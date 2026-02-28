@@ -1,0 +1,31 @@
+# STRIKTE ARBEITSANWEISUNG: SINGLE-FILE ENGINE & AUTO-VERSIONING
+
+## 1. Identifikation der Arbeitsgrundlage
+- Zieldatei: Die HTML-Datei im Hauptverzeichnis mit der **höchsten Versionsnummer** im Namen (Muster: `*_vX.X.X.html`).
+- Ignoriere alle Dateien im Ordner `/archiv` für aktive Bearbeitungen.
+- Referenzwissen: Nutze bei jeder Logik-Entscheidung die Dateien `@anleitung.md` und `@daten.xlsx`.
+
+## 2. Sicherheits-Protokoll (Git-Automatik)
+- VOR jeder Code-Änderung: Führe zwingend einen Git-Commit durch.
+- Befehl: `git add . && git commit -m "Backup vor Update auf neue Version"`
+- Dies ist dein obligatorischer "Undo"-Punkt.
+
+## 3. Der Build-Prozess (Version & Zeitstempel)
+- Nach Abschluss der fachlichen Aufgabe:
+    1. **Versions-Sprung:** Erhöhe die Nummer im Dateinamen (Patch +0.0.0.1 bei Fixes, Minor +0.1.0 bei Features).
+    2. **Datei-Kopie:** Speichere das Ergebnis als NEUE Datei (z.B. von `v0.8.7` zu `v0.8.8`).
+    3. **In-Code Update:** Suche im HTML nach den IDs und überschreibe sie hart:
+       - `<span id="version-display">...</span>` -> Neue Versionsnummer.
+       - `<span id="last-update">...</span>` -> Aktuelles Systemdatum & Uhrzeit (Format: DD.MM.YYYY, HH:mm).
+    4. **Inlining:** Stelle sicher, dass alles CSS/JS am Ende inline in der neuen HTML-Datei liegt.
+
+## 4. Automatisierte Ordner-Hygiene (Hausmeister-Modus)
+- Scanne nach dem Speichern den Hauptordner auf HTML-Versionen.
+- Behalte nur die **neueste Version** und die **4 vorherigen Stände** im Hauptverzeichnis.
+- Verschiebe alle älteren Versionen (v5 und älter) autonom in den Unterordner `/archiv`.
+- Erstelle `/archiv` selbstständig, falls nicht vorhanden.
+
+## 5. Performance & Kommunikation
+- Nutze für die 3.5MB+ Datei ausschließlich das **Diff-Verfahren** (Suchen & Ersetzen).
+- Berichte im Chat nur über die fachliche Änderung (z.B. "Inventar-System implementiert").
+- Erwähne Git, Archivierung oder Zeitstempel-Updates NICHT, es sei denn, ein Systembefehl schlägt fehl.

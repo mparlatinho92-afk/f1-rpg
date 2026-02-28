@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<title>Foto-Diagnose</title>
+<style>
+body { font-family:monospace; background:#111; color:#eee; padding:20px; }
+h2 { color:#FFD700; margin:16px 0 8px; }
+.test { display:flex; align-items:center; gap:12px; margin:6px 0; padding:8px;
+        background:#1a1a1a; border-radius:6px; border-left:4px solid #333; }
+.test.ok   { border-color:#22C55E; }
+.test.fail { border-color:#EF4444; }
+.test.wait { border-color:#3B82F6; }
+img { width:80px; height:60px; object-fit:contain; background:#0a0a0a; border-radius:4px; }
+.info { font-size:12px; }
+.label { font-weight:bold; margin-bottom:2px; }
+.url { font-size:10px; color:#666; }
+.result { font-size:11px; }
+.ok .result { color:#22C55E; }
+.fail .result { color:#EF4444; }
+</style>
+</head>
+<body>
+<h1>🔍 StatsF1 Foto-Diagnose</h1>
+<p style="color:#64748b;font-size:12px;margin-bottom:12px">Testet verschiedene Strategien für <b>senna.png</b></p>
+
+<div id="tests"></div>
+
+<h2>Netzwerk-Info</h2>
+<div id="netinfo" style="font-size:11px;color:#94a3b8;"></div>
+
+<script>
+const URL = 'https://www.statsf1.com/pilotes/photos/senna.png';
+
+const tests = [
+  { label: 'A: <img> mit referrerpolicy="no-referrer" (bisherige Methode)',
+    method: 'img-noreferrer' },
+  { label: 'B: <img> OHNE referrerpolicy',
+    method: 'img-default' },
+  { label: 'C: <img> mit referrerpolicy="unsafe-url"',
+    method: 'img-unsafeurl' },
+  { label: 'D: <img> mit referrerpolicy="origin"',
+    method: 'img-origin' },
+  { label: 'E: <img> mit referrerpolicy="no-referrer-when-downgrade"',
+    method: 'img-nrdwd' },
+  { label: 'F: new Image() im JS (kein referrerpolicy)',
+    method: 'js-default' },
+  { label: 'G: new Image() mit referrerPolicy="no-referrer" im JS',
+    method: 'js-noreferrer' },
+];
+
+const div = document.getElementById('tests');
+const rows = {};
+
+tests.forEach((t, i) => {
+  const row = document.createElement('div');
+  row.className = 'test wait';
+  row.id = 'test-' + i;
+  row.innerHTML = `
+    <img id="img-${i}" style="opacity:0.2">
+    <div class="info">
+      <div class="label">${t.label}</div>
+      <div class="url">${URL}</div>
+      <div class="result" id="res-${i}">⏳ prüft…</div>
+    </div>`;
+  div.appendChild(row);
+  rows[i] = row;
+});
+
+// Run each test
+function runTest(i) {
+  const t = tests[i];
+  const imgEl = document.getElementById('img-' + i);
+  const resEl = document.getElementById('res-' + i);
+  const row   = rows[i];
+
+  const onOk = () => {
+    row.className = 'test ok';
+    imgEl.style.opacity = '1';
+    resEl.textContent = '✅ GELADEN';
+  };
+  const onFail = (info) => {
+    row.className = 'test fail';
+    resEl.textContent = '❌ FEHLER' + (info ? ' – ' + info : '');
+  };
+
+  if (t.method.startsWith('img-')) {
+    const policy = {
+      'img-noreferrer': 'no-referrer',
+      'img-default':    null,
+      'img-unsafeurl':  'unsafe-url',
+      'img-origin':     'origin',
+      'img-nrdwd':      'no-referrer-when-downgrade',
+    }[t.method];
+
+    imgEl.onload  = onOk;
+    imgEl.onerror = () => onFail();
+    if (policy) imgEl.referrerPolicy = policy;
+    imgEl.src = URL + '?t=' + Date.now(); // cache-bust
+
+  } else {
+    const img = new Image();
+    if (t.method === 'js-noreferrer') img.referrerPolicy = 'no-referrer';
+    img.onload  = () => { imgEl.src = img.src; onOk(); };
+    img.onerror = () => onFail();
+    img.src = URL + '?t=' + (Date.now() + i);
+  }
+}
+
+tests.forEach((_, i) => setTimeout(() => runTest(i), i * 300));
+
+// Network info
+const ni = document.getElementById('netinfo');
+ni.innerHTML = `
+  Protokoll: <b>${location.protocol}</b><br>
+  Geöffnet von: <b>${location.href.substring(0,80)}</b><br>
+  User-Agent: <b>${navigator.userAgent.substring(0,80)}</b>
+`;
+</script>
+</body>
+</html>
