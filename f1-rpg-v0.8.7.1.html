@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.8.7</title>
+    <title>F1 RPG v0.8.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -640,11 +640,17 @@
     </style>
 <script type="text/javascript" nonce="e7f526daa24f4861b608b8b635c" src="//local.adguard.org?ts=1770919177865&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USTxIMcmVxdWVzdF9kYXRhGj8KMGIyOGUwMTRiYTNjMjhlY2YwMDA2NGFhMTYwZTk0NjQxMDRhNDU0ZjQ2MTFhYzk3YhILEgcQlaDD6eoLGAE%26filename%3Df1-rpg-v0_5_4%288%29.html%26opi%3D103135050&amp;app=opera.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=0"></script><script type="text/javascript" nonce="e7f526daa24f4861b608b8b635c" src="//local.adguard.org?ts=1770919177865&amp;name=AdGuard%20Extra&amp;type=user-script"></script></head>
 <body>
+
+<div style="font-size: 0.8em; color: gray; padding: 10px; border-bottom: 1px solid #ccc;">
+    Version: <span id="version-display">0.8.7.1</span> | 
+    Letztes Update: <span id="last-update">Noch nie aktualisiert</span>
+</div>
+
     <!-- Foto-Status Button -->
     <button onclick="document.getElementById('foto-modal').style.display='flex'"
-            style="position:fixed;top:10px;left:10px;z-index:9999;background:#1e293b;border:1px solid #334155;
+            style="position:fixed;top:45px;left:10px;z-index:9999;background:#ffc0cb;border:1px solid #334155;
                    color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;
-                   font-family:monospace;">📷 Foto-Status</button>
+                   font-family:monospace;font-weight:bold;">📷 Foto-Status</button>
 
     <div id="foto-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.8);
          align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
@@ -7169,7 +7175,6 @@ const SEASON_DATA = {
         }
         
         function finishLiveRace() {
-            if (!liveRaceState.positions || liveRaceState.positions.length === 0) return;
             const winner = liveRaceState.positions[0];
             addLiveEvent(`🏁 BANDEIRADA! Vitória de ${winner.name}, da equipe ${winner.teamName}!`, 'positive');
             
@@ -9401,7 +9406,7 @@ const SEASON_DATA = {
                             
                             // Aus seasonDeaths entfernen
                             GAME_STATE.seasonDeaths = (GAME_STATE.seasonDeaths || [])
-                                .filter(d => !(d.id === driver.id && d.raceIndex === deletedRace.raceIndex));
+                                .filter(d => d.id !== driver.id || d.raceIndex !== deletedRace.raceIndex);
                         }
                     }
                 });
@@ -9425,18 +9430,18 @@ const SEASON_DATA = {
                     const driverId = result.driver || result.d;
                     const points = result.points || result.pt || 0;
                     const position = result.position || result.p;
-                    const dnf = result.dnf === true || result.dnf === 1;
+                    const dnf = result.dnf || result.dnf === 1;
                     const fastestLap = result.fastestLap || result.fl === 1;
-                    const driver = GAME_STATE.drivers.find(d => d.id === driverId);
-
+                    
                     if (!GAME_STATE.driverStandings[driverId]) {
+                        const driver = GAME_STATE.drivers.find(d => d.id === driverId);
                         GAME_STATE.driverStandings[driverId] = {
                             name: driver?.name || driverId,
                             points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0,
                             positions: [], averageFinish: 0
                         };
                     }
-
+                    
                     const standing = GAME_STATE.driverStandings[driverId];
                     standing.points += points;
                     if (position === 1 && !dnf) standing.wins++;
@@ -9444,8 +9449,9 @@ const SEASON_DATA = {
                     if (dnf) standing.dnfs++;
                     if (fastestLap) standing.fastestLaps++;
                     if (!dnf) standing.positions.push(position);
-
+                    
                     // Team-Standings
+                    const driver = GAME_STATE.drivers.find(d => d.id === driverId);
                     if (driver && driver.team) {
                         if (!GAME_STATE.teamStandings[driver.team]) {
                             const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -9486,7 +9492,7 @@ const SEASON_DATA = {
             GAME_STATE.driverStandings = JSON.parse(JSON.stringify(lastSeason.driverStandings));
             GAME_STATE.teamStandings = JSON.parse(JSON.stringify(lastSeason.teamStandings));
             GAME_STATE.races = generateRacesForYear(lastSeason.year);
-            GAME_STATE.currentRace = lastSeason.raceCount;
+            GAME_STATE.currentRace = lastSeason.races;
             GAME_STATE.results = []; // Ergebnisse müssten auch gespeichert werden für voll funktional
             
             saveGame();
@@ -9582,14 +9588,10 @@ const SEASON_DATA = {
         
         window.startSelectedYear = function() {
             const year = parseInt(document.getElementById('yearSelector').value);
-            if (isNaN(year) || !SEASON_DATA[year]) {
-                alert(`❌ Jahr ${year} ist nicht verfügbar.`);
-                return;
-            }
             if (!confirm(`⚠️ Saison ${year} starten?\n\nDein aktueller Fortschritt geht verloren!`)) {
                 return;
             }
-
+            
             initFromYear(year);
             closeDatasetManager();
             renderAll();
@@ -10585,6 +10587,7 @@ const SEASON_DATA = {
 
         // v0.8.3: Einzelnes historisches Rennen anzeigen
         function renderHistoricalRace(raceId) {
+            const yearRaces = getF1DBYear(null); // need to find year
             // Find year for this raceId
             let raceData = null;
             let raceYear = null;
