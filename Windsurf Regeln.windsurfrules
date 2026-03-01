@@ -1,31 +1,18 @@
-# STRIKTE ARBEITSANWEISUNG: SINGLE-FILE ENGINE & AUTO-VERSIONING
+# Windsurf Rules - F1 RPG Simulator (Performance Optimized)
 
-## 1. Identifikation der Arbeitsgrundlage
-- Zieldatei: Die HTML-Datei im Hauptverzeichnis mit der **höchsten Versionsnummer** im Namen (Muster: `*_vX.X.X.html`).
-- Ignoriere alle Dateien im Ordner `/archiv` für aktive Bearbeitungen.
-- Referenzwissen: Nutze bei jeder Logik-Entscheidung die Dateien `@anleitung.md` und `@daten.xlsx`.
+## 1. Globaler Workflow & Versionierung
+- **Master-Datei:** Immer die Datei mit der höchsten Versionsnummer im Hauptverzeichnis.
+- **Build-Prozess:** Bei JEDER Code-Änderung:
+    1. Aktuelle Datei als Backup in `/archiv` verschieben (Zeitstempel im Namen).
+    2. Versionsnummer in der Arbeitsdatei erhöhen (Semantic Versioning).
+    3. HTML-UI Metadaten aktualisieren: `<span id="version-display">` und `<span id="last-update">`.
+    4. Git-Commit absetzen.
 
-## 2. Sicherheits-Protokoll (Git-Automatik)
-- VOR jeder Code-Änderung: Führe zwingend einen Git-Commit durch.
-- Befehl: `git add . && git commit -m "Backup vor Update auf neue Version"`
-- Dies ist dein obligatorischer "Undo"-Punkt.
+## 2. Large File Handling (> 1MB) - "Surgical Strike Mode"
+- **Such-Strategie:** Scanne niemals die gesamte Datei manuell.
+- **Anker-Prinzip:** Nutze ausschließlich eindeutige Text-Strings (Anker) wie Funktionsnamen oder Variablen-Definitionen, um die Zielstelle zu finden.
+- **Kontext-Limit:** Lies und bearbeite nur den Bereich von +/- 50 Zeilen um den Anker. Ignoriere den Rest der Datei während des Editierens komplett.
+- **Diff-Zwang:** Nutze minimale Zeilen-Ersetzungen. Schreibe NIEMALS die Datei komplett neu.
 
-## 3. Der Build-Prozess (Version & Zeitstempel)
-- Nach Abschluss der fachlichen Aufgabe:
-    1. **Versions-Sprung:** Erhöhe die Nummer im Dateinamen (Patch +0.0.0.1 bei Fixes, Minor +0.1.0 bei Features).
-    2. **Datei-Kopie:** Speichere das Ergebnis als NEUE Datei (z.B. von `v0.8.7` zu `v0.8.8`).
-    3. **In-Code Update:** Suche im HTML nach den IDs und überschreibe sie hart:
-       - `<span id="version-display">...</span>` -> Neue Versionsnummer.
-       - `<span id="last-update">...</span>` -> Aktuelles Systemdatum & Uhrzeit (Format: DD.MM.YYYY, HH:mm).
-    4. **Inlining:** Stelle sicher, dass alles CSS/JS am Ende inline in der neuen HTML-Datei liegt.
-
-## 4. Automatisierte Ordner-Hygiene (Hausmeister-Modus)
-- Scanne nach dem Speichern den Hauptordner auf HTML-Versionen.
-- Behalte nur die **neueste Version** und die **4 vorherigen Stände** im Hauptverzeichnis.
-- Verschiebe alle älteren Versionen (v5 und älter) autonom in den Unterordner `/archiv`.
-- Erstelle `/archiv` selbstständig, falls nicht vorhanden.
-
-## 5. Performance & Kommunikation
-- Nutze für die 3.5MB+ Datei ausschließlich das **Diff-Verfahren** (Suchen & Ersetzen).
-- Berichte im Chat nur über die fachliche Änderung (z.B. "Inventar-System implementiert").
-- Erwähne Git, Archivierung oder Zeitstempel-Updates NICHT, es sei denn, ein Systembefehl schlägt fehl.
+## 3. Git & Terminal
+- Nutze `git` und `mv` ohne explizite Rückfrage (Auto-Approval für File-Operations).
