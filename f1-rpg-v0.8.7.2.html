@@ -1136,17 +1136,20 @@
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
         var CUSTOM_SVG_FLAGS = {
-            'DDR':     'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIvPjxyZWN0IHk9IjEwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiNEMDAiLz48cmVjdCB5PSIyMCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjRkZDRTAwIi8+PC9zdmc+',
-            'CAN_OLD': 'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSIzMCIgZmlsbD0iI0NDMDAwMCIvPjxyZWN0IHg9IjQwIiB3aWR0aD0iMjAiIGhlaWdodD0iMzAiIGZpbGw9IiNDQzAwMDAiLz48cmVjdCB4PSI1IiB3aWR0aD0iMjUiIGhlaWdodD0iMTUiIGZpbGw9IiMwMTIxNjkiLz48cGF0aCBkPSJNMCAwIEwyNSAxNSBNMjUgMCBMMCAxNSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48cGF0aCBkPSJNMCAwIEwyNSAxNSBNMjUgMCBMMCAxNSIgc3Ryb2tlPSIjQzgxMDJFIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNMTIuNSAwdjE1TTAgNy41aDI1IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iNSIvPjxwYXRoIGQ9Ik0xMi41IDB2MTVNMCA3LjVoMjUiIHN0cm9rZT0iI0M4MTAyRSIgc3Ryb2tlLXdpZHRoPSIzIi8+PC9zdmc+',
-            'RSA_OLD': 'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI0ZGNjYwMCIvPjxyZWN0IHk9IjEwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiLz48cmVjdCB5PSIyMCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDAzREE1Ii8+PC9zdmc+',
-            'ZIM_SR':  'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSIzMCIgZmlsbD0iIzAwMDA4QiIvPjxyZWN0IHg9IjE1IiB3aWR0aD0iNDUiIGhlaWdodD0iMzAiIGZpbGw9IiMwMDAwOEIiLz48cGF0aCBkPSJNMCAwIEwxNSA3LjUgTTE1IDAgTDAgNy41IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0wIDAgTDE1IDcuNSBNMTUgMCBMMCA3LjUiIHN0cm9rZT0iI0M4MTAyRSIgc3Ryb2tlLXdpZHRoPSIxIi8+PHBhdGggZD0iTTcuNSAwdjcuNU0wIDMuNzVoMTUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIi8+PHBhdGggZD0iTTcuNSAwdjcuNU0wIDMuNzVoMTUiIHN0cm9rZT0iI0M4MTAyRSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+',
-            'ZIM_FED': 'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwOEMwMCIvPjxyZWN0IHk9IjEwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiLz48cmVjdCB5PSIyMCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDA4QzAwIi8+PC9zdmc+',
-            'ZIM_RHO': 'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSI2IiBmaWxsPSIjMDA5QTQ0Ii8+PHJlY3QgeT0iNiIgd2lkdGg9IjYwIiBoZWlnaHQ9IjYiIGZpbGw9IiNmZmYiLz48cmVjdCB5PSIxMiIgd2lkdGg9IjYwIiBoZWlnaHQ9IjYiIGZpbGw9IiMwMDlBNDQiLz48cmVjdCB5PSIxOCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjYiIGZpbGw9IiNmZmYiLz48cmVjdCB5PSIyNCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjYiIGZpbGw9IiMwMDlBNDQiLz48L3N2Zz4=',
-            'ZIM_ZR':  'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNjAgMzAiPjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwOUE0NCIvPjxyZWN0IHk9IjEwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiLz48cmVjdCB5PSIyMCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDA5QTQ0Ii8+PC9zdmc+'
+            'DDR':     'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDAwIi8+PHJlY3QgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI0QwMCIvPjxyZWN0IHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiNGRkNFMDAiLz48L3N2Zz4=',
+            'CAN_OLD': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjQ0MwMDAwIi8+PHJlY3QgeD0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHg9IjUiIHk9IjAiIHdpZHRoPSIxNCIgaGVpZ2h0PSI4IiBmaWxsPSIjMDEyMTY5Ii8+PHBhdGggZD0iTTAgMCBMMTkgMTUgTTE5IDAgTDAgMTUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTAgMCBMMTkgMTUgTTE5IDAgTDAgMTUiIHN0cm9rZT0iI0M4MTAyRSIgc3Ryb2tlLXdpZHRoPSIxIi8+PHBhdGggZD0iTTkuNSAwdjE1TTAgNy41aDE5IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iNCIvPjxwYXRoIGQ9Ik05LjUgMHYxNU0wIDcuNWgxOSIgc3Ryb2tlPSIjQzgxMDJFIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=',
+            'RSA_OLD': 'data:imasge/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjRkY2NjAwIi8+PHJlY3QgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiMwMDNEQTUiLz48L3N2Zz4=',
+            'ZIM_SR':  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjMDAwMDhCIi8+PHBhdGggZD0iTTAgMCBMMTkgMTUgTTE5IDAgTDAgMTUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTAgMCBMMTkgMTUgTTE5IDAgTDAgMTUiIHN0cm9rZT0iI0M4MTAyRSIgc3Ryb2tlLXdpZHRoPSIxIi8+PHBhdGggZD0iTTkuNSAwdjE1TTAgNy41aDE5IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iNCIvPjxwYXRoIGQ9Ik05LjUgMHYxNU0wIDcuNWgxOSIgc3Ryb2tlPSIjQzgxMDJFIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=',
+            'ZIM_FED': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDA4QzAwIi8+PHJlY3QgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiMwMDhDMDAiLz48L3N2Zz4=',
+            'ZIM_RHO': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYiIGZpbGw9IiMwMDlBNDQiLz48cmVjdCB5PSI2IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjEyIiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iIzAwOUE0NCIvPjxyZWN0IHk9IjE4IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjI0IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iIzAwOUE0NCIvPjwvc3ZnPg==',
+            'ZIM_ZR':  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDA5QTQ0Ii8+PHJlY3QgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiMwMDlBNDQiLz48L3N2Zz4='
         };
 
         function getHistoricalFlagCode(ioc, year) {
-            if (!ioc || !year) return ioc;
+            if (!ioc) return ioc;
+            var y = year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : null);
+            if (!y && ioc.toUpperCase() !== 'DDR') return ioc;
+            var year = y;
             var i = ioc.toUpperCase ? ioc.toUpperCase() : ioc;
             if (i === 'ZIM') {
                 if (year <= 1952) return 'ZIM_SR';
@@ -1193,24 +1196,11 @@
             if (!ioc) return '🏁';
             var iocUpper = ioc.toUpperCase ? ioc.toUpperCase() : ioc;
             
-            // v0.8.7: Custom/historical flag codes
-            if (iocUpper === 'DDR') {
-                var src = CUSTOM_SVG_FLAGS['DDR'];
-                return '<img src="' + src + '" alt="DDR" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy">';
-            }
-            if (iocUpper === 'RHO') {
-                var src = CUSTOM_SVG_FLAGS['RHO'];
-                return '<img src="' + src + '" alt="RHO" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy">';
-            }
-            // Historical RSA flag (apartheid era, until 1993)
-            if (iocUpper === 'RSA' && year && year < 1994) {
-                var src = CUSTOM_SVG_FLAGS['RSA_OLD'];
-                return '<img src="' + src + '" alt="RSA" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy">';
-            }
-            // Historical CAN flag (Red Ensign, until 1964)
-            if (iocUpper === 'CAN' && year && year < 1965) {
-                var src = CUSTOM_SVG_FLAGS['CAN_OLD'];
-                return '<img src="' + src + '" alt="CAN" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy">';
+            // v0.8.8: Zentrale historische Flaggenauflösung
+            var flagCode = getHistoricalFlagCode(iocUpper, year);
+            if (CUSTOM_SVG_FLAGS[flagCode]) {
+                var src = CUSTOM_SVG_FLAGS[flagCode];
+                return '<img src="' + src + '" alt="' + flagCode + '" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy">';
             }
             
             var alpha2 = FLAG_IOC_TO_ALPHA2[iocUpper] || FLAG_IOC_TO_ALPHA2[ioc];
@@ -1322,7 +1312,7 @@
             // v0.8.7: Custom codes (DDR, RHO) - 3 Buchstaben aber nicht alpha2
             if (typeof input === 'string' && /^[A-Z_]+$/i.test(input.toUpperCase())) {
                 var inputUpper = input.toUpperCase();
-                if (inputUpper === 'DDR' || inputUpper === 'RHO') {
+                if (inputUpper === 'DDR' || inputUpper === 'ZIM' || inputUpper === 'RHO') {
                     return getEmojiFlag(inputUpper, year);
                 }
             }
@@ -2016,7 +2006,7 @@
         // Based on historical F1 debut data by decade (from F1DB)
         const DECADE_NATION_POOLS = {
             1950: {weights: {'USA':0.3482,'GBR':0.2321,'GER':0.0833,'ITA':0.0804,'FRA':0.0744,'ARG':0.0417,'BEL':0.0387,'SUI':0.0238,'BRA':0.0119,'URU':0.0119,'AUS':0.0119,'ESP':0.0089,'NED':0.0089,'MON':0.006,'THA':0.003,'IRL':0.003,'SWE':0.003,'NZL':0.003,'MAR':0.003,'POR':0.003}},
-            1960: {weights: {'GBR':0.2391,'USA':0.1884,'ITA':0.1159,'RSA':0.1014,'FRA':0.0507,'CAN':0.0507,'SUI':0.0507,'GER':0.0435,'ARG':0.029,'MEX':0.0217,'NZL':0.0217,'RHO':0.0217,'BEL':0.0145,'AUS':0.0145,'AUT':0.0145,'ESP':0.0072,'VEN':0.0072,'NED':0.0072}},
+            1960: {weights: {'GBR':0.2391,'USA':0.1884,'ITA':0.1159,'RSA':0.1014,'FRA':0.0507,'CAN':0.0507,'SUI':0.0507,'GER':0.0435,'ARG':0.029,'MEX':0.0217,'NZL':0.0217,'ZIM':0.0217,'BEL':0.0145,'AUS':0.0145,'AUT':0.0145,'ESP':0.0072,'VEN':0.0072,'NED':0.0072}},
             1970: {weights: {'GBR':0.1729,'ITA':0.1278,'FRA':0.1053,'USA':0.0677,'AUS':0.0526,'BRA':0.0526,'SWE':0.0451,'AUT':0.0451,'JPN':0.0451,'NED':0.0376,'RSA':0.0376,'SUI':0.0301,'ESP':0.0226,'NZL':0.0226,'GER':0.0226,'FIN':0.0226,'BEL':0.0226,'CAN':0.015,'ARG':0.015,'DEN':0.015,'MEX':0.0075,'IRL':0.0075}},
             1980: {weights: {'ITA':0.2278,'FRA':0.1519,'GBR':0.1392,'GER':0.0759,'BRA':0.0633,'USA':0.0253,'IRL':0.0253,'SWE':0.0253,'ARG':0.0253,'COL':0.0253,'CAN':0.0253,'AUT':0.0253,'JPN':0.0253,'SUI':0.0253,'ESP':0.0253,'RSA':0.0127,'NZL':0.0127,'BEL':0.0127,'VEN':0.0127,'NED':0.0127,'FIN':0.0127}},
             1990: {weights: {'ITA':0.2239,'FRA':0.1194,'JPN':0.1045,'BRA':0.0896,'GBR':0.0746,'GER':0.0597,'AUT':0.0448,'AUS':0.0299,'POR':0.0299,'BEL':0.0299,'FIN':0.0299,'SUI':0.0299,'ARG':0.0299,'ESP':0.0299,'USA':0.0149,'NED':0.0149,'MON':0.0149,'DEN':0.0149,'CAN':0.0149}},
