@@ -769,7 +769,7 @@
         <!-- Header -->
         <div class="text-center mb-6">
             <h1 class="text-5xl font-bold mb-2" style="color: var(--accent-main)">
-                🏎️ F1 RPG <span class="text-lg text-secondary">v0.6.8</span>
+                🏎️ F1 RPG <span class="text-lg text-secondary" id="versionDisplay">v0.6.8</span>
             </h1>
             
             <!-- Saison-Navigation -->
@@ -11384,7 +11384,7 @@ const SEASON_DATA = {
                             <td class="p-3 text-center font-bold ${numStyle} text-sm">${race.round}</td>
                             <td class="p-3">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">${getEmojiFlag(CIRCUIT_COUNTRY[race.circuit] || '') || renderFlag(null, race.name)}</span>
+                                    <span class="text-xl">${getEmojiFlag(CIRCUIT_COUNTRY[race.circuit] || '', year) || renderFlag(null, race.name, year)}</span>
                                     <div>
                                         <div class="font-bold race-link">${race.name}${indyBadge}</div>
                                         <div class="text-xs text-tertiary">${formatCircuitName(race.circuit)}</div>
@@ -11473,7 +11473,7 @@ const SEASON_DATA = {
                         <td class="p-3 text-center font-bold ${isNext ? 'accent-gold' : 'text-tertiary'} text-sm">${idx + 1}</td>
                         <td class="p-3">
                             <div class="flex items-center gap-2">
-                                <span class="text-xl">${renderFlag(race.country, race.name)}</span>
+                                <span class="text-xl">${renderFlag(race.country, race.name, year)}</span>
                                 <div>
                                     <div class="font-bold race-link">${race.name}</div>
                                     <div class="text-xs text-tertiary">${race.circuit || ''}</div>
@@ -11572,7 +11572,7 @@ const SEASON_DATA = {
                                             <td class="p-3 text-center font-bold ${isNext ? 'accent-gold' : 'text-tertiary'}">${idx + 1}</td>
                                             <td class="p-3">
                                                 <div class="flex items-center gap-2">
-                                                    <span class="text-xl">${renderFlag(race.country, race.name)}</span>
+                                                    <span class="text-xl">${renderFlag(race.country, race.name, historicalYear)}</span>
                                                     <span class="font-bold race-link">${race.name}</span>
                                                 </div>
                                             </td>
@@ -15660,7 +15660,11 @@ const SEASON_DATA = {
         // === INIT ===
         function initialize() {
             logInfo('INIT', `F1 RPG ${VERSION} startet...`);
-            
+
+            // Versionsanzeige im Header dynamisch befüllen
+            const vd = document.getElementById('versionDisplay');
+            if (vd) vd.textContent = 'v' + VERSION;
+
             // Theme laden
             const savedTheme = localStorage.getItem('f1rpg_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
