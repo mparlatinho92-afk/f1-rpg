@@ -10822,7 +10822,7 @@ const SEASON_DATA = {
                         }).map(team => `
                             <div class="bg-secondary p-4 rounded-lg">
                                 <div class="flex items-center gap-2 mb-3 cursor-pointer" onclick="openTeamProfile('${team.id || team.name.toLowerCase().replace(/\\s+/g, '-')}')">
-                                    <span class="text-xl">${renderFlag(team.nation, team.name)}</span>
+                                    <span class="text-xl">${renderFlag(team.nation, team.name, h.year)}</span>
                                     <span class="font-bold hover:underline" style="color: ${team.color || '#888'}">${team.name}</span>
                                     ${team.wmPosition ? `<span class="text-xs text-tertiary">#${team.wmPosition}</span>` : ''}
                                 </div>
@@ -10830,7 +10830,7 @@ const SEASON_DATA = {
                                     ${team.drivers.map(driver => `
                                         <div class="flex items-center justify-between text-sm">
                                             <div class="flex items-center gap-2 flex-1 min-w-0">
-                                                <span>${renderFlag(driver.nation, driver.name)}</span>
+                                                <span>${renderFlag(driver.nation, driver.name, h.year)}</span>
                                                 <span class="driver-link truncate ${driver.isChampion ? 'font-bold accent-gold' : ''}" onclick="openDriverProfile('${driver.id || driver.name.toLowerCase().replace(/\\s+/g, '-')}')">${driver.name}</span>
                                                 ${driver.isChampion ? '<span class="text-xs">🏆</span>' : ''}
                                             </div>
