@@ -10301,7 +10301,7 @@ const SEASON_DATA = {
                 const teamResults = Object.entries(teamMap)
                     .map(([id, t]) => {
                         const nationIoc = (typeof CONSTRUCTOR_NATIONS !== 'undefined') ? CONSTRUCTOR_NATIONS[id.toUpperCase()] : null;
-                        const nation = nationIoc ? getEmojiFlag(nationIoc, year) : null;
+                        const nation = nationIoc || null; // IOC-Code speichern, renderFlag löst mit Jahr auf
                         return {
                         name: prettyTeam(id),
                         id: id,
