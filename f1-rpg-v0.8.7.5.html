@@ -10343,7 +10343,12 @@ const SEASON_DATA = {
             }
             
             // Generiere Rennen für dieses Jahr
-            data.races = generateRacesForYear(year);
+            // Nutze F1DB-Reihenfolge wenn verfügbar (stimmt mit Rennen-Tab überein)
+            if (f1dbYear && f1dbYear.length > 0) {
+                data.races = f1dbYear.map((r, i) => ({ name: r.name, circuit: r.circuit, isIndy: r.isIndy, id: i + 1 }));
+            } else {
+                data.races = generateRacesForYear(year);
+            }
             data.currentRace = data.races.length;
             
             // === SYNTHETISCHE RENNERGEBNISSE FÜR HISTORISCHE SAISONS ===
