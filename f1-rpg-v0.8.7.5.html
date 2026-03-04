@@ -11187,7 +11187,7 @@ const SEASON_DATA = {
             const races = isHistorical ? (historicalViewData.races || []) : GAME_STATE.races;
             // Für aktive Saisons: F1DB-Renndaten für korrekte Flaggen/Namen in der Matrix
             const matrixYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
-            const f1dbMatrixRaces = \!isHistorical ? getF1DBYear(matrixYear) : null;
+            const f1dbMatrixRaces = !isHistorical ? getF1DBYear(matrixYear) : null;
             const driverStandingsData = isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings;
             const driversList = isHistorical ? (historicalViewData.drivers || []) : GAME_STATE.drivers;
             
