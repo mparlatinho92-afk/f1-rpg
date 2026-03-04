@@ -32,20 +32,20 @@
 
         /* === THEME VARIABLES === */
         :root[data-theme="modern"] {
-            --bg-primary: #FFFFFF;
-            --bg-secondary: #F5F5F5;
-            --bg-card: #FFFFFF;
+            --bg-primary: #eef2f7;
+            --bg-secondary: #dde6f0;
+            --bg-card: #f7f9fc;
             --text-primary: #1A1A1A;
-            --text-secondary: #666666;
-            --text-tertiary: #999999;
+            --text-secondary: #4a5568;
+            --text-tertiary: #718096;
             --accent-main: #E10600;
-            --accent-gold: #FFD700;
-            --accent-green: #10B981;
-            --accent-blue: #3B82F6;
-            --accent-purple: #A855F7;
-            --border-color: #E0E0E0;
+            --accent-gold: #D97706;
+            --accent-green: #059669;
+            --accent-blue: #2563EB;
+            --accent-purple: #7C3AED;
+            --border-color: #c8d6e5;
             --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            --hover-bg: #F9FAFB;
+            --hover-bg: #e2eaf4;
         }
         
         :root[data-theme="dark"] {
@@ -63,6 +63,22 @@
             --border-color: #334155;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             --hover-bg: #2D3748;
+        }
+        :root[data-theme="slate"] {
+            --bg-primary: #1a2332;
+            --bg-secondary: #22304a;
+            --bg-card: #263548;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --accent-main: #EF4444;
+            --accent-gold: #FBBF24;
+            --accent-green: #10B981;
+            --accent-blue: #3B82F6;
+            --accent-purple: #A855F7;
+            --border-color: #334d6e;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --hover-bg: #2d4060;
         }
         .flag-svg {
             display: inline-block;
@@ -224,6 +240,9 @@
         
         .theme-dark {
             background: linear-gradient(135deg, #0F1419 50%, #232936 50%);
+        }
+        .theme-slate {
+            background: linear-gradient(135deg, #1a2332 50%, #263548 50%);
         }
         
         /* === RESPONSIVE === */
@@ -5682,7 +5701,7 @@ const SEASON_DATA = {
             templateUsed: null,
             currentYear: 2024,
             currentRace: 0,
-            theme: 'dark',
+            theme: 'slate',
             deathRealism: 100,  // Default: 100% = Ära-Wert
             aiSimulation: true,
             liveTickerMode: false,  // v0.8.0: Live-Ticker vs. Klassische Simulation
@@ -5749,7 +5768,7 @@ const SEASON_DATA = {
             sanitized.version = VERSION; // Immer auf aktuelle Version setzen
             sanitized.currentYear = sanitized.currentYear || 2024;
             sanitized.currentRace = sanitized.currentRace || 0;
-            sanitized.theme = sanitized.theme || 'dark';
+            sanitized.theme = sanitized.theme || 'slate';
             sanitized.deathRealism = sanitized.deathRealism ?? 100;
             sanitized.aiSimulation = sanitized.aiSimulation ?? true;
             sanitized.liveTickerMode = sanitized.liveTickerMode ?? false;  // v0.8.0
@@ -6071,7 +6090,7 @@ const SEASON_DATA = {
                 templateUsed: templateId,
                 currentYear: template.startYear,
                 currentRace: 0,
-                theme: localStorage.getItem('f1rpg_theme') || 'dark',
+                theme: localStorage.getItem('f1rpg_theme') || 'slate',
                 deathRealism: defaultDeathRealism,
                 aiSimulation: true,
                 
@@ -6139,7 +6158,7 @@ const SEASON_DATA = {
                 templateUsed: year.toString(),
                 currentYear: year,
                 currentRace: 0,
-                theme: localStorage.getItem('f1rpg_theme') || 'dark',
+                theme: localStorage.getItem('f1rpg_theme') || 'slate',
                 deathRealism: defaultDeathRealism,
                 aiSimulation: true,
                 
@@ -12181,10 +12200,14 @@ const SEASON_DATA = {
                 <div class="space-y-6">
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">🎨 Theme</h3>
-                        <div class="flex gap-4">
+                        <div class="flex gap-4 flex-wrap">
+                            <button onclick="setTheme('slate')" 
+                                    class="p-4 rounded-lg ${GAME_STATE.theme === 'slate' ? 'btn-primary' : 'bg-secondary'}">
+                                🌊 Slate
+                            </button>
                             <button onclick="setTheme('dark')" 
                                     class="p-4 rounded-lg ${GAME_STATE.theme === 'dark' ? 'btn-primary' : 'bg-secondary'}">
-                                🌙 Dark
+                                🌑 Dark
                             </button>
                             <button onclick="setTheme('modern')" 
                                     class="p-4 rounded-lg ${GAME_STATE.theme === 'modern' ? 'btn-primary' : 'bg-secondary'}">
@@ -15692,7 +15715,7 @@ const SEASON_DATA = {
             if (vd) vd.textContent = 'v' + VERSION;
 
             // Theme laden
-            const savedTheme = localStorage.getItem('f1rpg_theme') || 'dark';
+            const savedTheme = localStorage.getItem('f1rpg_theme') || 'slate';
             document.documentElement.setAttribute('data-theme', savedTheme);
             
             // Spielstand laden oder neu erstellen
