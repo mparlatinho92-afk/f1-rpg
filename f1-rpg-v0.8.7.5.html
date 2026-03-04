@@ -10299,9 +10299,13 @@ const SEASON_DATA = {
                 }
                 
                 const teamResults = Object.entries(teamMap)
-                    .map(([id, t]) => ({
+                    .map(([id, t]) => {
+                        const nationIoc = (typeof CONSTRUCTOR_NATIONS !== 'undefined') ? CONSTRUCTOR_NATIONS[id.toUpperCase()] : null;
+                        const nation = nationIoc ? getEmojiFlag(nationIoc, year) : null;
+                        return {
                         name: prettyTeam(id),
                         id: id,
+                        nation: nation,
                         wins: t.wins,
                         podiums: t.podiums,
                         points: Math.round(t.points * 10) / 10,
@@ -10309,7 +10313,8 @@ const SEASON_DATA = {
                             if (HIST_NAMES?.[did]) return HIST_NAMES[did].split(' ').pop();
                             return did.split('-').pop();
                         }).join(' / ')
-                    }))
+                    };
+                    })
                     .sort((a, b) => b.points - a.points || b.wins - a.wins);
                 
                 teamResults.forEach((t, i) => { t.position = i + 1; });
@@ -11067,6 +11072,7 @@ const SEASON_DATA = {
             const driverStandings = isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings;
             const driversList = isHistorical ? historicalViewData.drivers : GAME_STATE.drivers;
             const teamsList = isHistorical ? historicalViewData.teams : GAME_STATE.teams;
+            const flagYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
             
             const drivers = Object.entries(driverStandings || {})
                 .map(([id, s]) => ({ id, ...s }))
@@ -11098,7 +11104,7 @@ const SEASON_DATA = {
                                             <td class="p-3 font-bold ${idx === 0 ? 'accent-gold' : ''}">${idx + 1}</td>
                                             <td class="p-3">
                                                 <div class="flex items-center gap-2">
-                                                    <span>${renderFlag(driver?.nation, d.name)}</span>
+                                                    <span>${renderFlag(driver?.nation, d.name, flagYear)}</span>
                                                     <span class="font-bold driver-link" onclick="openDriverProfile('${d.id}')">${d.name}</span>
                                                 </div>
                                             </td>
@@ -11131,6 +11137,7 @@ const SEASON_DATA = {
             const teamStandings = isHistorical ? historicalViewData.teamStandings : GAME_STATE.teamStandings;
             const teamsList = isHistorical ? historicalViewData.teams : GAME_STATE.teams;
             const driversList = isHistorical ? historicalViewData.drivers : GAME_STATE.drivers;
+            const flagYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
             
             const teams = Object.entries(teamStandings || {})
                 .map(([id, s]) => ({ id, ...s }))
@@ -11159,7 +11166,7 @@ const SEASON_DATA = {
                                             <td class="p-3 font-bold ${idx === 0 ? 'accent-gold' : ''}">${idx + 1}</td>
                                             <td class="p-3">
                                                 <div class="flex items-center gap-2">
-                                                    <span>${renderFlag(team?.nation, t.name)}</span>
+                                                    <span>${renderFlag(team?.nation, t.name, flagYear)}</span>
                                                     <span class="font-bold team-link" onclick="openTeamProfile('${t.id}')">${t.name}</span>
                                                 </div>
                                             </td>
@@ -13760,7 +13767,8 @@ const SEASON_DATA = {
             if (isLegend) titleSuffix = ' (Legende)';
             else if (isFromPastSeason) titleSuffix = ' (Ehemaliger)';
             
-            document.getElementById('driverProfileTitle').innerHTML = `${renderFlag(driver.nation, driver.name)} ${driver.name}${titleSuffix}`;
+            const profileFlagYear = viewingHistoricalYear || GAME_STATE.currentYear;
+            document.getElementById('driverProfileTitle').innerHTML = `${renderFlag(driver.nation, driver.name, profileFlagYear)} ${driver.name}${titleSuffix}`;
             
             document.getElementById('driverProfileBody').innerHTML = `
                 ${isLegend ? `
@@ -13780,7 +13788,7 @@ const SEASON_DATA = {
                     <div class="flex-1">
                         <div class="text-3xl font-bold mb-1">${driver.name}</div>
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
-                            <span class="text-2xl">${renderFlag(driver.nation, driver.name)}</span>
+                            <span class="text-2xl">${renderFlag(driver.nation, driver.name, profileFlagYear)}</span>
                             ${team ? `
                                 <span class="px-2 py-1 rounded text-sm font-bold" style="background-color: ${team.color}20; color: ${team.color}">
                                     ${team.name}
