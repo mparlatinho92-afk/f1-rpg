@@ -10920,7 +10920,7 @@ const SEASON_DATA = {
                             if (name.toLowerCase() === histTeam.name.toLowerCase() ||
                                 name.toLowerCase().includes(histTeam.name.toLowerCase().split(' ')[0])) {
                                 team.wmPosition = typeof histTeam.position === 'number' ? histTeam.position : null;
-                                team.nation = histTeam.nation || '🏁';
+                                if (histTeam.nation) team.nation = histTeam.nation;
                                 break;
                             }
                         }
