@@ -11185,6 +11185,9 @@ const SEASON_DATA = {
             const isHistorical = viewingHistoricalYear && historicalViewData;
             const results = isHistorical ? (historicalViewData.results || []) : GAME_STATE.results;
             const races = isHistorical ? (historicalViewData.races || []) : GAME_STATE.races;
+            // Für aktive Saisons: F1DB-Renndaten für korrekte Flaggen/Namen in der Matrix
+            const matrixYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
+            const f1dbMatrixRaces = \!isHistorical ? getF1DBYear(matrixYear) : null;
             const driverStandingsData = isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings;
             const driversList = isHistorical ? (historicalViewData.drivers || []) : GAME_STATE.drivers;
             
@@ -11215,7 +11218,9 @@ const SEASON_DATA = {
                                 ${results.map((r, idx) => {
                                     // Komprimierte oder normale Daten
                                     const raceName = r.rn || r.raceName || `R${idx + 1}`;
-                                    const raceData = races[r.ri !== undefined ? r.ri : idx];
+                                    const raceIdx2 = r.ri !== undefined ? r.ri : idx;
+                                    const f1dbR = f1dbMatrixRaces ? f1dbMatrixRaces[raceIdx2] : null;
+                                    const raceData = f1dbR ? { circuit: f1dbR.circuit, name: f1dbR.name } : races[raceIdx2];
                                     const flagYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
                                     // Flagge: aus country-Feld (Emoji) oder via CIRCUIT_COUNTRY lookup
                                     let raceFlag = raceData?.country || '';
