@@ -71,7 +71,7 @@
             --text-primary: #e2e8f0;
             --text-secondary: #94a3b8;
             --text-tertiary: #64748b;
-            --accent-main: #EF4444;
+            --accent-main: #3b82f6;
             --accent-gold: #FBBF24;
             --accent-green: #10B981;
             --accent-blue: #3B82F6;
@@ -79,6 +79,70 @@
             --border-color: #334d6e;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             --hover-bg: #2d4060;
+        }
+        :root[data-theme="amber"] {
+            --bg-primary: #1c1608;
+            --bg-secondary: #2a200e;
+            --bg-card: #231a0b;
+            --text-primary: #f0d99a;
+            --text-secondary: #c4a85a;
+            --text-tertiary: #8a7240;
+            --accent-main: #d97706;
+            --accent-gold: #f59e0b;
+            --accent-green: #65a30d;
+            --accent-blue: #0ea5e9;
+            --accent-purple: #a855f7;
+            --border-color: #4a3510;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --hover-bg: #332808;
+        }
+        :root[data-theme="racing"] {
+            --bg-primary: #091a10;
+            --bg-secondary: #102a1a;
+            --bg-card: #132417;
+            --text-primary: #d1fae5;
+            --text-secondary: #6ee7b7;
+            --text-tertiary: #34d399;
+            --accent-main: #16a34a;
+            --accent-gold: #fbbf24;
+            --accent-green: #10b981;
+            --accent-blue: #38bdf8;
+            --accent-purple: #a855f7;
+            --border-color: #1a4d2a;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --hover-bg: #1a3a22;
+        }
+        :root[data-theme="indigo"] {
+            --bg-primary: #0d0b1a;
+            --bg-secondary: #16132b;
+            --bg-card: #1b1834;
+            --text-primary: #e0def4;
+            --text-secondary: #a09ccc;
+            --text-tertiary: #6c6899;
+            --accent-main: #6366f1;
+            --accent-gold: #fbbf24;
+            --accent-green: #10b981;
+            --accent-blue: #818cf8;
+            --accent-purple: #c084fc;
+            --border-color: #2e2a50;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --hover-bg: #252240;
+        }
+        :root[data-theme="bordeaux"] {
+            --bg-primary: #190808;
+            --bg-secondary: #271010;
+            --bg-card: #211010;
+            --text-primary: #ffe4e4;
+            --text-secondary: #fca5a5;
+            --text-tertiary: #ef9090;
+            --accent-main: #ef4444;
+            --accent-gold: #fbbf24;
+            --accent-green: #10b981;
+            --accent-blue: #60a5fa;
+            --accent-purple: #a855f7;
+            --border-color: #4a1515;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --hover-bg: #331515;
         }
         .flag-svg {
             display: inline-block;
@@ -243,6 +307,18 @@
         }
         .theme-slate {
             background: linear-gradient(135deg, #1a2332 50%, #263548 50%);
+        }
+        .theme-amber {
+            background: linear-gradient(135deg, #1c1608 50%, #231a0b 50%);
+        }
+        .theme-racing {
+            background: linear-gradient(135deg, #091a10 50%, #132417 50%);
+        }
+        .theme-indigo {
+            background: linear-gradient(135deg, #0d0b1a 50%, #1b1834 50%);
+        }
+        .theme-bordeaux {
+            background: linear-gradient(135deg, #190808 50%, #211010 50%);
         }
         
         /* === RESPONSIVE === */
@@ -12200,19 +12276,26 @@ const SEASON_DATA = {
                 <div class="space-y-6">
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">🎨 Theme</h3>
-                        <div class="flex gap-4 flex-wrap">
-                            <button onclick="setTheme('slate')" 
-                                    class="p-4 rounded-lg ${GAME_STATE.theme === 'slate' ? 'btn-primary' : 'bg-secondary'}">
-                                🌊 Slate
-                            </button>
-                            <button onclick="setTheme('dark')" 
-                                    class="p-4 rounded-lg ${GAME_STATE.theme === 'dark' ? 'btn-primary' : 'bg-secondary'}">
-                                🌑 Dark
-                            </button>
-                            <button onclick="setTheme('modern')" 
-                                    class="p-4 rounded-lg ${GAME_STATE.theme === 'modern' ? 'btn-primary' : 'bg-secondary'}">
-                                ☀️ Light
-                            </button>
+                        <div class="flex gap-3 flex-wrap">
+                            ${[
+                                {id:'slate',    label:'Slate',    a:'#1a2332', b:'#263548', c:'#3b82f6'},
+                                {id:'dark',     label:'Dark',     a:'#0F1419', b:'#232936', c:'#EF4444'},
+                                {id:'modern',   label:'Light',    a:'#eef2f7', b:'#f7f9fc', c:'#E10600'},
+                                {id:'amber',    label:'Amber',    a:'#1c1608', b:'#231a0b', c:'#d97706'},
+                                {id:'racing',   label:'Racing',   a:'#091a10', b:'#132417', c:'#16a34a'},
+                                {id:'indigo',   label:'Indigo',   a:'#0d0b1a', b:'#1b1834', c:'#6366f1'},
+                                {id:'bordeaux', label:'Bordeaux', a:'#190808', b:'#211010', c:'#dc2626'},
+                            ].map(t => `
+                                <button onclick="setTheme('${t.id}')" title="${t.label}"
+                                        style="border: 3px solid ${GAME_STATE.theme === t.id ? t.c : 'transparent'}; border-radius: 10px; padding: 2px; background: transparent; cursor: pointer;">
+                                    <div style="width:52px; height:40px; border-radius:7px; overflow:hidden; display:flex; flex-direction:column;">
+                                        <div style="flex:2; background:${t.a};"></div>
+                                        <div style="flex:2; background:${t.b};"></div>
+                                        <div style="flex:1; background:${t.c};"></div>
+                                    </div>
+                                    <div style="font-size:0.65rem; text-align:center; margin-top:3px; color:var(--text-secondary)">${t.label}</div>
+                                </button>
+                            `).join('')}
                         </div>
                     </div>
                     
