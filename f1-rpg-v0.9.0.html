@@ -14441,7 +14441,13 @@ const SEASON_DATA = {
                                 </div>
                                 <!-- Panel mitte: Rennen (scrollbar) -->
                                 <div style="flex:1; min-width:0; overflow-x:auto;">
-                                    ${rows.map(row => `
+                                    ${rows.map(row => {
+                                        const isTestDriver = row.cells.every(c => c.absent);
+                                        if (isTestDriver) return `
+                                            <div style="height:${ROW_H}px; margin-bottom:3px; display:flex; align-items:center; padding:0 8px;">
+                                                <span style="font-size:0.65rem; color:var(--text-muted); font-style:italic;">Testfahrer</span>
+                                            </div>`;
+                                        return `
                                         <div style="display:flex; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
@@ -14450,8 +14456,8 @@ const SEASON_DATA = {
                                                     <span style="font-size:0.6rem; color:#fff; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
                                                 </div>`
                                             ).join('')}
-                                        </div>
-                                    `).join('')}
+                                        </div>`;
+                                    }).join('')}
                                 </div>
                                 <!-- Panel rechts: WM + Punkte (fix) -->
                                 <div style="flex-shrink:0; width:76px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
