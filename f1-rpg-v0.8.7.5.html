@@ -14325,7 +14325,141 @@ const SEASON_DATA = {
                         </div>
                     `;
                 })()}
-                
+
+                <!-- Rennergebnisse Grid (Wikipedia-Stil) -->
+                ${(() => {
+                    if (!statsId || typeof getF1DBYear !== 'function') return '';
+                    const careerYearsF1DB = relevantHistSeasons.map(s => s[0]).sort((a,b) => b - a);
+                    if (careerYearsF1DB.length === 0) return '';
+
+                    const rows = careerYearsF1DB.map(year => {
+                        const f1dbYear = getF1DBYear(year);
+                        if (!f1dbYear || f1dbYear.length === 0) return null;
+
+                        const cells = f1dbYear.map(race => {
+                            const entry = race.entries.find(e => e.driverId === statsId);
+                            if (!entry) return { circuit: race.circuit || race.name, absent: true };
+                            return {
+                                circuit: race.circuit || race.name,
+                                pos: entry.posNum,
+                                posText: entry.posText,
+                                points: entry.points,
+                                fastestLap: entry.fastestLap,
+                                pole: entry.pole,
+                                isIndy: race.isIndy
+                            };
+                        });
+
+                        const histEntry = relevantHistSeasons.find(s => s[0] === year);
+                        const wmPos = histEntry ? histEntry[1] : '-';
+                        const wmPts = histEntry ? Math.round(histEntry[4]) : 0;
+
+                        let teamName = '-', teamColor = '#888';
+                        if (typeof getDriverConstructors === 'function') {
+                            const constructors = getDriverConstructors(statsId || driver.id);
+                            const yearCons = constructors[year];
+                            if (yearCons && yearCons.length > 0) {
+                                const sd = SEASON_DATA[year];
+                                const names = [];
+                                yearCons.forEach(c => {
+                                    let n = null;
+                                    if (sd?.t) {
+                                        const td = sd.t.find(t => t[0].toLowerCase() === c.replace(/-/g,'').toLowerCase() || t[0].toLowerCase() === c.split('-')[0]);
+                                        if (td) { n = td[1]; if (teamColor === '#888') teamColor = td[2]; }
+                                    }
+                                    names.push(n || (c.length <= 4 ? c.toUpperCase() : c.split('-').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ')));
+                                });
+                                teamName = names.join('/');
+                            }
+                        }
+
+                        return { year, cells, teamName, teamColor, wmPos, wmPts };
+                    }).filter(Boolean);
+
+                    if (rows.length === 0) return '';
+
+                    const cellBg = (pos, posText, points) => {
+                        const pt = (posText || '').toUpperCase();
+                        if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return '#252525';
+                        if (!pos) return '#4a4a4a';
+                        if (pos === 1) return '#b8942a';
+                        if (pos === 2) return '#7a8e9e';
+                        if (pos === 3) return '#9a6a3a';
+                        if (points > 0) return '#1f6b30';
+                        return '#1a3f5e';
+                    };
+                    const cellLabel = (pos, posText) => {
+                        const pt = (posText || '').toUpperCase();
+                        if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return pt;
+                        if (!pos) return 'Ret';
+                        return pos;
+                    };
+                    const circAbbr = (circuit) => {
+                        if (!circuit) return '???';
+                        const map = {
+                            'silverstone':'GBR','monaco':'MON','monza':'ITA','spa':'BEL',
+                            'nürburgring':'GER','nurburgring':'GER','reims':'FRA',
+                            'indianapolis':'IND','bremgarten':'SUI','pedralbes':'ESP',
+                            'aintree':'GBR','buenos aires':'ARG','sebring':'USA',
+                            'zandvoort':'NED','pescara':'ITA','casablanca':'MAR',
+                            'avus':'GER','ain diab':'MAR','riverside':'USA',
+                            'watkins glen':'USA','porto':'POR','monsanto':'POR',
+                            'boavista':'POR','brands hatch':'GBR','mexico':'MEX',
+                            'kyalami':'RSA','mosport':'CAN','mont-tremblant':'CAN',
+                            'jarama':'ESP','montjuic':'ESP','paul ricard':'FRA',
+                            'dijon':'FRA','estoril':'POR','jerez':'ESP',
+                            'adelaide':'AUS','suzuka':'JPN','phoenix':'USA',
+                            'magny-cours':'FRA','budapest':'HUN','interlagos':'BRA',
+                            'imola':'ITA','hockenheim':'GER','a1 ring':'AUT',
+                            'sepang':'MAS','bahrain':'BHR','shanghai':'CHN',
+                            'istanbul':'TUR','valencia':'EUR','abu dhabi':'ABU',
+                            'singapore':'SGP','marina bay':'SGP','sochi':'RUS',
+                            'baku':'AZE','portimao':'POR','mugello':'ITA',
+                            'jeddah':'SAU','losail':'QAT','miami':'USA',
+                            'las vegas':'USA','lusail':'QAT'
+                        };
+                        const lc = circuit.toLowerCase();
+                        for (const [k, v] of Object.entries(map)) {
+                            if (lc.includes(k)) return v;
+                        }
+                        return circuit.substring(0, 3).toUpperCase();
+                    };
+
+                    return `
+                        <div class="card p-4 rounded-lg mb-4">
+                            <h4 class="font-bold mb-3">🏁 Rennergebnisse</h4>
+                            <div style="overflow-x:auto;">
+                                <div style="min-width:max-content;">
+                                    ${rows.map(row => `
+                                        <div style="display:flex; align-items:center; gap:2px; margin-bottom:3px;">
+                                            <div style="width:34px; font-size:0.7rem; font-weight:bold; color:var(--text-primary); flex-shrink:0;">${row.year}</div>
+                                            <div style="width:70px; font-size:0.55rem; color:${row.teamColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0;" title="${row.teamName}">${row.teamName}</div>
+                                            ${row.cells.map(cell => cell.absent
+                                                ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
+                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}">
+                                                    <span style="font-size:0.42rem; color:rgba(255,255,255,0.7); line-height:1;">${circAbbr(cell.circuit)}</span>
+                                                    <span style="font-size:0.6rem; color:#fff; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
+                                                </div>`
+                                            ).join('')}
+                                            <div style="width:28px; font-size:0.65rem; font-weight:bold; text-align:right; color:var(--text-primary); flex-shrink:0; margin-left:4px;">${row.wmPos !== '-' ? row.wmPos+'.' : '-'}</div>
+                                            <div style="width:36px; font-size:0.6rem; text-align:right; color:var(--text-muted); flex-shrink:0;">${row.wmPts}P</div>
+                                        </div>
+                                    `).join('')}
+                                    <div style="font-size:0.55rem; color:var(--text-muted); margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                                        <span><span style="display:inline-block;width:10px;height:10px;background:#b8942a;border-radius:2px;vertical-align:middle;"></span> Sieg</span>
+                                        <span><span style="display:inline-block;width:10px;height:10px;background:#7a8e9e;border-radius:2px;vertical-align:middle;"></span> 2.</span>
+                                        <span><span style="display:inline-block;width:10px;height:10px;background:#9a6a3a;border-radius:2px;vertical-align:middle;"></span> 3.</span>
+                                        <span><span style="display:inline-block;width:10px;height:10px;background:#1f6b30;border-radius:2px;vertical-align:middle;"></span> Punkte</span>
+                                        <span><span style="display:inline-block;width:10px;height:10px;background:#1a3f5e;border-radius:2px;vertical-align:middle;"></span> Klassiert</span>
+                                        <span><span style="display:inline-block;width:10px;height:10px;background:#4a4a4a;border-radius:2px;vertical-align:middle;"></span> Ret</span>
+                                        <span style="border:1px solid #a855f7; padding:0 3px; border-radius:2px;">FL</span> Schnellste Runde
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })()}
+
                 <!-- All-Time Stats -->
                 ${allTime.races ? `
                 <div class="card p-4 rounded-lg">
