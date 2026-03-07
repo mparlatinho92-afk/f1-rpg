@@ -6702,6 +6702,17 @@ const SEASON_DATA = {
             logSuccess('RESERVE', `${added} Fahrer zum Reserve-Pool hinzugefügt`);
         }
 
+        // === GLOBALER EXPORT: Pool-Funktionen für onclick-Attribute ===
+        window.setPoolGroupFilter    = setPoolGroupFilter;
+        window.openPoolAssignModal   = openPoolAssignModal;
+        window.assignSofortFromPool  = assignSofortFromPool;
+        window.assignNextSeasonFromPool = assignNextSeasonFromPool;
+        window.cancelPendingAssignment  = cancelPendingAssignment;
+        window.removeFromPool        = removeFromPool;
+        window.openNewDriverModal    = openNewDriverModal;
+        window.createCustomDriver    = createCustomDriver;
+        window.confirmAddToPool      = confirmAddToPool;
+
         // === INITIALISIERUNG ===
         function initFromTemplate(templateId) {
             // Prüfe ob es eine Jahreszahl ist
