@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.9.1</title>
+    <title>F1 RPG v0.9.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1409,8 +1409,8 @@
                 return '🏁';
             }
             
-            // Wenn input '🏁' ist, versuche per Name zu finden
-            if (input === '🏁') {
+            // Wenn input '🏁' ist (oder Codepoint 127937), versuche per Name zu finden
+            if (input === '🏁' || (input.codePointAt && input.codePointAt(0) === 127937)) {
                 if (entityName) {
                     var ioc = lookupNationByName(entityName);
                     if (ioc) return getEmojiFlag(ioc, year);
@@ -1453,7 +1453,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.1';
+        const VERSION = '0.9.2';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6148,27 +6148,48 @@ const SEASON_DATA = {
         // RESERVE-POOL SYSTEM (v0.9.1)
         // ═══════════════════════════════════════════════════════════════
 
+        // Hilfsfunktion: erstes Jahr eines Fahrers in SEASON_DATA (sein hist. Debütjahr)
+        function getHistDebutYear(shortHistId) {
+            const years = Object.keys(SEASON_DATA).map(Number).sort((a, b) => a - b);
+            for (const y of years) {
+                const sd = SEASON_DATA[y];
+                if (sd && sd.d && sd.d.find(d => d[0] === shortHistId)) return y;
+            }
+            return null;
+        }
+
         // Befüllt GAME_STATE.reservePool mit hist. Fahrern ohne Cockpit
         function initReservePool(year) {
             if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
 
-            const knownHistIds = new Set([
-                ...GAME_STATE.drivers.map(d => d.histId).filter(Boolean),
-                ...GAME_STATE.reservePool.map(d => d.histId).filter(Boolean)
+            // Ausschluss per Name – SEASON_DATA-histIds (kurze Großbuchstaben) und
+            // GAME_STATE.drivers.histId (HIST_NAMES-Format) sind inkompatibel, Name ist zuverlässiger
+            const knownNames = new Set([
+                ...GAME_STATE.drivers.map(d => d.name?.toLowerCase().trim()).filter(Boolean),
+                ...GAME_STATE.reservePool.map(d => d.name?.toLowerCase().trim()).filter(Boolean)
             ]);
-
-            const seenHistIds = new Set();
+            const seenHistIds = new Set(
+                GAME_STATE.reservePool.map(d => d.histId).filter(Boolean)
+            );
             const candidates = [];
 
-            // Prüfe SEASON_DATA für das aktuelle und direkte Nachbarjahre
-            for (const y of [year - 1, year, year + 1]) {
+            // Nur Zukunftsjahre: Talente die im Spiel-Jahr noch nicht debütiert haben
+            for (const y of [year + 1, year + 2, year + 3]) {
                 const sd = SEASON_DATA[String(y)] || SEASON_DATA[y];
                 if (!sd || !sd.d) continue;
                 for (const d of sd.d) {
                     const [histId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
-                    if (!histId || knownHistIds.has(histId) || seenHistIds.has(histId)) continue;
+                    if (!histId || seenHistIds.has(histId)) continue;
+                    if (knownNames.has(name?.toLowerCase().trim())) continue;
                     seenHistIds.add(histId);
-                    if (birthYear && year - birthYear < 19) continue; // zu jung
+                    const currentAge = birthYear ? year - birthYear : null;
+                    if (currentAge !== null && currentAge < 19) continue; // zu jung
+                    // Max. 5 Jahre nach hist. Debütalter – keine veralteten Fahrer
+                    const debutYear = getHistDebutYear(histId);
+                    if (debutYear && birthYear && currentAge !== null) {
+                        const debutAge = debutYear - birthYear;
+                        if (currentAge > debutAge + 5) continue;
+                    }
                     candidates.push({ histId, name, nation, birthYear,
                         pace: pace || 70, rain: rain || 70, consistency: consistency || 70,
                         experience: experience || 70, starts: starts || 70 });
@@ -6259,8 +6280,17 @@ const SEASON_DATA = {
             const pool = GAME_STATE.reservePool || [];
             const idx = pool.findIndex(d => d.id === driverId);
             if (idx === -1) return;
-
             const driver = pool[idx];
+            // Doppelt-Fahrer verhindern: Name-Vergleich (histId-Formate sind inkompatibel)
+            const alreadyRacing = GAME_STATE.drivers.find(
+                d => d.name?.toLowerCase().trim() === driver.name?.toLowerCase().trim()
+                  && d.team && (!d.status || d.status === 'active')
+            );
+            if (alreadyRacing) {
+                alert(`${driver.name} fährt in dieser Saison bereits für ${alreadyRacing.team}.`);
+                return;
+            }
+
             driver.team = teamId;
             driver.contractEnd = GAME_STATE.currentYear + 1;
             driver.isReserve = false;
@@ -6421,7 +6451,7 @@ const SEASON_DATA = {
                         ${_pendingNewDrivers.map(([histId, name, , nation, birthYear, pace], i) => `
                             <label class="flex items-center gap-3 p-2 rounded cursor-pointer transition" style="background:var(--bg-secondary)">
                                 <input type="checkbox" class="nd-check" data-idx="${i}" checked style="width:16px;height:16px">
-                                <span>${nation || '🏁'}</span>
+                                <span>${renderFlag(nation, name)}</span>
                                 <span class="font-medium">${name}</span>
                                 ${birthYear ? `<span class="text-tertiary text-xs">${newYear - birthYear}J</span>` : ''}
                                 ${pace ? `<span class="text-xs text-tertiary ml-auto">Pace ${pace}</span>` : ''}
@@ -12714,12 +12744,15 @@ const SEASON_DATA = {
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
-                            <div class="font-bold text-green-400">v0.9.1 (aktuell)</div>
+                            <div class="font-bold text-green-400">v0.9.2 (aktuell)</div>
+                            <div>• FIX: Flaggen im Reservefahrer-Pool und Saisonstart-Dialog korrekt</div>
+                            <div>• FIX: renderFlag nutzt Codepoint-Fallback für 🏁-Platzhalter</div>
+                            <div>• FIX: showNewDriversModal nutzt renderFlag statt rohem Emoji</div>
+                            <div class="border-t border-gray-600 my-2 pt-2 font-bold">v0.9.1</div>
                             <div>• NEU: Reservefahrer-Pool – hist. Fahrer ohne Cockpit nutzbar</div>
                             <div>• NEU: Team-Zuweisung direkt aus dem Pool per Dropdown</div>
                             <div>• NEU: Fahrer manuell erstellen (Name, Nation, Skill-Level)</div>
                             <div>• NEU: Saisonstart-Dialog schlägt neue hist. Fahrer zur Aufnahme vor</div>
-                            <div>• Pool wird bei Spielstart aus SEASON_DATA befüllt (Umgebungsjahre)</div>
                             <div class="border-t border-gray-600 my-2 pt-2 font-bold">v0.9.0</div>
                             <div>• NEU: 7 Themes (Slate, Dark, Light, Amber, Racing, Indigo, Bordeaux)</div>
                             <div>• NEU: Rennergebnisse-Grid im Fahrer-Steckbrief (Wikipedia-Stil)</div>
