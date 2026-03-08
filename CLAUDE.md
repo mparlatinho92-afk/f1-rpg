@@ -30,6 +30,13 @@
 - Maximal ~3–5 Bullet-Points pro Version, prägnant auf Deutsch
 
 ## Git-Workflow (nach jeder Änderung)
+**WICHTIG: Nach jeder abgeschlossenen Änderung aktiv fragen:**
+„Soll ich committen? (ja/nein)"
+- Nicht warten bis der Nutzer es erwähnt – immer selbst am Ende vorschlagen
+- Erst nach „ja" den Workflow ausführen
+- Kein Commit, kein git-Befehl ohne explizite Freigabe
+
+Schritte (nur nach Freigabe):
 1. Backup der alten Version: `cp f1-rpg-vX.X.X.html archive/f1-rpg-vX.X.X_backup.html`
 2. Neue Versionsnummer in HTML einsetzen (`VERSION`-Konstante + `<title>`)
 3. Changelog in HTML aktualisieren (siehe oben)
