@@ -6006,6 +6006,14 @@ const SEASON_DATA = {
                 });
             }
             sanitized.results = sanitized.results || [];
+            // Migration v0.9.6b: raceIndex fehlt in Live-Ticker-Ergebnissen → rund-1 als Fallback
+            sanitized.results = sanitized.results.map((res, fallbackIdx) => {
+                if (res.raceIndex === undefined || res.raceIndex === null) {
+                    const ri = (res.round != null) ? res.round - 1 : fallbackIdx;
+                    return { ...res, raceIndex: ri };
+                }
+                return res;
+            });
             sanitized.qualifyingResults = sanitized.qualifyingResults || [];
             sanitized.seasonDeaths = sanitized.seasonDeaths || [];
             sanitized.seasonRetirements = sanitized.seasonRetirements || [];
@@ -8099,7 +8107,9 @@ const SEASON_DATA = {
             
             const raceResult = {
                 raceId: race.id,
+                raceIndex: liveRaceState.raceIndex,
                 raceName: race.name,
+                raceCountry: race.country,
                 round: liveRaceState.raceIndex + 1,
                 isRain: liveRaceState.isRain,
                 results: results
@@ -13237,6 +13247,7 @@ const SEASON_DATA = {
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                             <div class="font-bold text-green-400">v0.9.6 (aktuell)</div>
+                            <div>• FIX: Live-Ticker-Rennen zeigen jetzt Sieger, schnellste Runde und Popup korrekt</div>
                             <div>• FIX: Rennkalender nutzt echte F1DB-Rennen statt generischen Kalender</div>
                             <div>• FIX: Rennliste ab 1961 zeigt korrekte Reihenfolge (kein F1DB-Index-Mismatch)</div>
                             <div>• FIX: Alle DNF/Retirements im Rennen-Popup sichtbar</div>
