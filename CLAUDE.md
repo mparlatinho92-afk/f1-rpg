@@ -5,6 +5,8 @@
 - Erkläre kurz **warum** du eine Änderung machst, nicht nur was
 - Frage nach bevor du mehr als 3 Stellen gleichzeitig änderst
 - Bei Unklarheiten: frage kurz nach, handle nicht blind
+- **Vor jedem Coding-Task:** `/schemas/functions.schema.json` → Zeilennummer → direkt lesen. Kein blindes Grep durch 3,5MB.
+- **Vor Datenstruktur-Zugriffen** (SEASON_DATA, HIST_SEASONS, GAME_STATE, Driver): passendes Schema lesen statt aus dem Code rückschließen.
 
 ## Versionierung
 - Versionsnummer steht in der HTML im `<title>`-Tag und in der Konstante `VERSION`
