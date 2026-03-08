@@ -20,12 +20,14 @@
 - Der native Claude Code Bestätigungs-Prompt übernimmt die Freigabe (1 = Yes, 2 = No)
 
 Schritte (nur nach Freigabe):
-1. Backup der alten Version: `cp f1-rpg-vX.X.X.html archive/f1-rpg-vX.X.X_backup.html`
-2. Neue Versionsnummer in HTML einsetzen (`VERSION`-Konstante + `<title>`)
-3. Changelog in HTML aktualisieren (siehe oben)
-4. Git commit mit aussagekräftiger Message auf Deutsch:
+1. Neue Datei anlegen: `cp f1-rpg-vX.X.X.html f1-rpg-vY.Y.Y.html`
+2. Neue Versionsnummer in der neuen Datei einsetzen (`VERSION`-Konstante + `<title>`)
+3. Changelog in der neuen Datei aktualisieren (siehe oben)
+4. Alte Version ins Archiv verschieben: `mv f1-rpg-vX.X.X.html archive/`
+5. Git commit mit aussagekräftiger Message auf Deutsch:
    `git commit -m "v0.9.0 – Retirement-Wahrscheinlichkeit balanciert"`
-5. Datei umbenennen auf neue Versionsnummer
+
+→ Ergebnis: Hauptordner hat genau eine HTML-Datei, Archive hat eine saubere Datei pro Version (kein `_backup`-Suffix nötig)
 
 ## Versionierung
 - Versionsnummer steht in der HTML im `<title>`-Tag und in der Konstante `VERSION`
