@@ -51,14 +51,19 @@ Schritte (nur nach Freigabe):
 /CLAUDE.md               ← diese Datei
 ```
 
-## Schemas (Datenstrukturen)
-Vor dem Coden mit SEASON_DATA, HIST_SEASONS, GAME_STATE oder Driver-Objekten:
-**immer zuerst `/schemas/` lesen** – nicht in der 3,5MB-HTML suchen.
-- `season-data.schema.json`  → SEASON_DATA[year].t / .d Feldindex-Tabelle
-- `hist-seasons.schema.json` → HIST_SEASONS[slug] Feldindex-Tabelle
-- `game-state.schema.json`   → alle GAME_STATE Top-Level-Felder
-- `driver-objects.schema.json` → simulierter Fahrer, Team, Kontext-Varianten
-- **Schemas bei Strukturänderungen mitpflegen**
+## Schemas (Datenstrukturen + Funktions-Index)
+**Immer zuerst `/schemas/` lesen** – nicht blind in der 3,5MB-HTML suchen.
+
+| Datei | Inhalt |
+|---|---|
+| `season-data.schema.json` | SEASON_DATA[year].t / .d – Feldindex mit Typen |
+| `hist-seasons.schema.json` | HIST_SEASONS[slug] – Feldindex, Pitfalls |
+| `game-state.schema.json` | Alle GAME_STATE Top-Level-Felder |
+| `driver-objects.schema.json` | Simulierter Fahrer, Team, Kontext-Varianten |
+| `functions.schema.json` | **135 Funktionen mit Zeilennummer + Zweck** |
+
+- Schemas bei Strukturänderungen oder größeren Edits mitpflegen
+- Zeilennummern in `functions.schema.json` verschieben sich – nach signifikanten Edits aktualisieren
 
 ## Testen vor Einbauen
 - Neue Logik (Wahrscheinlichkeiten, Berechnungen) erst als isoliertes Test-Script
