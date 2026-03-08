@@ -9947,15 +9947,16 @@ const SEASON_DATA = {
             const f1db = getF1DBYear(year);
             if (f1db && f1db.length > 0) {
                 return f1db.map((r, i) => {
+                    // IOC-Code direkt speichern – getEmojiFlag gibt auf Windows ein <img>-Tag zurück,
+                    // das renderFlag nicht mehr auflösen kann. renderFlag(ioc) funktioniert korrekt.
                     const ioc = CIRCUIT_COUNTRY[r.circuit] || '';
-                    const country = ioc ? getEmojiFlag(ioc, year) : '🏁';
                     const winnerEntry = r.entries.find(e => e.posNum === 1);
                     const laps = winnerEntry?.laps || Math.max(...r.entries.filter(e => e.laps).map(e => e.laps), 60);
                     return {
                         id: i + 1,
                         name: r.name,
                         circuit: formatCircuitName(r.circuit),
-                        country,
+                        country: ioc,   // IOC-Code ('AUS'), kein Emoji
                         laps: laps || 60,
                         isIndy: r.isIndy || false
                     };
