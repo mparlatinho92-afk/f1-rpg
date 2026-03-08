@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.9.5</title>
+    <title>F1 RPG v0.9.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1453,7 +1453,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.5';
+        const VERSION = '0.9.6';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12261,8 +12261,8 @@ const SEASON_DATA = {
             const isPureHistorical = isHistorical && !isSimulated; // echte hist. Saison ohne Simulation
             const f1dbRaces = getF1DBYear(year); // immer versuchen
             
-            if (f1dbRaces && f1dbRaces.length > 0) {
-                // Simulations-Daten für aktuelle / simulierte Saison
+            if (f1dbRaces && f1dbRaces.length > 0 && isPureHistorical) {
+                // Nur für echte historische Saisons (nicht simuliert/aktuell) – F1DB-Reihenfolge
                 const simResults  = isHistorical ? (historicalViewData?.results || [])           : GAME_STATE.results;
                 const simQualis   = isHistorical ? (historicalViewData?.qualifyingResults || []) : GAME_STATE.qualifyingResults;
                 const simDrivers  = isHistorical ? (historicalViewData?.drivers || [])           : GAME_STATE.drivers;
@@ -13202,7 +13202,11 @@ const SEASON_DATA = {
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
-                            <div class="font-bold text-green-400">v0.9.5 (aktuell)</div>
+                            <div class="font-bold text-green-400">v0.9.6 (aktuell)</div>
+                            <div>• FIX: Rennliste für simulierte Saisons ab 1961 zeigt korrekte Reihenfolge</div>
+                            <div>• FIX: Rennen-Popup öffnet das richtige Rennen (nicht F1DB-Index-Mismatch)</div>
+                            <div>• FIX: DNF/Retirement im Rennen-Popup jetzt sichtbar</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.5</div>
                             <div>• NEU: Badge-Editor in Einstellungen (Tier-Emojis, Titelverteidiger, Weltmeister)</div>
                             <div>• NEU: Debüt-Badge auch in historischen und simulierten Archiv-Saisons</div>
                             <div>• NEU: Titelverteidiger-Badge auch in historischen Saisons</div>
