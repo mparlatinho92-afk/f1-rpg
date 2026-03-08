@@ -1,0 +1,70 @@
+{
+  "$description": "GAME_STATE – Globales Spielzustand-Objekt. Wird via sanitizeGameState() mit Defaults initialisiert.",
+  "$usage": "GAME_STATE.drivers / GAME_STATE.currentYear etc. – immer global verfügbar",
+
+  "GAME_STATE": {
+    "version":          { "type": "string",  "description": "Spielstand-Version für Migration" },
+    "templateUsed":     { "type": "string|null" },
+    "currentYear":      { "type": "integer", "description": "Aktuelles Spieljahr, z.B. 1971" },
+    "currentRace":      { "type": "integer", "description": "Index des nächsten Rennens in races[]" },
+
+    "$settings": {
+      "theme":          { "type": "string",  "values": ["slate","dark","modern","amber","racing","indigo","bordeaux"] },
+      "deathRealism":   { "type": "integer", "default": 100, "range": "0–100", "description": "0 = keine Tode, 100 = historisch realistisch" },
+      "aiSimulation":   { "type": "boolean", "default": true },
+      "liveTickerMode": { "type": "boolean", "default": false },
+      "dnfRate":        { "type": "integer", "default": 15,  "description": "Basis-DNF-Rate in %" },
+      "dnfWeight":      { "type": "integer", "default": 45,  "description": "Gewichtung Team-Zuverlässigkeit auf DNF-Rate" }
+    },
+
+    "$saisonDaten": {
+      "teams":   { "type": "array", "items": "→ siehe driver-objects.schema.json #Team" },
+      "drivers": { "type": "array", "items": "→ siehe driver-objects.schema.json #Driver" },
+      "races":   { "type": "array", "description": "Rennen der aktuellen Saison" }
+    },
+
+    "$ergebnisse": {
+      "results":           { "type": "array", "description": "Alle Rennergebnisse der laufenden Saison" },
+      "qualifyingResults": { "type": "array" },
+      "driverStandings":   { "type": "object", "key": "driverId", "value": "{ points, wins, name, ... }" },
+      "teamStandings":     { "type": "object", "key": "teamId",   "value": "{ points, wins, name, ... }" }
+    },
+
+    "$saisonEvents": {
+      "seasonDeaths":       { "type": "array", "itemShape": "{ driver, name, race, raceName, replacement }" },
+      "seasonRetirements":  { "type": "array", "itemShape": "{ driver, name, age, reason }" },
+      "seasonTransfers":    { "type": "array" }
+    },
+
+    "$reservePool": {
+      "reservePool":        { "type": "array", "description": "Verfügbare Fahrer außerhalb aktiver Teams. Seit v0.9.1.", "items": "→ Driver mit isReserve:true" },
+      "pendingAssignments": { "type": "array", "description": "Seit v0.9.3" },
+      "_recentlyRetiredNames": { "type": "array" }
+    },
+
+    "$historie": {
+      "history": {
+        "type": "array",
+        "description": "Vergangene Saisons (simuliert). Jeder Eintrag ist ein Snapshot.",
+        "itemShape": {
+          "year":           "integer",
+          "champion":       "string (Name)",
+          "championId":     "string (driverId)",
+          "teamChampion":   "string (Name)",
+          "drivers":        "array (Fahrer-Snapshots)",
+          "driverStandings":"object",
+          "teamStandings":  "object",
+          "deaths":         "array",
+          "retirements":    "array"
+        }
+      },
+      "allTimeStats": {
+        "totalRaces":   "integer",
+        "totalSeasons": "integer",
+        "drivers":      "{ [driverId]: { wins, podiums, points, seasons, ... } }",
+        "teams":        "{ [teamId]:   { wins, podiums, points, seasons, ... } }",
+        "worldChampions": "array: [{ year, driverId, name }]"
+      }
+    }
+  }
+}

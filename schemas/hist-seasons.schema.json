@@ -1,0 +1,25 @@
+{
+  "$description": "HIST_SEASONS – Historische Saison-Ergebnisse pro Fahrer. Key = Slug-ID.",
+  "$usage": "HIST_SEASONS['alain-prost'] → Array von Saison-Einträgen",
+
+  "HIST_SEASONS": {
+    "[driverId: string]": {
+      "$description": "Slug-ID wie in F1DB (lowercase, Bindestriche). Beispiel: 'alain-prost', 'nino-farina'.",
+      "items": [
+        { "index": 0, "field": "year",     "type": "integer", "example": 1980,    "description": "Saison-Jahr" },
+        { "index": 1, "field": "position", "type": "string",  "example": "5",     "description": "WM-Endplatzierung. 'None' wenn kein Ergebnis/nicht gewertet." },
+        { "index": 2, "field": "wins",     "type": "integer", "example": 3 },
+        { "index": 3, "field": "podiums",  "type": "integer", "example": 6 },
+        { "index": 4, "field": "points",   "type": "float",   "example": 43.0,    "description": "Punkte nach zeitgenössischem System" }
+      ]
+    }
+  },
+
+  "$relatedConstants": {
+    "HIST_NAMES":    "{ [slug]: 'Anzeigename' } – z.B. HIST_NAMES['alain-prost'] = 'Alain Prost'",
+    "HIST_CHAMPIONS":"{ [year]: slug } – z.B. HIST_CHAMPIONS[1985] = 'alain-prost'",
+    "HIST_DRIVERS":  "{ [slug]: [...] } – erweiterte Karrieredaten (Geburtsjahr, Todesjahr etc.)"
+  },
+
+  "$pitfall": "Slug hier ('alain-prost') ≠ SEASON_DATA-Kurzform ('ALAPR'). Debüt-Check: !HIST_SEASONS[id].some(s => s[0] < currentYear)"
+}

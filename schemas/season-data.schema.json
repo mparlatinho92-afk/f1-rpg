@@ -1,0 +1,37 @@
+{
+  "$description": "SEASON_DATA – Vordefinierte Saison-Templates (1950–aktuell). Key = Jahr als String.",
+  "$usage": "SEASON_DATA['1950'].t / SEASON_DATA['1950'].d",
+
+  "SEASON_DATA": {
+    "[year: string]": {
+      "t": {
+        "$description": "Teams der Saison. Array von Arrays.",
+        "items": [
+          { "index": 0, "field": "id",          "type": "string",  "example": "ALF",      "description": "Team-Kurzform-ID (Großbuchstaben)" },
+          { "index": 1, "field": "name",        "type": "string",  "example": "Alfa Romeo" },
+          { "index": 2, "field": "color",       "type": "string",  "example": "#9B0000",  "description": "Hex-Farbe für UI" },
+          { "index": 3, "field": "pace",        "type": "integer", "range": "0–100",      "description": "Basis-Pace des Teams" },
+          { "index": 4, "field": "rain",        "type": "integer", "range": "0–100",      "description": "Regen-Performance" },
+          { "index": 5, "field": "consistency", "type": "integer", "range": "0–100",      "description": "Zuverlässigkeit/Konstanz" }
+        ]
+      },
+      "d": {
+        "$description": "Fahrer der Saison. Array von Arrays.",
+        "items": [
+          { "index": 0, "field": "histId",      "type": "string",  "example": "NINOFA",   "description": "SEASON_DATA-Kurzform-ID – NICHT der HIST_SEASONS-Slug! Siehe nameToSlug für Konvertierung." },
+          { "index": 1, "field": "name",        "type": "string",  "example": "Nino Farina" },
+          { "index": 2, "field": "teamId",      "type": "string",  "example": "ALF",      "description": "Muss auf t[i][0] matchen" },
+          { "index": 3, "field": "nation",      "type": "string",  "example": "🇮🇹",      "description": "Emoji-Flagge oder IOC-Code" },
+          { "index": 4, "field": "birthYear",   "type": "integer", "example": 1906 },
+          { "index": 5, "field": "pace",        "type": "integer", "range": "0–100" },
+          { "index": 6, "field": "rain",        "type": "integer", "range": "0–100" },
+          { "index": 7, "field": "consistency", "type": "integer", "range": "0–100" },
+          { "index": 8, "field": "experience",  "type": "integer", "range": "0–100" },
+          { "index": 9, "field": "starts",      "type": "integer", "description": "Karriere-Starts bei Saison-Beginn" }
+        ]
+      }
+    }
+  },
+
+  "$pitfall": "SEASON_DATA-histId ('NINOFA') ≠ HIST_SEASONS-Slug ('nino-farina'). Konvertierung via nameToSlug-Lookup in initReservePool."
+}

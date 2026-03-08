@@ -1,0 +1,64 @@
+{
+  "$description": "Driver- und Team-Objekte wie sie in GAME_STATE.drivers / GAME_STATE.teams leben.",
+
+  "Driver": {
+    "$description": "Simulierter Fahrer. Erstellt via makeDriver() / generateDriver().",
+
+    "id":            { "type": "string",       "example": "reserve-NINOFA-1710000000-42", "description": "Eindeutige Laufzeit-ID" },
+    "histId":        { "type": "string|null",  "example": "nino-farina",                  "description": "HIST_SEASONS-Slug. NULL bei generierten Fahrern ohne hist. Referenz." },
+    "name":          { "type": "string" },
+    "team":          { "type": "string|null",  "description": "Team-ID oder null wenn ohne Team (Free Agent / Reserve)" },
+    "nation":        { "type": "string",       "description": "IOC-Code ('ITA') oder Emoji ('🇮🇹')" },
+    "number":        { "type": "integer",      "description": "Startnummer" },
+
+    "$skills": {
+      "pace":          { "type": "integer", "range": "0–100", "description": "Aktuelle Basis-Pace" },
+      "currentPace":   { "type": "integer", "description": "Pace inkl. Form-Schwankungen im laufenden Rennen" },
+      "potentialPace": { "type": "integer", "description": "Entwicklungs-Potenzial (für Transfers)" },
+      "rain":          { "type": "integer", "range": "0–100" },
+      "consistency":   { "type": "integer", "range": "0–100" },
+      "experience":    { "type": "integer", "range": "0–100" }
+    },
+
+    "$karriere": {
+      "starts":        { "type": "integer",     "description": "Gesamte F1-Starts" },
+      "birthYear":     { "type": "integer|null" },
+      "debutYear":     { "type": "integer|null", "description": "Erstes F1-Jahr im Spiel" },
+      "contractEnd":   { "type": "integer|null", "description": "Saison bis der Vertrag läuft" },
+      "status":        { "type": "string",       "values": ["active", "retired", "dead"] }
+    },
+
+    "$reservePool": {
+      "isReserve":     { "type": "boolean",     "description": "true = Fahrer ist im Reserve-Pool" },
+      "poolGroup":     { "type": "string|null", "values": ["A","B","C","null"], "description": "A=ehemals aktiv, B=aktuelles Jahr, C=Zukunft" },
+      "lastRacedYear": { "type": "integer|null","description": "Letztes Jahr mit Renneinsatz (nur Gruppe A)" },
+      "nextCockpit":   { "type": "object|null", "shape": "{ year: integer, teamName: string }" }
+    },
+
+    "$transfers": {
+      "replacedDriver":     { "type": "string|null",  "description": "ID des ersetzten Fahrers" },
+      "replacedDriverName": { "type": "string|null" },
+      "replacedInYear":     { "type": "integer|null" },
+      "satisfaction":       { "type": "integer",      "range": "0–100", "description": "Zufriedenheit mit aktuellem Team" }
+    }
+  },
+
+  "Team": {
+    "$description": "Team-Objekt in GAME_STATE.teams.",
+
+    "id":          { "type": "string",  "example": "ferrari" },
+    "name":        { "type": "string",  "example": "Ferrari" },
+    "color":       { "type": "string",  "description": "Hex-Farbe für UI" },
+    "nation":      { "type": "string",  "description": "IOC-Code" },
+    "speed":       { "type": "integer", "range": "0–100", "description": "Aktuelles Team-Pace-Level" },
+    "rain":        { "type": "integer", "range": "0–100" },
+    "consistency": { "type": "integer", "range": "0–100" },
+    "histId":      { "type": "string|null", "description": "F1DB-Konstrukteur-Slug" }
+  },
+
+  "$contextVariants": {
+    "historicalDriver": "In buildHistoricalYearData: { id (=Slug), name, position, wins, podiums, points, constructor, nation }",
+    "entryListDriver":  "In buildEntryList: { id, name, nation, points, wins, isChampion, isDebut, satisfaction? }",
+    "standingsEntry":   "In driverStandings[id]: { points, wins, name, team, ... }"
+  }
+}
