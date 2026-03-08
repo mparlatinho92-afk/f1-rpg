@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.9.0</title>
+    <title>F1 RPG v0.9.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1453,7 +1453,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.0';
+        const VERSION = '0.9.1';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5812,6 +5812,7 @@ const SEASON_DATA = {
         let currentTab = 'overview';
         let racesSubTab = 'calendar';
         let standingsSubTab = 'drivers';
+        let _pendingNewDrivers = []; // temporär für showNewDriversModal
         
         // === SANITIZER - Spielstand-Validierung und Default-Werte ===
         // Diese Funktion stellt sicher, dass alte Spielstände mit neuen Features kompatibel sind
@@ -5860,6 +5861,7 @@ const SEASON_DATA = {
             sanitized.seasonDeaths = sanitized.seasonDeaths || [];
             sanitized.seasonRetirements = sanitized.seasonRetirements || [];
             sanitized.seasonTransfers = sanitized.seasonTransfers || [];  // v0.5.x
+            sanitized.reservePool = sanitized.reservePool || [];         // v0.9.1
             sanitized.history = sanitized.history || [];
             
             // Objekte sicherstellen
@@ -6142,6 +6144,340 @@ const SEASON_DATA = {
             return false;
         }
         
+        // ═══════════════════════════════════════════════════════════════
+        // RESERVE-POOL SYSTEM (v0.9.1)
+        // ═══════════════════════════════════════════════════════════════
+
+        // Befüllt GAME_STATE.reservePool mit hist. Fahrern ohne Cockpit
+        function initReservePool(year) {
+            if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
+
+            const knownHistIds = new Set([
+                ...GAME_STATE.drivers.map(d => d.histId).filter(Boolean),
+                ...GAME_STATE.reservePool.map(d => d.histId).filter(Boolean)
+            ]);
+
+            const seenHistIds = new Set();
+            const candidates = [];
+
+            // Prüfe SEASON_DATA für das aktuelle und direkte Nachbarjahre
+            for (const y of [year - 1, year, year + 1]) {
+                const sd = SEASON_DATA[String(y)] || SEASON_DATA[y];
+                if (!sd || !sd.d) continue;
+                for (const d of sd.d) {
+                    const [histId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
+                    if (!histId || knownHistIds.has(histId) || seenHistIds.has(histId)) continue;
+                    seenHistIds.add(histId);
+                    if (birthYear && year - birthYear < 19) continue; // zu jung
+                    candidates.push({ histId, name, nation, birthYear,
+                        pace: pace || 70, rain: rain || 70, consistency: consistency || 70,
+                        experience: experience || 70, starts: starts || 70 });
+                }
+            }
+
+            for (const c of candidates) {
+                GAME_STATE.reservePool.push({
+                    id: 'reserve-' + c.histId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    histId: c.histId,
+                    name: c.name,
+                    team: null,
+                    nation: c.nation || '🏁',
+                    number: Math.floor(Math.random() * 80) + 20,
+                    pace: c.pace,
+                    currentPace: c.pace,
+                    potentialPace: Math.min(99, c.pace + Math.floor(Math.random() * 12)),
+                    rain: c.rain,
+                    consistency: c.consistency,
+                    experience: c.experience,
+                    starts: c.starts,
+                    birthYear: c.birthYear || null,
+                    debutYear: null,
+                    contractEnd: null,
+                    status: 'active',
+                    isReserve: true
+                });
+            }
+
+            logInfo('RESERVE', `Reserve-Pool: ${GAME_STATE.reservePool.length} Fahrer (${candidates.length} neu hinzugefügt)`);
+        }
+
+        // UI: Reservefahrer-Sektion für die Meldeliste
+        function renderReservePool() {
+            const pool = GAME_STATE.reservePool || [];
+            const sorted = [...pool].sort((a, b) => (b.pace || 0) - (a.pace || 0));
+            const teamsWithSpace = GAME_STATE.teams.filter(t => {
+                const count = GAME_STATE.drivers.filter(d => d.team === t.id && (!d.status || d.status === 'active')).length;
+                return count < 2;
+            });
+
+            return `
+                <div class="card p-6 rounded-xl mt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">🔄 Reservefahrer (${pool.length})</h3>
+                        <button onclick="openNewDriverModal()" class="btn-secondary px-3 py-1 text-sm rounded">+ Fahrer erstellen</button>
+                    </div>
+                    ${pool.length === 0 ? `
+                        <p class="text-secondary text-sm text-center py-4">Keine Reservefahrer im Pool.<br><span class="text-tertiary text-xs">Neue Saison starten oder "+ Fahrer erstellen" nutzen.</span></p>
+                    ` : `
+                        <div class="space-y-2">
+                            ${sorted.map(driver => {
+                                const age = driver.birthYear ? GAME_STATE.currentYear - driver.birthYear : null;
+                                const paceWidth = Math.max(5, driver.pace || 70);
+                                return `
+                                    <div class="flex items-center gap-3 p-3 bg-secondary rounded-lg flex-wrap">
+                                        <span>${renderFlag(driver.nation, driver.name)}</span>
+                                        <span class="driver-link font-medium" onclick="openDriverProfile('${driver.id}')">${driver.name}</span>
+                                        ${age ? `<span class="text-tertiary text-xs">${age}J</span>` : ''}
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-xs text-tertiary">Pace</span>
+                                            <div style="width:56px;height:7px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">
+                                                <div style="width:${paceWidth}%;height:100%;background:#3B82F6"></div>
+                                            </div>
+                                            <span class="text-xs font-mono">${driver.pace || '?'}</span>
+                                        </div>
+                                        <div class="flex gap-2 ml-auto flex-shrink-0">
+                                            ${teamsWithSpace.length > 0 ? `
+                                                <select onchange="assignFromPool('${driver.id}', this.value)" class="text-xs px-2 py-1 rounded border border-custom" style="background:var(--bg-tertiary)">
+                                                    <option value="">→ Team zuweisen</option>
+                                                    ${teamsWithSpace.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                                                </select>
+                                            ` : `<span class="text-xs text-tertiary italic">Alle Teams voll</span>`}
+                                            <button onclick="removeFromPool('${driver.id}')" class="text-xs px-2 py-1 rounded transition" style="background:rgba(239,68,68,0.15);color:#EF4444" title="Aus Pool entfernen">✕</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+
+        // Fahrer aus Pool einem Team zuweisen
+        function assignFromPool(driverId, teamId) {
+            if (!teamId) return;
+            const pool = GAME_STATE.reservePool || [];
+            const idx = pool.findIndex(d => d.id === driverId);
+            if (idx === -1) return;
+
+            const driver = pool[idx];
+            driver.team = teamId;
+            driver.contractEnd = GAME_STATE.currentYear + 1;
+            driver.isReserve = false;
+            driver.status = 'active';
+            driver.debutYear = driver.debutYear || GAME_STATE.currentYear;
+
+            // Falls noch nicht in drivers: hinzufügen
+            const existing = GAME_STATE.drivers.find(d => d.id === driverId);
+            if (!existing) {
+                GAME_STATE.drivers.push(driver);
+            } else {
+                existing.team = teamId;
+                existing.contractEnd = GAME_STATE.currentYear + 1;
+                existing.isReserve = false;
+            }
+
+            // In Standings eintragen falls noch nicht vorhanden
+            if (!GAME_STATE.driverStandings[driver.id]) {
+                GAME_STATE.driverStandings[driver.id] = {
+                    name: driver.name, team: teamId, points: 0,
+                    wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
+                };
+            } else {
+                GAME_STATE.driverStandings[driver.id].team = teamId;
+            }
+
+            GAME_STATE.reservePool.splice(idx, 1);
+            saveGame();
+            renderTab(currentTab);
+            const team = GAME_STATE.teams.find(t => t.id === teamId);
+            logSuccess('RESERVE', `${driver.name} → ${team?.name || teamId} zugewiesen`);
+        }
+
+        // Fahrer aus Pool entfernen
+        function removeFromPool(driverId) {
+            if (!confirm('Fahrer aus dem Reserve-Pool entfernen?')) return;
+            const pool = GAME_STATE.reservePool || [];
+            const idx = pool.findIndex(d => d.id === driverId);
+            if (idx === -1) return;
+            const driver = pool[idx];
+
+            // Falls auch in GAME_STATE.drivers: auf retired setzen
+            const inDrivers = GAME_STATE.drivers.findIndex(d => d.id === driverId);
+            if (inDrivers !== -1) GAME_STATE.drivers[inDrivers].status = 'retired';
+
+            GAME_STATE.reservePool.splice(idx, 1);
+            saveGame();
+            renderTab(currentTab);
+            logInfo('RESERVE', `${driver.name} aus Reserve-Pool entfernt`);
+        }
+
+        // Modal: Neuen Fahrer manuell erstellen
+        function openNewDriverModal() {
+            const nations = ['🇩🇪','🇬🇧','🇫🇷','🇮🇹','🇧🇷','🇦🇷','🇦🇺','🇺🇸','🇳🇱','🇧🇪','🇦🇹','🇫🇮','🇸🇪','🇨🇭','🇪🇸','🇵🇹','🇯🇵','🇨🇦','🇲🇽','🇩🇰','🇵🇱','🇷🇺','🇳🇿','🇿🇦','🇲🇨'];
+            const modal = document.createElement('div');
+            modal.id = 'newDriverModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div class="card p-6 rounded-xl" style="min-width:300px;max-width:460px;width:90%">
+                    <h3 class="text-lg font-bold mb-4">➕ Neuen Fahrer erstellen</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-secondary block mb-1">Name</label>
+                            <input id="ndName" type="text" placeholder="Vorname Nachname"
+                                class="w-full px-3 py-2 rounded border border-custom text-sm"
+                                style="background:var(--bg-secondary)">
+                        </div>
+                        <div>
+                            <label class="text-sm text-secondary block mb-1">Nation</label>
+                            <select id="ndNation" class="w-full px-3 py-2 rounded border border-custom text-sm" style="background:var(--bg-secondary)">
+                                ${nations.map(n => `<option value="${n}">${n}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-secondary block mb-1">Skill-Level</label>
+                            <select id="ndSkill" class="w-full px-3 py-2 rounded border border-custom text-sm" style="background:var(--bg-secondary)">
+                                <option value="rookie">Rookie (Pace ~65–75)</option>
+                                <option value="mid" selected>Mittelfeld (Pace ~72–82)</option>
+                                <option value="pro">Erfahren (Pace ~80–90)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-5">
+                        <button onclick="createCustomDriver()" class="btn-primary flex-1 py-2 rounded">Erstellen</button>
+                        <button onclick="document.getElementById('newDriverModal').remove()" class="btn-secondary flex-1 py-2 rounded">Abbrechen</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            setTimeout(() => document.getElementById('ndName')?.focus(), 50);
+        }
+
+        function createCustomDriver() {
+            const name = document.getElementById('ndName')?.value?.trim();
+            const nation = document.getElementById('ndNation')?.value || '🏁';
+            const skill = document.getElementById('ndSkill')?.value || 'mid';
+            if (!name) { alert('Bitte einen Namen eingeben.'); return; }
+
+            let pace, potential;
+            if (skill === 'rookie') { pace = 65 + Math.floor(Math.random() * 11); potential = pace + 10 + Math.floor(Math.random() * 8); }
+            else if (skill === 'pro') { pace = 80 + Math.floor(Math.random() * 11); potential = pace + 2 + Math.floor(Math.random() * 5); }
+            else { pace = 72 + Math.floor(Math.random() * 11); potential = pace + 5 + Math.floor(Math.random() * 8); }
+
+            const driver = {
+                id: 'custom-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+                name,
+                team: null,
+                nation,
+                number: Math.floor(Math.random() * 80) + 20,
+                pace,
+                currentPace: pace,
+                potentialPace: Math.min(99, potential),
+                rain: 65 + Math.floor(Math.random() * 21),
+                consistency: 65 + Math.floor(Math.random() * 21),
+                experience: 60 + Math.floor(Math.random() * 21),
+                starts: 60 + Math.floor(Math.random() * 21),
+                birthYear: GAME_STATE.currentYear - (22 + Math.floor(Math.random() * 8)),
+                debutYear: null,
+                contractEnd: null,
+                status: 'active',
+                isReserve: true
+            };
+
+            if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
+            GAME_STATE.reservePool.push(driver);
+            document.getElementById('newDriverModal')?.remove();
+            saveGame();
+            renderTab(currentTab);
+            logSuccess('RESERVE', `${driver.name} in Reserve-Pool erstellt`);
+        }
+
+        // Modal: Neue hist. Fahrer am Saisonbeginn vorschlagen
+        function showNewDriversModal(newYear) {
+            const knownHistIds = new Set([
+                ...GAME_STATE.drivers.map(d => d.histId).filter(Boolean),
+                ...(GAME_STATE.reservePool || []).map(d => d.histId).filter(Boolean)
+            ]);
+
+            const sd = SEASON_DATA[String(newYear)] || SEASON_DATA[newYear];
+            if (!sd || !sd.d) return;
+
+            _pendingNewDrivers = sd.d.filter(([histId, , , , birthYear]) => {
+                if (!histId || knownHistIds.has(histId)) return false;
+                if (birthYear && newYear - birthYear < 19) return false;
+                return true;
+            });
+
+            if (_pendingNewDrivers.length === 0) return;
+
+            const modal = document.createElement('div');
+            modal.id = 'newSeasonDriversModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center';
+            modal.innerHTML = `
+                <div class="card p-6 rounded-xl" style="max-width:540px;width:95%;max-height:80vh;overflow-y:auto">
+                    <h3 class="text-lg font-bold mb-2">🆕 Neue Fahrer für ${newYear}</h3>
+                    <p class="text-secondary text-sm mb-4">Diese Fahrer tauchen historisch in ${newYear} auf. In den Reserve-Pool aufnehmen?</p>
+                    <div class="space-y-2 mb-4">
+                        ${_pendingNewDrivers.map(([histId, name, , nation, birthYear, pace], i) => `
+                            <label class="flex items-center gap-3 p-2 rounded cursor-pointer transition" style="background:var(--bg-secondary)">
+                                <input type="checkbox" class="nd-check" data-idx="${i}" checked style="width:16px;height:16px">
+                                <span>${nation || '🏁'}</span>
+                                <span class="font-medium">${name}</span>
+                                ${birthYear ? `<span class="text-tertiary text-xs">${newYear - birthYear}J</span>` : ''}
+                                ${pace ? `<span class="text-xs text-tertiary ml-auto">Pace ${pace}</span>` : ''}
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="confirmAddToPool(${newYear})" class="btn-primary flex-1 py-2 rounded">Hinzufügen</button>
+                        <button onclick="document.getElementById('newSeasonDriversModal').remove()" class="btn-secondary flex-1 py-2 rounded">Später</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function confirmAddToPool(newYear) {
+            const checkboxes = document.querySelectorAll('#newSeasonDriversModal .nd-check');
+            if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
+            let added = 0;
+
+            checkboxes.forEach(cb => {
+                if (!cb.checked) return;
+                const idx = parseInt(cb.dataset.idx);
+                const d = _pendingNewDrivers[idx];
+                if (!d) return;
+                const [histId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
+
+                GAME_STATE.reservePool.push({
+                    id: 'reserve-' + histId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    histId,
+                    name,
+                    team: null,
+                    nation: nation || '🏁',
+                    number: Math.floor(Math.random() * 80) + 20,
+                    pace: pace || 70,
+                    currentPace: pace || 70,
+                    potentialPace: Math.min(99, (pace || 70) + Math.floor(Math.random() * 12)),
+                    rain: rain || 70,
+                    consistency: consistency || 70,
+                    experience: experience || 70,
+                    starts: starts || 70,
+                    birthYear: birthYear || null,
+                    debutYear: null,
+                    contractEnd: null,
+                    status: 'active',
+                    isReserve: true
+                });
+                added++;
+            });
+
+            _pendingNewDrivers = [];
+            document.getElementById('newSeasonDriversModal')?.remove();
+            if (added > 0) { saveGame(); renderTab(currentTab); }
+            logSuccess('RESERVE', `${added} Fahrer zum Reserve-Pool hinzugefügt`);
+        }
+
         // === INITIALISIERUNG ===
         function initFromTemplate(templateId) {
             // Prüfe ob es eine Jahreszahl ist
@@ -6181,7 +6517,8 @@ const SEASON_DATA = {
                 
                 seasonDeaths: [],
                 seasonRetirements: [],
-                
+                reservePool: [],           // v0.9.1
+
                 history: [],
                 allTimeStats: {
                     totalRaces: 0,
@@ -6190,7 +6527,7 @@ const SEASON_DATA = {
                     teams: {}
                 }
             };
-            
+
             initStandings();
             saveGame();
             logSuccess('INIT', `Neues Spiel gestartet mit Template: ${template.name} (Jahr ${template.startYear})`);
@@ -6250,7 +6587,8 @@ const SEASON_DATA = {
                 seasonDeaths: [],
                 seasonRetirements: [],
                 seasonTransfers: [],
-                
+                reservePool: [],           // v0.9.1
+
                 history: [],
                 allTimeStats: {
                     totalRaces: historical ? historical.totalRaces : 0,
@@ -6402,8 +6740,9 @@ const SEASON_DATA = {
             });
             
             initStandings();
+            initReservePool(year);  // v0.9.1: Reserve-Pool mit unbesetzten hist. Fahrern befüllen
             saveGame();
-            
+
             const legendCount = Object.values(GAME_STATE.allTimeStats.drivers || {}).filter(d => d.isLegend).length;
             const champCount = (GAME_STATE.allTimeStats.worldChampions || []).length;
             logSuccess('INIT', `Saison ${year}: ${template.teams.length} Teams, ${template.drivers.length} Fahrer | Historie: ${legendCount} Legenden, ${champCount} WM`);
@@ -9164,7 +9503,10 @@ const SEASON_DATA = {
             
             saveGame();
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
-            
+
+            // v0.9.1: Neue hist. Fahrer für dieses Jahr vorschlagen
+            setTimeout(() => showNewDriversModal(newYear), 500);
+
             return newYear;
         }
         
@@ -10727,14 +11069,16 @@ const SEASON_DATA = {
                         }).join('')}
                     </div>
                     <div class="mt-4 text-sm text-tertiary text-center">
-                        ${activeDrivers.length} Fahrer | ${GAME_STATE.teams.length} Teams | 
-                        Todes-Realismus: ${GAME_STATE.deathRealism}% | 
+                        ${activeDrivers.length} Fahrer | ${GAME_STATE.teams.length} Teams |
+                        Todes-Realismus: ${GAME_STATE.deathRealism}% |
                         KI-Simulation: ${GAME_STATE.aiSimulation ? 'AN' : 'AUS'}
                     </div>
                 </div>
+
+                ${renderReservePool()}
             `;
         }
-        
+
 
         // v0.8.3: Einzelnes historisches Rennen anzeigen
         function renderHistoricalRace(raceId) {

@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.8.7.3</title>
+    <title>F1 RPG v0.8.7.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1156,12 +1156,12 @@
             if (i === 'DDR') return 'DDR';
             // RHO: historische Fahrer haben nation='RHO' in der DB
             if (i === 'RHO') {
-                if (!y || y <= 1963) return 'ZIM_SR';
+                if (!y || y <= 1963) return 'ZIM_FED'; // Federation of Rhodesia & Nyasaland
                 return 'ZIM_RHO';
             }
             if (!y) return ioc;
             if (i === 'ZIM') {
-                if (y <= 1963) return 'ZIM_SR';
+                if (y <= 1963) return 'ZIM_FED'; // Federation of Rhodesia & Nyasaland
                 if (y <= 1979) return 'ZIM_RHO';
                 return 'ZIM';
             }
@@ -1175,7 +1175,7 @@
             var i = ioc.toUpperCase ? ioc.toUpperCase() : ioc;
             var refYear = year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : 9999);
             if (i === 'ZIM' || i === 'RHO') {
-                if (refYear <= 1963) return 'Südrhodesien';
+                if (refYear <= 1963) return 'Rhodesien (Federation)';
                 if (refYear <= 1979) return 'Rhodesien';
                 return 'Simbabwe';
             }
@@ -1186,7 +1186,7 @@
         // === KONSTRUKTEUR-NATIONEN ===
         var CONSTRUCTOR_NATIONS = {
             'EMW': 'DDR', 'HEC': 'DDR', 'GRE': 'DDR', 'REI': 'DDR',
-            'OSC': 'ITA'
+            'OSCA': 'ITA', 'LDS': 'RSA'
         };
 
         // === FLAGGEN-SYSTEM v0.5.5 ===
@@ -1354,7 +1354,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.8.7.3';
+        const VERSION = '0.8.7.4';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
