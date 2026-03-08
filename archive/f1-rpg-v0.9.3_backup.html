@@ -6192,12 +6192,23 @@ const SEASON_DATA = {
                 seenHistIds.add(d[0]);
                 if (d[1]) knownNames.add(d[1].toLowerCase().trim());
             }
-            function makeDriver(d, poolGroup, nextCockpit) {
-                const [histId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
+            // Reverse-Lookup: Name → HIST_SEASONS Slug (z.B. "Nino Farina" → "nino-farina")
+            const nameToSlug = {};
+            if (typeof HIST_NAMES !== 'undefined') {
+                for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
+                    nameToSlug[fullName.toLowerCase().trim()] = slug;
+                }
+            }
+
+            function makeDriver(d, poolGroup, nextCockpit, lastRacedYear) {
+                const [shortId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
+                // SEASON_DATA nutzt Kurzform-IDs ('NINOFA'), HIST_SEASONS nutzt Slugs ('nino-farina')
+                // → Name-Lookup für korrekten histId
+                const resolvedHistId = nameToSlug[name?.toLowerCase().trim()] || shortId;
                 const p = pace || 70;
                 return {
-                    id: 'reserve-' + histId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-                    histId, name, team: null,
+                    id: 'reserve-' + shortId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    histId: resolvedHistId, name, team: null,
                     nation: nation || '🏁',
                     number: Math.floor(Math.random() * 80) + 20,
                     pace: p, currentPace: p,
@@ -6207,7 +6218,8 @@ const SEASON_DATA = {
                     birthYear: birthYear || null,
                     debutYear: null, contractEnd: null,
                     status: 'active', isReserve: true,
-                    poolGroup, nextCockpit: nextCockpit || null
+                    poolGroup, nextCockpit: nextCockpit || null,
+                    lastRacedYear: lastRacedYear || null
                 };
             }
 
@@ -6226,7 +6238,7 @@ const SEASON_DATA = {
                     if (!d[0] || recentIds.has(d[0])) continue;
                     if (isKnown(d) || !ageOk(d)) continue;
                     markKnown(d);
-                    toAdd.push(makeDriver(d, 'A', null));
+                    toAdd.push(makeDriver(d, 'A', null, y)); // y = letztes bekanntes Rennjahr
                 }
             }
 
@@ -6260,7 +6272,7 @@ const SEASON_DATA = {
         // UI: Reservefahrer-Sektion für die Meldeliste
         function setPoolGroupFilter(group) {
             _poolGroupFilter = group;
-            renderTab(currentTab);
+            renderContent();
         }
 
         function renderReservePool() {
@@ -6331,6 +6343,7 @@ const SEASON_DATA = {
                                             <span class="text-xs font-mono">${driver.pace || '?'}</span>
                                         </div>
                                         ${groupBadge(driver.poolGroup)}
+                                        ${driver.poolGroup === 'A' && driver.lastRacedYear ? `<span class="text-xs text-tertiary">zuletzt ${driver.lastRacedYear}</span>` : ''}
                                         ${driver.poolGroup === 'C' && driver.nextCockpit ? `<span class="text-xs text-tertiary">→ ${driver.nextCockpit.teamName} ${driver.nextCockpit.year}</span>` : ''}
                                         ${pending ? `<span class="text-xs text-tertiary italic">📅 ${pending.teamName} ${pending.fromYear}</span>` : ''}
                                         <div class="flex gap-2 ml-auto flex-shrink-0">
@@ -6447,7 +6460,7 @@ const SEASON_DATA = {
             GAME_STATE.pendingAssignments.push({ driverId, teamId, fromYear, driverName: driver.name, teamName: team?.name || teamId });
             document.getElementById('poolAssignModal')?.remove();
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             logSuccess('RESERVE', `${driver.name} für Saison ${fromYear} bei ${team?.name || teamId} eingeplant`);
         }
 
@@ -6455,7 +6468,7 @@ const SEASON_DATA = {
             GAME_STATE.pendingAssignments = (GAME_STATE.pendingAssignments || []).filter(p => p.driverId !== driverId);
             document.getElementById('poolAssignModal')?.remove();
             saveGame();
-            renderTab(currentTab);
+            renderContent();
         }
 
         // Fahrer aus Pool einem Team zuweisen
@@ -6503,7 +6516,7 @@ const SEASON_DATA = {
 
             GAME_STATE.reservePool.splice(idx, 1);
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             const team = GAME_STATE.teams.find(t => t.id === teamId);
             logSuccess('RESERVE', `${driver.name} → ${team?.name || teamId} zugewiesen`);
         }
@@ -6522,7 +6535,7 @@ const SEASON_DATA = {
 
             GAME_STATE.reservePool.splice(idx, 1);
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             logInfo('RESERVE', `${driver.name} aus Reserve-Pool entfernt`);
         }
 
@@ -6602,7 +6615,7 @@ const SEASON_DATA = {
             GAME_STATE.reservePool.push(driver);
             document.getElementById('newDriverModal')?.remove();
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             logSuccess('RESERVE', `${driver.name} in Reserve-Pool erstellt`);
         }
 
@@ -6698,7 +6711,7 @@ const SEASON_DATA = {
 
             _pendingNewDrivers = [];
             document.getElementById('newSeasonDriversModal')?.remove();
-            if (added > 0) { saveGame(); renderTab(currentTab); }
+            if (added > 0) { saveGame(); renderContent(); }
             logSuccess('RESERVE', `${added} Fahrer zum Reserve-Pool hinzugefügt`);
         }
 
@@ -11221,7 +11234,36 @@ const SEASON_DATA = {
             
             const nextRace = GAME_STATE.races[GAME_STATE.currentRace];
             const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
-            
+
+            // Amtierender Weltmeister (Vorjahressieger)
+            const prevYear = GAME_STATE.currentYear - 1;
+            const reigningChampionId = (() => {
+                const histSeason = (GAME_STATE.history || []).find(h => h.year === prevYear);
+                if (histSeason?.championId) return histSeason.championId;
+                const histChamp = (GAME_STATE.allTimeStats?.worldChampions || []).find(c => c.year === prevYear);
+                if (histChamp?.driverId) return histChamp.driverId;
+                if (typeof HIST_CHAMPIONS !== 'undefined' && HIST_CHAMPIONS[prevYear]) return HIST_CHAMPIONS[prevYear];
+                return null;
+            })();
+
+            // Debütanten: Fahrer die in diesem Jahr zum ersten Mal in F1 starten
+            const debutIds = (() => {
+                const playedIds = new Set();
+                const playedHistIds = new Set();
+                for (const season of GAME_STATE.history || []) {
+                    for (const d of season.drivers || []) {
+                        if (d.id) playedIds.add(d.id);
+                        if (d.histId) playedHistIds.add(d.histId);
+                    }
+                }
+                return new Set(activeDrivers.filter(driver => {
+                    if (playedIds.has(driver.id)) return false;
+                    if (driver.histId && playedHistIds.has(driver.histId)) return false;
+                    const hist = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[driver.histId] || []) : [];
+                    return !hist.some(s => s[0] < GAME_STATE.currentYear);
+                }).map(d => d.id));
+            })();
+
             // Gefährlichkeits-Warnung für Ära
             const eraDeathRate = getEraValue(ERA_DEATH_RATES, GAME_STATE.currentYear);
             let eraWarning = '';
@@ -11326,6 +11368,8 @@ const SEASON_DATA = {
                                                     <span class="text-tertiary">#${driver.number}</span>
                                                     <span>${renderFlag(driver.nation, driver.name)}</span>
                                                     <span class="driver-link truncate" onclick="openDriverProfile('${driver.id}')">${driver.name}</span>
+                                                    ${reigningChampionId && (driver.id === reigningChampionId || driver.histId === reigningChampionId) ? `<span title="Amtierender Weltmeister">🏆</span>` : ''}
+                                                    ${debutIds.has(driver.id) ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E;white-space:nowrap">Debüt</span>` : ''}
                                                     ${driver.replacedDriverName && driver.replacedInYear === GAME_STATE.currentYear ? `<span class="text-xs text-tertiary">(ersetzt ${driver.replacedDriverName})</span>` : ''}
                                                 </div>
                                                 <div class="flex items-center gap-2 flex-shrink-0">
@@ -16596,6 +16640,9 @@ const SEASON_DATA = {
             if (!loadGame()) {
                 logInfo('INIT', 'Kein Spielstand gefunden, erstelle neuen...');
                 initFromYear(2024);
+            } else {
+                // Pool beim Laden auffüllen falls leer (z.B. alter Spielstand vor v0.9.1)
+                initReservePool(GAME_STATE.currentYear);
             }
             
             // Theme aus GAME_STATE anwenden
