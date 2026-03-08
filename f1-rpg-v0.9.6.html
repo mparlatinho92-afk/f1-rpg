@@ -5994,6 +5994,17 @@ const SEASON_DATA = {
             sanitized.teams = sanitized.teams || [];
             sanitized.drivers = sanitized.drivers || [];
             sanitized.races = sanitized.races || [];
+            // Migration v0.9.6: race.country – kaputte Twemoji-<img>-Tags → IOC-Code
+            if (sanitized.races.length > 0) {
+                sanitized.races = sanitized.races.map(race => {
+                    const c = race.country;
+                    if (!c || (typeof c === 'string' && c.startsWith('<'))) {
+                        const circ = (race.circuit || race.name || '').toLowerCase().replace(/\s+/g, '-');
+                        return { ...race, country: CIRCUIT_COUNTRY[circ] || '' };
+                    }
+                    return race;
+                });
+            }
             sanitized.results = sanitized.results || [];
             sanitized.qualifyingResults = sanitized.qualifyingResults || [];
             sanitized.seasonDeaths = sanitized.seasonDeaths || [];
