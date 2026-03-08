@@ -47,8 +47,18 @@ Schritte (nur nach Freigabe):
 /f1-rpg-vX.X.X.html     ← aktuelle Version (Einzeldatei, bleibt Monolith)
 /archive/                ← alle alten Versionen als Backup
 /tests/                  ← isolierte Logik-Tests (Monte Carlo, Balancing)
+/schemas/                ← Datenstruktur-Dokumentation (NUR Referenz, kein Laufzeit-Code)
 /CLAUDE.md               ← diese Datei
 ```
+
+## Schemas (Datenstrukturen)
+Vor dem Coden mit SEASON_DATA, HIST_SEASONS, GAME_STATE oder Driver-Objekten:
+**immer zuerst `/schemas/` lesen** – nicht in der 3,5MB-HTML suchen.
+- `season-data.schema.json`  → SEASON_DATA[year].t / .d Feldindex-Tabelle
+- `hist-seasons.schema.json` → HIST_SEASONS[slug] Feldindex-Tabelle
+- `game-state.schema.json`   → alle GAME_STATE Top-Level-Felder
+- `driver-objects.schema.json` → simulierter Fahrer, Team, Kontext-Varianten
+- **Schemas bei Strukturänderungen mitpflegen**
 
 ## Testen vor Einbauen
 - Neue Logik (Wahrscheinlichkeiten, Berechnungen) erst als isoliertes Test-Script
