@@ -11975,7 +11975,7 @@ const SEASON_DATA = {
             
             const top3 = lastRace.results.slice(0, 3);
             return `
-                <div class="mb-2 font-bold">${renderFlag(lastRace.raceCountry, lastRace.raceName)} ${lastRace.raceName} ${lastRace.isRain ? '🌧️' : '☀️'}</div>
+                <div class="mb-2 font-bold cursor-pointer" onclick="openRaceDetails(${lastRace.raceIndex})">${renderFlag(lastRace.raceCountry, lastRace.raceName)} <span class="race-link">${lastRace.raceName}</span> ${lastRace.isRain ? '🌧️' : '☀️'}</div>
                 <table class="w-full text-sm">
                     <thead><tr class="text-left text-tertiary"><th>Pos</th><th>Fahrer</th><th>Team</th><th>Punkte</th></tr></thead>
                     <tbody>
@@ -13251,7 +13251,9 @@ const SEASON_DATA = {
                             <div class="font-bold text-green-400">v0.9.7 (aktuell)</div>
                             <div>• NEU: Sieger/Pole/Schnellste Runde in Rennliste klickbar → Fahrer-Steckbrief</div>
                             <div>• NEU: Rennnamen im Fahrer-Steckbrief klickbar → Rennergebnis-Popup</div>
-                            <div>• NEU: P2/P3 in "Letztes Ergebnis" auf Übersicht klickbar</div>
+                            <div>• NEU: Team-Namen in Karriere-Historie und Race-Grid klickbar → Team-Steckbrief</div>
+                            <div>• NEU: Race-Grid Zellen klickbar → Rennergebnis-Popup</div>
+                            <div>• NEU: Letztes Ergebnis: Rennname + alle 3 Fahrer klickbar</div>
                             <div class="font-bold text-green-400 mt-2">v0.9.6</div>
                             <div>• FIX: Live-Ticker-Rennen zeigen jetzt Sieger, schnellste Runde und Popup korrekt</div>
                             <div>• FIX: Rennkalender nutzt echte F1DB-Rennen statt generischen Kalender</div>
@@ -15135,9 +15137,15 @@ const SEASON_DATA = {
                             }
                         }
                         
+                        const firstConstrId = (() => {
+                            if (typeof getDriverConstructors !== 'function') return null;
+                            const cons = getDriverConstructors(statsId || driver.id);
+                            return (cons[s[0]] || [])[0] || null;
+                        })();
                         fullCareer.push({
                             year: s[0],
                             team: teamName,
+                            teamId: firstConstrId,
                             teamColor: teamColor,
                             races: '-',
                             wins: s[2],
@@ -15179,6 +15187,7 @@ const SEASON_DATA = {
                             fullCareer.push({
                                 year: season.year,
                                 team: team?.name || histDriver?.team || '-',
+                                teamId: team?.id || histDriver?.team || null,
                                 teamColor: team?.color || '#888',
                                 races: driverStanding?.races || 0,
                                 wins: driverStanding?.wins || 0,
@@ -15215,8 +15224,8 @@ const SEASON_DATA = {
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
                                                 <td class="p-1 font-bold">${h.year}</td>
                                                 <td class="p-1">
-                                                    ${h.team !== '-' ? 
-                                                        '<span class="px-1 rounded text-xs" style="background-color: ' + h.teamColor + '20; color: ' + h.teamColor + '">' + h.team + '</span>' : 
+                                                    ${h.team !== '-' ?
+                                                        '<span class="px-1 rounded text-xs team-link cursor-pointer" style="background-color: ' + h.teamColor + '20; color: ' + h.teamColor + '"' + (h.teamId ? ' onclick="openTeamProfile(\'' + h.teamId + '\')"' : '') + '>' + h.team + '</span>' :
                                                         '<span class="text-tertiary text-xs">-</span>'}
                                                 </td>
                                                 <td class="p-1 text-center ${h.wins > 0 ? 'accent-gold font-bold' : ''}">${h.wins}</td>
@@ -15246,9 +15255,10 @@ const SEASON_DATA = {
 
                         const cells = f1dbYear.map(race => {
                             const entry = race.entries.find(e => e.driverId === statsId);
-                            if (!entry) return { circuit: race.circuit || race.name, absent: true };
+                            if (!entry) return { circuit: race.circuit || race.name, raceId: race.raceId, absent: true };
                             return {
                                 circuit: race.circuit || race.name,
+                                raceId: race.raceId,
                                 pos: entry.posNum,
                                 posText: entry.posText,
                                 points: entry.points,
@@ -15262,11 +15272,12 @@ const SEASON_DATA = {
                         const wmPos = histEntry ? histEntry[1] : '-';
                         const wmPts = histEntry ? Math.round(histEntry[4]) : 0;
 
-                        let teamName = '-', teamColor = '#888';
+                        let teamName = '-', teamColor = '#888', teamIdGrid = null;
                         if (typeof getDriverConstructors === 'function') {
                             const constructors = getDriverConstructors(statsId || driver.id);
                             const yearCons = constructors[year];
                             if (yearCons && yearCons.length > 0) {
+                                teamIdGrid = yearCons[0];
                                 const sd = SEASON_DATA[year];
                                 const names = [];
                                 yearCons.forEach(c => {
@@ -15281,7 +15292,7 @@ const SEASON_DATA = {
                             }
                         }
 
-                        return { year, cells, teamName, teamColor, wmPos, wmPts };
+                        return { year, cells, teamName, teamId: teamIdGrid, teamColor, wmPos, wmPts };
                     }).filter(Boolean);
 
                     if (rows.length === 0) return '';
@@ -15343,7 +15354,7 @@ const SEASON_DATA = {
                                     ${rows.map(row => `
                                         <div style="height:${ROW_H}px; display:flex; align-items:center; gap:4px; margin-bottom:3px;">
                                             <span style="width:34px; font-size:0.7rem; font-weight:bold; color:var(--text-primary); flex-shrink:0;">${row.year}</span>
-                                            <span style="flex:1; min-width:0; font-size:0.55rem; color:${row.teamColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${row.teamName}">${row.teamName}</span>
+                                            <span style="flex:1; min-width:0; font-size:0.55rem; color:${row.teamColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer; text-decoration:underline;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -15359,7 +15370,7 @@ const SEASON_DATA = {
                                         <div style="display:flex; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
-                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}">
+                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();openHistoricalRace(${cell.raceId})">
                                                     <span style="font-size:0.42rem; color:rgba(255,255,255,0.7); line-height:1;">${circAbbr(cell.circuit)}</span>
                                                     <span style="font-size:0.6rem; color:#fff; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
                                                 </div>`
