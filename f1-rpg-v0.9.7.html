@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.9.6</title>
+    <title>F1 RPG v0.9.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1453,7 +1453,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.6';
+        const VERSION = '0.9.7';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5901,7 +5901,7 @@ const SEASON_DATA = {
                     startYear: year,
                     teams: teams,
                     drivers: drivers,
-                    races: generateRacesForYear(year)
+                    races: buildRacesForYear(year)
                 };
             }
             
@@ -9922,8 +9922,8 @@ const SEASON_DATA = {
                 }
             });
             
-            // Rennen für neues Jahr generieren (kann später verbessert werden)
-            GAME_STATE.races = generateRacesForYear(newYear);
+            // Rennen für neues Jahr generieren (F1DB wenn vorhanden, sonst generiert)
+            GAME_STATE.races = buildRacesForYear(newYear);
             
             // Standings zurücksetzen
             initStandings();
@@ -9942,6 +9942,28 @@ const SEASON_DATA = {
             return newYear;
         }
         
+        // Rennen für Jahr bauen: F1DB wenn vorhanden (exakter hist. Kalender), sonst generiert
+        function buildRacesForYear(year) {
+            const f1db = getF1DBYear(year);
+            if (f1db && f1db.length > 0) {
+                return f1db.map((r, i) => {
+                    const ioc = CIRCUIT_COUNTRY[r.circuit] || '';
+                    const country = ioc ? getEmojiFlag(ioc, year) : '🏁';
+                    const winnerEntry = r.entries.find(e => e.posNum === 1);
+                    const laps = winnerEntry?.laps || Math.max(...r.entries.filter(e => e.laps).map(e => e.laps), 60);
+                    return {
+                        id: i + 1,
+                        name: r.name,
+                        circuit: formatCircuitName(r.circuit),
+                        country,
+                        laps: laps || 60,
+                        isIndy: r.isIndy || false
+                    };
+                });
+            }
+            return generateRacesForYear(year);
+        }
+
         function generateRacesForYear(year) {
             // === HISTORISCHE KALENDER 1950-1960 (exakt wie in echt, mit Indy 500) ===
             const historicCalendars = {
@@ -10207,7 +10229,7 @@ const SEASON_DATA = {
                         driver.seasonScore = null;
                     });
                     
-                    GAME_STATE.races = generateRacesForYear(GAME_STATE.currentYear);
+                    GAME_STATE.races = buildRacesForYear(GAME_STATE.currentYear);
                     GAME_STATE.currentRace = 0;
                     GAME_STATE.results = [];
                     GAME_STATE.qualifyingResults = [];
@@ -10406,7 +10428,7 @@ const SEASON_DATA = {
             GAME_STATE.teams = JSON.parse(JSON.stringify(lastSeason.teams));
             GAME_STATE.driverStandings = JSON.parse(JSON.stringify(lastSeason.driverStandings));
             GAME_STATE.teamStandings = JSON.parse(JSON.stringify(lastSeason.teamStandings));
-            GAME_STATE.races = generateRacesForYear(lastSeason.year);
+            GAME_STATE.races = buildRacesForYear(lastSeason.year);
             GAME_STATE.currentRace = lastSeason.races;
             GAME_STATE.results = []; // Ergebnisse müssten auch gespeichert werden für voll funktional
             
@@ -12119,7 +12141,7 @@ const SEASON_DATA = {
             const races = isHistorical ? (historicalViewData.races || []) : GAME_STATE.races;
             // Für aktive Saisons: F1DB-Renndaten für korrekte Flaggen/Namen in der Matrix
             const matrixYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
-            const f1dbMatrixRaces = !isHistorical ? getF1DBYear(matrixYear) : null;
+            const f1dbMatrixRaces = null; // Index-Mismatch 1961+: Spiel-Reihenfolge ≠ F1DB → game races nutzen
             const driverStandingsData = isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings;
             const driversList = isHistorical ? (historicalViewData.drivers || []) : GAME_STATE.drivers;
             
@@ -13202,7 +13224,11 @@ const SEASON_DATA = {
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
-                            <div class="font-bold text-green-400">v0.9.6 (aktuell)</div>
+                            <div class="font-bold text-green-400">v0.9.7 (aktuell)</div>
+                            <div>• FIX: Matrix-Flags zeigen korrektes Land (kein F1DB-Index-Mismatch mehr)</div>
+                            <div>• FIX: Alle DNF/Retirements im Rennen-Popup sichtbar (kein slice-Limit mehr)</div>
+                            <div>• NEU: Rennkalender nutzt echte F1DB-Rennen statt generischen Kalender</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.6</div>
                             <div>• FIX: Rennliste für simulierte Saisons ab 1961 zeigt korrekte Reihenfolge</div>
                             <div>• FIX: Rennen-Popup öffnet das richtige Rennen (nicht F1DB-Index-Mismatch)</div>
                             <div>• FIX: DNF/Retirement im Rennen-Popup jetzt sichtbar</div>
@@ -16681,7 +16707,7 @@ const SEASON_DATA = {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${results.slice(0, 20).map((r, idx) => {
+                                    ${results.map((r, idx) => {
                                         const pos = historicalYear ? r.p : r.position;
                                         const pts = historicalYear ? r.pt : r.points;
                                         const dnf = historicalYear ? r.dnf : r.dnf;
