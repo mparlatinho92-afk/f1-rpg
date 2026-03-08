@@ -30,11 +30,9 @@
 - Maximal ~3–5 Bullet-Points pro Version, prägnant auf Deutsch
 
 ## Git-Workflow (nach jeder Änderung)
-**WICHTIG: Nach jeder abgeschlossenen Änderung aktiv fragen:**
-„Soll ich committen? (ja/nein)"
-- Nicht warten bis der Nutzer es erwähnt – immer selbst am Ende vorschlagen
-- Erst nach „ja" den Workflow ausführen
-- Kein Commit, kein git-Befehl ohne explizite Freigabe
+**WICHTIG: Git-Workflow nach jeder abgeschlossenen Änderung automatisch ausführen**
+- Nicht warten bis der Nutzer es erwähnt – den Workflow direkt starten
+- Der native Claude Code Bestätigungs-Prompt übernimmt die Freigabe (1 = Yes, 2 = No)
 
 Schritte (nur nach Freigabe):
 1. Backup der alten Version: `cp f1-rpg-vX.X.X.html archive/f1-rpg-vX.X.X_backup.html`
