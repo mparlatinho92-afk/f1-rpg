@@ -13249,11 +13249,11 @@ const SEASON_DATA = {
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                             <div class="font-bold text-green-400">v0.9.7 (aktuell)</div>
+                            <div>• NEU: Fahrernamen in Team-Historie klickbar → Steckbrief; >2 Fahrer → Auswahl-Popup</div>
                             <div>• NEU: Sieger/Pole/Schnellste Runde in Rennliste klickbar → Fahrer-Steckbrief</div>
                             <div>• NEU: Rennnamen im Fahrer-Steckbrief klickbar → Rennergebnis-Popup</div>
                             <div>• NEU: Team-Namen in Karriere-Historie und Race-Grid klickbar → Team-Steckbrief</div>
                             <div>• NEU: Race-Grid Zellen klickbar → Rennergebnis-Popup</div>
-                            <div>• NEU: Letztes Ergebnis: Rennname + alle 3 Fahrer klickbar</div>
                             <div class="font-bold text-green-400 mt-2">v0.9.6</div>
                             <div>• FIX: Live-Ticker-Rennen zeigen jetzt Sieger, schnellste Runde und Popup korrekt</div>
                             <div>• FIX: Rennkalender nutzt echte F1DB-Rennen statt generischen Kalender</div>
@@ -16290,6 +16290,17 @@ const SEASON_DATA = {
             const teamHistory = [];
             const idsToCheck = [teamId];
             if (histId && histId !== teamId) idsToCheck.push(histId);
+
+            // Reverse-Lookup: Nachname/Vollname → histId-Slug (für TEAM_HIST-Namen)
+            const nameToSlug = {};
+            if (typeof HIST_NAMES !== 'undefined') {
+                for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
+                    nameToSlug[fullName.toLowerCase()] = slug;
+                    const lastName = fullName.split(' ').pop();
+                    if (!nameToSlug[lastName.toLowerCase()]) nameToSlug[lastName.toLowerCase()] = slug;
+                }
+            }
+            const resolveDriverId = (name) => name ? (nameToSlug[name.toLowerCase()] || null) : null;
             
             // Finde den Teamnamen für Suche in TEAM_HIST
             const teamNames = new Set();
@@ -16375,9 +16386,12 @@ const SEASON_DATA = {
                                 wmPos = '?';
                             }
                         }
+                        const dObjs1 = [];
+                        if (entry[1]) dObjs1.push({ name: entry[1], id: resolveDriverId(entry[1]) });
+                        if (entry[2]) dObjs1.push({ name: entry[2], id: resolveDriverId(entry[2]) });
                         teamHistory.push({
                             year: year,
-                            drivers: entry[2] ? `${entry[1]} / ${entry[2]}` : entry[1],
+                            driverObjs: dObjs1,
                             wins: typeof entry[3] === 'number' ? entry[3] : '📜',
                             podiums: typeof entry[4] === 'number' ? entry[4] : '📜',
                             points: typeof entry[5] === 'number' ? entry[5] : '📜',
@@ -16414,6 +16428,7 @@ const SEASON_DATA = {
                                         if (!yearDrivers[yearNum]) yearDrivers[yearNum] = [];
                                         const driverName = HIST_NAMES?.[driverId] || driverId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                                         yearDrivers[yearNum].push({
+                                            id: driverId,
                                             name: driverName.split(' ').pop(), // Nachname
                                             wins: seasonData[2] || 0,
                                             podiums: seasonData[3] || 0,
@@ -16432,7 +16447,7 @@ const SEASON_DATA = {
                             
                             teamHistory.push({
                                 year: yearNum,
-                                drivers: drivers.slice(0, 2).map(d => d.name).join(' / ') || '-',
+                                driverObjs: drivers.map(d => ({ name: d.name, id: d.id })),
                                 wins: drivers.reduce((sum, d) => sum + (d.wins || 0), 0),
                                 podiums: drivers.reduce((sum, d) => sum + (d.podiums || 0), 0),
                                 points: drivers.reduce((sum, d) => sum + (d.points || 0), 0),
@@ -16464,14 +16479,13 @@ const SEASON_DATA = {
                 }
                 
                 if (teamStanding || actualTeamId) {
-                    const seasonDrivers = (season.drivers || [])
+                    const seasonDriverObjs = (season.drivers || [])
                         .filter(d => d.team === actualTeamId)
-                        .map(d => d.name.split(' ').slice(-1)[0])
-                        .slice(0, 2);
-                    
+                        .map(d => ({ name: d.name.split(' ').slice(-1)[0], id: d.id }));
+
                     teamHistory.push({
                         year: season.year,
-                        drivers: seasonDrivers.join(' / ') || '-',
+                        driverObjs: seasonDriverObjs,
                         wins: teamStanding?.wins || 0,
                         podiums: teamStanding?.podiums || 0,
                         points: teamStanding?.points || 0,
@@ -16507,7 +16521,23 @@ const SEASON_DATA = {
                 const rowClass = h.isHistorical ? ' opacity-75' : '';
                 html += '<tr class="border-t border-custom' + rowClass + '">';
                 html += '<td class="p-1 font-bold">' + h.year + '</td>';
-                html += '<td class="p-1 text-xs">' + h.drivers + '</td>';
+                const dObjs = h.driverObjs || [];
+                let driversHtml;
+                if (dObjs.length === 0) {
+                    driversHtml = '-';
+                } else {
+                    const makeLink = d => d.id
+                        ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${d.name}</span>`
+                        : d.name;
+                    const shown = dObjs.slice(0, 2);
+                    const rest  = dObjs.slice(2);
+                    driversHtml = shown.map(makeLink).join(' / ');
+                    if (rest.length > 0) {
+                        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
+                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${rest.length}</span>`;
+                    }
+                }
+                html += '<td class="p-1 text-xs">' + driversHtml + '</td>';
                 html += '<td class="p-1 text-center ' + winsClass + '">' + h.wins + '</td>';
                 html += '<td class="p-1 text-center">' + h.podiums + '</td>';
                 html += '<td class="p-1 text-center">' + (typeof h.points === 'number' ? Math.round(h.points) : h.points) + '</td>';
@@ -16519,6 +16549,33 @@ const SEASON_DATA = {
             return html;
         }
         
+        window.openDriverPickModal = function(encoded) {
+            const drivers = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+            let modal = document.getElementById('driverPickModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'driverPickModal';
+                modal.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
+                modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:20px;min-width:220px;max-width:320px;" onclick="event.stopPropagation()">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <span style="font-weight:bold;color:var(--text-primary);">Fahrer auswählen</span>
+                        <button onclick="document.getElementById('driverPickModal').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;line-height:1;">✕</button>
+                    </div>
+                    ${drivers.map(d => `
+                        <div style="padding:8px 4px;border-bottom:1px solid var(--border-color);cursor:${d.id ? 'pointer' : 'default'};"
+                             class="${d.id ? 'card-hover driver-link' : ''}"
+                             onclick="${d.id ? `document.getElementById('driverPickModal').style.display='none';openDriverProfile('${d.id}')` : ''}">
+                            ${d.name}
+                        </div>
+                    `).join('')}
+                </div>`;
+            modal.style.display = 'flex';
+        };
+
         // Helper-Funktion für Vertragsstatus im Fahrer-Profil
         function renderContractStatus(driverId, driver) {
             const eval_ = evaluateDriverPerformance(driverId);
