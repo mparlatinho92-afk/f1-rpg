@@ -16291,16 +16291,37 @@ const SEASON_DATA = {
             const idsToCheck = [teamId];
             if (histId && histId !== teamId) idsToCheck.push(histId);
 
-            // Reverse-Lookup: Nachname/Vollname → histId-Slug (für TEAM_HIST-Namen)
-            const nameToSlug = {};
+            // Reverse-Lookup: Nachname → [slug1, slug2, ...] (für TEAM_HIST-Namen)
+            // Mehrere Kandidaten werden per Jahr+Team disambiguiert (Hill→Damon/Graham, Schumacher→Michael/Ralf)
+            const lastNameToSlugs = {};
             if (typeof HIST_NAMES !== 'undefined') {
                 for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
-                    nameToSlug[fullName.toLowerCase()] = slug;
-                    const lastName = fullName.split(' ').pop();
-                    if (!nameToSlug[lastName.toLowerCase()]) nameToSlug[lastName.toLowerCase()] = slug;
+                    const ln = fullName.split(' ').pop().toLowerCase();
+                    if (!lastNameToSlugs[ln]) lastNameToSlugs[ln] = [];
+                    lastNameToSlugs[ln].push(slug);
                 }
             }
-            const resolveDriverId = (name) => name ? (nameToSlug[name.toLowerCase()] || null) : null;
+            const resolveDriverForYear = (name, year) => {
+                if (!name) return null;
+                const candidates = lastNameToSlugs[name.toLowerCase()] || [];
+                if (candidates.length === 0) return null;
+                if (candidates.length === 1) return candidates[0];
+                // Mehrere: per Jahr+Team disambiguieren
+                const teamNamesNorm = Array.from(teamNames).map(n => n.toLowerCase().replace(/[\s\-]/g, ''));
+                if (typeof getDriverConstructors === 'function') {
+                    for (const slug of candidates) {
+                        if (!HIST_SEASONS?.[slug]?.some(s => s[0] === year)) continue;
+                        const yearCons = (getDriverConstructors(slug)[year] || [])
+                            .map(c => c.toLowerCase().replace(/[\s\-]/g, ''));
+                        if (yearCons.some(c => teamNamesNorm.some(t => c.includes(t) || t.includes(c)))) return slug;
+                    }
+                }
+                // Fallback: wer hat überhaupt in dem Jahr gefahren
+                for (const slug of candidates) {
+                    if (HIST_SEASONS?.[slug]?.some(s => s[0] === year)) return slug;
+                }
+                return candidates[0];
+            };
             
             // Finde den Teamnamen für Suche in TEAM_HIST
             const teamNames = new Set();
@@ -16387,8 +16408,8 @@ const SEASON_DATA = {
                             }
                         }
                         const dObjs1 = [];
-                        if (entry[1]) dObjs1.push({ name: entry[1], id: resolveDriverId(entry[1]) });
-                        if (entry[2]) dObjs1.push({ name: entry[2], id: resolveDriverId(entry[2]) });
+                        if (entry[1]) dObjs1.push({ name: entry[1], id: resolveDriverForYear(entry[1], year) });
+                        if (entry[2]) dObjs1.push({ name: entry[2], id: resolveDriverForYear(entry[2], year) });
                         teamHistory.push({
                             year: year,
                             driverObjs: dObjs1,
