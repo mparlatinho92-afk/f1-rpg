@@ -8872,6 +8872,9 @@ const SEASON_DATA = {
                     if (standing.wins > 0) retireChance *= 0.4; // -60% bei Sieg diese Saison
                     else if (standing.podiums >= 2) retireChance *= 0.6; // -40% bei 2+ Podien
                     
+                    // Läuft der Vertrag noch? Dann kein Alters-Rücktritt
+                    if (driver.contractEnd && driver.contractEnd > GAME_STATE.currentYear) retireChance = 0;
+
                     if (Math.random() < retireChance) {
                         driver.status = 'retired';
                         driver.retirementYear = GAME_STATE.currentYear;
