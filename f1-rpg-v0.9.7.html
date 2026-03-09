@@ -14725,6 +14725,19 @@ const SEASON_DATA = {
                     <div class="skill-value">${value}</div>
                 </div>
             `;
+
+            // Editierbarer Stat: Slider + Zahleneingabe (nur aktive Fahrer)
+            const editRow = (label, value, field, color = '#3B82F6') => `
+                <div class="skill-bar-container" style="align-items:center; gap:6px;">
+                    <div class="skill-label">${label}</div>
+                    <input type="range" min="0" max="100" value="${Math.round(value || 0)}"
+                           style="flex:1; cursor:pointer; accent-color:${color}; height:5px;"
+                           oninput="this.nextElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)">
+                    <input type="number" min="0" max="100" value="${Math.round(value || 0)}"
+                           style="width:44px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); text-align:center; padding:2px 4px; font-size:0.75rem;"
+                           oninput="this.previousElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)">
+                </div>
+            `;
             
             // WM-Position (nur für aktive Fahrer)
             const wmPosition = isCurrentlyActive ? Object.entries(GAME_STATE.driverStandings)
@@ -14889,34 +14902,30 @@ const SEASON_DATA = {
                                     <span class="font-bold">Pace</span>
                                     <span class="text-sm" style="color: ${gapColor}">${statusText}</span>
                                 </div>
+                                ${isCurrentlyActive ? `
+                                    ${editRow('Aktuell', paceInfo.current, 'currentPace', '#22C55E')}
+                                    ${editRow('Potenzial', paceInfo.potential, 'potentialPace', '#8B5CF6')}
+                                ` : `
                                 <div class="relative h-6 bg-tertiary rounded-lg overflow-hidden">
-                                    <!-- Potential (Hintergrund) -->
                                     <div class="absolute h-full rounded-lg opacity-30" style="width: ${paceInfo.potential}%; background: linear-gradient(90deg, #3B82F6, #8B5CF6);"></div>
-                                    <!-- Current (Vordergrund) -->
                                     <div class="absolute h-full rounded-lg" style="width: ${paceInfo.current}%; background: linear-gradient(90deg, #22C55E, #3B82F6);"></div>
                                 </div>
                                 <div class="flex justify-between mt-2 text-sm">
-                                    <div>
-                                        <span class="text-tertiary">Aktuell:</span> 
-                                        <span class="font-bold" style="color: #22C55E">${paceInfo.current}</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-tertiary">Potenzial:</span> 
-                                        <span class="font-bold" style="color: #8B5CF6">${paceInfo.potential}</span>
-                                        ${paceInfo.gap > 0 ? `<span class="text-xs text-tertiary">(+${paceInfo.gap})</span>` : ''}
-                                    </div>
+                                    <div><span class="text-tertiary">Aktuell:</span> <span class="font-bold" style="color: #22C55E">${paceInfo.current}</span></div>
+                                    <div><span class="text-tertiary">Potenzial:</span> <span class="font-bold" style="color: #8B5CF6">${paceInfo.potential}</span>${paceInfo.gap > 0 ? `<span class="text-xs text-tertiary">(+${paceInfo.gap})</span>` : ''}</div>
                                 </div>
+                                `}
                             </div>
                         `;
                     })()}
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            ${skillBar('Regen', driver.rain)}
-                            ${skillBar('Konstanz', driver.consistency)}
+                            ${isCurrentlyActive ? editRow('Regen', driver.rain, 'rain', '#3B82F6') : skillBar('Regen', driver.rain)}
+                            ${isCurrentlyActive ? editRow('Konstanz', driver.consistency, 'consistency', '#F97316') : skillBar('Konstanz', driver.consistency)}
                         </div>
                         <div>
-                            ${skillBar('Erfahrung', driver.experience)}
+                            ${isCurrentlyActive ? editRow('Erfahrung', driver.experience, 'experience', '#EAB308') : skillBar('Erfahrung', driver.experience)}
                             ${skillBar('Starts', driver.starts)}
                         </div>
                     </div>
@@ -16573,6 +16582,18 @@ const SEASON_DATA = {
             return html;
         }
         
+        window.updateDriverStat = function(driverId, field, value) {
+            const driver = GAME_STATE.drivers.find(d => d.id === driverId)
+                        || (GAME_STATE.reservePool || []).find(d => d.id === driverId);
+            if (!driver) return;
+            const v = Math.max(0, Math.min(100, Math.round(+value)));
+            driver[field] = v;
+            // pace / currentPace immer synchron halten
+            if (field === 'currentPace') { driver.pace = v; }
+            if (field === 'pace')        { driver.currentPace = v; }
+            saveGame();
+        };
+
         window.openDriverPickModal = function(encoded) {
             const drivers = JSON.parse(decodeURIComponent(escape(atob(encoded))));
             let modal = document.getElementById('driverPickModal');
