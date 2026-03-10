@@ -16638,9 +16638,9 @@ const SEASON_DATA = {
                 if (dObjs.length === 0) {
                     driversHtml = '-';
                 } else {
-                    const LIMIT = window.innerWidth < 640 ? 14 : 28;
+                    const LIMIT = window.innerWidth < 640 ? 16 : 38;
                     const inlineItems = [];
-                    let charCount = 0, truncated = false;
+                    let charCount = 0, truncated = false, fullyShown = 0;
                     for (let i = 0; i < dObjs.length; i++) {
                         const d = dObjs[i];
                         const sep = i > 0 ? ' / ' : '';
@@ -16648,6 +16648,7 @@ const SEASON_DATA = {
                         if (charCount + needed <= LIMIT) {
                             inlineItems.push({ d, display: d.name });
                             charCount += needed;
+                            fullyShown++;
                         } else {
                             const avail = LIMIT - charCount - sep.length;
                             if (avail >= 5) inlineItems.push({ d, display: d.name.substring(0, avail - 1) + '…' });
@@ -16661,7 +16662,8 @@ const SEASON_DATA = {
                     driversHtml = inlineItems.map(makeLink).join(' / ');
                     if (truncated) {
                         const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
-                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${dObjs.length}</span>`;
+                        const pickerCount = dObjs.length - fullyShown;
+                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${pickerCount}</span>`;
                     }
                 }
                 html += '<td class="p-1 text-xs">' + driversHtml + '</td>';
