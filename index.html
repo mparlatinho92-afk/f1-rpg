@@ -16406,6 +16406,29 @@ const SEASON_DATA = {
                 teamNames.add(histName);
             }
             
+            // Helper: alle Fahrer eines Teams in einem Jahr, sortiert nach WM-Punkten DESC
+            const constructorIds = Array.from(teamNames).map(n => n.toLowerCase().replace(/\s+/g, '-'));
+            const getDriversForTeamYear = (year) => {
+                if (typeof getDriverConstructors !== 'function' || typeof HIST_SEASONS === 'undefined') return [];
+                const drivers = [];
+                for (const [driverId, seasons] of Object.entries(HIST_SEASONS)) {
+                    const yearCons = (getDriverConstructors(driverId) || {})[year];
+                    if (!yearCons) continue;
+                    const matched = yearCons.find(c =>
+                        constructorIds.includes(c.toLowerCase()) ||
+                        constructorIds.some(id => c.toLowerCase().includes(id) || id.includes(c.toLowerCase()))
+                    );
+                    if (!matched) continue;
+                    const seasonData = seasons.find(s => s[0] === year);
+                    if (!seasonData) continue;
+                    const fullName = HIST_NAMES?.[driverId] || driverId.split('-').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+                    const w = fullName.trim().split(/\s+/);
+                    const displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : fullName;
+                    drivers.push({ id: driverId, name: displayName, points: seasonData[4] || 0 });
+                }
+                return drivers.sort((a, b) => (b.points || 0) - (a.points || 0)).map(d => ({ id: d.id, name: d.name }));
+            };
+
             // 1. Historische Saisons aus TEAM_HIST (vor Spielbeginn)
             // startYear: Nur Jahre VOR dem Spielbeginn anzeigen (historische Daten)
             // Für 2024 Demo: startYear=2024, zeige Jahre < 2024
@@ -16469,19 +16492,7 @@ const SEASON_DATA = {
                                 wmPos = '?';
                             }
                         }
-                        const dObjs1 = [];
-                        const makeDriverObj = (rawName) => {
-                            const id = resolveDriverForYear(rawName, year);
-                            let displayName = rawName;
-                            if (id && HIST_NAMES?.[id]) {
-                                const w = HIST_NAMES[id].trim().split(/\s+/);
-                                // "M. Häkkinen", "C. Sainz Jr.", "L. Pérez-Sala"
-                                displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : HIST_NAMES[id];
-                            }
-                            return { name: displayName, id };
-                        };
-                        if (entry[1]) dObjs1.push(makeDriverObj(entry[1]));
-                        if (entry[2]) dObjs1.push(makeDriverObj(entry[2]));
+                        const dObjs1 = getDriversForTeamYear(year);
                         teamHistory.push({
                             year: year,
                             driverObjs: dObjs1,
@@ -16519,10 +16530,12 @@ const SEASON_DATA = {
                                     const seasonData = seasons.find(s => s[0] === yearNum);
                                     if (seasonData) {
                                         if (!yearDrivers[yearNum]) yearDrivers[yearNum] = [];
-                                        const driverName = HIST_NAMES?.[driverId] || driverId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                        const fullN = HIST_NAMES?.[driverId] || driverId.split('-').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+                                        const wN = fullN.trim().split(/\s+/);
+                                        const driverName = wN.length > 1 ? wN[0][0] + '. ' + wN.slice(1).join(' ') : fullN;
                                         yearDrivers[yearNum].push({
                                             id: driverId,
-                                            name: driverName.split(' ').pop(), // Nachname
+                                            name: driverName,
                                             wins: seasonData[2] || 0,
                                             podiums: seasonData[3] || 0,
                                             points: seasonData[4] || 0
@@ -16577,8 +16590,10 @@ const SEASON_DATA = {
                         .map(d => {
                             const w = d.name.trim().split(/\s+/);
                             const displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : d.name;
-                            return { name: displayName, id: d.id };
-                        });
+                            return { name: displayName, id: d.id, points: season.driverStandings?.[d.id]?.points || 0 };
+                        })
+                        .sort((a, b) => (b.points || 0) - (a.points || 0))
+                        .map(d => ({ name: d.name, id: d.id }));
 
                     teamHistory.push({
                         year: season.year,
@@ -16623,15 +16638,30 @@ const SEASON_DATA = {
                 if (dObjs.length === 0) {
                     driversHtml = '-';
                 } else {
-                    const makeLink = d => d.id
-                        ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${d.name}</span>`
-                        : d.name;
-                    const shown = dObjs.slice(0, 2);
-                    const rest  = dObjs.slice(2);
-                    driversHtml = shown.map(makeLink).join(' / ');
-                    if (rest.length > 0) {
+                    const LIMIT = window.innerWidth < 640 ? 14 : 28;
+                    const inlineItems = [];
+                    let charCount = 0, truncated = false;
+                    for (let i = 0; i < dObjs.length; i++) {
+                        const d = dObjs[i];
+                        const sep = i > 0 ? ' / ' : '';
+                        const needed = sep.length + d.name.length;
+                        if (charCount + needed <= LIMIT) {
+                            inlineItems.push({ d, display: d.name });
+                            charCount += needed;
+                        } else {
+                            const avail = LIMIT - charCount - sep.length;
+                            if (avail >= 5) inlineItems.push({ d, display: d.name.substring(0, avail - 1) + '…' });
+                            truncated = true;
+                            break;
+                        }
+                    }
+                    const makeLink = ({ d, display }) => d.id
+                        ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${display}</span>`
+                        : display;
+                    driversHtml = inlineItems.map(makeLink).join(' / ');
+                    if (truncated) {
                         const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
-                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${rest.length}</span>`;
+                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${dObjs.length}</span>`;
                     }
                 }
                 html += '<td class="p-1 text-xs">' + driversHtml + '</td>';
