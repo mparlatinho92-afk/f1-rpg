@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 RPG v0.9.3</title>
+    <title>F1 RPG v0.9.7.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1453,7 +1453,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.3';
+        const VERSION = '0.9.7.3';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -1655,23 +1655,160 @@
             return calculateTierFromRank(teamRank, totalTeams);
         }
         
+        // Badge-Einstellungen (Tier-Emojis, Titelverteidiger, Weltmeister)
+        let _badgeSettingsCache = null;
+
+        function getBadgeSettings() {
+            if (_badgeSettingsCache) return _badgeSettingsCache;
+            const defaults = {
+                tierEmojis: { top1: '📈', top2: '📈', top3: '📈', mid: '📊', back: '📉' },
+                showTitelverteidiger: true,
+                titelverteidigerStyle: 'crown',
+                showHistChampion: true
+            };
+            try {
+                const saved = JSON.parse(localStorage.getItem('f1rpg_badgeSettings') || '{}');
+                _badgeSettingsCache = { ...defaults, ...saved, tierEmojis: { ...defaults.tierEmojis, ...(saved.tierEmojis || {}) } };
+            } catch(e) { _badgeSettingsCache = defaults; }
+            return _badgeSettingsCache;
+        }
+
+        function setTierEmoji(slot, emoji) {
+            const s = getBadgeSettings();
+            s.tierEmojis[slot] = emoji;
+            localStorage.setItem('f1rpg_badgeSettings', JSON.stringify(s));
+            _badgeSettingsCache = null;
+            document.getElementById('content').innerHTML = renderSettings();
+        }
+
+        function setBadgeSetting(key, val) {
+            const s = getBadgeSettings();
+            s[key] = val;
+            localStorage.setItem('f1rpg_badgeSettings', JSON.stringify(s));
+            _badgeSettingsCache = null;
+            document.getElementById('content').innerHTML = renderSettings();
+        }
+
+        function renderTVBadge(isTV, prevYear) {
+            if (!isTV) return '';
+            const style = getBadgeSettings().titelverteidigerStyle;
+            if (style === 'off') return '';
+            if (style === 'crown') return `<span title="Titelverteidiger">👑</span>`;
+            if (style === 'text_wm') return `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(255,215,0,0.15);color:#FFD700;white-space:nowrap">WM '${String(prevYear).slice(-2)}</span>`;
+            if (style === 'hash') return `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(255,215,0,0.15);color:#FFD700;white-space:nowrap">#1</span>`;
+            if (style === 'trophy') return `<span title="Amtierender Weltmeister">🏆</span>`;
+            return '';
+        }
+
+        function renderBadgeEditor() {
+            const bs = getBadgeSettings();
+            const te = bs.tierEmojis;
+
+            const eBtn = (slot, emoji) => {
+                const active = te[slot] === emoji;
+                return `<button onclick="setTierEmoji('${slot}','${emoji}')" title="${emoji}"
+                    style="font-size:1.25rem;padding:3px 7px;border-radius:7px;border:2px solid ${active ? '#3B82F6' : 'transparent'};background:${active ? 'rgba(59,130,246,0.15)' : 'transparent'};cursor:pointer">${emoji}</button>`;
+            };
+
+            const tvOpts = [
+                { val: 'off',     label: 'Aus' },
+                { val: 'crown',   label: '👑' },
+                { val: 'text_wm', label: "WM '73" },
+                { val: 'hash',    label: '#1' },
+                { val: 'trophy',  label: '🏆' },
+            ];
+            const tvBtn = (o) => {
+                const active = bs.titelverteidigerStyle === o.val;
+                return `<button onclick="setBadgeSetting('titelverteidigerStyle','${o.val}')"
+                    style="padding:4px 12px;border-radius:8px;border:2px solid ${active ? '#3B82F6' : '#555'};background:${active ? 'rgba(59,130,246,0.15)' : 'transparent'};cursor:pointer;font-size:0.82rem;color:var(--text-primary)">${o.label}</button>`;
+            };
+
+            const histActive = bs.showHistChampion;
+
+            return `
+                <div class="card p-6 rounded-xl">
+                    <h3 class="text-xl font-bold mb-5">🎖️ Meldeliste-Badges</h3>
+                    <div class="space-y-5 text-sm">
+
+                        <div>
+                            <div class="text-xs text-tertiary uppercase tracking-wide mb-3">Team-Tier-Icons</div>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-tertiary" style="min-width:95px">Top-Team #1</span>
+                                    ${['📈','🥇','🌟','👑','🔺','⚡','💎'].map(e => eBtn('top1', e)).join('')}
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-tertiary" style="min-width:95px">Top-Team #2</span>
+                                    ${['📈','🥈','⭐','🔸','🎯','⚡','💠'].map(e => eBtn('top2', e)).join('')}
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-tertiary" style="min-width:95px">Top-Team #3</span>
+                                    ${['📈','🥉','✨','🔹','💫','⚡','🔷'].map(e => eBtn('top3', e)).join('')}
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-tertiary" style="min-width:95px">Mittelfeld</span>
+                                    ${['📊','💨','▪️','🔵','〰️'].map(e => eBtn('mid', e)).join('')}
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-tertiary" style="min-width:95px">Backmarker</span>
+                                    ${['📉','🔻','🐢','🔴','▾'].map(e => eBtn('back', e)).join('')}
+                                </div>
+                            </div>
+                            <div class="mt-3 p-3 rounded-lg text-xs flex flex-wrap gap-2" style="background:var(--bg-tertiary)">
+                                <span class="text-tertiary">Vorschau:</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(255,215,0,0.15);color:#FFD700">${te.top1} #1</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(255,215,0,0.15);color:#FFD700">${te.top2} #2</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(255,215,0,0.15);color:#FFD700">${te.top3} #3</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(59,130,246,0.15);color:#3B82F6">${te.mid} Mittelfeld</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(136,136,136,0.15);color:#888">${te.back} Backmarker</span>
+                            </div>
+                        </div>
+
+                        <hr style="border-color:var(--border-color)">
+
+                        <div>
+                            <div class="text-xs text-tertiary uppercase tracking-wide mb-2">Titelverteidiger-Badge (laufende Saison)</div>
+                            <div class="flex gap-2 flex-wrap mb-2">${tvOpts.map(tvBtn).join('')}</div>
+                            <div class="text-xs text-tertiary">Kennzeichnet den amtierenden Weltmeister in der Meldeliste der laufenden Saison</div>
+                        </div>
+
+                        <hr style="border-color:var(--border-color)">
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">🏆 Weltmeister-Badge (historische Saison)</div>
+                                <div class="text-xs text-tertiary mt-0.5">Zeigt 🏆 neben dem Champion in Archiv-Saisons</div>
+                            </div>
+                            <button onclick="setBadgeSetting('showHistChampion',${!histActive})"
+                                style="padding:6px 18px;border-radius:8px;border:2px solid ${histActive ? '#22C55E' : '#555'};background:${histActive ? 'rgba(34,197,94,0.15)' : 'transparent'};cursor:pointer;color:${histActive ? '#22C55E' : '#888'};font-size:0.85rem">
+                                ${histActive ? 'An' : 'Aus'}
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
         // Hilfsfunktion: Berechnet Tier aus Rang
         function calculateTierFromRank(rank, totalTeams) {
+            const te = getBadgeSettings().tierEmojis;
             // Top 3 = Top-Teams
             if (rank <= 3) {
-                return { tier: 'top', emoji: '🏆', label: 'Top-Team', rank: rank };
+                const emoji = rank === 1 ? te.top1 : rank === 2 ? te.top2 : te.top3;
+                return { tier: 'top', emoji, label: 'Top-Team', rank: rank };
             }
-            
+
             // Rest aufteilen: Hälfte Mittelfeld, Hälfte Backmarker
             const remaining = totalTeams - 3;
             const midCount = Math.ceil(remaining / 2);
             const midEnd = 3 + midCount;
-            
+
             if (rank <= midEnd) {
-                return { tier: 'mid', emoji: '📊', label: 'Mittelfeld', rank: rank };
+                return { tier: 'mid', emoji: te.mid, label: 'Mittelfeld', rank: rank };
             }
-            
-            return { tier: 'back', emoji: '📉', label: 'Backmarker', rank: rank };
+
+            return { tier: 'back', emoji: te.back, label: 'Backmarker', rank: rank };
         }
         
         // Berechnet Tier-Verteilung für alle Teams
@@ -5764,7 +5901,7 @@ const SEASON_DATA = {
                     startYear: year,
                     teams: teams,
                     drivers: drivers,
-                    races: generateRacesForYear(year)
+                    races: buildRacesForYear(year)
                 };
             }
             
@@ -5857,7 +5994,26 @@ const SEASON_DATA = {
             sanitized.teams = sanitized.teams || [];
             sanitized.drivers = sanitized.drivers || [];
             sanitized.races = sanitized.races || [];
+            // Migration v0.9.6: race.country – kaputte Twemoji-<img>-Tags → IOC-Code
+            if (sanitized.races.length > 0) {
+                sanitized.races = sanitized.races.map(race => {
+                    const c = race.country;
+                    if (!c || (typeof c === 'string' && c.startsWith('<'))) {
+                        const circ = (race.circuit || race.name || '').toLowerCase().replace(/\s+/g, '-');
+                        return { ...race, country: CIRCUIT_COUNTRY[circ] || '' };
+                    }
+                    return race;
+                });
+            }
             sanitized.results = sanitized.results || [];
+            // Migration v0.9.6b: raceIndex fehlt in Live-Ticker-Ergebnissen → rund-1 als Fallback
+            sanitized.results = sanitized.results.map((res, fallbackIdx) => {
+                if (res.raceIndex === undefined || res.raceIndex === null) {
+                    const ri = (res.round != null) ? res.round - 1 : fallbackIdx;
+                    return { ...res, raceIndex: ri };
+                }
+                return res;
+            });
             sanitized.qualifyingResults = sanitized.qualifyingResults || [];
             sanitized.seasonDeaths = sanitized.seasonDeaths || [];
             sanitized.seasonRetirements = sanitized.seasonRetirements || [];
@@ -6192,12 +6348,23 @@ const SEASON_DATA = {
                 seenHistIds.add(d[0]);
                 if (d[1]) knownNames.add(d[1].toLowerCase().trim());
             }
-            function makeDriver(d, poolGroup, nextCockpit) {
-                const [histId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
+            // Reverse-Lookup: Name → HIST_SEASONS Slug (z.B. "Nino Farina" → "nino-farina")
+            const nameToSlug = {};
+            if (typeof HIST_NAMES !== 'undefined') {
+                for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
+                    nameToSlug[fullName.toLowerCase().trim()] = slug;
+                }
+            }
+
+            function makeDriver(d, poolGroup, nextCockpit, lastRacedYear) {
+                const [shortId, name, , nation, birthYear, pace, rain, consistency, experience, starts] = d;
+                // SEASON_DATA nutzt Kurzform-IDs ('NINOFA'), HIST_SEASONS nutzt Slugs ('nino-farina')
+                // → Name-Lookup für korrekten histId
+                const resolvedHistId = nameToSlug[name?.toLowerCase().trim()] || shortId;
                 const p = pace || 70;
                 return {
-                    id: 'reserve-' + histId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-                    histId, name, team: null,
+                    id: 'reserve-' + shortId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    histId: resolvedHistId, name, team: null,
                     nation: nation || '🏁',
                     number: Math.floor(Math.random() * 80) + 20,
                     pace: p, currentPace: p,
@@ -6207,7 +6374,8 @@ const SEASON_DATA = {
                     birthYear: birthYear || null,
                     debutYear: null, contractEnd: null,
                     status: 'active', isReserve: true,
-                    poolGroup, nextCockpit: nextCockpit || null
+                    poolGroup, nextCockpit: nextCockpit || null,
+                    lastRacedYear: lastRacedYear || null
                 };
             }
 
@@ -6226,7 +6394,7 @@ const SEASON_DATA = {
                     if (!d[0] || recentIds.has(d[0])) continue;
                     if (isKnown(d) || !ageOk(d)) continue;
                     markKnown(d);
-                    toAdd.push(makeDriver(d, 'A', null));
+                    toAdd.push(makeDriver(d, 'A', null, y)); // y = letztes bekanntes Rennjahr
                 }
             }
 
@@ -6260,7 +6428,7 @@ const SEASON_DATA = {
         // UI: Reservefahrer-Sektion für die Meldeliste
         function setPoolGroupFilter(group) {
             _poolGroupFilter = group;
-            renderTab(currentTab);
+            renderContent();
         }
 
         function renderReservePool() {
@@ -6331,6 +6499,7 @@ const SEASON_DATA = {
                                             <span class="text-xs font-mono">${driver.pace || '?'}</span>
                                         </div>
                                         ${groupBadge(driver.poolGroup)}
+                                        ${driver.poolGroup === 'A' && driver.lastRacedYear ? `<span class="text-xs text-tertiary">zuletzt ${driver.lastRacedYear}</span>` : ''}
                                         ${driver.poolGroup === 'C' && driver.nextCockpit ? `<span class="text-xs text-tertiary">→ ${driver.nextCockpit.teamName} ${driver.nextCockpit.year}</span>` : ''}
                                         ${pending ? `<span class="text-xs text-tertiary italic">📅 ${pending.teamName} ${pending.fromYear}</span>` : ''}
                                         <div class="flex gap-2 ml-auto flex-shrink-0">
@@ -6447,7 +6616,7 @@ const SEASON_DATA = {
             GAME_STATE.pendingAssignments.push({ driverId, teamId, fromYear, driverName: driver.name, teamName: team?.name || teamId });
             document.getElementById('poolAssignModal')?.remove();
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             logSuccess('RESERVE', `${driver.name} für Saison ${fromYear} bei ${team?.name || teamId} eingeplant`);
         }
 
@@ -6455,7 +6624,7 @@ const SEASON_DATA = {
             GAME_STATE.pendingAssignments = (GAME_STATE.pendingAssignments || []).filter(p => p.driverId !== driverId);
             document.getElementById('poolAssignModal')?.remove();
             saveGame();
-            renderTab(currentTab);
+            renderContent();
         }
 
         // Fahrer aus Pool einem Team zuweisen
@@ -6503,7 +6672,7 @@ const SEASON_DATA = {
 
             GAME_STATE.reservePool.splice(idx, 1);
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             const team = GAME_STATE.teams.find(t => t.id === teamId);
             logSuccess('RESERVE', `${driver.name} → ${team?.name || teamId} zugewiesen`);
         }
@@ -6522,7 +6691,7 @@ const SEASON_DATA = {
 
             GAME_STATE.reservePool.splice(idx, 1);
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             logInfo('RESERVE', `${driver.name} aus Reserve-Pool entfernt`);
         }
 
@@ -6602,7 +6771,7 @@ const SEASON_DATA = {
             GAME_STATE.reservePool.push(driver);
             document.getElementById('newDriverModal')?.remove();
             saveGame();
-            renderTab(currentTab);
+            renderContent();
             logSuccess('RESERVE', `${driver.name} in Reserve-Pool erstellt`);
         }
 
@@ -6698,9 +6867,20 @@ const SEASON_DATA = {
 
             _pendingNewDrivers = [];
             document.getElementById('newSeasonDriversModal')?.remove();
-            if (added > 0) { saveGame(); renderTab(currentTab); }
+            if (added > 0) { saveGame(); renderContent(); }
             logSuccess('RESERVE', `${added} Fahrer zum Reserve-Pool hinzugefügt`);
         }
+
+        // === GLOBALER EXPORT: Pool-Funktionen für onclick-Attribute ===
+        window.setPoolGroupFilter    = setPoolGroupFilter;
+        window.openPoolAssignModal   = openPoolAssignModal;
+        window.assignSofortFromPool  = assignSofortFromPool;
+        window.assignNextSeasonFromPool = assignNextSeasonFromPool;
+        window.cancelPendingAssignment  = cancelPendingAssignment;
+        window.removeFromPool        = removeFromPool;
+        window.openNewDriverModal    = openNewDriverModal;
+        window.createCustomDriver    = createCustomDriver;
+        window.confirmAddToPool      = confirmAddToPool;
 
         // === INITIALISIERUNG ===
         function initFromTemplate(templateId) {
@@ -7927,7 +8107,9 @@ const SEASON_DATA = {
             
             const raceResult = {
                 raceId: race.id,
+                raceIndex: liveRaceState.raceIndex,
                 raceName: race.name,
+                raceCountry: race.country,
                 round: liveRaceState.raceIndex + 1,
                 isRain: liveRaceState.isRain,
                 results: results
@@ -8273,7 +8455,7 @@ const SEASON_DATA = {
             }
             
             // v0.8.0: Modus-Auswahl vor jedem Rennen anzeigen
-            document.getElementById('raceModeModal').style.display = 'flex';
+            bringModalToFront(document.getElementById('raceModeModal')); document.getElementById('raceModeModal').style.display = 'flex';
         };
         
         window.closeRaceModeModal = function() {
@@ -8395,13 +8577,13 @@ const SEASON_DATA = {
                 <!-- Weltmeister -->
                 <div class="card p-4 rounded-lg mb-4 text-center" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">
                     <div class="text-sm text-black/70">Fahrer-Weltmeister</div>
-                    <div class="text-2xl font-bold text-black">${champion?.name || 'N/A'}</div>
+                    <div class="text-2xl font-bold text-black driver-link cursor-pointer" onclick="openDriverProfile('${champion?.id}')">${champion?.name || 'N/A'}</div>
                     <div class="text-lg text-black/80">${champion?.points || 0} Punkte | ${champion?.wins || 0} Siege</div>
                 </div>
-                
+
                 <div class="card p-4 rounded-lg mb-4 text-center" style="background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);">
                     <div class="text-sm text-black/70">Konstrukteurs-Weltmeister</div>
-                    <div class="text-2xl font-bold text-black">${teamChampion?.name || 'N/A'}</div>
+                    <div class="text-2xl font-bold text-black team-link cursor-pointer" onclick="openTeamProfile('${teamChampion?.id}')">${teamChampion?.name || 'N/A'}</div>
                     <div class="text-lg text-black/80">${teamChampion?.points || 0} Punkte</div>
                 </div>
             `;
@@ -8417,7 +8599,7 @@ const SEASON_DATA = {
                                 return `
                                     <div class="border-l-2 border-red-500 pl-3">
                                         <div class="flex justify-between items-center text-sm">
-                                            <span class="font-bold">${d.name} (${d.team || '?'})</span>
+                                            <span class="font-bold driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span><span class="font-bold"> (${d.team || '?'})</span>
                                             <span class="text-tertiary">${d.raceName}</span>
                                         </div>
                                         <div class="text-xs text-tertiary mt-1">
@@ -8442,41 +8624,43 @@ const SEASON_DATA = {
                     <h4 class="font-bold mb-3">📋 Karriereenden (${GAME_STATE.seasonRetirements.length})</h4>
                     <div class="space-y-3">`;
                 
+                const driverSpan = (r) => r.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>` : r.name;
+
                 if (byAge.length > 0) {
                     html += `<div class="mb-2">
                         <div class="text-sm font-bold mb-1">👴 Alters-Rücktritt</div>
                         ${byAge.map(r => `<div class="flex justify-between text-sm ml-4">
-                            <span>${r.name}</span>
+                            <span>${driverSpan(r)}</span>
                             <span class="text-tertiary">${r.reason || r.age + ' Jahre'}</span>
                         </div>`).join('')}
                     </div>`;
                 }
-                
+
                 if (dismissed.length > 0) {
                     html += `<div class="mb-2">
                         <div class="text-sm font-bold mb-1 text-red-400">🚫 Entlassen</div>
                         ${dismissed.map(r => `<div class="flex justify-between text-sm ml-4">
-                            <span>${r.name}</span>
+                            <span>${driverSpan(r)}</span>
                             <span class="text-tertiary">${r.reason || ''}</span>
                         </div>`).join('')}
                     </div>`;
                 }
-                
+
                 if (gaveUp.length > 0) {
                     html += `<div class="mb-2">
                         <div class="text-sm font-bold mb-1 text-yellow-400">😔 Aufgegeben</div>
                         ${gaveUp.map(r => `<div class="flex justify-between text-sm ml-4">
-                            <span>${r.name}</span>
+                            <span>${driverSpan(r)}</span>
                             <span class="text-tertiary">${r.reason || ''}</span>
                         </div>`).join('')}
                     </div>`;
                 }
-                
+
                 if (other.length > 0) {
                     html += `<div class="mb-2">
                         <div class="text-sm font-bold mb-1">🏁 Sonstige</div>
                         ${other.map(r => `<div class="flex justify-between text-sm ml-4">
-                            <span>${r.name}</span>
+                            <span>${driverSpan(r)}</span>
                             <span class="text-tertiary">${r.age ? r.age + ' Jahre' : ''}</span>
                         </div>`).join('')}
                     </div>`;
@@ -8506,50 +8690,52 @@ const SEASON_DATA = {
                     <h4 class="font-bold mb-3 text-blue-400">📝 Transfers & Fahrerwechsel (${transfers.length})</h4>
                     <div class="space-y-3">`;
                 
+                const tLink = (t) => t.driverId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${t.driverId}')">${t.driverName}</span>` : t.driverName;
+
                 // Vorzeitige Entlassungen
                 if (transfersByType.released.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-red-400">💢 Vorzeitig entlassen (${transfersByType.released.length})</div>
                         ${transfersByType.released.map(t => `
                             <div class="text-sm ml-4 text-tertiary">
-                                ${t.driverName} (${t.fromTeam}) - Score: ${t.score || '?'}/100
+                                ${tLink(t)} (${t.fromTeam}) - Score: ${t.score || '?'}/100
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Entlassen (Vertrag nicht verlängert)
                 if (transfersByType.dismissed.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-red-300">🚫 Vertrag nicht verlängert (${transfersByType.dismissed.length})</div>
                         ${transfersByType.dismissed.map(t => `
                             <div class="text-sm ml-4 text-tertiary">
-                                ${t.driverName} (${t.fromTeam}) - Score: ${t.score || '?'}/100
+                                ${tLink(t)} (${t.fromTeam}) - Score: ${t.score || '?'}/100
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Free Agents verpflichtet
                 if (transfersByType.freeagent.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-cyan-400">🆓 Free Agents verpflichtet (${transfersByType.freeagent.length})</div>
                         ${transfersByType.freeagent.map(t => `
                             <div class="text-sm ml-4">
-                                <span class="text-white">${t.driverName}</span>
+                                <span class="text-white">${tLink(t)}</span>
                                 <span class="text-tertiary"> → ${t.toTeam}</span>
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Abgeworben
                 if (transfersByType.poached.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-purple-400">🎯 Abgeworben (${transfersByType.poached.length})</div>
                         ${transfersByType.poached.map(t => `
                             <div class="text-sm ml-4">
-                                <span class="text-white">${t.driverName}</span>
+                                <span class="text-white">${tLink(t)}</span>
                                 <span class="text-tertiary"> (${t.fromTeam}, Score ${t.score || '?'}/100) → ${t.toTeam}</span>
                             </div>
                         `).join('')}
@@ -8562,54 +8748,54 @@ const SEASON_DATA = {
                         <div class="text-sm font-bold mb-1 text-yellow-400">💰 Rausgekauft (${transfersByType.buyout.length})</div>
                         ${transfersByType.buyout.map(t => `
                             <div class="text-sm ml-4">
-                                <span class="text-white">${t.driverName}</span>
+                                <span class="text-white">${tLink(t)}</span>
                                 <span class="text-tertiary"> (${t.fromTeam}, Score ${t.score || '?'}/100) → ${t.toTeam}</span>
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Aufstieg
                 if (transfersByType.upgrade.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-green-400">⬆️ Aufstieg (${transfersByType.upgrade.length})</div>
                         ${transfersByType.upgrade.map(t => `
                             <div class="text-sm ml-4">
-                                <span class="text-white">${t.driverName}</span>
+                                <span class="text-white">${tLink(t)}</span>
                                 <span class="text-tertiary"> (${t.fromTeam}) → ${t.toTeam}</span>
                                 ${t.score ? `<span class="text-tertiary"> - Score ${t.score}/100</span>` : ''}
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Seitenwechsel / Überraschungswechsel
                 if (transfersByType.lateral.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-blue-400">🔀 Seitenwechsel (${transfersByType.lateral.length})</div>
                         ${transfersByType.lateral.map(t => `
                             <div class="text-sm ml-4">
-                                <span class="text-white">${t.driverName}</span>
+                                <span class="text-white">${tLink(t)}</span>
                                 <span class="text-tertiary"> (${t.fromTeam}) → ${t.toTeam}</span>
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Abstieg
                 if (transfersByType.downgrade.length > 0) {
                     html += `<div>
                         <div class="text-sm font-bold mb-1 text-orange-400">⬇️ Abstieg (${transfersByType.downgrade.length})</div>
                         ${transfersByType.downgrade.map(t => `
                             <div class="text-sm ml-4">
-                                <span class="text-white">${t.driverName}</span>
+                                <span class="text-white">${tLink(t)}</span>
                                 <span class="text-tertiary"> (${t.fromTeam}) → ${t.toTeam}</span>
                                 ${t.score ? `<span class="text-tertiary"> - Score ${t.score}/100</span>` : ''}
                             </div>
                         `).join('')}
                     </div>`;
                 }
-                
+
                 // Generierte Fahrer
                 if (transfersByType.generated.length > 0) {
                     html += `<div>
@@ -8617,7 +8803,7 @@ const SEASON_DATA = {
                         ${transfersByType.generated.map(t => `
                             <div class="text-sm ml-4">
                                 <span class="text-white">${t.toTeam}</span>
-                                <span class="text-tertiary"> verpflichtet ${t.typeText}: ${t.driverName}</span>
+                                <span class="text-tertiary"> verpflichtet ${t.typeText}: ${tLink(t)}</span>
                                 <span class="text-tertiary text-xs"> (${t.tierText}, ${t.rookieChance}% Rookie-Chance)</span>
                             </div>
                         `).join('')}
@@ -8649,7 +8835,7 @@ const SEASON_DATA = {
             `;
             
             document.getElementById('seasonEndBody').innerHTML = html;
-            document.getElementById('seasonEndModal').style.display = 'flex';
+            bringModalToFront(document.getElementById('seasonEndModal')); document.getElementById('seasonEndModal').style.display = 'flex';
         }
         
         window.closeSeasonEndModal = function() {
@@ -8690,6 +8876,9 @@ const SEASON_DATA = {
                     if (standing.wins > 0) retireChance *= 0.4; // -60% bei Sieg diese Saison
                     else if (standing.podiums >= 2) retireChance *= 0.6; // -40% bei 2+ Podien
                     
+                    // Läuft der Vertrag noch? Dann kein Alters-Rücktritt
+                    if (driver.contractEnd && driver.contractEnd > GAME_STATE.currentYear) retireChance = 0;
+
                     if (Math.random() < retireChance) {
                         driver.status = 'retired';
                         driver.retirementYear = GAME_STATE.currentYear;
@@ -9761,8 +9950,8 @@ const SEASON_DATA = {
                 }
             });
             
-            // Rennen für neues Jahr generieren (kann später verbessert werden)
-            GAME_STATE.races = generateRacesForYear(newYear);
+            // Rennen für neues Jahr generieren (F1DB wenn vorhanden, sonst generiert)
+            GAME_STATE.races = buildRacesForYear(newYear);
             
             // Standings zurücksetzen
             initStandings();
@@ -9781,6 +9970,29 @@ const SEASON_DATA = {
             return newYear;
         }
         
+        // Rennen für Jahr bauen: F1DB wenn vorhanden (exakter hist. Kalender), sonst generiert
+        function buildRacesForYear(year) {
+            const f1db = getF1DBYear(year);
+            if (f1db && f1db.length > 0) {
+                return f1db.map((r, i) => {
+                    // IOC-Code direkt speichern – getEmojiFlag gibt auf Windows ein <img>-Tag zurück,
+                    // das renderFlag nicht mehr auflösen kann. renderFlag(ioc) funktioniert korrekt.
+                    const ioc = CIRCUIT_COUNTRY[r.circuit] || '';
+                    const winnerEntry = r.entries.find(e => e.posNum === 1);
+                    const laps = winnerEntry?.laps || Math.max(...r.entries.filter(e => e.laps).map(e => e.laps), 60);
+                    return {
+                        id: i + 1,
+                        name: r.name,
+                        circuit: formatCircuitName(r.circuit),
+                        country: ioc,   // IOC-Code ('AUS'), kein Emoji
+                        laps: laps || 60,
+                        isIndy: r.isIndy || false
+                    };
+                });
+            }
+            return generateRacesForYear(year);
+        }
+
         function generateRacesForYear(year) {
             // === HISTORISCHE KALENDER 1950-1960 (exakt wie in echt, mit Indy 500) ===
             const historicCalendars = {
@@ -10046,7 +10258,7 @@ const SEASON_DATA = {
                         driver.seasonScore = null;
                     });
                     
-                    GAME_STATE.races = generateRacesForYear(GAME_STATE.currentYear);
+                    GAME_STATE.races = buildRacesForYear(GAME_STATE.currentYear);
                     GAME_STATE.currentRace = 0;
                     GAME_STATE.results = [];
                     GAME_STATE.qualifyingResults = [];
@@ -10245,7 +10457,7 @@ const SEASON_DATA = {
             GAME_STATE.teams = JSON.parse(JSON.stringify(lastSeason.teams));
             GAME_STATE.driverStandings = JSON.parse(JSON.stringify(lastSeason.driverStandings));
             GAME_STATE.teamStandings = JSON.parse(JSON.stringify(lastSeason.teamStandings));
-            GAME_STATE.races = generateRacesForYear(lastSeason.year);
+            GAME_STATE.races = buildRacesForYear(lastSeason.year);
             GAME_STATE.currentRace = lastSeason.races;
             GAME_STATE.results = []; // Ergebnisse müssten auch gespeichert werden für voll funktional
             
@@ -10618,8 +10830,10 @@ const SEASON_DATA = {
                     movementsHtml += '<div class="mb-3">';
                     movementsHtml += '<div class="text-sm font-bold text-red-400 mb-1">💀 Verstorben (' + movements.deaths.length + ')</div>';
                     movements.deaths.forEach(d => {
-                        const replacement = d.replacement ? ' → Ersetzt durch ' + d.replacement : '';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + d.name + ' (' + d.raceName + ')' + replacement + '</div>';
+                        const dLink = d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name;
+                        const rLink = d.replacement ? (d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement) : '';
+                        const replacementStr = rLink ? ' → Ersetzt durch ' + rLink : '';
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + dLink + ' (' + d.raceName + ')' + replacementStr + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -10631,7 +10845,8 @@ const SEASON_DATA = {
                     movements.retirements.forEach(r => {
                         const typeEmoji = r.type === 'age' ? '👴' : r.type === 'dismissed' ? '🚫' : r.type === 'gaveup' ? '😔' : '❓';
                         const typeText = r.type === 'age' ? 'Alter' : r.type === 'dismissed' ? 'Entlassen' : r.type === 'gaveup' ? 'Aufgegeben' : '';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + r.name + ' ' + typeEmoji + ' (' + typeText + ')</div>';
+                        const rLink = r.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>` : r.name;
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + rLink + ' ' + typeEmoji + ' (' + typeText + ')</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -10644,7 +10859,9 @@ const SEASON_DATA = {
                         const fromTeam = GAME_STATE.teams.find(team => team.id === t.fromTeam)?.name || t.fromTeam;
                         const toTeam = t.toTeam ? (GAME_STATE.teams.find(team => team.id === t.toTeam)?.name || t.toTeam) : 'verlässt F1';
                         const driverName = t.driverName || t.name || 'Unbekannt';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + driverName + ': ' + fromTeam + ' → ' + toTeam + '</div>';
+                        const dId = t.driverId || t.driver;
+                        const tLink = dId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${dId}')">${driverName}</span>` : driverName;
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + tLink + ': ' + fromTeam + ' → ' + toTeam + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -10968,7 +11185,8 @@ const SEASON_DATA = {
                             points: season[4] || 0,
                             wins: season[2] || 0,
                             podiums: season[3] || 0,
-                            team: driverTeamName
+                            team: driverTeamName,
+                            teamId: constructor  // F1DB-Slug für Team-Lookup
                         };
                     }
                 }
@@ -11003,7 +11221,7 @@ const SEASON_DATA = {
                 
                 // Pretty-print constructor name
                 function prettyTeam(id) {
-                    return id.split('-').map(w => ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
+                    return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
                 }
                 
                 const teamResults = Object.entries(teamMap)
@@ -11210,7 +11428,36 @@ const SEASON_DATA = {
             
             const nextRace = GAME_STATE.races[GAME_STATE.currentRace];
             const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
-            
+
+            // Amtierender Weltmeister (Vorjahressieger)
+            const prevYear = GAME_STATE.currentYear - 1;
+            const reigningChampionId = (() => {
+                const histSeason = (GAME_STATE.history || []).find(h => h.year === prevYear);
+                if (histSeason?.championId) return histSeason.championId;
+                const histChamp = (GAME_STATE.allTimeStats?.worldChampions || []).find(c => c.year === prevYear);
+                if (histChamp?.driverId) return histChamp.driverId;
+                if (typeof HIST_CHAMPIONS !== 'undefined' && HIST_CHAMPIONS[prevYear]) return HIST_CHAMPIONS[prevYear];
+                return null;
+            })();
+
+            // Debütanten: Fahrer die in diesem Jahr zum ersten Mal in F1 starten
+            const debutIds = (() => {
+                const playedIds = new Set();
+                const playedHistIds = new Set();
+                for (const season of GAME_STATE.history || []) {
+                    for (const d of season.drivers || []) {
+                        if (d.id) playedIds.add(d.id);
+                        if (d.histId) playedHistIds.add(d.histId);
+                    }
+                }
+                return new Set(activeDrivers.filter(driver => {
+                    if (playedIds.has(driver.id)) return false;
+                    if (driver.histId && playedHistIds.has(driver.histId)) return false;
+                    const hist = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[driver.histId] || []) : [];
+                    return !hist.some(s => s[0] < GAME_STATE.currentYear);
+                }).map(d => d.id));
+            })();
+
             // Gefährlichkeits-Warnung für Ära
             const eraDeathRate = getEraValue(ERA_DEATH_RATES, GAME_STATE.currentYear);
             let eraWarning = '';
@@ -11255,7 +11502,7 @@ const SEASON_DATA = {
                                 <div>
                                     <span class="text-red-400 font-bold">💀 Verstorben: ${GAME_STATE.seasonDeaths.length}</span>
                                     <div class="text-tertiary mt-1">
-                                        ${GAME_STATE.seasonDeaths.map(d => d.name).join(', ')}
+                                        ${GAME_STATE.seasonDeaths.map(d => `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>`).join(', ')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -11263,7 +11510,7 @@ const SEASON_DATA = {
                                 <div>
                                     <span class="font-bold">🏁 Rücktritte: ${GAME_STATE.seasonRetirements.length}</span>
                                     <div class="text-tertiary mt-1">
-                                        ${GAME_STATE.seasonRetirements.map(r => r.name).join(', ')}
+                                        ${GAME_STATE.seasonRetirements.map(r => `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>`).join(', ')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -11315,7 +11562,9 @@ const SEASON_DATA = {
                                                     <span class="text-tertiary">#${driver.number}</span>
                                                     <span>${renderFlag(driver.nation, driver.name)}</span>
                                                     <span class="driver-link truncate" onclick="openDriverProfile('${driver.id}')">${driver.name}</span>
-                                                    ${driver.replacedDriverName && driver.replacedInYear === GAME_STATE.currentYear ? `<span class="text-xs text-tertiary">(ersetzt ${driver.replacedDriverName})</span>` : ''}
+                                                    ${renderTVBadge(reigningChampionId && (driver.id === reigningChampionId || driver.histId === reigningChampionId), prevYear)}
+                                                    ${debutIds.has(driver.id) ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E;white-space:nowrap">Debüt</span>` : ''}
+                                                    ${driver.replacedDriverName && driver.replacedInYear === GAME_STATE.currentYear ? `<span class="text-xs text-tertiary">(ersetzt ${driver.replacedDriver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${driver.replacedDriver}')">${driver.replacedDriverName}</span>` : driver.replacedDriverName})</span>` : ''}
                                                 </div>
                                                 <div class="flex items-center gap-2 flex-shrink-0">
                                                     ${(() => {
@@ -11379,7 +11628,7 @@ const SEASON_DATA = {
                 return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             }
             function teamName(id) {
-                return id.split('-').map(w => ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
+                return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
             }
             
             const indyBadge = raceData.isIndy ? '<span class="text-xs px-2 py-0.5 rounded ml-2" style="background:#B45309;color:white">🇺🇸 Indy 500</span>' : '';
@@ -11397,8 +11646,8 @@ const SEASON_DATA = {
                 ${winner ? `
                     <div class="card p-4 rounded-xl mb-4" style="background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.05));">
                         <div class="text-xs text-tertiary">🏆 Sieger</div>
-                        <div class="text-xl font-bold">${driverName(winner.driverId)}</div>
-                        <div class="text-sm text-secondary">${teamName(winner.constrId)} · ${winner.time || '-'} · ${winner.laps || '?'} Runden</div>
+                        <div class="text-xl font-bold driver-link cursor-pointer" onclick="openDriverProfile('${winner.driverId}')">${driverName(winner.driverId)}</div>
+                        <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${winner.constrId}')">${teamName(winner.constrId)}</span> · ${winner.time || '-'} · ${winner.laps || '?'} Runden</div>
                     </div>
                 ` : ''}
                 
@@ -11426,7 +11675,7 @@ const SEASON_DATA = {
                                         (e.pole ? '🅿️ ' : '') +
                                         '<span class="driver-link" onclick="openDriverProfile(\'' + e.driverId + '\')">' + driverName(e.driverId) + '</span>' +
                                     '</td>' +
-                                    '<td class="p-2 text-secondary hidden md:table-cell">' + teamName(e.constrId) + '</td>' +
+                                    '<td class="p-2 text-secondary hidden md:table-cell team-link cursor-pointer" onclick="openTeamProfile(\'' + e.constrId + '\')">' + teamName(e.constrId) + '</td>' +
                                     '<td class="p-2 text-center text-tertiary">' + (e.gridPos || '-') + '</td>' +
                                     '<td class="p-2 text-center text-tertiary">' + (e.laps ?? '-') + '</td>' +
                                     '<td class="p-2 text-right text-tertiary text-xs">' + timeStr + '</td>' +
@@ -11499,18 +11748,24 @@ const SEASON_DATA = {
                 <h2 class="text-3xl font-bold mb-6">🏁 Saison ${h.year}</h2>
                 
                 <!-- Weltmeister-Karten (kompakt) -->
+                ${(() => {
+                    const champId = h.championId || (typeof HIST_CHAMPIONS !== 'undefined' && HIST_CHAMPIONS[h.year]) || '';
+                    const teamChampId = h.teamChampionId ||
+                        (h.teamStandings && Object.entries(h.teamStandings).sort((a,b)=>(b[1].points||0)-(a[1].points||0))[0]?.[0]) || '';
+                    return `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="card p-4 rounded-xl text-center" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">
                         <div class="text-xs text-black/70">🏆 Weltmeister</div>
-                        <div class="text-xl font-bold text-black">${h.champion || (drivers[0]?.name) || '-'}</div>
+                        <div class="text-xl font-bold text-black ${champId ? 'driver-link cursor-pointer' : ''}" ${champId ? `onclick="openDriverProfile('${champId}')"` : ''}>${h.champion || (drivers[0]?.name) || '-'}</div>
                         <div class="text-sm text-black/80">${championPoints} Pkt</div>
                     </div>
                     <div class="card p-4 rounded-xl text-center" style="background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);">
                         <div class="text-xs text-black/70">🏎️ Konstrukteur</div>
-                        <div class="text-xl font-bold text-black">${h.teamChampion || (teams[0]?.name) || '-'}</div>
+                        <div class="text-xl font-bold text-black ${teamChampId ? 'team-link cursor-pointer' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamChampId}')"` : ''}>${h.teamChampion || (teams[0]?.name) || '-'}</div>
                         <div class="text-sm text-black/80">${teamChampionPoints} Pkt</div>
                     </div>
-                </div>
+                </div>`;
+                })()}
                 
                 <!-- Saison-Events (nur bei simulierten) -->
                 ${(deaths.length > 0 || retirements.length > 0) ? `
@@ -11520,13 +11775,13 @@ const SEASON_DATA = {
                             ${deaths.length > 0 ? `
                                 <div>
                                     <span class="text-red-400 font-bold">💀 Verstorben: ${deaths.length}</span>
-                                    <div class="text-tertiary mt-1">${deaths.map(d => d.name || d).join(', ')}</div>
+                                    <div class="text-tertiary mt-1">${deaths.map(d => (d.driver || d.id) ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver || d.id}')">${d.name || d}</span>` : (d.name || d)).join(', ')}</div>
                                 </div>
                             ` : ''}
                             ${retirements.length > 0 ? `
                                 <div>
                                     <span class="font-bold">🏁 Karriereenden: ${retirements.length}</span>
-                                    <div class="text-tertiary mt-1">${retirements.map(r => r.name || r).join(', ')}</div>
+                                    <div class="text-tertiary mt-1">${retirements.map(r => (r.driver || r.id) ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver || r.id}')">${r.name || r}</span>` : (r.name || r)).join(', ')}</div>
                                 </div>
                             ` : ''}
                         </div>
@@ -11542,40 +11797,57 @@ const SEASON_DATA = {
                         <button onclick="setIndyFilter('only')" class="px-3 py-1 rounded text-sm font-medium transition" style="background: ${indyFilter === 'only' ? '#3B82F6' : '#2D2D2D'}; color: ${indyFilter === 'only' ? 'white' : '#aaa'}">🇺🇸 Nur Indy</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${entryList.filter(team => {
-                            const teamIsIndy = isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId);
-                            if (indyFilter === 'only') return teamIsIndy;
-                            if (indyFilter === 'none') return !teamIsIndy;
-                            return true;
-                        }).map(team => `
-                            <div class="bg-secondary p-4 rounded-lg">
-                                <div class="flex items-center gap-2 mb-3 cursor-pointer" onclick="openTeamProfile('${team.id || team.name.toLowerCase().replace(/\\s+/g, '-')}')">
-                                    <span class="text-xl">${renderFlag(team.nation, team.name, h.year)}</span>
-                                    <span class="font-bold hover:underline" style="color: ${team.color || '#888'}">${team.name}</span>
-                                    ${team.wmPosition ? `<span class="text-xs text-tertiary">#${team.wmPosition}</span>` : ''}
-                                </div>
-                                <div class="space-y-2">
-                                    ${team.drivers.map(driver => `
-                                        <div class="flex items-center justify-between text-sm">
-                                            <div class="flex items-center gap-2 flex-1 min-w-0">
-                                                <span>${renderFlag(driver.nation, driver.name, h.year)}</span>
-                                                <span class="driver-link truncate ${driver.isChampion ? 'font-bold accent-gold' : ''}" onclick="openDriverProfile('${driver.id || driver.name.toLowerCase().replace(/\\s+/g, '-')}')">${driver.name}</span>
-                                                ${driver.isChampion ? '<span class="text-xs">🏆</span>' : ''}
-                                            </div>
-                                            <div class="flex items-center gap-2 flex-shrink-0 text-xs text-tertiary">
-                                                ${driver.wins > 0 ? `<span class="accent-gold">${driver.wins}S</span>` : ''}
-                                                <span>${driver.points || 0}P</span>
-                                                ${driver.satisfaction !== undefined && driver.satisfaction !== null ? `
-                                                    <div class="satisfaction-bar" title="Zufriedenheit: ${driver.satisfaction}/100" style="width: 30px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;">
-                                                        <div style="width: ${Math.max(5, driver.satisfaction)}%; height: 100%; background: ${driver.satisfaction >= 70 ? '#22C55E' : driver.satisfaction >= 50 ? '#EAB308' : driver.satisfaction >= 35 ? '#F97316' : '#EF4444'};"></div>
-                                                    </div>
-                                                ` : ''}
-                                            </div>
+                        ${(() => {
+                            const prevYearChampId = (() => {
+                                if (typeof HIST_CHAMPIONS !== 'undefined' && HIST_CHAMPIONS[h.year - 1]) return HIST_CHAMPIONS[h.year - 1];
+                                const prevSim = (GAME_STATE.history || []).find(s => s.year === h.year - 1);
+                                return prevSim?.championId || null;
+                            })();
+                            const filtered = entryList.filter(team => {
+                                const teamIsIndy = isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId);
+                                if (indyFilter === 'only') return teamIsIndy;
+                                if (indyFilter === 'none') return !teamIsIndy;
+                                return true;
+                            });
+                            const total = filtered.length;
+                            return filtered.map((team, teamIdx) => {
+                                const tierRank = team.wmPosition || (teamIdx + 1);
+                                const tierInfo = calculateTierFromRank(tierRank, total);
+                                const tierColor = tierInfo.tier === 'top' ? '#FFD700' : tierInfo.tier === 'mid' ? '#3B82F6' : '#888888';
+                                return `
+                                    <div class="bg-secondary p-4 rounded-lg">
+                                        <div class="flex items-center gap-2 mb-3 cursor-pointer" onclick="openTeamProfile('${team.id || team.name.toLowerCase().replace(/\\s+/g, '-')}')">
+                                            <span class="text-xl">${renderFlag(team.nation, team.name, h.year)}</span>
+                                            <span class="font-bold hover:underline" style="color: ${team.color || '#888'}">${team.name}</span>
+                                            <span class="px-1.5 py-0.5 rounded text-xs" style="background-color:${tierColor}20;color:${tierColor};font-size:10px">${tierInfo.emoji}</span>
+                                            ${team.wmPosition ? `<span class="text-xs text-tertiary">#${team.wmPosition}</span>` : ''}
                                         </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `).join('')}
+                                        <div class="space-y-2">
+                                            ${team.drivers.map(driver => `
+                                                <div class="flex items-center justify-between text-sm">
+                                                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                                                        <span>${renderFlag(driver.nation, driver.name, h.year)}</span>
+                                                        <span class="driver-link truncate ${driver.isChampion ? 'font-bold accent-gold' : ''}" onclick="openDriverProfile('${driver.id || driver.name.toLowerCase().replace(/\\s+/g, '-')}')">${driver.name}</span>
+                                                        ${getBadgeSettings().showHistChampion && driver.isChampion ? '<span class="text-xs">🏆</span>' : ''}
+                                                        ${renderTVBadge(prevYearChampId && driver.id === prevYearChampId, h.year - 1)}
+                                                        ${driver.isDebut ? '<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E;white-space:nowrap">Debüt</span>' : ''}
+                                                    </div>
+                                                    <div class="flex items-center gap-2 flex-shrink-0 text-xs text-tertiary">
+                                                        ${driver.wins > 0 ? `<span class="accent-gold">${driver.wins}S</span>` : ''}
+                                                        <span>${driver.points || 0}P</span>
+                                                        ${driver.satisfaction !== undefined && driver.satisfaction !== null ? `
+                                                            <div class="satisfaction-bar" title="Zufriedenheit: ${driver.satisfaction}/100" style="width: 30px; height: 6px; background: #333; border-radius: 3px; overflow: hidden;">
+                                                                <div style="width: ${Math.max(5, driver.satisfaction)}%; height: 100%; background: ${driver.satisfaction >= 70 ? '#22C55E' : driver.satisfaction >= 50 ? '#EAB308' : driver.satisfaction >= 35 ? '#F97316' : '#EF4444'};"></div>
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        })()}
                     </div>
                     <div class="mt-4 text-sm text-tertiary text-center">
                         ${entryList.length} Teams | ${entryList.reduce((sum, t) => sum + t.drivers.length, 0)} Fahrer
@@ -11603,7 +11875,7 @@ const SEASON_DATA = {
                         if (constructorId) {
                             // Formatiere ID zu Name
                             constructorName = constructorId.split('-').map(w => 
-                                ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+                                ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
                             ).join(' ');
                         }
                         
@@ -11623,13 +11895,15 @@ const SEASON_DATA = {
                         }
                         
                         const team = teamMap.get(constructorName);
+                        const dHistSeasons = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[driver.id] || []) : [];
                         team.drivers.push({
                             id: driver.id,
                             name: driver.name,
                             nation: driver.nation || '🏁',
                             points: driver.points || 0,
                             wins: driver.wins || 0,
-                            isChampion: driver.name === championName
+                            isChampion: driver.name === championName,
+                            isDebut: !dHistSeasons.some(s => s[0] < yearData.year)
                         });
                         team.totalPoints += driver.points || 0;
                         team.totalWins += driver.wins || 0;
@@ -11676,6 +11950,9 @@ const SEASON_DATA = {
                         .filter(d => d.team === team.id)
                         .map(d => {
                             const standing = yearData.driverStandings?.[d.id] || {};
+                            const sHistSeasons = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[d.histId || d.id] || []) : [];
+                            const prevSimSeasons = (GAME_STATE.history || []).filter(h => h.year < yearData.year);
+                            const playedBefore = prevSimSeasons.some(h => (h.drivers || []).some(hd => hd.id === d.id || (d.histId && hd.histId === d.histId)));
                             return {
                                 id: d.id,
                                 name: d.name,
@@ -11683,7 +11960,8 @@ const SEASON_DATA = {
                                 points: standing.points || 0,
                                 wins: standing.wins || 0,
                                 satisfaction: d.satisfaction,
-                                isChampion: d.name === championName
+                                isChampion: d.name === championName,
+                                isDebut: !playedBefore && !sHistSeasons.some(s => s[0] < yearData.year)
                             };
                         });
                     
@@ -11716,15 +11994,15 @@ const SEASON_DATA = {
             
             const top3 = lastRace.results.slice(0, 3);
             return `
-                <div class="mb-2 font-bold">${renderFlag(lastRace.raceCountry, lastRace.raceName)} ${lastRace.raceName} ${lastRace.isRain ? '🌧️' : '☀️'}</div>
+                <div class="mb-2 font-bold cursor-pointer" onclick="openRaceDetails(${lastRace.raceIndex})">${renderFlag(lastRace.raceCountry, lastRace.raceName)} <span class="race-link">${lastRace.raceName}</span> ${lastRace.isRain ? '🌧️' : '☀️'}</div>
                 <table class="w-full text-sm">
                     <thead><tr class="text-left text-tertiary"><th>Pos</th><th>Fahrer</th><th>Team</th><th>Punkte</th></tr></thead>
                     <tbody>
                         ${top3.map(r => `
-                            <tr class="${r.position === 1 ? 'accent-gold' : ''}">
+                            <tr class="${r.position === 1 ? 'accent-gold' : ''} cursor-pointer card-hover" onclick="openDriverProfile('${r.driver}')">
                                 <td class="py-1 font-bold">${r.position}.</td>
-                                <td>${renderFlag(r.nation, r.name, r.year || r.raceYear)} ${r.name}</td>
-                                <td class="text-tertiary">${r.teamName}</td>
+                                <td>${renderFlag(r.nation, r.name, r.year || r.raceYear)} <span class="driver-link">${r.name}</span></td>
+                                <td class="${r.team ? 'team-link cursor-pointer' : 'text-tertiary'}" onclick="${r.team ? `event.stopPropagation();openTeamProfile('${r.team}')` : ''}">${r.teamName}</td>
                                 <td class="font-bold">+${r.points}</td>
                             </tr>
                         `).join('')}
@@ -11808,7 +12086,7 @@ const SEASON_DATA = {
                             <tbody>
                                 ${drivers.map((d, idx) => {
                                     const driver = driversList.find(dr => dr.id === d.id);
-                                    const team = teamsList.find(t => t.id === d.team);
+                                    const team = teamsList.find(t => t.id === (d.teamId || d.team));
                                     return `
                                         <tr class="border-t border-custom card-hover">
                                             <td class="p-3 font-bold ${idx === 0 ? 'accent-gold' : ''}">${idx + 1}</td>
@@ -11904,7 +12182,7 @@ const SEASON_DATA = {
             const races = isHistorical ? (historicalViewData.races || []) : GAME_STATE.races;
             // Für aktive Saisons: F1DB-Renndaten für korrekte Flaggen/Namen in der Matrix
             const matrixYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
-            const f1dbMatrixRaces = !isHistorical ? getF1DBYear(matrixYear) : null;
+            const f1dbMatrixRaces = null; // Index-Mismatch 1961+: Spiel-Reihenfolge ≠ F1DB → game races nutzen
             const driverStandingsData = isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings;
             const driversList = isHistorical ? (historicalViewData.drivers || []) : GAME_STATE.drivers;
             
@@ -12046,8 +12324,8 @@ const SEASON_DATA = {
             const isPureHistorical = isHistorical && !isSimulated; // echte hist. Saison ohne Simulation
             const f1dbRaces = getF1DBYear(year); // immer versuchen
             
-            if (f1dbRaces && f1dbRaces.length > 0) {
-                // Simulations-Daten für aktuelle / simulierte Saison
+            if (f1dbRaces && f1dbRaces.length > 0 && isPureHistorical) {
+                // Nur für echte historische Saisons (nicht simuliert/aktuell) – F1DB-Reihenfolge
                 const simResults  = isHistorical ? (historicalViewData?.results || [])           : GAME_STATE.results;
                 const simQualis   = isHistorical ? (historicalViewData?.qualifyingResults || []) : GAME_STATE.qualifyingResults;
                 const simDrivers  = isHistorical ? (historicalViewData?.drivers || [])           : GAME_STATE.drivers;
@@ -12069,15 +12347,16 @@ const SEASON_DATA = {
                     const isNext = !isHistorical && idx === GAME_STATE.currentRace;
                     
                     let winnerName = null, poleName = null, flName = null;
-                    
+                    let winnerId = null, poleId = null, flId = null;
+
                     if (isPureHistorical) {
                         // Echte Ergebnisse aus F1DB
                         const w = race.entries.find(e => e.posNum === 1);
                         const p = race.entries.find(e => e.pole);
                         const f = race.entries.find(e => e.fastestLap);
-                        if (w) winnerName = dn(w.driverId);
-                        if (p) poleName = dn(p.driverId);
-                        if (f) flName = dn(f.driverId);
+                        if (w) { winnerName = dn(w.driverId); winnerId = w.driverId; }
+                        if (p) { poleName = dn(p.driverId); poleId = p.driverId; }
+                        if (f) { flName = dn(f.driverId); flId = f.driverId; }
                     } else if (isCompleted) {
                         // Simulierte Ergebnisse
                         const res = isHistorical
@@ -12087,15 +12366,15 @@ const SEASON_DATA = {
                             ? simQualis.find(q => q.ri === idx)
                             : simQualis.find(q => q.raceIndex === idx);
                         if (isHistorical) {
-                            if (res?.res?.[0]) winnerName = getSimName(res.res[0].d);
+                            if (res?.res?.[0]) { winnerName = getSimName(res.res[0].d); winnerId = res.res[0].d; }
                             const fl = res?.res?.find(r => r.fl);
-                            if (fl) flName = getSimName(fl.d);
-                            if (q?.res?.[0]) poleName = getSimName(q.res[0].d);
+                            if (fl) { flName = getSimName(fl.d); flId = fl.d; }
+                            if (q?.res?.[0]) { poleName = getSimName(q.res[0].d); poleId = q.res[0].d; }
                         } else {
-                            if (res?.results?.[0]) winnerName = res.results[0].name;
+                            if (res?.results?.[0]) { winnerName = res.results[0].name; winnerId = res.results[0].driver; }
                             const fl = res?.results?.find(r => r.fastestLap);
-                            if (fl) flName = fl.name;
-                            if (q?.results?.[0]) poleName = q.results[0].name;
+                            if (fl) { flName = fl.name; flId = fl.driver; }
+                            if (q?.results?.[0]) { poleName = q.results[0].name; poleId = q.results[0].driver; }
                         }
                     }
                     
@@ -12128,9 +12407,9 @@ const SEASON_DATA = {
                             </td>
                             <td class="p-3 text-center text-sm text-tertiary">${laps}</td>
                             <td class="p-3 text-center">${statusCell}</td>
-                            <td class="p-3 text-sm">${winnerName ? `<span class="font-bold">${winnerName}</span>` : '<span class="text-tertiary">–</span>'}</td>
-                            <td class="p-3 text-sm text-tertiary">${poleName || (isCompleted || isPureHistorical ? '–' : '')}</td>
-                            <td class="p-3 text-sm text-tertiary">${flName ? `<span class="accent-purple">⚡</span> ${flName}` : (isCompleted || isPureHistorical ? '–' : '')}</td>
+                            <td class="p-3 text-sm" onclick="event.stopPropagation()">${winnerName ? `<span class="font-bold driver-link" onclick="openDriverProfile('${winnerId}')">${winnerName}</span>` : '<span class="text-tertiary">–</span>'}</td>
+                            <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${poleName ? (poleId ? `<span class="driver-link" onclick="openDriverProfile('${poleId}')">${poleName}</span>` : poleName) : (isCompleted || isPureHistorical ? '–' : '')}</td>
+                            <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flName ? `<span class="accent-purple">⚡</span> ${flId ? `<span class="driver-link" onclick="openDriverProfile('${flId}')">${flName}</span>` : flName}` : (isCompleted || isPureHistorical ? '–' : '')}</td>
                         </tr>
                     `;
                 }).join('');
@@ -12177,25 +12456,26 @@ const SEASON_DATA = {
                 const isNext = !isHistorical && idx === GAME_STATE.currentRace;
                 
                 let winner = null, flDriver = null, poleDriver = null;
+                let winnerId2 = null, flId2 = null, poleId2 = null;
                 if (isCompleted) {
                     if (isHistorical) {
                         const res = results.find(r => r.ri === idx);
                         if (res?.res?.length) {
-                            winner = getDriverName(res.res[0].d);
+                            winner = getDriverName(res.res[0].d); winnerId2 = res.res[0].d;
                             const fl = res.res.find(r => r.fl);
-                            flDriver = fl ? getDriverName(fl.d) : null;
+                            if (fl) { flDriver = getDriverName(fl.d); flId2 = fl.d; }
                         }
                         const q = qualis.find(q => q.ri === idx);
-                        poleDriver = q?.res?.length ? getDriverName(q.res[0].d) : null;
+                        if (q?.res?.length) { poleDriver = getDriverName(q.res[0].d); poleId2 = q.res[0].d; }
                     } else {
                         const res = results.find(r => r.raceIndex === idx);
                         if (res?.results?.length) {
-                            winner = res.results[0].name;
+                            winner = res.results[0].name; winnerId2 = res.results[0].driver;
                             const fl = res.results.find(r => r.fastestLap);
-                            flDriver = fl ? fl.name : null;
+                            if (fl) { flDriver = fl.name; flId2 = fl.driver; }
                         }
                         const q = qualis.find(q => q.raceIndex === idx);
-                        poleDriver = q?.results?.length ? q.results[0].name : null;
+                        if (q?.results?.length) { poleDriver = q.results[0].name; poleId2 = q.results[0].driver; }
                     }
                 }
                 
@@ -12223,9 +12503,9 @@ const SEASON_DATA = {
                                     ? '<span class="accent-gold text-sm">▶ Nächstes</span>' 
                                     : '<span class="text-tertiary text-sm">–</span>'}
                         </td>
-                        <td class="p-3 text-sm">${winner ? `<span class="font-bold">${winner}</span>` : '<span class="text-tertiary">–</span>'}</td>
-                        <td class="p-3 text-sm text-tertiary">${poleDriver || (isCompleted ? '–' : '')}</td>
-                        <td class="p-3 text-sm text-tertiary">${flDriver ? `<span class="accent-purple">⚡</span> ${flDriver}` : (isCompleted ? '–' : '')}</td>
+                        <td class="p-3 text-sm" onclick="event.stopPropagation()">${winner ? `<span class="font-bold driver-link" onclick="openDriverProfile('${winnerId2}')">${winner}</span>` : '<span class="text-tertiary">–</span>'}</td>
+                        <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${poleDriver ? (poleId2 ? `<span class="driver-link" onclick="openDriverProfile('${poleId2}')">${poleDriver}</span>` : poleDriver) : (isCompleted ? '–' : '')}</td>
+                        <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flDriver ? `<span class="accent-purple">⚡</span> ${flId2 ? `<span class="driver-link" onclick="openDriverProfile('${flId2}')">${flDriver}</span>` : flDriver}` : (isCompleted ? '–' : '')}</td>
                     </tr>
                 `;
             }).join('');
@@ -12405,9 +12685,9 @@ const SEASON_DATA = {
                         <span class="text-xs text-tertiary">${race.date || ''}</span>
                     </div>
                     <div class="grid grid-cols-3 gap-2 text-sm">
-                        <div><span class="accent-gold font-bold">1. </span>${winner ? dn(winner.driverId) : '-'}</div>
-                        <div><span class="text-tertiary">2. </span>${p2 ? dn(p2.driverId) : '-'}</div>
-                        <div><span class="text-tertiary">3. </span>${p3 ? dn(p3.driverId) : '-'}</div>
+                        <div><span class="accent-gold font-bold">1. </span>${winner ? `<span class="driver-link" onclick="event.stopPropagation();openDriverProfile('${winner.driverId}')">${dn(winner.driverId)}</span>` : '-'}</div>
+                        <div><span class="text-tertiary">2. </span>${p2 ? `<span class="driver-link" onclick="event.stopPropagation();openDriverProfile('${p2.driverId}')">${dn(p2.driverId)}</span>` : '-'}</div>
+                        <div><span class="text-tertiary">3. </span>${p3 ? `<span class="driver-link" onclick="event.stopPropagation();openDriverProfile('${p3.driverId}')">${dn(p3.driverId)}</span>` : '-'}</div>
                     </div>
                     ${fl ? `<div class="text-xs text-tertiary mt-1">🟣 Schnellste Runde: ${dn(fl.driverId)}</div>` : ''}
                 </div>`;
@@ -12479,7 +12759,7 @@ const SEASON_DATA = {
                             <div class="card p-3 rounded-lg text-center cursor-pointer hover:opacity-80" onclick="showRaceDetail(${idx})">
                                 <div class="text-2xl mb-1">${GAME_STATE.races[idx]?.country || ''}</div>
                                 <div class="text-xs text-tertiary mb-1">R${idx + 1} ${race.isRain ? '🌧️' : ''}</div>
-                                <div class="text-sm font-bold">${winner.name.split(' ').pop()}</div>
+                                <div class="text-sm font-bold driver-link" onclick="event.stopPropagation();openDriverProfile('${winner.driver}')">${winner.name.split(' ').pop()}</div>
                             </div>
                         `;
                     }).join('')}
@@ -12538,10 +12818,10 @@ const SEASON_DATA = {
                     ${GAME_STATE.qualifyingResults.map((quali, idx) => {
                         const poleDriver = quali.results[0];
                         return `
-                            <div class="card p-3 rounded-lg text-center">
+                            <div class="card p-3 rounded-lg text-center ${poleDriver?.driver ? 'cursor-pointer hover:opacity-80' : ''}" ${poleDriver?.driver ? `onclick="openDriverProfile('${poleDriver.driver}')"` : ''}>
                                 <div class="text-2xl mb-1">${GAME_STATE.races[idx]?.country || ''}</div>
                                 <div class="text-xs text-tertiary mb-1">R${idx + 1} ${quali.isRain ? '🌧️' : ''}</div>
-                                <div class="text-sm font-bold accent-gold">${poleDriver?.name.split(' ').pop() || '-'}</div>
+                                <div class="text-sm font-bold accent-gold ${poleDriver?.driver ? 'driver-link' : ''}">${poleDriver?.name.split(' ').pop() || '-'}</div>
                             </div>
                         `;
                     }).join('')}
@@ -12981,11 +13261,49 @@ const SEASON_DATA = {
                         </div>
                     </div>
                     
+                    ${renderBadgeEditor()}
+
                     <!-- CHANGELOG -->
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
-                            <div class="font-bold text-green-400">v0.9.3 (aktuell)</div>
+                            <div class="font-bold text-green-400">v0.9.7.3 (aktuell)</div>
+                            <div>• FIX: Team-Steckbrief-Click friert nicht mehr ein (MutationObserver-Endlosschleife)</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.7.2</div>
+                            <div>• NEU: Saison-beendet-Popup: Weltmeister, Tode, Rücktritte, Transfers alle klickbar</div>
+                            <div>• FIX: Popup z-index – neues Popup erscheint immer im Vordergrund</div>
+                            <div>• FIX: Konstrukteur-Karte in Archiv-Saison ohne gespeicherte ID jetzt verlinkt</div>
+                            <div>• FIX: Pole/Schnellste-Runde in Rennliste öffnen Fahrer-Steckbrief (nicht Rennen)</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.7.1</div>
+                            <div>• NEU: Fahrer bei Tode/Rücktritte in Übersicht + Archiv klickbar</div>
+                            <div>• NEU: Weltmeister-Karten in Archiv-Saison klickbar (Fahrer + Team)</div>
+                            <div>• NEU: Sieger-Karte in hist. Rennergebnis klickbar (Fahrer + Team)</div>
+                            <div>• NEU: Team-Spalte im Rennen-Popup klickbar → Team-Steckbrief</div>
+                            <div>• NEU: Sieger/Pole-Kacheln in Rennen- und Qualifying-Tab klickbar</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.7</div>
+                            <div>• NEU: Fahrernamen in Team-Historie klickbar → Steckbrief; >2 Fahrer → Auswahl-Popup</div>
+                            <div>• NEU: Sieger/Pole/Schnellste Runde in Rennliste klickbar → Fahrer-Steckbrief</div>
+                            <div>• NEU: Rennnamen im Fahrer-Steckbrief klickbar → Rennergebnis-Popup</div>
+                            <div>• NEU: Team-Namen in Karriere-Historie und Race-Grid klickbar → Team-Steckbrief</div>
+                            <div>• NEU: Race-Grid Zellen klickbar → Rennergebnis-Popup</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.6</div>
+                            <div>• FIX: Live-Ticker-Rennen zeigen jetzt Sieger, schnellste Runde und Popup korrekt</div>
+                            <div>• FIX: Rennkalender nutzt echte F1DB-Rennen statt generischen Kalender</div>
+                            <div>• FIX: Rennliste ab 1961 zeigt korrekte Reihenfolge (kein F1DB-Index-Mismatch)</div>
+                            <div>• FIX: Alle DNF/Retirements im Rennen-Popup sichtbar</div>
+                            <div>• FIX: Matrix-Flags zeigen korrektes Land/Rennen</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.5</div>
+                            <div>• NEU: Badge-Editor in Einstellungen (Tier-Emojis, Titelverteidiger, Weltmeister)</div>
+                            <div>• NEU: Debüt-Badge auch in historischen und simulierten Archiv-Saisons</div>
+                            <div>• NEU: Titelverteidiger-Badge auch in historischen Saisons</div>
+                            <div>• FIX: getBadgeSettings gecacht – kein JSON.parse mehr bei jedem Render</div>
+                            <div>• FIX: Bild-Lazy-Loading ohne Doppelfetch, rootMargin 80→400px</div>
+                            <div class="font-bold text-green-400 mt-2">v0.9.4</div>
+                            <div>• NEU: Debüt-Badge in der Meldeliste für Erstjahres-Fahrer</div>
+                            <div>• NEU: 🏆 Weltmeister-Markierung (simuliert oder historisch)</div>
+                            <div>• FIX: Free-Agent-Karriere im Steckbrief (histId-Auflösung korrigiert)</div>
+                            <div>• FIX: Reserve-Pool wird beim Spielstand-Laden korrekt befüllt</div>
+                            <div class="border-t border-gray-600 my-2 pt-2 font-bold">v0.9.3</div>
                             <div>• NEU: Pool-Zuweisung (Nächste Saison) – Spieler-Fahrer hat Priorität</div>
                             <div>• NEU: STUFE 0 läuft vor early-return; schwächster Fahrer weicht bei Bedarf</div>
                             <div>• FIX: Zurückgetretene Fahrer erscheinen nicht mehr im Saisonstart-Dialog</div>
@@ -14436,6 +14754,19 @@ const SEASON_DATA = {
                     <div class="skill-value">${value}</div>
                 </div>
             `;
+
+            // Editierbarer Stat: Slider + Zahleneingabe (nur aktive Fahrer)
+            const editRow = (label, value, field, color = '#3B82F6') => `
+                <div class="skill-bar-container" style="align-items:center; gap:6px;">
+                    <div class="skill-label">${label}</div>
+                    <input type="range" min="0" max="100" value="${Math.round(value || 0)}"
+                           style="flex:1; cursor:pointer; accent-color:${color}; height:5px;"
+                           oninput="this.nextElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)">
+                    <input type="number" min="0" max="100" value="${Math.round(value || 0)}"
+                           style="width:44px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); text-align:center; padding:2px 4px; font-size:0.75rem;"
+                           oninput="this.previousElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)">
+                </div>
+            `;
             
             // WM-Position (nur für aktive Fahrer)
             const wmPosition = isCurrentlyActive ? Object.entries(GAME_STATE.driverStandings)
@@ -14600,34 +14931,30 @@ const SEASON_DATA = {
                                     <span class="font-bold">Pace</span>
                                     <span class="text-sm" style="color: ${gapColor}">${statusText}</span>
                                 </div>
+                                ${isCurrentlyActive ? `
+                                    ${editRow('Aktuell', paceInfo.current, 'currentPace', '#22C55E')}
+                                    ${editRow('Potenzial', paceInfo.potential, 'potentialPace', '#8B5CF6')}
+                                ` : `
                                 <div class="relative h-6 bg-tertiary rounded-lg overflow-hidden">
-                                    <!-- Potential (Hintergrund) -->
                                     <div class="absolute h-full rounded-lg opacity-30" style="width: ${paceInfo.potential}%; background: linear-gradient(90deg, #3B82F6, #8B5CF6);"></div>
-                                    <!-- Current (Vordergrund) -->
                                     <div class="absolute h-full rounded-lg" style="width: ${paceInfo.current}%; background: linear-gradient(90deg, #22C55E, #3B82F6);"></div>
                                 </div>
                                 <div class="flex justify-between mt-2 text-sm">
-                                    <div>
-                                        <span class="text-tertiary">Aktuell:</span> 
-                                        <span class="font-bold" style="color: #22C55E">${paceInfo.current}</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-tertiary">Potenzial:</span> 
-                                        <span class="font-bold" style="color: #8B5CF6">${paceInfo.potential}</span>
-                                        ${paceInfo.gap > 0 ? `<span class="text-xs text-tertiary">(+${paceInfo.gap})</span>` : ''}
-                                    </div>
+                                    <div><span class="text-tertiary">Aktuell:</span> <span class="font-bold" style="color: #22C55E">${paceInfo.current}</span></div>
+                                    <div><span class="text-tertiary">Potenzial:</span> <span class="font-bold" style="color: #8B5CF6">${paceInfo.potential}</span>${paceInfo.gap > 0 ? `<span class="text-xs text-tertiary">(+${paceInfo.gap})</span>` : ''}</div>
                                 </div>
+                                `}
                             </div>
                         `;
                     })()}
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            ${skillBar('Regen', driver.rain)}
-                            ${skillBar('Konstanz', driver.consistency)}
+                            ${isCurrentlyActive ? editRow('Regen', driver.rain, 'rain', '#3B82F6') : skillBar('Regen', driver.rain)}
+                            ${isCurrentlyActive ? editRow('Konstanz', driver.consistency, 'consistency', '#F97316') : skillBar('Konstanz', driver.consistency)}
                         </div>
                         <div>
-                            ${skillBar('Erfahrung', driver.experience)}
+                            ${isCurrentlyActive ? editRow('Erfahrung', driver.experience, 'experience', '#EAB308') : skillBar('Erfahrung', driver.experience)}
                             ${skillBar('Starts', driver.starts)}
                         </div>
                     </div>
@@ -14793,7 +15120,7 @@ const SEASON_DATA = {
                                 ${seasonResults.map(r => `
                                     <tr class="border-t border-custom">
                                         <td class="p-1 text-tertiary">${r.raceId}</td>
-                                        <td class="p-1">${r.raceName}</td>
+                                        <td class="p-1 race-link cursor-pointer" onclick="event.stopPropagation();openRaceDetails(${r.raceId - 1}${!isViewingCurrentSeason ? ', ' + seasonYear : ''})">${r.raceName}</td>
                                         <td class="p-1 text-center font-bold ${r.position <= 3 ? 'accent-gold' : ''} ${r.dnf ? 'text-red-500' : ''}">${r.dnf ? 'DNF' : 'P' + r.position}</td>
                                         <td class="p-1 text-center">${r.points}</td>
                                         <td class="p-1 text-center">
@@ -14851,9 +15178,15 @@ const SEASON_DATA = {
                             }
                         }
                         
+                        const firstConstrId = (() => {
+                            if (typeof getDriverConstructors !== 'function') return null;
+                            const cons = getDriverConstructors(statsId || driver.id);
+                            return (cons[s[0]] || [])[0] || null;
+                        })();
                         fullCareer.push({
                             year: s[0],
                             team: teamName,
+                            teamId: firstConstrId,
                             teamColor: teamColor,
                             races: '-',
                             wins: s[2],
@@ -14895,6 +15228,7 @@ const SEASON_DATA = {
                             fullCareer.push({
                                 year: season.year,
                                 team: team?.name || histDriver?.team || '-',
+                                teamId: team?.id || histDriver?.team || null,
                                 teamColor: team?.color || '#888',
                                 races: driverStanding?.races || 0,
                                 wins: driverStanding?.wins || 0,
@@ -14931,8 +15265,8 @@ const SEASON_DATA = {
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
                                                 <td class="p-1 font-bold">${h.year}</td>
                                                 <td class="p-1">
-                                                    ${h.team !== '-' ? 
-                                                        '<span class="px-1 rounded text-xs" style="background-color: ' + h.teamColor + '20; color: ' + h.teamColor + '">' + h.team + '</span>' : 
+                                                    ${h.team !== '-' ?
+                                                        '<span class="px-1 rounded text-xs team-link cursor-pointer" style="background-color: ' + h.teamColor + '20; color: ' + h.teamColor + '"' + (h.teamId ? ' onclick="openTeamProfile(\'' + h.teamId + '\')"' : '') + '>' + h.team + '</span>' :
                                                         '<span class="text-tertiary text-xs">-</span>'}
                                                 </td>
                                                 <td class="p-1 text-center ${h.wins > 0 ? 'accent-gold font-bold' : ''}">${h.wins}</td>
@@ -14962,9 +15296,10 @@ const SEASON_DATA = {
 
                         const cells = f1dbYear.map(race => {
                             const entry = race.entries.find(e => e.driverId === statsId);
-                            if (!entry) return { circuit: race.circuit || race.name, absent: true };
+                            if (!entry) return { circuit: race.circuit || race.name, raceId: race.raceId, absent: true };
                             return {
                                 circuit: race.circuit || race.name,
+                                raceId: race.raceId,
                                 pos: entry.posNum,
                                 posText: entry.posText,
                                 points: entry.points,
@@ -14978,11 +15313,12 @@ const SEASON_DATA = {
                         const wmPos = histEntry ? histEntry[1] : '-';
                         const wmPts = histEntry ? Math.round(histEntry[4]) : 0;
 
-                        let teamName = '-', teamColor = '#888';
+                        let teamName = '-', teamColor = '#888', teamIdGrid = null;
                         if (typeof getDriverConstructors === 'function') {
                             const constructors = getDriverConstructors(statsId || driver.id);
                             const yearCons = constructors[year];
                             if (yearCons && yearCons.length > 0) {
+                                teamIdGrid = yearCons[0];
                                 const sd = SEASON_DATA[year];
                                 const names = [];
                                 yearCons.forEach(c => {
@@ -14997,7 +15333,7 @@ const SEASON_DATA = {
                             }
                         }
 
-                        return { year, cells, teamName, teamColor, wmPos, wmPts };
+                        return { year, cells, teamName, teamId: teamIdGrid, teamColor, wmPos, wmPts };
                     }).filter(Boolean);
 
                     if (rows.length === 0) return '';
@@ -15059,7 +15395,7 @@ const SEASON_DATA = {
                                     ${rows.map(row => `
                                         <div style="height:${ROW_H}px; display:flex; align-items:center; gap:4px; margin-bottom:3px;">
                                             <span style="width:34px; font-size:0.7rem; font-weight:bold; color:var(--text-primary); flex-shrink:0;">${row.year}</span>
-                                            <span style="flex:1; min-width:0; font-size:0.55rem; color:${row.teamColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${row.teamName}">${row.teamName}</span>
+                                            <span style="flex:1; min-width:0; font-size:0.55rem; color:${row.teamColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer; text-decoration:underline;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -15075,7 +15411,7 @@ const SEASON_DATA = {
                                         <div style="display:flex; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
-                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}">
+                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();openHistoricalRaceModal(${cell.raceId})">
                                                     <span style="font-size:0.42rem; color:rgba(255,255,255,0.7); line-height:1;">${circAbbr(cell.circuit)}</span>
                                                     <span style="font-size:0.6rem; color:#fff; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
                                                 </div>`
@@ -15132,7 +15468,7 @@ const SEASON_DATA = {
                 ` : ''}
             `;
             
-            document.getElementById('driverProfileModal').style.display = 'flex';
+            bringModalToFront(document.getElementById('driverProfileModal')); document.getElementById('driverProfileModal').style.display = 'flex';
             initLazyImages(document.getElementById('driverProfileBody'));
         };
         
@@ -15142,44 +15478,34 @@ const SEASON_DATA = {
 
         // === LAZY IMAGE SYSTEM v0.8.5 ===
 
-        // IntersectionObserver – lädt Bilder sobald sichtbar
+        // IntersectionObserver – lädt Bilder sobald sichtbar (rootMargin 400px = Prefetch)
         const _lazyImgObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) return;
                 const img = entry.target;
                 const src = img.dataset.lazySrc;
                 if (!src) return;
+                _lazyImgObserver.unobserve(img);
                 const fallbackEl = img.parentElement?.querySelector('.profile-photo-fallback, .profile-logo-fallback');
-                const testImg = new Image();
-                testImg.referrerPolicy = 'no-referrer';
-                testImg.onload = () => {
-                    img.src = src;
+
+                // Direkt auf img setzen – kein Doppelfetch mehr
+                img.referrerPolicy = 'no-referrer';
+                img.onload = () => {
                     img.classList.add('lazy-loaded');
                     if (fallbackEl) fallbackEl.classList.add('hidden');
                 };
-                testImg.onerror = () => {
-                    // Versuche Fallback-URL (voller Slug, z.B. "damon-hill.png")
+                img.onerror = () => {
                     const fallbackSrc = img.dataset.fallbackSrc;
                     if (fallbackSrc && fallbackSrc !== src) {
-                        const testImg2 = new Image();
-                        testImg2.referrerPolicy = 'no-referrer';
-                        testImg2.onload = () => {
-                            img.src = fallbackSrc;
-                            img.classList.add('lazy-loaded');
-                            if (fallbackEl) fallbackEl.classList.add('hidden');
-                        };
-                        testImg2.onerror = () => {
-                            img.style.display = 'none'; // SVG-Fallback sichtbar
-                        };
-                        testImg2.src = fallbackSrc;
+                        img.onerror = () => { img.style.display = 'none'; };
+                        img.src = fallbackSrc;
                     } else {
-                        img.style.display = 'none'; // SVG-Fallback sichtbar
+                        img.style.display = 'none';
                     }
                 };
-                testImg.src = src;
-                _lazyImgObserver.unobserve(img);
+                img.src = src;
             });
-        }, { rootMargin: '80px' });
+        }, { rootMargin: '400px' });
 
         // Aktiviert Observer für alle lazy-imgs im Container
         function initLazyImages(container) {
@@ -15752,7 +16078,7 @@ const SEASON_DATA = {
                 } else {
                     // Versuche TEAM_HIST (historische nicht-simulierte Saisons)
                     let histName = teamId.split('-').map(w => 
-                        ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+                        ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
                     ).join(' ');
                     // Suche in TEAM_HIST
                     let thEntry = TEAM_HIST[histName] || TEAM_HIST[teamId];
@@ -15843,7 +16169,7 @@ const SEASON_DATA = {
                     <!-- Team-Historie (alle Saisons) - AUCH für ehemalige Teams! -->
                     ${renderTeamHistory(team.id, statsId)}
                 `;
-                document.getElementById('teamProfileModal').style.display = 'flex';
+                bringModalToFront(document.getElementById('teamProfileModal')); document.getElementById('teamProfileModal').style.display = 'flex';
                 initLazyImages(document.getElementById('teamProfileBody'));
                 return;
             }
@@ -15978,7 +16304,7 @@ const SEASON_DATA = {
                 ${renderTeamHistory(team.id, statsId)}
             `;
             
-            document.getElementById('teamProfileModal').style.display = 'flex';
+            bringModalToFront(document.getElementById('teamProfileModal')); document.getElementById('teamProfileModal').style.display = 'flex';
             initLazyImages(document.getElementById('teamProfileBody'));
         };
         
@@ -16005,6 +16331,38 @@ const SEASON_DATA = {
             const teamHistory = [];
             const idsToCheck = [teamId];
             if (histId && histId !== teamId) idsToCheck.push(histId);
+
+            // Reverse-Lookup: Nachname → [slug1, slug2, ...] (für TEAM_HIST-Namen)
+            // Mehrere Kandidaten werden per Jahr+Team disambiguiert (Hill→Damon/Graham, Schumacher→Michael/Ralf)
+            const lastNameToSlugs = {};
+            if (typeof HIST_NAMES !== 'undefined') {
+                for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
+                    const ln = fullName.split(' ').pop().toLowerCase();
+                    if (!lastNameToSlugs[ln]) lastNameToSlugs[ln] = [];
+                    lastNameToSlugs[ln].push(slug);
+                }
+            }
+            const resolveDriverForYear = (name, year) => {
+                if (!name) return null;
+                const candidates = lastNameToSlugs[name.toLowerCase()] || [];
+                if (candidates.length === 0) return null;
+                if (candidates.length === 1) return candidates[0];
+                // Mehrere: per Jahr+Team disambiguieren
+                const teamNamesNorm = Array.from(teamNames).map(n => n.toLowerCase().replace(/[\s\-]/g, ''));
+                if (typeof getDriverConstructors === 'function') {
+                    for (const slug of candidates) {
+                        if (!HIST_SEASONS?.[slug]?.some(s => s[0] === year)) continue;
+                        const yearCons = (getDriverConstructors(slug)[year] || [])
+                            .map(c => c.toLowerCase().replace(/[\s\-]/g, ''));
+                        if (yearCons.some(c => teamNamesNorm.some(t => c.includes(t) || t.includes(c)))) return slug;
+                    }
+                }
+                // Fallback: wer hat überhaupt in dem Jahr gefahren
+                for (const slug of candidates) {
+                    if (HIST_SEASONS?.[slug]?.some(s => s[0] === year)) return slug;
+                }
+                return candidates[0];
+            };
             
             // Finde den Teamnamen für Suche in TEAM_HIST
             const teamNames = new Set();
@@ -16090,9 +16448,12 @@ const SEASON_DATA = {
                                 wmPos = '?';
                             }
                         }
+                        const dObjs1 = [];
+                        if (entry[1]) dObjs1.push({ name: entry[1], id: resolveDriverForYear(entry[1], year) });
+                        if (entry[2]) dObjs1.push({ name: entry[2], id: resolveDriverForYear(entry[2], year) });
                         teamHistory.push({
                             year: year,
-                            drivers: entry[2] ? `${entry[1]} / ${entry[2]}` : entry[1],
+                            driverObjs: dObjs1,
                             wins: typeof entry[3] === 'number' ? entry[3] : '📜',
                             podiums: typeof entry[4] === 'number' ? entry[4] : '📜',
                             points: typeof entry[5] === 'number' ? entry[5] : '📜',
@@ -16129,6 +16490,7 @@ const SEASON_DATA = {
                                         if (!yearDrivers[yearNum]) yearDrivers[yearNum] = [];
                                         const driverName = HIST_NAMES?.[driverId] || driverId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                                         yearDrivers[yearNum].push({
+                                            id: driverId,
                                             name: driverName.split(' ').pop(), // Nachname
                                             wins: seasonData[2] || 0,
                                             podiums: seasonData[3] || 0,
@@ -16147,7 +16509,7 @@ const SEASON_DATA = {
                             
                             teamHistory.push({
                                 year: yearNum,
-                                drivers: drivers.slice(0, 2).map(d => d.name).join(' / ') || '-',
+                                driverObjs: drivers.map(d => ({ name: d.name, id: d.id })),
                                 wins: drivers.reduce((sum, d) => sum + (d.wins || 0), 0),
                                 podiums: drivers.reduce((sum, d) => sum + (d.podiums || 0), 0),
                                 points: drivers.reduce((sum, d) => sum + (d.points || 0), 0),
@@ -16179,14 +16541,13 @@ const SEASON_DATA = {
                 }
                 
                 if (teamStanding || actualTeamId) {
-                    const seasonDrivers = (season.drivers || [])
+                    const seasonDriverObjs = (season.drivers || [])
                         .filter(d => d.team === actualTeamId)
-                        .map(d => d.name.split(' ').slice(-1)[0])
-                        .slice(0, 2);
-                    
+                        .map(d => ({ name: d.name.split(' ').slice(-1)[0], id: d.id }));
+
                     teamHistory.push({
                         year: season.year,
-                        drivers: seasonDrivers.join(' / ') || '-',
+                        driverObjs: seasonDriverObjs,
                         wins: teamStanding?.wins || 0,
                         podiums: teamStanding?.podiums || 0,
                         points: teamStanding?.points || 0,
@@ -16222,7 +16583,23 @@ const SEASON_DATA = {
                 const rowClass = h.isHistorical ? ' opacity-75' : '';
                 html += '<tr class="border-t border-custom' + rowClass + '">';
                 html += '<td class="p-1 font-bold">' + h.year + '</td>';
-                html += '<td class="p-1 text-xs">' + h.drivers + '</td>';
+                const dObjs = h.driverObjs || [];
+                let driversHtml;
+                if (dObjs.length === 0) {
+                    driversHtml = '-';
+                } else {
+                    const makeLink = d => d.id
+                        ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${d.name}</span>`
+                        : d.name;
+                    const shown = dObjs.slice(0, 2);
+                    const rest  = dObjs.slice(2);
+                    driversHtml = shown.map(makeLink).join(' / ');
+                    if (rest.length > 0) {
+                        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
+                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${rest.length}</span>`;
+                    }
+                }
+                html += '<td class="p-1 text-xs">' + driversHtml + '</td>';
                 html += '<td class="p-1 text-center ' + winsClass + '">' + h.wins + '</td>';
                 html += '<td class="p-1 text-center">' + h.podiums + '</td>';
                 html += '<td class="p-1 text-center">' + (typeof h.points === 'number' ? Math.round(h.points) : h.points) + '</td>';
@@ -16234,6 +16611,46 @@ const SEASON_DATA = {
             return html;
         }
         
+        window.updateDriverStat = function(driverId, field, value) {
+            const driver = GAME_STATE.drivers.find(d => d.id === driverId)
+                        || (GAME_STATE.reservePool || []).find(d => d.id === driverId);
+            if (!driver) return;
+            const v = Math.max(0, Math.min(100, Math.round(+value)));
+            driver[field] = v;
+            // pace / currentPace immer synchron halten
+            if (field === 'currentPace') { driver.pace = v; }
+            if (field === 'pace')        { driver.currentPace = v; }
+            saveGame();
+        };
+
+        window.openDriverPickModal = function(encoded) {
+            const drivers = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+            let modal = document.getElementById('driverPickModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'driverPickModal';
+                modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
+                modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:20px;min-width:220px;max-width:320px;" onclick="event.stopPropagation()">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <span style="font-weight:bold;color:var(--text-primary);">Fahrer auswählen</span>
+                        <button onclick="document.getElementById('driverPickModal').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;line-height:1;">✕</button>
+                    </div>
+                    ${drivers.map(d => `
+                        <div style="padding:8px 4px;border-bottom:1px solid var(--border-color);cursor:${d.id ? 'pointer' : 'default'};"
+                             class="${d.id ? 'card-hover driver-link' : ''}"
+                             onclick="${d.id ? `document.getElementById('driverPickModal').style.display='none';openDriverProfile('${d.id}')` : ''}">
+                            ${d.name}
+                        </div>
+                    `).join('')}
+                </div>`;
+            modal.style.zIndex = ++_modalTopZ;
+            modal.style.display = 'flex';
+        };
+
         // Helper-Funktion für Vertragsstatus im Fahrer-Profil
         function renderContractStatus(driverId, driver) {
             const eval_ = evaluateDriverPerformance(driverId);
@@ -16431,6 +16848,10 @@ const SEASON_DATA = {
                 const t = teams.find(t => t.id === d.team);
                 return t ? t.name : '';
             };
+            const getTeamId = (driverId) => {
+                const d = drivers.find(d => d.id === driverId);
+                return d?.team || '';
+            };
             
             let html = `
                 <div class="text-center mb-4">
@@ -16459,7 +16880,7 @@ const SEASON_DATA = {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${results.slice(0, 20).map((r, idx) => {
+                                    ${results.map((r, idx) => {
                                         const pos = historicalYear ? r.p : r.position;
                                         const pts = historicalYear ? r.pt : r.points;
                                         const dnf = historicalYear ? r.dnf : r.dnf;
@@ -16500,7 +16921,7 @@ const SEASON_DATA = {
                                             <tr class="border-t border-custom ${rowClass}">
                                                 <td class="p-2 text-center">${posCell}</td>
                                                 <td class="p-2 driver-link" onclick="closeRaceDetail(); openDriverProfile('${driverId}')">${getDriverName(driverId)}</td>
-                                                <td class="p-2 text-tertiary">${getTeamName(driverId)}</td>
+                                                <td class="p-2 text-tertiary ${getTeamId(driverId) ? 'team-link cursor-pointer' : ''}" ${getTeamId(driverId) ? `onclick="event.stopPropagation(); openTeamProfile('${getTeamId(driverId)}')"` : ''}>${getTeamName(driverId)}</td>
                                                 <td class="p-2 text-center">${rightCell}</td>
                                             </tr>
                                         `;
@@ -16538,14 +16959,83 @@ const SEASON_DATA = {
             
             document.getElementById('raceDetailTitle').innerHTML = `🏁 ${renderFlag(race.country, race.name)} ${race.name}`;
             document.getElementById('raceDetailBody').innerHTML = html;
-            document.getElementById('raceDetailModal').style.display = 'flex';
+            bringModalToFront(document.getElementById('raceDetailModal')); document.getElementById('raceDetailModal').style.display = 'flex';
         };
         
         window.closeRaceDetail = function() {
             document.getElementById('raceDetailModal').style.display = 'none';
         };
-        
+
+        // F1DB-Rennen direkt im raceDetailModal öffnen (z.B. aus Fahrer-Steckbrief-Kacheln)
+        window.openHistoricalRaceModal = function(raceId) {
+            let raceData = null, raceYear = null;
+            for (const [yr, races] of Object.entries(F1DB_RESULTS)) {
+                if (races.find(r => r[0] === raceId)) { raceYear = parseInt(yr); break; }
+            }
+            if (!raceYear) return;
+            const allRaces = getF1DBYear(raceYear);
+            raceData = allRaces?.find(r => r.raceId === raceId);
+            if (!raceData) return;
+
+            const entries = raceData.entries;
+            const winner = entries.find(e => e.posNum === 1);
+            function dn(id) { return (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) || id.split('-').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
+            function tn(id) { return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase()+w.slice(1)))).join(' '); }
+
+            const indyBadge = raceData.isIndy ? ' <span class="text-xs px-2 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>' : '';
+            let html = `
+                <div class="text-center mb-4">
+                    <div class="text-4xl mb-2">${typeof renderFlag === 'function' ? renderFlag(null, raceData.name) : ''}</div>
+                    <h2 class="text-2xl font-bold">${raceData.name}${indyBadge}</h2>
+                    <div class="text-tertiary">${raceData.circuit || ''} | ${raceData.date || ''}</div>
+                    <div class="text-sm accent-blue mt-1">Saison ${raceYear}</div>
+                </div>
+                ${winner ? `<div class="card p-4 rounded-xl mb-4" style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,165,0,0.05))">
+                    <div class="text-xs text-tertiary">🏆 Sieger</div>
+                    <div class="text-xl font-bold driver-link cursor-pointer" onclick="openDriverProfile('${winner.driverId}')">${dn(winner.driverId)}</div>
+                    <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${winner.constrId}')">${tn(winner.constrId)}</span> · ${winner.time || '-'}</div>
+                </div>` : ''}
+                <div class="card rounded-xl overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-secondary"><tr>
+                            <th class="p-2 text-left">#</th>
+                            <th class="p-2 text-left">Fahrer</th>
+                            <th class="p-2 text-left hidden md:table-cell">Team</th>
+                            <th class="p-2 text-center">Grid</th>
+                            <th class="p-2 text-right">Zeit / Abstand</th>
+                            <th class="p-2 text-center">Pkt</th>
+                        </tr></thead>
+                        <tbody>
+                            ${entries.map(e => {
+                                const isDNF = !e.posNum || ['DNF','DNS','DSQ','NC'].includes(e.posText);
+                                const isW = e.posNum === 1;
+                                const timeStr = isW ? (e.time||'-') : (e.gap ? '+'+e.gap : (e.dnfReason||e.posText||'-'));
+                                return '<tr class="border-t border-custom '+(isDNF?'opacity-60':'')+(isW?' bg-yellow-900/10':'')+'">' +
+                                    '<td class="p-2 font-bold '+(isW?'accent-gold':'text-tertiary')+'">'+e.posText+(e.fastestLap?' 🟣':'')+'</td>' +
+                                    '<td class="p-2">'+(e.pole?'🅿️ ':'')+
+                                        '<span class="driver-link" onclick="openDriverProfile(\''+e.driverId+'\')">'+dn(e.driverId)+'</span></td>' +
+                                    '<td class="p-2 text-secondary hidden md:table-cell team-link cursor-pointer" onclick="openTeamProfile(\''+e.constrId+'\')">'+tn(e.constrId)+'</td>' +
+                                    '<td class="p-2 text-center text-tertiary">'+(e.gridPos||'-')+'</td>' +
+                                    '<td class="p-2 text-right text-tertiary text-xs">'+timeStr+'</td>' +
+                                    '<td class="p-2 text-center font-bold '+(e.points?'accent-gold':'text-tertiary')+'">'+(e.points||'')+'</td>' +
+                                '</tr>';
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-xs text-tertiary mt-2">🟣 = Schnellste Runde · 🅿️ = Pole Position</div>
+            `;
+
+            document.getElementById('raceDetailTitle').textContent = '🏁 ' + raceData.name + ' ' + raceYear;
+            document.getElementById('raceDetailBody').innerHTML = html;
+            const modal = document.getElementById('raceDetailModal');
+            bringModalToFront(modal);
+            modal.style.display = 'flex';
+        };
+
         // === MODAL HANDLING (Schließen per Hintergrund/Escape) ===
+        let _modalTopZ = 10000;
+        window.bringModalToFront = function(el) { if (el) el.style.zIndex = ++_modalTopZ; };
         function setupModalHandling() {
             // Alle Modal-Overlays
             const modals = document.querySelectorAll('.modal-overlay');
@@ -16585,6 +17075,9 @@ const SEASON_DATA = {
             if (!loadGame()) {
                 logInfo('INIT', 'Kein Spielstand gefunden, erstelle neuen...');
                 initFromYear(2024);
+            } else {
+                // Pool beim Laden auffüllen falls leer (z.B. alter Spielstand vor v0.9.1)
+                initReservePool(GAME_STATE.currentYear);
             }
             
             // Theme aus GAME_STATE anwenden

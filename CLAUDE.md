@@ -24,10 +24,13 @@ Schritte (nur nach Freigabe):
 2. Neue Versionsnummer in der neuen Datei einsetzen (`VERSION`-Konstante + `<title>`)
 3. Changelog in der neuen Datei aktualisieren (siehe oben)
 4. Alte Version ins Archiv verschieben: `mv f1-rpg-vX.X.X.html archive/`
-5. Git commit mit aussagekräftiger Message auf Deutsch:
+5. `cp f1-rpg-vY.Y.Y.html index.html` ← Netlify-Deploy-Datei aktualisieren
+6. Git add + commit mit aussagekräftiger Message auf Deutsch:
    `git commit -m "v0.9.0 – Retirement-Wahrscheinlichkeit balanciert"`
+7. `git push origin master` ← Netlify deployed automatisch
 
 → Ergebnis: Hauptordner hat genau eine HTML-Datei, Archive hat eine saubere Datei pro Version (kein `_backup`-Suffix nötig)
+→ index.html = immer aktuelle Version → sofort mobil verfügbar unter https://mparlatinho92.netlify.app/
 
 ## Versionierung
 - Versionsnummer steht in der HTML im `<title>`-Tag und in der Konstante `VERSION`
@@ -69,6 +72,7 @@ Schritte (nur nach Freigabe):
 ## Dateistruktur
 ```
 /f1-rpg-vX.X.X.html     ← aktuelle Version (Einzeldatei, bleibt Monolith)
+/index.html              ← Netlify-Einstieg (immer = aktuelle Version)
 /archive/                ← alle alten Versionen als Backup
 /tests/                  ← isolierte Logik-Tests (Monte Carlo, Balancing)
 /schemas/                ← Datenstruktur-Dokumentation (NUR Referenz, kein Laufzeit-Code)

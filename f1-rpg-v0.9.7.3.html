@@ -10830,8 +10830,10 @@ const SEASON_DATA = {
                     movementsHtml += '<div class="mb-3">';
                     movementsHtml += '<div class="text-sm font-bold text-red-400 mb-1">💀 Verstorben (' + movements.deaths.length + ')</div>';
                     movements.deaths.forEach(d => {
-                        const replacement = d.replacement ? ' → Ersetzt durch ' + d.replacement : '';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + d.name + ' (' + d.raceName + ')' + replacement + '</div>';
+                        const dLink = d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name;
+                        const rLink = d.replacement ? (d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement) : '';
+                        const replacementStr = rLink ? ' → Ersetzt durch ' + rLink : '';
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + dLink + ' (' + d.raceName + ')' + replacementStr + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -10843,7 +10845,8 @@ const SEASON_DATA = {
                     movements.retirements.forEach(r => {
                         const typeEmoji = r.type === 'age' ? '👴' : r.type === 'dismissed' ? '🚫' : r.type === 'gaveup' ? '😔' : '❓';
                         const typeText = r.type === 'age' ? 'Alter' : r.type === 'dismissed' ? 'Entlassen' : r.type === 'gaveup' ? 'Aufgegeben' : '';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + r.name + ' ' + typeEmoji + ' (' + typeText + ')</div>';
+                        const rLink = r.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>` : r.name;
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + rLink + ' ' + typeEmoji + ' (' + typeText + ')</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -10856,7 +10859,9 @@ const SEASON_DATA = {
                         const fromTeam = GAME_STATE.teams.find(team => team.id === t.fromTeam)?.name || t.fromTeam;
                         const toTeam = t.toTeam ? (GAME_STATE.teams.find(team => team.id === t.toTeam)?.name || t.toTeam) : 'verlässt F1';
                         const driverName = t.driverName || t.name || 'Unbekannt';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + driverName + ': ' + fromTeam + ' → ' + toTeam + '</div>';
+                        const dId = t.driverId || t.driver;
+                        const tLink = dId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${dId}')">${driverName}</span>` : driverName;
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + tLink + ': ' + fromTeam + ' → ' + toTeam + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -11180,7 +11185,8 @@ const SEASON_DATA = {
                             points: season[4] || 0,
                             wins: season[2] || 0,
                             podiums: season[3] || 0,
-                            team: driverTeamName
+                            team: driverTeamName,
+                            teamId: constructor  // F1DB-Slug für Team-Lookup
                         };
                     }
                 }
@@ -11215,7 +11221,7 @@ const SEASON_DATA = {
                 
                 // Pretty-print constructor name
                 function prettyTeam(id) {
-                    return id.split('-').map(w => ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
+                    return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
                 }
                 
                 const teamResults = Object.entries(teamMap)
@@ -11558,7 +11564,7 @@ const SEASON_DATA = {
                                                     <span class="driver-link truncate" onclick="openDriverProfile('${driver.id}')">${driver.name}</span>
                                                     ${renderTVBadge(reigningChampionId && (driver.id === reigningChampionId || driver.histId === reigningChampionId), prevYear)}
                                                     ${debutIds.has(driver.id) ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E;white-space:nowrap">Debüt</span>` : ''}
-                                                    ${driver.replacedDriverName && driver.replacedInYear === GAME_STATE.currentYear ? `<span class="text-xs text-tertiary">(ersetzt ${driver.replacedDriverName})</span>` : ''}
+                                                    ${driver.replacedDriverName && driver.replacedInYear === GAME_STATE.currentYear ? `<span class="text-xs text-tertiary">(ersetzt ${driver.replacedDriver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${driver.replacedDriver}')">${driver.replacedDriverName}</span>` : driver.replacedDriverName})</span>` : ''}
                                                 </div>
                                                 <div class="flex items-center gap-2 flex-shrink-0">
                                                     ${(() => {
@@ -11622,7 +11628,7 @@ const SEASON_DATA = {
                 return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             }
             function teamName(id) {
-                return id.split('-').map(w => ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
+                return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
             }
             
             const indyBadge = raceData.isIndy ? '<span class="text-xs px-2 py-0.5 rounded ml-2" style="background:#B45309;color:white">🇺🇸 Indy 500</span>' : '';
@@ -11869,7 +11875,7 @@ const SEASON_DATA = {
                         if (constructorId) {
                             // Formatiere ID zu Name
                             constructorName = constructorId.split('-').map(w => 
-                                ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+                                ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
                             ).join(' ');
                         }
                         
@@ -12080,7 +12086,7 @@ const SEASON_DATA = {
                             <tbody>
                                 ${drivers.map((d, idx) => {
                                     const driver = driversList.find(dr => dr.id === d.id);
-                                    const team = teamsList.find(t => t.id === d.team);
+                                    const team = teamsList.find(t => t.id === (d.teamId || d.team));
                                     return `
                                         <tr class="border-t border-custom card-hover">
                                             <td class="p-3 font-bold ${idx === 0 ? 'accent-gold' : ''}">${idx + 1}</td>
@@ -15405,7 +15411,7 @@ const SEASON_DATA = {
                                         <div style="display:flex; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
-                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();openHistoricalRace(${cell.raceId})">
+                                                : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();openHistoricalRaceModal(${cell.raceId})">
                                                     <span style="font-size:0.42rem; color:rgba(255,255,255,0.7); line-height:1;">${circAbbr(cell.circuit)}</span>
                                                     <span style="font-size:0.6rem; color:#fff; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
                                                 </div>`
@@ -16072,7 +16078,7 @@ const SEASON_DATA = {
                 } else {
                     // Versuche TEAM_HIST (historische nicht-simulierte Saisons)
                     let histName = teamId.split('-').map(w => 
-                        ({'fry':'Fry'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+                        ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
                     ).join(' ');
                     // Suche in TEAM_HIST
                     let thEntry = TEAM_HIST[histName] || TEAM_HIST[teamId];
@@ -16959,7 +16965,74 @@ const SEASON_DATA = {
         window.closeRaceDetail = function() {
             document.getElementById('raceDetailModal').style.display = 'none';
         };
-        
+
+        // F1DB-Rennen direkt im raceDetailModal öffnen (z.B. aus Fahrer-Steckbrief-Kacheln)
+        window.openHistoricalRaceModal = function(raceId) {
+            let raceData = null, raceYear = null;
+            for (const [yr, races] of Object.entries(F1DB_RESULTS)) {
+                if (races.find(r => r[0] === raceId)) { raceYear = parseInt(yr); break; }
+            }
+            if (!raceYear) return;
+            const allRaces = getF1DBYear(raceYear);
+            raceData = allRaces?.find(r => r.raceId === raceId);
+            if (!raceData) return;
+
+            const entries = raceData.entries;
+            const winner = entries.find(e => e.posNum === 1);
+            function dn(id) { return (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) || id.split('-').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
+            function tn(id) { return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase()+w.slice(1)))).join(' '); }
+
+            const indyBadge = raceData.isIndy ? ' <span class="text-xs px-2 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>' : '';
+            let html = `
+                <div class="text-center mb-4">
+                    <div class="text-4xl mb-2">${typeof renderFlag === 'function' ? renderFlag(null, raceData.name) : ''}</div>
+                    <h2 class="text-2xl font-bold">${raceData.name}${indyBadge}</h2>
+                    <div class="text-tertiary">${raceData.circuit || ''} | ${raceData.date || ''}</div>
+                    <div class="text-sm accent-blue mt-1">Saison ${raceYear}</div>
+                </div>
+                ${winner ? `<div class="card p-4 rounded-xl mb-4" style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,165,0,0.05))">
+                    <div class="text-xs text-tertiary">🏆 Sieger</div>
+                    <div class="text-xl font-bold driver-link cursor-pointer" onclick="openDriverProfile('${winner.driverId}')">${dn(winner.driverId)}</div>
+                    <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${winner.constrId}')">${tn(winner.constrId)}</span> · ${winner.time || '-'}</div>
+                </div>` : ''}
+                <div class="card rounded-xl overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-secondary"><tr>
+                            <th class="p-2 text-left">#</th>
+                            <th class="p-2 text-left">Fahrer</th>
+                            <th class="p-2 text-left hidden md:table-cell">Team</th>
+                            <th class="p-2 text-center">Grid</th>
+                            <th class="p-2 text-right">Zeit / Abstand</th>
+                            <th class="p-2 text-center">Pkt</th>
+                        </tr></thead>
+                        <tbody>
+                            ${entries.map(e => {
+                                const isDNF = !e.posNum || ['DNF','DNS','DSQ','NC'].includes(e.posText);
+                                const isW = e.posNum === 1;
+                                const timeStr = isW ? (e.time||'-') : (e.gap ? '+'+e.gap : (e.dnfReason||e.posText||'-'));
+                                return '<tr class="border-t border-custom '+(isDNF?'opacity-60':'')+(isW?' bg-yellow-900/10':'')+'">' +
+                                    '<td class="p-2 font-bold '+(isW?'accent-gold':'text-tertiary')+'">'+e.posText+(e.fastestLap?' 🟣':'')+'</td>' +
+                                    '<td class="p-2">'+(e.pole?'🅿️ ':'')+
+                                        '<span class="driver-link" onclick="openDriverProfile(\''+e.driverId+'\')">'+dn(e.driverId)+'</span></td>' +
+                                    '<td class="p-2 text-secondary hidden md:table-cell team-link cursor-pointer" onclick="openTeamProfile(\''+e.constrId+'\')">'+tn(e.constrId)+'</td>' +
+                                    '<td class="p-2 text-center text-tertiary">'+(e.gridPos||'-')+'</td>' +
+                                    '<td class="p-2 text-right text-tertiary text-xs">'+timeStr+'</td>' +
+                                    '<td class="p-2 text-center font-bold '+(e.points?'accent-gold':'text-tertiary')+'">'+(e.points||'')+'</td>' +
+                                '</tr>';
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-xs text-tertiary mt-2">🟣 = Schnellste Runde · 🅿️ = Pole Position</div>
+            `;
+
+            document.getElementById('raceDetailTitle').textContent = '🏁 ' + raceData.name + ' ' + raceYear;
+            document.getElementById('raceDetailBody').innerHTML = html;
+            const modal = document.getElementById('raceDetailModal');
+            bringModalToFront(modal);
+            modal.style.display = 'flex';
+        };
+
         // === MODAL HANDLING (Schließen per Hintergrund/Escape) ===
         let _modalTopZ = 10000;
         window.bringModalToFront = function(el) { if (el) el.style.zIndex = ++_modalTopZ; };
