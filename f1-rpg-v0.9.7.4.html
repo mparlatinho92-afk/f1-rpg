@@ -16343,9 +16343,15 @@ const SEASON_DATA = {
             const lastNameToSlugs = {};
             if (typeof HIST_NAMES !== 'undefined') {
                 for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
-                    const ln = normName(fullName.split(' ').pop());
+                    const ln = normName(fullName.split(' ').pop()); // z.B. "perez-sala"
                     if (!lastNameToSlugs[ln]) lastNameToSlugs[ln] = [];
                     lastNameToSlugs[ln].push(slug);
+                    // Auch letzten Bindestrich-Teil indexieren: "sala" → findet "perez-sala"
+                    const hyphenPart = ln.split('-').pop();
+                    if (hyphenPart !== ln) {
+                        if (!lastNameToSlugs[hyphenPart]) lastNameToSlugs[hyphenPart] = [];
+                        lastNameToSlugs[hyphenPart].push(slug);
+                    }
                 }
             }
             const resolveDriverForYear = (name, year) => {
@@ -16455,8 +16461,15 @@ const SEASON_DATA = {
                             }
                         }
                         const dObjs1 = [];
-                        if (entry[1]) dObjs1.push({ name: entry[1], id: resolveDriverForYear(entry[1], year) });
-                        if (entry[2]) dObjs1.push({ name: entry[2], id: resolveDriverForYear(entry[2], year) });
+                        const makeDriverObj = (rawName) => {
+                            const id = resolveDriverForYear(rawName, year);
+                            const displayName = id && HIST_NAMES?.[id]
+                                ? HIST_NAMES[id].split(' ').pop()  // Nachname mit Sonderzeichen
+                                : rawName;
+                            return { name: displayName, id };
+                        };
+                        if (entry[1]) dObjs1.push(makeDriverObj(entry[1]));
+                        if (entry[2]) dObjs1.push(makeDriverObj(entry[2]));
                         teamHistory.push({
                             year: year,
                             driverObjs: dObjs1,
