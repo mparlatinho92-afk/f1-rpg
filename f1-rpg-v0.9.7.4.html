@@ -12253,7 +12253,7 @@ const SEASON_DATA = {
                                 return `
                                     <tr class="border-t border-custom">
                                         <td class="p-2 sticky left-0 bg-primary z-10">
-                                            <span class="driver-link" onclick="openDriverProfile('${d.id}')">${d.name.split(' ').pop()}</span>
+                                            <span class="driver-link" onclick="openDriverProfile('${d.id}')">${d.name}</span>
                                         </td>
                                         ${results.map(race => {
                                             // Komprimierte oder normale Ergebnisse
@@ -16343,18 +16343,24 @@ const SEASON_DATA = {
             // Reverse-Lookup: Nachname → [slug1, slug2, ...] (für TEAM_HIST-Namen)
             // Mehrere Kandidaten werden per Jahr+Team disambiguiert (Hill→Damon/Graham, Schumacher→Michael/Ralf)
             const normName = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            // Partikel/Suffixe die nicht als eigenständige Suchschlüssel taugen
+            const SKIP = new Set(['de','la','le','van','den','der','von','jr','sr','jr.','sr.','di','da','dos','das']);
             const lastNameToSlugs = {};
             if (typeof HIST_NAMES !== 'undefined') {
                 for (const [slug, fullName] of Object.entries(HIST_NAMES)) {
-                    const ln = normName(fullName.split(' ').pop()); // z.B. "perez-sala"
-                    if (!lastNameToSlugs[ln]) lastNameToSlugs[ln] = [];
-                    lastNameToSlugs[ln].push(slug);
-                    // Auch letzten Bindestrich-Teil indexieren: "sala" → findet "perez-sala"
-                    const hyphenPart = ln.split('-').pop();
-                    if (hyphenPart !== ln) {
-                        if (!lastNameToSlugs[hyphenPart]) lastNameToSlugs[hyphenPart] = [];
-                        lastNameToSlugs[hyphenPart].push(slug);
-                    }
+                    const words = fullName.trim().split(/\s+/);
+                    if (words.length < 2) continue;
+                    const surname = words.slice(1).join(' '); // alles nach Vorname
+                    const addKey = key => {
+                        if (!key || key.length < 2) return;
+                        if (!lastNameToSlugs[key]) lastNameToSlugs[key] = [];
+                        if (!lastNameToSlugs[key].includes(slug)) lastNameToSlugs[key].push(slug);
+                    };
+                    addKey(normName(surname)); // "sainz jr.", "de la rosa", "hakkinen"
+                    // Jedes signifikante Wort/Teil separat indexieren
+                    normName(surname).split(/[\s\-]+/).forEach(part => {
+                        if (!SKIP.has(part)) addKey(part); // "sainz", "rosa", "hakkinen"
+                    });
                 }
             }
             const resolveDriverForYear = (name, year) => {
@@ -16466,9 +16472,12 @@ const SEASON_DATA = {
                         const dObjs1 = [];
                         const makeDriverObj = (rawName) => {
                             const id = resolveDriverForYear(rawName, year);
-                            const displayName = id && HIST_NAMES?.[id]
-                                ? HIST_NAMES[id].split(' ').pop()  // Nachname mit Sonderzeichen
-                                : rawName;
+                            let displayName = rawName;
+                            if (id && HIST_NAMES?.[id]) {
+                                const w = HIST_NAMES[id].trim().split(/\s+/);
+                                // "M. Häkkinen", "C. Sainz Jr.", "L. Pérez-Sala"
+                                displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : HIST_NAMES[id];
+                            }
                             return { name: displayName, id };
                         };
                         if (entry[1]) dObjs1.push(makeDriverObj(entry[1]));
@@ -16565,7 +16574,11 @@ const SEASON_DATA = {
                 if (teamStanding || actualTeamId) {
                     const seasonDriverObjs = (season.drivers || [])
                         .filter(d => d.team === actualTeamId)
-                        .map(d => ({ name: d.name.split(' ').slice(-1)[0], id: d.id }));
+                        .map(d => {
+                            const w = d.name.trim().split(/\s+/);
+                            const displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : d.name;
+                            return { name: displayName, id: d.id };
+                        });
 
                     teamHistory.push({
                         year: season.year,
