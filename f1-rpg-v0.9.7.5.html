@@ -16677,19 +16677,25 @@ const SEASON_DATA = {
                         const pickerCount = dObjs.length - fullyShown;
                         driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${pickerCount}</span>`;
                     }
-                    // 2-Zeilen-Split auf Mobile wenn viele Fahrer (>150 Zeichen ≈ 12 Fahrer)
+                    // 3-Zeilen-Split auf Mobile wenn viele Fahrer (>150 Zeichen ≈ 12 Fahrer)
                     if (window.innerWidth < 640 && !truncated && charCount > 150) {
-                        const half = charCount / 2;
-                        let running = 0, splitAt = inlineItems.length;
-                        for (let i = 0; i < inlineItems.length; i++) {
-                            running += (i > 0 ? 3 : 0) + inlineItems[i].display.length;
-                            if (running >= half) { splitAt = i + 1; break; }
-                        }
-                        if (splitAt < inlineItems.length) {
-                            const r1 = inlineItems.slice(0, splitAt).map(makeLink).join(' / ');
-                            const r2 = inlineItems.slice(splitAt).map(makeLink).join(' / ');
-                            driversHtml = `<div>${r1}</div><div>${r2}</div>`;
-                        }
+                        const findSplit = (items, fromIdx, targetChars) => {
+                            let running = 0;
+                            for (let i = fromIdx; i < items.length; i++) {
+                                running += (i > fromIdx ? 3 : 0) + items[i].display.length;
+                                if (running >= targetChars) return i + 1;
+                            }
+                            return items.length;
+                        };
+                        const third = charCount / 3;
+                        const split1 = findSplit(inlineItems, 0, third);
+                        const split2 = findSplit(inlineItems, split1, third);
+                        const r1 = inlineItems.slice(0, split1).map(makeLink).join(' / ');
+                        const r2 = inlineItems.slice(split1, split2).map(makeLink).join(' / ');
+                        const r3 = inlineItems.slice(split2).map(makeLink).join(' / ');
+                        driversHtml = r3
+                            ? `<div>${r1}</div><div>${r2}</div><div>${r3}</div>`
+                            : `<div>${r1}</div><div>${r2}</div>`;
                     }
                 }
                 html += '<td class="p-1 text-xs" style="white-space:nowrap">' + driversHtml + '</td>';
