@@ -16650,52 +16650,51 @@ const SEASON_DATA = {
                 if (dObjs.length === 0) {
                     driversHtml = '-';
                 } else {
-                    const LIMIT = window.innerWidth < 640 ? 999 : window.innerWidth < 1024 ? 44 : window.innerWidth < 1280 ? 70 : 88;
-                    const inlineItems = [];
-                    let charCount = 0, truncated = false, fullyShown = 0;
-                    for (let i = 0; i < dObjs.length; i++) {
-                        const d = dObjs[i];
-                        const sep = i > 0 ? ' / ' : '';
-                        const needed = sep.length + d.name.length;
-                        if (charCount + needed <= LIMIT) {
-                            inlineItems.push({ d, display: d.name });
-                            charCount += needed;
-                            fullyShown++;
-                        } else {
-                            const avail = LIMIT - charCount - sep.length;
-                            if (avail >= 5) inlineItems.push({ d, display: d.name.substring(0, avail - 1) + '…' });
-                            truncated = true;
-                            break;
-                        }
-                    }
+                    const isMobile = window.innerWidth < 640;
+                    const LINE_LIMIT = isMobile ? 65 : window.innerWidth < 1024 ? 44 : window.innerWidth < 1280 ? 70 : 88;
                     const makeLink = ({ d, display }) => d.id
                         ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${display}</span>`
                         : display;
-                    driversHtml = inlineItems.map(makeLink).join(' / ');
-                    if (truncated) {
-                        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
-                        const pickerCount = dObjs.length - fullyShown;
-                        driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${pickerCount}</span>`;
-                    }
-                    // 3-Zeilen-Split auf Mobile wenn viele Fahrer (>150 Zeichen ≈ 12 Fahrer)
-                    if (window.innerWidth < 640 && !truncated && charCount > 150) {
-                        const findSplit = (items, fromIdx, targetChars) => {
-                            let running = 0;
-                            for (let i = fromIdx; i < items.length; i++) {
-                                running += (i > fromIdx ? 3 : 0) + items[i].display.length;
-                                if (running >= targetChars) return i + 1;
+                    // Baut eine Zeile ab startIdx, bis LINE_LIMIT erreicht
+                    // allowPartial: letzten Namen abschneiden (Desktop); false: ganzer Fahrer oder nicht
+                    const buildLine = (startIdx, allowPartial) => {
+                        const items = [];
+                        let chars = 0;
+                        for (let i = startIdx; i < dObjs.length; i++) {
+                            const sep = items.length > 0 ? ' / ' : '';
+                            const needed = sep.length + dObjs[i].name.length;
+                            if (chars + needed <= LINE_LIMIT) {
+                                items.push({ d: dObjs[i], display: dObjs[i].name });
+                                chars += needed;
+                            } else {
+                                if (allowPartial) {
+                                    const avail = LINE_LIMIT - chars - sep.length;
+                                    if (avail >= 5) items.push({ d: dObjs[i], display: dObjs[i].name.substring(0, avail - 1) + '…' });
+                                }
+                                return { items, nextIdx: i };
                             }
-                            return items.length;
-                        };
-                        const third = charCount / 3;
-                        const split1 = findSplit(inlineItems, 0, third);
-                        const split2 = findSplit(inlineItems, split1, third);
-                        const r1 = inlineItems.slice(0, split1).map(makeLink).join(' / ');
-                        const r2 = inlineItems.slice(split1, split2).map(makeLink).join(' / ');
-                        const r3 = inlineItems.slice(split2).map(makeLink).join(' / ');
-                        driversHtml = r3
-                            ? `<div>${r1}</div><div>${r2}</div><div>${r3}</div>`
-                            : `<div>${r1}</div><div>${r2}</div>`;
+                        }
+                        return { items, nextIdx: dObjs.length };
+                    };
+                    const { items: line1, nextIdx: idx1 } = buildLine(0, !isMobile);
+                    if (isMobile && idx1 < dObjs.length) {
+                        // Mobil: 2 Zeilen + +N
+                        const { items: line2, nextIdx: idx2 } = buildLine(idx1, false);
+                        const r1 = line1.map(makeLink).join(' / ');
+                        const r2 = line2.map(makeLink).join(' / ');
+                        driversHtml = `<div>${r1}</div><div>${r2}</div>`;
+                        if (idx2 < dObjs.length) {
+                            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
+                            driversHtml += `<div><span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${dObjs.length - idx2}</span></div>`;
+                        }
+                    } else {
+                        // Desktop/Tablet: 1 Zeile + +N
+                        driversHtml = line1.map(makeLink).join(' / ');
+                        if (idx1 < dObjs.length) {
+                            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(dObjs))));
+                            const fullyShown = line1.filter(i => !i.display.endsWith('…')).length;
+                            driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${dObjs.length - fullyShown}</span>`;
+                        }
                     }
                 }
                 html += '<td class="p-1 text-xs" style="white-space:nowrap">' + driversHtml + '</td>';
