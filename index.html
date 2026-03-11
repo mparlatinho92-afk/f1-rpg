@@ -12209,13 +12209,14 @@ const SEASON_DATA = {
                     (a._avgPos - b._avgPos)
                 );
             
-            // Farben für Positionen
+            // Farben für Positionen – Punkte-Grenze era-korrekt via getPointsForPosition
             const getPosColor = (pos, dnf) => {
                 if (dnf) return 'background-color: #3D1F1F; color: #EF4444;';
                 if (pos === 1) return 'background-color: #FFD700; color: #000;';
                 if (pos === 2) return 'background-color: #C0C0C0; color: #000;';
                 if (pos === 3) return 'background-color: #CD7F32; color: #000;';
-                if (pos <= 10) return 'background-color: #1D4ED8; color: #FFF;';
+                if (getPointsForPosition(pos, matrixYear) > 0) return 'background-color: #166534; color: #FFF;'; // grün = Punkte
+                if (pos < 90) return 'background-color: #1D4ED8; color: #FFF;'; // blau = klassifiziert, keine Punkte
                 return 'background-color: var(--bg-secondary); color: var(--text-tertiary);';
             };
             
@@ -12294,7 +12295,8 @@ const SEASON_DATA = {
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #FFD700; color: #000;">1 = Sieg</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #C0C0C0; color: #000;">2 = P2</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #CD7F32; color: #000;">3 = P3</span>
-                    <span class="px-2 py-1 rounded font-bold" style="background-color: #1D4ED8; color: #FFF;">4-10 = Punkte</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #166534; color: #FFF;">Punkte</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #1D4ED8; color: #FFF;">Klassifiziert</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #3D1F1F; color: #EF4444;">Ret = DNF</span>
                 </div>
             `;
