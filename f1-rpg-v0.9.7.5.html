@@ -11303,13 +11303,15 @@ const SEASON_DATA = {
                         const entries = (race.entries || [])
                             .filter(e => e.driverId)
                             .map(e => {
-                                const isDNF = !e.posNum || ['DNF','DNS','DSQ','NC'].includes(String(e.posText || '').toUpperCase());
+                                const pt = String(e.posText || '').toUpperCase();
+                                const isDNF = !e.posNum || ['DNF','DNS','DSQ','NC','DNQ','DNPQ','EX','WD'].includes(pt);
                                 return {
                                     d: e.driverId,
                                     driver: e.driverId,
                                     p: e.posNum || 99,
                                     position: e.posNum || 99,
                                     dnf: isDNF ? 1 : 0,
+                                    posText: pt,
                                     pt: e.points || 0
                                 };
                             })
@@ -12210,13 +12212,18 @@ const SEASON_DATA = {
                 );
             
             // Farben für Positionen – Punkte-Grenze era-korrekt via getPointsForPosition
-            const getPosColor = (pos, dnf) => {
-                if (dnf) return 'background-color: #3D1F1F; color: #EF4444;';
+            const getPosColor = (pos, dnf, posText) => {
+                const pt = (posText || '').toUpperCase();
+                if (pt === 'DNPQ') return 'background-color: #831843; color: #F9A8D4;';
+                if (pt === 'DNQ')  return 'background-color: #7F1D1D; color: #FCA5A5;';
+                if (pt === 'DSQ')  return 'background-color: #78350F; color: #FCD34D;';
+                if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return 'background-color: #1C1C1C; color: #6B7280;';
+                if (dnf)           return 'background-color: #2D1B69; color: #A78BFA;'; // lila = DNF
                 if (pos === 1) return 'background-color: #FFD700; color: #000;';
                 if (pos === 2) return 'background-color: #C0C0C0; color: #000;';
                 if (pos === 3) return 'background-color: #CD7F32; color: #000;';
-                if (getPointsForPosition(pos, matrixYear) > 0) return 'background-color: #166534; color: #FFF;'; // grün = Punkte
-                if (pos < 90) return 'background-color: #1D4ED8; color: #FFF;'; // blau = klassifiziert, keine Punkte
+                if (getPointsForPosition(pos, matrixYear) > 0) return 'background-color: #166534; color: #FFF;';
+                if (pos < 90) return 'background-color: #1D4ED8; color: #FFF;';
                 return 'background-color: var(--bg-secondary); color: var(--text-tertiary);';
             };
             
@@ -12275,10 +12282,14 @@ const SEASON_DATA = {
                                             if (!result) return '<td class="p-2 text-center">-</td>';
                                             const pos = result.p || result.position;
                                             const dnf = result.dnf === 1 || result.dnf === true;
+                                            const pt = (result.posText || '').toUpperCase();
                                             const raceName = race.rn || race.raceName || '';
+                                            const specialLabel = ['DNQ','DNPQ','DSQ','DNS','WD','EX'].includes(pt) ? pt : null;
+                                            const label = specialLabel || (dnf ? 'Ret' : pos);
+                                            const titleText = specialLabel ? `${raceName}: ${pt}` : `${raceName}: P${pos}${dnf ? ' (DNF)' : ''}`;
                                             return `
-                                                <td class="p-2 text-center font-bold" style="${getPosColor(pos, dnf)}" title="${raceName}: P${pos}${dnf ? ' (DNF)' : ''}">
-                                                    ${dnf ? 'Ret' : pos}
+                                                <td class="p-2 text-center font-bold" style="${getPosColor(pos, dnf, pt)}" title="${titleText}">
+                                                    ${label}
                                                 </td>
                                             `;
                                         }).join('')}
@@ -12297,7 +12308,10 @@ const SEASON_DATA = {
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #CD7F32; color: #000;">3 = P3</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #166534; color: #FFF;">Punkte</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #1D4ED8; color: #FFF;">Klassifiziert</span>
-                    <span class="px-2 py-1 rounded font-bold" style="background-color: #3D1F1F; color: #EF4444;">Ret = DNF</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #2D1B69; color: #A78BFA;">Ret = DNF</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #78350F; color: #FCD34D;">DSQ</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #7F1D1D; color: #FCA5A5;">DNQ</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #831843; color: #F9A8D4;">DNPQ</span>
                 </div>
             `;
         }
