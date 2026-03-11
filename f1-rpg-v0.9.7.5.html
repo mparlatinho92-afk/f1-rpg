@@ -609,6 +609,16 @@
                 width: calc(100% - 2rem) !important;
                 max-width: none !important;
             }
+
+            /* Team-Steckbrief Vollbild auf Mobile */
+            #teamProfileModal .modal-content {
+                margin: 0;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: 100dvh;
+                max-height: 100dvh !important;
+                border-radius: 0;
+            }
             
             /* Kleinere Schrift für Cards auf Mobile */
             .card {
@@ -16619,7 +16629,7 @@ const SEASON_DATA = {
             
             let html = '<div class="card p-4 rounded-lg mt-4">';
             html += '<h4 class="font-bold mb-3">📜 Team-Historie</h4>';
-            html += '<div class="table-responsive max-h-64 overflow-y-auto"><table class="w-full text-sm">';
+            html += '<div class="table-responsive max-h-64 overflow-y-auto overflow-x-auto"><table class="text-sm" style="min-width:100%">';
             html += '<thead class="sticky top-0 bg-secondary"><tr class="text-tertiary text-xs">';
             html += '<th class="text-left p-1">Jahr</th>';
             html += '<th class="text-left p-1">Fahrer</th>';
@@ -16640,7 +16650,7 @@ const SEASON_DATA = {
                 if (dObjs.length === 0) {
                     driversHtml = '-';
                 } else {
-                    const LIMIT = window.innerWidth < 640 ? 16 : window.innerWidth < 1024 ? 44 : window.innerWidth < 1280 ? 70 : 88;
+                    const LIMIT = window.innerWidth < 640 ? 999 : window.innerWidth < 1024 ? 44 : window.innerWidth < 1280 ? 70 : 88;
                     const inlineItems = [];
                     let charCount = 0, truncated = false, fullyShown = 0;
                     for (let i = 0; i < dObjs.length; i++) {
@@ -16668,7 +16678,7 @@ const SEASON_DATA = {
                         driversHtml += ` <span class="driver-link cursor-pointer text-xs" onclick="event.stopPropagation();openDriverPickModal('${encoded}')">+${pickerCount}</span>`;
                     }
                 }
-                html += '<td class="p-1 text-xs">' + driversHtml + '</td>';
+                html += '<td class="p-1 text-xs" style="white-space:nowrap">' + driversHtml + '</td>';
                 html += '<td class="p-1 text-center ' + winsClass + '">' + h.wins + '</td>';
                 html += '<td class="p-1 text-center">' + h.podiums + '</td>';
                 html += '<td class="p-1 text-center">' + (typeof h.points === 'number' ? Math.round(h.points) : h.points) + '</td>';
