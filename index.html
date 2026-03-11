@@ -11295,58 +11295,33 @@ const SEASON_DATA = {
             }
             data.currentRace = data.races.length;
             
-            // === SYNTHETISCHE RENNERGEBNISSE FÜR HISTORISCHE SAISONS ===
-            // Verteile die Siege/Podien/Punkte auf die Rennen basierend auf den Saison-Statistiken
-            if (data.drivers.length > 0 && data.races.length > 0) {
-                const numRaces = data.races.length;
-                
-                // Für jedes Rennen: Erstelle ein plausibles Ergebnis
-                data.results = data.races.map((race, raceIdx) => {
-                    // Sortiere Fahrer für dieses Rennen (mit etwas Variation)
-                    const raceResults = data.drivers
-                        .filter(d => d.position !== null) // Nur Fahrer die in diesem Jahr fuhren
-                        .map(d => {
-                            // Basis-Stärke aus WM-Position
-                            const strength = d.position ? (25 - d.position) : 0;
-                            // Zufällige Variation pro Rennen (deterministisch basierend auf raceIdx + driverId)
-                            const hash = (raceIdx * 31 + d.id.length * 17) % 100;
-                            const variation = (hash / 100) * 10 - 5;
-                            return {
-                                driver: d.id,
-                                name: d.name,
-                                team: d.constructor || '-',
-                                score: strength + variation,
-                                // Verteile Siege gleichmäßig auf die besten Fahrer
-                                hasWin: d.wins > 0 && raceIdx < d.wins * (numRaces / d.wins)
-                            };
-                        })
-                        .sort((a, b) => b.score - a.score);
-                    
-                    // Erstelle Ergebnis-Array
-                    const results = raceResults.map((r, pos) => {
-                        const position = pos + 1;
-                        const points = getPointsForPosition(position, year);
+            // === ECHTE RENNERGEBNISSE AUS F1DB ===
+            if (f1dbYear && f1dbYear.length > 0) {
+                data.results = f1dbYear
+                    .filter(race => !race.isIndy)
+                    .map((race, raceIdx) => {
+                        const entries = (race.entries || [])
+                            .filter(e => e.driverId)
+                            .map(e => {
+                                const isDNF = !e.posNum || ['DNF','DNS','DSQ','NC'].includes(String(e.posText || '').toUpperCase());
+                                return {
+                                    d: e.driverId,
+                                    driver: e.driverId,
+                                    p: e.posNum || 99,
+                                    position: e.posNum || 99,
+                                    dnf: isDNF ? 1 : 0,
+                                    pt: e.points || 0
+                                };
+                            })
+                            .sort((a, b) => a.p - b.p);
                         return {
-                            d: r.driver,        // Komprimiert
-                            driver: r.driver,   // Für Kompatibilität
-                            name: r.name,
-                            team: r.team,
-                            p: position,
-                            position: position,
-                            pt: points,
-                            points: points,
-                            dnf: false
+                            ri: raceIdx,
+                            rn: race.name,
+                            raceName: race.name,
+                            res: entries,
+                            results: entries
                         };
                     });
-                    
-                    return {
-                        ri: raceIdx,
-                        rn: race.name,
-                        raceName: race.name,
-                        res: results,
-                        results: results
-                    };
-                });
             }
             
             return data;
@@ -12203,8 +12178,19 @@ const SEASON_DATA = {
                 return '<p class="text-tertiary text-center p-8">Noch keine Rennen absolviert</p>';
             }
             
+            // Fahrer die in mind. 1 Rennen erscheinen (Filter: Testfahrer/Ersatzfahrer ohne Ergebnis)
+            const activeInResults = new Set();
+            results.forEach(r => {
+                (r.res || r.results || []).forEach(res => activeInResults.add(res.d || res.driver));
+            });
+
             const driverStandings = Object.entries(driverStandingsData || {})
-                .map(([id, s]) => ({ id, ...s }))
+                .map(([id, s]) => {
+                    // Namens-Absicherung: HIST_NAMES als erste Quelle für historische IDs
+                    const resolvedName = (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) || s.name || id;
+                    return { id, ...s, name: resolvedName };
+                })
+                .filter(d => d.points > 0 || activeInResults.has(d.id))
                 .sort((a, b) => b.points - a.points);
             
             // Farben für Positionen
