@@ -24,7 +24,7 @@ Schritte (nur nach Freigabe):
 2. Neue Versionsnummer in der neuen Datei einsetzen (`VERSION`-Konstante + `<title>`)
 3. Changelog in der neuen Datei aktualisieren (siehe oben)
 4. Alte Version ins Archiv verschieben: `mv f1-rpg-vX.X.X.html archive/` ← nur lokal, Git ignoriert `archive/`
-5. `cp f1-rpg-vY.Y.Y.html index.html` ← Netlify-Deploy-Datei aktualisieren
+5. `cp f1-rpg-vY.Y.Y.html index.html` ← **PFLICHT – nie überspringen!** Netlify deployed index.html, nicht die versionierte Datei
 6. Git add + commit mit aussagekräftiger Message auf Deutsch:
    `git add f1-rpg-vY.Y.Y.html index.html CLAUDE.md` ← NUR neue Dateien, nie archive/
    `git commit -m "v0.9.0 – Retirement-Wahrscheinlichkeit balanciert"`
