@@ -31,8 +31,8 @@ Schritte (nur nach Freigabe):
 7. `git push origin master` ← Netlify deployed automatisch
 
 → Ergebnis: Hauptordner hat genau eine HTML-Datei, Archive hat eine saubere Datei pro Version (lokal, kein Git-Tracking)
-→ index.html = immer aktuelle Version → sofort mobil verfügbar unter https://mparlatinho92.netlify.app/
-→ Git/Netlify sehen nur: aktuelle HTML + index.html + schemas/ + tests/ + CLAUDE.md
+→ index.html = immer aktuelle Version → sofort mobil verfügbar unter https://mparlatinho92-afk.github.io/f1-rpg/
+→ Git/GitHub Pages sehen nur: aktuelle HTML + index.html + schemas/ + tests/ + CLAUDE.md
 
 ## Versionierung
 - Versionsnummer steht in der HTML im `<title>`-Tag und in der Konstante `VERSION`
