@@ -12180,18 +12180,34 @@ const SEASON_DATA = {
             
             // Fahrer die in mind. 1 Rennen erscheinen (Filter: Testfahrer/Ersatzfahrer ohne Ergebnis)
             const activeInResults = new Set();
+            // Starts + Positionssumme pro Fahrer für Tiebreaker
+            const driverStarts = {}, driverPosSum = {};
             results.forEach(r => {
-                (r.res || r.results || []).forEach(res => activeInResults.add(res.d || res.driver));
+                (r.res || r.results || []).forEach(res => {
+                    const did = res.d || res.driver;
+                    activeInResults.add(did);
+                    if (res.p && res.p < 90) { // echte Platzierung (keine DNF-Platzhalter)
+                        driverStarts[did] = (driverStarts[did] || 0) + 1;
+                        driverPosSum[did] = (driverPosSum[did] || 0) + res.p;
+                    }
+                });
             });
 
             const driverStandings = Object.entries(driverStandingsData || {})
                 .map(([id, s]) => {
-                    // Namens-Absicherung: HIST_NAMES als erste Quelle für historische IDs
                     const resolvedName = (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) || s.name || id;
-                    return { id, ...s, name: resolvedName };
+                    const starts = driverStarts[id] || 0;
+                    const avgPos = starts > 0 ? driverPosSum[id] / starts : 999;
+                    return { id, ...s, name: resolvedName, _starts: starts, _avgPos: avgPos };
                 })
                 .filter(d => d.points > 0 || activeInResults.has(d.id))
-                .sort((a, b) => b.points - a.points);
+                .sort((a, b) =>
+                    (b.points - a.points) ||
+                    (b.wins - a.wins) ||
+                    ((b.podiums || 0) - (a.podiums || 0)) ||
+                    (b._starts - a._starts) ||
+                    (a._avgPos - b._avgPos)
+                );
             
             // Farben für Positionen
             const getPosColor = (pos, dnf) => {
