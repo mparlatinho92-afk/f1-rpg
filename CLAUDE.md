@@ -23,14 +23,16 @@ Schritte (nur nach Freigabe):
 1. Neue Datei anlegen: `cp f1-rpg-vX.X.X.html f1-rpg-vY.Y.Y.html`
 2. Neue Versionsnummer in der neuen Datei einsetzen (`VERSION`-Konstante + `<title>`)
 3. Changelog in der neuen Datei aktualisieren (siehe oben)
-4. Alte Version ins Archiv verschieben: `mv f1-rpg-vX.X.X.html archive/`
+4. Alte Version ins Archiv verschieben: `mv f1-rpg-vX.X.X.html archive/` ← nur lokal, Git ignoriert `archive/`
 5. `cp f1-rpg-vY.Y.Y.html index.html` ← Netlify-Deploy-Datei aktualisieren
 6. Git add + commit mit aussagekräftiger Message auf Deutsch:
+   `git add f1-rpg-vY.Y.Y.html index.html CLAUDE.md` ← NUR neue Dateien, nie archive/
    `git commit -m "v0.9.0 – Retirement-Wahrscheinlichkeit balanciert"`
 7. `git push origin master` ← Netlify deployed automatisch
 
-→ Ergebnis: Hauptordner hat genau eine HTML-Datei, Archive hat eine saubere Datei pro Version (kein `_backup`-Suffix nötig)
+→ Ergebnis: Hauptordner hat genau eine HTML-Datei, Archive hat eine saubere Datei pro Version (lokal, kein Git-Tracking)
 → index.html = immer aktuelle Version → sofort mobil verfügbar unter https://mparlatinho92.netlify.app/
+→ Git/Netlify sehen nur: aktuelle HTML + index.html + schemas/ + tests/ + CLAUDE.md
 
 ## Versionierung
 - Versionsnummer steht in der HTML im `<title>`-Tag und in der Konstante `VERSION`
