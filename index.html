@@ -10,7 +10,7 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" href="/icon-512.svg" type="image/svg+xml">
-    <title>F1 RPG v0.9.7.5</title>
+    <title>F1 RPG v0.9.7.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1466,7 +1466,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.7.5';
+        const VERSION = '0.9.7.6';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12214,7 +12214,7 @@ const SEASON_DATA = {
             // Farben für Positionen – Punkte-Grenze era-korrekt via getPointsForPosition
             const getPosColor = (pos, dnf, posText) => {
                 const pt = (posText || '').toUpperCase();
-                if (pt === 'DNPQ') return 'background-color: #831843; color: #F9A8D4;';
+                if (pt === 'DNPQ') return 'background-color: #701A75; color: #F5D0FE;';
                 if (pt === 'DNQ')  return 'background-color: #7F1D1D; color: #FCA5A5;';
                 if (pt === 'DSQ')  return 'background-color: #78350F; color: #FCD34D;';
                 if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return 'background-color: #1C1C1C; color: #6B7280;';
@@ -12311,7 +12311,7 @@ const SEASON_DATA = {
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #2D1B69; color: #A78BFA;">Ret = DNF</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #78350F; color: #FCD34D;">DSQ</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #7F1D1D; color: #FCA5A5;">DNQ</span>
-                    <span class="px-2 py-1 rounded font-bold" style="background-color: #831843; color: #F9A8D4;">DNPQ</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #701A75; color: #F5D0FE;">DNPQ</span>
                 </div>
             `;
         }
@@ -13298,7 +13298,9 @@ const SEASON_DATA = {
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
-                            <div class="font-bold text-green-400">v0.9.7.5 (aktuell)</div>
+                            <div class="font-bold text-green-400">v0.9.7.6 (aktuell)</div>
+                            <div>• FIX: Saisonverlauf DNPQ-Farbe → Fuchsia (klar unterscheidbar von DNQ-Rot)</div>
+                            <div class="text-gray-500">v0.9.7.5</div>
                             <div>• FIX: Team-Historie Zeichenlimit erhöht (Desktop: 62, Tablet: 44 Zeichen)</div>
                             <div class="text-gray-500">v0.9.7.4</div>
                             <div>• FIX: Team-Historie Links bei Namen ohne Sonderzeichen (Hakkinen → Häkkinen)</div>
