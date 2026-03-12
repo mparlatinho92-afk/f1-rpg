@@ -6504,7 +6504,8 @@ const SEASON_DATA = {
             else if (_poolGroupFilter === 'B') filtered = pool.filter(d => d.poolGroup === 'B');
             else if (_poolGroupFilter === 'C') filtered = pool.filter(d => d.poolGroup === 'C');
             else if (_poolGroupFilter === 'indy') filtered = indyPool;
-            const sorted = [...filtered].sort((a, b) => (b.pace || 0) - (a.pace || 0));
+            const sorted = [...filtered].sort((a, b) =>
+                (b.lastRacedYear || 0) - (a.lastRacedYear || 0) || (b.pace || 0) - (a.pace || 0));
 
             const tabs = [
                 { key: 'all', label: `Alle (${pool.length})` },
@@ -8997,6 +8998,7 @@ const SEASON_DATA = {
                                 driver: driver.id, name: driver.name, type: 'dismissed', age: age,
                                 reason: `Entlassen (0 Punkte in ${racesThisSeason} Rennen)`
                             });
+                            addDismissedToPool(driver);
                             return;
                         }
                     }
