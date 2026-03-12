@@ -11322,6 +11322,7 @@ const SEASON_DATA = {
                             .sort((a, b) => a.p - b.p);
                         return {
                             ri: raceIdx,
+                            raceId: race.raceId,
                             rn: race.name,
                             raceName: race.name,
                             res: entries,
@@ -12256,11 +12257,14 @@ const SEASON_DATA = {
                                         const ioc = CIRCUIT_COUNTRY[circ];
                                         raceFlag = ioc ? getEmojiFlag(ioc, flagYear) : renderFlag(null, raceName);
                                     }
-                                    // Click: für simulierte Saison openRaceDetails, sonst openHistoricalRace
+                                    // Click: historisch (F1DB) → openHistoricalRaceModal, simuliert → openRaceDetails mit Year, aktuell → openRaceDetails
                                     const raceIdx = r.ri !== undefined ? r.ri : idx;
-                                    const onclick = isHistorical
-                                        ? `openRaceDetails(${raceIdx}, ${viewingHistoricalYear})`
-                                        : `openRaceDetails(${raceIdx})`;
+                                    const isPureHistorical = isHistorical && historicalViewData?.type === 'historical';
+                                    const onclick = isPureHistorical
+                                        ? `openHistoricalRaceModal(${r.raceId})`
+                                        : (isHistorical
+                                            ? `openRaceDetails(${raceIdx}, ${viewingHistoricalYear})`
+                                            : `openRaceDetails(${raceIdx})`);
                                     return `
                                         <th class="p-2 text-center min-w-[40px] cursor-pointer hover:opacity-70 transition" 
                                             title="${raceName}" onclick="${onclick}" style="font-size:1.2em">
@@ -13303,8 +13307,9 @@ const SEASON_DATA = {
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                             <div class="font-bold text-green-400">v0.9.7.9 (aktuell)</div>
-                            <div>• FIX: Saisonverlauf-Matrix: Rennen in Archivsaisons wieder anklickbar (Jahr-Typ-Mismatch)</div>
-                            <div>• FIX: Fahrer-Steckbrief: Team-Badge im Header ist jetzt klickbar</div>
+                            <div>• FIX: Saisonverlauf-Matrix: Flaggen in hist. F1DB-Saisons öffnen jetzt korrekt das Rennergebnis-Modal</div>
+                            <div>• FIX: Team-Steckbrief: aktive Teams nicht mehr fälschlich als „Ehemaliges Team" angezeigt</div>
+                            <div>• FIX: Fahrer-Steckbrief: Team-Badge im Header ist jetzt anklickbar</div>
                             <div class="text-gray-500">v0.9.7.8</div>
                             <div>• FIX: Team-Steckbrief: F1DB-Slug-IDs (red-bull, alfa-romeo) korrekt zu aktiven Teams aufgelöst</div>
                             <div>• FIX: Team-Steckbrief: Gründungsjahr/Statistiken bei historischen Teams (Alfa Romeo etc.) korrekt</div>
