@@ -53,8 +53,10 @@ Schritte (nur nach Freigabe):
 - Maximal ~3–5 Bullet-Points pro Version, prägnant auf Deutsch
 
 ## Testen vor Einbauen
-- Neue Logik (Wahrscheinlichkeiten, Berechnungen) erst als isoliertes Test-Script
-- Test läuft im Terminal durch, Ergebnis plausibel → dann erst in HTML einbauen
+- Neue Logik (Wahrscheinlichkeiten, Berechnungen) erst als isoliertes Test-Script in `/tests/`
+- Scripts sind reines Node.js (kein Browser, keine HTML-Abhängigkeiten)
+- **Workflow:** Claude schreibt Script → Nutzer führt aus (`node tests/foo.js`) → Nutzer schickt Output → Claude interpretiert
+- Claude führt Monte-Carlo-Simulationen NIEMALS selbst aus (Token-Verschwendung)
 - Bei Balance-Tests: gegen historische Referenzdaten in `/tests/historical_truth.js` prüfen
 
 ## Schemas (Datenstrukturen + Funktions-Index)
