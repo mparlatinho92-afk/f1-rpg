@@ -8803,16 +8803,8 @@ const SEASON_DATA = {
                         return;
                     }
                     // Entlassen (Vertrag ausgelaufen, kein neues Team)
-                    if (t.type === 'dismissed') {
-                        vertragsEntries.push({
-                            t,
-                            left: 'Vertrag ausgelaufen',
-                            right: 'Verlässt die Formel 1',
-                            color: '#f87171',
-                            order: 3
-                        });
-                        return;
-                    }
+                    // → NICHT in Verträge: steht bereits in Karriereenden
+                    if (t.type === 'dismissed') return;
                     // Rausgekauft (Vertrag noch laufend)
                     if (t.type === 'buyout') {
                         const tierLabel = t.type === 'upgrade' ? 'Aufstieg'
@@ -8862,12 +8854,8 @@ const SEASON_DATA = {
                         <h4 class="font-bold mb-3">📋 Verträge (${vertragsEntries.length})</h4>
                         <div class="space-y-1">
                         ${vertragsEntries.map(e => `
-                            <div class="flex items-baseline gap-1 text-sm" style="flex-wrap:wrap">
-                                <span style="color:var(--text-muted);min-width:0">${tLink(e.t)}</span>
-                                <span style="color:var(--text-muted);font-size:0.7rem">·</span>
-                                <span style="color:var(--text-muted);font-size:0.75rem">${e.left}</span>
-                                <span style="color:var(--text-muted);font-size:0.7rem">→</span>
-                                <span style="color:${e.color};font-size:0.75rem;font-weight:600">${e.right}</span>
+                            <div class="text-sm py-0.5">
+                                ${tLink(e.t)}<span style="color:var(--text-muted)"> · ${e.left} → </span><span style="color:${e.color};font-weight:600">${e.right}</span>
                             </div>
                         `).join('')}
                         </div>
@@ -8893,13 +8881,13 @@ const SEASON_DATA = {
                     const wSection = (label, color, items, showScore = false) => items.length === 0 ? '' : `
                         <div class="mb-2">
                             <div class="text-xs font-bold mb-1" style="color:${color}">${label} (${items.length})</div>
-                            ${items.map(t => `
-                                <div class="text-sm ml-3 flex gap-1 items-baseline" style="flex-wrap:wrap">
-                                    <span>${tLink(t)}</span>
-                                    <span class="text-xs" style="color:var(--text-muted)">${t.fromTeam || '–'} → ${t.toTeam}</span>
-                                    ${showScore && t.score ? `<span class="text-xs" style="color:var(--text-muted)">(${t.score}/100)</span>` : ''}
-                                </div>
-                            `).join('')}
+                            ${items.map(t => {
+                                const route = t.fromTeam && t.fromTeam !== '–' && t.fromTeam !== '-'
+                                    ? `${t.fromTeam} → ${t.toTeam}`
+                                    : `→ ${t.toTeam}`;
+                                const score = showScore && t.score ? ` <span style="color:var(--text-muted)">(${t.score}/100)</span>` : '';
+                                return `<div class="text-sm ml-3 py-0.5">${tLink(t)} <span style="color:var(--text-muted)">${route}</span>${score}</div>`;
+                            }).join('')}
                         </div>`;
 
                     html += `<div class="card p-4 rounded-lg mb-4">
