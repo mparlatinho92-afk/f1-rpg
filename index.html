@@ -8820,14 +8820,25 @@ const SEASON_DATA = {
                         });
                         return;
                     }
-                    // Abgeworben (Vertrag lief aus / kurz vor Ende)
+                    // Abgeworben = immer Aufstieg (hireByPoaching holt nur aus niedrigerem Tier)
                     if (t.type === 'poached') {
                         vertragsEntries.push({
                             t,
                             left: 'Vertrag ausgelaufen',
-                            right: `Abgeworben · ${t.toTeam}`,
-                            color: '#a78bfa',
-                            order: 1
+                            right: `Aufstieg · ${t.toTeam}`,
+                            color: '#4ade80',
+                            order: 0
+                        });
+                        return;
+                    }
+                    // Rausgekauft = bestes Szenario: Vertrag lief noch, trotzdem geholt
+                    if (t.type === 'buyout') {
+                        vertragsEntries.push({
+                            t,
+                            left: 'Vertrag läuft noch',
+                            right: `Rausgekauft · ${t.toTeam}`,
+                            color: '#fbbf24',
+                            order: -1
                         });
                         return;
                     }
@@ -8869,11 +8880,10 @@ const SEASON_DATA = {
 
                 if (wechsel.length > 0) {
                     const wByType = {
-                        upgrade:  wechsel.filter(t => t.type === 'upgrade'),
+                        buyout:   wechsel.filter(t => t.type === 'buyout'),
+                        upgrade:  wechsel.filter(t => t.type === 'upgrade' || t.type === 'poached'),
                         lateral:  wechsel.filter(t => t.type === 'lateral'),
                         downgrade:wechsel.filter(t => t.type === 'downgrade'),
-                        poached:  wechsel.filter(t => t.type === 'poached'),
-                        buyout:   wechsel.filter(t => t.type === 'buyout'),
                         freeagent:wechsel.filter(t => t.type === 'freeagent'),
                         generated:wechsel.filter(t => t.type === 'generated'),
                     };
@@ -8893,11 +8903,10 @@ const SEASON_DATA = {
                     html += `<div class="card p-4 rounded-lg mb-4">
                         <h4 class="font-bold mb-3">🔄 Wechsel (${wechsel.length})</h4>
                         <div>
+                        ${wSection('💰 Rausgekauft', '#fbbf24', wByType.buyout,     true)}
                         ${wSection('⬆️ Aufstieg',    '#4ade80', wByType.upgrade,   true)}
                         ${wSection('↔️ Seitenwechsel','var(--text-muted)', wByType.lateral, false)}
                         ${wSection('⬇️ Abstieg',     '#fb923c', wByType.downgrade,  true)}
-                        ${wSection('🎯 Abgeworben',  '#a78bfa', wByType.poached,    true)}
-                        ${wSection('💰 Rausgekauft', '#facc15', wByType.buyout,     true)}
                         ${wSection('🆓 Free Agents', 'var(--text-muted)', wByType.freeagent, false)}
                         ${wSection('🔧 Neue Fahrer', 'var(--text-muted)', wByType.generated, false)}
                         </div>
