@@ -6179,7 +6179,7 @@ const SEASON_DATA = {
                 // Skills (Default: 75)
                 driver.pace = driver.pace ?? 75;
                 driver.rain = driver.rain ?? 75;
-                driver.consistency = driver.consistency || 75;
+                driver.consistency = driver.consistency ?? 75;
                 driver.experience = driver.experience ?? 75;
                 driver.starts = driver.starts ?? 75;
                 
@@ -7376,11 +7376,12 @@ const SEASON_DATA = {
                     team.carSpeed * 0.25 +
                     team.strategy * 0.1
                 );
-                // Konstanz = Varianz-Fenster rennen-für-rennen:
-                // Konstanz 100 → ±4, Konstanz 0 → ±15
+                // Konstanz = Wahrscheinlichkeit volle Pace abzurufen
+                // Bei schlechtem Tag: −15 bis −35 Punkte (unabhängig vom Konstanzwert)
                 const _consVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
-                const _halfVar = 4 + (100 - _consVal) * 0.11;
-                performance += (Math.random() - 0.5) * 2 * _halfVar;
+                if (Math.random() >= (_consVal / 100)) {
+                    performance -= 15 + Math.random() * 20;
+                }
                 
                 // ═══════════════════════════════════════════════════════════════
                 // DNF-FORMEL v0.8.0 - Option E (Variable Spread-Verstärkung)
@@ -7877,7 +7878,7 @@ const SEASON_DATA = {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
                 if (!team) return;
                 
-                // Qualifying Performance – Konstanz als Varianz (eine schnelle Runde = Formtag möglich)
+                // Qualifying Performance – Konstanz noch als Varianz (Quali-Spezialfall folgt später)
                 let qualiPerformance = (
                     driver.pace * 0.45 +
                     (isRain ? driver.rain * 0.2 : 15) +
@@ -13554,10 +13555,10 @@ const SEASON_DATA = {
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                             <div class="font-bold text-green-400">v0.9.9.4 (aktuell)</div>
+                            <div>• NEU: Konstanz = Wahrscheinlichkeit volle Pace abzurufen (schlechter Tag: −15–35 Malus)</div>
                             <div>• NEU: WM-Stand Gleichstand-Regel einstellbar: Durchschnittsplatz oder Rennen → Durchschnittsplatz</div>
                             <div>• FIX: Gleichstand-Sortierung überall konsistent (WM-Tabelle, Saisonverlauf, Steckbrief)</div>
-                            <div>• FIX: Konstanz=0 bei geladenen Fahrern (Senna, Prost etc.) durch Sanitize-Bug behoben</div>
-                            <div>• FIX: Handbuch Konstanz-Text korrekt formatiert (zeilenweise lesbar)</div>
+                            <div>• FIX: Konstanz=0 bei Spielstand-Laden nicht mehr auf 75 zurückgesetzt</div>
                             <div class="text-gray-500">v0.9.9.3</div>
                             <div>• FIX: Konstanz = rennen-für-rennen Varianz statt statischer Bonus; korreliert mit Pace bei Generierung</div>
                             <div>• FIX: Simulierte Saisons im Rennergebnis-Grid (Wikipedia-Stil) sichtbar</div>
@@ -13772,21 +13773,25 @@ const SEASON_DATA = {
                 statusText: '⚠️ Teilweise',
                 implementation: `Vorhanden: pace, rain, consistency, experience, starts. FEHLT: schonung (Reifenmanagement), duelle (Rad-an-Rad)
 
-━━━ KONSTANZ-MECHANIK (ab v0.9.9.3) ━━━
+━━━ KONSTANZ-MECHANIK (ab v0.9.9.4) ━━━
 
-Konstanz steuert die rennen-für-rennen Varianz (NICHT Runde-für-Runde).
-Ein Fahrer mit niedriger Konstanz hat "Formtage" – mal stark, mal schwach.
-Ein Fahrer mit hoher Konstanz ist vorhersehbar konsistent.
+Konstanz = Wahrscheinlichkeit, pro Rennen die volle Pace abzurufen.
+Konstanz 75 bedeutet: 75 % der Rennen läuft der Fahrer auf Niveau,
+25 % der Rennen hat er einen schlechten Tag.
 
-Simulation (Rennen + Qualifying):
-  Varianzfenster = 4 + (100 − Konstanz) × 0.11
-  → Konstanz 100 = ±4 Punkte  |  Konstanz 0 = ±15 Punkte
-  Im Regen ersetzt driver.rain die Konstanz als Varianz-Basis.
+Simulation (Rennen):
+  Würfelwurf pro Rennen: Math.random() >= (Konstanz / 100)
+  → Schlechter Tag: −15 bis −35 Punkte Performance-Malus
+  → Der Malus ist für ALLE Fahrer gleich – Konstanz steuert nur die Häufigkeit
+  Im Regen ersetzt driver.rain den Konstanz-Wert.
+  Qualifying: noch alte Varianz-Formel (Spezialfall folgt)
 
-Konstanz ist kein statischer Bonus mehr (war früher 20 % Gewicht).
-Pace trägt jetzt 35 % zur Basis-Performance bei (vorher 30 %).
+Konstanz ist vollständig unabhängig von Pace.
+Ein langsamer Fahrer kann sehr konstant sein – er fährt dann
+zuverlässig auf seinem (niedrigen) Niveau. Ein schneller Fahrer mit
+niedriger Konstanz kann Rennen dominieren oder völlig verschwinden.
 
-Generierung (korreliert mit Pace):
+Generierung (korreliert mit Pace als Startpunkt):
   90 % der Fahrer: Konstanz = Pace ± 10
   10 % Ausreißer:  Konstanz = Pace ± 15–25 (langsamer Fahrer kann konstant sein!)
   Rookies: tendieren zu niedriger Konstanz (Offset −15..+5)
@@ -13794,16 +13799,14 @@ Generierung (korreliert mit Pace):
   Clamp: 30–97 (kein Fahrer absolut inkonstant oder robot-artig)
 
 Alters-/Erfahrungs-Effekt:
-  Konstanz selbst altert NICHT automatisch. Sie wird beim Erstellen
-  gesetzt und kann manuell editiert werden. Erfahrene Neuzugänge (exp-...)
-  erhalten einen symmetrischeren Offset als Rookies (gen-...).
-  Historische Fahrer: Konstanz-Wert kommt direkt aus SEASON_DATA[year].d[7].
+  Konstanz altert NICHT automatisch. Manuell editierbar.
+  Historische Fahrer: Wert aus SEASON_DATA[year].d[7].
 
 Empfohlene Wertebereiche:
-  30–45 → sehr inkonstant (Wilder Hund: Pole möglich, Ausfall wahrscheinlich)
-  50–65 → unterdurchschnittlich schwankend
-  66–79 → Durchschnitt (Masse der Fahrer)
-  80–90 → zuverlässig konstant
+  30–45 → sehr inkonstant (~60–70 % der Rennen schlechter Tag!)
+  50–65 → unterdurchschnittlich – jedes 3. Rennen ein Ausrutscher
+  66–79 → Durchschnitt – 1 von 4 Rennen schwächer
+  80–90 → zuverlässig – nur 1 von 5–10 Rennen ein schlechter Tag
   91–97 → Elite-Konstanz (Vettel, Lauda-Niveau)
   < 30  → Warnung: extreme Simulation-Auswirkungen
   = 100 → Warnung: physikalisch unrealistisch (Robot)`,
@@ -15337,7 +15340,7 @@ Empfohlene Wertebereiche:
                             ${isCurrentlyActive ? `
                                 ${editRow('Konstanz', driver.consistency, 'consistency', '#F97316')}
                                 <div id="constWarn_${driverId}" style="display:${(driver.consistency??75) < 30 || (driver.consistency??75) >= 100 ? 'block' : 'none'}; color:#F97316; font-size:0.68rem; margin-top:2px; padding:2px 6px; background:rgba(249,115,22,0.12); border-radius:4px;">
-                                    ${(driver.consistency??75) < 30 ? '⚠️ Sehr niedrige Konstanz – starke Formschwankungen rennen-für-rennen.' : '⚠️ Konstanz 100 = Roboter – max. 97 empfohlen.'}
+                                    ${(driver.consistency??75) < 30 ? '⚠️ Unter 30: über 70 % der Rennen mit Performance-Malus!' : '⚠️ Konstanz 100 = Roboter – max. 97 empfohlen.'}
                                 </div>
                             ` : skillBar('Konstanz', driver.consistency)}
                         </div>
@@ -17159,7 +17162,7 @@ Empfohlene Wertebereiche:
             if (field === 'consistency') {
                 const warn = document.getElementById('constWarn_' + driverId);
                 if (warn) {
-                    const msg = v < 30 ? '⚠️ Sehr niedrige Konstanz – starke Formschwankungen rennen-für-rennen.'
+                    const msg = v < 30 ? '⚠️ Unter 30: über 70 % der Rennen mit Performance-Malus!'
                               : v >= 100 ? '⚠️ Konstanz 100 = Roboter – kein Fahrer ist absolut konsistent.'
                               : '';
                     warn.textContent = msg;
