@@ -12286,8 +12286,24 @@ const SEASON_DATA = {
             const teamsList = isHistorical ? historicalViewData.teams : GAME_STATE.teams;
             const flagYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
             
+            // _avgPos frisch aus Rennergebnissen berechnen (wie Matrix) – robust gegen alte Saves
+            const _dsResults = isHistorical ? (historicalViewData?.results || []) : GAME_STATE.results;
+            const _dsStarts = {}, _dsPosSum = {};
+            _dsResults.forEach(r => {
+                (r.res || r.results || []).forEach(res => {
+                    const did = res.d || res.driver;
+                    if (res.p && res.p < 90 && !res.dnf) {
+                        _dsStarts[did]  = (_dsStarts[did]  || 0) + 1;
+                        _dsPosSum[did]  = (_dsPosSum[did]  || 0) + res.p;
+                    }
+                });
+            });
+
             const drivers = Object.entries(driverStandings || {})
-                .map(([id, s]) => ({ id, ...s }))
+                .map(([id, s]) => {
+                    const starts = _dsStarts[id] || 0;
+                    return { id, ...s, _starts: starts, _avgPos: starts > 0 ? _dsPosSum[id] / starts : undefined };
+                })
                 .sort(getDriverSortFn());
 
             return `
