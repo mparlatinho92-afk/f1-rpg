@@ -1635,6 +1635,28 @@
             return table[eraStart] || table[2020];
         }
         
+        // === WM-STAND SORTIERUNG (v0.9.9.4) ===
+        // Tiebreaker-Einstellung: 'avg' = nur Durchschnittsplatzierung
+        //                        'races_avg' = Anzahl Rennen, dann Durchschnittsplatzierung
+        function getDriverSortFn() {
+            const mode = localStorage.getItem('f1rpg_tiebreak') || 'avg';
+            return function(a, b) {
+                const ptDiff = (b.points || 0) - (a.points || 0);
+                if (ptDiff !== 0) return ptDiff;
+                if (mode === 'races_avg') {
+                    const rDiff = (b.races || b._starts || 0) - (a.races || a._starts || 0);
+                    if (rDiff !== 0) return rDiff;
+                }
+                const getAvg = d => {
+                    if (d._avgPos !== undefined) return d._avgPos;
+                    const f = d.finishes || 0;
+                    if (f > 0) return (d.totalPositions || 0) / f;
+                    return (d.champPosition && d.champPosition !== 'None') ? Number(d.champPosition) : 999;
+                };
+                return getAvg(a) - getAvg(b);
+            };
+        }
+
         // === TIER-SYSTEM (v0.6.0) ===
         // Berechnet Team-Tier basierend auf WM-Stand der letzten abgeschlossenen Saison
         // Top: Platz 1-3 | Mittelfeld: Hälfte des Rests | Backmarker: Rest
@@ -7758,6 +7780,10 @@ const SEASON_DATA = {
                     if (!r.dnf && (!ds.bestFinish || r.position < ds.bestFinish)) {
                         ds.bestFinish = r.position;
                     }
+                    if (!r.dnf && r.position > 0 && r.position < 90) {
+                        ds.totalPositions = (ds.totalPositions || 0) + r.position;
+                        ds.finishes = (ds.finishes || 0) + 1;
+                    }
                 }
                 
                 // Team standings
@@ -11379,7 +11405,8 @@ const SEASON_DATA = {
                             wins: season[2] || 0,
                             podiums: season[3] || 0,
                             team: driverTeamName,
-                            teamId: constructor  // F1DB-Slug für Team-Lookup
+                            teamId: constructor,  // F1DB-Slug für Team-Lookup
+                            champPosition: (season[1] && season[1] !== 'None') ? parseInt(season[1]) : null
                         };
                     }
                 }
@@ -11442,6 +11469,24 @@ const SEASON_DATA = {
                     data.teamStandings[t.id] = { name: t.name, points: t.points, wins: t.wins, podiums: t.podiums };
                 });
                 if (teamResults.length > 0) data.teamChampion = teamResults[0].name;
+
+                // avgFinish pro Fahrer aus F1DB-Einzelrennen berechnen
+                const drvFinTotals = {};
+                f1dbYear.forEach(race => {
+                    if (race.isIndy) return;
+                    race.entries.forEach(e => {
+                        if (!e.driverId || !e.posNum || e.posNum < 1 || e.posNum > 50) return;
+                        if (!drvFinTotals[e.driverId]) drvFinTotals[e.driverId] = { total: 0, count: 0 };
+                        drvFinTotals[e.driverId].total += e.posNum;
+                        drvFinTotals[e.driverId].count++;
+                    });
+                });
+                for (const [id, ft] of Object.entries(drvFinTotals)) {
+                    if (data.driverStandings[id]) {
+                        data.driverStandings[id].totalPositions = ft.total;
+                        data.driverStandings[id].finishes = ft.count;
+                    }
+                }
             } else if (typeof TEAM_HIST !== 'undefined') {
                 // Fallback: TEAM_HIST
                 const teamResults = [];
@@ -12242,7 +12287,7 @@ const SEASON_DATA = {
             
             const drivers = Object.entries(driverStandings || {})
                 .map(([id, s]) => ({ id, ...s }))
-                .sort((a, b) => b.points - a.points || b.wins - a.wins || b.podiums - a.podiums);
+                .sort(getDriverSortFn());
 
             return `
                 <div class="card rounded-xl overflow-hidden">
@@ -12391,13 +12436,7 @@ const SEASON_DATA = {
                     return { id, ...s, name: resolvedName, _starts: starts, _avgPos: avgPos };
                 })
                 .filter(d => d.points > 0 || activeInResults.has(d.id))
-                .sort((a, b) =>
-                    (b.points - a.points) ||
-                    (b.wins - a.wins) ||
-                    ((b.podiums || 0) - (a.podiums || 0)) ||
-                    (b._starts - a._starts) ||
-                    (a._avgPos - b._avgPos)
-                );
+                .sort(getDriverSortFn());
             
             // Farben für Positionen – Punkte-Grenze era-korrekt via getPointsForPosition
             const getPosColor = (pos, dnf, posText) => {
@@ -13416,6 +13455,31 @@ const SEASON_DATA = {
                         </div>
                     </div>
                     
+                    <!-- WM-STAND GLEICHSTAND-REGEL -->
+                    <div class="card p-6 rounded-xl">
+                        <h3 class="text-xl font-bold mb-2">🏆 WM-Stand: Gleichstand-Regel</h3>
+                        <p class="text-sm text-tertiary mb-4">Bei gleicher Punktzahl – welcher Fahrer steht höher im WM-Stand?</p>
+                        <div class="space-y-2">
+                            ${[
+                                { val: 'avg',       label: 'Durchschnittsplatzierung',                desc: 'Besser platziert im Schnitt = weiter oben – unabhängig von Rennanzahl' },
+                                { val: 'races_avg', label: 'Mehr Rennen, dann Durchschnittsplatzierung', desc: 'Wer mehr Rennen gefahren ist, steht bei Gleichstand höher – erst dann Durchschnitt' },
+                            ].map(opt => {
+                                const cur = localStorage.getItem('f1rpg_tiebreak') || 'avg';
+                                return `
+                                    <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg" style="${cur === opt.val ? 'background:var(--accent-muted)' : ''}">
+                                        <input type="radio" name="tiebreak" value="${opt.val}" ${cur === opt.val ? 'checked' : ''}
+                                               onchange="localStorage.setItem('f1rpg_tiebreak', this.value); renderAll();"
+                                               style="margin-top:3px; flex-shrink:0">
+                                        <div>
+                                            <div class="font-bold text-sm">${opt.label}</div>
+                                            <div class="text-xs text-tertiary mt-0.5">${opt.desc}</div>
+                                        </div>
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
                     <!-- DNF-WAHRSCHEINLICHKEIT SLIDER -->
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-4">💥 DNF-Wahrscheinlichkeit</h3>
@@ -13490,8 +13554,9 @@ const SEASON_DATA = {
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                             <div class="font-bold text-green-400">v0.9.9.4 (aktuell)</div>
+                            <div>• NEU: WM-Stand Gleichstand-Regel einstellbar: Durchschnittsplatz oder Rennen → Durchschnittsplatz</div>
+                            <div>• FIX: Gleichstand-Sortierung überall konsistent (WM-Tabelle, Saisonverlauf, Steckbrief)</div>
                             <div>• FIX: Konstanz=0 bei geladenen Fahrern (Senna, Prost etc.) durch Sanitize-Bug behoben</div>
-                            <div>• FIX: WM-Stand Gleichstand-Regel: erst Siege, dann Podien (wie F1-Reglement)</div>
                             <div>• FIX: Handbuch Konstanz-Text korrekt formatiert (zeilenweise lesbar)</div>
                             <div class="text-gray-500">v0.9.9.3</div>
                             <div>• FIX: Konstanz = rennen-für-rennen Varianz statt statischer Bonus; korreliert mit Pace bei Generierung</div>
@@ -15075,7 +15140,7 @@ Empfohlene Wertebereiche:
             // WM-Position (nur für aktive Fahrer)
             const wmPosition = isCurrentlyActive ? Object.entries(GAME_STATE.driverStandings)
                 .map(([id, s]) => ({ id, ...s }))
-                .sort((a, b) => b.points - a.points)
+                .sort(getDriverSortFn())
                 .findIndex(d => d.id === driverId) + 1 : 0;
             
             const age = driver.birthYear ? GAME_STATE.currentYear - driver.birthYear : '?';
@@ -15650,7 +15715,7 @@ Empfohlene Wertebereiche:
                                 };
                             });
                             const sortedSt = Object.entries(histSeason.driverStandings || {})
-                                .map(([id,s]) => ({id, points: s.points||0})).sort((a,b)=>b.points-a.points);
+                                .map(([id,s]) => ({id, ...s})).sort(getDriverSortFn());
                             const wmPos = (sortedSt.findIndex(d => d.id === simDriver.id) + 1) || '-';
                             const team = (histSeason.teams||[]).find(t => t.id === simDriver.team);
                             return { year, cells, teamName: team?.name||'-', teamId: team?.id||null,
