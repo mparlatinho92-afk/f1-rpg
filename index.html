@@ -13459,23 +13459,24 @@ const SEASON_DATA = {
                     <!-- WM-STAND GLEICHSTAND-REGEL -->
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-xl font-bold mb-2">🏆 WM-Stand: Gleichstand-Regel</h3>
-                        <p class="text-sm text-tertiary mb-4">Bei gleicher Punktzahl – welcher Fahrer steht höher im WM-Stand?</p>
+                        <p class="text-sm text-tertiary mb-3">Bei gleicher Punktzahl – welcher Fahrer steht höher?</p>
                         <div class="space-y-2">
                             ${[
-                                { val: 'avg',       label: 'Durchschnittsplatzierung',                desc: 'Besser platziert im Schnitt = weiter oben – unabhängig von Rennanzahl' },
-                                { val: 'races_avg', label: 'Mehr Rennen, dann Durchschnittsplatzierung', desc: 'Wer mehr Rennen gefahren ist, steht bei Gleichstand höher – erst dann Durchschnitt' },
+                                { val: 'avg',       label: 'Durchschnittsplatzierung',                    desc: 'Besser platziert im Schnitt = weiter oben – unabhängig von Rennanzahl' },
+                                { val: 'races_avg', label: 'Mehr Rennen → Durchschnittsplatzierung', desc: 'Mehr gestartete Rennen = höher bei Gleichstand, dann Durchschnitt' },
                             ].map(opt => {
                                 const cur = localStorage.getItem('f1rpg_tiebreak') || 'avg';
+                                const active = cur === opt.val;
                                 return `
-                                    <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg" style="${cur === opt.val ? 'background:var(--accent-muted)' : ''}">
-                                        <input type="radio" name="tiebreak" value="${opt.val}" ${cur === opt.val ? 'checked' : ''}
-                                               onchange="localStorage.setItem('f1rpg_tiebreak', this.value); renderAll();"
-                                               style="margin-top:3px; flex-shrink:0">
-                                        <div>
-                                            <div class="font-bold text-sm">${opt.label}</div>
-                                            <div class="text-xs text-tertiary mt-0.5">${opt.desc}</div>
+                                    <button onclick="localStorage.setItem('f1rpg_tiebreak','${opt.val}'); currentTab='standings'; standingsSubTab='drivers'; renderAll();"
+                                            class="w-full text-left p-3 rounded-lg transition"
+                                            style="border:2px solid ${active ? 'var(--accent-main)' : 'var(--border-color)'}; background:${active ? 'var(--accent-muted)' : 'var(--bg-secondary)'}; cursor:pointer;">
+                                        <div class="flex items-center gap-2">
+                                            <span style="width:12px;height:12px;border-radius:50%;border:2px solid ${active ? 'var(--accent-main)' : 'var(--text-muted)'};background:${active ? 'var(--accent-main)' : 'transparent'};flex-shrink:0;display:inline-block;"></span>
+                                            <span class="font-bold text-sm">${opt.label}</span>
                                         </div>
-                                    </label>
+                                        <div class="text-xs text-tertiary mt-1 pl-5">${opt.desc}</div>
+                                    </button>
                                 `;
                             }).join('')}
                         </div>
