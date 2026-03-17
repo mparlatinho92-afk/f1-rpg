@@ -41,6 +41,7 @@ Schritte (nur nach Freigabe):
 - **Minor** (2. Stelle, z.B. 0.9.x → 0.10.x): Mehrere Feature-Gruppen abgeschlossen
 - **Major** (1.0.0): Alle v1.0-Bedingungen aus der Checkliste unten erfüllt
 - **Strategie bis 1.0**: 0.9.9.x frei ausbauen (kein Limit), dann 0.9.10.x usw. – 1.0.0 ist das Ziel, nicht die nächste Zahl
+- **v1.0-Checkliste**: siehe `V1_ROADMAP.md` – vor v1.0-Feature-Arbeit lesen
 - Vergib die Versionsnummer eigenständig nach obiger Logik und erkläre die Wahl kurz
 - Die Versionsanzeige oben links im UI wird immer aus der
   VERSION-Konstante gezogen, nie hardcoded – nach jeder
@@ -84,43 +85,6 @@ Schritte (nur nach Freigabe):
 /schemas/                ← Datenstruktur-Dokumentation (NUR Referenz, kein Laufzeit-Code)
 /CLAUDE.md               ← diese Datei
 ```
-
-## v1.0 Voraussetzungen (Checkliste)
-**1.0.0 wird erst vergeben wenn alle Punkte ✓ sind.**
-Status: `○` = offen · `◑` = teilweise · `✓` = fertig
-
-### Balance & Gameplay
-- `○` **Top-Team-Dominanz brechen** – Wagen kann von Saison zu Saison besser/schlechter werden; seltene Extremfälle; Fahrer-Formschwäche (je länger desto unwahrscheinlicher)
-- `○` **Historisch korrekte Fahrer-Paces** – z.B. junger Alonso zu stark bei Minardi; Current Pace ≠ Potential Pace bei jungen Fahrern; Rohdiamanten: schnelleres Wachstum, Potential-Cap bis halber Altersschnitt
-- `○` **Historisch korrekte Team-Paces** – harmoniert mit Fahrerpaces; Ziel: Minardi 2001 kommt selten in Punkte
-- `○` **Rohdiamanten-Buff** – sollen sich wirklich lohnen, zu oft unten durch; Rohdiamant-Status nur bis halber Altersschnitt möglich
-- `○` **Funktionierendes Bewertungssystem** – Teamstärke, Teamkollegen-Stärke, Formaufschwung berücksichtigen
-
-### Reservefahrer & Pool
-- `○` **Entlassene Fahrer 5 Jahre als Free Agent** im Reservefahrer-Pool verfügbar; Rückkehr-Wahrscheinlichkeit schrumpft exponentiell
-- `○` **Fixer Fahrer-Pool für erfundene Fahrer** – vorhersehbarer Nachwuchs; Fallback bleibt der große Reservepool
-- `○` **Historische Saison-Fahrer** in eigenem Tab der Reservefahrer-Liste; chronologisch erste 2 Fahrer; bei echtem 1-Auto-Team kein Generieren
-
-### Saison-Optionen (einstellbar vor jeder Saison)
-- `○` **Ab 1983: max. 2 Fahrer gleichzeitig** (Option) – chronologisch erste 2; Spiel fragt ob 2. Fahrer für neue Saisons dazukommen soll
-- `○` **Grid-Begrenzung** (Option) – historische Startfeld-Größe; Rest durch Quali / Pre-Quali
-- `○` **Neue hist. Fahrer zu Reserveliste** (Option) – 2. Frage ob einsetzen; bei Rookie-Zuordnung berücksichtigen; zukünftige Fahrer-Tab-Fahrer auch einbeziehen; Mittelfeld 25%/Backmarker 75%-Regel
-- `○` **Ersatzfahrer aus Reserveliste** (Option) – auch entlassene Free Agents möglich
-- `○` **Mid-Season Entlassungen** (Option) – bei extrem schlechter Leistung; Top→Mittelfeld/Back, Mittelfeld→Back/weg; Abstieg = automatischer Tausch; "ganz weg" = Rookie-Ersatz
-- `○` **Historisches Kommen/Gehen der Teams** (Option) – Team ersetzt anderes, übernimmt Verträge + Wagen (Skills eher neu)
-- `○` **Lokalmatadoren-Teams** (Option) – epochenbedingter Prozentsatz; Fahrer-Konstrukteurseigentümer wechseln nie (sonst löst sich Team auf)
-
-### Features
-- `○` **Non-Championship-Rennen** – frühe Saisons nicht zu kurz; auch tödlich; im Kalender auswählbar (alle/Championship/Non-Championship); farblich unterschieden
-- `○` **Jahreskalender** – anstehende Rennen mit Uhrzeit; Zeitkonflikte untereinander
-- `○` **AAA/USAC-Saison** – separates parallel laufendes Feld; Indy 500 Statistiken geteilt; höhere Todesrate als F1
-- `○` **Verletzungs-System** – Rückkehrgarantie, Ersatzfahrer-Kaskade, historische Wahrscheinlichkeit, Formschwäche nach Rückkehr, Bewertung eingefroren (UI-Markierung), Rücktrittsneigung steigt
-- `○` **Anpassungsfähigkeit** – F1-Wagen (Hamilton/Ferrari-Szenario), Formelwagen (Andretti), Open-Wheeler (Surtees)
-- `○` **Alle manuellen Teamwechsel** – jeder Fahrer zu jeder Zeit versetzbar
-- `○` **Saubere Löschfunktion** – Rennen/Saison zurücksetzen inkl. Tod, Wechsel, Ergebnisse, All-Time-Stats
-
-### UI & Bugs
-- `○` **Alle UI-Bug-Fixes** – laufend abarbeiten, kein spezifischer Stand definiert
 
 ## Nach PC-Neustart (Nutzer-Info)
 1. CMD im Projektordner öffnen
