@@ -56,11 +56,28 @@ Schritte (nur nach Freigabe):
 - Maximal ~3–5 Bullet-Points pro Version, prägnant auf Deutsch
 
 ## Testen vor Einbauen
-- Neue Logik (Wahrscheinlichkeiten, Berechnungen) erst als isoliertes Test-Script in `/tests/`
-- Scripts sind reines Node.js (kein Browser, keine HTML-Abhängigkeiten)
-- **Workflow:** Claude schreibt Script → Nutzer führt aus (`node tests/foo.js`) → Nutzer schickt Output → Claude interpretiert
-- Claude führt Monte-Carlo-Simulationen NIEMALS selbst aus (Token-Verschwendung)
-- Bei Balance-Tests: gegen historische Referenzdaten in `/tests/historical_truth.js` prüfen
+**Workflow:** Nutzer sagt „teste Feature X" → Claude nennt Befehl → Nutzer führt aus → Nutzer schickt Output → Claude interpretiert.
+Claude simuliert NIEMALS selbst (Token-Verschwendung).
+
+### Monte-Carlo-Infrastruktur (in `/tests/`)
+| Datei | Zweck |
+|---|---|
+| `sim-core.js` | Lädt die echte HTML-Datei in Node via `vm.runInNewContext` mit Browser-Stubs (Proxy) |
+| `generate-truth.js` | Erzeugt `historical_truth.json` aus F1DB-Rohdaten (einmalig ausführen) |
+| `monte-carlo.js` | Simuliert N Saisons, vergleicht mit historical_truth, gibt Bericht aus |
+
+**Erst ausführen:**
+```
+node tests/generate-truth.js
+node tests/monte-carlo.js 1967 50
+node tests/monte-carlo.js 1984 100
+```
+
+**Kennzahlen im Bericht:**
+- Fahrer-/Konstrukteur-WM-Verteilung (mit `← REAL`-Markierung)
+- Ø Siege pro Team, DNF-Rate (Sim vs. Real Δ)
+- Champion-Punkte (Ø, Median, Min/Max)
+- Realitäts-Check: ✓ wenn Realchampion ≥ 20 % der Sims gewinnt, ⚠ sonst
 
 ## Schemas (Datenstrukturen + Funktions-Index)
 **Immer zuerst `/schemas/` lesen** – nicht blind in der 3,5MB-HTML suchen.
