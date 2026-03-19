@@ -13,6 +13,7 @@ Status: `○` = offen · `◑` = teilweise · `✓` = fertig
 - `○` **Funktionierendes Bewertungssystem** – Teamstärke, Teamkollegen-Stärke, Formaufschwung; Details: Sheet 2 der Originaldatei
 
 ## Reservefahrer & Pool
+- `○` **Werksfahrer vs. Privateer-System** *(optional post-release)* – Typ-Feld `'W'`/`'P'`/`'G'` in SEASON_DATA; Werksfahrer immer gemeldet, Privateers sporadisch (Eintrittswkeit pro Rennen), Gastfahrer 1–3 Rennen; era-basiertes Sitzlimit pro Werksteam (1950s: 4, 1960s–70s: 3, 1980s+: 2); ersetzt Grid-Füller (Option B)
 - `○` **Entlassene Fahrer 5 Jahre als Free Agent** im Pool; Rückkehr-Wahrscheinlichkeit schrumpft exponentiell
 - `○` **Fixer Fahrer-Pool für erfundene Fahrer** – vorhersehbarer Nachwuchs; Fallback = großer Reservepool
 - `○` **Historische Saison-Fahrer** in eigenem Tab der Reservefahrer-Liste; chronologisch erste 2; bei echtem 1-Auto-Team kein Generieren
