@@ -7,10 +7,12 @@
  * Beispiele:
  *   node tests/monte-carlo.js 1967 50
  *   node tests/monte-carlo.js 1984 100 --szenario=dominanz
+ *   node tests/monte-carlo.js 1965 50  --szenario=privateers
  *
  * Szenarien (--szenario):
  *   dominanz   – Top-Team-Dominanz und Titelverteilung
  *   balance    – DNF-Rate, Punkte-Spreizung, Pace-Verteilung
+ *   privateers – Privatfahrer-System (Meldequote, Grid-Fülle, DNQ-Mix)
  *   (ohne)     – Vollbericht (alle Kennzahlen)
  */
 'use strict';
@@ -47,8 +49,6 @@ if (!truth) {
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 function resetAndInit(c, y) {
-    // Spielstand zurücksetzen und Saison initialisieren
-    // initFromYear setzt GAME_STATE komplett neu auf
     try {
         c.initFromYear(y);
     } catch(e) {
@@ -62,25 +62,75 @@ function simulateSeason(c) {
     let totalStarts = 0;
     let totalDNFs   = 0;
 
+    // Privateer-Metriken
+    const drivers = c.GAME_STATE.drivers || [];
+    const privateers = drivers.filter(d => d.isPrivateer);
+    const works     = drivers.filter(d => !d.isPrivateer && (!d.status || d.status === 'active'));
+
+    let privateerQualifyingEntries = 0;   // wie oft hat ein Privateer tatsächlich gemeldet
+    let privateerMaxEntries        = 0;   // Obergrenze (privateerCount × Rennen)
+    let worksQualifyingEntries     = 0;
+    let privateerDNQs              = 0;
+    let worksDNQs                  = 0;
+    let totalGridEntries           = [];  // Feld-Größe pro Rennen (Qualifizierte + DNQs)
+
+    const privateerIds  = new Set(privateers.map(d => d.id));
+    const worksIds      = new Set(works.map(d => d.id));
+
     for (let i = 0; i < races.length; i++) {
         const isRain = Math.random() < 0.15;
         try {
-            c.simulateQualifying(i, isRain);
-            const result = c.simulateRace(i, isRain);
+            const qResult = c.simulateQualifying(i, isRain);
+            const result  = c.simulateRace(i, isRain);
             if (!result) continue;
             c.applyRaceResults(result);
 
-            // DNF-Statistik sammeln
+            // Quali-Einträge zählen
+            if (qResult && qResult.results) {
+                for (const r of qResult.results) {
+                    if (privateerIds.has(r.driver)) privateerQualifyingEntries++;
+                    else if (worksIds.has(r.driver)) worksQualifyingEntries++;
+                }
+                totalGridEntries.push(qResult.results.length);
+            }
+
+            // Max-Einträge: alle Privateers könnten theoretisch melden
+            privateerMaxEntries += privateers.length;
+
+            // DNQs aufteilen
+            for (const dnqId of (result.dnq || [])) {
+                if (privateerIds.has(dnqId)) privateerDNQs++;
+                else worksDNQs++;
+            }
+
+            // DNF-Statistik
             for (const r of result.results) {
                 totalStarts++;
                 if (r.dnf || r.fatal) totalDNFs++;
             }
         } catch(e) {
-            // Einzelne Rennen können selten fehler haben – überspringen
+            // Einzelne Rennen überspringen
         }
     }
 
-    return { totalStarts, totalDNFs };
+    // Wie viele Privateers haben überhaupt je gemeldet?
+    const privateersThatRaced = privateers.filter(d => d.firstRaceEntry !== undefined).length;
+
+    return {
+        totalStarts, totalDNFs,
+        privateerCount:             privateers.length,
+        worksCount:                 works.length,
+        privateerQualifyingEntries,
+        privateerMaxEntries,
+        worksQualifyingEntries,
+        privateerDNQs,
+        worksDNQs,
+        privateersThatRaced,
+        avgGridSize: totalGridEntries.length
+            ? totalGridEntries.reduce((a,b)=>a+b,0) / totalGridEntries.length
+            : 0,
+        raceCount: races.length,
+    };
 }
 
 function getChampion(c) {
@@ -101,23 +151,26 @@ function getTopTeam(c) {
     return best;
 }
 
-function getDriverName(c, id) {
-    const d = (c.GAME_STATE.drivers || []).find(d => d.id === id);
-    return d ? d.name : id;
-}
-
 // ── Simulation laufen lassen ───────────────────────────────────────────────
 console.log(`Simuliere ${N} Saisons...`);
 const progress = Math.max(1, Math.floor(N / 10));
 
 const results = {
-    champions:     {},  // driverId → Anzahl Titel
-    championTeams: {},  // teamId   → Anzahl Titel
-    teamWins:      {},  // teamId   → Gesamtsiege
-    driverWins:    {},  // driverId → Gesamtsiege
-    dnfRates:      [],  // pro Saison
-    championPoints:[],  // Punkte des Champions pro Saison
+    champions:     {},
+    championTeams: {},
+    teamWins:      {},
+    driverWins:    {},
+    dnfRates:      [],
+    championPoints:[],
     raceCount:      0,
+
+    // Privateer-Metriken (Summen über alle Sims)
+    privateerCounts:            [],
+    worksCounts:                [],
+    privateerEntryRates:        [],   // tatsächlich / möglich
+    avgGridSizes:               [],
+    privateerDNQRates:          [],   // privateer-DNQs / alle DNQs
+    privateersThatRacedRates:   [],   // wie viele Privateers je mind. 1 Rennen hatten
 };
 
 let successfulSims = 0;
@@ -127,10 +180,10 @@ for (let sim = 0; sim < N; sim++) {
 
     try {
         resetAndInit(ctx, year);
-        const { totalStarts, totalDNFs } = simulateSeason(ctx);
+        const stats = simulateSeason(ctx);
 
-        const champ    = getChampion(ctx);
-        const topTeam  = getTopTeam(ctx);
+        const champ   = getChampion(ctx);
+        const topTeam = getTopTeam(ctx);
 
         if (champ) {
             results.champions[champ.id]     = (results.champions[champ.id] || 0) + 1;
@@ -140,7 +193,6 @@ for (let sim = 0; sim < N; sim++) {
             results.championTeams[topTeam.id] = (results.championTeams[topTeam.id] || 0) + 1;
         }
 
-        // Siege sammeln
         for (const [dId, s] of Object.entries(ctx.GAME_STATE.driverStandings)) {
             if (s.wins > 0) results.driverWins[dId] = (results.driverWins[dId] || 0) + s.wins;
         }
@@ -148,8 +200,29 @@ for (let sim = 0; sim < N; sim++) {
             if (s.wins > 0) results.teamWins[tId] = (results.teamWins[tId] || 0) + s.wins;
         }
 
-        if (totalStarts > 0) results.dnfRates.push(totalDNFs / totalStarts);
-        results.raceCount = ctx.GAME_STATE.races.length;
+        if (stats.totalStarts > 0)
+            results.dnfRates.push(stats.totalDNFs / stats.totalStarts * 100);
+        results.raceCount = stats.raceCount;
+
+        // Privateer-Metriken
+        results.privateerCounts.push(stats.privateerCount);
+        results.worksCounts.push(stats.worksCount);
+        results.avgGridSizes.push(stats.avgGridSize);
+
+        if (stats.privateerMaxEntries > 0) {
+            results.privateerEntryRates.push(
+                stats.privateerQualifyingEntries / stats.privateerMaxEntries * 100
+            );
+        }
+        const totalDNQs = stats.privateerDNQs + stats.worksDNQs;
+        if (totalDNQs > 0) {
+            results.privateerDNQRates.push(stats.privateerDNQs / totalDNQs * 100);
+        }
+        if (stats.privateerCount > 0) {
+            results.privateersThatRacedRates.push(
+                stats.privateersThatRaced / stats.privateerCount * 100
+            );
+        }
 
         successfulSims++;
     } catch(e) {
@@ -163,37 +236,29 @@ console.log(`\n  Fertig. ${successfulSims}/${N} Saisons erfolgreich.\n`);
 // ── Bericht ───────────────────────────────────────────────────────────────
 const pct  = (n) => (n / successfulSims * 100).toFixed(1) + '%';
 const avg  = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '–';
+const avgN = (arr) => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
 const sort = (obj) => Object.entries(obj).sort((a,b)=>b[1]-a[1]);
 
-// Fahrernamen nachschlagen (letzter Spielstand)
 const nameOf = (id) => {
     const d = (ctx.GAME_STATE.drivers||[]).find(d=>d.id===id);
     return d ? d.name : id;
 };
-
-// Team-Namen nachschlagen
 const teamNameOf = (id) => {
     const t = (ctx.GAME_STATE.teams||[]).find(t=>t.id===id);
     return t ? t.name : id;
 };
-
-// Hilfsfunktion: Game-Champion-ID anhand des Real-Namens finden
 const findChampIdByName = (realName) => {
     if (!realName) return null;
     const needle = realName.toLowerCase();
-    // Exakter Treffer zuerst
     for (const id of Object.keys(results.champions)) {
         if (nameOf(id).toLowerCase() === needle) return id;
     }
-    // Teilstring-Treffer (Nachname)
     const lastName = needle.split(' ').pop();
     for (const id of Object.keys(results.champions)) {
         if (nameOf(id).toLowerCase().includes(lastName)) return id;
     }
     return null;
 };
-
-// Hilfsfunktion: Game-Team-ID anhand des Real-Namens finden
 const findTeamIdByName = (realName) => {
     if (!realName) return null;
     const needle = realName.toLowerCase();
@@ -239,9 +304,9 @@ for (const [id, total] of teamWinEntries) {
 
 // DNF-Rate
 console.log(`║`);
-const simDNF = parseFloat(avg(results.dnfRates) );
+const simDNF = parseFloat(avg(results.dnfRates));
 const realDNF = truth?.dnfRate;
-const dnfDelta = realDNF != null ? ` | real: ${(realDNF*100).toFixed(1)}% | Δ ${((simDNF - realDNF*100)).toFixed(1)}%` : '';
+const dnfDelta = realDNF != null ? ` | real: ${(realDNF*100).toFixed(1)}% | Δ ${(simDNF - realDNF*100).toFixed(1)}%` : '';
 console.log(`║  DNF-RATE`);
 console.log(`║    Sim:  ${(simDNF).toFixed(1)}%${dnfDelta}`);
 
@@ -257,32 +322,77 @@ if (pts.length) {
     console.log(`║    Ø ${avg(pts)} Pkt  |  Median: ${median}  |  Min: ${pts[0]}  |  Max: ${pts[pts.length-1]}${realStr}`);
 }
 
+// ── PRIVATEER-BERICHT ─────────────────────────────────────────────────────
+if (results.privateerCounts.some(n => n > 0)) {
+    console.log(`║`);
+    console.log(`╠═══════════════════════════════════════════════════╣`);
+    console.log(`║  PRIVATFAHRER-SYSTEM`);
+
+    const avgPrivateers = avgN(results.privateerCounts).toFixed(1);
+    const avgWorks      = avgN(results.worksCounts).toFixed(1);
+    console.log(`║    Werksfahrer:       Ø ${avgWorks} pro Saison`);
+    console.log(`║    Privatfahrer:      Ø ${avgPrivateers} pro Saison`);
+
+    const avgGrid = avgN(results.avgGridSizes).toFixed(1);
+    const gridSize = ctx.GAME_STATE.races?.length > 0
+        ? (() => { try { return ctx.getGridSize(year, ctx.GAME_STATE.races[0]); } catch(e) { return '?'; } })()
+        : '?';
+    console.log(`║    Ø Feld pro Rennen: ${avgGrid} Fahrer  (Grid-Cap: ${gridSize})`);
+
+    if (results.privateerEntryRates.length) {
+        const entryRate = avgN(results.privateerEntryRates).toFixed(1);
+        console.log(`║    Privateer-Meldequote: Ø ${entryRate}%  (pro Rennen)`);
+    }
+
+    if (results.privateersThatRacedRates.length) {
+        const racedRate = avgN(results.privateersThatRacedRates).toFixed(1);
+        console.log(`║    Privateers mit ≥1 Rennen: Ø ${racedRate}%  (erscheinen in Matrix)`);
+    }
+
+    if (results.privateerDNQRates.length) {
+        const dnqShare = avgN(results.privateerDNQRates).toFixed(1);
+        const workShare = (100 - parseFloat(dnqShare)).toFixed(1);
+        console.log(`║    DNQ-Verteilung:   Privateer ${dnqShare}%  /  Works ${workShare}%`);
+    }
+
+    // Plausibilitäts-Check
+    console.log(`║`);
+    const avgGridNum = avgN(results.avgGridSizes);
+    const gridCapNum = typeof gridSize === 'number' ? gridSize : 0;
+    const fillRate   = gridCapNum > 0 ? (avgGridNum / gridCapNum * 100).toFixed(0) : '?';
+    const fillOk     = gridCapNum > 0 && avgGridNum >= gridCapNum * 0.85;
+    console.log(`║    Grid-Auslastung: ${fillRate}%  ${fillOk ? '✓' : '⚠ unter 85% – zu wenig Meldungen'}`);
+
+    const entryRateNum = avgN(results.privateerEntryRates);
+    const entryOk = entryRateNum >= 30 && entryRateNum <= 85;
+    console.log(`║    Meldequote plausibel: ${entryOk ? '✓' : '⚠ außerhalb 30–85%'}`);
+} else {
+    console.log(`║`);
+    console.log(`║  (Kein Privatfahrer-System aktiv für ${year})`);
+}
+
 // Realitäts-Abweichungen
 if (truth) {
     console.log(`║`);
     console.log(`╠═══════════════════════════════════════════════════╣`);
     console.log(`║  REALITÄTS-ABGLEICH ${year}`);
 
-    // Champion richtig?
     const realChampPct = realChampGameId && results.champions[realChampGameId]
         ? pct(results.champions[realChampGameId]) : '0.0%';
     const champOk = parseFloat(realChampPct) >= 20 ? '✓' : '⚠';
     console.log(`║  ${champOk} Realchampion ${truth.championName || truth.champion}: ${realChampPct} der Sims`);
 
-    // Top-Team richtig?
     const realTeamPct = realTeamGameId && results.championTeams[realTeamGameId]
         ? pct(results.championTeams[realTeamGameId]) : '0.0%';
     const teamOk = parseFloat(realTeamPct) >= 20 ? '✓' : '⚠';
     console.log(`║  ${teamOk} Real-Konstrukteur ${truth.championTeamName || truth.championTeam}: ${realTeamPct} der Sims`);
 
-    // DNF-Abgleich
     if (realDNF != null) {
-        const delta = Math.abs(simDNF - realDNF*100);
+        const delta = Math.abs(simDNF - realDNF * 100);
         const dnfOk = delta < 5 ? '✓' : delta < 10 ? '~' : '⚠';
         console.log(`║  ${dnfOk} DNF-Abweichung: ${delta.toFixed(1)}% (${delta < 5 ? 'ok' : delta < 10 ? 'tolerabel' : 'zu groß'})`);
     }
 
-    // Überraschende Dominatoren (sim stark, real nicht)
     for (const [id, n] of sort(results.championTeams).slice(0, 3)) {
         if (id !== realTeamGameId && n / successfulSims > 0.25) {
             console.log(`║  ⚠ ${teamNameOf(id)} zu dominant: ${pct(n)} (real nicht Champion)`);
@@ -292,4 +402,5 @@ if (truth) {
 
 console.log(`╚═══════════════════════════════════════════════════╝`);
 console.log(`\nTipp: node tests/generate-truth.js  →  historical_truth.json erzeugen`);
-console.log(`      node tests/monte-carlo.js ${year} 100  →  mehr Simulationen\n`);
+console.log(`      node tests/monte-carlo.js ${year} 100  →  mehr Simulationen`);
+console.log(`      node tests/monte-carlo.js 1965 50   →  Privatfahrer-Test (viele Privateers)\n`);
