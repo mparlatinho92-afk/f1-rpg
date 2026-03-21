@@ -61,6 +61,8 @@ function simulateSeason(c) {
     const races    = c.GAME_STATE.races;
     let totalStarts = 0;
     let totalDNFs   = 0;
+    let totalDeaths        = 0;
+    let totalAccidentDNFs  = 0;
 
     // Privateer-Metriken
     const drivers = c.GAME_STATE.drivers || [];
@@ -103,10 +105,12 @@ function simulateSeason(c) {
                 else worksDNQs++;
             }
 
-            // DNF-Statistik
+            // DNF-Statistik + Todes-Metriken
             for (const r of result.results) {
                 totalStarts++;
                 if (r.dnf || r.fatal) totalDNFs++;
+                if (r.fatal) totalDeaths++;
+                if (r.dnf && r.dnfType === 'accident') totalAccidentDNFs++;
             }
         } catch(e) {
             // Einzelne Rennen überspringen
@@ -118,6 +122,7 @@ function simulateSeason(c) {
 
     return {
         totalStarts, totalDNFs,
+        totalDeaths, totalAccidentDNFs,
         privateerCount:             privateers.length,
         worksCount:                 works.length,
         privateerQualifyingEntries,
@@ -164,6 +169,10 @@ const results = {
     championPoints:[],
     raceCount:      0,
 
+    // Todes-Metriken
+    deathsPerSeason:            [],
+    accidentDNFsPerSeason:      [],
+
     // Privateer-Metriken (Summen über alle Sims)
     privateerCounts:            [],
     worksCounts:                [],
@@ -203,6 +212,10 @@ for (let sim = 0; sim < N; sim++) {
         if (stats.totalStarts > 0)
             results.dnfRates.push(stats.totalDNFs / stats.totalStarts * 100);
         results.raceCount = stats.raceCount;
+
+        // Todes-Metriken
+        results.deathsPerSeason.push(stats.totalDeaths);
+        results.accidentDNFsPerSeason.push(stats.totalAccidentDNFs);
 
         // Privateer-Metriken
         results.privateerCounts.push(stats.privateerCount);
@@ -310,6 +323,60 @@ const dnfDelta = realDNF != null ? ` | real: ${(realDNF*100).toFixed(1)}% | Δ $
 console.log(`║  DNF-RATE`);
 console.log(`║    Sim:  ${(simDNF).toFixed(1)}%${dnfDelta}`);
 
+// Todes-Metriken
+console.log(`║`);
+console.log(`║  TODE PRO SAISON`);
+const avgDeaths     = avgN(results.deathsPerSeason);
+const avgAccidents  = avgN(results.accidentDNFsPerSeason);
+const fatalAccRate  = avgAccidents > 0 ? (avgDeaths / avgAccidents * 100).toFixed(1) : '–';
+
+// Historische Zielwerte (Tode/Jahr) – abgeleitet aus ERA_DEATH_RATES-Kalibrierung
+// Formel rückwärts: target = rate × (Rennen × histGrid × DNF-Rate × 0.5 Unfall-Anteil)
+// Dekadenschritte passend zu ERA_DEATH_RATES-Stützstellen:
+//   1950: 0.10 × (8×19×0.50×0.5)=38   → 3.8 ≈ 4.0
+//   1955: 0.07 × (8×20×0.50×0.5)=40   → 2.8 ≈ 3.0
+//   1960: 0.047 × (10×20×0.48×0.5)=48 → 2.3 ≈ 2.0
+//   1965: 0.033 × (10×20×0.45×0.5)=45 → 1.5
+//   1970: 0.018 × (14×23×0.42×0.5)=68 → 1.2  ← explizit kalibriert
+//   1975: 0.011 × (14×25×0.40×0.5)=70 → 0.77 ≈ 0.8  ← explizit kalibriert
+//   1980: 0.005 × (14×24×0.35×0.5)=59 → 0.29 ≈ 0.3
+//   1985: 0.002 × (16×25×0.32×0.5)=64 → 0.13
+//   1990: 0.001 × (16×26×0.25×0.5)=52 → 0.05
+//   1995: 0.0005 × (17×26×0.20×0.5)=44 → 0.02
+//   2000+: 0
+const DEATH_TARGETS = {
+    1950: 4.0,   // ~4 Tode/Jahr – frühe 50er, gefährlichste Ära
+    1955: 3.0,   // ~3/Jahr – späte 50er
+    1960: 2.0,   // ~2/Jahr – frühe 60er
+    1965: 1.5,   // ~1.5/Jahr – späte 60er (Safety-Diskussion beginnt)
+    1970: 1.2,   // ~1.2/Jahr – frühe 70er (Rindt, Cevert, Williamson…)
+    1975: 0.8,   // ~0.8/Jahr – Safety-Reformen greifen (Peterson, Pryce…)
+    1980: 0.3,   // ~0.3/Jahr – 80er (Paletti, de Angelis…)
+    1985: 0.13,  // ~0.13/Jahr – späte 80er
+    1990: 0.05,  // ~0.05/Jahr – frühe 90er (vor 1994)
+    1995: 0.02,  // ~0.02/Jahr – nach Imola-Reformen
+    2000: 0,     // 2000+ nahezu 0
+};
+const getDeathTarget = (y) => {
+    const keys = Object.keys(DEATH_TARGETS).map(Number).sort((a,b)=>a-b);
+    let val = 0;
+    for (const k of keys) { if (y >= k) val = DEATH_TARGETS[k]; }
+    return val;
+};
+const deathTarget = getDeathTarget(year);
+const deathDelta  = (avgDeaths - deathTarget).toFixed(2);
+// Toleranz: ±50% des Ziels (min 0.2 für Niedrig-Raten), ±1.0 für hohe Raten
+const tol = deathTarget > 1.0 ? 0.5 : Math.max(0.2, deathTarget * 0.5);
+const deathOk = Math.abs(avgDeaths - deathTarget) <= tol ? '✓'
+              : Math.abs(avgDeaths - deathTarget) <= tol * 2 ? '~' : '⚠';
+const deathLable = deathTarget > 0
+    ? ` | Ziel: ~${deathTarget} | Δ ${Number(deathDelta) > 0 ? '+' : ''}${deathDelta}  (Tol ±${tol.toFixed(2)})`
+    : ' | Ziel: 0';
+
+console.log(`║    Sim:  Ø ${avgDeaths.toFixed(2)} Tode/Saison${deathLable}  ${deathOk}`);
+console.log(`║    Unfall-DNFs: Ø ${avgAccidents.toFixed(1)} | Fatal-Rate: ${fatalAccRate}%`);
+console.log(`║    (deathRealism=${ctx.GAME_STATE?.deathRealism ?? 100}%)`);
+
 // Champion-Punkte
 console.log(`║`);
 console.log(`║  CHAMPION-PUNKTE`);
@@ -397,6 +464,14 @@ if (truth) {
         if (id !== realTeamGameId && n / successfulSims > 0.25) {
             console.log(`║  ⚠ ${teamNameOf(id)} zu dominant: ${pct(n)} (real nicht Champion)`);
         }
+    }
+
+    // Todes-Plausibilität im Realitäts-Abgleich
+    if (deathTarget > 0) {
+        console.log(`║  ${deathOk} Tode/Saison: Sim Ø ${avgDeaths.toFixed(2)} vs. ~${deathTarget}/Jahr (Δ ${Number(deathDelta) > 0 ? '+' : ''}${deathDelta})`);
+    } else {
+        const noDeathOk = avgDeaths < 0.1 ? '✓' : '⚠';
+        console.log(`║  ${noDeathOk} Tode/Saison: Sim Ø ${avgDeaths.toFixed(2)} (Ziel: 0 ab 2000)`);
     }
 }
 
