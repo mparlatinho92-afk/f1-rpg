@@ -66,14 +66,14 @@ if (indyMode) {
     console.log(`╔═══════════════════════════════════════════════════╗`);
     console.log(`║  INDY 500 – ${year} (${indyRaces} Simulationen)`.padEnd(51) + `║`);
     console.log(`╠═══════════════════════════════════════════════════╣`);
-    console.log(`║  Ø Tode pro Rennen:   ${avg.toFixed(3)}  (Ziel: ~0.55)`.padEnd(51) + `║`);
+    console.log(`║  Ø Tode pro Rennen:   ${avg.toFixed(3)}  (Ziel: ~0.636)`.padEnd(51) + `║`);
     console.log(`║  Ø Unfall-DNFs:       ${accAvg.toFixed(2)}`.padEnd(51) + `║`);
     console.log(`║  Fatal-Rate/Unfall:   ${fatalRate}%`.padEnd(51) + `║`);
     console.log(`║  Rennen ohne Tod:     ${zeroRaces} (${(zeroRaces/indyRaces*100).toFixed(0)}%)`.padEnd(51) + `║`);
     console.log(`║  Rennen mit 1 Tod:    ${oneRaces} (${(oneRaces/indyRaces*100).toFixed(0)}%)`.padEnd(51) + `║`);
     console.log(`║  Rennen mit ≥2 Tode:  ${twoPlus} (${(twoPlus/indyRaces*100).toFixed(0)}%)`.padEnd(51) + `║`);
-    console.log(`║  Historisch (real):   ~0.55 Tode/Rennen (1950–60)`.padEnd(51) + `║`);
-    const ok = Math.abs(avg - 0.55) <= 0.20;
+    console.log(`║  Historisch (real):   ~0.636 Tode/Rennen (1950–60)`.padEnd(51) + `║`);
+    const ok = Math.abs(avg - 0.636) <= 0.20;
     console.log(`║  Bewertung: ${ok ? '✓ Im Zielbereich' : '⚠ Abweichung >0.20'}`.padEnd(51) + `║`);
     console.log(`╚═══════════════════════════════════════════════════╝`);
     process.exit(0);
@@ -170,6 +170,11 @@ function simulateSeason(c) {
     const trainingDeaths     = allDeaths.filter(d => d.fatalSession === 'training').length;
     const qualifyingDeaths   = allDeaths.filter(d => d.fatalSession === 'qualifying').length;
     const raceDeaths         = allDeaths.filter(d => d.fatalSession === 'race').length;
+    const indyDeaths         = allDeaths.filter(d => {
+        const r = c.GAME_STATE.races[d.race];
+        return r && (r.isIndy || (r.name && r.name.includes('Indianapolis')));
+    }).length;
+    const f1Deaths           = totalDeaths - indyDeaths;
 
     // Wie viele Privateers haben überhaupt je gemeldet?
     const privateersThatRaced = privateers.filter(d => d.firstRaceEntry !== undefined).length;
@@ -178,6 +183,7 @@ function simulateSeason(c) {
         totalStarts, totalDNFs,
         totalDeaths, totalAccidentDNFs,
         trainingDeaths, qualifyingDeaths, raceDeaths,
+        indyDeaths, f1Deaths,
         privateerCount:             privateers.length,
         worksCount:                 works.length,
         privateerQualifyingEntries,
@@ -228,6 +234,8 @@ const results = {
     deathsPerSeason:            [],
     accidentDNFsPerSeason:      [],
     deathsBySession: { training: [], qualifying: [], race: [] },
+    indyDeathsPerSeason:        [],
+    f1DeathsPerSeason:          [],
 
     // Privateer-Metriken (Summen über alle Sims)
     privateerCounts:            [],
@@ -275,6 +283,8 @@ for (let sim = 0; sim < N; sim++) {
         results.deathsBySession.training.push(stats.trainingDeaths || 0);
         results.deathsBySession.qualifying.push(stats.qualifyingDeaths || 0);
         results.deathsBySession.race.push(stats.raceDeaths || 0);
+        results.indyDeathsPerSeason.push(stats.indyDeaths || 0);
+        results.f1DeathsPerSeason.push(stats.f1Deaths || 0);
 
         // Privateer-Metriken
         results.privateerCounts.push(stats.privateerCount);
@@ -394,20 +404,22 @@ console.log(`║    Jahr ${year}: Ø ${avgDeaths.toFixed(2)} Tode | Unfall-DNFs 
 // ── ÄRA-SIMULATION (5-Jahres-Durchschnitt für stabilen Ziel-Vergleich) ──
 // Einzeljahre schwanken stark (Grid-Größe, Rennanzahl, DNF-Rate variieren).
 // → Alle 5 Jahre der Ära simulieren, Durchschnitt vs. Ziel vergleichen.
+// Non-Indy F1 WM-Tode: reale Tode/Ära ÷ 5 Saisons (Indy 500 separat)
 const ERA_DEATH_TARGETS = {
-    // Stützstellen = ERA_DEATH_RATES-Schlüssel; Formel: rate × accDNFs × gridNorm
-    1950: 3.5,   // ERA_DEATH_RATES[1950]=0.10
-    1955: 2.5,   // ERA_DEATH_RATES[1955]=0.07
-    1960: 2.0,   // ERA_DEATH_RATES[1960]=0.047
-    1965: 1.5,   // ERA_DEATH_RATES[1965]=0.033
-    1970: 1.2,   // ERA_DEATH_RATES[1970]=0.018  ← Rindt, Cevert, Williamson
-    1975: 0.8,   // ERA_DEATH_RATES[1975]=0.011  ← Peterson, Pryce
-    1980: 0.3,   // ERA_DEATH_RATES[1980]=0.005
-    1985: 0.13,  // ERA_DEATH_RATES[1985]=0.002
-    1990: 0.05,  // ERA_DEATH_RATES[1990]=0.001
-    1995: 0.02,  // ERA_DEATH_RATES[1995]=0.0005
+    1950: 0.4,   // 2 Tode (Fagioli/Marimón)
+    1955: 0.6,   // 3 Tode (Musso/Collins/Lewis-Evans)
+    1960: 0.8,   // 4 Tode (Bristow/Stacey/vTrips/deBeaufort)
+    1965: 0.55,  // ~3 Tode (Bandini/Schlesser/Mitter)
+    1970: 1.0,   // 5 Tode (Rindt/Courage/Williamson/Cevert/Koinigg)
+    1975: 0.6,   // 3 Tode (Donohue/Pryce/Peterson)
+    1980: 0.4,   // 2 Tode (Villeneuve/Paletti)
+    1985: 0,
+    1990: 0.4,   // 2 Tode (Ratzenberger/Senna – beide 1994)
+    1995: 0,
     2000: 0,
 };
+// Indy 500: 7 Tode / 11 Rennen (1950–1960) = 0.636/Rennen → 0.636/Saison
+const INDY_DEATH_TARGET = 0.636;
 const getEraDeathTarget = (y) => {
     const keys = Object.keys(ERA_DEATH_TARGETS).map(Number).sort((a,b)=>a-b);
     let val = 0;
@@ -424,7 +436,7 @@ for (let y = eraStart; y <= eraEnd; y++) {
 }
 
 const eraN = Math.max(10, Math.ceil(N / Math.max(1, eraYears.length)));
-let eraTotalDeaths = 0, eraTotalAcc = 0, eraSimsDone = 0;
+let eraTotalDeaths = 0, eraTotalF1Deaths = 0, eraTotalIndyDeaths = 0, eraTotalAcc = 0, eraSimsDone = 0;
 
 if (eraYears.length > 0) {
     for (const y of eraYears) {
@@ -432,22 +444,32 @@ if (eraYears.length > 0) {
             try {
                 resetAndInit(ctx, y);
                 const st = simulateSeason(ctx);
-                eraTotalDeaths += st.totalDeaths;
-                eraTotalAcc    += st.totalAccidentDNFs;
+                eraTotalDeaths      += st.totalDeaths;
+                eraTotalF1Deaths    += st.f1Deaths || 0;
+                eraTotalIndyDeaths  += st.indyDeaths || 0;
+                eraTotalAcc         += st.totalAccidentDNFs;
                 eraSimsDone++;
             } catch(e) {}
         }
     }
 }
 
-const eraAvgDeaths = eraSimsDone > 0 ? eraTotalDeaths / eraSimsDone : avgDeaths;
-const eraTarget    = getEraDeathTarget(eraStart);
-const eraDelta     = (eraAvgDeaths - eraTarget).toFixed(2);
-const eraTol       = eraTarget > 1.0 ? 0.4 : Math.max(0.15, eraTarget * 0.4);
-const eraOk        = Math.abs(eraAvgDeaths - eraTarget) <= eraTol ? '✓'
-                   : Math.abs(eraAvgDeaths - eraTarget) <= eraTol * 2 ? '~' : '⚠';
+const eraAvgDeaths     = eraSimsDone > 0 ? eraTotalDeaths / eraSimsDone : avgDeaths;
+const eraAvgF1Deaths   = eraSimsDone > 0 ? eraTotalF1Deaths / eraSimsDone : 0;
+const eraAvgIndyDeaths = eraSimsDone > 0 ? eraTotalIndyDeaths / eraSimsDone : 0;
+const f1Target         = getEraDeathTarget(eraStart);
+const hasIndy          = eraStart <= 1960 && eraEnd >= 1950;
+const indyTarget       = hasIndy ? INDY_DEATH_TARGET : 0;
+const totalTarget      = f1Target + indyTarget;
+const eraDelta         = (eraAvgDeaths - totalTarget).toFixed(2);
+const eraTol           = totalTarget > 1.0 ? 0.4 : Math.max(0.15, totalTarget * 0.4);
+const eraOk            = Math.abs(eraAvgDeaths - totalTarget) <= eraTol ? '✓'
+                       : Math.abs(eraAvgDeaths - totalTarget) <= eraTol * 2 ? '~' : '⚠';
 
-console.log(`║    Ära  ${eraStart}–${eraEnd}: Ø ${eraAvgDeaths.toFixed(2)} Tode | Ziel: ~${eraTarget} | Δ ${Number(eraDelta)>=0?'+':''}${eraDelta}  (Tol ±${eraTol.toFixed(2)})  ${eraOk}`);
+const indyStr = hasIndy ? ` | Indy: ${eraAvgIndyDeaths.toFixed(2)}` : '';
+const indyTargetStr = hasIndy ? ` (F1 ~${f1Target} + Indy ~${indyTarget})` : ` (~${f1Target})`;
+console.log(`║    Ära  ${eraStart}–${eraEnd}: Ø ${eraAvgDeaths.toFixed(2)} Tode | F1: ${eraAvgF1Deaths.toFixed(2)}${indyStr} | Ziel: ~${totalTarget.toFixed(2)}${indyTargetStr}`);
+console.log(`║    Δ ${Number(eraDelta)>=0?'+':''}${eraDelta}  (Tol ±${eraTol.toFixed(2)})  ${eraOk}`);
 console.log(`║    (${eraYears.length} Jahre × ${eraN} Sims = ${eraSimsDone} Saisons | deathRealism=${ctx.GAME_STATE?.deathRealism ?? 100}%)`);
 
 // ── Session-Verteilung: Erwartung vs. Simulation ──────────────────────────
@@ -458,8 +480,8 @@ const totalSessionDeaths =
 
 if (totalSessionDeaths > 0.05) {
     try {
-        const raceFrac  = ctx.getEraValue(ctx.ERA_RACE_DEATH_FRACTION, year) || 0.5;
-        const trainFrac = ctx.ERA_TRAINING_FRACTION || 0.55;
+        const raceFrac  = ctx.ERA_RACE_DEATH_FRACTION || 0.75;
+        const trainFrac = ctx.ERA_TRAINING_FRACTION   || 0.50;
         const expRace   = raceFrac * 100;
         const expTrain  = (1 - raceFrac) * trainFrac * 100;
         const expQuali  = (1 - raceFrac) * (1 - trainFrac) * 100;
@@ -570,8 +592,8 @@ if (truth) {
     }
 
     // Todes-Plausibilität (Ära-Durchschnitt ist aussagekräftiger als Einzeljahr)
-    if (eraTarget > 0) {
-        console.log(`║  ${eraOk} Ära ${eraStart}–${eraEnd} Tode/Saison: Ø ${eraAvgDeaths.toFixed(2)} vs. ~${eraTarget} (Δ ${Number(eraDelta)>=0?'+':''}${eraDelta})`);
+    if (totalTarget > 0) {
+        console.log(`║  ${eraOk} Ära ${eraStart}–${eraEnd} Tode/Saison: Ø ${eraAvgDeaths.toFixed(2)} vs. ~${totalTarget.toFixed(2)} (Δ ${Number(eraDelta)>=0?'+':''}${eraDelta})`);
     } else {
         const noDeathOk = eraAvgDeaths < 0.05 ? '✓' : '⚠';
         console.log(`║  ${noDeathOk} Ära ${eraStart}–${eraEnd} Tode/Saison: Ø ${eraAvgDeaths.toFixed(2)} (Ziel: 0)`);
