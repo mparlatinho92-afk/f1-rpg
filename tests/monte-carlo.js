@@ -25,11 +25,59 @@ const args     = process.argv.slice(2);
 const year     = parseInt(args[0]) || 1967;
 const N        = parseInt(args[1]) || 50;
 const szenArg  = (args.find(a => a.startsWith('--szenario=')) || '').split('=')[1] || 'alle';
+const indyMode = args.includes('--indy');
 
 console.log(`\n═══════════════════════════════════════════════════`);
 console.log(`  F1 RPG Monte-Carlo  |  Jahr: ${year}  |  Sims: ${N}`);
-console.log(`  Szenario: ${szenArg}`);
+console.log(`  Szenario: ${indyMode ? 'INDY 500' : szenArg}`);
 console.log(`═══════════════════════════════════════════════════\n`);
+
+// ── Indy-Only-Modus ───────────────────────────────────────────────────────
+if (indyMode) {
+    const ctx2 = getContext();
+    let indyDeaths = 0, indyAccidents = 0, indyStarts = 0, indyRaces = 0;
+    let indyDeathsPerRace = [];
+    console.log(`Simuliere ${N} Indianapolis-500-Rennen...\n`);
+    for (let sim = 0; sim < N; sim++) {
+        try {
+            ctx2.initFromYear(year);
+            const races = ctx2.GAME_STATE.races;
+            const indyIdx = races.findIndex(r => r.isIndy || (r.name && r.name.includes('Indianapolis')));
+            if (indyIdx === -1) { console.log(`[!] Kein Indy-Rennen in ${year} gefunden.`); process.exit(1); }
+            ctx2.simulateQualifying(indyIdx, false);
+            const result = ctx2.simulateRace(indyIdx, false);
+            if (!result) continue;
+            let deaths = 0, accidents = 0;
+            for (const r of result.results) {
+                indyStarts++;
+                if (r.fatal) { indyDeaths++; deaths++; }
+                if (r.dnf && r.dnfType === 'accident') { indyAccidents++; accidents++; }
+            }
+            indyDeathsPerRace.push(deaths);
+            indyRaces++;
+        } catch(e) { /* skip */ }
+    }
+    const avg = indyRaces ? indyDeaths / indyRaces : 0;
+    const accAvg = indyRaces ? indyAccidents / indyRaces : 0;
+    const fatalRate = indyAccidents > 0 ? (indyDeaths / indyAccidents * 100).toFixed(1) : '–';
+    const zeroRaces = indyDeathsPerRace.filter(d => d === 0).length;
+    const oneRaces  = indyDeathsPerRace.filter(d => d === 1).length;
+    const twoPlus   = indyDeathsPerRace.filter(d => d >= 2).length;
+    console.log(`╔═══════════════════════════════════════════════════╗`);
+    console.log(`║  INDY 500 – ${year} (${indyRaces} Simulationen)`.padEnd(51) + `║`);
+    console.log(`╠═══════════════════════════════════════════════════╣`);
+    console.log(`║  Ø Tode pro Rennen:   ${avg.toFixed(3)}  (Ziel: ~0.55)`.padEnd(51) + `║`);
+    console.log(`║  Ø Unfall-DNFs:       ${accAvg.toFixed(2)}`.padEnd(51) + `║`);
+    console.log(`║  Fatal-Rate/Unfall:   ${fatalRate}%`.padEnd(51) + `║`);
+    console.log(`║  Rennen ohne Tod:     ${zeroRaces} (${(zeroRaces/indyRaces*100).toFixed(0)}%)`.padEnd(51) + `║`);
+    console.log(`║  Rennen mit 1 Tod:    ${oneRaces} (${(oneRaces/indyRaces*100).toFixed(0)}%)`.padEnd(51) + `║`);
+    console.log(`║  Rennen mit ≥2 Tode:  ${twoPlus} (${(twoPlus/indyRaces*100).toFixed(0)}%)`.padEnd(51) + `║`);
+    console.log(`║  Historisch (real):   ~0.55 Tode/Rennen (1950–60)`.padEnd(51) + `║`);
+    const ok = Math.abs(avg - 0.55) <= 0.20;
+    console.log(`║  Bewertung: ${ok ? '✓ Im Zielbereich' : '⚠ Abweichung >0.20'}`.padEnd(51) + `║`);
+    console.log(`╚═══════════════════════════════════════════════════╝`);
+    process.exit(0);
+}
 
 // ── Kontext laden ─────────────────────────────────────────────────────────
 const ctx = getContext();
