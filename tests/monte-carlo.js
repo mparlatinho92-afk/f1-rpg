@@ -109,7 +109,6 @@ function simulateSeason(c) {
     const races    = c.GAME_STATE.races;
     let totalStarts = 0;
     let totalDNFs   = 0;
-    let totalDeaths        = 0;
     let totalAccidentDNFs  = 0;
 
     // Privateer-Metriken
@@ -130,6 +129,7 @@ function simulateSeason(c) {
     for (let i = 0; i < races.length; i++) {
         const isRain = Math.random() < 0.15;
         try {
+            c.simulateTraining(i);                       // Training → Qualifying → Rennen
             const qResult = c.simulateQualifying(i, isRain);
             const result  = c.simulateRace(i, isRain);
             if (!result) continue;
@@ -153,11 +153,10 @@ function simulateSeason(c) {
                 else worksDNQs++;
             }
 
-            // DNF-Statistik + Todes-Metriken
+            // DNF-Statistik (nur Rennergebnis, ohne Training/Qualifying)
             for (const r of result.results) {
                 totalStarts++;
                 if (r.dnf || r.fatal) totalDNFs++;
-                if (r.fatal) totalDeaths++;
                 if (r.dnf && r.dnfType === 'accident') totalAccidentDNFs++;
             }
         } catch(e) {
@@ -165,12 +164,20 @@ function simulateSeason(c) {
         }
     }
 
+    // Todes-Statistik aus seasonDeaths – erfasst Training + Qualifying + Rennen
+    const allDeaths = c.GAME_STATE.seasonDeaths || [];
+    const totalDeaths        = allDeaths.length;
+    const trainingDeaths     = allDeaths.filter(d => d.fatalSession === 'training').length;
+    const qualifyingDeaths   = allDeaths.filter(d => d.fatalSession === 'qualifying').length;
+    const raceDeaths         = allDeaths.filter(d => d.fatalSession === 'race').length;
+
     // Wie viele Privateers haben überhaupt je gemeldet?
     const privateersThatRaced = privateers.filter(d => d.firstRaceEntry !== undefined).length;
 
     return {
         totalStarts, totalDNFs,
         totalDeaths, totalAccidentDNFs,
+        trainingDeaths, qualifyingDeaths, raceDeaths,
         privateerCount:             privateers.length,
         worksCount:                 works.length,
         privateerQualifyingEntries,
@@ -220,6 +227,7 @@ const results = {
     // Todes-Metriken
     deathsPerSeason:            [],
     accidentDNFsPerSeason:      [],
+    deathsBySession: { training: [], qualifying: [], race: [] },
 
     // Privateer-Metriken (Summen über alle Sims)
     privateerCounts:            [],
@@ -264,6 +272,9 @@ for (let sim = 0; sim < N; sim++) {
         // Todes-Metriken
         results.deathsPerSeason.push(stats.totalDeaths);
         results.accidentDNFsPerSeason.push(stats.totalAccidentDNFs);
+        results.deathsBySession.training.push(stats.trainingDeaths || 0);
+        results.deathsBySession.qualifying.push(stats.qualifyingDeaths || 0);
+        results.deathsBySession.race.push(stats.raceDeaths || 0);
 
         // Privateer-Metriken
         results.privateerCounts.push(stats.privateerCount);
@@ -438,6 +449,36 @@ const eraOk        = Math.abs(eraAvgDeaths - eraTarget) <= eraTol ? '✓'
 
 console.log(`║    Ära  ${eraStart}–${eraEnd}: Ø ${eraAvgDeaths.toFixed(2)} Tode | Ziel: ~${eraTarget} | Δ ${Number(eraDelta)>=0?'+':''}${eraDelta}  (Tol ±${eraTol.toFixed(2)})  ${eraOk}`);
 console.log(`║    (${eraYears.length} Jahre × ${eraN} Sims = ${eraSimsDone} Saisons | deathRealism=${ctx.GAME_STATE?.deathRealism ?? 100}%)`);
+
+// ── Session-Verteilung: Erwartung vs. Simulation ──────────────────────────
+const totalSessionDeaths =
+    avgN(results.deathsBySession.training) +
+    avgN(results.deathsBySession.qualifying) +
+    avgN(results.deathsBySession.race);
+
+if (totalSessionDeaths > 0.05) {
+    try {
+        const raceFrac  = ctx.getEraValue(ctx.ERA_RACE_DEATH_FRACTION, year) || 0.5;
+        const trainFrac = ctx.ERA_TRAINING_FRACTION || 0.55;
+        const expRace   = raceFrac * 100;
+        const expTrain  = (1 - raceFrac) * trainFrac * 100;
+        const expQuali  = (1 - raceFrac) * (1 - trainFrac) * 100;
+
+        const simRace   = avgN(results.deathsBySession.race)       / totalSessionDeaths * 100;
+        const simTrain  = avgN(results.deathsBySession.training)   / totalSessionDeaths * 100;
+        const simQuali  = avgN(results.deathsBySession.qualifying) / totalSessionDeaths * 100;
+
+        const badge = (exp, sim) => Math.abs(sim - exp) < 5 ? '✓' : Math.abs(sim - exp) < 10 ? '~' : '⚠';
+        console.log(`║`);
+        console.log(`║  SESSION-VERTEILUNG DER TODE`);
+        console.log(`║    (Erwartung aus ERA_RACE/TRAINING_FRACTION → Sim-Ergebnis)`);
+        console.log(`║    Rennen:     ${expRace.toFixed(0).padStart(3)}% → ${simRace.toFixed(0).padStart(3)}%  ${badge(expRace, simRace)}`);
+        console.log(`║    Training:   ${expTrain.toFixed(0).padStart(3)}% → ${simTrain.toFixed(0).padStart(3)}%  ${badge(expTrain, simTrain)}`);
+        console.log(`║    Qualifying: ${expQuali.toFixed(0).padStart(3)}% → ${simQuali.toFixed(0).padStart(3)}%  ${badge(expQuali, simQuali)}`);
+    } catch(e) { /* ERA-Konstanten nicht im Kontext */ }
+} else {
+    console.log(`║    (zu wenig Tode für Session-Verteilung)`);
+}
 
 // Champion-Punkte
 console.log(`║`);
