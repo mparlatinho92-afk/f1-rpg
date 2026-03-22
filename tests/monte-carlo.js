@@ -330,31 +330,24 @@ const avgDeaths     = avgN(results.deathsPerSeason);
 const avgAccidents  = avgN(results.accidentDNFsPerSeason);
 const fatalAccRate  = avgAccidents > 0 ? (avgDeaths / avgAccidents * 100).toFixed(1) : '–';
 
-// Historische Zielwerte (Tode/Jahr) – abgeleitet aus ERA_DEATH_RATES-Kalibrierung
-// Formel rückwärts: target = rate × (Rennen × histGrid × DNF-Rate × 0.5 Unfall-Anteil)
-// Dekadenschritte passend zu ERA_DEATH_RATES-Stützstellen:
-//   1950: 0.10 × (8×19×0.50×0.5)=38   → 3.8 ≈ 4.0
-//   1955: 0.07 × (8×20×0.50×0.5)=40   → 2.8 ≈ 3.0
-//   1960: 0.047 × (10×20×0.48×0.5)=48 → 2.3 ≈ 2.0
-//   1965: 0.033 × (10×20×0.45×0.5)=45 → 1.5
-//   1970: 0.018 × (14×23×0.42×0.5)=68 → 1.2  ← explizit kalibriert
-//   1975: 0.011 × (14×25×0.40×0.5)=70 → 0.77 ≈ 0.8  ← explizit kalibriert
-//   1980: 0.005 × (14×24×0.35×0.5)=59 → 0.29 ≈ 0.3
-//   1985: 0.002 × (16×25×0.32×0.5)=64 → 0.13
-//   1990: 0.001 × (16×26×0.25×0.5)=52 → 0.05
-//   1995: 0.0005 × (17×26×0.20×0.5)=44 → 0.02
-//   2000+: 0
+// Historische Zielwerte (Tode/Jahr) – abgeleitet aus ERA_DEATH_RATES × Unfall-DNFs/Saison
+// getEraValue() nutzt "letzter Schlüssel ≤ Jahr" → 5-Jahres-Stützstellen werden genutzt.
+// Formel: target = ERA_DEATH_RATES[stützstelle] × Ø(histGrid/gridCap) × accident_DNFs
+// Verifiziert mit Monte-Carlo nach getEraValue-Fix (v0.9.9.14):
+//   1952: rate=0.10, gridNorm=24/24=1.0, accDNFs≈32 → ~3.2/Jahr
+//   1967: rate=0.033 (1965-stützstelle!), gridNorm=19/19=1.0, accDNFs≈50 → ~1.65/Jahr
+//   1973: rate=0.018, gridNorm=24/24=1.0, accDNFs≈76 → ~1.37/Jahr
 const DEATH_TARGETS = {
-    1950: 4.0,   // ~4 Tode/Jahr – frühe 50er, gefährlichste Ära
-    1955: 3.0,   // ~3/Jahr – späte 50er
-    1960: 2.0,   // ~2/Jahr – frühe 60er
-    1965: 1.5,   // ~1.5/Jahr – späte 60er (Safety-Diskussion beginnt)
-    1970: 1.2,   // ~1.2/Jahr – frühe 70er (Rindt, Cevert, Williamson…)
-    1975: 0.8,   // ~0.8/Jahr – Safety-Reformen greifen (Peterson, Pryce…)
-    1980: 0.3,   // ~0.3/Jahr – 80er (Paletti, de Angelis…)
-    1985: 0.13,  // ~0.13/Jahr – späte 80er
-    1990: 0.05,  // ~0.05/Jahr – frühe 90er (vor 1994)
-    1995: 0.02,  // ~0.02/Jahr – nach Imola-Reformen
+    1950: 3.5,   // ERA_DEATH_RATES[1950]=0.10; 1950er Grid 20–24
+    1955: 2.5,   // ERA_DEATH_RATES[1955]=0.07; kleinere Grids, weniger Rennen
+    1960: 2.0,   // ERA_DEATH_RATES[1960]=0.047; frühe 60er
+    1965: 1.5,   // ERA_DEATH_RATES[1965]=0.033; späte 60er – Safety-Bewusstsein steigt
+    1970: 1.2,   // ERA_DEATH_RATES[1970]=0.018; frühe 70er (Rindt, Cevert…)
+    1975: 0.8,   // ERA_DEATH_RATES[1975]=0.011; Safety-Reformen (Peterson, Pryce…)
+    1980: 0.3,   // ERA_DEATH_RATES[1980]=0.005; 80er (Paletti, de Angelis…)
+    1985: 0.13,  // ERA_DEATH_RATES[1985]=0.002; späte 80er
+    1990: 0.05,  // ERA_DEATH_RATES[1990]=0.001; frühe 90er
+    1995: 0.02,  // ERA_DEATH_RATES[1995]=0.0005; nach Imola-Reformen
     2000: 0,     // 2000+ nahezu 0
 };
 const getDeathTarget = (y) => {
