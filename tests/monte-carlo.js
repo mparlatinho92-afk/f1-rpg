@@ -109,8 +109,14 @@ function simulateSeason(c) {
             for (const r of result.results) {
                 totalStarts++;
                 if (r.dnf || r.fatal) totalDNFs++;
-                if (r.fatal) totalDeaths++;
+                if (r.fatal) totalDeaths++;  // Renntode
                 if (r.dnf && r.dnfType === 'accident') totalAccidentDNFs++;
+            }
+            // Qualifying/Training-Tode zählen (retroaktiv markiert, nicht in result.results)
+            if (qResult && qResult.results) {
+                for (const r of qResult.results) {
+                    if (r.fatal) totalDeaths++;
+                }
             }
         } catch(e) {
             // Einzelne Rennen überspringen
