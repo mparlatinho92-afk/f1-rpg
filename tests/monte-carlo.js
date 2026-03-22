@@ -323,52 +323,73 @@ const dnfDelta = realDNF != null ? ` | real: ${(realDNF*100).toFixed(1)}% | Δ $
 console.log(`║  DNF-RATE`);
 console.log(`║    Sim:  ${(simDNF).toFixed(1)}%${dnfDelta}`);
 
-// Todes-Metriken
+// ── TODES-METRIKEN ────────────────────────────────────────────────────────
+// Einzeljahr-Kontext (zu rauschbehaftet für Ziel-Vergleich)
 console.log(`║`);
 console.log(`║  TODE PRO SAISON`);
-const avgDeaths     = avgN(results.deathsPerSeason);
-const avgAccidents  = avgN(results.accidentDNFsPerSeason);
-const fatalAccRate  = avgAccidents > 0 ? (avgDeaths / avgAccidents * 100).toFixed(1) : '–';
+const avgDeaths    = avgN(results.deathsPerSeason);
+const avgAccidents = avgN(results.accidentDNFsPerSeason);
+const fatalAccRate = avgAccidents > 0 ? (avgDeaths / avgAccidents * 100).toFixed(1) : '–';
+console.log(`║    Jahr ${year}: Ø ${avgDeaths.toFixed(2)} Tode | Unfall-DNFs Ø ${avgAccidents.toFixed(1)} | Fatal-Rate ${fatalAccRate}%`);
 
-// Historische Zielwerte (Tode/Jahr) – abgeleitet aus ERA_DEATH_RATES × Unfall-DNFs/Saison
-// getEraValue() nutzt "letzter Schlüssel ≤ Jahr" → 5-Jahres-Stützstellen werden genutzt.
-// Formel: target = ERA_DEATH_RATES[stützstelle] × Ø(histGrid/gridCap) × accident_DNFs
-// Verifiziert mit Monte-Carlo nach getEraValue-Fix (v0.9.9.14):
-//   1952: rate=0.10, gridNorm=24/24=1.0, accDNFs≈32 → ~3.2/Jahr
-//   1967: rate=0.033 (1965-stützstelle!), gridNorm=19/19=1.0, accDNFs≈50 → ~1.65/Jahr
-//   1973: rate=0.018, gridNorm=24/24=1.0, accDNFs≈76 → ~1.37/Jahr
-const DEATH_TARGETS = {
-    1950: 3.5,   // ERA_DEATH_RATES[1950]=0.10; 1950er Grid 20–24
-    1955: 2.5,   // ERA_DEATH_RATES[1955]=0.07; kleinere Grids, weniger Rennen
-    1960: 2.0,   // ERA_DEATH_RATES[1960]=0.047; frühe 60er
-    1965: 1.5,   // ERA_DEATH_RATES[1965]=0.033; späte 60er – Safety-Bewusstsein steigt
-    1970: 1.2,   // ERA_DEATH_RATES[1970]=0.018; frühe 70er (Rindt, Cevert…)
-    1975: 0.8,   // ERA_DEATH_RATES[1975]=0.011; Safety-Reformen (Peterson, Pryce…)
-    1980: 0.3,   // ERA_DEATH_RATES[1980]=0.005; 80er (Paletti, de Angelis…)
-    1985: 0.13,  // ERA_DEATH_RATES[1985]=0.002; späte 80er
-    1990: 0.05,  // ERA_DEATH_RATES[1990]=0.001; frühe 90er
-    1995: 0.02,  // ERA_DEATH_RATES[1995]=0.0005; nach Imola-Reformen
-    2000: 0,     // 2000+ nahezu 0
+// ── ÄRA-SIMULATION (5-Jahres-Durchschnitt für stabilen Ziel-Vergleich) ──
+// Einzeljahre schwanken stark (Grid-Größe, Rennanzahl, DNF-Rate variieren).
+// → Alle 5 Jahre der Ära simulieren, Durchschnitt vs. Ziel vergleichen.
+const ERA_DEATH_TARGETS = {
+    // Stützstellen = ERA_DEATH_RATES-Schlüssel; Formel: rate × accDNFs × gridNorm
+    1950: 3.5,   // ERA_DEATH_RATES[1950]=0.10
+    1955: 2.5,   // ERA_DEATH_RATES[1955]=0.07
+    1960: 2.0,   // ERA_DEATH_RATES[1960]=0.047
+    1965: 1.5,   // ERA_DEATH_RATES[1965]=0.033
+    1970: 1.2,   // ERA_DEATH_RATES[1970]=0.018  ← Rindt, Cevert, Williamson
+    1975: 0.8,   // ERA_DEATH_RATES[1975]=0.011  ← Peterson, Pryce
+    1980: 0.3,   // ERA_DEATH_RATES[1980]=0.005
+    1985: 0.13,  // ERA_DEATH_RATES[1985]=0.002
+    1990: 0.05,  // ERA_DEATH_RATES[1990]=0.001
+    1995: 0.02,  // ERA_DEATH_RATES[1995]=0.0005
+    2000: 0,
 };
-const getDeathTarget = (y) => {
-    const keys = Object.keys(DEATH_TARGETS).map(Number).sort((a,b)=>a-b);
+const getEraDeathTarget = (y) => {
+    const keys = Object.keys(ERA_DEATH_TARGETS).map(Number).sort((a,b)=>a-b);
     let val = 0;
-    for (const k of keys) { if (y >= k) val = DEATH_TARGETS[k]; }
+    for (const k of keys) { if (y >= k) val = ERA_DEATH_TARGETS[k]; }
     return val;
 };
-const deathTarget = getDeathTarget(year);
-const deathDelta  = (avgDeaths - deathTarget).toFixed(2);
-// Toleranz: ±50% des Ziels (min 0.2 für Niedrig-Raten), ±1.0 für hohe Raten
-const tol = deathTarget > 1.0 ? 0.5 : Math.max(0.2, deathTarget * 0.5);
-const deathOk = Math.abs(avgDeaths - deathTarget) <= tol ? '✓'
-              : Math.abs(avgDeaths - deathTarget) <= tol * 2 ? '~' : '⚠';
-const deathLable = deathTarget > 0
-    ? ` | Ziel: ~${deathTarget} | Δ ${Number(deathDelta) > 0 ? '+' : ''}${deathDelta}  (Tol ±${tol.toFixed(2)})`
-    : ' | Ziel: 0';
 
-console.log(`║    Sim:  Ø ${avgDeaths.toFixed(2)} Tode/Saison${deathLable}  ${deathOk}`);
-console.log(`║    Unfall-DNFs: Ø ${avgAccidents.toFixed(1)} | Fatal-Rate: ${fatalAccRate}%`);
-console.log(`║    (deathRealism=${ctx.GAME_STATE?.deathRealism ?? 100}%)`);
+// Ära-Grenzen: 5-Jahres-Block in dem `year` liegt
+const eraStart = Math.floor(year / 5) * 5;
+const eraEnd   = eraStart + 4;
+const eraYears = [];
+for (let y = eraStart; y <= eraEnd; y++) {
+    try { resetAndInit(ctx, y); eraYears.push(y); } catch(e) {}
+}
+
+const eraN = Math.max(10, Math.ceil(N / Math.max(1, eraYears.length)));
+let eraTotalDeaths = 0, eraTotalAcc = 0, eraSimsDone = 0;
+
+if (eraYears.length > 0) {
+    for (const y of eraYears) {
+        for (let s = 0; s < eraN; s++) {
+            try {
+                resetAndInit(ctx, y);
+                const st = simulateSeason(ctx);
+                eraTotalDeaths += st.totalDeaths;
+                eraTotalAcc    += st.totalAccidentDNFs;
+                eraSimsDone++;
+            } catch(e) {}
+        }
+    }
+}
+
+const eraAvgDeaths = eraSimsDone > 0 ? eraTotalDeaths / eraSimsDone : avgDeaths;
+const eraTarget    = getEraDeathTarget(eraStart);
+const eraDelta     = (eraAvgDeaths - eraTarget).toFixed(2);
+const eraTol       = eraTarget > 1.0 ? 0.4 : Math.max(0.15, eraTarget * 0.4);
+const eraOk        = Math.abs(eraAvgDeaths - eraTarget) <= eraTol ? '✓'
+                   : Math.abs(eraAvgDeaths - eraTarget) <= eraTol * 2 ? '~' : '⚠';
+
+console.log(`║    Ära  ${eraStart}–${eraEnd}: Ø ${eraAvgDeaths.toFixed(2)} Tode | Ziel: ~${eraTarget} | Δ ${Number(eraDelta)>=0?'+':''}${eraDelta}  (Tol ±${eraTol.toFixed(2)})  ${eraOk}`);
+console.log(`║    (${eraYears.length} Jahre × ${eraN} Sims = ${eraSimsDone} Saisons | deathRealism=${ctx.GAME_STATE?.deathRealism ?? 100}%)`);
 
 // Champion-Punkte
 console.log(`║`);
@@ -459,12 +480,12 @@ if (truth) {
         }
     }
 
-    // Todes-Plausibilität im Realitäts-Abgleich
-    if (deathTarget > 0) {
-        console.log(`║  ${deathOk} Tode/Saison: Sim Ø ${avgDeaths.toFixed(2)} vs. ~${deathTarget}/Jahr (Δ ${Number(deathDelta) > 0 ? '+' : ''}${deathDelta})`);
+    // Todes-Plausibilität (Ära-Durchschnitt ist aussagekräftiger als Einzeljahr)
+    if (eraTarget > 0) {
+        console.log(`║  ${eraOk} Ära ${eraStart}–${eraEnd} Tode/Saison: Ø ${eraAvgDeaths.toFixed(2)} vs. ~${eraTarget} (Δ ${Number(eraDelta)>=0?'+':''}${eraDelta})`);
     } else {
-        const noDeathOk = avgDeaths < 0.1 ? '✓' : '⚠';
-        console.log(`║  ${noDeathOk} Tode/Saison: Sim Ø ${avgDeaths.toFixed(2)} (Ziel: 0 ab 2000)`);
+        const noDeathOk = eraAvgDeaths < 0.05 ? '✓' : '⚠';
+        console.log(`║  ${noDeathOk} Ära ${eraStart}–${eraEnd} Tode/Saison: Ø ${eraAvgDeaths.toFixed(2)} (Ziel: 0)`);
     }
 }
 
