@@ -52,16 +52,15 @@ manuelle CSV für ~15 argentinische Rennen (1947–1949).
   Für Multi-Gegner-Elo: vorhandene Platzierungen nutzen, fehlende ignorieren (K-Faktor
   entsprechend skalieren: weniger Duelle = kleineres K).
 
-### 0a.1 – Offene Temporada-Slugs (4 unauflösbare Lokalfahrer)
-Alle 4 haben nur 1 Renneinsatz und minimalen ELO-Einfluss.
-Vorname recherchieren → in `SLUG_ALIASES` von `calculate-elo.js` eintragen.
+### 0a.1 – Offene Temporada-Slugs (1 verbleibend)
+Recherchiert 2026-03. 3 von 4 aufgelöst und in SLUG_ALIASES eingetragen.
 
-| Slug | Name im Datensatz | Rennen | Jahr |
-|---|---|---|---|
-| `ncataudella` | "N.Cataudella" | 500 Millas de Rafaela, P9 | 1950 |
-| `fpiombo` | "F.Piombo" | 500 Millas de Rafaela, P10 | 1950 |
-| `valentin` | "Valentin" | Boa Vista, P2 | 1951 |
-| `d-bazet` | "D. Bazet" | Gran Premio de Montevideo, P12 | 1952 |
+| Slug | Vollname | Status |
+|---|---|---|
+| `ncataudella` | Natalio Cataudella (arg., geb. 1906 Ispica/Sizilien) | ✓ eingetragen |
+| `fpiombo` | Francisco Piombo (arg.) | ✓ eingetragen |
+| `d-bazet` | Dantón Bazet (uruguayisch) | ✓ eingetragen |
+| `valentin` | unbekannt – nur Nachname, Boa Vista 1951 P2 | offen |
 
 ---
 

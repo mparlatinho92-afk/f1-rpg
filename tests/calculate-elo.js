@@ -196,6 +196,11 @@ const SLUG_ALIASES = {
     'r-toni':              'raffaele-toti',
     // AAA/USAC Schreibvarianten
     'louie-unser':         'louis-unser',
+    // Temporada-Lokalfahrer (recherchiert 2026-03)
+    'ncataudella':         'natalio-cataudella',  // Natalio Cataudella, arg., 500 Millas Rafaela 1950 P9
+    'fpiombo':             'francisco-piombo',    // Francisco Piombo, arg., 500 Millas Rafaela 1950 P10
+    'd-bazet':             'danton-bazet',        // Dantón Bazet, uruguayisch, GP Piriápolis 1952 P12
+    // 'valentin' bleibt offen – nur Nachname bekannt, Quinta da Boa Vista 1951 P2
 };
 
 // ── Regenrennen (F1DB race IDs) – fahrerbedingten DNFs ELO-neutral halten ──
