@@ -494,6 +494,11 @@ rain_delta_rel[driver] = Ø(actual_pos_wet - expected_pos_from_elo_wet)
 
 **WET_RACE_IDS** ist trotzdem eingebettet (für visuelle Markierung + zukünftige Nutzung).
 
+**Implementiert (calculate-elo.js):**
+In Regenrennen werden `driver`- und `collision`-DNFs **ELO-neutral** behandelt (kein Malus).
+Spin/Kollision im Regen = Streckenbedingung, nicht reiner Fahrerfehler.
+Tech-DNFs und DSQ bleiben unverändert.
+
 ---
 
 ## Phase 2f.2 – Regenwahrscheinlichkeit pro Rennen (Spiel-Integration)
