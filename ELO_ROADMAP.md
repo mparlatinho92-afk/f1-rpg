@@ -573,19 +573,22 @@ Fahrer mit Kriegspause (1940–1946) und Karriere-Pausen.
 
 ## Priorisierung für nächste Coding-Session
 
+Stand: 2026-03-26
+
 | Prio | Task | Aufwand | Status |
 |------|------|---------|--------|
-| 1 | Phase 0 – Temporada-Scraper (teamdan.com) | Klein | `○` |
-| 2 | Phase 2 – DNF-Fix: Accident→neutral + Elo neu berechnen | Klein | `○` |
-| 3 | Phase 3 – normalize-elo.js → SEASON_DATA pace-Werte | Mittel | `○` |
-| 4 | Phase 3d – Team-Elo → carSpeed kalibrieren | Mittel | `○` |
-| 5 | Phase 4f – DNF-Grund im Renn-Log (Spiel) | Klein | `○` |
-| 6 | Phase 4a – currentPace in simulateRace nutzen | Klein | `○` |
-| 7 | Phase 4b – Saisonübergang Fahrer-Entwicklung | Mittel | `○` |
-| 8 | Phase 4c+d – Team-Chassis-Würfel + Era Reset | Mittel | `○` |
-| 9 | Phase 4g – Adaptations-Malus implementieren | Klein | `○` |
+| ~~1~~ | ~~Phase 0 – Temporada-Scraper (teamdan.com)~~ | Klein | `✓` scraper + Daten fertig |
+| ~~0a.1~~ | ~~Temporada-Slugs recherchieren~~ | Klein | `✓` 3/4 aufgelöst, 1 offen (valentin) |
+| 1 | Phase 2 – DNF-Fix: Accident→neutral + Elo neu berechnen | Klein | `○` |
+| 2 | Phase 3 – normalize-elo.js → pace_ratings.json | Mittel | `○` |
+| 3 | Phase 3d – Team-Elo → carSpeed kalibrieren | Mittel | `○` |
+| 4 | Phase 4f – DNF-Grund im Renn-Log (Spiel) | Klein | `○` |
+| 5 | Phase 4a – currentPace in simulateRace nutzen | Klein | `○` |
+| 6 | Phase 4b – Saisonübergang Fahrer-Entwicklung | Mittel | `○` |
+| 7 | Phase 4c+d – Team-Chassis-Würfel + Era Reset | Mittel | `○` |
+| 8 | Phase 4g – Adaptations-Malus implementieren | Klein | `○` |
 
-→ Prio 1–2: Daten vervollständigen + Elo-Fix → saubere Basis
-→ Prio 3–4: Pace-Werte ins Spiel bringen → direkter Gameplay-Impact
-→ Prio 5–9: Spiel-Engine Phase 4 komplett
+→ Prio 1: DNF-Fix → saubere ELO-Basis
+→ Prio 2–3: Pace-Werte ins Spiel bringen → direkter Gameplay-Impact
+→ Prio 4–8: Spiel-Engine Phase 4 komplett
 
