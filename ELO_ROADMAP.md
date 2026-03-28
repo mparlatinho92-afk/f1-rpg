@@ -249,10 +249,20 @@ fuhr – sein relatives Delta bestimmt seinen Platz in der 58–98-Skala.
 - `currentPace` = saison-spezifischer Wert (relatives ELO + Alterskurve)
 - SEASON_DATA erhält neue Spalte `potentialPace` neben `pace` (= currentPace)
 
+### 3e – Konstanz-Kennzahl aus F1DB
+- `✓` Pro Fahrer pro Saison aus F1DB berechnen:
+  - `driver_fault_rate` = (Spin + Kollisions-DNF) / Starts (tech-DNFs neutral)
+  - `pos_stddev` = Standardabweichung der Zielpositionen (DNF = letzter Platz + 1)
+  - `consistency` = 40% fault_rate + 60% pos_stddev → invertiert → Skala 58–98
+- `✓` Output: in `pace_ratings.json` als Feld `consistency` (null wenn n < 5)
+- `✓` Validierung: Berger 1988 con=66, Prost con=81, Hamilton/Verstappen con=98 ✓
+- `○` Teams beachten consistency beim Signing oder nicht – ist nicht fix (Phase 4)
+
 ### 3d – Team-Pace (carSpeed) aus ELO ableiten
-- `○` `team_avg_elo[year]` bereits als Nebenprodukt von Option C berechnet
-- `○` Normalisiert auf carSpeed-Skala → `team.carSpeed` pro Saison datenbasiert
-- `○` Kein manuelles Schätzen mehr nötig
+- `✓` `team_max_elo[year]` pro Team (Max statt Avg – schwacher Teamkollege soll Auto nicht schlechtstellen)
+- `✓` Globale Perzentile 5%/95% → Skala 60–96 (= SEASON_DATA-Skala)
+- `✓` Output: `tests/carspeed_ratings.json` { teamSlug: { year: carSpeed } }
+- `✓` Validierung: McLaren 1988=96, Ferrari 1988=82, Minardi 2002=60, Red Bull 2023=96 ✓
 
 ---
 
