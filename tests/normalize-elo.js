@@ -22,6 +22,7 @@ const HTML_FILE       = path.join(__dirname, '..', 'index.html');
 const ELO_FILE        = path.join(__dirname, 'elo_ratings.json');
 const OUT_FILE        = path.join(__dirname, 'pace_ratings.json');
 const F1DB_DRV_FILE   = path.join(__dirname, '..', 'f1db-json-splitted', 'f1db-drivers.json');
+const CARSPEED_FILE   = path.join(__dirname, 'carspeed_by_team.json');
 
 // Geburtsjahre aus f1db-drivers.json { slug: year }
 const birthYears = {};
@@ -457,64 +458,17 @@ for (const [slug, years] of Object.entries(eloRatings)) {
     if (Object.keys(driverOut).length > 0) output[slug] = driverOut;
 }
 
-// ── 8b. Phase 3d – carSpeed aus Team-Elo ────────────────────────────────────
+// ── 8b. Phase 3d – carSpeed aus Konstrukteurs-Standings (Option A) ───────────
 //
-// team_avg_elo = Ø driver_elo aller Fahrer die ≥ 2 Rennen für das Team fuhren
-// Normalisierung: globale Perzentile 5%/95% → Skala 60–96 (= SEASON_DATA-Skala)
-// Output: tests/carspeed_ratings.json { teamSlug: { year: carSpeed } }
+// Quelle: carspeed_by_team.json (erzeugt von build-carspeed.js)
+// Formel: pts / yearMax → globale Perzentile 5%/95% → Skala 60–96
+// Unabhängig vom Fahrer-Elo (kein circular dependency).
+// Für Option B (Team-Elo post-v1.0) → ELO_ROADMAP.md Abschnitt 3d.
 
-const CS_MIN   = 60;
-const CS_MAX   = 96;
-const CS_RANGE = CS_MAX - CS_MIN;
+const carspeedOutput = JSON.parse(fs.readFileSync(CARSPEED_FILE, 'utf8'));
+console.log(`\ncarSpeed aus Konstrukteurs-Standings geladen: ${Object.keys(carspeedOutput).length} Teams`);
 
-// team_avg_elo[year][teamSlug] aufbauen
-const teamEloByYear = {};
-
-for (const [yearStr, drivers] of Object.entries(relData)) {
-    // Welche Slugs haben dieses Jahr einen Team-Eintrag + race_count >= 2?
-    const teamEntries = {};
-    for (const [slug, d] of Object.entries(drivers)) {
-        const rc   = (raceCountByYear[yearStr] || {})[slug] || 0;
-        const team = (teamByYear[yearStr] || {})[slug];
-        if (!team || rc < 2) continue;
-        (teamEntries[team] = teamEntries[team] || []).push(d.driverElo);
-    }
-    teamEloByYear[yearStr] = {};
-    for (const [team, elos] of Object.entries(teamEntries)) {
-        // Max statt Avg: der beste Fahrer zeigt die Decke des Autos
-        // Avg würde schwache Teamkollegen (Alboreto 1988) das Auto künstlich schlechtstellen
-        teamEloByYear[yearStr][team] = Math.max(...elos);
-    }
-}
-
-// Globale Perzentile über alle team_avg_elo-Werte
-const allTeamElos = [];
-for (const teams of Object.values(teamEloByYear)) {
-    for (const v of Object.values(teams)) allTeamElos.push(v);
-}
-const CS_P5  = percentile(allTeamElos, 5);
-const CS_P95 = percentile(allTeamElos, 95);
-
-console.log(`\ncarSpeed-Normalisierung:`);
-console.log(`  P5  = ${CS_P5.toFixed(1)} team-Elo → ${CS_MIN}`);
-console.log(`  P95 = ${CS_P95.toFixed(1)} team-Elo → ${CS_MAX}`);
-
-const carspeedOutput = {};
-for (const [year, teams] of Object.entries(teamEloByYear)) {
-    for (const [team, avgElo] of Object.entries(teams)) {
-        const cs = Math.round(clamp(
-            ((avgElo - CS_P5) / (CS_P95 - CS_P5)) * CS_RANGE + CS_MIN,
-            CS_MIN, CS_MAX
-        ));
-        (carspeedOutput[team] = carspeedOutput[team] || {})[year] = cs;
-    }
-}
-
-const CS_FILE = path.join(__dirname, 'carspeed_ratings.json');
-fs.writeFileSync(CS_FILE, JSON.stringify(carspeedOutput, null, 2), 'utf8');
-console.log(`✓ Fertig: ${Object.keys(carspeedOutput).length} Teams → tests/carspeed_ratings.json`);
-
-// Phase 4b: carSpeed in output einbetten (zweiter Pass, da carspeedOutput erst hier fertig ist)
+// Phase 4b: carSpeed in output einbetten
 for (const [slug, years] of Object.entries(output)) {
     for (const [yearStr, d] of Object.entries(years)) {
         const team = (teamByYear[yearStr] || {})[slug];

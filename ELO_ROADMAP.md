@@ -258,11 +258,18 @@ fuhr – sein relatives Delta bestimmt seinen Platz in der 58–98-Skala.
 - `✓` Validierung: Berger 1988 con=66, Prost con=81, Hamilton/Verstappen con=98 ✓
 - `○` Teams beachten consistency beim Signing oder nicht – ist nicht fix (Phase 4)
 
-### 3d – Team-Pace (carSpeed) aus ELO ableiten
-- `✓` `team_max_elo[year]` pro Team (Max statt Avg – schwacher Teamkollege soll Auto nicht schlechtstellen)
-- `✓` Globale Perzentile 5%/95% → Skala 60–96 (= SEASON_DATA-Skala)
-- `✓` Output: `tests/carspeed_ratings.json` { teamSlug: { year: carSpeed } }
-- `✓` Validierung: McLaren 1988=96, Ferrari 1988=82, Minardi 2002=60, Red Bull 2023=96 ✓
+### 3d – Team-Pace (carSpeed) aus Konstrukteurs-Standings (Option A, aktuell)
+- `✓` `tests/build-carspeed.js`: normalisiert `f1db-seasons-constructor-standings.json` direkt auf 60–96
+- `✓` `normalize-elo.js` nutzt `carspeed_by_team.json` für PACE_RATINGS[3] (kein team_max_elo mehr)
+- `✓` PACE_RATINGS neu generiert + in HTML eingebettet (80.4 KB, 792 Fahrer)
+- Formel: `pts / yearMax` → globale P5/P95-Perzentile → 60–96; kein Fahrer-Elo-Zirkel
+
+### 3d-B – Team-Elo (Option B, geplant post-v1.0)
+- Eigenes Elo-System für Konstrukteure, unabhängig von Fahrer-Elo
+- Basis: bestes Renn-Ergebnis pro Team pro Rennen (Konstrukteurs-Duell)
+- K-Faktor niedriger als Fahrer (Teams ändern sich langsamer)
+- Vorteil: erfasst echten Car-Anteil, nicht durch Fahrerwechsel verzerrt
+- Voraussetzung: saubere Trennung driver_elo vs. team_elo in calculate-elo.js
 
 ---
 
