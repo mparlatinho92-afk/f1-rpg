@@ -18,9 +18,16 @@
 const fs   = require('fs');
 const path = require('path');
 
-const HTML_FILE = path.join(__dirname, '..', 'index.html');
-const ELO_FILE  = path.join(__dirname, 'elo_ratings.json');
-const OUT_FILE  = path.join(__dirname, 'pace_ratings.json');
+const HTML_FILE       = path.join(__dirname, '..', 'index.html');
+const ELO_FILE        = path.join(__dirname, 'elo_ratings.json');
+const OUT_FILE        = path.join(__dirname, 'pace_ratings.json');
+const F1DB_DRV_FILE   = path.join(__dirname, '..', 'f1db-json-splitted', 'f1db-drivers.json');
+
+// Geburtsjahre aus f1db-drivers.json { slug: year }
+const birthYears = {};
+for (const d of JSON.parse(fs.readFileSync(F1DB_DRV_FILE, 'utf8'))) {
+    if (d.id && d.dateOfBirth) birthYears[d.id] = parseInt(d.dateOfBirth.slice(0, 4));
+}
 
 const PACE_MIN   = 58;
 const PACE_MAX   = 98;
@@ -58,6 +65,20 @@ function percentile(arr, p) {
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function round1(v) { return Math.round(v * 10) / 10; }
+
+/** Phase 3b – Alters-Multiplikator für Fahrerpace.
+ *  Aufbau bis 29 (Potenz-Kurve), Zenit 29–32, Abbau 1.5 %/Jahr ab 32.
+ *  Ohne Geburtsjahr → 1.0 (keine Einschränkung). */
+function ageFactor(birthYear, raceYear) {
+    if (!birthYear) return 1.0;
+    const age = raceYear - birthYear;
+    const PEAK_AGE   = 29;
+    const PRIME_END  = 32;
+    const DECLINE    = 0.015;   // 1.5 % pro Jahr nach 32
+    if (age < PEAK_AGE)  return Math.pow(Math.max(0.5, age / PEAK_AGE), 0.4);
+    if (age <= PRIME_END) return 1.0;
+    return Math.max(0.5, 1.0 - DECLINE * (age - PRIME_END));
+}
 
 // ── DSQ-Overrides (identisch zu calculate-elo.js) ────────────────────────────
 const DSQ_OVERRIDES = {
@@ -419,8 +440,15 @@ for (const [slug, years] of Object.entries(eloRatings)) {
         if (!d) continue;
         const potPace   = round1(normalizePotential(careerPotentialRelElo[slug] ?? 0));
         const potFinal  = round1(Math.max(d.pace, potPace, POTENTIAL_OVERRIDE[slug] ?? 0));
+        // Age curve als Prior: viel Gewicht bei wenig Daten, null Gewicht bei ≥ RELIABILITY_FULL Rennen
+        // → gut kalibrierte Fahrer (20+ Rennen) bleiben reines Elo; Rookies/wenige Rennen nähern sich Alterskurve an
+        const ageF      = ageFactor(birthYears[slug], +year);
+        const ageCap    = Math.max(PACE_MIN, potFinal * ageF);
+        const ageWeight = Math.max(0, 1 - d.raceCount / RELIABILITY_FULL); // 0 = pure Elo, 1 = pure Alterskurve
+        const curPace   = round1(d.pace - ageWeight * Math.max(0, d.pace - ageCap));
         driverOut[year] = {
             pace:           d.pace,
+            current_pace:   curPace,
             potential_pace: potFinal,
             race_count:     d.raceCount,
             consistency:    d.consistency ?? null,
@@ -486,6 +514,14 @@ const CS_FILE = path.join(__dirname, 'carspeed_ratings.json');
 fs.writeFileSync(CS_FILE, JSON.stringify(carspeedOutput, null, 2), 'utf8');
 console.log(`✓ Fertig: ${Object.keys(carspeedOutput).length} Teams → tests/carspeed_ratings.json`);
 
+// Phase 4b: carSpeed in output einbetten (zweiter Pass, da carspeedOutput erst hier fertig ist)
+for (const [slug, years] of Object.entries(output)) {
+    for (const [yearStr, d] of Object.entries(years)) {
+        const team = (teamByYear[yearStr] || {})[slug];
+        d.car_speed = team ? (carspeedOutput[team]?.[yearStr] ?? null) : null;
+    }
+}
+
 // carSpeed-Validierung 1988 + 2002
 const csChecks = [
     ['mclaren', '1988', 'McLaren 1988'],
@@ -541,21 +577,25 @@ for (const [slug, year, label] of checks) {
     const d = output[slug]?.[year];
     if (d) {
         const pace = String(d.pace).padStart(4);
+        const cur  = String(d.current_pace ?? '–').padStart(4);
         const pot  = String(d.potential_pace).padStart(4);
         const con  = String(d.consistency ?? '–').padStart(4);
+        const cs   = String(d.car_speed ?? '–').padStart(4);
         const n    = String(d.race_count).padStart(2);
-        console.log(`  ${label.padEnd(40)} pace=${pace}  pot=${pot}  con=${con}  n=${n}`);
+        console.log(`  ${label.padEnd(40)} pace=${pace}  cur=${cur}  pot=${pot}  con=${con}  cs=${cs}  n=${n}`);
     } else {
         console.log(`  ${label.padEnd(40)} ← KEIN EINTRAG`);
     }
 }
 
 // ── Kompakt-Export für HTML-Einbettung ───────────────────────────────────────
-// Format: { slug: { year: [pace, potential_pace, consistency_or_null] } }
+// Format: { slug: { year: [current_pace, potential_pace, consistency_or_-1, carSpeed_or_0] } }
 // - Nur 1950+ (F1-Saisons)
 // - Nur Fahrer die in F1DB vorkommen (race_count > 0 in mind. 1 Jahr)
-// - Integer-Werte (pace gerundet), consistency null → -1
-// - race_count weggelassen (nicht für Simulation nötig)
+// - [0] current_pace: Elo-Pace begrenzt durch Alterskurve (Phase 3b)
+// - [1] potential_pace: Career-Peak (eingefroren)
+// - [2] consistency: null → -1
+// - [3] car_speed: Team-Elo-abgeleitet 60–96, unbekannt → 0
 
 const compact = {};
 for (const [slug, years] of Object.entries(output)) {
@@ -567,9 +607,10 @@ for (const [slug, years] of Object.entries(output)) {
     compact[slug] = {};
     for (const [year, d] of f1Years) {
         compact[slug][year] = [
-            Math.round(d.pace),
+            Math.round(d.current_pace ?? d.pace),
             Math.round(d.potential_pace),
             d.consistency !== null ? d.consistency : -1,
+            d.car_speed  !== null ? Math.round(d.car_speed) : 0,
         ];
     }
 }
