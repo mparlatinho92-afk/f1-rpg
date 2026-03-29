@@ -94,10 +94,14 @@ function createBrowserStubs() {
 
 // ── HTML-Skript laden ─────────────────────────────────────────────────────
 function findHtmlFile() {
+    // index.html ist immer die aktuelle Version (Netlify-Standard)
     const dir = path.join(__dirname, '..');
-    const file = fs.readdirSync(dir).find(f => /^f1-rpg-v[\d.]+\.html$/.test(f));
-    if (!file) throw new Error('Keine f1-rpg-v*.html Datei gefunden!');
-    return path.join(dir, file);
+    const idx = path.join(dir, 'index.html');
+    if (fs.existsSync(idx)) return idx;
+    // Fallback: höchste versionierte Datei
+    const files = fs.readdirSync(dir).filter(f => /^f1-rpg-v[\d.]+\.html$/.test(f)).sort();
+    if (!files.length) throw new Error('Keine f1-rpg-v*.html Datei gefunden!');
+    return path.join(dir, files[files.length - 1]);
 }
 
 let _cachedCtx = null;
