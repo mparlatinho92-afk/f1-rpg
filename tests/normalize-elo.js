@@ -59,6 +59,35 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function round1(v) { return Math.round(v * 10) / 10; }
 
+// ── DSQ-Overrides (identisch zu calculate-elo.js) ────────────────────────────
+const DSQ_OVERRIDES = {
+    389: { 'martin-brundle': { pos: 5  }, 'stefan-bellof':  { dnfType: 'tech'      } },
+    390: { 'martin-brundle': { pos: 11 }, 'stefan-bellof':  { dnfType: 'tech'      } },
+    391: { 'stefan-bellof':  { pos: 6  }, 'martin-brundle': { dnfType: 'tech'      } },
+    392: { 'stefan-bellof':  { pos: 5  }, 'martin-brundle': { dnfType: 'tech'      } },
+    393: { 'stefan-bellof':  { dnfType: 'tech'   }, 'martin-brundle': { pos: 10 }    },
+    394: { 'stefan-bellof':  { pos: 3  }                                              },
+    395: { 'stefan-bellof':  { dnfType: 'tech'   }, 'martin-brundle': { pos: 9  }    },
+    396: { 'stefan-bellof':  { dnfType: 'driver' }, 'martin-brundle': { pos: 2  }    },
+    397: { 'stefan-bellof':  { dnfType: 'driver' }                                   },
+    398: { 'stefan-bellof':  { pos: 10 }, 'stefan-johansson': { dnfType: 'collision' } },
+    399: { 'stefan-johansson': { dnfType: 'tech' }                                   },
+    401: { 'stefan-bellof':  { pos: 10 }, 'stefan-johansson': { pos: 12 }            },
+};
+
+// ── Potential-Overrides: bekannte Ausnahmefälle ───────────────────────────────
+// Nur für Fahrer bei denen peak_relElo strukturell unterschätzt wird:
+//   - kurze Karriere vollständig in Backmarker-Auto (Daten können Talent nicht beweisen)
+//   - historisch belegtes Ausnahmetalent aus anderen Quellen (WSPC, Rennsportruf etc.)
+//
+// Fallback-Empfehlung wenn dieser Override nicht ausreicht:
+//   Velocity→Potential: 2-Jahres-Elo-Delta auch auf potential_pace anwenden
+//   (hilft bei Rising Stars mit vorhandenen Elo-Daten, z.B. Senna 1984 Toleman)
+const POTENTIAL_OVERRIDE = {
+    'stefan-bellof':     85,  // Nürburgring-Rekord 1983, WSPC-Dominanz, Monaco 1984 P3 – Tyrrell zu schwach für Elo-Beweis
+    'gilles-villeneuve': 93,  // stirbt 1982 im Ferrari; nie in echtem Titelfight-Auto trotz Weltklasseniveau
+};
+
 // ── 1. Daten laden ───────────────────────────────────────────────────────────
 
 console.log('\nLade Daten …');
@@ -77,7 +106,7 @@ for (const [yearStr, rounds] of Object.entries(f1db)) {
     teamByYear[year]      = teamByYear[year]      || {};
     raceCountByYear[year] = raceCountByYear[year] || {};
 
-    for (const [, , entries] of rounds) {
+    for (const [raceId, , entries] of rounds) {
         if (!Array.isArray(entries)) continue;
         for (const e of entries) {
             const posText = e[2];
@@ -91,9 +120,10 @@ for (const [yearStr, rounds] of Object.entries(f1db)) {
             teamByYear[year][slug] = team;
 
             // Race-Count nur für echte Startteilnahmen
-            if (posText !== 'DNS' && posText !== 'DSQ' && posText !== 'EX') {
-                raceCountByYear[year][slug] = (raceCountByYear[year][slug] || 0) + 1;
-            }
+            // DSQ: nur zählen wenn Override vorhanden (= tatsächlich gestartet, z.B. Tyrrell 1984)
+            if (posText === 'DNS' || posText === 'EX') continue;
+            if (posText === 'DSQ' && !(DSQ_OVERRIDES[raceId] || {})[slug]) continue;
+            raceCountByYear[year][slug] = (raceCountByYear[year][slug] || 0) + 1;
         }
     }
 }
@@ -209,16 +239,57 @@ for (const [year, drivers] of Object.entries(rawPace)) {
     }
 }
 
-// ── 6. potential_pace = bestes career-pace (eingefroren) ─────────────────────
+// ── 6. potential_pace = Option B: peak_relElo (Ø bester 3 Jahre) ─────────────
+//
+// Warum nicht career-max-pace:
+//   - career-max-pace = Saisonschnitt, schlechtes Auto drückt gute Fahrer runter
+//   - Bellof 1984 Monaco-P3 = Einzelrennen-Hochleistung → in peak_race_elo sichtbar
+//   - Fangio ohne peak_relElo hätte zu niedrige potential wegen wenig Rennen
+//
+// Methode:
+//   peak_relElo pro Jahr = peak_race_elo − Jahres-Ø(race_elo)
+//   Smoothing: Ø der besten 3 Jahre (verhindert Einzelrennen-Spike)
+//   Fahrer mit < 3 Jahren: alle Jahre gemittelt
+//   Normalisierung: globale P5/P95 → 58–98
 
-const careerBest = {};
-for (const [year, drivers] of Object.entries(finalPace)) {
-    for (const [slug, d] of Object.entries(drivers)) {
-        if (!careerBest[slug] || d.pace > careerBest[slug]) {
-            careerBest[slug] = d.pace;
-        }
+// Jahres-Ø der race_elo (für Relativierung)
+const yearAvgRaceElo = {};
+for (const [slug, years] of Object.entries(eloRatings)) {
+    for (const [year, vals] of Object.entries(years)) {
+        yearAvgRaceElo[year] = yearAvgRaceElo[year] || { sum: 0, n: 0 };
+        yearAvgRaceElo[year].sum += vals.race_elo;
+        yearAvgRaceElo[year].n   += 1;
     }
 }
+for (const y of Object.keys(yearAvgRaceElo)) {
+    yearAvgRaceElo[y] = yearAvgRaceElo[y].sum / yearAvgRaceElo[y].n;
+}
+
+// Bester Ø aus Top-3-Jahren (peak_relElo) pro Fahrer
+const careerPotentialRelElo = {};
+for (const [slug, years] of Object.entries(eloRatings)) {
+    const relPeaks = [];
+    for (const [year, vals] of Object.entries(years)) {
+        const peakElo = vals.peak_race_elo ?? vals.race_elo; // Fallback: race_elo wenn kein Peak
+        const avgElo  = yearAvgRaceElo[year] ?? peakElo;
+        relPeaks.push(peakElo - avgElo);
+    }
+    relPeaks.sort((a, b) => b - a);
+    const top = relPeaks.slice(0, 3);
+    careerPotentialRelElo[slug] = top.reduce((a, b) => a + b, 0) / top.length;
+}
+
+// Globale P5/P99 der career potential relElos
+// P99 statt P95: nur absolute Top-Karrieren (Hamilton, Verstappen, Senna) erreichen 98.
+// Mit P95 überschreiten zu viele Fahrer den Schwellenwert → alles clampt auf 98.
+const allPotRelElos = Object.values(careerPotentialRelElo);
+const POT_P5  = percentile(allPotRelElos, 5);
+const POT_P95 = percentile(allPotRelElos, 99);
+
+function normalizePotential(relElo) {
+    return clamp(((relElo - POT_P5) / (POT_P95 - POT_P5)) * PACE_RANGE + PACE_MIN, PACE_MIN, PACE_MAX);
+}
+
 
 // Output wird nach Phase 3e + 3d gebaut (consistency muss zuerst gesetzt sein)
 
@@ -254,16 +325,33 @@ for (const [yearStr, rounds] of Object.entries(f1db)) {
             const status  = (e[9] || '').toLowerCase();
 
             if (posText === 'DNQ' || posText === 'DNPQ' || posText === 'DNS') continue;
+            // DSQ: nur zählen wenn Override vorhanden (= tatsächlich gestartet)
+            const dsqOv = posText === 'DSQ' ? (DSQ_OVERRIDES[raceId] || {})[slug] : null;
+            if (posText === 'DSQ' && !dsqOv) continue;
 
             seasonStats[slug]          = seasonStats[slug]          || {};
-            seasonStats[slug][yearStr] = seasonStats[slug][yearStr] || { positions: [], faults: 0, starts: 0 };
+            seasonStats[slug][yearStr] = seasonStats[slug][yearStr] || { positions: [], gridPositions: [], faults: 0, starts: 0 };
             const st = seasonStats[slug][yearStr];
             st.starts++;
 
-            if (pos && posText !== 'DSQ') {
+            // Grid-Position als Fallback für pos_stddev (e[11] = gridPositionNumber)
+            const gridPos = e[11];
+            if (gridPos != null && gridPos > 0) st.gridPositions.push(gridPos);
+
+            if (dsqOv) {
+                // Override: echte Position verwenden, DNFs NICHT in positions
+                if (dsqOv.pos !== undefined) {
+                    st.positions.push(dsqOv.pos);
+                } else if (dsqOv.dnfType === 'driver' || dsqOv.dnfType === 'collision') {
+                    st.faults++;  // Fahrerfehler → fault_rate, kein Eintrag in positions
+                }
+                // Tech-DNF-Override: kein Eintrag in positions, kein fault
+            } else if (pos) {
+                // Klassifizierte Zieleinfahrt → positions
                 st.positions.push(pos);
             } else {
-                st.positions.push(dnfPos);
+                // DNF: Tech → stilles Überspringen; Driver/Collision → fault_rate
+                // pos_stddev bleibt unberührt (kein dnfPos mehr!)
                 const type = classifyStatus(status);
                 if (type === 'driver' || type === 'collision') st.faults++;
             }
@@ -282,8 +370,11 @@ const allFaultRates = [], allStddevs = [];
 for (const years of Object.values(seasonStats)) {
     for (const [, st] of Object.entries(years)) {
         if (st.starts < 3) continue;
+        const posArr = st.positions.length >= 3 ? st.positions
+                     : st.gridPositions.length >= 3 ? st.gridPositions
+                     : [];
         allFaultRates.push(st.faults / st.starts);
-        allStddevs.push(stddev(st.positions));
+        if (posArr.length >= 3) allStddevs.push(stddev(posArr));
     }
 }
 
@@ -304,11 +395,17 @@ function calcConsistency(faultRate, posStd) {
 for (const [year, drivers] of Object.entries(finalPace)) {
     for (const [slug, d] of Object.entries(drivers)) {
         const st = seasonStats[slug]?.[year];
-        if (!st || d.raceCount < 5) {  // < 5 echte Rennteilnahmen: zu wenig Aussagekraft
+        if (!st || d.raceCount < 5) {
             d.consistency = null;
             continue;
         }
-        d.consistency = calcConsistency(st.faults / st.starts, stddev(st.positions));
+        // pos_stddev: primär Zieleinfahrten, Fallback Grid-Positionen, sonst 0
+        // Mindestens 3 Werte für aussagekräftigen stddev
+        const posArr = st.positions.length >= 3 ? st.positions
+                     : st.gridPositions.length >= 3 ? st.gridPositions
+                     : [];
+        const posStd = posArr.length >= 3 ? stddev(posArr) : 0;
+        d.consistency = calcConsistency(st.faults / st.starts, posStd);
     }
 }
 
@@ -320,9 +417,11 @@ for (const [slug, years] of Object.entries(eloRatings)) {
     for (const year of Object.keys(years)) {
         const d = finalPace[year]?.[slug];
         if (!d) continue;
+        const potPace   = round1(normalizePotential(careerPotentialRelElo[slug] ?? 0));
+        const potFinal  = round1(Math.max(d.pace, potPace, POTENTIAL_OVERRIDE[slug] ?? 0));
         driverOut[year] = {
             pace:           d.pace,
-            potential_pace: round1(careerBest[slug] ?? d.pace),
+            potential_pace: potFinal,
             race_count:     d.raceCount,
             consistency:    d.consistency ?? null,
         };
@@ -431,6 +530,9 @@ const checks = [
     ['lewis-hamilton',         '2019', 'Hamilton 2019 (Peak)'],
     ['jim-clark',              '1965', 'Clark 1965 (dominiert)'],
     ['graham-hill',            '1965', 'Hill G. 1965'],
+    ['romain-grosjean',        '2012', 'Grosjean 2012 (schnell+crashprone)'],
+    ['romain-grosjean',        '2015', 'Grosjean 2015 (reifer)'],
+    ['kimi-raikkonen',         '2003', 'Räikkönen 2003 (McLaren)'],
 ];
 
 console.log('\nValidierung bekannter Fahrer:');
@@ -447,3 +549,33 @@ for (const [slug, year, label] of checks) {
         console.log(`  ${label.padEnd(40)} ← KEIN EINTRAG`);
     }
 }
+
+// ── Kompakt-Export für HTML-Einbettung ───────────────────────────────────────
+// Format: { slug: { year: [pace, potential_pace, consistency_or_null] } }
+// - Nur 1950+ (F1-Saisons)
+// - Nur Fahrer die in F1DB vorkommen (race_count > 0 in mind. 1 Jahr)
+// - Integer-Werte (pace gerundet), consistency null → -1
+// - race_count weggelassen (nicht für Simulation nötig)
+
+const compact = {};
+for (const [slug, years] of Object.entries(output)) {
+    const f1Years = Object.entries(years).filter(([y]) => +y >= 1950);
+    if (f1Years.length === 0) continue;
+    const hasRaces = f1Years.some(([, d]) => (d.race_count || 0) > 0);
+    if (!hasRaces) continue;
+
+    compact[slug] = {};
+    for (const [year, d] of f1Years) {
+        compact[slug][year] = [
+            Math.round(d.pace),
+            Math.round(d.potential_pace),
+            d.consistency !== null ? d.consistency : -1,
+        ];
+    }
+}
+
+const COMPACT_FILE = path.join(__dirname, 'pace_ratings_compact.js');
+const compactJs = 'const PACE_RATINGS=' + JSON.stringify(compact) + ';';
+fs.writeFileSync(COMPACT_FILE, compactJs, 'utf8');
+const kb = (compactJs.length / 1024).toFixed(1);
+console.log(`\n✓ Kompakt-Export: ${Object.keys(compact).length} Fahrer, ${kb} KB → tests/pace_ratings_compact.js`);

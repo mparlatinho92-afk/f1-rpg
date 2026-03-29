@@ -207,6 +207,37 @@ const SLUG_ALIASES = {
 // Spin/Kollision im Regen ≠ reiner Fahrerfehler → kein ELO-Malus
 const WET_RACE_IDS = new Set([3,8,18,19,22,29,33,34,36,37,39,52,56,99,100,108,109,113,115,134,140,143,145,147,158,166,167,169,201,207,212,220,237,246,255,258,260,262,274,280,287,292,295,309,316,328,344,346,347,350,352,356,363,378,394,406,417,441,460,461,467,474,479,484,502,503,516,520,524,528,533,534,535,536,547,563,567,571,575,578,580,583,587,588,602,605,609,623,627,637,644,652,654,657,659,662,665,666,690,700,712,715,728,731,747,763,766,778,783,784,791,793,794,798,799,803,805,806,822,824,833,837,846,848,849,850,855,860,878,880,908,912,925,941,945,955,958,970,987,1008,1021,1032,1037,1046,1047,1050,1051,1061,1064,1070,1074,1075,1085,1122]);
 
+// ── DSQ-Overrides: echte Rennresultate bei Meisterschaftsausschluss ────────
+// F1DB setzt positionNumber=null für ganze Teams die nachträglich disqualifiziert wurden.
+// Diese Tabelle liefert die tatsächlichen On-Track-Resultate für die Elo-Berechnung.
+// Nur Einträge für Fahrer die tatsächlich gestartet sind (kein Eintrag = DNS/DNQ, kein Elo).
+const DSQ_OVERRIDES = {
+    // ── Tyrrell 1984 (Ballast-Skandal, rückwirkend aus Meisterschaft ausgeschlossen) ──
+    // Quellen: Wikipedia (Stefan Bellof, Martin Brundle, Tyrrell 012), grandprix.com
+    389: { 'martin-brundle': { pos: 5  },                              // R01 Brasilien: P5 (F1-Debüt)
+           'stefan-bellof':  { dnfType: 'tech' } },                    // R01 Brasilien: DNF R11 Drosselkabel
+    390: { 'martin-brundle': { pos: 11 },                              // R02 Südafrika: P11
+           'stefan-bellof':  { dnfType: 'tech' } },                    // R02 Südafrika: DNF R60 Nabenversagen
+    391: { 'stefan-bellof':  { pos: 6  },                              // R03 Belgien: P6
+           'martin-brundle': { dnfType: 'tech' } },                    // R03 Belgien: DNF R51 Rad verloren
+    392: { 'stefan-bellof':  { pos: 5  },                              // R04 San Marino: P5
+           'martin-brundle': { dnfType: 'tech' } },                    // R04 San Marino: DNF R55 Einspritzung
+    393: { 'stefan-bellof':  { dnfType: 'tech' },                      // R05 Frankreich: DNF R11 Motor
+           'martin-brundle': { pos: 10 } },                            // R05 Frankreich: ~P10 klassifiziert
+    394: { 'stefan-bellof':  { pos: 3  } },                            // R06 Monaco: P3 (Brundle DNS → kein Override)
+    395: { 'stefan-bellof':  { dnfType: 'tech' },                      // R07 Kanada: DNF Antriebswelle
+           'martin-brundle': { pos: 9  } },                            // R07 Kanada: ~P9 klassifiziert
+    396: { 'stefan-bellof':  { dnfType: 'driver' },                    // R08 Detroit: DNF Unfall Mauer
+           'martin-brundle': { pos: 2  } },                            // R08 Detroit: P2 (<1s hinter Piquet)
+    397: { 'stefan-bellof':  { dnfType: 'driver' } },                  // R09 Dallas: DNF R9 Unfall (Brundle DNS → kein Override)
+    398: { 'stefan-bellof':   { pos: 10 },                             // R10 Großbritannien: ~P10 (68 Runden)
+           'stefan-johansson': { dnfType: 'collision' } },             // R10 Großbritannien: Runde-1-Unfall
+    399: { 'stefan-johansson': { dnfType: 'tech' } },                  // R11 Deutschland: ~42 Runden, Mechanikproblem
+    // R12 Österreich (raceId 400): Bellof + Johansson DNQ → kein Override
+    401: { 'stefan-bellof':   { pos: 10 },                             // R13 Holland: 69 Runden klassifiziert (~P10)
+           'stefan-johansson': { pos: 12 } },                          // R13 Holland: 69 Runden klassifiziert (~P12)
+};
+
 // ── Elo-Kernfunktionen ─────────────────────────────────────────────────────
 
 function expected(rA, rB) {
@@ -325,6 +356,18 @@ function processF1DBRace(ratings, entries, raceId = 0) {
         if (posText === 'DSQ' || posText === 'DNS' || posText === 'EX') {
             getElo(ratings, slug);
             active.add(slug);
+            // Meisterschafts-DSQ: echtes Rennresultat aus Override-Tabelle verwenden
+            if (posText === 'DSQ') {
+                const override = (DSQ_OVERRIDES[raceId] || {})[slug];
+                if (override) {
+                    if (override.pos !== undefined) {
+                        finishers.push({ slug, pos: override.pos });
+                    } else if (override.dnfType) {
+                        const laps = parseInt(e[5]) || 0;
+                        dnfs.push({ slug, dnfType: override.dnfType, laps });
+                    }
+                }
+            }
             continue;
         }
 
@@ -497,8 +540,12 @@ function main() {
     // Laufender Elo-Zustand: { slug: { race: float, quali: float } }
     const ratings = {};
 
-    // Jahres-Snapshots: { slug: { year: { race_elo, quali_elo, driver_elo } } }
+    // Jahres-Snapshots: { slug: { year: { race_elo, quali_elo, driver_elo, peak_race_elo } } }
     const snapshots = {};
+
+    // peak_race_elo: höchste race_elo die ein Fahrer innerhalb eines Jahres erreicht hat.
+    // Erfasst Einzelrennen-Hochleistungen (z.B. Bellof Monaco 1984) für potential_pace.
+    const yearPeakRace = {};
 
     // Nur Fahrer speichern die in diesem Jahr tatsächlich aktiv waren (verhindert
     // carry-forward für verstorbene/zurückgetretene Fahrer).
@@ -508,9 +555,10 @@ function main() {
             if (!r) continue;
             if (!snapshots[slug]) snapshots[slug] = {};
             snapshots[slug][String(year)] = {
-                race_elo:   Math.round(r.race),
-                quali_elo:  Math.round(r.quali),
-                driver_elo: Math.round(r.race * 0.5 + r.quali * 0.5),
+                race_elo:      Math.round(r.race),
+                quali_elo:     Math.round(r.quali),
+                driver_elo:    Math.round(r.race * 0.5 + r.quali * 0.5),
+                peak_race_elo: Math.round(yearPeakRace[slug] ?? r.race),
             };
         }
     }
@@ -554,8 +602,21 @@ function main() {
     for (const year of Object.keys(f1dbResults).map(Number).sort((a, b) => a - b)) {
         const rounds         = f1dbResults[String(year)];
         const activeThisYear = new Set();
+
+        // Jahres-Peak zurücksetzen (neues Jahr = neue Messung)
+        for (const slug of Object.keys(yearPeakRace)) delete yearPeakRace[slug];
+
         for (const [raceId, , entries] of rounds) {
             const active = processF1DBRace(ratings, entries, raceId);
+
+            // Peak-race_elo nach jedem Rennen aktualisieren
+            for (const slug of active) {
+                const rElo = ratings[slug]?.race;
+                if (rElo != null && (yearPeakRace[slug] == null || rElo > yearPeakRace[slug])) {
+                    yearPeakRace[slug] = rElo;
+                }
+            }
+
             active.forEach(s => activeThisYear.add(s));
 
             const qualiEntries = qualiData[String(raceId)];

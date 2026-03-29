@@ -602,3 +602,22 @@ Stand: 2026-03-26
 → Prio 2–3: Pace-Werte ins Spiel bringen → direkter Gameplay-Impact
 → Prio 4–8: Spiel-Engine Phase 4 komplett
 
+
+
+---
+
+## Zukunfts-Ideen (post-Phase 4)
+
+### Multi-Disziplin-Elo (WSPC / Le Mans / CART)
+Fahrer wie Bellof, Ickx, Prost (Le Mans), Schumacher (frühe WSPC-Jahre) haben Weltklasse-Leistungen
+außerhalb der F1 erbracht. Diese könnten als zusätzliche Elo-Signale genutzt werden:
+- Scraper für WSPC 1982–1992 (Sportwagen-WM)
+- Kalibrierungsfaktor F1 ↔ WSPC (unterschiedliches Feld-Niveau)
+- Betrifft nur ~20–30 Fahrer, hätte aber echten Mehrwert für Potential-Berechnung
+- Priorität: niedrig (Sonderfall), aber konzeptionell sauber
+
+### Velocity → Potential (Fallback)
+Falls POTENTIAL_OVERRIDE-Tabelle nicht ausreicht:
+2-Jahres-Elo-Delta (velocity) auch auf potential_pace anwenden, nicht nur auf pace.
+Hilft bei Rising Stars mit vorhandenen Elo-Daten (Senna 1984, Verstappen 2015).
+Bellof profitiert nicht (kein 2-Jahres-Lookback), aber allgemeiner Rohdiamanten-Detektor.
