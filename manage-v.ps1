@@ -24,19 +24,20 @@ $Content = $Content -replace '<title>[^<]*</title>', "<title>F1 RPG v$NewVersion
 if ($ChangelogPoints -ne "") {
     $Date = Get-Date -Format "dd.MM.yyyy"
     $BulletLines = $ChangelogPoints -split ";" | ForEach-Object {
-        "                            <div>- $_</div>"
+        "                            <div>&#8226; $_</div>"
     }
     $BulletsJoined = $BulletLines -join "`r`n"
 
     $NewEntry = "<!-- CHANGELOG -->`r`n                            <div class=`"font-bold text-green-400`">v$NewVersion (aktuell) - $Date</div>`r`n$BulletsJoined"
 
-    # Altes (aktuell)-Label auf grau setzen (PS 5.1 kompatibler Weg ohne ScriptBlock)
-    $OldPattern = '(<div[^>]*>)(v[\d.]+ \(aktuell\))(</div>)'
-    $OldMatch = [regex]::Match($Content, $OldPattern)
-    if ($OldMatch.Success) {
-        $OldLabel = $OldMatch.Value
-        $NewLabel = $OldLabel -replace ' \(aktuell\)', '' -replace 'text-green-400', 'text-slate-400'
-        $Content = $Content.Replace($OldLabel, $NewLabel)
+    # Alle bisherigen gruenen (aktuell)-Zeilen auf grau ohne (aktuell) – verhindert Doppel-„aktuell“ nach fehlerhaften Laeufen
+    $OldPattern = '<div class="font-bold text-green-400">(v[\d.]+\s+\(aktuell\)[^<]*)</div>'
+    while ($true) {
+        $m = [regex]::Match($Content, $OldPattern)
+        if (-not $m.Success) { break }
+        $inner = $m.Groups[1].Value -replace ' \(aktuell\)', ''
+        $replacement = '<div class="font-bold text-slate-400">' + $inner + '</div>'
+        $Content = $Content.Substring(0, $m.Index) + $replacement + $Content.Substring($m.Index + $m.Length)
     }
 
     # Neuen Eintrag einsetzen
@@ -54,8 +55,13 @@ if (!(Test-Path "archive")) { New-Item -ItemType Directory -Path "archive" | Out
 Move-Item $OldFile.Name "archive/" -Force
 Write-Host "Archiviert: $($OldFile.Name)" -ForegroundColor Cyan
 
-# 7. Git
-git add $NewFileName index.html
+# NEU: 6b. Funktions-Index automatisch aktualisieren
+if (Test-Path "update-functions-index.ps1") {
+    ./update-functions-index.ps1
+}
+
+# 7. Git (Erweitert um das Schema)
+git add $NewFileName index.html schemas/functions.schema.json
 git commit -m "v$NewVersion - $CommitMsg"
 git push origin master
 
