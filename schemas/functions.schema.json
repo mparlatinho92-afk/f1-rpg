@@ -1,160 +1,729 @@
 {
-  "$description": "Funktions-Index f1-rpg-v0.9.5.html – 135 Funktionen mit Zeilennummer und Zweck.",
-  "$usage": "Bei Codesuche zuerst hier nachschlagen statt 3,5MB zu greppen.",
-  "$warning": "Zeilennummern verschieben sich bei größeren Edits – nach signifikanten Änderungen aktualisieren.",
-
-  "RENDERING": {
-    "renderContent":              { "line": 11338, "desc": "Dispatch je nach aktivem Tab – Einstieg für alle Seiten" },
-    "renderOverview":             { "line": 11353, "desc": "Saison-Übersicht: Standings, Meldeliste, nächstes Rennen" },
-    "renderHistoricalOverview":   { "line": 11636, "desc": "Archiv-Saison: Weltmeister, Meldeliste, Events" },
-    "renderHistoricalRace":       { "line": 11547, "desc": "Einzelnes historisches Rennergebnis" },
-    "renderLastRace":             { "line": 11928, "desc": "Letztes Rennen der laufenden Saison" },
-    "renderStandings":            { "line": 11951, "desc": "Dispatch Fahrer- vs. Konstrukteurs-WM" },
-    "renderDriverStandings":      { "line": 11994, "desc": "Fahrer-WM-Tabelle mit Punkten" },
-    "renderTeamStandings":        { "line": 12059, "desc": "Konstrukteurs-WM-Tabelle" },
-    "renderResultsMatrix":        { "line": 12115, "desc": "Saisonverlauf: alle Fahrer × alle Rennen" },
-    "renderRaces":                { "line": 12225, "desc": "Dispatch Rennen-Ansicht" },
-    "renderUnifiedRaceList":      { "line": 12251, "desc": "Rennliste einheitlich (historisch + aktuell)" },
-    "renderCalendar":             { "line": 12475, "desc": "Rennkalender mit Terminen und Strecken" },
-    "renderF1DBRaceList":         { "line": 12596, "desc": "Vollständige F1DB-Rennliste mit Details" },
-    "renderF1DBRaceListCompact":  { "line": 12548, "desc": "Kompakte F1DB-Rennliste" },
-    "renderRaceResults":          { "line": 12634, "desc": "Rennergebnis aktuelles Wochenende" },
-    "renderQualifyingResults":    { "line": 12705, "desc": "Qualifying-Ergebnisse mit Startpositionen" },
-    "renderStats":                { "line": 12780, "desc": "Dispatch Statistiken-Seite" },
-    "renderAllTimeDrivers":       { "line": 12836, "desc": "All-Time Fahrer-Statistiken" },
-    "renderAllTimeTeams":         { "line": 12947, "desc": "All-Time Konstrukteur-Statistiken" },
-    "renderChampions":            { "line": 13016, "desc": "Weltmeister-Übersicht aller Jahre" },
-    "renderSettings":             { "line": 13102, "desc": "Einstellungen: Themes, Badges, DNF-Gewichtung" },
-    "renderBadgeEditor":          { "line": 1703,  "desc": "Editor-UI für Tier-Emojis und Champion-Badges" },
-    "renderHandbook":             { "line": 14001, "desc": "Handbuch / FAQ" },
-    "renderRoadmap":              { "line": 14184, "desc": "Feature-Roadmap" },
-    "renderReservePool":          { "line": 6415,  "desc": "Reservefahrer-Pool nach Gruppen" },
-    "renderNav":                  { "line": 11323, "desc": "Navigationsmenü mit Tabs" },
-    "renderDriverPhotoHtml":      { "line": 15687, "desc": "Fahrer-Foto HTML mit Lazy-Loading" },
-    "renderTeamLogoHtml":         { "line": 15932, "desc": "Team-Logo HTML mit Lazy-Loading" },
-    "renderTeamHistory":          { "line": 16222, "desc": "Team-Karriere alle Saisons" },
-    "renderContractStatus":       { "line": 16456, "desc": "Vertragsstatus für Fahrer" },
-    "renderAll":                  { "line": 16610, "desc": "Master-Render nach State-Update" },
-    "renderTVBadge":              { "line": 1692,  "desc": "Titelverteidiger-Badge (style-abhängig)" }
-  },
-
-  "SPIELLOGIK": {
-    "simulateRace":                   { "line": 7168,  "desc": "Komplettes Rennen simulieren (DNF, Positionen, Punkte)" },
-    "simulateQualifying":             { "line": 7682,  "desc": "Qualifying mit Startpositionen" },
-    "simulateLap":                    { "line": 7871,  "desc": "Einzelne Rennrunde simulieren" },
-    "applyRaceResults":               { "line": 7601,  "desc": "Rennergebnisse in Standings schreiben" },
-    "processTeamChanges":             { "line": 9199,  "desc": "Fahrer-Transfers, Hires, Entlassungen zwischen Saisons" },
-    "generateDriver":                 { "line": 2298,  "desc": "Neuen Fahrer mit realistischen Stats generieren" },
-    "evaluateDriverPerformance":      { "line": 8959,  "desc": "Performance-Score 0–100 aus Rennresultaten berechnen" },
-    "initReservePool":                { "line": 6302,  "desc": "Reserve-Pool aus hist. Daten befüllen (Saisonstart)" },
-    "assignFromPool":                 { "line": 6612,  "desc": "Fahrer zu Team zuweisen, aus Pool entfernen" },
-    "assignSofortFromPool":           { "line": 6566,  "desc": "Sofort-Zuweisung laufende Saison" },
-    "assignNextSeasonFromPool":       { "line": 6589,  "desc": "Zuweisung für nächste Saison planen" },
-    "removeFromPool":                 { "line": 6662,  "desc": "Fahrer aus Pool entfernen (mit Bestätigung)" },
-    "startNewSeason":                 { "line": 9723,  "desc": "Neue Saison initialisieren (Teams, Fahrer, Rennen)" },
-    "checkCareerEnds":                { "line": 8821,  "desc": "Karriere-Enden prüfen (Alter, Leistung)" },
-    "processDriverPaceDevelopment":   { "line": 9164,  "desc": "Pace aller Fahrer nach Saison entwickeln" },
-    "initStandings":                  { "line": 7137,  "desc": "Standings für Saisonstart berechnen" },
-    "recalculateStandingsFromResults":{ "line": 10336, "desc": "Standings aus Race-Results neu berechnen" },
-    "updateDriverCareerScores":       { "line": 9117,  "desc": "Karriere-Stats aller Fahrer nach Rennen updaten" },
-    "_hireFromFreeAgents":            { "line": 9482,  "desc": "Free Agents in Teams holen" },
-    "_hireByPoaching":                { "line": 9532,  "desc": "Fahrer aus anderen Teams abwerben" },
-    "_hireByBuyout":                  { "line": 9581,  "desc": "Fahrer aus Vertrag herauskaufen (nur Top-Teams)" },
-    "findTeamWithSpace":              { "line": 9625,  "desc": "Team mit freiem Cockpit finden" },
-    "executeTransfer":                { "line": 9654,  "desc": "Transfer durchführen inkl. Historisierung" }
-  },
-
-  "DATEN_HELPERS": {
-    "buildHistoricalYearData":   { "line": 11059, "desc": "Hist. Saison aus F1DB → GAME_STATE-Format konvertieren" },
-    "buildEntryList":            { "line": 11797, "desc": "Meldeliste aufbauen (Teams mit Fahrern, Badges, Flags)" },
-    "getYearData":               { "line": 11010, "desc": "Saison-Daten für Jahr (aus history oder GAME_STATE)" },
-    "getViewData":               { "line": 10966, "desc": "Daten für aktuell sichtbares Jahr (gecacht)" },
-    "getBadgeSettings":          { "line": 1661,  "desc": "Badge-Einstellungen aus localStorage (mit Cache)" },
-    "calculateTierFromRank":     { "line": 1794,  "desc": "Rang → Tier (top/mid/back) + Emoji" },
-    "getTeamTier":               { "line": 1624,  "desc": "Team-Tier aus aktuellem Ranking ermitteln" },
-    "getAllTeamTiers":            { "line": 1815,  "desc": "Tier-Einteilung aller Teams berechnen" },
-    "getDriverConstructors":     { "line": 5540,  "desc": "Alle Konstrukteure eines Fahrers (nach Jahr)" },
-    "getConstructorPosition":    { "line": 5553,  "desc": "Konstrukteur-Rang in einem Jahr" },
-    "getHistoricalStats":        { "line": 5693,  "desc": "Hist. Stats (Champions, Wins) ab Jahr" },
-    "getF1DBYear":               { "line": 2507,  "desc": "F1DB-Rennen für Jahr laden" },
-    "getEraValue":               { "line": 1616,  "desc": "Wert aus Dekaden-Tabellen für ein Jahr" },
-    "getPointsForPosition":      { "line": 11286, "desc": "Punkte für Rennergebnis (regelwerk-abhängig)" },
-    "getF1DBConstructorStandings":{ "line": 16204,"desc": "Konstrukteur-Standings aus F1DB" },
-    "findReplacementDriver":     { "line": 2395,  "desc": "Ersatzfahrer aus Reserve-Pool suchen" },
-    "weightedPick":              { "line": 2291,  "desc": "Gewichtete Zufallsauswahl aus Array" },
-    "pickNationByDecade":        { "line": 2264,  "desc": "Fahrer-Nation gewichtet nach Jahrzehnt" }
-  },
-
-  "FLAGGEN_NATIONEN": {
-    "renderFlag":            { "line": 1402, "desc": "Flagge als Emoji oder SVG rendern (mit Jahr-Kontext)" },
-    "getEmojiFlag":          { "line": 1304, "desc": "Emoji-Flagge für IOC-Code + Jahr (mit Fallback)" },
-    "getHistoricalFlagCode": { "line": 1248, "desc": "Hist. Ländercode (DDR, Rhodesia, Zimbabwe etc.)" },
-    "getCountryDisplayName": { "line": 1272, "desc": "Länderbezeichnung mit hist. Entsprechung" },
-    "convertEmojiToIOC":     { "line": 1332, "desc": "Emoji-Flagge → ISO/IOC-Code" },
-    "lookupNationByName":    { "line": 1381, "desc": "Ländercode per NAME_TO_IOC Lookup" }
-  },
-
-  "UI_NAVIGATION": {
-    "switchToYear":          { "line": 10943, "desc": "Zwischen Jahren wechseln (historisch/aktuell)" },
-    "updateSeasonSelector":  { "line": 10973, "desc": "Jahres-Dropdown aktualisieren" },
-    "openPoolAssignModal":   { "line": 6500,  "desc": "Modal: Fahrer aus Pool zuweisen" },
-    "openNewDriverModal":    { "line": 6680,  "desc": "Modal: Eigenen Fahrer erstellen" },
-    "setTierEmoji":          { "line": 1676,  "desc": "Tier-Emoji-Slot setzen (invalidiert Cache)" },
-    "setBadgeSetting":       { "line": 1684,  "desc": "Badge-Einstellung in localStorage schreiben" },
-    "showSeasonStartModal":  { "line": 10735, "desc": "Saison-Start-Dialog (Template/Jahr-Wahl)" },
-    "showSeasonEndModal":    { "line": 8488,  "desc": "Saison-Ende-Zusammenfassung mit Weltmeister" },
-    "showNewDriversModal":   { "line": 6760,  "desc": "Dialog neue hist. Fahrer beim Saisonstart" },
-    "updateYearPreview":     { "line": 10488, "desc": "Preview-Infos für Jahr-Auswahl aktualisieren" },
-    "stopLiveRace":          { "line": 7822,  "desc": "Live-Rennsimulation stoppen" },
-    "setIndyFilter":         { "line": null,   "desc": "Indy-Filter in Meldeliste setzen (all/none/only)" }
-  },
-
-  "SAVE_LOAD": {
-    "saveGame":           { "line": 6261,  "desc": "GAME_STATE → localStorage 'f1rpg_save'" },
-    "loadGame":           { "line": 6271,  "desc": "localStorage → GAME_STATE (mit sanitize)" },
-    "sanitizeGameState":  { "line": 5957,  "desc": "Geladenen State mit Defaults auffüllen (Migration)" },
-    "updateSaveStatus":   { "line": 16605, "desc": "Save-Status-Meldung im UI anzeigen" }
-  },
-
-  "SAISONSTART_ENDE": {
-    "initFromYear":       { "line": 6923,  "desc": "Saison aus hist. Jahr initialisieren" },
-    "initFromTemplate":   { "line": 6867,  "desc": "Saison aus Schnellstart-Template starten" },
-    "startNewSeason":     { "line": 9723,  "desc": "Neue Saison komplett initialisieren" },
-    "confirmAddToPool":   { "line": 6814,  "desc": "Neue hist. Fahrer zum Pool bestätigen" },
-    "generateRacesForYear":{ "line": 9945, "desc": "Rennkalender für Jahr generieren (F1DB oder Template)" }
-  },
-
-  "PACE_ENTWICKLUNG": {
-    "initializeDriverPace":   { "line": 1842, "desc": "Initiale Pace für neuen Fahrer setzen" },
-    "developDriverPace":      { "line": 1881, "desc": "Pace-Entwicklung über Zeit simulieren" },
-    "hasReachedPotential":    { "line": 1906, "desc": "Maximales Potential erreicht?" },
-    "getPaceDevelopmentInfo": { "line": 1912, "desc": "Entwicklungs-Infos für UI (Potential, Alter, Stadium)" },
-    "weightedCareerAverage":  { "line": 9100, "desc": "Gewichteter Karriere-Durchschnitt (letzte Saison × 4)" }
-  },
-
-  "BILDER_LAZY": {
-    "initLazyImages":           { "line": 15403, "desc": "Lazy-Loading Observer für Bilder starten" },
-    "getDriverPhotoUrl":        { "line": 15415, "desc": "Foto-URL für Fahrer (statsf1.com + Overrides)" },
-    "getDriverPhotoUrlFallback":{ "line": 15636, "desc": "Fallback-Foto-URL" },
-    "getDriverAvatarSvg":       { "line": 15649, "desc": "SVG-Avatar wenn kein Foto vorhanden" },
-    "getTeamLogoUrl":           { "line": 15881, "desc": "Logo-URL für Team" },
-    "getTeamLogoSvg":           { "line": 15899, "desc": "SVG-Team-Logo als Fallback" }
-  },
-
-  "CORE_UTILS": {
-    "initialize":         { "line": 16791, "desc": "Einstiegspunkt: lädt Save, init UI, startet Event-Listener" },
-    "log":                { "line": 1538,  "desc": "Zentrale Debug-Logging-Funktion mit Kategorie + Typ" },
-    "logInfo":            { "line": 1566,  "desc": "log() Wrapper: info" },
-    "logSuccess":         { "line": 1567,  "desc": "log() Wrapper: success" },
-    "logWarning":         { "line": 1568,  "desc": "log() Wrapper: warning" },
-    "logError":           { "line": 1569,  "desc": "log() Wrapper: error" },
-    "createCustomDriver": { "line": 6720,  "desc": "Custom-Fahrer mit Name/Nation/Stats erstellen" },
-    "getHistDebutYear":   { "line": 6292,  "desc": "Erstes Jahr mit hist. Daten für Fahrer-Slug" },
-    "isIndyRaceId":       { "line": 2544,  "desc": "Prüft ob Rennen-ID = Indianapolis 500" },
-    "formatCircuitName":  { "line": 2575,  "desc": "Streckenname formatieren (CamelCase → Titel)" },
-    "setupModalHandling": { "line": 16767, "desc": "Modals + Event-Handler registrieren" },
-    "addLiveEvent":       { "line": 7830,  "desc": "Event zu Live-Log hinzufügen" },
-    "updateLivePositionsTable": { "line": 7848, "desc": "Live-Standings während Rennen updaten" },
-    "finishLiveRace":     { "line": 8042,  "desc": "Live-Rennen beenden + Ergebnis-Modal" }
-  }
+    "$description":  "Funktions-Index f1-rpg-v0.9.9.73.html – 174 Funktionen mit Zeilennummer und Zweck.",
+    "$usage":  "Bei Codesuche zuerst hier nachschlagen statt 3,5MB zu greppen.",
+    "$warning":  "Zeilennummern verschieben sich bei größeren Edits – nach signifikanten Änderungen aktualisieren.",
+    "RENDERING":  {
+                      "renderContent":  {
+                                            "line":  13247,
+                                            "desc":  "Dispatch je nach aktivem Tab – Einstieg für alle Seiten"
+                                        },
+                      "renderOverview":  {
+                                             "line":  13262,
+                                             "desc":  "Saison-Übersicht: Standings, Meldeliste, nächstes Rennen"
+                                         },
+                      "renderHistoricalOverview":  {
+                                                       "line":  13557,
+                                                       "desc":  "Archiv-Saison: Weltmeister, Meldeliste, Events"
+                                                   },
+                      "renderHistoricalRace":  {
+                                                   "line":  13468,
+                                                   "desc":  "Einzelnes historisches Rennergebnis"
+                                               },
+                      "renderLastRace":  {
+                                             "line":  13858,
+                                             "desc":  "Letztes Rennen der laufenden Saison"
+                                         },
+                      "renderStandings":  {
+                                              "line":  13881,
+                                              "desc":  "Dispatch Fahrer- vs. Konstrukteurs-WM"
+                                          },
+                      "renderDriverStandings":  {
+                                                    "line":  13931,
+                                                    "desc":  "Fahrer-WM-Tabelle mit Punkten"
+                                                },
+                      "renderTeamStandings":  {
+                                                  "line":  14014,
+                                                  "desc":  "Konstrukteurs-WM-Tabelle"
+                                              },
+                      "renderResultsMatrix":  {
+                                                  "line":  14070,
+                                                  "desc":  "Saisonverlauf: alle Fahrer × alle Rennen"
+                                              },
+                      "renderRaces":  {
+                                          "line":  14241,
+                                          "desc":  "Dispatch Rennen-Ansicht"
+                                      },
+                      "renderUnifiedRaceList":  {
+                                                    "line":  14267,
+                                                    "desc":  "Rennliste einheitlich (historisch + aktuell)"
+                                                },
+                      "renderCalendar":  {
+                                             "line":  14493,
+                                             "desc":  "Rennkalender mit Terminen und Strecken"
+                                         },
+                      "renderF1DBRaceList":  {
+                                                 "line":  14618,
+                                                 "desc":  "Vollständige F1DB-Rennliste mit Details"
+                                             },
+                      "renderF1DBRaceListCompact":  {
+                                                        "line":  14568,
+                                                        "desc":  "Kompakte F1DB-Rennliste"
+                                                    },
+                      "renderRaceResults":  {
+                                                "line":  14656,
+                                                "desc":  "Rennergebnis aktuelles Wochenende"
+                                            },
+                      "renderQualifyingResults":  {
+                                                      "line":  14754,
+                                                      "desc":  "Qualifying-Ergebnisse mit Startpositionen"
+                                                  },
+                      "renderStats":  {
+                                          "line":  14856,
+                                          "desc":  "Dispatch Statistiken-Seite"
+                                      },
+                      "renderAllTimeDrivers":  {
+                                                   "line":  14912,
+                                                   "desc":  "All-Time Fahrer-Statistiken"
+                                               },
+                      "renderAllTimeTeams":  {
+                                                 "line":  15023,
+                                                 "desc":  "All-Time Konstrukteur-Statistiken"
+                                             },
+                      "renderChampions":  {
+                                              "line":  15092,
+                                              "desc":  "Weltmeister-Übersicht aller Jahre"
+                                          },
+                      "renderSettings":  {
+                                             "line":  15178,
+                                             "desc":  "Einstellungen: Themes, Badges, DNF-Gewichtung"
+                                         },
+                      "renderBadgeEditor":  {
+                                                "line":  1891,
+                                                "desc":  "Editor-UI für Tier-Emojis und Champion-Badges"
+                                            },
+                      "renderHandbook":  {
+                                             "line":  16485,
+                                             "desc":  "Handbuch / FAQ"
+                                         },
+                      "renderRoadmap":  {
+                                            "line":  16668,
+                                            "desc":  "Feature-Roadmap"
+                                        },
+                      "renderReservePool":  {
+                                                "line":  7436,
+                                                "desc":  "Reservefahrer-Pool nach Gruppen"
+                                            },
+                      "renderNav":  {
+                                        "line":  13232,
+                                        "desc":  "Navigationsmenü mit Tabs"
+                                    },
+                      "renderDriverPhotoHtml":  {
+                                                    "line":  18292,
+                                                    "desc":  "Fahrer-Foto HTML mit Lazy-Loading"
+                                                },
+                      "renderTeamLogoHtml":  {
+                                                 "line":  18537,
+                                                 "desc":  "Team-Logo HTML mit Lazy-Loading"
+                                             },
+                      "renderTeamHistory":  {
+                                                "line":  18835,
+                                                "desc":  "Team-Karriere alle Saisons"
+                                            },
+                      "renderContractStatus":  {
+                                                   "line":  19249,
+                                                   "desc":  "Vertragsstatus für Fahrer"
+                                               },
+                      "renderAll":  {
+                                        "line":  19400,
+                                        "desc":  "Master-Render nach State-Update"
+                                    },
+                      "renderTVBadge":  {
+                                            "line":  1880,
+                                            "desc":  "Titelverteidiger-Badge (style-abhängig)"
+                                        },
+                      "prettyTeam":  {
+                                         "line":  13079,
+                                         "desc":  "Team-Kurzname aus ID formatieren (inner helper renderTeamHistory)"
+                                     },
+                      "driverName":  {
+                                         "line":  13490,
+                                         "desc":  "Fahrer V.-Initial + Nachname (inner helper, Meldeliste)"
+                                     },
+                      "teamName":  {
+                                       "line":  13494,
+                                       "desc":  "Team-Name aus ID (inner helper, Meldeliste)"
+                                   },
+                      "updateDnfPreview":  {
+                                               "line":  19337,
+                                               "desc":  "DNF-Vorschau in Einstellungen live aktualisieren"
+                                           },
+                      "renderLiveQualiTab":  {
+                                                 "line":  9282,
+                                                 "desc":  "Qualifying-Tab während Live-Session rendern"
+                                             }
+                  },
+    "SPIELLOGIK":  {
+                       "simulateRace":  {
+                                            "line":  8228,
+                                            "desc":  "Komplettes Rennen simulieren (DNF, Positionen, Punkte)"
+                                        },
+                       "simulateQualifying":  {
+                                                  "line":  8926,
+                                                  "desc":  "Qualifying mit Startpositionen"
+                                              },
+                       "simulateLap":  {
+                                           "line":  9334,
+                                           "desc":  "Einzelne Rennrunde simulieren"
+                                       },
+                       "applyRaceResults":  {
+                                                "line":  8699,
+                                                "desc":  "Rennergebnisse in Standings schreiben"
+                                            },
+                       "processTeamChanges":  {
+                                                  "line":  10733,
+                                                  "desc":  "Fahrer-Transfers, Hires, Entlassungen zwischen Saisons"
+                                              },
+                       "generateDriver":  {
+                                              "line":  2559,
+                                              "desc":  "Neuen Fahrer mit realistischen Stats generieren"
+                                          },
+                       "evaluateDriverPerformance":  {
+                                                         "line":  10493,
+                                                         "desc":  "Performance-Score 0–100 aus Rennresultaten berechnen"
+                                                     },
+                       "initReservePool":  {
+                                               "line":  7297,
+                                               "desc":  "Reserve-Pool aus hist. Daten befüllen (Saisonstart)"
+                                           },
+                       "assignFromPool":  {
+                                              "line":  7641,
+                                              "desc":  "Fahrer zu Team zuweisen, aus Pool entfernen"
+                                          },
+                       "assignSofortFromPool":  {
+                                                    "line":  7595,
+                                                    "desc":  "Sofort-Zuweisung laufende Saison"
+                                                },
+                       "assignNextSeasonFromPool":  {
+                                                        "line":  7618,
+                                                        "desc":  "Zuweisung für nächste Saison planen"
+                                                    },
+                       "removeFromPool":  {
+                                              "line":  7702,
+                                              "desc":  "Fahrer aus Pool entfernen (mit Bestätigung)"
+                                          },
+                       "startNewSeason":  {
+                                              "line":  11415,
+                                              "desc":  "Neue Saison initialisieren (Teams, Fahrer, Rennen)"
+                                          },
+                       "checkCareerEnds":  {
+                                               "line":  10351,
+                                               "desc":  "Karriere-Enden prüfen (Alter, Leistung)"
+                                           },
+                       "processDriverPaceDevelopment":  {
+                                                            "line":  10698,
+                                                            "desc":  "Pace aller Fahrer nach Saison entwickeln"
+                                                        },
+                       "initStandings":  {
+                                             "line":  8197,
+                                             "desc":  "Standings für Saisonstart berechnen"
+                                         },
+                       "recalculateStandingsFromResults":  {
+                                                               "line":  12239,
+                                                               "desc":  "Standings aus Race-Results neu berechnen"
+                                                           },
+                       "updateDriverCareerScores":  {
+                                                        "line":  10651,
+                                                        "desc":  "Karriere-Stats aller Fahrer nach Rennen updaten"
+                                                    },
+                       "_hireFromFreeAgents":  {
+                                                   "line":  11031,
+                                                   "desc":  "Free Agents in Teams holen"
+                                               },
+                       "_hireByPoaching":  {
+                                               "line":  11081,
+                                               "desc":  "Fahrer aus anderen Teams abwerben"
+                                           },
+                       "_hireByBuyout":  {
+                                             "line":  11132,
+                                             "desc":  "Fahrer aus Vertrag herauskaufen (nur Top-Teams)"
+                                         },
+                       "findTeamWithSpace":  {
+                                                 "line":  11178,
+                                                 "desc":  "Team mit freiem Cockpit finden"
+                                             },
+                       "executeTransfer":  {
+                                               "line":  11209,
+                                               "desc":  "Transfer durchführen inkl. Historisierung"
+                                           },
+                       "_rollWeekendDeath":  {
+                                                 "line":  8789,
+                                                 "desc":  "Todesfall im Rennwochenende würfeln (hist. Unfallrate)"
+                                             },
+                       "simulateTraining":  {
+                                                "line":  8816,
+                                                "desc":  "Freies Training simulieren (Rundenzeiten, kein Ergebnis)"
+                                            },
+                       "runSimulation":  {
+                                             "line":  9898,
+                                             "desc":  "Live-Rennsimulation starten (requestAnimationFrame-Loop)"
+                                         },
+                       "checkRetirements":  {
+                                                "line":  10486,
+                                                "desc":  "Fahrer-Rücktritte nach Saison prüfen (Alter + Performance)"
+                                            },
+                       "applyTeamSuccessions":  {
+                                                    "line":  11325,
+                                                    "desc":  "Team-Nachfolgen verarbeiten (Umbenennung, Übernahmen)"
+                                                },
+                       "applyTeamEntryExit":  {
+                                                  "line":  11368,
+                                                  "desc":  "Team-Einsteiger und -Aussteiger für neues Jahr verarbeiten"
+                                              },
+                       "buildRacesForYear":  {
+                                                 "line":  11808,
+                                                 "desc":  "Rennobjekte aus F1DB aufbauen (circuitId, Datum, Land)"
+                                             },
+                       "addDismissedToPool":  {
+                                                  "line":  7422,
+                                                  "desc":  "Entlassene Fahrer dem Reserve-Pool hinzufügen"
+                                              },
+                       "ageOk":  {
+                                     "line":  7313,
+                                     "desc":  "Alterscheck für Pool-Fahrer (Comeback-Fenster offen?)"
+                                 },
+                       "cancelPendingAssignment":  {
+                                                       "line":  7633,
+                                                       "desc":  "Pending Saisonzuweisung widerrufen und Modal schließen"
+                                                   },
+                       "pamUpdateReplace":  {
+                                                "line":  7580,
+                                                "desc":  "Ersetzen-UI im Pool-Assign-Modal aktualisieren"
+                                            }
+                   },
+    "DATEN_HELPERS":  {
+                          "buildHistoricalYearData":  {
+                                                          "line":  12970,
+                                                          "desc":  "Hist. Saison aus F1DB → GAME_STATE-Format konvertieren"
+                                                      },
+                          "buildEntryList":  {
+                                                 "line":  13725,
+                                                 "desc":  "Meldeliste aufbauen (Teams mit Fahrern, Badges, Flags)"
+                                             },
+                          "getYearData":  {
+                                              "line":  12921,
+                                              "desc":  "Saison-Daten für Jahr (aus history oder GAME_STATE)"
+                                          },
+                          "getViewData":  {
+                                              "line":  12877,
+                                              "desc":  "Daten für aktuell sichtbares Jahr (gecacht)"
+                                          },
+                          "getBadgeSettings":  {
+                                                   "line":  1849,
+                                                   "desc":  "Badge-Einstellungen aus localStorage (mit Cache)"
+                                               },
+                          "calculateTierFromRank":  {
+                                                        "line":  2026,
+                                                        "desc":  "Rang → Tier (top/mid/back) + Emoji"
+                                                    },
+                          "getTeamTier":  {
+                                              "line":  1812,
+                                              "desc":  "Team-Tier aus aktuellem Ranking ermitteln"
+                                          },
+                          "getAllTeamTiers":  {
+                                                  "line":  2047,
+                                                  "desc":  "Tier-Einteilung aller Teams berechnen"
+                                              },
+                          "getDriverConstructors":  {
+                                                        "line":  6350,
+                                                        "desc":  "Alle Konstrukteure eines Fahrers (nach Jahr)"
+                                                    },
+                          "getConstructorPosition":  {
+                                                         "line":  6363,
+                                                         "desc":  "Konstrukteur-Rang in einem Jahr"
+                                                     },
+                          "getHistoricalStats":  {
+                                                     "line":  6503,
+                                                     "desc":  "Hist. Stats (Champions, Wins) ab Jahr"
+                                                 },
+                          "getF1DBYear":  {
+                                              "line":  2816,
+                                              "desc":  "F1DB-Rennen für Jahr laden"
+                                          },
+                          "getEraValue":  {
+                                              "line":  1780,
+                                              "desc":  "Wert aus Dekaden-Tabellen für ein Jahr"
+                                          },
+                          "getPointsForPosition":  {
+                                                       "line":  13195,
+                                                       "desc":  "Punkte für Rennergebnis (regelwerk-abhängig)"
+                                                   },
+                          "getF1DBConstructorStandings":  {
+                                                              "line":  18817,
+                                                              "desc":  "Konstrukteur-Standings aus F1DB"
+                                                          },
+                          "findReplacementDriver":  {
+                                                        "line":  2669,
+                                                        "desc":  "Ersatzfahrer aus Reserve-Pool suchen"
+                                                    },
+                          "weightedPick":  {
+                                               "line":  2552,
+                                               "desc":  "Gewichtete Zufallsauswahl aus Array"
+                                           },
+                          "pickNationByDecade":  {
+                                                     "line":  2525,
+                                                     "desc":  "Fahrer-Nation gewichtet nach Jahrzehnt"
+                                                 },
+                          "getDriverSeasons":  {
+                                                   "line":  6592,
+                                                   "desc":  "Alle Saisons eines Fahrers aus HIST_SEASONS (vor optionalem Jahr)"
+                                               },
+                          "getConstructorIdByName":  {
+                                                         "line":  6375,
+                                                         "desc":  "Konstrukteur-ID per Name-Lookup (F1DB-Mapping)"
+                                                     },
+                          "expandSeasonData":  {
+                                                   "line":  6680,
+                                                   "desc":  "SEASON_DATA für Jahr mit vollständigen Objekt-Feldern expandieren"
+                                               },
+                          "getEraDNFRate":  {
+                                                "line":  1754,
+                                                "desc":  "Era-spezifische Basis-DNF-Rate aus Lookup-Tabelle"
+                                            },
+                          "getDriverSortFn":  {
+                                                  "line":  1790,
+                                                  "desc":  "Sortierfunktion-Factory für Fahrerliste (pace/name/team)"
+                                              },
+                          "isIndyOnlyConstructor":  {
+                                                        "line":  6409,
+                                                        "desc":  "Prüft ob Konstrukteur ausschließlich beim Indy 500 startet"
+                                                    },
+                          "isIndyOnlyDriver":  {
+                                                   "line":  6416,
+                                                   "desc":  "Prüft ob Fahrer ausschließlich beim Indy 500 startet"
+                                               },
+                          "getF1DBQualifying":  {
+                                                    "line":  2785,
+                                                    "desc":  "Qualifying-Rohdaten aus F1DB für Rennen-ID"
+                                                },
+                          "getF1DBRaceMs":  {
+                                                "line":  2813,
+                                                "desc":  "Rennzeiten in ms aus F1DB (getF1DBYear-basiert)"
+                                            },
+                          "getQualiTimeMs":  {
+                                                 "line":  2789,
+                                                 "desc":  "Qualifying-Bestzeit in ms für Fahrer/Rennen"
+                                             },
+                          "getQualiGapMs":  {
+                                                "line":  2791,
+                                                "desc":  "Qualifying-Rückstand in ms auf Pole"
+                                            }
+                      },
+    "FLAGGEN_NATIONEN":  {
+                             "renderFlag":  {
+                                                "line":  1440,
+                                                "desc":  "Flagge als Emoji oder SVG rendern (mit Jahr-Kontext)"
+                                            },
+                             "getEmojiFlag":  {
+                                                  "line":  1342,
+                                                  "desc":  "Emoji-Flagge für IOC-Code + Jahr (mit Fallback)"
+                                              },
+                             "getHistoricalFlagCode":  {
+                                                           "line":  1286,
+                                                           "desc":  "Hist. Ländercode (DDR, Rhodesia, Zimbabwe etc.)"
+                                                       },
+                             "getCountryDisplayName":  {
+                                                           "line":  1310,
+                                                           "desc":  "Länderbezeichnung mit hist. Entsprechung"
+                                                       },
+                             "convertEmojiToIOC":  {
+                                                       "line":  1370,
+                                                       "desc":  "Emoji-Flagge → ISO/IOC-Code"
+                                                   },
+                             "lookupNationByName":  {
+                                                        "line":  1419,
+                                                        "desc":  "Ländercode per NAME_TO_IOC Lookup"
+                                                    }
+                         },
+    "UI_NAVIGATION":  {
+                          "switchToYear":  {
+                                               "line":  12854,
+                                               "desc":  "Zwischen Jahren wechseln (historisch/aktuell)"
+                                           },
+                          "updateSeasonSelector":  {
+                                                       "line":  12884,
+                                                       "desc":  "Jahres-Dropdown aktualisieren"
+                                                   },
+                          "openPoolAssignModal":  {
+                                                      "line":  7529,
+                                                      "desc":  "Modal: Fahrer aus Pool zuweisen"
+                                                  },
+                          "openNewDriverModal":  {
+                                                     "line":  7720,
+                                                     "desc":  "Modal: Eigenen Fahrer erstellen"
+                                                 },
+                          "setTierEmoji":  {
+                                               "line":  1864,
+                                               "desc":  "Tier-Emoji-Slot setzen (invalidiert Cache)"
+                                           },
+                          "setBadgeSetting":  {
+                                                  "line":  1872,
+                                                  "desc":  "Badge-Einstellung in localStorage schreiben"
+                                              },
+                          "showSeasonStartModal":  {
+                                                       "line":  12641,
+                                                       "desc":  "Saison-Start-Dialog (Template/Jahr-Wahl)"
+                                                   },
+                          "showSeasonEndModal":  {
+                                                     "line":  9976,
+                                                     "desc":  "Saison-Ende-Zusammenfassung mit Weltmeister"
+                                                 },
+                          "showNewDriversModal":  {
+                                                      "line":  7800,
+                                                      "desc":  "Dialog neue hist. Fahrer beim Saisonstart"
+                                                  },
+                          "updateYearPreview":  {
+                                                    "line":  12391,
+                                                    "desc":  "Preview-Infos für Jahr-Auswahl aktualisieren"
+                                                },
+                          "stopLiveRace":  {
+                                               "line":  9183,
+                                               "desc":  "Live-Rennsimulation stoppen"
+                                           },
+                          "setIndyFilter":  {
+                                                "line":  null,
+                                                "desc":  "Indy-Filter in Meldeliste setzen (all/none/only)"
+                                            },
+                          "setPoolGroupFilter":  {
+                                                     "line":  7411,
+                                                     "desc":  "Gruppen-Filter im Reserve-Pool setzen (A/B/C/all)"
+                                                 }
+                      },
+    "SAVE_LOAD":  {
+                      "saveGame":  {
+                                       "line":  7256,
+                                       "desc":  "GAME_STATE → localStorage \u0027f1rpg_save\u0027"
+                                   },
+                      "loadGame":  {
+                                       "line":  7266,
+                                       "desc":  "localStorage → GAME_STATE (mit sanitize)"
+                                   },
+                      "sanitizeGameState":  {
+                                                "line":  6815,
+                                                "desc":  "Geladenen State mit Defaults auffüllen (Migration)"
+                                            },
+                      "updateSaveStatus":  {
+                                               "line":  19395,
+                                               "desc":  "Save-Status-Meldung im UI anzeigen"
+                                           }
+                  },
+    "SAISONSTART_ENDE":  {
+                             "initFromYear":  {
+                                                  "line":  7969,
+                                                  "desc":  "Saison aus hist. Jahr initialisieren"
+                                              },
+                             "initFromTemplate":  {
+                                                      "line":  7907,
+                                                      "desc":  "Saison aus Schnellstart-Template starten"
+                                                  },
+                             "startNewSeason":  {
+                                                    "line":  11415,
+                                                    "desc":  "Neue Saison komplett initialisieren"
+                                                },
+                             "confirmAddToPool":  {
+                                                      "line":  7854,
+                                                      "desc":  "Neue hist. Fahrer zum Pool bestätigen"
+                                                  },
+                             "generateRacesForYear":  {
+                                                          "line":  11834,
+                                                          "desc":  "Rennkalender für Jahr generieren (F1DB oder Template)"
+                                                      }
+                         },
+    "PACE_ENTWICKLUNG":  {
+                             "initializeDriverPace":  {
+                                                          "line":  2074,
+                                                          "desc":  "Initiale Pace für neuen Fahrer setzen"
+                                                      },
+                             "developDriverPace":  {
+                                                       "line":  2113,
+                                                       "desc":  "Pace-Entwicklung über Zeit simulieren"
+                                                   },
+                             "hasReachedPotential":  {
+                                                         "line":  2167,
+                                                         "desc":  "Maximales Potential erreicht?"
+                                                     },
+                             "getPaceDevelopmentInfo":  {
+                                                            "line":  2173,
+                                                            "desc":  "Entwicklungs-Infos für UI (Potential, Alter, Stadium)"
+                                                        },
+                             "weightedCareerAverage":  {
+                                                           "line":  10634,
+                                                           "desc":  "Gewichteter Karriere-Durchschnitt (letzte Saison × 4)"
+                                                       },
+                             "calculatePaceGap":  {
+                                                      "line":  2061,
+                                                      "desc":  "Pace-Abstand (ELO-basiert) zu Referenzfahrer berechnen"
+                                                  },
+                             "_eloDisplayPace":  {
+                                                     "line":  2139,
+                                                     "desc":  "ELO-Pace-Rating aufbereiten für Fahrer-Anzeige"
+                                                 },
+                             "_eloDisplayCS":  {
+                                                   "line":  2144,
+                                                   "desc":  "ELO-Career-Score aufbereiten für Team/Konstrukteur-Anzeige"
+                                               }
+                         },
+    "BILDER_LAZY":  {
+                        "initLazyImages":  {
+                                               "line":  18008,
+                                               "desc":  "Lazy-Loading Observer für Bilder starten"
+                                           },
+                        "getDriverPhotoUrl":  {
+                                                  "line":  18020,
+                                                  "desc":  "Foto-URL für Fahrer (statsf1.com + Overrides)"
+                                              },
+                        "getDriverPhotoUrlFallback":  {
+                                                          "line":  18241,
+                                                          "desc":  "Fallback-Foto-URL"
+                                                      },
+                        "getDriverAvatarSvg":  {
+                                                   "line":  18254,
+                                                   "desc":  "SVG-Avatar wenn kein Foto vorhanden"
+                                               },
+                        "getTeamLogoUrl":  {
+                                               "line":  18486,
+                                               "desc":  "Logo-URL für Team"
+                                           },
+                        "getTeamLogoSvg":  {
+                                               "line":  18504,
+                                               "desc":  "SVG-Team-Logo als Fallback"
+                                           }
+                    },
+    "CORE_UTILS":  {
+                       "initialize":  {
+                                          "line":  19924,
+                                          "desc":  "Einstiegspunkt: lädt Save, init UI, startet Event-Listener"
+                                      },
+                       "log":  {
+                                   "line":  1582,
+                                   "desc":  "Zentrale Debug-Logging-Funktion mit Kategorie + Typ"
+                               },
+                       "logInfo":  {
+                                       "line":  1610,
+                                       "desc":  "log() Wrapper: info"
+                                   },
+                       "logSuccess":  {
+                                          "line":  1611,
+                                          "desc":  "log() Wrapper: success"
+                                      },
+                       "logWarning":  {
+                                          "line":  1612,
+                                          "desc":  "log() Wrapper: warning"
+                                      },
+                       "logError":  {
+                                        "line":  1613,
+                                        "desc":  "log() Wrapper: error"
+                                    },
+                       "createCustomDriver":  {
+                                                  "line":  7760,
+                                                  "desc":  "Custom-Fahrer mit Name/Nation/Stats erstellen"
+                                              },
+                       "getHistDebutYear":  {
+                                                "line":  7287,
+                                                "desc":  "Erstes Jahr mit hist. Daten für Fahrer-Slug"
+                                            },
+                       "isIndyRaceId":  {
+                                            "line":  2854,
+                                            "desc":  "Prüft ob Rennen-ID = Indianapolis 500"
+                                        },
+                       "formatCircuitName":  {
+                                                 "line":  3385,
+                                                 "desc":  "Streckenname formatieren (CamelCase → Titel)"
+                                             },
+                       "setupModalHandling":  {
+                                                  "line":  19900,
+                                                  "desc":  "Modals + Event-Handler registrieren"
+                                              },
+                       "addLiveEvent":  {
+                                            "line":  9191,
+                                            "desc":  "Event zu Live-Log hinzufügen"
+                                        },
+                       "updateLivePositionsTable":  {
+                                                        "line":  9209,
+                                                        "desc":  "Live-Standings während Rennen updaten"
+                                                    },
+                       "finishLiveRace":  {
+                                              "line":  9474,
+                                              "desc":  "Live-Rennen beenden + Ergebnis-Modal"
+                                          },
+                       "ensureReadable":  {
+                                              "line":  1983,
+                                              "desc":  "Hex-Farbe auf Kontrast-Lesbarkeit prüfen und ggf. aufhellen"
+                                          },
+                       "h2r":  {
+                                   "line":  2002,
+                                   "desc":  "Interne HSL-zu-RGB Hilfsfunktion (inner von ensureReadable)"
+                               },
+                       "getConstructorColor":  {
+                                                   "line":  2009,
+                                                   "desc":  "Konstrukteur-Farbe aus SEASON_DATA (mit Fallback #888)"
+                                               },
+                       "getGridSize":  {
+                                           "line":  1716,
+                                           "desc":  "Starterfeld-Größe für Jahr/Rennen (Indy: 33, sonst era-abhängig)"
+                                       },
+                       "isKnown":  {
+                                       "line":  7308,
+                                       "desc":  "Prüft ob Fahrer bereits im System bekannt ist (Pool/drivers)"
+                                   },
+                       "markKnown":  {
+                                         "line":  7323,
+                                         "desc":  "Fahrer im Pool als bekannt markieren (knownIds Set)"
+                                     },
+                       "makeDriver":  {
+                                          "line":  7335,
+                                          "desc":  "Fahrer-Objekt aus SEASON_DATA-Rohdaten-Zeile erstellen"
+                                      }
+                   },
+    "STRECKEN_DATEN":  {
+                           "getCircuitLength":  {
+                                                    "line":  3068,
+                                                    "desc":  "Streckenlänge in km (jahresabhängig für Monaco, Spa, etc.)"
+                                                },
+                           "getCircuitSpeedFactor":  {
+                                                         "line":  3088,
+                                                         "desc":  "Geschwindigkeits-Multiplikator für Strecke (Monaco 0.72, Monza 1.22)"
+                                                     },
+                           "getCircuitBaseTime":  {
+                                                      "line":  3347,
+                                                      "desc":  "Basis-Rundenzeit in s: Länge / (Ära-Speed × Faktor) × 3600"
+                                                  },
+                           "_getClimate":  {
+                                               "line":  3357,
+                                               "desc":  "Klima-Lookup für Strecke/Land/Monat (Wet-Chance-Basis)"
+                                           },
+                           "getRaceWetChance":  {
+                                                    "line":  3368,
+                                                    "desc":  "Regenwahrscheinlichkeit für Rennen (Strecke + Monat)"
+                                                },
+                           "getRaceHeatIntensity":  {
+                                                        "line":  3375,
+                                                        "desc":  "Hitzefaktor für Rennen (beeinflusst Motorschaden-Chance)"
+                                                    }
+                       },
+    "FORMAT_UTILS":  {
+                         "fmtMs":  {
+                                       "line":  2793,
+                                       "desc":  "Millisekunden → Zeit-String (1:23.456)"
+                                   },
+                         "fmtGapMs":  {
+                                          "line":  2805,
+                                          "desc":  "Gap in ms → +0.000s String (Qualifying/Rennen-Rückstand)"
+                                      },
+                         "fmtRaceGap":  {
+                                            "line":  19747,
+                                            "desc":  "Rennrückstand formatieren (lap/gap/P1 je nach Typ)"
+                                        },
+                         "calcDnf":  {
+                                         "line":  19349,
+                                         "desc":  "DNF-Rate aus relativem Slider-Wert (0–1) → Prozent"
+                                     },
+                         "buildQualiRow":  {
+                                               "line":  19764,
+                                               "desc":  "HTML-Tabellenzeile für Qualifying-Ergebnis bauen"
+                                           },
+                         "buildRaceRow":  {
+                                              "line":  19807,
+                                              "desc":  "HTML-Tabellenzeile für Rennergebnis bauen"
+                                          }
+                     }
 }
