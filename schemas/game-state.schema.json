@@ -5,6 +5,10 @@
   "GAME_STATE": {
     "version":          { "type": "string",  "description": "Spielstand-Version für Migration" },
     "templateUsed":     { "type": "string|null" },
+    "font":             { "type": "string", "default": "system", "description": "UI-Schriftart (id), wird als CSS-Font-Stack angewendet" },
+    "fontSizePx":       { "type": "integer", "default": 14, "range": "12–18", "description": "UI-Schriftgröße in Pixel" },
+    "fontWeight":       { "type": "integer", "default": 400, "values": [400,500,600,700], "description": "UI-Schriftgewicht" },
+    "fontItalic":       { "type": "boolean", "default": false, "description": "UI-Kursiv aktiv" },
     "currentYear":      { "type": "integer", "description": "Aktuelles Spieljahr, z.B. 1971" },
     "currentRace":      { "type": "integer", "description": "Index des nächsten Rennens in races[]" },
 
