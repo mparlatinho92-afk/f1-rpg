@@ -31,9 +31,9 @@ Bei Unklarheiten: kurz nachfragen, nicht blind handeln.
 ## Bestätigungs-Dialog (Git, Push, manage-v)
 Wie im Claude-Code-Terminal: Vor Schritten mit Wirkung auf **Remote**, **Archiv** oder **Versions-Script** immer zuerst im gewohnten Format nachfragen, z.B.:
 - **„1“** = ja ausführen, **„2“** = nein, oder **y** / **n**
-Betrifft mindestens: **`./manage-v.ps1`**, **`git push`**, und manuelle Commits, wenn anschließend Push gewünscht sein könnte.
-**Nicht** eigenmächtig pushen oder `manage-v.ps1` starten, nur weil ein Task fertig ist – erst die Rückmeldung des Nutzers abwarten.
-**Ausnahme:** Der Nutzer formuliert eindeutig (z.B. „push ausführen“, „ja, manage-v laufen lassen“) – das zählt als Bestätigung.
+Betrifft mindestens: **`./manage-v`**, **`git push`**, und manuelle Commits, wenn anschließend Push gewünscht sein könnte.
+**Nicht** eigenmächtig pushen oder `manage-v` starten, nur weil ein Task fertig ist – erst die Rückmeldung des Nutzers abwarten.
+**Ausnahme:** Der Nutzer formuliert eindeutig (z.B. „push ausführen”, „ja, manage-v laufen lassen”) – das zählt als Bestätigung.
 
 ## Schemas (Navigations-Zentrale)
 Datei	Inhalt
@@ -47,14 +47,15 @@ hist-seasons.schema.json	Struktur der Fahrer-Historien (WM-Ergebnisse)
 Nach jedem Task der neue Funktionen hinzufügt:
 1. `grep -c "function " f1-rpg-vX.html` vs. Einträge in `functions.schema.json` vergleichen
 2. Wenn Lücke > 0: Nutzer **unaufgefordert** darauf hinweisen und neue Funktionen eintragen
-3. Erst danach den `manage-v.ps1`-Befehl vorschlagen
+3. Erst danach den `./manage-v`-Befehl vorschlagen
 
 Claude muss das eigenständig erkennen — der Nutzer fragt nicht danach.
 
 ## Automatisierter Versions-Workflow
-Sobald ein Task abgeschlossen ist, schlage unaufgefordert den passenden ./manage-v.ps1 Befehl vor. Ausführung erst nach Bestätigung – siehe **Bestätigungs-Dialog** (y/n oder 1/2 wie im Claude-Code-Terminal; in Cursor dieselbe Konvention).
+Sobald ein Task abgeschlossen ist, schlage unaufgefordert den passenden `./manage-v` Befehl vor. Ausführung erst nach Bestätigung – siehe **Bestätigungs-Dialog** (y/n oder 1/2 wie im Claude-Code-Terminal; in Cursor dieselbe Konvention).
 **WICHTIG: Nach Abschluss eines Tasks diesen Workflow nutzen**
-- Befehl: `./manage-v.ps1 -NewVersion "0.9.9.69" -CommitMsg "Fix: DRS Logic" -ChangelogPoints "NEU: DRS Zonen optimiert;FIX: UI Glitch in Tabelle"`
+- Befehl: `./manage-v -NewVersion "0.9.9.69" -CommitMsg "Fix: DRS Logic" -ChangelogPoints "NEU: DRS Zonen optimiert;FIX: UI Glitch in Tabelle"`
+- **Wrapper:** `manage-v` (ohne Extension) ist ein Bash-Wrapper der `powershell.exe -File manage-v.ps1 "$@"` aufruft – funktioniert direkt aus bash ohne Fehler
 - **Vorteil:** Das Script patcht VERSION, Titel UND den Changelog in der HTML automatisch.
 - Claude muss den Changelog NICHT mehr manuell in der HTML editieren.
 - **Archivierung:** Die alte Version wird automatisch nach `/archive/` verschoben.
