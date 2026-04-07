@@ -12,8 +12,8 @@ if (-not $OldFile) { Write-Error "Keine f1-rpg-v*.html gefunden!"; return }
 
 Write-Host "Upgrade: $($OldFile.Name) -> $NewFileName" -ForegroundColor Cyan
 
-# 2. Neue Version durch Kopie erstellen
-Copy-Item $OldFile.Name $NewFileName
+# 2. Neue Version aus index.html erstellen (primäre Editierdatei)
+Copy-Item index.html $NewFileName
 
 # 3. Versionsnummer patchen (single- und double-quote-Varianten)
 $Content = Get-Content $NewFileName -Raw -Encoding UTF8
@@ -60,8 +60,8 @@ if (Test-Path "update-functions-index.ps1") {
     ./update-functions-index.ps1
 }
 
-# 7. Git (Erweitert um das Schema)
-git add $NewFileName index.html schemas/functions.schema.json
+# 7. Git (Erweitert um die Schemas)
+git add $NewFileName index.html schemas/functions.schema.json schemas/game-state.schema.json
 git commit -m "v$NewVersion - $CommitMsg"
 git push origin master
 
