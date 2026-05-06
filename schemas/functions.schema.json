@@ -584,24 +584,32 @@
                                                 "desc":  "UI-Kursiv togglen und anwenden"
                                             },
                           "buildGameCircuitGPIndex":  {
-                                                          "line":  16684,
-                                                          "desc":  "Baut {cIdx, gpIdx} aus GAME_STATE (history + aktuelle Saison) – kein Cache, immer frisch"
+                                                          "line":  17023,
+                                                          "desc":  "Baut {cIdx, gpIdx}: F1DB_RESULTS ab 1950 (historisch) + simulierte Saisons. Mit Cache (_gpCICache)."
                                                       },
+                          "_buildWinRanking":  {
+                                                   "line":  22330,
+                                                   "desc":  "Hilfsfunktion: berechnet sortierte Siegrangliste [name, count] aus history-Einträgen"
+                                               },
+                          "_rankingBlock":  {
+                                                "line":  22338,
+                                                "desc":  "Hilfsfunktion: rendert HTML-Block 'Meiste Siege' aus ranked-Array"
+                                            },
                           "renderAllCircuits":  {
-                                                    "line":  16720,
-                                                    "desc":  "Stats-SubTab: Spielstand-Strecken sortiert nach Rennen, öffnet openGameCircuitProfile"
+                                                    "line":  17083,
+                                                    "desc":  "Stats-SubTab: Strecken ab 1950 (hist+sim) mit Top-Sieger, öffnet openGameCircuitProfile"
                                                 },
                           "renderAllGPs":  {
-                                               "line":  16740,
-                                               "desc":  "Stats-SubTab: Spielstand-GPs sortiert nach Austragungen, öffnet openGameGPProfile"
+                                               "line":  17108,
+                                               "desc":  "Stats-SubTab: Grand Prix ab 1950 (hist+sim) mit Top-Sieger, öffnet openGameGPProfile"
                                            },
                           "openGameCircuitProfile":  {
-                                                         "line":  21792,
-                                                         "desc":  "Spielstand-Circuit-Modal: eigene Rennergebnisse an dieser Strecke"
+                                                         "line":  22348,
+                                                         "desc":  "Circuit-Modal: Alle Siege ab 1950, Meiste-Siege-Rangliste, laufender #-Zähler"
                                                      },
                           "openGameGPProfile":  {
-                                                    "line":  21823,
-                                                    "desc":  "Spielstand-GP-Modal: eigene Ergebnisse für diesen Grand Prix"
+                                                    "line":  22385,
+                                                    "desc":  "GP-Modal: Alle Austragungen ab 1950, Meiste-Siege-Rangliste, laufender #-Zähler"
                                                 },
                           "openCircuitProfile":  {
                                                      "line":  21573,
