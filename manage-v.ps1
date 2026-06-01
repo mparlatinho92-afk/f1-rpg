@@ -63,6 +63,7 @@ if ($ChangelogPoints -ne "") {
 $Content | Set-Content $NewFileName -Encoding UTF8
 
 # 5. index.html: NUR Versionsnummer aktualisieren (NICHT die inlinierte Version!)
+Start-Sleep -Seconds 2  # kurze Pause fuer Defender/Indexer nach dem grossen Monolith-Write
 $IndexContent = Get-Content index.html -Raw -Encoding UTF8
 $IndexContent = $IndexContent -replace "const VERSION = ['\`"][^'\`"]*['\`"];", "const VERSION = '$NewVersion';"
 $IndexContent = $IndexContent -replace '<title>[^<]*</title>', "<title>F1 RPG v$NewVersion</title>"
