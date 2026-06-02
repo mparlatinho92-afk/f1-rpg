@@ -1554,7 +1554,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.92';
+        const VERSION = '0.9.11.94';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -18271,10 +18271,13 @@ Empfohlene Wertebereiche:
                             const dStanding = GAME_STATE.driverStandings[driver.id] || {};
                             return `
                                 <div class="bg-secondary p-3 rounded-lg cursor-pointer" onclick="closeTeamProfile(); openDriverProfile('${driver.id}')">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-2xl">${renderFlag(driver.nation, driver.name)}</span>
-                                        <span class="font-bold">${driver.name}</span>
-                                        ${driver.number ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
+                                    <div class="flex items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-2xl">${renderFlag(driver.nation, driver.name)}</span>
+                                            <span class="font-bold">${driver.name}</span>
+                                            ${driver.number ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
+                                        </div>
+                                        ${GAME_STATE.results.length >= 3 ? (() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${c};font-weight:bold">${s}</span></div>`; })() : ''}
                                     </div>
                                     <div class="grid grid-cols-3 gap-2 text-center text-xs">
                                         <div>
