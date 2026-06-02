@@ -11763,7 +11763,7 @@
                                 nation: d.nation || '🏁',
                                 points: standing.points || 0,
                                 wins: standing.wins || 0,
-                                satisfaction: d.satisfaction,
+                                satisfaction: typeof evaluateDriverPerformance === 'function' ? (evaluateDriverPerformance(d.id)?.score ?? null) : null,
                                 isChampion: d.name === championName,
                                 isDebut: !playedBefore && !sHistSeasons.some(s => s[0] < yearData.year),
                                 isPrivateer: d.isPrivateer || false,
@@ -12071,7 +12071,7 @@
                                 <div class="flex items-center gap-2 flex-shrink-0 text-xs text-tertiary">
                                     ${driver.wins > 0 ? `<span class="accent-gold">${driver.wins}S</span>` : ''}
                                     ${o.showPoints ? `<span>${driver.points||0}P</span>` : ''}
-                                    ${o.showSatisfaction && driver.satisfaction != null ? `<div class="satisfaction-bar" title="Zufriedenheit: ${driver.satisfaction}/100" style="width:30px;height:6px;background:#333;border-radius:3px;overflow:hidden"><div style="width:${Math.max(5,driver.satisfaction)}%;height:100%;background:${driver.satisfaction>=70?'#22C55E':driver.satisfaction>=50?'#EAB308':driver.satisfaction>=35?'#F97316':'#EF4444'}"></div></div>` : ''}
+                                    ${o.showSatisfaction && driver.satisfaction != null ? (() => { const s=driver.satisfaction; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="color:${c};font-weight:bold">${s}</span></div>`; })() : ''}
                                     ${o.showContractEnd && driver.contractEnd ? `<span title="Vertragsende">📝${driver.contractEnd}</span>` : ''}
                                     ${o.showBirthYear && driver.birthYear ? `<span>${year - driver.birthYear}J</span>` : ''}
                                 </div>
@@ -12082,7 +12082,7 @@
                             const txtStyle = getTeamHeaderTextStyle(colors);
                             return `
                                 <div class="bg-secondary rounded-lg overflow-hidden">
-                                    <div class="flex items-center gap-2 px-3 py-2 cursor-pointer" style="background:${grad};min-height:42px" onclick="openTeamProfile('${profileId}')">
+                                    <div class="flex items-center gap-2 px-4 py-2 cursor-pointer" style="background:${grad};min-height:42px" onclick="openTeamProfile('${profileId}')">
                                         <span class="text-xl">${flag}</span>
                                         ${logo}
                                         <span class="font-bold hover:underline" style="${txtStyle}">${team.name}</span>
