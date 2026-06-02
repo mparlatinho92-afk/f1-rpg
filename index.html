@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.11.91</title>
+    <title>F1 RPG v0.9.11.92</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1554,7 +1554,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.91';
+        const VERSION = '0.9.11.92';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11997,8 +11997,8 @@
             if (primary === '#888888' || primary === '#888') {
                 return `<span class="${cls}" style="color:var(--text-muted);font-weight:bold"${click}>${name}</span>`;
             }
-            const shadow = (lum < 0.13 || lum > 0.65)
-                ? (() => { const c = lum < 0.5 ? '255,255,255' : '0,0,0'; return `;font-weight:bold;text-shadow:-1px -1px 0 rgba(${c},0.60),1px -1px 0 rgba(${c},0.60),-1px 1px 0 rgba(${c},0.60),1px 1px 0 rgba(${c},0.60)`; })()
+            const shadow = (lum < 0.35 || lum > 0.65)
+                ? (() => { const c = lum < 0.5 ? '255,255,255' : '0,0,0'; return `;font-weight:bold;text-shadow:-1px -1px 0 rgba(${c},0.85),1px -1px 0 rgba(${c},0.85),-1px 1px 0 rgba(${c},0.85),1px 1px 0 rgba(${c},0.85)`; })()
                 : ';font-weight:bold';
             return `<span class="${cls}" style="color:${primary}${shadow}"${click}>${name}</span>`;
         }
@@ -13950,7 +13950,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.11.91 (aktuell) - 02.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.11.92 (aktuell) - 02.06.2026</div>
+                            <div>&#8226; FIX: Teamname-Shadow-Schwelle angehoben (0.13->0.35), Opacity erhoeht (0.60->0.85)</div>
+                            <div class="font-bold text-slate-400">v0.9.11.91 - 02.06.2026</div>
                             <div>&#8226; FIX: Podien historisch (posNum=0 bei DNF wurde als Podium gezählt)</div>
                             <div class="font-bold text-slate-400">v0.9.11.90 - 02.06.2026</div>
                             <div>&#8226; FIX: manage-v schreibt Changelog jetzt auch in index.html (war: nur Monolith)</div>
@@ -17105,8 +17107,8 @@ Empfohlene Wertebereiche:
                         const _tcColors = getTeamColors(teamIdGrid || '', year, teamColor) || [teamColor];
                         const _tcFinal = _tcColors[0] || teamColor;
                         const _tcL2 = _lum2(_tcFinal);
-                        const _tcShadow = (_tcL2 < 0.13 || _tcL2 > 0.65)
-                            ? (() => { const c = _tcL2 < 0.5 ? '255,255,255' : '0,0,0'; return `;font-weight:bold;text-shadow:-1px -1px 0 rgba(${c},0.60),1px -1px 0 rgba(${c},0.60),-1px 1px 0 rgba(${c},0.60),1px 1px 0 rgba(${c},0.60)`; })()
+                        const _tcShadow = (_tcL2 < 0.35 || _tcL2 > 0.65)
+                            ? (() => { const c = _tcL2 < 0.5 ? '255,255,255' : '0,0,0'; return `;font-weight:bold;text-shadow:-1px -1px 0 rgba(${c},0.85),1px -1px 0 rgba(${c},0.85),-1px 1px 0 rgba(${c},0.85),1px 1px 0 rgba(${c},0.85)`; })()
                             : ';font-weight:bold';
                         const teamColorStyle = (_tcFinal === '#888888' || _tcFinal === '#888') ? 'color:var(--text-muted);font-weight:bold' : `color:${_tcFinal}${_tcShadow}`;
                         return { year, cells, teamName, teamId: teamIdGrid, teamColor: _tcFinal, teamColorStyle, wmPos, wmPts, simulated: false };
@@ -20109,6 +20111,7 @@ Empfohlene Wertebereiche:
     </script>
 </body>
 </html>
+
 
 
 
