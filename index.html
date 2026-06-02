@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.11.90</title>
+    <title>F1 RPG v0.9.11.91</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1554,7 +1554,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.90';
+        const VERSION = '0.9.11.91';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11055,7 +11055,7 @@
                         const t = teamMap[e.constrId];
                         t.driversSet.add(e.driverId);
                         if (e.posNum === 1) t.wins++;
-                        if (e.posNum <= 3) t.podiums++;
+                        if (e.posNum >= 1 && e.posNum <= 3) t.podiums++;
                         t.points += (e.points || 0);
                     });
                 });
@@ -13950,7 +13950,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.11.90 (aktuell) - 02.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.11.91 (aktuell) - 02.06.2026</div>
+                            <div>&#8226; FIX: Podien historisch (posNum=0 bei DNF wurde als Podium gezählt)</div>
+                            <div class="font-bold text-slate-400">v0.9.11.90 - 02.06.2026</div>
                             <div>&#8226; FIX: manage-v schreibt Changelog jetzt auch in index.html (war: nur Monolith)</div>
                             <div>&#8226; FIX: Eintraege v0.9.11.87-89 im Changelog nachgepflegt</div>
                             <div class="font-bold text-slate-400">v0.9.11.89 - 02.06.2026</div>
@@ -20107,6 +20109,7 @@ Empfohlene Wertebereiche:
     </script>
 </body>
 </html>
+
 
 
 
