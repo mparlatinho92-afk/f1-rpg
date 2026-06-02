@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.11.88</title>
+    <title>F1 RPG v0.9.11.89</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1554,7 +1554,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.88';
+        const VERSION = '0.9.11.89';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12054,7 +12054,7 @@
                         const colors = getTeamColors(teamId, year, team.color);
                         const isColoredHeader = entryListStyle === 'header';
                         const flag = renderFlag(team.nation, team.name, year);
-                        const logo = renderTeamLogoInline(team.histId || team.id || team.name.toLowerCase().replace(/\s+/g, '-'), year, team.color, team.name);
+                        const logo = renderTeamLogoInline(team.histId || team.id || team.name.toLowerCase().replace(/\s+/g, '-'), year, colors[0], team.name);
                         const wmPos = team.wmPosition ? `<span class="text-xs text-tertiary">#${team.wmPosition}</span>` : '';
                         const driverRows = team.drivers.map(driver => `
                             <div class="flex items-center justify-between text-sm">
@@ -12367,6 +12367,7 @@
                                             <td class="p-3">
                                                 <div class="flex items-center gap-2">
                                                     <span>${renderFlag(team?.nation, t.name, flagYear)}</span>
+                                                    ${renderTeamLogoInline(team?.histId || t.id, flagYear, getTeamColors(team?.histId || t.id, flagYear, team?.color)[0], t.name)}
                                                     ${renderTeamNameColored(t.name, t.id, flagYear, team?.color)}
                                                 </div>
                                             </td>
@@ -20094,6 +20095,7 @@ Empfohlene Wertebereiche:
     </script>
 </body>
 </html>
+
 
 
 
