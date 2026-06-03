@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.11.99</title>
+    <title>F1 RPG v0.9.12.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1550,12 +1550,31 @@
         
         console.log('[FLAGS] ✅', Object.keys(NAME_TO_IOC).length, 'Namen |', Object.keys(SVG_FLAGS).length, 'SVG');
 
+        // Sub-national GP flags (city/region flags override national flag)
+        const _WK = 'https://commons.wikimedia.org/wiki/Special:FilePath/';
+        const GP_FLAG_IMG = {
+            'Las Vegas GP':      _WK + 'Flag_of_Las_Vegas%2C_Nevada.svg',
+            'Miami GP':          _WK + 'Flag_of_Miami%2C_Florida.svg',
+            'São Paulo GP':      _WK + 'Bandeira_da_cidade_de_S%C3%A3o_Paulo.svg',
+            'Tuscan GP':         _WK + 'Flag_of_Tuscany.svg',
+            'Emilia Romagna GP': _WK + 'Flag_of_Emilia-Romagna_%28de_facto%29.svg',
+            'Abu Dhabi GP':      _WK + 'Flag_of_Abu_Dhabi.svg',
+            'Styrian GP':        _WK + 'Flag_of_Styria.svg',
+            'European GP':       _WK + 'Flag_of_Europe.svg',
+        };
+        function getGPFlagHtml(gpName, country, year) {
+            const canonical = typeof extractGPCanonical === 'function' ? extractGPCanonical(gpName || '') : (gpName || '');
+            const url = GP_FLAG_IMG[canonical];
+            if (url) return `<img src="${url}" alt="${canonical}" class="inline-flag" style="height:1em;width:1.5em;vertical-align:-0.1em;object-fit:contain;" loading="lazy">`;
+            return renderFlag(country || null, gpName, year);
+        }
+
         // ============================================================
         // F1 RPG v0.5.2 - DNF-Gewichtung, Changelog in UI, Bug-Fixes
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.99';
+        const VERSION = '0.9.12.0';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12123,7 +12142,7 @@
             
             const top3 = lastRace.results.slice(0, 3);
             return `
-                <div class="mb-2 font-bold cursor-pointer" onclick="openRaceDetails(${lastRace.raceIndex})">${renderFlag(lastRace.raceCountry, lastRace.raceName)} <span class="race-link">${lastRace.raceName}</span> ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</div>
+                <div class="mb-2 font-bold cursor-pointer" onclick="openRaceDetails(${lastRace.raceIndex})">${getGPFlagHtml(lastRace.raceName, lastRace.raceCountry)} <span class="race-link">${lastRace.raceName}</span> ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</div>
                 <table class="w-full text-sm">
                     <thead><tr class="text-left text-tertiary"><th>Pos</th><th>Fahrer</th><th>Team</th><th>Punkte</th></tr></thead>
                     <tbody>
@@ -12469,14 +12488,18 @@
                                                 : (f1dbMatrixRaces ? f1dbMatrixRaces[raceIdx2] : null);
                                     const raceData = f1dbR ? { circuit: f1dbR.circuit, name: f1dbR.name } : races[raceIdx2];
                                     const flagYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
-                                    // Flagge: Emoji aus country-Feld → IOC → circuit-Fallback
+                                    // Flagge: GP-Name override (sub-national) → IOC → circuit-Fallback
                                     let raceFlag = '';
+                                    const _gpCanon = extractGPCanonical(raceName || '');
+                                    if (GP_FLAG_IMG[_gpCanon]) {
+                                        raceFlag = `<img src="${GP_FLAG_IMG[_gpCanon]}" alt="${_gpCanon}" class="inline-flag" style="height:1.2em;width:1.6em;vertical-align:-0.15em;object-fit:contain;" loading="lazy">`;
+                                    }
                                     const _rfCountry = raceData?.country || '';
-                                    if (_rfCountry && _rfCountry.codePointAt(0) > 127) {
+                                    if (!raceFlag && _rfCountry && _rfCountry.codePointAt(0) > 127) {
                                         // Emoji → via IOC historisch auflösen
                                         const ioc = convertEmojiToIOC(_rfCountry);
                                         raceFlag = ioc ? getEmojiFlag(ioc, flagYear) : ''; // '' → Circuit-Fallback
-                                    } else if (_rfCountry && _rfCountry !== '🏁') {
+                                    } else if (!raceFlag && _rfCountry && _rfCountry !== '🏁') {
                                         // IOC-Code direkt nutzen (z.B. 'GBR', 'GER', 'AUS')
                                         raceFlag = getEmojiFlag(_rfCountry, flagYear);
                                     }
@@ -12676,7 +12699,7 @@
                             <td class="p-3 text-center font-bold ${numStyle} text-sm">${race.round}</td>
                             <td class="p-3">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">${getEmojiFlag(CIRCUIT_COUNTRY[race.circuit] || '', year) || renderFlag(null, race.name, year)}</span>
+                                    <span class="text-xl">${getGPFlagHtml(race.name, CIRCUIT_COUNTRY[race.circuit] || null, year)}</span>
                                     <div>
                                         <div class="font-bold race-link">${race.name}${indyBadge}</div>
                                         <div class="text-xs text-tertiary">${formatCircuitName(race.circuit)}</div>
@@ -12766,7 +12789,7 @@
                         <td class="p-3 text-center font-bold ${isNext ? 'accent-gold' : 'text-tertiary'} text-sm">${idx + 1}</td>
                         <td class="p-3">
                             <div class="flex items-center gap-2">
-                                <span class="text-xl">${renderFlag(race.country, race.name, year)}</span>
+                                <span class="text-xl">${getGPFlagHtml(race.name, race.country, year)}</span>
                                 <div>
                                     <div class="font-bold race-link">${race.name}</div>
                                     <div class="text-xs text-tertiary">${race.circuit || ''}</div>
@@ -12865,7 +12888,7 @@
                                             <td class="p-3 text-center font-bold ${isNext ? 'accent-gold' : 'text-tertiary'}">${idx + 1}</td>
                                             <td class="p-3">
                                                 <div class="flex items-center gap-2">
-                                                    <span class="text-xl">${renderFlag(race.country, race.name, historicalYear)}</span>
+                                                    <span class="text-xl">${getGPFlagHtml(race.name, race.country, historicalYear)}</span>
                                                     <span class="font-bold race-link">${race.name}</span>
                                                     ${race.raceId && WET_RACE_IDS.has(race.raceId) ? '<span title="Regenrennen (historisch)" style="font-size:0.9em">🌧️</span>' : ''}
                                                     ${(() => { const c = (race.circuitId||race.circuit||'').toLowerCase(); return (race.raceId && HOT_RACE_IDS.has(race.raceId)) || HOT_CIRCUITS.has(c) ? '<span title="Hitzerennen" style="font-size:0.9em">🌡️</span>' : ''; })()}
@@ -12995,7 +13018,7 @@
             return `
                 <!-- Letztes Rennen -->
                 <div class="card rounded-xl p-4 mb-6">
-                    <h3 class="text-xl font-bold mb-4">${renderFlag(lastRace.raceCountry, lastRace.raceName)} ${lastRace.raceName} ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</h3>
+                    <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastRace.raceName, lastRace.raceCountry)} ${lastRace.raceName} ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <table class="w-full text-sm">
@@ -13106,7 +13129,7 @@
             return `
                 <!-- Letztes Qualifying -->
                 <div class="card rounded-xl p-4 mb-6">
-                    <h3 class="text-xl font-bold mb-4">${renderFlag(lastQuali.raceCountry, lastQuali.raceName)} ${lastQuali.raceName} - Qualifying ${lastQuali.isRain ? '🌧️' : ''}</h3>
+                    <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastQuali.raceName, lastQuali.raceCountry)} ${lastQuali.raceName} - Qualifying ${lastQuali.isRain ? '🌧️' : ''}</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <table class="w-full text-sm">
@@ -13681,7 +13704,7 @@
                      style="${c.isActive ? 'border-left:3px solid var(--accent-main)' : 'border-left:3px solid transparent'}"
                      onclick="openGameCircuitProfile('${c.cid}')">
                     <div>
-                        <span class="font-medium">🏟️ ${c.name}</span>
+                        <span class="font-medium">${renderFlag(CIRCUIT_COUNTRY[c.cid] || null, c.name)} ${c.name}</span>
                         ${c.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main)" title="Im aktuellen Kalender">📅</span>' : ''}
                         <span class="text-tertiary text-xs ml-2">${c.first}–${c.last}</span>
                         ${c.topWins > 1 ? `<span class="text-tertiary text-xs ml-3">🏆 ${c.topWinner} (${c.topWins}×)</span>` : ''}
@@ -13702,15 +13725,16 @@
                 'Dutch GP':'NED','German GP':'GER','Spanish GP':'ESP','Argentine GP':'ARG',
                 'Monaco GP':'MON','Mexican GP':'MEX','Canadian GP':'CAN','Austrian GP':'AUT',
                 'Swedish GP':'SWE','Japanese GP':'JPN','Australian GP':'AUS',
-                'Brazilian GP':'BRA','Portuguese GP':'POR','European GP':'EUR',
+                'Brazilian GP':'BRA','São Paulo GP':'BRA','Portuguese GP':'POR','European GP':'EUR',
                 'Pacific GP':'JPN','Luxembourg GP':'LUX','Hungarian GP':'HUN',
                 'Turkish GP':'TUR','Bahrain GP':'BHR','Chinese GP':'CHN',
                 'Malaysian GP':'MAS','Singapore GP':'SGP','Korean GP':'KOR',
                 'Indian GP':'IND','Russian GP':'RUS','Azerbaijan GP':'AZE',
                 'Styrian GP':'AUT','Tuscan GP':'ITA','Eifel GP':'GER',
                 'Sakhir GP':'BHR','Miami GP':'USA','Qatar GP':'QAT',
-                'Moroccan GP':'MAR','Pescara GP':'ITA',
+                'Moroccan GP':'MAR','Pescara GP':'ITA','70th Anniversary GP':'GBR',
             };
+            const _gpFlag = gpKey => getGPFlagHtml(gpKey, GP_COUNTRY[gpKey] || null);
             const { gpIdx } = buildGameCircuitGPIndex();
             const activeGPs = new Set((GAME_STATE.races || []).map(r => extractGPCanonical(r.name || '')));
             const list = Object.entries(gpIdx)
@@ -13737,7 +13761,7 @@
                      style="${g.isActive ? 'border-left:3px solid var(--accent-main)' : 'border-left:3px solid transparent'}"
                      onclick="openGameGPProfile('${safe}')">
                     <div>
-                        <span class="font-medium">${renderFlag(g.country, g.gpKey)} ${g.gpKey}</span>${hint}
+                        <span class="font-medium">${_gpFlag(g.gpKey)} ${g.gpKey}</span>${hint}
                         ${g.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main)" title="Im aktuellen Kalender">📅</span>' : ''}
                         <span class="text-tertiary text-xs ml-2">${g.first}–${g.last}</span>${topHint}
                         ${g.lastWinner ? `<span class="text-tertiary text-xs ml-3">→ ${g.last}: ${g.lastWinner}</span>` : ''}
@@ -13971,7 +13995,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.11.99 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.0 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; NEU: Stadtflaggen Las Vegas/São Paulo/Miami/Abu Dhabi, Regionenflaggen Toskana/Emilia-Romagna/Steiermark/Europa – ueberall (Kalender historisch+aktuell, GP-Tab, Strecken-Tab, Rennen-Details)</div>
+                            <div>&#8226; NEU: São Paulo GP korrekt getrennt vom Brazilian GP (2021+)</div>
+                            <div>&#8226; FIX: extractGPCanonical normalisiert alle F1DB-Rennnamen lueckenlos</div>
+                            <div class="font-bold text-slate-400">v0.9.11.99 - 03.06.2026</div>
                             <div>&#8226; FIX: GP-Statistiken: Flagge folgt GP-Namen nicht Streckenland (GP_COUNTRY-Tabelle)</div>
                             <div>&#8226; FIX: extractGPCanonical vereinheitlicht Magyar/Europe/Sverige/Pescara/70th Anniversary etc.</div>
                             <div class="font-bold text-slate-400">v0.9.11.98 - 03.06.2026</div>
@@ -19610,7 +19638,7 @@ Empfohlene Wertebereiche:
             const _rdCircuitName = getCircuitDisplayName(_rdCid);
             let html = `
                 <div class="text-center mb-4">
-                    <div class="text-4xl mb-2">${renderFlag(race.country, race.name)}</div>
+                    <div class="text-4xl mb-2">${getGPFlagHtml(race.name, race.country)}</div>
                     <h2 class="text-2xl font-bold">${race.name}</h2>
                     <div class="text-tertiary">${race.circuit} | ${race.laps} Runden</div>
                     ${historicalYear ? `<div class="text-sm accent-blue mt-1">Saison ${historicalYear}</div>` : ''}
@@ -19875,7 +19903,7 @@ Empfohlene Wertebereiche:
 
             if (qualiResult) html += '</div>'; // close rdContent-race
             
-            document.getElementById('raceDetailTitle').innerHTML = `🏁 ${renderFlag(race.country, race.name)} ${race.name}`;
+            document.getElementById('raceDetailTitle').innerHTML = `🏁 ${getGPFlagHtml(race.name, race.country)} ${race.name}`;
             document.getElementById('raceDetailBody').innerHTML = html;
             bringModalToFront(document.getElementById('raceDetailModal')); document.getElementById('raceDetailModal').style.display = 'flex';
         };
