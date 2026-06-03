@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.3</title>
+    <title>F1 RPG v0.9.12.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.3';
+        const VERSION = '0.9.12.4';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3052,7 +3052,6 @@
         };
         
         let currentTab = 'overview';
-        let racesSubTab = 'calendar';
         let standingsSubTab = 'drivers';
         let _pendingNewDrivers = []; // temporär für showNewDriversModal
         let _poolGroupFilter = 'all'; // aktiver Filter-Tab im Reserve-Pool
@@ -13276,6 +13275,7 @@
         
         window.setStATSSubTab = function(tab) {
             stATSSubTab = tab;
+            localStorage.setItem('f1rpg_subtab_stats', tab);
             stATSSearch = '';
             renderContent();
         };
@@ -14008,7 +14008,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.3 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.4 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; FIX: Statistiken-Sub-Tab (Fahrer/Teams/GP etc.) bleibt nach Reload erhalten</div>
+                            <div>&#8226; FIX: Strecken/GP-Steckbrief aus globalem Search und hist. Ansicht zeigt jetzt Pole+SCR (Redirect auf Game-Versionen)</div>
+                            <div>&#8226; FIX: Tote Variable racesSubTab entfernt</div>
+                            <div class="font-bold text-slate-400">v0.9.12.3 - 03.06.2026</div>
                             <div>&#8226; FIX: Aktive Seite bleibt nach Seiten-Reload und Spielstand-Import erhalten (statt immer Übersicht)</div>
                             <div class="font-bold text-slate-400">v0.9.12.2 - 03.06.2026</div>
                             <div>&#8226; NEU: Pole Position und Schnellste Runde in GP/Strecken-Steckbrief (Ranking + Tabellenspalten)</div>
@@ -19218,67 +19222,8 @@ Empfohlene Wertebereiche:
             document.getElementById('teamProfileModal').style.display = 'none';
         };
 
-        window.openCircuitProfile = function(circuitId) {
-            buildCircuitGPIndex();
-            const cid = (circuitId || '').toLowerCase();
-            const history = _circuitIdx[cid] || [];
-            const displayName = getCircuitDisplayName(cid);
-            const _dn = id => !id ? '—' : (HIST_NAMES?.[id] || id.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '));
-            const _tn = id => !id ? '—' : id.split('-').map(w=>w.length<=3?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-            const rows = history.map(e => {
-                const dClick = e.driverId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.driverId}')"` : '';
-                const tClick = e.constrId ? `class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${e.constrId}')"` : '';
-                const safeGP = e.gpKey.replace(/'/g,'');
-                return `<tr style="border-bottom:1px solid var(--border-color)">
-                    <td class="p-2 text-sm font-bold" style="color:var(--accent-main)">${e.year}</td>
-                    <td class="p-2 text-sm cursor-pointer" style="color:var(--text-secondary)" onclick="closeCircuitGPProfile();openGPProfile('${safeGP}')">${e.gpKey}</td>
-                    <td class="p-2 text-sm" ${dClick}>${_dn(e.driverId)}</td>
-                    <td class="p-2 text-sm" ${tClick}>${_tn(e.constrId)}</td>
-                </tr>`;
-            }).join('');
-            document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName)} ${displayName}`;
-            document.getElementById('circuitGPProfileBody').innerHTML = `
-                <div class="text-secondary text-sm mb-3">${history.length} WM-Rennen</div>
-                <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
-                    <thead><tr style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;border-bottom:2px solid var(--border-color)">
-                        <th class="p-2 text-left">Jahr</th><th class="p-2 text-left">Grand Prix</th>
-                        <th class="p-2 text-left">Sieger</th><th class="p-2 text-left">Konstrukteur</th>
-                    </tr></thead>
-                    <tbody>${rows || '<tr><td colspan="4" class="p-4 text-center text-tertiary">Keine Daten</td></tr>'}</tbody>
-                </table></div>`;
-            bringModalToFront(document.getElementById('circuitGPProfileModal'));
-            document.getElementById('circuitGPProfileModal').style.display = 'flex';
-        };
-
-        window.openGPProfile = function(gpKey) {
-            buildCircuitGPIndex();
-            const history = _gpIdx[gpKey] || [];
-            const _dn = id => !id ? '—' : (HIST_NAMES?.[id] || id.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '));
-            const _tn = id => !id ? '—' : id.split('-').map(w=>w.length<=3?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-            const rows = history.map(e => {
-                const dClick = e.driverId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.driverId}')"` : '';
-                const tClick = e.constrId ? `class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${e.constrId}')"` : '';
-                const cName = getCircuitDisplayName(e.circuitId);
-                return `<tr style="border-bottom:1px solid var(--border-color)">
-                    <td class="p-2 text-sm font-bold" style="color:var(--accent-main)">${e.year}</td>
-                    <td class="p-2 text-sm cursor-pointer" style="color:var(--text-secondary)" onclick="closeCircuitGPProfile();openCircuitProfile('${e.circuitId}')">${cName}</td>
-                    <td class="p-2 text-sm" ${dClick}>${_dn(e.driverId)}</td>
-                    <td class="p-2 text-sm" ${tClick}>${_tn(e.constrId)}</td>
-                </tr>`;
-            }).join('');
-            document.getElementById('circuitGPProfileTitle').innerHTML = `${getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey])} ${gpKey}`;
-            document.getElementById('circuitGPProfileBody').innerHTML = `
-                <div class="text-secondary text-sm mb-3">${history.length} Austragung${history.length !== 1 ? 'en' : ''}</div>
-                <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
-                    <thead><tr style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;border-bottom:2px solid var(--border-color)">
-                        <th class="p-2 text-left">Jahr</th><th class="p-2 text-left">Strecke</th>
-                        <th class="p-2 text-left">Sieger</th><th class="p-2 text-left">Konstrukteur</th>
-                    </tr></thead>
-                    <tbody>${rows || '<tr><td colspan="4" class="p-4 text-center text-tertiary">Keine Daten</td></tr>'}</tbody>
-                </table></div>`;
-            bringModalToFront(document.getElementById('circuitGPProfileModal'));
-            document.getElementById('circuitGPProfileModal').style.display = 'flex';
-        };
+        window.openCircuitProfile = function(circuitId) { openGameCircuitProfile(circuitId); };
+        window.openGPProfile = function(gpKey) { openGameGPProfile(gpKey); };
 
         window.closeCircuitGPProfile = function() {
             document.getElementById('circuitGPProfileModal').style.display = 'none';
@@ -20241,6 +20186,8 @@ Empfohlene Wertebereiche:
             if (_savedTab && _validTabs.includes(_savedTab)) currentTab = _savedTab;
             const _savedSubStandings = localStorage.getItem('f1rpg_subtab_standings');
             if (_savedSubStandings && ['drivers','teams','matrix'].includes(_savedSubStandings)) standingsSubTab = _savedSubStandings;
+            const _savedSubStats = localStorage.getItem('f1rpg_subtab_stats');
+            if (_savedSubStats && ['drivers','teams','champions','circuits','gps'].includes(_savedSubStats)) stATSSubTab = _savedSubStats;
 
             renderAll();
             updateSaveStatus('✅ Bereit');
