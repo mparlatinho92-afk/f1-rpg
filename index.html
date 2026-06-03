@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.0</title>
+    <title>F1 RPG v0.9.12.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1562,11 +1562,29 @@
             'Styrian GP':        _WK + 'Flag_of_Styria.svg',
             'European GP':       _WK + 'Flag_of_Europe.svg',
         };
+        const GP_COUNTRY_MAP = {
+            'Indianapolis 500':'USA','San Marino GP':'SMR','Emilia Romagna GP':'ITA',
+            'Abu Dhabi GP':'UAE','Las Vegas GP':'USA','Saudi Arabian GP':'SAU',
+            'South African GP':'RSA','US GP West':'USA','US GP East':'USA',
+            'United States GP':'USA','British GP':'GBR','Belgian GP':'BEL',
+            'French GP':'FRA','Italian GP':'ITA','Swiss GP':'SUI','Dutch GP':'NED',
+            'German GP':'GER','Spanish GP':'ESP','Argentine GP':'ARG','Monaco GP':'MON',
+            'Mexican GP':'MEX','Canadian GP':'CAN','Austrian GP':'AUT','Swedish GP':'SWE',
+            'Japanese GP':'JPN','Australian GP':'AUS','Brazilian GP':'BRA',
+            'São Paulo GP':'BRA','Portuguese GP':'POR','European GP':'EUR',
+            'Pacific GP':'JPN','Luxembourg GP':'LUX','Hungarian GP':'HUN',
+            'Turkish GP':'TUR','Bahrain GP':'BHR','Chinese GP':'CHN',
+            'Malaysian GP':'MAS','Singapore GP':'SGP','Korean GP':'KOR',
+            'Indian GP':'IND','Russian GP':'RUS','Azerbaijan GP':'AZE',
+            'Styrian GP':'AUT','Tuscan GP':'ITA','Eifel GP':'GER',
+            'Sakhir GP':'BHR','Miami GP':'USA','Qatar GP':'QAT',
+            'Moroccan GP':'MAR','Pescara GP':'ITA','70th Anniversary GP':'GBR',
+        };
         function getGPFlagHtml(gpName, country, year) {
             const canonical = typeof extractGPCanonical === 'function' ? extractGPCanonical(gpName || '') : (gpName || '');
             const url = GP_FLAG_IMG[canonical];
             if (url) return `<img src="${url}" alt="${canonical}" class="inline-flag" style="height:1em;width:1.5em;vertical-align:-0.1em;object-fit:contain;" loading="lazy">`;
-            return renderFlag(country || null, gpName, year);
+            return renderFlag(country || GP_COUNTRY_MAP[canonical] || null, gpName, year);
         }
 
         // ============================================================
@@ -1574,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.0';
+        const VERSION = '0.9.12.1';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -13716,25 +13734,7 @@
 
         function renderAllGPs() {
             // Flagge gehört zum GP-Namen, nicht zur Strecke (Swiss GP → SUI, auch wenn in Dijon gefahren)
-            const GP_COUNTRY = {
-                'Indianapolis 500':'USA','San Marino GP':'SMR','Emilia Romagna GP':'ITA',
-                'Abu Dhabi GP':'UAE','Las Vegas GP':'USA','Saudi Arabian GP':'SAU',
-                'South African GP':'RSA','US GP West':'USA','US GP East':'USA',
-                'United States GP':'USA','British GP':'GBR',
-                'Belgian GP':'BEL','French GP':'FRA','Italian GP':'ITA','Swiss GP':'SUI',
-                'Dutch GP':'NED','German GP':'GER','Spanish GP':'ESP','Argentine GP':'ARG',
-                'Monaco GP':'MON','Mexican GP':'MEX','Canadian GP':'CAN','Austrian GP':'AUT',
-                'Swedish GP':'SWE','Japanese GP':'JPN','Australian GP':'AUS',
-                'Brazilian GP':'BRA','São Paulo GP':'BRA','Portuguese GP':'POR','European GP':'EUR',
-                'Pacific GP':'JPN','Luxembourg GP':'LUX','Hungarian GP':'HUN',
-                'Turkish GP':'TUR','Bahrain GP':'BHR','Chinese GP':'CHN',
-                'Malaysian GP':'MAS','Singapore GP':'SGP','Korean GP':'KOR',
-                'Indian GP':'IND','Russian GP':'RUS','Azerbaijan GP':'AZE',
-                'Styrian GP':'AUT','Tuscan GP':'ITA','Eifel GP':'GER',
-                'Sakhir GP':'BHR','Miami GP':'USA','Qatar GP':'QAT',
-                'Moroccan GP':'MAR','Pescara GP':'ITA','70th Anniversary GP':'GBR',
-            };
-            const _gpFlag = gpKey => getGPFlagHtml(gpKey, GP_COUNTRY[gpKey] || null);
+            const _gpFlag = gpKey => getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey] || null);
             const { gpIdx } = buildGameCircuitGPIndex();
             const activeGPs = new Set((GAME_STATE.races || []).map(r => extractGPCanonical(r.name || '')));
             const list = Object.entries(gpIdx)
@@ -13744,7 +13744,7 @@
                     const top = Object.entries(wc).sort((a,b) => b[1]-a[1])[0];
                     const lastE = entries[entries.length-1];
                     const lastWinner = lastE?.driverName && lastE.driverName !== '—' ? lastE.driverName : null;
-                    const country = GP_COUNTRY[gpKey] || null;
+                    const country = GP_COUNTRY_MAP[gpKey] || null;
                     return { gpKey, count: entries.length,
                         first: entries[0]?.year, last: lastE?.year,
                         circuits: new Set(entries.map(e => e.cid)).size,
@@ -13995,7 +13995,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.0 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.1 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; NEU: GP- und Strecken-Steckbrief zeigt korrekte Flagge im Titel (inkl. Stadt-/Regionenflaggen)</div>
+                            <div>&#8226; NEU: Siegerliste: Buttons Alle aufklappen / Alle zuklappen</div>
+                            <div>&#8226; FIX: Filter 'Alle'/'Gespielt' als permanenter 2-Button-Toggle</div>
+                            <div class="font-bold text-slate-400">v0.9.12.0 - 03.06.2026</div>
                             <div>&#8226; NEU: Stadtflaggen Las Vegas/São Paulo/Miami/Abu Dhabi, Regionenflaggen Toskana/Emilia-Romagna/Steiermark/Europa – ueberall (Kalender historisch+aktuell, GP-Tab, Strecken-Tab, Rennen-Details)</div>
                             <div>&#8226; NEU: São Paulo GP korrekt getrennt vom Brazilian GP (2021+)</div>
                             <div>&#8226; FIX: extractGPCanonical normalisiert alle F1DB-Rennnamen lueckenlos</div>
@@ -19215,7 +19219,7 @@ Empfohlene Wertebereiche:
                     <td class="p-2 text-sm" ${tClick}>${_tn(e.constrId)}</td>
                 </tr>`;
             }).join('');
-            document.getElementById('circuitGPProfileTitle').textContent = '🏟️ ' + displayName;
+            document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName)} ${displayName}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-3">${history.length} WM-Rennen</div>
                 <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
@@ -19245,7 +19249,7 @@ Empfohlene Wertebereiche:
                     <td class="p-2 text-sm" ${tClick}>${_tn(e.constrId)}</td>
                 </tr>`;
             }).join('');
-            document.getElementById('circuitGPProfileTitle').textContent = '🏁 ' + gpKey;
+            document.getElementById('circuitGPProfileTitle').innerHTML = `${getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey])} ${gpKey}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-3">${history.length} Austragung${history.length !== 1 ? 'en' : ''}</div>
                 <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
@@ -19270,7 +19274,20 @@ Empfohlene Wertebereiche:
             if (_gpDetailLast?.type === 'circuit') openGameCircuitProfile(_gpDetailLast.id);
             else if (_gpDetailLast?.type === 'gp') openGameGPProfile(_gpDetailLast.id);
         };
+        window.setGpDetailFilter = function(mode) {
+            if (_gpDetailFilter === mode) return;
+            _gpDetailFilter = mode;
+            if (_gpDetailLast?.type === 'circuit') openGameCircuitProfile(_gpDetailLast.id);
+            else if (_gpDetailLast?.type === 'gp') openGameGPProfile(_gpDetailLast.id);
+        };
 
+        window.toggleAllDecadeGroups = function(expand) {
+            document.querySelectorAll('[id$="_arr"]').forEach(arrow => {
+                const gid = arrow.id.replace('_arr', '');
+                document.querySelectorAll('tr.' + gid).forEach(r => r.style.display = expand ? '' : 'none');
+                arrow.textContent = expand ? '▼' : '▶';
+            });
+        };
         window.toggleDecadeGroup = function(gid) {
             const rows = document.querySelectorAll(`tr.${gid}`);
             const arrow = document.getElementById(gid + '_arr');
@@ -19306,7 +19323,8 @@ Empfohlene Wertebereiche:
         function _rankingBlock(driverRanked, constrRanked, filter, streak) {
             const medals = ['🥇','🥈','🥉'];
             const _tn = id => !id ? '—' : id.split('-').map(w=>w.length<=3?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-            const filterBtn = `<button onclick="toggleGpDetailFilter()" style="float:right;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">${filter === 'all' ? '📋 Alle (ab 1950)' : '🎮 Nur gespielt'}</button>`;
+            const _fBtnStyle = (active) => `background:${active?'var(--accent-main)':'var(--bg-secondary)'};color:${active?'var(--accent-on)':'var(--text-secondary)'};border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;margin-left:3px`;
+            const filterBtn = `<span style="float:right"><button onclick="setGpDetailFilter('all')" style="${_fBtnStyle(filter==='all')}">📋 Alle</button><button onclick="setGpDetailFilter('played')" style="${_fBtnStyle(filter==='played')}">🎮 Gespielt</button></span>`;
             const dBlock = driverRanked.length >= 2 ? `
                 <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">🏆 Fahrer</div>
                 <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
@@ -19318,7 +19336,7 @@ Empfohlene Wertebereiche:
                     ${constrRanked.slice(0,6).map(([id,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${_tn(id)} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
                 </div>` : '';
             const streakHtml = streak ? `<div class="text-xs mb-3" style="color:var(--text-muted)">⚡ Längste Serie: <strong style="color:var(--text-primary)">${streak.driver}</strong> <span style="color:var(--accent-main)">${streak.count}×</span> in Folge${streak.from === streak.to ? ` (${streak.from})` : ` (${streak.from}–${streak.to})`}</div>` : '';
-            if (!streakHtml && !dBlock && !cBlock) return '';
+            if (!streakHtml && !dBlock && !cBlock) return `<div class="mb-2" style="overflow:hidden">${filterBtn}</div>`;
             return `<div class="mb-4 p-3 rounded-lg" style="background:var(--bg-tertiary);overflow:hidden">${filterBtn}${streakHtml}${dBlock}${cBlock}</div>`;
         }
 
@@ -19400,11 +19418,15 @@ Empfohlene Wertebereiche:
             const displayName = getCircuitDisplayName(cid);
             const rows = _buildModalRows(history, 'circuit');
             const noData = `<tr><td colspan="5" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
-            document.getElementById('circuitGPProfileTitle').textContent = '🏟️ ' + displayName;
+            document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName)} ${displayName}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Rennen · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
                 ${_venueCard(all)}
                 ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history))}
+                <div style="display:flex;gap:5px;justify-content:flex-end;margin-bottom:5px">
+                    <button onclick="toggleAllDecadeGroups(true)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▼ Alle</button>
+                    <button onclick="toggleAllDecadeGroups(false)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▶ Alle</button>
+                </div>
                 <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
                     <thead><tr style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;border-bottom:2px solid var(--border-color)">
                         <th class="p-2 text-left">#</th><th class="p-2 text-left">Jahr</th><th class="p-2 text-left">Grand Prix</th>
@@ -19423,11 +19445,15 @@ Empfohlene Wertebereiche:
             const history = _gpDetailFilter === 'played' ? all.filter(e => !e.isHistorical) : all;
             const rows = _buildModalRows(history, 'gp');
             const noData = `<tr><td colspan="5" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
-            document.getElementById('circuitGPProfileTitle').textContent = '🏁 ' + gpKey;
+            document.getElementById('circuitGPProfileTitle').innerHTML = `${getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey])} ${gpKey}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Austragung${all.length !== 1 ? 'en' : ''} · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
                 ${_venueCard(all)}
                 ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history))}
+                <div style="display:flex;gap:5px;justify-content:flex-end;margin-bottom:5px">
+                    <button onclick="toggleAllDecadeGroups(true)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▼ Alle</button>
+                    <button onclick="toggleAllDecadeGroups(false)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▶ Alle</button>
+                </div>
                 <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
                     <thead><tr style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;border-bottom:2px solid var(--border-color)">
                         <th class="p-2 text-left">#</th><th class="p-2 text-left">Jahr</th><th class="p-2 text-left">Strecke</th>
