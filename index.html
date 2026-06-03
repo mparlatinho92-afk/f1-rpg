@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.11.98</title>
+    <title>F1 RPG v0.9.11.99</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1555,7 +1555,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.98';
+        const VERSION = '0.9.11.99';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -13622,7 +13622,7 @@
                     const winner = race.entries.find(e => e.posNum === 1);
                     const wId = winner?.driverId || null;
                     const wName = wId ? (HIST_NAMES?.[wId] || wId.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ')) : '—';
-                    push({ year: y, gpKey, cid, driverId: wId, driverName: wName, constrId: winner?.constrId || null, isHistorical: true });
+                    push({ year: y, gpKey, cid, country: CIRCUIT_COUNTRY[race.circuit] || null, driverId: wId, driverName: wName, constrId: winner?.constrId || null, isHistorical: true });
                 }
             }
 
@@ -13643,7 +13643,7 @@
                     const wObj = wId ? dMap[wId] : null;
                     const wName = wObj?.name || (wId ? (HIST_NAMES?.[wObj?.histId || wId] || wId.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ')) : '—');
                     const wTeam = w ? (w.tmn || wObj?.team || w.team || null) : null;
-                    push({ year, gpKey, cid, driverId: wId, driverName: wName, constrId: wTeam });
+                    push({ year, gpKey, cid, country: rt.country || CIRCUIT_COUNTRY[(rt.circuitId || cid)] || null, driverId: wId, driverName: wName, constrId: wTeam });
                 }
             };
             for (const s of (GAME_STATE.history || [])) process(s.year, s.races, s.results, s.drivers);
@@ -13692,6 +13692,25 @@
         }
 
         function renderAllGPs() {
+            // Flagge gehört zum GP-Namen, nicht zur Strecke (Swiss GP → SUI, auch wenn in Dijon gefahren)
+            const GP_COUNTRY = {
+                'Indianapolis 500':'USA','San Marino GP':'SMR','Emilia Romagna GP':'ITA',
+                'Abu Dhabi GP':'UAE','Las Vegas GP':'USA','Saudi Arabian GP':'SAU',
+                'South African GP':'RSA','US GP West':'USA','US GP East':'USA',
+                'United States GP':'USA','British GP':'GBR',
+                'Belgian GP':'BEL','French GP':'FRA','Italian GP':'ITA','Swiss GP':'SUI',
+                'Dutch GP':'NED','German GP':'GER','Spanish GP':'ESP','Argentine GP':'ARG',
+                'Monaco GP':'MON','Mexican GP':'MEX','Canadian GP':'CAN','Austrian GP':'AUT',
+                'Swedish GP':'SWE','Japanese GP':'JPN','Australian GP':'AUS',
+                'Brazilian GP':'BRA','Portuguese GP':'POR','European GP':'EUR',
+                'Pacific GP':'JPN','Luxembourg GP':'LUX','Hungarian GP':'HUN',
+                'Turkish GP':'TUR','Bahrain GP':'BHR','Chinese GP':'CHN',
+                'Malaysian GP':'MAS','Singapore GP':'SGP','Korean GP':'KOR',
+                'Indian GP':'IND','Russian GP':'RUS','Azerbaijan GP':'AZE',
+                'Styrian GP':'AUT','Tuscan GP':'ITA','Eifel GP':'GER',
+                'Sakhir GP':'BHR','Miami GP':'USA','Qatar GP':'QAT',
+                'Moroccan GP':'MAR','Pescara GP':'ITA',
+            };
             const { gpIdx } = buildGameCircuitGPIndex();
             const activeGPs = new Set((GAME_STATE.races || []).map(r => extractGPCanonical(r.name || '')));
             const list = Object.entries(gpIdx)
@@ -13701,11 +13720,12 @@
                     const top = Object.entries(wc).sort((a,b) => b[1]-a[1])[0];
                     const lastE = entries[entries.length-1];
                     const lastWinner = lastE?.driverName && lastE.driverName !== '—' ? lastE.driverName : null;
+                    const country = GP_COUNTRY[gpKey] || null;
                     return { gpKey, count: entries.length,
                         first: entries[0]?.year, last: lastE?.year,
                         circuits: new Set(entries.map(e => e.cid)).size,
                         topWinner: top?.[0], topWins: top?.[1] || 0,
-                        lastWinner, isActive: activeGPs.has(gpKey) };
+                        lastWinner, country, isActive: activeGPs.has(gpKey) };
                 })
                 .sort((a, b) => b.count - a.count || a.gpKey.localeCompare(b.gpKey));
             if (!list.length) return '<div class="text-tertiary p-6 text-center">Noch keine Rennen gespielt.</div>';
@@ -13717,7 +13737,7 @@
                      style="${g.isActive ? 'border-left:3px solid var(--accent-main)' : 'border-left:3px solid transparent'}"
                      onclick="openGameGPProfile('${safe}')">
                     <div>
-                        <span class="font-medium">🏁 ${g.gpKey}</span>${hint}
+                        <span class="font-medium">${renderFlag(g.country, g.gpKey)} ${g.gpKey}</span>${hint}
                         ${g.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main)" title="Im aktuellen Kalender">📅</span>' : ''}
                         <span class="text-tertiary text-xs ml-2">${g.first}–${g.last}</span>${topHint}
                         ${g.lastWinner ? `<span class="text-tertiary text-xs ml-3">→ ${g.last}: ${g.lastWinner}</span>` : ''}
@@ -13951,7 +13971,10 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.11.98 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.11.99 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; FIX: GP-Statistiken: Flagge folgt GP-Namen nicht Streckenland (GP_COUNTRY-Tabelle)</div>
+                            <div>&#8226; FIX: extractGPCanonical vereinheitlicht Magyar/Europe/Sverige/Pescara/70th Anniversary etc.</div>
+                            <div class="font-bold text-slate-400">v0.9.11.98 - 03.06.2026</div>
                             <div>&#8226; FIX: Flaggen-CDN-Ausfall → native Emoji statt leerem Bild (onerror-Fallback)</div>
                             <div class="font-bold text-slate-400">v0.9.11.97 - 03.06.2026</div>
                             <div>&#8226; FIX: manage-v schreibt index.html jetzt via Temp-Datei (kein Defender-Lock mehr)</div>
