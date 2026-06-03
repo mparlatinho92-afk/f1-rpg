@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.11.97</title>
+    <title>F1 RPG v0.9.11.98</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1422,7 +1422,8 @@
                 var cp1 = (0x1F1E6 + alpha2.charCodeAt(0) - 65).toString(16);
                 var cp2 = (0x1F1E6 + alpha2.charCodeAt(1) - 65).toString(16);
                 var twemojiUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/' + cp1 + '-' + cp2 + '.png';
-                return '<img src="' + twemojiUrl + '" alt="' + alpha2 + '" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy">';
+                var nativeFb = String.fromCodePoint(alpha2.charCodeAt(0) + 127397, alpha2.charCodeAt(1) + 127397);
+                return '<img src="' + twemojiUrl + '" alt="' + alpha2 + '" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy" onerror="this.outerHTML=this.dataset.fb" data-fb="' + nativeFb + '">';
             }
             
             // Native Emoji für alle anderen (Mobile, macOS, Linux, Firefox)
@@ -1554,7 +1555,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.11.97';
+        const VERSION = '0.9.11.98';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -13950,7 +13951,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.11.97 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.11.98 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; FIX: Flaggen-CDN-Ausfall → native Emoji statt leerem Bild (onerror-Fallback)</div>
+                            <div class="font-bold text-slate-400">v0.9.11.97 - 03.06.2026</div>
                             <div>&#8226; FIX: manage-v schreibt index.html jetzt via Temp-Datei (kein Defender-Lock mehr)</div>
                             <div class="font-bold text-slate-400">v0.9.11.96 - 03.06.2026</div>
                             <div>&#8226; NEU: Playwright-REPL-Driver fuer automatische UI-Verifikation (.claude/skills/run/)</div>
