@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.1</title>
+    <title>F1 RPG v0.9.12.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.1';
+        const VERSION = '0.9.12.2';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -13661,14 +13661,20 @@
                     if (!cid) continue;
                     const gpKey = extractGPCanonical(race.name || '');
                     const winner = race.entries.find(e => e.posNum === 1);
+                    const pole   = race.entries.find(e => e.pole);
+                    const fl     = race.entries.find(e => e.fastestLap);
+                    const _hn = id => id ? (HIST_NAMES?.[id] || id.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ')) : null;
                     const wId = winner?.driverId || null;
-                    const wName = wId ? (HIST_NAMES?.[wId] || wId.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ')) : '—';
-                    push({ year: y, gpKey, cid, country: CIRCUIT_COUNTRY[race.circuit] || null, driverId: wId, driverName: wName, constrId: winner?.constrId || null, isHistorical: true });
+                    const wName = _hn(wId) || '—';
+                    const poleId = pole?.driverId || null;
+                    const flId   = fl?.driverId   || null;
+                    push({ year: y, gpKey, cid, country: CIRCUIT_COUNTRY[race.circuit] || null, driverId: wId, driverName: wName, constrId: winner?.constrId || null, isHistorical: true, poleId, poleName: _hn(poleId), flId, flName: _hn(flId) });
                 }
             }
 
             // Simulierte Saisons
-            const process = (year, races, results, driverSnapshot) => {
+            const _sn = (id, dMap) => { const o = id ? dMap[id] : null; return o?.name || (id ? (HIST_NAMES?.[o?.histId || id] || id.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ')) : null); };
+            const process = (year, races, results, driverSnapshot, qualis) => {
                 const dMap = {};
                 for (const d of (driverSnapshot || [])) dMap[d.id] = d;
                 for (const rr of (results || [])) {
@@ -13684,15 +13690,20 @@
                     const wObj = wId ? dMap[wId] : null;
                     const wName = wObj?.name || (wId ? (HIST_NAMES?.[wObj?.histId || wId] || wId.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join(' ')) : '—');
                     const wTeam = w ? (w.tmn || wObj?.team || w.team || null) : null;
-                    push({ year, gpKey, cid, country: rt.country || CIRCUIT_COUNTRY[(rt.circuitId || cid)] || null, driverId: wId, driverName: wName, constrId: wTeam });
+                    const q = (qualis || []).find(q => (q.ri ?? q.raceIndex) === ri);
+                    const pEntry = q ? ((q.res || q.results || [])[0]) : null;
+                    const poleId = pEntry ? (pEntry.d || pEntry.driver) : null;
+                    const flEntry = res.find(r => r.fl === 1 || r.fl === true || r.fastestLap === true);
+                    const flId = flEntry ? (flEntry.d || flEntry.driver) : null;
+                    push({ year, gpKey, cid, country: rt.country || CIRCUIT_COUNTRY[(rt.circuitId || cid)] || null, driverId: wId, driverName: wName, constrId: wTeam, poleId, poleName: _sn(poleId, dMap), flId, flName: _sn(flId, dMap) });
                 }
             };
-            for (const s of (GAME_STATE.history || [])) process(s.year, s.races, s.results, s.drivers);
+            for (const s of (GAME_STATE.history || [])) process(s.year, s.races, s.results, s.drivers, s.qualifyingResults);
             const curRes = (GAME_STATE.results || []).map(rr => ({
                 ri: rr.raceIndex, rn: rr.raceName,
-                res: (rr.results || []).map(r => ({ p: r.position, d: r.driver, team: r.team }))
+                res: (rr.results || []).map(r => ({ p: r.position, d: r.driver, team: r.team, fl: r.fastestLap ? 1 : 0 }))
             }));
-            process(GAME_STATE.currentYear, GAME_STATE.races, curRes, GAME_STATE.drivers);
+            process(GAME_STATE.currentYear, GAME_STATE.races, curRes, GAME_STATE.drivers, GAME_STATE.qualifyingResults);
             for (const k of Object.keys(cIdx)) cIdx[k].sort((a,b) => a.year - b.year);
             for (const k of Object.keys(gpIdx)) gpIdx[k].sort((a,b) => a.year - b.year);
             _gpCICache = { cIdx, gpIdx };
@@ -13995,7 +14006,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.1 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.2 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; NEU: Pole Position und Schnellste Runde in GP/Strecken-Steckbrief (Ranking + Tabellenspalten)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.1 - 03.06.2026</div>
                             <div>&#8226; NEU: GP- und Strecken-Steckbrief zeigt korrekte Flagge im Titel (inkl. Stadt-/Regionenflaggen)</div>
                             <div>&#8226; NEU: Siegerliste: Buttons Alle aufklappen / Alle zuklappen</div>
                             <div>&#8226; FIX: Filter 'Alle'/'Gespielt' als permanenter 2-Button-Toggle</div>
@@ -19320,7 +19333,17 @@ Empfohlene Wertebereiche:
             }
             return (best && best.count >= 2) ? best : null;
         }
-        function _rankingBlock(driverRanked, constrRanked, filter, streak) {
+        function _buildPoleRanking(history) {
+            const pc = {};
+            for (const e of history) { if (e.poleName) pc[e.poleName] = (pc[e.poleName] || 0) + 1; }
+            return Object.entries(pc).sort((a,b) => b[1]-a[1]);
+        }
+        function _buildFLRanking(history) {
+            const fc = {};
+            for (const e of history) { if (e.flName) fc[e.flName] = (fc[e.flName] || 0) + 1; }
+            return Object.entries(fc).sort((a,b) => b[1]-a[1]);
+        }
+        function _rankingBlock(driverRanked, constrRanked, filter, streak, poleRanked, flRanked) {
             const medals = ['🥇','🥈','🥉'];
             const _tn = id => !id ? '—' : id.split('-').map(w=>w.length<=3?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
             const _fBtnStyle = (active) => `background:${active?'var(--accent-main)':'var(--bg-secondary)'};color:${active?'var(--accent-on)':'var(--text-secondary)'};border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;margin-left:3px`;
@@ -19332,12 +19355,22 @@ Empfohlene Wertebereiche:
                 </div>` : '';
             const cBlock = constrRanked.length >= 2 ? `
                 <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">🏗️ Konstrukteure</div>
-                <div class="flex flex-wrap gap-x-5 gap-y-1">
+                <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
                     ${constrRanked.slice(0,6).map(([id,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${_tn(id)} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
                 </div>` : '';
-            const streakHtml = streak ? `<div class="text-xs mb-3" style="color:var(--text-muted)">⚡ Längste Serie: <strong style="color:var(--text-primary)">${streak.driver}</strong> <span style="color:var(--accent-main)">${streak.count}×</span> in Folge${streak.from === streak.to ? ` (${streak.from})` : ` (${streak.from}–${streak.to})`}</div>` : '';
-            if (!streakHtml && !dBlock && !cBlock) return `<div class="mb-2" style="overflow:hidden">${filterBtn}</div>`;
-            return `<div class="mb-4 p-3 rounded-lg" style="background:var(--bg-tertiary);overflow:hidden">${filterBtn}${streakHtml}${dBlock}${cBlock}</div>`;
+            const pBlock = poleRanked && poleRanked.length >= 2 ? `
+                <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">🔵 Pole Position</div>
+                <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
+                    ${poleRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
+                </div>` : '';
+            const fBlock = flRanked && flRanked.length >= 2 ? `
+                <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">⚡ Schnellste Runde</div>
+                <div class="flex flex-wrap gap-x-5 gap-y-1">
+                    ${flRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
+                </div>` : '';
+            const streakHtml = streak ? `<div class="text-xs mb-3" style="color:var(--text-muted)">🔥 Längste Serie: <strong style="color:var(--text-primary)">${streak.driver}</strong> <span style="color:var(--accent-main)">${streak.count}×</span> in Folge${streak.from === streak.to ? ` (${streak.from})` : ` (${streak.from}–${streak.to})`}</div>` : '';
+            if (!streakHtml && !dBlock && !cBlock && !pBlock && !fBlock) return `<div class="mb-2" style="overflow:hidden">${filterBtn}</div>`;
+            return `<div class="mb-4 p-3 rounded-lg" style="background:var(--bg-tertiary);overflow:hidden">${filterBtn}${streakHtml}${dBlock}${cBlock}${pBlock}${fBlock}</div>`;
         }
 
         function _buildModalRows(history, type) {
@@ -19366,13 +19399,15 @@ Empfohlene Wertebereiche:
                 const isOpen = dk === lastDec;
                 const gid = `dg_${type}_${dk}`;
                 html += `<tr style="cursor:pointer;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)" onclick="toggleDecadeGroup('${gid}')">
-                    <td colspan="5" style="padding:5px 8px;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary)">
+                    <td colspan="7" style="padding:5px 8px;font-size:0.73rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary)">
                         <span id="${gid}_arr">${isOpen ? '▼' : '▶'}</span> ${dk}er <span style="font-weight:400;color:var(--text-muted)">(${group.length})</span>
                     </td>
                 </tr>`;
                 for (const { e, i } of group) {
                     const dClick = e.driverId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.driverId}')"` : '';
                     const tClick = e.constrId ? `class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${e.constrId}')"` : '';
+                    const pClick = e.poleId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.poleId}')"` : '';
+                    const fClick = e.flId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.flId}')"` : '';
                     const nth = _nth[i] > 1 ? ` <sup style="color:var(--accent-main)">${_nth[i]}×</sup>` : '';
                     const col2 = type === 'circuit'
                         ? `<td class="p-2 text-sm cursor-pointer" style="color:var(--text-secondary)" onclick="closeCircuitGPProfile();openGameGPProfile('${e.gpKey.replace(/'/g,'')}')">${e.gpKey}</td>`
@@ -19383,6 +19418,8 @@ Empfohlene Wertebereiche:
                         ${col2}
                         <td class="p-2 text-sm" ${dClick}>${e.driverName || '—'}${nth}</td>
                         <td class="p-2 text-sm" ${tClick}>${_tn(e.constrId)}</td>
+                        <td class="p-2 text-sm" style="color:var(--text-secondary)" ${pClick}>${e.poleName || '—'}</td>
+                        <td class="p-2 text-sm" style="color:var(--text-secondary)" ${fClick}>${e.flName ? `<span style="color:var(--accent-main)">⚡</span> ${e.flName}` : '—'}</td>
                     </tr>`;
                 }
             }
@@ -19417,12 +19454,12 @@ Empfohlene Wertebereiche:
             const history = _gpDetailFilter === 'played' ? all.filter(e => !e.isHistorical) : all;
             const displayName = getCircuitDisplayName(cid);
             const rows = _buildModalRows(history, 'circuit');
-            const noData = `<tr><td colspan="5" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
+            const noData = `<tr><td colspan="7" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
             document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName)} ${displayName}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Rennen · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
                 ${_venueCard(all)}
-                ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history))}
+                ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history), _buildPoleRanking(history), _buildFLRanking(history))}
                 <div style="display:flex;gap:5px;justify-content:flex-end;margin-bottom:5px">
                     <button onclick="toggleAllDecadeGroups(true)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▼ Alle</button>
                     <button onclick="toggleAllDecadeGroups(false)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▶ Alle</button>
@@ -19431,6 +19468,7 @@ Empfohlene Wertebereiche:
                     <thead><tr style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;border-bottom:2px solid var(--border-color)">
                         <th class="p-2 text-left">#</th><th class="p-2 text-left">Jahr</th><th class="p-2 text-left">Grand Prix</th>
                         <th class="p-2 text-left">Sieger</th><th class="p-2 text-left">Konstrukteur</th>
+                        <th class="p-2 text-left">Pole</th><th class="p-2 text-left">SCR</th>
                     </tr></thead>
                     <tbody>${rows || noData}</tbody>
                 </table></div>`;
@@ -19444,12 +19482,12 @@ Empfohlene Wertebereiche:
             const all = gpIdx[gpKey] || [];
             const history = _gpDetailFilter === 'played' ? all.filter(e => !e.isHistorical) : all;
             const rows = _buildModalRows(history, 'gp');
-            const noData = `<tr><td colspan="5" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
+            const noData = `<tr><td colspan="7" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
             document.getElementById('circuitGPProfileTitle').innerHTML = `${getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey])} ${gpKey}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Austragung${all.length !== 1 ? 'en' : ''} · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
                 ${_venueCard(all)}
-                ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history))}
+                ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history), _buildPoleRanking(history), _buildFLRanking(history))}
                 <div style="display:flex;gap:5px;justify-content:flex-end;margin-bottom:5px">
                     <button onclick="toggleAllDecadeGroups(true)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▼ Alle</button>
                     <button onclick="toggleAllDecadeGroups(false)" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-secondary)">▶ Alle</button>
@@ -19458,6 +19496,7 @@ Empfohlene Wertebereiche:
                     <thead><tr style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;border-bottom:2px solid var(--border-color)">
                         <th class="p-2 text-left">#</th><th class="p-2 text-left">Jahr</th><th class="p-2 text-left">Strecke</th>
                         <th class="p-2 text-left">Sieger</th><th class="p-2 text-left">Konstrukteur</th>
+                        <th class="p-2 text-left">Pole</th><th class="p-2 text-left">SCR</th>
                     </tr></thead>
                     <tbody>${rows || noData}</tbody>
                 </table></div>`;
