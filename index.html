@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.2</title>
+    <title>F1 RPG v0.9.12.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.2';
+        const VERSION = '0.9.12.3';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11289,6 +11289,7 @@
         
         window.switchTab = function(tabId) {
             currentTab = tabId;
+            localStorage.setItem('f1rpg_tab', tabId);
             renderNav();
             renderContent();
         };
@@ -12217,6 +12218,7 @@
         
         window.setStandingsSubTab = function(tab) {
             standingsSubTab = tab;
+            localStorage.setItem('f1rpg_subtab_standings', tab);
             renderContent();
         };
 
@@ -14006,7 +14008,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.2 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.3 (aktuell) - 03.06.2026</div>
+                            <div>&#8226; FIX: Aktive Seite bleibt nach Seiten-Reload und Spielstand-Import erhalten (statt immer Übersicht)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.2 - 03.06.2026</div>
                             <div>&#8226; NEU: Pole Position und Schnellste Runde in GP/Strecken-Steckbrief (Ranking + Tabellenspalten)</div>
                             <div class="font-bold text-slate-400">v0.9.12.1 - 03.06.2026</div>
                             <div>&#8226; NEU: GP- und Strecken-Steckbrief zeigt korrekte Flagge im Titel (inkl. Stadt-/Regionenflaggen)</div>
@@ -20230,7 +20234,14 @@ Empfohlene Wertebereiche:
             
             // Modal-Handling initialisieren
             setupModalHandling();
-            
+
+            // Letzten Tab wiederherstellen
+            const _validTabs = ['overview','standings','races','stATS','handbook','roadmap','settings'];
+            const _savedTab = localStorage.getItem('f1rpg_tab');
+            if (_savedTab && _validTabs.includes(_savedTab)) currentTab = _savedTab;
+            const _savedSubStandings = localStorage.getItem('f1rpg_subtab_standings');
+            if (_savedSubStandings && ['drivers','teams','matrix'].includes(_savedSubStandings)) standingsSubTab = _savedSubStandings;
+
             renderAll();
             updateSaveStatus('✅ Bereit');
             logSuccess('INIT', `Geladen: Jahr ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}/${GAME_STATE.races.length}`);
