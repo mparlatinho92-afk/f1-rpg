@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.13</title>
+    <title>F1 RPG v0.9.12.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.13';
+        const VERSION = '0.9.12.14';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5273,10 +5273,10 @@
                 const _isGoodDay = Math.random() < (_consVal / 100);
                 const _paceFactor = _isGoodDay ? 1.0 : 0.0;
                 let performance = (
-                    _effPace * _paceFactor * 0.35 +
+                    _effPace * _paceFactor * 0.45 +
                     (isRain ? driver.rain * _paceFactor * 0.2 : 15) +
                     driver.experience * 0.15 +
-                    _effCarSpeed * 0.25
+                    _effCarSpeed * 0.15
                 );
                 // Kontinuierliches Rauschen: ±6 (Konstanz=100) bis ±16 (Konstanz=0)
                 const _halfVar = 6 + (100 - _consVal) * 0.10;
@@ -5426,12 +5426,14 @@
                 results[0].winnerTimeSec = winnerTimeSec; // nur am Sieger speichern
             }
             
-            // Fastest Lap (random aus Top 10) – nur in Ären mit FL-Punkt (1950–1959, 2019+)
+            // Fastest Lap – gewichtet nach Race-Score + Zufall (frische Reifen = Mittelfeld möglich, aber selten)
             const _flYear = GAME_STATE.currentYear;
             const _flGivesPoint = _flYear <= 1959 || _flYear >= 2019;
-            const eligibleForFL = results.filter(r => !r.dnf && r.position <= 10);
+            const eligibleForFL = results.filter(r => !r.dnf);
             if (eligibleForFL.length > 0) {
-                const flDriver = eligibleForFL[Math.floor(Math.random() * eligibleForFL.length)];
+                const _flScored = eligibleForFL.map(r => ({ r, w: (r.score || 50) * 0.7 + Math.random() * 30 }));
+                _flScored.sort((a, b) => b.w - a.w);
+                const flDriver = _flScored[0].r;
                 flDriver.fastestLap = true;
                 if (_flGivesPoint) flDriver.points += 1;
             }
@@ -6031,9 +6033,9 @@
 
                 // Qualifying Performance – Konstanz noch als Varianz (Quali-Spezialfall folgt später)
                 let qualiPerformance = (
-                    driver.pace * 0.50 +
+                    driver.pace * 0.60 +
                     (isRain ? driver.rain * 0.2 : 15) +
-                    team.carSpeed * 0.35
+                    team.carSpeed * 0.25
                 );
                 const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
                 const _qHalfVar = 5 + (100 - _qConsVal) * 0.08; // ±5..13 (mehr Abwechslung an der Pole)
@@ -14039,7 +14041,10 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.13 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.14 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; FIX: Pace staerker gewichtet (Race 0.45, Quali 0.60), CarSpeed reduziert</div>
+                            <div>&#8226; FIX: Schnellste Runde score-gewichtet, alle Finisher eligible</div>
+                            <div class="font-bold text-slate-400">v0.9.12.13 - 04.06.2026</div>
                             <div>&#8226; DATA: Vanwall 1957 – Moss (ex-MAS) und Lewis-Evans (ex-CON) zu Vanwall</div>
                             <div class="font-bold text-slate-400">v0.9.12.12 - 04.06.2026</div>
                             <div>&#8226; FIX: Katastrophenstopp verliert Positionen abhängig von echtem Abstand zu Hintermann</div>
