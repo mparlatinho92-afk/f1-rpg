@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.14</title>
+    <title>F1 RPG v0.9.12.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.14';
+        const VERSION = '0.9.12.15';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6038,8 +6038,10 @@
                     team.carSpeed * 0.25
                 );
                 const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
-                const _qHalfVar = 5 + (100 - _qConsVal) * 0.08; // ±5..13 (mehr Abwechslung an der Pole)
+                const _qHalfVar = 8 + (100 - _qConsVal) * 0.08; // ±8..16 (Minimum erhöht für mehr Pole-Vielfalt)
                 qualiPerformance += (Math.random() - 0.5) * 2 * _qHalfVar;
+                // Sonderrunde: 6% Chance auf außergewöhnliche Runde (perfektes Reifenfenster, ideale Abstimmung)
+                if (Math.random() < 0.06) qualiPerformance += Math.random() * 12;
                 
                 // Simulierte Rundenzeit: Basis von Streckenlänge + Ära, dann Score-Delta
                 const baseTime = getCircuitBaseTime(race.circuitId, year, 'quali');
@@ -14041,7 +14043,10 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.14 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.15 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; FIX: Qualifying-Noise erhöht (min ±8 statt ±5) für realistischere Pole-Verteilung</div>
+                            <div>&#8226; NEU: Sonderrunde im Qualifying – 6% Chance auf außergewöhnliche Runde für jeden Fahrer</div>
+                            <div class="font-bold text-slate-400">v0.9.12.14 - 04.06.2026</div>
                             <div>&#8226; FIX: Pace staerker gewichtet (Race 0.45, Quali 0.60), CarSpeed reduziert</div>
                             <div>&#8226; FIX: Schnellste Runde score-gewichtet, alle Finisher eligible</div>
                             <div class="font-bold text-slate-400">v0.9.12.13 - 04.06.2026</div>
