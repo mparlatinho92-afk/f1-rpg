@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.6</title>
+    <title>F1 RPG v0.9.12.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.6';
+        const VERSION = '0.9.12.7';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5254,7 +5254,7 @@
                 _qualiGrid.results.forEach(r => { if (!r.dnpq && r.position > 0) _gridPosMap[r.driver] = r.position; });
             }
             const _nGrid = Object.keys(_gridPosMap).length || activeDrivers.length;
-            const _GRID_K = 10;
+            const _GRID_K = 22;
 
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -6720,7 +6720,7 @@
                 // Basis-Rundenzeit: Streckenlänge + Ära (circuit-spezifisch kalibriert)
                 const _liveRace = GAME_STATE.races[liveRaceState.raceIndex];
                 const _liveBase = getCircuitBaseTime(_liveRace?.circuitId, GAME_STATE.currentYear, 'race');
-                let lapTime = _liveBase + (Math.random() - 0.5) * (_liveBase * 0.02);
+                let lapTime = _liveBase + (Math.random() - 0.5) * (_liveBase * 0.01);
                 
                 // Fahrer-Skills
                 lapTime *= 1 - (driver.pace / 100) * 0.02; // ±2%
@@ -7220,7 +7220,7 @@
 
             // [SYNC simulateRace] Grid-Gap: Startposition gibt Zeitvorsprung (P1=0s, ~0.3s pro Position)
             const _liveBaseInit = getCircuitBaseTime(race?.circuitId, GAME_STATE.currentYear, 'race') || 90;
-            const _gridGapPerPos = _liveBaseInit * 0.007; // ~0.7% Basis-Rundenzeit pro Gitterplatz (äquivalent zu _GRID_K=10 in simulateRace)
+            const _gridGapPerPos = _liveBaseInit * 0.015; // ~1.5% Basis-Rundenzeit pro Gitterplatz (proportional zu _GRID_K=22)
 
             liveRaceState.positions = activeDrivers.map(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -14018,7 +14018,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.6 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.7 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; BALANCE: Grid-Bonus erhöht (_GRID_K 10→22) – Pole-to-Win jetzt ~36% in simulateRace</div>
+                            <div>&#8226; BALANCE: Live-Ticker Lap-Rauschen halbiert (±0.5%) + Gap 1.5% – Pole-to-Win ~35% (sync)</div>
+                            <div>&#8226; FIX: sim-core lädt jetzt Monolith statt index.html (Daten korrekt inline)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.6 - 04.06.2026</div>
                             <div>&#8226; FIX: Live-Ticker gibt Startposition echten Zeitvorsprung (0.7% pro Gitterplatz, sync mit simulateRace _GRID_K)</div>
                             <div>&#8226; FIX: Qualifying-Varianz erhöht für mehr Pole-Abwechslung (±5–13 statt ±3–10)</div>
                             <div class="font-bold text-slate-400">v0.9.12.5 - 04.06.2026</div>
