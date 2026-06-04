@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.4</title>
+    <title>F1 RPG v0.9.12.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.4';
+        const VERSION = '0.9.12.5';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6724,7 +6724,8 @@
                 
                 // Fahrer-Skills
                 lapTime *= 1 - (driver.pace / 100) * 0.02; // ±2%
-                lapTime *= 1 - ((liveRaceState.isRain ? driver.rain : driver.consistency) / 100) * 0.01;
+                // [SYNC simulateRace] Konstanz: schlechter Tag → konstanter Rundenzeit-Malus (~0.3–0.6% pro Runde)
+                if (!p.isGoodDay) lapTime += _liveBase * (0.003 + Math.random() * 0.003);
                 
                 // Team-Skills
                 lapTime *= 1 - (team.carSpeed / 100) * 0.015; // ±1.5%
@@ -7220,6 +7221,9 @@
             liveRaceState.positions = activeDrivers.map(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
                 const qualiPos = qualiResult ? qualiResult.results.find(q => q.driver === driver.id) : null;
+                // [SYNC simulateRace] Konstanz: Good-Day-Wurf einmal pro Fahrer vor Rennstart
+                const _consValLive = liveRaceState.isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
+                const isGoodDay = Math.random() < (_consValLive / 100);
 
                 return {
                     driver: driver.id,
@@ -7238,7 +7242,8 @@
                     dnfType: null,
                     dnfReason: null,
                     fatal: false,
-                    qualiPos: qualiPos ? qualiPos.position : null
+                    qualiPos: qualiPos ? qualiPos.position : null,
+                    isGoodDay,
                 };
             });
             
@@ -14008,7 +14013,10 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.4 (aktuell) - 03.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.5 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; FIX: Live-Ticker kennt jetzt Good-Day/Bad-Day pro Fahrer (sync mit simulateRace)</div>
+                            <div>&#8226; FIX: Inkonsistenter Warntext am Konstanz-Schieberegler vereinheitlicht</div>
+                            <div class="font-bold text-slate-400">v0.9.12.4 - 03.06.2026</div>
                             <div>&#8226; FIX: Statistiken-Sub-Tab (Fahrer/Teams/GP etc.) bleibt nach Reload erhalten</div>
                             <div>&#8226; FIX: Strecken/GP-Steckbrief aus globalem Search und hist. Ansicht zeigt jetzt Pole+SCR (Redirect auf Game-Versionen)</div>
                             <div>&#8226; FIX: Tote Variable racesSubTab entfernt</div>
@@ -19117,7 +19125,7 @@ Empfohlene Wertebereiche:
                 const warn = document.getElementById('constWarn_' + driverId);
                 if (warn) {
                     const msg = v < 30 ? '⚠️ Unter 30: über 70 % der Rennen mit Performance-Malus!'
-                              : v >= 100 ? '⚠️ Konstanz 100 = Roboter – kein Fahrer ist absolut konsistent.'
+                              : v >= 100 ? '⚠️ Konstanz 100 = Roboter – max. 97 empfohlen.'
                               : '';
                     warn.textContent = msg;
                     warn.style.display = msg ? 'block' : 'none';
