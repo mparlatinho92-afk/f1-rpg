@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.5</title>
+    <title>F1 RPG v0.9.12.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.5';
+        const VERSION = '0.9.12.6';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6015,7 +6015,7 @@
                     team.strategy * 0.1
                 );
                 const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
-                const _qHalfVar = 3 + (100 - _qConsVal) * 0.07; // ±3..10
+                const _qHalfVar = 5 + (100 - _qConsVal) * 0.08; // ±5..13 (mehr Abwechslung an der Pole)
                 qualiPerformance += (Math.random() - 0.5) * 2 * _qHalfVar;
                 
                 // Simulierte Rundenzeit: Basis von Streckenlänge + Ära, dann Score-Delta
@@ -7218,12 +7218,17 @@
             }
             liveRaceState.dnq = _liveQnqIds;
 
+            // [SYNC simulateRace] Grid-Gap: Startposition gibt Zeitvorsprung (P1=0s, ~0.3s pro Position)
+            const _liveBaseInit = getCircuitBaseTime(race?.circuitId, GAME_STATE.currentYear, 'race') || 90;
+            const _gridGapPerPos = _liveBaseInit * 0.007; // ~0.7% Basis-Rundenzeit pro Gitterplatz (äquivalent zu _GRID_K=10 in simulateRace)
+
             liveRaceState.positions = activeDrivers.map(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
                 const qualiPos = qualiResult ? qualiResult.results.find(q => q.driver === driver.id) : null;
                 // [SYNC simulateRace] Konstanz: Good-Day-Wurf einmal pro Fahrer vor Rennstart
                 const _consValLive = liveRaceState.isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
                 const isGoodDay = Math.random() < (_consValLive / 100);
+                const gridPos = qualiPos?.position ?? (activeDrivers.indexOf(driver) + 1);
 
                 return {
                     driver: driver.id,
@@ -7233,7 +7238,7 @@
                     number: driver.number,
                     nation: driver.nation,
                     isGuest: driver.isGuest || false,
-                    totalTime: 0,
+                    totalTime: (gridPos - 1) * _gridGapPerPos,
                     gap: 0,
                     tyreLaps: 0,
                     hasPitted: false,
@@ -14013,7 +14018,10 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.5 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.6 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; FIX: Live-Ticker gibt Startposition echten Zeitvorsprung (0.7% pro Gitterplatz, sync mit simulateRace _GRID_K)</div>
+                            <div>&#8226; FIX: Qualifying-Varianz erhöht für mehr Pole-Abwechslung (±5–13 statt ±3–10)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.5 - 04.06.2026</div>
                             <div>&#8226; FIX: Live-Ticker kennt jetzt Good-Day/Bad-Day pro Fahrer (sync mit simulateRace)</div>
                             <div>&#8226; FIX: Inkonsistenter Warntext am Konstanz-Schieberegler vereinheitlicht</div>
                             <div class="font-bold text-slate-400">v0.9.12.4 - 03.06.2026</div>
