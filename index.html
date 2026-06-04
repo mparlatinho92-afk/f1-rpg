@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.9</title>
+    <title>F1 RPG v0.9.12.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.9';
+        const VERSION = '0.9.12.10';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5245,25 +5245,14 @@
                 }
             }
 
-            // Grid-Bonus: Qualifying-Score-Delta → beeinflusst Rennergebnis proportional zu echtem Zeitabstand
+            // Grid-Bonus: Startposition aus Qualifying → P1 max. Vorteil, letzter Platz keiner
             const _qualiGrid = GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex);
             const _gridPosMap = {};
-            const _qualiScoreMap = {};
             if (_qualiGrid) {
-                _qualiGrid.results.forEach(r => {
-                    if (!r.dnpq && r.position > 0) {
-                        _gridPosMap[r.driver] = r.position;
-                        if (r.score != null) _qualiScoreMap[r.driver] = r.score;
-                    }
-                });
+                _qualiGrid.results.forEach(r => { if (!r.dnpq && r.position > 0) _gridPosMap[r.driver] = r.position; });
             }
             const _nGrid = Object.keys(_gridPosMap).length || activeDrivers.length;
             const _GRID_K = 8;
-            // Score-Range vorberechnen: P1 bekommt vollen Bonus, Lücke zum Voranstehenden zählt
-            const _qualiScores = Object.values(_qualiScoreMap);
-            const _qualiScoreMax = _qualiScores.length ? Math.max(..._qualiScores) : null;
-            const _qualiScoreMin = _qualiScores.length ? Math.min(..._qualiScores) : null;
-            const _qualiScoreRange = (_qualiScoreMax != null && _qualiScoreMin != null) ? (_qualiScoreMax - _qualiScoreMin) : 0;
 
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -5302,17 +5291,9 @@
                     }
                 }
 
-                // Grid-Bonus: proportional zum echten Qualifying-Score-Delta (= simulierter Zeitabstand)
-                // Fallback auf positionsbasiert wenn keine Qualifying-Scores vorhanden
+                // Grid-Bonus: lineare Startposition (gleichmäßige Abstände auf dem Gitter)
                 const _gp = _gridPosMap[driver.id];
-                if (_gp && _nGrid > 1) {
-                    const _qs = _qualiScoreMap[driver.id];
-                    if (_qs != null && _qualiScoreRange > 0) {
-                        performance += (_qs - _qualiScoreMin) / _qualiScoreRange * _GRID_K;
-                    } else {
-                        performance += (_nGrid - _gp) / (_nGrid - 1) * _GRID_K;
-                    }
-                }
+                if (_gp && _nGrid > 1) performance += (_nGrid - _gp) / (_nGrid - 1) * _GRID_K;
 
                 // ═══════════════════════════════════════════════════════════════
                 // DNF-FORMEL v0.9.9.6 – Ära-basiert
@@ -14035,7 +14016,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.9 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.10 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; FIX: Grid-Bonus korrigiert – Startgitter hat immer gleiche Abstände (linear)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.9 - 04.06.2026</div>
                             <div>&#8226; FIX: Rennsieger hing zu stark von Startplatz ab (GRID_K 22→8)</div>
                             <div>&#8226; FIX: Grid-Bonus jetzt proportional zu echtem Qualifying-Zeitabstand</div>
                             <div class="font-bold text-slate-400">v0.9.12.8 - 04.06.2026</div>
