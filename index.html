@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.7</title>
+    <title>F1 RPG v0.9.12.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.7';
+        const VERSION = '0.9.12.8';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6720,7 +6720,7 @@
                 // Basis-Rundenzeit: Streckenlänge + Ära (circuit-spezifisch kalibriert)
                 const _liveRace = GAME_STATE.races[liveRaceState.raceIndex];
                 const _liveBase = getCircuitBaseTime(_liveRace?.circuitId, GAME_STATE.currentYear, 'race');
-                let lapTime = _liveBase + (Math.random() - 0.5) * (_liveBase * 0.01);
+                let lapTime = _liveBase + (Math.random() - 0.5) * (_liveBase * 0.02);
                 
                 // Fahrer-Skills
                 lapTime *= 1 - (driver.pace / 100) * 0.02; // ±2%
@@ -14018,7 +14018,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.7 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.8 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; BALANCE: Live-Ticker Lap-Rauschen wieder auf ±1% – mehr Spannung und Positionswechsel (Ziel: Unterhaltung > stat. Genauigkeit)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.7 - 04.06.2026</div>
                             <div>&#8226; BALANCE: Grid-Bonus erhöht (_GRID_K 10→22) – Pole-to-Win jetzt ~36% in simulateRace</div>
                             <div>&#8226; BALANCE: Live-Ticker Lap-Rauschen halbiert (±0.5%) + Gap 1.5% – Pole-to-Win ~35% (sync)</div>
                             <div>&#8226; FIX: sim-core lädt jetzt Monolith statt index.html (Daten korrekt inline)</div>
