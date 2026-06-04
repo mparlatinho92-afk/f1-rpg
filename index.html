@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.11</title>
+    <title>F1 RPG v0.9.12.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.11';
+        const VERSION = '0.9.12.12';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5382,17 +5382,25 @@
                 return b.score - a.score;
             });
             
-            // Pit-Stopp-Effekt: Strategy → gelegentliche Positionsverschiebung (Undercut / Katastrophenstopp)
+            // Pit-Stopp-Effekt: Strategy → Undercut oder Katastrophenstopp
+            // Höhere Strategy = seltener schlechte Stopps + schützt vor schlimmen Ausreißern
             const _pitFinishers = results.filter(r => !r.dnf);
             for (let _pi = 0; _pi < _pitFinishers.length; _pi++) {
                 const _pt = GAME_STATE.teams.find(t => t.id === _pitFinishers[_pi].team);
                 const _ps = _pt?.strategy ?? 70;
                 if (_ps >= 80 && _pi > 0 && Math.random() < (_ps - 78) * 0.004) {
-                    // Brillanter Undercut: 1 Position nach vorne
-                    [_pitFinishers[_pi - 1], _pitFinishers[_pi]] = [_pitFinishers[_pi], _pitFinishers[_pi - 1]];
-                } else if (_ps <= 60 && _pi < _pitFinishers.length - 1 && Math.random() < (62 - _ps) * 0.004) {
-                    // Katastrophenstopp: 1 Position nach hinten
-                    [_pitFinishers[_pi], _pitFinishers[_pi + 1]] = [_pitFinishers[_pi + 1], _pitFinishers[_pi]];
+                    // Brillanter Undercut: +1 Position
+                    const _e = _pitFinishers.splice(_pi, 1)[0];
+                    _pitFinishers.splice(_pi - 1, 0, _e);
+                } else if (Math.random() < Math.max(0, 85 - _ps) * 0.003) {
+                    // Katastrophenstopp: Zeitverlust in Score-Einheiten → Positionen abhängig von echten Abständen
+                    // Kleine Abstände = viele Positionen verloren; großer Abstand = kaum Verlust
+                    const _pitScoreLoss = Math.random() * Math.max(0, 85 - _ps) * 0.15;
+                    const _e = _pitFinishers.splice(_pi, 1)[0];
+                    const _effScore = _e.score - _pitScoreLoss;
+                    let _insertAt = _pitFinishers.findIndex(r => r.score <= _effScore);
+                    if (_insertAt === -1) _insertAt = _pitFinishers.length;
+                    _pitFinishers.splice(_insertAt, 0, _e);
                 }
             }
             const _pitDnfs = results.filter(r => r.dnf);
@@ -14031,7 +14039,9 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.11 (aktuell) - 04.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.12 (aktuell) - 04.06.2026</div>
+                            <div>&#8226; FIX: Katastrophenstopp verliert Positionen abhängig von echtem Abstand zu Hintermann</div>
+                            <div class="font-bold text-slate-400">v0.9.12.11 - 04.06.2026</div>
                             <div>&#8226; FIX: Strategy entfernt aus Qualifying-Formel (reine Pace)</div>
                             <div>&#8226; FIX: Strategy in simulateRace nur noch als Pit-Stopp-Effekt</div>
                             <div class="font-bold text-slate-400">v0.9.12.10 - 04.06.2026</div>
