@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.18</title>
+    <title>F1 RPG v0.9.12.19</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1592,7 +1592,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.18';
+        const VERSION = '0.9.12.19';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11342,6 +11342,7 @@
                 default: content.innerHTML = renderOverview();
             }
             initLazyImages(content);
+            _initCircuitMapNow();
         }
         
         function renderOverview() {
@@ -13254,6 +13255,12 @@
         let stATSSearch = '';
         let stATSSortBy = 'wins';
         let stATSSortDir = 'desc';
+        let _circuitsMapView = 'list';
+        let _gpsMapView = 'list';
+        let _mapFilterYear = null;
+        window.setCircuitsView = v => { _circuitsMapView = v; renderContent(); };
+        window.setGPsView = v => { _gpsMapView = v; renderContent(); };
+        window.setMapFilterYear = y => { _mapFilterYear = y; renderContent(); };
         
         function renderStATS() {
             const stATS = GAME_STATE.allTimeStATS;
@@ -13749,6 +13756,12 @@
         }
 
         function renderAllCircuits() {
+            const filterYear = _mapFilterYear || GAME_STATE.currentYear;
+            const tabBar = `<div class="flex gap-2 mb-3">
+                <button onclick="setCircuitsView('list')" class="px-3 py-1.5 rounded-lg text-sm transition ${_circuitsMapView === 'list' ? 'btn-primary' : 'bg-secondary'}">☰ Liste</button>
+                <button onclick="setCircuitsView('map')" class="px-3 py-1.5 rounded-lg text-sm transition ${_circuitsMapView === 'map' ? 'btn-primary' : 'bg-secondary'}">🗺️ Weltkarte</button>
+            </div>`;
+            if (_circuitsMapView === 'map') return tabBar + renderCircuitWorldMap('circuits', filterYear);
             const { cIdx } = buildGameCircuitGPIndex();
             const activeCircuits = new Set((GAME_STATE.races || []).map(r => (r.circuit || r.circuitId || '').toLowerCase()));
             const list = Object.entries(cIdx)
@@ -13764,8 +13777,8 @@
                         lastWinner, isActive: activeCircuits.has(cid) };
                 })
                 .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-            if (!list.length) return '<div class="text-tertiary p-6 text-center">Noch keine Rennen gespielt.</div>';
-            return `<div class="space-y-1 mt-2">${list.map(c => `
+            if (!list.length) return tabBar + '<div class="text-tertiary p-6 text-center">Noch keine Rennen gespielt.</div>';
+            return tabBar + `<div class="space-y-1 mt-2">${list.map(c => `
                 <div class="card p-3 rounded-lg cursor-pointer hover:opacity-80 transition flex justify-between items-center"
                      style="${c.isActive ? 'border-left:3px solid var(--accent-main)' : 'border-left:3px solid transparent'}"
                      onclick="openGameCircuitProfile('${c.cid}')">
@@ -13781,6 +13794,12 @@
         }
 
         function renderAllGPs() {
+            const filterYear = _mapFilterYear || GAME_STATE.currentYear;
+            const tabBar = `<div class="flex gap-2 mb-3">
+                <button onclick="setGPsView('list')" class="px-3 py-1.5 rounded-lg text-sm transition ${_gpsMapView === 'list' ? 'btn-primary' : 'bg-secondary'}">☰ Liste</button>
+                <button onclick="setGPsView('map')" class="px-3 py-1.5 rounded-lg text-sm transition ${_gpsMapView === 'map' ? 'btn-primary' : 'bg-secondary'}">🗺️ Weltkarte</button>
+            </div>`;
+            if (_gpsMapView === 'map') return tabBar + renderCircuitWorldMap('gps', filterYear);
             // Flagge gehört zum GP-Namen, nicht zur Strecke (Swiss GP → SUI, auch wenn in Dijon gefahren)
             const _gpFlag = gpKey => getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey] || null);
             const { gpIdx } = buildGameCircuitGPIndex();
@@ -13800,8 +13819,8 @@
                         lastWinner, country, isActive: activeGPs.has(gpKey) };
                 })
                 .sort((a, b) => b.count - a.count || a.gpKey.localeCompare(b.gpKey));
-            if (!list.length) return '<div class="text-tertiary p-6 text-center">Noch keine Rennen gespielt.</div>';
-            return `<div class="space-y-1 mt-2">${list.map(g => {
+            if (!list.length) return tabBar + '<div class="text-tertiary p-6 text-center">Noch keine Rennen gespielt.</div>';
+            return tabBar + `<div class="space-y-1 mt-2">${list.map(g => {
                 const safe = g.gpKey.replace(/'/g,'');
                 const hint = g.circuits > 1 ? ` <span class="text-tertiary text-xs">(${g.circuits} Strecken)</span>` : '';
                 const topHint = g.topWins > 1 ? ` <span class="text-tertiary text-xs ml-3">🏆 ${g.topWinner} (${g.topWins}×)</span>` : '';
@@ -13817,6 +13836,86 @@
                     <span class="text-secondary text-sm">${g.count}×</span>
                 </div>`;
             }).join('')}</div>`;
+        }
+
+        function renderCircuitWorldMap(mode, filterYear) {
+            const yr = filterYear || GAME_STATE.currentYear;
+            const maxY = GAME_STATE.currentYear;
+            const yOpts = [];
+            for (let y = maxY; y >= 1950; y--) yOpts.push(`<option value="${y}"${y === yr ? ' selected' : ''}>${y}</option>`);
+            return `
+                <div class="flex gap-2 items-center mb-2">
+                    <span class="text-sm" style="color:var(--text-secondary)">Saison aktiv:</span>
+                    <select class="rounded px-2 py-1 text-sm" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color)" onchange="setMapFilterYear(+this.value)">${yOpts.join('')}</select>
+                    <span class="text-xs ml-2" style="color:var(--text-tertiary)"><span style="color:#22c55e">●</span> aktiv ${yr} &nbsp; <span style="color:#6b7280">●</span> nicht aktiv</span>
+                </div>
+                <div id="circuit-world-map" data-mode="${mode}" data-year="${yr}" style="height:430px;border-radius:8px;overflow:hidden;border:1px solid var(--border-color)"></div>`;
+        }
+
+        function _initCircuitMapNow() {
+            const container = document.getElementById('circuit-world-map');
+            if (!container || container._leafletDone) return;
+            container._leafletDone = true;
+            const mode = container.dataset.mode || 'circuits';
+            const yr = parseInt(container.dataset.year) || GAME_STATE.currentYear;
+            const { cIdx, gpIdx } = buildGameCircuitGPIndex();
+            const activeCircuits = new Set(Object.keys(cIdx).filter(cid => cIdx[cid].some(e => e.year === yr)));
+            // GP-Key pro Strecke für das Filterjahr → liefert jahresspezifische Flagge (Dijon → SUI im Swiss GP Jahr)
+            const gpKeyForYear = {};
+            for (const [cid, entries] of Object.entries(cIdx)) {
+                const e = entries.find(e => e.year === yr);
+                if (e) gpKeyForYear[cid] = e.gpKey;
+            }
+            const gpByCid = {};
+            for (const [gpKey, entries] of Object.entries(gpIdx)) {
+                for (const e of entries) {
+                    if (!gpByCid[e.cid]) gpByCid[e.cid] = {};
+                    gpByCid[e.cid][gpKey] = (gpByCid[e.cid][gpKey] || 0) + 1;
+                }
+            }
+            function doInit() {
+                if (!container.isConnected) return;
+                const map = L.map(container, { scrollWheelZoom: true }).setView([30, 10], 2);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> © <a href="https://carto.com">CARTO</a>',
+                    subdomains: 'abcd', maxZoom: 19
+                }).addTo(map);
+                for (const [cid, coords] of Object.entries(CIRCUIT_COORDS || {})) {
+                    if (!coords) continue;
+                    const isActive = activeCircuits.has(cid);
+                    const name = getCircuitDisplayName(cid);
+                    // Flag: GP-Land des Filterjahres hat Vorrang vor Streckenland
+                    const gpKey = gpKeyForYear[cid];
+                    const flagIoc = (gpKey ? GP_COUNTRY_MAP[gpKey] : null) || CIRCUIT_COUNTRY[cid] || null;
+                    const flagHtml = (isActive && flagIoc) ? renderFlag(flagIoc, name, yr) : '';
+                    const dotColor = isActive ? '#22c55e' : '#6b7280';
+                    const dotBorder = isActive ? '#16a34a' : '#374151';
+                    const dotSize = isActive ? 10 : 7;
+                    const icon = L.divIcon({
+                        html: `<div style="display:flex;align-items:center;gap:3px;pointer-events:none"><div style="width:${dotSize}px;height:${dotSize}px;border-radius:50%;background:${dotColor};border:1.5px solid ${dotBorder};flex-shrink:0"></div>${flagHtml}</div>`,
+                        className: '', iconSize: null, iconAnchor: [dotSize / 2, dotSize / 2]
+                    });
+                    let popup;
+                    if (mode === 'gps') {
+                        const gps = gpByCid[cid] || {};
+                        const links = Object.entries(gps).sort((a,b)=>b[1]-a[1]).slice(0,6)
+                            .map(([gk])=>`<a href="#" onclick="openGameGPProfile('${gk.replace(/'/g,'')}');return false" style="display:block">${getGPFlagHtml(gk,GP_COUNTRY_MAP[gk]||null)} ${gk}</a>`).join('');
+                        popup = `<b>${flagHtml} ${name}</b>${isActive?` <span style="color:#22c55e">● ${yr}</span>`:''}<br>${links||'—'}`;
+                    } else {
+                        popup = `<b>${flagHtml} ${name}</b>${isActive?` <span style="color:#22c55e">● ${yr}</span>`:''}<br><a href="#" onclick="openGameCircuitProfile('${cid}');return false">Profil öffnen →</a>`;
+                    }
+                    L.marker(coords, { icon }).addTo(map).bindPopup(popup);
+                }
+            }
+            if (window.L) { doInit(); return; }
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = doInit;
+            document.head.appendChild(script);
         }
 
         function renderSettings() {
@@ -14043,7 +14142,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.18 (aktuell) - 07.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.19 (aktuell) - 07.06.2026</div>
+                            <div>&#8226; NEU: Strecken-Tab – Weltkarte mit aktiven/inaktiven Strecken (Leaflet/CARTO)</div>
+                            <div>&#8226; NEU: Grand-Prix-Tab – Weltkarte mit GP-Standorten und Saison-Filter</div>
+                            <div>&#8226; NEU: Flaggen neben aktiven Strecken (jahresspezifisch, z.B. Dijon=SUI im Swiss-GP-Jahr)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.18 - 07.06.2026</div>
                             <div>&#8226; FIX: CLAUDE.md Schema-Tabelle zusammengefuehrt (war doppelt)</div>
                             <div>&#8226; FIX: functions.schema.json Eintragsanzahl aktualisiert (135→183)</div>
                             <div class="font-bold text-slate-400">v0.9.12.17 - 07.06.2026</div>
