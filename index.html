@@ -13859,12 +13859,17 @@
             const mode = container.dataset.mode || 'circuits';
             const yr = parseInt(container.dataset.year) || GAME_STATE.currentYear;
             const { cIdx, gpIdx } = buildGameCircuitGPIndex();
-            const activeCircuits = new Set(Object.keys(cIdx).filter(cid => cIdx[cid].some(e => e.year === yr)));
-            // GP-Key pro Strecke für das Filterjahr → liefert jahresspezifische Flagge (Dijon → SUI im Swiss GP Jahr)
+            // Active = im Kalender des Jahres (alle Rennen, nicht nur abgeschlossene)
             const gpKeyForYear = {};
-            for (const [cid, entries] of Object.entries(cIdx)) {
-                const e = entries.find(e => e.year === yr);
-                if (e) gpKeyForYear[cid] = e.gpKey;
+            let activeCircuits;
+            if (yr === GAME_STATE.currentYear) {
+                activeCircuits = new Set((GAME_STATE.races || []).map(r => (r.circuit || r.circuitId || '').toLowerCase()).filter(Boolean));
+                (GAME_STATE.races || []).forEach(r => { const c = (r.circuit || r.circuitId || '').toLowerCase(); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
+            } else {
+                const histSeason = (GAME_STATE.history || []).find(h => h.year === yr);
+                const sched = histSeason ? (histSeason.races || []) : ((getF1DBYear(yr) || []).filter(r => !r.isIndy));
+                activeCircuits = new Set(sched.map(r => (r.circuit || r.circuitId || '').toLowerCase()).filter(Boolean));
+                sched.forEach(r => { const c = (r.circuit || r.circuitId || '').toLowerCase(); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
             }
             const gpByCid = {};
             for (const [gpKey, entries] of Object.entries(gpIdx)) {
@@ -14143,6 +14148,8 @@
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
                             <div class="font-bold text-green-400">v0.9.12.19 (aktuell) - 07.06.2026</div>
+                            <div>&#8226; FIX: Weltkarte zeigt alle Kalender-Strecken aktiv (nicht nur abgeschlossene Rennen)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.19 - 07.06.2026</div>
                             <div>&#8226; NEU: Strecken-Tab – Weltkarte mit aktiven/inaktiven Strecken (Leaflet/CARTO)</div>
                             <div>&#8226; NEU: Grand-Prix-Tab – Weltkarte mit GP-Standorten und Saison-Filter</div>
                             <div>&#8226; NEU: Flaggen neben aktiven Strecken (jahresspezifisch, z.B. Dijon=SUI im Swiss-GP-Jahr)</div>
