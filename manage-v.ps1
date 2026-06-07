@@ -62,26 +62,51 @@ if ($ChangelogPoints -ne "") {
 
 $Content | Set-Content $NewFileName -Encoding UTF8
 
-# 5. index.html: NUR Versionsnummer aktualisieren (NICHT die inlinierte Version!)
-Start-Sleep -Seconds 2  # kurze Pause fuer Defender/Indexer nach dem grossen Monolith-Write
+# 5. index.html: Versionsnummer + Changelog aktualisieren (NICHT die inlinierte Daten-Version!)
 $IndexContent = Get-Content index.html -Raw -Encoding UTF8
 $IndexContent = $IndexContent -replace "const VERSION = ['\`"][^'\`"]*['\`"];", "const VERSION = '$NewVersion';"
 $IndexContent = $IndexContent -replace '<title>[^<]*</title>', "<title>F1 RPG v$NewVersion</title>"
-for ($attempt = 1; $attempt -le 3; $attempt++) {
+if ($ChangelogPoints -ne "") {
+    $OldPattern2 = '<div class="font-bold text-green-400">(v[\d.]+\s+\(aktuell\)[^<]*)</div>'
+    while ($true) {
+        $m2 = [regex]::Match($IndexContent, $OldPattern2)
+        if (-not $m2.Success) { break }
+        $inner2 = $m2.Groups[1].Value -replace ' \(aktuell\)', ''
+        $replacement2 = '<div class="font-bold text-slate-400">' + $inner2 + '</div>'
+        $IndexContent = $IndexContent.Substring(0, $m2.Index) + $replacement2 + $IndexContent.Substring($m2.Index + $m2.Length)
+    }
+    $IndexContent = $IndexContent -replace '<!-- CHANGELOG -->', $NewEntry
+}
+# Temp-Datei + umbenennen: umgeht Defender/Indexer-Lock auf index.html
+$TempIndex = "index.html.tmp"
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($TempIndex), $IndexContent, $utf8NoBom)
+$indexWritten = $false
+for ($attempt = 1; $attempt -le 10; $attempt++) {
     try {
-        $IndexContent | Set-Content index.html -Encoding UTF8 -ErrorAction Stop
+        Move-Item $TempIndex index.html -Force -ErrorAction Stop
         Write-Host "index.html Version aktualisiert (src-Tags bleiben erhalten)" -ForegroundColor Cyan
+        $indexWritten = $true
         break
     } catch {
-        if ($attempt -eq 3) { Write-Warning "index.html gesperrt - bitte manuell auf v$NewVersion setzen!" }
-        else { Start-Sleep -Milliseconds 500 }
+        if ($attempt -eq 10) {
+            Write-Warning "index.html gesperrt nach 10 Versuchen: $($_.Exception.Message)"
+            Remove-Item $TempIndex -ErrorAction SilentlyContinue
+        } else {
+            Start-Sleep -Milliseconds (500 * $attempt)
+        }
     }
 }
+if (-not $indexWritten) { Write-Warning "index.html manuell auf v$NewVersion setzen!" }
 
-# 6. Alte Datei ins Archiv verschieben
+# 6. Alte Datei ins Archiv verschieben (nur wenn andere Version)
 if (!(Test-Path "archive")) { New-Item -ItemType Directory -Path "archive" | Out-Null }
-Move-Item $OldFile.Name "archive/" -Force
-Write-Host "Archiviert: $($OldFile.Name)" -ForegroundColor Cyan
+if ($OldFile.Name -ne $NewFileName) {
+    Move-Item $OldFile.Name "archive/" -Force
+    Write-Host "Archiviert: $($OldFile.Name)" -ForegroundColor Cyan
+} else {
+    Write-Host "Gleiche Version – kein Archiv-Schritt" -ForegroundColor Yellow
+}
 
 # 6b. Funktions-Index automatisch aktualisieren
 if (Test-Path "update-functions-index.ps1") {
