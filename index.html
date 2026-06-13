@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.22</title>
+    <title>F1 RPG v0.9.12.23</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1608,7 +1608,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.22';
+        const VERSION = '0.9.12.23';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3740,6 +3740,206 @@
             return null;
         }
 
+        // === FEEDER-FAHRER (echte F2/F3-Aufsteiger 2023–2026) ===
+        // Quelle: Wikipedia/Wikidata (driverdb.com blockt Bots). Identität (Name, Nation, Geburtsjahr)
+        // ist REAL; pace/potential werden pro Spielstand zufällig gewürfelt → Hinweis im Steckbrief.
+        // Format: [name, nationEmoji, birthYear, series, lastSeason]. Erscheinen im Reserve-Pool erst
+        // ab 19 J. (Altersfenster), Dedup gegen aktive/bekannte Fahrer (kein Duplikat von F1-Aufsteigern).
+        const FEEDER_DRIVERS = [
+            ["Roy Nissany","🇮🇱",1994,"F2",2023],
+            ["Ralph Boschung","🇨🇭",1997,"F2",2023],
+            ["Jehan Daruvala","🇮🇳",1998,"F2",2023],
+            ["Grégoire Saucy","🇨🇭",1999,"F3",2023],
+            ["Juan Manuel Correa","🇺🇸",1999,"F2",2024],
+            ["Ritomo Miyata","🇯🇵",1999,"F2",2026],
+            ["Arthur Leclerc","🇲🇨",2000,"F2",2023],
+            ["Clément Novalak","🇫🇷",2000,"F2",2023],
+            ["Colton Herta","🇺🇸",2000,"F2",2026],
+            ["Kush Maini","🇮🇳",2000,"F2",2026],
+            ["Nico Varrone","🇦🇷",2000,"F2",2026],
+            ["Richard Verschoor","🇳🇱",2000,"F2",2025],
+            ["Sophia Flörsch","🇩🇪",2000,"F3",2024],
+            ["Ayumu Iwasa","🇯🇵",2001,"F2",2023],
+            ["Brad Benavides","🇺🇸",2001,"F2+F3",2026],
+            ["Enzo Fittipaldi","🇧🇷",2001,"F2",2024],
+            ["Ido Cohen","🇮🇱",2001,"F3",2023],
+            ["Niels Koolen","🇳🇱",2001,"F2",2024],
+            ["Rafael Villagómez","🇲🇽",2001,"F2+F3",2026],
+            ["Victor Martins","🇫🇷",2001,"F2",2025],
+            ["Amaury Cordeel","🇧🇪",2002,"F2",2025],
+            ["Caio Collet","🇧🇷",2002,"F3",2023],
+            ["Francesco Simonazzi","🇮🇹",2002,"F3",2023],
+            ["Frederik Vesti","🇩🇰",2002,"F2",2023],
+            ["Josh Mason","🇬🇧",2002,"F2",2023],
+            ["Kaylen Frederick","🇺🇸",2002,"F3",2023],
+            ["Luke Browning","🇬🇧",2002,"F2+F3",2025],
+            ["Max Esterson","🇺🇸",2002,"F2+F3",2025],
+            ["Tommy Smith","🇦🇺",2002,"F3",2024],
+            ["Alex García","🇲🇽",2003,"F3",2023],
+            ["Dennis Hauger","🇳🇴",2003,"F2",2024],
+            ["Franco Colapinto","🇦🇷",2003,"F2+F3",2024],
+            ["Jack Doohan","🇦🇺",2003,"F2",2023],
+            ["James Hedley","🇬🇧",2003,"F3",2025],
+            ["John Bennett","🇬🇧",2003,"F2",2026],
+            ["Joshua Dürksen","🇵🇾",2003,"F2",2026],
+            ["Matías Zagazeta","🇵🇪",2003,"F3",2025],
+            ["Nicola Marinangeli","🇮🇹",2003,"F3",2025],
+            ["Piotr Wiśnicki","🇵🇱",2003,"F3",2024],
+            ["Théo Pourchaire","🇫🇷",2003,"F2",2023],
+            ["Zane Maloney","🇧🇧",2003,"F2",2024],
+            ["Dino Beganovic","🇸🇪",2004,"F2+F3",2026],
+            ["Gabriel Bortoleto","🇧🇷",2004,"F2+F3",2024],
+            ["Isack Hadjar","🇫🇷",2004,"F2",2024],
+            ["Javier Sagrera","🇪🇸",2004,"F3",2025],
+            ["Jonny Edgar","🇬🇧",2004,"F3",2023],
+            ["José Garfias","🇲🇽",2004,"F3",2026],
+            ["Joshua Dufek","🇨🇭",2004,"F3",2025],
+            ["Leonardo Fornaroli","🇮🇹",2004,"F2+F3",2025],
+            ["Mari Boya","🇪🇸",2004,"F2+F3",2026],
+            ["Michael Shin","🇰🇷",2004,"F3",2026],
+            ["Noel León","🇲🇽",2004,"F2+F3",2026],
+            ["Oliver Goethe","🇩🇪",2004,"F2+F3",2026],
+            ["Paul Aron","🇪🇪",2004,"F2+F3",2024],
+            ["Ricardo Escotto","🇲🇽",2004,"F3",2026],
+            ["Roberto Faria","🇧🇷",2004,"F3",2023],
+            ["Roman Bilinski","🇵🇱",2004,"F2+F3",2026],
+            ["Roman Staněk","🇨🇿",2004,"F2",2025],
+            ["Sami Meguetounif","🇫🇷",2004,"F2+F3",2025],
+            ["Santiago Ramos","🇲🇽",2004,"F3",2025],
+            ["Taylor Barnard","🇬🇧",2004,"F2+F3",2024],
+            ["Tim Tramnitz","🇩🇪",2004,"F3",2025],
+            ["Alex Dunne","🇮🇪",2005,"F2+F3",2026],
+            ["Charlie Wurz","🇦🇹",2005,"F3",2025],
+            ["Christian Mansell","🇦🇺",2005,"F2+F3",2024],
+            ["Cian Shields","🇬🇧",2005,"F2+F3",2026],
+            ["Fernando Barrichello","🇧🇷",2005,"F3",2026],
+            ["Gabriele Minì","🇮🇹",2005,"F2+F3",2026],
+            ["Hugh Barter","🇦🇺",2005,"F3",2023],
+            ["Hunter Yeany","🇺🇸",2005,"F3",2023],
+            ["Jak Crawford","🇺🇸",2005,"F2",2025],
+            ["Jin Nakamura","🇯🇵",2005,"F3",2026],
+            ["Joseph Loake","🇬🇧",2005,"F3",2024],
+            ["Laurens van Hoepen","🇳🇱",2005,"F2+F3",2026],
+            ["Oliver Bearman","🇬🇧",2005,"F2",2024],
+            ["Oliver Gray","🇬🇧",2005,"F3",2023],
+            ["Patrick Heuzenroeder","🇦🇺",2005,"F3",2026],
+            ["Pepe Martí","🇪🇸",2005,"F2+F3",2025],
+            ["Rafael Câmara","🇧🇷",2005,"F2+F3",2026],
+            ["Sebastián Montoya","🇨🇴",2005,"F2+F3",2026],
+            ["Tasanapol Inthraphuvasak","🇹🇭",2005,"F2+F3",2026],
+            ["Zak O'Sullivan","🇬🇧",2005,"F2+F3",2024],
+            ["Alessandro Giusti","🇫🇷",2006,"F3",2026],
+            ["Brando Badoer","🇮🇹",2006,"F3",2026],
+            ["Bruno del Pino","🇪🇸",2006,"F3",2026],
+            ["Callum Voisin","🇬🇧",2006,"F3",2025],
+            ["Christian Ho","🇸🇬",2006,"F3",2026],
+            ["Gerrard Xie","🇨🇳",2006,"F3",2026],
+            ["Hiyu Yamakoshi","🇯🇵",2006,"F3",2026],
+            ["Ivan Domingues","🇵🇹",2006,"F3",2025],
+            ["James Wharton","🇦🇺",2006,"F2+F3",2026],
+            ["Kacper Sztuka","🇵🇱",2006,"F3",2024],
+            ["Martinius Stenshorne","🇳🇴",2006,"F2+F3",2026],
+            ["McKenzy Cresswell","🇬🇧",2006,"F3",2023],
+            ["Nandhavud Bhirombhakdi","🇹🇭",2006,"F3",2026],
+            ["Nikita Bedrin","🇮🇹",2006,"F3",2025],
+            ["Nikola Tsolov","🇧🇬",2006,"F2+F3",2026],
+            ["Tuukka Taponen","🇫🇮",2006,"F3",2026],
+            ["Arvid Lindblad","🇬🇧",2007,"F2+F3",2025],
+            ["Emerson Fittipaldi Jr.","🇧🇷",2007,"F2",2026],
+            ["Fionn McLaughlin","🇮🇪",2007,"F3",2026],
+            ["Jesse Carrasquedo Jr.","🇲🇽",2007,"F3",2025],
+            ["Kanato Le","🇯🇵",2007,"F3",2026],
+            ["Louis Sharp","🇳🇿",2007,"F3",2026],
+            ["Matteo De Palo","🇮🇹",2007,"F3",2026],
+            ["Nicola Lacorte","🇮🇹",2007,"F3",2026],
+            ["Noah Strømsted","🇩🇰",2007,"F3",2026],
+            ["Pedro Clerot","🇧🇷",2007,"F3",2026],
+            ["Taito Kato","🇯🇵",2007,"F3",2026],
+            ["Théophile Naël","🇫🇷",2007,"F3",2026],
+            ["Ugo Ugochukwu","🇺🇸",2007,"F3",2026],
+            ["Yevan David","🇱🇰",2007,"F3",2026],
+            ["Enzo Deligny","🇫🇷",2008,"F3",2026],
+            ["Ernesto Rivera","🇲🇽",2008,"F3",2026],
+            ["Freddie Slater","🇬🇧",2008,"F3",2026],
+            ["Maciej Gładysz","🇵🇱",2008,"F3",2026],
+            ["Mattia Colnaghi","🇦🇷",2008,"F3",2026],
+            ["Nikita Johnson","🇺🇸",2008,"F3",2025],
+        ];
+        // Echte Porträt-URLs (Slug 'feeder-<name>' → volle Bild-URL). Leer = Sketch-Avatar-Fallback.
+        // Befüllbar über die Foto-Wunschliste; offizielle FIA-F2/F3-Headshots bevorzugt.
+        const FEEDER_PHOTO_OVERRIDES = {};
+
+        // Deterministischer Slug (akzentfrei) – zugleich Fahrer-ID und Foto-Override-Key.
+        function feederSlug(name) {
+            return 'feeder-' + name.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+
+        // Baut einen Reserve-Pool-Fahrer aus einem FEEDER_DRIVERS-Eintrag.
+        // pace/potential werden ZUFÄLLIG gewürfelt → pro Spielstand andere Werte (Identität bleibt real).
+        function makeFeederDriver(entry, year) {
+            const [name, nat, birthYear, series, lastSeason] = entry;
+            const potentialPace = 74 + Math.floor(Math.random() * 19);          // 74–92
+            const gap = 9 + Math.floor(Math.random() * 8);                      // 9–16
+            const currentPace = Math.max(60, potentialPace - gap);
+            const con = Math.min(95, Math.max(45, currentPace + (Math.floor(Math.random() * 21) - 12)));
+            return {
+                id: feederSlug(name),
+                histId: null, name, team: null,
+                isIndyOnly: false,
+                nation: nat,
+                number: null,
+                pace: currentPace, currentPace,
+                potentialPace,
+                rain: 62 + Math.floor(Math.random() * 18),
+                consistency: con,
+                experience: 60 + Math.floor(Math.random() * 15),
+                starts: 0,
+                birthYear,
+                debutYear: null, histDebutYear: null, contractEnd: null,
+                status: 'active', isReserve: true,
+                poolGroup: 'F',
+                feederFictionalSkills: true,
+                feederInfo: { series, lastSeason }
+            };
+        }
+
+        // Speist echte F2/F3-Aufsteiger in den Reserve-Pool (Erst-Erscheinen im Altersfenster 19–26,
+        // Dedup gegen aktive/bekannte Fahrer). In initReservePool VOR der proaktiven Generierung
+        // aufgerufen → echte Fahrer werden generierten vorgezogen.
+        let _feederSeasonDataNames = null;   // Cache: alle SEASON_DATA-Fahrernamen (normalisiert)
+        function injectFeederDrivers(year) {
+            if (typeof FEEDER_DRIVERS === 'undefined' || !GAME_STATE.reservePool) return 0;
+            const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+            // SEASON_DATA-Namen einmal sammeln → Feeder, die real in die F1 aufsteigen, NICHT
+            // zusätzlich als Pool-Fahrer einspeisen (verhindert Namens-Duplikate über die Jahre).
+            if (_feederSeasonDataNames === null && typeof SEASON_DATA !== 'undefined') {
+                _feederSeasonDataNames = new Set();
+                for (const y of Object.keys(SEASON_DATA)) {
+                    const sd = SEASON_DATA[y];
+                    if (sd && sd.d) for (const d of sd.d) if (d[1]) _feederSeasonDataNames.add(norm(d[1]));
+                }
+            }
+            const sdNames = _feederSeasonDataNames || new Set();
+            const knownNames = new Set([
+                ...GAME_STATE.drivers.map(d => norm(d.name)).filter(Boolean),
+                ...GAME_STATE.reservePool.map(d => norm(d.name)).filter(Boolean)
+            ]);
+            let added = 0;
+            for (const entry of FEEDER_DRIVERS) {
+                const name = entry[0], birthYear = entry[2];
+                const age = year - birthYear;
+                if (age < 19 || age > 26) continue;                       // Erst-Erscheinungs-Fenster
+                const key = norm(name);
+                if (knownNames.has(key) || sdNames.has(key)) continue;     // aktiv / im Pool / echte F1-Karte
+                GAME_STATE.reservePool.push(makeFeederDriver(entry, year));
+                knownNames.add(key);
+                added++;
+            }
+            if (added) logInfo('RESERVE', `Feeder: ${added} echte F2/F3-Aufsteiger eingespeist (${year})`);
+            return added;
+        }
+
         // Befüllt GAME_STATE.reservePool mit hist. Fahrern ohne Cockpit
         function initReservePool(year) {
             if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
@@ -3852,6 +4052,9 @@
             }
 
             for (const driver of toAdd) { if (driver) GAME_STATE.reservePool.push(driver); }
+
+            // Echte F2/F3-Aufsteiger einspeisen (VOR der proaktiven Generierung → echte bevorzugt)
+            injectFeederDrivers(year);
 
             // ── Post-Template-Auffüllung (Nachwuchs) ──────────────────────────
             // Nach dem SEASON_DATA-Horizont (~letztes Template-Jahr) liefern Gruppe A/B/C
@@ -4040,6 +4243,7 @@
             const cntA = pool.filter(d => d.poolGroup === 'A' || !d.poolGroup).length;
             const cntB = pool.filter(d => d.poolGroup === 'B').length;
             const cntC = pool.filter(d => d.poolGroup === 'C').length;
+            const cntF = pool.filter(d => d.poolGroup === 'F').length;
             const indyPool = pool.filter(d => d.isIndyOnly || (d.nextCockpit?.teamName && ['Watson','Kuzma','Epperly','Kurtis Kraft','KUR','WAT','EPP','KUZ'].includes(d.nextCockpit.teamName)));
             const cntIndy = indyPool.length;
 
@@ -4047,6 +4251,7 @@
             if (_poolGroupFilter === 'A') filtered = pool.filter(d => d.poolGroup === 'A' || !d.poolGroup);
             else if (_poolGroupFilter === 'B') filtered = pool.filter(d => d.poolGroup === 'B');
             else if (_poolGroupFilter === 'C') filtered = pool.filter(d => d.poolGroup === 'C');
+            else if (_poolGroupFilter === 'F') filtered = pool.filter(d => d.poolGroup === 'F');
             else if (_poolGroupFilter === 'indy') filtered = indyPool;
             const sorted = [...filtered].sort((a, b) =>
                 (b.lastRacedYear || 0) - (a.lastRacedYear || 0) || (b.pace || 0) - (a.pace || 0));
@@ -4056,6 +4261,7 @@
                 { key: 'A', label: `Free Agents (${cntA})` },
                 { key: 'B', label: `Testfahrer (${cntB})` },
                 { key: 'C', label: `Kommend (${cntC})` },
+                ...(cntF > 0 ? [{ key: 'F', label: `🏎️ Nachwuchs (${cntF})` }] : []),
                 ...(cntIndy > 0 ? [{ key: 'indy', label: `🇺🇸 Indy (${cntIndy})` }] : []),
             ];
 
@@ -4065,6 +4271,8 @@
                 ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(234,179,8,0.15);color:#EAB308">Testfahrer</span>`
                 : g === 'C'
                 ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(59,130,246,0.15);color:#3B82F6">Kommend</span>`
+                : g === 'F'
+                ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(124,58,237,0.15);color:#A78BFA">Nachwuchs F2/F3</span>`
                 : '';
 
             return `
@@ -14453,7 +14661,13 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.22 (aktuell) - 13.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.23 (aktuell) - 13.06.2026</div>
+                            <div>&#8226; NEU: 118 echte F2/F3-Fahrer (2023-2026) als Nachwuchs im Reserve-Pool - echte Identitaet, fiktive (pro Spielstand gewuerfelte) Fahrwerte</div>
+                            <div>&#8226; NEU: Pool-Tab Nachwuchs + Steckbrief-Hinweis dass Fahrwerte fiktiv sind</div>
+                            <div>&#8226; NEU: Feeder erscheinen ab 19 J. (Altersfenster), Dedup gegen aktive Fahrer + SEASON_DATA (keine F1-Aufsteiger-Duplikate)</div>
+                            <div>&#8226; NEU: echte Fahrer werden generierten vorgezogen</div>
+                            <div>&#8226;  Foto-Override-Haken fuer spaetere Portraets</div>
+                            <div class="font-bold text-slate-400">v0.9.12.22 - 13.06.2026</div>
                             <div>&#8226; FIX: Reserve-Pool versiegte nach ~2025 - Entlassene wurden nicht ersetzt, Teamkollege fuhr allein</div>
                             <div>&#8226; FIX: Mid-Season-Entlassung ohne Ersatzquelle liess Sitz leer - jetzt Notfall-Fahrer generiert</div>
                             <div>&#8226; NEU: fillEmptyTeamSeats garantiert 2 Fahrer/Team (Saisonstart + Laden, repariert Altstaende)</div>
@@ -17015,7 +17229,12 @@ Empfohlene Wertebereiche:
                         📜 Ehemaliger Fahrer (zuletzt aktiv: ${pastSeasonYear})
                     </div>
                 ` : ''}
-                
+                ${driver.feederFictionalSkills ? `
+                    <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #2A2438; border: 1px solid #7C3AED;">
+                        🏎️ Echter ${driver.feederInfo?.series || 'F2/F3'}-Aufsteiger${driver.feederInfo?.lastSeason ? ` (zuletzt ${driver.feederInfo.lastSeason})` : ''} – Name, Nation &amp; Alter sind real, die <b>Fahrwerte (Pace/Potenzial) sind fiktiv</b> und pro Spielstand zufällig.
+                    </div>
+                ` : ''}
+
                 <!-- Header -->
                 <div class="flex gap-4 mb-6">
                     ${renderDriverPhotoHtml(stATSId || driverId)}
@@ -18051,6 +18270,9 @@ Empfohlene Wertebereiche:
         // Bei Namensgleichen (hill, schumacher) greift onerror auf den vollen Slug zurück.
         function getDriverPhotoUrl(driverId) {
             if (!driverId) return null;
+            // Feeder-Fahrer (F2/F3): volle Override-URL falls hinterlegt, sonst Avatar-Fallback
+            if (typeof FEEDER_PHOTO_OVERRIDES !== 'undefined' && FEEDER_PHOTO_OVERRIDES[driverId])
+                return FEEDER_PHOTO_OVERRIDES[driverId];
             // Override-Tabelle zuerst (verifizierte Sonderfälle)
             const override = DRIVER_PHOTO_OVERRIDES[driverId];
             if (override) return `https://www.stATSf1.com/pilotes/photos/${override}.png`;
