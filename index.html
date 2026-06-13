@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.24</title>
+    <title>F1 RPG v0.9.12.25</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -812,7 +812,7 @@
     </div>
 
     <!-- Foto-Status Button -->
-    <button onclick="document.getElementById('foto-modal').style.display='flex'"
+    <button onclick="document.getElementById('foto-modal').style.display='flex'; if(typeof renderFotoStatus==='function')renderFotoStatus();"
             style="position:fixed;top:45px;left:10px;z-index:9997;background:#ffc0cb;border:1px solid #334155;
                    color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;
                    font-family:monospace;font-weight:bold;">📷 Foto-Status</button>
@@ -828,32 +828,12 @@
         </div>
 
         <p style="color:#64748b;margin:0 0 16px 0;font-size:0.75rem;">
-          Alle Fotos werden live von stATSf1.com geladen. Diese Fahrer haben noch kein Bild.<br>
-          Korrekte Dateinamen können als Override in DRIVER_PHOTO_OVERRIDES eingetragen werden.
+          Fotos werden live von stATSf1.com geladen. Blocklist + Feeder unten werden dynamisch
+          aus dem Code erzeugt. Korrekte Dateinamen als Override eintragen (DRIVER_PHOTO_OVERRIDES
+          bzw. FEEDER_PHOTO_OVERRIDES) – betroffene Fahrer verschwinden dann automatisch aus der Liste.
         </p>
 
-        <div style="margin-bottom:16px;">
-          <div style="color:#f59e0b;font-weight:bold;margin-bottom:6px;">⚠️ Echte Konflikte — gleicher Dateiname für 2 Fahrer (beide bekommen SVG)</div>
-          <div style="color:#94a3b8;line-height:1.8;">
-            alan-brown / archie-scott-brown → <span style="color:#f59e0b">browna</span><br>
-            ernesto-brambilla / vittorio-brambilla → <span style="color:#f59e0b">brambill</span><br>
-            hans-stuck / hans-joachim-stuck → <span style="color:#f59e0b">stuckh</span><br>
-            pedro-rodriguez / ricardo-rodriguez → <span style="color:#f59e0b">rodrigue</span><br>
-            walt-brown / warwick-brown → <span style="color:#f59e0b">brownw</span><br>
-            christian-fittipaldi → <span style="color:#f59e0b">fittipa</span> (= Emerson)
-          </div>
-        </div>
-
-        <div style="margin-bottom:16px;">
-          <div style="color:#ef4444;font-weight:bold;margin-bottom:6px;">🚫 Verdächtige — Dateiname passt zu anderem Fahrer</div>
-          <div style="color:#94a3b8;line-height:1.8;">
-            chuck-stevenson → <span style="color:#ef4444">stevens</span> (= Will Stevens)<br>
-            helm-glockler → <span style="color:#ef4444">glock</span> (= Timo Glock)<br>
-            pierluigi-martini → <span style="color:#ef4444">martin</span> (zu generisch)<br>
-            robert-shwartzman → <span style="color:#ef4444">roberts</span> (falscher Name)<br>
-            roger-williamson → <span style="color:#ef4444">williams</span> (= Jonathan Williams)
-          </div>
-        </div>
+        <div id="foto-status-dynamic"></div>
 
         <div>
           <div style="color:#64748b;font-weight:bold;margin-bottom:6px;">❌ NOT FOUND — kein Bild auf stATSf1.com gefunden</div>
@@ -1608,7 +1588,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.24';
+        const VERSION = '0.9.12.25';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -14664,7 +14644,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.24 (aktuell) - 14.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.25 (aktuell) - 14.06.2026</div>
+                            <div>&#8226; FIX: Historische Fahrer mit Namensvettern zeigten falsches statsf1-Foto (Lewis-Evans, Rodriguez-Brueder, Stuck Vater/Sohn, Brambilla, Brown-Paare) - jetzt Avatar</div>
+                            <div>&#8226; FIX: 3 falsche Foto-Overrides entfernt (chuck-stevenson->Will Stevens, helm-glockler->Timo Glock, roger-williamson->Jonathan Williams)</div>
+                            <div>&#8226; NEU: Foto-Status-Modal dynamisch (Blocklist + Feeder ohne Foto aus Code) - bleibt nach Override-Eintraegen automatisch aktuell</div>
+                            <div class="font-bold text-slate-400">v0.9.12.24 - 14.06.2026</div>
                             <div>&#8226; FIX: Feeder-Fahrer (F2/F3) zeigten falsche statsf1-Fotos gleichnamiger Fahrer (O'Sullivan->Danny Sullivan, Montoya->Vater) - jetzt neutraler Avatar statt falschem Bild</div>
                             <div>&#8226; FIX: Feeder-Foto nur bei explizitem Override geladen, kein Nachname-Raten</div>
                             <div>&#8226; NEU: verifizierte Portraets fuer Pourchaire und O'Sullivan (FEEDER_PHOTO_OVERRIDES akzeptiert statsf1-Dateinamen)</div>
@@ -18286,6 +18270,9 @@ Empfohlene Wertebereiche:
                 if (fo) return /^https?:/i.test(fo) ? fo : `https://www.stATSf1.com/pilotes/photos/${fo}.png`;
                 return null;
             }
+            // Blocklist: Nachname-Heuristik lädt falschen Namensvetter / 2 Fahrer kollidieren auf
+            // denselben Dateinamen → immer Avatar (realisiert die Foto-Status-Doku „beide bekommen SVG").
+            if (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined' && DRIVER_PHOTO_BLOCKLIST.has(driverId)) return null;
             // Override-Tabelle zuerst (verifizierte Sonderfälle)
             const override = DRIVER_PHOTO_OVERRIDES[driverId];
             if (override) return `https://www.stATSf1.com/pilotes/photos/${override}.png`;
@@ -18375,7 +18362,6 @@ Empfohlene Wertebereiche:
             'carl-scarborough': 'scarboro',
             'carlos-menditeguy': 'menditeg',
             'carlos-reutemann': 'reuteman',
-            'chuck-stevenson': 'stevens',
             'clemente-biondetti': 'biondett',
             'conny-andersson': 'andersso',
             'corrado-fabi': 'fabic',
@@ -18414,7 +18400,6 @@ Empfohlene Wertebereiche:
             'gus-hutchison': 'hutchiso',
             'harry-blanchard': 'blanchar',
             'heikki-kovalainen': 'kovalain',
-            'helm-glockler': 'glock',
             'helmut-niedermayr': 'niederma',
             'henri-pescarolo': 'pescarol',
             'henry-taylor': 'taylorh',
@@ -18481,7 +18466,6 @@ Empfohlene Wertebereiche:
             'robert-la-caze': 'lacaze',
             'roberto-bussinello': 'bussinel',
             'roelof-wunderink': 'wunderin',
-            'roger-williamson': 'williams',
             'roland-ratzenberger': 'ratzenbe',
             'rolf-stommelen': 'stommele',
             'roy-salvadori': 'salvado',
@@ -18504,11 +18488,33 @@ Empfohlene Wertebereiche:
             'zsolt-baumgartner': 'baumgart',
         };
 
+        // Foto-Blocklist: Fahrer, deren Nachname-Heuristik ein FALSCHES statsf1-Foto eines
+        // Namensvetters lädt, oder bei denen 2 Fahrer auf denselben Dateinamen kollidieren.
+        // → immer Sketch-Avatar statt falschem Bild (Quelle: Foto-Status-Wunschliste).
+        // Wenn ein verifizierter, eindeutiger Dateiname existiert, stattdessen in
+        // DRIVER_PHOTO_OVERRIDES eintragen und hier entfernen.
+        const DRIVER_PHOTO_BLOCKLIST = new Set([
+            // 🚫 Verdächtige – Dateiname gehört einem anderen Fahrer
+            'stuart-lewis-evans',   // evans = anderer Evans
+            'chuck-stevenson',      // stevens = Will Stevens (war falscher Override)
+            'helm-glockler',        // glock = Timo Glock (war falscher Override)
+            'roger-williamson',     // williams = Jonathan Williams (war falscher Override)
+            'pierluigi-martini',    // martini/martin zu generisch
+            'robert-shwartzman',    // falscher Name
+            // ⚠️ Echte Konflikte – 2 Fahrer, ein Dateiname (beide → Avatar)
+            'alan-brown', 'archie-scott-brown', 'walt-brown', 'warwick-brown',
+            'ernesto-brambilla', 'vittorio-brambilla',
+            'hans-stuck', 'hans-joachim-stuck',
+            'pedro-rodriguez', 'ricardo-rodriguez',
+        ]);
+
         // Fallback: prüfe Override-Tabelle, dann voller Slug
         function getDriverPhotoUrlFallback(driverId) {
             if (!driverId) return null;
             // Feeder-Fahrer: kein geratener Slug-Fallback (sonst falsche Namensvetter)
             if (typeof driverId === 'string' && driverId.startsWith('feeder-')) return null;
+            // Blocklist (Namensvetter-/Kollisionsfälle) → kein Slug-Fallback, nur Avatar
+            if (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined' && DRIVER_PHOTO_BLOCKLIST.has(driverId)) return null;
             // Override-Tabelle hat Vorrang
             if (DRIVER_PHOTO_OVERRIDES[driverId]) return null; // bereits in getDriverPhotoUrl behandelt
             // Letzter Fallback: voller Slug (selten nötig)
@@ -18571,6 +18577,30 @@ Empfohlene Wertebereiche:
                 <div class="profile-photo-fallback">${getDriverAvatarSvg()}</div>
             </div>`;
         }
+
+        // Foto-Status-Modal: Blocklist + Feeder-ohne-Foto dynamisch aus dem Code rendern,
+        // damit die Liste nach Override-Einträgen automatisch aktuell bleibt (NOT-FOUND ist statisch).
+        window.renderFotoStatus = function() {
+            const el = document.getElementById('foto-status-dynamic');
+            if (!el) return;
+            const bl = (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined') ? [...DRIVER_PHOTO_BLOCKLIST].sort() : [];
+            let feeder = [];
+            if (typeof FEEDER_DRIVERS !== 'undefined' && typeof feederSlug === 'function') {
+                feeder = FEEDER_DRIVERS
+                    .map(e => ({ name: e[0], slug: feederSlug(e[0]) }))
+                    .filter(d => !(typeof FEEDER_PHOTO_OVERRIDES !== 'undefined' && FEEDER_PHOTO_OVERRIDES[d.slug]))
+                    .sort((a, b) => a.name.localeCompare(b.name));
+            }
+            el.innerHTML = `
+                <div style="margin-bottom:16px;">
+                  <div style="color:#a78bfa;font-weight:bold;margin-bottom:6px;">🚫 Blocklist (${bl.length}) — Namensvetter/Kollision → Avatar statt falschem Foto</div>
+                  <div style="color:#94a3b8;line-height:1.7;columns:2;column-gap:16px;">${bl.map(s => s + '<br>').join('')}</div>
+                </div>
+                <div style="margin-bottom:16px;">
+                  <div style="color:#a78bfa;font-weight:bold;margin-bottom:6px;">🏎️ Feeder F2/F3 ohne Foto (${feeder.length}) — Avatar; Override via FEEDER_PHOTO_OVERRIDES</div>
+                  <div style="color:#94a3b8;line-height:1.6;columns:2;column-gap:16px;">${feeder.map(d => `${d.name} <span style="color:#475569">${d.slug.replace(/^feeder-/, '')}</span><br>`).join('')}</div>
+                </div>`;
+        };
 
         // === TEAM-LOGO ===
         // Generisches Logo mit Teamfarbe – wird durch echte Logopedia-URLs ersetzt sobald verfügbar
