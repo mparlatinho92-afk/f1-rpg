@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.21</title>
+    <title>F1 RPG v0.9.12.22</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1608,7 +1608,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.21';
+        const VERSION = '0.9.12.22';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3852,7 +3852,35 @@
             }
 
             for (const driver of toAdd) { if (driver) GAME_STATE.reservePool.push(driver); }
-            logInfo('RESERVE', `Reserve-Pool: ${GAME_STATE.reservePool.length} Fahrer (${toAdd.length} neu, A/B/C)`);
+
+            // ── Post-Template-Auffüllung (Nachwuchs) ──────────────────────────
+            // Nach dem SEASON_DATA-Horizont (~letztes Template-Jahr) liefern Gruppe A/B/C
+            // nichts mehr → der Pool versiegt über die Jahre. Mangels echter F2/F3-Daten
+            // mit generierten Nachwuchsfahrern (junge Rookies) auf ein Mindestniveau auffüllen,
+            // damit Transfermarkt + Entlassungen/Rücktritte langfristig funktionieren.
+            let _tmplYears = 0;
+            for (let y = year - 2; y <= year + 5; y++) {
+                if (SEASON_DATA[String(y)] || SEASON_DATA[y]) { _tmplYears++; }
+            }
+            const MIN_POOL = 12;
+            let _genCount = 0;
+            if (_tmplYears === 0) {
+                while (GAME_STATE.reservePool.length < MIN_POOL) {
+                    // Überwiegend junge Rookies (Feeder-Aufsteiger), gelegentlich erfahren
+                    const gd = generateDriver(null, year, Math.random() < 0.8);
+                    if (!gd) break;
+                    gd.team = null;
+                    gd.status = 'active';
+                    gd.isReserve = true;
+                    gd.poolGroup = 'A';   // als Free Agent verfügbar
+                    gd.generated = true;  // fiktiver Nachwuchs (kein hist. Vorbild)
+                    gd.histId = null;
+                    gd.contractEnd = null;
+                    GAME_STATE.reservePool.push(gd);
+                    _genCount++;
+                }
+            }
+            logInfo('RESERVE', `Reserve-Pool: ${GAME_STATE.reservePool.length} Fahrer (${toAdd.length} neu A/B/C${_genCount ? `, ${_genCount} Nachwuchs generiert` : ''})`);
         }
 
         function sanitizeReservePool(year) {
@@ -8168,10 +8196,91 @@
                     _dismissalEntry.replacementName = nd.name;
                     _dismissalEntry.replacementId = nd.id;
                     logInfo('TRANSFER', `➡️ ${nd.name} (Pool) → ${oldTeam?.name} (ersetzt ${driver.name})`);
+                } else if (oldTeam) {
+                    // Kein Free Agent, kein Pool-Kandidat (z.B. Pool nach SEASON_DATA-Horizont
+                    // erschöpft) → fiktiven Fahrer generieren statt den Sitz leer zu lassen.
+                    const nd = generateDriver(oldTeam.id, currentYear, Math.random() < 0.5);
+                    nd.contractEnd = currentYear;
+                    nd.replacedDriver = driver.id;
+                    nd.replacedDriverName = driver.name;
+                    nd.replacedInYear = currentYear;
+                    GAME_STATE.drivers.push(nd);
+                    GAME_STATE.driverStandings[nd.id] = {
+                        name: nd.name, team: nd.team,
+                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
+                    };
+                    _dismissalEntry.replacementName = nd.name;
+                    _dismissalEntry.replacementId = nd.id;
+                    logInfo('TRANSFER', `➡️ ${nd.name} (neu) → ${oldTeam.name} (ersetzt ${driver.name})`);
                 }
 
                 GAME_STATE.seasonRetirements.push(_dismissalEntry);
             });
+        }
+
+        // Garantiert, dass jedes Team 2 aktive Fahrer hat. Füllt leere Sitze in der Reihenfolge
+        // Free Agent → Reserve-Pool → generierter Fahrer (letzter Ausweg). Greift Altlasten auf
+        // (z.B. Teamkollege fährt allein, weil ein entlassener Fahrer nie ersetzt wurde) und wird
+        // bei jedem Saisonstart sowie beim Laden aufgerufen. Gibt die Anzahl gefüllter Sitze zurück.
+        function fillEmptyTeamSeats(year) {
+            if (!GAME_STATE.aiSimulation) return 0;
+            let filled = 0;
+            (GAME_STATE.teams || []).forEach(t => {
+                const teamIsIndy = isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId);
+                const _compat = d => {
+                    const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id);
+                    return teamIsIndy ? isIndy : !isIndy;
+                };
+                const seatCount = () => GAME_STATE.drivers.filter(d =>
+                    d.team === t.id && (!d.status || d.status === 'active')).length;
+
+                // Nur tatsächlich fahrende Teams (≥1 Fahrer) auffüllen – kein Wiederbeleben
+                // ausgetretener 0-Fahrer-Teams.
+                if (seatCount() < 1) return;
+
+                let guard = 0;
+                while (seatCount() < 2 && guard++ < 4) {
+                    // 1. Free Agent (aktiver Fahrer ohne Team) – echte Ex-Fahrer zuerst
+                    const fa = GAME_STATE.drivers.find(d =>
+                        !d.team && (!d.status || d.status === 'active') &&
+                        d._dismissedFromTeam !== t.id && _compat(d));
+                    if (fa) {
+                        fa.team = t.id;
+                        fa.contractEnd = fa.contractEnd || (year + 1);
+                        if (!GAME_STATE.driverStandings[fa.id])
+                            GAME_STATE.driverStandings[fa.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0 };
+                        GAME_STATE.driverStandings[fa.id].team = t.id;
+                        logInfo('TRANSFER', `➡️ ${fa.name} (FA) → ${t.name} (Sitz aufgefüllt)`);
+                        filled++;
+                        continue;
+                    }
+                    // 2. Reserve-Pool (echte Ex-Fahrer / Nachwuchs)
+                    const cand = (GAME_STATE.reservePool || []).find(p =>
+                        !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p));
+                    if (cand) {
+                        GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== cand);
+                        const nd = { ...cand, team: t.id, isReserve: false, contractEnd: year + 1 };
+                        if (nd.histId && typeof PACE_RATINGS !== 'undefined') {
+                            const pr = PACE_RATINGS[nd.histId]?.[String(year)] ?? null;
+                            if (pr) { nd.pace = pr[0]; nd.currentPace = pr[0]; nd.potentialPace = pr[1]; }
+                        }
+                        GAME_STATE.drivers.push(nd);
+                        GAME_STATE.driverStandings[nd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
+                        logInfo('TRANSFER', `➡️ ${nd.name} (Pool) → ${t.name} (Sitz aufgefüllt)`);
+                        filled++;
+                        continue;
+                    }
+                    // 3. Letzter Ausweg: generierter Fahrer
+                    const gd = generateDriver(t.id, year, Math.random() < 0.7);
+                    gd.contractEnd = year + 1;
+                    GAME_STATE.drivers.push(gd);
+                    GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
+                    logInfo('TRANSFER', `➡️ ${gd.name} (neu) → ${t.name} (Sitz aufgefüllt)`);
+                    filled++;
+                }
+            });
+            if (filled > 0) logInfo('GRID', `${filled} leere(n) Sitz(e) aufgefüllt (${year})`);
+            return filled;
         }
 
         // === PERFORMANCE-BEWERTUNG ===
@@ -9852,6 +9961,7 @@
             initReservePool(newYear);
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
+            fillEmptyTeamSeats(newYear);   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
             saveGame();
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
 
@@ -14343,7 +14453,12 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.21 (aktuell) - 13.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.22 (aktuell) - 13.06.2026</div>
+                            <div>&#8226; FIX: Reserve-Pool versiegte nach ~2025 - Entlassene wurden nicht ersetzt, Teamkollege fuhr allein</div>
+                            <div>&#8226; FIX: Mid-Season-Entlassung ohne Ersatzquelle liess Sitz leer - jetzt Notfall-Fahrer generiert</div>
+                            <div>&#8226; NEU: fillEmptyTeamSeats garantiert 2 Fahrer/Team (Saisonstart + Laden, repariert Altstaende)</div>
+                            <div>&#8226; NEU: Pool wird nach SEASON_DATA-Horizont mit Nachwuchsfahrern aufgefuellt</div>
+                            <div class="font-bold text-slate-400">v0.9.12.21 - 13.06.2026</div>
                             <div>&#8226; FIX: Such-Trefferliste wird nicht mehr vom Foto-Status-Button verdeckt</div>
                             <div>&#8226; NEU: Globale Suche umlaut-/akzent-insensitiv (Huelkenberg, Raeikkoenen, Perez)</div>
                             <div>&#8226; NEU: Tastatur-Navigation in der Suche (Pfeiltasten + Enter)</div>
@@ -20552,6 +20667,7 @@ Empfohlene Wertebereiche:
                 initReservePool(GAME_STATE.currentYear);
                 sanitizeReservePool(GAME_STATE.currentYear);
                 sanitizeDriverDuplicates(GAME_STATE.currentYear);
+                fillEmptyTeamSeats(GAME_STATE.currentYear);   // repariert Altstände: allein fahrende Teamkollegen nachbesetzen
             }
             
             // Theme aus GAME_STATE anwenden
