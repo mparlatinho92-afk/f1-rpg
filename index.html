@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.20</title>
+    <title>F1 RPG v0.9.12.21</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -813,7 +813,7 @@
 
     <!-- Foto-Status Button -->
     <button onclick="document.getElementById('foto-modal').style.display='flex'"
-            style="position:fixed;top:45px;left:10px;z-index:9999;background:#ffc0cb;border:1px solid #334155;
+            style="position:fixed;top:45px;left:10px;z-index:9997;background:#ffc0cb;border:1px solid #334155;
                    color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;
                    font-family:monospace;font-weight:bold;">📷 Foto-Status</button>
 
@@ -1608,7 +1608,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.20';
+        const VERSION = '0.9.12.21';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -13736,23 +13736,26 @@
         window.stATSGoToPage = function(p) { stATSPage = p; renderContent(); };
 
         // === GLOBALES SUCHFELD ===
+        let _gsResults = [];   // aktuelle Trefferliste (für Tastatur-Navigation)
+        let _gsActive = -1;    // Index des markierten Treffers
         window.globalSearchInput = function(value) {
             const dd = document.getElementById('global-search-dd');
             if (!dd) return;
             if (!value || value.length < 2) { dd.style.display = 'none'; return; }
             const q = value.toLowerCase();
+            const qn = _nrm(value);   // umlaut-/akzent-insensitiv wie Strecken-Suche → behebt lückenhafte Fahrer/Team-Treffer
             const results = [];
             const seen = new Set();
 
             const addDriver = (id, name, sub) => {
                 if (seen.has('d:'+id)) return;
                 seen.add('d:'+id);
-                if (name.toLowerCase().includes(q)) results.push({ type:'driver', id, name, sub });
+                if (_nrm(name).includes(qn)) results.push({ type:'driver', id, name, sub });
             };
             const addTeam = (id, name, sub) => {
                 if (seen.has('t:'+id)) return;
                 seen.add('t:'+id);
-                if (name.toLowerCase().includes(q)) results.push({ type:'team', id, name, sub });
+                if (_nrm(name).includes(qn)) results.push({ type:'team', id, name, sub });
             };
 
             // Aktive Fahrer + Teams zuerst
@@ -13784,21 +13787,45 @@
                     if (!seen.has(key)) { seen.add(key); results.push({ type:'gp', id:gpKey, name:gpKey, sub:`Grand Prix · ${_gpIdx[gpKey].length} Austragungen` }); }
                 }
             }
-            if (results.length === 0) { dd.style.display = 'none'; return; }
-            dd.innerHTML = results.slice(0, 12).map(r => `
-                <div onclick="globalSearchSelect('${r.type}','${r.id.replace(/'/g,'')}')"
-                     style="padding:7px 12px;cursor:pointer;border-bottom:1px solid #1e293b;transition:background 0.1s"
-                     onmouseenter="this.style.background='#1e293b'" onmouseleave="this.style.background=''">
+            _gsResults = results.slice(0, 12);
+            _gsActive = _gsResults.length ? 0 : -1;   // ersten Treffer vormarkieren → Enter öffnet sofort
+            _gsRenderDD();
+        };
+
+        // Dropdown rendern + markierten Treffer in Sicht scrollen (zentral für Maus & Tastatur)
+        function _gsRenderDD() {
+            const dd = document.getElementById('global-search-dd');
+            if (!dd) return;
+            if (!_gsResults.length) { dd.style.display = 'none'; return; }
+            dd.innerHTML = _gsResults.map((r, i) => `
+                <div onclick="globalSearchPick(${i})" onmouseenter="globalSearchHover(${i})"
+                     style="padding:7px 12px;cursor:pointer;border-bottom:1px solid #1e293b;transition:background 0.1s;background:${i===_gsActive?'#1e293b':'transparent'}">
                     <div style="color:#e2e8f0;font-size:12px">${r.type==='driver'?'👤':r.type==='circuit'?'🏟️':r.type==='gp'?'🏁':'🏎️'} ${r.name}</div>
                     <div style="color:#64748b;font-size:10px">${r.sub}</div>
                 </div>`).join('');
             dd.style.display = 'block';
+            const act = dd.children[_gsActive];
+            if (act) act.scrollIntoView({ block: 'nearest' });
+        }
+
+        // Maus-Hover synchronisiert die Markierung (ohne vollen Rebuild)
+        window.globalSearchHover = function(i) {
+            _gsActive = i;
+            const dd = document.getElementById('global-search-dd');
+            if (dd) Array.from(dd.children).forEach((c, idx) => { c.style.background = idx === i ? '#1e293b' : 'transparent'; });
+        };
+
+        // Auswahl per Index (robust gegen Sonderzeichen in der ID – kein String-Inlining mehr)
+        window.globalSearchPick = function(i) {
+            const r = _gsResults[i];
+            if (r) globalSearchSelect(r.type, r.id);
         };
 
         window.globalSearchSelect = function(type, id) {
             const inp = document.getElementById('global-search-input');
             const dd = document.getElementById('global-search-dd');
             if (inp) inp.value = '';
+            _gsResults = []; _gsActive = -1;
             if (dd) dd.style.display = 'none';
             if (type === 'driver') openDriverProfile(id);
             else if (type === 'circuit') openCircuitProfile(id);
@@ -13807,9 +13834,25 @@
         };
 
         window.globalSearchKeydown = function(e) {
+            const dd = document.getElementById('global-search-dd');
             if (e.key === 'Escape') {
                 document.getElementById('global-search-input').value = '';
+                _gsResults = []; _gsActive = -1;
                 document.getElementById('global-search-dd').style.display = 'none';
+                return;
+            }
+            if (!_gsResults.length || !dd || dd.style.display === 'none') return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                _gsActive = (_gsActive + 1) % _gsResults.length;
+                _gsRenderDD();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                _gsActive = (_gsActive - 1 + _gsResults.length) % _gsResults.length;
+                _gsRenderDD();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (_gsActive >= 0) globalSearchPick(_gsActive);
             }
         };
 
@@ -14300,7 +14343,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.20 (aktuell) - 13.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.21 (aktuell) - 13.06.2026</div>
+                            <div>&#8226; FIX: Such-Trefferliste wird nicht mehr vom Foto-Status-Button verdeckt</div>
+                            <div>&#8226; NEU: Globale Suche umlaut-/akzent-insensitiv (Huelkenberg, Raeikkoenen, Perez)</div>
+                            <div>&#8226; NEU: Tastatur-Navigation in der Suche (Pfeiltasten + Enter)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.20 - 13.06.2026</div>
                             <div>&#8226; NEU: Mega-Sim simuliert bis zu 500 Saisons am Stueck mit Fortschrittsbalken und Abbrechen</div>
                             <div>&#8226; NEU: fastMode + Auto-Heal nach jedem Saisonuebergang, kein Tab-Freeze</div>
                             <div>&#8226; TECH: Renn-Loop und Saison-Ende-Snapshot in wiederverwendbare Funktionen extrahiert</div>
