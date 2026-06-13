@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.19</title>
+    <title>F1 RPG v0.9.12.20</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -969,6 +969,9 @@
                 <button onclick="simulateFullSeason()" class="px-6 py-3 rounded-lg font-bold transition text-lg" style="background-color: var(--accent-blue); color: white;">
                     ⚡ Komplette Saison
                 </button>
+                <button onclick="megaSim()" class="px-6 py-3 rounded-lg font-bold transition text-lg" style="background-color: var(--accent-main); color: white;" title="Mehrere Saisons am Stück simulieren (1–500)">
+                    ⏩ Mega-Sim
+                </button>
             </div>
         </div>
 
@@ -1215,6 +1218,19 @@
             </div>
         </div>
         
+        <!-- Mega-Sim Fortschritts-Overlay -->
+        <div id="megasim-overlay" style="display:none;position:fixed;inset:0;z-index:9999;
+             background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;gap:14px">
+            <div style="color:var(--text-primary,#fff);font-size:18px;font-weight:bold" id="megasim-counter">0 / 0 Saisons</div>
+            <div style="width:60%;max-width:420px;height:14px;background:rgba(255,255,255,.15);border-radius:7px;overflow:hidden">
+                <div id="megasim-bar" style="height:100%;width:0%;background:var(--accent-main,#e10600);transition:width .15s"></div>
+            </div>
+            <div style="color:var(--text-muted,#aaa);font-size:13px" id="megasim-season">–</div>
+            <button onclick="window._megaSimCancel()" class="btn-secondary" style="margin-top:8px;padding:8px 20px;border-radius:6px;cursor:pointer">
+                Abbrechen
+            </button>
+        </div>
+
         <!-- Race Mode Selection Modal (v0.8.0) -->
         <div id="raceModeModal" class="modal-overlay" style="display: none;">
             <div class="modal-content" style="max-width: 500px;">
@@ -1592,7 +1608,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.19';
+        const VERSION = '0.9.12.20';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -1690,7 +1706,8 @@
             debugLogEntries.unshift(entry);
             if (debugLogEntries.length > MAX_LOG_ENTRIES) debugLogEntries.pop();
             
-            const container = document.getElementById('debug-log-entries');
+            // fastMode (Mega-Sim): Eintrag wird gespeichert, aber teurer DOM-Rebuild übersprungen
+            const container = window._megaSimFast ? null : document.getElementById('debug-log-entries');
             if (container) {
                 const typeClass = `log-${type}`;
                 container.innerHTML = debugLogEntries.map(e => `
@@ -1701,8 +1718,8 @@
                     </div>
                 `).join('');
             }
-            
-            const countEl = document.getElementById('debug-log-count');
+
+            const countEl = window._megaSimFast ? null : document.getElementById('debug-log-count');
             if (countEl) countEl.textContent = `(${debugLogEntries.length} Einträge)`;
             
             console.log(`[${category}] ${message}`);
@@ -7471,9 +7488,10 @@
             GAME_STATE._seasonEndEventsProcessed = true;
         }
 
-        function showSeasonEndModal() {
-            // WICHTIG: Snapshot der Fahrer BEVOR Karriereenden und Teamwechsel
-            // Mit Zufriedenheit am echten Saisonende (vor Wechseln!)
+        // Snapshot der Fahrer/Teams BEVOR Karriereenden & Teamwechsel + processSeasonEndEvents().
+        // Aus showSeasonEndModal() extrahiert, damit der headless Mega-Sim-Pfad (runSeasonHeadless)
+        // exakt denselben Saison-Ende-Snapshot nutzt – keine Duplizierung.
+        function prepareSeasonEndSnapshot() {
             // v0.6.2: Speichere seasonScore UND aktualisiere careerScores
             const driversATSeasonEnd = GAME_STATE.drivers.map(d => {
                 const driverCopy = JSON.parse(JSON.stringify(d));
@@ -7483,10 +7501,10 @@
                         // Aktueller Saison-Score
                         driverCopy.seasonScore = eval_.score;
                         driverCopy.satisfaction = eval_.score; // Kompatibilität
-                        
+
                         // Karriere-Scores Array initialisieren falls nicht vorhanden
                         if (!driverCopy.careerScores) driverCopy.careerScores = [];
-                        
+
                         // Aktuellen Score zur Karriere hinzufügen
                         driverCopy.careerScores.push({
                             year: GAME_STATE.currentYear,
@@ -7495,7 +7513,7 @@
                             points: eval_.points,
                             wins: eval_.wins
                         });
-                        
+
                         // Karriere-Durchschnitt berechnen (zeitgewichtet, v0.8.6)
                         driverCopy.careerAverageScore = weightedCareerAverage(driverCopy.careerScores);
                     }
@@ -7503,16 +7521,21 @@
                 return driverCopy;
             });
             const teamsATSeasonEnd = JSON.parse(JSON.stringify(GAME_STATE.teams));
-            
+
             // Speichere Snapshot für startNewSeason()
             GAME_STATE._seasonEndSnapshot = {
                 drivers: driversATSeasonEnd,
                 teams: teamsATSeasonEnd
             };
-            
-            // JETZT Karriereenden und Teamwechsel berechnen (für Anzeige im Modal)
+
+            // JETZT Karriereenden und Teamwechsel berechnen
             processSeasonEndEvents();
-            
+        }
+
+        function showSeasonEndModal() {
+            // WICHTIG: Snapshot + Karriereenden/Teamwechsel (für Anzeige im Modal)
+            prepareSeasonEndSnapshot();
+
             const champion = Object.entries(GAME_STATE.driverStandings)
                 .map(([id, s]) => ({ id, ...s }))
                 .sort((a, b) => b.points - a.points)[0];
@@ -10572,9 +10595,10 @@
         // === UI FUNKTIONEN ===
         // simulateNextRace ist oben definiert (mit Qualifying)
         
-        window.simulateFullSeason = function() {
-            if (!confirm('⚡ Komplette Saison simulieren?')) return;
-            
+        // Simuliert alle verbleibenden Rennen der aktuellen Saison (Training → Quali → Rennen).
+        // Von simulateFullSeason() UND dem headless Mega-Sim (runSeasonHeadless) genutzt – ein Loop,
+        // keine [SYNC]-Duplikate.
+        function simulateSeasonRaces() {
             while (GAME_STATE.currentRace < GAME_STATE.races.length) {
                 const _fsRace = GAME_STATE.races[GAME_STATE.currentRace];
                 const _fsWetChance = getRaceWetChance(_fsRace?.raceId, _fsRace?.circuitId || _fsRace?.circuit, _fsRace?.month, _fsRace?.country);
@@ -10599,11 +10623,140 @@
                 }
                 applyRaceResults(result);
             }
+        }
+
+        window.simulateFullSeason = function() {
+            if (!confirm('⚡ Komplette Saison simulieren?')) return;
+
+            simulateSeasonRaces();
 
             // showSeasonEndModal() nimmt den Snapshot VOR processSeasonEndEvents() (korrekte Reihenfolge
             // wie im interaktiven Pfad) → History speichert korrektes Team aus der Saison, nicht neues Team.
             renderAll();
             showSeasonEndModal();
+        };
+
+        // === MULTI-SEASON-SIMULATION (Mega-Sim) ============================
+        // Simuliert N Saisons am Stück, ohne UI-Freeze: Batch-Chunking via setTimeout,
+        // fastMode (kein Log-/Render-Overhead), Abbruch per Flag, Auto-Heal nach jedem
+        // Saisonübergang, 1× saveGame am Ende. Logik identisch zu allen anderen Sim-Pfaden.
+
+        // Integritätsprüfung der frisch gebauten Saison. Gibt Problem-Strings zurück (leer = ok).
+        function megaSimSanityCheck() {
+            const issues = [];
+            const drivers = GAME_STATE.drivers || [];
+            const teams = GAME_STATE.teams || [];
+            const teamIds = new Set(teams.map(t => t.id));
+            // Fahrer mit gesetztem, aber ungültigem Team = echte Korruption (null-Team = Reserve, ok)
+            const dangling = drivers.filter(d => d.team && !teamIds.has(d.team));
+            if (dangling.length) issues.push(`Fahrer mit ungültigem Team: ${dangling.length}`);
+            // Teams mit < 2 Fahrern (unvollständiges Grid)
+            teams.forEach(t => {
+                const seats = drivers.filter(d => d.team === t.id).length;
+                if (seats < 2) issues.push(`${t.name || t.id}: nur ${seats} Fahrer`);
+            });
+            // Leerer Rennkalender
+            if (!GAME_STATE.races || GAME_STATE.races.length === 0) issues.push('Leerer Rennkalender');
+            return issues;
+        }
+
+        // Eine Saison headless durchsimulieren + Saisonübergang (entspricht simulateFullSeason +
+        // confirmSeasonStart, nur ohne Modals/Slider – nutzt die aktuellen GAME_STATE-Settings).
+        function runSeasonHeadless() {
+            simulateSeasonRaces();
+            prepareSeasonEndSnapshot();   // Snapshot + processSeasonEndEvents (guarded)
+            startNewSeason();             // History speichern, Jahr +1, neues Grid bauen
+        }
+
+        window._megaSimCancelled = false;
+        window._megaSimCancel = function() { window._megaSimCancelled = true; };
+
+        window.megaSim = function() {
+            const input = prompt('🏎️ Wie viele Saisons simulieren? (1–500)', '10');
+            if (input === null) return;
+            const n = parseInt(input);
+            if (!n || n < 1 || n > 500) { alert('Bitte eine Zahl zwischen 1 und 500 eingeben.'); return; }
+            if (GAME_STATE.currentRace < GAME_STATE.races.length &&
+                !confirm(`Aktuelle Saison ${GAME_STATE.currentYear} läuft noch (${GAME_STATE.currentRace}/${GAME_STATE.races.length}).\n\nSie wird als erste Saison zu Ende simuliert. Fortfahren?`)) return;
+
+            const overlay  = document.getElementById('megasim-overlay');
+            const bar      = document.getElementById('megasim-bar');
+            const counter  = document.getElementById('megasim-counter');
+            const seasonEl = document.getElementById('megasim-season');
+            overlay.style.display = 'flex';
+            bar.style.width = '0%';
+            counter.textContent = `0 / ${n} Saisons`;
+            seasonEl.textContent = '–';
+
+            let done = 0, totalMs = 0, healed = 0, warned = 0;
+            window._megaSimCancelled = false;
+            window._megaSimFast = true;
+
+            const teardown = () => {
+                window._megaSimFast = false;
+                overlay.style.display = 'none';
+                renderAll();
+            };
+            const finish = (msg) => {
+                counter.textContent = msg;
+                bar.style.width = '100%';
+                setTimeout(teardown, 1400);
+            };
+
+            const BATCH = 5;
+            const step = () => {
+                if (window._megaSimCancelled) {
+                    saveGame();
+                    finish(`✋ Abgebrochen nach ${done} Saison(s)`);
+                    return;
+                }
+                if (done >= n) {
+                    saveGame();   // einmal am Ende – nicht pro Saison (localStorage-I/O)
+                    const avg = done ? Math.round(totalMs / done) : 0;
+                    let msg = `✓ ${done} Saisons · Ø ${avg} ms/Saison`;
+                    if (healed) msg += ` · ${healed} repariert`;
+                    finish(msg);
+                    return;
+                }
+                const t0 = performance.now();
+                for (let b = 0; b < BATCH && done < n && !window._megaSimCancelled; b++) {
+                    try {
+                        runSeasonHeadless();
+                        const issues = megaSimSanityCheck();
+                        if (issues.length) {
+                            const fatal = issues.filter(s => s.includes('ungültigem Team') || s.includes('Leerer Rennkalender'));
+                            if (fatal.length) {
+                                // Auto-Heal: ungültige Team-Refs lösen, Teams nachbesetzen
+                                const teamIds = new Set((GAME_STATE.teams || []).map(t => t.id));
+                                GAME_STATE.drivers.forEach(d => { if (d.team && !teamIds.has(d.team)) d.team = null; });
+                                if (typeof sanitizeDriverDuplicates === 'function') sanitizeDriverDuplicates(GAME_STATE.currentYear);
+                                const rest = megaSimSanityCheck().filter(s => s.includes('ungültigem Team') || s.includes('Leerer Rennkalender'));
+                                logWarning('MEGASIM', `Auto-Heal Saison ${GAME_STATE.currentYear}: ${fatal.join(' | ')}${rest.length ? ' – Rest: ' + rest.join(' | ') : ' ✓ behoben'}`);
+                                healed++;
+                            } else {
+                                logWarning('MEGASIM', `SanityCheck Saison ${GAME_STATE.currentYear}: ${issues.join(' | ')}`);
+                                warned++;
+                            }
+                        }
+                        done++;
+                    } catch (e) {
+                        window._megaSimFast = false;
+                        logError('MEGASIM', `Exception Saison ${done + 1}: ${e.message}`);
+                        console.error(e);
+                        saveGame();
+                        finish(`⚠ Exception nach ${done} Saisons`);
+                        return;
+                    }
+                }
+                totalMs += performance.now() - t0;
+                const avg = done ? Math.round(totalMs / done) : 0;
+                bar.style.width = Math.round((done / n) * 100) + '%';
+                counter.textContent = `${done} / ${n} Saisons`;
+                seasonEl.textContent = `Ø ${avg} ms/Saison${warned ? ` · ${warned} Warnung(en)` : ''}`;
+                setTimeout(step, 0);   // an Browser zurückgeben (UI/Abbrechen reagieren)
+            };
+
+            setTimeout(step, 0);
         };
         
         window.quickSave = function() {
@@ -14147,7 +14300,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.19 (aktuell) - 07.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.20 (aktuell) - 13.06.2026</div>
+                            <div>&#8226; NEU: Mega-Sim simuliert bis zu 500 Saisons am Stueck mit Fortschrittsbalken und Abbrechen</div>
+                            <div>&#8226; NEU: fastMode + Auto-Heal nach jedem Saisonuebergang, kein Tab-Freeze</div>
+                            <div>&#8226; TECH: Renn-Loop und Saison-Ende-Snapshot in wiederverwendbare Funktionen extrahiert</div>
+                            <div class="font-bold text-slate-400">v0.9.12.19 - 07.06.2026</div>
                             <div>&#8226; FIX: Weltkarte zeigt alle Kalender-Strecken aktiv (nicht nur abgeschlossene Rennen)</div>
                             <div class="font-bold text-slate-400">v0.9.12.19 - 07.06.2026</div>
                             <div>&#8226; FIX: Weltkarte zeigt alle Kalender-Strecken aktiv (nicht nur abgeschlossene Rennen)</div>
