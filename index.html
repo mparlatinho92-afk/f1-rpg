@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.23</title>
+    <title>F1 RPG v0.9.12.24</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1608,7 +1608,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.23';
+        const VERSION = '0.9.12.24';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3865,9 +3865,12 @@
             ["Mattia Colnaghi","🇦🇷",2008,"F3",2026],
             ["Nikita Johnson","🇺🇸",2008,"F3",2025],
         ];
-        // Echte Porträt-URLs (Slug 'feeder-<name>' → volle Bild-URL). Leer = Sketch-Avatar-Fallback.
-        // Befüllbar über die Foto-Wunschliste; offizielle FIA-F2/F3-Headshots bevorzugt.
-        const FEEDER_PHOTO_OVERRIDES = {};
+        // Echte Porträts (Slug 'feeder-<name>' → Wert). Wert = volle URL (http…) ODER statsf1-Dateiname.
+        // Leer/kein Eintrag = Sketch-Avatar-Fallback. Befüllbar über die Foto-Wunschliste.
+        const FEEDER_PHOTO_OVERRIDES = {
+            'feeder-theo-pourchaire': 'pourchai',   // verifiziert via stATSf1
+            'feeder-zak-o-sullivan': 'osulliva',    // verifiziert via stATSf1
+        };
 
         // Deterministischer Slug (akzentfrei) – zugleich Fahrer-ID und Foto-Override-Key.
         function feederSlug(name) {
@@ -14661,7 +14664,11 @@
                         <h3 class="text-xl font-bold mb-4">📋 Changelog</h3>
                         <div class="text-xs space-y-2 max-h-64 overflow-y-auto" style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.23 (aktuell) - 13.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.24 (aktuell) - 14.06.2026</div>
+                            <div>&#8226; FIX: Feeder-Fahrer (F2/F3) zeigten falsche statsf1-Fotos gleichnamiger Fahrer (O'Sullivan->Danny Sullivan, Montoya->Vater) - jetzt neutraler Avatar statt falschem Bild</div>
+                            <div>&#8226; FIX: Feeder-Foto nur bei explizitem Override geladen, kein Nachname-Raten</div>
+                            <div>&#8226; NEU: verifizierte Portraets fuer Pourchaire und O'Sullivan (FEEDER_PHOTO_OVERRIDES akzeptiert statsf1-Dateinamen)</div>
+                            <div class="font-bold text-slate-400">v0.9.12.23 - 13.06.2026</div>
                             <div>&#8226; NEU: 118 echte F2/F3-Fahrer (2023-2026) als Nachwuchs im Reserve-Pool - echte Identitaet, fiktive (pro Spielstand gewuerfelte) Fahrwerte</div>
                             <div>&#8226; NEU: Pool-Tab Nachwuchs + Steckbrief-Hinweis dass Fahrwerte fiktiv sind</div>
                             <div>&#8226; NEU: Feeder erscheinen ab 19 J. (Altersfenster), Dedup gegen aktive Fahrer + SEASON_DATA (keine F1-Aufsteiger-Duplikate)</div>
@@ -18270,9 +18277,15 @@ Empfohlene Wertebereiche:
         // Bei Namensgleichen (hill, schumacher) greift onerror auf den vollen Slug zurück.
         function getDriverPhotoUrl(driverId) {
             if (!driverId) return null;
-            // Feeder-Fahrer (F2/F3): volle Override-URL falls hinterlegt, sonst Avatar-Fallback
-            if (typeof FEEDER_PHOTO_OVERRIDES !== 'undefined' && FEEDER_PHOTO_OVERRIDES[driverId])
-                return FEEDER_PHOTO_OVERRIDES[driverId];
+            // Feeder-Fahrer (F2/F3): NUR explizite Overrides, sonst KEIN geratenes statsf1-Bild
+            // (Nachname-Heuristik liefert sonst falsche Namensvetter: O'Sullivan→Danny Sullivan,
+            //  Sebastián Montoya→Vater, Fernando Barrichello→Rubens). Kein Override → Avatar-Fallback.
+            // Override-Wert: volle URL (http…) oder statsf1-Dateiname.
+            if (typeof driverId === 'string' && driverId.startsWith('feeder-')) {
+                const fo = (typeof FEEDER_PHOTO_OVERRIDES !== 'undefined') ? FEEDER_PHOTO_OVERRIDES[driverId] : null;
+                if (fo) return /^https?:/i.test(fo) ? fo : `https://www.stATSf1.com/pilotes/photos/${fo}.png`;
+                return null;
+            }
             // Override-Tabelle zuerst (verifizierte Sonderfälle)
             const override = DRIVER_PHOTO_OVERRIDES[driverId];
             if (override) return `https://www.stATSf1.com/pilotes/photos/${override}.png`;
@@ -18494,6 +18507,8 @@ Empfohlene Wertebereiche:
         // Fallback: prüfe Override-Tabelle, dann voller Slug
         function getDriverPhotoUrlFallback(driverId) {
             if (!driverId) return null;
+            // Feeder-Fahrer: kein geratener Slug-Fallback (sonst falsche Namensvetter)
+            if (typeof driverId === 'string' && driverId.startsWith('feeder-')) return null;
             // Override-Tabelle hat Vorrang
             if (DRIVER_PHOTO_OVERRIDES[driverId]) return null; // bereits in getDriverPhotoUrl behandelt
             // Letzter Fallback: voller Slug (selten nötig)
@@ -18545,6 +18560,10 @@ Empfohlene Wertebereiche:
         // data-lazy-src = primäre URL (Nachname), data-fallback-src = voller Slug (für Namensgleiche)
         function renderDriverPhotoHtml(driverId) {
             const url = getDriverPhotoUrl(driverId);
+            // Keine (gültige) Bild-URL → direkt Avatar, kein Lade-Versuch
+            if (!url) {
+                return `<div class="profile-photo-wrap"><div class="profile-photo-fallback">${getDriverAvatarSvg()}</div></div>`;
+            }
             const fallbackUrl = getDriverPhotoUrlFallback(driverId);
             const fbAttr = (fallbackUrl && fallbackUrl !== url) ? ` data-fallback-src="${fallbackUrl}"` : '';
             return `<div class="profile-photo-wrap">
