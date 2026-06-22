@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.26</title>
+    <title>F1 RPG v0.9.12.27</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -715,7 +715,16 @@
         #debug-log-content.collapsed {
             display: none;
         }
-        
+
+        #storage-badge {
+            white-space: nowrap;
+            user-select: none;
+        }
+        #storage-details {
+            font-family: system-ui, sans-serif;
+            font-size: 0.8rem;
+        }
+
         .log-entry {
             padding: 2px 4px;
             border-bottom: 1px solid var(--border-color);
@@ -902,9 +911,13 @@
         <div id="debug-log-container">
             <div id="debug-log-header" onclick="toggleDebugLog()">
                 <span>🔧 <strong>Debug-Log</strong> <span id="debug-log-count">(0 Einträge)</span></span>
-                <span id="debug-log-toggle">▼</span>
+                <span style="display:flex;align-items:center;gap:0.6rem;">
+                    <span id="storage-badge" onclick="event.stopPropagation(); toggleStorageDisplay();" title="Speicherauslastung – klicken zum Umschalten (prominent/verkleinert)"></span>
+                    <span id="debug-log-toggle">▼</span>
+                </span>
             </div>
             <div id="debug-log-content" class="collapsed">
+                <div id="storage-details"></div>
                 <div id="debug-log-entries">
                     <div class="log-entry"><span class="log-info">System bereit...</span></div>
                 </div>
@@ -920,7 +933,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.26 (aktuell) - 14.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.12.27 (aktuell) - 22.06.2026</div>
+                            <div>&#8226; NEU: Speicherlimit-Anzeige (Balken/Prozent) im Debug-Log-Panel, umschaltbar prominent/verkleinert</div>
+                            <div>&#8226; NEU: Quota-Schutz beim Speichern - Warnung statt stillem Verlust</div>
+                            <div>&#8226; NEU: Speicher-Aufschluesselung pro Key + Verlaufsprotokoll</div>
+                            <div class="font-bold text-slate-400">v0.9.12.26 - 14.06.2026</div>
                             <div>&#8226; NEU: Changelog jetzt eigenes Popup-Fenster statt langer Liste in den Einstellungen</div>
                             <div>&#8226; NEU: Klick auf die Versionsnummer oben oeffnet den Changelog (Shortcut), Button in den Einstellungen ebenso</div>
                             <div class="font-bold text-slate-400">v0.9.12.25 - 14.06.2026</div>
@@ -2640,7 +2657,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.26';
+        const VERSION = '0.9.12.27';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -2773,7 +2790,141 @@
                 toggle.textContent = '▼';
             }
         };
-        
+
+        // === SPEICHERLIMIT-ANZEIGE (v0.9.12.27) ===
+        const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024;  // konservativ ~5 MB (Browser variieren)
+        const STORAGE_WARN_PCT = 80;                  // ab hier Alarm (überstimmt "verkleinert")
+        const STORAGE_HISTORY_KEY = 'f1rpg_storage_history';
+        const STORAGE_HISTORY_MAX = 50;
+        let _storageQuotaAlerted = false;             // Quota-Alert nur einmal pro Sitzung
+
+        function formatBytes(n) {
+            if (n < 1024) return n + ' B';
+            if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+            return (n / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        // Summiert alle f1rpg_-Keys (UTF-16: 2 Byte/Zeichen) + Pro-Key-Aufschlüsselung
+        function getStorageUsage() {
+            let total = 0;
+            const breakdown = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (!key || key.indexOf('f1rpg_') !== 0) continue;
+                const val = localStorage.getItem(key) || '';
+                const bytes = (key.length + val.length) * 2;
+                total += bytes;
+                breakdown.push({ key, bytes });
+            }
+            breakdown.sort((a, b) => b.bytes - a.bytes);
+            const percent = Math.min(100, (total / STORAGE_LIMIT_BYTES) * 100);
+            return { totalBytes: total, limitBytes: STORAGE_LIMIT_BYTES, percent, breakdown };
+        }
+
+        // Ampelfarbe nach Auslastung (feste Hex-Werte, in allen Themes lesbar)
+        function _storageColor(pct) {
+            if (pct >= STORAGE_WARN_PCT) return '#ef4444'; // rot
+            if (pct >= 60) return '#f59e0b';               // gelb
+            return '#22c55e';                              // grün
+        }
+
+        // Gekapseltes setItem mit sichtbarer Quota-Warnung statt stillem Verlust
+        function safeSetItem(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                const isQuota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+                logError('STORAGE', (isQuota ? 'Speicherlimit erreicht! ' : 'Speichern fehlgeschlagen: ') + e.message);
+                updateSaveStatus('⚠️ Speicher voll – Spielstand NICHT gesichert!');
+                if (isQuota && !_storageQuotaAlerted) {
+                    _storageQuotaAlerted = true;
+                    alert('⚠️ Speicherlimit erreicht!\n\nDer Spielstand konnte nicht gesichert werden (Browser-Limit ~5 MB).\nExportiere deinen Spielstand als Datei, um nichts zu verlieren.');
+                }
+                updateStorageMeter();
+                return false;
+            }
+        }
+
+        // Verlauf protokollieren (Ring-Puffer + Coalesce gegen Autosave-Flut)
+        function pushStorageHistory() {
+            try {
+                const usage = getStorageUsage();
+                let hist = [];
+                try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) { hist = []; }
+                if (!Array.isArray(hist)) hist = [];
+                const now = Date.now();
+                const entry = { t: new Date().toISOString(), bytes: usage.totalBytes, year: (GAME_STATE && GAME_STATE.currentYear) || null };
+                const last = hist[hist.length - 1];
+                // Coalesce: letzter Eintrag <2 Min alt UND <1 KB Differenz → überschreiben statt anhängen
+                if (last && (now - new Date(last.t).getTime()) < 120000 && Math.abs(usage.totalBytes - last.bytes) < 1024) {
+                    hist[hist.length - 1] = entry;
+                } else {
+                    hist.push(entry);
+                }
+                if (hist.length > STORAGE_HISTORY_MAX) hist = hist.slice(hist.length - STORAGE_HISTORY_MAX);
+                // Direkt schreiben (nicht safeSetItem → Rekursion vermeiden); Verlauf ist winzig
+                try { localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(hist)); } catch (e) {}
+            } catch (e) { /* Verlauf ist nice-to-have, nie blockierend */ }
+        }
+
+        // Badge-Modus umschalten: 'full' (prominent) ↔ 'mini' (verkleinert)
+        window.toggleStorageDisplay = function() {
+            const cur = localStorage.getItem('f1rpg_storage_display') || 'full';
+            localStorage.setItem('f1rpg_storage_display', cur === 'full' ? 'mini' : 'full');
+            updateStorageMeter();
+        };
+
+        // Aktualisiert Header-Badge (immer sichtbar) + Detail-Bereich (aufgeklappt)
+        function updateStorageMeter() {
+            const badge = document.getElementById('storage-badge');
+            if (!badge) return;
+            const usage = getStorageUsage();
+            const pct = usage.percent;
+            const color = _storageColor(pct);
+            const pctTxt = pct < 10 ? pct.toFixed(1) : String(Math.round(pct));
+            const isAlarm = pct >= STORAGE_WARN_PCT;
+            let mode = localStorage.getItem('f1rpg_storage_display') || 'full';
+            if (isAlarm) mode = 'full'; // Alarm-Override: Warnung nie verstecken
+
+            if (mode === 'mini') {
+                badge.innerHTML = `💾 ${pctTxt}%`;
+            } else {
+                const barW = 70;
+                const fillW = Math.round(barW * Math.min(100, pct) / 100);
+                const bar = `<span style="display:inline-block;width:${barW}px;height:8px;background:var(--bg-tertiary,#334155);border-radius:4px;overflow:hidden;vertical-align:middle;">`
+                    + `<span style="display:block;width:${fillW}px;height:100%;background:${color};"></span></span>`;
+                badge.innerHTML = `${isAlarm ? '⚠️ ' : ''}💾 ${formatBytes(usage.totalBytes)}/${formatBytes(usage.limitBytes)} (${pctTxt}%) ${bar}`;
+            }
+            badge.style.color = color;
+
+            const details = document.getElementById('storage-details');
+            if (details) details.innerHTML = renderStorageDetails(usage);
+        }
+
+        // HTML für aufgeklappten Detail-Bereich: Aufschlüsselung + Verlauf
+        function renderStorageDetails(usage) {
+            usage = usage || getStorageUsage();
+            const rows = usage.breakdown.map(b =>
+                `<div style="display:flex;justify-content:space-between;gap:1rem;">`
+                + `<span>${b.key}</span><span style="color:var(--text-muted);">${formatBytes(b.bytes)}</span></div>`
+            ).join('') || '<div style="color:var(--text-muted);">– leer –</div>';
+
+            let hist = [];
+            try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) {}
+            if (!Array.isArray(hist)) hist = [];
+            let histHtml = '';
+            if (hist.length >= 2) {
+                const first = hist[0], last = hist[hist.length - 1];
+                const diff = last.bytes - first.bytes;
+                const sign = diff >= 0 ? '+' : '−';
+                histHtml = `<div style="margin-top:0.4rem;color:var(--text-muted);">📈 Verlauf: ${sign}${formatBytes(Math.abs(diff))} über letzte ${hist.length} Speicherungen</div>`;
+            }
+            return `<div style="padding:0.25rem 0 0.5rem;border-bottom:1px solid var(--border-color);margin-bottom:0.5rem;">`
+                + `<div style="font-weight:bold;margin-bottom:0.3rem;">📦 Speicher-Aufschlüsselung (${formatBytes(usage.totalBytes)} / ${formatBytes(usage.limitBytes)})</div>`
+                + rows + histHtml + `</div>`;
+        }
+
         // === ERA-KONSTANTEN ===
         const ERA_ROOKIE_AGE = {
             1950: 35.5, 1955: 30.6, 1960: 30.1, 1965: 29.1,
@@ -4701,9 +4852,11 @@
         // === LOCALSTORAGE FUNKTIONEN ===
         function saveGame() {
             try {
-                localStorage.setItem('f1rpg_gamestate', JSON.stringify(GAME_STATE));
+                if (!safeSetItem('f1rpg_gamestate', JSON.stringify(GAME_STATE))) return;
                 updateSaveStatus('💾 Gespeichert: ' + new Date().toLocaleTimeString('de-DE'));
                 logSuccess('SAVE', 'Spielstand gespeichert');
+                pushStorageHistory();
+                updateStorageMeter();
             } catch (e) {
                 logError('SAVE', 'Fehler beim Speichern: ' + e.message);
             }
@@ -4733,9 +4886,11 @@
                     year: GAME_STATE.currentYear,
                     race: GAME_STATE.currentRace
                 };
-                localStorage.setItem('f1rpg_autosave', JSON.stringify(snapshot));
+                if (!safeSetItem('f1rpg_autosave', JSON.stringify(snapshot))) return;
                 updateSaveStatus(`🔄 Auto-Save: Saison ${snapshot.year}, Rennen ${snapshot.race} – ${new Date().toLocaleTimeString('de-DE')}`);
                 logSuccess('AUTOSAVE', `Auto-Save: Jahr ${snapshot.year}, Rennen ${snapshot.race}`);
+                pushStorageHistory();
+                updateStorageMeter();
             } catch (e) {
                 logError('AUTOSAVE', 'Auto-Save fehlgeschlagen: ' + e.message);
             }
@@ -20994,6 +21149,7 @@ Empfohlene Wertebereiche:
             if (_savedSubStats && ['drivers','teams','champions','circuits','gps'].includes(_savedSubStats)) stATSSubTab = _savedSubStats;
 
             renderAll();
+            updateStorageMeter();
             updateSaveStatus('✅ Bereit');
             logSuccess('INIT', `Geladen: Jahr ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}/${GAME_STATE.races.length}`);
         }
