@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.12.27</title>
+    <title>F1 RPG v0.9.13.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -933,7 +933,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.12.27 (aktuell) - 22.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.13.0 (aktuell) - 23.06.2026</div>
+                            <div>&#8226; NEU: Spielstände in IndexedDB – Speicherlimit von ~5 MB auf Hunderte MB/GB</div>
+                            <div>&#8226; NEU: Automatische, verlustfreie Migration alter localStorage-Stände</div>
+                            <div>&#8226; NEU: Speicheranzeige nutzt echte Browser-Quota (navigator.storage.estimate)</div>
+                            <div>&#8226; FIX: Privater Modus/blockiertes IndexedDB → Fallback auf localStorage</div>
+                            <div class="font-bold text-slate-400">v0.9.12.27 - 22.06.2026</div>
                             <div>&#8226; NEU: Speicherlimit-Anzeige (Balken/Prozent) im Debug-Log-Panel, umschaltbar prominent/verkleinert</div>
                             <div>&#8226; NEU: Quota-Schutz beim Speichern - Warnung statt stillem Verlust</div>
                             <div>&#8226; NEU: Speicher-Aufschluesselung pro Key + Verlaufsprotokoll</div>
@@ -2657,7 +2662,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.12.27';
+        const VERSION = '0.9.13.0';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -2846,18 +2851,150 @@
             }
         }
 
-        // Verlauf protokollieren (Ring-Puffer + Coalesce gegen Autosave-Flut)
-        function pushStorageHistory() {
+        // ═══════════════════════════════════════════════════════════════
+        // INDEXEDDB-SPEICHER (v0.9.13.0)
+        // Große Keys (gamestate/autosave) liegen hier statt in localStorage
+        // → echtes Quota (Hunderte MB–GB) statt ~5 MB. Kleine Prefs bleiben
+        // synchron in localStorage. Werte als JSON-String (Parität zu
+        // localStorage, kein DataCloneError, in DevTools lesbar).
+        // ═══════════════════════════════════════════════════════════════
+        const IDB_NAME = 'f1rpg';
+        const IDB_STORE = 'kv';
+        let _idbDB = null;            // gecachte DB-Verbindung
+        let _idbAvailable = (typeof indexedDB !== 'undefined' && indexedDB !== null);
+
+        function idbOpen() {
+            return new Promise((resolve, reject) => {
+                if (_idbDB) return resolve(_idbDB);
+                if (!_idbAvailable) return reject(new Error('IndexedDB nicht verfügbar'));
+                let req;
+                try { req = indexedDB.open(IDB_NAME, 1); }
+                catch (e) { _idbAvailable = false; return reject(e); }
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = () => { _idbDB = req.result; resolve(_idbDB); };
+                req.onerror = () => { _idbAvailable = false; reject(req.error || new Error('IndexedDB open fehlgeschlagen')); };
+            });
+        }
+
+        function idbGet(key) {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const rq = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
+                    rq.onsuccess = () => resolve(rq.result !== undefined ? rq.result : null);
+                    rq.onerror = () => reject(rq.error);
+                }).catch(reject);
+            });
+        }
+
+        function idbSet(key, value) {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_STORE, 'readwrite');
+                    tx.objectStore(IDB_STORE).put(value, key);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => reject(tx.error);
+                    tx.onabort = () => reject(tx.error || new Error('IndexedDB tx abgebrochen'));
+                }).catch(reject);
+            });
+        }
+
+        function idbDel(key) {
+            return new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_STORE, 'readwrite');
+                    tx.objectStore(IDB_STORE).delete(key);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                }).catch(() => resolve(false));
+            });
+        }
+
+        // Async-Pendant zu safeSetItem: IndexedDB-Write + Quota/Fehler-Handling.
+        // Ohne IndexedDB (z.B. Firefox-Privat) → Fallback auf localStorage – auch
+        // wenn IndexedDB erst beim ersten Zugriff scheitert (open() lazy).
+        async function safeIdbSet(key, value) {
+            if (_idbAvailable) {
+                try {
+                    await idbSet(key, value);
+                    return true;
+                } catch (e) {
+                    if (!_idbAvailable) {   // IndexedDB fiel beim Öffnen aus → localStorage
+                        logWarning('STORAGE', 'IndexedDB nicht nutzbar → Fallback auf localStorage');
+                        return safeSetItem(key, value);
+                    }
+                    const isQuota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+                    logError('STORAGE', (isQuota ? 'Speicherlimit erreicht! ' : 'Speichern fehlgeschlagen: ') + (e.message || e));
+                    updateSaveStatus('⚠️ Speicher voll – Spielstand NICHT gesichert!');
+                    if (isQuota && !_storageQuotaAlerted) {
+                        _storageQuotaAlerted = true;
+                        alert('⚠️ Speicherlimit erreicht!\n\nDer Spielstand konnte nicht gesichert werden.\nExportiere deinen Spielstand als Datei, um nichts zu verlieren.');
+                    }
+                    updateStorageMeter();
+                    return false;
+                }
+            }
+            return safeSetItem(key, value);
+        }
+
+        // Lesen mit Fallback: IndexedDB, sonst (oder bei Fehler) localStorage.
+        async function idbGetSafe(key) {
+            if (_idbAvailable) {
+                try { return await idbGet(key); }
+                catch (e) { /* fällt durch auf localStorage */ }
+            }
+            const ls = localStorage.getItem(key);
+            return ls != null ? ls : null;
+        }
+
+        // Einmalige, idempotente Migration: alte localStorage-Stände → IndexedDB.
+        async function migrateStorageToIdb() {
+            if (!_idbAvailable) return;
             try {
-                const usage = getStorageUsage();
+                for (const key of ['f1rpg_gamestate', 'f1rpg_autosave']) {
+                    const legacy = localStorage.getItem(key);
+                    if (legacy == null) continue;
+                    const existing = await idbGet(key);
+                    if (existing == null) {
+                        await idbSet(key, legacy);
+                        logInfo('STORAGE', `Migration: ${key} → IndexedDB (${formatBytes(legacy.length * 2)})`);
+                    }
+                    localStorage.removeItem(key);   // gibt altes ~MB-Budget frei
+                }
+            } catch (e) {
+                logError('STORAGE', 'Migration fehlgeschlagen: ' + (e.message || e));
+            }
+        }
+
+        // Echte Origin-Belegung inkl. IndexedDB (navigator.storage.estimate).
+        // Fallback auf localStorage-Summe, wenn API fehlt.
+        async function getStorageEstimate() {
+            try {
+                if (navigator.storage && navigator.storage.estimate) {
+                    const est = await navigator.storage.estimate();
+                    const usage = est.usage || 0;
+                    const quota = est.quota || STORAGE_LIMIT_BYTES;
+                    return { usage, quota, percent: Math.min(100, (usage / quota) * 100), real: true };
+                }
+            } catch (e) { /* Fallback unten */ }
+            const u = getStorageUsage();
+            return { usage: u.totalBytes, quota: u.limitBytes, percent: u.percent, real: false };
+        }
+
+        // Verlauf protokollieren (Ring-Puffer + Coalesce gegen Autosave-Flut)
+        async function pushStorageHistory() {
+            try {
+                const est = await getStorageEstimate();
                 let hist = [];
                 try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) { hist = []; }
                 if (!Array.isArray(hist)) hist = [];
                 const now = Date.now();
-                const entry = { t: new Date().toISOString(), bytes: usage.totalBytes, year: (GAME_STATE && GAME_STATE.currentYear) || null };
+                const entry = { t: new Date().toISOString(), bytes: est.usage, year: (GAME_STATE && GAME_STATE.currentYear) || null };
                 const last = hist[hist.length - 1];
                 // Coalesce: letzter Eintrag <2 Min alt UND <1 KB Differenz → überschreiben statt anhängen
-                if (last && (now - new Date(last.t).getTime()) < 120000 && Math.abs(usage.totalBytes - last.bytes) < 1024) {
+                if (last && (now - new Date(last.t).getTime()) < 120000 && Math.abs(est.usage - last.bytes) < 1024) {
                     hist[hist.length - 1] = entry;
                 } else {
                     hist.push(entry);
@@ -2876,11 +3013,11 @@
         };
 
         // Aktualisiert Header-Badge (immer sichtbar) + Detail-Bereich (aufgeklappt)
-        function updateStorageMeter() {
+        async function updateStorageMeter() {
             const badge = document.getElementById('storage-badge');
             if (!badge) return;
-            const usage = getStorageUsage();
-            const pct = usage.percent;
+            const est = await getStorageEstimate();
+            const pct = est.percent;
             const color = _storageColor(pct);
             const pctTxt = pct < 10 ? pct.toFixed(1) : String(Math.round(pct));
             const isAlarm = pct >= STORAGE_WARN_PCT;
@@ -2894,21 +3031,32 @@
                 const fillW = Math.round(barW * Math.min(100, pct) / 100);
                 const bar = `<span style="display:inline-block;width:${barW}px;height:8px;background:var(--bg-tertiary,#334155);border-radius:4px;overflow:hidden;vertical-align:middle;">`
                     + `<span style="display:block;width:${fillW}px;height:100%;background:${color};"></span></span>`;
-                badge.innerHTML = `${isAlarm ? '⚠️ ' : ''}💾 ${formatBytes(usage.totalBytes)}/${formatBytes(usage.limitBytes)} (${pctTxt}%) ${bar}`;
+                badge.innerHTML = `${isAlarm ? '⚠️ ' : ''}💾 ${formatBytes(est.usage)}/${formatBytes(est.quota)} (${pctTxt}%) ${bar}`;
             }
             badge.style.color = color;
 
             const details = document.getElementById('storage-details');
-            if (details) details.innerHTML = renderStorageDetails(usage);
+            if (details) details.innerHTML = renderStorageDetails(est);
         }
 
         // HTML für aufgeklappten Detail-Bereich: Aufschlüsselung + Verlauf
-        function renderStorageDetails(usage) {
-            usage = usage || getStorageUsage();
+        // est = getStorageEstimate()-Ergebnis (echte Origin-Belegung inkl. IndexedDB)
+        function renderStorageDetails(est) {
+            const usage = getStorageUsage();   // localStorage-Aufschlüsselung (kleine Keys)
+            const headBytes = est ? est.usage : usage.totalBytes;
+            const headQuota = est ? est.quota : usage.limitBytes;
             const rows = usage.breakdown.map(b =>
                 `<div style="display:flex;justify-content:space-between;gap:1rem;">`
                 + `<span>${b.key}</span><span style="color:var(--text-muted);">${formatBytes(b.bytes)}</span></div>`
-            ).join('') || '<div style="color:var(--text-muted);">– leer –</div>';
+            ).join('');
+            // Spielstände liegen in IndexedDB → eigene Zeile (Differenz Estimate − localStorage)
+            let idbRow = '';
+            if (est && est.real) {
+                const idbBytes = Math.max(0, est.usage - usage.totalBytes);
+                idbRow = `<div style="display:flex;justify-content:space-between;gap:1rem;">`
+                    + `<span>IndexedDB (Spielstände)</span><span style="color:var(--text-muted);">${formatBytes(idbBytes)}</span></div>`;
+            }
+            const body = (rows + idbRow) || '<div style="color:var(--text-muted);">– leer –</div>';
 
             let hist = [];
             try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) {}
@@ -2921,8 +3069,8 @@
                 histHtml = `<div style="margin-top:0.4rem;color:var(--text-muted);">📈 Verlauf: ${sign}${formatBytes(Math.abs(diff))} über letzte ${hist.length} Speicherungen</div>`;
             }
             return `<div style="padding:0.25rem 0 0.5rem;border-bottom:1px solid var(--border-color);margin-bottom:0.5rem;">`
-                + `<div style="font-weight:bold;margin-bottom:0.3rem;">📦 Speicher-Aufschlüsselung (${formatBytes(usage.totalBytes)} / ${formatBytes(usage.limitBytes)})</div>`
-                + rows + histHtml + `</div>`;
+                + `<div style="font-weight:bold;margin-bottom:0.3rem;">📦 Speicher-Aufschlüsselung (${formatBytes(headBytes)} / ${formatBytes(headQuota)})</div>`
+                + body + histHtml + `</div>`;
         }
 
         // === ERA-KONSTANTEN ===
@@ -4849,10 +4997,10 @@
             return sanitized;
         }
 
-        // === LOCALSTORAGE FUNKTIONEN ===
-        function saveGame() {
+        // === SPEICHER-FUNKTIONEN (IndexedDB, Fallback localStorage) ===
+        async function saveGame() {
             try {
-                if (!safeSetItem('f1rpg_gamestate', JSON.stringify(GAME_STATE))) return;
+                if (!(await safeIdbSet('f1rpg_gamestate', JSON.stringify(GAME_STATE)))) return;
                 updateSaveStatus('💾 Gespeichert: ' + new Date().toLocaleTimeString('de-DE'));
                 logSuccess('SAVE', 'Spielstand gespeichert');
                 pushStorageHistory();
@@ -4861,10 +5009,10 @@
                 logError('SAVE', 'Fehler beim Speichern: ' + e.message);
             }
         }
-        
-        function loadGame() {
+
+        async function loadGame() {
             try {
-                const saved = localStorage.getItem('f1rpg_gamestate');
+                const saved = await idbGetSafe('f1rpg_gamestate');
                 if (saved) {
                     let loadedState = JSON.parse(saved);
                     // SANITIZER: Spielstand validieren und Defaults setzen
@@ -4878,7 +5026,7 @@
             return false;
         }
 
-        function autoSaveGame() {
+        async function autoSaveGame() {
             try {
                 const snapshot = {
                     state: GAME_STATE,
@@ -4886,7 +5034,7 @@
                     year: GAME_STATE.currentYear,
                     race: GAME_STATE.currentRace
                 };
-                if (!safeSetItem('f1rpg_autosave', JSON.stringify(snapshot))) return;
+                if (!(await safeIdbSet('f1rpg_autosave', JSON.stringify(snapshot)))) return;
                 updateSaveStatus(`🔄 Auto-Save: Saison ${snapshot.year}, Rennen ${snapshot.race} – ${new Date().toLocaleTimeString('de-DE')}`);
                 logSuccess('AUTOSAVE', `Auto-Save: Jahr ${snapshot.year}, Rennen ${snapshot.race}`);
                 pushStorageHistory();
@@ -4896,9 +5044,9 @@
             }
         }
 
-        window.restoreAutoSave = function() {
+        window.restoreAutoSave = async function() {
             try {
-                const raw = localStorage.getItem('f1rpg_autosave');
+                const raw = await idbGetSafe('f1rpg_autosave');
                 if (!raw) { alert('Kein Auto-Save vorhanden.'); return; }
                 const snapshot = JSON.parse(raw);
                 const ts = new Date(snapshot.savedAt).toLocaleString('de-DE');
@@ -12020,7 +12168,7 @@
             if (!file) return;
             
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
                     
@@ -12085,9 +12233,9 @@
                         document.documentElement.setAttribute('data-theme', GAME_STATE.theme);
                     }
 
-                    saveGame();
+                    await saveGame();
                     renderAll();
-                    
+
                     logSuccess('IMPORT', `Spielstand importiert: Jahr ${GAME_STATE.currentYear}`);
                     alert(`✅ Importiert!\n\nSaison: ${GAME_STATE.currentYear}\nRennen: ${GAME_STATE.currentRace}/${GAME_STATE.races?.length || '?'}\nFahrer: ${GAME_STATE.drivers?.length || '?'}`);
                     
@@ -20544,11 +20692,12 @@ Empfohlene Wertebereiche:
             updateDnfSettings();
         };
         
-        window.clearAllData = function() {
+        window.clearAllData = async function() {
             if (!confirm('⚠️ ALLE DATEN LÖSCHEN?\n\nDies kann nicht rückgängig gemacht werden!')) return;
             if (!confirm('🚨 WIRKLICH SICHER?\n\nLetzter Warnhinweis!')) return;
-            
-            localStorage.removeItem('f1rpg_gamestate');
+
+            localStorage.removeItem('f1rpg_gamestate');   // Alt-Schlüssel (vor IndexedDB-Migration)
+            try { await idbDel('f1rpg_gamestate'); await idbDel('f1rpg_autosave'); } catch (e) {}
             location.reload();
         };
         
@@ -21096,7 +21245,7 @@ Empfohlene Wertebereiche:
         }
         
         // === INIT ===
-        function initialize() {
+        async function initialize() {
             logInfo('INIT', `F1 RPG ${VERSION} startet...`);
 
             // Versionsanzeige im Header dynamisch befüllen
@@ -21106,12 +21255,17 @@ Empfohlene Wertebereiche:
             // Theme laden
             const savedTheme = localStorage.getItem('f1rpg_theme') || 'slate';
             document.documentElement.setAttribute('data-theme', savedTheme);
-            
+
             // Typography laden (Font + Größe + Fett + Kursiv)
             applyTypography();
-            
+
+            // Persistenten Speicher anfordern (schützt IndexedDB vor Eviction; bei PWA oft automatisch)
+            try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+            // Einmalige Migration alter localStorage-Stände → IndexedDB
+            await migrateStorageToIdb();
+
             // Spielstand laden oder neu erstellen
-            if (!loadGame()) {
+            if (!(await loadGame())) {
                 logInfo('INIT', 'Kein Spielstand gefunden, erstelle neuen...');
                 initFromYear(2024);
             } else {
