@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.13.0</title>
+    <title>F1 RPG v0.9.13.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -933,7 +933,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.13.0 (aktuell) - 23.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.13.1 (aktuell) - 23.06.2026</div>
+                            <div>&#8226; NEU: Mega-Sim ohne Limit (0 = unbegrenzt, läuft bis Abbruch oder Speichergrenze)</div>
+                            <div>&#8226; NEU: Mega-Sim stoppt sich vor dem Speicher-Crash selbst (Heap-Wächter ≥88%)</div>
+                            <div>&#8226; NEU: Zwischenspeichern alle 25 Saisons + Sicherung bei Abbruch → Fortschritt geht nie verloren</div>
+                            <div class="font-bold text-slate-400">v0.9.13.0 - 23.06.2026</div>
                             <div>&#8226; NEU: Spielstände in IndexedDB – Speicherlimit von ~5 MB auf Hunderte MB/GB</div>
                             <div>&#8226; NEU: Automatische, verlustfreie Migration alter localStorage-Stände</div>
                             <div>&#8226; NEU: Speicheranzeige nutzt echte Browser-Quota (navigator.storage.estimate)</div>
@@ -2023,7 +2027,7 @@
                 <button onclick="simulateFullSeason()" class="px-6 py-3 rounded-lg font-bold transition text-lg" style="background-color: var(--accent-blue); color: white;">
                     ⚡ Komplette Saison
                 </button>
-                <button onclick="megaSim()" class="px-6 py-3 rounded-lg font-bold transition text-lg" style="background-color: var(--accent-main); color: white;" title="Mehrere Saisons am Stück simulieren (1–500)">
+                <button onclick="megaSim()" class="px-6 py-3 rounded-lg font-bold transition text-lg" style="background-color: var(--accent-main); color: white;" title="Mehrere Saisons am Stück simulieren (0 = unbegrenzt)">
                     ⏩ Mega-Sim
                 </button>
             </div>
@@ -2662,7 +2666,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.13.0';
+        const VERSION = '0.9.13.1';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12328,10 +12332,11 @@
         window._megaSimCancel = function() { window._megaSimCancelled = true; };
 
         window.megaSim = function() {
-            const input = prompt('🏎️ Wie viele Saisons simulieren? (1–500)', '10');
+            const input = prompt('🏎️ Wie viele Saisons simulieren?\n0 = unbegrenzt (läuft bis Abbruch oder Speichergrenze)', '0');
             if (input === null) return;
             const n = parseInt(input);
-            if (!n || n < 1 || n > 500) { alert('Bitte eine Zahl zwischen 1 und 500 eingeben.'); return; }
+            if (isNaN(n) || n < 0) { alert('Bitte 0 (unbegrenzt) oder eine positive Zahl eingeben.'); return; }
+            const unlimited = (n === 0);
             if (GAME_STATE.currentRace < GAME_STATE.races.length &&
                 !confirm(`Aktuelle Saison ${GAME_STATE.currentYear} läuft noch (${GAME_STATE.currentRace}/${GAME_STATE.races.length}).\n\nSie wird als erste Saison zu Ende simuliert. Fortfahren?`)) return;
 
@@ -12341,10 +12346,19 @@
             const seasonEl = document.getElementById('megasim-season');
             overlay.style.display = 'flex';
             bar.style.width = '0%';
-            counter.textContent = `0 / ${n} Saisons`;
+            counter.textContent = unlimited ? '0 Saisons …' : `0 / ${n} Saisons`;
             seasonEl.textContent = '–';
 
-            let done = 0, totalMs = 0, healed = 0, warned = 0;
+            let done = 0, totalMs = 0, healed = 0, warned = 0, _saving = false;
+            const SAVE_EVERY = 25;   // Zwischenspeichern als Crash-Versicherung (v. a. unbegrenzter Lauf)
+            // Selbst-Stopp VOR dem Crash: Heap-Auslastung (nur Chrome) ≥ 88% → sauber beenden
+            const crashGuard = () => {
+                try {
+                    const m = performance.memory;
+                    if (m && m.jsHeapSizeLimit && (m.usedJSHeapSize / m.jsHeapSizeLimit) >= 0.88) return 'Arbeitsspeicher';
+                } catch (e) {}
+                return null;
+            };
             window._megaSimCancelled = false;
             window._megaSimFast = true;
 
@@ -12366,8 +12380,15 @@
                     finish(`✋ Abgebrochen nach ${done} Saison(s)`);
                     return;
                 }
-                if (done >= n) {
-                    saveGame();   // einmal am Ende – nicht pro Saison (localStorage-I/O)
+                const guard = crashGuard();   // VOR dem Crash sauber stoppen, Fortschritt ist gesichert
+                if (guard) {
+                    saveGame();
+                    logWarning('MEGASIM', `Selbst-Stopp: ${guard}grenze (~88%) erreicht nach ${done} Saisons`);
+                    finish(`🛑 ${guard}grenze erreicht – sauber gestoppt nach ${done} Saisons`);
+                    return;
+                }
+                if (!unlimited && done >= n) {
+                    saveGame();   // einmal am Ende
                     const avg = done ? Math.round(totalMs / done) : 0;
                     let msg = `✓ ${done} Saisons · Ø ${avg} ms/Saison`;
                     if (healed) msg += ` · ${healed} repariert`;
@@ -12375,7 +12396,7 @@
                     return;
                 }
                 const t0 = performance.now();
-                for (let b = 0; b < BATCH && done < n && !window._megaSimCancelled; b++) {
+                for (let b = 0; b < BATCH && (unlimited || done < n) && !window._megaSimCancelled; b++) {
                     try {
                         runSeasonHeadless();
                         const issues = megaSimSanityCheck();
@@ -12395,6 +12416,11 @@
                             }
                         }
                         done++;
+                        // Zwischenspeichern (async, nicht-blockierend): bei hartem Crash höchstens SAVE_EVERY Saisons verloren
+                        if (!_saving && done % SAVE_EVERY === 0) {
+                            _saving = true;
+                            saveGame().finally(() => { _saving = false; });
+                        }
                     } catch (e) {
                         window._megaSimFast = false;
                         logError('MEGASIM', `Exception Saison ${done + 1}: ${e.message}`);
@@ -12406,8 +12432,13 @@
                 }
                 totalMs += performance.now() - t0;
                 const avg = done ? Math.round(totalMs / done) : 0;
-                bar.style.width = Math.round((done / n) * 100) + '%';
-                counter.textContent = `${done} / ${n} Saisons`;
+                if (unlimited) {
+                    bar.style.width = ((done % 20) * 5) + '%';   // bewegter Balken (kein festes Ziel)
+                    counter.textContent = `${done} Saisons …`;
+                } else {
+                    bar.style.width = Math.round((done / n) * 100) + '%';
+                    counter.textContent = `${done} / ${n} Saisons`;
+                }
                 seasonEl.textContent = `Ø ${avg} ms/Saison${warned ? ` · ${warned} Warnung(en)` : ''}`;
                 setTimeout(step, 0);   // an Browser zurückgeben (UI/Abbrechen reagieren)
             };
