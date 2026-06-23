@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.13.1</title>
+    <title>F1 RPG v0.9.13.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -933,7 +933,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.13.1 (aktuell) - 23.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.13.2 (aktuell) - 23.06.2026</div>
+                            <div>&#8226; FIX: Mega-Sim crasht/bremst nicht mehr – kein Per-Rennen-Speichern im Fastmode (~33→0 Serialisierungen/Saison, 25x schneller)</div>
+                            <div>&#8226; FIX: Crash-Selbstschutz jetzt auch in Firefox (Spielstand-Größe statt nur Chrome-Heap)</div>
+                            <div>&#8226; NEU: Mega-Sim aktualisiert die UI flüssig pro Saison statt alle 5</div>
+                            <div class="font-bold text-slate-400">v0.9.13.1 - 23.06.2026</div>
                             <div>&#8226; NEU: Mega-Sim ohne Limit (0 = unbegrenzt, läuft bis Abbruch oder Speichergrenze)</div>
                             <div>&#8226; NEU: Mega-Sim stoppt sich vor dem Speicher-Crash selbst (Heap-Wächter ≥88%)</div>
                             <div>&#8226; NEU: Zwischenspeichern alle 25 Saisons + Sicherung bei Abbruch → Fortschritt geht nie verloren</div>
@@ -2666,7 +2670,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.13.1';
+        const VERSION = '0.9.13.2';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -2806,6 +2810,7 @@
         const STORAGE_HISTORY_KEY = 'f1rpg_storage_history';
         const STORAGE_HISTORY_MAX = 50;
         let _storageQuotaAlerted = false;             // Quota-Alert nur einmal pro Sitzung
+        let _lastSaveBytes = 0;                       // Größe des letzten Saves (UTF-16) – Proxy für RAM-Last (Crash-Wächter)
 
         function formatBytes(n) {
             if (n < 1024) return n + ' B';
@@ -5004,7 +5009,9 @@
         // === SPEICHER-FUNKTIONEN (IndexedDB, Fallback localStorage) ===
         async function saveGame() {
             try {
-                if (!(await safeIdbSet('f1rpg_gamestate', JSON.stringify(GAME_STATE)))) return;
+                const json = JSON.stringify(GAME_STATE);
+                _lastSaveBytes = json.length * 2;   // UTF-16 → Bytes (Proxy für RAM-Last)
+                if (!(await safeIdbSet('f1rpg_gamestate', json))) return;
                 updateSaveStatus('💾 Gespeichert: ' + new Date().toLocaleTimeString('de-DE'));
                 logSuccess('SAVE', 'Spielstand gespeichert');
                 pushStorageHistory();
@@ -7341,8 +7348,12 @@
             });
 
             processMidSeasonDismissals();
-            saveGame();
-            if (GAME_STATE.currentRace % 3 === 0) autoSaveGame();
+            // Im Mega-Sim-Fastmode NICHT pro Rennen speichern – sonst ~33 wachsende
+            // State-Serialisierungen/Saison → Slowdown + OOM. Mega-Sim speichert selbst.
+            if (!window._megaSimFast) {
+                saveGame();
+                if (GAME_STATE.currentRace % 3 === 0) autoSaveGame();
+            }
         }
 
         // === ZWEI-WÜRFEL-TODESMODELL ===
@@ -11512,7 +11523,7 @@
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
             fillEmptyTeamSeats(newYear);   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
-            saveGame();
+            if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
 
             // autoAddNewDrivers läuft bereits in processSeasonEndEvents() vor processTeamChanges()
@@ -12354,9 +12365,14 @@
             // Selbst-Stopp VOR dem Crash: Heap-Auslastung (nur Chrome) ≥ 88% → sauber beenden
             const crashGuard = () => {
                 try {
-                    const m = performance.memory;
-                    if (m && m.jsHeapSizeLimit && (m.usedJSHeapSize / m.jsHeapSizeLimit) >= 0.88) return 'Arbeitsspeicher';
+                    const m = performance.memory;   // Chromium: echtes Heap-Limit
+                    if (m && m.jsHeapSizeLimit) {
+                        if ((m.usedJSHeapSize / m.jsHeapSizeLimit) >= 0.88) return 'Arbeitsspeicher';
+                        return null;
+                    }
                 } catch (e) {}
+                // Firefox/Safari (kein performance.memory): State-Größe als Proxy, Stopp bei ~300 MB
+                if (_lastSaveBytes >= 300 * 1024 * 1024) return 'Spielstand-Größe';
                 return null;
             };
             window._megaSimCancelled = false;
@@ -12373,7 +12389,7 @@
                 setTimeout(teardown, 1400);
             };
 
-            const BATCH = 5;
+            const BATCH = 1;   // 1 Saison pro Macrotask → flüssige UI-Aktualisierung pro Saison
             const step = () => {
                 if (window._megaSimCancelled) {
                     saveGame();
