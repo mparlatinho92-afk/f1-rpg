@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.2</title>
+    <title>F1 RPG v0.9.14.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -918,6 +918,14 @@
             </div>
             <div id="debug-log-content" class="collapsed">
                 <div id="storage-details"></div>
+                <div id="dummy-juniors-ctrl" style="padding:0.4rem 0;border-bottom:1px solid var(--border-color);margin-bottom:0.5rem;font-size:0.85rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                    <span title="Reiner Datenballast pro Saison zum Stresstesten von Speicher/Export. Serien=0 → aus. Keine Spielwirkung.">🧪 Junior-Stresstest:</span>
+                    <label style="display:flex;align-items:center;gap:0.25rem;">Serien <input id="dj-series" type="number" min="0" step="1" value="0" style="width:52px;padding:2px 6px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);" onclick="event.stopPropagation();" onchange="event.stopPropagation(); setDummyJuniorParams();"></label>
+                    <label style="display:flex;align-items:center;gap:0.25rem;">Fahrer/Serie <input id="dj-drivers" type="number" min="0" step="1" value="25" style="width:52px;padding:2px 6px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);" onclick="event.stopPropagation();" onchange="event.stopPropagation(); setDummyJuniorParams();"></label>
+                    <label style="display:flex;align-items:center;gap:0.25rem;">Rennen/Serie <input id="dj-races" type="number" min="0" step="1" value="15" style="width:52px;padding:2px 6px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);" onclick="event.stopPropagation();" onchange="event.stopPropagation(); setDummyJuniorParams();"></label>
+                    <button onclick="event.stopPropagation(); stripDummyJuniors();" style="padding:2px 10px;border-radius:4px;cursor:pointer;background:var(--accent-secondary);color:#fff;border:none;">🧹 Dummies entfernen</button>
+                    <span id="dummy-juniors-status" style="color:var(--text-muted);flex-basis:100%;"></span>
+                </div>
                 <div id="debug-log-entries">
                     <div class="log-entry"><span class="log-info">System bereit...</span></div>
                 </div>
@@ -933,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.2 (aktuell) - 24.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.3 (aktuell) - 24.06.2026</div>
+                            <div>&#8226; NEU: Debug-Tool – Junior-Stresstest erzeugt Dummy-Serien als reinen Datenballast pro Saison (Speicher/Export testen)</div>
+                            <div>&#8226; NEU: Transparent dosierbar über Serien × Fahrer/Serie × Rennen/Serie + Live-Vorschau</div>
+                            <div>&#8226; NEU: Ballast-Größe (roh/komprimiert) in der Speicher-Aufschlüsselung + 'Dummies entfernen'-Button</div>
+                            <div class="font-bold text-slate-400">v0.9.14.2 - 24.06.2026</div>
                             <div>&#8226; FIX: Export-Bestätigung zeigt jetzt die tatsächliche Dateigröße (vorher ~2x zu hoch durch UTF-16-Rechnung)</div>
                             <div class="font-bold text-slate-400">v0.9.14.1 - 24.06.2026</div>
                             <div>&#8226; FIX: Export funktioniert wieder bei sehr vielen Saisons – kein Pretty-Print mehr (Datei ~2,4x kleiner)</div>
@@ -2680,7 +2692,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.2';
+        const VERSION = '0.9.14.3';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3158,6 +3170,7 @@
 
             const details = document.getElementById('storage-details');
             if (details) details.innerHTML = renderStorageDetails(est);
+            if (typeof syncDummyJuniorUI === 'function') syncDummyJuniorUI();
         }
 
         // HTML für aufgeklappten Detail-Bereich: Aufschlüsselung + Verlauf
@@ -3177,7 +3190,24 @@
                 idbRow = `<div style="display:flex;justify-content:space-between;gap:1rem;">`
                     + `<span>IndexedDB (Spielstände)</span><span style="color:var(--text-muted);">${formatBytes(idbBytes)}</span></div>`;
             }
-            const body = (rows + idbRow) || '<div style="color:var(--text-muted);">– leer –</div>';
+            // Junior-Ballast (Stresstest) – nur Größe, kein Inhalt → test-neutral.
+            // Volle Größenrechnung nur wenn Panel offen & nicht im Mega-Sim (sonst nur Saison-Zahl, billig).
+            let ballastRow = '';
+            const ballastSeasons = (GAME_STATE.history || []).filter(s => s._dummyJuniors).length;
+            if (ballastSeasons > 0) {
+                const collapsed = document.getElementById('debug-log-content')?.classList.contains('collapsed');
+                let val;
+                if (!collapsed && !window._megaSimFast) {
+                    let bytes = 0;   // .length ≈ UTF-8 (mostly ASCII) → roh/unkomprimiert = Export-Größe
+                    for (const s of GAME_STATE.history) if (s._dummyJuniors) bytes += JSON.stringify(s._dummyJuniors).length;
+                    val = `${formatBytes(bytes)} roh · ${ballastSeasons} Saisons`;
+                } else {
+                    val = `${ballastSeasons} Saison(s)`;
+                }
+                ballastRow = `<div style="display:flex;justify-content:space-between;gap:1rem;color:#f59e0b;" title="Rohe/unkomprimierte JSON-Größe = Export-Größe. In IndexedDB liegt es komprimiert (siehe Zeile darüber).">`
+                    + `<span>🧪 Junior-Ballast (roh/Export)</span><span>${val}</span></div>`;
+            }
+            const body = (rows + idbRow + ballastRow) || '<div style="color:var(--text-muted);">– leer –</div>';
 
             let hist = [];
             try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) {}
@@ -4607,6 +4637,10 @@
             sanitized.pendingAssignments = sanitized.pendingAssignments || []; // v0.9.3
             sanitized._recentlyRetiredNames = sanitized._recentlyRetiredNames || []; // v0.9.3
             sanitized.history = sanitized.history || [];
+            // Stresstest-Ballast (reine Daten): Serien=0 → aus; Defaults für Fahrer/Rennen vorbelegt
+            sanitized.dummyJuniorSeries  = sanitized.dummyJuniorSeries  || 0;
+            sanitized.dummyJuniorDrivers = sanitized.dummyJuniorDrivers || 25;
+            sanitized.dummyJuniorRaces   = sanitized.dummyJuniorRaces   || 15;
             
             // Objekte sicherstellen
             sanitized.driverStandings = sanitized.driverStandings || {};
@@ -11097,6 +11131,104 @@
             return years.length > 0 ? years[0] : null;
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // DUMMY-JUNIOR-SERIEN (Last-Generator für Stresstests, v0.9.14.3)
+        // REINER DATENBALLAST: wird nur gespeichert/geladen/exportiert, von KEINER
+        // Spiellogik gelesen. Kein Aufstieg, keine All-Time-Tabelle, keine F1-Wirkung.
+        // Transparent dosierbar über 3 Felder: Serien × Fahrer/Serie × Rennen/Serie pro Saison.
+        // ═══════════════════════════════════════════════════════════════
+        const _DUMMY_PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+
+        // Erzeugt eine real-ish Junior-Saison in derselben Objektform wie eine F1-History-Saison.
+        function generateDummySeriesSeason(idx, gridSize, rounds, year) {
+            const sName = `Serie ${idx + 1}`;
+            const drivers = [];
+            const standings = {};
+            for (let i = 0; i < gridSize; i++) {
+                const id = `dj${idx + 1}-${year}-${i}`;
+                drivers.push({ id, name: `${sName} Fahrer ${i + 1}`, nation: 'XX', points: 0 });
+                standings[id] = { name: `${sName} Fahrer ${i + 1}`, points: 0, wins: 0, podiums: 0, poles: 0 };
+            }
+            const races = [];
+            for (let r = 0; r < rounds; r++) {
+                const order = drivers.map(d => d.id);
+                for (let k = order.length - 1; k > 0; k--) {   // Fisher-Yates Shuffle
+                    const j = (Math.random() * (k + 1)) | 0;
+                    const t = order[k]; order[k] = order[j]; order[j] = t;
+                }
+                const results = order.map((id, pos) => ({ d: id, p: pos + 1, t: 60000 + ((Math.random() * 5000) | 0) }));
+                const quali   = order.map((id, pos) => ({ d: id, p: pos + 1, t: 58000 + ((Math.random() * 4000) | 0) }));
+                order.slice(0, 10).forEach((id, pos) => { standings[id].points += _DUMMY_PTS[pos]; });
+                standings[order[0]].wins++;
+                order.slice(0, 3).forEach(id => standings[id].podiums++);
+                standings[quali[0].d].poles++;
+                races.push({ round: r + 1, name: `${sName} Round ${r + 1}`, results, qualifying: quali });
+            }
+            let champ = drivers[0];
+            drivers.forEach(d => { d.points = standings[d.id].points; if (d.points > champ.points) champ = d; });
+            return { series: sName, year, grid: gridSize, rounds,
+                     champion: champ.name, championId: champ.id, drivers, races, standings };
+        }
+
+        // Liest die 3 Stresstest-Parameter aus GAME_STATE (mit Defaults).
+        function _dummyJuniorParams() {
+            return {
+                series:  Math.max(0, GAME_STATE.dummyJuniorSeries  | 0),
+                drivers: Math.max(0, GAME_STATE.dummyJuniorDrivers | 0),
+                races:   Math.max(0, GAME_STATE.dummyJuniorRaces   | 0)
+            };
+        }
+
+        // Hängt (Serien × Fahrer × Rennen) Junior-Daten an eine archivierte Saison (reiner Ballast).
+        function attachDummyJuniors(season, year) {
+            if (!season) return;
+            const p = _dummyJuniorParams();
+            if (p.series < 1 || p.drivers < 1 || p.races < 1) return;
+            const out = [];
+            for (let i = 0; i < p.series; i++) out.push(generateDummySeriesSeason(i, p.drivers, p.races, year));
+            season._dummyJuniors = out;
+        }
+
+        // Entfernt allen Junior-Ballast wieder + erzwingt Rewrite der History-Records (Persistenz v2).
+        window.stripDummyJuniors = async function() {
+            let n = 0;
+            (GAME_STATE.history || []).forEach(s => { if (s._dummyJuniors) { delete s._dummyJuniors; n++; } });
+            GAME_STATE.dummyJuniorSeries = 0;   // Generierung aus, Felder bleiben für Wiederverwendung
+            // History-Store leeren → saveGame schreibt alle (jetzt sauberen) Saisons neu
+            if (_idbAvailable && typeof idbHistClear === 'function') await idbHistClear();
+            _persistedHistoryYears = new Set();
+            await saveGame();
+            if (typeof renderAll === 'function') renderAll();
+            syncDummyJuniorUI();
+            alert(`🧹 Junior-Dummies aus ${n} Saison(s) entfernt.`);
+        };
+
+        // Liest die 3 Eingabefelder → GAME_STATE, speichert.
+        window.setDummyJuniorParams = function() {
+            const g = id => { const el = document.getElementById(id); return el ? Math.max(0, parseInt(el.value) || 0) : 0; };
+            GAME_STATE.dummyJuniorSeries  = g('dj-series');
+            GAME_STATE.dummyJuniorDrivers = g('dj-drivers');
+            GAME_STATE.dummyJuniorRaces   = g('dj-races');
+            syncDummyJuniorUI();
+            saveGame();
+        };
+
+        // Spiegelt Parameter + Vorschau + Ballast-Status ins Debug-Panel (von updateStorageMeter aufgerufen).
+        function syncDummyJuniorUI() {
+            const p = _dummyJuniorParams();
+            const set = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
+            set('dj-series', p.series); set('dj-drivers', p.drivers); set('dj-races', p.races);
+            const st = document.getElementById('dummy-juniors-status');
+            if (st) {
+                const active = p.series >= 1 && p.drivers >= 1 && p.races >= 1;
+                const ballast = (GAME_STATE.history || []).filter(s => s._dummyJuniors).length;
+                const preview = active
+                    ? `→ ${p.series} Serien × ${p.races} Rennen = ${p.series * p.races} Rennen, ${p.series * p.drivers} Fahrer/Saison`
+                    : '→ aus (eine Zahl ist 0)';
+                st.textContent = preview + (ballast ? ` · ${ballast} Saison(s) mit Ballast` : '');
+            }
+        }
+
         // WICHTIG: neuesJahr = aktuellesJahr + 1 - KEINE AUSNAHMEN!
         function startNewSeason() {
             const newYear = GAME_STATE.currentYear + 1;
@@ -11188,7 +11320,13 @@
                 
                 // Snapshot löschen
                 delete GAME_STATE._seasonEndSnapshot;
-                
+
+                // STRESSTEST: Dummy-Junior-Serien an die eben archivierte Saison hängen (reiner Ballast)
+                if ((GAME_STATE.dummyJuniorSeries | 0) > 0) {
+                    const _s = GAME_STATE.history[GAME_STATE.history.length - 1];
+                    attachDummyJuniors(_s, _s.year);
+                }
+
                 GAME_STATE.allTimeStATS.totalSeasons++;
                 
                 // Team-Championship in All-Time StATS zählen (mit histId)
