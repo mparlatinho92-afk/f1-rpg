@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.3</title>
+    <title>F1 RPG v0.9.14.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.3 (aktuell) - 24.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.4 (aktuell) - 25.06.2026</div>
+                            <div>&#8226; NEU: Export/Import als NDJSON-Stream - kein JS-String-Limit mehr (behebt 'Invalid string length')</div>
+                            <div>&#8226; NEU: Import liest Datei zeilenweise (file.stream), nie komplett im Speicher</div>
+                            <div>&#8226; FIX: alte Einzel-JSON-Spielstaende bleiben voll importierbar</div>
+                            <div class="font-bold text-slate-400">v0.9.14.3 - 24.06.2026</div>
                             <div>&#8226; NEU: Debug-Tool – Junior-Stresstest erzeugt Dummy-Serien als reinen Datenballast pro Saison (Speicher/Export testen)</div>
                             <div>&#8226; NEU: Transparent dosierbar über Serien × Fahrer/Serie × Rennen/Serie + Live-Vorschau</div>
                             <div>&#8226; NEU: Ballast-Größe (roh/komprimiert) in der Speicher-Aufschlüsselung + 'Dummies entfernen'-Button</div>
@@ -2692,7 +2696,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.3';
+        const VERSION = '0.9.14.4';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12445,18 +12449,29 @@
         };
         
         // === EXPORT / IMPORT ===
+        // Export im NDJSON-Streaming-Format (Phase 1): nie ein einziger Riesen-String.
+        // Zeile 1 = Meta-Header, Zeile 2 = core (GAME_STATE OHNE history, bounded ~0.7MB),
+        // danach je Saison genau 1 Zeile. Der Blob fügt die Teile zusammen, ohne sie zu
+        // einem JS-String zu konkatenieren → kein "Invalid string length" mehr.
         window.exportSave = function() {
             try {
-                const exportData = {
-                    ...GAME_STATE,
+                const hist = GAME_STATE.history || [];
+                const parts = [];
+                parts.push(JSON.stringify({
+                    _format: 'f1rpg-ndjson', _v: 1,
+                    exportVersion: VERSION,
                     exportedAt: new Date().toISOString(),
-                    exportVersion: VERSION
-                };
+                    currentYear: GAME_STATE.currentYear,
+                    currentRace: GAME_STATE.currentRace,
+                    seasons: hist.length
+                }) + '\n');
+                // core: _stringifyCore tauscht history temporär raus (synchron) → bounded
+                parts.push(_stringifyCore({ _t: 'core' }) + '\n');
+                for (const h of hist) {
+                    parts.push(JSON.stringify({ _t: 'season', d: h }) + '\n');   // je Saison bounded
+                }
 
-                // KEIN Pretty-Print (null,2): verdoppelt den String → sprengt bei sehr vielen
-                // Saisons das JS-String-Limit (~536 Mio. Zeichen) und ließ den Button lautlos sterben.
-                const json = JSON.stringify(exportData);
-                const blob = new Blob([json], { type: 'application/json' });
+                const blob = new Blob(parts, { type: 'application/x-ndjson' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -12465,100 +12480,126 @@
                 URL.revokeObjectURL(url);
 
                 // blob.size = echte UTF-8-Dateigröße (json.length*2 wäre UTF-16/In-RAM, ~2x zu groß)
-                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(blob.size)})`);
-                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nDateigröße: ${formatBytes(blob.size)}`);
+                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(blob.size)}, NDJSON, ${hist.length} Saisons)`);
+                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nSaisons: ${hist.length}\nDateigröße: ${formatBytes(blob.size)}`);
             } catch (e) {
                 logError('EXPORT', 'Export fehlgeschlagen: ' + (e.message || e));
-                alert('❌ Export fehlgeschlagen.\n\nDer Spielstand ist vermutlich zu groß für eine einzelne Datei (' + (e.message || e) + ').\n\nDeine Daten sind sicher im Browser gespeichert (IndexedDB) – der Datei-Export ist nur für Backup/Transfer gedacht.');
+                alert('❌ Export fehlgeschlagen.\n\n' + (e.message || e) + '\n\nDeine Daten sind sicher im Browser gespeichert (IndexedDB) – der Datei-Export ist nur für Backup/Transfer gedacht.');
             }
         };
-        
-        window.importSave = function(event) {
+
+        // Gemeinsamer Import-Abschluss für beide Pfade (NDJSON & Alt-Format):
+        // validiert, übernimmt, sanitisiert, schreibt History-Store + core.
+        async function _applyImportedState(gameState) {
+            // Basis-Validierung (== null deckt undefined und null ab, nicht 0)
+            if (gameState.currentYear == null && gameState.year == null) throw new Error('Kein Jahr gefunden');
+            if (!gameState.drivers && !gameState.fahrer) throw new Error('Keine Fahrer gefunden');
+            if (!gameState.teams && !gameState.konstrukteure) throw new Error('Keine Teams gefunden');
+
+            // Feld-Normalisierung für alte Formate
+            if (!gameState.currentYear && gameState.year) gameState.currentYear = gameState.year;
+            if (!gameState.drivers && gameState.fahrer) gameState.drivers = gameState.fahrer;
+            if (!gameState.teams && gameState.konstrukteure) gameState.teams = gameState.konstrukteure;
+            if (!gameState.races && gameState.rennen) gameState.races = gameState.rennen;
+            if (gameState.currentRace === undefined) gameState.currentRace = 0;
+
+            GAME_STATE = gameState;
+            GAME_STATE.version = VERSION;
+
+            // Sanitize durchlaufen für Migration
+            GAME_STATE = sanitizeGameState(GAME_STATE);
+            initReservePool(GAME_STATE.currentYear);
+            sanitizeReservePool(GAME_STATE.currentYear);
+            sanitizeDriverDuplicates(GAME_STATE.currentYear);
+
+            if (GAME_STATE.theme) document.documentElement.setAttribute('data-theme', GAME_STATE.theme);
+
+            // History-Store leeren → Diff schreibt alle importierten Saisons frisch, alte verschwinden
+            if (_idbAvailable) { await idbHistClear(); }
+            _persistedHistoryYears = new Set();
+            await saveGame();
+            renderAll();
+
+            logSuccess('IMPORT', `Spielstand importiert: Jahr ${GAME_STATE.currentYear}`);
+            alert(`✅ Importiert!\n\nSaison: ${GAME_STATE.currentYear}\nRennen: ${GAME_STATE.currentRace}/${GAME_STATE.races?.length || '?'}\nFahrer: ${GAME_STATE.drivers?.length || '?'}`);
+        }
+
+        // Erkennt NDJSON am Meta-Header der ersten Zeile (liest nur die ersten Bytes).
+        async function _detectNdjson(file) {
+            if (typeof file.stream !== 'function') return false;   // ohne Streaming → Alt-Pfad
+            try {
+                const head = await file.slice(0, 512).text();
+                const firstLine = head.split('\n')[0];
+                const obj = JSON.parse(firstLine);
+                return !!(obj && obj._format === 'f1rpg-ndjson');
+            } catch (e) { return false; }   // kein vollständiger JSON-Header in 512B → Alt-Format
+        }
+
+        // Streaming-Import: zeilenweise dekodieren, nie die ganze Datei in einem String.
+        async function _importNdjson(file) {
+            const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+            let buf = '';
+            let core = null;
+            const seasons = [];
+            let sawHeader = false;
+            const handleLine = (line) => {
+                if (!line.trim()) return;
+                const rec = JSON.parse(line);
+                if (!sawHeader && rec._format === 'f1rpg-ndjson') { sawHeader = true; return; }
+                sawHeader = true;
+                if (rec._t === 'core') core = rec.state;
+                else if (rec._t === 'season' && rec.d) seasons.push(rec.d);
+            };
+            while (true) {
+                const { value, done } = await reader.read();
+                if (value) buf += value;
+                let nl;
+                while ((nl = buf.indexOf('\n')) >= 0) {
+                    handleLine(buf.slice(0, nl));
+                    buf = buf.slice(nl + 1);
+                }
+                if (done) break;
+            }
+            if (buf.length) handleLine(buf);   // letzte Zeile ohne abschließendes \n
+            if (!core) throw new Error('NDJSON-Datei ohne core-Datensatz');
+            core.history = seasons;
+            await _applyImportedState(core);
+        }
+
+        // Alt-Pfad: komplette Datei via FileReader (kleine Einzel-JSON-Stände, abwärtskompatibel).
+        function _importLegacyJson(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden'));
+                reader.onload = async function(e) {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        if (!imported) throw new Error('Leere Datei');
+                        // Off-Season-Export erkennbar an exportedYear ohne drivers/teams
+                        if (imported.exportedYear && !imported.drivers && !imported.teams && !imported.currentYear) {
+                            throw new Error('Das ist eine Off-Season-Datei, kein Spielstand. Bitte "💾 Exportieren" nutzen.');
+                        }
+                        // Alter gameState-Wrapper oder direkter Spielstand
+                        const gameState = imported.gameState ? imported.gameState : imported;
+                        await _applyImportedState(gameState);
+                        resolve();
+                    } catch (err) { reject(err); }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        window.importSave = async function(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    
-                    // Flexible Validierung für verschiedene Spielstand-Formate
-                    // Alte Formate könnten andere Strukturen haben
-                    if (!imported) {
-                        throw new Error('Leere Datei');
-                    }
-                    
-                    // Off-Season-Export erkennbar an exportedYear ohne drivers/teams
-                    if (imported.exportedYear && !imported.drivers && !imported.teams && !imported.currentYear) {
-                        throw new Error('Das ist eine Off-Season-Datei, kein Spielstand. Bitte "💾 Exportieren" nutzen.');
-                    }
-
-                    // Prüfe ob es ein direkter Spielstand oder ein Export-Wrapper ist
-                    let gameState = imported;
-                    if (imported.gameState) {
-                        // Altes Format mit gameState-Wrapper
-                        gameState = imported.gameState;
-                    }
-
-                    // Basis-Validierung (== null deckt undefined und null ab, nicht 0)
-                    if (gameState.currentYear == null && gameState.year == null) {
-                        throw new Error('Kein Jahr gefunden');
-                    }
-                    if (!gameState.drivers && !gameState.fahrer) {
-                        throw new Error('Keine Fahrer gefunden');
-                    }
-                    if (!gameState.teams && !gameState.konstrukteure) {
-                        throw new Error('Keine Teams gefunden');
-                    }
-                    
-                    // Feld-Normalisierung für alte Formate
-                    if (!gameState.currentYear && gameState.year) {
-                        gameState.currentYear = gameState.year;
-                    }
-                    if (!gameState.drivers && gameState.fahrer) {
-                        gameState.drivers = gameState.fahrer;
-                    }
-                    if (!gameState.teams && gameState.konstrukteure) {
-                        gameState.teams = gameState.konstrukteure;
-                    }
-                    if (!gameState.races && gameState.rennen) {
-                        gameState.races = gameState.rennen;
-                    }
-                    if (gameState.currentRace === undefined) {
-                        gameState.currentRace = 0;
-                    }
-                    
-                    // GAME_STATE überschreiben
-                    GAME_STATE = gameState;
-                    GAME_STATE.version = VERSION;
-                    
-                    // Sanitize durchlaufen für Migration
-                    GAME_STATE = sanitizeGameState(GAME_STATE);
-                    initReservePool(GAME_STATE.currentYear);
-                    sanitizeReservePool(GAME_STATE.currentYear);
-                    sanitizeDriverDuplicates(GAME_STATE.currentYear);
-
-                    // Theme anwenden
-                    if (GAME_STATE.theme) {
-                        document.documentElement.setAttribute('data-theme', GAME_STATE.theme);
-                    }
-
-                    // History-Store leeren → Diff schreibt alle importierten Saisons frisch, alte verschwinden
-                    if (_idbAvailable) { await idbHistClear(); }
-                    _persistedHistoryYears = new Set();
-                    await saveGame();
-                    renderAll();
-
-                    logSuccess('IMPORT', `Spielstand importiert: Jahr ${GAME_STATE.currentYear}`);
-                    alert(`✅ Importiert!\n\nSaison: ${GAME_STATE.currentYear}\nRennen: ${GAME_STATE.currentRace}/${GAME_STATE.races?.length || '?'}\nFahrer: ${GAME_STATE.drivers?.length || '?'}`);
-                    
-                } catch (err) {
-                    logError('IMPORT', 'Import fehlgeschlagen: ' + err.message);
-                    alert('❌ Import fehlgeschlagen: ' + err.message);
-                }
-            };
-            reader.readAsText(file);
             event.target.value = '';
+            try {
+                if (await _detectNdjson(file)) await _importNdjson(file);
+                else await _importLegacyJson(file);
+            } catch (err) {
+                logError('IMPORT', 'Import fehlgeschlagen: ' + (err.message || err));
+                alert('❌ Import fehlgeschlagen: ' + (err.message || err));
+            }
         };
         
         // === UI FUNKTIONEN ===
