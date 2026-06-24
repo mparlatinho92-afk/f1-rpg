@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.0</title>
+    <title>F1 RPG v0.9.14.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -933,7 +933,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.0 (aktuell) - 24.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.1 (aktuell) - 24.06.2026</div>
+                            <div>&#8226; FIX: Export funktioniert wieder bei sehr vielen Saisons – kein Pretty-Print mehr (Datei ~2,4x kleiner)</div>
+                            <div>&#8226; FIX: Export zeigt bei Fehler jetzt eine klare Meldung statt nicht zu reagieren</div>
+                            <div>&#8226; NEU: Export-Bestätigung zeigt die Dateigröße</div>
+                            <div class="font-bold text-slate-400">v0.9.14.0 - 24.06.2026</div>
                             <div>&#8226; NEU: Vergangene Saisons werden einzeln gespeichert statt bei jedem Save komplett – Speicherzeit bleibt konstant statt zu wachsen</div>
                             <div>&#8226; NEU: Automatische Migration bestehender Spielstände ins neue Format</div>
                             <div>&#8226; FIX: Mega-Sim über hunderte Saisons ohne wachsende Verlangsamung</div>
@@ -2674,7 +2678,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.0';
+        const VERSION = '0.9.14.1';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12302,22 +12306,30 @@
         
         // === EXPORT / IMPORT ===
         window.exportSave = function() {
-            const exportData = {
-                ...GAME_STATE,
-                exportedAt: new Date().toISOString(),
-                exportVersion: VERSION
-            };
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `F1RPG_${GAME_STATE.currentYear}_R${GAME_STATE.currentRace}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            logSuccess('EXPORT', 'Spielstand exportiert');
-            alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}`);
+            try {
+                const exportData = {
+                    ...GAME_STATE,
+                    exportedAt: new Date().toISOString(),
+                    exportVersion: VERSION
+                };
+
+                // KEIN Pretty-Print (null,2): verdoppelt den String → sprengt bei sehr vielen
+                // Saisons das JS-String-Limit (~536 Mio. Zeichen) und ließ den Button lautlos sterben.
+                const json = JSON.stringify(exportData);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `F1RPG_${GAME_STATE.currentYear}_R${GAME_STATE.currentRace}_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(json.length * 2)})`);
+                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nDateigröße: ${formatBytes(json.length * 2)}`);
+            } catch (e) {
+                logError('EXPORT', 'Export fehlgeschlagen: ' + (e.message || e));
+                alert('❌ Export fehlgeschlagen.\n\nDer Spielstand ist vermutlich zu groß für eine einzelne Datei (' + (e.message || e) + ').\n\nDeine Daten sind sicher im Browser gespeichert (IndexedDB) – der Datei-Export ist nur für Backup/Transfer gedacht.');
+            }
         };
         
         window.importSave = function(event) {
