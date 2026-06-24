@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.13.2</title>
+    <title>F1 RPG v0.9.14.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -933,7 +933,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.13.2 (aktuell) - 23.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.0 (aktuell) - 24.06.2026</div>
+                            <div>&#8226; NEU: Vergangene Saisons werden einzeln gespeichert statt bei jedem Save komplett – Speicherzeit bleibt konstant statt zu wachsen</div>
+                            <div>&#8226; NEU: Automatische Migration bestehender Spielstände ins neue Format</div>
+                            <div>&#8226; FIX: Mega-Sim über hunderte Saisons ohne wachsende Verlangsamung</div>
+                            <div class="font-bold text-slate-400">v0.9.13.2 - 23.06.2026</div>
                             <div>&#8226; FIX: Mega-Sim crasht/bremst nicht mehr – kein Per-Rennen-Speichern im Fastmode (~33→0 Serialisierungen/Saison, 25x schneller)</div>
                             <div>&#8226; FIX: Crash-Selbstschutz jetzt auch in Firefox (Spielstand-Größe statt nur Chrome-Heap)</div>
                             <div>&#8226; NEU: Mega-Sim aktualisiert die UI flüssig pro Saison statt alle 5</div>
@@ -2670,7 +2674,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.13.2';
+        const VERSION = '0.9.14.0';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -2868,7 +2872,9 @@
         // localStorage, kein DataCloneError, in DevTools lesbar).
         // ═══════════════════════════════════════════════════════════════
         const IDB_NAME = 'f1rpg';
-        const IDB_STORE = 'kv';
+        const IDB_STORE = 'kv';          // kleine Keys: core, autosave
+        const IDB_HIST = 'history';      // je vergangene Saison 1 Record (Key = Jahr) – write-once
+        const IDB_VERSION = 2;
         let _idbDB = null;            // gecachte DB-Verbindung
         let _idbAvailable = (typeof indexedDB !== 'undefined' && indexedDB !== null);
 
@@ -2877,11 +2883,12 @@
                 if (_idbDB) return resolve(_idbDB);
                 if (!_idbAvailable) return reject(new Error('IndexedDB nicht verfügbar'));
                 let req;
-                try { req = indexedDB.open(IDB_NAME, 1); }
+                try { req = indexedDB.open(IDB_NAME, IDB_VERSION); }
                 catch (e) { _idbAvailable = false; return reject(e); }
                 req.onupgradeneeded = () => {
                     const db = req.result;
                     if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+                    if (!db.objectStoreNames.contains(IDB_HIST))  db.createObjectStore(IDB_HIST);
                 };
                 req.onsuccess = () => { _idbDB = req.result; resolve(_idbDB); };
                 req.onerror = () => { _idbAvailable = false; reject(req.error || new Error('IndexedDB open fehlgeschlagen')); };
@@ -2921,6 +2928,86 @@
             });
         }
 
+        // ── History-Store (Persistenz v2): je Saison 1 Record, write-once ──
+        // Records als plain object (structured-clone, kein stringify – billiger, write-once).
+        let _persistedHistoryYears = new Set();   // welche Jahre liegen bereits im history-Store
+
+        function idbHistPut(year, obj) {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_HIST, 'readwrite');
+                    tx.objectStore(IDB_HIST).put(obj, year);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => reject(tx.error);
+                    tx.onabort = () => reject(tx.error || new Error('history put abgebrochen'));
+                }).catch(reject);
+            });
+        }
+        function idbHistDelete(year) {
+            return new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_HIST, 'readwrite');
+                    tx.objectStore(IDB_HIST).delete(year);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                }).catch(() => resolve(false));
+            });
+        }
+        // Alle History-Records lesen, nach Jahr sortiert → rekonstruiert GAME_STATE.history
+        function idbHistGetAll() {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const store = db.transaction(IDB_HIST, 'readonly').objectStore(IDB_HIST);
+                    const rq = store.openCursor();
+                    const out = [];
+                    rq.onsuccess = () => {
+                        const cur = rq.result;
+                        if (cur) { out.push({ _key: cur.key, val: cur.value }); cur.continue(); }
+                        else {
+                            out.sort((a, b) => Number(a._key) - Number(b._key));
+                            resolve(out.map(o => o.val));
+                        }
+                    };
+                    rq.onerror = () => reject(rq.error);
+                }).catch(reject);
+            });
+        }
+        function idbHistClear() {
+            return new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_HIST, 'readwrite');
+                    tx.objectStore(IDB_HIST).clear();
+                    tx.oncomplete = () => { _persistedHistoryYears.clear(); resolve(true); };
+                    tx.onerror = () => resolve(false);
+                }).catch(() => resolve(false));
+            });
+        }
+
+        // Diff-basierte Persistierung: schreibt neue Saisons, löscht entfernte.
+        // Deckt push (startNewSeason), filter-Reset und pop-Undo einheitlich ab –
+        // ohne Mutations-Hooks. Vergangene Saisons sind immutable → Jahr-Vergleich genügt.
+        async function persistHistory() {
+            if (!_idbAvailable) return;   // Fallback-Modus: history liegt im core-Blob (siehe saveGame)
+            const hist = GAME_STATE.history || [];
+            const liveYears = new Set();
+            for (const h of hist) {
+                const y = h && h.year;
+                if (y == null) continue;
+                liveYears.add(y);
+                if (!_persistedHistoryYears.has(y)) {
+                    await idbHistPut(y, h);
+                    _persistedHistoryYears.add(y);
+                }
+            }
+            // Persistierte Jahre, die nicht mehr im RAM sind → löschen
+            for (const y of [..._persistedHistoryYears]) {
+                if (!liveYears.has(y)) {
+                    await idbHistDelete(y);
+                    _persistedHistoryYears.delete(y);
+                }
+            }
+        }
+
         // Async-Pendant zu safeSetItem: IndexedDB-Write + Quota/Fehler-Handling.
         // Ohne IndexedDB (z.B. Firefox-Privat) → Fallback auf localStorage – auch
         // wenn IndexedDB erst beim ersten Zugriff scheitert (open() lazy).
@@ -2958,10 +3045,13 @@
             return ls != null ? ls : null;
         }
 
-        // Einmalige, idempotente Migration: alte localStorage-Stände → IndexedDB.
+        // Einmalige, idempotente Migration in zwei Stufen:
+        // (v1) alte localStorage-Stände → IndexedDB kv.
+        // (v2) monolithischer f1rpg_gamestate-Blob → core (ohne history) + history-Store.
         async function migrateStorageToIdb() {
             if (!_idbAvailable) return;
             try {
+                // — Stufe v1: localStorage → IDB kv —
                 for (const key of ['f1rpg_gamestate', 'f1rpg_autosave']) {
                     const legacy = localStorage.getItem(key);
                     if (legacy == null) continue;
@@ -2970,7 +3060,23 @@
                         await idbSet(key, legacy);
                         logInfo('STORAGE', `Migration: ${key} → IndexedDB (${formatBytes(legacy.length * 2)})`);
                     }
-                    localStorage.removeItem(key);   // gibt altes ~MB-Budget frei
+                    localStorage.removeItem(key);
+                }
+                // — Stufe v2: Voll-Blob f1rpg_gamestate → core + history-Records —
+                const core = await idbGet('f1rpg_core');
+                if (core == null) {
+                    const blob = await idbGet('f1rpg_gamestate');
+                    if (blob != null) {
+                        const full = JSON.parse(blob);
+                        const hist = Array.isArray(full.history) ? full.history : [];
+                        for (const h of hist) {
+                            if (h && h.year != null) await idbHistPut(h.year, h);
+                        }
+                        full.history = [];   // history wandert in eigenen Store
+                        await idbSet('f1rpg_core', JSON.stringify(full));
+                        await idbDel('f1rpg_gamestate');   // erst NACH erfolgreichem Split entfernen
+                        logInfo('STORAGE', `Migration v2: ${hist.length} Saisons in History-Store ausgelagert`);
+                    }
                 }
             } catch (e) {
                 logError('STORAGE', 'Migration fehlgeschlagen: ' + (e.message || e));
@@ -5006,28 +5112,58 @@
             return sanitized;
         }
 
-        // === SPEICHER-FUNKTIONEN (IndexedDB, Fallback localStorage) ===
+        // === SPEICHER-FUNKTIONEN (IndexedDB v2: core + History-Store, Fallback localStorage) ===
+        // Serialisiert GAME_STATE OHNE history (history → eigener Store, write-once).
+        // Tauscht history temporär aus statt zu klonen (synchron, threadsicher).
+        function _stringifyCore(extra) {
+            const histRef = GAME_STATE.history;
+            GAME_STATE.history = [];
+            try { return JSON.stringify(extra ? { ...extra, state: GAME_STATE } : GAME_STATE); }
+            finally { GAME_STATE.history = histRef; }
+        }
+
         async function saveGame() {
             try {
-                const json = JSON.stringify(GAME_STATE);
-                _lastSaveBytes = json.length * 2;   // UTF-16 → Bytes (Proxy für RAM-Last)
-                if (!(await safeIdbSet('f1rpg_gamestate', json))) return;
+                if (_idbAvailable) {
+                    const json = _stringifyCore();
+                    _lastSaveBytes = json.length * 2;   // nur core (Crash-Wächter misst das Relevante)
+                    await idbSet('f1rpg_core', json);   // raw: wirft bei Fehler → catch (Fallback)
+                    await persistHistory();             // nur neue/entfernte Saisons
+                } else {
+                    const json = JSON.stringify(GAME_STATE);   // Fallback: voller Blob (kein Split)
+                    _lastSaveBytes = json.length * 2;
+                    if (!safeSetItem('f1rpg_gamestate', json)) return;
+                }
                 updateSaveStatus('💾 Gespeichert: ' + new Date().toLocaleTimeString('de-DE'));
                 logSuccess('SAVE', 'Spielstand gespeichert');
                 pushStorageHistory();
                 updateStorageMeter();
             } catch (e) {
-                logError('SAVE', 'Fehler beim Speichern: ' + e.message);
+                logError('SAVE', 'Fehler beim Speichern: ' + (e.message || e));
+                updateSaveStatus('⚠️ Speicherfehler – Fallback localStorage');
+                // Sicherheitsnetz: voller Blob nach localStorage (keine Teilstände im core-Key)
+                try { safeSetItem('f1rpg_gamestate', JSON.stringify(GAME_STATE)); } catch (e2) {}
             }
         }
 
         async function loadGame() {
             try {
+                // v2: core + History-Store
+                let core = null;
+                if (_idbAvailable) core = await idbGet('f1rpg_core');
+                if (core) {
+                    const loaded = JSON.parse(core);
+                    loaded.history = await idbHistGetAll();
+                    GAME_STATE = sanitizeGameState(loaded);
+                    _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
+                    logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, ${GAME_STATE.history.length} Saisons (History-Store)`);
+                    return true;
+                }
+                // Fallback: voller Blob (localStorage-Modus oder noch nicht gesplittet)
                 const saved = await idbGetSafe('f1rpg_gamestate');
                 if (saved) {
-                    let loadedState = JSON.parse(saved);
-                    // SANITIZER: Spielstand validieren und Defaults setzen
-                    GAME_STATE = sanitizeGameState(loadedState);
+                    GAME_STATE = sanitizeGameState(JSON.parse(saved));
+                    _persistedHistoryYears = new Set();   // nicht gesplittet → leer
                     logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}`);
                     return true;
                 }
@@ -5039,15 +5175,16 @@
 
         async function autoSaveGame() {
             try {
-                const snapshot = {
-                    state: GAME_STATE,
+                // Autosave = core-Snapshot (history liegt persistent im Store)
+                const snapJson = _stringifyCore({
                     savedAt: new Date().toISOString(),
                     year: GAME_STATE.currentYear,
                     race: GAME_STATE.currentRace
-                };
-                if (!(await safeIdbSet('f1rpg_autosave', JSON.stringify(snapshot)))) return;
-                updateSaveStatus(`🔄 Auto-Save: Saison ${snapshot.year}, Rennen ${snapshot.race} – ${new Date().toLocaleTimeString('de-DE')}`);
-                logSuccess('AUTOSAVE', `Auto-Save: Jahr ${snapshot.year}, Rennen ${snapshot.race}`);
+                });
+                if (_idbAvailable) { await idbSet('f1rpg_autosave', snapJson); }
+                else if (!safeSetItem('f1rpg_autosave', snapJson)) return;
+                updateSaveStatus(`🔄 Auto-Save: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace} – ${new Date().toLocaleTimeString('de-DE')}`);
+                logSuccess('AUTOSAVE', `Auto-Save: Jahr ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}`);
                 pushStorageHistory();
                 updateStorageMeter();
             } catch (e) {
@@ -5063,6 +5200,11 @@
                 const ts = new Date(snapshot.savedAt).toLocaleString('de-DE');
                 if (!confirm(`Auto-Save laden?\n📅 ${ts}\n🏁 Saison ${snapshot.year}, nach Rennen ${snapshot.race}\n\n⚠️ Aktueller Spielstand wird überschrieben!`)) return;
                 GAME_STATE = sanitizeGameState(snapshot.state);
+                // History aus Store ergänzen (neues core-Format); altes Voll-Format hatte history inline
+                if ((!GAME_STATE.history || GAME_STATE.history.length === 0) && _idbAvailable) {
+                    GAME_STATE.history = await idbHistGetAll();
+                    _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
+                }
                 renderAll();
                 updateSaveStatus(`↩️ Auto-Save geladen (${ts})`);
                 logSuccess('AUTOSAVE', 'Auto-Save wiederhergestellt');
@@ -12248,6 +12390,9 @@
                         document.documentElement.setAttribute('data-theme', GAME_STATE.theme);
                     }
 
+                    // History-Store leeren → Diff schreibt alle importierten Saisons frisch, alte verschwinden
+                    if (_idbAvailable) { await idbHistClear(); }
+                    _persistedHistoryYears = new Set();
                     await saveGame();
                     renderAll();
 
@@ -20744,7 +20889,11 @@ Empfohlene Wertebereiche:
             if (!confirm('🚨 WIRKLICH SICHER?\n\nLetzter Warnhinweis!')) return;
 
             localStorage.removeItem('f1rpg_gamestate');   // Alt-Schlüssel (vor IndexedDB-Migration)
-            try { await idbDel('f1rpg_gamestate'); await idbDel('f1rpg_autosave'); } catch (e) {}
+            localStorage.removeItem('f1rpg_autosave');
+            try {
+                await idbDel('f1rpg_gamestate'); await idbDel('f1rpg_core'); await idbDel('f1rpg_autosave');
+                await idbHistClear();   // v2: History-Store leeren
+            } catch (e) {}
             location.reload();
         };
         
