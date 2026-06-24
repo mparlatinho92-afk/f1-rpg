@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.1</title>
+    <title>F1 RPG v0.9.14.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -933,7 +933,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.1 (aktuell) - 24.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.2 (aktuell) - 24.06.2026</div>
+                            <div>&#8226; FIX: Export-Bestätigung zeigt jetzt die tatsächliche Dateigröße (vorher ~2x zu hoch durch UTF-16-Rechnung)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.1 - 24.06.2026</div>
                             <div>&#8226; FIX: Export funktioniert wieder bei sehr vielen Saisons – kein Pretty-Print mehr (Datei ~2,4x kleiner)</div>
                             <div>&#8226; FIX: Export zeigt bei Fehler jetzt eine klare Meldung statt nicht zu reagieren</div>
                             <div>&#8226; NEU: Export-Bestätigung zeigt die Dateigröße</div>
@@ -2678,7 +2680,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.1';
+        const VERSION = '0.9.14.2';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12324,8 +12326,9 @@
                 a.click();
                 URL.revokeObjectURL(url);
 
-                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(json.length * 2)})`);
-                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nDateigröße: ${formatBytes(json.length * 2)}`);
+                // blob.size = echte UTF-8-Dateigröße (json.length*2 wäre UTF-16/In-RAM, ~2x zu groß)
+                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(blob.size)})`);
+                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nDateigröße: ${formatBytes(blob.size)}`);
             } catch (e) {
                 logError('EXPORT', 'Export fehlgeschlagen: ' + (e.message || e));
                 alert('❌ Export fehlgeschlagen.\n\nDer Spielstand ist vermutlich zu groß für eine einzelne Datei (' + (e.message || e) + ').\n\nDeine Daten sind sicher im Browser gespeichert (IndexedDB) – der Datei-Export ist nur für Backup/Transfer gedacht.');
