@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.4</title>
+    <title>F1 RPG v0.9.14.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.4 (aktuell) - 25.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.5 (aktuell) - 25.06.2026</div>
+                            <div>&#8226; NEU: Persistenz v3 - schwere Saison-Daten (Ergebnisse/Fahrer/Teams) in eigenen IndexedDB-Store ausgelagert</div>
+                            <div>&#8226; NEU: Automatische einmalige Migration bestehender Spielstaende</div>
+                            <div>&#8226; TECH: Fundament fuer kommendes Lazy Loading (Phase 3, RAM-Entlastung)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.4 - 25.06.2026</div>
                             <div>&#8226; NEU: Export/Import als NDJSON-Stream - kein JS-String-Limit mehr (behebt 'Invalid string length')</div>
                             <div>&#8226; NEU: Import liest Datei zeilenweise (file.stream), nie komplett im Speicher</div>
                             <div>&#8226; FIX: alte Einzel-JSON-Spielstaende bleiben voll importierbar</div>
@@ -2696,7 +2700,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.4';
+        const VERSION = '0.9.14.5';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -2895,8 +2899,9 @@
         // ═══════════════════════════════════════════════════════════════
         const IDB_NAME = 'f1rpg';
         const IDB_STORE = 'kv';          // kleine Keys: core, autosave
-        const IDB_HIST = 'history';      // je vergangene Saison 1 Record (Key = Jahr) – write-once
-        const IDB_VERSION = 2;
+        const IDB_HIST = 'history';      // je Saison 1 LEICHTER Record (Key = Jahr) – Standings/Champion/Events
+        const IDB_DETAIL = 'history_detail';  // je Saison 1 SCHWERER Record (results/quali/drivers/teams/races/ballast)
+        const IDB_VERSION = 3;
         let _idbDB = null;            // gecachte DB-Verbindung
         let _idbAvailable = (typeof indexedDB !== 'undefined' && indexedDB !== null);
 
@@ -2911,6 +2916,7 @@
                     const db = req.result;
                     if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
                     if (!db.objectStoreNames.contains(IDB_HIST))  db.createObjectStore(IDB_HIST);
+                    if (!db.objectStoreNames.contains(IDB_DETAIL)) db.createObjectStore(IDB_DETAIL);  // v3
                 };
                 req.onsuccess = () => { _idbDB = req.result; resolve(_idbDB); };
                 req.onerror = () => { _idbAvailable = false; reject(req.error || new Error('IndexedDB open fehlgeschlagen')); };
@@ -2975,6 +2981,45 @@
                 }).catch(() => resolve(false));
             });
         }
+
+        // ── Detail-Store (Persistenz v3): schwere Felder je Saison getrennt ──
+        function idbHistDetailPut(year, obj) {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_DETAIL, 'readwrite');
+                    tx.objectStore(IDB_DETAIL).put(obj, year);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => reject(tx.error);
+                    tx.onabort = () => reject(tx.error || new Error('detail put abgebrochen'));
+                }).catch(reject);
+            });
+        }
+        function idbHistDetailDelete(year) {
+            return new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_DETAIL, 'readwrite');
+                    tx.objectStore(IDB_DETAIL).delete(year);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                }).catch(() => resolve(false));
+            });
+        }
+        // Alle Detail-Records als Map(Jahr → schwererObj) – Key nötig fürs Merge in loadHistoryMerged
+        function idbHistDetailMap() {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const store = db.transaction(IDB_DETAIL, 'readonly').objectStore(IDB_DETAIL);
+                    const rq = store.openCursor();
+                    const map = new Map();
+                    rq.onsuccess = () => {
+                        const cur = rq.result;
+                        if (cur) { map.set(Number(cur.key), cur.value); cur.continue(); }
+                        else resolve(map);
+                    };
+                    rq.onerror = () => reject(rq.error);
+                }).catch(reject);
+            });
+        }
         // Alle History-Records lesen, nach Jahr sortiert → rekonstruiert GAME_STATE.history
         function idbHistGetAll() {
             return new Promise((resolve, reject) => {
@@ -2994,15 +3039,29 @@
                 }).catch(reject);
             });
         }
+        // Voll-Reset BEIDER History-Stores (leicht + Detail) – für Import/clearAllData/stripDummyJuniors
         function idbHistClear() {
             return new Promise((resolve) => {
                 idbOpen().then(db => {
-                    const tx = db.transaction(IDB_HIST, 'readwrite');
+                    const tx = db.transaction([IDB_HIST, IDB_DETAIL], 'readwrite');
                     tx.objectStore(IDB_HIST).clear();
+                    tx.objectStore(IDB_DETAIL).clear();
                     tx.oncomplete = () => { _persistedHistoryYears.clear(); resolve(true); };
                     tx.onerror = () => resolve(false);
                 }).catch(() => resolve(false));
             });
+        }
+
+        // Persistenz v3: schwere Felder wandern in den Detail-Store, der Rest bleibt leicht.
+        // Phase 2 = nur Storage-Split; loadHistoryMerged() fügt beim Laden wieder zusammen.
+        const HISTORY_HEAVY_FIELDS = ['results', 'qualifyingResults', 'races', 'drivers', 'teams', '_dummyJuniors'];
+        function _splitHistoryRecord(full) {
+            const light = {}, heavy = {};
+            for (const k in full) {
+                if (HISTORY_HEAVY_FIELDS.includes(k)) heavy[k] = full[k];
+                else light[k] = full[k];
+            }
+            return { light, heavy };
         }
 
         // Diff-basierte Persistierung: schreibt neue Saisons, löscht entfernte.
@@ -3017,17 +3076,31 @@
                 if (y == null) continue;
                 liveYears.add(y);
                 if (!_persistedHistoryYears.has(y)) {
-                    await idbHistPut(y, h);
+                    const { light, heavy } = _splitHistoryRecord(h);
+                    await idbHistPut(y, light);
+                    await idbHistDetailPut(y, heavy);
                     _persistedHistoryYears.add(y);
                 }
             }
-            // Persistierte Jahre, die nicht mehr im RAM sind → löschen
+            // Persistierte Jahre, die nicht mehr im RAM sind → aus beiden Stores löschen
             for (const y of [..._persistedHistoryYears]) {
                 if (!liveYears.has(y)) {
                     await idbHistDelete(y);
+                    await idbHistDetailDelete(y);
                     _persistedHistoryYears.delete(y);
                 }
             }
+        }
+
+        // Lädt leichte + schwere Records und fügt sie pro Jahr zu vollständigen Records zusammen.
+        // (Phase 2: GAME_STATE.history bleibt komplett im RAM → alle Leser unverändert.)
+        async function loadHistoryMerged() {
+            const light = await idbHistGetAll();          // leicht, nach Jahr sortiert
+            const detail = await idbHistDetailMap();      // Map(Jahr → schwer)
+            return light.map(l => {
+                const d = detail.get(Number(l.year));
+                return d ? { ...l, ...d } : l;
+            });
         }
 
         // Async-Pendant zu safeSetItem: IndexedDB-Write + Quota/Fehler-Handling.
@@ -3100,6 +3173,29 @@
                         logInfo('STORAGE', `Migration v2: ${hist.length} Saisons in History-Store ausgelagert`);
                     }
                 }
+                // — Stufe v3: schwere Felder aus history-Store in history_detail auslagern —
+                // Marker verhindert teures Voll-Scan bei jedem Boot (history ist write-once → einmalig).
+                if (await idbGet('f1rpg_migv3') != null) return;
+                const allHist = await new Promise((resolve, reject) => {
+                    idbOpen().then(db => {
+                        const rq = db.transaction(IDB_HIST, 'readonly').objectStore(IDB_HIST).openCursor();
+                        const out = [];
+                        rq.onsuccess = () => { const c = rq.result; if (c) { out.push({ key: c.key, val: c.value }); c.continue(); } else resolve(out); };
+                        rq.onerror = () => reject(rq.error);
+                    }).catch(reject);
+                });
+                let split3 = 0;
+                for (const { key, val } of allHist) {
+                    if (!val || typeof val !== 'object') continue;
+                    const isUnsplit = HISTORY_HEAVY_FIELDS.some(f => f in val);
+                    if (!isUnsplit) continue;
+                    const { light, heavy } = _splitHistoryRecord(val);
+                    await idbHistDetailPut(key, heavy);
+                    await idbHistPut(key, light);   // überschreibt vollen Record durch leichten
+                    split3++;
+                }
+                await idbSet('f1rpg_migv3', 1);   // Scan erledigt → künftige Boots überspringen
+                if (split3 > 0) logInfo('STORAGE', `Migration v3: ${split3} Saisons in Detail-Store gesplittet`);
             } catch (e) {
                 logError('STORAGE', 'Migration fehlgeschlagen: ' + (e.message || e));
             }
@@ -5192,12 +5288,12 @@
 
         async function loadGame() {
             try {
-                // v2: core + History-Store
+                // v3: core + History-Store (leicht) + Detail-Store (schwer), gemerged
                 let core = null;
                 if (_idbAvailable) core = await idbGet('f1rpg_core');
                 if (core) {
                     const loaded = JSON.parse(core);
-                    loaded.history = await idbHistGetAll();
+                    loaded.history = await loadHistoryMerged();
                     GAME_STATE = sanitizeGameState(loaded);
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                     logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, ${GAME_STATE.history.length} Saisons (History-Store)`);
@@ -5246,7 +5342,7 @@
                 GAME_STATE = sanitizeGameState(snapshot.state);
                 // History aus Store ergänzen (neues core-Format); altes Voll-Format hatte history inline
                 if ((!GAME_STATE.history || GAME_STATE.history.length === 0) && _idbAvailable) {
-                    GAME_STATE.history = await idbHistGetAll();
+                    GAME_STATE.history = await loadHistoryMerged();
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                 }
                 renderAll();
