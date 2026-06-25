@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.5</title>
+    <title>F1 RPG v0.9.14.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.5 (aktuell) - 25.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.6 (aktuell) - 25.06.2026</div>
+                            <div>&#8226; FIX: 'Auf Anfang zuruecksetzen' crashte (leeres Legacy-TEMPLATES-Objekt)</div>
+                            <div>&#8226; FIX: Roadmap-Tab crashte bzw. zeigte 'undefined' bei Changelog-/prioritaetslosen Eintraegen</div>
+                            <div>&#8226; TECH: functions.schema.json Encoding-Bloat behoben (73MB->25KB) + update-Skript UTF-8-gehaertet</div>
+                            <div class="font-bold text-slate-400">v0.9.14.5 - 25.06.2026</div>
                             <div>&#8226; NEU: Persistenz v3 - schwere Saison-Daten (Ergebnisse/Fahrer/Teams) in eigenen IndexedDB-Store ausgelagert</div>
                             <div>&#8226; NEU: Automatische einmalige Migration bestehender Spielstaende</div>
                             <div>&#8226; TECH: Fundament fuer kommendes Lazy Loading (Phase 3, RAM-Entlastung)</div>
@@ -2700,7 +2704,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.5';
+        const VERSION = '0.9.14.6';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -12181,11 +12185,18 @@
                 return;
             }
             
-            const template = GAME_STATE.templateUsed || 'modern-2024';
-            initFromTemplate(template);
+            const template = GAME_STATE.templateUsed || '2024';
+            // initFromTemplate akzeptiert Jahreszahlen (SEASON_DATA) ODER Legacy-Template-Namen.
+            // Schlägt es fehl (z.B. alter Name 'modern-2024' – TEMPLATES ist leer), Jahr aus dem
+            // Namen ziehen oder auf 2024 zurückfallen, statt auf TEMPLATES[].name zu crashen.
+            if (!initFromTemplate(template)) {
+                const yMatch = String(template).match(/(\d{4})/);
+                const year = (yMatch && SEASON_DATA[yMatch[1]]) ? parseInt(yMatch[1]) : 2024;
+                initFromYear(year);
+            }
             closeResetCenter();
             renderAll();
-            alert('✅ Zurückgesetzt auf ' + TEMPLATES[template].name);
+            alert('✅ Zurückgesetzt auf Saison ' + GAME_STATE.currentYear);
         };
         
         window.deleteSelectedSeasons = function() {
@@ -17792,8 +17803,11 @@ Empfohlene Wertebereiche:
             
             const statusLabels = {
                 'done': { text: '✅ Fertig', color: 'accent-green' },
+                'implemented': { text: '✅ Umgesetzt', color: 'accent-green' },
+                'active': { text: '🔧 In Arbeit', color: 'accent-gold' },
                 'partial': { text: '⚠️ Teilweise', color: 'accent-gold' },
-                'pending': { text: '⏳ Ausstehend', color: 'text-tertiary' }
+                'pending': { text: '⏳ Ausstehend', color: 'text-tertiary' },
+                'missing': { text: '❌ Offen', color: 'text-tertiary' }
             };
             
             const priorityLabels = {
@@ -17811,15 +17825,15 @@ Empfohlene Wertebereiche:
                 <!-- Übersicht -->
                 <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="card p-4 rounded-lg text-center">
-                        <div class="text-3xl font-bold accent-green">${ROADMAP_ITEMS.filter(r => r.status === 'done').length}</div>
+                        <div class="text-3xl font-bold accent-green">${ROADMAP_ITEMS.filter(r => r.status === 'done' || r.status === 'implemented').length}</div>
                         <div class="text-sm text-tertiary">Fertig</div>
                     </div>
                     <div class="card p-4 rounded-lg text-center">
-                        <div class="text-3xl font-bold accent-gold">${ROADMAP_ITEMS.filter(r => r.status === 'partial').length}</div>
+                        <div class="text-3xl font-bold accent-gold">${ROADMAP_ITEMS.filter(r => r.status === 'partial' || r.status === 'active').length}</div>
                         <div class="text-sm text-tertiary">In Arbeit</div>
                     </div>
                     <div class="card p-4 rounded-lg text-center">
-                        <div class="text-3xl font-bold text-tertiary">${ROADMAP_ITEMS.filter(r => r.status === 'pending').length}</div>
+                        <div class="text-3xl font-bold text-tertiary">${ROADMAP_ITEMS.filter(r => r.status === 'pending' || r.status === 'missing').length}</div>
                         <div class="text-sm text-tertiary">Ausstehend</div>
                     </div>
                 </div>
@@ -17827,18 +17841,19 @@ Empfohlene Wertebereiche:
                 <!-- Items nach Kategorie -->
                 ${categories.map(cat => `
                     <div class="mb-6">
-                        <h3 class="text-xl font-bold mb-3">${cat}</h3>
+                        <h3 class="text-xl font-bold mb-3">${cat || 'Änderungsverlauf'}</h3>
                         <div class="space-y-2">
                             ${ROADMAP_ITEMS.filter(r => r.category === cat).map(item => `
                                 <div class="card p-4 rounded-lg">
                                     <div class="flex justify-between items-start mb-2">
-                                        <div class="font-bold">${item.id}: ${item.title}</div>
+                                        <div class="font-bold">${item.id ? item.id + ': ' : ''}${item.title}</div>
                                         <div class="flex gap-2">
-                                            <span class="text-xs px-2 py-1 rounded ${priorityLabels[item.priority].color}">${priorityLabels[item.priority].text}</span>
-                                            <span class="text-xs px-2 py-1 rounded ${statusLabels[item.status].color}">${statusLabels[item.status].text}</span>
+                                            ${priorityLabels[item.priority] ? `<span class="text-xs px-2 py-1 rounded ${priorityLabels[item.priority].color}">${priorityLabels[item.priority].text}</span>` : ''}
+                                            ${statusLabels[item.status] ? `<span class="text-xs px-2 py-1 rounded ${statusLabels[item.status].color}">${statusLabels[item.status].text}</span>` : ''}
                                         </div>
                                     </div>
-                                    <div class="text-sm text-secondary">${item.description}</div>
+                                    ${item.description ? `<div class="text-sm text-secondary">${item.description}</div>` : ''}
+                                    ${Array.isArray(item.items) ? `<ul class="text-sm text-secondary list-disc list-inside space-y-1">${item.items.map(b => `<li>${b}</li>`).join('')}</ul>` : ''}
                                 </div>
                             `).join('')}
                         </div>
