@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.7</title>
+    <title>F1 RPG v0.9.14.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.7 (aktuell) - 26.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.8 (aktuell) - 26.06.2026</div>
+                            <div>&#8226; NEU: getHistoryDetail/idbHistDetailGet mit LRU-Cache (8 Jahre) als Fundament fuer Lazy Loading</div>
+                            <div>&#8226; NEU: Detail-Cache-Invalidierung in persistHistory/idbHistClear</div>
+                            <div class="font-bold text-slate-400">v0.9.14.7 - 26.06.2026</div>
                             <div>&#8226; CLEANUP: Roadmap-Tab entruempelt - alte Changelog-Stichpunkt-Eintraege (v0.8.5.x, RM28/RM29) entfernt</div>
                             <div>&#8226; FIX: Roadmap zeigt keine 'undefined'-Eintraege mehr</div>
                             <div class="font-bold text-slate-400">v0.9.14.6 - 25.06.2026</div>
@@ -2707,7 +2710,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.7';
+        const VERSION = '0.9.14.8';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3027,6 +3030,40 @@
                 }).catch(reject);
             });
         }
+        // ── Lazy Detail-Zugriff (Phase 3): EINEN Detail-Record on-demand + LRU-Cache ──
+        // Fundament fürs Lazy Loading: schwere Felder bleiben in IDB, werden erst beim
+        // Render eines konkreten Jahres geladen statt komplett ins RAM (loadHistoryMerged).
+        function idbHistDetailGet(year) {
+            return new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const rq = db.transaction(IDB_DETAIL, 'readonly').objectStore(IDB_DETAIL).get(Number(year));
+                    rq.onsuccess = () => resolve(rq.result || null);
+                    rq.onerror = () => resolve(null);
+                }).catch(() => resolve(null));
+            });
+        }
+        // LRU: Render-Pfade greifen oft mehrfach hintereinander auf dasselbe Jahr zu.
+        // Map hält Einfügereihenfolge → ältester Eintrag = erster Key.
+        const _histDetailCache = new Map();   // Jahr(Number) → schwererObj | null
+        const HIST_DETAIL_CACHE_MAX = 8;
+        async function getHistoryDetail(year) {
+            const y = Number(year);
+            if (_histDetailCache.has(y)) {
+                const v = _histDetailCache.get(y);   // Touch: ans Ende (= jüngste) verschieben
+                _histDetailCache.delete(y);
+                _histDetailCache.set(y, v);
+                return v;
+            }
+            const detail = await idbHistDetailGet(y);
+            _histDetailCache.set(y, detail);
+            while (_histDetailCache.size > HIST_DETAIL_CACHE_MAX) {
+                _histDetailCache.delete(_histDetailCache.keys().next().value);  // ältesten verdrängen
+            }
+            return detail;
+        }
+        // Cache konsistent halten: bei Detail-Write/Delete den Eintrag invalidieren (Stale-Schutz).
+        function _histDetailCacheInvalidate(year) { _histDetailCache.delete(Number(year)); }
+        function _histDetailCacheClear() { _histDetailCache.clear(); }
         // Alle History-Records lesen, nach Jahr sortiert → rekonstruiert GAME_STATE.history
         function idbHistGetAll() {
             return new Promise((resolve, reject) => {
@@ -3053,7 +3090,7 @@
                     const tx = db.transaction([IDB_HIST, IDB_DETAIL], 'readwrite');
                     tx.objectStore(IDB_HIST).clear();
                     tx.objectStore(IDB_DETAIL).clear();
-                    tx.oncomplete = () => { _persistedHistoryYears.clear(); resolve(true); };
+                    tx.oncomplete = () => { _persistedHistoryYears.clear(); _histDetailCacheClear(); resolve(true); };
                     tx.onerror = () => resolve(false);
                 }).catch(() => resolve(false));
             });
@@ -3086,6 +3123,7 @@
                     const { light, heavy } = _splitHistoryRecord(h);
                     await idbHistPut(y, light);
                     await idbHistDetailPut(y, heavy);
+                    _histDetailCacheInvalidate(y);
                     _persistedHistoryYears.add(y);
                 }
             }
@@ -3094,6 +3132,7 @@
                 if (!liveYears.has(y)) {
                     await idbHistDelete(y);
                     await idbHistDetailDelete(y);
+                    _histDetailCacheInvalidate(y);
                     _persistedHistoryYears.delete(y);
                 }
             }
