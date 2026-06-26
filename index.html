@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.8</title>
+    <title>F1 RPG v0.9.14.9</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.8 (aktuell) - 26.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.9 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: gapSec/tmn/Quali-Migrationen alter Saves laufen lazy beim Detail-Laden (migrateHistoryDetail) statt eager ueber die ganze History</div>
+                            <div>&#8226; FIX: sanitizeGameState entlastet - drei Voll-History-Detail-Paesse entfernt</div>
+                            <div>&#8226; FIX: restoreAutoSave migriert History jetzt konsistent</div>
+                            <div class="font-bold text-slate-400">v0.9.14.8 - 26.06.2026</div>
                             <div>&#8226; NEU: getHistoryDetail/idbHistDetailGet mit LRU-Cache (8 Jahre) als Fundament fuer Lazy Loading</div>
                             <div>&#8226; NEU: Detail-Cache-Invalidierung in persistHistory/idbHistClear</div>
                             <div class="font-bold text-slate-400">v0.9.14.7 - 26.06.2026</div>
@@ -2710,7 +2714,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.8';
+        const VERSION = '0.9.14.9';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3054,7 +3058,7 @@
                 _histDetailCache.set(y, v);
                 return v;
             }
-            const detail = await idbHistDetailGet(y);
+            const detail = migrateHistoryDetail(y, await idbHistDetailGet(y));
             _histDetailCache.set(y, detail);
             while (_histDetailCache.size > HIST_DETAIL_CACHE_MAX) {
                 _histDetailCache.delete(_histDetailCache.keys().next().value);  // ältesten verdrängen
@@ -3064,6 +3068,64 @@
         // Cache konsistent halten: bei Detail-Write/Delete den Eintrag invalidieren (Stale-Schutz).
         function _histDetailCacheInvalidate(year) { _histDetailCache.delete(Number(year)); }
         function _histDetailCacheClear() { _histDetailCache.clear(); }
+
+        // Phase 3 Schritt 2: Detail-Migrationen für alte History-Saves – LAZY beim Detail-Laden
+        // statt eager in sanitizeGameState über die ganze History. Idempotent (jede Migration
+        // bricht früh ab, wenn die Daten schon vorhanden sind), mutiert detail in place, gibt es zurück.
+        // year kommt separat (liegt im LEICHTEN Record, nicht im Detail). Aufgerufen aus
+        // getHistoryDetail (lazy) UND loadHistoryMerged (aktueller Voll-Ladepfad → kein Regress).
+        function migrateHistoryDetail(year, detail) {
+            if (!detail) return detail;
+            // gapSec: History-Ergebnisse ohne Score → positionsbasierte Schätzung (3s × (pos-1))
+            const races = detail.races || [];
+            for (const raceResult of (detail.results || [])) {
+                const res = raceResult.res || raceResult.results || [];
+                const finishers = res.filter(r => !r.dnf && !r.fat && !r.fatal);
+                if (finishers.length === 0) continue;
+                const posKey = finishers[0].p !== undefined ? 'p' : 'position';
+                if (finishers[0].gapSec !== undefined) continue;
+                const race = races[raceResult.ri ?? raceResult.raceIndex];
+                const laps = race?.laps || 60;
+                finishers[0].winnerTimeSec = laps * 75; // Schätzung 75s/Runde
+                finishers.forEach(r => {
+                    const pos = r[posKey] || 1;
+                    r.gapSec = pos > 1 ? parseFloat(((pos - 1) * 3.0).toFixed(3)) : 0;
+                });
+            }
+            // tmn (Teamname zur Rennzeit) backfüllen: primär SEASON_DATA-Startzuteilung, sonst Snapshot
+            for (const race of (detail.results || [])) {
+                for (const r of (race.res || [])) {
+                    if (r.tmn) continue;
+                    let teamId = null;
+                    if (SEASON_DATA?.[year]?.d) {
+                        const sdRow = SEASON_DATA[year].d.find(row => row[0] === r.d);
+                        if (sdRow) teamId = sdRow[2];
+                    }
+                    if (!teamId) {
+                        const driver = (detail.drivers || []).find(d => d.id === r.d);
+                        teamId = driver?.team || null;
+                    }
+                    if (!teamId) continue;
+                    const team = (detail.teams || []).find(t => t.id === teamId);
+                    if (team) r.tmn = team.name;
+                }
+            }
+            // Qualifying-Zeiten schätzen (alte Saves: t=undefined wegen r.lapTime-Bug)
+            for (const quali of (detail.qualifyingResults || [])) {
+                const race = (detail.races || [])[quali.ri];
+                if (!race) continue;
+                const baseTime = typeof getCircuitBaseTime === 'function'
+                    ? getCircuitBaseTime(race.circuitId, year, 'quali') : null;
+                if (!baseTime || isNaN(baseTime)) continue;
+                for (const r of (quali.res || [])) {
+                    const hasTime = r.t && !isNaN(parseFloat(r.t)) && parseFloat(r.t) > 0;
+                    if (hasTime) continue;
+                    const pos = r.p || 1;   // Pole-Zeit + 0.1s pro Position hinter P1
+                    r.t = parseFloat((baseTime + (pos - 1) * 0.1).toFixed(3));
+                }
+            }
+            return detail;
+        }
         // Alle History-Records lesen, nach Jahr sortiert → rekonstruiert GAME_STATE.history
         function idbHistGetAll() {
             return new Promise((resolve, reject) => {
@@ -3145,6 +3207,7 @@
             const detail = await idbHistDetailMap();      // Map(Jahr → schwer)
             return light.map(l => {
                 const d = detail.get(Number(l.year));
+                if (d) migrateHistoryDetail(l.year, d);
                 return d ? { ...l, ...d } : l;
             });
         }
@@ -5154,75 +5217,8 @@
                     migrationCount++;
                 }
             }
-            // History: score fehlt → positionsbasierte Schätzung (3s × (pos-1))
-            if (Array.isArray(sanitized.history)) {
-                for (const season of sanitized.history) {
-                    const races = season.races || [];
-                    for (const raceResult of (season.results || [])) {
-                        const res = raceResult.res || raceResult.results || [];
-                        const finishers = res.filter(r => !r.dnf && !r.fat && !r.fatal);
-                        if (finishers.length === 0) continue;
-                        const posKey = finishers[0].p !== undefined ? 'p' : 'position';
-                        if (finishers[0].gapSec !== undefined) continue;
-                        const race = races[raceResult.ri ?? raceResult.raceIndex];
-                        const laps = race?.laps || 60;
-                        finishers[0].winnerTimeSec = laps * 75; // Schätzung 75s/Runde
-                        finishers.forEach(r => {
-                            const pos = r[posKey] || 1;
-                            r.gapSec = pos > 1 ? parseFloat(((pos - 1) * 3.0).toFixed(3)) : 0;
-                        });
-                        migrationCount++;
-                    }
-                }
-            }
-
-            // ── Migration: tmn (Teamname zur Rennzeit) für alte History-Saves backfüllen ──────
-            if (Array.isArray(sanitized.history)) {
-                for (const season of sanitized.history) {
-                    for (const race of (season.results || [])) {
-                        for (const r of (race.res || [])) {
-                            if (r.tmn) continue;
-                            // Primär: SEASON_DATA-Startzuteilung (Rennzeit-Zuordnung, vor Transfer/Entlassung)
-                            let teamId = null;
-                            if (SEASON_DATA?.[season.year]?.d) {
-                                const sdRow = SEASON_DATA[season.year].d.find(row => row[0] === r.d);
-                                if (sdRow) teamId = sdRow[2];
-                            }
-                            // Fallback: Snapshot-Team (Gastfahrer / Fahrer nicht in SEASON_DATA)
-                            if (!teamId) {
-                                const driver = (season.drivers || []).find(d => d.id === r.d);
-                                teamId = driver?.team || null;
-                            }
-                            if (!teamId) continue;
-                            const team = (season.teams || []).find(t => t.id === teamId);
-                            if (team) { r.tmn = team.name; migrationCount++; }
-                        }
-                    }
-                }
-            }
-
-            // ── Migration: Qualifying-Zeiten für alte History-Saves schätzen ──────────────────
-            // t war fälschlicherweise r.lapTime (undefined) statt r.time → alle alten Saves haben t=undefined
-            if (Array.isArray(sanitized.history)) {
-                for (const season of sanitized.history) {
-                    const year = season.year;
-                    for (const quali of (season.qualifyingResults || [])) {
-                        const race = (season.races || [])[quali.ri];
-                        if (!race) continue;
-                        const baseTime = typeof getCircuitBaseTime === 'function'
-                            ? getCircuitBaseTime(race.circuitId, year, 'quali') : null;
-                        if (!baseTime || isNaN(baseTime)) continue;
-                        for (const r of (quali.res || [])) {
-                            const hasTime = r.t && !isNaN(parseFloat(r.t)) && parseFloat(r.t) > 0;
-                            if (hasTime) continue;
-                            // Schätzung: Pole-Zeit + 0.1s pro Position hinter P1
-                            const pos = r.p || 1;
-                            r.t = parseFloat((baseTime + (pos - 1) * 0.1).toFixed(3));
-                            migrationCount++;
-                        }
-                    }
-                }
-            }
+            // History-Detail-Migrationen (gapSec / tmn / Quali-Zeit) → Phase 3 Schritt 2:
+            // lazy in migrateHistoryDetail() beim Detail-Laden statt eager über die ganze History.
 
             // Migration: fatalSession aus seasonDeaths → Rennergebnisse übertragen (v0.9.9.23)
             if (sanitized.seasonDeaths && sanitized.results) {
