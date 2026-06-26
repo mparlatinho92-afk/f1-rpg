@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.6</title>
+    <title>F1 RPG v0.9.14.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.6 (aktuell) - 25.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.7 (aktuell) - 26.06.2026</div>
+                            <div>&#8226; CLEANUP: Roadmap-Tab entruempelt - alte Changelog-Stichpunkt-Eintraege (v0.8.5.x, RM28/RM29) entfernt</div>
+                            <div>&#8226; FIX: Roadmap zeigt keine 'undefined'-Eintraege mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.14.6 - 25.06.2026</div>
                             <div>&#8226; FIX: 'Auf Anfang zuruecksetzen' crashte (leeres Legacy-TEMPLATES-Objekt)</div>
                             <div>&#8226; FIX: Roadmap-Tab crashte bzw. zeigte 'undefined' bei Changelog-/prioritaetslosen Eintraegen</div>
                             <div>&#8226; TECH: functions.schema.json Encoding-Bloat behoben (73MB->25KB) + update-Skript UTF-8-gehaertet</div>
@@ -2704,7 +2707,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.6';
+        const VERSION = '0.9.14.7';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -17687,110 +17690,6 @@ Empfohlene Wertebereiche:
                     status: 'done',
                     priority: 'high',
                     implementation: 'histId-Lookup für champion am Saisonende. Migration recalcChampionships() beim Laden korrigiert alte Werte aus HIST_SEASONS + history.'
-                },
-                {
-                    id: 'RM29',
-                    category: 'Karriere',
-                    title: '⚖️ v0.8.6: Fairer Teamkollegen-Vergleich + Rohdiamant-Schutz',
-                    items: [
-                        '✅ Performance-Bewertung: Pace-Erwartungskorrektur – junger Fahrer hinter Superstar wird nicht mehr unfair bestraft',
-                        '✅ Rookie-Schutz: Mindest-Score in Jahr 1 (42), Jahr 2 (36), Jahr 3 (30)',
-                        '✅ Rohdiamant-Schutz: Hohes Potenzial (≥86) schützt vor vorzeitiger Entlassung',
-                        '✅ Karriere-Durchschnitt: zeitgewichtet – letzte Saison zählt 4×, vorletzte 3×, ältere weniger',
-                        '✅ Top-Teams holen keine Rookies: Free Agents, Upgrades und Überraschungswechsel filtern jetzt Fahrer mit < 2 Jahren Erfahrung',
-                        '✅ Echtes Debütjahr aus HIST_DRIVERS – Schumacher (1991) ist kein Rookie mehr',
-                        '✅ Era-adjustierte Leistungsbewertung – 2001 Punkte werden auf modernes 25-Pkt-System normalisiert',
-                        '✅ Podium-Rate als Bewertungskritierum – P2 jede Runde wird jetzt korrekt belohnt',
-                    ],
-                },
-                {
-                    id: 'RM28',
-                    category: 'UI',
-                    title: '🔧 v0.8.5.9: Saisonverlauf + Team-Steckbrief-Fixes',
-                    items: [
-                        '✅ Saisonverlauf: echte Länder-Flaggen statt MC/BE/FR-Text',
-                        '✅ Saisonverlauf: jede Flagge klickbar → Rennergebnis',
-                        '✅ Meldeliste: Teams in historischen Saisons anklickbar → Steckbrief',
-                        '✅ Team-Steckbrief: WM-Position aus F1DB für nicht-simulierte Saisons (kein ? mehr)',
-                    ],
-                },
-                {
-                    title: '🔧 v0.8.5.8: DNF-Anzeige wie historische Rennen',
-                    items: [
-                        '✅ Position: zeigt "DNF" (rot) statt Platznummer',
-                        '✅ Rechte Spalte: zeigt Ausfallgrund (Engine, Hydraulics...) statt leer',
-                        '✅ Punkte werden für Finisher weiterhin angezeigt',
-                        '✅ Schnellste Runde ⚡ weiterhin sichtbar',
-                    ],
-                },
-                {
-                    title: '🔧 v0.8.5.7: DNF-Grund sichtbar im Modal',
-                    items: [
-                        '✅ DNF-Gründe statt ❌: Engine, Gearbox, Hydraulics etc. sichtbar im Rennen-Detail',
-                        '✅ Historische Rennen zeigen echten F1DB-Grund (Oil pressure, Halfshaft...)',
-                        '✅ Simulierte Rennen zeigen era-spezifischen Grund',
-                        '✅ Todesfall bleibt 💀, Schnellste Runde ⚡ unverändert',
-                    ],
-                },
-                {
-                    title: '🔧 v0.8.5.6: Flaggen-Fixes + DNF-Gründe',
-                    items: [
-                        '✅ Portugiesische Flagge korrekt (war Puerto Rico)',
-                        '✅ Bahrain 🇧🇭 und Saudi-Arabien 🇸🇦 Flaggen hinzugefügt',
-                        '✅ Simulierte Rennen: era-spezifische DNF-Gründe (Engine, Gearbox, Hydraulics, MGU-K etc.)',
-                    ],
-                },
-                {
-                    title: '🎲 v0.8.5.5: Doppelter Namenspool',
-                    items: [
-                        '✅ Vornamen: 499 → 948 (+449 neue W3/W1)',
-                        '✅ Nachnamen: 832 → 1549 (+717 neue W3/W1)',
-                        '✅ Bestehende W5-Namen auf W4 reduziert (realistischere Häufigkeit)',
-                        '✅ Neue Namen: UK, DE, FR, IT, ES, BR, Skandinavien, Finnland – seltene historische Varianten',
-                    ],
-                },
-                {
-                    title: '🎌 v0.8.5.4: Länderflaggen + Streckennamen',
-                    items: [
-                        '✅ Alle Rennen zeigen korrekte Länderflagge (78 Strecken gemappt)',
-                        '✅ Streckennamen korrekt groß-/kleingeschrieben (Nürburgring, Jacarepaguá, Portimão etc.)',
-                    ],
-                },
-                {
-                    title: '✅ v0.8.5.3: F1DB-Kalender auch für aktuelle Saison',
-                    items: [
-                        '✅ Aktuelle und simulierte Saisons zeigen echten F1DB-Kalender (richtige Rennen, Strecken, Runden)',
-                        '✅ Simulierte Ergebnisse bleiben erhalten – Sieger/Pole/FL aus Simulation',
-                        '✅ Nächstes Rennen goldfarben hervorgehoben, zukünftige Rennen grau',
-                        '✅ Alle Rennen anklickbar: Simulation → Modal, Historisch → F1DB-Ergebnisse',
-                    ],
-                },
-                {
-                    title: '✅ v0.8.5.2: Echter F1DB-Kalender für alle Jahre',
-                    items: [
-                        '✅ Historische Jahre 1961+ zeigen echten Kalender aus F1DB (kein generischer Einheitskalender mehr)',
-                        '✅ Rundenzahl aus Siegerdaten automatisch ermittelt',
-                        '✅ Pole Position + Schnellste Runde aus F1DB-Ergebnissen',
-                        '✅ Alle Rennen anklickbar → öffnet echte F1DB-Ergebnistabelle',
-                    ],
-                },
-                {
-                    title: '🗓️ v0.8.5.1: Einheitlicher Rennen-Tab',
-                    items: [
-                        '✅ Kalender + Ergebnisse in einer Ansicht (kein Tab-Wechsel mehr)',
-                        '✅ Historische Saisons zeigen simulierte Ergebnisse, nicht echte F1-Daten',
-                        '✅ Pole Position + Schnellste Runde direkt in der Übersicht',
-                        '✅ Alle Rennen anklickbar → Vollständiges Ergebnis-Modal',
-                    ],
-                },
-                {
-                    title: '🎲 v0.8.5: Gewichtete Namens-Generierung',
-                    items: [
-                        '✅ Neue Vornamen (504) und Nachnamen (792) – kein Bezug zu echten F1-Fahrern',
-                        '✅ Gewichtetes Zufallssystem: häufige Namen (5×) viel wahrscheinlicher als seltene (1×)',
-                        '✅ Besonders Vornamen: James/Thomas/David häufig, Algernon/Hezekiah selten',
-                        '✅ Internationale Namen: EN/DE/FR/IT/ES/PT/BR/FI/SE/JP',
-                    ],
                 },
                 {
                     title: '📊 v0.8.4: All-Time Sortierung Multi-Key',
