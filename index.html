@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.9</title>
+    <title>F1 RPG v0.9.14.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.9 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.10 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Lazy Loading - Spielstand laedt nur leichte Saison-Daten, schwere Renndetails on-demand beim Ansehen (RAM-Grenze faellt)</div>
+                            <div>&#8226; NEU: Vergangene Saisons (Saisonverlauf/Ergebnisse/Rennen/Renn-Detail) laden ihre Details lazy beim Oeffnen</div>
+                            <div>&#8226; FIX: Champion-Titelzaehlung nutzt leichtes championHistId - nach Light-Load korrekt</div>
+                            <div class="font-bold text-slate-400">v0.9.14.9 - 27.06.2026</div>
                             <div>&#8226; NEU: gapSec/tmn/Quali-Migrationen alter Saves laufen lazy beim Detail-Laden (migrateHistoryDetail) statt eager ueber die ganze History</div>
                             <div>&#8226; FIX: sanitizeGameState entlastet - drei Voll-History-Detail-Paesse entfernt</div>
                             <div>&#8226; FIX: restoreAutoSave migriert History jetzt konsistent</div>
@@ -2714,7 +2718,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.9';
+        const VERSION = '0.9.14.10';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3069,6 +3073,16 @@
         function _histDetailCacheInvalidate(year) { _histDetailCache.delete(Number(year)); }
         function _histDetailCacheClear() { _histDetailCache.clear(); }
 
+        // Team-Namen-Korrekturen (geteilt: sanitizeGameState + migrateHistoryDetail).
+        const NAME_CORRECTIONS = {
+            'Jbw': 'JBW', 'Brm': 'BRM', 'Hwm': 'HWM', 'Era': 'ERA',
+            'Afm': 'AFM', 'Ags': 'AGS', 'Bar': 'BAR', 'Hrt': 'HRT',
+            'ATS': 'ATS', 'Brp': 'BRP', 'Emw': 'EMW', 'Enb': 'ENB',
+            'Lds': 'LDS', 'Lec': 'LEC', 'Osca': 'O.S.C.A.', 'Ram': 'RAM',
+            'Mclaren': 'McLaren', 'Alphatauri': 'AlphaTauri',
+            'Bmw Sauber': 'BMW Sauber', 'Rb': 'Racing Bulls'
+        };
+
         // Phase 3 Schritt 2: Detail-Migrationen für alte History-Saves – LAZY beim Detail-Laden
         // statt eager in sanitizeGameState über die ganze History. Idempotent (jede Migration
         // bricht früh ab, wenn die Daten schon vorhanden sind), mutiert detail in place, gibt es zurück.
@@ -3076,6 +3090,10 @@
         // getHistoryDetail (lazy) UND loadHistoryMerged (aktueller Voll-Ladepfad → kein Regress).
         function migrateHistoryDetail(year, detail) {
             if (!detail) return detail;
+            // Phase 3 Schritt 3: Team-Namen-Korrektur (v0.5.5) – liest schwere teams, daher lazy hier.
+            for (const team of (detail.teams || [])) {
+                if (team.name && NAME_CORRECTIONS[team.name]) team.name = NAME_CORRECTIONS[team.name];
+            }
             // gapSec: History-Ergebnisse ohne Score → positionsbasierte Schätzung (3s × (pos-1))
             const races = detail.races || [];
             for (const raceResult of (detail.results || [])) {
@@ -3201,7 +3219,8 @@
         }
 
         // Lädt leichte + schwere Records und fügt sie pro Jahr zu vollständigen Records zusammen.
-        // (Phase 2: GAME_STATE.history bleibt komplett im RAM → alle Leser unverändert.)
+        // Phase 3: NICHT mehr im Lade-Pfad – nur noch für den Export (voller Stand). loadGame/
+        // restoreAutoSave laden nur idbHistGetAll() (leicht); Detail kommt lazy via getHistoryDetail.
         async function loadHistoryMerged() {
             const light = await idbHistGetAll();          // leicht, nach Jahr sortiert
             const detail = await idbHistDetailMap();      // Map(Jahr → schwer)
@@ -3210,6 +3229,21 @@
                 if (d) migrateHistoryDetail(l.year, d);
                 return d ? { ...l, ...d } : l;
             });
+        }
+
+        // Phase 3 Schritt 3: Einmal-Backfill für ALTE leichte Records ohne championHistId.
+        // Neue Saisons (startNewSeason) speichern championHistId direkt leicht. Alt-Saves haben den
+        // histId-Schlüssel nur im schweren drivers-Snapshot → hier einmalig auflösen + leicht
+        // zurückschreiben, danach für immer ohne Detail-Zugriff. Läuft VOR sanitize (Recount braucht es).
+        async function _backfillChampionHistIds(hist) {
+            if (!_idbAvailable || !Array.isArray(hist)) return;
+            for (const h of hist) {
+                if (!h || h.championId == null || h.championHistId !== undefined) continue;
+                const detail = await idbHistDetailGet(h.year);
+                const champDriver = detail && (detail.drivers || []).find(d => d.id === h.championId);
+                h.championHistId = champDriver?.histId || h.championId;   // Fallback: id selbst
+                await idbHistPut(h.year, h);   // h ist leicht (aus history-Store) → kein Heavy-Leak
+            }
         }
 
         // Async-Pendant zu safeSetItem: IndexedDB-Write + Quota/Fehler-Handling.
@@ -4922,14 +4956,7 @@
             // ═══════════════════════════════════════════════════════════════
             
             // --- Migration: Team-Namen Korrekturen (v0.5.5) ---
-            const nameCorrections = {
-                'Jbw': 'JBW', 'Brm': 'BRM', 'Hwm': 'HWM', 'Era': 'ERA',
-                'Afm': 'AFM', 'Ags': 'AGS', 'Bar': 'BAR', 'Hrt': 'HRT',
-                'ATS': 'ATS', 'Brp': 'BRP', 'Emw': 'EMW', 'Enb': 'ENB',
-                'Lds': 'LDS', 'Lec': 'LEC', 'Osca': 'O.S.C.A.', 'Ram': 'RAM',
-                'Mclaren': 'McLaren', 'Alphatauri': 'AlphaTauri',
-                'Bmw Sauber': 'BMW Sauber', 'Rb': 'Racing Bulls'
-            };
+            const nameCorrections = NAME_CORRECTIONS;   // Phase 3: geteilte Modul-Konstante
             
             // ═══════════════════════════════════════════════════════════════
             // SEKTION 3: FAHRER DEFAULTS & MIGRATIONEN
@@ -5130,27 +5157,16 @@
                 h.champion = h.champion || 'Unbekannt';
                 h.teamChampion = h.teamChampion || 'Unbekannt';
                 h.raceCount = h.raceCount || h.races || 0;
-                h.results = h.results || [];
-                h.qualifyingResults = h.qualifyingResults || [];
                 h.deaths = h.deaths || [];
                 h.retirements = h.retirements || [];
                 h.driverStandings = h.driverStandings || {};
                 h.teamStandings = h.teamStandings || {};
-                h.teams = h.teams || [];
-                h.drivers = h.drivers || [];
-                
-                // Migration: Korrigiere Team-Namen in gespeicherten Saisons (v0.5.5)
-                if (h.teams && h.teams.length > 0) {
-                    h.teams.forEach(team => {
-                        if (team.name && nameCorrections[team.name]) {
-                            logInfo('MIGRATE', `History ${h.year}: ${team.name} → ${nameCorrections[team.name]}`);
-                            team.name = nameCorrections[team.name];
-                            migrationCount++;
-                        }
-                    });
-                }
-                
-                // Migration: teamChampion korrigieren
+                // Phase 3: KEINE Heavy-Defaults (results/qualifyingResults/teams/drivers) mehr hier –
+                // sie liegen im Detail-Store, nicht im RAM. Würde sonst leichte Records mit []
+                // überschreiben. Detail-Leser guarden selbst mit || []. Team-Namen-Korrektur (liest
+                // schwere teams) läuft lazy in migrateHistoryDetail().
+
+                // Migration: teamChampion korrigieren (LEICHT)
                 if (h.teamChampion && nameCorrections[h.teamChampion]) {
                     h.teamChampion = nameCorrections[h.teamChampion];
                     migrationCount++;
@@ -5188,11 +5204,11 @@
                     correctChamps = HIST_SEASONS[driverId].filter(s => s[0] < migStartYear && s[1] === '1').length;
                 }
                 // Simulated championships from history (check both id and histId)
+                // Phase 3: histId-Schlüssel kommt jetzt aus dem LEICHTEN Feld championHistId
+                // (in loadGame für Alt-Saves einmalig backfilled) statt aus schwerem h.drivers.
                 (sanitized.history || []).forEach(h => {
                     if (h.championId === driverId) correctChamps++;
-                    // Also check via histId stored in drivers snapshot
-                    const champDriver = (h.drivers || []).find(d => d.id === h.championId);
-                    if (champDriver?.histId === driverId && h.championId !== driverId) correctChamps++;
+                    else if (h.championHistId === driverId) correctChamps++;
                 });
                 if (dStATS.championships !== correctChamps) {
                     logInfo('MIGRATE', `Championships fix: ${driverId}: ${dStATS.championships} → ${correctChamps}`);
@@ -5335,10 +5351,11 @@
                 if (_idbAvailable) core = await idbGet('f1rpg_core');
                 if (core) {
                     const loaded = JSON.parse(core);
-                    loaded.history = await loadHistoryMerged();
+                    loaded.history = await idbHistGetAll();          // Phase 3: nur LEICHTE Records in den RAM
+                    await _backfillChampionHistIds(loaded.history);  // Alt-Saves: histId-Schlüssel einmalig leicht setzen
                     GAME_STATE = sanitizeGameState(loaded);
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
-                    logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, ${GAME_STATE.history.length} Saisons (History-Store)`);
+                    logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, ${GAME_STATE.history.length} Saisons (History-Store, leicht)`);
                     return true;
                 }
                 // Fallback: voller Blob (localStorage-Modus oder noch nicht gesplittet)
@@ -5384,7 +5401,8 @@
                 GAME_STATE = sanitizeGameState(snapshot.state);
                 // History aus Store ergänzen (neues core-Format); altes Voll-Format hatte history inline
                 if ((!GAME_STATE.history || GAME_STATE.history.length === 0) && _idbAvailable) {
-                    GAME_STATE.history = await loadHistoryMerged();
+                    GAME_STATE.history = await idbHistGetAll();   // Phase 3: nur LEICHTE Records
+                    await _backfillChampionHistIds(GAME_STATE.history);
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                 }
                 renderAll();
@@ -11431,6 +11449,9 @@
                     year: GAME_STATE.currentYear,
                     champion: champion ? champion.name : 'N/A',
                     championId: champion ? champion.id : null,
+                    // Phase 3: histId-Schlüssel des Champions LEICHT mitspeichern (allTimeStATS ist mit
+                    // histId||id verschlüsselt). Recount braucht so kein schweres h.drivers mehr.
+                    championHistId: champion ? (champion.histId || champion.id) : null,
                     championPoints: champion ? champion.points : 0,
                     teamChampion: teamChampion ? teamChampion.name : 'N/A',
                     teamChampionId: teamChampion ? teamChampion.id : null,
@@ -13243,7 +13264,7 @@
         let viewingHistoricalYear = null;
         let historicalViewData = null;
         
-        function switchToYear(year) {
+        async function switchToYear(year) {
             selectedRaceId = null; // v0.8.3: Reset race view on year switch
             if (year === GAME_STATE.currentYear) {
                 // Zurück zur aktuellen Saison
@@ -13253,15 +13274,29 @@
                 updateSeasonSelector();
                 return;
             }
-            
-            // Time Machine: Hole Daten für jedes Jahr
-            const yearData = getYearData(year);
-            if (yearData) {
-                viewingHistoricalYear = year;
-                historicalViewData = yearData;
-                renderAll();
-                updateSeasonSelector();
-                logInfo('VIEW', `Zeige Saison ${year} (${yearData.type})`);
+
+            // Phase 3 Schritt 4: schwere Detail-Felder der simulierten Saison LAZY laden und
+            // TRANSIENT an den (leichten) History-Record hängen. getYearData kopiert die Array-Refs
+            // in yearData → danach wieder abhängen: Record bleibt leicht, historicalViewData hält die
+            // Refs für die gesamte Ansicht. So liegt immer nur die GERADE betrachtete Saison im RAM.
+            const rec = GAME_STATE.history.find(h => h.year === year);
+            let detail = null;
+            if (rec) {
+                detail = await getHistoryDetail(year);
+                if (detail) Object.assign(rec, detail);
+            }
+            try {
+                // Time Machine: Hole Daten für jedes Jahr
+                const yearData = getYearData(year);
+                if (yearData) {
+                    viewingHistoricalYear = year;
+                    historicalViewData = yearData;
+                    renderAll();
+                    updateSeasonSelector();
+                    logInfo('VIEW', `Zeige Saison ${year} (${yearData.type})`);
+                }
+            } finally {
+                if (detail && rec) for (const k of HISTORY_HEAVY_FIELDS) delete rec[k];
             }
         }
         
@@ -21148,13 +21183,16 @@ Empfohlene Wertebereiche:
         }
         
         // === RENNEN-DETAIL MODAL ===
-        window.openRaceDetails = function(raceIndex, historicalYear = null) {
+        window.openRaceDetails = async function(raceIndex, historicalYear = null) {
             let race, raceResult, qualiResult, trainingResult, drivers, teams;
 
             if (historicalYear) {
                 // Historische Saison – Number()-Vergleich wegen möglichem String/Number-Mismatch
-                const season = GAME_STATE.history.find(h => Number(h.year) === Number(historicalYear));
-                if (!season) return;
+                const lightSeason = GAME_STATE.history.find(h => Number(h.year) === Number(historicalYear));
+                if (!lightSeason) return;
+                // Phase 3 Schritt 4: schwere Felder lazy aus dem Detail-Store (Cache, da Saison betrachtet);
+                // transient gemergt, GAME_STATE.history bleibt leicht.
+                const season = { ...lightSeason, ...(await getHistoryDetail(Number(historicalYear)) || {}) };
 
                 race = season.races?.[raceIndex];
                 raceResult = season.results?.find(r => r.ri === raceIndex);
