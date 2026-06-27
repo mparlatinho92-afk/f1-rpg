@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.18</title>
+    <title>F1 RPG v0.9.14.19</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.18 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.19 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Junior-Fahrer altern über die Jahre, Pace entwickelt sich (jung wächst, nach Peak Abbau)</div>
+                            <div>&#8226; NEU: Karriere-Enden + automatische Nachrücker – Roster rotiert realistisch durch</div>
+                            <div class="font-bold text-slate-400">v0.9.14.18 - 27.06.2026</div>
                             <div>&#8226; NEU: Junior-Welt-Modus simuliert pro Saison eigene Junior-Serien (F3/F2) mit echten, über Jahre stabilen Fahrern</div>
                             <div>&#8226; NEU: heterogene Daten (eindeutige Namen/Nationen/Pace) als realistischer Speicher-Lasttest, schwer in gzip-Detail-Store</div>
                             <div>&#8226; FIX: Dummy-Stresstest läuft nur noch im Dummy-Modus</div>
@@ -2743,7 +2746,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.18';
+        const VERSION = '0.9.14.19';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11650,9 +11653,28 @@
                 id: 'jw' + seq, histId: 'jw' + seq,
                 name: _jwRand(JUNIOR_FIRST) + ' ' + _jwRand(JUNIOR_LAST),
                 nation: _jwRand(JUNIOR_NATIONS),
-                pace: 60 + ((Math.random() * 35) | 0),   // 60–94, heterogen
+                pace: 58 + ((Math.random() * 28) | 0),   // 58–85 Einstieg, entwickelt sich (2b)
+                age: 17 + ((Math.random() * 4) | 0),     // 17–20 Einstiegsalter
+                _retireAge: 24 + ((Math.random() * 6) | 0),  // 24–29, pro Fahrer variabel
                 seriesId, debutYear: year
             };
+        }
+        // 2b: ein Karrierejahr – altern + Pace-Drift (jung: wachsen, nach Peak: abbauen).
+        const JW_PEAK_AGE = 24;
+        function _developJuniorDriver(d) {
+            d.age = (d.age || 18) + 1;
+            const delta = (d.age <= JW_PEAK_AGE) ? (1 + ((Math.random() * 2) | 0)) : -(1 + ((Math.random() * 2) | 0));
+            d.pace = Math.max(40, Math.min(99, (d.pace || 60) + delta));
+        }
+        // 2b: bestehende Fahrer altern + Karriere-Enden aussortieren (Nachrücker folgt via _ensureJuniorRoster).
+        function _ageAndRetireJuniors(jw) {
+            const survivors = [];
+            for (const d of (jw.drivers || [])) {
+                _developJuniorDriver(d);
+                if (d.age >= (d._retireAge || 26)) continue;   // Karriere-Ende → kein Survivor
+                survivors.push(d);
+            }
+            jw.drivers = survivors;
         }
         // Serien + Roster auffüllen, falls leer (oder Scale erhöht wurde).
         function _ensureJuniorRoster(jw, year) {
@@ -11685,7 +11707,7 @@
             return {
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points },
                 heavy: { seriesId: series.id, standings,
-                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, pace: d.pace, points: standings[d.id].points })),
+                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, pace: d.pace, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
         }
@@ -11694,7 +11716,8 @@
         async function advanceJuniorWorld(year) {
             if (GAME_STATE.juniorMode !== 'world') return;
             const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
-            _ensureJuniorRoster(jw, year);
+            _ageAndRetireJuniors(jw);          // 2b: Returner altern/Pace-Drift, Karriere-Enden raus
+            _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
             const sc = _juniorScale();
             const lightSeries = [], heavySeries = [];
             for (const s of jw.series) {
