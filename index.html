@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.10</title>
+    <title>F1 RPG v0.9.14.11</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.10 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.11 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Fahrer-/Team-Profile laden Karriere-Historie vergangener Saisons lazy - Grids wieder vollstaendig, RAM bleibt schlank</div>
+                            <div>&#8226; NEU: Leichter Teilnehmer-Index pro Saison (driverHistIds/teamHistIds) laedt nur Teilnahme-Jahre, skaliert auf tausende Saisons</div>
+                            <div class="font-bold text-slate-400">v0.9.14.10 - 27.06.2026</div>
                             <div>&#8226; NEU: Lazy Loading - Spielstand laedt nur leichte Saison-Daten, schwere Renndetails on-demand beim Ansehen (RAM-Grenze faellt)</div>
                             <div>&#8226; NEU: Vergangene Saisons (Saisonverlauf/Ergebnisse/Rennen/Renn-Detail) laden ihre Details lazy beim Oeffnen</div>
                             <div>&#8226; FIX: Champion-Titelzaehlung nutzt leichtes championHistId - nach Light-Load korrekt</div>
@@ -2718,7 +2721,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.10';
+        const VERSION = '0.9.14.11';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3231,19 +3234,57 @@
             });
         }
 
-        // Phase 3 Schritt 3: Einmal-Backfill für ALTE leichte Records ohne championHistId.
-        // Neue Saisons (startNewSeason) speichern championHistId direkt leicht. Alt-Saves haben den
-        // histId-Schlüssel nur im schweren drivers-Snapshot → hier einmalig auflösen + leicht
-        // zurückschreiben, danach für immer ohne Detail-Zugriff. Läuft VOR sanitize (Recount braucht es).
-        async function _backfillChampionHistIds(hist) {
+        // Phase 3 Einmal-Backfill für ALTE leichte Records ohne die LEICHTEN Index-Felder
+        // (championHistId aus Schritt 3, driverHistIds/teamHistIds aus Option A). Neue Saisons
+        // (startNewSeason) speichern sie direkt. Alt-Saves haben die Infos nur im schweren Snapshot →
+        // hier EINMAL pro Record auflösen (1 Detail-Read) + leicht zurückschreiben, danach für immer
+        // ohne Detail-Zugriff. Läuft VOR sanitize (Recount braucht championHistId).
+        async function _backfillLightHistFields(hist) {
             if (!_idbAvailable || !Array.isArray(hist)) return;
             for (const h of hist) {
-                if (!h || h.championId == null || h.championHistId !== undefined) continue;
-                const detail = await idbHistDetailGet(h.year);
-                const champDriver = detail && (detail.drivers || []).find(d => d.id === h.championId);
-                h.championHistId = champDriver?.histId || h.championId;   // Fallback: id selbst
+                if (!h) continue;
+                const needChamp = h.championId != null && h.championHistId === undefined;
+                const needLists = h.driverHistIds === undefined || h.teamHistIds === undefined;
+                if (!needChamp && !needLists) continue;
+                const detail = await idbHistDetailGet(h.year);   // 1 Read deckt alle drei Felder ab
+                if (needChamp) {
+                    const champDriver = detail && (detail.drivers || []).find(d => d.id === h.championId);
+                    h.championHistId = champDriver?.histId || h.championId;   // Fallback: id selbst
+                }
+                if (needLists) {
+                    h.driverHistIds = (detail?.drivers || []).map(d => d.histId || d.id);
+                    h.teamHistIds = (detail?.teams || []).map(t => t.histId || t.id);
+                }
                 await idbHistPut(h.year, h);   // h ist leicht (aus history-Store) → kein Heavy-Leak
             }
+        }
+
+        // Phase 3 Option A: Teilnahme-Jahre eines Fahrers/Teams aus den LEICHTEN Indizes
+        // (driverHistIds/teamHistIds) ableiten und nur diese transient hydrieren (schwere Felder an die
+        // Records hängen). Records OHNE Index (un-backfilled) konservativ einschließen; Records die schon
+        // schwere Felder tragen (localStorage-Fallback ODER bereits hydriert) überspringen → werden NICHT
+        // dehydriert. Gibt die frisch hydrierten Records zurück (für die Dehydrierung im Profil-Wrapper).
+        async function _hydrateProfileYears(id, kind) {
+            const idxField = kind === 'team' ? 'teamHistIds' : 'driverHistIds';
+            const idSet = new Set([id]);   // stabile Identitäts-Schlüssel (id + histId) aus dem RAM sammeln
+            if (kind === 'team') {
+                const t = (GAME_STATE.teams || []).find(t => t.id === id || t.histId === id);
+                if (t) { idSet.add(t.id); if (t.histId) idSet.add(t.histId); }
+            } else {
+                const d = (GAME_STATE.drivers || []).find(d => d.id === id || d.histId === id)
+                       || (GAME_STATE.reservePool || []).find(d => d.id === id || d.histId === id);
+                if (d) { idSet.add(d.id); if (d.histId) idSet.add(d.histId); }
+            }
+            const recs = [];
+            for (const h of GAME_STATE.history || []) {
+                const idx = h[idxField];
+                const relevant = !Array.isArray(idx) || idx.some(x => idSet.has(x));   // kein Index → konservativ
+                if (!relevant) continue;
+                if (HISTORY_HEAVY_FIELDS.some(k => k in h)) continue;   // schon schwer (Fallback/hydriert)
+                const detail = await getHistoryDetail(h.year);
+                if (detail) { Object.assign(h, detail); recs.push(h); }
+            }
+            return recs;
         }
 
         // Async-Pendant zu safeSetItem: IndexedDB-Write + Quota/Fehler-Handling.
@@ -5352,7 +5393,7 @@
                 if (core) {
                     const loaded = JSON.parse(core);
                     loaded.history = await idbHistGetAll();          // Phase 3: nur LEICHTE Records in den RAM
-                    await _backfillChampionHistIds(loaded.history);  // Alt-Saves: histId-Schlüssel einmalig leicht setzen
+                    await _backfillLightHistFields(loaded.history);  // Alt-Saves: leichte Index-Felder einmalig setzen
                     GAME_STATE = sanitizeGameState(loaded);
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                     logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, ${GAME_STATE.history.length} Saisons (History-Store, leicht)`);
@@ -5402,7 +5443,7 @@
                 // History aus Store ergänzen (neues core-Format); altes Voll-Format hatte history inline
                 if ((!GAME_STATE.history || GAME_STATE.history.length === 0) && _idbAvailable) {
                     GAME_STATE.history = await idbHistGetAll();   // Phase 3: nur LEICHTE Records
-                    await _backfillChampionHistIds(GAME_STATE.history);
+                    await _backfillLightHistFields(GAME_STATE.history);
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                 }
                 renderAll();
@@ -11444,6 +11485,18 @@
                     }))
                 }));
                 
+                // Phase 3 Option A: Fahrer/Team-Snapshots EINMAL berechnen (teuer wg. evaluateDriverPerformance),
+                // damit daraus die LEICHTEN Teilnehmer-Indizes abgeleitet werden können.
+                const _seasonDrivers = GAME_STATE._seasonEndSnapshot?.drivers || GAME_STATE.drivers.map(d => {
+                    const driverCopy = JSON.parse(JSON.stringify(d));
+                    if (typeof evaluateDriverPerformance === 'function') {
+                        const eval_ = evaluateDriverPerformance(d.id);
+                        if (eval_) driverCopy.satisfaction = eval_.score;
+                    }
+                    return driverCopy;
+                });
+                const _seasonTeams = GAME_STATE._seasonEndSnapshot?.teams || JSON.parse(JSON.stringify(GAME_STATE.teams));
+
                 GAME_STATE.history.push({
                     type: 'simulated',
                     year: GAME_STATE.currentYear,
@@ -11452,6 +11505,10 @@
                     // Phase 3: histId-Schlüssel des Champions LEICHT mitspeichern (allTimeStATS ist mit
                     // histId||id verschlüsselt). Recount braucht so kein schweres h.drivers mehr.
                     championHistId: champion ? (champion.histId || champion.id) : null,
+                    // Phase 3 Option A: LEICHTER Teilnehmer-Index (histId||id pro Fahrer/Team) – erlaubt
+                    // Profil-Karriere-Grids vorzufiltern, welche Saisons zu hydrieren sind (statt alle).
+                    driverHistIds: _seasonDrivers.map(d => d.histId || d.id),
+                    teamHistIds: _seasonTeams.map(t => t.histId || t.id),
                     championPoints: champion ? champion.points : 0,
                     teamChampion: teamChampion ? teamChampion.name : 'N/A',
                     teamChampionId: teamChampion ? teamChampion.id : null,
@@ -11470,15 +11527,8 @@
                     driverStandings: JSON.parse(JSON.stringify(GAME_STATE.driverStandings)),
                     teamStandings: JSON.parse(JSON.stringify(GAME_STATE.teamStandings)),
                     // Fahrer/Teams für Steckbriefe - SNAPSHOT VOR TEAMWECHSELN (mit Zufriedenheit)
-                    drivers: GAME_STATE._seasonEndSnapshot?.drivers || GAME_STATE.drivers.map(d => {
-                        const driverCopy = JSON.parse(JSON.stringify(d));
-                        if (typeof evaluateDriverPerformance === 'function') {
-                            const eval_ = evaluateDriverPerformance(d.id);
-                            if (eval_) driverCopy.satisfaction = eval_.score;
-                        }
-                        return driverCopy;
-                    }),
-                    teams: GAME_STATE._seasonEndSnapshot?.teams || JSON.parse(JSON.stringify(GAME_STATE.teams))
+                    drivers: _seasonDrivers,
+                    teams: _seasonTeams
                 });
                 
                 // Snapshot löschen
@@ -17839,7 +17889,14 @@ Empfohlene Wertebereiche:
         }
         
         // === FAHRER-STECKBRIEF ===
-        window.openDriverProfile = function(driverId) {
+        // Phase 3 Option A: async Wrapper – hydriert nur die Teilnahme-Jahre (leichter driverHistIds-Index),
+        // rendert den (synchronen) Body, hängt danach wieder ab → Steady-State bleibt leicht.
+        window.openDriverProfile = async function(driverId) {
+            const _recs = await _hydrateProfileYears(driverId, 'driver');
+            try { _openDriverProfileBody(driverId); }
+            finally { for (const r of _recs) for (const k of HISTORY_HEAVY_FIELDS) delete r[k]; }
+        };
+        function _openDriverProfileBody(driverId) {
             // Zuerst in aktuellen Fahrern suchen (per id ODER per histId)
             let driver = GAME_STATE.drivers.find(d => d.id === driverId || d.histId === driverId);
             // Auch im Reserve-Pool suchen
@@ -19680,7 +19737,13 @@ Empfohlene Wertebereiche:
         }
 
         // =======================================
-        window.openTeamProfile = function(teamId) {
+        // Phase 3 Option A: async Wrapper – hydriert nur die Teilnahme-Jahre (leichter teamHistIds-Index).
+        window.openTeamProfile = async function(teamId) {
+            const _recs = await _hydrateProfileYears(teamId, 'team');
+            try { _openTeamProfileBody(teamId); }
+            finally { for (const r of _recs) for (const k of HISTORY_HEAVY_FIELDS) delete r[k]; }
+        };
+        function _openTeamProfileBody(teamId) {
             // Suche per id ODER per histId ODER per Name (inkl. Slug-Konvertierung "red-bull" → "red bull")
             const teamIdLower = String(teamId).toLowerCase();
             const teamIdSlug = teamIdLower.replace(/-/g, ' ');
