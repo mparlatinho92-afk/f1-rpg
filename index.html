@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.15</title>
+    <title>F1 RPG v0.9.14.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.15 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.16 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Junior-Klassen-Modus wird einmalig beim Spielstart gewählt (Aus / Dummy-Stresstest / Junior-Welt) und ist danach gesperrt</div>
+                            <div>&#8226; NEU: Dummy-Stresstest-Panel nur noch im Dummy-Modus sichtbar</div>
+                            <div>&#8226; FIX: alte Spielstände migrieren automatisch (mit Ballast → Dummy, sonst Aus)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.15 - 27.06.2026</div>
                             <div>&#8226; NEU: History-Detail-Records werden vor IndexedDB-Write gzip-komprimiert (v.a. Firefox/Safari Plattenersparnis)</div>
                             <div>&#8226; FIX: alte unkomprimierte Records weiter lesbar (abwärtskompatibel)</div>
                             <div class="font-bold text-slate-400">v0.9.14.14 - 27.06.2026</div>
@@ -2732,7 +2736,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.15';
+        const VERSION = '0.9.14.16';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4962,6 +4966,13 @@
             sanitized.dummyJuniorSeries  = sanitized.dummyJuniorSeries  || 0;
             sanitized.dummyJuniorDrivers = sanitized.dummyJuniorDrivers || 25;
             sanitized.dummyJuniorRaces   = sanitized.dummyJuniorRaces   || 15;
+            // Junior-Modus (game-breaking-Schutz): einmal beim Neuspiel gewählt, danach gesperrt.
+            // Alt-Saves migrieren: hatten sie Dummy-Ballast → 'dummy', sonst 'off'.
+            if (sanitized.juniorMode === undefined) {
+                const hadDummy = (sanitized.dummyJuniorSeries | 0) > 0
+                    || (sanitized.history || []).some(s => s && (s._hasDummyJuniors || s._dummyJuniors));
+                sanitized.juniorMode = hadDummy ? 'dummy' : 'off';
+            }
             
             // Objekte sicherstellen
             sanitized.driverStandings = sanitized.driverStandings || {};
@@ -6781,6 +6792,7 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: 100,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
+                juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
 
                 teams: JSON.parse(JSON.stringify(template.teams)),
                 drivers: JSON.parse(JSON.stringify(template.drivers)),
@@ -6866,6 +6878,7 @@
                 dnfRate: existingDnfRate,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
                 rookieProtection: false,
+                juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
 
                 teams: JSON.parse(JSON.stringify(template.teams)),
                 drivers: JSON.parse(JSON.stringify(template.drivers)),
@@ -11470,6 +11483,9 @@
 
         // Spiegelt Parameter + Vorschau + Ballast-Status ins Debug-Panel (von updateStorageMeter aufgerufen).
         function syncDummyJuniorUI() {
+            // Junior-Modus-Sperre: Dummy-Stresstest-Panel nur im Modus 'dummy' zeigen.
+            const ctrl = document.getElementById('dummy-juniors-ctrl');
+            if (ctrl) ctrl.style.display = (GAME_STATE.juniorMode === 'dummy') ? '' : 'none';
             const p = _dummyJuniorParams();
             const set = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
             set('dj-series', p.series); set('dj-drivers', p.drivers); set('dj-races', p.races);
@@ -11483,6 +11499,39 @@
                 st.textContent = preview + (ballast ? ` · ${ballast} Saison(s) mit Ballast` : '');
             }
         }
+
+        // ═══ Junior-Modus-Wahl (game-breaking-Schutz) ═══
+        // Einmal beim Neuspiel: 'off' (Normalspiel), 'dummy' (alter Last-Generator) oder
+        // 'world' (komplexe Junior-Welt). Danach gesperrt – kein Mid-Game-Wechsel.
+        // Selbst-gebautes Overlay (keine statische HTML nötig).
+        function promptJuniorMode() {
+            const old = document.getElementById('juniorModeModal');
+            if (old) old.remove();
+            const ov = document.createElement('div');
+            ov.id = 'juniorModeModal';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
+            const opt = (mode, icon, title, desc) =>
+                `<button onclick="setJuniorMode('${mode}')" style="display:block;width:100%;text-align:left;margin:0.4rem 0;padding:0.7rem 0.9rem;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;">
+                    <div style="font-weight:600;">${icon} ${title}</div>
+                    <div style="font-size:0.82rem;color:var(--text-muted);margin-top:0.2rem;">${desc}</div>
+                </button>`;
+            ov.innerHTML = `<div style="max-width:460px;width:90%;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:1.2rem;">
+                <div style="font-size:1.05rem;font-weight:700;margin-bottom:0.3rem;">🏎️ Junior-Klassen für diesen Spielstand</div>
+                <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.8rem;">Einmalige Wahl – danach für diesen Spielstand gesperrt (kein Mid-Game-Wechsel).</div>
+                ${opt('off', '🚫', 'Aus', 'Nur Formel 1, keine Junior-Klassen.')}
+                ${opt('dummy', '🧪', 'Dummy-Stresstest', 'Reiner Datenballast pro Saison (alter Last-Generator).')}
+                ${opt('world', '🌍', 'Junior-Welt', 'Eigenständige Junior-Welt mit echten Karrieren, All-Time- & Strecken-Stats (ohne F1-Aufstieg).')}
+            </div>`;
+            document.body.appendChild(ov);
+        }
+        window.setJuniorMode = function(mode) {
+            if (!['off', 'dummy', 'world'].includes(mode)) mode = 'off';
+            GAME_STATE.juniorMode = mode;
+            const ov = document.getElementById('juniorModeModal');
+            if (ov) ov.remove();
+            saveGame();
+            if (typeof syncDummyJuniorUI === 'function') syncDummyJuniorUI();
+        };
 
         // WICHTIG: neuesJahr = aktuellesJahr + 1 - KEINE AUSNAHMEN!
         function startNewSeason() {
@@ -12360,6 +12409,7 @@
             closeResetCenter();
             renderAll();
             alert('✅ Zurückgesetzt auf Saison ' + GAME_STATE.currentYear);
+            promptJuniorMode();   // Voll-Reset = neuer Anfang → Junior-Modus erneut wählen
         };
         
         window.deleteSelectedSeasons = function() {
@@ -12700,8 +12750,9 @@
             initFromYear(year);
             closeDatasetManager();
             renderAll();
+            promptJuniorMode();   // einmalige Junior-Modus-Wahl für neuen Spielstand
         };
-        
+
         window.closeDatasetManager = function() {
             document.getElementById('datasetManagerModal').style.display = 'none';
         };
@@ -12716,6 +12767,7 @@
             }
             closeDatasetManager();
             renderAll();
+            promptJuniorMode();   // einmalige Junior-Modus-Wahl für neuen Spielstand
         };
         
         // === EXPORT / IMPORT ===
