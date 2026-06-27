@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.11</title>
+    <title>F1 RPG v0.9.14.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.11 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.12 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Strecken-/GP-Statistik baut den Index per Streaming (Saison fuer Saison) - vollstaendig auch bei tausenden Saisons ohne RAM-Spitze</div>
+                            <div>&#8226; NEU: Phase 3 Lazy Loading fast komplett - Saisons, Profile und Strecken/GP laden Detaildaten on-demand</div>
+                            <div class="font-bold text-slate-400">v0.9.14.11 - 27.06.2026</div>
                             <div>&#8226; NEU: Fahrer-/Team-Profile laden Karriere-Historie vergangener Saisons lazy - Grids wieder vollstaendig, RAM bleibt schlank</div>
                             <div>&#8226; NEU: Leichter Teilnehmer-Index pro Saison (driverHistIds/teamHistIds) laedt nur Teilnahme-Jahre, skaliert auf tausende Saisons</div>
                             <div class="font-bold text-slate-400">v0.9.14.10 - 27.06.2026</div>
@@ -2721,7 +2724,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.11';
+        const VERSION = '0.9.14.12';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16161,11 +16164,12 @@
             switchToYear(year);
         };
 
-        let _gpCICache = null, _gpCIKey = '';
-        function buildGameCircuitGPIndex() {
-            const ck = `${GAME_STATE.currentYear}|${(GAME_STATE.history||[]).length}|${(GAME_STATE.results||[]).length}`;
-            if (_gpCICache && _gpCIKey === ck) return _gpCICache;
+        let _gpCICache = null, _gpCIKey = '', _gpCIPartial = false, _gpCIBuilding = false;
 
+        // Phase 3 Group 4: Kern-Assembler – baut cIdx/gpIdx aus F1DB-Historie + den übergebenen Sim-Saison-
+        // Daten (schwere Felder müssen bereitstehen) + aktueller Saison. histSeasons: [{year,races,results,
+        // drivers,qualis}]. Getrennt vom Cache/Streaming, damit Sync- und Async-Pfad dieselbe Logik teilen.
+        function _assembleGPIndex(histSeasons) {
             const cIdx = {}, gpIdx = {};
             const push = (entry) => {
                 (cIdx[entry.cid] = cIdx[entry.cid] || []).push(entry);
@@ -16220,7 +16224,7 @@
                     push({ year, gpKey, cid, country: rt.country || CIRCUIT_COUNTRY[(rt.circuitId || cid)] || null, driverId: wId, driverName: wName, constrId: wTeam, poleId, poleName: _sn(poleId, dMap), flId, flName: _sn(flId, dMap) });
                 }
             };
-            for (const s of (GAME_STATE.history || [])) process(s.year, s.races, s.results, s.drivers, s.qualifyingResults);
+            for (const sd of (histSeasons || [])) process(sd.year, sd.races, sd.results, sd.drivers, sd.qualis);
             const curRes = (GAME_STATE.results || []).map(rr => ({
                 ri: rr.raceIndex, rn: rr.raceName,
                 res: (rr.results || []).map(r => ({ p: r.position, d: r.driver, team: r.team, fl: r.fastestLap ? 1 : 0 }))
@@ -16228,9 +16232,46 @@
             process(GAME_STATE.currentYear, GAME_STATE.races, curRes, GAME_STATE.drivers, GAME_STATE.qualifyingResults);
             for (const k of Object.keys(cIdx)) cIdx[k].sort((a,b) => a.year - b.year);
             for (const k of Object.keys(gpIdx)) gpIdx[k].sort((a,b) => a.year - b.year);
-            _gpCICache = { cIdx, gpIdx };
+            return { cIdx, gpIdx };
+        }
+
+        // Sync (alle 5 Aufrufer bleiben synchron): liefert sofort F1DB + aktuelle Saison + alle Saisons,
+        // deren schwere Felder bereits im RAM liegen (localStorage-Fallback oder gerade hydriert). Fehlen
+        // leichte Saisons, wird EINMAL ein async Voll-Build angestoßen, der den Cache nachzieht + neu rendert.
+        function buildGameCircuitGPIndex() {
+            const ck = `${GAME_STATE.currentYear}|${(GAME_STATE.history||[]).length}|${(GAME_STATE.results||[]).length}`;
+            if (_gpCICache && _gpCIKey === ck) return _gpCICache;
+            const inRam = []; let light = 0;
+            for (const s of (GAME_STATE.history || [])) {
+                if (s.results !== undefined) inRam.push({ year: s.year, races: s.races, results: s.results, drivers: s.drivers, qualis: s.qualifyingResults });
+                else light++;
+            }
+            _gpCICache = _assembleGPIndex(inRam);
             _gpCIKey = ck;
+            _gpCIPartial = light > 0;
+            if (_gpCIPartial && _idbAvailable && !_gpCIBuilding) _ensureGameCircuitGPIndex();   // fire-and-forget
             return _gpCICache;
+        }
+
+        // Async Voll-Build: streamt jede leichte Saison EINZELN (laden → verarbeiten → verwerfen) → RAM
+        // bounded auf eine Saison statt alle. Ersetzt den Cache durch den vollständigen Index und rendert
+        // die Strecken-/GP-Ansicht neu, falls sie offen ist. Cache-Hit verhindert Re-Trigger (kein Loop).
+        async function _ensureGameCircuitGPIndex() {
+            if (_gpCIBuilding) return;
+            _gpCIBuilding = true;
+            try {
+                const ck = `${GAME_STATE.currentYear}|${(GAME_STATE.history||[]).length}|${(GAME_STATE.results||[]).length}`;
+                const all = [];
+                for (const s of (GAME_STATE.history || [])) {
+                    if (s.results !== undefined) { all.push({ year: s.year, races: s.races, results: s.results, drivers: s.drivers, qualis: s.qualifyingResults }); continue; }
+                    const d = await idbHistDetailGet(s.year);   // genau eine Saison im RAM, danach verworfen
+                    all.push({ year: s.year, races: d?.races, results: d?.results, drivers: d?.drivers, qualis: d?.qualifyingResults });
+                }
+                _gpCICache = _assembleGPIndex(all);
+                _gpCIKey = ck;
+                _gpCIPartial = false;
+                if (currentTab === 'stATS' && (stATSSubTab === 'circuits' || stATSSubTab === 'gps')) renderContent();
+            } finally { _gpCIBuilding = false; }
         }
 
         function renderAllCircuits() {
