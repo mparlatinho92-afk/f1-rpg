@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.13</title>
+    <title>F1 RPG v0.9.14.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.13 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.14 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: gzip-Komprimierung für History-Detail vorbereitet (CompressionStream-Helfer, noch ohne Wiring)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.13 - 27.06.2026</div>
                             <div>&#8226; FIX: Junior-Ballast entfernen (Stresstest) loeschte nach Lazy Loading versehentlich ALLE Saison-Detaildaten - jetzt chirurgisch nur der Ballast</div>
                             <div>&#8226; NEU: Phase 3 Lazy Loading KOMPLETT - alle Ansichten + Debug-Tools arbeiten mit leichten Records, RAM bleibt schlank auch bei tausenden Saisons</div>
                             <div class="font-bold text-slate-400">v0.9.14.12 - 27.06.2026</div>
@@ -2727,7 +2729,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.13';
+        const VERSION = '0.9.14.14';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3010,6 +3012,23 @@
         }
 
         // ── Detail-Store (Persistenz v3): schwere Felder je Saison getrennt ──
+        // Phase 4 (gzip): schwere Detail-Records vor dem IDB-Write komprimieren, beim Lesen
+        // entpacken. Bringt v.a. auf Firefox/Safari Plattenersparnis (Chrome komprimiert IDB
+        // intern schon). Format: komprimiert = Wrapper { __gz:1, b:Uint8Array }; alte Records
+        // sind die rohen Heavy-Objekte (Felder results/drivers/… – nie __gz) → abwärtskompatibel.
+        // Feature-Detection: ohne CompressionStream wird unkomprimiert geschrieben (Get versteht beides).
+        const _GZIP_OK = (typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined');
+        async function _gzipEncode(obj) {
+            if (!_GZIP_OK) return obj;
+            const stream = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'));
+            const buf = await new Response(stream).arrayBuffer();
+            return { __gz: 1, b: new Uint8Array(buf) };
+        }
+        async function _gzipDecode(rec) {
+            if (!rec || !rec.__gz) return rec;   // null oder alt/unkomprimiert → unverändert
+            const stream = new Blob([rec.b]).stream().pipeThrough(new DecompressionStream('gzip'));
+            return JSON.parse(await new Response(stream).text());
+        }
         function idbHistDetailPut(year, obj) {
             return new Promise((resolve, reject) => {
                 idbOpen().then(db => {
