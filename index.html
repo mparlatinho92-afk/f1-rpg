@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.16</title>
+    <title>F1 RPG v0.9.14.17</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.16 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.17 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Junior-Welt-Datenstruktur + eigene IndexedDB-Stores (junior_history/junior_detail) mit gzip-Komprimierung</div>
+                            <div>&#8226; NEU: IndexedDB-Schema auf v4 erweitert (abwärtskompatibel, bestehende Daten bleiben)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.16 - 27.06.2026</div>
                             <div>&#8226; NEU: Junior-Klassen-Modus wird einmalig beim Spielstart gewählt (Aus / Dummy-Stresstest / Junior-Welt) und ist danach gesperrt</div>
                             <div>&#8226; NEU: Dummy-Stresstest-Panel nur noch im Dummy-Modus sichtbar</div>
                             <div>&#8226; FIX: alte Spielstände migrieren automatisch (mit Ballast → Dummy, sonst Aus)</div>
@@ -2736,7 +2739,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.16';
+        const VERSION = '0.9.14.17';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -2937,7 +2940,9 @@
         const IDB_STORE = 'kv';          // kleine Keys: core, autosave
         const IDB_HIST = 'history';      // je Saison 1 LEICHTER Record (Key = Jahr) – Standings/Champion/Events
         const IDB_DETAIL = 'history_detail';  // je Saison 1 SCHWERER Record (results/quali/drivers/teams/races/ballast)
-        const IDB_VERSION = 3;
+        const IDB_JHIST = 'junior_history';   // Junior-Welt: leichter Record je Saison (Key = Jahr), analog IDB_HIST
+        const IDB_JDETAIL = 'junior_detail';  // Junior-Welt: schwerer Record je Saison (gzip), analog IDB_DETAIL
+        const IDB_VERSION = 4;
         let _idbDB = null;            // gecachte DB-Verbindung
         let _idbAvailable = (typeof indexedDB !== 'undefined' && indexedDB !== null);
 
@@ -2953,6 +2958,8 @@
                     if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
                     if (!db.objectStoreNames.contains(IDB_HIST))  db.createObjectStore(IDB_HIST);
                     if (!db.objectStoreNames.contains(IDB_DETAIL)) db.createObjectStore(IDB_DETAIL);  // v3
+                    if (!db.objectStoreNames.contains(IDB_JHIST))   db.createObjectStore(IDB_JHIST);    // v4 Junior-Welt
+                    if (!db.objectStoreNames.contains(IDB_JDETAIL)) db.createObjectStore(IDB_JDETAIL);  // v4 Junior-Welt
                 };
                 req.onsuccess = () => { _idbDB = req.result; resolve(_idbDB); };
                 req.onerror = () => { _idbAvailable = false; reject(req.error || new Error('IndexedDB open fehlgeschlagen')); };
@@ -3211,6 +3218,71 @@
                     tx.objectStore(IDB_HIST).clear();
                     tx.objectStore(IDB_DETAIL).clear();
                     tx.oncomplete = () => { _persistedHistoryYears.clear(); _histDetailCacheClear(); resolve(true); };
+                    tx.onerror = () => resolve(false);
+                }).catch(() => resolve(false));
+            });
+        }
+
+        // ═══ Junior-Welt-Persistenz (Schritt 1) ═══
+        // Eigene light/heavy-Stores analog F1, nutzt dieselben gzip-Helfer (_gzipEncode/_gzipDecode)
+        // → Lazy+gzip greifen automatisch. Schwere Junior-Saison-Felder (results/drivers/…) in
+        // IDB_JDETAIL (komprimiert), leichte (Standings/Champion) in IDB_JHIST.
+        function _emptyJuniorWorld() {
+            return { drivers: [], series: [], history: [], allTimeStats: {}, circuitIndex: {} };
+        }
+        function idbJHistPut(year, obj) {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_JHIST, 'readwrite');
+                    tx.objectStore(IDB_JHIST).put(obj, year);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => reject(tx.error);
+                }).catch(reject);
+            });
+        }
+        function idbJHistGetAll() {
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const rq = db.transaction(IDB_JHIST, 'readonly').objectStore(IDB_JHIST).openCursor();
+                    const out = [];
+                    rq.onsuccess = () => {
+                        const cur = rq.result;
+                        if (cur) { out.push({ _key: cur.key, val: cur.value }); cur.continue(); }
+                        else { out.sort((a, b) => Number(a._key) - Number(b._key)); resolve(out.map(o => o.val)); }
+                    };
+                    rq.onerror = () => reject(rq.error);
+                }).catch(reject);
+            });
+        }
+        async function idbJDetailPut(year, obj) {
+            const stored = await _gzipEncode(obj);   // gzip wie F1-Detail
+            return new Promise((resolve, reject) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction(IDB_JDETAIL, 'readwrite');
+                    tx.objectStore(IDB_JDETAIL).put(stored, year);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => reject(tx.error);
+                }).catch(reject);
+            });
+        }
+        async function idbJDetailGet(year) {
+            const raw = await new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const rq = db.transaction(IDB_JDETAIL, 'readonly').objectStore(IDB_JDETAIL).get(Number(year));
+                    rq.onsuccess = () => resolve(rq.result || null);
+                    rq.onerror = () => resolve(null);
+                }).catch(() => resolve(null));
+            });
+            return _gzipDecode(raw);
+        }
+        // Voll-Reset beider Junior-Stores (Import/clearAllData/Modus-Reset)
+        function idbJClear() {
+            return new Promise((resolve) => {
+                idbOpen().then(db => {
+                    const tx = db.transaction([IDB_JHIST, IDB_JDETAIL], 'readwrite');
+                    tx.objectStore(IDB_JHIST).clear();
+                    tx.objectStore(IDB_JDETAIL).clear();
+                    tx.oncomplete = () => resolve(true);
                     tx.onerror = () => resolve(false);
                 }).catch(() => resolve(false));
             });
@@ -4972,6 +5044,16 @@
                 const hadDummy = (sanitized.dummyJuniorSeries | 0) > 0
                     || (sanitized.history || []).some(s => s && (s._hasDummyJuniors || s._dummyJuniors));
                 sanitized.juniorMode = hadDummy ? 'dummy' : 'off';
+            }
+            // Junior-Welt-Struktur (Schritt 1): leichte Felder im core; history wird lazy aus den
+            // Junior-Stores geladen (nicht hier). Nur Defaults sicherstellen, nie schwere Felder anfassen.
+            if (!sanitized.juniorWorld || typeof sanitized.juniorWorld !== 'object') {
+                sanitized.juniorWorld = _emptyJuniorWorld();
+            } else {
+                const jw = sanitized.juniorWorld;
+                jw.drivers = jw.drivers || []; jw.series = jw.series || [];
+                jw.history = jw.history || []; jw.allTimeStats = jw.allTimeStats || {};
+                jw.circuitIndex = jw.circuitIndex || {};
             }
             
             // Objekte sicherstellen
@@ -6793,6 +6875,7 @@
                 dnfRate: 100,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
+                juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
 
                 teams: JSON.parse(JSON.stringify(template.teams)),
                 drivers: JSON.parse(JSON.stringify(template.drivers)),
@@ -6879,6 +6962,7 @@
                 aiSimulation: true,
                 rookieProtection: false,
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
+                juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
 
                 teams: JSON.parse(JSON.stringify(template.teams)),
                 drivers: JSON.parse(JSON.stringify(template.drivers)),
