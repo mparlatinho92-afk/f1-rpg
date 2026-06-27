@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.17</title>
+    <title>F1 RPG v0.9.14.18</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.17 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.18 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: Junior-Welt-Modus simuliert pro Saison eigene Junior-Serien (F3/F2) mit echten, über Jahre stabilen Fahrern</div>
+                            <div>&#8226; NEU: heterogene Daten (eindeutige Namen/Nationen/Pace) als realistischer Speicher-Lasttest, schwer in gzip-Detail-Store</div>
+                            <div>&#8226; FIX: Dummy-Stresstest läuft nur noch im Dummy-Modus</div>
+                            <div class="font-bold text-slate-400">v0.9.14.17 - 27.06.2026</div>
                             <div>&#8226; NEU: Junior-Welt-Datenstruktur + eigene IndexedDB-Stores (junior_history/junior_detail) mit gzip-Komprimierung</div>
                             <div>&#8226; NEU: IndexedDB-Schema auf v4 erweitert (abwärtskompatibel, bestehende Daten bleiben)</div>
                             <div class="font-bold text-slate-400">v0.9.14.16 - 27.06.2026</div>
@@ -2739,7 +2743,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.17';
+        const VERSION = '0.9.14.18';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11617,6 +11621,98 @@
             if (typeof syncDummyJuniorUI === 'function') syncDummyJuniorUI();
         };
 
+        // ═══ Junior-Welt-Generator (Schritt 2) ═══
+        // Vollwertige, eigenständige Junior-Welt (Modus 'world'): stabile Fahrer mit Historie,
+        // pro Saison parallel simuliert. Schwer (results/standings/snapshots) in junior_detail (gzip),
+        // leicht (Champion-Summary) in juniorWorld.history. KEIN F1-Aufstieg.
+        // 2a: Welt-Init + Fahrer-Pool + Saison-Sim + Persistenz (noch ohne Karriere-Entwicklung/Transfers).
+        const JUNIOR_SERIES_DEFS = [
+            { id: 'f3', name: 'Junior Formel 3', level: 3 },
+            { id: 'f2', name: 'Junior Formel 2', level: 2 }
+        ];
+        const JUNIOR_FIRST = ['Liam','Noah','Mateo','Hugo','Enzo','Luca','Theo','Felix','Aaron','Nico','Dario','Kimi','Aron','Gabriel','Santiago','Oliver','Emil','Jonas','Rafael','Victor','Andrea','Diego','Tomas','Yuki'];
+        const JUNIOR_LAST  = ['Berg','Costa','Marin','Vidal','Krause','Rossi','Lindqvist','Dumas','Petrov','Nakano','Silva','Hansen','Moreau','Bianchi','Novak','Keller','Tan','Okafor','Reyes','Adler','Falk','Conti','Mertens','Sato'];
+        const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NLD','SWE','FIN','BEL','DNK','AUT','CHE','ARG'];
+        const _JW_PTS = [25,18,15,12,10,8,6,4,2,1];
+
+        function _juniorScale() {
+            return {
+                driversPerSeries: Math.max(2, (GAME_STATE.juniorDriversPerSeries | 0) || 22),
+                races:            Math.max(1, (GAME_STATE.juniorRaces | 0) || 10)
+            };
+        }
+        function _jwRand(arr) { return arr[(Math.random() * arr.length) | 0]; }
+
+        // Stabiler Junior-Fahrer mit eindeutiger, über Jahre konstanter histId.
+        function _makeJuniorDriver(jw, seriesId, year) {
+            const seq = (jw._nextSeq = (jw._nextSeq || 0) + 1);
+            return {
+                id: 'jw' + seq, histId: 'jw' + seq,
+                name: _jwRand(JUNIOR_FIRST) + ' ' + _jwRand(JUNIOR_LAST),
+                nation: _jwRand(JUNIOR_NATIONS),
+                pace: 60 + ((Math.random() * 35) | 0),   // 60–94, heterogen
+                seriesId, debutYear: year
+            };
+        }
+        // Serien + Roster auffüllen, falls leer (oder Scale erhöht wurde).
+        function _ensureJuniorRoster(jw, year) {
+            if (!jw.series || jw.series.length === 0) jw.series = JUNIOR_SERIES_DEFS.map(s => ({ ...s }));
+            jw.drivers = jw.drivers || [];
+            const sc = _juniorScale();
+            for (const s of jw.series) {
+                let have = jw.drivers.filter(d => d.seriesId === s.id).length;
+                for (; have < sc.driversPerSeries; have++) jw.drivers.push(_makeJuniorDriver(jw, s.id, year));
+            }
+        }
+        // Eine Saison einer Serie simulieren → { light: Summary, heavy: volle Daten }.
+        function _simulateJuniorSeriesSeason(series, drivers, races, year) {
+            const standings = {};
+            drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0 });
+            const raceRecs = [];
+            for (let r = 0; r < races; r++) {
+                const order = drivers.map(d => ({ id: d.id, score: d.pace + Math.random() * 30 }))
+                    .sort((a, b) => b.score - a.score).map(o => o.id);
+                const results = order.map((id, pos) => ({ d: id, p: pos + 1, t: 90000 + pos * 350 + ((Math.random() * 1500) | 0) }));
+                const quali = [...order].sort(() => Math.random() - 0.5).map((id, pos) => ({ d: id, p: pos + 1, t: 88000 + pos * 300 + ((Math.random() * 1200) | 0) }));
+                order.slice(0, 10).forEach((id, pos) => standings[id].points += _JW_PTS[pos]);
+                standings[order[0]].wins++;
+                order.slice(0, 3).forEach(id => standings[id].podiums++);
+                standings[quali[0].d].poles++;
+                raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, results, qualifying: quali });
+            }
+            let champ = drivers[0];
+            drivers.forEach(d => { if (standings[d.id].points > standings[champ.id].points) champ = d; });
+            return {
+                light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points },
+                heavy: { seriesId: series.id, standings,
+                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, pace: d.pace, points: standings[d.id].points })),
+                    races: raceRecs }
+            };
+        }
+        // Orchestriert eine Junior-Saison: Roster sichern, je Serie simulieren, leicht in
+        // juniorWorld.history (core, klein) + schwer in junior_detail (gzip) persistieren.
+        async function advanceJuniorWorld(year) {
+            if (GAME_STATE.juniorMode !== 'world') return;
+            const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
+            _ensureJuniorRoster(jw, year);
+            const sc = _juniorScale();
+            const lightSeries = [], heavySeries = [];
+            for (const s of jw.series) {
+                const roster = jw.drivers.filter(d => d.seriesId === s.id);
+                const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year);
+                lightSeries.push(sim.light); heavySeries.push(sim.heavy);
+            }
+            const lightRec = { year, series: lightSeries };
+            jw.history = jw.history || [];
+            jw.history.push(lightRec);
+            if (_idbAvailable) {
+                try {
+                    await idbJHistPut(year, lightRec);
+                    await idbJDetailPut(year, { year, series: heavySeries });
+                } catch (e) { logWarning('JUNIOR', 'Persist fehlgeschlagen: ' + e); }
+            }
+        }
+
         // WICHTIG: neuesJahr = aktuellesJahr + 1 - KEINE AUSNAHMEN!
         function startNewSeason() {
             const newYear = GAME_STATE.currentYear + 1;
@@ -11721,10 +11817,12 @@
                 // Snapshot löschen
                 delete GAME_STATE._seasonEndSnapshot;
 
-                // STRESSTEST: Dummy-Junior-Serien an die eben archivierte Saison hängen (reiner Ballast)
-                if ((GAME_STATE.dummyJuniorSeries | 0) > 0) {
-                    const _s = GAME_STATE.history[GAME_STATE.history.length - 1];
-                    attachDummyJuniors(_s, _s.year);
+                // Junior-Klassen je nach Modus an die eben archivierte Saison koppeln
+                const _js = GAME_STATE.history[GAME_STATE.history.length - 1];
+                if (GAME_STATE.juniorMode === 'dummy' && (GAME_STATE.dummyJuniorSeries | 0) > 0) {
+                    attachDummyJuniors(_js, _js.year);     // reiner Ballast (alt)
+                } else if (GAME_STATE.juniorMode === 'world') {
+                    advanceJuniorWorld(_js.year);          // komplexe Junior-Welt (async, fire-and-forget)
                 }
 
                 GAME_STATE.allTimeStATS.totalSeasons++;
