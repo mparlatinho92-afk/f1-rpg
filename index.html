@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.14</title>
+    <title>F1 RPG v0.9.14.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.14 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.15 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; NEU: History-Detail-Records werden vor IndexedDB-Write gzip-komprimiert (v.a. Firefox/Safari Plattenersparnis)</div>
+                            <div>&#8226; FIX: alte unkomprimierte Records weiter lesbar (abwärtskompatibel)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.14 - 27.06.2026</div>
                             <div>&#8226; NEU: gzip-Komprimierung für History-Detail vorbereitet (CompressionStream-Helfer, noch ohne Wiring)</div>
                             <div class="font-bold text-slate-400">v0.9.14.13 - 27.06.2026</div>
                             <div>&#8226; FIX: Junior-Ballast entfernen (Stresstest) loeschte nach Lazy Loading versehentlich ALLE Saison-Detaildaten - jetzt chirurgisch nur der Ballast</div>
@@ -2729,7 +2732,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.14';
+        const VERSION = '0.9.14.15';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3029,11 +3032,12 @@
             const stream = new Blob([rec.b]).stream().pipeThrough(new DecompressionStream('gzip'));
             return JSON.parse(await new Response(stream).text());
         }
-        function idbHistDetailPut(year, obj) {
+        async function idbHistDetailPut(year, obj) {
+            const stored = await _gzipEncode(obj);   // Phase 4: schwer → komprimierter Wrapper
             return new Promise((resolve, reject) => {
                 idbOpen().then(db => {
                     const tx = db.transaction(IDB_DETAIL, 'readwrite');
-                    tx.objectStore(IDB_DETAIL).put(obj, year);
+                    tx.objectStore(IDB_DETAIL).put(stored, year);
                     tx.oncomplete = () => resolve(true);
                     tx.onerror = () => reject(tx.error);
                     tx.onabort = () => reject(tx.error || new Error('detail put abgebrochen'));
@@ -3051,8 +3055,8 @@
             });
         }
         // Alle Detail-Records als Map(Jahr → schwererObj) – Key nötig fürs Merge in loadHistoryMerged
-        function idbHistDetailMap() {
-            return new Promise((resolve, reject) => {
+        async function idbHistDetailMap() {
+            const raw = await new Promise((resolve, reject) => {
                 idbOpen().then(db => {
                     const store = db.transaction(IDB_DETAIL, 'readonly').objectStore(IDB_DETAIL);
                     const rq = store.openCursor();
@@ -3065,18 +3069,22 @@
                     rq.onerror = () => reject(rq.error);
                 }).catch(reject);
             });
+            // Phase 4: jeden Wert entpacken (alte unkomprimierte bleiben unverändert)
+            for (const [k, v] of raw) raw.set(k, await _gzipDecode(v));
+            return raw;
         }
         // ── Lazy Detail-Zugriff (Phase 3): EINEN Detail-Record on-demand + LRU-Cache ──
         // Fundament fürs Lazy Loading: schwere Felder bleiben in IDB, werden erst beim
         // Render eines konkreten Jahres geladen statt komplett ins RAM (loadHistoryMerged).
-        function idbHistDetailGet(year) {
-            return new Promise((resolve) => {
+        async function idbHistDetailGet(year) {
+            const raw = await new Promise((resolve) => {
                 idbOpen().then(db => {
                     const rq = db.transaction(IDB_DETAIL, 'readonly').objectStore(IDB_DETAIL).get(Number(year));
                     rq.onsuccess = () => resolve(rq.result || null);
                     rq.onerror = () => resolve(null);
                 }).catch(() => resolve(null));
             });
+            return _gzipDecode(raw);   // Phase 4: entpackt {__gz}, alte unkomprimierte Records unverändert
         }
         // LRU: Render-Pfade greifen oft mehrfach hintereinander auf dasselbe Jahr zu.
         // Map hält Einfügereihenfolge → ältester Eintrag = erster Key.
