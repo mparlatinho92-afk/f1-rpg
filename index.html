@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.12</title>
+    <title>F1 RPG v0.9.14.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.12 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.13 (aktuell) - 27.06.2026</div>
+                            <div>&#8226; FIX: Junior-Ballast entfernen (Stresstest) loeschte nach Lazy Loading versehentlich ALLE Saison-Detaildaten - jetzt chirurgisch nur der Ballast</div>
+                            <div>&#8226; NEU: Phase 3 Lazy Loading KOMPLETT - alle Ansichten + Debug-Tools arbeiten mit leichten Records, RAM bleibt schlank auch bei tausenden Saisons</div>
+                            <div class="font-bold text-slate-400">v0.9.14.12 - 27.06.2026</div>
                             <div>&#8226; NEU: Strecken-/GP-Statistik baut den Index per Streaming (Saison fuer Saison) - vollstaendig auch bei tausenden Saisons ohne RAM-Spitze</div>
                             <div>&#8226; NEU: Phase 3 Lazy Loading fast komplett - Saisons, Profile und Strecken/GP laden Detaildaten on-demand</div>
                             <div class="font-bold text-slate-400">v0.9.14.11 - 27.06.2026</div>
@@ -2724,7 +2727,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.12';
+        const VERSION = '0.9.14.13';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3480,13 +3483,17 @@
             // Junior-Ballast (Stresstest) – nur Größe, kein Inhalt → test-neutral.
             // Volle Größenrechnung nur wenn Panel offen & nicht im Mega-Sim (sonst nur Saison-Zahl, billig).
             let ballastRow = '';
-            const ballastSeasons = (GAME_STATE.history || []).filter(s => s._dummyJuniors).length;
+            // Phase 3 Group 5: leichter Marker _hasDummyJuniors (Detail liegt nach Light-Load nicht im RAM)
+            const ballastSeasons = (GAME_STATE.history || []).filter(s => s._hasDummyJuniors || s._dummyJuniors).length;
             if (ballastSeasons > 0) {
                 const collapsed = document.getElementById('debug-log-content')?.classList.contains('collapsed');
                 let val;
                 if (!collapsed && !window._megaSimFast) {
                     let bytes = 0;   // .length ≈ UTF-8 (mostly ASCII) → roh/unkomprimiert = Export-Größe
-                    for (const s of GAME_STATE.history) if (s._dummyJuniors) bytes += JSON.stringify(s._dummyJuniors).length;
+                    for (const s of GAME_STATE.history) {
+                        if (s._dummyJuniors) bytes += JSON.stringify(s._dummyJuniors).length;   // hydriert/Fallback
+                        else if (s._dummyJuniorBytes) bytes += s._dummyJuniorBytes;               // leichter Marker
+                    }
                     val = `${formatBytes(bytes)} roh · ${ballastSeasons} Saisons`;
                 } else {
                     val = `${ballastSeasons} Saison(s)`;
@@ -11391,16 +11398,33 @@
             const out = [];
             for (let i = 0; i < p.series; i++) out.push(generateDummySeriesSeason(i, p.drivers, p.races, year));
             season._dummyJuniors = out;
+            // Phase 3 Group 5: LEICHTE Marker, damit Ballast-Zählung/-Größe nach Light-Load ohne
+            // Detail-Zugriff funktioniert (das schwere _dummyJuniors liegt im Detail-Store).
+            season._hasDummyJuniors = true;
+            season._dummyJuniorBytes = JSON.stringify(out).length;
         }
 
-        // Entfernt allen Junior-Ballast wieder + erzwingt Rewrite der History-Records (Persistenz v2).
+        // Entfernt allen Junior-Ballast wieder. Phase 3 Group 5: CHIRURGISCH – pro Saison NUR _dummyJuniors
+        // aus dem Detail-Store entfernen (results/drivers/teams bleiben erhalten!). KEIN idbHistClear mehr:
+        // das würde nach Light-Load die leeren RAM-Records persistieren und ALLE Detaildaten löschen.
+        // Vorfilter über leichten Marker → nur Ballast-Saisons werden angefasst.
         window.stripDummyJuniors = async function() {
             let n = 0;
-            (GAME_STATE.history || []).forEach(s => { if (s._dummyJuniors) { delete s._dummyJuniors; n++; } });
+            for (const s of (GAME_STATE.history || [])) {
+                if (!s._hasDummyJuniors && s._dummyJuniors === undefined) continue;   // kein Ballast
+                if (_idbAvailable) {
+                    const d = await idbHistDetailGet(s.year);
+                    if (d && d._dummyJuniors !== undefined) {
+                        delete d._dummyJuniors;
+                        await idbHistDetailPut(s.year, d);   // restliche schwere Felder bleiben
+                        _histDetailCacheInvalidate(s.year);
+                    }
+                }
+                delete s._dummyJuniors; delete s._hasDummyJuniors; delete s._dummyJuniorBytes;
+                if (_idbAvailable) await idbHistPut(s.year, s);   // leichten Record ohne Marker zurückschreiben
+                n++;
+            }
             GAME_STATE.dummyJuniorSeries = 0;   // Generierung aus, Felder bleiben für Wiederverwendung
-            // History-Store leeren → saveGame schreibt alle (jetzt sauberen) Saisons neu
-            if (_idbAvailable && typeof idbHistClear === 'function') await idbHistClear();
-            _persistedHistoryYears = new Set();
             await saveGame();
             if (typeof renderAll === 'function') renderAll();
             syncDummyJuniorUI();
@@ -11425,7 +11449,7 @@
             const st = document.getElementById('dummy-juniors-status');
             if (st) {
                 const active = p.series >= 1 && p.drivers >= 1 && p.races >= 1;
-                const ballast = (GAME_STATE.history || []).filter(s => s._dummyJuniors).length;
+                const ballast = (GAME_STATE.history || []).filter(s => s._hasDummyJuniors || s._dummyJuniors).length;
                 const preview = active
                     ? `→ ${p.series} Serien × ${p.races} Rennen = ${p.series * p.races} Rennen, ${p.series * p.drivers} Fahrer/Saison`
                     : '→ aus (eine Zahl ist 0)';
