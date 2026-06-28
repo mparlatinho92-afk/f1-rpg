@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.26</title>
+    <title>F1 RPG v0.9.14.27</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.26 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.27 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Fahrer haben ein Regen-Können</div>
+                            <div>&#8226; NEU: ~18% Regenrennen – bei Nässe zählt Regen-Können statt Pace, mit mehr Überraschungen</div>
+                            <div class="font-bold text-slate-400">v0.9.14.26 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Welt-Regler für Fahrer/Serie und Rennen/Serie (auch zum Hochskalieren/Stresstesten)</div>
                             <div>&#8226; NEU: bei höherer Fahrerzahl werden automatisch zusätzliche Junior-Teams angelegt</div>
                             <div class="font-bold text-slate-400">v0.9.14.25 - 28.06.2026</div>
@@ -2775,7 +2778,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.26';
+        const VERSION = '0.9.14.27';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11705,6 +11708,7 @@
                 pace,
                 potential: Math.min(99, pace + 5 + ((Math.random() * 18) | 0)),   // 3.5E: Ceiling – Stars vs. Mitläufer
                 consistency: 60 + ((Math.random() * 35) | 0),                     // 3.5B: 60–94 Tagesform-Stabilität
+                rain: 55 + ((Math.random() * 40) | 0),                            // 5b: Regen-Können 55–94 (zählt bei Nässe)
                 age: 17 + ((Math.random() * 4) | 0),     // 17–20 Einstiegsalter
                 _retireAge: 24 + ((Math.random() * 6) | 0),  // 24–29, pro Fahrer variabel
                 seriesId, debutYear: year
@@ -11825,6 +11829,7 @@
             }
             const nGrid = drivers.length;
             for (let r = 0; r < races; r++) {
+                const wet = Math.random() < 0.18;   // 5b: ~18% Regenrennen
                 // (D) QUALI: Pace + Auto + wenig Rauschen → Startgitter
                 const qOrder = drivers.map(d => {
                     const t = teamById[d.team] || {};
@@ -11843,9 +11848,10 @@
                     }
                     const con = d.consistency ?? 75;                               // (B) Tagesform
                     const goodDay = Math.random() < con / 100 ? 1 : 0.55;
-                    const halfVar = 6 + (100 - con) * 0.10;
+                    const halfVar = (6 + (100 - con) * 0.10) * (wet ? 1.6 : 1);     // 5b: Nässe → mehr Varianz/Überraschungen
                     const gridBonus = nGrid > 1 ? (nGrid - (grid[d.id] || nGrid)) / (nGrid - 1) * 6 : 0;
-                    const score = (d.pace || 60) * goodDay * 0.50 + (t.strength || 60) * 0.18
+                    const skill = wet ? ((d.pace || 60) * 0.4 + (d.rain || 70) * 0.6) : (d.pace || 60);   // 5b: bei Nässe zählt Regen-Können
+                    const score = skill * goodDay * 0.50 + (t.strength || 60) * 0.18
                         + _jwExperience(d) * 0.12 + gridBonus + (Math.random() - 0.5) * 2 * halfVar;
                     perf.push({ id: d.id, dnf: false, score });
                 }
@@ -11856,7 +11862,7 @@
                 finishers.slice(0, 10).forEach((p, pos) => standings[p.id].points += _JW_PTS[pos]);
                 if (finishers[0]) standings[finishers[0].id].wins++;
                 finishers.slice(0, 3).forEach(p => standings[p.id].podiums++);
-                raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], results, qualifying: quali });
+                raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], wet, results, qualifying: quali });
             }
             let champ = drivers[0];
             drivers.forEach(d => { d._lastPoints = standings[d.id].points; if (standings[d.id].points > standings[champ.id].points) champ = d; });
@@ -11869,7 +11875,7 @@
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
                 heavy: { seriesId: series.id, standings, teamPoints: teamPts,
-                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, age: d.age, points: standings[d.id].points })),
+                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, rain: d.rain, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
         }
