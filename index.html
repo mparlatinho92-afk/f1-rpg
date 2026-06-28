@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.24</title>
+    <title>F1 RPG v0.9.14.25</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.24 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.25 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Tab mit Untertabs Saison / All-Time-Bestenliste / Strecken</div>
+                            <div>&#8226; NEU: Formel 2 wird über Formel 3 angezeigt (höhere Klasse oben)</div>
+                            <div>&#8226; NEU: All-Time-Rangliste (Titel/Siege/...) + Strecken-Rekordsieger</div>
+                            <div class="font-bold text-slate-400">v0.9.14.24 - 28.06.2026</div>
                             <div>&#8226; NEU: Eigener Haupt-Tab '🌍 Junior-Welt' (nur im Junior-Welt-Modus) mit Saison-Tabellen für F3/F2</div>
                             <div>&#8226; NEU: Saison-Auswahl, Fahrerwertung mit Team/Siege/Podien/Poles/DNF, lazy aus dem Detail-Store geladen</div>
                             <div class="font-bold text-slate-400">v0.9.14.23 - 28.06.2026</div>
@@ -2768,7 +2772,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.24';
+        const VERSION = '0.9.14.25';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -14309,8 +14313,11 @@
             _initCircuitMapNow();
         }
 
-        // ═══ Junior-Welt-Tab (Schritt 4a): Saison-Tabelle, lazy aus junior_detail ═══
+        // ═══ Junior-Welt-Tab (Schritt 4a/4b): Saison / All-Time / Strecken ═══
         let _juniorViewYear = null;
+        let _juniorSubTab = 'season';
+        // Höhere Klasse zuerst: F2 (level 2) vor F3 (level 3) → aufsteigend nach level.
+        function _juniorSeriesLevel(id) { return (GAME_STATE.juniorWorld?.series || []).find(x => x.id === id)?.level ?? 99; }
         function renderJuniorWorld() {
             if (GAME_STATE.juniorMode !== 'world') {
                 return '<div class="card p-4 rounded-lg">Die Junior-Welt ist für diesen Spielstand nicht aktiv.</div>';
@@ -14321,28 +14328,75 @@
                 return '<div class="card p-4 rounded-lg">🌍 Junior-Welt aktiv – noch keine Saison simuliert. Schalte eine Saison weiter, dann erscheinen hier die Tabellen.</div>';
             }
             if (_juniorViewYear == null || !years.includes(_juniorViewYear)) _juniorViewYear = years[years.length - 1];
-            const opts = years.slice().reverse().map(y => `<option value="${y}" ${y === _juniorViewYear ? 'selected' : ''}>${y}</option>`).join('');
-            setTimeout(() => _renderJuniorSeason(_juniorViewYear), 0);   // async Detail nachladen
+            const sub = _juniorSubTab || 'season';
+            const subBtn = (id, label) => `<button onclick="juniorSubTab('${id}')" class="px-3 py-1 rounded text-sm ${sub === id ? 'btn-primary' : 'bg-secondary'}">${label}</button>`;
+            let body;
+            if (sub === 'alltime') {
+                body = renderJuniorAllTime(jw);
+            } else if (sub === 'circuits') {
+                body = renderJuniorCircuits(jw);
+            } else {
+                const opts = years.slice().reverse().map(y => `<option value="${y}" ${y === _juniorViewYear ? 'selected' : ''}>${y}</option>`).join('');
+                setTimeout(() => _renderJuniorSeason(_juniorViewYear), 0);   // async Detail nachladen
+                body = `<div class="card p-4 rounded-lg mb-4"><label class="text-sm">Saison
+                        <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select></label></div>
+                    <div id="junior-season-tables"><div class="text-tertiary p-4">Lade Saison ${_juniorViewYear}…</div></div>`;
+            }
             return `
                 <div class="card p-4 rounded-lg mb-4">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                        <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
-                        <label class="text-sm">Saison
-                            <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select>
-                        </label>
-                    </div>
-                    <div class="text-sm text-tertiary mt-1">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken</div>
+                    <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
+                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken</div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${subBtn('season', '🏁 Saison')}${subBtn('alltime', '🏆 All-Time')}${subBtn('circuits', '📍 Strecken')}</div>
                 </div>
-                <div id="junior-season-tables"><div class="text-tertiary p-4">Lade Saison ${_juniorViewYear}…</div></div>
+                ${body}
             `;
         }
+        window.juniorSubTab = function(t) { _juniorSubTab = t; renderContent(); };
         window.juniorSelectYear = function(y) { _juniorViewYear = y; _renderJuniorSeason(y); };
         async function _renderJuniorSeason(year) {
             const cont = document.getElementById('junior-season-tables');
             if (!cont) return;
             const detail = await idbJDetailGet(year);
             if (!detail || !detail.series) { cont.innerHTML = '<div class="text-tertiary p-4">Keine Daten für diese Saison.</div>'; return; }
-            cont.innerHTML = detail.series.map(s => _renderJuniorSeriesTable(s, year)).join('');
+            const ordered = [...detail.series].sort((a, b) => _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));   // F2 vor F3
+            cont.innerHTML = ordered.map(s => _renderJuniorSeriesTable(s, year)).join('');
+        }
+        // All-Time-Bestenliste aus jw.allTimeStats (in core, sync)
+        function renderJuniorAllTime(jw) {
+            const arr = Object.entries(jw.allTimeStats || {}).map(([histId, s]) => ({ histId, ...s }));
+            if (!arr.length) return '<div class="card p-4 rounded-lg text-tertiary">Noch keine All-Time-Daten.</div>';
+            arr.sort((a, b) => (b.titles || 0) - (a.titles || 0) || (b.wins || 0) - (a.wins || 0) || (b.points || 0) - (a.points || 0));
+            const top = arr.slice(0, 100);
+            let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">All-Time-Bestenliste${arr.length > 100 ? ` (Top 100 von ${arr.length})` : ''}</h3>`
+                + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
+                + `<th class="pr-2">#</th><th>Fahrer</th><th>Nat</th><th class="text-right">Titel</th><th class="text-right">Siege</th><th class="text-right">Podien</th><th class="text-right">Poles</th><th class="text-right">Punkte</th><th class="text-right">Starts</th><th class="text-right">Saisons</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+            top.forEach((s, i) => {
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${s.name}</td><td>${s.nation || ''}</td>`
+                    + `<td class="text-right font-medium">${s.titles || 0}</td><td class="text-right">${s.wins || 0}</td><td class="text-right">${s.podiums || 0}</td>`
+                    + `<td class="text-right">${s.poles || 0}</td><td class="text-right">${s.points || 0}</td><td class="text-right">${s.starts || 0}</td>`
+                    + `<td class="text-right">${s.seasons || 0}</td><td class="text-right">${s.dnfs || 0}</td></tr>`;
+            });
+            html += '</tbody></table></div></div>';
+            return html;
+        }
+        // Strecken-Statistik aus jw.circuitIndex (Rennen + Rekordsieger)
+        function renderJuniorCircuits(jw) {
+            const ci = jw.circuitIndex || {};
+            const names = Object.keys(ci).sort((a, b) => (ci[b].races || 0) - (ci[a].races || 0));
+            if (!names.length) return '<div class="card p-4 rounded-lg text-tertiary">Noch keine Strecken-Daten.</div>';
+            const at = jw.allTimeStats || {};
+            let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">Strecken (${names.length})</h3>`
+                + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
+                + `<th>Strecke</th><th class="text-right" style="padding-right:2.5rem">Rennen</th><th>Rekordsieger</th><th class="text-right">Siege</th></tr></thead><tbody>`;
+            names.forEach(n => {
+                const w = ci[n].winsByDriver || {};
+                let recId = null, recWins = 0;
+                for (const [id, v] of Object.entries(w)) { if ((v.wins || 0) > recWins) { recWins = v.wins; recId = id; } }
+                const recName = recId ? (at[recId]?.name || recId) : '–';
+                html += `<tr class="border-t border-custom"><td>${n}</td><td class="text-right" style="padding-right:2.5rem">${ci[n].races || 0}</td><td>${recName}</td><td class="text-right">${recWins || 0}</td></tr>`;
+            });
+            html += '</tbody></table></div></div>';
+            return html;
         }
         function _renderJuniorSeriesTable(s, year) {
             const seriesObj = (GAME_STATE.juniorWorld.series || []).find(x => x.id === s.seriesId) || {};
