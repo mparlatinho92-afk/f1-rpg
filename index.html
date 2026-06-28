@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.25</title>
+    <title>F1 RPG v0.9.14.26</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.25 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.26 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Welt-Regler für Fahrer/Serie und Rennen/Serie (auch zum Hochskalieren/Stresstesten)</div>
+                            <div>&#8226; NEU: bei höherer Fahrerzahl werden automatisch zusätzliche Junior-Teams angelegt</div>
+                            <div class="font-bold text-slate-400">v0.9.14.25 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Tab mit Untertabs Saison / All-Time-Bestenliste / Strecken</div>
                             <div>&#8226; NEU: Formel 2 wird über Formel 3 angezeigt (höhere Klasse oben)</div>
                             <div>&#8226; NEU: All-Time-Rangliste (Titel/Siege/...) + Strecken-Rekordsieger</div>
@@ -2772,7 +2775,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.25';
+        const VERSION = '0.9.14.26';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11738,17 +11741,20 @@
         const JW_SEATS_PER_TEAM = 2;
         // Teams je Serie anlegen (falls fehlend) + teamlose Fahrer (Alt-Saves/Neuzugänge) auf offene Sitze.
         function _ensureJuniorTeams(jw) {
-            const sc = _juniorScale();
+            // Anzahl Teams folgt der Skalierung; bei Erhöhung (5a) werden Teams NACHGELEGT (nie entfernt).
+            const need = Math.max(1, Math.ceil(_juniorScale().driversPerSeries / JW_SEATS_PER_TEAM));
             for (const s of (jw.series || [])) {
-                if (s.teams && s.teams.length) continue;
-                const n = Math.max(1, Math.ceil(sc.driversPerSeries / JW_SEATS_PER_TEAM));
-                const names = [...JUNIOR_TEAM_NAMES].sort(() => Math.random() - 0.5);
-                s.teams = Array.from({ length: n }, (_, i) => ({
-                    id: `jt-${s.id}-${i}`,
-                    name: `${names[i % names.length]}${i >= names.length ? ' ' + (Math.floor(i / names.length) + 1) : ''} ${s.id.toUpperCase()}`,
-                    strength: 52 + ((Math.random() * 43) | 0),   // 3.5A: Auto-Speed 52–94 (zählt im Ergebnis)
-                    reliability: 70 + ((Math.random() * 25) | 0) // 3.5C: Zuverlässigkeit 70–94 (DNF-Faktor)
-                }));
+                if (!s.teams) s.teams = [];
+                while (s.teams.length < need) {
+                    const i = s.teams.length;
+                    const nm = JUNIOR_TEAM_NAMES[i % JUNIOR_TEAM_NAMES.length];
+                    s.teams.push({
+                        id: `jt-${s.id}-${i}`,
+                        name: `${nm}${i >= JUNIOR_TEAM_NAMES.length ? ' ' + (Math.floor(i / JUNIOR_TEAM_NAMES.length) + 1) : ''} ${s.id.toUpperCase()}`,
+                        strength: 52 + ((Math.random() * 43) | 0),   // 3.5A: Auto-Speed 52–94
+                        reliability: 70 + ((Math.random() * 25) | 0) // 3.5C: Zuverlässigkeit 70–94
+                    });
+                }
             }
             for (const d of (jw.drivers || [])) if (!d.team) d.team = _openJuniorSeat(jw, d.seriesId);
         }
@@ -14342,16 +14348,30 @@
                         <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select></label></div>
                     <div id="junior-season-tables"><div class="text-tertiary p-4">Lade Saison ${_juniorViewYear}…</div></div>`;
             }
+            const sc = _juniorScale();
+            const numInput = (field, label, min, val) => `<label class="text-xs text-tertiary">${label} <input type="number" min="${min}" value="${val}" onchange="juniorSetScale('${field}', this.value)" style="width:56px;padding:2px 6px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);"></label>`;
             return `
                 <div class="card p-4 rounded-lg mb-4">
                     <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
                     <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken</div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-bottom:0.6rem;">
+                        ${numInput('drivers', 'Fahrer/Serie', 2, sc.driversPerSeries)}
+                        ${numInput('races', 'Rennen/Serie', 1, sc.races)}
+                        <span class="text-xs text-tertiary">(wirkt ab nächster Saison)</span>
+                    </div>
                     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${subBtn('season', '🏁 Saison')}${subBtn('alltime', '🏆 All-Time')}${subBtn('circuits', '📍 Strecken')}</div>
                 </div>
                 ${body}
             `;
         }
         window.juniorSubTab = function(t) { _juniorSubTab = t; renderContent(); };
+        window.juniorSetScale = function(field, val) {
+            const n = parseInt(val) || 0;
+            if (field === 'drivers') GAME_STATE.juniorDriversPerSeries = Math.max(2, n);
+            else GAME_STATE.juniorRaces = Math.max(1, n);
+            saveGame();
+            renderContent();
+        };
         window.juniorSelectYear = function(y) { _juniorViewYear = y; _renderJuniorSeason(y); };
         async function _renderJuniorSeason(year) {
             const cont = document.getElementById('junior-season-tables');
