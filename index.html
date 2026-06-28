@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.19</title>
+    <title>F1 RPG v0.9.14.20</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -941,7 +941,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.19 (aktuell) - 27.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.20 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Serien haben eigene Teams (2 Sitze) – Fahrer mit Team-Zugehörigkeit, Team-Champion je Saison</div>
+                            <div>&#8226; NEU: Transfers zwischen Junior-Teams</div>
+                            <div>&#8226; NEU: bester F3-Nachwuchs steigt in die F2 auf (füllt frei werdende Sitze)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.19 - 27.06.2026</div>
                             <div>&#8226; NEU: Junior-Fahrer altern über die Jahre, Pace entwickelt sich (jung wächst, nach Peak Abbau)</div>
                             <div>&#8226; NEU: Karriere-Enden + automatische Nachrücker – Roster rotiert realistisch durch</div>
                             <div class="font-bold text-slate-400">v0.9.14.18 - 27.06.2026</div>
@@ -2746,7 +2750,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.19';
+        const VERSION = '0.9.14.20';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11676,14 +11680,70 @@
             }
             jw.drivers = survivors;
         }
-        // Serien + Roster auffüllen, falls leer (oder Scale erhöht wurde).
+        // ── 2c: Teams pro Serie, Transfers, Aufstieg F3→F2 ──
+        const JUNIOR_TEAM_NAMES = ['Apex','Volt','Strada','Nordic','Falcon','Meridian','Pulsar','Crest','Vortex','Lumen','Granite','Zenith','Cobra','Helix','Orbit','Delta'];
+        const JW_SEATS_PER_TEAM = 2;
+        // Teams je Serie anlegen (falls fehlend) + teamlose Fahrer (Alt-Saves/Neuzugänge) auf offene Sitze.
+        function _ensureJuniorTeams(jw) {
+            const sc = _juniorScale();
+            for (const s of (jw.series || [])) {
+                if (s.teams && s.teams.length) continue;
+                const n = Math.max(1, Math.ceil(sc.driversPerSeries / JW_SEATS_PER_TEAM));
+                const names = [...JUNIOR_TEAM_NAMES].sort(() => Math.random() - 0.5);
+                s.teams = Array.from({ length: n }, (_, i) => ({
+                    id: `jt-${s.id}-${i}`,
+                    name: `${names[i % names.length]}${i >= names.length ? ' ' + (Math.floor(i / names.length) + 1) : ''} ${s.id.toUpperCase()}`
+                }));
+            }
+            for (const d of (jw.drivers || [])) if (!d.team) d.team = _openJuniorSeat(jw, d.seriesId);
+        }
+        // Erstes Team einer Serie mit freiem Sitz (< JW_SEATS_PER_TEAM), sonst erstes Team (Fallback).
+        function _openJuniorSeat(jw, seriesId) {
+            const s = (jw.series || []).find(x => x.id === seriesId);
+            if (!s || !s.teams || !s.teams.length) return null;
+            const counts = {};
+            for (const d of jw.drivers) if (d.seriesId === seriesId) counts[d.team] = (counts[d.team] || 0) + 1;
+            for (const t of s.teams) if ((counts[t.id] || 0) < JW_SEATS_PER_TEAM) return t.id;
+            return s.teams[0].id;
+        }
+        // Aufstieg: beste F3-Fahrer (nach Vorsaison-Punkten) füllen die durch Rücktritte offenen F2-Sitze.
+        function _promoteJuniors(jw) {
+            const f2 = (jw.series || []).find(s => s.id === 'f2');
+            const f3 = (jw.series || []).find(s => s.id === 'f3');
+            if (!f2 || !f3) return;
+            const open = Math.max(0, _juniorScale().driversPerSeries - jw.drivers.filter(d => d.seriesId === 'f2').length);
+            if (open <= 0) return;
+            const f3sorted = jw.drivers.filter(d => d.seriesId === 'f3').sort((a, b) => (b._lastPoints || 0) - (a._lastPoints || 0));
+            for (let i = 0; i < open && i < f3sorted.length; i++) {
+                const d = f3sorted[i];
+                d.seriesId = 'f2'; d.team = _openJuniorSeat(jw, 'f2');
+            }
+        }
+        // Transfers: ein Teil der Fahrer tauscht innerhalb der Serie das Team (reine Pointer-Verschiebung, ~0 Bytes).
+        function _juniorTransfers(jw) {
+            for (const s of (jw.series || [])) {
+                const roster = jw.drivers.filter(d => d.seriesId === s.id);
+                const moves = Math.floor(roster.length * 0.15);
+                for (let i = 0; i < moves; i++) {
+                    const a = roster[(Math.random() * roster.length) | 0];
+                    const b = roster[(Math.random() * roster.length) | 0];
+                    if (a && b && a.team !== b.team) { const t = a.team; a.team = b.team; b.team = t; }
+                }
+            }
+        }
+        // Serien + Roster auffüllen, falls leer (oder Scale erhöht/Sitze frei). Neuzugänge bekommen ein Team.
         function _ensureJuniorRoster(jw, year) {
             if (!jw.series || jw.series.length === 0) jw.series = JUNIOR_SERIES_DEFS.map(s => ({ ...s }));
             jw.drivers = jw.drivers || [];
+            _ensureJuniorTeams(jw);
             const sc = _juniorScale();
             for (const s of jw.series) {
                 let have = jw.drivers.filter(d => d.seriesId === s.id).length;
-                for (; have < sc.driversPerSeries; have++) jw.drivers.push(_makeJuniorDriver(jw, s.id, year));
+                for (; have < sc.driversPerSeries; have++) {
+                    const d = _makeJuniorDriver(jw, s.id, year);
+                    d.team = _openJuniorSeat(jw, s.id);
+                    jw.drivers.push(d);
+                }
             }
         }
         // Eine Saison einer Serie simulieren → { light: Summary, heavy: volle Daten }.
@@ -11703,11 +11763,17 @@
                 raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, results, qualifying: quali });
             }
             let champ = drivers[0];
-            drivers.forEach(d => { if (standings[d.id].points > standings[champ.id].points) champ = d; });
+            drivers.forEach(d => { d._lastPoints = standings[d.id].points; if (standings[d.id].points > standings[champ.id].points) champ = d; });
+            // Team-Champion (Summe der Fahrerpunkte je Team)
+            const teamPts = {};
+            drivers.forEach(d => { if (d.team) teamPts[d.team] = (teamPts[d.team] || 0) + standings[d.id].points; });
+            const teamChampId = Object.keys(teamPts).sort((a, b) => teamPts[b] - teamPts[a])[0] || null;
+            const teamChampName = (series.teams || []).find(t => t.id === teamChampId)?.name || null;
             return {
-                light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points },
-                heavy: { seriesId: series.id, standings,
-                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, pace: d.pace, age: d.age, points: standings[d.id].points })),
+                light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
+                    teamChampion: teamChampName, teamChampionId: teamChampId },
+                heavy: { seriesId: series.id, standings, teamPoints: teamPts,
+                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, team: d.team, pace: d.pace, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
         }
@@ -11717,6 +11783,9 @@
             if (GAME_STATE.juniorMode !== 'world') return;
             const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
             _ageAndRetireJuniors(jw);          // 2b: Returner altern/Pace-Drift, Karriere-Enden raus
+            _ensureJuniorTeams(jw);            // 2c: Teams sicherstellen (+ teamlose zuordnen)
+            _promoteJuniors(jw);               // 2c: beste F3 → offene F2-Sitze
+            _juniorTransfers(jw);              // 2c: Team-Wechsel innerhalb der Serie
             _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
             const sc = _juniorScale();
             const lightSeries = [], heavySeries = [];
