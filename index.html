@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.20</title>
+    <title>F1 RPG v0.9.14.21</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -926,6 +926,10 @@
                     <button onclick="event.stopPropagation(); stripDummyJuniors();" style="padding:2px 10px;border-radius:4px;cursor:pointer;background:var(--accent-secondary);color:#fff;border:none;">🧹 Dummies entfernen</button>
                     <span id="dummy-juniors-status" style="color:var(--text-muted);flex-basis:100%;"></span>
                 </div>
+                <div id="junior-world-ctrl" style="display:none;padding:0.4rem 0;border-bottom:1px solid var(--border-color);margin-bottom:0.5rem;font-size:0.85rem;">
+                    <span title="Eigenständige Junior-Welt (F3/F2) – läuft pro Saison parallel zur F1. Voll funktionsfähig außer F1-Aufstieg.">🌍 Junior-Welt:</span>
+                    <span id="junior-world-status" style="color:var(--text-muted);"></span>
+                </div>
                 <div id="debug-log-entries">
                     <div class="log-entry"><span class="log-info">System bereit...</span></div>
                 </div>
@@ -941,7 +945,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.20 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.21 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Welt-Status im Debug-Panel (Serien/Fahrer/Saisons + letzte Champions, nur world-Modus)</div>
+                            <div>&#8226; NEU: Log-Zeile pro simulierter Junior-Saison</div>
+                            <div class="font-bold text-slate-400">v0.9.14.20 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Serien haben eigene Teams (2 Sitze) – Fahrer mit Team-Zugehörigkeit, Team-Champion je Saison</div>
                             <div>&#8226; NEU: Transfers zwischen Junior-Teams</div>
                             <div>&#8226; NEU: bester F3-Nachwuchs steigt in die F2 auf (füllt frei werdende Sitze)</div>
@@ -2750,7 +2757,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.20';
+        const VERSION = '0.9.14.21';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11593,6 +11600,23 @@
                     : '→ aus (eine Zahl ist 0)';
                 st.textContent = preview + (ballast ? ` · ${ballast} Saison(s) mit Ballast` : '');
             }
+            syncJuniorWorldUI();
+        }
+        // 2d: Junior-Welt-Status ins Debug-Panel (nur Modus 'world'). Reine Anzeige.
+        function syncJuniorWorldUI() {
+            const ctrl = document.getElementById('junior-world-ctrl');
+            if (!ctrl) return;
+            const on = GAME_STATE.juniorMode === 'world';
+            ctrl.style.display = on ? '' : 'none';
+            if (!on) return;
+            const jw = GAME_STATE.juniorWorld || {};
+            const drivers = (jw.drivers || []).length;
+            const series = (jw.series || []).length;
+            const seasons = (jw.history || []).length;
+            const last = (jw.history || [])[seasons - 1];
+            const champs = last ? (last.series || []).map(s => `${s.seriesName || s.seriesId}: ${s.champion}`).join(' · ') : '–';
+            const st = document.getElementById('junior-world-status');
+            if (st) st.textContent = `${series} Serien, ${drivers} aktive Fahrer, ${seasons} Saison(s)` + (last ? ` · letzte (${last.year}): ${champs}` : '');
         }
 
         // ═══ Junior-Modus-Wahl (game-breaking-Schutz) ═══
@@ -11797,6 +11821,9 @@
             const lightRec = { year, series: lightSeries };
             jw.history = jw.history || [];
             jw.history.push(lightRec);
+            // 2d: Sichtbarkeit – eine Log-Zeile mit den Champions pro Serie
+            logInfo('JUNIOR', `🌍 Junior-Welt ${year}: ` + lightSeries.map(s => `${s.seriesName || s.seriesId}-Champion ${s.champion}`).join(', '));
+            if (typeof syncJuniorWorldUI === 'function') syncJuniorWorldUI();
             if (_idbAvailable) {
                 try {
                     await idbJHistPut(year, lightRec);
