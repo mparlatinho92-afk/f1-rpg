@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.23</title>
+    <title>F1 RPG v0.9.14.24</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.23 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.24 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Eigener Haupt-Tab '🌍 Junior-Welt' (nur im Junior-Welt-Modus) mit Saison-Tabellen für F3/F2</div>
+                            <div>&#8226; NEU: Saison-Auswahl, Fahrerwertung mit Team/Siege/Podien/Poles/DNF, lazy aus dem Detail-Store geladen</div>
+                            <div class="font-bold text-slate-400">v0.9.14.23 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Teams haben Auto-Stärke + Zuverlässigkeit – das Auto beeinflusst Ergebnisse spürbar</div>
                             <div>&#8226; NEU: Fahrer-Konstanz (Tagesform) + individuelles Talent/Potential (Stars vs. Mitläufer)</div>
                             <div>&#8226; NEU: DNF/Ausfälle im Rennen + Qualifying bestimmt das Startgitter</div>
@@ -2765,7 +2768,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.23';
+        const VERSION = '0.9.14.24';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -14255,13 +14258,15 @@
             { id: 'standings', name: '🏆 WM-Stand' },
             { id: 'races', name: '🏁 Rennen' },
             { id: 'stATS', name: '📈 Statistiken' },
+            { id: 'junior', name: '🌍 Junior-Welt' },
             { id: 'handbook', name: '📖 Handbuch' },
             { id: 'roadmap', name: '🗺️ Roadmap' },
             { id: 'settings', name: '⚙️ Einstellungen' }
         ];
         
         function renderNav() {
-            document.getElementById('nav').innerHTML = tabs.map(t => `
+            const visibleTabs = tabs.filter(t => t.id !== 'junior' || GAME_STATE.juniorMode === 'world');
+            document.getElementById('nav').innerHTML = visibleTabs.map(t => `
                 <button onclick="switchTab('${t.id}')" 
                         class="px-4 py-2 rounded-lg transition font-medium ${currentTab === t.id ? 'btn-primary' : 'bg-secondary'}">
                     ${t.name}
@@ -14294,6 +14299,7 @@
                 case 'standings': content.innerHTML = renderStandings(); break;
                 case 'races': content.innerHTML = renderRaces(); break;
                 case 'stATS': content.innerHTML = renderStATS(); break;
+                case 'junior': content.innerHTML = renderJuniorWorld(); break;
                 case 'handbook': content.innerHTML = renderHandbook(); break;
                 case 'roadmap': content.innerHTML = renderRoadmap(); break;
                 case 'settings': content.innerHTML = renderSettings(); break;
@@ -14302,7 +14308,60 @@
             initLazyImages(content);
             _initCircuitMapNow();
         }
-        
+
+        // ═══ Junior-Welt-Tab (Schritt 4a): Saison-Tabelle, lazy aus junior_detail ═══
+        let _juniorViewYear = null;
+        function renderJuniorWorld() {
+            if (GAME_STATE.juniorMode !== 'world') {
+                return '<div class="card p-4 rounded-lg">Die Junior-Welt ist für diesen Spielstand nicht aktiv.</div>';
+            }
+            const jw = GAME_STATE.juniorWorld || _emptyJuniorWorld();
+            const years = (jw.history || []).map(h => h.year);
+            if (!years.length) {
+                return '<div class="card p-4 rounded-lg">🌍 Junior-Welt aktiv – noch keine Saison simuliert. Schalte eine Saison weiter, dann erscheinen hier die Tabellen.</div>';
+            }
+            if (_juniorViewYear == null || !years.includes(_juniorViewYear)) _juniorViewYear = years[years.length - 1];
+            const opts = years.slice().reverse().map(y => `<option value="${y}" ${y === _juniorViewYear ? 'selected' : ''}>${y}</option>`).join('');
+            setTimeout(() => _renderJuniorSeason(_juniorViewYear), 0);   // async Detail nachladen
+            return `
+                <div class="card p-4 rounded-lg mb-4">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                        <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
+                        <label class="text-sm">Saison
+                            <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select>
+                        </label>
+                    </div>
+                    <div class="text-sm text-tertiary mt-1">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken</div>
+                </div>
+                <div id="junior-season-tables"><div class="text-tertiary p-4">Lade Saison ${_juniorViewYear}…</div></div>
+            `;
+        }
+        window.juniorSelectYear = function(y) { _juniorViewYear = y; _renderJuniorSeason(y); };
+        async function _renderJuniorSeason(year) {
+            const cont = document.getElementById('junior-season-tables');
+            if (!cont) return;
+            const detail = await idbJDetailGet(year);
+            if (!detail || !detail.series) { cont.innerHTML = '<div class="text-tertiary p-4">Keine Daten für diese Saison.</div>'; return; }
+            cont.innerHTML = detail.series.map(s => _renderJuniorSeriesTable(s, year)).join('');
+        }
+        function _renderJuniorSeriesTable(s, year) {
+            const seriesObj = (GAME_STATE.juniorWorld.series || []).find(x => x.id === s.seriesId) || {};
+            const seriesName = seriesObj.name || s.seriesId;
+            const teamName = id => (seriesObj.teams || []).find(t => t.id === id)?.name || '–';
+            const teamByDriver = {}; (s.drivers || []).forEach(d => teamByDriver[d.id] = d.team);
+            const rows = Object.values(s.standings || {}).sort((a, b) => b.points - a.points);
+            let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">${seriesName} – ${year}</h3>`
+                + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
+                + `<th class="pr-2">#</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right">P</th><th class="text-right">Pole</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+            rows.forEach((r, i) => {
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${r.name}</td><td>${teamName(teamByDriver[r.id])}</td>`
+                    + `<td class="text-right font-medium">${r.points}</td><td class="text-right">${r.wins || 0}</td><td class="text-right">${r.podiums || 0}</td>`
+                    + `<td class="text-right">${r.poles || 0}</td><td class="text-right">${r.dnfs || 0}</td></tr>`;
+            });
+            html += '</tbody></table></div></div>';
+            return html;
+        }
+
         function renderOverview() {
             // Einzelnes Rennen anzeigen?
             if (selectedRaceId !== null) {
