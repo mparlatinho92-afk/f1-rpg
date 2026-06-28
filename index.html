@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.22</title>
+    <title>F1 RPG v0.9.14.23</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.22 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.23 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Teams haben Auto-Stärke + Zuverlässigkeit – das Auto beeinflusst Ergebnisse spürbar</div>
+                            <div>&#8226; NEU: Fahrer-Konstanz (Tagesform) + individuelles Talent/Potential (Stars vs. Mitläufer)</div>
+                            <div>&#8226; NEU: DNF/Ausfälle im Rennen + Qualifying bestimmt das Startgitter</div>
+                            <div class="font-bold text-slate-400">v0.9.14.22 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Welt führt eigene All-Time-Statistiken je Fahrer (Titel/Siege/Podien/Poles/Punkte/Starts)</div>
                             <div>&#8226; NEU: Junior-Strecken-Index mit eigenem Streckenkalender pro Serie</div>
                             <div>&#8226; NEU: Streaming-Rebuild der Aggregate aus dem Detail-Store (RAM-schonend)</div>
@@ -2761,7 +2765,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.22';
+        const VERSION = '0.9.14.23';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11683,23 +11687,34 @@
         // Stabiler Junior-Fahrer mit eindeutiger, über Jahre konstanter histId.
         function _makeJuniorDriver(jw, seriesId, year) {
             const seq = (jw._nextSeq = (jw._nextSeq || 0) + 1);
+            const pace = 58 + ((Math.random() * 28) | 0);   // 58–85 Einstieg
             return {
                 id: 'jw' + seq, histId: 'jw' + seq,
                 name: _jwRand(JUNIOR_FIRST) + ' ' + _jwRand(JUNIOR_LAST),
                 nation: _jwRand(JUNIOR_NATIONS),
-                pace: 58 + ((Math.random() * 28) | 0),   // 58–85 Einstieg, entwickelt sich (2b)
+                pace,
+                potential: Math.min(99, pace + 5 + ((Math.random() * 18) | 0)),   // 3.5E: Ceiling – Stars vs. Mitläufer
+                consistency: 60 + ((Math.random() * 35) | 0),                     // 3.5B: 60–94 Tagesform-Stabilität
                 age: 17 + ((Math.random() * 4) | 0),     // 17–20 Einstiegsalter
                 _retireAge: 24 + ((Math.random() * 6) | 0),  // 24–29, pro Fahrer variabel
                 seriesId, debutYear: year
             };
         }
-        // 2b: ein Karrierejahr – altern + Pace-Drift (jung: wachsen, nach Peak: abbauen).
+        // 2b/3.5E: ein Karrierejahr – altern + Pace-Drift RICHTUNG Potential (jung: wachsen bis zum
+        // individuellen Ceiling, nach Peak: abbauen). Hohes Potential → echte Stars, niedriges → Plateau.
         const JW_PEAK_AGE = 24;
         function _developJuniorDriver(d) {
             d.age = (d.age || 18) + 1;
-            const delta = (d.age <= JW_PEAK_AGE) ? (1 + ((Math.random() * 2) | 0)) : -(1 + ((Math.random() * 2) | 0));
-            d.pace = Math.max(40, Math.min(99, (d.pace || 60) + delta));
+            if (d.age <= JW_PEAK_AGE) {
+                const room = (d.potential || 85) - (d.pace || 60);
+                const gain = room > 0 ? Math.min(room, 1 + ((Math.random() * 3) | 0)) : 0;
+                d.pace = Math.min(99, (d.pace || 60) + gain);
+            } else {
+                d.pace = Math.max(40, (d.pace || 60) - (1 + ((Math.random() * 2) | 0)));
+            }
         }
+        // 3.5F: Erfahrung aus Alter abgeleitet (kein Extra-State), 0–60.
+        function _jwExperience(d) { return Math.max(0, Math.min(60, ((d.age || 18) - 16) * 6)); }
         // 2b: bestehende Fahrer altern + Karriere-Enden aussortieren (Nachrücker folgt via _ensureJuniorRoster).
         function _ageAndRetireJuniors(jw) {
             const survivors = [];
@@ -11723,7 +11738,9 @@
                 const names = [...JUNIOR_TEAM_NAMES].sort(() => Math.random() - 0.5);
                 s.teams = Array.from({ length: n }, (_, i) => ({
                     id: `jt-${s.id}-${i}`,
-                    name: `${names[i % names.length]}${i >= names.length ? ' ' + (Math.floor(i / names.length) + 1) : ''} ${s.id.toUpperCase()}`
+                    name: `${names[i % names.length]}${i >= names.length ? ' ' + (Math.floor(i / names.length) + 1) : ''} ${s.id.toUpperCase()}`,
+                    strength: 52 + ((Math.random() * 43) | 0),   // 3.5A: Auto-Speed 52–94 (zählt im Ergebnis)
+                    reliability: 70 + ((Math.random() * 25) | 0) // 3.5C: Zuverlässigkeit 70–94 (DNF-Faktor)
                 }));
             }
             for (const d of (jw.drivers || [])) if (!d.team) d.team = _openJuniorSeat(jw, d.seriesId);
@@ -11778,24 +11795,54 @@
             }
         }
         // Eine Saison einer Serie simulieren → { light: Summary, heavy: volle Daten }.
+        // Schritt 3.5: F1-nahes Modell – Auto-Stärke (A), Konstanz/Tagesform (B), DNF nach
+        // Team-Zuverlässigkeit (C), Quali bestimmt Startgitter mit Grid-Bonus im Rennen (D).
         function _simulateJuniorSeriesSeason(series, drivers, races, year) {
+            const teamById = {};
+            (series.teams || []).forEach(t => teamById[t.id] = t);
+            const teamArr = series.teams || [];
+            const avgRel = teamArr.length ? teamArr.reduce((s, t) => s + (t.reliability || 80), 0) / teamArr.length : 80;
             const standings = {};
-            drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0 });
+            drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0, dnfs: 0 });
             const raceRecs = [];
             // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3)
             if (!series.calendar || series.calendar.length < races) {
                 const pool = [...JUNIOR_CIRCUITS].sort(() => Math.random() - 0.5);
                 series.calendar = Array.from({ length: races }, (_, i) => pool[i % pool.length]);
             }
+            const nGrid = drivers.length;
             for (let r = 0; r < races; r++) {
-                const order = drivers.map(d => ({ id: d.id, score: d.pace + Math.random() * 30 }))
-                    .sort((a, b) => b.score - a.score).map(o => o.id);
-                const results = order.map((id, pos) => ({ d: id, p: pos + 1, t: 90000 + pos * 350 + ((Math.random() * 1500) | 0) }));
-                const quali = [...order].sort(() => Math.random() - 0.5).map((id, pos) => ({ d: id, p: pos + 1, t: 88000 + pos * 300 + ((Math.random() * 1200) | 0) }));
-                order.slice(0, 10).forEach((id, pos) => standings[id].points += _JW_PTS[pos]);
-                standings[order[0]].wins++;
-                order.slice(0, 3).forEach(id => standings[id].podiums++);
-                standings[quali[0].d].poles++;
+                // (D) QUALI: Pace + Auto + wenig Rauschen → Startgitter
+                const qOrder = drivers.map(d => {
+                    const t = teamById[d.team] || {};
+                    return { id: d.id, q: (d.pace || 60) * 0.62 + (t.strength || 60) * 0.30 + Math.random() * 9 };
+                }).sort((a, b) => b.q - a.q);
+                const grid = {}; qOrder.forEach((o, i) => grid[o.id] = i + 1);
+                const quali = qOrder.map((o, i) => ({ d: o.id, p: i + 1, t: 88000 + i * 300 + ((Math.random() * 800) | 0) }));
+                standings[qOrder[0].id].poles++;
+                // RENNEN: Performance je Fahrer (A Auto, B Konstanz, D Grid-Bonus) + DNF (C)
+                const perf = [];
+                for (const d of drivers) {
+                    const t = teamById[d.team] || {};
+                    const relFactor = 1 + (avgRel - (t.reliability || 80)) / 100;   // (C) schlechtere Teams häufiger DNF
+                    if (Math.random() < Math.max(2, Math.min(35, 10 * relFactor)) / 100) {
+                        standings[d.id].dnfs++; perf.push({ id: d.id, dnf: true, score: -1e9 }); continue;
+                    }
+                    const con = d.consistency ?? 75;                               // (B) Tagesform
+                    const goodDay = Math.random() < con / 100 ? 1 : 0.55;
+                    const halfVar = 6 + (100 - con) * 0.10;
+                    const gridBonus = nGrid > 1 ? (nGrid - (grid[d.id] || nGrid)) / (nGrid - 1) * 6 : 0;
+                    const score = (d.pace || 60) * goodDay * 0.50 + (t.strength || 60) * 0.18
+                        + _jwExperience(d) * 0.12 + gridBonus + (Math.random() - 0.5) * 2 * halfVar;
+                    perf.push({ id: d.id, dnf: false, score });
+                }
+                const finishers = perf.filter(p => !p.dnf).sort((a, b) => b.score - a.score);
+                const dnfList = perf.filter(p => p.dnf);
+                const order = [...finishers, ...dnfList];
+                const results = order.map((p, pos) => ({ d: p.id, p: pos + 1, dnf: p.dnf, t: p.dnf ? null : 90000 + pos * 350 + ((Math.random() * 1200) | 0) }));
+                finishers.slice(0, 10).forEach((p, pos) => standings[p.id].points += _JW_PTS[pos]);
+                if (finishers[0]) standings[finishers[0].id].wins++;
+                finishers.slice(0, 3).forEach(p => standings[p.id].podiums++);
                 raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], results, qualifying: quali });
             }
             let champ = drivers[0];
@@ -11809,7 +11856,7 @@
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
                 heavy: { seriesId: series.id, standings, teamPoints: teamPts,
-                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, team: d.team, pace: d.pace, age: d.age, points: standings[d.id].points })),
+                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
         }
@@ -11826,7 +11873,7 @@
             const champHistId = standArr[0] && standArr[0].histId;
             for (const d of (heavy.drivers || [])) {
                 const k = d.histId;
-                const s = st[k] || (st[k] = { name: d.name, nation: d.nation, starts: 0, wins: 0, podiums: 0, poles: 0, points: 0, titles: 0, seasons: 0 });
+                const s = st[k] || (st[k] = { name: d.name, nation: d.nation, starts: 0, wins: 0, podiums: 0, poles: 0, points: 0, titles: 0, seasons: 0, dnfs: 0 });
                 s.name = d.name; s.nation = d.nation;
                 const sd = (heavy.standings || {})[d.id] || {};
                 s.starts += racesCount;
@@ -11834,6 +11881,7 @@
                 s.podiums += sd.podiums || 0;
                 s.poles += sd.poles || 0;
                 s.points += sd.points || 0;
+                s.dnfs = (s.dnfs || 0) + (sd.dnfs || 0);
                 s.seasons += 1;
                 if (k === champHistId) s.titles += 1;
             }
@@ -11841,7 +11889,8 @@
                 const circuit = r.circuit || r.name;
                 const c = ci[circuit] || (ci[circuit] = { races: 0, winsByDriver: {} });
                 c.races += 1;
-                const winId = r.results && r.results[0] && r.results[0].d;   // id===histId in Junior-Welt
+                const win = r.results && r.results[0];
+                const winId = win && !win.dnf && win.d;   // Sieger = erster Nicht-DNF (id===histId)
                 if (winId) {
                     const w = c.winsByDriver[winId] || (c.winsByDriver[winId] = { wins: 0 });
                     w.wins += 1;
