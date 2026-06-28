@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.21</title>
+    <title>F1 RPG v0.9.14.22</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.21 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.22 (aktuell) - 28.06.2026</div>
+                            <div>&#8226; NEU: Junior-Welt führt eigene All-Time-Statistiken je Fahrer (Titel/Siege/Podien/Poles/Punkte/Starts)</div>
+                            <div>&#8226; NEU: Junior-Strecken-Index mit eigenem Streckenkalender pro Serie</div>
+                            <div>&#8226; NEU: Streaming-Rebuild der Aggregate aus dem Detail-Store (RAM-schonend)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.21 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Welt-Status im Debug-Panel (Serien/Fahrer/Saisons + letzte Champions, nur world-Modus)</div>
                             <div>&#8226; NEU: Log-Zeile pro simulierter Junior-Saison</div>
                             <div class="font-bold text-slate-400">v0.9.14.20 - 28.06.2026</div>
@@ -2757,7 +2761,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.21';
+        const VERSION = '0.9.14.22';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11615,8 +11619,10 @@
             const seasons = (jw.history || []).length;
             const last = (jw.history || [])[seasons - 1];
             const champs = last ? (last.series || []).map(s => `${s.seriesName || s.seriesId}: ${s.champion}`).join(' · ') : '–';
+            const allTime = Object.keys(jw.allTimeStats || {}).length;
+            const circuits = Object.keys(jw.circuitIndex || {}).length;
             const st = document.getElementById('junior-world-status');
-            if (st) st.textContent = `${series} Serien, ${drivers} aktive Fahrer, ${seasons} Saison(s)` + (last ? ` · letzte (${last.year}): ${champs}` : '');
+            if (st) st.textContent = `${series} Serien, ${drivers} aktive Fahrer, ${seasons} Saison(s), ${allTime} All-Time-Fahrer, ${circuits} Strecken` + (last ? ` · letzte (${last.year}): ${champs}` : '');
         }
 
         // ═══ Junior-Modus-Wahl (game-breaking-Schutz) ═══
@@ -11706,6 +11712,7 @@
         }
         // ── 2c: Teams pro Serie, Transfers, Aufstieg F3→F2 ──
         const JUNIOR_TEAM_NAMES = ['Apex','Volt','Strada','Nordic','Falcon','Meridian','Pulsar','Crest','Vortex','Lumen','Granite','Zenith','Cobra','Helix','Orbit','Delta'];
+        const JUNIOR_CIRCUITS = ['Valanga','Montegro','Sankt Ring','Costa Brava','Hollowmoor','Eldenmoor','Brackley Park','Nordschleifchen','Lac Bleu','Avalon Bay','Redrock','Kaiserkurve','Porto Verde','Silberwald'];
         const JW_SEATS_PER_TEAM = 2;
         // Teams je Serie anlegen (falls fehlend) + teamlose Fahrer (Alt-Saves/Neuzugänge) auf offene Sitze.
         function _ensureJuniorTeams(jw) {
@@ -11775,6 +11782,11 @@
             const standings = {};
             drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0 });
             const raceRecs = [];
+            // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3)
+            if (!series.calendar || series.calendar.length < races) {
+                const pool = [...JUNIOR_CIRCUITS].sort(() => Math.random() - 0.5);
+                series.calendar = Array.from({ length: races }, (_, i) => pool[i % pool.length]);
+            }
             for (let r = 0; r < races; r++) {
                 const order = drivers.map(d => ({ id: d.id, score: d.pace + Math.random() * 30 }))
                     .sort((a, b) => b.score - a.score).map(o => o.id);
@@ -11784,7 +11796,7 @@
                 standings[order[0]].wins++;
                 order.slice(0, 3).forEach(id => standings[id].podiums++);
                 standings[quali[0].d].poles++;
-                raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, results, qualifying: quali });
+                raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], results, qualifying: quali });
             }
             let champ = drivers[0];
             drivers.forEach(d => { d._lastPoints = standings[d.id].points; if (standings[d.id].points > standings[champ.id].points) champ = d; });
@@ -11801,6 +11813,60 @@
                     races: raceRecs }
             };
         }
+        // ── Schritt 3: Aggregate (All-Time-Stats je Fahrer + Strecken-Index) ──
+        // Inkrementell: faltet EINE simulierte Serien-Saison (heavy) in target.allTimeStats/circuitIndex.
+        // target = jw (live, inkrementell) ODER ein frisches Objekt (Streaming-Rebuild). Idempotent NICHT –
+        // jede Saison genau einmal falten (Rebuild ersetzt komplett, advance faltet je neue Saison einmal).
+        function _foldJuniorAggregates(target, heavy) {
+            const st = (target.allTimeStats = target.allTimeStats || {});
+            const ci = (target.circuitIndex = target.circuitIndex || {});
+            const races = heavy.races || [];
+            const racesCount = races.length;
+            const standArr = Object.values(heavy.standings || {}).sort((a, b) => b.points - a.points);
+            const champHistId = standArr[0] && standArr[0].histId;
+            for (const d of (heavy.drivers || [])) {
+                const k = d.histId;
+                const s = st[k] || (st[k] = { name: d.name, nation: d.nation, starts: 0, wins: 0, podiums: 0, poles: 0, points: 0, titles: 0, seasons: 0 });
+                s.name = d.name; s.nation = d.nation;
+                const sd = (heavy.standings || {})[d.id] || {};
+                s.starts += racesCount;
+                s.wins += sd.wins || 0;
+                s.podiums += sd.podiums || 0;
+                s.poles += sd.poles || 0;
+                s.points += sd.points || 0;
+                s.seasons += 1;
+                if (k === champHistId) s.titles += 1;
+            }
+            for (const r of races) {
+                const circuit = r.circuit || r.name;
+                const c = ci[circuit] || (ci[circuit] = { races: 0, winsByDriver: {} });
+                c.races += 1;
+                const winId = r.results && r.results[0] && r.results[0].d;   // id===histId in Junior-Welt
+                if (winId) {
+                    const w = c.winsByDriver[winId] || (c.winsByDriver[winId] = { wins: 0 });
+                    w.wins += 1;
+                }
+            }
+        }
+        // Streaming-Rebuild (lazy): All-Time/Strecken aus den junior_detail-Records neu aufbauen,
+        // jede Saison einzeln laden→falten→verwerfen (RAM bounded). Für Alt-'world'-Saves (vor Schritt 3)
+        // oder Reparatur nach Import. Über window aufrufbar.
+        window.rebuildJuniorAggregates = async function() {
+            const jw = GAME_STATE.juniorWorld;
+            if (!jw || !_idbAvailable) return;
+            const fresh = { allTimeStats: {}, circuitIndex: {} };
+            const light = await idbJHistGetAll();
+            for (const rec of light) {
+                const detail = await idbJDetailGet(rec.year);
+                for (const heavy of (detail && detail.series || [])) _foldJuniorAggregates(fresh, heavy);
+            }
+            jw.allTimeStats = fresh.allTimeStats;
+            jw.circuitIndex = fresh.circuitIndex;
+            await saveGame();
+            if (typeof syncJuniorWorldUI === 'function') syncJuniorWorldUI();
+            logInfo('JUNIOR', `🌍 Aggregate neu aufgebaut: ${Object.keys(fresh.allTimeStats).length} Fahrer, ${Object.keys(fresh.circuitIndex).length} Strecken`);
+        };
+
         // Orchestriert eine Junior-Saison: Roster sichern, je Serie simulieren, leicht in
         // juniorWorld.history (core, klein) + schwer in junior_detail (gzip) persistieren.
         async function advanceJuniorWorld(year) {
@@ -11817,6 +11883,7 @@
                 const roster = jw.drivers.filter(d => d.seriesId === s.id);
                 const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year);
                 lightSeries.push(sim.light); heavySeries.push(sim.heavy);
+                _foldJuniorAggregates(jw, sim.heavy);   // Schritt 3: inkrementell All-Time/Strecken
             }
             const lightRec = { year, series: lightSeries };
             jw.history = jw.history || [];
