@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.27</title>
+    <title>F1 RPG v0.9.14.28</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.27 (aktuell) - 28.06.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.28 (aktuell) - 01.07.2026</div>
+                            <div>&#8226; NEU: Junior-Fahrer haben Verträge (1-3 Jahre)</div>
+                            <div>&#8226; NEU: Bei Vertragsende steigen bessere Fahrer in stärkere Teams auf – statt zufälliger Tausche</div>
+                            <div class="font-bold text-slate-400">v0.9.14.27 - 28.06.2026</div>
                             <div>&#8226; NEU: Junior-Fahrer haben ein Regen-Können</div>
                             <div>&#8226; NEU: ~18% Regenrennen – bei Nässe zählt Regen-Können statt Pace, mit mehr Überraschungen</div>
                             <div class="font-bold text-slate-400">v0.9.14.26 - 28.06.2026</div>
@@ -2778,7 +2781,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.27';
+        const VERSION = '0.9.14.28';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11711,6 +11714,7 @@
                 rain: 55 + ((Math.random() * 40) | 0),                            // 5b: Regen-Können 55–94 (zählt bei Nässe)
                 age: 17 + ((Math.random() * 4) | 0),     // 17–20 Einstiegsalter
                 _retireAge: 24 + ((Math.random() * 6) | 0),  // 24–29, pro Fahrer variabel
+                contractEnd: year + 1 + ((Math.random() * 3) | 0),   // 5c: Vertrag 1–3 Jahre
                 seriesId, debutYear: year
             };
         }
@@ -11785,14 +11789,24 @@
             }
         }
         // Transfers: ein Teil der Fahrer tauscht innerhalb der Serie das Team (reine Pointer-Verschiebung, ~0 Bytes).
-        function _juniorTransfers(jw) {
+        // 5c: Vertragsgetriebene Transfers – Fahrer mit ausgelaufenem Vertrag (contractEnd<=year) suchen
+        // einen Sitz. Bessere Fahrer steigen in stärkere Teams auf (Tausch mit schwächerem Fahrer dort),
+        // danach Vertrag verlängern. Kapazitätserhaltend (Sitztausch). Ersetzt den alten Zufalls-Swap.
+        function _juniorContractMoves(jw, year) {
             for (const s of (jw.series || [])) {
+                const strength = {}; (s.teams || []).forEach(t => strength[t.id] = t.strength || 60);
                 const roster = jw.drivers.filter(d => d.seriesId === s.id);
-                const moves = Math.floor(roster.length * 0.15);
-                for (let i = 0; i < moves; i++) {
-                    const a = roster[(Math.random() * roster.length) | 0];
-                    const b = roster[(Math.random() * roster.length) | 0];
-                    if (a && b && a.team !== b.team) { const t = a.team; a.team = b.team; b.team = t; }
+                const free = roster.filter(d => (d.contractEnd || 0) <= year);
+                for (const d of free) {
+                    if (Math.random() < 0.5) {   // Aufstiegsversuch: stärkeres Team, dort ein schwächerer Fahrer
+                        const cand = roster.filter(o => o !== d && (strength[o.team] || 0) > (strength[d.team] || 0) && (o.pace || 0) < (d.pace || 0));
+                        if (cand.length) {
+                            const target = cand[(Math.random() * cand.length) | 0];
+                            const tmp = d.team; d.team = target.team; target.team = tmp;
+                            target.contractEnd = year + 1 + ((Math.random() * 3) | 0);
+                        }
+                    }
+                    d.contractEnd = year + 1 + ((Math.random() * 3) | 0);   // verlängern
                 }
             }
         }
@@ -11943,7 +11957,7 @@
             _ageAndRetireJuniors(jw);          // 2b: Returner altern/Pace-Drift, Karriere-Enden raus
             _ensureJuniorTeams(jw);            // 2c: Teams sicherstellen (+ teamlose zuordnen)
             _promoteJuniors(jw);               // 2c: beste F3 → offene F2-Sitze
-            _juniorTransfers(jw);              // 2c: Team-Wechsel innerhalb der Serie
+            _juniorContractMoves(jw, year);    // 5c: vertragsgetriebene Transfers (Auslaufverträge → Aufstieg)
             _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
             const sc = _juniorScale();
             const lightSeries = [], heavySeries = [];
