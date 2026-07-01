@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.29</title>
+    <title>F1 RPG v0.9.14.30</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.29 (aktuell) - 01.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.30 (aktuell) - 01.07.2026</div>
+                            <div>&#8226; NEU: Schnellste-Runde-Wertung (SR) je Rennen + All-Time</div>
+                            <div>&#8226; NEU: bestes Karriere-Ergebnis je Fahrer</div>
+                            <div>&#8226; NEU: Legenden-Kennzeichnung (👑 ab 3 Titeln) in der All-Time-Bestenliste</div>
+                            <div class="font-bold text-slate-400">v0.9.14.29 - 01.07.2026</div>
                             <div>&#8226; NEU: Junior-Fahrer haben eindeutige Startnummern</div>
                             <div>&#8226; NEU: Länderflaggen in Saison- und All-Time-Tabelle</div>
                             <div>&#8226; NEU: Team-Farben (farbige Markierung in den Tabellen)</div>
@@ -2785,7 +2789,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.29';
+        const VERSION = '0.9.14.30';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11850,7 +11854,7 @@
             const teamArr = series.teams || [];
             const avgRel = teamArr.length ? teamArr.reduce((s, t) => s + (t.reliability || 80), 0) / teamArr.length : 80;
             const standings = {};
-            drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0, dnfs: 0 });
+            drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0, dnfs: 0, fastestLaps: 0 });
             const raceRecs = [];
             // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3)
             if (!series.calendar || series.calendar.length < races) {
@@ -11892,6 +11896,11 @@
                 finishers.slice(0, 10).forEach((p, pos) => standings[p.id].points += _JW_PTS[pos]);
                 if (finishers[0]) standings[finishers[0].id].wins++;
                 finishers.slice(0, 3).forEach(p => standings[p.id].podiums++);
+                // 5e: schnellste Runde – zufällig unter der vorderen Hälfte der Finisher (schnelle Autos)
+                if (finishers.length) {
+                    const flPool = Math.max(1, Math.ceil(finishers.length / 2));
+                    standings[finishers[(Math.random() * flPool) | 0].id].fastestLaps++;
+                }
                 raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], wet, results, qualifying: quali });
             }
             let champ = drivers[0];
@@ -11920,9 +11929,15 @@
             const racesCount = races.length;
             const standArr = Object.values(heavy.standings || {}).sort((a, b) => b.points - a.points);
             const champHistId = standArr[0] && standArr[0].histId;
+            // 5e: bestes Renn-Ergebnis (kleinste Position, Nicht-DNF) je Fahrer in dieser Saison
+            const bestPos = {};
+            for (const r of races) for (const res of (r.results || [])) {
+                if (res.dnf) continue;
+                if (bestPos[res.d] == null || res.p < bestPos[res.d]) bestPos[res.d] = res.p;
+            }
             for (const d of (heavy.drivers || [])) {
                 const k = d.histId;
-                const s = st[k] || (st[k] = { name: d.name, nation: d.nation, starts: 0, wins: 0, podiums: 0, poles: 0, points: 0, titles: 0, seasons: 0, dnfs: 0 });
+                const s = st[k] || (st[k] = { name: d.name, nation: d.nation, starts: 0, wins: 0, podiums: 0, poles: 0, points: 0, titles: 0, seasons: 0, dnfs: 0, fastestLaps: 0, bestFinish: null });
                 s.name = d.name; s.nation = d.nation;
                 const sd = (heavy.standings || {})[d.id] || {};
                 s.starts += racesCount;
@@ -11931,6 +11946,9 @@
                 s.poles += sd.poles || 0;
                 s.points += sd.points || 0;
                 s.dnfs = (s.dnfs || 0) + (sd.dnfs || 0);
+                s.fastestLaps = (s.fastestLaps || 0) + (sd.fastestLaps || 0);
+                const bp = bestPos[d.id];
+                if (bp != null && (s.bestFinish == null || bp < s.bestFinish)) s.bestFinish = bp;
                 s.seasons += 1;
                 if (k === champHistId) s.titles += 1;
             }
@@ -14423,15 +14441,17 @@
             if (!arr.length) return '<div class="card p-4 rounded-lg text-tertiary">Noch keine All-Time-Daten.</div>';
             arr.sort((a, b) => (b.titles || 0) - (a.titles || 0) || (b.wins || 0) - (a.wins || 0) || (b.points || 0) - (a.points || 0));
             const top = arr.slice(0, 100);
-            let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">All-Time-Bestenliste${arr.length > 100 ? ` (Top 100 von ${arr.length})` : ''}</h3>`
+            const legends = arr.filter(s => (s.titles || 0) >= 3).length;   // 5e: Legende ab 3 Titeln
+            let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">All-Time-Bestenliste${arr.length > 100 ? ` (Top 100 von ${arr.length})` : ''}${legends ? ` · 👑 ${legends} Legende(n)` : ''}</h3>`
                 + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
-                + `<th class="pr-2">#</th><th>Fahrer</th><th>Nat</th><th class="text-right">Titel</th><th class="text-right">Siege</th><th class="text-right">Podien</th><th class="text-right">Poles</th><th class="text-right">Punkte</th><th class="text-right">Starts</th><th class="text-right">Saisons</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+                + `<th class="pr-2">#</th><th>Fahrer</th><th>Nat</th><th class="text-right">Titel</th><th class="text-right">Siege</th><th class="text-right">Podien</th><th class="text-right">Poles</th><th class="text-right">SR</th><th class="text-right">Punkte</th><th class="text-right">Starts</th><th class="text-right">Bestes</th><th class="text-right">Saisons</th><th class="text-right">DNF</th></tr></thead><tbody>`;
             top.forEach((s, i) => {
                 const flag = typeof renderFlag === 'function' ? renderFlag(s.nation, null, null) : '';
-                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${flag} ${s.name}</td><td>${s.nation || ''}</td>`
+                const crown = (s.titles || 0) >= 3 ? ' 👑' : '';
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${flag} ${s.name}${crown}</td><td>${s.nation || ''}</td>`
                     + `<td class="text-right font-medium">${s.titles || 0}</td><td class="text-right">${s.wins || 0}</td><td class="text-right">${s.podiums || 0}</td>`
-                    + `<td class="text-right">${s.poles || 0}</td><td class="text-right">${s.points || 0}</td><td class="text-right">${s.starts || 0}</td>`
-                    + `<td class="text-right">${s.seasons || 0}</td><td class="text-right">${s.dnfs || 0}</td></tr>`;
+                    + `<td class="text-right">${s.poles || 0}</td><td class="text-right">${s.fastestLaps || 0}</td><td class="text-right">${s.points || 0}</td><td class="text-right">${s.starts || 0}</td>`
+                    + `<td class="text-right">${s.bestFinish != null ? 'P' + s.bestFinish : '–'}</td><td class="text-right">${s.seasons || 0}</td><td class="text-right">${s.dnfs || 0}</td></tr>`;
             });
             html += '</tbody></table></div></div>';
             return html;
@@ -14464,14 +14484,14 @@
             const rows = Object.values(s.standings || {}).sort((a, b) => b.points - a.points);
             let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">${seriesName} – ${year}</h3>`
                 + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
-                + `<th class="pr-2">#</th><th class="pr-2">Nr</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right">P</th><th class="text-right">Pole</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+                + `<th class="pr-2">#</th><th class="pr-2">Nr</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right">P</th><th class="text-right">Pole</th><th class="text-right">SR</th><th class="text-right">DNF</th></tr></thead><tbody>`;
             rows.forEach((r, i) => {
                 const d = drvById[r.id] || {};
                 const flag = typeof renderFlag === 'function' ? renderFlag(d.nation, null, year) : '';
                 html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td class="pr-2 text-tertiary">${d.number || ''}</td>`
                     + `<td>${flag} ${r.name}</td><td>${teamCell(d.team)}</td>`
                     + `<td class="text-right font-medium">${r.points}</td><td class="text-right">${r.wins || 0}</td><td class="text-right">${r.podiums || 0}</td>`
-                    + `<td class="text-right">${r.poles || 0}</td><td class="text-right">${r.dnfs || 0}</td></tr>`;
+                    + `<td class="text-right">${r.poles || 0}</td><td class="text-right">${r.fastestLaps || 0}</td><td class="text-right">${r.dnfs || 0}</td></tr>`;
             });
             html += '</tbody></table></div></div>';
             return html;
