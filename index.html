@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.30</title>
+    <title>F1 RPG v0.9.14.31</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.30 (aktuell) - 01.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.31 (aktuell) - 01.07.2026</div>
+                            <div>&#8226; NEU: Optionale (seltene) tödliche Unfälle in der Junior-Welt – per Toggle, Default aus</div>
+                            <div>&#8226; NEU: Memoriam-Liste verunglückter Fahrer</div>
+                            <div>&#8226; NEU: Saison-Notizen (Neulinge/Aufstiege/Rücktritte/Todesfälle) + Log-Zusammenfassung</div>
+                            <div class="font-bold text-slate-400">v0.9.14.30 - 01.07.2026</div>
                             <div>&#8226; NEU: Schnellste-Runde-Wertung (SR) je Rennen + All-Time</div>
                             <div>&#8226; NEU: bestes Karriere-Ergebnis je Fahrer</div>
                             <div>&#8226; NEU: Legenden-Kennzeichnung (👑 ab 3 Titeln) in der All-Time-Bestenliste</div>
@@ -2789,7 +2793,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.30';
+        const VERSION = '0.9.14.31';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11754,12 +11758,14 @@
         // 2b: bestehende Fahrer altern + Karriere-Enden aussortieren (Nachrücker folgt via _ensureJuniorRoster).
         function _ageAndRetireJuniors(jw) {
             const survivors = [];
+            let retired = 0;
             for (const d of (jw.drivers || [])) {
                 _developJuniorDriver(d);
-                if (d.age >= (d._retireAge || 26)) continue;   // Karriere-Ende → kein Survivor
+                if (d.age >= (d._retireAge || 26)) { retired++; continue; }   // Karriere-Ende
                 survivors.push(d);
             }
             jw.drivers = survivors;
+            return retired;   // 5f: für Saison-Zusammenfassung
         }
         // ── 2c: Teams pro Serie, Transfers, Aufstieg F3→F2 ──
         const JUNIOR_TEAM_NAMES = ['Apex','Volt','Strada','Nordic','Falcon','Meridian','Pulsar','Crest','Vortex','Lumen','Granite','Zenith','Cobra','Helix','Orbit','Delta'];
@@ -11799,14 +11805,16 @@
         function _promoteJuniors(jw) {
             const f2 = (jw.series || []).find(s => s.id === 'f2');
             const f3 = (jw.series || []).find(s => s.id === 'f3');
-            if (!f2 || !f3) return;
+            if (!f2 || !f3) return 0;
             const open = Math.max(0, _juniorScale().driversPerSeries - jw.drivers.filter(d => d.seriesId === 'f2').length);
-            if (open <= 0) return;
+            if (open <= 0) return 0;
             const f3sorted = jw.drivers.filter(d => d.seriesId === 'f3').sort((a, b) => (b._lastPoints || 0) - (a._lastPoints || 0));
+            let promoted = 0;
             for (let i = 0; i < open && i < f3sorted.length; i++) {
                 const d = f3sorted[i];
-                d.seriesId = 'f2'; d.team = _openJuniorSeat(jw, 'f2');
+                d.seriesId = 'f2'; d.team = _openJuniorSeat(jw, 'f2'); promoted++;
             }
+            return promoted;   // 5f: für Saison-Zusammenfassung
         }
         // Transfers: ein Teil der Fahrer tauscht innerhalb der Serie das Team (reine Pointer-Verschiebung, ~0 Bytes).
         // 5c: Vertragsgetriebene Transfers – Fahrer mit ausgelaufenem Vertrag (contractEnd<=year) suchen
@@ -11855,6 +11863,8 @@
             const avgRel = teamArr.length ? teamArr.reduce((s, t) => s + (t.reliability || 80), 0) / teamArr.length : 80;
             const standings = {};
             drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0, dnfs: 0, fastestLaps: 0 });
+            const dead = new Set();   // 5f: tödliche Unfälle (nur wenn GAME_STATE.juniorDeaths)
+            const deathsOn = !!GAME_STATE.juniorDeaths;
             const raceRecs = [];
             // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3)
             if (!series.calendar || series.calendar.length < races) {
@@ -11878,7 +11888,10 @@
                     const t = teamById[d.team] || {};
                     const relFactor = 1 + (avgRel - (t.reliability || 80)) / 100;   // (C) schlechtere Teams häufiger DNF
                     if (Math.random() < Math.max(2, Math.min(35, 10 * relFactor)) / 100) {
-                        standings[d.id].dnfs++; perf.push({ id: d.id, dnf: true, score: -1e9 }); continue;
+                        standings[d.id].dnfs++;
+                        // 5f: ~Hälfte Unfälle; bei aktiviertem Modus seltener tödlich (1% der Unfälle)
+                        if (deathsOn && Math.random() < 0.5 && Math.random() < 0.01) dead.add(d.id);
+                        perf.push({ id: d.id, dnf: true, score: -1e9 }); continue;
                     }
                     const con = d.consistency ?? 75;                               // (B) Tagesform
                     const goodDay = Math.random() < con / 100 ? 1 : 0.55;
@@ -11911,6 +11924,7 @@
             const teamChampId = Object.keys(teamPts).sort((a, b) => teamPts[b] - teamPts[a])[0] || null;
             const teamChampName = (series.teams || []).find(t => t.id === teamChampId)?.name || null;
             return {
+                dead: [...dead],   // 5f: histId===id in Junior-Welt
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
                 heavy: { seriesId: series.id, standings, teamPoints: teamPts,
@@ -11988,24 +12002,37 @@
         async function advanceJuniorWorld(year) {
             if (GAME_STATE.juniorMode !== 'world') return;
             const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
-            _ageAndRetireJuniors(jw);          // 2b: Returner altern/Pace-Drift, Karriere-Enden raus
+            const retired = _ageAndRetireJuniors(jw);   // 2b: Returner altern, Karriere-Enden raus
             _ensureJuniorTeams(jw);            // 2c: Teams sicherstellen (+ teamlose zuordnen)
-            _promoteJuniors(jw);               // 2c: beste F3 → offene F2-Sitze
+            const promoted = _promoteJuniors(jw);       // 2c: beste F3 → offene F2-Sitze
             _juniorContractMoves(jw, year);    // 5c: vertragsgetriebene Transfers (Auslaufverträge → Aufstieg)
             _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
+            const newcomers = jw.drivers.filter(d => d.debutYear === year).length;
             const sc = _juniorScale();
             const lightSeries = [], heavySeries = [];
+            const nameById = {}; jw.drivers.forEach(d => nameById[d.id] = d.name);
+            const deadIds = [];
             for (const s of jw.series) {
                 const roster = jw.drivers.filter(d => d.seriesId === s.id);
                 const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year);
                 lightSeries.push(sim.light); heavySeries.push(sim.heavy);
                 _foldJuniorAggregates(jw, sim.heavy);   // Schritt 3: inkrementell All-Time/Strecken
+                (sim.dead || []).forEach(id => deadIds.push(id));
             }
-            const lightRec = { year, series: lightSeries };
+            // 5f: Tödliche Unfälle – Fahrer aus dem Roster entfernen + ins Memoriam
+            if (deadIds.length) {
+                jw.memoriam = jw.memoriam || [];
+                deadIds.forEach(id => jw.memoriam.push({ histId: id, name: nameById[id] || id, year }));
+                jw.drivers = jw.drivers.filter(d => !deadIds.includes(d.id));
+            }
+            const events = { retired, promoted, newcomers, deaths: deadIds.length };
+            const lightRec = { year, series: lightSeries, events };
             jw.history = jw.history || [];
             jw.history.push(lightRec);
-            // 2d: Sichtbarkeit – eine Log-Zeile mit den Champions pro Serie
-            logInfo('JUNIOR', `🌍 Junior-Welt ${year}: ` + lightSeries.map(s => `${s.seriesName || s.seriesId}-Champion ${s.champion}`).join(', '));
+            // 2d/5f: Log – Champions + Saison-Zusammenfassung
+            logInfo('JUNIOR', `🌍 Junior-Welt ${year}: ` + lightSeries.map(s => `${s.seriesName || s.seriesId}-Champion ${s.champion}`).join(', ')
+                + ` · Rücktritte ${retired}, Aufstiege ${promoted}, Neu ${newcomers}` + (deadIds.length ? `, ✝ ${deadIds.length}` : ''));
+            if (deadIds.length) deadIds.forEach(id => logWarning('JUNIOR', `✝ Tödlicher Unfall: ${nameById[id] || id} (${year})`));
             if (typeof syncJuniorWorldUI === 'function') syncJuniorWorldUI();
             if (_idbAvailable) {
                 try {
@@ -14398,8 +14425,10 @@
             } else {
                 const opts = years.slice().reverse().map(y => `<option value="${y}" ${y === _juniorViewYear ? 'selected' : ''}>${y}</option>`).join('');
                 setTimeout(() => _renderJuniorSeason(_juniorViewYear), 0);   // async Detail nachladen
+                const evt = ((jw.history || []).find(h => h.year === _juniorViewYear) || {}).events;
+                const evtNote = evt ? `<div class="text-xs text-tertiary mt-2">Saison-Notizen: ${evt.newcomers || 0} Neulinge · ${evt.promoted || 0} Aufstiege · ${evt.retired || 0} Rücktritte${evt.deaths ? ` · ✝ ${evt.deaths} Todesfälle` : ''}</div>` : '';
                 body = `<div class="card p-4 rounded-lg mb-4"><label class="text-sm">Saison
-                        <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select></label></div>
+                        <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select></label>${evtNote}</div>
                     <div id="junior-season-tables"><div class="text-tertiary p-4">Lade Saison ${_juniorViewYear}…</div></div>`;
             }
             const sc = _juniorScale();
@@ -14407,10 +14436,11 @@
             return `
                 <div class="card p-4 rounded-lg mb-4">
                     <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
-                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken</div>
-                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-bottom:0.6rem;">
+                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken${(jw.memoriam || []).length ? ` · ✝ ${jw.memoriam.length}` : ''}</div>
+                    <div style="display:flex;gap:0.7rem;flex-wrap:wrap;align-items:center;margin-bottom:0.6rem;">
                         ${numInput('drivers', 'Fahrer/Serie', 2, sc.driversPerSeries)}
                         ${numInput('races', 'Rennen/Serie', 1, sc.races)}
+                        <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;"><input type="checkbox" ${GAME_STATE.juniorDeaths ? 'checked' : ''} onchange="juniorToggleDeaths(this.checked)"> Todesfälle (selten)</label>
                         <span class="text-xs text-tertiary">(wirkt ab nächster Saison)</span>
                     </div>
                     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${subBtn('season', '🏁 Saison')}${subBtn('alltime', '🏆 All-Time')}${subBtn('circuits', '📍 Strecken')}</div>
@@ -14419,6 +14449,7 @@
             `;
         }
         window.juniorSubTab = function(t) { _juniorSubTab = t; renderContent(); };
+        window.juniorToggleDeaths = function(on) { GAME_STATE.juniorDeaths = !!on; saveGame(); };
         window.juniorSetScale = function(field, val) {
             const n = parseInt(val) || 0;
             if (field === 'drivers') GAME_STATE.juniorDriversPerSeries = Math.max(2, n);
