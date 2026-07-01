@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.31</title>
+    <title>F1 RPG v0.9.14.32</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.31 (aktuell) - 01.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.32 (aktuell) - 01.07.2026</div>
+                            <div>&#8226; FIX: Junior-Fahrernamen nutzen jetzt den großen bestehenden Namenspool (viel mehr Vielfalt)</div>
+                            <div>&#8226; FIX: keine zwei aktiven Fahrer mehr mit identischem Vor- und Nachnamen</div>
+                            <div class="font-bold text-slate-400">v0.9.14.31 - 01.07.2026</div>
                             <div>&#8226; NEU: Optionale (seltene) tödliche Unfälle in der Junior-Welt – per Toggle, Default aus</div>
                             <div>&#8226; NEU: Memoriam-Liste verunglückter Fahrer</div>
                             <div>&#8226; NEU: Saison-Notizen (Neulinge/Aufstiege/Rücktritte/Todesfälle) + Log-Zusammenfassung</div>
@@ -2793,7 +2796,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.31';
+        const VERSION = '0.9.14.32';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11699,8 +11702,6 @@
             { id: 'f3', name: 'Junior Formel 3', level: 3 },
             { id: 'f2', name: 'Junior Formel 2', level: 2 }
         ];
-        const JUNIOR_FIRST = ['Liam','Noah','Mateo','Hugo','Enzo','Luca','Theo','Felix','Aaron','Nico','Dario','Kimi','Aron','Gabriel','Santiago','Oliver','Emil','Jonas','Rafael','Victor','Andrea','Diego','Tomas','Yuki'];
-        const JUNIOR_LAST  = ['Berg','Costa','Marin','Vidal','Krause','Rossi','Lindqvist','Dumas','Petrov','Nakano','Silva','Hansen','Moreau','Bianchi','Novak','Keller','Tan','Okafor','Reyes','Adler','Falk','Conti','Mertens','Sato'];
         const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NED','SWE','FIN','BEL','DEN','AUT','SUI','ARG'];
         const _JW_PTS = [25,18,15,12,10,8,6,4,2,1];
 
@@ -11725,9 +11726,13 @@
         function _makeJuniorDriver(jw, seriesId, year) {
             const seq = (jw._nextSeq = (jw._nextSeq || 0) + 1);
             const pace = 58 + ((Math.random() * 28) | 0);   // 58–85 Einstieg
+            // Namen aus dem großen bestehenden Fiktiv-Pool (FIRST_NAMES_W/LAST_NAMES_W), eindeutig im aktiven Feld
+            const usedNames = new Set((jw.drivers || []).map(d => d.name));
+            let name = '';
+            for (let t = 0; t < 40; t++) { name = weightedPick(FIRST_NAMES_W) + ' ' + weightedPick(LAST_NAMES_W); if (!usedNames.has(name)) break; }
             return {
                 id: 'jw' + seq, histId: 'jw' + seq,
-                name: _jwRand(JUNIOR_FIRST) + ' ' + _jwRand(JUNIOR_LAST),
+                name,
                 nation: _jwRand(JUNIOR_NATIONS),
                 number: _assignJuniorNumber(jw, seriesId),   // 5d: Startnummer
                 pace,
