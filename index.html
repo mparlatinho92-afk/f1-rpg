@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.28</title>
+    <title>F1 RPG v0.9.14.29</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -945,7 +945,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.28 (aktuell) - 01.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.29 (aktuell) - 01.07.2026</div>
+                            <div>&#8226; NEU: Junior-Fahrer haben eindeutige Startnummern</div>
+                            <div>&#8226; NEU: Länderflaggen in Saison- und All-Time-Tabelle</div>
+                            <div>&#8226; NEU: Team-Farben (farbige Markierung in den Tabellen)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.28 - 01.07.2026</div>
                             <div>&#8226; NEU: Junior-Fahrer haben Verträge (1-3 Jahre)</div>
                             <div>&#8226; NEU: Bei Vertragsende steigen bessere Fahrer in stärkere Teams auf – statt zufälliger Tausche</div>
                             <div class="font-bold text-slate-400">v0.9.14.27 - 28.06.2026</div>
@@ -2781,7 +2785,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.28';
+        const VERSION = '0.9.14.29';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11689,7 +11693,7 @@
         ];
         const JUNIOR_FIRST = ['Liam','Noah','Mateo','Hugo','Enzo','Luca','Theo','Felix','Aaron','Nico','Dario','Kimi','Aron','Gabriel','Santiago','Oliver','Emil','Jonas','Rafael','Victor','Andrea','Diego','Tomas','Yuki'];
         const JUNIOR_LAST  = ['Berg','Costa','Marin','Vidal','Krause','Rossi','Lindqvist','Dumas','Petrov','Nakano','Silva','Hansen','Moreau','Bianchi','Novak','Keller','Tan','Okafor','Reyes','Adler','Falk','Conti','Mertens','Sato'];
-        const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NLD','SWE','FIN','BEL','DNK','AUT','CHE','ARG'];
+        const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NED','SWE','FIN','BEL','DEN','AUT','SUI','ARG'];
         const _JW_PTS = [25,18,15,12,10,8,6,4,2,1];
 
         function _juniorScale() {
@@ -11700,6 +11704,15 @@
         }
         function _jwRand(arr) { return arr[(Math.random() * arr.length) | 0]; }
 
+        // 5d: stabile Startnummer 2–99, eindeutig unter den aktiven Fahrern der Serie.
+        function _assignJuniorNumber(jw, seriesId) {
+            const used = new Set(jw.drivers.filter(d => d.seriesId === seriesId && d.number).map(d => d.number));
+            for (let tries = 0; tries < 200; tries++) {
+                const n = 2 + ((Math.random() * 98) | 0);
+                if (!used.has(n)) return n;
+            }
+            return 2 + ((Math.random() * 98) | 0);
+        }
         // Stabiler Junior-Fahrer mit eindeutiger, über Jahre konstanter histId.
         function _makeJuniorDriver(jw, seriesId, year) {
             const seq = (jw._nextSeq = (jw._nextSeq || 0) + 1);
@@ -11708,6 +11721,7 @@
                 id: 'jw' + seq, histId: 'jw' + seq,
                 name: _jwRand(JUNIOR_FIRST) + ' ' + _jwRand(JUNIOR_LAST),
                 nation: _jwRand(JUNIOR_NATIONS),
+                number: _assignJuniorNumber(jw, seriesId),   // 5d: Startnummer
                 pace,
                 potential: Math.min(99, pace + 5 + ((Math.random() * 18) | 0)),   // 3.5E: Ceiling – Stars vs. Mitläufer
                 consistency: 60 + ((Math.random() * 35) | 0),                     // 3.5B: 60–94 Tagesform-Stabilität
@@ -11745,6 +11759,7 @@
         }
         // ── 2c: Teams pro Serie, Transfers, Aufstieg F3→F2 ──
         const JUNIOR_TEAM_NAMES = ['Apex','Volt','Strada','Nordic','Falcon','Meridian','Pulsar','Crest','Vortex','Lumen','Granite','Zenith','Cobra','Helix','Orbit','Delta'];
+        const JUNIOR_TEAM_COLORS = ['#e6194b','#3cb44b','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45','#fabed4','#469990','#dcbeff','#9A6324','#ffe119','#800000','#000075','#a9a9a9'];
         const JUNIOR_CIRCUITS = ['Valanga','Montegro','Sankt Ring','Costa Brava','Hollowmoor','Eldenmoor','Brackley Park','Nordschleifchen','Lac Bleu','Avalon Bay','Redrock','Kaiserkurve','Porto Verde','Silberwald'];
         const JW_SEATS_PER_TEAM = 2;
         // Teams je Serie anlegen (falls fehlend) + teamlose Fahrer (Alt-Saves/Neuzugänge) auf offene Sitze.
@@ -11759,6 +11774,7 @@
                     s.teams.push({
                         id: `jt-${s.id}-${i}`,
                         name: `${nm}${i >= JUNIOR_TEAM_NAMES.length ? ' ' + (Math.floor(i / JUNIOR_TEAM_NAMES.length) + 1) : ''} ${s.id.toUpperCase()}`,
+                        color: JUNIOR_TEAM_COLORS[i % JUNIOR_TEAM_COLORS.length],   // 5d: Team-Farbe
                         strength: 52 + ((Math.random() * 43) | 0),   // 3.5A: Auto-Speed 52–94
                         reliability: 70 + ((Math.random() * 25) | 0) // 3.5C: Zuverlässigkeit 70–94
                     });
@@ -11889,7 +11905,7 @@
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
                 heavy: { seriesId: series.id, standings, teamPoints: teamPts,
-                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, rain: d.rain, age: d.age, points: standings[d.id].points })),
+                    drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, number: d.number, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, rain: d.rain, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
         }
@@ -14411,7 +14427,8 @@
                 + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
                 + `<th class="pr-2">#</th><th>Fahrer</th><th>Nat</th><th class="text-right">Titel</th><th class="text-right">Siege</th><th class="text-right">Podien</th><th class="text-right">Poles</th><th class="text-right">Punkte</th><th class="text-right">Starts</th><th class="text-right">Saisons</th><th class="text-right">DNF</th></tr></thead><tbody>`;
             top.forEach((s, i) => {
-                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${s.name}</td><td>${s.nation || ''}</td>`
+                const flag = typeof renderFlag === 'function' ? renderFlag(s.nation, null, null) : '';
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${flag} ${s.name}</td><td>${s.nation || ''}</td>`
                     + `<td class="text-right font-medium">${s.titles || 0}</td><td class="text-right">${s.wins || 0}</td><td class="text-right">${s.podiums || 0}</td>`
                     + `<td class="text-right">${s.poles || 0}</td><td class="text-right">${s.points || 0}</td><td class="text-right">${s.starts || 0}</td>`
                     + `<td class="text-right">${s.seasons || 0}</td><td class="text-right">${s.dnfs || 0}</td></tr>`;
@@ -14441,14 +14458,18 @@
         function _renderJuniorSeriesTable(s, year) {
             const seriesObj = (GAME_STATE.juniorWorld.series || []).find(x => x.id === s.seriesId) || {};
             const seriesName = seriesObj.name || s.seriesId;
-            const teamName = id => (seriesObj.teams || []).find(t => t.id === id)?.name || '–';
-            const teamByDriver = {}; (s.drivers || []).forEach(d => teamByDriver[d.id] = d.team);
+            const teamOf = id => (seriesObj.teams || []).find(t => t.id === id) || {};
+            const drvById = {}; (s.drivers || []).forEach(d => drvById[d.id] = d);
+            const teamCell = id => { const t = teamOf(id); return `<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${t.color || '#888'};margin-right:5px;vertical-align:middle;"></span>${t.name || '–'}`; };
             const rows = Object.values(s.standings || {}).sort((a, b) => b.points - a.points);
             let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">${seriesName} – ${year}</h3>`
                 + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
-                + `<th class="pr-2">#</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right">P</th><th class="text-right">Pole</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+                + `<th class="pr-2">#</th><th class="pr-2">Nr</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right">P</th><th class="text-right">Pole</th><th class="text-right">DNF</th></tr></thead><tbody>`;
             rows.forEach((r, i) => {
-                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${r.name}</td><td>${teamName(teamByDriver[r.id])}</td>`
+                const d = drvById[r.id] || {};
+                const flag = typeof renderFlag === 'function' ? renderFlag(d.nation, null, year) : '';
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td class="pr-2 text-tertiary">${d.number || ''}</td>`
+                    + `<td>${flag} ${r.name}</td><td>${teamCell(d.team)}</td>`
                     + `<td class="text-right font-medium">${r.points}</td><td class="text-right">${r.wins || 0}</td><td class="text-right">${r.podiums || 0}</td>`
                     + `<td class="text-right">${r.poles || 0}</td><td class="text-right">${r.dnfs || 0}</td></tr>`;
             });
