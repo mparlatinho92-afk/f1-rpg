@@ -1,0 +1,106 @@
+===============================================================
+ FABLE-ÜBERGABE — PAKET A (Daten)
+ Nationskorrekte, ära-gewichtete Namens-Pools
+===============================================================
+
+── LEITPLANKE (gilt immer) ────────────────────────────────────
+- Das Spiel hat zur Laufzeit KEIN LLM. Es ist ein Standalone-HTML-Monolith.
+  Du generierst nichts im laufenden Spiel, sondern autorst EINMALIG das Material
+  (hier: gewichtete Datenpools). Das Spiel setzt daraus deterministisch zusammen.
+- Du lieferst Material als ABGEGRENZTEN BLOCK (JS-Literal / JSON). Die chirurgische
+  Integration in index.html / data/*.js (Diff, Schema-Pflege functions.schema.json,
+  manage-v) macht danach die reguläre Opus-Session. Du fasst den Monolithen NICHT an.
+- Kein git push, kein manage-v, keine Datei-Edits am Spiel.
+- Ausgaben auf Deutsch bzw. als neutrale Daten.
+────────────────────────────────────────────────────────────────
+
+
+DAS PROBLEM (echter Code-Defekt)
+- pickNationByDecade(year) -> index.html:4590, nutzt DECADE_NATION_POOLS (4579) und
+  wählt die NATION ära-korrekt gewichtet (z.B. 1980er: ITA 22.8%, FRA 15.2%, GBR 13.9% ...).
+- generateDriver(teamId, year) -> index.html:4682. Namens-Zusammenbau in 4703-4718:
+  zieht Vor-/Nachname via weightedPick (4617) aus EINEM flachen Welt-Topf
+  FIRST_NAMES_W (4259, ~515 Einträge) und LAST_NAMES_W (4381).
+- Folge: Nation und Name sind ENTKOPPELT. Ein nation:'SUI'-Fahrer kann "Takeshi Smith"
+  heißen. Kein Bezug zwischen gewählter Nation und kultureller Namensherkunft.
+- Ausnahme heute schon vorhanden: Indy-Teams bekommen einen US-Sonder-Topf (4688-4701)
+  -- der einzige Ort mit Nation<->Name-Kopplung, dient als Muster.
+
+ZIEL
+Namens-Pools PRO NATION (IOC-Code wie in DECADE_NATION_POOLS: GBR, ITA, FRA, GER, SUI,
+BRA, JPN, FIN, USA, ARG, ESP, NED, BEL, AUT, SWE, AUS, RSA, MEX, CAN, COL, RUS, POL, CZE ...),
+mit korrekter interner Häufigkeit und Ära-Sensibilität. Danach koppelt generateDriver den
+Namen an die von pickNationByDecade gewählte Nation.
+
+ROHQUELLE
+BigQuery-Namens-Frequenz-Datensatz (liegt im Archiv des Nutzers). Zwei CSVs, je ein Name
+pro Zeile, Schema:
+    forename,gender,country,count      # bzw. surname,gender,country,count
+    Md,M,AE,132181
+    Muhammad,M,AE,84884
+    Mohammed,M,AE,51575
+- Vornamen ~200 MB, Nachnamen ~372 MB roh. NUR Build-Zeit-Quelle -- kommt NIE ins Spiel.
+- count = echte Häufigkeit je Land -> ersetzt die manuelle 5/3/1-Schätzung direkt.
+- Der Nutzer stellt den Export bereit. Deine Aufgabe ist die VEREDELUNG, nicht die Beschaffung.
+
+WICHTIG - LAUFZEIT/OFFLINE
+Der Monolith bleibt offline/standalone. Das Enddeliverable ist ein ~30-80 KB großer,
+eingebackener Pool (wie heute FIRST_NAMES_W). Die Roh-DB ist danach irrelevant. Das Spiel
+funktioniert auch komplett OHNE dieses Paket weiter (heutige flache Pools) -- es ist eine
+Verbesserung, keine Abhängigkeit.
+
+AUFBEREITUNGS-PIPELINE (Big Data NIE lokal anfassen)
+1. Aggregation in BigQuery (nicht auf dem PC -- spart die 572 MB komplett):
+       SELECT country, forename, count
+       FROM forenames
+       WHERE gender = 'M'                      -- F1 historisch quasi rein männlich
+       QUALIFY ROW_NUMBER() OVER (PARTITION BY country ORDER BY count DESC) <= 120
+   -> Export ist eine Mini-CSV (paar hundert KB) statt 572 MB. Analog für Nachnamen.
+2. ISO->IOC-Mapping: country ist ISO-2 (AE, CH, DE), das Spiel nutzt IOC-Codes
+   (GBR, SUI, GER -- siehe DECADE_NATION_POOLS). Kleine Mapping-Tabelle ist Pflicht.
+3. count -> Gewicht normalisieren: relative Häufigkeit je Land auf handhabbare Gewichte
+   mappen (z.B. log-skaliert oder auf 1-5 gebucketet), damit weightedPick wie gewohnt läuft.
+4. REGION-CAVEAT (dein eigentlicher Mehrwert): die CSV liefert Häufigkeit + Nation, aber
+   NICHT die Sprachregion. Schweiz kommt als ein CH-Topf (DE/FR/IT gemischt) -> naive
+   Paarung erzeugt weiter "Jacques Müller". Du musst die Namen intra-national nach
+   wahrscheinlicher Sprachregion taggen bzw. Kohärenz-Regeln setzen (siehe Regel 2).
+
+DIE SCHWIERIGEN REGELN (genau das, was zu prompten anstrengend ist -- dein Kernnutzen)
+1. Häufigkeitsverteilung realistisch: nicht zu viele seltene Doppelnamen (kein Überfluss an
+   "Kleinschmidt-Petersen"), nicht zu wenige echte Allerweltsnamen (genug "Müller", "Smith",
+   "Rossi"). Gewicht 5 = häufig, 3 = mittel, 1 = selten.
+2. Sprachregionen innerhalb eines Landes: z.B. Schweiz = DE/FR/IT. Ein Schweizer ist ENTWEDER
+   "Hugo Müller" (Deutschschweiz) ODER "Jacques Grosjean" (Romandie) -- NICHT "Jacques Müller"
+   (Vor-/Nachname aus verschiedenen Regionen gemischt). Vor- und Nachname müssen REGIONKOHÄRENT
+   gezogen werden (Sub-Pools je Region + regioninterne Kopplung).
+3. Ära-Drift der Vornamen: ein moderner Deutscher (2020er) heißt schlecht "Klaus-Jürgen";
+   ein 1960er schlecht "Finn-Luca". Vornamen brauchen Ära-Fenster (früh/mittel/heute),
+   Nachnamen sind ära-stabiler.
+4. Exoten-Fallback: wenn pickNationByDecade eine seltene Nation liefert, für die (noch) kein
+   dedizierter Pool existiert (z.B. Kirgise / INA / EST / VEN) -- definierter Fallback:
+   nächstverwandter Kulturpool ODER kleiner generischer Regionstopf, nie der falsche (kein
+   "Hans Schmidt" für einen Kirgisen). Regel klar dokumentieren.
+5. Eindeutigkeit bleibt beim Spiel: die bestehende Dedup-Logik gegen aktive Nachnamen
+   (4705-4716) greift weiter; du lieferst nur die Pools, nicht die Anti-Duplikat-Logik.
+
+ERWARTETES DELIVERABLE (plug-in-fähig)
+- Struktur NAME_POOLS_BY_NATION (JS-Literal oder JSON), Schema-Vorschlag:
+    {
+      "SUI": { "regions": [
+        { "w":0.65, "first":[["Hans",5],["Hugo",3]], "last":[["Müller",5],["Meier",4]] },  // DE
+        { "w":0.30, "first":[["Jacques",4],["Olivier",3]], "last":[["Grosjean",4],["Favre",3]] }, // FR
+        { "w":0.05, "first":[["Gianluca",3]], "last":[["Rossi",3]] }  // IT
+      ]},
+      "GER": { "regions":[ { "w":1, "first":{"early":[],"mid":[],"modern":[]}, "last":[] } ] },
+      ...
+    }
+  (Regionen-Gewicht w; Vornamen optional nach Ära-Fenster early/mid/modern.)
+- Kurze Pick-Spezifikation (Prosa, ~15 Zeilen): wie generateDriver künftig zieht --
+  Nation -> Region (nach w) -> Ära-Fenster (aus year) -> weightedPick first+last aus DERSELBEN
+  Region. Plus Fallback-Regel für pool-lose Nationen.
+- Abdeckung mindestens der Nationen aus DECADE_NATION_POOLS. Rest -> Fallback.
+
+ABGRENZUNG (NICHT tun)
+- Keine Änderung an pickNationByDecade / DECADE_NATION_POOLS (Nations-Gewichte stimmen bereits).
+- generateDriver nicht selbst umbauen -- nur die Pick-Spezifikation liefern; Umbau macht Opus.
+- Kein manage-v, kein Commit.

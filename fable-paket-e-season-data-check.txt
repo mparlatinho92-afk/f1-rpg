@@ -1,0 +1,35 @@
+===============================================================
+ FABLE-ÜBERGABE — PAKET E (Validierung)
+ Historische Daten-Validierung SEASON_DATA
+===============================================================
+
+── LEITPLANKE (gilt immer) ────────────────────────────────────
+- Das Spiel hat zur Laufzeit KEIN LLM. Es ist ein Standalone-HTML-Monolith.
+  Du generierst nichts im laufenden Spiel, sondern lieferst EINMALIG ein Urteil
+  (hier: eine Korrektur-Tabelle). Den Einbau macht danach die Opus-Session.
+- Du lieferst NUR die Korrektur-Tabelle als abgegrenzten Block. Keine direkten Datei-Edits.
+  Du fasst den Monolithen NICHT an.
+- Kein git push, kein manage-v, keine Datei-Edits am Spiel.
+- Ausgaben auf Deutsch.
+────────────────────────────────────────────────────────────────
+
+
+KONTEXT
+Laut Projekt-Memory ~42 SEASON_DATA-Abweichungen, Cockpit-Lücken, offene Elo-Fixes.
+Du = Faktenchecker gegen echte F1-Historie: wer fuhr wann, welches Team, welche Nation.
+
+DATENSTRUKTUR
+- SEASON_DATA in data/seasons.js, Schema: schemas/season-data.schema.json (vorab lesen).
+
+ABLAUF
+- Nutzer/Opus liefert die konkreten Abweichungs-Kandidaten (Jahr, Team, Fahrer, Feld) aus
+  data/seasons.js.
+- Du prüfst je Fall gegen reale Historie und schlägst Korrektur vor (mit kurzer Begründung
+  aus Wissen). KEINE direkten Datei-Edits -- du lieferst die Korrektur-Tabelle; Einbau via Opus.
+
+DELIVERABLE
+- Tabelle: Jahr | Team | Feld | ist | soll | Begründung. Priorisiert nach Sicherheit.
+
+ABGRENZUNG
+- Nur Korrektur-Vorschlag, keine Umsetzung.
+- Kein manage-v, kein Commit.

@@ -1,0 +1,52 @@
+===============================================================
+ FABLE-ÜBERGABE — PAKET B (Prosa)
+ Erzählter Saison-Rückblick am Saisonende
+===============================================================
+
+── LEITPLANKE (gilt immer) ────────────────────────────────────
+- Das Spiel hat zur Laufzeit KEIN LLM. Es ist ein Standalone-HTML-Monolith.
+  Du generierst nichts im laufenden Spiel, sondern autorst EINMALIG das Material
+  (hier: eine Phrasen-Bank + Assembler-Spec). Das Spiel setzt daraus deterministisch zusammen.
+- Du lieferst Material als ABGEGRENZTEN BLOCK (Prosa/Pseudo-Code). Die chirurgische
+  Integration in index.html (Diff, Schema-Pflege functions.schema.json, manage-v) macht danach
+  die reguläre Opus-Session. Du fasst den Monolithen NICHT an.
+- Kein git push, kein manage-v, keine Datei-Edits am Spiel.
+- Ausgaben auf Deutsch.
+────────────────────────────────────────────────────────────────
+
+
+ANDOCKPUNKT
+- showSeasonEndModal() -> index.html:9709. Baut das Saisonende-Modal (html-String).
+  Champion-Objekt ab 9713, Team-Champion 9717, Todesfälle-Block ab 9745.
+- processSeasonEndEvents() -> 9603 (Logik, kein UI). prepareSeasonEndSnapshot() -> 9668.
+- Einbaustelle für den Rückblick: neuer Card-Block im html NACH dem Konstrukteurs-Champion
+  (~9741). Rein additiv, ändert keine Berechnung.
+
+VERFÜGBARER STATE (Input für die Erzähl-Bausteine)
+- champion / teamChampion: { id, name, points, wins }.
+- GAME_STATE.driverStandings / teamStandings: volle Wertung (Punkte je Fahrer/Team)
+  -> für Titel-Vorsprung, "bis zum letzten Rennen", Vize etc.
+- GAME_STATE.seasonDeaths (Array): { driver, name, team, raceName, replacement, replacementTeam }.
+- GAME_STATE.currentYear -> Ära (bestimmt Ton/Namens-Lore).
+- Fahrer tragen ECHTE historische Namen -> dein F1-Wissen anwendbar (reale Rivalitäten,
+  Charaktere, Team-Lore der jeweiligen Ära).
+
+ZIEL & WARUM FABLE
+Ein erzählter Report (3-6 Sätze), der den Titelkampf lebendig nacherzählt -- mit echten Namen,
+ära-stimmig. Braucht Varianz (jede Saison klingt anders) UND F1-Lore-Gefühl = deine Doppelstärke.
+
+DELIVERABLE (kein Runtime-LLM!)
+- Eine Phrasen-Bank + Assembler-Spezifikation: modulare Satzbausteine (Titel-knapp /
+  Titel-dominant / Überraschungssieger / Rookie-Durchbruch / tragische Saison bei Todesfällen /
+  Backmarker-Sensation), die das Spiel deterministisch nach State-Bedingungen zusammensetzt.
+- Strukturvorschlag: function seasonRecapText(champion, teamChampion, standings, deaths, year)
+  -> gibt fertigen deutschen Absatz zurück, rein aus Bausteinen + Bedingungen (Vorsprung, #Siege,
+  #Tote, Ära). Du lieferst Bausteine + Auswahl-Logik als Prosa/Pseudo-Code; Opus verdrahtet.
+- Ton: sportjournalistisch, deutsch, ära-angepasst (1950er nüchtern-heroisch, 2000er
+  medial-modern). Keine erfundenen Fakten über reale Personen -- nur was aus dem State folgt +
+  neutrale Lore-Färbung.
+
+ABGRENZUNG
+- Nur additiver Anzeige-Block. Keine Änderung an Standings/Karriere/Score-Logik.
+- Modus-neutral: erscheint in JEDEM Modus gleich (Modus = nur Darstellung).
+- Kein manage-v, kein Commit.

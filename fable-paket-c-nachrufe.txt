@@ -1,0 +1,39 @@
+===============================================================
+ FABLE-ÜBERGABE — PAKET C (Prosa)
+ Nachrufe & Abschiede (Tod / Karriereende)
+===============================================================
+
+── LEITPLANKE (gilt immer) ────────────────────────────────────
+- Das Spiel hat zur Laufzeit KEIN LLM. Es ist ein Standalone-HTML-Monolith.
+  Du generierst nichts im laufenden Spiel, sondern autorst EINMALIG das Material
+  (hier: zwei Phrasen-Banken + Assembler-Spec). Das Spiel setzt deterministisch zusammen.
+- Du lieferst Material als ABGEGRENZTEN BLOCK (Prosa/Pseudo-Code). Die chirurgische
+  Integration in index.html (Diff, Schema-Pflege functions.schema.json, manage-v) macht danach
+  die reguläre Opus-Session. Du fasst den Monolithen NICHT an.
+- Kein git push, kein manage-v, keine Datei-Edits am Spiel.
+- Ausgaben auf Deutsch.
+────────────────────────────────────────────────────────────────
+
+
+ANDOCKPUNKTE
+- Tod: _rollWeekendDeath() -> index.html:7949; Anzeige im Saisonende-Modal ab 9745
+  (GAME_STATE.seasonDeaths, Felder: { driver, name, team, raceName, replacement, replacementTeam }).
+- Karriereende/Rücktritt: checkCareerEnds() -> 10041, checkRetirements() -> 10222.
+
+ZIEL & WARUM FABLE
+Wenn ein ECHTER historischer Fahrer im Sim tödlich verunglückt oder zurücktritt -> kurzer,
+würdiger Nachruf/Abschiedstext (1-3 Sätze), der aufgreift, wer der Fahrer real war (Ära, echte
+Erfolge, Charakter). Emotional, lore-schwer, self-contained -- der stärkste "Ton-Unterschied"-Test.
+
+DELIVERABLE
+- Phrasen-Bank in zwei Registern: NACHRUF (Tod, würdevoll) und ABSCHIED (Rücktritt, warm/ehrend).
+  Bausteine nach: erfahrener Champion vs. junges Talent vs. langjähriger Backmarker; Ära-Ton.
+  Assembler-Spec analog Paket B.
+- Für REALE Fahrer darfst du neutrale Lore-Färbung einweben; für FIKTIVE/generierte Fahrer
+  (histId ohne reale Entsprechung) nur State-basierte, generische Würdigung (keine erfundene Bio).
+  -> Du brauchst eine Regel "real vs. generiert erkennen" (z.B. via vorhandenes histId-Schema;
+  Details liefert die Opus-Session).
+
+ABGRENZUNG
+- Additiver Text im bestehenden Todesfall-/Rücktritts-Block. Keine Logikänderung.
+- Kein manage-v, kein Commit.

@@ -1,0 +1,36 @@
+===============================================================
+ FABLE-ÜBERGABE — PAKET D (Validierung)
+ Realismus-QA eines Mega-Sim-Laufs
+===============================================================
+
+── LEITPLANKE (gilt immer) ────────────────────────────────────
+- Das Spiel hat zur Laufzeit KEIN LLM. Es ist ein Standalone-HTML-Monolith.
+  Du generierst nichts im laufenden Spiel, sondern lieferst EINMALIG ein Urteil
+  (hier: einen Plausibilitäts-Report). Fixes/Logik macht danach die Opus-Session.
+- Du lieferst NUR das Urteil als abgegrenzten Markdown-Block. Keine Code-Fixes.
+  Du fasst den Monolithen NICHT an.
+- Kein git push, kein manage-v, keine Datei-Edits am Spiel.
+- Ausgaben auf Deutsch.
+────────────────────────────────────────────────────────────────
+
+
+KONTEXT
+Leitlinie: "plausibel vor perfekt, emergent vor gescriptet" (CLAUDE.md). Es fehlt ein Maßstab
+für plausibel. Du = F1-Wissens-Orakel als Plausibilitäts-Prüfer.
+
+ABLAUF (Nutzer-getrieben, kein Code)
+- Nutzer liefert Output eines Headless-Laufs (runSeasonHeadless -> index.html:13524,
+  simulateSeasonRaces -> 13460) -- z.B. mehrere simulierte Saisons als Tabellen/JSON.
+- Du urteilst strukturiert: plausibel / unplausibel + Begründung je Auffälligkeit.
+  Fokus: Wechselt ein 34-jähriger Champion realistisch zu einem Backmarker? Passen Nationen
+  zur Ära? Sind Titel-/DNF-Verteilungen historisch glaubwürdig? Backmarker zu oft in Punkten?
+
+DELIVERABLE
+- Markdown-Report: Liste der Auffälligkeiten, je mit Schweregrad + "warum unrealistisch" +
+  Bezug zu echter F1-Historie. KEINE Code-Fixes -- nur das Urteil.
+- Verknüpft mit Roadmap-Punkt "Minardi 2001 kommt selten in Punkte" (V1_ROADMAP.md): welche
+  realen Teams/Fahrer taugen als Kalibrier-Anker.
+
+ABGRENZUNG
+- Nur Urteil, keine Umsetzung. Kalibrier-/Logik-Fixes macht Opus.
+- Kein manage-v, kein Commit.
