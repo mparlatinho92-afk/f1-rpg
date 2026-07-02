@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.33</title>
+    <title>F1 RPG v0.9.14.34</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.33 (aktuell) - 02.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.34 (aktuell) - 02.07.2026</div>
+                            <div>&#8226; NEU: Junior-Karriere-Historie im exakten F1-Steckbrief-Layout (Jahr | Serie | Team | S | P | Pkt | Platz)</div>
+                            <div>&#8226; NEU: neuestes Jahr oben (chronologisch absteigend wie F1)</div>
+                            <div>&#8226; NEU: Serie je Saison als farbiges Badge, Titel als '1. 🏆' – mobilfreundlich</div>
+                            <div class="font-bold text-slate-400">v0.9.14.33 - 02.07.2026</div>
                             <div>&#8226; NEU: Anklickbare Junior-Fahrer-Steckbriefe im Stil der F1-Steckbriefe (Karriere-Bilanz + Verlauf über F2/F3)</div>
                             <div>&#8226; NEU: Serie je Saison im Karriere-Verlauf als farbiges Badge</div>
                             <div>&#8226; NEU: Junior-Tabellen + Steckbrief mobilfreundlich (Nebenspalten auf dem Handy ausgeblendet)</div>
@@ -2803,7 +2807,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.33';
+        const VERSION = '0.9.14.34';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -14501,7 +14505,8 @@
                     rows.push({ year: h.year, seriesId: s.seriesId, teamName: t.name || '–', teamColor: t.color || '#888', pos, points: sd.points, wins: sd.wins, podiums: sd.podiums, poles: sd.poles, champ: sorted[0] && sorted[0].histId === histId });
                 }
             }
-            rows.sort((a, b) => a.year - b.year || _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));
+            rows.sort((a, b) => b.year - a.year || _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));   // neuestes Jahr oben (wie F1)
+            const debutYear = rows.length ? Math.min(...rows.map(r => r.year)) : null;
             const at = (jw.allTimeStats || {})[histId] || {};
             const active = (jw.drivers || []).find(d => d.id === histId);
             const dead = (jw.memoriam || []).find(m => m.histId === histId);
@@ -14510,12 +14515,22 @@
             const name = at.name || (active && active.name) || histId;
             const curTeam = active ? teamObj(active.seriesId, active.team) : null;
             const box = (val, label) => `<div class="p-2 bg-secondary rounded-lg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem"><div class="text-xl md:text-2xl font-bold">${val}</div><div class="text-xs md:text-sm text-tertiary">${label}</div></div>`;
-            let career = `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary"><th>Jahr</th><th>Serie</th><th>Team</th><th class="text-right">Pos</th><th class="text-right">Pkt</th><th class="text-right jw-hide-mobile">S</th><th class="text-right jw-hide-mobile">P</th><th class="text-right jw-hide-mobile">Pole</th></tr></thead><tbody>`;
+            let career = `<div class="table-responsive max-h-64 overflow-y-auto"><table class="w-full text-sm">`
+                + `<thead class="sticky top-0 bg-secondary"><tr class="text-tertiary text-xs">`
+                + `<th class="text-left p-1">Jahr</th><th class="text-left p-1">Serie</th><th class="text-left p-1">Team</th>`
+                + `<th class="text-center p-1 jw-hide-mobile">S</th><th class="text-center p-1 jw-hide-mobile">P</th>`
+                + `<th class="text-center p-1">Pkt</th><th class="text-center p-1">Platz</th></tr></thead><tbody>`;
             for (const r of rows) {
-                career += `<tr class="border-t border-custom"><td>${r.year}</td><td>${seriesBadge(r.seriesId)}</td>`
-                    + `<td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${r.teamColor};margin-right:5px;vertical-align:middle;"></span>${r.teamName}</td>`
-                    + `<td class="text-right">${r.champ ? '🏆 ' : ''}P${r.pos}</td><td class="text-right font-medium">${r.points}</td>`
-                    + `<td class="text-right jw-hide-mobile">${r.wins || 0}</td><td class="text-right jw-hide-mobile">${r.podiums || 0}</td><td class="text-right jw-hide-mobile">${r.poles || 0}</td></tr>`;
+                const posCell = r.pos === 1 ? '1. 🏆' : (r.pos ? r.pos + '.' : '-');
+                const posClass = r.pos === 1 ? 'accent-gold' : (r.pos && r.pos <= 3 ? 'accent-blue' : '');
+                career += `<tr class="border-t border-custom">`
+                    + `<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:var(--accent-main)" onclick="closeDriverProfile();_juniorSubTab='season';_juniorViewYear=${r.year};renderContent()">${r.year}</span></td>`
+                    + `<td class="p-1">${seriesBadge(r.seriesId)}</td>`
+                    + `<td class="p-1"><span style="color:${r.teamColor};font-weight:600">${r.teamName}</span></td>`
+                    + `<td class="p-1 text-center jw-hide-mobile ${r.wins > 0 ? 'accent-gold font-bold' : ''}">${r.wins || 0}</td>`
+                    + `<td class="p-1 text-center jw-hide-mobile">${r.podiums || 0}</td>`
+                    + `<td class="p-1 text-center">${r.points}</td>`
+                    + `<td class="p-1 text-center font-bold ${posClass}">${posCell}</td></tr>`;
             }
             career += '</tbody></table></div>';
 
@@ -14531,7 +14546,7 @@
                             ${active && active.number ? `<span class="text-2xl font-bold text-tertiary">#${active.number}</span>` : ''}
                             ${active ? seriesBadge(active.seriesId) : ''}
                         </div>
-                        <div class="text-sm text-secondary">${at.nation || ''} · Debüt ${rows.length ? rows[0].year : '–'}</div>
+                        <div class="text-sm text-secondary">${at.nation || ''} · Debüt ${debutYear != null ? debutYear : '–'}</div>
                     </div>
                 </div>
                 <div class="card p-4 rounded-lg mb-4">
@@ -14542,7 +14557,7 @@
                     </div>
                 </div>
                 <div class="card p-4 rounded-lg mb-4">
-                    <h4 class="font-bold mb-3">📅 Karriere-Verlauf</h4>
+                    <h4 class="font-bold mb-3">📜 Karriere-Historie</h4>
                     ${career}
                 </div>
             `;
