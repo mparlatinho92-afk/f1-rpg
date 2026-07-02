@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.32</title>
+    <title>F1 RPG v0.9.14.33</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -626,11 +626,14 @@
             table {
                 min-width: 100%;
             }
-            
+
             th, td {
                 padding: 0.5rem 0.25rem;
                 font-size: 0.8rem;
             }
+
+            /* Junior-Welt: Nebenspalten auf Mobile ausblenden (Kernspalten bleiben) */
+            .jw-hide-mobile { display: none !important; }
             
             /* Modal auf Mobile */
             .modal-content {
@@ -945,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.32 (aktuell) - 01.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.33 (aktuell) - 02.07.2026</div>
+                            <div>&#8226; NEU: Anklickbare Junior-Fahrer-Steckbriefe im Stil der F1-Steckbriefe (Karriere-Bilanz + Verlauf über F2/F3)</div>
+                            <div>&#8226; NEU: Serie je Saison im Karriere-Verlauf als farbiges Badge</div>
+                            <div>&#8226; NEU: Junior-Tabellen + Steckbrief mobilfreundlich (Nebenspalten auf dem Handy ausgeblendet)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.32 - 01.07.2026</div>
                             <div>&#8226; FIX: Junior-Fahrernamen nutzen jetzt den großen bestehenden Namenspool (viel mehr Vielfalt)</div>
                             <div>&#8226; FIX: keine zwei aktiven Fahrer mehr mit identischem Vor- und Nachnamen</div>
                             <div class="font-bold text-slate-400">v0.9.14.31 - 01.07.2026</div>
@@ -2796,7 +2803,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.32';
+        const VERSION = '0.9.14.33';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -14471,6 +14478,77 @@
             const ordered = [...detail.series].sort((a, b) => _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));   // F2 vor F3
             cont.innerHTML = ordered.map(s => _renderJuniorSeriesTable(s, year)).join('');
         }
+        // Anklickbarer Junior-Steckbrief – nutzt den bestehenden F1-Steckbrief-Rahmen
+        // (#driverProfileModal / -Title / -Body) + dieselbe visuelle Sprache (Header, Stat-Karten, Verlauf).
+        // Karriere je Serie/Saison (F2/F3) wird lazy aus junior_detail gestreamt.
+        window.openJuniorDriver = async function(histId) {
+            const jw = GAME_STATE.juniorWorld;
+            if (!jw) return;
+            const seriesName = id => (jw.series || []).find(s => s.id === id)?.name || id;
+            const teamObj = (sid, tid) => ((jw.series || []).find(s => s.id === sid)?.teams || []).find(t => t.id === tid) || {};
+            const seriesBadge = sid => `<span class="px-2 py-1 rounded text-xs font-bold" style="background-color:${sid === 'f2' ? '#4363d8' : '#e6194b'}22;color:${sid === 'f2' ? '#4363d8' : '#e6194b'}">${seriesName(sid)}</span>`;
+            // Karriere aus den Detail-Records streamen (eine Zeile je Serie/Saison)
+            const rows = [];
+            for (const h of (jw.history || [])) {
+                const det = await idbJDetailGet(h.year);
+                for (const s of (det && det.series || [])) {
+                    const sd = (s.standings || {})[histId];
+                    if (!sd) continue;
+                    const sorted = Object.values(s.standings).sort((a, b) => b.points - a.points);
+                    const pos = sorted.findIndex(x => x.histId === histId) + 1;
+                    const drv = (s.drivers || []).find(d => d.id === histId) || {};
+                    const t = teamObj(s.seriesId, drv.team);
+                    rows.push({ year: h.year, seriesId: s.seriesId, teamName: t.name || '–', teamColor: t.color || '#888', pos, points: sd.points, wins: sd.wins, podiums: sd.podiums, poles: sd.poles, champ: sorted[0] && sorted[0].histId === histId });
+                }
+            }
+            rows.sort((a, b) => a.year - b.year || _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));
+            const at = (jw.allTimeStats || {})[histId] || {};
+            const active = (jw.drivers || []).find(d => d.id === histId);
+            const dead = (jw.memoriam || []).find(m => m.histId === histId);
+            const flag = typeof renderFlag === 'function' ? renderFlag(at.nation, at.name, null) : '';
+            const crown = (at.titles || 0) >= 3 ? ' 👑' : '';
+            const name = at.name || (active && active.name) || histId;
+            const curTeam = active ? teamObj(active.seriesId, active.team) : null;
+            const box = (val, label) => `<div class="p-2 bg-secondary rounded-lg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem"><div class="text-xl md:text-2xl font-bold">${val}</div><div class="text-xs md:text-sm text-tertiary">${label}</div></div>`;
+            let career = `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary"><th>Jahr</th><th>Serie</th><th>Team</th><th class="text-right">Pos</th><th class="text-right">Pkt</th><th class="text-right jw-hide-mobile">S</th><th class="text-right jw-hide-mobile">P</th><th class="text-right jw-hide-mobile">Pole</th></tr></thead><tbody>`;
+            for (const r of rows) {
+                career += `<tr class="border-t border-custom"><td>${r.year}</td><td>${seriesBadge(r.seriesId)}</td>`
+                    + `<td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${r.teamColor};margin-right:5px;vertical-align:middle;"></span>${r.teamName}</td>`
+                    + `<td class="text-right">${r.champ ? '🏆 ' : ''}P${r.pos}</td><td class="text-right font-medium">${r.points}</td>`
+                    + `<td class="text-right jw-hide-mobile">${r.wins || 0}</td><td class="text-right jw-hide-mobile">${r.podiums || 0}</td><td class="text-right jw-hide-mobile">${r.poles || 0}</td></tr>`;
+            }
+            career += '</tbody></table></div>';
+
+            document.getElementById('driverProfileTitle').innerHTML = `${flag} ${name}${crown}`;
+            document.getElementById('driverProfileBody').innerHTML = `
+                <div class="flex gap-4 mb-6">
+                    <div class="flex-1">
+                        <div class="text-3xl font-bold mb-1">${name}${crown}</div>
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <span class="text-2xl">${flag}</span>
+                            ${curTeam && curTeam.name ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:${curTeam.color}22;color:${curTeam.color}">${curTeam.name}</span>`
+                                : (dead ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:#e6194b22;color:#e6194b">✝ verunglückt ${dead.year}</span>` : '<span class="text-tertiary">Karriere beendet</span>')}
+                            ${active && active.number ? `<span class="text-2xl font-bold text-tertiary">#${active.number}</span>` : ''}
+                            ${active ? seriesBadge(active.seriesId) : ''}
+                        </div>
+                        <div class="text-sm text-secondary">${at.nation || ''} · Debüt ${rows.length ? rows[0].year : '–'}</div>
+                    </div>
+                </div>
+                <div class="card p-4 rounded-lg mb-4">
+                    <h4 class="font-bold mb-3">🏆 Karriere-Bilanz</h4>
+                    <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-center">
+                        ${box(at.titles || 0, 'Titel')}${box(at.wins || 0, 'Siege')}${box(at.podiums || 0, 'Podien')}${box(at.poles || 0, 'Poles')}${box(at.fastestLaps || 0, 'Schn. R.')}
+                        ${box(at.points || 0, 'Punkte')}${box(at.starts || 0, 'Starts')}${box(at.bestFinish != null ? 'P' + at.bestFinish : '–', 'Bestes')}${box(at.seasons || 0, 'Saisons')}${box(at.dnfs || 0, 'DNF')}
+                    </div>
+                </div>
+                <div class="card p-4 rounded-lg mb-4">
+                    <h4 class="font-bold mb-3">📅 Karriere-Verlauf</h4>
+                    ${career}
+                </div>
+            `;
+            bringModalToFront(document.getElementById('driverProfileModal'));
+            document.getElementById('driverProfileModal').style.display = 'flex';
+        };
         // All-Time-Bestenliste aus jw.allTimeStats (in core, sync)
         function renderJuniorAllTime(jw) {
             const arr = Object.entries(jw.allTimeStats || {}).map(([histId, s]) => ({ histId, ...s }));
@@ -14480,14 +14558,14 @@
             const legends = arr.filter(s => (s.titles || 0) >= 3).length;   // 5e: Legende ab 3 Titeln
             let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">All-Time-Bestenliste${arr.length > 100 ? ` (Top 100 von ${arr.length})` : ''}${legends ? ` · 👑 ${legends} Legende(n)` : ''}</h3>`
                 + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
-                + `<th class="pr-2">#</th><th>Fahrer</th><th>Nat</th><th class="text-right">Titel</th><th class="text-right">Siege</th><th class="text-right">Podien</th><th class="text-right">Poles</th><th class="text-right">SR</th><th class="text-right">Punkte</th><th class="text-right">Starts</th><th class="text-right">Bestes</th><th class="text-right">Saisons</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+                + `<th class="pr-2">#</th><th>Fahrer</th><th class="jw-hide-mobile">Nat</th><th class="text-right">Titel</th><th class="text-right">Siege</th><th class="text-right jw-hide-mobile">Podien</th><th class="text-right jw-hide-mobile">Poles</th><th class="text-right jw-hide-mobile">SR</th><th class="text-right">Punkte</th><th class="text-right jw-hide-mobile">Starts</th><th class="text-right jw-hide-mobile">Bestes</th><th class="text-right jw-hide-mobile">Saisons</th><th class="text-right jw-hide-mobile">DNF</th></tr></thead><tbody>`;
             top.forEach((s, i) => {
                 const flag = typeof renderFlag === 'function' ? renderFlag(s.nation, null, null) : '';
                 const crown = (s.titles || 0) >= 3 ? ' 👑' : '';
-                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${flag} ${s.name}${crown}</td><td>${s.nation || ''}</td>`
-                    + `<td class="text-right font-medium">${s.titles || 0}</td><td class="text-right">${s.wins || 0}</td><td class="text-right">${s.podiums || 0}</td>`
-                    + `<td class="text-right">${s.poles || 0}</td><td class="text-right">${s.fastestLaps || 0}</td><td class="text-right">${s.points || 0}</td><td class="text-right">${s.starts || 0}</td>`
-                    + `<td class="text-right">${s.bestFinish != null ? 'P' + s.bestFinish : '–'}</td><td class="text-right">${s.seasons || 0}</td><td class="text-right">${s.dnfs || 0}</td></tr>`;
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td>${flag} <span class="cursor-pointer" style="text-decoration:underline dotted;text-underline-offset:2px;" onclick="openJuniorDriver('${s.histId}')">${s.name}</span>${crown}</td><td class="jw-hide-mobile">${s.nation || ''}</td>`
+                    + `<td class="text-right font-medium">${s.titles || 0}</td><td class="text-right">${s.wins || 0}</td><td class="text-right jw-hide-mobile">${s.podiums || 0}</td>`
+                    + `<td class="text-right jw-hide-mobile">${s.poles || 0}</td><td class="text-right jw-hide-mobile">${s.fastestLaps || 0}</td><td class="text-right">${s.points || 0}</td><td class="text-right jw-hide-mobile">${s.starts || 0}</td>`
+                    + `<td class="text-right jw-hide-mobile">${s.bestFinish != null ? 'P' + s.bestFinish : '–'}</td><td class="text-right jw-hide-mobile">${s.seasons || 0}</td><td class="text-right jw-hide-mobile">${s.dnfs || 0}</td></tr>`;
             });
             html += '</tbody></table></div></div>';
             return html;
@@ -14520,14 +14598,14 @@
             const rows = Object.values(s.standings || {}).sort((a, b) => b.points - a.points);
             let html = `<div class="card p-4 rounded-lg mb-4"><h3 class="font-bold mb-2">${seriesName} – ${year}</h3>`
                 + `<div class="table-responsive"><table class="w-full text-sm"><thead><tr class="text-left text-tertiary">`
-                + `<th class="pr-2">#</th><th class="pr-2">Nr</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right">P</th><th class="text-right">Pole</th><th class="text-right">SR</th><th class="text-right">DNF</th></tr></thead><tbody>`;
+                + `<th class="pr-2">#</th><th class="pr-2 jw-hide-mobile">Nr</th><th>Fahrer</th><th>Team</th><th class="text-right">Pkt</th><th class="text-right">S</th><th class="text-right jw-hide-mobile">P</th><th class="text-right jw-hide-mobile">Pole</th><th class="text-right jw-hide-mobile">SR</th><th class="text-right jw-hide-mobile">DNF</th></tr></thead><tbody>`;
             rows.forEach((r, i) => {
                 const d = drvById[r.id] || {};
                 const flag = typeof renderFlag === 'function' ? renderFlag(d.nation, null, year) : '';
-                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td class="pr-2 text-tertiary">${d.number || ''}</td>`
-                    + `<td>${flag} ${r.name}</td><td>${teamCell(d.team)}</td>`
-                    + `<td class="text-right font-medium">${r.points}</td><td class="text-right">${r.wins || 0}</td><td class="text-right">${r.podiums || 0}</td>`
-                    + `<td class="text-right">${r.poles || 0}</td><td class="text-right">${r.fastestLaps || 0}</td><td class="text-right">${r.dnfs || 0}</td></tr>`;
+                html += `<tr class="border-t border-custom"><td class="pr-2">${i + 1}</td><td class="pr-2 text-tertiary jw-hide-mobile">${d.number || ''}</td>`
+                    + `<td>${flag} <span class="cursor-pointer" style="text-decoration:underline dotted;text-underline-offset:2px;" onclick="openJuniorDriver('${r.histId || r.id}')">${r.name}</span></td><td>${teamCell(d.team)}</td>`
+                    + `<td class="text-right font-medium">${r.points}</td><td class="text-right">${r.wins || 0}</td><td class="text-right jw-hide-mobile">${r.podiums || 0}</td>`
+                    + `<td class="text-right jw-hide-mobile">${r.poles || 0}</td><td class="text-right jw-hide-mobile">${r.fastestLaps || 0}</td><td class="text-right jw-hide-mobile">${r.dnfs || 0}</td></tr>`;
             });
             html += '</tbody></table></div></div>';
             return html;
