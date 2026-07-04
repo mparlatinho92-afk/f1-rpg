@@ -10,6 +10,10 @@ Roh-CSVs: forenames.csv 226 MB / surnames.csv 381 MB — bleiben im Drive, NICHT
 | `country_codes.csv` | ISO-2 → Ländername (105 Länder; es fehlen u.a. AU, NZ, TH, MC, VE, ZW) |
 | `aggregate-names.js` | Streaming-Aggregator Roh-CSV → Aggregat (`node aggregate-names.js in.csv out.csv M|ALL topN`) |
 | `curation-view.js` | Kurations-Ansicht: Top-N je Land mit 1–5-Bucket (`node curation-view.js fore_agg.csv 30 DE,GB`) |
+| `extract-tails.js` | Raritäten-Schwänze aus den Aggregaten ziehen (Filter + Regions-Routing) → `name-tails.out.js` + Review |
+| `curate-tails.js` | Dokumentierter Kurationspass (drop/move/rename, Akzente) → `name-tails.final.js` (steckt in `../paketA-name-pools.js`) |
+
+Reproduktion der Tails: `node extract-tails.js && node curate-tails.js` (aus diesem Ordner).
 
 Bekannte Daten-Macken (bei Nutzung filtern): weibliche Formen in `sur_agg` (PL -ska, CZ -ová,
 RU -ова), Akzent-Duplikate (ES/PT), RU/IL teils nicht-lateinische Schrift, CN nur englische

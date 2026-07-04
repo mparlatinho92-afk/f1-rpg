@@ -12,6 +12,7 @@ Datenquelle: `fable-deliverables/paketA-name-pools.js` (`NAME_POOLS_BY_NATION`, 
 6. **Nachname:** bestehende Dedup-Logik unverändert auf `region.last` anwenden (Filter gegen aktive Nachnamen 4705–4716, bei leerem Rest voller Regions-Pool), dann `weightedPick`.
 7. **Indy-Sonderfall:** kann auf `NAME_POOLS_BY_NATION.USA` (mit `era`) umgestellt werden; der alte Spezial-Topf 4688–4701 entfällt dann.
 8. `FIRST_NAMES_W`/`LAST_NAMES_W` bleiben als Not-Fallback im Code erhalten (falls Pool-Konstante fehlt), werden aber regulär nicht mehr gezogen.
+9. **Raritäten-Schwänze (`NAME_TAILS_BY_NATION`) einmalig beim Init mergen** (nicht bei jedem Pick): für jeden Eintrag `{r, first, last}` alle `last`-Namen mit Gewicht 1 an `regions[r].last` anhängen; alle `first`-Namen mit Gewicht 1 **nur an die Fenster mid und modern** anhängen (bzw. ans flache Array, wenn die Region ära-flach ist). Grund: das Aggregat ist gegenwartslastig — ein 1955er-Deutscher darf nicht „Kevin" heißen. Die Tails liefern die Namensvielfalt (~2000 Gewicht-1-Namen), die Kern-Pools die Häufigkeitsstruktur.
 
 ## Fallback-Regel (pool-lose Nationen)
 `NATION_NAME_FALLBACK` mappt auf den kulturell nächstverwandten Pool (z.B. `CHI→ARG`, `UKR→RUS`, `UAE→MAR`, `NOR→DEN`). Nationen ohne plausiblen Verwandten (KOR, TUR, GRE, Balkan …) gehen bewusst auf den neutralen `INT`-Topf — nie auf einen markant falschen. `pickNationByDecade` liefert ohnehin nur Nationen, für die dedizierte Pools existieren; die Map ist Zukunftssicherung.
