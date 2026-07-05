@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.32</title>
+    <title>F1 RPG v0.9.14.33</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.32 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.33 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; FIX: Junior-Welt (F3/F2) nutzt jetzt nationskohärente Paket-A-Namen statt entkoppelter Zufallsnamen</div>
+                            <div>&#8226; NEU: exportNameStats() – Dev-Auswertung der Namensverteilung pro Nation als JSON</div>
+                            <div class="font-bold text-slate-400">v0.9.14.32 - 05.07.2026</div>
                             <div>&#8226; NEU: Nationskohärente Fahrer-Namen (Vor+Nachname aus selber Region, ära-sensibel, 41 Nationen)</div>
                             <div>&#8226; NEU: Diaspora-Regionen & Fallback-Ketten (KOR→INT, UAE→MAR, NOR→DEN)</div>
                             <div>&#8226; FIX: Indy nutzt regulären US-Namenspool statt Spezial-Topf</div>
@@ -2812,7 +2815,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.32';
+        const VERSION = '0.9.14.33';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4743,6 +4746,44 @@
                 if (filtered.length) lastArr = filtered;
             }
             return { firstName, lastName: weightedPick(lastArr) };
+        }
+
+        // Dev-Auswertung (Paket A): sampelt N Fahrer über die echte Pipeline
+        // (pickNationByDecade → pickPooledName, OHNE Dedup = reine Pool-/Gewichts-Verteilung)
+        // und liefert pro Nation Namens-Häufigkeiten als sortiertes JSON. _nations zeigt die
+        // Nationen-Frequenz (erklärt z.B. warum "Müller" selten ggü. "Smith" ist: GER wird
+        // seltener gezogen als GBR+USA zusammen). Konsole: exportNameStats() bzw.
+        // exportNameStats(20000, 2024, true) schreibt zusätzlich eine JSON-Datei.
+        function exportNameStats(samples = 10000, year, download = false) {
+            year = year || (GAME_STATE && GAME_STATE.currentYear) || 2024;
+            const stats = { _meta: { samples, year }, _nations: {}, byNation: {} };
+            for (let i = 0; i < samples; i++) {
+                const n = pickNationByDecade(year);
+                const p = pickPooledName(n, year, null);
+                const fn = p ? p.firstName : weightedPick(FIRST_NAMES_W);
+                const ln = p ? p.lastName : weightedPick(LAST_NAMES_W);
+                stats._nations[n] = (stats._nations[n] || 0) + 1;
+                const s = stats.byNation[n] || (stats.byNation[n] = { total: 0, first: {}, last: {} });
+                s.total++;
+                s.first[fn] = (s.first[fn] || 0) + 1;
+                s.last[ln]  = (s.last[ln]  || 0) + 1;
+            }
+            const sortObj = o => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]));
+            stats._nations = sortObj(stats._nations);
+            for (const n in stats.byNation) {
+                stats.byNation[n].first = sortObj(stats.byNation[n].first);
+                stats.byNation[n].last  = sortObj(stats.byNation[n].last);
+            }
+            if (download && typeof document !== 'undefined') {
+                const blob = new Blob([JSON.stringify(stats, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `name-stats-${year}-${samples}.json`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
+            console.log(`[exportNameStats] ${samples} Samples @ ${year} — Nationen-Frequenz:`, stats._nations);
+            return stats;
         }
 
         function generateDriver(teamId, year, isRookie = true) {
@@ -11791,14 +11832,21 @@
         function _makeJuniorDriver(jw, seriesId, year) {
             const seq = (jw._nextSeq = (jw._nextSeq || 0) + 1);
             const pace = 58 + ((Math.random() * 28) | 0);   // 58–85 Einstieg
-            // Namen aus dem großen bestehenden Fiktiv-Pool (FIRST_NAMES_W/LAST_NAMES_W), eindeutig im aktiven Feld
+            // Nation ZUERST → nationskohärenter Name aus denselben Paket-A-Pools wie die F1
+            // (kein "Jacques Müller": Vor+Nachname stammen aus derselben Region der Nation).
+            const nation = _jwRand(JUNIOR_NATIONS);
             const usedNames = new Set((jw.drivers || []).map(d => d.name));
+            const usedLast  = new Set((jw.drivers || []).map(d => d.name.split(' ').slice(-1)[0]));
             let name = '';
-            for (let t = 0; t < 40; t++) { name = weightedPick(FIRST_NAMES_W) + ' ' + weightedPick(LAST_NAMES_W); if (!usedNames.has(name)) break; }
+            for (let t = 0; t < 40; t++) {
+                const p = pickPooledName(nation, year, usedLast);
+                name = p ? `${p.firstName} ${p.lastName}` : (weightedPick(FIRST_NAMES_W) + ' ' + weightedPick(LAST_NAMES_W));
+                if (!usedNames.has(name)) break;
+            }
             return {
                 id: 'jw' + seq, histId: 'jw' + seq,
                 name,
-                nation: _jwRand(JUNIOR_NATIONS),
+                nation,
                 number: _assignJuniorNumber(jw, seriesId),   // 5d: Startnummer
                 pace,
                 potential: Math.min(99, pace + 5 + ((Math.random() * 18) | 0)),   // 3.5E: Ceiling – Stars vs. Mitläufer
