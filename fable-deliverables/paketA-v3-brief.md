@@ -43,20 +43,34 @@ praktisch unerschöpflich wirken.
    Nutze es nach deinem Ausbau, um die reale Ausgabe zu prüfen: Kopf-Klumpung, Tail-Abdeckung,
    Smith:Müller-Ratio. (Aufruf z.B. `exportNameStats(20000, 2024, true)` lädt eine JSON-Datei.)
 
-## Zusatzaufgabe — Nationen-Frequenz für die Junior/Kart-Ebene
-Getrennt von den Namen gibt es die Frage, **wie oft welche Nationalität** einen Fahrer stellt.
-- **F1-Ebene ist bereits erledigt (Opus):** `DECADE_NATION_POOLS` (index.html) — die modernen Dekaden
-  (2000/2010/2020) wurden aus SEASON_DATA-Fahrer-Nationalitäten neu aggregiert (F1-realistisch:
-  GBR 17 %, GER 4,9 %, EST-Spike weg). Das ist die **F1-Spitze** und bewusst eng.
-- **Deine Aufgabe = die breite Basis unten:** F1 ist nur ~15 Nationen. Karts/F4/F3 haben eine viel
-  **breitere** Nationen-Vielfalt (Nordeuropa, Osteuropa, Asien, kleine Nationen). Liefere eine
-  **breite Nationen-Frequenz-Verteilung für die Junior-Ebene** (aus europäischer Kart-/Open-Wheeler-
-  Historie, soweit Datenquelle beschaffbar — analog zu deinem Namens-BigQuery-Ansatz). Ziel: die
-  Junior-Welt (`JUNIOR_NATIONS` in index.html, aktuell 15 Nationen gleichgewichtet) bekommt eine
-  realistische, breite Verteilung, die sich Richtung F1 verengt (Trichter). Quelle klären: es gibt
-  KEINE Kart-Nationalitätsdaten im Repo — das ist ein externer/BigQuery-Job wie bei den Namen.
+## Zusatzaufgabe — Nationen-Frequenz datengetrieben aus großem Motorsport-Pool
+Getrennt von den Namen: **wie oft stellt welche Nationalität einen Fahrer** — je Ära.
+
+**Leitprinzip (der Kern der Aufgabe):** Diese Verteilung darf NICHT aus kleinen Stichproben oder
+Einzelbeobachtungen kommen. F1 pro Dekade sind nur ~100–135 Fahrer — da verzerrt jeder Einzelne
+(Rikky von Opel/Liechtenstein 1973 macht LIE zu „2 % der 70er"; Albon allein = THA 5 % in den 2020ern).
+Nur ein **großer Pool** (zehntausende Fahrer) glättet das automatisch und liefert die echte nationale
+Motorsport-Dichte. Bestimme die Verteilung **datengetrieben, nie per Hand/Auge** — genau wie die Namen.
+
+- **Quelle:** ein großer Motorsport-Fahrer-Datensatz über ALLE Serien und Ären, mit Nationalität
+  (Driver-Database-Klasse ~100k+ Fahrer, Wikipedia-„Rennfahrer nach Nation"-Kategorien o.ä.). Groß
+  genug, dass Einzelfälle im Rauschen verschwinden. Beschaffung ist ein externer/BigQuery-/Scrape-Job
+  wie bei den Namen — es gibt KEINE brauchbaren Motorsport-Nationalitätsdaten im Repo.
+- **KRITISCHE Abgrenzung:** NICHT die Namens-/Bevölkerungs-BigQuery als Quelle recyceln. Bevölkerung ≠
+  Motorsport — sonst dominieren China/Indien durch schiere Einwohnerzahl trotz fehlender Renntradition.
+  Es braucht **Motorsport-Beteiligung**, eine andere Datenquelle als die Namen.
+- **Ergebnis:** eine robuste **Nationen-Verteilung je Ära (Dekade)**, aus der F1 und Junior nur
+  **gefilterte Ausschnitte** sind (Selektion nach oben = Trichter). Keine handgepflegten Nationen-Listen
+  je Ebene mehr — eine Datenbasis, mehrere Ausschnitte.
+- **Zielstrukturen:** ersetzt langfristig `DECADE_NATION_POOLS` (index.html, F1-Ebene) UND speist die
+  Junior-Welt (`JUNIOR_NATIONS`, aktuell 15 Nationen gleichgewichtet). Konkretes Format (Ära × Nation ×
+  Gewicht) mit Opus bei der Integration klären.
+
+**Interim-Hinweis:** Opus hat `DECADE_NATION_POOLS` 2000–2020 aus SEASON_DATA notdürftig kalibriert
+(EST-Zähl-Artefakt entfernt) — aber das ist selbst nur kleine F1-Stichprobe = **Interim, keine
+Referenz-Wahrheit**. Es fliegt raus, sobald deine große Datenlage steht.
 
 ## Nicht dein Scope
 - Code / Pick-Logik (`generateDriver`, `pickPooledName`, `ensureNamePoolsMerged`, `pickNameRegion`) — Opus.
-- F1-Ebene `DECADE_NATION_POOLS` (2000–2020 bereits Opus-erledigt) — nur die **Junior/Kart-Basis** ist deins.
+- Integration der fertigen Nationen-Verteilung in die index.html-Strukturen — Opus (du lieferst die Daten).
 - In-Game-Nationenstatistik-Panel — Opus-Folgeschritt NACH dir.
