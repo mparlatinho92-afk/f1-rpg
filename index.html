@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.35</title>
+    <title>F1 RPG v0.9.14.36</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.35 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.36 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; FIX: Fahrer-Nation wird dauerhaft in der All-Time-Statistik gespeichert – generierte Fahrer bleiben nach Ausscheiden ihrer Nation zugeordnet (kein UNBEKANNT mehr)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.35 - 05.07.2026</div>
                             <div>&#8226; NEU: Nationen-Statistik-Panel (🌍) – All-Time Siege/Podien/Titel je Nation, umschaltbar real/generiert/gesamt</div>
                             <div>&#8226; NEU: JSON-Export der Nationenstatistik in allen drei Sichten</div>
                             <div class="font-bold text-slate-400">v0.9.14.34 - 05.07.2026</div>
@@ -2824,7 +2826,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.35';
+        const VERSION = '0.9.14.36';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4850,8 +4852,8 @@
                 const s = f1[key]; const gen = /^gen-/.test(key);
                 const nm = (s.name || '').toLowerCase().trim();
                 const histNat = !gen ? ((typeof lookupNationByName === 'function' ? lookupNationByName(s.name) : null) || realNat[nm]) : null;
-                const ioc = liveNat[key] || liveNat[nm] || histNat;
-                bump(_iocOf(ioc), s, !gen);
+                const ioc = _iocOf(s.nation) || liveNat[key] || liveNat[nm] || histNat;
+                bump(ioc, s, !gen);
             }
             // Junior: Key 'jw…' = generiert; ein NICHT-'jw'-Key wäre ein realer F2/F3-Import
             const jws = jw.allTimeStats || {};
@@ -7286,6 +7288,7 @@
                 for (const [driverId, stATS] of Object.entries(historical.drivers)) {
                     GAME_STATE.allTimeStATS.drivers[driverId] = {
                         ...stATS,
+                        nation: stATS.nation || (typeof lookupNationByName === 'function' ? lookupNationByName(stATS.name) : null),
                         isLegend: stATS.isLegend || false
                     };
                 }
@@ -7324,6 +7327,7 @@
                         // Lege ihn mit 0-StATS an damit Titel gezählt werden können!
                         GAME_STATE.allTimeStATS.drivers[d.histId] = {
                             name: d.name,
+                            nation: _iocOf(d.nation),
                             wins: 0,
                             podiums: 0,
                             poles: 0,
@@ -7343,6 +7347,7 @@
                     if (!GAME_STATE.allTimeStATS.drivers[genId]) {
                         GAME_STATE.allTimeStATS.drivers[genId] = {
                             name: d.name,
+                            nation: _iocOf(d.nation),
                             wins: 0,
                             podiums: 0,
                             poles: 0,
@@ -8116,12 +8121,14 @@
                 
                 // Fahrer All-Time - nutze historische ID wenn vorhanden
                 if (!GAME_STATE.allTimeStATS.drivers[driverStATSId]) {
-                    GAME_STATE.allTimeStATS.drivers[driverStATSId] = { 
-                        name: r.name, races: 0, wins: 0, points: 0, podiums: 0, poles: 0 
+                    GAME_STATE.allTimeStATS.drivers[driverStATSId] = {
+                        name: r.name, nation: _iocOf(driverObj?.nation), races: 0, wins: 0, points: 0, podiums: 0, poles: 0
                     };
                 }
                 const ad = GAME_STATE.allTimeStATS.drivers[driverStATSId];
                 ad.name = r.name; // Aktualisiere Namen
+                // Nation dauerhaft sichern (auch für generierte Fahrer, sonst nach Ausscheiden "UNBEKANNT")
+                if (!ad.nation) { const _n = _iocOf(driverObj?.nation) || (typeof lookupNationByName === 'function' ? lookupNationByName(r.name) : null); if (_n) ad.nation = _n; }
                 ad.races++;
                 ad.points += r.points;
                 if (r.position === 1 && !r.dnf) ad.wins++;
@@ -12424,6 +12431,7 @@
                         // Fahrer noch nicht in All-Time StATS - anlegen
                         GAME_STATE.allTimeStATS.drivers[driverStATSId] = {
                             name: champion.name,
+                            nation: _iocOf(champion.nation),
                             races: 0, wins: 0, points: 0, podiums: 0, poles: 0, championships: 0
                         };
                     }
