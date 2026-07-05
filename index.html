@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.37</title>
+    <title>F1 RPG v0.9.14.38</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.37 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.38 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; FIX: 1950er/60er Nationen-Verteilung ohne Indy-500-Fahrer (USA 34,8 Prozent zu 7,2 Prozent in den 50ern)</div>
+                            <div>&#8226; NEU: F1-Blend der Nationen-Frequenz jetzt Indy-frei (Excel + Deliverable aktualisiert)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.37 - 05.07.2026</div>
                             <div>&#8226; NEU: Namens-Datenbank v3 - ~20.500 Namen mit echten Haeufigkeits-Gewichten (Top-400 je Nation)</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer ARG/NOR/GRE/TUR/KOR + kleine Nationen gefuellt</div>
                             <div>&#8226; NEU: Motorsport-Nationen-Frequenz je Dekade (12.207 Fahrer, Wikidata) inkl. F1-Blend</div>
@@ -2831,7 +2834,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.37';
+        const VERSION = '0.9.14.38';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4600,9 +4603,14 @@
         ];
         // v0.8.7: Decade-weighted nationality pools for generated drivers
         // Based on historical F1 debut data by decade (from F1DB)
+        // v0.9.14.38: 1950/1960 OHNE Indy-500-Teilnehmer neu gezählt (103 Indy-only-
+        // Fahrer, alle USA — Indy hat eigenen Pool: generateDriver setzt bei
+        // isIndyTeam hart 'USA'). Road-F1-Debüts aus f1db-json-splitted, Crossover
+        // (Road+Indy, z.B. Ascari '52) zählt als Road. USA 1950: 34,8%→7,2%.
+        // Skript: fable-deliverables/nation-data/recompute-1950s-road-f1.js
         const DECADE_NATION_POOLS = {
-            1950: {weights: {'USA':0.3482,'GBR':0.2321,'GER':0.0833,'ITA':0.0804,'FRA':0.0744,'ARG':0.0417,'BEL':0.0387,'SUI':0.0238,'BRA':0.0119,'URU':0.0119,'AUS':0.0119,'ESP':0.0089,'NED':0.0089,'MON':0.006,'THA':0.003,'IRL':0.003,'SWE':0.003,'NZL':0.003,'MAR':0.003,'POR':0.003}},
-            1960: {weights: {'GBR':0.2391,'USA':0.1884,'ITA':0.1159,'RSA':0.1014,'FRA':0.0507,'CAN':0.0507,'SUI':0.0507,'GER':0.0435,'ARG':0.029,'MEX':0.0217,'NZL':0.0217,'ZIM':0.0217,'BEL':0.0145,'AUS':0.0145,'AUT':0.0145,'ESP':0.0072,'VEN':0.0072,'NED':0.0072}},
+            1950: {weights: {'GBR':0.3305,'GER':0.1186,'ITA':0.1144,'FRA':0.1059,'USA':0.072,'ARG':0.0593,'BEL':0.0551,'SUI':0.0339,'BRA':0.0169,'AUS':0.0169,'URU':0.0169,'ESP':0.0127,'NED':0.0127,'MON':0.0085,'IRL':0.0042,'THA':0.0042,'SWE':0.0042,'NZL':0.0042,'MAR':0.0042,'POR':0.0042}},
+            1960: {weights: {'GBR':0.2444,'USA':0.1704,'ITA':0.1185,'RSA':0.1037,'SUI':0.0519,'FRA':0.0519,'CAN':0.0519,'GER':0.0444,'ARG':0.0296,'MEX':0.0222,'NZL':0.0222,'ZIM':0.0222,'BEL':0.0148,'AUS':0.0148,'AUT':0.0148,'VEN':0.0074,'ESP':0.0074,'NED':0.0074}},
             1970: {weights: {'GBR':0.1729,'ITA':0.1278,'FRA':0.1053,'USA':0.0677,'AUS':0.0526,'BRA':0.0526,'SWE':0.0451,'AUT':0.0451,'JPN':0.0451,'NED':0.0376,'RSA':0.0376,'SUI':0.0301,'ESP':0.0226,'NZL':0.0226,'GER':0.0226,'FIN':0.0226,'BEL':0.0226,'CAN':0.015,'ARG':0.015,'DEN':0.015,'MEX':0.0075,'IRL':0.0075}},
             1980: {weights: {'ITA':0.2278,'FRA':0.1519,'GBR':0.1392,'GER':0.0759,'BRA':0.0633,'USA':0.0253,'IRL':0.0253,'SWE':0.0253,'ARG':0.0253,'COL':0.0253,'CAN':0.0253,'AUT':0.0253,'JPN':0.0253,'SUI':0.0253,'ESP':0.0253,'RSA':0.0127,'NZL':0.0127,'BEL':0.0127,'VEN':0.0127,'NED':0.0127,'FIN':0.0127}},
             1990: {weights: {'ITA':0.2239,'FRA':0.1194,'JPN':0.1045,'BRA':0.0896,'GBR':0.0746,'GER':0.0597,'AUT':0.0448,'AUS':0.0299,'POR':0.0299,'BEL':0.0299,'FIN':0.0299,'SUI':0.0299,'ARG':0.0299,'ESP':0.0299,'USA':0.0149,'NED':0.0149,'MON':0.0149,'DEN':0.0149,'CAN':0.0149}},
