@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.34</title>
+    <title>F1 RPG v0.9.14.35</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.34 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.35 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; NEU: Nationen-Statistik-Panel (🌍) – All-Time Siege/Podien/Titel je Nation, umschaltbar real/generiert/gesamt</div>
+                            <div>&#8226; NEU: JSON-Export der Nationenstatistik in allen drei Sichten</div>
+                            <div class="font-bold text-slate-400">v0.9.14.34 - 05.07.2026</div>
                             <div>&#8226; FIX: Nationen-Häufigkeit 2000–2020 aus echten F1-Fahrerdaten neu kalibriert – GBR 20%→17%, GER 2,5%→4,9%, Estland-Ausreißer entfernt</div>
                             <div>&#8226; NEU: exportNameStats-Baseline + Fable-v3-Brief (breite Kart-Nationen-Basis) abgelegt</div>
                             <div class="font-bold text-slate-400">v0.9.14.33 - 05.07.2026</div>
@@ -2210,6 +2213,9 @@
             <button onclick="openDatasetManager()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--text-tertiary); color: white;">
                 📂 Datensätze
             </button>
+            <button onclick="openNationStatsModal()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--accent-blue, #2563eb); color: white;">
+                🌍 Nationen-Statistik
+            </button>
         </div>
         
         <!-- Hidden file input -->
@@ -2818,7 +2824,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.34';
+        const VERSION = '0.9.14.35';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4790,6 +4796,123 @@
             }
             console.log(`[exportNameStats] ${samples} Samples @ ${year} — Nationen-Frequenz:`, stats._nations);
             return stats;
+        }
+
+        // Nation → IOC normalisieren (Emoji ODER Code-String; defunkte Nationen gemappt).
+        function _iocOf(v) {
+            if (!v) return null;
+            const c = (typeof convertEmojiToIOC === 'function') ? convertEmojiToIOC(v) : null;
+            let s = c || String(v).trim().toUpperCase();
+            if (s === 'DDR' || s === 'FRG') s = 'GER';
+            if (s === 'RHO') s = 'ZIM';
+            return /^[A-Z]{2,3}$/.test(s) ? s : null;
+        }
+
+        // Nationen-All-Time-Statistik: aggregiert Fahrer-Karrierewerte (Siege, Podien, Poles,
+        // Titel, Punkte, Starts) je Nation. Quellen: F1 (allTimeStATS.drivers – Nation per Backfill
+        // aus Live-Fahrern + SEASON_DATA, deckt auch ausgeschiedene reale Fahrer) + Junior-Welt
+        // (juniorWorld.allTimeStats – Nation im Eintrag). filter: 'real' (histor. Fahrer inkl.
+        // reale F2/F3) | 'generated' (fiktive) | 'total'. Konsole: exportNationStats('real', true) → JSON.
+        function exportNationStats(filter = 'total', download = false) {
+            const GS = GAME_STATE || {};
+            // reale Fahrer: Name → Nation aus SEASON_DATA
+            const realNat = {};
+            if (typeof SEASON_DATA !== 'undefined') {
+                for (const y in SEASON_DATA) for (const d of (SEASON_DATA[y].d || [])) {
+                    const nm = (d[1] || '').toLowerCase().trim(); const ioc = _iocOf(d[3]);
+                    if (nm && ioc && !realNat[nm]) realNat[nm] = ioc;
+                }
+            }
+            // Live-Fahrer (aktiv + reserve + junior): id/histId/name → Nation
+            const liveNat = {};
+            const addLive = arr => (arr || []).forEach(d => {
+                const n = _iocOf(d.nation); if (!n) return;
+                if (d.id) liveNat[d.id] = n; if (d.histId) liveNat[d.histId] = n;
+                if (d.name) liveNat[d.name.toLowerCase().trim()] = n;
+            });
+            addLive(GS.drivers); addLive(GS.reservePool);
+            const jw = GS.juniorWorld || {}; addLive(jw.drivers);
+
+            const acc = {};
+            const bump = (ioc, s, real) => {
+                if (filter === 'real' && !real) return;
+                if (filter === 'generated' && real) return;
+                ioc = ioc || 'UNBEKANNT';
+                const a = acc[ioc] || (acc[ioc] = { drivers: 0, wins: 0, podiums: 0, poles: 0, titles: 0, points: 0, starts: 0 });
+                a.drivers++;
+                a.wins += s.wins || 0; a.podiums += s.podiums || 0; a.poles += s.poles || 0;
+                a.titles += (s.championships || 0) + (s.titles || 0);
+                a.points += s.points || 0; a.starts += (s.races || 0) + (s.starts || 0);
+            };
+            // F1: Key = histor. Slug (real) oder 'gen-…' (generiert)
+            const f1 = (GS.allTimeStATS && GS.allTimeStATS.drivers) || {};
+            for (const key in f1) {
+                const s = f1[key]; const gen = /^gen-/.test(key);
+                const nm = (s.name || '').toLowerCase().trim();
+                const histNat = !gen ? ((typeof lookupNationByName === 'function' ? lookupNationByName(s.name) : null) || realNat[nm]) : null;
+                const ioc = liveNat[key] || liveNat[nm] || histNat;
+                bump(_iocOf(ioc), s, !gen);
+            }
+            // Junior: Key 'jw…' = generiert; ein NICHT-'jw'-Key wäre ein realer F2/F3-Import
+            const jws = jw.allTimeStats || {};
+            for (const key in jws) {
+                const s = jws[key]; const gen = /^jw/.test(key);
+                bump(_iocOf(s.nation) || liveNat[key], s, !gen);
+            }
+            const sorted = Object.fromEntries(Object.entries(acc).sort((a, b) => b[1].wins - a[1].wins || b[1].points - a[1].points));
+            const out = { _meta: { filter, generated: new Date().toISOString().slice(0, 10), nations: Object.keys(sorted).length }, byNation: sorted };
+            if (download && typeof document !== 'undefined') {
+                const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `nation-stats-${filter}.json`; a.click(); URL.revokeObjectURL(a.href);
+            }
+            console.log(`[exportNationStats:${filter}] ${Object.keys(sorted).length} Nationen`, sorted);
+            return out;
+        }
+
+        // In-Game-Panel: Nationen-Statistik mit real/generiert/gesamt-Umschaltung + JSON-Export je Sicht.
+        let _nationStatsFilter = 'total';
+        function openNationStatsModal() {
+            let ov = document.getElementById('nationStatsModal');
+            if (!ov) {
+                ov = document.createElement('div');
+                ov.id = 'nationStatsModal';
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+                ov.onclick = e => { if (e.target === ov) ov.remove(); };
+                document.body.appendChild(ov);
+            }
+            _renderNationStats();
+        }
+        function _renderNationStats() {
+            const ov = document.getElementById('nationStatsModal'); if (!ov) return;
+            const f = _nationStatsFilter;
+            const rows = Object.entries(exportNationStats(f, false).byNation);
+            const tab = (id, label) => `<button onclick="_nationStatsFilter='${id}';_renderNationStats()" class="px-3 py-1 rounded font-bold text-sm" style="background:${f === id ? 'var(--accent-green)' : 'var(--text-tertiary)'};color:#fff;">${label}</button>`;
+            const flag = ioc => { try { return (typeof renderFlag === 'function' && ioc !== 'UNBEKANNT') ? renderFlag(ioc, GAME_STATE.currentYear) : ''; } catch (e) { return ''; } };
+            const cell = v => `<td style="padding:3px 8px;text-align:right;">${v}</td>`;
+            const body = rows.map(([ioc, s]) => `<tr style="border-bottom:1px solid rgba(128,128,128,.15);">
+                <td style="padding:3px 8px;text-align:left;white-space:nowrap;">${flag(ioc)} ${ioc}</td>
+                ${cell(s.drivers)}<td style="padding:3px 8px;text-align:right;font-weight:bold;">${s.wins}</td>${cell(s.podiums)}${cell(s.poles)}${cell(s.titles)}${cell(Math.round(s.points))}${cell(s.starts)}</tr>`).join('');
+            ov.innerHTML = `<div class="card rounded-xl" style="max-width:660px;width:100%;max-height:85vh;display:flex;flex-direction:column;padding:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <h2 style="font-size:1.15rem;font-weight:bold;">🌍 Nationen-Statistik (All-Time)</h2>
+                    <button onclick="document.getElementById('nationStatsModal').remove()" style="font-size:1.3rem;line-height:1;cursor:pointer;">✕</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+                    ${tab('real', 'Reale Fahrer')}${tab('generated', 'Generierte')}${tab('total', 'Gesamt')}
+                    <button onclick="exportNationStats('${f}',true)" class="px-3 py-1 rounded font-bold text-sm" style="background:var(--accent-purple);color:#fff;margin-left:auto;">⬇ JSON</button>
+                </div>
+                <div style="overflow:auto;flex:1;">
+                <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+                    <thead><tr style="border-bottom:2px solid rgba(128,128,128,.4);">
+                        <th style="padding:4px 8px;text-align:left;">Nation</th><th style="padding:4px 8px;text-align:right;">Fahrer</th>
+                        <th style="padding:4px 8px;text-align:right;">Siege</th><th style="padding:4px 8px;text-align:right;">Podien</th>
+                        <th style="padding:4px 8px;text-align:right;">Poles</th><th style="padding:4px 8px;text-align:right;">Titel</th>
+                        <th style="padding:4px 8px;text-align:right;">Punkte</th><th style="padding:4px 8px;text-align:right;">Starts</th>
+                    </tr></thead><tbody>${body || '<tr><td colspan="8" style="padding:12px;text-align:center;">Keine Daten</td></tr>'}</tbody>
+                </table></div>
+                <div style="font-size:.7rem;color:var(--text-tertiary);margin-top:8px;">${rows.length} Nationen · „⬇ JSON" exportiert die aktuelle Sicht (real / generiert / gesamt einzeln).</div>
+            </div>`;
         }
 
         function generateDriver(teamId, year, isRookie = true) {
