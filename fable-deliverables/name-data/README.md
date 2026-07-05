@@ -1,5 +1,14 @@
 # Namens-Datenbasis (Paket A) — Build-Zeit-Quelle, KEIN Laufzeit-Code
 
+**v3 (aktuell):** `data/names.js` wird komplett von **`build-names-v3.js`** generiert
+(volle Top-400-Datenlast, echte Count-Gewichte w=round(100·(c/max)^0.6), ~20.500 Namen,
+304 KB). Eingefrorene Kurationsbasis: `curated-base-v2.js` (NIE data/names.js als
+Build-Input lesen — Idempotenz!). Analyse: `analyze-weights.js`, Validierung:
+`validate-names-v3.js` (repliziert Laufzeit-Pick-Mathematik exakt), Review:
+`names-v3-review.txt`. `../paketA-name-pools.js` ist die veraltete v2-Kopie.
+Die v2-Tail-Skripte unten bleiben als Dokumentation der Kurationsentscheidungen
+(Bans/OPS sind nach build-names-v3.js portiert).
+
 Aggregat aus dem BigQuery-Namens-Datensatz (Drive-Ordner `1BXqtZZfJZhvGgwWtfO-aXXYAf_U0EMFV`,
 Roh-CSVs: forenames.csv 226 MB / surnames.csv 381 MB — bleiben im Drive, NICHT ins Repo).
 
