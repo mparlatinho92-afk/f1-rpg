@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.40</title>
+    <title>F1 RPG v0.9.14.41</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.40 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.41 (aktuell) - 06.07.2026</div>
+                            <div>&#8226; NEU: Saison-Rückblick jetzt auch im Off-Season-Popup jeder archivierten Saison – deterministisch regeneriert, 0 Bytes Speicherlast</div>
+                            <div>&#8226; FIX: Jahr-Doppelung im Rennnamen bei Todesfall-Sätzen (beim 1951 Indianapolis 500 → beim Indianapolis 500)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.40 - 05.07.2026</div>
                             <div>&#8226; NEU: Erzählter Saison-Rückblick (3-6 Sätze, ära-stimmig, deterministisch) im Saisonende-Modal</div>
                             <div>&#8226; NEU: Phrasen-Bank mit 5 Ära-Registern, Titelkampf-Kategorien, Rookie/Underdog/Tragik-Bausteinen</div>
                             <div class="font-bold text-slate-400">v0.9.14.39 - 05.07.2026</div>
@@ -2841,7 +2844,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.40';
+        const VERSION = '0.9.14.41';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6619,7 +6622,8 @@
 
         function showOffSeasonModal(year) {
             const hist = GAME_STATE.history || [];
-            const h = hist.find(x => x.year === year)
+            const hArchived = hist.find(x => x.year === year);
+            const h = hArchived
                 || (year === GAME_STATE.currentYear ? {
                     year, transfers: GAME_STATE.seasonTransfers || [],
                     deaths: GAME_STATE.seasonDeaths || [], retirements: GAME_STATE.seasonRetirements || []
@@ -6720,7 +6724,26 @@
                 ...entries.map(n => row('✅', n, 'eingestiegen'))
             ].join('');
 
-            const noData = !movHtml && !renewHtml && !deathHtml && !retHtml && !teamHtml;
+            // 📰 Paket B: Saison-Rückblick deterministisch regenerieren — NICHT gespeichert.
+            // Alle Inputs (driverStandings/teamStandings/deaths/raceCount/championRookie)
+            // sind LEICHTE History-Felder → kein Detail-Load nötig, identischer Text wie
+            // im Saisonende-Modal (gleicher Seed). Nur für archivierte Saisons.
+            let recapHtml = '';
+            if (hArchived && hArchived.driverStandings) {
+                const rSorted = Object.entries(hArchived.driverStandings)
+                    .map(([id, s]) => ({ id, ...s }))
+                    .sort((a, b) => (b.points || 0) - (a.points || 0));
+                const rTeamChamp = Object.entries(hArchived.teamStandings || {})
+                    .map(([id, s]) => ({ id, ...s }))
+                    .sort((a, b) => (b.points || 0) - (a.points || 0))[0] || null;
+                const recap = rSorted[0] ? seasonRecapText(rSorted[0], rTeamChamp,
+                    hArchived.driverStandings, hArchived.teamStandings,
+                    hArchived.deaths || [], year,
+                    { raceCount: hArchived.raceCount || 0, isRookieChampion: !!hArchived.championRookie }) : '';
+                if (recap) recapHtml = `<p class="text-sm leading-relaxed">${recap}</p>`;
+            }
+
+            const noData = !movHtml && !renewHtml && !deathHtml && !retHtml && !teamHtml && !recapHtml;
 
             const modal = document.createElement('div');
             modal.id = 'offSeasonModal';
@@ -6735,6 +6758,7 @@
                         ${noData
                             ? `<p class="text-tertiary text-sm">Keine Off-Season-Daten gespeichert (vor v0.9.10.33).</p>`
                             : [
+                                section('📰 Saison-Rückblick', recapHtml),
                                 section('Fahrerbewegungen', movHtml),
                                 section('Vertragsverlängerungen', renewHtml),
                                 section('Todesfälle', deathHtml),
@@ -10264,7 +10288,8 @@
                 maxWinnerSiegeNom: maxWinner ? _recapSiege(maxWinner.wins, false) : '',
                 deadName: deaths[0] ? deaths[0].name : '',
                 deadTeam: deaths[0] ? (deaths[0].team || '?') : '',
-                deadRace: deaths[0] ? (deaths[0].raceName || 'Rennwochenende') : '',
+                // führendes Jahr im Rennnamen strippen ("1951 Indianapolis 500" → "beim Indianapolis 500")
+                deadRace: deaths[0] ? (deaths[0].raceName || 'Rennwochenende').replace(/^\d{4}\s+/, '') : '',
                 deadList: _recapNameList(deaths.map(d => d.name)),
                 deadCount: String(deaths.length),
                 klasseNom: era.klasseNom, klasseGen: era.klasseGen, klasseIn: era.klasseIn,
@@ -10296,6 +10321,17 @@
             }
 
             return s.join(' ');
+        }
+
+        // Rookie-Check für den Saison-Rückblick: keine careerScores-Einträge vor 'year'
+        // + Guard "Saison nach Spielstart" (im Startjahr haben ALLE geseedeten Fahrer
+        // leere careerScores → wären falsche Rookies). Eine Quelle für showSeasonEndModal
+        // (Live-Anzeige) UND startNewSeason (leichtes History-Flag championRookie).
+        function isRookieChampionCheck(championId, year) {
+            const startYear = parseInt(GAME_STATE.templateUsed) || year;
+            const d = championId ? GAME_STATE.drivers.find(x => x.id === championId) : null;
+            return !!(d && year > startYear && Array.isArray(d.careerScores) &&
+                d.careerScores.filter(c => c.year < year).length === 0);
         }
 
         function showSeasonEndModal() {
@@ -10335,17 +10371,13 @@
 
             // === PAKET B: Erzählter Saison-Rückblick (rein additiv, keine Logik-Änderung) ===
             {
-                // Rookie nur ab der 2. Spieljahr-Saison erkennbar — im Startjahr haben
-                // ALLE geseedeten Fahrer leere careerScores (falsche Rookies)
-                const recapStartYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
-                const champDrv = champion ? GAME_STATE.drivers.find(d => d.id === champion.id) : null;
-                const isRookieChampion = !!(champDrv && GAME_STATE.currentYear > recapStartYear &&
-                    Array.isArray(champDrv.careerScores) &&
-                    champDrv.careerScores.filter(c => c.year < GAME_STATE.currentYear).length === 0);
+                const isRookieChampion = champion ? isRookieChampionCheck(champion.id, GAME_STATE.currentYear) : false;
                 const recap = seasonRecapText(champion, teamChampion,
                     GAME_STATE.driverStandings, GAME_STATE.teamStandings,
                     GAME_STATE.seasonDeaths, GAME_STATE.currentYear,
-                    { raceCount: (GAME_STATE.races || []).length, isRookieChampion });
+                    // results.length statt races.length: exakt der Wert, den die History als
+                    // raceCount speichert → Off-Season-Regeneration liefert identischen Text
+                    { raceCount: (GAME_STATE.results || []).length, isRookieChampion });
                 if (recap) html += `
                     <div class="card p-4 rounded-lg mb-4">
                         <h4 class="font-bold mb-2">📰 Saison-Rückblick</h4>
@@ -12762,6 +12794,9 @@
                     driverHistIds: _seasonDrivers.map(d => d.histId || d.id),
                     teamHistIds: _seasonTeams.map(t => t.histId || t.id),
                     championPoints: champion ? champion.points : 0,
+                    // Paket B: Rookie-Flag LEICHT mitspeichern (h.drivers ist schwer/lazy →
+                    // Off-Season-Rückblick kann sonst nicht identisch regeneriert werden)
+                    championRookie: champion ? isRookieChampionCheck(champion.id, GAME_STATE.currentYear) : false,
                     teamChampion: teamChampion ? teamChampion.name : 'N/A',
                     teamChampionId: teamChampion ? teamChampion.id : null,
                     teamChampionPoints: teamChampion ? teamChampion.points : 0,
