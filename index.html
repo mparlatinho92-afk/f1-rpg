@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.33</title>
+    <title>F1 RPG v0.9.14.34</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.33 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.34 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; FIX: Nationen-Häufigkeit 2000–2020 aus echten F1-Fahrerdaten neu kalibriert – GBR 20%→17%, GER 2,5%→4,9%, Estland-Ausreißer entfernt</div>
+                            <div>&#8226; NEU: exportNameStats-Baseline + Fable-v3-Brief (breite Kart-Nationen-Basis) abgelegt</div>
+                            <div class="font-bold text-slate-400">v0.9.14.33 - 05.07.2026</div>
                             <div>&#8226; FIX: Junior-Welt (F3/F2) nutzt jetzt nationskohärente Paket-A-Namen statt entkoppelter Zufallsnamen</div>
                             <div>&#8226; NEU: exportNameStats() – Dev-Auswertung der Namensverteilung pro Nation als JSON</div>
                             <div class="font-bold text-slate-400">v0.9.14.32 - 05.07.2026</div>
@@ -2815,7 +2818,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.33';
+        const VERSION = '0.9.14.34';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4590,9 +4593,12 @@
             1970: {weights: {'GBR':0.1729,'ITA':0.1278,'FRA':0.1053,'USA':0.0677,'AUS':0.0526,'BRA':0.0526,'SWE':0.0451,'AUT':0.0451,'JPN':0.0451,'NED':0.0376,'RSA':0.0376,'SUI':0.0301,'ESP':0.0226,'NZL':0.0226,'GER':0.0226,'FIN':0.0226,'BEL':0.0226,'CAN':0.015,'ARG':0.015,'DEN':0.015,'MEX':0.0075,'IRL':0.0075}},
             1980: {weights: {'ITA':0.2278,'FRA':0.1519,'GBR':0.1392,'GER':0.0759,'BRA':0.0633,'USA':0.0253,'IRL':0.0253,'SWE':0.0253,'ARG':0.0253,'COL':0.0253,'CAN':0.0253,'AUT':0.0253,'JPN':0.0253,'SUI':0.0253,'ESP':0.0253,'RSA':0.0127,'NZL':0.0127,'BEL':0.0127,'VEN':0.0127,'NED':0.0127,'FIN':0.0127}},
             1990: {weights: {'ITA':0.2239,'FRA':0.1194,'JPN':0.1045,'BRA':0.0896,'GBR':0.0746,'GER':0.0597,'AUT':0.0448,'AUS':0.0299,'POR':0.0299,'BEL':0.0299,'FIN':0.0299,'SUI':0.0299,'ARG':0.0299,'ESP':0.0299,'USA':0.0149,'NED':0.0149,'MON':0.0149,'DEN':0.0149,'CAN':0.0149}},
-            2000: {weights: {'GER':0.1148,'BRA':0.0984,'JPN':0.0984,'GBR':0.082,'ITA':0.082,'FRA':0.0656,'SUI':0.0492,'ESP':0.0328,'FIN':0.0328,'AUS':0.0328,'AUT':0.0328,'NED':0.0328,'ARG':0.0164,'COL':0.0164,'MAS':0.0164,'CZE':0.0164,'IRL':0.0164,'HUN':0.0164,'SWE':0.0164,'DEN':0.0164,'BEL':0.0164,'IND':0.0164,'POR':0.0164,'ISR':0.0164,'USA':0.0164,'POL':0.0164,'VEN':0.0164}},
-            2010: {weights: {'GBR':0.1452,'FRA':0.0806,'BRA':0.0645,'RUS':0.0645,'ESP':0.0645,'GER':0.0484,'CAN':0.0484,'MEX':0.0484,'ITA':0.0484,'NED':0.0484,'BEL':0.0323,'VEN':0.0323,'INA':0.0323,'IND':0.0161,'MAS':0.0161,'AUS':0.0161,'CZE':0.0161,'USA':0.0161,'CHN':0.0161,'FIN':0.0161,'SWE':0.0161,'DEN':0.0161,'SUI':0.0161,'MON':0.0161,'NZL':0.0161,'JPN':0.0161}},
-            2020: {weights: {'GBR':0.2051,'BRA':0.0769,'JPN':0.0769,'FRA':0.0769,'RUS':0.0513,'AUS':0.0513,'EST':0.0513,'USA':0.0513,'ITA':0.0513,'GER':0.0256,'ISR':0.0256,'CHN':0.0256,'NED':0.0256,'ESP':0.0256,'MEX':0.0256,'NZL':0.0256,'DEN':0.0256,'MON':0.0256,'ARG':0.0256,'IRL':0.0256,'SWE':0.0256}}
+            // 2000–2020: aus SEASON_DATA-Fahrer-Nationalitäten aggregiert (Fahrer-Saisons je Dekade,
+            // Unbekannt-Platzhalter 🏁 ausgeschlossen, <0.4% verworfen+renormiert). F1-realistisch.
+            // 1950–1990 bleiben handkuratiert (SEASON_DATA dort zu 🏁-lastig). Breite Kart/Junior-Basis → Fable.
+            2000: {weights: {'GER':0.1926,'GBR':0.1704,'ITA':0.1481,'BRA':0.1407,'ESP':0.0593,'AUS':0.0593,'CAN':0.0519,'COL':0.0444,'FRA':0.0296,'POL':0.0296,'NED':0.0222,'IRL':0.0222,'FIN':0.0222,'JPN':0.0074}},
+            2010: {weights: {'GER':0.1613,'GBR':0.1613,'ESP':0.1129,'AUS':0.1048,'BRA':0.1048,'FIN':0.0887,'DEN':0.0484,'FRA':0.0484,'NED':0.0403,'JPN':0.0323,'ITA':0.0323,'CAN':0.0242,'POL':0.0161,'MON':0.0161,'THA':0.0081}},
+            2020: {weights: {'GBR':0.1748,'FRA':0.1165,'ESP':0.1068,'CAN':0.0874,'AUS':0.0777,'NED':0.0583,'MON':0.0583,'FIN':0.0485,'THA':0.0485,'GER':0.0485,'JPN':0.0485,'DEN':0.0388,'CHN':0.0291,'ITA':0.0194,'USA':0.0194,'BRA':0.0097,'POL':0.0097}}
         };
         
         function pickNationByDecade(year) {
