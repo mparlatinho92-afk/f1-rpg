@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.34</title>
+    <title>F1 RPG v0.9.14.32</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.34 (aktuell) - 02.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.32 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; NEU: Nationskohärente Fahrer-Namen (Vor+Nachname aus selber Region, ära-sensibel, 41 Nationen)</div>
+                            <div>&#8226; NEU: Diaspora-Regionen & Fallback-Ketten (KOR→INT, UAE→MAR, NOR→DEN)</div>
+                            <div>&#8226; FIX: Indy nutzt regulären US-Namenspool statt Spezial-Topf</div>
+                            <div class="font-bold text-slate-400">v0.9.14.34 - 02.07.2026</div>
                             <div>&#8226; NEU: Junior-Karriere-Historie im exakten F1-Steckbrief-Layout (Jahr | Serie | Team | S | P | Pkt | Platz)</div>
                             <div>&#8226; NEU: neuestes Jahr oben (chronologisch absteigend wie F1)</div>
                             <div>&#8226; NEU: Serie je Saison als farbiges Badge, Titel als '1. 🏆' – mobilfreundlich</div>
@@ -2546,6 +2550,7 @@
     <script src="data/f1db.js"></script>
     <script src="data/hist.js"></script>
     <script src="data/seasons.js"></script>
+    <script src="data/names.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -2807,7 +2812,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.34';
+        const VERSION = '0.9.14.32';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4679,47 +4684,96 @@
             return n;
         }
 
+        // Paket A: Raritäten-Schwänze EINMALIG in die Kern-Pools mergen (nicht pro Pick).
+        // last → Gewicht 1 an regions[r].last; first → Gewicht 1 nur an mid+modern
+        // (Aggregat gegenwartslastig), bei ära-flachem first-Array direkt anhängen.
+        let _namePoolsMerged = false;
+        function ensureNamePoolsMerged() {
+            if (_namePoolsMerged) return;
+            _namePoolsMerged = true;
+            if (typeof NAME_TAILS_BY_NATION === 'undefined' || typeof NAME_POOLS_BY_NATION === 'undefined') return;
+            for (const nat in NAME_TAILS_BY_NATION) {
+                const pool = NAME_POOLS_BY_NATION[nat];
+                if (!pool || !pool.regions) continue;
+                for (const tail of NAME_TAILS_BY_NATION[nat]) {
+                    const region = pool.regions[tail.r];
+                    if (!region) continue;
+                    if (tail.last) for (const nm of tail.last) region.last.push([nm, 1]);
+                    if (tail.first) {
+                        if (Array.isArray(region.first)) {
+                            for (const nm of tail.first) region.first.push([nm, 1]);
+                        } else {
+                            for (const nm of tail.first) {
+                                region.first.mid.push([nm, 1]);
+                                region.first.modern.push([nm, 1]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Region gewichtet ziehen: erst nach minYear filtern (Diaspora-Regionen),
+        // dann Kumulativ-Pick über die gefilterte Gewichts-Summe (implizite Renormierung).
+        function pickNameRegion(regions, year) {
+            const avail = regions.filter(r => !r.minYear || year >= r.minYear);
+            const list = avail.length ? avail : regions;
+            const total = list.reduce((s, r) => s + (r.w || 0), 0);
+            let x = Math.random() * total;
+            for (const r of list) { x -= (r.w || 0); if (x <= 0) return r; }
+            return list[list.length - 1];
+        }
+
+        // Nationskohärenten Namen ziehen: Vor- UND Nachname aus DERSELBEN Region.
+        // Gibt null zurück, wenn kein Pool existiert → Aufrufer nutzt Flat-Fallback.
+        function pickPooledName(nation, year, usedLastNames) {
+            ensureNamePoolsMerged();
+            if (typeof NAME_POOLS_BY_NATION === 'undefined') return null;
+            const fb = (typeof NATION_NAME_FALLBACK !== 'undefined' && NATION_NAME_FALLBACK[nation]) || 'INT';
+            const pool = NAME_POOLS_BY_NATION[nation] || NAME_POOLS_BY_NATION[fb] || NAME_POOLS_BY_NATION['INT'];
+            if (!pool || !pool.regions || !pool.regions.length) return null;
+            const region = pickNameRegion(pool.regions, year);
+            const era = year < 1975 ? 'early' : year < 2010 ? 'mid' : 'modern';
+            const firstArr = Array.isArray(region.first) ? region.first : (region.first[era] || region.first.mid);
+            const firstName = weightedPick(firstArr);
+            // Nachname: Dedup gegen aktive Fahrer, bei leerem Rest voller Regions-Pool
+            let lastArr = region.last;
+            if (usedLastNames) {
+                const filtered = lastArr.filter(n => !usedLastNames.has(n[0]));
+                if (filtered.length) lastArr = filtered;
+            }
+            return { firstName, lastName: weightedPick(lastArr) };
+        }
+
         function generateDriver(teamId, year, isRookie = true) {
             // Prüfe ob dies ein Indy-500-only Team ist
             const team = GAME_STATE.teams?.find(t => t.id === teamId);
             const isIndyTeam = team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId));
-            
-            // Indy-Teams: Nur US-amerikanische Namen und Nation
-            const firstNamesPool = isIndyTeam ? 
-                [['Bill',5],['Jack',5],['Jim',5],['Bob',5],['Sam',4],
-                 ['Tony',4],['Eddie',3],['Johnny',3],['Pat',3],['Chuck',3],
-                 ['Andy',3],['Cal',2],['Gene',2],['Don',2],['Lee',2],
-                 ['Troy',1],['Art',1],['Walt',1],['Rodger',1],['Duke',1]] :
-                FIRST_NAMES_W;
-            
-            const lastNamesPool = isIndyTeam ?
-                [['Smith',5],['Johnson',5],['Williams',5],['Brown',5],['Jones',5],
-                 ['Davis',4],['Miller',4],['Wilson',4],['Moore',4],['Taylor',4],
-                 ['Anderson',3],['Thomas',3],['Jackson',3],['White',3],['Harris',3],
-                 ['Martin',3],['Thompson',3],['Robinson',2],['Clark',2],['Lewis',2],
-                 ['Walker',2],['Hall',2],['Young',1],['King',1]] :
-                LAST_NAMES_W;
-            
-            const firstName = weightedPick(firstNamesPool);
-            
+
+            // Nation zuerst (Indy immer USA) – Namen kommen aus dem nationskohärenten Pool
+            const nation = isIndyTeam ? 'USA' : pickNationByDecade(year);
+
             // Nachnamen ohne Duplikate mit aktiven Fahrern
             const usedLastNames = new Set(
                 (GAME_STATE.drivers || [])
                     .filter(d => !d.status || d.status === 'active')
                     .map(d => d.name.split(' ').slice(-1)[0])
             );
-            
-            // Filtere verfügbare Nachnamen
-            let availableLastNames = lastNamesPool.filter(n => !usedLastNames.has(n[0]));
-            if (availableLastNames.length === 0) {
-                availableLastNames = lastNamesPool;
+
+            // Namen aus NAME_POOLS_BY_NATION (regionskohärent, ära-sensibel).
+            // Not-Fallback: alte flache FIRST_NAMES_W/LAST_NAMES_W (falls Pool-Konstante fehlt).
+            let firstName, lastName;
+            const pooled = pickPooledName(nation, year, usedLastNames);
+            if (pooled) {
+                firstName = pooled.firstName;
+                lastName = pooled.lastName;
+            } else {
+                firstName = weightedPick(FIRST_NAMES_W);
+                let avail = LAST_NAMES_W.filter(n => !usedLastNames.has(n[0]));
+                if (!avail.length) avail = LAST_NAMES_W;
+                lastName = weightedPick(avail);
             }
-            
-            const lastName = weightedPick(availableLastNames);
-            
-            // Nation: Indy-Teams immer USA
-            const nation = isIndyTeam ? 'USA' : pickNationByDecade(year);
-            
+
             if (isRookie) {
                 // ROOKIE: Jung, niedriger aktueller Skill, aber hohes Potenzial
                 const potentialPace = 75 + Math.floor(Math.random() * 20); // Potenzial: 75-94
