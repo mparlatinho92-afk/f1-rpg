@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.38</title>
+    <title>F1 RPG v0.9.14.39</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.38 (aktuell) - 05.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.39 (aktuell) - 05.07.2026</div>
+                            <div>&#8226; NEU: Junior-Welt zieht Nationen aus datenbasierter Motorsport-Frequenz je Dekade (statt 15 gleichgewichtet), USA fuer F3/F2 gedaempft</div>
+                            <div>&#8226; NEU: Reserve-Pool nach Template-Horizont nutzt F1-nahen Motorsport-Trichter - mehr Nationen-Vielfalt</div>
+                            <div>&#8226; FIX: Indy und F1-Grid-Fill unveraendert</div>
+                            <div class="font-bold text-slate-400">v0.9.14.38 - 05.07.2026</div>
                             <div>&#8226; FIX: 1950er/60er Nationen-Verteilung ohne Indy-500-Fahrer (USA 34,8 Prozent zu 7,2 Prozent in den 50ern)</div>
                             <div>&#8226; NEU: F1-Blend der Nationen-Frequenz jetzt Indy-frei (Excel + Deliverable aktualisiert)</div>
                             <div class="font-bold text-slate-400">v0.9.14.37 - 05.07.2026</div>
@@ -2834,7 +2838,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.38';
+        const VERSION = '0.9.14.39';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4642,7 +4646,49 @@
             }
             return nations[nations.length - 1];
         }
-        
+
+        // ── Motorsport-Nationen-Trichter (Fable Paket A v3) ──────────────────
+        // sharesF1Blend = 50% Motorsport-Welt-Frequenz (12.207 Wikidata-Auto-Rennfahrer,
+        // je Debüt-Dekade) + 50% DECADE_NATION_POOLS. F1-naher Trichter für die Junior-Welt
+        // (F3/F2) und den Reserve-Pool NACH Template-Horizont (~2025+). NIE für Indy
+        // (dort hart 'USA') und NIE für den normalen F1-Grid-Fill (dort DECADE_NATION_POOLS).
+        const MOTORSPORT_NATION_BLEND = {
+            1950: { GBR:0.2304, USA:0.1642, FRA:0.1385, ITA:0.1241, GER:0.0928, ARG:0.0407, BEL:0.0361, SUI:0.0261, AUS:0.0148, ESP:0.0145, BRA:0.011, NED:0.0095, EST:0.0093, URU:0.0091, SWE:0.0079, AUT:0.0053, JPN:0.005, RUS:0.0047, MON:0.0046, CAN:0.0043, CZE:0.0042, POR:0.0041, NZL:0.0041, FIN:0.0039, RSA:0.0037, IRL:0.0033, POL:0.0024, MAR:0.0023, THA:0.0023, CHI:0.0019, GRE:0.0015, NOR:0.0015, ROU:0.0012, TUR:0.0012, KEN:0.001, DEN:0.0009, PER:0.0009, HUN:0.0009, ZIM:0.0009, MEX:0.0007, LUX:0.0007, VEN:0.0005, SRB:0.0005 },
+            1960: { USA:0.1849, GBR:0.1581, FRA:0.0999, ITA:0.0987, GER:0.0567, RSA:0.0558, SUI:0.0419, CAN:0.0339, ARG:0.0272, JPN:0.0226, EST:0.0199, AUS:0.0198, AUT:0.0193, NZL:0.0186, BEL:0.0171, ESP:0.0156, MEX:0.0137, SWE:0.0119, ZIM:0.0115, FIN:0.0097, NED:0.0094, CZE:0.0066, POL:0.0049, RUS:0.0044, VEN:0.0041, BRA:0.0031, DEN:0.0026, POR:0.0026, HUN:0.0022, NOR:0.0022, IRL:0.0017, GRE:0.0017, KEN:0.0013, ISR:0.0009, COL:0.0009, BUL:0.0009, CHI:0.0009, TUR:0.0009, IND:0.0009 },
+            1970: { USA:0.144, GBR:0.1178, FRA:0.1133, ITA:0.0986, JPN:0.0418, GER:0.0391, SWE:0.0371, AUS:0.0332, BRA:0.0328, AUT:0.0316, SUI:0.0279, ESP:0.0258, NED:0.0257, BEL:0.025, ARG:0.0246, RSA:0.0223, CAN:0.0208, FIN:0.019, NZL:0.0156, EST:0.0153, RUS:0.0128, CZE:0.009, DEN:0.0088, MEX:0.0072, IRL:0.0059, POR:0.0047, POL:0.0047, NOR:0.0039, KEN:0.0039, TUR:0.0022, UKR:0.0022, CHI:0.0017, CHN:0.0013, PER:0.0013, MON:0.0013, QAT:0.0013, HUN:0.0013, CIV:0.0013, GRE:0.0009, ZIM:0.0009 },
+            1980: { ITA:0.1547, USA:0.1456, FRA:0.1204, GBR:0.1033, GER:0.0686, JPN:0.0442, BRA:0.0412, SWE:0.0252, ESP:0.0249, ARG:0.0235, CAN:0.0213, SUI:0.0202, AUT:0.0185, BEL:0.0178, FIN:0.0161, NED:0.0142, IRL:0.0134, COL:0.0127, RUS:0.0118, NZL:0.01, AUS:0.0082, RSA:0.0082, EST:0.0079, VEN:0.0067, POR:0.0061, CHN:0.0061, CZE:0.0061, NOR:0.0053, HUN:0.0043, POL:0.0032, TUR:0.0029, DEN:0.0029, MEX:0.0022, GRE:0.0018, ROU:0.0014, UKR:0.0014, MON:0.0011, PER:0.0011, KOR:0.0004 },
+            1990: { ITA:0.1379, USA:0.1206, FRA:0.0948, JPN:0.0876, GBR:0.0697, BRA:0.0626, GER:0.0519, ARG:0.0357, ESP:0.0296, AUS:0.0276, AUT:0.0273, FIN:0.026, POR:0.024, BEL:0.0234, SUI:0.0208, NED:0.0175, CAN:0.0159, DEN:0.0117, CZE:0.0094, RUS:0.0085, SWE:0.0078, MON:0.0078, NOR:0.0072, POL:0.0072, HUN:0.0055, NZL:0.0055, MEX:0.0049, EST:0.0042, CHN:0.0039, IRL:0.0036, RSA:0.0029, UKR:0.0023, TUR:0.0023, CHI:0.002, IND:0.0016, KOR:0.0003 },
+            2000: { GBR:0.1306, GER:0.1233, USA:0.1112, ITA:0.0985, BRA:0.0904, FRA:0.0453, ESP:0.0439, AUS:0.0427, CAN:0.0317, ARG:0.0265, NED:0.0236, COL:0.0225, JPN:0.0223, FIN:0.0213, POL:0.0194, IRL:0.0157, RUS:0.011, SUI:0.0084, SWE:0.0084, NZL:0.0075, CZE:0.0061, AUT:0.0061, BEL:0.0055, CHN:0.0055, EST:0.0055, MEX:0.0046, POR:0.0043, NOR:0.0043, TUR:0.0043, UKR:0.0035, DEN:0.0029, IND:0.0023, HUN:0.0023, INA:0.002, RSA:0.002, THA:0.002, CHI:0.0017, KOR:0.0011 },
+            2010: { GBR:0.1284, USA:0.1182, GER:0.0991, ESP:0.0739, BRA:0.0653, AUS:0.0607, FIN:0.059, FRA:0.0493, ITA:0.0381, JPN:0.0336, DEN:0.0322, NED:0.0295, ARG:0.0279, CAN:0.0204, POL:0.0129, SWE:0.0118, RUS:0.0118, MON:0.0091, SUI:0.0087, BEL:0.0087, AUT:0.0076, NOR:0.0076, MEX:0.0066, THA:0.0065, HUN:0.0059, EST:0.0056, CHN:0.0052, NZL:0.0052, CZE:0.0045, COL:0.0042, MAS:0.0035, RSA:0.0035, IND:0.0031, INA:0.0024, POR:0.0021, TUR:0.0021, ISR:0.0021, IRL:0.0017, KOR:0.0003 },
+            2020: { USA:0.1578, GBR:0.1271, FRA:0.0898, ESP:0.0717, GER:0.0513, AUS:0.0502, CAN:0.0481, NED:0.0436, JPN:0.0343, ITA:0.0336, FIN:0.0324, MON:0.0298, DEN:0.0282, THA:0.0261, ARG:0.0208, BRA:0.02, CHN:0.0183, POL:0.0099, MEX:0.0094, RUS:0.0069, BEL:0.0056, AUT:0.005, HUN:0.005, CZE:0.005, SWE:0.0044, RSA:0.0044, EST:0.0038, NOR:0.0038, SUI:0.0038, NZL:0.0025, POR:0.0025, IND:0.0025, URU:0.0025, PHI:0.0019, TUR:0.0019, KOR:0.0012, IRL:0.0012 }
+        };
+
+        // Gewichtete Nationen-Ziehung aus dem F1-nahen Motorsport-Trichter (sharesF1Blend).
+        // dampUSA=true halbiert das USA-Gewicht + renormiert (für die europ. geprägten F3/F2-
+        // Junior-Grids, en-Wiki-Bias). 2020+-Dekade ist Wikidata-dünn (n=793) → 50:50 mit den
+        // 2010ern gemischt gezogen (Brief P.3). NIE für Indy oder den normalen F1-Grid-Fill.
+        function pickNationMotorsport(year, dampUSA) {
+            var decade = Math.floor(year / 10) * 10;
+            if (decade < 1950) decade = 1950;
+            if (decade > 2020) decade = 2020;
+            if (decade === 2020 && Math.random() < 0.5) decade = 2010;   // dünne 2020er glätten
+            var weights = MOTORSPORT_NATION_BLEND[decade] || MOTORSPORT_NATION_BLEND[2020];
+            var nations = Object.keys(weights), total = 0, i, w;
+            for (i = 0; i < nations.length; i++) {
+                w = weights[nations[i]];
+                if (dampUSA && nations[i] === 'USA') w *= 0.5;
+                total += w;
+            }
+            var rand = Math.random() * total, cum = 0;
+            for (i = 0; i < nations.length; i++) {
+                w = weights[nations[i]];
+                if (dampUSA && nations[i] === 'USA') w *= 0.5;
+                cum += w;
+                if (rand <= cum) return nations[i];
+            }
+            return nations[nations.length - 1];
+        }
+
         // Legacy: keep NATIONS for backwards compat (used by Indy-check elsewhere)
         const NATIONS = ['🇮🇹','🇩🇪','🇫🇷','🇬🇧','🇪🇸','🇧🇷','🇦🇷','🇦🇺','🇯🇵','🇫🇮','🇸🇪','🇳🇱','🇧🇪','🇦🇹','🇨🇭','🇵🇱'];
         
@@ -4930,13 +4976,16 @@
             </div>`;
         }
 
-        function generateDriver(teamId, year, isRookie = true) {
+        function generateDriver(teamId, year, isRookie = true, nationSource = 'decade') {
             // Prüfe ob dies ein Indy-500-only Team ist
             const team = GAME_STATE.teams?.find(t => t.id === teamId);
             const isIndyTeam = team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId));
 
-            // Nation zuerst (Indy immer USA) – Namen kommen aus dem nationskohärenten Pool
-            const nation = isIndyTeam ? 'USA' : pickNationByDecade(year);
+            // Nation zuerst (Indy immer USA) – Namen kommen aus dem nationskohärenten Pool.
+            // nationSource='motorsport' → F1-naher Motorsport-Trichter (Reserve-Pool nach
+            // Template-Horizont, mehr Vielfalt); Default 'decade' = F1-realer DECADE_NATION_POOLS.
+            const nation = isIndyTeam ? 'USA'
+                : (nationSource === 'motorsport' ? pickNationMotorsport(year) : pickNationByDecade(year));
 
             // Nachnamen ohne Duplikate mit aktiven Fahrern
             const usedLastNames = new Set(
@@ -6238,8 +6287,10 @@
             let _genCount = 0;
             if (_tmplYears === 0) {
                 while (GAME_STATE.reservePool.length < MIN_POOL) {
-                    // Überwiegend junge Rookies (Feeder-Aufsteiger), gelegentlich erfahren
-                    const gd = generateDriver(null, year, Math.random() < 0.8);
+                    // Überwiegend junge Rookies (Feeder-Aufsteiger), gelegentlich erfahren.
+                    // nationSource='motorsport': F1-naher Motorsport-Trichter (sharesF1Blend) statt
+                    // versiegender DECADE_NATION_POOLS[2020] → mehr Nationen-Vielfalt (Brief P.2).
+                    const gd = generateDriver(null, year, Math.random() < 0.8, 'motorsport');
                     if (!gd) break;
                     gd.team = null;
                     gd.status = 'active';
@@ -11957,6 +12008,8 @@
             { id: 'f3', name: 'Junior Formel 3', level: 3 },
             { id: 'f2', name: 'Junior Formel 2', level: 2 }
         ];
+        // Legacy: seit Paket A v3 zieht _makeJuniorDriver Nationen über pickNationMotorsport
+        // (gewichtete Motorsport-Frequenz je Dekade). Liste nur noch als Referenz/Fallback.
         const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NED','SWE','FIN','BEL','DEN','AUT','SUI','ARG'];
         const _JW_PTS = [25,18,15,12,10,8,6,4,2,1];
 
@@ -11983,7 +12036,9 @@
             const pace = 58 + ((Math.random() * 28) | 0);   // 58–85 Einstieg
             // Nation ZUERST → nationskohärenter Name aus denselben Paket-A-Pools wie die F1
             // (kein "Jacques Müller": Vor+Nachname stammen aus derselben Region der Nation).
-            const nation = _jwRand(JUNIOR_NATIONS);
+            // Gewichtete Motorsport-Frequenz je Dekade (Fable Paket A v3) statt gleichgewichtet;
+            // dampUSA=true für die europäisch geprägten F3/F2-Junior-Grids (en-Wiki-Bias).
+            const nation = pickNationMotorsport(year, true);
             const usedNames = new Set((jw.drivers || []).map(d => d.name));
             const usedLast  = new Set((jw.drivers || []).map(d => d.name.split(' ').slice(-1)[0]));
             let name = '';
