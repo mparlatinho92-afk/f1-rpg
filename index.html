@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.43</title>
+    <title>F1 RPG v0.9.14.44</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.43 (aktuell) - 06.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.44 (aktuell) - 06.07.2026</div>
+                            <div>&#8226; FIX: Alt-Spielstände werden beim Laden einmalig bereinigt – Indy-only-Fahrer verlieren vorgeseedete Zukunfts-Karrieren (Sim-Anteil bleibt exakt erhalten)</div>
+                            <div>&#8226; FIX: Auch eingefrorene Nachruf-Bilanzen vergangener Indy-Todesfälle werden mitkorrigiert</div>
+                            <div class="font-bold text-slate-400">v0.9.14.43 - 06.07.2026</div>
                             <div>&#8226; FIX: Indy-only-Fahrer werden nicht mehr mit kompletter realer Karriere (inkl. Zukunft) vorgeseedet – Statistik kommt jetzt überall aus der Sim-Zeitlinie</div>
                             <div>&#8226; FIX: '1 Grand-Prix-Starts' → korrekter Singular in Nachruf-Bilanzen</div>
                             <div>&#8226; NEU: Deutlich mehr Abschieds-/Nachruf-Varianten – weniger Wiederholungen bei mehreren Karriereenden pro Saison</div>
@@ -2852,7 +2855,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.43';
+        const VERSION = '0.9.14.44';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5281,6 +5284,7 @@
         // === DER EINZIGE GLOBALE ZUSTAND ===
         let GAME_STATE = {
             version: VERSION,
+            _indySeedFixed: true,   // v0.9.14.44: Neuspiele seeden korrekt (Sim-Zeitlinie)
             templateUsed: null,
             currentYear: 2024,
             currentRace: 0,
@@ -5327,6 +5331,83 @@
 
         // === SANITIZER - Spielstand-Validierung und Default-Werte ===
         // Diese Funktion stellt sicher, dass alte Spielstände mit neuen Features kompatibel sind
+        // v0.9.14.44: Einmal-Migration für Alt-Saves — entfernt den alten Voll-
+        // Karriere-Seed (inkl. Zukunft, v0.8.2.4) der Indy-only-Fahrer aus
+        // allTimeStATS und ersetzt ihn durch die Vor-Startjahr-Vorgeschichte
+        // (Design-Regel: Statistik = Sim-Zeitlinie; getHistoricalStATS-Fix v0.9.14.43).
+        //   korrigiert = aktuell − Alt-Seed(volle Karriere) + Neu-Seed(< Startjahr)
+        // Der Sim-Anteil bleibt exakt erhalten (beide Seeds sind aus HIST-Daten
+        // deterministisch rekonstruierbar — keine schweren History-Records nötig).
+        // Korrigiert auch eingefrorene obitStats vergangener Indy-Todesfälle/
+        // -Rücktritte (leichte History-Felder). Setzt state._indySeedFixed.
+        function migrateIndySeedStats(state) {
+            if (!state || !state.allTimeStATS || typeof isIndyOnlyDriver !== 'function' ||
+                typeof HIST_DRIVERS === 'undefined' || typeof HIST_SEASONS === 'undefined') return false;
+            const startYear = parseInt(state.templateUsed) || 1950;
+            const FIELDS = ['wins', 'podiums', 'poles', 'points', 'races', 'championships'];
+            // Alt-Seed (alle Saisons) vs. Neu-Seed (< Startjahr) — exakt die Formeln
+            // aus getHistoricalStATS, damit die Differenz den Seed vollständig aufhebt
+            const deltaFor = (histId) => {
+                const data = HIST_DRIVERS[histId];
+                const seasons = HIST_SEASONS[histId] || [];
+                if (!data || seasons.length === 0) return null;
+                const calc = (list) => ({
+                    wins: list.reduce((s, x) => s + x[2], 0),
+                    podiums: list.reduce((s, x) => s + x[3], 0),
+                    points: Math.round(list.reduce((s, x) => s + x[4], 0) * 10) / 10,
+                    championships: list.filter(x => x[1] === '1').length,
+                    races: Math.round(data[4] * list.length / seasons.length),
+                    poles: Math.round(data[2] * list.length / seasons.length)
+                });
+                const pre = seasons.filter(s => s[0] < startYear);
+                return {
+                    oldSeed: calc(seasons),
+                    newSeed: pre.length ? calc(pre) : { wins: 0, podiums: 0, poles: 0, points: 0, races: 0, championships: 0 },
+                    pre
+                };
+            };
+            const applyDelta = (obj, d) => {
+                FIELDS.forEach(f => {
+                    if (obj[f] === undefined) return; // nur vorhandene Felder anfassen (obitStats hat weniger)
+                    const v = (obj[f] || 0) - d.oldSeed[f] + d.newSeed[f];
+                    obj[f] = Math.max(0, f === 'points' ? Math.round(v * 10) / 10 : Math.round(v));
+                });
+            };
+            let changed = 0;
+            for (const [key, entry] of Object.entries(state.allTimeStATS.drivers || {})) {
+                if (!isIndyOnlyDriver(key)) continue;
+                const d = deltaFor(key);
+                if (!d) continue;
+                applyDelta(entry, d);
+                if (d.pre.length) {
+                    entry.firstYear = Math.min(...d.pre.map(s => s[0]));
+                    entry.lastYear = Math.max(...d.pre.map(s => s[0]));
+                    entry.seasons = d.pre;
+                } else {
+                    delete entry.seasons;
+                }
+                // Leere Hüllen (nie im Sim gefahren, keine Vorgeschichte) entfernen —
+                // werden beim ersten echten Start automatisch neu angelegt
+                if (FIELDS.every(f => !(entry[f] > 0))) {
+                    delete state.allTimeStATS.drivers[key];
+                }
+                changed++;
+            }
+            // Eingefrorene obitStats in History-Todesfällen/-Rücktritten (leichte Felder)
+            (state.history || []).forEach(h => {
+                [h.deaths, h.retirements].forEach(list => (list || []).forEach(e => {
+                    if (!e || !e.obitStats || !e.histId || !isIndyOnlyDriver(e.histId)) return;
+                    const d = deltaFor(e.histId);
+                    if (!d) return;
+                    applyDelta(e.obitStats, d);
+                    changed++;
+                }));
+            });
+            state._indySeedFixed = true;
+            if (changed > 0) logInfo('MIGRATE', `Indy-Seed-Korrektur: ${changed} Einträge auf Sim-Zeitlinie bereinigt`);
+            return changed > 0;
+        }
+
         function sanitizeGameState(state) {
             if (!state) return state;
             
@@ -5757,7 +5838,13 @@
                     migrationCount++;
                 }
             }
-            
+
+            // ── Migration v0.9.14.44: Indy-Seed auf Sim-Zeitlinie korrigieren ────
+            // (Einmal-Marker _indySeedFixed; Neuspiele ab v0.9.14.44 setzen ihn direkt)
+            if (!sanitized._indySeedFixed && migrateIndySeedStats(sanitized)) {
+                migrationCount++;
+            }
+
             // ── Migration: gapSec für alte Rennergebnisse backfüllen ─────────────
             // Laufende Saison: score vorhanden → exakte Berechnung
             if (Array.isArray(sanitized.results)) {
@@ -7274,6 +7361,7 @@
 
             GAME_STATE = {
                 version: VERSION,
+                _indySeedFixed: true,   // v0.9.14.44: Neuspiele seeden korrekt (Sim-Zeitlinie)
                 templateUsed: templateId,
                 currentYear: template.startYear,
                 currentRace: 0,
@@ -7360,6 +7448,7 @@
             
             GAME_STATE = {
                 version: VERSION,
+                _indySeedFixed: true,   // v0.9.14.44: Neuspiele seeden korrekt (Sim-Zeitlinie)
                 templateUsed: year.toString(),
                 currentYear: year,
                 currentRace: 0,
