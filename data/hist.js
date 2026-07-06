@@ -3245,14 +3245,19 @@ function getHistoricalStATS(startYear) {
     
     for (const [driverId, data] of Object.entries(HIST_DRIVERS)) {
         const [wins, podiums, poles, points, races, championships, firstYear, lastYear] = data;
-        // v0.8.2.4: Indy/F1 Flag – muss VOR den Filtern stehen
+        // v0.8.2.4: Indy/F1 Flag
         const driverIsIndyOnly = isIndyOnlyDriver(driverId);
-        if (!driverIsIndyOnly && firstYear >= startYear) continue;
+        // v0.9.14.43: Indy-only NICHT mehr ausgenommen — seit dem Indy/F1-Crossover
+        // fahren sie im Sim mit (Indy 500) und können sterben. Design-Regel:
+        // Sämtliche Statistik kommt aus der Sim-Zeitlinie; nur Saisons VOR dem
+        // Startjahr sind gemeinsame Vorgeschichte, Zukunft wird nie geseedet.
+        // (Vorher: komplette reale Karriere inkl. Zukunft → "9 Starts" im Jahr 1
+        // + Doppelzählung mit Sim-Indy-Starts.)
+        if (firstYear >= startYear) continue;
 
         // Berechne StATS bis Vorjahr aus echten Saison-Daten
         const seasons = HIST_SEASONS[driverId] || [];
-        // Indy-only Fahrer kommen nie in die Simulation → komplette Karriere zeigen
-        const relevantSeasons = driverIsIndyOnly ? seasons : seasons.filter(s => s[0] < startYear);
+        const relevantSeasons = seasons.filter(s => s[0] < startYear);
 
         if (relevantSeasons.length === 0) continue;
 
@@ -3261,8 +3266,7 @@ function getHistoricalStATS(startYear) {
         const calcPoints = relevantSeasons.reduce((sum, s) => sum + s[4], 0);
         const calcChamps = relevantSeasons.filter(s => s[1] === '1').length;
         const calcFirst = Math.min(...relevantSeasons.map(s => s[0]));
-        // Indy-only: echtes Karrierende aus HIST_DRIVERS, nicht auf startYear gekappt
-        const calcLast = driverIsIndyOnly ? lastYear : Math.max(...relevantSeasons.map(s => s[0]));
+        const calcLast = Math.max(...relevantSeasons.map(s => s[0]));
 
         result.drivers[driverId] = {
             name: HIST_NAMES[driverId] || driverId,
