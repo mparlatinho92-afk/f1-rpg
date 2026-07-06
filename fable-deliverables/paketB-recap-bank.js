@@ -314,7 +314,8 @@ function seasonRecapText(champion, teamChampion, driverStandings, teamStandings,
         maxWinnerSiegeNom: maxWinner ? _recapSiege(maxWinner.wins, false) : '',
         deadName: deaths[0] ? deaths[0].name : '',
         deadTeam: deaths[0] ? (deaths[0].team || '?') : '',
-        deadRace: deaths[0] ? (deaths[0].raceName || 'Rennwochenende') : '',
+        // führendes Jahr im Rennnamen strippen ("1951 Indianapolis 500" → "beim Indianapolis 500")
+        deadRace: deaths[0] ? (deaths[0].raceName || 'Rennwochenende').replace(/^\d{4}\s+/, '') : '',
         deadList: _recapNameList(deaths.map(d => d.name)),
         deadCount: String(deaths.length),
         klasseNom: era.klasseNom, klasseGen: era.klasseGen, klasseIn: era.klasseIn,
@@ -351,5 +352,6 @@ function seasonRecapText(champion, teamChampion, driverStandings, teamStandings,
 
 // Node-Testbarkeit (im Browser-Monolith wirkungslos)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { seasonRecapText, RECAP_BANK, RECAP_ERA_WORDS };
+    module.exports = { seasonRecapText, RECAP_BANK, RECAP_ERA_WORDS,
+        _recapHash, _recapRng, _recapPick, _recapNum, _recapFill };
 }
