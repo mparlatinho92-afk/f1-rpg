@@ -207,7 +207,10 @@ const OBIT_BANK = {
             'An den Strecken werden die Fahnen auf halbmast wehen.',
             'Das Fahrerlager trauert – und fährt weiter, wie es immer fährt.',
             'Es wird stiller sein {klasseIn}, wenn die Motoren das nächste Mal starten.',
-            'Sein Name bleibt – in den Listen und in den Köpfen.'
+            'Sein Name bleibt – in den Listen und in den Köpfen.',
+            'Beim nächsten Start wird eine Schweigeminute mehr sagen als jedes Wort.',
+            'Der Sport geht weiter – ärmer als zuvor.',
+            'Es gibt Verluste, die keine Saison heilt.'
         ]
     },
     abschied: {
@@ -238,19 +241,31 @@ const OBIT_BANK = {
             generic: [
                 '{nameE} hängt den Helm an den Nagel.',
                 'Für {name} ist Schluss – der Sport zieht weiter, der Dank bleibt.',
-                '{nameE} verabschiedet sich aus dem Grand-Prix-Zirkus.'
+                '{nameE} verabschiedet sich aus dem Grand-Prix-Zirkus.',
+                'Ohne Getöse, ohne große Bühne: {nameE} tritt ab.',
+                'Für {name} endet, was ihn ein Fahrerleben lang getragen hat.'
             ]
         },
         stats: [
             'Zurück bleiben {bilanz} – und unzählige Geschichten.',
             'Am Ende stehen {bilanz}.',
-            'Seine Bilanz: {bilanz}.'
+            'Seine Bilanz: {bilanz}.',
+            'Was bleibt: {bilanz}.',
+            'Die Zahlen: {bilanz}. Die Geschichten dahinter erzählen andere weiter.'
         ],
         close: [
             'Man wird ihn {klasseIn} vermissen.',
             'Die Startaufstellung wird ohne ihn ein Stück ärmer sein.',
             'Was bleibt, ist Dankbarkeit.',
-            'Die Boxengasse verliert ein vertrautes Gesicht.'
+            'Die Boxengasse verliert ein vertrautes Gesicht.',
+            'Sein Platz im Fahrerlager bleibt unbesetzt – der in den Erinnerungen nicht.',
+            'Es ist ein Abschied ohne Bitterkeit – so, wie ihn sich jeder wünscht.',
+            'Der Sport behält ihn als einen der Seinen in Erinnerung.',
+            'Und irgendwann, bei irgendeinem Rennen, wird jemand fragen: Weißt du noch?',
+            'Das Fahrerlager verliert einen, der dazugehörte.',
+            'Nun beginnt das Leben nach dem Rennsport.',
+            'Der Helm ruht – die Erinnerungen nicht.',
+            'Auch das gehört zum Rennsport: der Moment, in dem einer geht.'
         ]
     }
 };
@@ -281,7 +296,7 @@ function _obitBilanz(stats) {
     const parts = [];
     const starts = stats.races || 0, wins = stats.wins || 0,
           podiums = stats.podiums || 0, titles = stats.championships || 0;
-    if (starts > 0) parts.push(`${starts} Grand-Prix-Starts`);
+    if (starts > 0) parts.push(`${starts} ${starts === 1 ? 'Grand-Prix-Start' : 'Grand-Prix-Starts'}`);
     if (wins > 0) parts.push(`${wins} ${wins === 1 ? 'Sieg' : 'Siege'}`);
     else if (podiums > 0) parts.push(`${podiums} ${podiums === 1 ? 'Podestplatz' : 'Podestplätze'}`);
     if (titles > 0) parts.push(`${titles} WM-Titel`);

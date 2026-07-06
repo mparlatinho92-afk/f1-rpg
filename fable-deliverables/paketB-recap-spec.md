@@ -75,6 +75,27 @@ Jeder Satz stützt sich nur auf State-Werte + neutrale Ära-Färbung. Verboten: 
 die der State nicht hergibt („sein erster Titel", „nach seinem Unfall in …",
 Charakter-Zuschreibungen zu realen Personen), erfundene Unfallursachen bei Todesfällen.
 
+## 5b. Phrasen-Bank erweitern — vollständige Regeln (self-contained, kein
+## Session-Memory nötig)
+
+1. **Quelle ist `fable-deliverables/paketB-recap-bank.js`** — dort editieren, dann den
+   Inline-Block in index.html (RECAP_ERA_WORDS bis inkl. seasonRecapText, vor
+   `isRookieChampionCheck`) synchron halten. NIE nur eine Kopie ändern.
+2. **Kasus-Tokens nie mischen:** Zahl-Tokens sind fertige Nominalphrasen in festem
+   Kasus — `{gapNom}`/`{gapDat}`/`{gapAkk}` („um {gapAkk}"!, „mit {gapDat}",
+   „{gapNom} Vorsprung"), `{siegeNom}`/`{siegeDat}`. Nie nackte Zahlen mit
+   angehängtem „Sieg(e)/Punkt(e)" im Template bilden.
+3. **Verb-Kongruenz-Falle:** Konstruktionen, deren Verb-Numerus vom Zahlwert abhängt
+   („trennte(n) … ein Punkt / 3 Punkte") vermeiden — auf invariante Formen umbauen
+   („betrug der Abstand … {gapAkk}").
+4. **Ära-Tokens:** feste grammatische Rollen — `{klasseNom}`/`{presseNom}`/`{publikum}`
+   nur als Subjekt (alle Singular!), `{klasseGen}` nur Genitiv-Attribut, `{klasseIn}`
+   fertige Präpositionalphrase, `{fahrerPl}` Plural-Nomen.
+5. **Rückwirkung:** Pool-Änderungen ändern die Phrasen-WAHL auch rückwirkend für alte
+   Saisons (deterministischer Pick über Poolgröße; Off-Season regeneriert). Fakten
+   bleiben korrekt — bewusst akzeptierter Trade-off der 0-Byte-Regeneration.
+6. Danach: Node-Test (Szenarien wie §7), `./update-functions-index.ps1`, manage-v.
+
 ## 6. Pflicht-Nacharbeiten (Opus)
 
 1. `functions.schema.json`: `seasonRecapText` + `_recap*`-Helfer eintragen

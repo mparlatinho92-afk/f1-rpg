@@ -63,6 +63,33 @@ Assembler degradiert dann auf generische Bausteine ohne Bilanz-Satz.
   Felder: Live-Lookup-Fallback, sonst generische Würdigung. Abschied nur für
   Typ age/gaveup (Entlassene bekommen keinen warmen Abschiedstext).
 
+## 3b. Phrasen-Bank erweitern — vollständige Regeln (self-contained, kein
+## Session-Memory nötig)
+
+1. **Quelle ist `fable-deliverables/paketC-obituary-bank.js`** — dort editieren,
+   dann den Inline-Block in index.html (zwischen `// FABLE PAKET C`-Header und
+   `function showSeasonEndModal()`) daraus neu generieren (Export-Block
+   entfernen, 8 Spaces Basis-Indent). NIE nur eine der beiden Kopien ändern.
+2. **Lore (`DRIVER_LORE`):** nur Herkunft/Fahrstil/Charakter/etablierte
+   Spitznamen — NIE reale Erfolge/Titel (§1). Maskuline/neutrale
+   NOMINATIV-Apposition ("der stille Schotte"), Key = kebab-case-Name ohne
+   Akzente (`_obitNameKey`).
+3. **Templates:** `{nameE}` ausschließlich in Subjekt-Position (Nominativ);
+   `{name}` ist kasus-frei; `{bilanz}` nur als Aufzählung einbetten (Ziffern,
+   kasus-invariant, aber NUMERUS beachten: 1 → Singular-Nomen im Builder);
+   Ära-Tokens: `{klasseNom}` nur als Subjekt, `{klasseIn}` fertige
+   Präpositionalphrase, `{klasseGen}` nur Genitiv-Attribut. Satzanfänge werden
+   automatisch großgeschrieben (Tokens dürfen vorn stehen).
+4. **Wiederholungs-Faustegel:** close-/stats-Pools ≥ 8 bzw. ≥ 5 Varianten
+   halten — bei mehreren Todesfällen/Rücktritten pro Saison werden sonst
+   sichtbar gleiche Schlusssätze untereinander gezogen (Seed ist pro Fahrer,
+   Kollisionen sind Zufall).
+5. **Rückwirkung:** Pool-Änderungen ändern die Phrasen-WAHL auch rückwirkend
+   für alte Saisons (deterministischer Pick über Poolgröße). Fakten bleiben
+   korrekt — bewusst akzeptierter Trade-off der 0-Byte-Regeneration.
+6. Danach: Node-Test (Szenarien in `tests`-Abschnitt unten bzw. Scratch),
+   `./update-functions-index.ps1`, manage-v.
+
 ## 4. Pflicht-Nacharbeiten (Opus)
 
 1. functions.schema.json: `obituaryText`, `_obitNameKey`, `_obitIsReal`,
