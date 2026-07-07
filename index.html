@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.48</title>
+    <title>F1 RPG v0.9.14.49</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.48 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.49 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; NEU: Ansehen-Ruf-Badge in den Off-Season-Transfermeldungen (Verträge & Wechsel)</div>
+                            <div>&#8226; NEU: Ansehen-Diagramm bleibt für ehemalige Fahrer erhalten</div>
+                            <div>&#8226; FIX: Ansehen-Verlaufskurve dezenter (dünnere Linien)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.48 - 07.07.2026</div>
                             <div>&#8226; NEU: Ansehen-Panel im Fahrerprofil mit Einstufung, Stufentext & EMA-Verlaufskurve</div>
                             <div>&#8226; NEU: Fahrer-Ansehen startet kaliber-gerecht (Prognose) statt neutral</div>
                             <div>&#8226; NEU: Ansehen (Ruf) und Zufriedenheit sind getrennt – ein Star bleibt trotz schwacher Saison angesehen</div>
@@ -2872,7 +2876,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.48';
+        const VERSION = '0.9.14.49';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11048,6 +11052,16 @@
                     ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${t.driverId}')">${t.driverName}</span>`
                     : (t.driverName || '–');
 
+                // Ansehen-Badge für Transfer-Meldungen (Ruf zum Transfer-Zeitpunkt, färbt nach Tier)
+                const _repBadge = (drvId) => {
+                    const rd = drvId && GAME_STATE.drivers.find(d => d.id === drvId);
+                    const r = rd && typeof rd.reputation === 'number' ? rd.reputation : null;
+                    if (r === null) return '';
+                    const c = r >= 80 ? '#FBBF24' : r >= 65 ? '#22C55E' : r >= 50 ? '#38BDF8' : r >= 35 ? '#F59E0B' : '#EF4444';
+                    const e = r >= 80 ? '⭐' : r >= 65 ? '🏅' : r >= 50 ? '📊' : r >= 35 ? '⚠️' : '🔻';
+                    return ` <span title="Ansehen (Ruf)" style="font-size:0.68rem;padding:0 4px;border-radius:3px;background:${c}22;color:${c};border:1px solid ${c}44;font-weight:600;white-space:nowrap">${e}${r}</span>`;
+                };
+
                 // IDs aller Fahrer die vorzeitig freigestellt wurden (für Merge-Check)
                 const releasedIds = new Set(allTransfers.filter(t => t.type === 'released').map(t => t.driverId));
                 // IDs aller Fahrer die als Free Agent verpflichtet wurden
@@ -11179,7 +11193,7 @@
                         <div class="space-y-1">
                         ${vertragsEntries.map(e => `
                             <div class="text-sm py-0.5">
-                                ${tLink(e.t)}<span style="color:var(--text-muted)"> · ${e.left} → </span><span style="color:${e.color};font-weight:600">${e.right}</span>
+                                ${tLink(e.t)}${_repBadge(e.t.driverId)}<span style="color:var(--text-muted)"> · ${e.left} → </span><span style="color:${e.color};font-weight:600">${e.right}</span>
                             </div>
                         `).join('')}
                         </div>
@@ -11209,7 +11223,7 @@
                                     ? `${t.fromTeam} → ${t.toTeam}`
                                     : `→ ${t.toTeam}`;
                                 const score = showScore && t.score ? ` <span style="color:var(--text-muted)">(${t.score}/100)</span>` : '';
-                                return `<div class="text-sm ml-3 py-0.5">${tLink(t)} <span style="color:var(--text-muted)">${route}</span>${score}</div>`;
+                                return `<div class="text-sm ml-3 py-0.5">${tLink(t)}${_repBadge(t.driverId)} <span style="color:var(--text-muted)">${route}</span>${score}</div>`;
                             }).join('')}
                         </div>`;
 
@@ -21187,8 +21201,11 @@ Empfohlene Wertebereiche:
 
                 <!-- Ansehen / Reputation (Welle 2) -->
                 ${(() => {
-                    const _rdrv = isCurrentlyActive ? GAME_STATE.drivers.find(d => d.id === driverId) : null;
-                    if (!_rdrv) return '';
+                    // Aktive UND ehemalige Fahrer: Ansehen-Diagramm bleibt aus statistischen Gründen
+                    // erhalten (retired-Fahrer bleiben in GAME_STATE.drivers samt repHistory).
+                    const _rdrv = driver || null;
+                    const _hasRepData = _rdrv && (typeof _rdrv.reputation === 'number' || (_rdrv.repHistory && _rdrv.repHistory.length));
+                    if (!_rdrv || (!isCurrentlyActive && !_hasRepData)) return '';
                     const rep = (typeof _rdrv.reputation === 'number') ? _rdrv.reputation : seedReputationFromPace(_rdrv);
                     const seeded = typeof _rdrv.reputation !== 'number';
                     const tier = rep >= 80 ? { t: 'Superstar',    c: '#FBBF24', e: '⭐', d: 'Ein Name, der T&uuml;ren &ouml;ffnet — Topteams rei&szlig;en sich um ihn, jeder Fehltritt wird zur Schlagzeile.' }
@@ -21206,17 +21223,17 @@ Empfohlene Wertebereiche:
                         const Y = v => pt + ih * (1 - Math.max(0, Math.min(100, v)) / 100);
                         const repLine = h.map((e, i) => `${X(i).toFixed(1)},${Y(e.rep).toFixed(1)}`).join(' ');
                         const rawLine = h.map((e, i) => `${X(i).toFixed(1)},${Y(e.raw).toFixed(1)}`).join(' ');
-                        const repDots = h.map((e, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(e.rep).toFixed(1)}" r="2.5" fill="${tier.c}"/>`).join('');
-                        const rawDots = h.map((e, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(e.raw).toFixed(1)}" r="1.6" fill="rgba(148,163,184,0.65)"/>`).join('');
+                        const repDots = h.map((e, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(e.rep).toFixed(1)}" r="1.7" fill="${tier.c}"/>`).join('');
+                        const rawDots = h.map((e, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(e.raw).toFixed(1)}" r="1.4" fill="rgba(148,163,184,0.6)"/>`).join('');
                         const g75 = Y(75).toFixed(1), g35 = Y(35).toFixed(1);
                         trend = `<div class="mt-3">
                             <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible">
                                 <line x1="${pl}" y1="${g75}" x2="${W - pr}" y2="${g75}" stroke="rgba(148,163,184,0.35)" stroke-width="1" stroke-dasharray="3 3"/>
                                 <line x1="${pl}" y1="${g35}" x2="${W - pr}" y2="${g35}" stroke="rgba(148,163,184,0.22)" stroke-width="1" stroke-dasharray="3 3"/>
                                 <text x="${pl}" y="${(parseFloat(g75) - 3).toFixed(1)}" text-anchor="start" font-size="8" fill="rgba(148,163,184,0.85)">75 · Champion-Floor</text>
-                                <polyline points="${rawLine}" fill="none" stroke="rgba(148,163,184,0.6)" stroke-width="1" stroke-dasharray="4 3"/>
+                                <polyline points="${rawLine}" fill="none" stroke="rgba(148,163,184,0.55)" stroke-width="0.8" stroke-dasharray="4 3"/>
                                 ${rawDots}
-                                <polyline points="${repLine}" fill="none" stroke="${tier.c}" stroke-width="2.5" stroke-linejoin="round"/>
+                                <polyline points="${repLine}" fill="none" stroke="${tier.c}" stroke-width="1.4" stroke-linejoin="round" opacity="0.9"/>
                                 ${repDots}
                                 <text x="${pl}" y="${H - 4}" font-size="9" fill="rgba(148,163,184,0.9)">${h[0].year}</text>
                                 <text x="${W - pr}" y="${H - 4}" text-anchor="end" font-size="9" fill="rgba(148,163,184,0.9)">${h[h.length - 1].year}</text>
