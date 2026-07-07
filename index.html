@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.50</title>
+    <title>F1 RPG v0.9.14.51</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.50 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.51 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; FIX: Schwache Teams werden nicht mehr durch Star-Fahrer hochgezogen (carSpeed folgt dem Auto, nicht dem Fahrer)</div>
+                            <div>&#8226; FIX: Car-Ceiling enger justiert – Backmarker holen realistischere Punkte (Minardi 2001 ~5 statt ~24)</div>
+                            <div>&#8226; BALANCE: Top-Team-Dominanz & historische Anker (1988 McLaren) unveraendert</div>
+                            <div class="font-bold text-slate-400">v0.9.14.50 - 07.07.2026</div>
                             <div>&#8226; FIX: Ansehen-Verlaufskurve erscheint jetzt auch bei ehemaligen Fahrern</div>
                             <div>&#8226; FIX: Debüt-Badge nur noch im echten Debütjahr statt in jeder Saison</div>
                             <div>&#8226; NEU: 43 historische Cockpit-Korrekturen 1952-1991 (Paket E) – realistischere Ein-Auto-Backmarker</div>
@@ -2880,7 +2884,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.50';
+        const VERSION = '0.9.14.51';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -7922,7 +7926,11 @@
                     : null;
                 const _effPace     = (_prData && _prData[0] > 0) ? _prData[0] : (driver.pace || 70);
                 const _effCon      = driver.consistency ?? 75; // immer aus driver-Objekt – editierbar im Editor
-                const _effCarSpeed  = (_prData && _prData[3] > 0) ? _prData[3] : team.carSpeed;
+                // carSpeed = Eigenschaft des TEAMS/Autos, NICHT des Fahrers. PACE_RATINGS[3] (reale
+                // Karriere-carSpeed) nur als Fallback, wenn das Team keinen Wert hat – sonst würde ein
+                // Star-Fahrer die carSpeed seines echten Top-Teams zu einem Backmarker mitbringen
+                // (Paket-D HOCH#1, Befund b: „Auto folgt dem Fahrer"). [SYNC simulateRace]
+                const _effCarSpeed  = (team.carSpeed > 0) ? team.carSpeed : ((_prData && _prData[3] > 0) ? _prData[3] : 70);
                 // Konstanz = P(Skill-Zugriff): Schlechter Tag → Pace + Regen komplett weg
                 const _consVal = isRain ? (driver.rain ?? 75) : _effCon;
                 const _isGoodDay = Math.random() < (_consVal / 100);
@@ -7942,10 +7950,12 @@
                 // (carSpeed + Headroom) wird Mehrleistung stark gestaucht (nicht hart gekappt).
                 // Ein Ausnahme-Fahrer hebt ein schwaches Auto also spürbar, aber nicht bis an die
                 // Spitze – er wird vom Material ausgebremst. Reputation/Ansehen dafür = Welle 2.
-                // Parameter konservativ, via Monte-Carlo feinjustieren.
+                // Parameter MC-getunt (Paket-D HOCH#1, v0.9.14.51): HEADROOM 12→6, SOFT 0.35→0.25 →
+                // Minardi 2001 Ø ~5 P (real 0), 1988 McLaren bleibt 100 %/Senna-Champion. Greift nur
+                // bei schwachen Autos (bei Top-Teams liegt der Ceiling weit über ihrer Leistung).
                 // [SYNC simulateRace] Gegenstück im Live-Ticker (Lap-Pace) folgt als eigener Schritt.
-                const _CEIL_HEADROOM = 12;    // Punkte über carSpeed ohne Stauchung
-                const _CEIL_SOFT     = 0.35;  // Reststeigung oberhalb der Schwelle
+                const _CEIL_HEADROOM = 6;     // Punkte über carSpeed ohne Stauchung
+                const _CEIL_SOFT     = 0.25;  // Reststeigung oberhalb der Schwelle
                 const _carCeil = _effCarSpeed + _CEIL_HEADROOM;
                 if (performance > _carCeil) {
                     performance = _carCeil + (performance - _carCeil) * _CEIL_SOFT;
