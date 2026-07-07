@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.49</title>
+    <title>F1 RPG v0.9.14.50</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.49 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.50 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; FIX: Ansehen-Verlaufskurve erscheint jetzt auch bei ehemaligen Fahrern</div>
+                            <div>&#8226; FIX: Debüt-Badge nur noch im echten Debütjahr statt in jeder Saison</div>
+                            <div>&#8226; NEU: 43 historische Cockpit-Korrekturen 1952-1991 (Paket E) – realistischere Ein-Auto-Backmarker</div>
+                            <div class="font-bold text-slate-400">v0.9.14.49 - 07.07.2026</div>
                             <div>&#8226; NEU: Ansehen-Ruf-Badge in den Off-Season-Transfermeldungen (Verträge & Wechsel)</div>
                             <div>&#8226; NEU: Ansehen-Diagramm bleibt für ehemalige Fahrer erhalten</div>
                             <div>&#8226; FIX: Ansehen-Verlaufskurve dezenter (dünnere Linien)</div>
@@ -2876,7 +2880,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.49';
+        const VERSION = '0.9.14.50';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16508,8 +16512,12 @@
                         .map(d => {
                             const standing = yearData.driverStandings?.[d.id] || {};
                             const sHistSeasons = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[d.histId || d.id] || []) : [];
-                            const prevSimSeasons = (GAME_STATE.history || []).filter(h => h.year < yearData.year);
-                            const playedBefore = prevSimSeasons.some(h => (h.drivers || []).some(hd => hd.id === d.id || (d.histId && hd.histId === d.histId)));
+                            // Debüt = echtes erstes F1-Jahr. Historisch: min. HIST_SEASONS-Jahr; generiert:
+                            // debutYear. NICHT über h.drivers prüfen (heavy field, im Steady-State leer →
+                            // generierte Fahrer bekämen sonst in JEDER Saison ein "Debüt"-Badge).
+                            const _trueDebut = sHistSeasons.length
+                                ? Math.min(...sHistSeasons.map(s => s[0]))
+                                : (typeof d.debutYear === 'number' ? d.debutYear : null);
                             return {
                                 id: d.id,
                                 histId: d.histId,
@@ -16519,7 +16527,7 @@
                                 wins: standing.wins || 0,
                                 satisfaction: typeof evaluateDriverPerformance === 'function' ? (evaluateDriverPerformance(d.id)?.score ?? null) : null,
                                 isChampion: d.name === championName,
-                                isDebut: !playedBefore && !sHistSeasons.some(s => s[0] < yearData.year),
+                                isDebut: _trueDebut != null && _trueDebut === yearData.year,
                                 isPrivateer: d.isPrivateer || false,
                                 isIndyOnly: isIndyOnlyDriver(d.histId || d.id),
                                 number: d.number,
@@ -21204,17 +21212,38 @@ Empfohlene Wertebereiche:
                     // Aktive UND ehemalige Fahrer: Ansehen-Diagramm bleibt aus statistischen Gründen
                     // erhalten (retired-Fahrer bleiben in GAME_STATE.drivers samt repHistory).
                     const _rdrv = driver || null;
-                    const _hasRepData = _rdrv && (typeof _rdrv.reputation === 'number' || (_rdrv.repHistory && _rdrv.repHistory.length));
-                    if (!_rdrv || (!isCurrentlyActive && !_hasRepData)) return '';
-                    const rep = (typeof _rdrv.reputation === 'number') ? _rdrv.reputation : seedReputationFromPace(_rdrv);
-                    const seeded = typeof _rdrv.reputation !== 'number';
+                    if (!_rdrv) return '';
+                    // Ansehen-Verlauf rekonstruieren: live repHistory + reputation aus den History-
+                    // Snapshots (heavy 'drivers', hier hydriert) → Diagramm bleibt für aktive UND
+                    // ehemalige Fahrer erhalten, unabhängig davon, wie das Profil geöffnet wurde.
+                    const _repTimeline = [];
+                    const _seenYr = new Set();
+                    for (const e of (_rdrv.repHistory || [])) {
+                        if (!_seenYr.has(e.year)) { _repTimeline.push({ year: e.year, rep: e.rep, raw: e.raw }); _seenYr.add(e.year); }
+                    }
+                    for (const _s of GAME_STATE.history || []) {
+                        if (_seenYr.has(_s.year)) continue;
+                        const _hd = (_s.drivers || []).find(d => d.id === driverId || d.histId === driverId || (stATSId && d.histId === stATSId));
+                        if (_hd && typeof _hd.reputation === 'number') {
+                            const _re = (_hd.repHistory || []).find(x => x.year === _s.year);
+                            _repTimeline.push({ year: _s.year, rep: _hd.reputation, raw: _re ? _re.raw : _hd.reputation });
+                            _seenYr.add(_s.year);
+                        }
+                    }
+                    _repTimeline.sort((a, b) => a.year - b.year);
+                    const _hasRepData = typeof _rdrv.reputation === 'number' || _repTimeline.length > 0;
+                    if (!isCurrentlyActive && !_hasRepData) return '';
+                    const rep = (typeof _rdrv.reputation === 'number') ? _rdrv.reputation
+                              : _repTimeline.length ? _repTimeline[_repTimeline.length - 1].rep
+                              : seedReputationFromPace(_rdrv);
+                    const seeded = typeof _rdrv.reputation !== 'number' && _repTimeline.length === 0;
                     const tier = rep >= 80 ? { t: 'Superstar',    c: '#FBBF24', e: '⭐', d: 'Ein Name, der T&uuml;ren &ouml;ffnet — Topteams rei&szlig;en sich um ihn, jeder Fehltritt wird zur Schlagzeile.' }
                                : rep >= 65 ? { t: 'Etabliert',    c: '#22C55E', e: '🏅', d: 'Fest im Fahrerlager verankert — ein sicherer Wert, den kaum ein Team leichtfertig ziehen l&auml;sst.' }
                                : rep >= 50 ? { t: 'Solide',       c: '#38BDF8', e: '📊', d: 'Zuverl&auml;ssig und unauff&auml;llig — liefert seine Leistung ab, ohne gro&szlig;e Schlagzeilen zu machen.' }
                                : rep >= 35 ? { t: 'Unter Druck',  c: '#F59E0B', e: '⚠️', d: 'Der Sitz wackelt — muss endlich abliefern, bevor die Kritiker und die Konkurrenz lauter werden.' }
                                :             { t: 'Angeschlagen', c: '#EF4444', e: '🔻', d: 'Ruf ramponiert — kaum noch Teams, die anrufen; ein Abstieg oder das Karriereende drohen.' };
-                    // EMA-Sparkline: roher Saisonwert (springt) vs. geglättetes Ansehen (zieht nach)
-                    const _rh = _rdrv.repHistory || [];
+                    // EMA-Sparkline aus dem rekonstruierten Verlauf (roher Saisonwert vs. geglättetes Ansehen)
+                    const _rh = _repTimeline;
                     let trend = '';
                     if (_rh.length >= 2) {
                         const h = _rh.slice(-12);
