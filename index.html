@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.47</title>
+    <title>F1 RPG v0.9.14.48</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.47 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.48 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; NEU: Ansehen-Panel im Fahrerprofil mit Einstufung, Stufentext & EMA-Verlaufskurve</div>
+                            <div>&#8226; NEU: Fahrer-Ansehen startet kaliber-gerecht (Prognose) statt neutral</div>
+                            <div>&#8226; NEU: Ansehen (Ruf) und Zufriedenheit sind getrennt – ein Star bleibt trotz schwacher Saison angesehen</div>
+                            <div>&#8226; FIX: Reputation-Seed deckelt bei 72, Champion-Status wird in der Sim verdient</div>
+                            <div class="font-bold text-slate-400">v0.9.14.47 - 07.07.2026</div>
                             <div>&#8226; NEU: Nationen-Pools geglättet – mehr Vielfalt, kein Land bei 0% (Paket F)</div>
                             <div>&#8226; NEU: Reputations-System – Ansehen aus Auto-Überperformance, Titeln & Teamduellen</div>
                             <div>&#8226; NEU: Champions/Top-Fahrer wechseln nicht mehr freiwillig in Backmarker-Autos</div>
@@ -2867,7 +2872,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.47';
+        const VERSION = '0.9.14.48';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11888,6 +11893,15 @@
         // 1990–2025, ~14.900 Starts). Bei Rang > 11 wird auf R11 gekappt.
         const EXPECTATION_MEDIAN = [2, 3, 5, 7, 8, 10, 10, 11, 13, 15, 16];
 
+        // Reputations-Prior aus der Start-Pace (Kaliber): etablierte/talentierte Fahrer starten
+        // nicht bei neutral 50, sondern nahe ihrem Kaliber und konvergieren dann per EMA an die
+        // tatsächliche Sim-Leistung. Deckel bei 72 (< Champion-Floor 75) → rep≥75 muss IN der Sim
+        // verdient werden. Nutzt nur die ohnehin gesetzte Pace (kein Import realer Titel/Erfolge).
+        function seedReputationFromPace(driver) {
+            const p = (driver && (driver.currentPace || driver.pace)) || 75;
+            return Math.max(32, Math.min(72, Math.round(50 + (p - 75) * 1.2)));
+        }
+
         function updateDriverReputations() {
             const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
 
@@ -11954,8 +11968,16 @@
                 const seasonRepValue = Math.max(0, Math.min(100,
                     50 + overperfTerm + titleTerm + winTerm + podiumTerm + h2hTerm));
 
-                const old = (typeof driver.reputation === 'number') ? driver.reputation : 50;
+                const old = (typeof driver.reputation === 'number') ? driver.reputation : seedReputationFromPace(driver);
                 driver.reputation = Math.round(0.65 * old + 0.35 * seasonRepValue);
+
+                // Reputations-Verlauf für die EMA-Sparkline (raw = Saison-Rohwert, rep = geglättet).
+                // Der Abstand raw↔rep macht die EMA-Glättung sichtbar. Auf 15 Einträge begrenzt.
+                if (!driver.repHistory) driver.repHistory = [];
+                if (!driver.repHistory.some(e => e.year === GAME_STATE.currentYear)) {
+                    driver.repHistory.push({ year: GAME_STATE.currentYear, rep: driver.reputation, raw: Math.round(seasonRepValue) });
+                    if (driver.repHistory.length > 15) driver.repHistory.shift();
+                }
 
                 // Dev-Instrumentierung (nur im MC-Test aktiv, im Spiel kostenlos):
                 // legt die Reputations-Komponenten offen → H2H-Einflussanalyse.
@@ -12211,7 +12233,7 @@
                 // Welle 2: Reputation moduliert Retention. Hohe Reputation (Champion-Niveau)
                 // nimmt NIE aktiv einen Sitz unter Mittelfeld an (Paket G: P(≥Mittelfeld)≈0.96) →
                 // Downgrade-Ziele werden auf Mittelfeld gekappt (findet sich nur Backmarker → bleibt/FA).
-                const rep = (typeof driver.reputation === 'number') ? driver.reputation : 50;
+                const rep = (typeof driver.reputation === 'number') ? driver.reputation : seedReputationFromPace(driver);
                 const repUpgradeBonus = Math.max(0, rep - 50) / 100 * 0.4;   // rep 75 → +0.10, rep 100 → +0.20
                 const downgradeMax = rep >= 75 ? midTeamCount : totalTeams;   // Champion-Floor: nicht unter Mittelfeld
 
@@ -21162,6 +21184,62 @@ Empfohlene Wertebereiche:
                     </div>
                 </div>
                 ` : ''}
+
+                <!-- Ansehen / Reputation (Welle 2) -->
+                ${(() => {
+                    const _rdrv = isCurrentlyActive ? GAME_STATE.drivers.find(d => d.id === driverId) : null;
+                    if (!_rdrv) return '';
+                    const rep = (typeof _rdrv.reputation === 'number') ? _rdrv.reputation : seedReputationFromPace(_rdrv);
+                    const seeded = typeof _rdrv.reputation !== 'number';
+                    const tier = rep >= 80 ? { t: 'Superstar',    c: '#FBBF24', e: '⭐', d: 'Ein Name, der T&uuml;ren &ouml;ffnet — Topteams rei&szlig;en sich um ihn, jeder Fehltritt wird zur Schlagzeile.' }
+                               : rep >= 65 ? { t: 'Etabliert',    c: '#22C55E', e: '🏅', d: 'Fest im Fahrerlager verankert — ein sicherer Wert, den kaum ein Team leichtfertig ziehen l&auml;sst.' }
+                               : rep >= 50 ? { t: 'Solide',       c: '#38BDF8', e: '📊', d: 'Zuverl&auml;ssig und unauff&auml;llig — liefert seine Leistung ab, ohne gro&szlig;e Schlagzeilen zu machen.' }
+                               : rep >= 35 ? { t: 'Unter Druck',  c: '#F59E0B', e: '⚠️', d: 'Der Sitz wackelt — muss endlich abliefern, bevor die Kritiker und die Konkurrenz lauter werden.' }
+                               :             { t: 'Angeschlagen', c: '#EF4444', e: '🔻', d: 'Ruf ramponiert — kaum noch Teams, die anrufen; ein Abstieg oder das Karriereende drohen.' };
+                    // EMA-Sparkline: roher Saisonwert (springt) vs. geglättetes Ansehen (zieht nach)
+                    const _rh = _rdrv.repHistory || [];
+                    let trend = '';
+                    if (_rh.length >= 2) {
+                        const h = _rh.slice(-12);
+                        const W = 340, H = 96, pl = 6, pr = 6, pt = 10, pb = 18, iw = W - pl - pr, ih = H - pt - pb;
+                        const X = i => pl + iw * (i / (h.length - 1));
+                        const Y = v => pt + ih * (1 - Math.max(0, Math.min(100, v)) / 100);
+                        const repLine = h.map((e, i) => `${X(i).toFixed(1)},${Y(e.rep).toFixed(1)}`).join(' ');
+                        const rawLine = h.map((e, i) => `${X(i).toFixed(1)},${Y(e.raw).toFixed(1)}`).join(' ');
+                        const repDots = h.map((e, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(e.rep).toFixed(1)}" r="2.5" fill="${tier.c}"/>`).join('');
+                        const rawDots = h.map((e, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(e.raw).toFixed(1)}" r="1.6" fill="rgba(148,163,184,0.65)"/>`).join('');
+                        const g75 = Y(75).toFixed(1), g35 = Y(35).toFixed(1);
+                        trend = `<div class="mt-3">
+                            <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible">
+                                <line x1="${pl}" y1="${g75}" x2="${W - pr}" y2="${g75}" stroke="rgba(148,163,184,0.35)" stroke-width="1" stroke-dasharray="3 3"/>
+                                <line x1="${pl}" y1="${g35}" x2="${W - pr}" y2="${g35}" stroke="rgba(148,163,184,0.22)" stroke-width="1" stroke-dasharray="3 3"/>
+                                <text x="${pl}" y="${(parseFloat(g75) - 3).toFixed(1)}" text-anchor="start" font-size="8" fill="rgba(148,163,184,0.85)">75 · Champion-Floor</text>
+                                <polyline points="${rawLine}" fill="none" stroke="rgba(148,163,184,0.6)" stroke-width="1" stroke-dasharray="4 3"/>
+                                ${rawDots}
+                                <polyline points="${repLine}" fill="none" stroke="${tier.c}" stroke-width="2.5" stroke-linejoin="round"/>
+                                ${repDots}
+                                <text x="${pl}" y="${H - 4}" font-size="9" fill="rgba(148,163,184,0.9)">${h[0].year}</text>
+                                <text x="${W - pr}" y="${H - 4}" text-anchor="end" font-size="9" fill="rgba(148,163,184,0.9)">${h[h.length - 1].year}</text>
+                            </svg>
+                            <div class="text-xs text-tertiary mt-1"><span style="color:${tier.c};font-weight:600">&#9473; Ansehen (EMA)</span> &nbsp;&middot;&nbsp; <span style="color:rgba(148,163,184,0.95)">&#9548; Saisonwert (roh)</span> — der Abstand zeigt die Gl&auml;ttung: Ausrei&szlig;er werden ged&auml;mpft, das Ansehen zieht langsam nach.</div>
+                        </div>`;
+                    } else {
+                        trend = `<div class="text-xs text-tertiary mt-2" style="opacity:.85">&#128202; Ansehen-Verlauf erscheint nach mehreren gespielten Saisons — er zeigt dann die EMA-Gl&auml;ttung (roher Saisonwert vs. nachziehendes Ansehen).</div>`;
+                    }
+                    return `<div class="card p-4 rounded-lg mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="font-bold">${tier.e} Ansehen</h4>
+                            <span class="font-semibold text-sm" style="color:${tier.c}">&middot; ${tier.t}</span>
+                            <span class="ml-auto font-mono font-bold" style="color:${tier.c}">${rep}/100${seeded ? ' <span style="opacity:.6;font-weight:400">(Prognose)</span>' : ''}</span>
+                        </div>
+                        <div style="height:8px;border-radius:4px;background:rgba(148,163,184,0.25);overflow:hidden">
+                            <div style="height:100%;width:${rep}%;background:${tier.c};transition:width .3s"></div>
+                        </div>
+                        <div class="text-sm mt-2" style="color:${tier.c}">${tier.d}</div>
+                        ${trend}
+                        <div class="text-xs text-tertiary mt-2">Steigt durch Ausreizen schwacher Autos, Titel/Siege &amp; die Teamduell-Bilanz. Hohes Ansehen sch&uuml;tzt vor dem Abstieg in schwache Autos.</div>
+                    </div>`;
+                })()}
 
                 <!-- H2H Teamkollegen -->
                 ${(() => {
