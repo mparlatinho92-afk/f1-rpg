@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.45</title>
+    <title>F1 RPG v0.9.14.46</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.45 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.46 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; NEU: Teamduell-Tracking pro Rennen UND pro Quali (H2H vs Teamkollege, Wertung nur wenn beide teilnahmen)</div>
+                            <div>&#8226; NEU: Aktuelle-Saison Quali/Rennen-H2H im Fahrerprofil sichtbar</div>
+                            <div class="font-bold text-slate-400">v0.9.14.45 - 07.07.2026</div>
                             <div>&#8226; FIX: Generierte Rookies fuellen keine Top-Team-Sitze mehr (Antonelli-Fall geschlossen)</div>
                             <div>&#8226; FIX: Top-Team-Grenze vereinheitlicht (getTopTeamCount, oberste ~30%)</div>
                             <div>&#8226; NEU: Car-Ceiling - schwaches Auto bremst Ausnahme-Fahrer aus, kein Backmarker-Sieg durch Star-Fahrer mehr</div>
@@ -2859,7 +2862,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.45';
+        const VERSION = '0.9.14.46';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -8310,6 +8313,51 @@
             };
         }
 
+        // Teamduell-Tracking: stellt sicher, dass ein Fahrer die H2H-Zähler hat.
+        // h2hSeason resettet automatisch beim Jahreswechsel (_year-Guard), h2hCareer bleibt.
+        function _ensureH2H(d) {
+            const yr = GAME_STATE.currentYear;
+            if (!d.h2hSeason || d.h2hSeason._year !== yr) {
+                d.h2hSeason = { _year: yr, qW: 0, qL: 0, rW: 0, rL: 0, tmId: null, tmName: null };
+            }
+            if (!d.h2hCareer) d.h2hCareer = { qW: 0, qL: 0, rW: 0, rL: 0 };
+        }
+
+        // Teaminterne Duelle pro Rennen UND pro Quali (statt nur jährlich aus Saison-Punkten).
+        // Wertung nur, wenn BEIDE Teamkollegen die Session bestritten haben (Quali: beide mit
+        // qualiPos; Rennen: beide in results = beide gestartet, DNF zählt als Teilnahme).
+        // Feldrelativer Head-to-Head → granulare Basis für die Reputation (Welle 2).
+        function trackTeammateDuels(raceResult) {
+            const byTeam = {};
+            for (const r of raceResult.results) {
+                if (!r.team) continue;
+                (byTeam[r.team] = byTeam[r.team] || []).push(r);
+            }
+            for (const teamId in byTeam) {
+                const pair = byTeam[teamId];
+                if (pair.length !== 2) continue; // nur echte Teamkollegen-Paare
+                const [a, b] = pair;
+                const dA = GAME_STATE.drivers.find(d => d.id === a.driver);
+                const dB = GAME_STATE.drivers.find(d => d.id === b.driver);
+                if (!dA || !dB) continue;
+                _ensureH2H(dA); _ensureH2H(dB);
+                dA.h2hSeason.tmId = dB.id; dA.h2hSeason.tmName = dB.name;
+                dB.h2hSeason.tmId = dA.id; dB.h2hSeason.tmName = dA.name;
+                // Quali-Duell: beide mit gültiger qualiPos
+                if (a.qualiPos != null && b.qualiPos != null && a.qualiPos !== b.qualiPos) {
+                    const aWon = a.qualiPos < b.qualiPos;
+                    const win = aWon ? dA : dB, los = aWon ? dB : dA;
+                    win.h2hSeason.qW++; los.h2hSeason.qL++; win.h2hCareer.qW++; los.h2hCareer.qL++;
+                }
+                // Renn-Duell: beide gestartet, Klassifikation über position (DNF = hintere Position)
+                if (a.position != null && b.position != null && a.position !== b.position) {
+                    const aWon = a.position < b.position;
+                    const win = aWon ? dA : dB, los = aWon ? dB : dA;
+                    win.h2hSeason.rW++; los.h2hSeason.rL++; win.h2hCareer.rW++; los.h2hCareer.rL++;
+                }
+            }
+        }
+
         function applyRaceResults(raceResult) {
             raceResult.results.forEach(r => {
                 // Driver standings
@@ -8394,6 +8442,7 @@
                 if (raceIsIndy) at.hasIndy = true; else at.hasF1 = true;
             });
 
+            trackTeammateDuels(raceResult);
             processMidSeasonDismissals();
             // Im Mega-Sim-Fastmode NICHT pro Rennen speichern – sonst ~33 wachsende
             // State-Serialisierungen/Saison → Slowdown + OOM. Mega-Sim speichert selbst.
@@ -21052,8 +21101,14 @@ Empfohlene Wertebereiche:
                             '<td class="p-1 text-right font-mono" style="color:' + c + '">' + (avgDiff >= 0 ? '+' : '') + avgDiff.toFixed(0) + '</td>' +
                             '</tr>';
                     }).join('');
+                    const _adrv = GAME_STATE.drivers.find(d => d.id === driverId);
+                    const _hs = _adrv && _adrv.h2hSeason;
+                    const _sessionLine = (_hs && _hs.tmName && (_hs.qW + _hs.qL + _hs.rW + _hs.rL) > 0)
+                        ? '<div class="text-xs mb-3" style="color:var(--text-secondary,#94a3b8)">Aktuelle Saison vs <b>' + _hs.tmName + '</b> — Quali <span style="color:#22C55E">' + _hs.qW + '</span>:<span style="color:#EF4444">' + _hs.qL + '</span> &middot; Rennen <span style="color:#22C55E">' + _hs.rW + '</span>:<span style="color:#EF4444">' + _hs.rL + '</span></div>'
+                        : '';
                     return `<div class="card p-4 rounded-lg mb-4">
                         <h4 class="font-bold mb-3">⚔️ Head-to-Head Teamkollegen</h4>
+                        ${_sessionLine}
                         <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead><tr class="text-tertiary text-xs">
