@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.46</title>
+    <title>F1 RPG v0.9.14.47</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.46 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.47 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; NEU: Nationen-Pools geglättet – mehr Vielfalt, kein Land bei 0% (Paket F)</div>
+                            <div>&#8226; NEU: Reputations-System – Ansehen aus Auto-Überperformance, Titeln & Teamduellen</div>
+                            <div>&#8226; NEU: Champions/Top-Fahrer wechseln nicht mehr freiwillig in Backmarker-Autos</div>
+                            <div>&#8226; NEU: Schwaches Ansehen macht Fahrer leichter ersetzbar</div>
+                            <div class="font-bold text-slate-400">v0.9.14.46 - 07.07.2026</div>
                             <div>&#8226; NEU: Teamduell-Tracking pro Rennen UND pro Quali (H2H vs Teamkollege, Wertung nur wenn beide teilnahmen)</div>
                             <div>&#8226; NEU: Aktuelle-Saison Quali/Rennen-H2H im Fahrerprofil sichtbar</div>
                             <div class="font-bold text-slate-400">v0.9.14.45 - 07.07.2026</div>
@@ -2862,7 +2867,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.46';
+        const VERSION = '0.9.14.47';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4636,18 +4641,19 @@
         // isIndyTeam hart 'USA'). Road-F1-Debüts aus f1db-json-splitted, Crossover
         // (Road+Indy, z.B. Ascari '52) zählt als Road. USA 1950: 34,8%→7,2%.
         // Skript: fable-deliverables/nation-data/recompute-1950s-road-f1.js
+        // Geglättet (Fable Paket F, 2026-07-07): F1DB Renn-STARTS je Nation/Dekade (Road-F1
+        // 1950–2025, Indy raus) → w^0.65 → Shrink u/(u+4) (Ein-Fahrer-Fix, THA 2020 0.0485→0.0194)
+        // → Europa-Tilt (1.0–1.2) → Floor ε=0.002 (56-Nationen-Master, keine Nation bei 0%) → renorm.
+        // Quelle: fable-deliverables/paketF-nation-smoothing/ — NICHT von Hand editieren.
         const DECADE_NATION_POOLS = {
-            1950: {weights: {'GBR':0.3305,'GER':0.1186,'ITA':0.1144,'FRA':0.1059,'USA':0.072,'ARG':0.0593,'BEL':0.0551,'SUI':0.0339,'BRA':0.0169,'AUS':0.0169,'URU':0.0169,'ESP':0.0127,'NED':0.0127,'MON':0.0085,'IRL':0.0042,'THA':0.0042,'SWE':0.0042,'NZL':0.0042,'MAR':0.0042,'POR':0.0042}},
-            1960: {weights: {'GBR':0.2444,'USA':0.1704,'ITA':0.1185,'RSA':0.1037,'SUI':0.0519,'FRA':0.0519,'CAN':0.0519,'GER':0.0444,'ARG':0.0296,'MEX':0.0222,'NZL':0.0222,'ZIM':0.0222,'BEL':0.0148,'AUS':0.0148,'AUT':0.0148,'VEN':0.0074,'ESP':0.0074,'NED':0.0074}},
-            1970: {weights: {'GBR':0.1729,'ITA':0.1278,'FRA':0.1053,'USA':0.0677,'AUS':0.0526,'BRA':0.0526,'SWE':0.0451,'AUT':0.0451,'JPN':0.0451,'NED':0.0376,'RSA':0.0376,'SUI':0.0301,'ESP':0.0226,'NZL':0.0226,'GER':0.0226,'FIN':0.0226,'BEL':0.0226,'CAN':0.015,'ARG':0.015,'DEN':0.015,'MEX':0.0075,'IRL':0.0075}},
-            1980: {weights: {'ITA':0.2278,'FRA':0.1519,'GBR':0.1392,'GER':0.0759,'BRA':0.0633,'USA':0.0253,'IRL':0.0253,'SWE':0.0253,'ARG':0.0253,'COL':0.0253,'CAN':0.0253,'AUT':0.0253,'JPN':0.0253,'SUI':0.0253,'ESP':0.0253,'RSA':0.0127,'NZL':0.0127,'BEL':0.0127,'VEN':0.0127,'NED':0.0127,'FIN':0.0127}},
-            1990: {weights: {'ITA':0.2239,'FRA':0.1194,'JPN':0.1045,'BRA':0.0896,'GBR':0.0746,'GER':0.0597,'AUT':0.0448,'AUS':0.0299,'POR':0.0299,'BEL':0.0299,'FIN':0.0299,'SUI':0.0299,'ARG':0.0299,'ESP':0.0299,'USA':0.0149,'NED':0.0149,'MON':0.0149,'DEN':0.0149,'CAN':0.0149}},
-            // 2000–2020: aus SEASON_DATA-Fahrer-Nationalitäten aggregiert (Fahrer-Saisons je Dekade,
-            // Unbekannt-Platzhalter 🏁 ausgeschlossen, <0.4% verworfen+renormiert). F1-realistisch.
-            // 1950–1990 bleiben handkuratiert (SEASON_DATA dort zu 🏁-lastig). Breite Kart/Junior-Basis → Fable.
-            2000: {weights: {'GER':0.1926,'GBR':0.1704,'ITA':0.1481,'BRA':0.1407,'ESP':0.0593,'AUS':0.0593,'CAN':0.0519,'COL':0.0444,'FRA':0.0296,'POL':0.0296,'NED':0.0222,'IRL':0.0222,'FIN':0.0222,'JPN':0.0074}},
-            2010: {weights: {'GER':0.1613,'GBR':0.1613,'ESP':0.1129,'AUS':0.1048,'BRA':0.1048,'FIN':0.0887,'DEN':0.0484,'FRA':0.0484,'NED':0.0403,'JPN':0.0323,'ITA':0.0323,'CAN':0.0242,'POL':0.0161,'MON':0.0161,'THA':0.0081}},
-            2020: {weights: {'GBR':0.1748,'FRA':0.1165,'ESP':0.1068,'CAN':0.0874,'AUS':0.0777,'NED':0.0583,'MON':0.0583,'FIN':0.0485,'THA':0.0485,'GER':0.0485,'JPN':0.0485,'DEN':0.0388,'CHN':0.0291,'ITA':0.0194,'USA':0.0194,'BRA':0.0097,'POL':0.0097}}
+            1950: {weights: {'GBR':0.2381,'ITA':0.1302,'FRA':0.124,'GER':0.0895,'USA':0.0788,'ARG':0.0753,'BEL':0.0585,'SUI':0.0376,'AUS':0.0199,'BRA':0.017,'ESP':0.0135,'URU':0.0121,'NED':0.0099,'MON':0.0092,'SWE':0.0044,'THA':0.0043,'NZL':0.0034,'IRL':0.0021,'AUT':0.0019,'BUL':0.0019,'CAN':0.0019,'CHI':0.0019,'CHN':0.0019,'CIV':0.0019,'COL':0.0019,'CZE':0.0019,'DEN':0.0019,'EST':0.0019,'FIN':0.0019,'GRE':0.0019,'HUN':0.0019,'INA':0.0019,'IND':0.0019,'ISR':0.0019,'JPN':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'MEX':0.0019,'NOR':0.0019,'PER':0.0019,'PHI':0.0019,'POL':0.0019,'POR':0.0019,'QAT':0.0019,'ROU':0.0019,'RSA':0.0019,'RUS':0.0019,'SRB':0.0019,'TUR':0.0019,'UKR':0.0019,'VEN':0.0019,'ZIM':0.0019}},
+            1960: {weights: {'GBR':0.2671,'USA':0.1526,'ITA':0.0879,'RSA':0.0609,'FRA':0.0515,'GER':0.0496,'SUI':0.0484,'NZL':0.0397,'BEL':0.0339,'AUS':0.0253,'CAN':0.0239,'MEX':0.0201,'ARG':0.0185,'AUT':0.0139,'ZIM':0.0129,'NED':0.0111,'SWE':0.0076,'POR':0.0029,'BRA':0.0019,'BUL':0.0019,'CHI':0.0019,'CHN':0.0019,'CIV':0.0019,'COL':0.0019,'CZE':0.0019,'DEN':0.0019,'ESP':0.0019,'EST':0.0019,'FIN':0.0019,'GRE':0.0019,'HUN':0.0019,'INA':0.0019,'IND':0.0019,'IRL':0.0019,'ISR':0.0019,'JPN':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'MON':0.0019,'NOR':0.0019,'PER':0.0019,'PHI':0.0019,'POL':0.0019,'QAT':0.0019,'ROU':0.0019,'RUS':0.0019,'SRB':0.0019,'THA':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'VEN':0.0019}},
+            1970: {weights: {'GBR':0.1629,'FRA':0.1158,'ITA':0.0954,'USA':0.0672,'BRA':0.0501,'AUT':0.0496,'RSA':0.0464,'SWE':0.0459,'AUS':0.0448,'SUI':0.0399,'GER':0.0384,'NZL':0.0376,'BEL':0.0256,'NED':0.0221,'CAN':0.0218,'JPN':0.0145,'ARG':0.013,'FIN':0.0128,'ESP':0.0112,'MEX':0.0101,'DEN':0.0052,'IRL':0.0037,'LIE':0.0033,'ZIM':0.0019,'BUL':0.0019,'CHI':0.0019,'CHN':0.0019,'CIV':0.0019,'COL':0.0019,'CZE':0.0019,'EST':0.0019,'GRE':0.0019,'HUN':0.0019,'INA':0.0019,'IND':0.0019,'ISR':0.0019,'KEN':0.0019,'KOR':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'MON':0.0019,'NOR':0.0019,'PER':0.0019,'PHI':0.0019,'POL':0.0019,'POR':0.0019,'QAT':0.0019,'ROU':0.0019,'RUS':0.0019,'SRB':0.0019,'THA':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'VEN':0.0019}},
+            1980: {weights: {'ITA':0.2128,'FRA':0.1719,'GBR':0.1347,'BRA':0.0665,'GER':0.0592,'AUT':0.0357,'USA':0.0348,'SUI':0.0315,'ARG':0.0246,'ESP':0.0204,'IRL':0.0201,'CAN':0.0172,'FIN':0.0171,'SWE':0.0171,'NED':0.0136,'JPN':0.0131,'COL':0.0101,'RSA':0.0081,'BEL':0.0081,'AUS':0.0058,'CHI':0.0052,'VEN':0.0045,'MEX':0.0044,'NZL':0.0027,'BUL':0.0019,'CHN':0.0019,'CIV':0.0019,'CZE':0.0019,'DEN':0.0019,'EST':0.0019,'GRE':0.0019,'HUN':0.0019,'INA':0.0019,'IND':0.0019,'ISR':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'MON':0.0019,'NOR':0.0019,'PER':0.0019,'PHI':0.0019,'POL':0.0019,'POR':0.0019,'QAT':0.0019,'ROU':0.0019,'RUS':0.0019,'SRB':0.0019,'THA':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'ZIM':0.0019}},
+            1990: {weights: {'ITA':0.2291,'FRA':0.1404,'GBR':0.128,'BRA':0.0979,'JPN':0.0768,'GER':0.0554,'AUT':0.042,'FIN':0.0359,'BEL':0.0249,'SUI':0.0161,'NED':0.0149,'POR':0.0136,'ESP':0.0122,'AUS':0.0111,'ARG':0.0095,'CAN':0.0067,'DEN':0.0054,'MON':0.004,'USA':0.004,'SWE':0.0037,'BUL':0.0019,'CHI':0.0019,'CHN':0.0019,'CIV':0.0019,'COL':0.0019,'CZE':0.0019,'EST':0.0019,'GRE':0.0019,'HUN':0.0019,'INA':0.0019,'IND':0.0019,'IRL':0.0019,'ISR':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'MEX':0.0019,'NOR':0.0019,'NZL':0.0019,'PER':0.0019,'PHI':0.0019,'POL':0.0019,'QAT':0.0019,'ROU':0.0019,'RSA':0.0019,'RUS':0.0019,'SRB':0.0019,'THA':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'VEN':0.0019,'ZIM':0.0019}},
+            2000: {weights: {'GER':0.1569,'GBR':0.1319,'BRA':0.1287,'ITA':0.1022,'FIN':0.065,'FRA':0.0625,'ESP':0.0606,'JPN':0.0549,'NED':0.0372,'AUT':0.0356,'AUS':0.0115,'CAN':0.0103,'COL':0.0102,'POL':0.0099,'POR':0.0086,'HUN':0.007,'USA':0.0068,'SUI':0.0067,'IRL':0.0063,'ARG':0.0062,'IND':0.006,'MAS':0.0059,'DEN':0.0045,'CZE':0.0038,'BEL':0.0019,'BUL':0.0019,'CHI':0.0019,'CHN':0.0019,'CIV':0.0019,'EST':0.0019,'GRE':0.0019,'INA':0.0019,'ISR':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MEX':0.0019,'MON':0.0019,'NOR':0.0019,'NZL':0.0019,'PER':0.0019,'PHI':0.0019,'QAT':0.0019,'ROU':0.0019,'RSA':0.0019,'RUS':0.0019,'SRB':0.0019,'SWE':0.0019,'THA':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'VEN':0.0019,'ZIM':0.0019}},
+            2010: {weights: {'GER':0.1678,'GBR':0.1384,'FRA':0.1026,'ESP':0.0877,'BRA':0.0685,'FIN':0.057,'RUS':0.0451,'ITA':0.0372,'AUS':0.0288,'MEX':0.0283,'NED':0.0273,'BEL':0.022,'JPN':0.02,'IND':0.0158,'DEN':0.0124,'SWE':0.0122,'VEN':0.0101,'MON':0.0093,'POL':0.0091,'SUI':0.009,'CAN':0.0088,'NZL':0.0065,'THA':0.0062,'INA':0.0051,'AUT':0.0039,'USA':0.0039,'ARG':0.0019,'BUL':0.0019,'CHI':0.0019,'CHN':0.0019,'CIV':0.0019,'COL':0.0019,'CZE':0.0019,'EST':0.0019,'GRE':0.0019,'HUN':0.0019,'IRL':0.0019,'ISR':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'NOR':0.0019,'PER':0.0019,'PHI':0.0019,'POR':0.0019,'QAT':0.0019,'ROU':0.0019,'RSA':0.0019,'SRB':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'ZIM':0.0019}},
+            2020: {weights: {'GBR':0.1681,'FRA':0.1272,'GER':0.0838,'AUS':0.0678,'ESP':0.0633,'FIN':0.0533,'NED':0.0531,'CAN':0.0487,'ITA':0.0408,'RUS':0.0349,'BRA':0.0255,'MON':0.0248,'DEN':0.0214,'JPN':0.0197,'THA':0.0194,'MEX':0.0192,'CHN':0.0167,'USA':0.0136,'NZL':0.0134,'ARG':0.0124,'POL':0.0064,'AUT':0.0019,'BEL':0.0019,'BUL':0.0019,'CHI':0.0019,'CIV':0.0019,'COL':0.0019,'CZE':0.0019,'EST':0.0019,'GRE':0.0019,'HUN':0.0019,'INA':0.0019,'IND':0.0019,'IRL':0.0019,'ISR':0.0019,'KEN':0.0019,'KOR':0.0019,'LIE':0.0019,'LUX':0.0019,'MAR':0.0019,'MAS':0.0019,'NOR':0.0019,'PER':0.0019,'PHI':0.0019,'POR':0.0019,'QAT':0.0019,'ROU':0.0019,'RSA':0.0019,'SRB':0.0019,'SUI':0.0019,'SWE':0.0019,'TUR':0.0019,'UKR':0.0019,'URU':0.0019,'VEN':0.0019,'ZIM':0.0019}}
         };
         
         function pickNationByDecade(year) {
@@ -4677,14 +4683,14 @@
         // (F3/F2) und den Reserve-Pool NACH Template-Horizont (~2025+). NIE für Indy
         // (dort hart 'USA') und NIE für den normalen F1-Grid-Fill (dort DECADE_NATION_POOLS).
         const MOTORSPORT_NATION_BLEND = {
-            1950: { GBR:0.2304, USA:0.1642, FRA:0.1385, ITA:0.1241, GER:0.0928, ARG:0.0407, BEL:0.0361, SUI:0.0261, AUS:0.0148, ESP:0.0145, BRA:0.011, NED:0.0095, EST:0.0093, URU:0.0091, SWE:0.0079, AUT:0.0053, JPN:0.005, RUS:0.0047, MON:0.0046, CAN:0.0043, CZE:0.0042, POR:0.0041, NZL:0.0041, FIN:0.0039, RSA:0.0037, IRL:0.0033, POL:0.0024, MAR:0.0023, THA:0.0023, CHI:0.0019, GRE:0.0015, NOR:0.0015, ROU:0.0012, TUR:0.0012, KEN:0.001, DEN:0.0009, PER:0.0009, HUN:0.0009, ZIM:0.0009, MEX:0.0007, LUX:0.0007, VEN:0.0005, SRB:0.0005 },
-            1960: { USA:0.1849, GBR:0.1581, FRA:0.0999, ITA:0.0987, GER:0.0567, RSA:0.0558, SUI:0.0419, CAN:0.0339, ARG:0.0272, JPN:0.0226, EST:0.0199, AUS:0.0198, AUT:0.0193, NZL:0.0186, BEL:0.0171, ESP:0.0156, MEX:0.0137, SWE:0.0119, ZIM:0.0115, FIN:0.0097, NED:0.0094, CZE:0.0066, POL:0.0049, RUS:0.0044, VEN:0.0041, BRA:0.0031, DEN:0.0026, POR:0.0026, HUN:0.0022, NOR:0.0022, IRL:0.0017, GRE:0.0017, KEN:0.0013, ISR:0.0009, COL:0.0009, BUL:0.0009, CHI:0.0009, TUR:0.0009, IND:0.0009 },
-            1970: { USA:0.144, GBR:0.1178, FRA:0.1133, ITA:0.0986, JPN:0.0418, GER:0.0391, SWE:0.0371, AUS:0.0332, BRA:0.0328, AUT:0.0316, SUI:0.0279, ESP:0.0258, NED:0.0257, BEL:0.025, ARG:0.0246, RSA:0.0223, CAN:0.0208, FIN:0.019, NZL:0.0156, EST:0.0153, RUS:0.0128, CZE:0.009, DEN:0.0088, MEX:0.0072, IRL:0.0059, POR:0.0047, POL:0.0047, NOR:0.0039, KEN:0.0039, TUR:0.0022, UKR:0.0022, CHI:0.0017, CHN:0.0013, PER:0.0013, MON:0.0013, QAT:0.0013, HUN:0.0013, CIV:0.0013, GRE:0.0009, ZIM:0.0009 },
-            1980: { ITA:0.1547, USA:0.1456, FRA:0.1204, GBR:0.1033, GER:0.0686, JPN:0.0442, BRA:0.0412, SWE:0.0252, ESP:0.0249, ARG:0.0235, CAN:0.0213, SUI:0.0202, AUT:0.0185, BEL:0.0178, FIN:0.0161, NED:0.0142, IRL:0.0134, COL:0.0127, RUS:0.0118, NZL:0.01, AUS:0.0082, RSA:0.0082, EST:0.0079, VEN:0.0067, POR:0.0061, CHN:0.0061, CZE:0.0061, NOR:0.0053, HUN:0.0043, POL:0.0032, TUR:0.0029, DEN:0.0029, MEX:0.0022, GRE:0.0018, ROU:0.0014, UKR:0.0014, MON:0.0011, PER:0.0011, KOR:0.0004 },
-            1990: { ITA:0.1379, USA:0.1206, FRA:0.0948, JPN:0.0876, GBR:0.0697, BRA:0.0626, GER:0.0519, ARG:0.0357, ESP:0.0296, AUS:0.0276, AUT:0.0273, FIN:0.026, POR:0.024, BEL:0.0234, SUI:0.0208, NED:0.0175, CAN:0.0159, DEN:0.0117, CZE:0.0094, RUS:0.0085, SWE:0.0078, MON:0.0078, NOR:0.0072, POL:0.0072, HUN:0.0055, NZL:0.0055, MEX:0.0049, EST:0.0042, CHN:0.0039, IRL:0.0036, RSA:0.0029, UKR:0.0023, TUR:0.0023, CHI:0.002, IND:0.0016, KOR:0.0003 },
-            2000: { GBR:0.1306, GER:0.1233, USA:0.1112, ITA:0.0985, BRA:0.0904, FRA:0.0453, ESP:0.0439, AUS:0.0427, CAN:0.0317, ARG:0.0265, NED:0.0236, COL:0.0225, JPN:0.0223, FIN:0.0213, POL:0.0194, IRL:0.0157, RUS:0.011, SUI:0.0084, SWE:0.0084, NZL:0.0075, CZE:0.0061, AUT:0.0061, BEL:0.0055, CHN:0.0055, EST:0.0055, MEX:0.0046, POR:0.0043, NOR:0.0043, TUR:0.0043, UKR:0.0035, DEN:0.0029, IND:0.0023, HUN:0.0023, INA:0.002, RSA:0.002, THA:0.002, CHI:0.0017, KOR:0.0011 },
-            2010: { GBR:0.1284, USA:0.1182, GER:0.0991, ESP:0.0739, BRA:0.0653, AUS:0.0607, FIN:0.059, FRA:0.0493, ITA:0.0381, JPN:0.0336, DEN:0.0322, NED:0.0295, ARG:0.0279, CAN:0.0204, POL:0.0129, SWE:0.0118, RUS:0.0118, MON:0.0091, SUI:0.0087, BEL:0.0087, AUT:0.0076, NOR:0.0076, MEX:0.0066, THA:0.0065, HUN:0.0059, EST:0.0056, CHN:0.0052, NZL:0.0052, CZE:0.0045, COL:0.0042, MAS:0.0035, RSA:0.0035, IND:0.0031, INA:0.0024, POR:0.0021, TUR:0.0021, ISR:0.0021, IRL:0.0017, KOR:0.0003 },
-            2020: { USA:0.1578, GBR:0.1271, FRA:0.0898, ESP:0.0717, GER:0.0513, AUS:0.0502, CAN:0.0481, NED:0.0436, JPN:0.0343, ITA:0.0336, FIN:0.0324, MON:0.0298, DEN:0.0282, THA:0.0261, ARG:0.0208, BRA:0.02, CHN:0.0183, POL:0.0099, MEX:0.0094, RUS:0.0069, BEL:0.0056, AUT:0.005, HUN:0.005, CZE:0.005, SWE:0.0044, RSA:0.0044, EST:0.0038, NOR:0.0038, SUI:0.0038, NZL:0.0025, POR:0.0025, IND:0.0025, URU:0.0025, PHI:0.0019, TUR:0.0019, KOR:0.0012, IRL:0.0012 }
+            1950: { GBR:0.1733,FRA:0.1222,ITA:0.1171,USA:0.1155,GER:0.078,ARG:0.0547,BEL:0.0435,SUI:0.0331,AUS:0.0209,ESP:0.0195,BRA:0.0147,EST:0.0135,SWE:0.0122,NED:0.0119,AUT:0.0093,JPN:0.009,URU:0.0088,RUS:0.0086,CAN:0.0081,CZE:0.008,FIN:0.0076,RSA:0.0073,NZL:0.0067,MON:0.0064,POR:0.0058,POL:0.0055,CHI:0.0047,IRL:0.0045,GRE:0.0041,NOR:0.0041,ROU:0.0035,TUR:0.0035,THA:0.0032,KEN:0.0032,DEN:0.0028,HUN:0.0028,PER:0.0028,ZIM:0.0028,LUX:0.0024,MEX:0.0024,SRB:0.002,VEN:0.002,BUL:0.002,CHN:0.002,CIV:0.002,COL:0.002,INA:0.002,IND:0.002,ISR:0.002,KOR:0.002,LIE:0.002,MAR:0.002,MAS:0.002,PHI:0.002,QAT:0.002,UKR:0.002 },
+            1960: { GBR:0.1691,USA:0.137,ITA:0.0773,FRA:0.0739,GER:0.0546,SUI:0.0427,RSA:0.039,NZL:0.0315,BEL:0.0304,AUS:0.0279,ARG:0.0244,CAN:0.0236,JPN:0.0217,AUT:0.0216,EST:0.02,SWE:0.0183,MEX:0.0159,ESP:0.0153,NED:0.0148,FIN:0.0126,CZE:0.0098,ZIM:0.0085,POL:0.008,RUS:0.0075,POR:0.0069,BRA:0.006,DEN:0.0054,HUN:0.0048,NOR:0.0048,GRE:0.0041,IRL:0.0041,KEN:0.0035,BUL:0.0027,CHI:0.0027,COL:0.0027,INA:0.0027,IND:0.0027,ISR:0.0027,LIE:0.0027,SRB:0.0027,TUR:0.0027,VEN:0.0027,CHN:0.002,CIV:0.002,KOR:0.002,LUX:0.002,MAR:0.002,MAS:0.002,MON:0.002,PER:0.002,PHI:0.002,QAT:0.002,ROU:0.002,THA:0.002,UKR:0.002,URU:0.002 },
+            1970: { GBR:0.1115,FRA:0.1014,USA:0.0925,ITA:0.0783,GER:0.0447,SWE:0.0402,AUT:0.0378,SUI:0.0358,BRA:0.0353,AUS:0.0328,RSA:0.0303,BEL:0.0289,NZL:0.0266,JPN:0.026,CAN:0.0259,ARG:0.0238,ESP:0.022,NED:0.0214,FIN:0.0174,EST:0.0167,RUS:0.0148,CZE:0.0118,MEX:0.0113,POL:0.0078,POR:0.0078,NOR:0.0068,IRL:0.0066,KEN:0.0065,DEN:0.0061,TUR:0.0047,UKR:0.0047,CHI:0.0038,ZIM:0.0034,HUN:0.0034,MON:0.0034,CHN:0.0032,CIV:0.0032,PER:0.0032,QAT:0.0032,GRE:0.0026,ISR:0.0024,BUL:0.002,COL:0.002,INA:0.002,IND:0.002,KOR:0.002,LIE:0.002,LUX:0.002,MAR:0.002,MAS:0.002,PHI:0.002,ROU:0.002,SRB:0.002,THA:0.002,URU:0.002,VEN:0.002 },
+            1980: { ITA:0.1447,FRA:0.1248,GBR:0.0995,USA:0.0825,GER:0.0582,BRA:0.0464,JPN:0.032,AUT:0.0279,SUI:0.0275,ESP:0.0256,ARG:0.0254,SWE:0.0242,FIN:0.0218,CAN:0.0198,BEL:0.0186,NED:0.0184,RUS:0.0146,AUS:0.0135,IRL:0.0129,EST:0.0112,CZE:0.0095,POR:0.0095,NOR:0.0087,CHN:0.0087,RSA:0.0081,HUN:0.0076,NZL:0.0076,MEX:0.0067,POL:0.0063,DEN:0.0058,TUR:0.0058,COL:0.0053,CHI:0.0049,GRE:0.0042,VEN:0.0037,ROU:0.0037,UKR:0.0037,MON:0.003,PER:0.0028,BUL:0.0023,CIV:0.0021,IND:0.0021,ISR:0.0021,KEN:0.0021,MAS:0.0021,PHI:0.0021,INA:0.002,KOR:0.002,LIE:0.002,LUX:0.002,MAR:0.002,QAT:0.002,SRB:0.002,THA:0.002,URU:0.002,ZIM:0.002 },
+            1990: { ITA:0.1452,FRA:0.1031,GBR:0.0952,BRA:0.0687,JPN:0.067,USA:0.0583,GER:0.0507,FIN:0.0326,AUT:0.0302,BEL:0.0246,ARG:0.0237,ESP:0.0228,NED:0.0207,AUS:0.0194,POR:0.0192,SUI:0.0175,CAN:0.0139,SWE:0.0128,CZE:0.0123,RUS:0.0115,NOR:0.0103,POL:0.0103,DEN:0.0101,HUN:0.0087,NZL:0.0079,EST:0.0073,MEX:0.0073,IRL:0.0065,CHN:0.0063,RSA:0.0052,TUR:0.0048,UKR:0.0048,CHI:0.004,BUL:0.0039,IND:0.0035,THA:0.0035,MON:0.0034,VEN:0.0031,GRE:0.0028,LUX:0.0028,ROU:0.0028,SRB:0.0028,MAS:0.0025,CIV:0.002,COL:0.002,INA:0.002,ISR:0.002,KEN:0.002,KOR:0.002,LIE:0.002,MAR:0.002,PER:0.002,PHI:0.002,QAT:0.002,URU:0.002,ZIM:0.002 },
+            2000: { GER:0.1073,GBR:0.1039,BRA:0.0855,ITA:0.0769,FRA:0.0595,USA:0.0571,ESP:0.0481,FIN:0.0473,JPN:0.0457,NED:0.0345,AUT:0.0281,ARG:0.0243,AUS:0.0194,SUI:0.015,RUS:0.0137,CAN:0.0133,POL:0.013,POR:0.012,SWE:0.0115,CZE:0.0113,IRL:0.0111,NZL:0.0093,BEL:0.0088,EST:0.0088,HUN:0.0087,DEN:0.0081,CHN:0.0076,IND:0.0075,NOR:0.0075,TUR:0.0075,MEX:0.0068,COL:0.0065,UKR:0.0065,MAS:0.0063,INA:0.004,RSA:0.004,THA:0.004,BUL:0.0037,CHI:0.0036,PER:0.0032,VEN:0.0032,GRE:0.0032,MON:0.0032,ROU:0.0032,KOR:0.0027,PHI:0.0027,SRB:0.0026,URU:0.0023,CIV:0.002,ISR:0.002,KEN:0.002,LIE:0.002,LUX:0.002,MAR:0.002,QAT:0.002,ZIM:0.002 },
+            2010: { GBR:0.1082,GER:0.1074,FRA:0.0774,ESP:0.0646,USA:0.0561,BRA:0.0487,FIN:0.0465,ITA:0.0412,RUS:0.0381,NED:0.0268,JPN:0.026,AUS:0.0247,BEL:0.0234,MEX:0.0231,ARG:0.0211,SWE:0.0209,DEN:0.0178,SUI:0.0166,CAN:0.0142,IND:0.0134,AUT:0.013,POL:0.013,NOR:0.0109,NZL:0.0106,HUN:0.0093,EST:0.0089,VEN:0.0088,MON:0.0079,CZE:0.0078,THA:0.0076,CHN:0.0071,INA:0.007,COL:0.0062,MAS:0.0055,RSA:0.0055,POR:0.0047,TUR:0.0047,IRL:0.0042,ISR:0.0039,ROU:0.0036,BUL:0.003,LIE:0.0023,LUX:0.0023,CHI:0.002,CIV:0.002,GRE:0.002,KEN:0.002,KOR:0.002,MAR:0.002,PER:0.002,PHI:0.002,QAT:0.002,SRB:0.002,UKR:0.002,URU:0.002,ZIM:0.002 },
+            2020: { GBR:0.1226,FRA:0.0962,USA:0.0736,GER:0.0706,ESP:0.0538,AUS:0.0482,ITA:0.0459,NED:0.0456,FIN:0.0402,CAN:0.0324,RUS:0.0293,BRA:0.0285,ARG:0.0251,DEN:0.024,JPN:0.022,MEX:0.0212,MON:0.0154,CHN:0.0149,THA:0.0141,POL:0.0122,NZL:0.0118,BEL:0.0095,AUT:0.0089,CZE:0.0089,HUN:0.0089,SWE:0.0081,EST:0.0074,NOR:0.0074,SUI:0.0074,RSA:0.0068,POR:0.0056,TUR:0.0047,IND:0.0047,URU:0.0047,MAR:0.0039,PER:0.0039,PHI:0.0039,VEN:0.0039,IRL:0.0036,ROU:0.0036,COL:0.003,INA:0.003,ISR:0.003,KOR:0.003,BUL:0.0023,LUX:0.0023,CHI:0.002,CIV:0.002,GRE:0.002,KEN:0.002,LIE:0.002,MAS:0.002,QAT:0.002,SRB:0.002,UKR:0.002,ZIM:0.002 }
         };
 
         // Gewichtete Nationen-Ziehung aus dem F1-nahen Motorsport-Trichter (sharesF1Blend).
@@ -10118,6 +10124,7 @@
             if (!GAME_STATE.aiSimulation) return;
 
             updateDriverCareerScores();
+            updateDriverReputations();       // Welle 2: Reputation VOR processTeamChanges aktualisieren
             processDriverPaceDevelopment();
             checkCareerEnds();
 
@@ -11870,7 +11877,100 @@
             
             logInfo('CAREER', `Karriere-Scores für ${activeDrivers.length} Fahrer aktualisiert`);
         }
-        
+
+        // === REPUTATIONS-SYSTEM (Welle 2, Paket G) ===
+        // Interner Skalar 0–100 (neutral 50), 1×/Saison aktualisiert (VOR processTeamChanges).
+        // Speist sich aus: (1) Überperformance vs. Erwartungskurve je Konstrukteurs-Rang,
+        // (2) Titel/Sieg/Podium-Boni, (3) Teamkollegen-H2H (h2hSeason, Quali+Rennen) — Letzteres
+        // erfüllt die NUTZER-VORGABE, dass die pro-Rennen/Quali-Duelle aktiv gewichtet einfließen.
+        // EMA-geglättet; steuert Retention/Upgrade in processTeamChanges. Persistiert automatisch.
+        // Erwartungskurve = mediane Zielposition je Konstrukteurs-WM-Rang R1–R11 (Paket G,
+        // 1990–2025, ~14.900 Starts). Bei Rang > 11 wird auf R11 gekappt.
+        const EXPECTATION_MEDIAN = [2, 3, 5, 7, 8, 10, 10, 11, 13, 15, 16];
+
+        function updateDriverReputations() {
+            const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
+
+            // Team-Ranking auf Team-Ebene (identisch zu evaluateDriverPerformance)
+            const teamRankingList = Object.entries(GAME_STATE.teamStandings)
+                .map(([id, s]) => ({ id, points: s.points || 0 }))
+                .sort((a, b) => b.points - a.points);
+            const teamRankOf = id => {
+                const idx = teamRankingList.findIndex(t => t.id === id);
+                return idx >= 0 ? idx + 1 : teamRankingList.length;
+            };
+
+            // Fahrer-Weltmeister dieser Saison (P1 der Fahrer-WM)
+            const champ = Object.entries(GAME_STATE.driverStandings)
+                .map(([id, s]) => ({ id, points: s.points || 0 }))
+                .sort((a, b) => b.points - a.points)[0];
+            const championId = champ && champ.points > 0 ? champ.id : null;
+
+            activeDrivers.forEach(driver => {
+                const standing = GAME_STATE.driverStandings[driver.id] || {};
+
+                // Mediane klassifizierte Zielposition dieser Saison
+                const finishes = [];
+                for (const rr of GAME_STATE.results || []) {
+                    const r = rr.results.find(e => e.driver === driver.id);
+                    if (r && !r.dnf && !r.fatal && !r.dnpq && r.position > 0) finishes.push(r.position);
+                }
+                if (finishes.length === 0) return;   // keine Datenbasis → Reputation unverändert
+                finishes.sort((a, b) => a - b);
+                const medianFinish = finishes[Math.floor(finishes.length / 2)];
+
+                // Überperformance vs. Auto-Erwartung (positiv = schwaches Auto ausgereizt → Teil 7)
+                const teamRank = teamRankOf(driver.team);
+                const expectedPos = EXPECTATION_MEDIAN[Math.min(teamRank, EXPECTATION_MEDIAN.length) - 1];
+                let overperf = expectedPos - medianFinish;
+                // ±1.5 Positionen = Rauschen (P25/P75-Band); erst darüber ein Signal
+                if (Math.abs(overperf) <= 1.5) overperf = 0;
+                else overperf += (overperf > 0 ? -1.5 : 1.5);
+                const overperfTerm = Math.max(-6, Math.min(6, overperf)) * 3;   // ±18
+
+                // Titel / Siege / Podien
+                const titleTerm  = driver.id === championId ? 18 : 0;
+                const winTerm    = Math.min(standing.wins || 0, 5) * 2;         // 0..10
+                const podiumTerm = Math.min(standing.podiums || 0, 8) * 0.8;    // 0..6.4
+
+                // Teamkollegen-H2H (Saison): Rennen 60 % / Quali 40 %, gedeckelt ±10.
+                // Nur ab ≥6 Duellen werten (darunter Rauschen, s. Paket G Median-Delta 2).
+                let h2hTerm = 0, h2hCounted = false;
+                const h = driver.h2hSeason;
+                if (h && h._year === GAME_STATE.currentYear) {
+                    const rTot = h.rW + h.rL, qTot = h.qW + h.qL;
+                    if (rTot + qTot >= 6) {
+                        h2hCounted = true;
+                        const rShare = rTot > 0 ? (h.rW - h.rL) / rTot : 0;
+                        const qShare = qTot > 0 ? (h.qW - h.qL) / qTot : 0;
+                        const share = (rTot > 0 && qTot > 0) ? 0.6 * rShare + 0.4 * qShare
+                                    : rTot > 0 ? rShare : qShare;
+                        h2hTerm = Math.max(-10, Math.min(10, share * 10));
+                    }
+                }
+
+                const baseNoH2H = Math.max(0, Math.min(100,
+                    50 + overperfTerm + titleTerm + winTerm + podiumTerm));
+                const seasonRepValue = Math.max(0, Math.min(100,
+                    50 + overperfTerm + titleTerm + winTerm + podiumTerm + h2hTerm));
+
+                const old = (typeof driver.reputation === 'number') ? driver.reputation : 50;
+                driver.reputation = Math.round(0.65 * old + 0.35 * seasonRepValue);
+
+                // Dev-Instrumentierung (nur im MC-Test aktiv, im Spiel kostenlos):
+                // legt die Reputations-Komponenten offen → H2H-Einflussanalyse.
+                if (typeof REP_DEBUG !== 'undefined' && REP_DEBUG) {
+                    driver._repParts = {
+                        overperfTerm, titleTerm, winTerm, podiumTerm, h2hTerm, h2hCounted,
+                        baseNoH2H, seasonRepValue, reputation: driver.reputation,
+                        races: finishes.length
+                    };
+                }
+            });
+
+            logInfo('CAREER', `Reputation für ${activeDrivers.length} Fahrer aktualisiert`);
+        }
+
         // === PACE-ENTWICKLUNG AM SAISONENDE (v0.6.1) ===
         // Entwickelt die Pace aller aktiven Fahrer basierend auf Performance
         function processDriverPaceDevelopment() {
@@ -12107,9 +12207,16 @@
                 const isBackmarker = teamRank > midTeamCount;
                 const yearsInTeam = driver.yearsInTeam || 0;
                 const longtimeBonus = yearsInTeam >= 5 ? 0.20 : 0;
-                
+
+                // Welle 2: Reputation moduliert Retention. Hohe Reputation (Champion-Niveau)
+                // nimmt NIE aktiv einen Sitz unter Mittelfeld an (Paket G: P(≥Mittelfeld)≈0.96) →
+                // Downgrade-Ziele werden auf Mittelfeld gekappt (findet sich nur Backmarker → bleibt/FA).
+                const rep = (typeof driver.reputation === 'number') ? driver.reputation : 50;
+                const repUpgradeBonus = Math.max(0, rep - 50) / 100 * 0.4;   // rep 75 → +0.10, rep 100 → +0.20
+                const downgradeMax = rep >= 75 ? midTeamCount : totalTeams;   // Champion-Floor: nicht unter Mittelfeld
+
                 if (eval_.rating === 'excellent') {
-                    const upgradeChance = 0.35 + longtimeBonus;
+                    const upgradeChance = 0.35 + longtimeBonus + repUpgradeBonus;
                     if (!isTopTeam && Math.random() < upgradeChance) {
                         // Rookies/Second-Year dürfen max 1 Tier aufsteigen (nicht direkt zu Top-Teams) (v0.8.6)
                         const isYoung = eval_.isRookie || eval_.isSecondYear;
@@ -12149,14 +12256,15 @@
                     logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (✅)`);
                     
                 } else if (eval_.rating === 'average') {
-                    // Backmarker-Teams: 15% Budget-/Sponsoring-Entlassung auch bei Durchschnitt
-                    if (isBackmarker && !eval_.isRookie && Math.random() < 0.15) {
+                    // Backmarker-Teams: Budget-/Sponsoring-Entlassung auch bei Durchschnitt.
+                    // Welle 2: niedrige Reputation (<35) → doppelt so leicht ersetzbar.
+                    if (isBackmarker && !eval_.isRookie && Math.random() < (rep < 35 ? 0.30 : 0.15)) {
                         if (_tryDismiss(driver, changes)) return;
                         // Cap erreicht → Verlängerung statt Entlassung
                     }
                     const lateralChance = 0.50 + longtimeBonus;
                     if (Math.random() < lateralChance) {
-                        const newTeam = findTeamWithSpace(teamRanking, teamRank, totalTeams, driver.team, driverIsIndy);
+                        const newTeam = findTeamWithSpace(teamRanking, teamRank, downgradeMax, driver.team, driverIsIndy);
                         if (newTeam) {
                             executeTransfer(driver, newTeam, isMidTeam ? 'lateral' : 'downgrade', changes);
                             return;
@@ -12171,7 +12279,7 @@
                     // ⚠️ SCHWACH: Fahrer wird free agent (nicht dismissed!)
                     // → bleibt im Pool, kann von anderem Team aufgenommen werden
                     if (isTopTeam) {
-                        const worseTeam = findTeamWithSpace(teamRanking, topTeamCount, totalTeams, driver.team, driverIsIndy);
+                        const worseTeam = findTeamWithSpace(teamRanking, topTeamCount, downgradeMax, driver.team, driverIsIndy);
                         if (worseTeam) {
                             executeTransfer(driver, worseTeam, 'downgrade', changes);
                         } else {
@@ -12187,7 +12295,7 @@
                         }
                     } else if (isMidTeam) {
                         if (Math.random() < 0.70) {
-                            const worseTeam = findTeamWithSpace(teamRanking, midTeamCount, totalTeams, driver.team, driverIsIndy);
+                            const worseTeam = findTeamWithSpace(teamRanking, midTeamCount, downgradeMax, driver.team, driverIsIndy);
                             if (worseTeam) {
                                 executeTransfer(driver, worseTeam, 'downgrade', changes);
                                 return;
