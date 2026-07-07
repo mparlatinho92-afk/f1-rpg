@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.44</title>
+    <title>F1 RPG v0.9.14.45</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.44 (aktuell) - 06.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.45 (aktuell) - 07.07.2026</div>
+                            <div>&#8226; FIX: Generierte Rookies fuellen keine Top-Team-Sitze mehr (Antonelli-Fall geschlossen)</div>
+                            <div>&#8226; FIX: Top-Team-Grenze vereinheitlicht (getTopTeamCount, oberste ~30%)</div>
+                            <div>&#8226; NEU: Car-Ceiling - schwaches Auto bremst Ausnahme-Fahrer aus, kein Backmarker-Sieg durch Star-Fahrer mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.14.44 - 06.07.2026</div>
                             <div>&#8226; FIX: Alt-Spielstände werden beim Laden einmalig bereinigt – Indy-only-Fahrer verlieren vorgeseedete Zukunfts-Karrieren (Sim-Anteil bleibt exakt erhalten)</div>
                             <div>&#8226; FIX: Auch eingefrorene Nachruf-Bilanzen vergangener Indy-Todesfälle werden mitkorrigiert</div>
                             <div class="font-bold text-slate-400">v0.9.14.43 - 06.07.2026</div>
@@ -2855,7 +2859,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.44';
+        const VERSION = '0.9.14.45';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5092,6 +5096,13 @@
             }
         }
         
+        // Einheitliche Top-Team-Grenze (Rookie-Verbot + Tier-Logik): oberste ~30% der Teams,
+        // min. 2. Bei normalem 10-Team-Grid = 3 ("Top 3"), skaliert aber mit größeren
+        // historischen Grids. EINE Definition für Todes-Ersatz, Silly-Season und Sitz-Auffüllung.
+        function getTopTeamCount(totalTeams) {
+            return Math.max(2, Math.ceil((totalTeams || 0) * 0.3));
+        }
+
         // v0.6.5: Universelle Ersatzfahrer-Suche (Mid-Season & Saisonende)
         // Holt erfahrenen Fahrer: 1. Arbeitslos, 2. Von niedrigerem Team "klauen"
         function findReplacementDriver(targetTeamId, year, minExperience = 1, excludeDriverIds = null) {
@@ -7904,6 +7915,20 @@
                 const _halfVar = 6 + (100 - _consVal) * 0.10;
                 performance += (Math.random() - 0.5) * 2 * _halfVar;
 
+                // === CAR-CEILING (v0.9.14.45) ===
+                // Das Auto begrenzt, wie weit ein Fahrer nach oben ausreißen kann: oberhalb von
+                // (carSpeed + Headroom) wird Mehrleistung stark gestaucht (nicht hart gekappt).
+                // Ein Ausnahme-Fahrer hebt ein schwaches Auto also spürbar, aber nicht bis an die
+                // Spitze – er wird vom Material ausgebremst. Reputation/Ansehen dafür = Welle 2.
+                // Parameter konservativ, via Monte-Carlo feinjustieren.
+                // [SYNC simulateRace] Gegenstück im Live-Ticker (Lap-Pace) folgt als eigener Schritt.
+                const _CEIL_HEADROOM = 12;    // Punkte über carSpeed ohne Stauchung
+                const _CEIL_SOFT     = 0.35;  // Reststeigung oberhalb der Schwelle
+                const _carCeil = _effCarSpeed + _CEIL_HEADROOM;
+                if (performance > _carCeil) {
+                    performance = _carCeil + (performance - _carCeil) * _CEIL_SOFT;
+                }
+
                 // === LOKALMATADOR-BONUS ===
                 if (localStorage.getItem('f1rpg_home_boost') !== 'off') {
                     const _hero = HOME_CIRCUIT_HEROES[driver.histId];
@@ -8091,8 +8116,8 @@
                             const teamRank = teamRanking.findIndex(t => t.id === driver.team) + 1;
                             const totalTeams = GAME_STATE.teams.length;
                             
-                            // Tier bestimmen (Top 3, Mittelfeld, Backmarker)
-                            const topTeamCount = 3;
+                            // Tier bestimmen (Top-Teams, Mittelfeld, Backmarker)
+                            const topTeamCount = getTopTeamCount(totalTeams);
                             const midTeamEnd = Math.ceil(totalTeams * 0.7);
                             const isTopTeam = teamRank > 0 && teamRank <= topTeamCount;
                             const isMidTeam = teamRank > topTeamCount && teamRank <= midTeamEnd;
@@ -9582,7 +9607,7 @@
                     const teamRank = teamRanking.findIndex(t => t.id === driver.team) + 1;
                     const totalTeams = GAME_STATE.teams.length;
                     
-                    const topTeamCount = 3;
+                    const topTeamCount = getTopTeamCount(totalTeams);
                     const midTeamEnd = Math.ceil(totalTeams * 0.7);
                     const isTopTeam = teamRank > 0 && teamRank <= topTeamCount;
                     const isMidTeam = teamRank > topTeamCount && teamRank <= midTeamEnd;
@@ -11508,8 +11533,17 @@
         function fillEmptyTeamSeats(year) {
             if (!GAME_STATE.aiSimulation) return 0;
             let filled = 0;
+            // Team-Ranking für Top-Team-Erkennung: generierte Rookies / Karriere-Anfänger
+            // dürfen keinen Top-Team-Sitz auffüllen (Antonelli-Fall auch über die Hintertür).
+            const _fillRanking = Object.entries(GAME_STATE.teamStandings)
+                .map(([id, s]) => ({ id, points: s.points || 0 }))
+                .sort((a, b) => b.points - a.points);
+            const _fillTopN = getTopTeamCount((GAME_STATE.teams || []).length);
+            const _isBeginner = d => d.debutYear && (year - d.debutYear) < 1;
             (GAME_STATE.teams || []).forEach(t => {
                 const teamIsIndy = isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId);
+                const _rankIdx = _fillRanking.findIndex(x => x.id === t.id);
+                const isTopTeam = _rankIdx >= 0 && _rankIdx < _fillTopN;
                 const _compat = d => {
                     const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id);
                     return teamIsIndy ? isIndy : !isIndy;
@@ -11523,10 +11557,14 @@
 
                 let guard = 0;
                 while (seatCount() < 2 && guard++ < 4) {
-                    // 1. Free Agent (aktiver Fahrer ohne Team) – echte Ex-Fahrer zuerst
-                    const fa = GAME_STATE.drivers.find(d =>
-                        !d.team && (!d.status || d.status === 'active') &&
-                        d._dismissedFromTeam !== t.id && _compat(d));
+                    // 1. Free Agent (aktiver Fahrer ohne Team) – echte Ex-Fahrer zuerst.
+                    // Top-Team: keine Karriere-Anfänger, und der stärkste Verfügbare zuerst.
+                    const _faBase = d => !d.team && (!d.status || d.status === 'active') &&
+                        d._dismissedFromTeam !== t.id && _compat(d);
+                    const fa = isTopTeam
+                        ? GAME_STATE.drivers.filter(d => _faBase(d) && !_isBeginner(d))
+                            .sort((a, b) => (b.currentPace || b.pace || 0) - (a.currentPace || a.pace || 0))[0]
+                        : GAME_STATE.drivers.find(_faBase);
                     if (fa) {
                         fa.team = t.id;
                         fa.contractEnd = fa.contractEnd || (year + 1);
@@ -11539,7 +11577,8 @@
                     }
                     // 2. Reserve-Pool (echte Ex-Fahrer / Nachwuchs)
                     const cand = (GAME_STATE.reservePool || []).find(p =>
-                        !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p));
+                        !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) &&
+                        (!isTopTeam || !_isBeginner(p)));
                     if (cand) {
                         GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== cand);
                         const nd = { ...cand, team: t.id, isReserve: false, contractEnd: year + 1 };
@@ -11553,8 +11592,8 @@
                         filled++;
                         continue;
                     }
-                    // 3. Letzter Ausweg: generierter Fahrer
-                    const gd = generateDriver(t.id, year, Math.random() < 0.7);
+                    // 3. Letzter Ausweg: generierter Fahrer (Top-Team nie Rookie)
+                    const gd = generateDriver(t.id, year, isTopTeam ? false : Math.random() < 0.7);
                     gd.contractEnd = year + 1;
                     GAME_STATE.drivers.push(gd);
                     GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
@@ -11836,7 +11875,7 @@
                 .sort((a, b) => b.points - a.points);
             
             const totalTeams = teamRanking.length;
-            const topTeamCount = Math.max(2, Math.ceil(totalTeams * 0.3));
+            const topTeamCount = getTopTeamCount(totalTeams);
             const midTeamCount = Math.max(4, Math.ceil(totalTeams * 0.7));
             
             const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
