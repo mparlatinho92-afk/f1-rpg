@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.56</title>
+    <title>F1 RPG v0.9.14.57</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.56 (aktuell) - 08.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.57 (aktuell) - 09.07.2026</div>
+                            <div>&#8226; FIX: US-GP in Indianapolis (2000-2007) bekommt nicht mehr die 1950er-Indy-500-Todesrate - keine Phantom-Toden moderner Fahrer mehr (Alonso/Fisichella/Coulthard etc.)</div>
+                            <div>&#8226; NEU: Indy-500-Todesrate greift nur noch fuer echte WM-Runden bis 1960</div>
+                            <div class="font-bold text-slate-400">v0.9.14.56 - 08.07.2026</div>
                             <div>&#8226; NEU: Reservefahrer-Tab-Split - Talente (nie in F1 gestartet) getrennt von Free Agents (Ex-Fahrer ohne Cockpit)</div>
                             <div>&#8226;  generierte Nachwuchsfahrer sind keine falschen Free Agents mehr</div>
                             <div>&#8226; NEU: Nachwuchs-Pool haelt >=15 junge Talente frisch statt zu vergreisen (Pool-Alter-Peak 32->30, versiegt nicht mehr)</div>
@@ -2903,7 +2906,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.56';
+        const VERSION = '0.9.14.57';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -8600,8 +8603,12 @@
             const race = GAME_STATE.races[raceIndex];
             if (!race) { _weekendDeath[raceIndex] = null; return; }
             const year = GAME_STATE.currentYear;
-            const isIndyRace = race.isIndy || race.name === 'Indianapolis 500';
-            const baseDeathRate = isIndyRace ? INDY_DEATH_RATE : (getEraValue(ERA_DEATH_RATES, year) || 0);
+            // Indy-500-Todesrate (0.636, kalibriert fürs 1950er Oval) NUR für die echten
+            // Indy-500-WM-Runden (1950–1960). Der moderne US-GP auf dem Indy-Kurs (2000–2007)
+            // trägt in F1DB ebenfalls isIndy=true, ist aber ein normales F1-Rennen → sonst
+            // ~5 Phantom-Tode in den 2000ern (HOCH#4-Befund).
+            const isIndy500 = (race.isIndy || race.name === 'Indianapolis 500') && year <= 1960;
+            const baseDeathRate = isIndy500 ? INDY_DEATH_RATE : (getEraValue(ERA_DEATH_RATES, year) || 0);
             if (baseDeathRate <= 0 || !(GAME_STATE.deathRealism > 0)) {
                 _weekendDeath[raceIndex] = null; return;
             }
