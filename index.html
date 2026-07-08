@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.53</title>
+    <title>F1 RPG v0.9.14.54</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.53 (aktuell) - 08.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.54 (aktuell) - 08.07.2026</div>
+                            <div>&#8226; FIX: Keine Champions mehr mit 40/41 - ueberalterte Fahrer bauen aera-relativ ab (Schumi-Befund gefixt)</div>
+                            <div>&#8226; NEU: Eine Alterskurve fuer extrapolierte reale + generierte Fahrer (ageDeclineRate/ageCeiling), MC-validiert 40+ auf 0%</div>
+                            <div class="font-bold text-slate-400">v0.9.14.53 - 08.07.2026</div>
                             <div>&#8226; BALANCE: Das Auto ist jetzt Ober- UND Untergrenze – schwacher Fahrer im Topwagen holt trotzdem Punkte, Star im Backmarker kaum (aber Ansehen)</div>
                             <div>&#8226; BALANCE: Backmarker starten realistischer schwach (Minardi 2001 ~2-3 statt ~24 Punkte)</div>
                             <div>&#8226; FIX: Erste Saison nutzt dieselbe Leistungspyramide wie alle Folgesaisons</div>
@@ -2891,7 +2894,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.53';
+        const VERSION = '0.9.14.54';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4279,10 +4282,45 @@
             
             driver.currentPace += actualDevelopment;
             driver.pace = driver.currentPace; // Sync halten
-            
+
             return driver;
         }
-        
+
+        // ── Ära-relative Altersbremse (HOCH#3) ─────────────────────────────────
+        // EINE Formel für alle SYNTHETISCHEN Alterspfade: extrapolierte reale Fahrer
+        // (jenseits ihres PACE_RATINGS-Endes), generierte Fahrer und – später – die
+        // Pool-Warteschlange. Reale Karrierejahre bleiben unangetastet (sie tragen den
+        // echten Elo-Verlauf, der den Altersabbau bereits real enthält).
+        // Zenit-Ende ≈ Ära-Rentenalter + Offset (das Rentenalter ist jung-verzerrt durch
+        // Grid-Churn, daher der Aufschlag). Rückgabe: Pace-Verfall PRO JAHR (0 unter dem
+        // Zenit; dort läuft der Aufbau weiter über developDriverPace).
+        // Konstanten MC-getunt gegen: ≥40-Champions → 0 %, ≥37 → ~3 %
+        // (tests/paketD-h3-age-decline.js).
+        const AGE_DECLINE_OFFSET = 1;    // Zenit-Ende = ERA_RETIREMENT_AGE + 1 (steiler: 40er klar unter Rivalen)
+        const AGE_DECLINE_SLOPE  = 1.1;  // Pace-Verlust/Jahr je Jahr über dem Zenit
+        const AGE_DECLINE_CAP    = 9;    // Deckel Verfall/Jahr
+        function ageDeclineRate(age, year) {
+            if (!age || age <= 0) return 0;
+            const peakEnd = (getEraValue(ERA_RETIREMENT_AGE, year) || 30) + AGE_DECLINE_OFFSET;
+            const over = age - peakEnd;
+            if (over <= 0) return 0;
+            return Math.min(AGE_DECLINE_CAP, over * AGE_DECLINE_SLOPE);
+        }
+
+        // Extrem-Alter-DECKEL (HOCH#3, Teil A): jenseits Zenit+Onset ist selbst ein REALER
+        // Elo-Wert biologisch nicht haltbar – korrigiert Comeback-Artefakte (Schumi 2010:
+        // Elo 93 für eine reale P9-Saison). Eigener, HÖHERER Onset als die Abbaukurve, damit
+        // echte starke 37er (Barrichello 2009, Schumi 2006) frei bleiben und NUR 40+ greift.
+        // Rückgabe: Pace-Obergrenze (oder null = kein Deckel). Konstanten MC-getunt.
+        const AGE_CEILING_OFFSET = 8;    // Deckel-Onset = ERA_RETIREMENT_AGE + 8 (Modern ≈ 37)
+        const AGE_CEILING_SLOPE  = 5;    // Deckel-Absenkung/Jahr über dem Onset
+        function ageCeiling(age, year) {
+            if (!age || age <= 0) return null;
+            const onset = (getEraValue(ERA_RETIREMENT_AGE, year) || 30) + AGE_CEILING_OFFSET;
+            if (age <= onset) return null;
+            return Math.max(45, 99 - (age - onset) * AGE_CEILING_SLOPE);
+        }
+
         // Prüft ob ein Fahrer sein Potenzial erreicht hat
         // PACE_RATINGS Anzeige-Helfer: geben Elo-kalibrierte Werte zurück wenn vorhanden
         function _eloDisplayPace(driver, year) {
@@ -13768,7 +13806,12 @@
                                 const _f1LastYearForDecay = (typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[driver.histId])
                                     ? HIST_DRIVERS[driver.histId][7] : null;
                                 const _pastF1Career = _f1LastYearForDecay !== null && newYear > _f1LastYearForDecay;
-                                const _decayRate = _pastF1Career ? 4.0 : 2.5;
+                                const _flatDecay = _pastF1Career ? 4.0 : 2.5;
+                                // Ära-relative Altersbremse (HOCH#3) dominiert für überalterte Fahrer:
+                                // ein durchgehend startender Veteran rostet nicht (gap≈1), fällt aber
+                                // biologisch – sonst Champions mit 40/41 (Schumi-Befund).
+                                const _ageRate = ageDeclineRate(driver.birthYear ? newYear - driver.birthYear : 0, newYear);
+                                const _decayRate = Math.max(_flatDecay, _ageRate);
                                 driver.pace = Math.max(40, (driver.currentPace || driver.pace) - _gapYears * _decayRate);
                                 driver.currentPace = driver.pace;
                                 // Consistency ebenfalls anteilig reduzieren (Rosteffekt)
@@ -13780,16 +13823,23 @@
                             driver._lastPaceDate = _currentDate;
                         }
                     }
+                    // Extrem-Alter-Deckel (HOCH#3 Teil A) – reale UND extrapolierte Jahre:
+                    // kappt Comeback-Artefakte (Schumi 2010 Elo 93 → biologisch gedeckelt).
+                    const _ageCeil = ageCeiling(driver.birthYear ? newYear - driver.birthYear : 0, newYear);
+                    if (_ageCeil !== null && driver.pace > _ageCeil) {
+                        driver.pace = _ageCeil;
+                        driver.currentPace = _ageCeil;
+                    }
                 } else if (!driver.histId) {
-                    // Generierter Fahrer: Alters-basierter Abbau (Aufbau via processDriverPaceDevelopment)
+                    // Generierter Fahrer: dieselbe ära-relative Altersbremse wie extrapolierte
+                    // Reale (ersetzt den fixen age>=33-Abbau) → kein Verhaltensbruch zwischen
+                    // realen und generierten Fahrern. Aufbau unter dem Zenit via developDriverPace.
                     const age = driver.birthYear ? newYear - driver.birthYear : 30;
                     const pot = driver.potentialPace || Math.min(98, driver.pace + 15);
-                    if (age >= 33) {
-                        // Abbauphase: max -4/Jahr (processDriverPaceDevelopment kennt kein Decline)
-                        const decline = Math.round(1 + Math.random() * 3);
-                        driver.pace = Math.max(50, driver.pace - decline);
+                    const _ageRate = ageDeclineRate(age, newYear);
+                    if (_ageRate > 0) {
+                        driver.pace = Math.max(50, driver.pace - _ageRate);
                     }
-                    // 29–32: Plateau; < 29: Aufbau wird durch processDriverPaceDevelopment gehandhabt
                     if (!driver.potentialPace) driver.potentialPace = pot;
                     driver.currentPace = driver.pace; // sync: developDriverPace() könnte pace verändert haben
                 }
