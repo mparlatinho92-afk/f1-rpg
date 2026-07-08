@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.52</title>
+    <title>F1 RPG v0.9.14.53</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.52 (aktuell) - 07.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.53 (aktuell) - 08.07.2026</div>
+                            <div>&#8226; BALANCE: Das Auto ist jetzt Ober- UND Untergrenze – schwacher Fahrer im Topwagen holt trotzdem Punkte, Star im Backmarker kaum (aber Ansehen)</div>
+                            <div>&#8226; BALANCE: Backmarker starten realistischer schwach (Minardi 2001 ~2-3 statt ~24 Punkte)</div>
+                            <div>&#8226; FIX: Erste Saison nutzt dieselbe Leistungspyramide wie alle Folgesaisons</div>
+                            <div class="font-bold text-slate-400">v0.9.14.52 - 07.07.2026</div>
                             <div>&#8226; BALANCE: Team-Staerke schwankt weniger extrem von Jahr zu Jahr (keine Backmarker-Spruenge an die Spitze mehr)</div>
                             <div>&#8226; BALANCE: Rang-Veraenderung/Jahr jetzt real-nah (Median +-1 Platz)</div>
                             <div class="font-bold text-slate-400">v0.9.14.51 - 07.07.2026</div>
@@ -2887,7 +2891,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.52';
+        const VERSION = '0.9.14.53';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5234,9 +5238,19 @@
                 const data = SEASON_DATA[year];
                 if (!data) return null;
                 
+                // v0.9.14.53: carSpeed = SD-Rang-Remap (steile Pyramide, floor 60, exp 1.8) statt
+                // roher SD-Pace – identisch zu startNewSeason Phase-4b, damit die 1. Saison dieselbe
+                // Leistungspyramide hat (Paket-D HOCH#1 Befund a: rohe SD-Backmarker-Werte zu hoch,
+                // z.B. Minardi 2001 pace 78 → remapped 60). Nur beim Neuspiel-Init; Folgesaisons remappt Phase-4b.
+                const _csV = data.t.filter(t => t[3] > 0).sort((a, b) => b[3] - a[3]);
+                const _csMax = _csV[0]?.[3] ?? 96, _csN = _csV.length;
+                const _csRM = new Map(_csV.map((e, i) => {
+                    const pos = _csN > 1 ? 1 - i / (_csN - 1) : 1;
+                    return [e[0], Math.round(60 + Math.pow(pos, 1.8) * (_csMax - 60))];
+                }));
                 const teams = data.t.map(t => ({
                     id: t[0], name: t[1], nation: '🏁', color: t[2],
-                    carSpeed: t[3], reliability: t[4], strategy: t[5],
+                    carSpeed: _csRM.get(t[0]) ?? t[3], reliability: t[4], strategy: t[5],
                     histId: t[1],  // Display-Name als histId (kompatibel mit isIndyOnlyConstructor)
                     isIndyOnly: isIndyOnlyConstructor(t[1])
                 }));
@@ -7942,7 +7956,7 @@
                     _effPace * _paceFactor * 0.45 +
                     (isRain ? driver.rain * _paceFactor * 0.2 : 15) +
                     driver.experience * 0.15 +
-                    _effCarSpeed * 0.15
+                    _effCarSpeed * 0.20   // v0.9.14.53: 0.15→0.20 – Auto ist Ceiling UND Floor
                 );
                 // Kontinuierliches Rauschen: ±6 (Konstanz=100) bis ±16 (Konstanz=0)
                 const _halfVar = 6 + (100 - _consVal) * 0.10;
@@ -7953,12 +7967,15 @@
                 // (carSpeed + Headroom) wird Mehrleistung stark gestaucht (nicht hart gekappt).
                 // Ein Ausnahme-Fahrer hebt ein schwaches Auto also spürbar, aber nicht bis an die
                 // Spitze – er wird vom Material ausgebremst. Reputation/Ansehen dafür = Welle 2.
-                // Parameter MC-getunt (Paket-D HOCH#1, v0.9.14.51): HEADROOM 12→6, SOFT 0.35→0.25 →
-                // Minardi 2001 Ø ~5 P (real 0), 1988 McLaren bleibt 100 %/Senna-Champion. Greift nur
-                // bei schwachen Autos (bei Top-Teams liegt der Ceiling weit über ihrer Leistung).
+                // Parameter MC-getunt (Paket-D HOCH#1, v0.9.14.53): HEADROOM 6→4, SOFT 0.25→0.18 (+
+                // carSpeed-Gewicht 0.15→0.20 oben + SD-Rang-Remap beim Init). Zusammen: Minardi 2001/02
+                // Ø ~2–4 P (real 0), 1988 McLaren bleibt 100 %/Senna-Champion, Badoer-im-Topwagen > Star-
+                // im-Backmarker (Auto = Floor). Greift nur bei schwachen Autos (Top-Ceiling liegt weit
+                // über deren Leistung). Rest: Backmarker Jahr 3+ noch leicht überhöht (emergente Feld-
+                // Kompression, mit HOCH#2 verzahnt).
                 // [SYNC simulateRace] Gegenstück im Live-Ticker (Lap-Pace) folgt als eigener Schritt.
-                const _CEIL_HEADROOM = 6;     // Punkte über carSpeed ohne Stauchung
-                const _CEIL_SOFT     = 0.25;  // Reststeigung oberhalb der Schwelle
+                const _CEIL_HEADROOM = 4;     // Punkte über carSpeed ohne Stauchung
+                const _CEIL_SOFT     = 0.18;  // Reststeigung oberhalb der Schwelle
                 const _carCeil = _effCarSpeed + _CEIL_HEADROOM;
                 if (performance > _carCeil) {
                     performance = _carCeil + (performance - _carCeil) * _CEIL_SOFT;
