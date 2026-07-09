@@ -1,7 +1,7 @@
 # Paket C — Integrations-Spec: Nachrufe & Abschiede
 
 **Deliverable:** `fable-deliverables/paketC-obituary-bank.js` — `DRIVER_LORE`
-(~115 kuratierte Epitheta realer Fahrer, Key = normalisierter Name),
+(~238 kuratierte Epitheta realer Fahrer inkl. Indy-Piloten 1950–60, Key = normalisierter Name),
 `OBIT_BANK` (Register `nachruf`/`abschied` mit Kategorien champion/talent/star/
 backmarker/gaveup/generic), Assembler `obituaryText()` + 3 `_obit*`-Helfer.
 Wiederverwendet aus Paket B (bereits inline): `_recapHash/_recapRng/_recapPick/

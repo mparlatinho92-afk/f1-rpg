@@ -69,21 +69,30 @@ const RECAP_BANK = {
             'Die Saison {year} trug eine einzige Handschrift – die von {champion}, der dem Jahr {klasseIn} mit {siegeDat} seinen Stempel aufdrückte.',
             'Selten war ein Titel so ungefährdet: {champion} fuhr {year} in einer eigenen Liga und krönte sich mit {points} Punkten zum Weltmeister.',
             '{year} gab es an {champion} kein Vorbeikommen: {siegeNom}, {points} Punkte – die Konkurrenz fuhr hinterher.',
-            'Was {champion} {year} zeigte, war Dominanz in Reinform: {siegeNom}, {points} Punkte, keine offenen Fragen.'
+            'Was {champion} {year} zeigte, war Dominanz in Reinform: {siegeNom}, {points} Punkte, keine offenen Fragen.',
+            'Man wird die Saison {year} als Ein-Mann-Vorstellung in Erinnerung behalten: {champion} thronte mit {points} Punkten und {siegeDat} über dem Feld.',
+            'Die Frage der Saison {year} lautete früh nicht mehr ob, sondern nur noch wann: {champion} machte den Titel mit {siegeDat} zur Formsache.',
+            '{champion} gegen den Rest – auf diese Formel ließ sich das Jahr {year} bringen, und die {points} Punkte des Champions sprechen für sich.'
         ],
         knapp: [
             'Einen engeren Ausgang hätte sich {klasseNom} kaum ausdenken können: Am Ende der Saison {year} betrug der Abstand zwischen {champion} und {vize} gerade einmal {gapAkk}.',
             'Die Saison {year} wurde zum Nervenspiel – erst ganz am Ende sicherte sich {champion} den Titel, mit {gapDat} Vorsprung vor {vize}.',
             'Bis zuletzt blieb der Titelkampf {year} offen, dann hatte {champion} das bessere Ende für sich: {gapNom} Vorsprung auf {vize} – mehr nicht.',
             '{year} lieferten sich {champion} und {vize} ein Duell auf Augenhöhe, das {champion} um {gapAkk} für sich entschied.',
-            'Am Ende entschieden Nuancen: {champion} rettete {year} einen Vorsprung von {gapDat} auf {vize} ins Ziel und ist Weltmeister.'
+            'Am Ende entschieden Nuancen: {champion} rettete {year} einen Vorsprung von {gapDat} auf {vize} ins Ziel und ist Weltmeister.',
+            'Wimpernschlag-Finale {year}: {champion} schlug {vize} um {gapAkk} – knapper geht es kaum.',
+            'Die Saison {year} hielt die Spannung bis zur allerletzten Wertung: {champion} setzte sich mit {gapDat} Vorsprung gegen {vize} durch.',
+            'Wer {year} wegsah, hat Geschichte verpasst: {champion} entschied eines der engsten Titelrennen {klasseGen} um {gapAkk} gegen {vize} für sich.'
         ],
         normal: [
             '{champion} sicherte sich {year} mit {points} Punkten und {siegeDat} den Fahrertitel.',
             'Die Weltmeisterschaft des Jahres {year} ging an {champion}, der sich mit {siegeDat} und konstanten Resultaten durchsetzte.',
             'Am Ende einer intensiven Saison {year} stand {champion} als verdienter Champion fest – {points} Punkte, {siegeNom}.',
             '{champion} hieß der Mann, an dem {year} kein Weg vorbeiführte: Der Titel ging mit {siegeDat} an ihn.',
-            'Mit {siegeDat} und {points} Punkten kürte sich {champion} {year} zum Weltmeister {klasseGen}.'
+            'Mit {siegeDat} und {points} Punkten kürte sich {champion} {year} zum Weltmeister {klasseGen}.',
+            'Die Saison {year} fand in {champion} ihren verdienten Weltmeister – {points} Punkte, {siegeNom}.',
+            'Am Ende des Jahres {year} stand {champion} dort, wo alle hinwollten: ganz oben, mit {points} Punkten und {siegeDat}.',
+            'Solide, schnell, verdient: {champion} sicherte sich {year} mit {siegeDat} und {points} Punkten die Krone {klasseGen}.'
         ]
     },
 
@@ -93,19 +102,25 @@ const RECAP_BANK = {
             'Dahinter blieb {vize} als bester Verfolger chancenlos – der Rückstand von {gapDat} spricht eine deutliche Sprache.',
             '{vize} wurde Vize-Weltmeister, doch die Lücke von {gapDat} ließ nie echte Spannung aufkommen.',
             'Die Vize-Weltmeisterschaft ging an {vize}, der dem Dominator über weite Strecken nur hinterherfahren konnte.',
-            'Bester der Geschlagenen: {vize}, der mit {vizePoints} Punkten immerhin den Rest des Feldes hinter sich hielt.'
+            'Bester der Geschlagenen: {vize}, der mit {vizePoints} Punkten immerhin den Rest des Feldes hinter sich hielt.',
+            'Dass {vize} mit {vizePoints} Punkten Vize-Weltmeister wurde, verdient Respekt – am Ausgang des Jahres änderte es nichts.',
+            'Hinter dem Überflieger sammelte {vize} ein, was übrig blieb: Rang zwei, mit {gapDat} Rückstand.'
         ],
         knapp: [
             'Für {vize} bleibt die bittere Rolle des geschlagenen Helden – kaum je war ein Vize-Weltmeister so nah dran.',
             '{vize} verlor den Titel nicht durch Schwäche, sondern um Haaresbreite – ein Jahrgang, der beiden zur Ehre gereicht.',
             'So kurz vor dem Ziel gescheitert: {vize} wird den Winter mit der Frage verbringen, wo die entscheidenden Punkte liegen blieben.',
-            'Auf der anderen Seite stand {vize}, der mit {vizePoints} Punkten alles gegeben hatte – und dem am Ende fast nichts fehlte.'
+            'Auf der anderen Seite stand {vize}, der mit {vizePoints} Punkten alles gegeben hatte – und dem am Ende fast nichts fehlte.',
+            'Und {vize}? Er geht als tragischer Zweiter in die Bücher ein – näher dran war selten jemand.',
+            'Für {vize} war es die Saison der Beinahe-Krönung – bitterer kann sich Rang zwei kaum anfühlen.'
         ],
         normal: [
             'Rang zwei ging an {vize}, der mit {vizePoints} Punkten der beständigste Herausforderer war.',
             'Als Vize-Weltmeister behauptete sich {vize}, ohne den Champion je ernsthaft in Bedrängnis zu bringen.',
             '{vize} komplettierte als Zweiter das Spitzenduo, {gapAkk} hinter dem Champion.',
-            'Dahinter reihte sich {vize} als Vize-Weltmeister ein – respektabel, aber ohne echten Zugriff auf die Krone.'
+            'Dahinter reihte sich {vize} als Vize-Weltmeister ein – respektabel, aber ohne echten Zugriff auf die Krone.',
+            'Dahinter sicherte sich {vize} mit {vizePoints} Punkten den zweiten Platz.',
+            'Die Rolle des ersten Verfolgers übernahm {vize} – beständig genug für Rang zwei, zu wenig für mehr.'
         ]
     },
 
@@ -114,22 +129,30 @@ const RECAP_BANK = {
         rookie: [
             'Dass ausgerechnet ein Mann in seinem ersten Jahr die etablierte Garde düpierte, machte den Titel umso bemerkenswerter – ein Durchbruch, wie ihn {klasseNom} nur selten erlebt.',
             'Es war der Durchbruch eines Neulings: In seiner ersten Saison ließ {champion} sämtlichen Routiniers das Nachsehen.',
-            'Ein Rookie als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.'
+            'Ein Rookie als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.',
+            'Und das im ersten Anlauf: {champion} brauchte keine Lehrjahre, er machte sein Debütjahr gleich zum Meisterjahr.',
+            'Die etablierten {fahrerPl} mussten sich von einem Neuling zeigen lassen, wo es langgeht – ein Debüt für die Geschichtsbücher.'
         ],
         underdog: [
             'Die eigentliche Sensation lieferte das Material: {champTeam} beendete die Konstrukteurswertung nur auf Rang {champTeamRank} – den Fahrertitel holte {champion} trotzdem.',
             'Dass der Titel ausgerechnet in ein Team der zweiten Reihe wanderte – {champTeam}, nur Rang {champTeamRank} bei den Konstrukteuren –, gab der Saison ihre eigene Note.',
-            '{champion} schlug mit unterlegenem Gerät zu: Sein Team {champTeam} kam in der Konstrukteurswertung nicht über Rang {champTeamRank} hinaus.'
+            '{champion} schlug mit unterlegenem Gerät zu: Sein Team {champTeam} kam in der Konstrukteurswertung nicht über Rang {champTeamRank} hinaus.',
+            'Das Auto war es jedenfalls nicht: {champTeam} landete bei den Konstrukteuren nur auf Rang {champTeamRank} – dieser Titel war das Werk des Fahrers.',
+            'Wer wissen will, was ein Fahrer ausmachen kann, schaue auf Rang {champTeamRank} von {champTeam} in der Teamwertung – und dann auf den Weltmeister {champion}.'
         ],
         mostWinsLost: [
             'Kurios: Die meisten Saisonsiege feierte mit {maxWinner} ein anderer ({maxWinnerSiegeNom}) – am Ende zählte die Konstanz von {champion}.',
             'Der siegreichste Mann des Jahres hieß {maxWinner} ({maxWinnerSiegeNom}), doch die Krone trug am Ende der beständigere {champion}.',
-            '{maxWinner} gewann mehr Rennen als jeder andere – Weltmeister aber wurde {champion}: ein Sieg der Regelmäßigkeit über den Glanz.'
+            '{maxWinner} gewann mehr Rennen als jeder andere – Weltmeister aber wurde {champion}: ein Sieg der Regelmäßigkeit über den Glanz.',
+            'Sieger des Jahres: {maxWinner} ({maxWinnerSiegeNom}). Weltmeister des Jahres: {champion}. Manchmal sind das zwei verschiedene Geschichten.',
+            'Dass {maxWinner} häufiger gewann und der Titel trotzdem an {champion} ging, wird {klasseIn} noch lange Gesprächsstoff liefern.'
         ],
         poleKing: [
             'Auch samstags war {champion} das Maß aller Dinge: {poles} Pole-Positions unterstreichen die Vormachtstellung.',
             'Dazu kam rohe Geschwindigkeit: {poles} Pole-Positions machten {champion} auch zum König des Qualifyings.',
-            'Im Qualifying regierte {champion} mit {poles} Pole-Positions fast nach Belieben.'
+            'Im Qualifying regierte {champion} mit {poles} Pole-Positions fast nach Belieben.',
+            'Eine Randnotiz mit Gewicht: {poles} Pole-Positions gingen an {champion} – schneller war samstags keiner.',
+            'Der Samstag gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.'
         ]
     },
 
@@ -138,12 +161,16 @@ const RECAP_BANK = {
         double: [
             'Perfekt wurde das Jahr durch die Doppelkrone: {teamChampionName} sicherte sich auch die Konstrukteurswertung – Fahrer- und Teamtitel unter einem Dach.',
             'Auch bei den Konstrukteuren führte kein Weg an {teamChampionName} vorbei – das Team des Champions machte den Doppelerfolg perfekt.',
-            'Der Arbeitgeber des Weltmeisters feierte gleich mit: {teamChampionName} gewann auch die Teamwertung – die Doppelkrone {klasseGen}.'
+            'Der Arbeitgeber des Weltmeisters feierte gleich mit: {teamChampionName} gewann auch die Teamwertung – die Doppelkrone {klasseGen}.',
+            'Und weil ein Titel offenbar nicht genug war, holte {teamChampionName} auch noch die Konstrukteurswertung – ein Jahr wie aus einem Guss.',
+            'Fahrertitel und Teamtitel unter demselben Dach: {teamChampionName} räumte {year} beides ab.'
         ],
         separate: [
             'Bei den Konstrukteuren hatte derweil {teamChampionName} mit {teamChampionPoints} Punkten die Nase vorn.',
             'Die Teamwertung ging getrennte Wege: Dort setzte sich {teamChampionName} durch.',
-            'Der Konstrukteurstitel landete bei {teamChampionName} – dieser Triumph blieb dem Team des Champions verwehrt.'
+            'Der Konstrukteurstitel landete bei {teamChampionName} – dieser Triumph blieb dem Team des Champions verwehrt.',
+            'Ein Trostpflaster für die Konkurrenz gab es in der Teamwertung: Dort triumphierte {teamChampionName}.',
+            'Die Konstrukteurskrone nahm derweil einen anderen Weg – sie ging mit {teamChampionPoints} Punkten an {teamChampionName}.'
         ]
     },
 
@@ -152,12 +179,16 @@ const RECAP_BANK = {
         one: [
             'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der beim {deadRace} ums Leben kam – {klasseNom} verneigte sich vor einem der Ihren.',
             'Doch die Saison hatte auch ihre dunkle Seite: Beim {deadRace} verlor {deadName} sein Leben – eine Lücke, die kein Ergebnis schließt.',
-            'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der beim {deadRace} tödlich verunglückte.'
+            'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der beim {deadRace} tödlich verunglückte.',
+            'Und doch fällt ein Schatten über alle Zahlen dieses Jahres: {deadName} ({deadTeam}) verlor beim {deadRace} sein Leben.',
+            'Die Saison forderte ihren Preis: Beim {deadRace} starb {deadName} – das Fahrerlager verlor eines seiner Gesichter.'
         ],
         many: [
             'Es war zugleich ein schwarzes Jahr: {deadList} bezahlten ihren Sport mit dem Leben – {deadCount} Todesfälle, die schwer auf dieser Saison lasten.',
             'Doch der Preis war hoch: Mit {deadList} verlor {klasseNom} in diesem Jahr {deadCount} {fahrerPl}.',
-            'Über allem liegt Trauer: {deadList} kehrten von ihren Einsätzen nicht zurück.'
+            'Über allem liegt Trauer: {deadList} kehrten von ihren Einsätzen nicht zurück.',
+            'Die dunkle Bilanz dieses Jahres wiegt schwerer als jede Wertung: {deadList} verloren ihr Leben.',
+            'Kein Rückblick ohne Trauer: {deadCount} {fahrerPl} – {deadList} – kehrten in diesem Jahr nicht zurück.'
         ]
     },
 
@@ -167,12 +198,18 @@ const RECAP_BANK = {
             'So endete ein Jahr, über das {presseNom} noch lange schreiben sollte.',
             'Es war eine Saison, die {publikum} so schnell nicht vergessen wird.',
             'Und so blickt {klasseNom} auf einen Jahrgang zurück, der Lust auf mehr macht.',
-            'Der Vorhang fiel – und ließ ein Jahr zurück, das seinen Platz in den Annalen sicher hat.'
+            'Der Vorhang fiel – und ließ ein Jahr zurück, das seinen Platz in den Annalen sicher hat.',
+            'Bleibt die Frage, wer diese Messlatte im kommenden Jahr höher legen will.',
+            'Die Motoren schweigen – die Debatten {klasseGen} beginnen jetzt erst richtig.',
+            'Abgerechnet ist: Jetzt beginnt das Warten auf den ersten Start des neuen Jahres.'
         ],
         tragic: [
             'Zwischen Triumph und Trauer bleibt {year} ein Jahr, das niemand {klasseIn} so schnell vergisst.',
             'So bleibt ein Jahrgang in Erinnerung, in dem Erfolg und Verlust so nah beieinanderlagen wie selten.',
-            'Gefeiert wurde am Ende leise – zu präsent war, was diese Saison gekostet hatte.'
+            'Gefeiert wurde am Ende leise – zu präsent war, was diese Saison gekostet hatte.',
+            'Die Pokale sind verteilt, die Wunden nicht verheilt – dieses Jahr hinterlässt beides.',
+            'Was bleibt, ist ein Jahrgang mit zwei Gesichtern: einem strahlenden und einem stillen.',
+            'Man wird die Sieger dieses Jahres feiern – und die Fehlenden nicht vergessen.'
         ]
     }
 };
