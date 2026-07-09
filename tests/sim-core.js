@@ -13,7 +13,7 @@ const path = require('path');
 function makeFakeElement() {
     return new Proxy({}, {
         get(_, k) {
-            if (k === 'style')     return new Proxy({}, { get:()=>'', set:()=>true });
+            if (k === 'style')     return new Proxy({}, { get:(_, sk) => typeof sk === 'symbol' ? undefined : () => {}, set:()=>true });
             if (k === 'classList') return { add:()=>{}, remove:()=>{}, toggle:()=>{}, contains:()=>false };
             if (k === 'dataset')   return {};
             if (['innerHTML','textContent','value','src','href','className','id'].includes(k)) return '';
@@ -94,14 +94,28 @@ function createBrowserStubs() {
 
 // ── HTML-Skript laden ─────────────────────────────────────────────────────
 function findHtmlFile() {
-    // index.html ist immer die aktuelle Version (Netlify-Standard)
     const dir = path.join(__dirname, '..');
+    // Monolith bevorzugen (hat data/*.js inline) – index.html nutzt externe <script src>
+    const files = fs.readdirSync(dir).filter(f => /^f1-rpg-v[\d.]+\.html$/.test(f)).sort();
+    if (files.length) return path.join(dir, files[files.length - 1]);
+    // Fallback: index.html (nur wenn kein Monolith vorhanden)
     const idx = path.join(dir, 'index.html');
     if (fs.existsSync(idx)) return idx;
-    // Fallback: höchste versionierte Datei
-    const files = fs.readdirSync(dir).filter(f => /^f1-rpg-v[\d.]+\.html$/.test(f)).sort();
-    if (!files.length) throw new Error('Keine f1-rpg-v*.html Datei gefunden!');
-    return path.join(dir, files[files.length - 1]);
+    throw new Error('Keine f1-rpg-v*.html Datei gefunden!');
+}
+
+// Baut den Monolith-Quelltext in-memory aus index.html + data/*.js (wie manage-v),
+// ohne eine Datei zu schreiben. Für MC-Tests gegen UNCOMMITTETE index.html-Änderungen.
+// Aktivierung via Env SIMCORE_FROM_INDEX=1.
+function buildSourceFromIndex() {
+    const dir = path.join(__dirname, '..');
+    let html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+    for (const jsFile of ['data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js']) {
+        const placeholder = `    <script src="${jsFile}"></script>`;
+        const js = fs.readFileSync(path.join(dir, jsFile), 'utf8');
+        html = html.replace(placeholder, `    <script>\n${js}\n    </script>`);
+    }
+    return html;
 }
 
 let _cachedCtx = null;
@@ -109,15 +123,77 @@ let _cachedCtx = null;
 function getContext() {
     if (_cachedCtx) return _cachedCtx;
 
-    const htmlPath = findHtmlFile();
-    console.log(`[sim-core] Lade: ${path.basename(htmlPath)} ...`);
-    const html   = fs.readFileSync(htmlPath, 'utf8');
-    const start  = html.indexOf('<script>') + 8;
-    const end    = html.lastIndexOf('</script>');
-    const script = html.slice(start, end);
+    let html;
+    if (process.env.SIMCORE_FROM_INDEX === '1') {
+        console.log('[sim-core] Lade: index.html + data/*.js (in-memory inlined, uncommittet) ...');
+        html = buildSourceFromIndex();
+    } else {
+        const htmlPath = findHtmlFile();
+        console.log(`[sim-core] Lade: ${path.basename(htmlPath)} ...`);
+        html = fs.readFileSync(htmlPath, 'utf8');
+    }
+    // Alle inline <script>...</script>-Blöcke extrahieren und zusammenführen
+    // (Monolith hat mehrere Blöcke: f1db, hist, seasons, main)
+    const scriptBlocks = [];
+    const re = /<script>([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = re.exec(html)) !== null) scriptBlocks.push(m[1]);
+    const script = scriptBlocks.join('\n');
 
-    // `let GAME_STATE` → `var GAME_STATE` damit ctx.GAME_STATE von außen sichtbar ist
-    const patchedScript = script.replace(/\blet\s+GAME_STATE\s*=/, 'var GAME_STATE =');
+    // `let` → `var` für extern sichtbare Globals
+    // Außerdem: Balancing-Parameter durch SIM_CONFIG ersetzen (index.html bleibt unverändert)
+    const patchedScript = script
+        .replace(/\blet\s+GAME_STATE\s*=/, 'var GAME_STATE =')
+        // SIM_CONFIG-Block am Anfang injizieren (wird durch Replace-Kette danach genutzt)
+        .replace(
+            /\bconst\s+VERSION\s*=\s*'[^']*';/,
+            m => m + '\nvar SIM_CONFIG = {' +
+                'qualiPaceWeight:0.45,qualiCarWeight:0.30,qualiVarianceBase:3,' +
+                'trainVarianceBase:5,raceBadDayMin:15,raceBadDayRange:20,' +
+                'privateerActivityMult:1.0,rainProbability:0.15,' +
+                'paceRaceWeight:0.35,carSpeedRaceWeight:0.25,' +
+                'experienceWeight:0.15,strategyWeight:0.10,rainWeight:0.20,dnfMultiplier:1.0};'
+        )
+        // Qualifying-Varianz
+        .replace(
+            /const _qHalfVar = 3 \+ \(100 - _qConsVal\) \* 0\.07;/,
+            'const _qHalfVar = SIM_CONFIG.qualiVarianceBase + (100 - _qConsVal) * 0.07;'
+        )
+        // Training-Varianz
+        .replace(
+            /const _halfVar = 5 \+ \(100 - _consVal\) \* 0\.09;[^\n]*/,
+            'const _halfVar = SIM_CONFIG.trainVarianceBase + (100 - _consVal) * 0.09;'
+        )
+        // Race bad-day Strafe
+        .replace(
+            /performance -= 15 \+ Math\.random\(\) \* 20;/,
+            'performance -= SIM_CONFIG.raceBadDayMin + Math.random() * SIM_CONFIG.raceBadDayRange;'
+        )
+        // Privateer activityRate
+        .replace(
+            /eraBase \+ \(Math\.random\(\) \* 0\.20 - 0\.10\)/,
+            'eraBase * SIM_CONFIG.privateerActivityMult + (Math.random() * 0.20 - 0.10)'
+        )
+        // Pace-Gewicht Rennen
+        .replace(/_effPace \* 0\.35/, '_effPace * SIM_CONFIG.paceRaceWeight')
+        // CarSpeed-Gewicht Rennen
+        .replace(/_effCarSpeed \* 0\.25/, '_effCarSpeed * SIM_CONFIG.carSpeedRaceWeight')
+        // Erfahrungs-Gewicht
+        .replace(/driver\.experience \* 0\.15/g, 'driver.experience * SIM_CONFIG.experienceWeight')
+        // Strategie-Gewicht (Rennen + Quali + Training)
+        .replace(/team\.strategy \* 0\.1(?!\d)/g, 'team.strategy * SIM_CONFIG.strategyWeight')
+        // Regen-Gewicht (Rennen + Quali)
+        .replace(/driver\.rain \* 0\.2(?!\d)/g, 'driver.rain * SIM_CONFIG.rainWeight')
+        // DNF-Multiplikator (Rennen)
+        .replace(
+            /const _multiplier = \(GAME_STATE\.dnfRate \?\? 100\) \/ 100;/,
+            'const _multiplier = (GAME_STATE.dnfRate ?? 100) / 100 * (SIM_CONFIG.dnfMultiplier ?? 1.0);'
+        )
+        // DNF-Multiplikator (Qualifying-Runden)
+        .replace(
+            /const _mult2 = \(GAME_STATE\.dnfRate \?\? 100\) \/ 100;/,
+            'const _mult2 = (GAME_STATE.dnfRate ?? 100) / 100 * (SIM_CONFIG.dnfMultiplier ?? 1.0);'
+        );
 
     const ctx = createBrowserStubs();
     try {
@@ -139,4 +215,20 @@ function getContext() {
     return ctx;
 }
 
-module.exports = { getContext };
+let _simConfigDefaults = null;
+
+/**
+ * Wie getContext(), aber überschreibt SIM_CONFIG mit den übergebenen Werten.
+ * Setzt vorher auf Defaults zurück – sicher für mehrere Aufrufe mit verschiedenen Configs.
+ */
+function getContextWithConfig(config = {}) {
+    const ctx = getContext();
+    if (!_simConfigDefaults) {
+        _simConfigDefaults = { ...ctx.SIM_CONFIG };
+    }
+    // Erst zurücksetzen, dann überschreiben
+    Object.assign(ctx.SIM_CONFIG, _simConfigDefaults, config);
+    return ctx;
+}
+
+module.exports = { getContext, getContextWithConfig };

@@ -110,6 +110,8 @@ function simulateSeason(c) {
     let totalStarts = 0;
     let totalDNFs   = 0;
     let totalAccidentDNFs  = 0;
+    let poleTimes   = [];   // Pole-Zeiten in Sekunden (exkl. Indy)
+    let raceLapTimes = [];  // Sieger Ø-Rundenzeit in Sekunden (exkl. Indy)
 
     // Privateer-Metriken
     const drivers = c.GAME_STATE.drivers || [];
@@ -127,13 +129,25 @@ function simulateSeason(c) {
     const worksIds      = new Set(works.map(d => d.id));
 
     for (let i = 0; i < races.length; i++) {
-        const isRain = Math.random() < 0.15;
+        const isRain = Math.random() < (c.SIM_CONFIG?.rainProbability ?? 0.15);
         try {
             c.simulateTraining(i);                       // Training → Qualifying → Rennen
             const qResult = c.simulateQualifying(i, isRain);
             const result  = c.simulateRace(i, isRain);
             if (!result) continue;
             c.applyRaceResults(result);
+
+            // Zeitmetriken – nur F1-Rennen (kein Indy)
+            const _isIndy = races[i].isIndy || (races[i].name && races[i].name.includes('Indianapolis'));
+            if (!_isIndy) {
+                if (qResult && qResult.results && qResult.results[0]) {
+                    const pt = parseFloat(qResult.results[0].time);
+                    if (pt > 0) poleTimes.push(pt);
+                }
+                const ws = result.results && result.results[0] ? result.results[0].winnerTimeSec : null;
+                const lp = races[i].laps;
+                if (ws && lp) raceLapTimes.push(ws / lp);
+            }
 
             // Quali-Einträge zählen
             if (qResult && qResult.results) {
@@ -196,6 +210,8 @@ function simulateSeason(c) {
             ? totalGridEntries.reduce((a,b)=>a+b,0) / totalGridEntries.length
             : 0,
         raceCount: races.length,
+        avgPoleSec: poleTimes.length ? poleTimes.reduce((a,b)=>a+b,0)/poleTimes.length : 0,
+        avgRaceLapSec: raceLapTimes.length ? raceLapTimes.reduce((a,b)=>a+b,0)/raceLapTimes.length : 0,
     };
 }
 
@@ -236,6 +252,10 @@ const results = {
     deathsBySession: { training: [], qualifying: [], race: [] },
     indyDeathsPerSeason:        [],
     f1DeathsPerSeason:          [],
+
+    // Zeitmetriken
+    poleTimeSecs:               [],
+    raceLapSecs:                [],
 
     // Privateer-Metriken (Summen über alle Sims)
     privateerCounts:            [],
@@ -285,6 +305,10 @@ for (let sim = 0; sim < N; sim++) {
         results.deathsBySession.race.push(stats.raceDeaths || 0);
         results.indyDeathsPerSeason.push(stats.indyDeaths || 0);
         results.f1DeathsPerSeason.push(stats.f1Deaths || 0);
+
+        // Zeitmetriken
+        if (stats.avgPoleSec > 0)    results.poleTimeSecs.push(stats.avgPoleSec);
+        if (stats.avgRaceLapSec > 0) results.raceLapSecs.push(stats.avgRaceLapSec);
 
         // Privateer-Metriken
         results.privateerCounts.push(stats.privateerCount);
@@ -597,6 +621,47 @@ if (truth) {
     } else {
         const noDeathOk = eraAvgDeaths < 0.05 ? '✓' : '⚠';
         console.log(`║  ${noDeathOk} Ära ${eraStart}–${eraEnd} Tode/Saison: Ø ${eraAvgDeaths.toFixed(2)} (Ziel: 0)`);
+    }
+}
+
+// ── RUNDENZEITEN-ABGLEICH ─────────────────────────────────────────────────
+function fmtSec(s) {
+    if (!s || s <= 0) return '–';
+    const m = Math.floor(s / 60);
+    const rem = (s % 60).toFixed(3).padStart(6, '0');
+    return m > 0 ? `${m}:${rem}` : `${(s).toFixed(3)}s`;
+}
+function timeDeltaIcon(deltaS, tol) {
+    const a = Math.abs(deltaS);
+    return a <= tol ? '✓' : a <= tol * 2.5 ? '~' : '⚠';
+}
+
+const simPole    = avgN(results.poleTimeSecs);
+const simRaceLap = avgN(results.raceLapSecs);
+const realPoleMs    = truth?.avgPoleMs;
+const realRaceLapMs = truth?.avgRaceLapMs;
+
+if (simPole > 0 || simRaceLap > 0) {
+    console.log(`║`);
+    console.log(`╠═══════════════════════════════════════════════════╣`);
+    console.log(`║  RUNDENZEITEN  (Ø F1-Rennen, exkl. Indy)`);
+
+    if (simPole > 0) {
+        const realPole = realPoleMs ? realPoleMs / 1000 : null;
+        const realStr  = realPole ? `  Real: ${fmtSec(realPole)}` : '';
+        const deltaStr = realPole ? `  Δ ${(simPole-realPole>=0?'+':'')}${(simPole-realPole).toFixed(1)}s  ${timeDeltaIcon(simPole-realPole, 8)}` : '';
+        const poleCount = truth?.poleTimeCount ?? '?';
+        console.log(`║  Qualifying – Pole  (Ø ${poleCount} Rennen)`);
+        console.log(`║    Sim: ${fmtSec(simPole)}${realStr}${deltaStr}`);
+    }
+
+    if (simRaceLap > 0) {
+        const realLap = realRaceLapMs ? realRaceLapMs / 1000 : null;
+        const realStr = realLap ? `  Real: ${fmtSec(realLap)}` : '';
+        const deltaStr = realLap ? `  Δ ${(simRaceLap-realLap>=0?'+':'')}${(simRaceLap-realLap).toFixed(1)}s  ${timeDeltaIcon(simRaceLap-realLap, 12)}` : '';
+        const raceCount = truth?.raceTimeCount ?? '?';
+        console.log(`║  Rennen – Sieger Ø/Runde (${raceCount} Rennen)`);
+        console.log(`║    Sim: ${fmtSec(simRaceLap)}${realStr}${deltaStr}`);
     }
 }
 

@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>F1 RPG – Balancing Tool</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: monospace; background: #0f172a; color: #e2e8f0; padding: 16px; font-size: 13px; }
+
+/* ── Banner ── */
+.banner {
+  background: #1e293b; border: 1px solid #f59e0b; border-radius: 6px;
+  padding: 10px 14px; margin-bottom: 14px; font-size: 0.75rem; color: #cbd5e1;
+  line-height: 1.7;
+}
+.banner strong { color: #f59e0b; }
+.banner code { background: #0f172a; padding: 1px 5px; border-radius: 3px; color: #4ade80; }
+
+/* ── Layout ── */
+h1  { color: #f59e0b; font-size: 1.05rem; margin-bottom: 14px; }
+.layout { display: grid; grid-template-columns: 400px 1fr; gap: 14px; }
+.panel  { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 12px; }
+
+/* ── Sliders ── */
+h2  { color: #64748b; font-size: 0.68rem; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+.sr { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+.sr label { width: 176px; color: #cbd5e1; flex-shrink: 0; font-size: 0.73rem; }
+.sr input[type=range] { flex: 1; accent-color: #f59e0b; }
+.sr .val { width: 44px; text-align: right; color: #f59e0b; font-size: 0.78rem; }
+.reset-btn { font-size: 0.62rem; color: #475569; cursor: pointer; border: none; background: none; }
+.reset-btn:hover { color: #94a3b8; }
+.section-divider { border: none; border-top: 1px solid #1e3a5f; margin: 8px 0; }
+
+/* ── Year Grid ── */
+.year-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.year-grid label { display: flex; align-items: center; gap: 2px; color: #94a3b8; cursor: pointer; font-size: 0.72rem; }
+.year-grid input[type=checkbox] { accent-color: #f59e0b; }
+
+/* ── Buttons / Controls ── */
+.btn { background: #f59e0b; color: #0f172a; font-weight: bold; font-family: monospace;
+       border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; }
+.btn:hover { background: #fbbf24; }
+.btn:disabled { background: #334155; color: #475569; cursor: default; }
+.btn-sm { padding: 5px 10px; font-size: 0.76rem; }
+.btn-outline { background: transparent; border: 1px solid #475569; color: #94a3b8; }
+.btn-outline:hover { border-color: #94a3b8; color: #e2e8f0; background: transparent; }
+.btn-green { background: #15803d; color: #fff; }
+.btn-green:hover { background: #16a34a; }
+.controls { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.nsims { background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+         padding: 5px 7px; border-radius: 4px; font-family: monospace; width: 58px; }
+.spinner { color: #f59e0b; display: none; }
+.err { color: #f87171; margin-top: 6px; font-size: 0.78rem; }
+input[type=text], input[type=number], select {
+  background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+  padding: 5px 7px; border-radius: 4px; font-family: monospace; font-size: 0.8rem;
+}
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.tab-btn {
+  background: #1e293b; border: 1px solid #334155; color: #64748b;
+  padding: 6px 14px; border-radius: 4px; cursor: pointer; font-family: monospace;
+  font-size: 0.78rem; transition: all .15s;
+}
+.tab-btn:hover { border-color: #64748b; color: #94a3b8; }
+.tab-btn.active { background: #f59e0b; border-color: #f59e0b; color: #0f172a; font-weight: bold; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Tab-spezifische Inputs ── */
+.tab-inputs { background: #1e293b; border: 1px solid #334155; border-radius: 6px;
+              padding: 10px 12px; margin-bottom: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tab-inputs label { color: #94a3b8; font-size: 0.75rem; }
+.tab-inputs .grp { display: flex; align-items: center; gap: 6px; }
+
+/* ── Ergebnis-Blöcke ── */
+.year-block { margin-bottom: 20px; }
+.year-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.year-title { color: #f59e0b; font-size: 0.95rem; font-weight: bold; }
+.badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 3px; }
+.badge-ok   { background: #14532d; color: #4ade80; }
+.badge-warn { background: #713f12; color: #fbbf24; }
+.badge-fail { background: #7f1d1d; color: #f87171; }
+
+/* ── Stats-Karten ── */
+.stats-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.stat { background: #0f172a; border: 1px solid #1e293b; border-radius: 4px; padding: 5px 9px; }
+.stat .lbl { font-size: 0.62rem; color: #475569; text-transform: uppercase; }
+.stat .v   { font-size: 0.95rem; color: #f59e0b; }
+.stat .v.ok   { color: #4ade80; }
+.stat .v.warn { color: #fbbf24; }
+.stat .v.fail { color: #f87171; }
+
+/* ── Tabellen ── */
+.tables { display: flex; gap: 10px; flex-wrap: wrap; }
+.tbl-wrap { flex: 1; min-width: 180px; }
+table { width: 100%; border-collapse: collapse; }
+th { color: #475569; text-align: left; padding: 3px 6px; border-bottom: 1px solid #334155; font-size: 0.68rem; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: #94a3b8; }
+th.sort-active { color: #f59e0b; }
+td { padding: 3px 6px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; }
+.real { color: #4ade80; }
+.hi   { color: #f59e0b; }
+.ok   { color: #4ade80; }
+.warn { color: #fbbf24; }
+.fail { color: #f87171; }
+.muted { color: #475569; }
+.diff-pos { color: #f87171; }
+.diff-neg { color: #4ade80; }
+.diff-zero { color: #475569; }
+
+/* ── Saisonmatrix ── */
+.matrix-wrap { overflow-x: auto; margin-bottom: 12px; }
+.matrix-title { color: #64748b; font-size: 0.68rem; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+.matrix-table th { font-size: 0.62rem; padding: 2px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; }
+.matrix-table td { padding: 2px 4px; text-align: center; font-size: 0.72rem; min-width: 28px; }
+.matrix-table tr td:first-child { text-align: left; white-space: nowrap; color: #cbd5e1; }
+.pos-1  { background: #713f12; color: #fbbf24; font-weight: bold; }
+.pos-23 { background: #1e3a5f; color: #93c5fd; }
+.pos-dns{ background: #3f0f0f; color: #f87171; }
+.pos-mid{ color: #94a3b8; }
+
+/* ── Multi-Season-Tabelle ── */
+.multi-table td, .multi-table th { padding: 4px 8px; }
+.champion-bar { display: flex; gap: 2px; }
+.cb-seg { height: 10px; border-radius: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ── Server-Hinweis ── -->
+<div class="banner" style="border-color:#ef4444; margin-bottom:8px;">
+  <strong style="color:#ef4444;">⚠ Voraussetzung:</strong>
+  Erst in CMD den Backend-Server starten: <code>node tests/balancing-server.js</code> &nbsp;→&nbsp; läuft auf Port 3001
+</div>
+
+<!-- ── Workflow-Banner ── -->
+<div class="banner">
+  <strong>Workflow:</strong>
+  Slider anpassen → Simulieren → zufrieden?
+  &nbsp;①&nbsp;<strong>💾 Config speichern</strong> → schreibt <code>tests/sim-config-result.json</code>
+  &nbsp;②&nbsp;<code>node tests/sim-config-apply.js tests/sim-config-result.json</code> → patcht index.html
+  &nbsp;③&nbsp;Dann erst <strong>manage-v.ps1</strong>
+</div>
+
+<h1>🏎 F1 RPG – Balancing Tool</h1>
+
+<div class="layout">
+<!-- ═══════════════════════════ LINKE SPALTE ═══════════════════════════ -->
+<div>
+  <!-- Session-Parameter -->
+  <div class="panel">
+    <h2>Session-Parameter</h2>
+
+    <div class="sr"><label>Fahrer-Pace (Quali)</label>
+      <input type="range" id="qualiPaceWeight" min="0.1" max="0.8" step="0.05" value="0.45">
+      <span class="val" id="v_qualiPaceWeight">0.45</span>
+      <button class="reset-btn" onclick="reset('qualiPaceWeight',0.45)">↺</button></div>
+
+    <div class="sr"><label>Auto-Speed (Quali)</label>
+      <input type="range" id="qualiCarWeight" min="0.1" max="0.8" step="0.05" value="0.30">
+      <span class="val" id="v_qualiCarWeight">0.30</span>
+      <button class="reset-btn" onclick="reset('qualiCarWeight',0.30)">↺</button></div>
+
+    <div class="sr"><label>Quali-Varianz Basis</label>
+      <input type="range" id="qualiVarianceBase" min="1" max="20" step="1" value="3">
+      <span class="val" id="v_qualiVarianceBase">3</span>
+      <button class="reset-btn" onclick="reset('qualiVarianceBase',3)">↺</button></div>
+
+    <div class="sr"><label>Training-Varianz Basis</label>
+      <input type="range" id="trainVarianceBase" min="1" max="25" step="1" value="5">
+      <span class="val" id="v_trainVarianceBase">5</span>
+      <button class="reset-btn" onclick="reset('trainVarianceBase',5)">↺</button></div>
+
+    <div class="sr"><label>Schlechter-Tag Min</label>
+      <input type="range" id="raceBadDayMin" min="0" max="40" step="1" value="15">
+      <span class="val" id="v_raceBadDayMin">15</span>
+      <button class="reset-btn" onclick="reset('raceBadDayMin',15)">↺</button></div>
+
+    <div class="sr"><label>Schlechter-Tag Bereich</label>
+      <input type="range" id="raceBadDayRange" min="0" max="60" step="1" value="20">
+      <span class="val" id="v_raceBadDayRange">20</span>
+      <button class="reset-btn" onclick="reset('raceBadDayRange',20)">↺</button></div>
+
+    <div class="sr"><label>Privateer Aktivität ×</label>
+      <input type="range" id="privateerActivityMult" min="0.2" max="1.5" step="0.05" value="1.0">
+      <span class="val" id="v_privateerActivityMult">1.00</span>
+      <button class="reset-btn" onclick="reset('privateerActivityMult',1.0)">↺</button></div>
+
+    <div class="sr"><label>Regen-Wahrsch.</label>
+      <input type="range" id="rainProbability" min="0" max="0.5" step="0.01" value="0.15">
+      <span class="val" id="v_rainProbability">0.15</span>
+      <button class="reset-btn" onclick="reset('rainProbability',0.15)">↺</button></div>
+  </div>
+
+  <!-- Performance-Formel -->
+  <div class="panel" style="margin-top:10px;">
+    <h2>Performance-Formel (Rennen)</h2>
+    <div style="font-size:0.65rem;color:#475569;margin-bottom:8px;">
+      Score = Pace×w1 + CarSpeed×w2 + Erfahrung×w3 + Strategie×w4 + (Regen×w5 oder +15)
+    </div>
+
+    <div class="sr"><label>Pace-Gewicht (w1)</label>
+      <input type="range" id="paceRaceWeight" min="0.1" max="0.7" step="0.05" value="0.35">
+      <span class="val" id="v_paceRaceWeight">0.35</span>
+      <button class="reset-btn" onclick="reset('paceRaceWeight',0.35)">↺</button></div>
+
+    <div class="sr"><label>CarSpeed-Gewicht (w2)</label>
+      <input type="range" id="carSpeedRaceWeight" min="0.05" max="0.6" step="0.05" value="0.25">
+      <span class="val" id="v_carSpeedRaceWeight">0.25</span>
+      <button class="reset-btn" onclick="reset('carSpeedRaceWeight',0.25)">↺</button></div>
+
+    <div class="sr"><label>Erfahrungs-Gewicht (w3)</label>
+      <input type="range" id="experienceWeight" min="0.0" max="0.4" step="0.05" value="0.15">
+      <span class="val" id="v_experienceWeight">0.15</span>
+      <button class="reset-btn" onclick="reset('experienceWeight',0.15)">↺</button></div>
+
+    <div class="sr"><label>Strategie-Gewicht (w4)</label>
+      <input type="range" id="strategyWeight" min="0.0" max="0.3" step="0.05" value="0.10">
+      <span class="val" id="v_strategyWeight">0.10</span>
+      <button class="reset-btn" onclick="reset('strategyWeight',0.10)">↺</button></div>
+
+    <div class="sr"><label>Regen-Gewicht (w5)</label>
+      <input type="range" id="rainWeight" min="0.0" max="0.5" step="0.05" value="0.20">
+      <span class="val" id="v_rainWeight">0.20</span>
+      <button class="reset-btn" onclick="reset('rainWeight',0.20)">↺</button></div>
+
+    <div class="sr"><label>DNF-Multiplikator</label>
+      <input type="range" id="dnfMultiplier" min="0.3" max="2.0" step="0.1" value="1.0">
+      <span class="val" id="v_dnfMultiplier">1.00</span>
+      <button class="reset-btn" onclick="reset('dnfMultiplier',1.0)">↺</button></div>
+
+    <div id="weightSum" style="font-size:0.68rem;margin-top:4px;color:#64748b;"></div>
+  </div>
+
+  <!-- Jahre + Steuerung -->
+  <div class="panel" style="margin-top:10px;">
+    <h2>Jahre (Einzelsaison / Multi-Saison)</h2>
+    <div class="year-grid" id="yearGrid"></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <button class="btn btn-sm btn-outline" onclick="selAll()">Alle</button>
+      <button class="btn btn-sm btn-outline" onclick="selNone()">Keine</button>
+      <button class="btn btn-sm btn-outline" onclick="selDecade(1950)">50er</button>
+      <button class="btn btn-sm btn-outline" onclick="selDecade(1960)">60er</button>
+      <button class="btn btn-sm btn-outline" onclick="selDecade(1970)">70er</button>
+      <button class="btn btn-sm btn-outline" onclick="selDecade(1980)">80er</button>
+      <button class="btn btn-sm btn-outline" onclick="selDecade(1990)">90er</button>
+    </div>
+    <div class="controls">
+      <input type="number" class="nsims" id="nSims" value="30" min="5" max="500">
+      <span style="color:#475569">Sims/Jahr</span>
+      <button class="btn" id="runBtn" onclick="runSim()">▶ Simulieren</button>
+      <button class="btn btn-green" onclick="saveConfig()">💾 Config speichern</button>
+      <span class="spinner" id="spinner">⏳</span>
+    </div>
+    <div class="err" id="errMsg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ RECHTE SPALTE ══════════════════════════ -->
+<div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('single')">① Einzelsaison</button>
+    <button class="tab-btn" onclick="switchTab('multi')">② Mehrere Saisons</button>
+    <button class="tab-btn" onclick="switchTab('driver')">③ Fahrer-Entwicklung</button>
+    <button class="tab-btn" onclick="switchTab('team')">④ Team-Entwicklung</button>
+    <button class="tab-btn" onclick="switchTab('matrix')">⑤ Saisonmatrix</button>
+    <button class="tab-btn" onclick="switchTab('outlier')">⑥ Ausreißer</button>
+  </div>
+
+  <!-- Tab 1: Einzelsaison -->
+  <div class="tab-pane active" id="tab-single">
+    <div style="color:#334155;padding:30px 0;text-align:center;">← Simulation starten</div>
+  </div>
+
+  <!-- Tab 2: Mehrere Saisons -->
+  <div class="tab-pane" id="tab-multi">
+    <div class="tab-inputs">
+      <div class="grp"><label>Startjahr</label>
+        <select id="multiStart"></select></div>
+      <div class="grp"><label>Saisons</label>
+        <input type="number" id="multiCount" value="10" min="2" max="75" style="width:58px"></div>
+      <div class="grp" style="gap:12px;">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;" title="Jedes Jahr wird unabhängig aus SEASON_DATA geladen. Korrekte Fahrer-Roster pro Jahr. Für Balancing einzelner Jahre empfohlen.">
+          <input type="radio" name="multiMode" value="historical" checked>
+          <span>Historisch <span style="font-size:0.62rem;color:#475569">– jedes Jahr frisch aus SEASON_DATA, korrekte Roster, schnell</span></span>
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;" title="Startet einmalig und läuft durch – wie das echte Spiel. Fahrer treten zurück, Teams entwickeln sich. Setzt processSeasonEndEvents() voraus (v0.9.9.92+).">
+          <input type="radio" name="multiMode" value="continuous">
+          <span>Kontinuierlich <span style="font-size:0.62rem;color:#475569">– ein durchgehender Lauf wie im Spiel, Rücktritte aktiv (ab v0.9.9.92)</span></span>
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;margin-left:8px;color:#475569;font-size:0.72rem;" title="Training ist standardmäßig deaktiviert (~15% schneller). Aktivieren für realistischeren Sim-Lauf.">
+          <input type="checkbox" id="skipTrainingCb" style="accent-color:#f59e0b;">
+          <span>Training aktivieren</span>
+        </label>
+      </div>
+      <button class="btn btn-sm" onclick="runMulti()">▶ Simulieren</button>
+      <span class="spinner" id="spinnerMulti">⏳ <span id="spinnerMultiInfo" style="font-size:0.7rem;color:#64748b"></span></span>
+    </div>
+    <div id="tab-multi-results" style="color:#334155;padding:20px 0;text-align:center;">← Startjahr wählen und simulieren</div>
+  </div>
+
+  <!-- Tab 3: Fahrer-Entwicklung -->
+  <div class="tab-pane" id="tab-driver">
+    <div class="tab-inputs" style="flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <div class="grp" style="gap:4px;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="radio" name="driverMode" value="isolated" checked onchange="onDriverModeChange()">
+            <span style="font-size:0.75rem;">Isoliert <span style="color:#475569">(historische Teams)</span></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="radio" name="driverMode" value="fromsim" onchange="onDriverModeChange()">
+            <span style="font-size:0.75rem;">Aus kont. Simulation <span style="color:#475569">(kein Neu-Sim)</span></span>
+          </label>
+        </div>
+      </div>
+      <div id="driverIsolatedWarning" style="font-size:0.68rem;color:#f59e0b;background:#1c1400;border:1px solid #713f12;border-radius:4px;padding:4px 8px;display:none">
+        ⚠ Isolierter Modus: Fahrer bekommt jedes Jahr das historische Team + historischen carSpeed – unabhängig vom echten Spielverlauf.
+      </div>
+      <div id="driverFromSimHint" style="font-size:0.68rem;color:#4ade80;background:#0a1f0a;border:1px solid #14532d;border-radius:4px;padding:4px 8px;display:none">
+        ✓ Liest aus dem letzten kontinuierlichen Sim-Lauf (Tab ②). Kein Neu-Sim nötig.
+      </div>
+      <div id="driverFromSimMissing" style="font-size:0.68rem;color:#f87171;background:#1f0a0a;border:1px solid #7f1d1d;border-radius:4px;padding:4px 8px;display:none">
+        ✗ Noch kein kontinuierlicher Sim-Lauf vorhanden. Zuerst Tab ② → Kontinuierlich → Simulieren.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <div class="grp"><label>Fahrer</label>
+          <input type="text" id="driverQuery" placeholder="Name eingeben…" style="width:200px" list="driverQueryList" autocomplete="off" oninput="filterDriverList(this)" onchange="filterDriverList(this)">
+          <datalist id="driverQueryList"></datalist>
+        </div>
+        <div class="grp" id="driverStartGrp"><label>Startjahr</label>
+          <select id="driverStart"></select></div>
+        <div class="grp" id="driverCountGrp"><label>Saisons</label>
+          <input type="number" id="driverCount" value="8" min="1" max="30" style="width:50px"></div>
+        <button class="btn btn-sm" onclick="runDriverOrExtract()">▶ Tracken</button>
+        <span class="spinner" id="spinnerDriver">⏳</span>
+      </div>
+    </div>
+    <div id="tab-driver-results" style="color:#334155;padding:20px 0;text-align:center;">← Fahrernamen eingeben</div>
+  </div>
+
+  <!-- Tab 4: Team-Entwicklung -->
+  <div class="tab-pane" id="tab-team">
+    <div class="tab-inputs" style="flex-direction:column;gap:8px;">
+      <div id="teamFromSimHint" style="font-size:0.68rem;color:#4ade80;background:#0a1f0a;border:1px solid #14532d;border-radius:4px;padding:4px 8px;display:none">
+        ✓ Liest aus dem letzten kontinuierlichen Sim-Lauf (Tab ②).
+      </div>
+      <div id="teamFromSimMissing" style="font-size:0.68rem;color:#f87171;background:#1f0a0a;border:1px solid #7f1d1d;border-radius:4px;padding:4px 8px;">
+        Noch kein kontinuierlicher Sim-Lauf. Zuerst Tab ② → Kontinuierlich → Simulieren.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <div class="grp"><label>Team</label>
+          <input type="text" id="teamQuery" placeholder="Name eingeben…" style="width:200px" list="teamQueryList" autocomplete="off" oninput="filterTeamList(this)" onchange="filterTeamList(this)">
+          <datalist id="teamQueryList"></datalist>
+        </div>
+        <button class="btn btn-sm" onclick="extractTeamFromSim()">▶ Anzeigen</button>
+      </div>
+    </div>
+    <div id="tab-team-results" style="color:#334155;padding:20px 0;text-align:center;">← Team eingeben (erst nach kont. Simulation)</div>
+  </div>
+
+  <!-- Tab 5: Saisonmatrix -->
+  <div class="tab-pane" id="tab-matrix">
+    <div class="tab-inputs">
+      <div class="grp"><label>Jahr</label>
+        <select id="matrixYear"></select></div>
+      <div class="grp"><label>N Sims</label>
+        <input type="number" id="matrixN" value="20" min="5" max="100" style="width:58px"></div>
+      <button class="btn btn-sm" onclick="runMatrix()">▶ Matrix berechnen</button>
+      <span class="spinner" id="spinnerMatrix">⏳</span>
+    </div>
+    <div id="tab-matrix-results" style="color:#334155;padding:20px 0;text-align:center;">← Jahr wählen und berechnen</div>
+  </div>
+
+  <!-- Tab 6: Ausreißer -->
+  <div class="tab-pane" id="tab-outlier">
+    <div class="tab-inputs">
+      <div class="grp" style="gap:10px;">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+          <input type="radio" name="outlierMode" value="single" checked onchange="toggleOutlierYear()"> Einzelsaison
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+          <input type="radio" name="outlierMode" value="global" onchange="toggleOutlierYear()"> Alle gewählten Jahre
+        </label>
+      </div>
+      <div class="grp" id="outlierYearGrp">
+        <label>Jahr</label>
+        <select id="outlierYear"></select>
+      </div>
+      <div class="grp">
+        <label>N Zeilen</label>
+        <input type="number" id="outlierTopN" value="20" min="5" max="500" style="width:58px">
+      </div>
+      <button class="btn btn-sm" onclick="runOutliers()">▶ Ausreißer finden</button>
+      <span class="spinner" id="spinnerOutlier">⏳</span>
+    </div>
+    <div style="font-size:0.65rem;color:#475569;margin-bottom:6px;">Läuft immer im historischen Modus (initFromYear) – korrekte Roster pro Jahr, Rücktritte nicht relevant.</div>
+    <div id="tab-outlier-results" style="color:#334155;padding:20px 0;text-align:center;">← Modus wählen und simulieren</div>
+  </div>
+
+</div><!-- rechte Spalte -->
+</div><!-- layout -->
+
+<script>
+'use strict';
+
+const YEARS = Array.from({length: 2025-1950}, (_,i) => 1950+i);
+const DEFAULTS = {
+  qualiPaceWeight:0.45, qualiCarWeight:0.30, qualiVarianceBase:3,
+  trainVarianceBase:5, raceBadDayMin:15, raceBadDayRange:20,
+  privateerActivityMult:1.0, rainProbability:0.15,
+  paceRaceWeight:0.35, carSpeedRaceWeight:0.25,
+  experienceWeight:0.15, strategyWeight:0.10, rainWeight:0.20, dnfMultiplier:1.0,
+};
+
+// ── Jahr-Checkboxen + Selects ──────────────────────────────────────────────
+const yg = document.getElementById('yearGrid');
+YEARS.forEach(y => {
+  const lbl = document.createElement('label');
+  lbl.innerHTML = `<input type="checkbox" value="${y}" ${[1967,1975,1984].includes(y)?'checked':''}> ${y}`;
+  yg.appendChild(lbl);
+});
+
+['multiStart','driverStart'].forEach(id => {
+  const sel = document.getElementById(id);
+  YEARS.forEach(y => {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === 1975) o.selected = true;
+    sel.appendChild(o);
+  });
+});
+
+const matrixYearSel = document.getElementById('matrixYear');
+YEARS.forEach(y => {
+  const o = document.createElement('option');
+  o.value = y; o.textContent = y;
+  if (y === 1984) o.selected = true;
+  matrixYearSel.appendChild(o);
+});
+
+const outlierYearSel = document.getElementById('outlierYear');
+YEARS.forEach(y => {
+  const o = document.createElement('option');
+  o.value = y; o.textContent = y;
+  if (y === 1984) o.selected = true;
+  outlierYearSel.appendChild(o);
+});
+
+function selAll()  { document.querySelectorAll('#yearGrid input').forEach(el => el.checked = true); }
+function selNone() { document.querySelectorAll('#yearGrid input').forEach(el => el.checked = false); }
+function selDecade(d) {
+  selNone();
+  document.querySelectorAll('#yearGrid input').forEach(el => {
+    const y = parseInt(el.value);
+    if (y >= d && y < d+10) el.checked = true;
+  });
+}
+
+// ── Slider ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('input[type=range]').forEach(el => {
+  el.addEventListener('input', () => { updateVal(el); updateWeightSum(); });
+});
+function updateVal(el) {
+  const v = parseFloat(el.value);
+  document.getElementById('v_'+el.id).textContent = v.toFixed(el.step.includes('.')?2:0);
+}
+function reset(id, def) {
+  const el = document.getElementById(id);
+  el.value = def;
+  updateVal(el);
+  updateWeightSum();
+}
+function updateWeightSum() {
+  const w = ['paceRaceWeight','carSpeedRaceWeight','experienceWeight','strategyWeight']
+    .reduce((s,id) => s + parseFloat(document.getElementById(id).value), 0);
+  const el = document.getElementById('weightSum');
+  el.textContent = `Summe w1-w4: ${w.toFixed(2)} (+ Regen/Dry-Baseline)`;
+  el.style.color = Math.abs(w - 0.85) < 0.05 ? '#4ade80' : '#fbbf24';
+}
+updateWeightSum();
+
+// ── Konfig auslesen ─────────────────────────────────────────────────────────
+function getConfig() {
+  const cfg = {};
+  Object.keys(DEFAULTS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) cfg[id] = parseFloat(el.value);
+  });
+  return cfg;
+}
+function getYears() {
+  return [...document.querySelectorAll('#yearGrid input:checked')].map(el => parseInt(el.value));
+}
+
+// ── Tab-Switching ────────────────────────────────────────────────────────────
+const TAB_ORDER = ['single','multi','driver','team','matrix','outlier'];
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', TAB_ORDER[i] === name);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'team') refreshTeamTabState();
+  if (name === 'driver') refreshDriverTabState();
+}
+
+// ── Autocomplete: Datalist befüllen ──────────────────────────────────────────
+let _allDriverNames = {}; // id → display name
+let _allTeamNames  = {}; // id → display name
+
+async function loadDriverNames() {
+  if (Object.keys(_allDriverNames).length > 0) return;
+  try {
+    const r = await fetch('/driver-names'); _allDriverNames = await r.json();
+  } catch(_) {}
+}
+async function loadTeamNames() {
+  if (Object.keys(_allTeamNames).length > 0) return;
+  try {
+    const r = await fetch('/team-names'); _allTeamNames = await r.json();
+  } catch(_) {}
+}
+
+function filterDriverList(inp) {
+  const q = inp.value.toLowerCase();
+  const dl = document.getElementById('driverQueryList');
+  dl.innerHTML = '';
+  if (q.length < 2) return;
+  // Merge static names + multiData names
+  const src = Object.keys(_multiData?.allDriverNames || {}).length
+    ? _multiData.allDriverNames : _allDriverNames;
+  const matches = Object.entries(src)
+    .filter(([id, name]) => (name||'').toLowerCase().includes(q) || id.includes(q))
+    .sort((a,b) => a[1].localeCompare(b[1])).slice(0, 20);
+  for (const [id, name] of matches) {
+    const opt = document.createElement('option');
+    opt.value = name; opt.dataset.id = id;
+    dl.appendChild(opt);
+  }
+}
+
+function filterTeamList(inp) {
+  const q = inp.value.toLowerCase();
+  const dl = document.getElementById('teamQueryList');
+  dl.innerHTML = '';
+  if (q.length < 2) return;
+  const src = Object.keys(_multiData?.allTeamNames || {}).length
+    ? _multiData.allTeamNames : _allTeamNames;
+  // Deduplizieren nach Name: gleiche Anzeigenamen zusammenfassen
+  const seen = new Map(); // name → first id
+  for (const [id, name] of Object.entries(src)) {
+    if (!seen.has(name)) seen.set(name, id);
+  }
+  const matches = [...seen.entries()]
+    .filter(([name]) => name.toLowerCase().includes(q))
+    .sort((a,b) => a[0].localeCompare(b[0])).slice(0, 20);
+  for (const [name] of matches) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    dl.appendChild(opt);
+  }
+}
+
+// Beim Laden Namen vorholen
+loadDriverNames();
+loadTeamNames();
+
+// ── Fahrer-Tab: Modus-Toggle ──────────────────────────────────────────────────
+function onDriverModeChange() {
+  refreshDriverTabState();
+}
+function refreshDriverTabState() {
+  const mode = document.querySelector('input[name="driverMode"]:checked')?.value || 'isolated';
+  const fromSim = mode === 'fromsim';
+  const hasSim  = _multiData?.mode === 'continuous';
+  document.getElementById('driverIsolatedWarning').style.display = (!fromSim) ? 'block' : 'none';
+  document.getElementById('driverFromSimHint').style.display     = (fromSim && hasSim)  ? 'block' : 'none';
+  document.getElementById('driverFromSimMissing').style.display  = (fromSim && !hasSim) ? 'block' : 'none';
+  document.getElementById('driverStartGrp').style.display  = fromSim ? 'none' : '';
+  document.getElementById('driverCountGrp').style.display  = fromSim ? 'none' : '';
+}
+
+// ── Team-Tab: Status anzeigen ─────────────────────────────────────────────────
+function refreshTeamTabState() {
+  const hasSim = _multiData?.mode === 'continuous';
+  document.getElementById('teamFromSimHint').style.display    = hasSim  ? 'block' : 'none';
+  document.getElementById('teamFromSimMissing').style.display = !hasSim ? 'block' : 'none';
+  // Datalist befüllen – nach Name deduplizieren
+  if (hasSim && _multiData.allTeamNames) {
+    const dl = document.getElementById('teamQueryList');
+    dl.innerHTML = '';
+    const seen = new Set();
+    for (const [, name] of Object.entries(_multiData.allTeamNames).sort((a,b)=>a[1].localeCompare(b[1]))) {
+      if (seen.has(name)) continue; seen.add(name);
+      const opt = document.createElement('option'); opt.value = name; dl.appendChild(opt);
+    }
+  }
+}
+
+// ── runDriver / runDriverOrExtract ────────────────────────────────────────────
+function runDriverOrExtract() {
+  const mode = document.querySelector('input[name="driverMode"]:checked')?.value || 'isolated';
+  if (mode === 'fromsim') extractDriverFromSim();
+  else runDriver();
+}
+
+// ── Fahrer aus kont. Sim extrahieren (kein Server-Call) ───────────────────────
+function extractDriverFromSim() {
+  if (!_multiData || _multiData.mode !== 'continuous') {
+    document.getElementById('tab-driver-results').innerHTML =
+      '<div class="err">Kein kontinuierlicher Sim-Lauf vorhanden. Tab ② → Kontinuierlich → Simulieren.</div>';
+    return;
+  }
+  const q = document.getElementById('driverQuery').value.trim().toLowerCase();
+  if (!q) { alert('Fahrernamen eingeben.'); return; }
+
+  // Fahrer-ID suchen: erst direkt, dann über Display-Name
+  let driverId = null, driverName = null;
+  const allNames = _multiData.allDriverNames || {};
+  // Exakter ID-Match
+  if (allNames[q]) { driverId = q; driverName = allNames[q]; }
+  // Name-Match (exakt oder Teilstring)
+  if (!driverId) {
+    for (const [id, name] of Object.entries(allNames)) {
+      if ((name||'').toLowerCase() === q || id === q) { driverId = id; driverName = name; break; }
+    }
+  }
+  if (!driverId) {
+    // Fuzzy: erster der q enthält
+    for (const [id, name] of Object.entries(allNames)) {
+      if ((name||'').toLowerCase().includes(q) || id.includes(q)) { driverId = id; driverName = name; break; }
+    }
+  }
+  if (!driverId) {
+    document.getElementById('tab-driver-results').innerHTML =
+      `<div class="err">Fahrer "${q}" nicht in Sim-Daten. Tipp: Name aus Dropdown wählen.</div>`;
+    return;
+  }
+
+  const rows = [];
+  for (const s of _multiData.seasons) {
+    const v = s.driverData?.[driverId];
+    const realEntry = (s.realStandings || []).find(e => e.driverId === driverId);
+    const realPos = realEntry?.pos ?? null;
+    const realPts = realEntry?.pts ?? null;
+    const deltaPos = v && realPos ? +((v.avgPos||0) - realPos).toFixed(1) : null;
+    const deltaPts = v && realPts !== null ? +((v.avgPts||0) - realPts).toFixed(1) : null;
+    const isChamp  = s.champDistrib?.some(c => c.id === driverId);
+    rows.push({ year: s.year, v, realPos, realPts, deltaPos, deltaPts, isChamp });
+  }
+
+  const N = _multiData.N;
+  const mkSeason = r => ({
+    year: r.year, present: !!r.v,
+    driverName: r.v?.name || driverName,
+    avgPos: r.v?.avgPos ?? null, avgPts: r.v?.avgPts ?? null,
+    team: r.v?.topTeam ?? '–', appearances: r.v?.appearances ?? 0,
+    isChamp: r.isChamp,
+    realPos: r.realPos, realPts: r.realPts, deltaPos: r.deltaPos, deltaPts: r.deltaPts,
+    realPace: r.v?.simPace ?? null,
+  });
+  const html = buildDriverDevTable({ driverQuery: driverId, N, seasons: rows.map(mkSeason) });
+  document.getElementById('tab-driver-results').innerHTML = html;
+  _driverData = { driverQuery: driverId, N, seasons: rows.map(mkSeason) };
+}
+
+// ── Team aus kont. Sim extrahieren ────────────────────────────────────────────
+function extractTeamFromSim() {
+  if (!_multiData || _multiData.mode !== 'continuous') {
+    document.getElementById('tab-team-results').innerHTML =
+      '<div class="err">Kein kontinuierlicher Sim-Lauf vorhanden. Tab ② → Kontinuierlich → Simulieren.</div>';
+    return;
+  }
+  const q = document.getElementById('teamQuery').value.trim().toLowerCase();
+  if (!q) { alert('Teamnamen eingeben.'); return; }
+
+  // Alle Team-IDs sammeln die zum Namen passen (gleicher Name kann mehrere IDs haben)
+  const allTeams = _multiData.allTeamNames || {};
+  let teamName = null;
+  const matchedIds = new Set();
+  // Exakter Name-Match zuerst
+  for (const [id, name] of Object.entries(allTeams)) {
+    if ((name||'').toLowerCase() === q || id.toLowerCase() === q) {
+      matchedIds.add(id); if (!teamName) teamName = name;
+    }
+  }
+  // Fuzzy falls nichts gefunden
+  if (!matchedIds.size) {
+    for (const [id, name] of Object.entries(allTeams)) {
+      if ((name||'').toLowerCase().includes(q) || id.toLowerCase().includes(q)) {
+        matchedIds.add(id); if (!teamName) teamName = name;
+      }
+    }
+  }
+  // Alle IDs mit gleichem Anzeigenamen dazu (z.B. MCL + MCL2 = beide "McLaren")
+  if (teamName) {
+    for (const [id, name] of Object.entries(allTeams)) {
+      if ((name||'').toLowerCase() === teamName.toLowerCase()) matchedIds.add(id);
+    }
+  }
+  if (!matchedIds.size) {
+    document.getElementById('tab-team-results').innerHTML =
+      `<div class="err">Team "${q}" nicht in Sim-Daten. Tipp: Name aus Dropdown wählen.</div>`;
+    return;
+  }
+
+  const rows = [];
+  for (const s of _multiData.seasons) {
+    // Aggregiere über alle matching IDs (z.B. wenn Team-ID sich im Laufe des Sims ändert)
+    let v = null;
+    for (const tid of matchedIds) {
+      const entry = s.teamData?.[tid];
+      if (!entry) continue;
+      if (!v) { v = { ...entry }; }
+      else {
+        // Gewichtetes Zusammenführen falls mehrere IDs Daten haben
+        const total = (v.appearances || 0) + (entry.appearances || 0);
+        if (total > 0) {
+          v.avgPos = +((v.avgPos * v.appearances + entry.avgPos * entry.appearances) / total).toFixed(1);
+          v.avgPts = +((v.avgPts * v.appearances + entry.avgPts * entry.appearances) / total).toFixed(1);
+          v.appearances = total;
+        }
+      }
+    }
+    const isChamp = s.teamDistrib?.some(t => matchedIds.has(t.id));
+    const champPct = s.teamDistrib?.filter(t => matchedIds.has(t.id)).reduce((sum, t) => sum + (t.pct||0), 0) ?? 0;
+    // SEASON_DATA carSpeed – erst nach Team-ID (z.B. "FER"), dann nach Name
+    let sdCS = null;
+    for (const tid of matchedIds) { if (s.sdTeamSpeeds?.[tid] != null) { sdCS = s.sdTeamSpeeds[tid]; break; } }
+    if (sdCS === null) sdCS = s.sdTeamSpeeds?.[teamName] ?? null;
+    // Echte Konstr.-Standings
+    const realEntry = s.realTeamStandings?.[teamName] || s.realTeamStandings?.[teamName?.toLowerCase()] || null;
+    const realPos = realEntry?.pos ?? null;
+    const realPts = realEntry?.pts ?? null;
+    const deltaPos = v?.avgPos != null && realPos != null ? +(v.avgPos - realPos).toFixed(1) : null;
+    const deltaPts = v?.avgPts != null && realPts != null ? +(v.avgPts - realPts).toFixed(1) : null;
+    rows.push({ year: s.year, v, isChamp, champPct, sdCS, realPos, realPts, deltaPos, deltaPts });
+  }
+
+  const N = _multiData.N;
+  const presentRows = rows.filter(r => r.v);
+  if (!presentRows.length) {
+    document.getElementById('tab-team-results').innerHTML =
+      `<div class="err">Team "${teamName}" hat in keiner Saison Daten.</div>`;
+    return;
+  }
+
+  // 🏆 nur für das Team mit dem höchsten % pro Jahr (nicht für jeden der je gewann)
+  const topChampByYear = new Map();
+  for (const s of _multiData.seasons) {
+    if (s.teamDistrib?.length) topChampByYear.set(s.year, s.teamDistrib[0].id);
+  }
+
+  const tableRows = rows.map(r => {
+    if (!r.v) return `<tr><td style="color:#f59e0b">${r.year}</td><td class="muted" colspan="8">nicht im Feld</td></tr>`;
+    const isTopChamp = matchedIds.has(topChampByYear.get(r.year));
+    const champMark = isTopChamp ? ' 🏆' : '';
+    const posCls  = r.v.avgPos <= 3 ? 'hi' : r.v.avgPos <= 6 ? 'ok' : '';
+    const rPosCls = r.realPos != null ? (r.realPos <= 3 ? 'real' : r.realPos <= 6 ? 'ok' : '') : '';
+    const dPosCls = r.deltaPos === null ? '' : Math.abs(r.deltaPos) < 1 ? 'diff-zero' : r.deltaPos > 0 ? 'diff-pos' : 'diff-neg';
+    const dPtsCls = r.deltaPts === null ? '' : Math.abs(r.deltaPts) < 5 ? 'diff-zero' : r.deltaPts > 0 ? 'diff-pos' : 'diff-neg';
+    const sdTxt = r.sdCS !== null ? r.sdCS : '–';
+    const sdCls = r.sdCS !== null ? (r.sdCS >= 90 ? 'ok' : r.sdCS >= 80 ? 'warn' : 'muted') : '';
+    return `<tr>
+      <td style="color:#f59e0b;font-weight:bold">${r.year}${champMark}</td>
+      <td class="${posCls}">${r.v.avgPos !== null ? `P${r.v.avgPos}` : '–'}</td>
+      <td class="${rPosCls}">${r.realPos !== null ? `P${r.realPos}` : '–'}</td>
+      <td class="${dPosCls}">${r.deltaPos !== null ? (r.deltaPos > 0 ? '+' : '') + r.deltaPos : '–'}</td>
+      <td>${r.v.avgPts ?? '–'}</td>
+      <td class="real">${r.realPts !== null ? r.realPts : '–'}</td>
+      <td class="${dPtsCls}">${r.deltaPts !== null ? (r.deltaPts > 0 ? '+' : '') + r.deltaPts : '–'}</td>
+      <td class="${sdCls}" style="font-size:0.75rem">${sdTxt}</td>
+      <td class="muted" style="font-size:0.68rem">${r.v.appearances}</td>
+    </tr>`;
+  }).join('');
+
+  const _exportIds = [...matchedIds].join(',');
+  document.getElementById('tab-team-results').innerHTML = `
+    <div class="panel">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span class="year-title">${teamName}</span>
+        <span style="color:#475569;font-size:0.7rem">${N} Sims/Jahr | ${_multiData.startYear}–${_multiData.startYear+_multiData.numSeasons-1}</span>
+        <button class="btn btn-sm btn-outline" onclick="exportTeam('${_exportIds}','${teamName}')">📋 Export für Claude</button>
+        <span id="exportConfirmTeam" style="font-size:0.72rem;color:#4ade80;display:none">✓ Kopiert</span>
+      </div>
+      <table style="width:100%;">
+        <thead><tr>
+          <th>Jahr</th>
+          <th>Pos Sim</th><th class="real">Real</th><th>Δ Pos</th>
+          <th>Pkt Sim</th><th class="real">Real</th><th>Δ Pkt</th>
+          <th title="SEASON_DATA carSpeed (roh, vor Remapping)">SD</th><th>Sims</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div style="font-size:0.65rem;color:#334155;margin-top:6px;">
+        🏆 = echter Konstr.-WM &nbsp;|&nbsp;
+        <span class="diff-neg">grün Δ</span> = Sim besser als Real &nbsp;|&nbsp;
+        <span class="diff-pos">rot Δ</span> = Sim schlechter als Real &nbsp;|&nbsp;
+        SD = SEASON_DATA carSpeed (Rohwert vor Remapping)
+      </div>
+    </div>`;
+}
+
+function exportTeam(teamIdsStr, teamName) {
+  if (!_multiData) return;
+  const ids = new Set((teamIdsStr||'').split(',').filter(Boolean));
+  const topChampByYear = new Map();
+  for (const s of _multiData.seasons) {
+    if (s.teamDistrib?.length) topChampByYear.set(s.year, s.teamDistrib[0].id);
+  }
+  const lines = [
+    `## F1 RPG Team-Entwicklung: ${teamName}`,
+    `**N Sims:** ${_multiData.N} | **${_multiData.startYear}–${_multiData.startYear+_multiData.numSeasons-1}**`,
+    '',
+    '| Jahr | Pos Sim | Real | Δ Pos | Pkt Sim | Real | Δ Pkt | SD |',
+    '|------|---------|------|-------|---------|------|-------|----|',
+  ];
+  for (const s of _multiData.seasons) {
+    let v = null;
+    for (const tid of ids) {
+      const e = s.teamData?.[tid]; if (e) { v = e; break; }
+    }
+    if (!v) continue;
+    const isTop = ids.has(topChampByYear.get(s.year));
+    let sdCS = null;
+    for (const tid of ids) { if (s.sdTeamSpeeds?.[tid] != null) { sdCS = s.sdTeamSpeeds[tid]; break; } }
+    if (sdCS === null) sdCS = s.sdTeamSpeeds?.[teamName] ?? '–';
+    const realEntry = s.realTeamStandings?.[teamName] || s.realTeamStandings?.[teamName?.toLowerCase()] || null;
+    const realPos = realEntry?.pos ?? null;
+    const realPts = realEntry?.pts ?? null;
+    const deltaPos = v.avgPos != null && realPos != null ? +(v.avgPos - realPos).toFixed(1) : null;
+    const deltaPts = v.avgPts != null && realPts != null ? +(v.avgPts - realPts).toFixed(1) : null;
+    lines.push(`| ${s.year}${isTop?' 🏆':''} | P${v.avgPos} | ${realPos!=null?'P'+realPos:'–'} | ${deltaPos!=null?(deltaPos>0?'+':'')+deltaPos:'–'} | ${v.avgPts??'–'} | ${realPts??'–'} | ${deltaPts!=null?(deltaPts>0?'+':'')+deltaPts:'–'} | ${sdCS} |`);
+  }
+  _copyAndConfirm(lines.join('\n'), 'exportConfirmTeam');
+}
+
+// ── Spinner-Hilfe ─────────────────────────────────────────────────────────
+function withSpinner(id, fn) {
+  const sp = document.getElementById(id);
+  sp.style.display = 'inline';
+  return fn().finally(() => { sp.style.display = 'none'; });
+}
+
+// ── Config speichern ─────────────────────────────────────────────────────────
+async function saveConfig() {
+  const config = getConfig();
+  await fetch('/save-config', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(config)
+  });
+  alert('✓ Gespeichert als tests/sim-config-result.json\n\nNächster Schritt:\nnode tests/sim-config-apply.js tests/sim-config-result.json');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 1: EINZELSAISON
+// ══════════════════════════════════════════════════════════════
+let _singleData = null;
+
+async function runSim() {
+  const years = getYears();
+  if (!years.length) { document.getElementById('errMsg').textContent = 'Bitte mind. 1 Jahr wählen.'; return; }
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('errMsg').textContent = '';
+  await withSpinner('spinner', async () => {
+    try {
+      const resp = await fetch('/simulate', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ years, N: parseInt(document.getElementById('nSims').value), config: getConfig() })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      _singleData = data;
+      const tab = document.getElementById('tab-single');
+      tab.innerHTML = '';
+      // Export-Button
+      const exportBar = document.createElement('div');
+      exportBar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;';
+      exportBar.innerHTML = `<button class="btn btn-sm btn-outline" onclick="exportSingle()">📋 Export für Claude</button>
+        <span id="exportConfirmSingle" style="font-size:0.72rem;color:#4ade80;display:none">✓ Kopiert</span>`;
+      tab.appendChild(exportBar);
+      for (const d of data) tab.appendChild(buildYearBlock(d));
+    } catch(e) {
+      document.getElementById('errMsg').textContent = '⚠ ' + e.message;
+    }
+  });
+  btn.disabled = false;
+}
+
+function _copyAndConfirm(text, confirmId) {
+  navigator.clipboard.writeText(text).then(() => {
+    const el = document.getElementById(confirmId);
+    if (!el) return;
+    el.style.display = 'inline';
+    setTimeout(() => el.style.display = 'none', 2500);
+  });
+}
+
+function exportSingle() {
+  if (!_singleData) return;
+  const lines = ['## F1 RPG Einzelsaison-Auswertung', ''];
+  for (const d of _singleData) {
+    lines.push(`### ${d.year} — ${d.N} Sims | Real-Check: ${d.realityCheck} | Echter Champ: ${d.realChamp ?? '?'} (${d.realChampPct}%)`);
+    lines.push(`DNF: ${d.avgDNFRate}% | Ø Grid: ${d.avgGridSize}${d.realGridAvg ? ` (Real: ${d.realGridAvg})` : ''} | Ø Champ-Pkt: ${d.avgChampPoints}`);
+    lines.push('');
+    lines.push('**WM-Verteilung:**');
+    lines.push('| # | Fahrer | % | Echter Champ? |');
+    lines.push('|---|--------|---|---------------|');
+    d.champions.forEach((c, i) => {
+      const real = d.realChamp && (c.id === d.realChamp || c.name?.toLowerCase().includes(d.realChamp?.toLowerCase() ?? '___'));
+      lines.push(`| ${i+1} | ${c.name} | ${c.pct}% | ${real ? '◄ ja' : ''} |`);
+    });
+    lines.push('');
+    lines.push('**Siege & Poles (Sim Ø / Real / Δ):**');
+    lines.push('| Fahrer | Siege Sim | Real | Δ | Poles Sim | Real | Δ |');
+    lines.push('|--------|-----------|------|---|-----------|------|---|');
+    const allIds = new Set([...Object.keys(d.simWinsAvg||{}), ...Object.keys(d.realWins||{}), ...Object.keys(d.simPolesAvg||{}), ...Object.keys(d.realPoles||{})]);
+    [...allIds].map(id => ({
+      name: d.wins.find(w=>w.id===id)?.name || d.poles.find(p=>p.id===id)?.name || id,
+      sw: d.simWinsAvg?.[id]??0, rw: d.realWins?.[id]??0,
+      sp: d.simPolesAvg?.[id]??0, rp: d.realPoles?.[id]??0,
+    }))
+    .filter(x => x.sw>=0.1||x.rw>0||x.sp>=0.1||x.rp>0)
+    .sort((a,b)=>(b.sw+b.rw)-(a.sw+a.rw)).slice(0,12)
+    .forEach(x => {
+      const wd = +(x.sw-x.rw).toFixed(1), pd = +(x.sp-x.rp).toFixed(1);
+      lines.push(`| ${x.name} | ${x.sw} | ${x.rw} | ${wd>0?'+':''}${wd} | ${x.sp} | ${x.rp} | ${pd>0?'+':''}${pd} |`);
+    });
+    lines.push('');
+  }
+  _copyAndConfirm(lines.join('\n'), 'exportConfirmSingle');
+}
+
+function exportMulti() {
+  if (!_multiData) return;
+  const { startYear, numSeasons, N, mode, seasons } = _multiData;
+  const hasPole = seasons.some(s => s.topSimPole || s.realPoleLeader);
+  const lines = [
+    `## F1 RPG Mehrere Saisons: ${startYear}–${startYear+numSeasons-1}`,
+    `**N Sims:** ${N} | **Modus:** ${mode === 'continuous' ? 'Kontinuierlich' : 'Historisch'}`,
+    '',
+    '| Jahr | Sim Champ | % | Echter Champ | % | DNF | Ø Grid | Real Grid |'
+      + (hasPole ? ' Top Q Sim | % | Real Pole |' : ''),
+    '|------|-----------|---|--------------|---|-----|--------|-----------|'
+      + (hasPole ? '-----------|---|-----------|' : ''),
+  ];
+  for (const s of seasons) {
+    const poleCol = hasPole
+      ? ` ${s.topSimPole?.name??'–'} | ${s.topSimPole?.pct??0}% | ${s.realPoleLeader?.name??'–'} (${s.realPoleLeader?.poles??''}P) |`
+      : '';
+    lines.push(`| ${s.year} | ${s.topChamp?.name??'–'} | ${s.topChamp?.pct??0}% | ${s.realChamp??'?'} | ${s.realChampPct??0}% | ${s.avgDNFRate}% | ${s.avgGridSize} | ${s.realGridAvg??'–'} |${poleCol}`);
+  }
+  // WM-Verteilung per year
+  const hasDistrib = seasons.some(s => s.champDistrib?.length > 1);
+  if (hasDistrib) {
+    lines.push('', '### WM-Verteilung (Fahrer)');
+    for (const s of seasons) {
+      if (!s.champDistrib?.length) continue;
+      const distrib = s.champDistrib.map(c => {
+        const isReal = c.id === s.realChamp || c.name?.toLowerCase().includes((s.realChamp||'').replace(/-/g,' '));
+        return `${c.name} ${c.pct}%${isReal ? ' ◄' : ''}`;
+      }).join(' | ');
+      lines.push(`**${s.year}:** ${distrib}`);
+    }
+  }
+  // Konstrukteur-Verteilung per year
+  const hasTeamDistrib = seasons.some(s => s.teamDistrib?.length > 0);
+  if (hasTeamDistrib) {
+    lines.push('', '### Konstrukteure (Sim)');
+    for (const s of seasons) {
+      if (!s.teamDistrib?.length) continue;
+      const distrib = s.teamDistrib.map(t => `${t.name} ${t.pct}%`).join(' | ');
+      lines.push(`**${s.year}:** ${distrib}`);
+    }
+  }
+  _copyAndConfirm(lines.join('\n'), 'exportConfirmMulti');
+}
+
+function exportDriver() {
+  if (!_driverData) return;
+  const { driverQuery, N, seasons } = _driverData;
+  const presentSeasons = seasons.filter(s => s.present);
+  const driverName = presentSeasons[0]?.driverName || driverQuery;
+  const lines = [
+    `## F1 RPG Fahrer-Entwicklung: ${driverName}`,
+    `**N Sims/Jahr:** ${N}`,
+    '',
+    '| Jahr | Pos Sim | Real | Δ Pos | Pkt Sim | Real | Δ Pkt | Pace | Team |',
+    '|------|---------|------|-------|---------|------|-------|------|------|',
+  ];
+  for (const s of seasons) {
+    if (!s.present) continue;
+
+    const pos  = s.avgPos  !== null ? `P${s.avgPos}`  : '–';
+    const rPos = s.realPos !== null ? `P${s.realPos}` : '–';
+    const dPos = s.deltaPos !== null ? (s.deltaPos > 0 ? '+' : '') + s.deltaPos : '–';
+    const pts  = s.avgPts  !== null ? s.avgPts  : '–';
+    const rPts = s.realPts !== null ? s.realPts : '–';
+    const dPts = s.deltaPts !== null ? (s.deltaPts > 0 ? '+' : '') + s.deltaPts : '–';
+    const champ = s.isChamp ? ' 🏆' : '';
+    const pace = s.realPace !== null ? s.realPace : '–';
+    lines.push(`| ${s.year}${champ} | ${pos} | ${rPos} | ${dPos} | ${pts} | ${rPts} | ${dPts} | ${pace} | ${s.team||'?'} |`);
+  }
+  _copyAndConfirm(lines.join('\n'), 'exportConfirmDriver');
+}
+
+function exportMatrix() {
+  if (!_matrixData) return;
+  const { year, N, raceNames, topDriverIds, driverNames, simMatrix, realMatrix } = _matrixData;
+  const shortNames = raceNames.map(n => (n || '?').replace(/Grand Prix|GP/i, '').trim().slice(0, 10));
+  const lines = [
+    `## F1 RPG Saisonmatrix: ${year}`,
+    `**N Sims:** ${N}`,
+    '',
+    '### Simulation (Ø Position)',
+    '| Fahrer | ' + shortNames.join(' | ') + ' |',
+    '|--------|' + shortNames.map(() => '-----').join('|') + '|',
+  ];
+  for (const dId of topDriverIds) {
+    const name = (driverNames[dId] || dId).split(' ').pop().slice(0, 14);
+    const cells = raceNames.map((_, ri) => {
+      const e = simMatrix[ri]?.[dId];
+      if (!e) return '–';
+      if (e.avg === null) return 'DNF';
+      return String(e.avg) + (e.dnfPct > 20 ? `↯${e.dnfPct}%` : '');
+    });
+    lines.push(`| ${name} | ${cells.join(' | ')} |`);
+  }
+  lines.push('', '### Realität (F1DB)', '| Fahrer | ' + shortNames.join(' | ') + ' |',
+    '|--------|' + shortNames.map(() => '-----').join('|') + '|');
+  // Build sim→real ID mapping (same logic as buildRealMatrix)
+  const { realDriverNames } = _matrixData;
+  const simToReal = {};
+  for (const simId of topDriverIds) {
+    const simName = (driverNames[simId] || simId).toLowerCase();
+    for (const [realId, realName] of Object.entries(realDriverNames || {})) {
+      if ((realName || '').toLowerCase() === simName || realId === simId) {
+        simToReal[simId] = realId; break;
+      }
+    }
+    if (!simToReal[simId]) simToReal[simId] = simId;
+  }
+  // Build real positions per driver per race
+  const realByDriver = {};
+  for (const dId of topDriverIds) realByDriver[dId] = {};
+  for (let ri = 0; ri < (realMatrix?.length || 0); ri++) {
+    const race = realMatrix[ri];
+    if (!race?.results) continue;
+    for (const dId of topDriverIds) {
+      const realId = simToReal[dId] || dId;
+      const r = race.results.find(x => x.driverId === realId);
+      if (r) realByDriver[dId][ri] = r.dnf ? 'DNF' : `P${r.pos}`;
+    }
+  }
+  for (const dId of topDriverIds) {
+    const name = (driverNames[dId] || dId).split(' ').pop().slice(0, 14);
+    const cells = raceNames.map((_, ri) => realByDriver[dId][ri] ?? '–');
+    lines.push(`| ${name} | ${cells.join(' | ')} |`);
+  }
+  _copyAndConfirm(lines.join('\n'), 'exportConfirmMatrix');
+}
+
+function buildYearBlock(d) {
+  const div = document.createElement('div');
+  div.className = 'year-block panel';
+
+  const badgeCls = 'badge badge-' + d.realityCheck;
+  const badgeTxt = d.realityCheck === 'ok' ? '✓ Real-Check' : d.realityCheck === 'warn' ? '⚠ Real-Check' : '✗ Real-Check';
+  const realInfo = d.realChamp ? ` (${d.realChamp} ${d.realChampPct}%)` : '';
+
+  // Grid diff
+  const gDiff = d.realGridAvg ? (d.avgGridSize - d.realGridAvg).toFixed(1) : '–';
+  const gDiffCls = gDiff !== '–' ? (Math.abs(gDiff) < 1 ? 'ok' : Math.abs(gDiff) < 3 ? 'warn' : 'fail') : '';
+
+  div.innerHTML = `
+    <div class="year-header">
+      <span class="year-title">${d.year}</span>
+      <span class="${badgeCls}">${badgeTxt}${realInfo}</span>
+      <span style="color:#475569;font-size:0.7rem">${d.N} Sims</span>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="lbl">DNF-Rate</div>
+        <div class="v ${d.avgDNFRate > (d.truth?.dnfRate??0)*100*1.3 ? 'warn':''}">${d.avgDNFRate}%
+          ${d.truth?.dnfRate ? `<span class="muted" style="font-size:0.65rem">/ Real: ${(d.truth.dnfRate*100).toFixed(1)}%</span>` : ''}</div></div>
+      <div class="stat"><div class="lbl">Ø Grid</div>
+        <div class="v ${gDiffCls}">${d.avgGridSize}
+          ${d.realGridAvg ? `<span class="muted" style="font-size:0.65rem">/ Real: ${d.realGridAvg} (Δ${gDiff>0?'+':''}${gDiff})</span>` : ''}</div></div>
+      <div class="stat"><div class="lbl">Total Fahrer</div>
+        <div class="v">${d.realGridTotal ? `Real: ${d.realGridTotal}` : '–'}</div></div>
+      <div class="stat"><div class="lbl">Ø Champ-Pkt</div><div class="v">${d.avgChampPoints}</div></div>
+      <div class="stat"><div class="lbl">Privateer/Rennen</div>
+        <div class="v">${d.avgPrivateerPerRace}
+          ${d.realPrivPerRace != null ? `<span class="muted" style="font-size:0.65rem">/ Real≈${d.realPrivPerRace}</span>` : ''}</div></div>
+    </div>
+    <div class="tables">
+      ${tblChamps(d)}
+      ${tblWinsPoles(d)}
+    </div>`;
+  return div;
+}
+
+function tblChamps(d) {
+  const rows = d.champions.map((c,i) => {
+    const isReal = d.realChamp && (c.id === d.realChamp || c.name?.toLowerCase().includes(d.realChamp?.toLowerCase?.() ?? '___'));
+    const cls = isReal ? 'real' : c.pct >= 30 ? 'hi' : '';
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="${cls}">${c.name}${isReal ? ' ◄' : ''}</td>
+      <td class="${cls}">${c.pct}%</td></tr>`;
+  }).join('');
+  return `<div class="tbl-wrap panel"><h2>WM-Verteilung</h2><table>
+    <thead><tr><th>#</th><th>Fahrer</th><th>%</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function tblWinsPoles(d) {
+  // IDs kommen vom Server bereits vereinheitlicht (f1db-IDs)
+  // realDriverNames: f1dbId → Display-Name (für Anzeige)
+  const realNames = d.truth ? {} : {};  // Fallback – wird unten befüllt
+
+  const allIds = new Set([
+    ...Object.keys(d.simWinsAvg  || {}),
+    ...Object.keys(d.simPolesAvg || {}),
+    ...Object.keys(d.realWins    || {}),
+    ...Object.keys(d.realPoles   || {}),
+  ]);
+
+  // Display-Name: aus winList/poleList (haben echten Namen), Fallback: ID selbst
+  function displayName(id) {
+    return d.wins.find(w=>w.id===id)?.name
+        || d.poles.find(p=>p.id===id)?.name
+        || id;
+  }
+
+  const sorted = [...allIds].map(id => ({
+    id,
+    name: displayName(id),
+    sw: d.simWinsAvg?.[id]  ?? 0,
+    rw: d.realWins?.[id]    ?? 0,
+    sp: d.simPolesAvg?.[id] ?? 0,
+    rp: d.realPoles?.[id]   ?? 0,
+  }))
+  .filter(x => x.sw >= 0.1 || x.rw > 0 || x.sp >= 0.1 || x.rp > 0)
+  .sort((a,b) => (b.sw + b.rw) - (a.sw + a.rw))
+  .slice(0, 14);
+
+  const rows = sorted.map(x => {
+    const wDiff = +(x.sw - x.rw).toFixed(1);
+    const pDiff = +(x.sp - x.rp).toFixed(1);
+    const wCls = Math.abs(wDiff) < 0.5 ? 'diff-zero' : wDiff > 0 ? 'diff-pos' : 'diff-neg';
+    const pCls = Math.abs(pDiff) < 0.5 ? 'diff-zero' : pDiff > 0 ? 'diff-pos' : 'diff-neg';
+    return `<tr>
+      <td>${x.name}</td>
+      <td>${x.sw}</td><td class="real">${x.rw}</td><td class="${wCls}">${wDiff>0?'+':''}${wDiff}</td>
+      <td>${x.sp}</td><td class="real">${x.rp}</td><td class="${pCls}">${pDiff>0?'+':''}${pDiff}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="tbl-wrap panel" style="min-width:340px;"><h2>Siege &amp; Poles: Sim Ø / Real / Δ</h2>
+    <table>
+      <thead><tr>
+        <th>Fahrer</th>
+        <th>Siege Sim</th><th class="real">Real</th><th>Δ</th>
+        <th>Poles Sim</th><th class="real">Real</th><th>Δ</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="font-size:0.65rem;color:#334155;margin-top:4px;">
+      Sim = Ø pro Saison über ${d.N} Sims &nbsp;|&nbsp;
+      <span class="diff-neg">grün</span> = Sim unter Real &nbsp;|&nbsp;
+      <span class="diff-pos">rot</span> = Sim über Real
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 2: MEHRERE SAISONS
+// ══════════════════════════════════════════════════════════════
+let _multiData = null;
+let _driverData = null;
+let _matrixData = null;
+
+async function runMulti() {
+  const startYear  = parseInt(document.getElementById('multiStart').value);
+  const numSeasons = parseInt(document.getElementById('multiCount').value);
+  const N          = parseInt(document.getElementById('nSims').value);
+  const mode       = document.querySelector('input[name="multiMode"]:checked')?.value || 'historical';
+  const res = document.getElementById('tab-multi-results');
+  res.innerHTML = '';
+  const infoEl = document.getElementById('spinnerMultiInfo');
+  if (infoEl) infoEl.textContent = mode === 'continuous' ? `${N} Runs auf Workers verteilt…` : `${N} Sims/Jahr…`;
+  await withSpinner('spinnerMulti', async () => {
+    try {
+      const resp = await fetch('/simulate-multiseason', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ startYear, numSeasons, N, config: getConfig(), mode,
+          skipTraining: !document.getElementById('skipTrainingCb')?.checked })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      _multiData = data;
+      res.innerHTML = buildMultiTable(data);
+    } catch(e) {
+      res.innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+    }
+  });
+}
+
+function buildMultiTable(data) {
+  const hasPole = data.seasons.some(s => s.topSimPole || s.realPoleLeader);
+  const rows = data.seasons.map(s => {
+    const rc = s.realityCheck === 'ok' ? 'ok' : s.realityCheck === 'warn' ? 'warn' : 'fail';
+    const realChamp = s.realChamp ? `<span class="real" style="font-size:0.7rem">(${s.realChamp})</span>` : '';
+    const top = s.topChamp;
+    const bar     = buildChampBar(s.champDistrib || []);
+    const teamBar = buildChampBar(s.teamDistrib  || []);
+
+    // Pole-Spalten
+    let poleCells = '';
+    if (hasPole) {
+      const pSimName  = s.topSimPole?.name  ?? '–';
+      const pSimPct   = s.topSimPole?.pct   ?? 0;
+      const pRealName = s.realPoleLeader?.name ?? '–';
+      const pRealPoles= s.realPoleLeader?.poles ?? '';
+      const pRealPct  = s.realPolePct ?? 0;
+      const match = pSimName !== '–' && pRealName !== '–' && pSimName === pRealName;
+      const pCls  = match ? 'ok' : pRealPct >= 30 ? 'warn' : pRealPct > 0 ? '' : 'fail';
+      poleCells = `
+        <td style="border-left:1px solid #1e3a5f">${pSimName}</td>
+        <td class="${pCls}" style="font-size:0.72rem">${pSimPct}%</td>
+        <td class="real" style="font-size:0.72rem">${pRealName}${pRealPoles ? ` <span class="muted">(${pRealPoles}P)</span>` : ''}</td>
+        <td class="${pCls}" style="font-size:0.72rem">${pRealPct}%</td>`;
+    }
+
+    return `<tr>
+      <td style="color:#f59e0b;font-weight:bold">${s.year}</td>
+      <td>${top ? `${top.name}` : '–'}</td>
+      <td class="${rc}">${s.topChamp?.pct ?? 0}%</td>
+      <td>${realChamp}</td>
+      <td class="${rc}">${s.realChampPct ?? 0}%</td>
+      <td>${bar}</td>
+      <td style="border-left:1px solid #1e293b">${teamBar}</td>
+      <td>${s.avgDNFRate}%
+        <span class="muted" style="font-size:0.65rem">
+          ${s.realGridAvg ? `/ Grid: ${s.avgGridSize}↔${s.realGridAvg}` : ''}
+        </span>
+      </td>
+      ${poleCells}
+    </tr>`;
+  }).join('');
+
+  const poleHeader = hasPole
+    ? `<th style="border-left:1px solid #1e3a5f">Top Q Sim</th><th>%</th><th class="real">Real Pole</th><th>%</th>`
+    : '';
+
+  return `<div class="panel">
+    <div class="year-header">
+      <span class="year-title">${data.startYear}–${data.startYear+data.numSeasons-1}</span>
+      <span style="color:#475569;font-size:0.7rem">${data.N} Sims &nbsp;|&nbsp; ${data.mode === 'continuous' ? '🔄 Kontinuierlich' : '📅 Historisch'}</span>
+    </div>
+    <table class="multi-table" style="width:100%;overflow-x:auto">
+      <thead><tr>
+        <th>Jahr</th><th>Top-Sim-Champ</th><th>%</th>
+        <th>Echter Champ</th><th>%</th>
+        <th>WM-Verteilung</th>
+        <th style="border-left:1px solid #1e293b">Konstrukteure</th>
+        <th>DNF / Grid</th>
+        ${poleHeader}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${hasPole ? `<div style="font-size:0.62rem;color:#334155;margin-top:5px;">Top Q Sim = häufigster Sim-Pole-Sitter &nbsp;|&nbsp; % = Anteil an Gesamt-Poles &nbsp;|&nbsp; <span class="ok">grün</span> = Übereinstimmung</div>` : ''}
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-sm btn-outline" onclick="exportMulti()">📋 Export für Claude</button>
+      <span id="exportConfirmMulti" style="font-size:0.72rem;color:#4ade80;display:none">✓ Kopiert</span>
+    </div>
+  </div>`;
+}
+
+function buildChampBar(distrib) {
+  const colors = ['#f59e0b','#94a3b8','#4ade80','#60a5fa','#f87171','#c084fc','#34d399','#fb923c'];
+  if (!distrib.length) return '–';
+  const segs = distrib.slice(0,6).map((c,i) =>
+    `<span class="cb-seg" style="width:${c.pct}%;max-width:${c.pct}%;min-width:2px;background:${colors[i]}" title="${c.name} ${c.pct}%"></span>`
+  ).join('');
+  return `<div class="champion-bar" style="width:120px;">${segs}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 3: FAHRER-ENTWICKLUNG
+// ══════════════════════════════════════════════════════════════
+async function runDriver() {
+  const driverQuery = document.getElementById('driverQuery').value.trim();
+  if (!driverQuery) { alert('Fahrernamen/ID eingeben.'); return; }
+  const startYear  = parseInt(document.getElementById('driverStart').value);
+  const numSeasons = parseInt(document.getElementById('driverCount').value);
+  const N          = parseInt(document.getElementById('nSims').value);
+  const res = document.getElementById('tab-driver-results');
+  res.innerHTML = '';
+  await withSpinner('spinnerDriver', async () => {
+    try {
+      const resp = await fetch('/simulate-driver', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ driverQuery, startYear, numSeasons, N, config: getConfig() })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      _driverData = data;
+      res.innerHTML = buildDriverDevTable(data);
+    } catch(e) {
+      res.innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+    }
+  });
+}
+
+function buildDriverDevTable(data) {
+  const presentSeasons = data.seasons.filter(s => s.present);
+  if (!presentSeasons.length)
+    return `<div class="panel"><div class="err">Fahrer "${data.driverQuery}" in keinem Jahr gefunden. Bitte histId verwenden (z.B. "ayrton-senna").</div></div>`;
+
+  const driverName = presentSeasons[0].driverName || data.driverQuery;
+  const rows = data.seasons.map(s => {
+    if (!s.present) return `<tr><td style="color:#f59e0b">${s.year}</td><td colspan="9" class="muted">nicht im Feld</td></tr>`;
+
+    const posCls  = s.avgPos  <= 3 ? 'hi' : s.avgPos  <= 8  ? 'ok' : '';
+    const rPosCls = s.realPos <= 3 ? 'real' : s.realPos <= 8 ? 'ok' : '';
+
+    const dPosCls = s.deltaPos === null ? '' : Math.abs(s.deltaPos) < 1 ? 'diff-zero' : s.deltaPos > 0 ? 'diff-pos' : 'diff-neg';
+    const dPtsCls = s.deltaPts === null ? '' : Math.abs(s.deltaPts) < 2 ? 'diff-zero' : s.deltaPts > 0 ? 'diff-pos' : 'diff-neg';
+
+    const champMark = s.isChamp ? ' 🏆' : '';
+    const paceCls = s.realPace !== null ? (s.realPace >= 88 ? 'ok' : s.realPace >= 78 ? 'warn' : 'muted') : '';
+    return `<tr>
+      <td style="color:#f59e0b;font-weight:bold">${s.year}${champMark}</td>
+      <td class="${posCls}">${s.avgPos  !== null ? `P${s.avgPos}`  : '–'}</td>
+      <td class="${rPosCls}">${s.realPos !== null ? `P${s.realPos}` : '–'}</td>
+      <td class="${dPosCls}">${s.deltaPos !== null ? (s.deltaPos > 0 ? '+' : '') + s.deltaPos : '–'}</td>
+      <td>${s.avgPts  !== null ? s.avgPts  : '–'}</td>
+      <td class="real">${s.realPts !== null ? s.realPts : '–'}</td>
+      <td class="${dPtsCls}">${s.deltaPts !== null ? (s.deltaPts > 0 ? '+' : '') + s.deltaPts : '–'}</td>
+      <td class="${paceCls}" style="font-size:0.75rem">${s.realPace !== null ? s.realPace : '–'}</td>
+      <td style="color:#94a3b8">${s.team || '?'}</td>
+      <td class="muted" style="font-size:0.7rem">${s.appearances}/${data.N}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="panel">
+    <div class="year-header">
+      <span class="year-title">${driverName}</span>
+      <span style="color:#475569;font-size:0.7rem">${data.N} Sims/Jahr</span>
+    </div>
+    <table style="width:100%;">
+      <thead><tr>
+        <th>Jahr</th>
+        <th>Pos Sim</th><th class="real">Real</th><th>Δ Pos</th>
+        <th>Pkt Sim</th><th class="real">Real</th><th>Δ Pkt</th>
+        <th title="PACE_RATINGS currentPace für dieses Jahr">Pace</th>
+        <th>Team</th><th>N</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="font-size:0.65rem;color:#334155;margin-top:6px;">
+      🏆 = echter WM &nbsp;|&nbsp;
+      <span class="diff-neg">grün Δ</span> = Sim besser als Real &nbsp;|&nbsp;
+      <span class="diff-pos">rot Δ</span> = Sim schlechter als Real &nbsp;|&nbsp;
+      Pace = PACE_RATINGS currentPace (historischer Anker)
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-sm btn-outline" onclick="exportDriver()">📋 Export für Claude</button>
+      <span id="exportConfirmDriver" style="font-size:0.72rem;color:#4ade80;display:none">✓ Kopiert</span>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 4: SAISONMATRIX
+// ══════════════════════════════════════════════════════════════
+async function runMatrix() {
+  const year = parseInt(document.getElementById('matrixYear').value);
+  const N    = parseInt(document.getElementById('matrixN').value);
+  const res  = document.getElementById('tab-matrix-results');
+  res.innerHTML = '';
+  await withSpinner('spinnerMatrix', async () => {
+    try {
+      const resp = await fetch('/season-matrix', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ year, N, config: getConfig() })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      _matrixData = data;
+      res.innerHTML = buildMatrixView(data);
+    } catch(e) {
+      res.innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+    }
+  });
+}
+
+function buildMatrixView(data) {
+  const { year, N, raceNames, topDriverIds, driverNames, realDriverNames, simMatrix, realMatrix } = data;
+
+  const simTable  = buildOneMatrix(raceNames, topDriverIds, driverNames, simMatrix, false);
+  const realTable = buildRealMatrix(raceNames, topDriverIds, driverNames, realDriverNames, realMatrix);
+
+  return `<div class="year-header">
+      <span class="year-title">${year}</span>
+      <span style="color:#475569;font-size:0.7rem">${N} Sims für Sim-Spalten</span>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:320px;">
+        <div class="matrix-title">Simulation (Ø Position)</div>
+        ${simTable}
+      </div>
+      <div style="flex:1;min-width:320px;">
+        <div class="matrix-title">Realität (F1DB)</div>
+        ${realTable}
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-sm btn-outline" onclick="exportMatrix()">📋 Export für Claude</button>
+      <span id="exportConfirmMatrix" style="font-size:0.72rem;color:#4ade80;display:none">✓ Kopiert</span>
+    </div>`;
+}
+
+function buildOneMatrix(raceNames, topDriverIds, driverNames, simMatrix, isReal) {
+  // Cols = races, rows = top drivers
+  const shortNames = raceNames.map(n => (n || '?').replace(/Grand Prix|GP/i,'').trim().slice(0,8));
+  const header = `<tr><th>Fahrer</th>${shortNames.map(n=>`<th title="${n}">${n}</th>`).join('')}</tr>`;
+
+  const rows = topDriverIds.map(dId => {
+    const name = (driverNames[dId] || dId).split(' ').pop().slice(0,10);
+    const cells = raceNames.map((_, ri) => {
+      const entry = simMatrix[ri]?.[dId];
+      if (!entry) return `<td class="muted">–</td>`;
+      const avg = entry.avg;
+      if (avg === null) return `<td class="pos-dns">DNF</td>`;
+      const cls = avg <= 1.5 ? 'pos-1' : avg <= 3 ? 'pos-23' : avg > 12 ? 'pos-dns' : 'pos-mid';
+      const dnfNote = entry.dnfPct > 20 ? `<sup style="color:#f87171;font-size:0.6rem">↯${entry.dnfPct}%</sup>` : '';
+      return `<td class="${cls}" title="${driverNames[dId]||dId}: Ø${avg}">${avg}${dnfNote}</td>`;
+    }).join('');
+    return `<tr><td>${name}</td>${cells}</tr>`;
+  }).join('');
+
+  return `<div class="matrix-wrap"><table class="matrix-table panel"><thead>${header}</thead><tbody>${rows}</tbody></table></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 5: AUSREISSER
+// ══════════════════════════════════════════════════════════════
+let _outlierData = null;
+// col: Feldname | abs: sortiert nach |Δ| (true) oder Rohwert (false) | dir: -1=desc +1=asc
+let _outlierSort = { col: 'deltaPos', abs: true, dir: -1 };
+
+function toggleOutlierYear() {
+  const mode = document.querySelector('input[name="outlierMode"]:checked')?.value;
+  document.getElementById('outlierYearGrp').style.display = mode === 'single' ? '' : 'none';
+}
+
+async function runOutliers() {
+  const mode = document.querySelector('input[name="outlierMode"]:checked')?.value || 'single';
+  const N    = parseInt(document.getElementById('nSims').value);
+  const res  = document.getElementById('tab-outlier-results');
+
+  let years;
+  if (mode === 'single') {
+    years = [parseInt(document.getElementById('outlierYear').value)];
+  } else {
+    years = getYears();
+    if (!years.length) { alert('Keine Jahre ausgewählt.'); return; }
+  }
+
+  res.innerHTML = '';
+  await withSpinner('spinnerOutlier', async () => {
+    try {
+      const resp = await fetch('/simulate-outliers', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ years, N, config: getConfig() })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      _outlierData = data;
+      _outlierSort = { col: 'deltaPos', abs: true, dir: -1 }; // Reset auf Standard
+      renderOutliersTable();
+    } catch(e) {
+      res.innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+    }
+  });
+}
+
+// Klick auf Spalten-Header: Δ-Spalten → 4 Zustände (|▼|→|▲|→▼→▲), Rest → ▼/▲
+function sortOutliers(col) {
+  const isDelta = col.startsWith('delta');
+  if (_outlierSort.col === col) {
+    if (isDelta) {
+      if      ( _outlierSort.abs && _outlierSort.dir === -1) { _outlierSort.dir =  1; }
+      else if ( _outlierSort.abs && _outlierSort.dir ===  1) { _outlierSort.abs = false; _outlierSort.dir = -1; }
+      else if (!_outlierSort.abs && _outlierSort.dir === -1) { _outlierSort.dir =  1; }
+      else                                                   { _outlierSort.abs = true;  _outlierSort.dir = -1; }
+    } else {
+      _outlierSort.dir *= -1;
+    }
+  } else {
+    _outlierSort.col = col;
+    _outlierSort.abs = isDelta;
+    _outlierSort.dir = -1;
+  }
+  renderOutliersTable();
+}
+
+function _sortIcon(col) {
+  if (_outlierSort.col !== col) return ' <span class="muted" style="font-size:0.55rem">⇅</span>';
+  if (_outlierSort.abs)
+    return _outlierSort.dir === -1
+      ? ' <span style="color:#f59e0b;font-size:0.7rem">|▼|</span>'
+      : ' <span style="color:#f59e0b;font-size:0.7rem">|▲|</span>';
+  return _outlierSort.dir === -1
+    ? ' <span style="color:#f59e0b;font-size:0.7rem">▼</span>'
+    : ' <span style="color:#f59e0b;font-size:0.7rem">▲</span>';
+}
+
+function renderOutliersTable() {
+  if (!_outlierData) return;
+  const topN = parseInt(document.getElementById('outlierTopN').value) || 20;
+  document.getElementById('tab-outlier-results').innerHTML = _buildOutliersHTML(_outlierData, topN);
+}
+
+function _buildOutliersHTML(data, topN) {
+  const { entries, N, years } = data;
+  const isMultiYear = years.length > 1;
+  const { col, abs, dir } = _outlierSort;
+
+  const sorted = [...entries]
+    .filter(e => col === 'deltaPtsPerRace' && abs ? e.deltaPtsPerRace !== null : true)
+    .sort((a, b) => {
+      const va = abs ? Math.abs(a[col] ?? 0) : (a[col] ?? 0);
+      const vb = abs ? Math.abs(b[col] ?? 0) : (b[col] ?? 0);
+      return (vb - va) * dir * -1; // dir=-1 desc → vb-va; dir=+1 asc → va-vb
+    })
+    .slice(0, topN);
+
+  if (!sorted.length)
+    return `<div class="panel"><div class="err">Keine Daten – sind Jahre ausgewählt und historical_truth vorhanden?</div></div>`;
+
+  const fmt = v => v === null ? '–' : (v > 0 ? '+' : '') + v;
+  const dCls = (v, thr) => v === null ? '' : Math.abs(v) < thr ? 'diff-zero' : v > 0 ? 'diff-pos' : 'diff-neg';
+
+  // Sortierbare Header-Helfer
+  const th = (label, field, cls = '') =>
+    `<th class="sortable${_outlierSort.col === field ? ' sort-active' : ''}${cls ? ' '+cls : ''}" onclick="sortOutliers('${field}')">${label}${_sortIcon(field)}</th>`;
+
+  const rows = sorted.map((e, i) => `<tr>
+    <td class="muted">${i+1}.</td>
+    <td style="color:#e2e8f0;white-space:nowrap">${e.name}</td>
+    ${isMultiYear ? `<td style="color:#f59e0b;cursor:pointer" onclick="sortOutliers('year')" title="nach Jahr sortieren">${e.year}</td>` : ''}
+    <td>${e.avgPos !== null ? `P${e.avgPos}` : '–'}</td>
+    <td class="real">${e.realPos !== null ? `P${e.realPos}` : '–'}</td>
+    <td class="${dCls(e.deltaPos, 1)}">${fmt(e.deltaPos)}</td>
+    <td>${e.avgPts ?? '–'}</td>
+    <td class="real">${e.realPts ?? '–'}</td>
+    <td class="${dCls(e.deltaPts, 2)}">${fmt(e.deltaPts)}</td>
+    <td class="muted">${e.numRaces ?? '–'}</td>
+    <td>${e.avgPtsPerRace ?? '–'}</td>
+    <td class="real">${e.realPtsPerRace ?? '–'}</td>
+    <td class="${dCls(e.deltaPtsPerRace, 0.1)}">${fmt(e.deltaPtsPerRace)}</td>
+    <td style="border-left:1px solid #334155">${e.avgSimQPos ?? '–'}</td>
+    <td class="real">${e.realQPos ?? '–'}</td>
+    <td class="${dCls(e.deltaQPos, 0.5)}">${fmt(e.deltaQPos)}</td>
+    <td class="muted" style="font-size:0.65rem">${e.appearances}/${N}</td>
+  </tr>`).join('');
+
+  const sortDesc = abs
+    ? (dir === -1 ? `|${col}| ▼ (größte Abweichung)` : `|${col}| ▲ (kleinste Abweichung)`)
+    : (dir === -1 ? `${col} ▼` : `${col} ▲`);
+  const yearLabel = isMultiYear
+    ? `${Math.min(...years)}–${Math.max(...years)} (${years.length} Jahre)`
+    : String(years[0]);
+
+  return `<div class="panel">
+    <div class="year-header">
+      <span class="year-title">Ausreißer: ${yearLabel}</span>
+      <span style="color:#475569;font-size:0.7rem">${N} Sims/Jahr &nbsp;|&nbsp; ${topN} Zeilen &nbsp;|&nbsp; <span style="color:#f59e0b">${sortDesc}</span></span>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;white-space:nowrap">
+      <thead><tr>
+        <th>#</th>
+        ${th('Fahrer','name')}
+        ${isMultiYear ? th('Jahr','year') : ''}
+        ${th('Ø Pos','avgPos')}
+        ${th('Real','realPos','real')}
+        ${th('Δ Pos','deltaPos')}
+        ${th('Ø Pkt','avgPts')}
+        ${th('Real','realPts','real')}
+        ${th('Δ Pkt','deltaPts')}
+        ${th('R','numRaces')}
+        ${th('Ø Pkt/R','avgPtsPerRace')}
+        ${th('Real','realPtsPerRace','real')}
+        ${th('Δ Pkt/R','deltaPtsPerRace')}
+        ${th('Ø Q','avgSimQPos')}
+        ${th('Real Q','realQPos','real')}
+        ${th('Δ Q','deltaQPos')}
+        ${th('N','appearances')}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div style="font-size:0.65rem;color:#334155;margin-top:6px;">
+      Δ-Spalten: Klick = |Δ|▼ → |Δ|▲ → Δ▼ → Δ▲ &nbsp;|&nbsp;
+      <span class="diff-pos">rot Δ Pos/Q</span> = Sim unterschätzt &nbsp;|&nbsp;
+      <span class="diff-pos">rot Δ Pkt</span> = Sim gibt zu viele &nbsp;|&nbsp;
+      R = Rennen/Saison &nbsp;|&nbsp; Q = Ø Quali-Pos (DNF-neutral)
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-sm btn-outline" onclick="exportOutliers()">📋 Export für Claude</button>
+      <span id="exportConfirm" style="font-size:0.72rem;color:#4ade80;display:none">✓ In Zwischenablage kopiert</span>
+    </div>
+  </div>`;
+}
+
+function exportOutliers() {
+  if (!_outlierData) return;
+  const topN   = parseInt(document.getElementById('outlierTopN').value) || 20;
+  const { entries, N, years } = _outlierData;
+  const { col, abs, dir } = _outlierSort;
+  const isMultiYear = years.length > 1;
+
+  const sorted = [...entries]
+    .filter(e => col === 'deltaPtsPerRace' && abs ? e.deltaPtsPerRace !== null : true)
+    .sort((a, b) => (Math.abs(b[col] ?? 0) - Math.abs(a[col] ?? 0)) * dir * -1)
+    .slice(0, topN);
+
+  const yearLabel = isMultiYear
+    ? `${Math.min(...years)}–${Math.max(...years)} (${years.length} Jahre)`
+    : String(years[0]);
+  const sortLabel = abs
+    ? `|${col}| ${dir === -1 ? '▼ größte Abweichung' : '▲ kleinste Abweichung'}`
+    : `${col} ${dir === -1 ? '▼' : '▲'}`;
+
+  const pad = (v, w) => String(v ?? '–').padEnd(w);
+  const fmtD = v => v === null ? '–' : (v > 0 ? '+' : '') + v;
+
+  // Spaltenbreiten berechnen
+  const cols = [
+    { h: '#',       f: (e, i) => String(i + 1)            },
+    { h: 'Fahrer',  f: e => e.name                        },
+    ...(isMultiYear ? [{ h: 'Jahr', f: e => String(e.year) }] : []),
+    { h: 'Ø Pos',   f: e => e.avgPos  != null ? `P${e.avgPos}`  : '–' },
+    { h: 'Real Pos',f: e => e.realPos != null ? `P${e.realPos}` : '–' },
+    { h: 'Δ Pos',   f: e => fmtD(e.deltaPos)              },
+    { h: 'Ø Pkt',   f: e => String(e.avgPts  ?? '–')      },
+    { h: 'Real Pkt',f: e => String(e.realPts ?? '–')      },
+    { h: 'Δ Pkt',   f: e => fmtD(e.deltaPts)              },
+    { h: 'R',       f: e => String(e.numRaces ?? '–')     },
+    { h: 'Ø Pkt/R', f: e => String(e.avgPtsPerRace  ?? '–') },
+    { h: 'Real P/R',f: e => String(e.realPtsPerRace ?? '–') },
+    { h: 'Δ Pkt/R', f: e => fmtD(e.deltaPtsPerRace)      },
+    { h: 'Ø Q-Pos', f: e => String(e.avgSimQPos ?? '–')  },
+    { h: 'Real Q',  f: e => String(e.realQPos    ?? '–') },
+    { h: 'Δ Q',     f: e => fmtD(e.deltaQPos)            },
+    { h: 'N',       f: e => `${e.appearances}/${N}`       },
+  ];
+
+  const widths = cols.map(c => Math.max(c.h.length, ...sorted.map(e => c.f(e, 0).length)));
+
+  const sep  = '| ' + widths.map(w => '-'.repeat(w)).join(' | ') + ' |';
+  const head = '| ' + cols.map((c, i) => c.h.padEnd(widths[i])).join(' | ') + ' |';
+  const rows = sorted.map((e, i) =>
+    '| ' + cols.map((c, ci) => c.f(e, i).padEnd(widths[ci])).join(' | ') + ' |'
+  ).join('\n');
+
+  const md = [
+    `## F1 RPG Sim-Ausreißer: ${yearLabel}`,
+    `**N Sims/Jahr:** ${N} | **Zeilen:** ${topN} | **Sort:** ${sortLabel}`,
+    `**Legende:** Δ Pos/Q: + = Sim unterschätzt Fahrer (Rang zu niedrig) | Δ Pkt: + = Sim gibt zu viele Punkte | R = Rennen/Saison | Q = Ø Quali-Pos`,
+    '',
+    head,
+    sep,
+    rows,
+  ].join('\n');
+
+  _copyAndConfirm(md, 'exportConfirm');
+}
+
+function buildRealMatrix(raceNames, topDriverIds, simDriverNames, realDriverNames, realMatrix) {
+  // realMatrix: [{round, name, circuitId, results:[{driverId,pos,dnf}]}]
+  // topDriverIds sind Sim-IDs → müssen zu Real-IDs gemapped werden
+  // Matching: Fahrernamen vergleichen (sim driverNames vs. realDriverNames)
+  const simToReal = {};
+  for (const simId of topDriverIds) {
+    const simName = (simDriverNames[simId] || simId).toLowerCase();
+    for (const [realId, realName] of Object.entries(realDriverNames)) {
+      if ((realName || '').toLowerCase() === simName || realId === simId) {
+        simToReal[simId] = realId;
+        break;
+      }
+    }
+    if (!simToReal[simId]) simToReal[simId] = simId; // Fallback: gleiche ID
+  }
+
+  const shortNames = realMatrix.map(r => (r.name || r.circuitId || `R${r.round}`).replace(/Grand Prix|GP/i,'').trim().slice(0,8));
+  const header = `<tr><th>Fahrer</th>${shortNames.map(n=>`<th title="${n}">${n}</th>`).join('')}</tr>`;
+
+  const rows = topDriverIds.map(dId => {
+    const realId = simToReal[dId] || dId;
+    const name = (simDriverNames[dId] || dId).split(' ').pop().slice(0,10);
+    const cells = realMatrix.map(race => {
+      const r = race.results.find(x => x.driverId === realId);
+      if (!r) return `<td class="muted">–</td>`;
+      if (r.dnf) return `<td class="pos-dns">DNF</td>`;
+      const cls = r.pos === 1 ? 'pos-1' : r.pos <= 3 ? 'pos-23' : r.pos > 12 ? 'pos-dns' : 'pos-mid';
+      return `<td class="${cls}">${r.pos}</td>`;
+    }).join('');
+    return `<tr><td>${name}</td>${cells}</tr>`;
+  }).join('');
+
+  return `<div class="matrix-wrap"><table class="matrix-table panel"><thead>${header}</thead><tbody>${rows}</tbody></table></div>`;
+}
+
+</script>
+</body>
+</html>

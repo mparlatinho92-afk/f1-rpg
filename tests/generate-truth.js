@@ -15,6 +15,7 @@ const raceResults         = JSON.parse(fs.readFileSync(path.join(DB, 'f1db-races
 const races               = JSON.parse(fs.readFileSync(path.join(DB, 'f1db-races.json'),                       'utf8'));
 const driversDb           = JSON.parse(fs.readFileSync(path.join(DB, 'f1db-drivers.json'),                     'utf8'));
 const constructorsDb      = JSON.parse(fs.readFileSync(path.join(DB, 'f1db-constructors.json'),                 'utf8'));
+const qualiResults        = JSON.parse(fs.readFileSync(path.join(DB, 'f1db-races-qualifying-results.json'),    'utf8'));
 
 // Name-Lookups für Matching in monte-carlo.js
 const driverNames = {};
@@ -100,6 +101,47 @@ for (const r of races) {
 }
 for (const [year, count] of Object.entries(raceCount)) {
     if (truth[year]) truth[year].raceCount = count;
+}
+
+// ── Reale Ø-Pol-Zeit pro Jahr (exkl. Indy 500) ────────────────────────────
+// timeMillis = pre-2014 (einzel Session); q3Millis = ab 2014 (Q3-Zeit)
+const raceLookup = {};
+for (const r of races) raceLookup[r.id] = r;
+
+const poleTimesPerYear = {};
+for (const q of qualiResults) {
+    if (q.positionNumber !== 1) continue;
+    const timeMs = q.timeMillis || q.q3Millis;
+    if (!timeMs) continue;
+    const race = raceLookup[q.raceId];
+    if (!race || race.circuitId === 'indianapolis') continue;
+    if (!poleTimesPerYear[q.year]) poleTimesPerYear[q.year] = [];
+    poleTimesPerYear[q.year].push(timeMs);
+}
+for (const [year, times] of Object.entries(poleTimesPerYear)) {
+    if (truth[year]) {
+        truth[year].avgPoleMs     = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
+        truth[year].poleTimeCount = times.length;
+    }
+}
+
+// ── Reale Ø-Sieger-Rundenzeit pro Jahr (winner_time_ms / laps, exkl. Indy) ──
+const raceLapTimesPerYear = {};
+for (const r of raceResults) {
+    if (r.positionNumber !== 1) continue;
+    if (!r.timeMillis) continue;
+    const race = raceLookup[r.raceId];
+    if (!race || race.circuitId === 'indianapolis') continue;
+    const laps = race.scheduledLaps || race.laps;
+    if (!laps) continue;
+    if (!raceLapTimesPerYear[r.year]) raceLapTimesPerYear[r.year] = [];
+    raceLapTimesPerYear[r.year].push(r.timeMillis / laps);
+}
+for (const [year, times] of Object.entries(raceLapTimesPerYear)) {
+    if (truth[year]) {
+        truth[year].avgRaceLapMs    = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
+        truth[year].raceTimeCount   = times.length;
+    }
 }
 
 // ── Ausgabe ───────────────────────────────────────────────────────────────

@@ -122,19 +122,27 @@ function getCarSpeedStats(c) {
 }
 
 // Namens-Cache aufbauen während der Simulation (GAME_STATE ändert sich)
-const nameCache = {};
-const teamCache = {};
+const nameCache     = {};
+const teamCache     = {};
+const entryYearCache = {}; // _simEntryYear pro Fahrer-ID
 
 function cacheNames(c) {
     for (const d of (c.GAME_STATE.drivers || [])) {
         if (d.id && d.name) nameCache[d.id] = d.name;
+        // Nur beim ersten Auftreten setzen (früheste bekannte Entry)
+        if (d.id && d._simEntryYear && !entryYearCache[d.id]) entryYearCache[d.id] = d._simEntryYear;
     }
     for (const t of (c.GAME_STATE.teams || [])) {
         if (t.id && t.name) teamCache[t.id] = t.name;
     }
 }
 
-function nameOf(id)     { return nameCache[id] || id; }
+// +year Suffix für Spät-Einsteiger (nicht im Original-Startkader)
+function nameOf(id) {
+    const name = nameCache[id] || id;
+    const entry = entryYearCache[id];
+    return (entry && entry > startYear) ? `${name} +${entry}` : name;
+}
 function teamNameOf(id) { return teamCache[id] || id; }
 
 // ── Haupt-Simulation ──────────────────────────────────────────────────────
@@ -169,8 +177,9 @@ for (let sim = 0; sim < N; sim++) {
             cacheNames(ctx);
 
             // Kennzahlen sammeln
-            if (champ)   yd.champions[champ.id]       = (yd.champions[champ.id]       || 0) + 1;
-            if (topTeam) yd.championTeams[topTeam.id] = (yd.championTeams[topTeam.id] || 0) + 1;
+            if (champ)   yd.champions[champ.id]             = (yd.champions[champ.id]             || 0) + 1;
+            // FIX: Team nach NAME tracken (nicht ID), sonst erscheint 'Alpine' für alle Renault-Siege
+            if (topTeam) yd.championTeams[topTeam.name]     = (yd.championTeams[topTeam.name]     || 0) + 1;
             yd.carSpeedAvg.push(cs.avg);
             yd.carSpeedTop.push(cs.top);
             yd.carSpeedSpread.push(cs.spread);
@@ -191,13 +200,21 @@ for (let sim = 0; sim < N; sim++) {
             if (year >= endYear) break;
 
             // ── Saison-Übergang ────────────────────────────────────────────
-            // 1. Karriere-Scores aktualisieren (benötigt aiSimulation=true)
+            // 1. Karriere-Scores + relScore aktualisieren (benötigt aiSimulation=true)
             if (typeof ctx.updateDriverCareerScores === 'function') ctx.updateDriverCareerScores();
             // 2. Pace-Entwicklung für generierte Fahrer
             if (typeof ctx.processDriverPaceDevelopment === 'function') ctx.processDriverPaceDevelopment();
             // 3. Karriere-Enden
             if (typeof ctx.checkCareerEnds === 'function') ctx.checkCareerEnds();
-            // 4. Teamwechsel
+            // 3b. Neue Debüt-Fahrer für nächste Saison in Pool laden (ohne Modal)
+            //     initReservePool lädt SD[year±1], überspringt bereits vorhandene Fahrer
+            if (typeof ctx.initReservePool === 'function') ctx.initReservePool(year + 1);
+            // 3c. Hist. Fahrer des nächsten Jahrgangs JETZT injizieren (als Free Agents),
+            //     damit processTeamChanges sie sofort verpflichten kann.
+            //     FIX: startNewSeason() ruft _injectNewSeasonDrivers nochmal auf – idempotent,
+            //     bereits vorhandene Fahrer werden übersprungen.
+            if (typeof ctx._injectNewSeasonDrivers === 'function') ctx._injectNewSeasonDrivers(year + 1);
+            // 4. Teamwechsel (jetzt mit neu injizierten Fahrern verfügbar)
             if (typeof ctx.processTeamChanges === 'function') ctx.processTeamChanges();
 
             // Era-Reset-Prüfung: carSpeed VOR startNewSeason speichern
@@ -275,13 +292,30 @@ for (let y = startYear; y <= endYear; y++) {
     const entries  = sortDesc(yd.championTeams);
     const topId    = entries[0]?.[0] ?? '?';
     const topCount = entries[0]?.[1] ?? 0;
-    const name     = teamNameOf(topId).substring(0, 24).padEnd(24);
+    const name     = topId.substring(0, 24).padEnd(24); // topId ist bereits der Name
     const winPct   = pctFmt(topCount, successfulSims).padStart(5);
     const csAvg    = avgFmt(yd.carSpeedAvg).padStart(5);
     const csTop    = avgFmt(yd.carSpeedTop).padStart(5);
     const dnfAvg   = avgFmt(yd.dnfRates).padStart(4);
     const era      = ERA_RESETS.includes(y) ? '⚡' : '  ';
     console.log(boxLine(`  ${era}${y}  ${name}  ${winPct}  ${csAvg} ${csTop} ${dnfAvg}%`));
+}
+
+// WDC pro Jahr
+console.log(boxSep());
+console.log(boxLine('WDC PRO SAISON (häufigster Fahrerweltmeister)'));
+console.log(boxLine(`  Jahr   Fahrer                        Win%`));
+console.log(boxLine(`  ─────  ────────────────────────────  ────`));
+for (let y = startYear; y <= endYear; y++) {
+    const yd      = yearStats[y];
+    const entries = sortDesc(yd.champions);
+    if (!entries.length) continue;
+    const topId    = entries[0][0];
+    const topCount = entries[0][1];
+    const name     = nameOf(topId).substring(0, 28).padEnd(28);
+    const winPct   = pctFmt(topCount, successfulSims).padStart(5);
+    const era      = ERA_RESETS.includes(y) ? '⚡' : '  ';
+    console.log(boxLine(`  ${era}${y}  ${name}  ${winPct}`));
 }
 
 // Era-Reset-Prüfung
@@ -354,7 +388,7 @@ console.log(boxSep());
 console.log(boxLine('TOP-KONSTRUKTEURE (alle Saisons gesamt)'));
 const topTeams = sortDesc(allTeamTitles).slice(0, 6);
 for (const [id, n] of topTeams) {
-    const name = teamNameOf(id).substring(0, 22).padEnd(22);
+    const name = id.substring(0, 22).padEnd(22); // id ist bereits der Name
     const titlesPerSim = (n / successfulSims).toFixed(2);
     console.log(boxLine(`  ${name}  ${titlesPerSim} T/Sim  (${n} total)`));
 }
