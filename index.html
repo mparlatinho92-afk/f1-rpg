@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.57</title>
+    <title>F1 RPG v0.9.14.58</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.57 (aktuell) - 09.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.58 (aktuell) - 09.07.2026</div>
+                            <div>&#8226; NEU: Toedliche Unfaelle ausserhalb der WM - Testfahrt/Nicht-WM-Rennen/Sportwagen (F1) + AAA/Midget/Sprint (Indy, bis 1960), mit echtem Zeitpunkt (vor Saison / mitten drin / Off-Season) + Ersatzfahrer wie bei WM-Toden</div>
+                            <div>&#8226; NEU: Non-WM-Ereignisse sauber in der Saison-Uebersicht dokumentiert (kein sichtbares Rennen)</div>
+                            <div>&#8226; NEU: Per-Fahrer-Todesmodell - dichteres/gefaehrlicheres Feld erzeugt emergent mehr Tote</div>
+                            <div>&#8226;  MC-kalibriert (F1 gesamt ~40 real, alle Dekaden im Anker)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.57 - 09.07.2026</div>
                             <div>&#8226; FIX: US-GP in Indianapolis (2000-2007) bekommt nicht mehr die 1950er-Indy-500-Todesrate - keine Phantom-Toden moderner Fahrer mehr (Alonso/Fisichella/Coulthard etc.)</div>
                             <div>&#8226; NEU: Indy-500-Todesrate greift nur noch fuer echte WM-Runden bis 1960</div>
                             <div class="font-bold text-slate-400">v0.9.14.56 - 08.07.2026</div>
@@ -2906,7 +2911,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.57';
+        const VERSION = '0.9.14.58';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3842,6 +3847,26 @@
         // Würfel 2: 75% Rennen | 12.5% Training | 12.5% Qualifying
         const ERA_RACE_DEATH_FRACTION = 0.75;  // Anteil Rennen (Rest = Training + Qualifying)
         const ERA_TRAINING_FRACTION   = 0.50;  // von den 25% non-race: 50% Training, 50% Qualifying
+
+        // === NON-WM-TODESRATEN (HOCH#4 Teil 2) ===
+        // P(Tod) PRO FAHRER PRO SAISON in Ereignissen AUSSERHALB der WM bzw. des Indy 500 –
+        // Testfahrten/Nicht-WM-Rennen/Sportwagen (F1) bzw. AAA/USAC-Champ-Car/Midget/Sprint
+        // (Indy, real nur bis 1960 im F1-Kontext). Per-Fahrer-Wurf → dichteres & gefährlicheres
+        // Feld erzeugt emergent mehr Tote (Indy-Oval pro Kopf tödlicher als F1). Kalibriert an
+        // realen Dekaden-Häufigkeiten (F1: 50er~6/60er~4/70er~5/80er~2), MC-getunt via
+        // tests/death-era-mc.js. Reale F1-Non-WM-Tode: Ascari'55, Castellotti'57, de Portago'57,
+        // Behra'59, Siffert'71, Bonnier'72, Revson'74, Depailler'80, de Angelis'86 …
+        const ERA_NONWM_F1_DEATH_RATE = {
+            1950: 0.020, 1955: 0.020, 1960: 0.014, 1965: 0.014,
+            1970: 0.012, 1975: 0.012, 1980: 0.008, 1985: 0.008,
+            1990: 0.002, 1995: 0, 2000: 0, 2005: 0,
+            2010: 0, 2015: 0, 2020: 0, 2025: 0
+        };
+        const ERA_NONWM_INDY_DEATH_RATE = {
+            1950: 0.040, 1955: 0.040, 1960: 0.040, 1965: 0  // Indy nur bis 1960 im F1-Sim
+        };
+        const NONWM_F1_VENUES   = ['Testfahrt', 'Nicht-WM-Rennen', 'Sportwagen-Rennen'];
+        const NONWM_INDY_VENUES = ['AAA-Champ-Car', 'Midget-Rennen', 'Sprint-Car-Rennen'];
 
         // Historische Grid-Größe pro Jahr (Jahresschnitt, aufgerundet), aus F1DB
         // Ausnahmen (Monaco, Nürburgring/Nordschleife) werden in getGridSize() behandelt
@@ -5577,6 +5602,7 @@
             sanitized.teams = sanitized.teams || [];
             sanitized.drivers = sanitized.drivers || [];
             sanitized.races = sanitized.races || [];
+            sanitized.pendingNonWMDeaths = sanitized.pendingNonWMDeaths || [];   // HOCH#4 (terminierte Non-WM-Tode)
             // Migration v0.9.6: race.country – kaputte Twemoji-<img>-Tags → IOC-Code
             if (sanitized.races.length > 0) {
                 sanitized.races = sanitized.races.map(race => {
@@ -7791,6 +7817,7 @@
             initStandings();
             initReservePool(year);  // v0.9.1: Reserve-Pool mit unbesetzten hist. Fahrern befüllen
             prePopulateDriverCareerScores(year);
+            rollSeasonNonWMDeaths();  // HOCH#4: Tode außerhalb WM für die 1. Saison terminieren
             saveGame();
 
             const legendCount = Object.values(GAME_STATE.allTimeStATS.drivers || {}).filter(d => d.isLegend).length;
@@ -8582,6 +8609,8 @@
                 // v0.8.2.4: Indy/F1 Tracking
                 if (raceIsIndy) at.hasIndy = true; else at.hasF1 = true;
             });
+
+            applyPendingNonWMDeaths(GAME_STATE.currentRace);  // HOCH#4: terminierte Non-WM-Tode nach diesem Rennen feuern
 
             trackTeammateDuels(raceResult);
             processMidSeasonDismissals();
@@ -10255,6 +10284,84 @@
             }
         };
         
+        // === NON-WM-TODESFÄLLE (HOCH#4 Teil 2) ===
+        // Tode AUSSERHALB der WM/Indy500 (Testfahrt/Sportwagen/Nicht-WM bzw. AAA/Midget) mit
+        // ECHTEM Zeitpunkt im Saisonverlauf. rollSeasonNonWMDeaths() würfelt beim Saison-START
+        // deterministisch (geteilter Code → beide Modi identisch) pro Fahrer + terminiert jeden
+        // Tod auf einen Slot: afterRace 0 = vor der Saison, k = nach Rennen k, nRaces = Off-Season.
+        // applyPendingNonWMDeaths(n) feuert die Tode mit afterRace===n – aus applyRaceResults
+        // (nach jedem Rennen, geteilt) + einmal bei 0 (Saison-Start). Opfer für immer weg + Ersatz
+        // wie bei WM-Toden (nur mitten in der Saison), Ort = Platzhalter, KEIN sichtbares Rennen.
+        function rollSeasonNonWMDeaths() {
+            GAME_STATE.pendingNonWMDeaths = [];
+            const year = GAME_STATE.currentYear;
+            if (!(GAME_STATE.deathRealism > 0)) return;
+            const realism = GAME_STATE.deathRealism / 100;
+            const f1Rate   = (getEraValue(ERA_NONWM_F1_DEATH_RATE, year)   || 0) * realism;
+            const indyRate = (getEraValue(ERA_NONWM_INDY_DEATH_RATE, year) || 0) * realism;
+            if (f1Rate <= 0 && indyRate <= 0) return;
+            const nRaces = (GAME_STATE.races || []).length;
+            if (nRaces === 0) return;
+            const _pick = arr => arr[Math.floor(Math.random() * arr.length)];
+            GAME_STATE.drivers
+                .filter(d => (!d.status || d.status === 'active') && d.team)
+                .forEach(d => {
+                    const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id);
+                    const rate = isIndy ? indyRate : f1Rate;
+                    if (rate <= 0 || Math.random() >= rate) return;
+                    GAME_STATE.pendingNonWMDeaths.push({
+                        driverId: d.id, name: d.name,
+                        venue: _pick(isIndy ? NONWM_INDY_VENUES : NONWM_F1_VENUES),
+                        nonwmType: isIndy ? 'indy' : 'f1',
+                        afterRace: Math.floor(Math.random() * (nRaces + 1))  // 0..nRaces
+                    });
+                });
+            applyPendingNonWMDeaths(0);   // Vor-Saison-Tode sofort (Fahrer fährt dieses Jahr gar nicht)
+        }
+
+        function applyPendingNonWMDeaths(completedCount) {
+            const pending = GAME_STATE.pendingNonWMDeaths || [];
+            if (!pending.length) return;
+            const fire = pending.filter(p => p.afterRace === completedCount);
+            if (!fire.length) return;
+            GAME_STATE.pendingNonWMDeaths = pending.filter(p => p.afterRace !== completedCount);
+            const year = GAME_STATE.currentYear;
+            const nRaces = (GAME_STATE.races || []).length;
+            if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
+            fire.forEach(p => {
+                const d = GAME_STATE.drivers.find(x => x.id === p.driverId);
+                if (!d || (d.status && d.status !== 'active')) return;   // schon weg (Transfer/Tod)
+                const teamName = GAME_STATE.teams.find(t => t.id === d.team)?.name || '-';
+                const timing = completedCount === 0 ? `vor der Saison ${year}`
+                    : completedCount >= nRaces ? `nach der Saison ${year}`
+                    : `vor dem ${GAME_STATE.races[completedCount]?.name || 'nächsten Rennen'}`;
+                d.status = 'deceased';
+                d.deathYear = year;
+                d.deathRace = p.venue;
+                logError('DEATH', `💀 ${d.name} tödlich verunglückt (${p.venue}, ${timing})`);
+                // Ersatz wenn der Sitz noch DIESE Saison fährt (vor Saison + mitten drin);
+                // Off-Season-Tod (completedCount>=nRaces) braucht keinen – der Markt füllt nächstes Jahr.
+                let replacement = null;
+                if (completedCount < nRaces && d.team) {
+                    replacement = generateDriver(d.team, year, Math.random() < 0.5);
+                    replacement.replacedDriver = d.id;
+                    replacement.replacedDriverName = d.name;
+                    replacement.replacedInYear = year;
+                    GAME_STATE.drivers.push(replacement);
+                    GAME_STATE.driverStandings[replacement.id] = {
+                        name: replacement.name, team: replacement.team,
+                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
+                    };
+                }
+                GAME_STATE.seasonDeaths.push({
+                    driver: d.id, name: d.name, team: teamName,
+                    race: null, raceName: p.venue, raceCountry: null,
+                    fatalSession: 'nonwm', nonwmType: p.nonwmType, timing,
+                    replacement: replacement?.name, replacementId: replacement?.id, replacementTeam: replacement?.team
+                });
+            });
+        }
+
         // === SAISONENDE MODAL ===
         function processSeasonEndEvents() {
             // Guard: nicht doppelt ausführen (interaktiver Pfad ruft showSeasonEndModal() auf,
@@ -14213,6 +14320,7 @@
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
             fillEmptyTeamSeats(newYear);   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
+            rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
 
@@ -16249,7 +16357,18 @@
                     </div>
                 `;
             }
-            
+
+            // HOCH#4: Tödliche Unfälle AUSSERHALB der WM in dieser Saison (kein sichtbares Rennen)
+            // – sauber als Saison-Ereignisse mit Zeitpunkt dokumentiert.
+            const _nonWMDeaths = (GAME_STATE.seasonDeaths || []).filter(d => d.fatalSession === 'nonwm');
+            const nonWMEvents = _nonWMDeaths.length === 0 ? '' : `
+                <div class="card p-4 rounded-xl mb-4" style="border:1px solid rgba(239,68,68,0.4)">
+                    <div class="text-sm font-bold text-red-400 mb-2">💀 Tödliche Unfälle außerhalb der WM (${_nonWMDeaths.length})</div>
+                    ${_nonWMDeaths.map(d => `
+                        <div class="text-sm text-secondary pl-2 mb-1">• ${d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name} <span class="text-tertiary">(${d.raceName})</span>${d.timing ? ` <span class="text-tertiary text-xs">— ${d.timing}</span>` : ''}${d.replacement ? ` <span class="text-tertiary text-xs">→ ersetzt durch ${d.replacement}</span>` : ''}</div>
+                    `).join('')}
+                </div>`;
+
             return `
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-3xl font-bold">🏁 Saison ${GAME_STATE.currentYear} Übersicht</h2>
@@ -16257,7 +16376,8 @@
                 </div>
 
                 ${eraWarning}
-                
+                ${nonWMEvents}
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-sm font-bold mb-2 text-secondary">Fortschritt</h3>
