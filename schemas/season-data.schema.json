@@ -9,7 +9,7 @@
         "items": [
           { "index": 0, "field": "id",          "type": "string",  "example": "ALF",      "description": "Team-Kurzform-ID (Großbuchstaben)" },
           { "index": 1, "field": "name",        "type": "string",  "example": "Alfa Romeo" },
-          { "index": 2, "field": "color",       "type": "string",  "example": "#9B0000",  "description": "Hex-Farbe für UI" },
+          { "index": 2, "field": "color",       "type": "string",  "example": "#9B0000",  "description": "Basis-Hex-Farbe – wird von getTeamColors() als Fallback genutzt. Mehrfarbige Liveries werden NICHT hier gespeichert, sondern in TEAM_COLORS_EXTRA (jahresexakt) oder TEAM_COLORS_RANGES (Jahresbereich). getTeamColors(teamId, year, baseColor) gibt immer ein Array zurück: [c1] bis [c1,c2,c3]." },
           { "index": 3, "field": "pace",        "type": "integer", "range": "0–100",      "description": "Basis-Pace des Teams" },
           { "index": 4, "field": "rain",        "type": "integer", "range": "0–100",      "description": "Regen-Performance" },
           { "index": 5, "field": "consistency", "type": "integer", "range": "0–100",      "description": "Zuverlässigkeit/Konstanz" }
@@ -33,5 +33,6 @@
     }
   },
 
-  "$pitfall": "SEASON_DATA-histId ('NINOFA') ≠ HIST_SEASONS-Slug ('nino-farina'). Konvertierung via nameToSlug-Lookup in initReservePool."
+  "$pitfall": "SEASON_DATA-histId ('NINOFA') ≠ HIST_SEASONS-Slug ('nino-farina'). Konvertierung via nameToSlug-Lookup in initReservePool.",
+  "$pitfall2": "t[i][2] (color) ist NUR der Fallback. Mehrfarbige Liveries → TEAM_COLORS_EXTRA (jahresexakt) oder TEAM_COLORS_RANGES (Bereich). Nie Farben direkt aus t[i][2] rendern ohne getTeamColors() zu nutzen."
 }
