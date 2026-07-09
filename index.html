@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.58</title>
+    <title>F1 RPG v0.9.14.59</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.58 (aktuell) - 09.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.59 (aktuell) - 09.07.2026</div>
+                            <div>&#8226; FIX: Alle 2282 Platzhalter-Flaggen in SEASON_DATA durch echte Nationen ersetzt (740 Fahrer, 100% aller Fahrer haben jetzt eine Nation)</div>
+                            <div>&#8226; FIX: Historische Staaten korrekt (DDR/Rhodesien als Aera-Flagge), historische Flaggen (CAN/ESP/RSA vor Reform) unveraendert</div>
+                            <div>&#8226; FIX: Runtime-Platzhalter-Reparatur (case-Bug) - bestehende Saves heilen beim Laden</div>
+                            <div class="font-bold text-slate-400">v0.9.14.58 - 09.07.2026</div>
                             <div>&#8226; NEU: Toedliche Unfaelle ausserhalb der WM - Testfahrt/Nicht-WM-Rennen/Sportwagen (F1) + AAA/Midget/Sprint (Indy, bis 1960), mit echtem Zeitpunkt (vor Saison / mitten drin / Off-Season) + Ersatzfahrer wie bei WM-Toden</div>
                             <div>&#8226; NEU: Non-WM-Ereignisse sauber in der Saison-Uebersicht dokumentiert (kein sichtbares Rennen)</div>
                             <div>&#8226; NEU: Per-Fahrer-Todesmodell - dichteres/gefaehrlicheres Feld erzeugt emergent mehr Tote</div>
@@ -2911,7 +2915,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.58';
+        const VERSION = '0.9.14.59';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6044,16 +6048,17 @@
                     d.nation = nFix;
                     migrationCount++;
                 }
-                // '🏁'-Fallback via NAME_TO_IOC reparieren
-                if (d.nation === '🏁' && d.name && typeof NAME_TO_IOC !== 'undefined') {
-                    const _iocFix = NAME_TO_IOC[d.name];
+                // '🏁'-Fallback via Name reparieren (lowercase-Lookup; Ära-Konvention wie SEASON_DATA:
+                // normale Nationen als Emoji, historische Codes DDR/RHO als Code-String).
+                if (d.nation === '🏁' && d.name && typeof lookupNationByName === 'function') {
+                    const _iocFix = lookupNationByName(d.name);
                     if (_iocFix) {
-                        const _emojiFix = getEmojiFlag(_iocFix, sanitized.currentYear);
-                        if (_emojiFix) {
-                            logInfo('MIGRATE', `Nation 🏁 fix: ${d.name} → ${_iocFix}`);
-                            d.nation = _emojiFix;
-                            migrationCount++;
-                        }
+                        const _a2 = (typeof FLAG_IOC_TO_ALPHA2 !== 'undefined') ? FLAG_IOC_TO_ALPHA2[_iocFix] : null;
+                        d.nation = _a2
+                            ? String.fromCodePoint(_a2.charCodeAt(0) + 127397, _a2.charCodeAt(1) + 127397)
+                            : _iocFix;
+                        logInfo('MIGRATE', `Nation 🏁 fix: ${d.name} → ${_iocFix}`);
+                        migrationCount++;
                     }
                 }
             }
