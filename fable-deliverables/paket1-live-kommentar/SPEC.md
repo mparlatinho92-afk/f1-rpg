@@ -1,5 +1,10 @@
 # Paket 1 — Delta-Spec: Live-Ticker-Kommentar
 
+> **⚠️ ZUERST LESEN:** `fable-deliverables/FABLE-GRUNDREGELN.md` (alle 8 Regeln). Kern-Verbote, die hier gelten – egal was unten steht:
+> 1. **NIE reale Erfolge/Fakten** (Titel, Siege, echte Karriere/Unfälle) – die Sim-Zeitlinie weicht ab.
+> 2. **Ära-Register** e50/e62/e76/e94/e10 – Ton pro Dekade, kein Einheitston.
+> 3. **0 Bytes gespeicherter Text** – nur Pools/Assembler, Regeneration zur Laufzeit; Sprache Deutsch.
+
 > Baut auf `fable-deliverables/FABLE-GRUNDREGELN.md` auf. Hier steht nur das Paket-Spezifische.
 
 **Deliverable:** `fable-deliverables/paket1-live-kommentar/live-commentary-bank.js`
