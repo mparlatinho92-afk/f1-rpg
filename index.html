@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.61</title>
+    <title>F1 RPG v0.9.14.62</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.61 (aktuell) - 09.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.62 (aktuell) - 10.07.2026</div>
+                            <div>&#8226; NEU: Karriere-H2H paarweise – Teamkollegen-Duelle werden über Jahre gespeichert (Grundlage für Rivalitäts-Texte)</div>
+                            <div>&#8226; NEU: Zufalls-Button im Team-Editor generiert fiktiven Rennstall (Name/Nation/Tier)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.61 - 09.07.2026</div>
                             <div>&#8226; NEU: Nachrufe/Abschiede - 116 neue Fahrer-Portraits inkl. Indy-Piloten der 50er</div>
                             <div>&#8226; NEU: Deutlich mehr Textvarianten fuer Saison-Rueckblick, Nachrufe und Karriereenden</div>
                             <div class="font-bold text-slate-400">v0.9.14.60 - 09.07.2026</div>
@@ -2922,7 +2925,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.61';
+        const VERSION = '0.9.14.62';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -8503,6 +8506,36 @@
             if (!d.h2hCareer) d.h2hCareer = { qW: 0, qL: 0, rW: 0, rL: 0 };
         }
 
+        // Paarweiser Karriere-H2H (Paket 5-B): kumuliert Teamkollegen-Duelle ÜBER JAHRE.
+        // h2hCareer ist nur ein Aggregat pro Fahrer; dieser Store ist pro Fahrer-PAAR.
+        // Key = beide IDs sortiert; Zähler aus Sicht der kleineren ID (a).
+        function _h2hPairKey(id1, id2) { return id1 < id2 ? id1 + '|' + id2 : id2 + '|' + id1; }
+        function _h2hPairRec(id1, id2) {
+            if (!GAME_STATE.h2hHistory) GAME_STATE.h2hHistory = {};
+            const key = _h2hPairKey(id1, id2);
+            let rec = GAME_STATE.h2hHistory[key];
+            if (!rec) {
+                const a = id1 < id2 ? id1 : id2, b = id1 < id2 ? id2 : id1;
+                rec = { a, b, aName: '', bName: '', rW: 0, rL: 0, qW: 0, qL: 0, years: {} };
+                GAME_STATE.h2hHistory[key] = rec;
+            }
+            return rec;
+        }
+        // Bilanz zweier Fahrer aus Sicht von idSelf (null wenn nie Teamkollegen).
+        function getH2HHistory(idSelf, idOther) {
+            const rec = GAME_STATE.h2hHistory && GAME_STATE.h2hHistory[_h2hPairKey(idSelf, idOther)];
+            if (!rec) return null;
+            const selfIsA = rec.a === idSelf;
+            const years = Object.keys(rec.years).map(Number).sort((x, y) => x - y);
+            return {
+                rW: selfIsA ? rec.rW : rec.rL, rL: selfIsA ? rec.rL : rec.rW,
+                qW: selfIsA ? rec.qW : rec.qL, qL: selfIsA ? rec.qL : rec.qW,
+                selfName: selfIsA ? rec.aName : rec.bName,
+                otherName: selfIsA ? rec.bName : rec.aName,
+                years, seasons: years.length
+            };
+        }
+
         // Teaminterne Duelle pro Rennen UND pro Quali (statt nur jährlich aus Saison-Punkten).
         // Wertung nur, wenn BEIDE Teamkollegen die Session bestritten haben (Quali: beide mit
         // qualiPos; Rennen: beide in results = beide gestartet, DNF zählt als Teilnahme).
@@ -8523,17 +8556,24 @@
                 _ensureH2H(dA); _ensureH2H(dB);
                 dA.h2hSeason.tmId = dB.id; dA.h2hSeason.tmName = dB.name;
                 dB.h2hSeason.tmId = dA.id; dB.h2hSeason.tmName = dA.name;
+                // Paarweiser Karriere-Store (Paket 5-B): Namen + Jahr festhalten
+                const _pr = _h2hPairRec(dA.id, dB.id);
+                _pr.aName = _pr.a === dA.id ? dA.name : dB.name;
+                _pr.bName = _pr.a === dA.id ? dB.name : dA.name;
+                _pr.years[GAME_STATE.currentYear] = true;
                 // Quali-Duell: beide mit gültiger qualiPos
                 if (a.qualiPos != null && b.qualiPos != null && a.qualiPos !== b.qualiPos) {
                     const aWon = a.qualiPos < b.qualiPos;
                     const win = aWon ? dA : dB, los = aWon ? dB : dA;
                     win.h2hSeason.qW++; los.h2hSeason.qL++; win.h2hCareer.qW++; los.h2hCareer.qL++;
+                    if (win.id === _pr.a) _pr.qW++; else _pr.qL++;
                 }
                 // Renn-Duell: beide gestartet, Klassifikation über position (DNF = hintere Position)
                 if (a.position != null && b.position != null && a.position !== b.position) {
                     const aWon = a.position < b.position;
                     const win = aWon ? dA : dB, los = aWon ? dB : dA;
                     win.h2hSeason.rW++; los.h2hSeason.rL++; win.h2hCareer.rW++; los.h2hCareer.rL++;
+                    if (win.id === _pr.a) _pr.rW++; else _pr.rL++;
                 }
             }
         }
@@ -9414,6 +9454,9 @@
                             </div>`).join('')}
                     </div>
                     <div class="flex gap-2 justify-end">
+                        <button onclick="editorRandomizeTeamForm()" class="px-3 py-1.5 rounded text-sm mr-auto"
+                                title="Zufälliges Team generieren"
+                                style="background:#2D2D2D;color:#ddd">🎲 Zufall</button>
                         <button onclick="editorHideAddTeamForm()" class="px-3 py-1.5 rounded text-sm"
                                 style="background:#2D2D2D;color:#aaa">Abbrechen</button>
                         <button onclick="editorConfirmAddTeam()" class="px-3 py-1.5 rounded text-sm font-medium"
@@ -9421,7 +9464,32 @@
                     </div>
                 </div>`;
         }
-        
+
+        // Interim-Bausteine für Zufallsteams – bewusst FIKTIV (kein realer Rennstall/Sponsor).
+        // Wird von Fable Paket 6 (nationskohärente Pools) abgelöst.
+        const _RANDOM_TEAM_BASE = ['Aurelia','Bergwind','Corsair','Delphi','Everest','Falkner','Grandezza',
+            'Helios','Ibarra','Jansen','Königstern','Larimar','Meridian','Nordkap','Orion','Pallas','Quintus',
+            'Renard','Solstice','Talon','Ultima','Vanguard','Westfeld','Zenith'];
+        const _RANDOM_TEAM_SUFFIX = ['Racing','Motorsport','Corse','Engineering','Automobili','Grand Prix','Racing Team','Autosport'];
+        window.editorRandomizeTeamForm = function() {
+            const yr = GAME_STATE.currentYear || 1990;
+            const base = _RANDOM_TEAM_BASE[Math.floor(Math.random() * _RANDOM_TEAM_BASE.length)];
+            const suffix = _RANDOM_TEAM_SUFFIX[Math.floor(Math.random() * _RANDOM_TEAM_SUFFIX.length)];
+            const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+            setVal('editor-new-team-name', Math.random() < 0.55 ? `${base} ${suffix}` : base);
+            // Nation über den Motorsport-Frequenz-Trichter (USA gedämpft)
+            const ioc = pickNationMotorsport(yr, true);
+            const natName = (NATION_OPTIONS.find(([c]) => c === ioc) || [])[1];
+            setVal('editor-new-team-nation', natName ? `${natName} (${ioc})` : (ioc || ''));
+            // Zufällige Farbe
+            setVal('editor-new-team-color', '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'));
+            // Tier gewichtet (Privatiers eher hinten); Stat-Overrides leeren → Tier-Schnitt greift
+            const tier = ['back','back','back','mid','mid','top'][Math.floor(Math.random() * 6)];
+            const radio = document.querySelector(`input[name="editor-tier"][value="${tier}"]`);
+            if (radio) radio.checked = true;
+            ['editor-new-team-speed','editor-new-team-rain','editor-new-team-cons'].forEach(id => setVal(id, ''));
+        };
+
         let liveRaceState = {
             active: false,
             paused: false,
