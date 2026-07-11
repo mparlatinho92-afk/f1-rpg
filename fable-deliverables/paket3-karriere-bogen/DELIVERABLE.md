@@ -78,7 +78,7 @@ OBIT_BANK.abschied.werdegang = {
       '{seasonsText} verlässt ein Champion das Feld, das er lange prägte.',
       'Vom ersten Start bis zum Titel: {seasonsText} schließt sich ein großer Kreis.',
       'Was als Neulingssaison begann, endet {seasonsText} mit dem Nimbus eines Meisters.',
-      'Er kam als Unbekannter und geht als Champion – {seasonsText}.',
+      'den Weg vom Herausforderer zum Champion hat er vollendet – {seasonsText}.',
       '{seasonsText} legt ein Weltmeister den Helm ab – der Weg dorthin war das eigentliche Denkmal.'
     ]
   },

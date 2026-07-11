@@ -292,7 +292,7 @@ const DRIVER_BIO_BANK = {
             e10: [
                 'kompletter Fahrer, kompletter Werkzeugkasten: {name} hat auf jede Frage eine Antwort.',
                 '{nationAdj} mit ausgewogenem Profil – {name} performt auf jedem Streckentyp stabil.',
-                'kein One-Trick-Pony: {name} kann Qualifying, Rennen, Regen und Reifen.',
+                'kein One-Trick-Pony: {name} nimmt jede Aufgabe eines Rennwochenendes an.',
                 '{name} ist der Fahrer für alle Fälle – flexibel, stabil, unterschätzt.',
                 'die Stärke von {name} ist, dass er keine Schwäche hat – zumindest keine, die man ausnutzen könnte.'
             ]

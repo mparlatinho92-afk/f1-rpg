@@ -80,7 +80,7 @@ const RECAP_BANK = {
             'Bis zuletzt blieb der Titelkampf {year} offen, dann hatte {champion} das bessere Ende für sich: {gapNom} Vorsprung auf {vize} – mehr nicht.',
             '{year} lieferten sich {champion} und {vize} ein Duell auf Augenhöhe, das {champion} um {gapAkk} für sich entschied.',
             'Am Ende entschieden Nuancen: {champion} rettete {year} einen Vorsprung von {gapDat} auf {vize} ins Ziel und ist Weltmeister.',
-            'Wimpernschlag-Finale {year}: {champion} schlug {vize} um {gapAkk} – knapper geht es kaum.',
+            'Enger Titelkampf bis zur letzten Wertung: {champion} schlug {vize} {year} um {gapAkk}.',
             'Die Saison {year} hielt die Spannung bis zur allerletzten Wertung: {champion} setzte sich mit {gapDat} Vorsprung gegen {vize} durch.',
             'Wer {year} wegsah, hat Geschichte verpasst: {champion} entschied eines der engsten Titelrennen {klasseGen} um {gapAkk} gegen {vize} für sich.'
         ],
@@ -88,7 +88,7 @@ const RECAP_BANK = {
             '{champion} sicherte sich {year} mit {points} Punkten und {siegeDat} den Fahrertitel.',
             'Die Weltmeisterschaft des Jahres {year} ging an {champion}, der sich mit {siegeDat} und konstanten Resultaten durchsetzte.',
             'Am Ende einer intensiven Saison {year} stand {champion} als verdienter Champion fest – {points} Punkte, {siegeNom}.',
-            '{champion} hieß der Mann, an dem {year} kein Weg vorbeiführte: Der Titel ging mit {siegeDat} an ihn.',
+            '{champion} hieß der Mann, der {year} am Ende die Nase vorn hatte: Der Titel ging mit {siegeDat} an ihn.',
             'Mit {siegeDat} und {points} Punkten kürte sich {champion} {year} zum Weltmeister {klasseGen}.',
             'Die Saison {year} fand in {champion} ihren verdienten Weltmeister – {points} Punkte, {siegeNom}.',
             'Am Ende des Jahres {year} stand {champion} dort, wo alle hinwollten: ganz oben, mit {points} Punkten und {siegeDat}.',
@@ -108,7 +108,7 @@ const RECAP_BANK = {
         ],
         knapp: [
             'Für {vize} bleibt die bittere Rolle des geschlagenen Helden – kaum je war ein Vize-Weltmeister so nah dran.',
-            '{vize} verlor den Titel nicht durch Schwäche, sondern um Haaresbreite – ein Jahrgang, der beiden zur Ehre gereicht.',
+            '{vize} verlor den Titel nicht durch Schwäche, sondern in einem Duell, das kaum enger hätte geführt werden können – ein Jahrgang, der beiden zur Ehre gereicht.',
             'So kurz vor dem Ziel gescheitert: {vize} wird den Winter mit der Frage verbringen, wo die entscheidenden Punkte liegen blieben.',
             'Auf der anderen Seite stand {vize}, der mit {vizePoints} Punkten alles gegeben hatte – und dem am Ende fast nichts fehlte.',
             'Und {vize}? Er geht als tragischer Zweiter in die Bücher ein – näher dran war selten jemand.',
@@ -119,7 +119,7 @@ const RECAP_BANK = {
             'Als Vize-Weltmeister behauptete sich {vize}, ohne den Champion je ernsthaft in Bedrängnis zu bringen.',
             '{vize} komplettierte als Zweiter das Spitzenduo, {gapAkk} hinter dem Champion.',
             'Dahinter reihte sich {vize} als Vize-Weltmeister ein – respektabel, aber ohne echten Zugriff auf die Krone.',
-            'Dahinter sicherte sich {vize} mit {vizePoints} Punkten den zweiten Platz.',
+            'Platz zwei der Wertung ging mit {vizePoints} Punkten an {vize}.',
             'Die Rolle des ersten Verfolgers übernahm {vize} – beständig genug für Rang zwei, zu wenig für mehr.'
         ]
     },
@@ -129,7 +129,7 @@ const RECAP_BANK = {
         rookie: [
             'Dass ausgerechnet ein Mann in seinem ersten Jahr die etablierte Garde düpierte, machte den Titel umso bemerkenswerter – ein Durchbruch, wie ihn {klasseNom} nur selten erlebt.',
             'Es war der Durchbruch eines Neulings: In seiner ersten Saison ließ {champion} sämtlichen Routiniers das Nachsehen.',
-            'Ein Rookie als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.',
+            'Ein Neuling als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.',
             'Und das im ersten Anlauf: {champion} brauchte keine Lehrjahre, er machte sein Debütjahr gleich zum Meisterjahr.',
             'Die etablierten {fahrerPl} mussten sich von einem Neuling zeigen lassen, wo es langgeht – ein Debüt für die Geschichtsbücher.'
         ],
@@ -148,11 +148,11 @@ const RECAP_BANK = {
             'Dass {maxWinner} häufiger gewann und der Titel trotzdem an {champion} ging, wird {klasseIn} noch lange Gesprächsstoff liefern.'
         ],
         poleKing: [
-            'Auch samstags war {champion} das Maß aller Dinge: {poles} Pole-Positions unterstreichen die Vormachtstellung.',
+            'Auch über eine Runde war {champion} das Maß aller Dinge: {poles} Pole-Positions unterstreichen die Vormachtstellung.',
             'Dazu kam rohe Geschwindigkeit: {poles} Pole-Positions machten {champion} auch zum König des Qualifyings.',
             'Im Qualifying regierte {champion} mit {poles} Pole-Positions fast nach Belieben.',
             'Eine Randnotiz mit Gewicht: {poles} Pole-Positions gingen an {champion} – schneller war samstags keiner.',
-            'Der Samstag gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.'
+            'Die erste Startposition gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.'
         ]
     },
 
@@ -177,7 +177,7 @@ const RECAP_BANK = {
     // Satz 5 (optional) — Todesfälle (nur State-Fakten, keine Ursachen erfinden)
     tragik: {
         one: [
-            'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der beim {deadRace} ums Leben kam – {klasseNom} verneigte sich vor einem der Ihren.',
+            'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der beim {deadRace} ums Leben kam – das Fahrerlager verneigte sich vor einem der Seinen.',
             'Doch die Saison hatte auch ihre dunkle Seite: Beim {deadRace} verlor {deadName} sein Leben – eine Lücke, die kein Ergebnis schließt.',
             'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der beim {deadRace} tödlich verunglückte.',
             'Und doch fällt ein Schatten über alle Zahlen dieses Jahres: {deadName} ({deadTeam}) verlor beim {deadRace} sein Leben.',

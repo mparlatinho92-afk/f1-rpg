@@ -125,7 +125,7 @@ const PREVIEW_BANK = {
         '{wechselName} fährt in diesem Jahr für {wechselTeam} – eine Verbindung, die neugierig macht.',
         'der prominenteste Umzug des Winters: {wechselName} startet fortan für {wechselTeam}.',
         'neues Kapitel für {wechselName}: Bei {wechselTeam} will er sich neu beweisen.',
-        'ob der Tapetenwechsel zündet? {wechselName} versucht sein Glück ab sofort bei {wechselTeam}.',
+        'ob die neue Umgebung zündet? {wechselName} versucht sein Glück ab sofort bei {wechselTeam}.',
         'die Boxengasse hat ein neues Gesprächsthema: {wechselName} in Diensten von {wechselTeam}.'
     ],
 
