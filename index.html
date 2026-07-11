@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.64</title>
+    <title>F1 RPG v0.9.14.65</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.64 (aktuell) - 11.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.65 (aktuell) - 12.07.2026</div>
+                            <div>&#8226; NEU: Streckeneditor im Kalender-Tab – eigene Strecken (Name/Nation/Länge/Charakter), dauerhaft im Save</div>
+                            <div>&#8226; NEU: 🎲 Zufallsstrecke mit nationskohärenten Fiktiv-Namen (Paket 8), Ära-Sponsoren ab e76</div>
+                            <div>&#8226; NEU: Kalender per Drag&Drop sortieren + Rennen löschen im Editor-Modus</div>
+                            <div>&#8226; INFO: Custom-Strecken nutzen dieselben Balancing-Regler wie reale Kurse (era-skalierend)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.64 - 11.07.2026</div>
                             <div>&#8226; FIX: Nachruf-Lore - Fakten-/Karriere-Lecks (Hailwood/Badoer/Sanesi) entfernt</div>
                             <div>&#8226; FIX: Lore-Adjektiv-Monotonie geglaettet (still 14->6)</div>
                             <div>&#8226; FIX: Saison-Rueckblick Register-/Hyperbel-Politur (Rookie/Samstag/Wimpernschlag)</div>
@@ -2932,7 +2937,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.64';
+        const VERSION = '0.9.14.65';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5464,6 +5469,7 @@
             teams: [],
             drivers: [],
             races: [],
+            customCircuits: [],   // v0.9.14.65: Nutzer-Strecken (persistent, s. Streckeneditor)
             
             // Aktuelle Saison-Ergebnisse
             results: [],
@@ -5623,6 +5629,7 @@
             sanitized.teams = sanitized.teams || [];
             sanitized.drivers = sanitized.drivers || [];
             sanitized.races = sanitized.races || [];
+            sanitized.customCircuits = sanitized.customCircuits || [];   // v0.9.14.65: Nutzer-Strecken
             sanitized.pendingNonWMDeaths = sanitized.pendingNonWMDeaths || [];   // HOCH#4 (terminierte Non-WM-Tode)
             // Migration v0.9.6: race.country – kaputte Twemoji-<img>-Tags → IOC-Code
             if (sanitized.races.length > 0) {
@@ -6083,6 +6090,8 @@
             if (migrationCount > 0) {
                 logSuccess('MIGRATE', `${migrationCount} Migrationen durchgeführt (${oldVersion} → ${VERSION})`);
             }
+            // v0.9.14.65: Nutzer-Strecken-Dimensionen ins Laufzeit-Registry spiegeln
+            if (typeof syncCustomCircuitDims === 'function') syncCustomCircuitDims(sanitized.customCircuits);
             logInfo('SANITIZE', `Spielstand validiert (v${sanitized.version})`);
             // Saisonnummern nach Ära neu vergeben (löscht zufällige Altnummern, setzt korrekte)
             if (typeof assignSeasonNumbers === 'function') {
@@ -9496,6 +9505,401 @@
             if (radio) radio.checked = true;
             ['editor-new-team-speed','editor-new-team-rain','editor-new-team-cons'].forEach(id => setVal(id, ''));
         };
+
+        // ══════════════════════════════════════════════════════════════════════
+        // STRECKENEDITOR (v0.9.14.65) – Nutzer-Strecken im Kalender-Tab
+        // Fable-Paket 8: nationskohärente Fiktiv-Namen (place/circuitPattern/racePattern).
+        // Kohärenz: Strecke + Rennen ziehen denselben {loc}. Ära-Mix: Sponsor erst ab e76.
+        // ══════════════════════════════════════════════════════════════════════
+        const CIRCUIT_NAME_POOLS = {
+            place: {
+                it: ['Valdano','Montefiore','Castelrosso','San Verino','Lagoscuro','Torrelunga','Vallechiara','Montaverde','Rovalta','Pievalta'],
+                gb: ['Kingsmoor','Draycott','Feltonbury','Alderfield','Wexcombe','Harrowdale','Stanmere','Copperton','Ashwell Heath','Norbury Down'],
+                fr: ['Valmont','Beaurivage','Roche-Noire','Vireloup','Charmes-sur-Loire','Montbrison-le-Haut','Sainte-Claire','Lac-Argent','Fontaubert','Prévalon'],
+                de: ['Falkenried','Lindenfeld','Hohenfeld','Grünbach','Adlersheim','Steinfurth','Waldkron','Silberhausen','Ebenrode','Kranichtal'],
+                us: ['Redstone','Twin Buttes','Copper Flats','Lakeport','Dry Creek','Fairhaven','Bluff City','Cedar Ridge','Stonewall','Prairie Bend'],
+                jp: ['Kazemura','Hoshizaki','Minamigaoka','Tsukihara','Okabayashi','Harukawa','Shirotani','Nagisano','Yamaseki','Kurosawa-ko'],
+                br: ['Vale Verde','Santa Elisa','Porto Azul','Ribeirão Alto','Boa Vista do Sul','Campo Dourado','Serra Clara','Lagoa Funda','Monte Alegre do Norte','Cruzeiro Velho'],
+                es: ['Valdemora','Torrealta','Puerto Lindo','San Cebrián','Fuentelsol','Miravalles','Casaroja','Alcorbes','Peñablanca','Villaverde de Arriba'],
+                at: ['Almried','Steinwang','Zellmoos','Traunfeld','Murwald','Kirchleiten'],
+                ch: ['Neuenwil','Lindenmoos','Valclair','Sernatal','Hochwil','Montfleuri'],
+                be: ['Westerlinde','Bosduin','Vielrode','Hameau-du-Lac','Sint-Goriks','Ardevaux'],
+                nl: ['Westerduin','Leeuwenmeer','Kolkwijk','Bronsloot','Havezande','Vlasdonk'],
+                pt: ['Vila Serena','Alto do Sol','São Faustino','Miradouro','Vale Sereno','Cabo Sereno'],
+                se: ['Granlunda','Norrsjö','Ekvalla','Lindtorp','Silverfors','Havsbyn'],
+                fi: ['Korpivaara','Sinisalmi','Virtalahti','Kuusiranta','Peltokoski','Ilvesjärvi'],
+                hu: ['Zöldhalom','Napvölgy','Kisberek','Fehérpuszta','Szélmajor','Aranyliget'],
+                cz: ['Jestřebník','Modravka','Lipová Hora','Zelenov','Habrovec','Stříbrník'],
+                ru: ['Beloretschje','Kamengrad','Orlowka','Tichaja Reka','Krasnolessje','Sinjaja Gora'],
+                tr: ['Denizova','Yeşilkaya','Aytepe','Kartalca','Günova','Tuzlukale'],
+                za: ['Duinekloof','Vaalberg','Silwerkruin','Elandsvlakte','Môreson','Karookrans'],
+                ar: ['Villa Esperanza','Monte Claro','San Edelmiro','El Mirasol','Estancia del Sur','Alto Pampero'],
+                mx: ['San Bernal','Valle Escondido','Piedras Altas','El Roble Viejo','Lomas del Águila','Cerro Dorado'],
+                ca: ['Maplebrook','Baie-Claire','Whitepine','Fort Alder','Lac Bernier','Granite Bay'],
+                au: ['Warrandale','Silvergum','Bindarra','Wattle Creek','Marralong','Currawong Downs'],
+                nz: ['Aldermere','Glenorrin','Fernbrook','Seacliff Downs','Broadmere','Harringvale'],
+                cn: ['Yunhu','Jinshawan','Baiyunling','Shitanhe','Luyuan','Tianmawan'],
+                kr: ['Hanuiri','Dallaegol','Sinpyeongho','Gureumsan','Songdam-ri','Baekhasan'],
+                in: ['Kesargarh','Suryavan','Chandravati','Veerapalli','Mohanpura','Tejgarh'],
+                my: ['Teluk Sena','Sungai Emas','Bukit Delima','Lembah Jati','Tanjung Mas','Padang Seri'],
+                ae: ['Wadi Sarab','Ras Al Noor','Al Nokhba','Jazirat Al Fajr','Bandar Al Shams','Madinat Al Sahwa']
+            },
+            circuitPattern: {
+                it: ['Autodromo di {loc}','Autodromo Nazionale {loc}','Circuito di {loc}','Autodromo Internazionale {loc}'],
+                gb: ['{loc} Circuit','{loc} Park Circuit','{loc} Aerodrome Circuit','{loc} International Circuit','{loc} Racing Circuit'],
+                fr: ['Circuit de {loc}','Autodrome de {loc}','Circuit International de {loc}','Circuit des Collines de {loc}'],
+                de: ['{loc}ring','Motodrom {loc}','Rennstrecke {loc}','{loc}-Schleife','Motorsport-Arena {loc}'],
+                us: ['{loc} Speedway','{loc} Raceway','{loc} Motor Speedway','{loc} International Raceway','{loc} Road Course'],
+                jp: ['{loc} Circuit','{loc} Speedway','{loc} International Circuit','{loc} Highland Circuit'],
+                br: ['Autódromo de {loc}','Circuito {loc}','Autódromo Internacional de {loc}'],
+                es: ['Circuito de {loc}','Autódromo {loc}','Circuito Permanente de {loc}'],
+                at: ['{loc}ring','Motorsportpark {loc}','Rennstrecke {loc}'],
+                ch: ['Rundstrecke {loc}','Circuit de {loc}','{loc}-Kurs'],
+                be: ['Circuit de {loc}','Circuit van {loc}','Omloop van {loc}'],
+                nl: ['Circuit {loc}','Circuit van {loc}','Racebaan {loc}'],
+                pt: ['Circuito de {loc}','Autódromo de {loc}','Circuito Internacional de {loc}'],
+                se: ['{loc}banan','{loc} Ring','Motorbana {loc}'],
+                fi: ['{loc} Ring','{loc} Circuit','Moottorirata {loc}'],
+                hu: ['{loc}ring','Versenypálya {loc}'],
+                cz: ['Okruh {loc}','Autodrom {loc}'],
+                ru: ['{loc} Ring','Autodrom {loc}'],
+                tr: ['{loc} Park','{loc} Circuit'],
+                za: ['{loc} Circuit','{loc} Raceway','{loc} Grand Prix Circuit'],
+                ar: ['Autódromo de {loc}','Autódromo Municipal de {loc}','Circuito {loc}'],
+                mx: ['Autódromo de {loc}','Autódromo Internacional de {loc}','Circuito {loc}'],
+                ca: ['{loc} Circuit','Circuit de {loc}','{loc} Motorsport Park'],
+                au: ['{loc} Raceway','{loc} International Raceway','{loc} Circuit'],
+                nz: ['{loc} Circuit','{loc} Raceway','{loc} Motor Racing Circuit'],
+                cn: ['{loc} International Circuit','{loc} Circuit'],
+                kr: ['{loc} International Circuit','{loc} Speedway'],
+                in: ['{loc} International Circuit','{loc} Racing Circuit'],
+                my: ['{loc} International Circuit','{loc} Circuit'],
+                ae: ['{loc} Autodrome','{loc} International Circuit','{loc} Circuit']
+            },
+            racePattern: {
+                it: ['Gran Premio di {loc}','Coppa {loc}','Trofeo {loc}'],
+                gb: ['{loc} Grand Prix','{loc} Trophy','{loc} Gold Cup','International {loc} Trophy'],
+                fr: ['Grand Prix de {loc}','Coupe de {loc}','Grand Prix Automobile de {loc}'],
+                de: ['Großer Preis von {loc}','Internationales {loc}-Rennen','{loc}-Pokal'],
+                us: ['{loc} Grand Prix','{loc} 200','{loc} Classic','{loc} Trophy Race'],
+                jp: ['{loc} Grand Prix','{loc} Trophy'],
+                br: ['Grande Prêmio de {loc}','Copa {loc}'],
+                es: ['Gran Premio de {loc}','Copa de {loc}'],
+                at: ['Großer Preis von {loc}','Flugplatzrennen {loc}','{loc}-Pokal'],
+                ch: ['Großer Preis von {loc}','Grand Prix de {loc}','Preis von {loc}'],
+                be: ['Grand Prix de {loc}','Grote Prijs van {loc}','Coupe de {loc}'],
+                nl: ['Grote Prijs van {loc}','{loc} Grand Prix'],
+                pt: ['Grande Prémio de {loc}','Taça de {loc}'],
+                se: ['{loc} Grand Prix','{loc}loppet'],
+                fi: ['{loc} Grand Prix','{loc}-ajot'],
+                hu: ['{loc} Nagydíj','{loc} Grand Prix'],
+                cz: ['Grand Prix {loc}','{loc} Grand Prix'],
+                ru: ['Grand Prix {loc}','{loc} Grand Prix'],
+                tr: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                za: ['{loc} Grand Prix','{loc} Trophy'],
+                ar: ['Gran Premio de {loc}','Copa {loc}','Premio {loc}'],
+                mx: ['Gran Premio de {loc}','Copa {loc}'],
+                ca: ['{loc} Grand Prix','Grand Prix de {loc}'],
+                au: ['{loc} Grand Prix','{loc} 100','{loc} Cup'],
+                nz: ['{loc} Grand Prix','{loc} Trophy'],
+                cn: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                kr: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                in: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                my: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                ae: ['{loc} Grand Prix','Grand Prix of {loc}']
+            }
+        };
+        // IOC-3 → Pool-Key. Nation ohne Eintrag → Re-Roll (kein generic, Nutzer-Vorgabe).
+        const CIRCUIT_NATION_KEY = { ITA:'it',GBR:'gb',FRA:'fr',GER:'de',USA:'us',JPN:'jp',BRA:'br',
+            ESP:'es',AUT:'at',SUI:'ch',BEL:'be',NED:'nl',POR:'pt',SWE:'se',FIN:'fi',HUN:'hu',CZE:'cz',
+            RUS:'ru',TUR:'tr',RSA:'za',ARG:'ar',MEX:'mx',CAN:'ca',AUS:'au',NZL:'nz',CHN:'cn',KOR:'kr',
+            IND:'in',MAS:'my',UAE:'ae' };
+        // Fiktive Sponsoren je Ära (Rennnamen-Präfix, nur e76+). Kollisionsfrei gehalten.
+        const CIRCUIT_SPONSOR_POOLS = {
+            e76: ['Vireon','Castellan','Aurex','Solvana','Meridia','Halcyon'],
+            e94: ['Valcorp','Orbica','Delacor','Pravix','Zentaro','Kestrix'],
+            e10: ['Quantix','Volteon','Skyre','Cortexa','Nexora','Axreon']
+        };
+        // Charakter-Presets → Speed-Faktor (innerhalb der realen Spanne 0.72–1.48 verankert,
+        // damit Fiktivstrecken nie schneller/langsamer wirken als reale Kurse).
+        const CIRCUIT_CHARACTER_PRESETS = [
+            ['street',   'Stadtkurs (langsam, eng)', 0.80],
+            ['slow',     'Klassisch langsam',        0.90],
+            ['balanced', 'Ausgewogen',               1.00],
+            ['fast',     'Schnell, flüssig',         1.12],
+            ['highspeed','Highspeed / Ovalartig',    1.30]
+        ];
+        const _MONTH_ABBR = ['','Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+        let _calendarEditMode = false, _showAddCircuitForm = false, _calDragIdx = null;
+
+        // Spiegelt GAME_STATE.customCircuits (oder eine übergebene Liste) ins Laufzeit-Registry.
+        function syncCustomCircuitDims(src) {
+            const list = src || (typeof GAME_STATE !== 'undefined' && GAME_STATE.customCircuits) || [];
+            Object.keys(CUSTOM_CIRCUIT_DIMS).forEach(k => delete CUSTOM_CIRCUIT_DIMS[k]);
+            list.forEach(c => { if (c && c.circuitId) CUSTOM_CIRCUIT_DIMS[c.circuitId] = { length: c.length, factor: c.factor }; });
+        }
+        function _slugifyCircuit(s) {
+            return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        }
+        function _expectedPoleSec(length, factor, year) {
+            const eraSpeed = getEraValue(ERA_AVG_SPEED_KMH, year);
+            return length / (eraSpeed * factor * 1.0) * 3600;   // quali-Session = 1.0
+        }
+        function _fmtLap(s) {
+            if (!isFinite(s) || s <= 0) return '—';
+            const m = Math.floor(s / 60), sec = s - m * 60;
+            return m + ':' + sec.toFixed(1).padStart(4, '0');
+        }
+        function _circuitSponsor(year) {
+            const pool = year < 1994 ? CIRCUIT_SPONSOR_POOLS.e76 : year < 2010 ? CIRCUIT_SPONSOR_POOLS.e94 : CIRCUIT_SPONSOR_POOLS.e10;
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        // Rennland ziehen (Motorsport-Frequenz), Mikrostaaten + poollose Nationen aus, optional
+        // schon im Kalender vergebene Länder meiden (SPEC §2b).
+        function _pickCircuitNation(year, usedIOC) {
+            const EXCL = new Set(['MON', 'SGP', 'SIN']);
+            for (let t = 0; t < 40; t++) {
+                const ioc = pickNationMotorsport(year, true);
+                if (EXCL.has(ioc) || !CIRCUIT_NATION_KEY[ioc]) continue;
+                if (usedIOC && usedIOC.has(ioc)) continue;
+                return ioc;
+            }
+            const free = Object.keys(CIRCUIT_NATION_KEY).filter(i => !usedIOC || !usedIOC.has(i));
+            const pool = free.length ? free : Object.keys(CIRCUIT_NATION_KEY);
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        const _gcv = id => { const e = document.getElementById(id); return e ? e.value : ''; };
+        const _scv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+
+        window.updateCircuitPreview = function() {
+            const len = parseFloat(_gcv('editor-circuit-length'));
+            const preset = CIRCUIT_CHARACTER_PRESETS.find(p => p[0] === _gcv('editor-circuit-char')) || CIRCUIT_CHARACTER_PRESETS[2];
+            const el = document.getElementById('editor-circuit-preview');
+            if (!el) return;
+            el.textContent = (len > 0) ? `≈ Pole ${_fmtLap(_expectedPoleSec(len, preset[2], GAME_STATE.currentYear || 1990))} (${GAME_STATE.currentYear || ''})` : '≈ Pole —';
+        };
+
+        // 🎲 Zufalls-Komponierer: Nation → {loc} → Strecke + Rennen (kohärent), Ära-Mix-Sponsor.
+        window.editorRandomizeCircuit = function() {
+            const yr = GAME_STATE.currentYear || 1990;
+            const usedIOC = new Set((GAME_STATE.races || []).map(r => r.country).filter(Boolean));
+            const usedNames = new Set((GAME_STATE.races || []).map(r => (r.name || '').toLowerCase()));
+            const ioc = _pickCircuitNation(yr, usedIOC);
+            const key = CIRCUIT_NATION_KEY[ioc];
+            const places = CIRCUIT_NAME_POOLS.place[key], cPat = CIRCUIT_NAME_POOLS.circuitPattern[key], rPat = CIRCUIT_NAME_POOLS.racePattern[key];
+            const sponsorProb = yr < 1972 ? 0 : yr < 1994 ? 0.30 : yr < 2010 ? 0.50 : 0.70;
+            let loc, trackName, raceName, tries = 0;
+            do {
+                loc = places[Math.floor(Math.random() * places.length)];
+                trackName = cPat[Math.floor(Math.random() * cPat.length)].replace('{loc}', loc);
+                raceName = rPat[Math.floor(Math.random() * rPat.length)].replace('{loc}', loc);
+                if (Math.random() < sponsorProb) raceName = _circuitSponsor(yr) + ' ' + raceName;
+                tries++;
+            } while (usedNames.has(raceName.toLowerCase()) && tries < 8);
+            const length = Math.round((3.6 + Math.random() * 3.4) * 10) / 10;   // 3.6–7.0 km
+            const preset = CIRCUIT_CHARACTER_PRESETS[Math.floor(Math.random() * CIRCUIT_CHARACTER_PRESETS.length)];
+            const month = 3 + Math.floor(Math.random() * 9);   // März–November
+            _scv('editor-circuit-track', trackName);
+            _scv('editor-circuit-race', raceName);
+            const natName = (NATION_OPTIONS.find(([c]) => c === ioc) || [])[1];
+            _scv('editor-circuit-nation', natName ? `${natName} (${ioc})` : ioc);
+            _scv('editor-circuit-length', length);
+            _scv('editor-circuit-char', preset[0]);
+            _scv('editor-circuit-month', month);
+            updateCircuitPreview();
+        };
+
+        // Live-Insert in den laufenden Kalender (Monat-sortiert, nie vor currentRace).
+        function editorAddCircuitToCalendar(c) {
+            const races = GAME_STATE.races, race = customCircuitToRace(c);
+            const minIdx = GAME_STATE.currentRace || 0, hasMonths = races.some(r => r.month);
+            let idx = races.length;
+            if (c.month && hasMonths) { idx = races.findIndex(r => (r.month || 13) > c.month); if (idx < 0) idx = races.length; }
+            if (idx < minIdx) idx = minIdx;
+            races.splice(idx, 0, race);
+            races.forEach((r, i) => { r.id = i + 1; });
+        }
+
+        window.toggleCalendarEditMode = function() { _calendarEditMode = !_calendarEditMode; _showAddCircuitForm = false; renderContent(); };
+        window.editorShowAddCircuit = function() { _showAddCircuitForm = true; renderContent(); };
+        window.editorHideAddCircuit = function() { _showAddCircuitForm = false; renderContent(); };
+
+        window.editorConfirmAddCircuit = function() {
+            const track = (_gcv('editor-circuit-track') || '').trim();
+            const raceName = (_gcv('editor-circuit-race') || '').trim() || track;
+            const length = parseFloat(_gcv('editor-circuit-length'));
+            const charKey = _gcv('editor-circuit-char') || 'balanced';
+            const month = parseInt(_gcv('editor-circuit-month')) || null;
+            const natRaw = (_gcv('editor-circuit-nation') || '').trim();
+            if (!track) { document.getElementById('editor-circuit-track')?.focus(); return; }
+            if (!(length > 0) || length > 30) { alert('Bitte eine gültige Länge in km angeben (0–30).'); return; }
+            let country = '';
+            const iocM = natRaw.match(/\(([A-Za-z]{3})\)\s*$/);
+            if (iocM) country = iocM[1].toUpperCase();
+            else { const hit = NATION_OPTIONS.find(([c, n]) => n.toLowerCase() === natRaw.toLowerCase()); if (hit) country = hit[0]; }
+            const preset = CIRCUIT_CHARACTER_PRESETS.find(p => p[0] === charKey) || CIRCUIT_CHARACTER_PRESETS[2];
+            let base = 'cst-' + (_slugifyCircuit(track) || 'strecke'), cid = base, n = 2;
+            const taken = id => GAME_STATE.customCircuits.some(c => c.circuitId === id) || (typeof CIRCUIT_LENGTHS !== 'undefined' && CIRCUIT_LENGTHS[id]);
+            while (taken(cid)) { cid = base + '-' + n; n++; }
+            const c = { circuitId: cid, trackName: track, raceName, country, length,
+                factor: preset[2], laps: Math.max(5, Math.round(305 / length)), month };
+            GAME_STATE.customCircuits.push(c);
+            syncCustomCircuitDims();
+            editorAddCircuitToCalendar(c);
+            _showAddCircuitForm = false;
+            if (typeof saveGame === 'function') saveGame();
+            renderContent();
+        };
+
+        window.editorDeleteCircuitRace = function(idx) {
+            const races = GAME_STATE.races;
+            if (idx < (GAME_STATE.currentRace || 0)) return;   // gelaufene/aktuelle gesperrt
+            const race = races[idx]; if (!race) return;
+            if (race.custom) {
+                GAME_STATE.customCircuits = GAME_STATE.customCircuits.filter(c => c.circuitId !== race.circuitId);
+                syncCustomCircuitDims();
+            }
+            races.splice(idx, 1);
+            races.forEach((r, i) => { r.id = i + 1; });
+            if (typeof saveGame === 'function') saveGame();
+            renderContent();
+        };
+
+        // Drag & Drop-Umsortierung (nur idx >= currentRace)
+        window.calEditDragStart = function(idx) { _calDragIdx = idx; };
+        window.calEditDrop = function(toIdx) {
+            const from = _calDragIdx; _calDragIdx = null;
+            if (from == null || from === toIdx) { renderContent(); return; }
+            const minIdx = GAME_STATE.currentRace || 0;
+            if (from < minIdx || toIdx < minIdx) { renderContent(); return; }
+            const races = GAME_STATE.races;
+            const [moved] = races.splice(from, 1);
+            races.splice(toIdx, 0, moved);
+            races.forEach((r, i) => { r.id = i + 1; });
+            if (typeof saveGame === 'function') saveGame();
+            renderContent();
+        };
+        let _calTouchGhost = null;
+        window.calEditTouchStart = function(e, idx) {
+            _calDragIdx = idx;
+            const t = e.touches[0], label = e.currentTarget.querySelector('.font-bold')?.textContent || '';
+            _calTouchGhost = document.createElement('div');
+            _calTouchGhost.textContent = label;
+            Object.assign(_calTouchGhost.style, { position: 'fixed', pointerEvents: 'none', zIndex: 9999,
+                background: 'rgba(20,20,30,0.95)', color: '#fff', fontSize: '13px', padding: '4px 10px',
+                borderRadius: '6px', border: '1px solid rgba(255,255,255,0.25)', left: (t.clientX - 20) + 'px',
+                top: (t.clientY - 36) + 'px', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden',
+                textOverflow: 'ellipsis', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' });
+            document.body.appendChild(_calTouchGhost);
+        };
+        window.calEditTouchMove = function(e) {
+            if (_calDragIdx == null) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            if (_calTouchGhost) { _calTouchGhost.style.left = (t.clientX - 20) + 'px'; _calTouchGhost.style.top = (t.clientY - 36) + 'px'; }
+        };
+        window.calEditTouchEnd = function(e) {
+            if (_calDragIdx == null) return;
+            if (_calTouchGhost) { _calTouchGhost.remove(); _calTouchGhost = null; }
+            const t = e.changedTouches[0], el = document.elementFromPoint(t.clientX, t.clientY);
+            const row = el?.closest('[data-cal-idx]');
+            if (row) calEditDrop(parseInt(row.dataset.calIdx));
+            else { _calDragIdx = null; }
+        };
+
+        function renderAddCircuitForm() {
+            const yr = GAME_STATE.currentYear || 1990;
+            const presetOpts = CIRCUIT_CHARACTER_PRESETS.map(p => `<option value="${p[0]}"${p[0] === 'balanced' ? ' selected' : ''}>${p[1]}</option>`).join('');
+            const monthOpts = '<option value="">— Monat —</option>' + _MONTH_ABBR.map((m, i) => i ? `<option value="${i}">${m}</option>` : '').join('');
+            const previewTxt = `≈ Pole ${_fmtLap(_expectedPoleSec(5.0, 1.0, yr))} (${yr})`;
+            return `
+                <div class="p-4 rounded-lg mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.10)">
+                    <div class="font-semibold text-sm mb-3">Neue Strecke</div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                        <div>
+                            <label class="text-xs block mb-1" style="color:var(--text-muted)">Streckenname</label>
+                            <input id="editor-circuit-track" type="text" placeholder="z.B. Falkenriedring"
+                                   class="w-full px-2 py-1.5 rounded text-sm" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)">
+                        </div>
+                        <div>
+                            <label class="text-xs block mb-1" style="color:var(--text-muted)">Rennname</label>
+                            <input id="editor-circuit-race" type="text" placeholder="z.B. Großer Preis von Falkenried"
+                                   class="w-full px-2 py-1.5 rounded text-sm" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)">
+                        </div>
+                        <div>
+                            <label class="text-xs block mb-1" style="color:var(--text-muted)">Nation</label>
+                            <input id="editor-circuit-nation" type="text" placeholder="z.B. Deutschland (GER)" list="circuit-nation-list" autocomplete="off"
+                                   class="w-full px-2 py-1.5 rounded text-sm" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)">
+                            <datalist id="circuit-nation-list">${NATION_OPTIONS.map(([ioc, name]) => `<option value="${name} (${ioc})">`).join('')}</datalist>
+                        </div>
+                        <div>
+                            <label class="text-xs block mb-1" style="color:var(--text-muted)">Länge (km)</label>
+                            <input id="editor-circuit-length" type="number" min="1" max="30" step="0.1" value="5.0" oninput="updateCircuitPreview()"
+                                   class="w-full px-2 py-1.5 rounded text-sm" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)">
+                        </div>
+                        <div>
+                            <label class="text-xs block mb-1" style="color:var(--text-muted)">Charakter</label>
+                            <select id="editor-circuit-char" onchange="updateCircuitPreview()"
+                                    class="w-full px-2 py-1.5 rounded text-sm" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)">${presetOpts}</select>
+                        </div>
+                        <div>
+                            <label class="text-xs block mb-1" style="color:var(--text-muted)">Monat (Kalender-Position)</label>
+                            <select id="editor-circuit-month"
+                                    class="w-full px-2 py-1.5 rounded text-sm" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)">${monthOpts}</select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="editor-circuit-preview" class="text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,0.05);color:var(--text-muted)">${previewTxt}</span>
+                        <button onclick="editorRandomizeCircuit()" class="px-3 py-1.5 rounded text-sm mr-auto" title="Zufällige Strecke generieren" style="background:#2D2D2D;color:#ddd">🎲 Zufall</button>
+                        <button onclick="editorHideAddCircuit()" class="px-3 py-1.5 rounded text-sm" style="background:#2D2D2D;color:#aaa">Abbrechen</button>
+                        <button onclick="editorConfirmAddCircuit()" class="px-3 py-1.5 rounded text-sm font-medium" style="background:#3B82F6;color:white">Hinzufügen</button>
+                    </div>
+                </div>`;
+        }
+
+        function renderCalendarEditorControls() {
+            if (!_calendarEditMode) {
+                return `<div class="flex justify-end mb-3">
+                    <button onclick="toggleCalendarEditMode()" class="px-3 py-1.5 rounded text-sm" style="background:#2D2D2D;color:#ddd">✎ Kalender bearbeiten</button>
+                </div>`;
+            }
+            return `<div class="flex gap-2 mb-3 items-center flex-wrap">
+                    <button onclick="editorShowAddCircuit()" class="px-3 py-1.5 rounded text-sm font-medium" style="background:#3B82F6;color:#fff">+ Strecke hinzufügen</button>
+                    <button onclick="editorShowAddCircuit(); editorRandomizeCircuit();" class="px-3 py-1.5 rounded text-sm" style="background:#2D2D2D;color:#ddd" title="Zufällige Strecke aus Namens-Pools">🎲 Zufallsstrecke</button>
+                    <span class="text-xs" style="color:var(--text-muted)">Ziehen zum Sortieren · ✕ löschen · gelaufene Rennen gesperrt</span>
+                    <button onclick="toggleCalendarEditMode()" class="px-3 py-1.5 rounded text-sm ml-auto font-medium" style="background:#22C55E;color:#111">✓ Fertig</button>
+                </div>
+                ${_showAddCircuitForm ? renderAddCircuitForm() : ''}`;
+        }
+
+        function renderCalendarEditorList() {
+            const races = GAME_STATE.races || [], cr = GAME_STATE.currentRace || 0;
+            const rows = races.map((race, idx) => {
+                const locked = idx < cr;
+                const flag = typeof getGPFlagHtml === 'function' ? getGPFlagHtml(race.name, race.country, null) : '';
+                const mon = race.month ? _MONTH_ABBR[race.month] : '';
+                const dnd = locked ? '' : `draggable="true" ondragstart="calEditDragStart(${idx})" ondragover="event.preventDefault()" ondrop="calEditDrop(${idx})" ontouchstart="calEditTouchStart(event,${idx})" ontouchmove="calEditTouchMove(event)" ontouchend="calEditTouchEnd(event)"`;
+                return `<tr class="border-t border-custom" data-cal-idx="${idx}" ${dnd} style="${locked ? 'opacity:0.45' : 'cursor:grab'}">
+                    <td class="p-2 text-center text-tertiary">${locked ? '✓' : '⠿'}</td>
+                    <td class="p-2 text-center font-bold text-tertiary">${idx + 1}</td>
+                    <td class="p-2"><div class="flex items-center gap-2"><span class="text-lg">${flag}</span>
+                        <div><div class="font-bold">${race.name}${race.custom ? ' <span class="text-xs px-1 rounded" style="background:rgba(59,130,246,0.2);color:#93C5FD">eigen</span>' : ''}</div>
+                        <div class="text-xs text-tertiary">${race.circuit || ''}</div></div></div></td>
+                    <td class="p-2 text-center text-xs text-tertiary">${mon}</td>
+                    <td class="p-2 text-center text-xs text-tertiary">${race.laps || ''}</td>
+                    <td class="p-2 text-center">${locked ? '' : `<button onclick="editorDeleteCircuitRace(${idx})" class="text-xs px-2 py-0.5 rounded" style="background:rgba(239,68,68,0.15);color:#EF4444" title="Rennen löschen">✕</button>`}</td>
+                </tr>`;
+            }).join('');
+            return `<div class="card rounded-xl overflow-hidden"><div class="table-responsive"><table class="w-full text-sm">
+                <thead class="bg-secondary"><tr><th class="p-2 w-8"></th><th class="p-2 text-center w-10">#</th>
+                <th class="p-2 text-left">Grand Prix / Strecke</th><th class="p-2 text-center w-14">Monat</th>
+                <th class="p-2 text-center w-16">Runden</th><th class="p-2 text-center w-10"></th></tr></thead>
+                <tbody>${rows}</tbody></table></div></div>
+                <p class="text-xs text-tertiary mt-2 text-center">Nutzer-Strecken (⟨eigen⟩) bleiben dauerhaft im Kalender, bis du sie löschst.</p>`;
+        }
 
         let liveRaceState = {
             active: false,
@@ -14662,7 +15066,7 @@
         function buildRacesForYear(year) {
             const f1db = getF1DBYear(year);
             if (f1db && f1db.length > 0) {
-                return f1db.map((r, i) => {
+                const _f1dbRaces = f1db.map((r, i) => {
                     // IOC-Code direkt speichern – getEmojiFlag gibt auf Windows ein <img>-Tag zurück,
                     // das renderFlag nicht mehr auflösen kann. renderFlag(ioc) funktioniert korrekt.
                     const ioc = CIRCUIT_COUNTRY[r.circuit] || '';
@@ -14681,8 +15085,39 @@
                         month: r.date ? parseInt(r.date.slice(5, 7)) : null
                     };
                 });
+                return injectCustomCircuitsIntoCalendar(_f1dbRaces, year);
             }
-            return generateRacesForYear(year);
+            return injectCustomCircuitsIntoCalendar(generateRacesForYear(year), year);
+        }
+
+        // v0.9.14.65: Nutzer-Strecken (GAME_STATE.customCircuits) in JEDEN neuen Saison-Kalender
+        // einsortieren – chronologisch nach Monat (Order-Modell: Monat, nicht feste Position).
+        // Nur für frische Saisons gedacht (currentRace=0); Mid-Season-Adds laufen über
+        // editorAddCircuitToCalendar mit currentRace-Schutz.
+        function customCircuitToRace(c) {
+            return {
+                id: 0, raceId: null,
+                name: c.raceName, circuit: c.trackName, circuitId: c.circuitId,
+                country: c.country || '', laps: c.laps || Math.max(5, Math.round(305 / (c.length || 4.5))),
+                isIndy: false, month: c.month || null, custom: true
+            };
+        }
+        function injectCustomCircuitsIntoCalendar(races, year) {
+            const cc = (typeof GAME_STATE !== 'undefined' && GAME_STATE.customCircuits) || [];
+            if (!cc.length) return races;
+            const merged = races.slice();
+            const hasMonths = merged.some(r => r.month);
+            cc.forEach(c => {
+                const race = customCircuitToRace(c);
+                let idx = merged.length;
+                if (c.month && hasMonths) {
+                    idx = merged.findIndex(r => (r.month || 13) > c.month);
+                    if (idx < 0) idx = merged.length;
+                }
+                merged.splice(idx, 0, race);
+            });
+            merged.forEach((r, i) => { r.id = i + 1; });
+            return merged;
         }
 
         function generateRacesForYear(year) {
@@ -17958,7 +18393,8 @@
                 ` : ''}
                 
                 <h2 class="text-3xl font-bold mb-4">🏁 Rennen ${year}</h2>
-                ${renderUnifiedRaceList(isHistorical, year)}
+                ${!isHistorical ? renderCalendarEditorControls() : ''}
+                ${(!isHistorical && _calendarEditMode) ? renderCalendarEditorList() : renderUnifiedRaceList(isHistorical, year)}
             `;
         }
         
