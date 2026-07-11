@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.62</title>
+    <title>F1 RPG v0.9.14.63</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.62 (aktuell) - 10.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.63 (aktuell) - 11.07.2026</div>
+                            <div>&#8226; FIX: Genus-Bruch in Nachrufen/Saison-Rueckblick (feminine Aera-Bezeichnung)</div>
+                            <div>&#8226; FIX: Live-Ticker P-Notation raus aus 1950-93-Kommentaren</div>
+                            <div class="font-bold text-slate-400">v0.9.14.62 - 10.07.2026</div>
                             <div>&#8226; NEU: Karriere-H2H paarweise – Teamkollegen-Duelle werden über Jahre gespeichert (Grundlage für Rivalitäts-Texte)</div>
                             <div>&#8226; NEU: Zufalls-Button im Team-Editor generiert fiktiven Rennstall (Name/Nation/Tier)</div>
                             <div class="font-bold text-slate-400">v0.9.14.61 - 09.07.2026</div>
@@ -2925,7 +2928,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.62';
+        const VERSION = '0.9.14.63';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -10708,7 +10711,7 @@
             // Satz 5 (optional) — Todesfälle (nur State-Fakten, keine Ursachen erfinden)
             tragik: {
                 one: [
-                    'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der beim {deadRace} ums Leben kam – {klasseNom} verneigte sich vor einem der Ihren.',
+                    'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der beim {deadRace} ums Leben kam – das Fahrerlager verneigte sich vor einem der Seinen.',
                     'Doch die Saison hatte auch ihre dunkle Seite: Beim {deadRace} verlor {deadName} sein Leben – eine Lücke, die kein Ergebnis schließt.',
                     'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der beim {deadRace} tödlich verunglückte.',
                     'Und doch fällt ein Schatten über alle Zahlen dieses Jahres: {deadName} ({deadTeam}) verlor beim {deadRace} sein Leben.',
@@ -11216,7 +11219,7 @@
             nachruf: {
                 open: {
                     champion: [
-                        '{nameE} ist tot. {klasseNom} verliert einen seiner ganz Großen.',
+                        '{nameE} ist tot. {klasseNom} verliert einen der ganz Großen.',
                         'Mit {name} verliert der Rennsport einen Champion, der seiner Zeit den Stempel aufdrückte.',
                         '{nameE} wird nie wieder ein Lenkrad in die Hand nehmen – ein Verlust, der weit über den Sport hinausreicht.',
                         'Der Tod von {name} reißt eine Lücke, die keine Wertung der Welt schließen kann.',
@@ -11226,7 +11229,7 @@
                     ],
                     talent: [
                         '{nameE} starb, bevor seine Geschichte richtig beginnen konnte.',
-                        'Mit {name} verliert {klasseNom} eines seiner größten Versprechen – niemand wird je erfahren, wie weit ihn sein Talent getragen hätte.',
+                        'Mit {name} verliert {klasseNom} eines der größten Versprechen seiner Generation – niemand wird je erfahren, wie weit ihn sein Talent getragen hätte.',
                         'So jung, so schnell, so früh gegangen: {nameE} hinterlässt die bitterste aller Fragen – was wäre gewesen?',
                         'Das Schicksal gab {name} nicht die Zeit, die sein Können verdient hätte.',
                         'Er kam, um Geschichte zu schreiben – die Zeit dafür wurde {name} nicht gegeben.',
