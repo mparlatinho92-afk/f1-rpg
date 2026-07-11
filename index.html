@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.66</title>
+    <title>F1 RPG v0.9.14.67</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.66 (aktuell) - 12.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.67 (aktuell) - 12.07.2026</div>
+                            <div>&#8226; FIX: Zukunfts-Saisons starten chronologisch (Frühjahr zuerst) statt in 1950er-Reihenfolge</div>
+                            <div>&#8226;  kein doppelter US-GP mehr</div>
+                            <div>&#8226; FIX: generierter Kalender nutzt moderne Strecken – French GP → Paul Ricard, Austrian GP → Spielberg, German GP 60 statt 15 Runden</div>
+                            <div>&#8226; FIX: Streckenlängen korrigiert – Las Vegas 6.20km (war 3.65), Silverstone & Nürburgring jahresabhängig – korrekte Rundenzeiten auch in realen Rennen</div>
+                            <div class="font-bold text-slate-400">v0.9.14.66 - 12.07.2026</div>
                             <div>&#8226; BALANCE: 35 zuvor neutrale Strecken mit realistischem Speed-Faktor – empirisch aus realer Ø-Renngeschwindigkeit abgeleitet (Hungaroring 0.90, Melbourne 0.95, Brands Hatch 1.08, Mugello 1.12 …)</div>
                             <div>&#8226; INFO: 12 Strecken bleiben bewusst neutral (Daten = Ära-Schnitt: Suzuka, Zandvoort, Imola …)</div>
                             <div>&#8226; INFO: Methode gegen 31 Bestandsfaktoren geeicht (reproduziert Monaco/Monza)</div>
@@ -2941,7 +2946,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.66';
+        const VERSION = '0.9.14.67';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -15267,17 +15272,17 @@
             // Basis-Rennen (immer dabei) – month = typischer Rennmonat
             races.push({ name: 'Monaco GP',   country: '🇲🇨', circuit: 'Monaco',      laps: 78, month: 5  });
             races.push({ name: 'Belgian GP',  country: '🇧🇪', circuit: 'Spa',          laps: 44, month: 6  });
-            races.push({ name: 'French GP',   country: '🇫🇷', circuit: 'Reims',        laps: 50, month: 7  });
+            races.push({ name: 'French GP',   country: '🇫🇷', circuit: 'Paul Ricard',  laps: 53, month: 7  });  // v0.9.14.67: war Reims (weg seit 1966, 391km); moderner FR-GP = Paul Ricard
             races.push({ name: 'British GP',  country: '🇬🇧', circuit: 'Silverstone',  laps: 52, month: 7  });
-            races.push({ name: 'German GP',   country: '🇩🇪', circuit: 'Nürburgring',  laps: 15, month: 8  });
+            races.push({ name: 'German GP',   country: '🇩🇪', circuit: 'Nürburgring',  laps: 60, month: 8  });  // v0.9.14.67: war 15 Rd (Nordschleife-Annahme → 68km auf 4.56km-GP-Kurs); 60 Rd = reale GP-Distanz
             races.push({ name: 'Italian GP',  country: '🇮🇹', circuit: 'Monza',        laps: 53, month: 9  });
 
             // Zusätzliche Rennen je nach Ära
             if (year >= 1961) races.push({ name: 'Dutch GP',         country: '🇳🇱', circuit: 'Zandvoort',    laps: 75,  month: 8  });
             if (year >= 1961 && year <= 1969) races.push({ name: 'United States GP', country: '🇺🇸', circuit: 'Watkins Glen', laps: 108, month: 10 });
             if (year >= 1950 && year <= 1960) races.push({ name: 'Argentine GP',     country: '🇦🇷', circuit: 'Buenos Aires', laps: 80,  month: 1  });
-            if (year >= 1970) races.push({ name: 'United States GP', country: '🇺🇸', circuit: 'Watkins Glen',  laps: 59,  month: 10 });
-            if (year >= 1970) races.push({ name: 'Austrian GP',      country: '🇦🇹', circuit: 'Österreichring',laps: 54,  month: 8  });
+            if (year >= 1970 && year <= 2011) races.push({ name: 'United States GP', country: '🇺🇸', circuit: 'Watkins Glen',  laps: 59,  month: 10 });  // ab 2012 → Austin (unten), sonst doppelter „United States GP"
+            if (year >= 1970) races.push({ name: 'Austrian GP',      country: '🇦🇹', circuit: 'Spielberg',    laps: 71,  month: 8  });  // v0.9.14.67: war „Österreichring" (mappt nicht → 4.5km-Fallback); moderner AT-GP = Spielberg
             if (year >= 1973) races.push({ name: 'Brazilian GP',     country: '🇧🇷', circuit: 'Interlagos',   laps: 71,  month: 2  });
             if (year >= 1976) races.push({ name: 'Japanese GP',      country: '🇯🇵', circuit: 'Suzuka',       laps: 53,  month: 10 });
             if (year >= 1981) races.push({ name: 'San Marino GP',    country: '🇮🇹', circuit: 'Imola',        laps: 60,  month: 5  });
@@ -15295,7 +15300,13 @@
             if (year >= 2022) races.push({ name: 'Miami GP',         country: '🇺🇸', circuit: 'Miami',        laps: 57,  month: 5  });
             if (year >= 2023) races.push({ name: 'Las Vegas GP',     country: '🇺🇸', circuit: 'Las Vegas',    laps: 50,  month: 11 });
             if (year >= 2023) races.push({ name: 'Qatar GP',         country: '🇶🇦', circuit: 'Lusail',       laps: 57,  month: 11 });
-            
+
+            // v0.9.14.67: chronologisch nach Monat sortieren. Ohne dies stand der generierte
+            // Kalender (Zukunfts-Saisons ohne F1DB) in thematischer Push-Reihenfolge (Monaco,
+            // Belgien, Frankreich, ... = „1950er-Gefühl") statt Saisonauftakt im Frühjahr.
+            // Stabile Sortierung → Monatsgleiche behalten Push-Reihenfolge. Historische Kalender
+            // (oben, echte Reihenfolge) bleiben unberührt.
+            races.sort((a, b) => (a.month || 13) - (b.month || 13));
             return races.map((r, i) => ({ ...r, id: i + 1 }));
         }
         
