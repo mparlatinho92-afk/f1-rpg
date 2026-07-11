@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.63</title>
+    <title>F1 RPG v0.9.14.64</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.63 (aktuell) - 11.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.64 (aktuell) - 11.07.2026</div>
+                            <div>&#8226; FIX: Nachruf-Lore - Fakten-/Karriere-Lecks (Hailwood/Badoer/Sanesi) entfernt</div>
+                            <div>&#8226; FIX: Lore-Adjektiv-Monotonie geglaettet (still 14->6)</div>
+                            <div>&#8226; FIX: Saison-Rueckblick Register-/Hyperbel-Politur (Rookie/Samstag/Wimpernschlag)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.63 - 11.07.2026</div>
                             <div>&#8226; FIX: Genus-Bruch in Nachrufen/Saison-Rueckblick (feminine Aera-Bezeichnung)</div>
                             <div>&#8226; FIX: Live-Ticker P-Notation raus aus 1950-93-Kommentaren</div>
                             <div class="font-bold text-slate-400">v0.9.14.62 - 10.07.2026</div>
@@ -2928,7 +2932,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.63';
+        const VERSION = '0.9.14.64';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -10614,7 +10618,7 @@
                     'Bis zuletzt blieb der Titelkampf {year} offen, dann hatte {champion} das bessere Ende für sich: {gapNom} Vorsprung auf {vize} – mehr nicht.',
                     '{year} lieferten sich {champion} und {vize} ein Duell auf Augenhöhe, das {champion} um {gapAkk} für sich entschied.',
                     'Am Ende entschieden Nuancen: {champion} rettete {year} einen Vorsprung von {gapDat} auf {vize} ins Ziel und ist Weltmeister.',
-                    'Wimpernschlag-Finale {year}: {champion} schlug {vize} um {gapAkk} – knapper geht es kaum.',
+                    'Enger Titelkampf bis zur letzten Wertung: {champion} schlug {vize} {year} um {gapAkk}.',
                     'Die Saison {year} hielt die Spannung bis zur allerletzten Wertung: {champion} setzte sich mit {gapDat} Vorsprung gegen {vize} durch.',
                     'Wer {year} wegsah, hat Geschichte verpasst: {champion} entschied eines der engsten Titelrennen {klasseGen} um {gapAkk} gegen {vize} für sich.'
                 ],
@@ -10622,7 +10626,7 @@
                     '{champion} sicherte sich {year} mit {points} Punkten und {siegeDat} den Fahrertitel.',
                     'Die Weltmeisterschaft des Jahres {year} ging an {champion}, der sich mit {siegeDat} und konstanten Resultaten durchsetzte.',
                     'Am Ende einer intensiven Saison {year} stand {champion} als verdienter Champion fest – {points} Punkte, {siegeNom}.',
-                    '{champion} hieß der Mann, an dem {year} kein Weg vorbeiführte: Der Titel ging mit {siegeDat} an ihn.',
+                    '{champion} hieß der Mann, der {year} am Ende die Nase vorn hatte: Der Titel ging mit {siegeDat} an ihn.',
                     'Mit {siegeDat} und {points} Punkten kürte sich {champion} {year} zum Weltmeister {klasseGen}.',
                     'Die Saison {year} fand in {champion} ihren verdienten Weltmeister – {points} Punkte, {siegeNom}.',
                     'Am Ende des Jahres {year} stand {champion} dort, wo alle hinwollten: ganz oben, mit {points} Punkten und {siegeDat}.',
@@ -10642,7 +10646,7 @@
                 ],
                 knapp: [
                     'Für {vize} bleibt die bittere Rolle des geschlagenen Helden – kaum je war ein Vize-Weltmeister so nah dran.',
-                    '{vize} verlor den Titel nicht durch Schwäche, sondern um Haaresbreite – ein Jahrgang, der beiden zur Ehre gereicht.',
+                    '{vize} verlor den Titel nicht durch Schwäche, sondern in einem Duell, das kaum enger hätte geführt werden können – ein Jahrgang, der beiden zur Ehre gereicht.',
                     'So kurz vor dem Ziel gescheitert: {vize} wird den Winter mit der Frage verbringen, wo die entscheidenden Punkte liegen blieben.',
                     'Auf der anderen Seite stand {vize}, der mit {vizePoints} Punkten alles gegeben hatte – und dem am Ende fast nichts fehlte.',
                     'Und {vize}? Er geht als tragischer Zweiter in die Bücher ein – näher dran war selten jemand.',
@@ -10653,7 +10657,7 @@
                     'Als Vize-Weltmeister behauptete sich {vize}, ohne den Champion je ernsthaft in Bedrängnis zu bringen.',
                     '{vize} komplettierte als Zweiter das Spitzenduo, {gapAkk} hinter dem Champion.',
                     'Dahinter reihte sich {vize} als Vize-Weltmeister ein – respektabel, aber ohne echten Zugriff auf die Krone.',
-                    'Dahinter sicherte sich {vize} mit {vizePoints} Punkten den zweiten Platz.',
+                    'Platz zwei der Wertung ging mit {vizePoints} Punkten an {vize}.',
                     'Die Rolle des ersten Verfolgers übernahm {vize} – beständig genug für Rang zwei, zu wenig für mehr.'
                 ]
             },
@@ -10663,7 +10667,7 @@
                 rookie: [
                     'Dass ausgerechnet ein Mann in seinem ersten Jahr die etablierte Garde düpierte, machte den Titel umso bemerkenswerter – ein Durchbruch, wie ihn {klasseNom} nur selten erlebt.',
                     'Es war der Durchbruch eines Neulings: In seiner ersten Saison ließ {champion} sämtlichen Routiniers das Nachsehen.',
-                    'Ein Rookie als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.',
+                    'Ein Neuling als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.',
                     'Und das im ersten Anlauf: {champion} brauchte keine Lehrjahre, er machte sein Debütjahr gleich zum Meisterjahr.',
                     'Die etablierten {fahrerPl} mussten sich von einem Neuling zeigen lassen, wo es langgeht – ein Debüt für die Geschichtsbücher.'
                 ],
@@ -10682,11 +10686,11 @@
                     'Dass {maxWinner} häufiger gewann und der Titel trotzdem an {champion} ging, wird {klasseIn} noch lange Gesprächsstoff liefern.'
                 ],
                 poleKing: [
-                    'Auch samstags war {champion} das Maß aller Dinge: {poles} Pole-Positions unterstreichen die Vormachtstellung.',
+                    'Auch über eine Runde war {champion} das Maß aller Dinge: {poles} Pole-Positions unterstreichen die Vormachtstellung.',
                     'Dazu kam rohe Geschwindigkeit: {poles} Pole-Positions machten {champion} auch zum König des Qualifyings.',
                     'Im Qualifying regierte {champion} mit {poles} Pole-Positions fast nach Belieben.',
                     'Eine Randnotiz mit Gewicht: {poles} Pole-Positions gingen an {champion} – schneller war samstags keiner.',
-                    'Der Samstag gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.'
+                    'Die erste Startposition gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.'
                 ]
             },
 
@@ -11006,7 +11010,7 @@
             'raymond-sommer':        'der unermüdliche "Cœur de Lion"',
             'hans-stuck':            'der alte "Bergkönig"',
             'tony-rolt':             'der erfinderische Kriegsheld',
-            'consalvo-sanesi':       'der treue Alfa-Testfahrer',
+            'consalvo-sanesi':       'der pflichtbewusste Toskaner',
             // ── Indianapolis (1950–60) ──────────────────────────────────────────
             'bill-vukovich':         'der eisenharte Mann aus Fresno',
             'tony-bettenhausen':     'der unermüdliche Farmer aus Illinois',
@@ -11045,7 +11049,7 @@
             'chris-amon':            'der feinfühlige Neuseeländer',
             'jackie-stewart':        'der akribische Schotte und Vorkämpfer der Sicherheit',
             'innes-ireland':         'der schillernde Haudegen aus Schottland',
-            'mike-hailwood':         'der Motorrad-Champion auf vier Rädern',
+            'mike-hailwood':         'der Zweirad-Virtuose auf vier Rädern',
             'mike-spence':           'der bescheidene Perfektionist aus Croydon',
             'ludovico-scarfiotti':   'der Spross der Fiat-Dynastie',
             'willy-mairesse':        'der wilde Wallone',
@@ -11083,14 +11087,14 @@
             'john-watson':           'der besonnene Belfaster',
             'jochen-mass':           'der frühere Seemann aus Dorfen',
             'hans-joachim-stuck':    'der lange, lebensfrohe Bayer',
-            'rolf-stommelen':        'der stille Kölner',
+            'rolf-stommelen':        'der sachliche Kölner',
             'harald-ertl':           'der bärtige Journalist aus Zell am See',
             'gunnar-nilsson':        'der tapfere Schwede aus Helsingborg',
             'tony-brise':            'das strahlende Talent aus Kent',
             'arturo-merzario':       'der kleine Mann mit dem Cowboyhut',
             'jean-pierre-jarier':    'der ungestüme Pariser',
             'jean-pierre-jabouille': 'der Ingenieur-Pilot aus Paris',
-            'helmuth-koinigg':       'der stille Wiener',
+            'helmuth-koinigg':       'der zurückhaltende Wiener',
             'david-purley':          'der furchtlose Ex-Fallschirmjäger aus Bognor Regis',
             'wilson-fittipaldi':     'der ältere der Fittipaldi-Brüder',
             'bruno-giacomelli':      'der joviale Mann aus Brescia',
@@ -11102,7 +11106,7 @@
             'nigel-mansell':         'der Kämpfer mit dem berühmten Schnauzbart',
             'keke-rosberg':          'der unerschrockene Finne',
             'elio-de-angelis':       'der Pianist unter den Rennfahrern',
-            'riccardo-paletti':      'der stille Mailänder',
+            'riccardo-paletti':      'der schüchterne Mailänder',
             'stefan-bellof':         'das ungestüme Jahrhunderttalent aus Gießen',
             'manfred-winkelhock':    'der bodenständige Schwabe',
             'michele-alboreto':      'der feinsinnige Mailänder',
@@ -11137,7 +11141,7 @@
             'eddie-irvine':          'der schlagfertige Nordire',
             'david-coulthard':       'der grundsolide Schotte',
             'johnny-herbert':        'der unverwüstliche Optimist aus Essex',
-            'olivier-panis':         'der stille Südfranzose',
+            'olivier-panis':         'der unaufgeregte Südfranzose',
             'giancarlo-fisichella':  'der sanfte Römer',
             'ralf-schumacher':       'der jüngere der Schumacher-Brüder',
             'alex-zanardi':          'der unverwüstliche Lebenskünstler aus Bologna',
@@ -11147,15 +11151,15 @@
             'jos-verstappen':        'der ungestüme Mann aus Montfort',
             'nick-heidfeld':         'der stille "Quick Nick"',
             'jj-lehto':              'der schnelle Finne aus Espoo',
-            'karl-wendlinger':       'der stille Tiroler',
-            'luca-badoer':           'der ewige Testfahrer aus Montebelluna',
+            'karl-wendlinger':       'der gelassene Tiroler',
+            'luca-badoer':           'der loyale Mann aus Montebelluna',
             'jan-magnussen':         'das Naturtalent aus Roskilde',
             'mark-blundell':         'der kernige Mann aus Barnet',
             'taki-inoue':            'der Kultfahrer aus Kobe',
             // ── 2000er ──────────────────────────────────────────────────────────
             'fernando-alonso':       'der unbeugsame Asturier',
             'kimi-raikkonen':        'der wortkarge "Iceman"',
-            'juan-pablo-montoya':    'der ungestüme Kolumbianer',
+            'juan-pablo-montoya':    'der angriffslustige Kolumbianer',
             'felipe-massa':          'der herzliche Paulista',
             'jenson-button':         'der Gentleman aus Somerset',
             'mark-webber':           'der geradlinige Australier',
@@ -11177,7 +11181,7 @@
             'max-verstappen':        'der kompromisslose Limburger',
             'valtteri-bottas':       'der stoische Finne',
             'sergio-perez':          'der geduldige Mann aus Guadalajara',
-            'jules-bianchi':         'das große Versprechen aus Nizza',
+            'jules-bianchi':         'die stille Hoffnung aus Nizza',
             'charles-leclerc':       'der Junge aus Monte Carlo',
             'lando-norris':          'der aufgeweckte Bristoler',
             'george-russell':        'der akribische Mann aus King’s Lynn',
@@ -11188,12 +11192,12 @@
             'nico-hulkenberg':       'der schlagfertige Emsländer',
             'kevin-magnussen':       'der kantige Däne',
             'romain-grosjean':       'der wandlungsfähige Genfer',
-            'lance-stroll':          'der stille Kanadier',
+            'lance-stroll':          'der verschlossene Kanadier',
             'alexander-albon':       'der freundliche Londoner Thailänder',
             'yuki-tsunoda':          'der Feuerkopf aus Sagamihara',
             'daniil-kvyat':          'der "Torpedo" aus Ufa',
-            'stoffel-vandoorne':     'der stille Flame aus Kortrijk',
-            'antonio-giovinazzi':    'der freundliche Apulier',
+            'stoffel-vandoorne':     'der bedachte Flame aus Kortrijk',
+            'antonio-giovinazzi':    'der sonnige Apulier',
             'marcus-ericsson':       'der beharrliche Schwede aus Kumla',
             'mick-schumacher':       'der höfliche junge Mann aus dem Hause Schumacher',
             'guanyu-zhou':           'der Pionier aus Shanghai',
@@ -11205,7 +11209,7 @@
             'isack-hadjar':          'der quirlige Pariser',
             'oliver-bearman':        'der unerschrockene Junge aus Essex',
             'brendon-hartley':       'der ausdauernde Neuseeländer',
-            'pascal-wehrlein':       'der stille Schwabe aus Sigmaringen',
+            'pascal-wehrlein':       'der ernste Schwabe aus Sigmaringen',
             'paul-di-resta':         'der nüchterne Schotte aus West Lothian',
             'jean-eric-vergne':      'der nachdenkliche Pariser'
         };
