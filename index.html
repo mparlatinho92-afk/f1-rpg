@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.69</title>
+    <title>F1 RPG v0.9.14.70</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.69 (aktuell) - 12.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.70 (aktuell) - 12.07.2026</div>
+                            <div>&#8226; FIX: Live-Ticker-Kommentar per Shuffle-Bag - jede Zeile kommt pro Durchlauf genau einmal, dann neu gemischt (kaum noch Wiederholungen bei Ereignissen kurz hintereinander)</div>
+                            <div>&#8226; NEU: Kommentar-Beutel ist pro Ticker-Session isoliert und wird beim Schliessen freigegeben</div>
+                            <div class="font-bold text-slate-400">v0.9.14.69 - 12.07.2026</div>
                             <div>&#8226; NEU: Live-Ticker mit hunderten aera-gerechten Kommentar-Varianten (Paket 1)</div>
                             <div>&#8226; NEU: Kurzportraet generierter Fahrer im Profil, Archetyp aus Skill-Profil (Paket 2)</div>
                             <div>&#8226; NEU: Karriere-Bogen im Ruecktritts-Nachruf (Paket 3)</div>
@@ -2956,7 +2959,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.69';
+        const VERSION = '0.9.14.70';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -10589,7 +10592,45 @@
         };
         const _LIVE_ERA_KEY = (year) =>
             year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
-        const _liveLastPick = {};
+        // Shuffle-Bag pro Event×Ära (v0.9.14.70): jede Zeile kommt EXAKT EINMAL pro
+        // Durchlauf, erst danach neu gemischt → maximale Streuung bei Ereignissen in
+        // zeitlicher Nähe (statt nur „nicht zweimal hintereinander"). Naht-Schutz beim
+        // Neumischen (erste ≠ letzte). Kein Seeding (Ticker ephemer).
+        const _liveBags = {};
+        // Bags sind session-lokal: bei Ticker-Start frisch, beim Schließen gelöscht.
+        function _liveResetBags() { for (const k in _liveBags) delete _liveBags[k]; }
+        function _liveShuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        function _liveDraw(event, pool, usable) {
+            let bag = _liveBags[event];
+            if (!bag || bag.pool !== pool) {
+                bag = _liveBags[event] = { pool, order: _liveShuffle(pool.map((_, i) => i)), pos: 0, last: null };
+            }
+            const usableSet = new Set(usable);
+            for (let guard = 0; guard < pool.length * 2 + 2; guard++) {
+                if (bag.pos >= bag.order.length) {          // Durchlauf zu Ende → neu mischen
+                    _liveShuffle(bag.order);
+                    bag.pos = 0;
+                    // Naht-Schutz: neue erste Zeile darf nicht die zuletzt gezeigte sein
+                    if (bag.last !== null && bag.order.length > 1 && pool[bag.order[0]] === bag.last) {
+                        [bag.order[0], bag.order[1]] = [bag.order[1], bag.order[0]];
+                    }
+                }
+                const tpl = pool[bag.order[bag.pos++]];
+                if (usableSet.has(tpl) && (tpl !== bag.last || usable.length === 1)) {
+                    bag.last = tpl;
+                    return tpl;
+                }
+            }
+            const t = usable[Math.floor(Math.random() * usable.length)];   // Not-Fallback
+            bag.last = t;
+            return t;
+        }
         function liveLine(event, ctx) {
             ctx = ctx || {};
             const pools = LIVE_COMMENTARY[event];
@@ -10601,11 +10642,7 @@
                 return ctx[k] === undefined || ctx[k] === null || ctx[k] === '';
             }));
             if (!usable.length) usable = pool;
-            if (usable.length > 1 && _liveLastPick[event] !== undefined) {
-                usable = usable.filter(t => t !== _liveLastPick[event]);
-            }
-            const tpl = usable[Math.floor(Math.random() * usable.length)];
-            _liveLastPick[event] = tpl;
+            const tpl = _liveDraw(event, pool, usable);
             return tpl.replace(/\{(\w+)\}/g, (_, k) => (ctx[k] ?? ''));
         }
 
@@ -10908,6 +10945,7 @@
         }
         
         window.closeLiveRace = function() {
+            _liveResetBags();   // Session vorbei → Kommentar-Beutel freigeben
             if (!liveRaceState || !liveRaceState.finished) {
                 // Nur wenn Rennen beendet ist
                 document.getElementById('liveTickerModal').style.display = 'none';
@@ -11169,6 +11207,7 @@
             
             // Live-Zustand initialisieren
             _liveRaceDeathFired = false;
+            _liveResetBags();   // frischer Kommentar-Beutel pro Ticker-Session
             liveRaceState = {
                 active: false, // NICHT aktiv beim Start!
                 paused: false,
