@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.70</title>
+    <title>F1 RPG v0.9.14.71</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.70 (aktuell) - 12.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.71 (aktuell) - 12.07.2026</div>
+                            <div>&#8226; NEU: Namens-Pools massiv vertieft - Nachnamen bis 1500/Nation (~4-5x), mehr Vielfalt fuer Langzeit- und Nachwuchs-Szenarien</div>
+                            <div>&#8226; NEU: Junk-Filter entfernt vokallose Daten-Artefakte</div>
+                            <div>&#8226; FIX: Aera-korrekte Vornamen-Koepfe (1950er etc.) bleiben erhalten</div>
+                            <div class="font-bold text-slate-400">v0.9.14.70 - 12.07.2026</div>
                             <div>&#8226; FIX: Live-Ticker-Kommentar per Shuffle-Bag - jede Zeile kommt pro Durchlauf genau einmal, dann neu gemischt (kaum noch Wiederholungen bei Ereignissen kurz hintereinander)</div>
                             <div>&#8226; NEU: Kommentar-Beutel ist pro Ticker-Session isoliert und wird beim Schliessen freigegeben</div>
                             <div class="font-bold text-slate-400">v0.9.14.69 - 12.07.2026</div>
@@ -2959,7 +2963,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.70';
+        const VERSION = '0.9.14.71';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -10934,6 +10938,12 @@
         
         function finishLiveRace() {
             const winner = liveRaceState.positions[0];
+            // [ABSICHT / KEEP – nicht "korrigieren"] Diese portugiesische Sieger-Zeile
+            // ("BANDEIRADA!") ist ein bewusstes Easter-Egg (Nutzer-Entscheidung 2026-07-12).
+            // Sie wird NICHT durch den deutschen LIVE_COMMENTARY.finish-Pool (Fable-Paket 1)
+            // ersetzt – das ist KEIN übersehener Bug und KEIN Sprach-/Konsistenzfehler.
+            // Der finish-Pool existiert bereit, bleibt hier aber absichtlich ungenutzt.
+            // Nur auf ausdrückliche Nutzer-Anweisung ändern.
             addLiveEvent(`🏁 BANDEIRADA! Vitória de ${winner.name}, da equipe ${winner.teamName}!`, 'positive');
             
             // Buttons: Control-Buttons verstecken, Close-Button zeigen
