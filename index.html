@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.68</title>
+    <title>F1 RPG v0.9.14.69</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.68 (aktuell) - 12.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.69 (aktuell) - 12.07.2026</div>
+                            <div>&#8226; NEU: Live-Ticker mit hunderten aera-gerechten Kommentar-Varianten (Paket 1)</div>
+                            <div>&#8226; NEU: Kurzportraet generierter Fahrer im Profil, Archetyp aus Skill-Profil (Paket 2)</div>
+                            <div>&#8226; NEU: Karriere-Bogen im Ruecktritts-Nachruf (Paket 3)</div>
+                            <div>&#8226; NEU: Erzaehlte Saison-Vorschau im Off-Season-Popup (Paket 4)</div>
+                            <div>&#8226; NEU: Duell-/Rivalitaets-Text im Fahrerprofil (Paket 5)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.68 - 12.07.2026</div>
                             <div>&#8226; NEU: Team-Generator mit nationskohaerenten Fiktiv-Namen (Gruender + Aera-Sponsor ab e76)</div>
                             <div>&#8226; NEU: Grid-Editor-Button 'Feld auffuellen' - ergaenzt Privatier-Rennstaelle bis 10 Teams</div>
                             <div>&#8226; FIX: Zufallsteam-Wuerfel nutzt jetzt kohaerente Paket-6-Pools statt Platzhalter</div>
@@ -2950,7 +2956,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.68';
+        const VERSION = '0.9.14.69';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -7072,7 +7078,15 @@
                 if (recap) recapHtml = `<p class="text-sm leading-relaxed">${recap}</p>`;
             }
 
-            const noData = !movHtml && !renewHtml && !deathHtml && !retHtml && !teamHtml && !recapHtml;
+            // 🔮 Paket 4: Saison-Vorschau (Prognose) – nur für die tatsächlich anstehende Saison,
+            // deterministisch aus Live-State (Titelverteidiger, reputation×speed, Rookies, Wechsel).
+            let previewHtml = '';
+            if (year === GAME_STATE.currentYear) {
+                const _pv = buildSeasonPreview(year);
+                if (_pv) previewHtml = `<p class="text-sm leading-relaxed">${_pv}</p>`;
+            }
+
+            const noData = !movHtml && !renewHtml && !deathHtml && !retHtml && !teamHtml && !recapHtml && !previewHtml;
 
             const modal = document.createElement('div');
             modal.id = 'offSeasonModal';
@@ -7087,6 +7101,7 @@
                         ${noData
                             ? `<p class="text-tertiary text-sm">Keine Off-Season-Daten gespeichert (vor v0.9.10.33).</p>`
                             : [
+                                section('🔮 Saison-Vorschau', previewHtml),
                                 section('📰 Saison-Rückblick', recapHtml),
                                 section('Fahrerbewegungen', movHtml),
                                 section('Vertragsverlängerungen', renewHtml),
@@ -10077,6 +10092,523 @@
             liveRaceState.active = false;
         }
         
+        // ══════════════════════════════════════════════════════════════════════
+        // LIVE-TICKER-KOMMENTAR (Fable-Paket 1, v0.9.14.69) – ära-gerechte Phrasen-Pools.
+        // Reine Darstellung (SPEC §0), 0 Konsequenz, kein Seeding (Ticker ephemer).
+        // liveLine(event, ctx) → Register wählen → Slot-Filter → Zufalls-Pick → füllen.
+        // {reason} = fertiges dt. Nomen aus DNF_REASON_DE (Token-Miss → generische Zeile).
+        // ══════════════════════════════════════════════════════════════════════
+        const LIVE_COMMENTARY = {
+            start: {
+                e50: [
+                    '🏁 Die Flagge fällt! {fieldSize} Piloten stürzen sich in die erste Kurve – {totalLaps} Runden liegen vor ihnen.',
+                    '🏁 Der Grand Prix ist eröffnet! {fieldSize} Wagen donnern von der Startlinie.',
+                    '🏁 Start frei! Über {totalLaps} Runden wird heute um Ruhm und Ehre gefahren.',
+                    '🏁 Die Motoren brüllen auf – das Feld von {fieldSize} Wagen setzt sich in Bewegung!',
+                    '🏁 Es ist soweit: {fieldSize} tapfere Piloten nehmen die {totalLaps} Runden in Angriff.',
+                    '🏁 Mit ohrenbetäubendem Donner rollt das Feld an – der große Preis über {totalLaps} Runden hat begonnen!',
+                    '🏁 Startschuss! Staub, Lärm und {fieldSize} Wagen im Kampf um die erste Kurve.',
+                    '🏁 Das Rennen ist gestartet – {totalLaps} Runden Prüfung für Mensch und Maschine.'
+                ],
+                e62: [
+                    '🏁 Start! {fieldSize} Fahrer gehen auf die {totalLaps} Runden.',
+                    '🏁 Die Flagge fällt – das Feld von {fieldSize} Wagen ist unterwegs!',
+                    '🏁 Sauberer Ablauf beim Losfahren – vor den Fahrern liegen {totalLaps} Runden.',
+                    '🏁 Das Feld hat sich in Bewegung gesetzt – {fieldSize} Wagen im Getümmel der ersten Runde.',
+                    '🏁 Der Grand Prix läuft! {totalLaps} Runden stehen auf dem Programm.',
+                    '🏁 Los geht es – {fieldSize} Fahrer, {totalLaps} Runden, alles offen.',
+                    '🏁 Start zum Grand Prix – die erste Kurve verlangt gleich volle Konzentration.',
+                    '🏁 Die Startflagge ist gefallen – {fieldSize} Fahrer im Kampf um die ersten Meter.'
+                ],
+                e76: [
+                    '🏁 Start! {fieldSize} Autos jagen in die erste Kurve!',
+                    '🏁 Grün! Das Feld schießt davon – {totalLaps} Runden liegen vor uns.',
+                    '🏁 Das Feld ist weg! {fieldSize} Autos im Pulk Richtung erste Kurve – enger geht es kaum.',
+                    '🏁 Start frei zum großen Preis – {fieldSize} Autos, {totalLaps} Runden, volle Attacke!',
+                    '🏁 Und sie sind unterwegs! Die erste Runde von {totalLaps} läuft.',
+                    '🏁 Turbulente erste Meter – {fieldSize} Autos kämpfen um jede Lücke!',
+                    '🏁 Es ist angerichtet: {totalLaps} Runden Renn-Action ab jetzt!',
+                    '🏁 Los geht’s! Das Feld von {fieldSize} Autos stürmt davon.'
+                ],
+                e94: [
+                    '🏁 Die Lichter erlöschen – Start zum Grand Prix! {fieldSize} Autos auf {totalLaps} Runden.',
+                    '🏁 Start! Das Feld biegt in die erste Runde von {totalLaps} ein.',
+                    '🏁 Es ist los! {fieldSize} Autos, {totalLaps} Runden – die Strategie-Schlacht beginnt.',
+                    '🏁 Lichter aus und los! Die Jagd über {totalLaps} Runden ist eröffnet.',
+                    '🏁 Der Grand Prix rollt – {fieldSize} Autos im Kampf um Position.',
+                    '🏁 Start in den Renntag: {totalLaps} Runden, alles ist möglich.',
+                    '🏁 Die Startaufstellung löst sich auf – ab jetzt zählt nur noch Pace.',
+                    '🏁 Rennstart! {fieldSize} Autos – und {totalLaps} Runden, in denen alles passieren kann.'
+                ],
+                e10: [
+                    '🏁 Lights out! {fieldSize} Autos gehen auf die {totalLaps} Runden.',
+                    '🏁 Und los! Das Feld schiebt sich durch die ersten Kurven – {totalLaps} Runden ab jetzt.',
+                    '🏁 Start! {fieldSize} Autos, {totalLaps} Runden – Showtime.',
+                    '🏁 Es ist gestartet! Erste Runde von {totalLaps} läuft.',
+                    '🏁 Go, go, go! {fieldSize} Autos im Sprint zur ersten Kurve.',
+                    '🏁 Die Lichter sind aus – das Rennen über {totalLaps} Runden läuft!',
+                    '🏁 Rennstart! Jetzt zählt es – {totalLaps} Runden bis zur Zielflagge.',
+                    '🏁 Los geht’s: {fieldSize} Autos jagen in Runde 1 von {totalLaps}.'
+                ]
+            },
+            pit: {
+                e50: [
+                    '🔧 Runde {lap}: {driver} steuert die Box an – die Mechaniker eilen an den Wagen.',
+                    '🔧 Runde {lap}: Boxenhalt bei {team} – {driver} rollt an die Werksbox.',
+                    '🔧 Runde {lap}: {driver} hält an der Box – frische Reifen für die nächste Etappe.',
+                    '🔧 Runde {lap}: Halt für {driver}! Die {team}-Mannschaft arbeitet mit fliegenden Händen.',
+                    '🔧 Runde {lap}: {driver} kommt herein – ein Boxenhalt in alter Manier, jede Sekunde zählt auch hier.',
+                    '🔧 Runde {lap}: Die Box ruft – {driver} unterbricht seine Fahrt für frischen Gummi.',
+                    '🔧 Runde {lap}: Werkstatt-Dienst für {driver} – die {team}-Mechaniker legen Hand an.',
+                    '🔧 Runde {lap}: {driver} biegt zur Box ab – das Feld zieht derweil vorüber.',
+                    '🔧 Runde {lap}: Boxenhalt {driver} – aktuell Platz {pos}, gleich geht die Jagd weiter.',
+                    '🔧 Runde {lap}: {driver} an der Box – Männer, Werkzeug, Eile.',
+                    '🔧 Runde {lap}: Frischer Gummi für {driver} – dann wieder hinaus ins Getümmel.',
+                    '🔧 Runde {lap}: Boxenhalt bei {team} – {driver} verliert Zeit, gewinnt aber Reifen.',
+                    '🔧 Runde {lap}: {driver} macht Station an der Box – aktuell Platz {pos}.',
+                    '🔧 Runde {lap}: Halt bei {team}! {driver} lässt nacharbeiten und kehrt zurück auf die Bahn.'
+                ],
+                e62: [
+                    '🔧 Runde {lap}: {driver} kommt an die Box – die {team}-Crew wartet schon.',
+                    '🔧 Runde {lap}: Boxenstopp für {driver} – Routinearbeit der Mechaniker.',
+                    '🔧 Runde {lap}: {driver} biegt in die Boxengasse ein – frische Reifen sind fällig.',
+                    '🔧 Runde {lap}: Stopp bei {team}: {driver} steht – gleich geht es weiter.',
+                    '🔧 Runde {lap}: Die Box winkt {driver} herein – Service am Wagen.',
+                    '🔧 Runde {lap}: {driver} unterbricht die Fahrt – Boxenstopp, aktuell Platz {pos}.',
+                    '🔧 Runde {lap}: Arbeit für die {team}-Mannschaft – {driver} steht an der Box.',
+                    '🔧 Runde {lap}: {driver} holt sich neue Reifen ab – dann zurück ins Rennen.',
+                    '🔧 Runde {lap}: Boxenstopp {driver} – die Uhr läuft unbarmherzig weiter.',
+                    '🔧 Runde {lap}: Kurzer Halt für {driver} – die Mechaniker geben ihr Bestes.',
+                    '🔧 Runde {lap}: {driver} an der Box – jede Sekunde kostet Meter auf der Strecke.',
+                    '🔧 Runde {lap}: Reifenwechsel bei {driver} – {team} schickt ihn wieder hinaus.',
+                    '🔧 Runde {lap}: {driver} rollt zur Box – im Rennen über {totalLaps} Runden will so ein Halt gut gewählt sein.',
+                    '🔧 Runde {lap}: Halt an der Box – {driver} vertraut auf seine Crew.'
+                ],
+                e76: [
+                    '🔧 Runde {lap}: {driver} kommt rein! Die {team}-Crew springt über die Mauer.',
+                    '🔧 Runde {lap}: Boxenstopp {driver} – Schlagschrauber kreischen, dann Vollgas!',
+                    '🔧 Runde {lap}: {driver} in der Box – frische Reifen, neue Chance.',
+                    '🔧 Runde {lap}: Stopp bei {team}! {driver} steht, die Crew arbeitet auf Hochtouren.',
+                    '🔧 Runde {lap}: {driver} biegt an die Box ab – jetzt muss jeder Handgriff sitzen!',
+                    '🔧 Runde {lap}: Reifenwechsel für {driver} – aktuell Platz {pos}.',
+                    '🔧 Runde {lap}: Die Box hat {driver} reingeholt – Service in Sekunden.',
+                    '🔧 Runde {lap}: {driver} an der Box – die Konkurrenz zieht draußen vorbei.',
+                    '🔧 Runde {lap}: Boxenstopp! {driver} setzt auf frischen Gummi.',
+                    '🔧 Runde {lap}: {team} holt {driver} an die Box – mutiger Zeitpunkt oder Pflichtstopp? Wir werden es sehen.',
+                    '🔧 Runde {lap}: {driver} steht in der Box – die Sekunden fühlen sich an wie Minuten.',
+                    '🔧 Runde {lap}: Frische Walzen für {driver}!',
+                    '🔧 Runde {lap}: {driver} zum Service – die {team}-Jungs machen Tempo.',
+                    '🔧 Runde {lap}: Stopp für {driver} – und wieder raus in den Verkehr!'
+                ],
+                e94: [
+                    '🔧 Runde {lap}: {driver} kommt an die Box – die {team}-Crew steht bereit.',
+                    '🔧 Runde {lap}: Boxenstopp {driver} – Standardprogramm bei {team}.',
+                    '🔧 Runde {lap}: {driver} in der Boxengasse – jetzt entscheidet die Strategie.',
+                    '🔧 Runde {lap}: Stopp für {driver} – frische Reifen im Kampf um jede Zehntel.',
+                    '🔧 Runde {lap}: {team} ruft {driver} herein – Strategie-Schach in der Boxengasse.',
+                    '🔧 Runde {lap}: {driver} biegt ab zum Service – aktuell P{pos}.',
+                    '🔧 Runde {lap}: Boxenstopp! {driver} vertraut auf den Plan seiner Ingenieure.',
+                    '🔧 Runde {lap}: {driver} steht – Sekunden, die sich später auszahlen sollen.',
+                    '🔧 Runde {lap}: Reifenwechsel bei {driver} – die Stoppuhr ist gnadenlos.',
+                    '🔧 Runde {lap}: {driver} an der Box – in Runde {lap} von {totalLaps} ein spannender Zeitpunkt.',
+                    '🔧 Runde {lap}: Service für {driver} – die {team}-Crew arbeitet im Akkord.',
+                    '🔧 Runde {lap}: Box frei für {driver} – rein, Reifen, raus.',
+                    '🔧 Runde {lap}: {driver} holt neuen Gummi – das Rennen wird auch am Kommandostand entschieden.',
+                    '🔧 Runde {lap}: Stopp {driver} – jetzt zählt jeder Handgriff.'
+                ],
+                e10: [
+                    '🔧 Runde {lap}: Box, Box! {driver} kommt rein.',
+                    '🔧 Runde {lap}: {driver} in der Box – die {team}-Crew übernimmt.',
+                    '🔧 Runde {lap}: Stopp für {driver} – frische Reifen, neues Spiel.',
+                    '🔧 Runde {lap}: {driver} biegt in die Boxengasse ab – aktuell P{pos}.',
+                    '🔧 Runde {lap}: Boxenstopp {driver} – das Strategie-Duell nimmt Fahrt auf.',
+                    '🔧 Runde {lap}: {driver} steht – Reifen drauf und wieder raus!',
+                    '🔧 Runde {lap}: Pit-Stopp bei {team} – {driver} wechselt auf frischen Gummi.',
+                    '🔧 Runde {lap}: {driver} kommt zum Service – Timing ist hier alles.',
+                    '🔧 Runde {lap}: Stopp! {driver} und {team} ziehen ihre Strategie durch.',
+                    '🔧 Runde {lap}: {driver} in der Box – Runde {lap} von {totalLaps}, interessanter Call.',
+                    '🔧 Runde {lap}: Reifenwechsel {driver} – jede Zehntel in der Gasse zählt.',
+                    '🔧 Runde {lap}: {driver} rollt durch die Boxengasse – gleich geht die Jagd weiter.',
+                    '🔧 Runde {lap}: Boxenstopp für {driver} – die Crew von {team} ist dran.',
+                    '🔧 Runde {lap}: {driver} holt sich neue Reifen – Attacke im nächsten Stint?'
+                ]
+            },
+            overtake: {
+                e50: [
+                    '⚡ Runde {lap}: {driver} zieht an {victim} vorbei – ein Manöver voller Wagemut!',
+                    '⚡ Runde {lap}: {driver} bezwingt {victim} im Zweikampf – das Publikum an der Strecke jubelt.',
+                    '⚡ Runde {lap}: Kühn! {driver} schiebt sich an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} lässt {victim} hinter sich – nun Platz {pos}.',
+                    '⚡ Runde {lap}: Rad an Rad – dann ist es entschieden: {driver} vor {victim}!',
+                    '⚡ Runde {lap}: {driver} setzt sich gegen {victim} durch – großer Sport!',
+                    '⚡ Runde {lap}: Ein Duell der Tapferen – {driver} behält gegen {victim} die Oberhand.',
+                    '⚡ Runde {lap}: {driver} geht vorbei an {victim} – die Zuschauer erheben sich von den Plätzen!',
+                    '⚡ Runde {lap}: {victim} muss {driver} ziehen lassen – Positionswechsel, Platz {pos}.',
+                    '⚡ Runde {lap}: Attacke von {driver}! {victim} kann sich nicht wehren.',
+                    '⚡ Runde {lap}: {driver} nutzt seine Chance und überholt {victim} – beherzt gefahren!',
+                    '⚡ Runde {lap}: Vorbei! {driver} übernimmt die Position von {victim} – Platz {pos}.',
+                    '⚡ Runde {lap}: {driver} ringt {victim} nieder – Zweikampf nach alter Schule.',
+                    '⚡ Runde {lap}: Mutprobe bestanden: {driver} ist an {victim} vorbei.'
+                ],
+                e62: [
+                    '⚡ Runde {lap}: {driver} überholt {victim} – sauber gemacht.',
+                    '⚡ Runde {lap}: {driver} findet die Lücke und geht an {victim} vorbei.',
+                    '⚡ Runde {lap}: Positionswechsel: {driver} nun vor {victim}, Platz {pos}.',
+                    '⚡ Runde {lap}: {driver} setzt das Manöver gegen {victim} – kontrolliert und entschlossen.',
+                    '⚡ Runde {lap}: {victim} hat das Nachsehen – {driver} zieht vorbei.',
+                    '⚡ Runde {lap}: Schöner Zweikampf – am Ende hat {driver} gegen {victim} die Nase vorn.',
+                    '⚡ Runde {lap}: {driver} kämpft sich an {victim} vorbei – Platz {pos} für ihn.',
+                    '⚡ Runde {lap}: {driver} zieht am Wagen von {victim} vorbei – ohne Berührung, mit Nachdruck.',
+                    '⚡ Runde {lap}: {driver} nimmt {victim} die Position ab.',
+                    '⚡ Runde {lap}: {victim} muss {driver} passieren lassen.',
+                    '⚡ Runde {lap}: Gutes Tempo von {driver} – {victim} ist geschlagen.',
+                    '⚡ Runde {lap}: {driver} macht den entscheidenden Schritt – vorbei an {victim}.',
+                    '⚡ Runde {lap}: Da war die Lücke! {driver} überholt {victim} und liegt auf Platz {pos}.',
+                    '⚡ Runde {lap}: {driver} erhöht das Tempo und lässt {victim} hinter sich.'
+                ],
+                e76: [
+                    '⚡ Runde {lap}: {driver} attackiert und kassiert {victim}!',
+                    '⚡ Runde {lap}: Was für ein Manöver! {driver} geht an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} schnappt sich {victim} – jetzt Platz {pos}!',
+                    '⚡ Runde {lap}: {victim} wehrt sich, aber {driver} ist durch!',
+                    '⚡ Runde {lap}: Sehenswert! {driver} bezwingt {victim} im Zweikampf!',
+                    '⚡ Runde {lap}: {driver} lässt {victim} stehen – starke Vorstellung!',
+                    '⚡ Runde {lap}: Harter, fairer Kampf – {driver} setzt sich gegen {victim} durch.',
+                    '⚡ Runde {lap}: {driver} übernimmt Platz {pos} – {victim} hat das Nachsehen.',
+                    '⚡ Runde {lap}: Da geht die Tür auf – {driver} schlüpft an {victim} vorbei!',
+                    '⚡ Runde {lap}: {driver} macht kurzen Prozess mit {victim}.',
+                    '⚡ Runde {lap}: {victim} unter Druck – und {driver} nutzt die Gelegenheit eiskalt!',
+                    '⚡ Runde {lap}: Überholmanöver {driver}! {victim} muss sich hinten anstellen.',
+                    '⚡ Runde {lap}: {driver} ist der Schnellere – vorbei an {victim}, weiter geht die Jagd!',
+                    '⚡ Runde {lap}: Position getauscht: {driver} vor {victim} – das Publikum tobt!'
+                ],
+                e94: [
+                    '⚡ Runde {lap}: {driver} geht an {victim} vorbei – sauber platziert.',
+                    '⚡ Runde {lap}: {driver} erwischt {victim} – Positionsgewinn, P{pos}.',
+                    '⚡ Runde {lap}: Druckphase beendet – {driver} ist an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} setzt sich gegen {victim} durch – die Pace stimmt.',
+                    '⚡ Runde {lap}: {victim} verliert die Position an {driver}.',
+                    '⚡ Runde {lap}: Präzise Attacke – {driver} überholt {victim}.',
+                    '⚡ Runde {lap}: {driver} nutzt den Schwung und schiebt sich an {victim} vorbei.',
+                    '⚡ Runde {lap}: Zweikampf entschieden: {driver} vor {victim}, P{pos}.',
+                    '⚡ Runde {lap}: {driver} macht Ernst – {victim} kann nicht kontern.',
+                    '⚡ Runde {lap}: Überholmanöver! {driver} zieht an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} bringt das Manöver gegen {victim} sicher zu Ende.',
+                    '⚡ Runde {lap}: {victim} in der Defensive – und {driver} schlägt zu.',
+                    '⚡ Runde {lap}: Klasse Timing: {driver} kassiert {victim}.',
+                    '⚡ Runde {lap}: {driver} arbeitet sich vor – {victim} abgehakt, jetzt P{pos}.'
+                ],
+                e10: [
+                    '⚡ Runde {lap}: {driver} schnappt sich {victim} – jetzt P{pos}!',
+                    '⚡ Runde {lap}: Starker Move! {driver} geht an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} erledigt das gegen {victim} – Positionsgewinn!',
+                    '⚡ Runde {lap}: {victim} kann nichts machen – {driver} ist durch!',
+                    '⚡ Runde {lap}: {driver} holt sich P{pos} – vorbei an {victim}.',
+                    '⚡ Runde {lap}: Überholmanöver {driver}! {victim} muss abreißen lassen.',
+                    '⚡ Runde {lap}: {driver} mit dem besseren Tempo – {victim} ist fällig.',
+                    '⚡ Runde {lap}: Sauber durchgezogen: {driver} überholt {victim}.',
+                    '⚡ Runde {lap}: {driver} attackiert – und der Move gegen {victim} sitzt!',
+                    '⚡ Runde {lap}: {victim} verteidigt hart, aber {driver} bleibt dran und geht vorbei!',
+                    '⚡ Runde {lap}: Da ist die Lücke – {driver} taucht durch, {victim} geschlagen!',
+                    '⚡ Runde {lap}: {driver} lässt {victim} hinter sich – auf zur nächsten Aufgabe.',
+                    '⚡ Runde {lap}: Klasse Racing! {driver} setzt sich gegen {victim} durch.',
+                    '⚡ Runde {lap}: {driver} zieht vorbei – {victim} hat keine Antwort.'
+                ]
+            },
+            dnf_mechanical: {
+                e50: [
+                    '❌ Runde {lap}: {reason} am Wagen von {driver} – das Rennen ist für ihn zu Ende.',
+                    '❌ Runde {lap}: {driver} rollt aus – {reason}. Ein bitterer Moment für {team}.',
+                    '❌ Runde {lap}: Die Technik streikt: {reason} zwingt {driver} zur Aufgabe.',
+                    '❌ Runde {lap}: Aus für {driver} – {reason}. So grausam kann dieser Sport sein.',
+                    '❌ Runde {lap}: {driver} stellt seinen Wagen ab – die Diagnose lautet {reason}.',
+                    '❌ Runde {lap}: {reason}! {driver} muss den Kampf aufgeben – von Platz {pos} aus dem Rennen.',
+                    '❌ Runde {lap}: Das Material hält nicht: {reason} beendet die Fahrt von {driver}.',
+                    '❌ Runde {lap}: {driver} bleibt liegen – der Wagen will nicht mehr.',
+                    '❌ Runde {lap}: Aus und vorbei für {driver} – die Maschine versagt ihren Dienst.',
+                    '❌ Runde {lap}: {driver} rollt langsam aus – ein Defekt beendet seinen Grand Prix.',
+                    '❌ Runde {lap}: Bittere Aufgabe: {driver} stellt den {team}-Wagen ab.',
+                    '❌ Runde {lap}: Der Wagen von {driver} gibt den Geist auf – das Rennen ist gelaufen.',
+                    '❌ Runde {lap}: Technisches K.o. für {driver} – auf Platz {pos} liegend ist Schluss.',
+                    '❌ Runde {lap}: {driver} scheidet aus – Mensch stark, Maschine schwach.'
+                ],
+                e62: [
+                    '❌ Runde {lap}: {reason} bei {driver} – Aufgabe.',
+                    '❌ Runde {lap}: {driver} ist draußen – {reason} am {team}-Wagen.',
+                    '❌ Runde {lap}: {reason} stoppt {driver} – das war es für heute.',
+                    '❌ Runde {lap}: {driver} muss abstellen – die Ursache: {reason}.',
+                    '❌ Runde {lap}: Defekt bei {driver}: {reason}. Die Box kann nichts mehr tun.',
+                    '❌ Runde {lap}: {reason} – und {driver} verliert alle Chancen in diesem Rennen.',
+                    '❌ Runde {lap}: {driver} rollt an die Seite – {reason}, Rennende.',
+                    '❌ Runde {lap}: {driver} scheidet mit technischem Defekt aus.',
+                    '❌ Runde {lap}: Der Wagen von {driver} streikt – Aufgabe.',
+                    '❌ Runde {lap}: {driver} bleibt stehen – das Material hat nicht gehalten.',
+                    '❌ Runde {lap}: Aus für {driver} – die Technik spielt nicht mehr mit.',
+                    '❌ Runde {lap}: {driver} stellt den Wagen ab – bitter für die {team}-Mannschaft.',
+                    '❌ Runde {lap}: Defekt bei {driver} – aus Platz {pos} heraus ist Schluss.',
+                    '❌ Runde {lap}: {driver} ist raus – wieder fordert die Technik ihren Tribut.'
+                ],
+                e76: [
+                    '❌ Runde {lap}: {reason} bei {driver}! Das Rennen ist für ihn gelaufen.',
+                    '❌ Runde {lap}: {driver} rollt aus – {reason}. Frust pur bei {team}.',
+                    '❌ Runde {lap}: Die Technik sagt Nein: {reason} wirft {driver} aus dem Rennen.',
+                    '❌ Runde {lap}: {reason} – Aus für {driver}, der Wagen steht.',
+                    '❌ Runde {lap}: {driver} ist draußen! {reason} am {team}-Renner.',
+                    '❌ Runde {lap}: Bitter! {reason} stoppt {driver} auf Platz {pos}.',
+                    '❌ Runde {lap}: {driver} muss aufgeben – {reason}. Mehr war heute nicht drin.',
+                    '❌ Runde {lap}: {driver} bleibt liegen – Defekt! Das war es.',
+                    '❌ Runde {lap}: Aus für {driver} – die Technik hat den Dienst quittiert.',
+                    '❌ Runde {lap}: {driver} stellt die Maschine ab – wieder ein Opfer der Materialschlacht.',
+                    '❌ Runde {lap}: Der {team}-Renner von {driver} steht – Rennende!',
+                    '❌ Runde {lap}: {driver} raus! Von Platz {pos} direkt ins Aus – Technik-K.o.',
+                    '❌ Runde {lap}: Nichts geht mehr bei {driver} – Aufgabe.',
+                    '❌ Runde {lap}: {driver} parkt den Wagen an der Seite – bitterer Tag für {team}.'
+                ],
+                e94: [
+                    '❌ Runde {lap}: {reason} bei {driver} – Aufgabe.',
+                    '❌ Runde {lap}: {driver} ist raus – {reason}. Die Ingenieure können nur noch zuschauen.',
+                    '❌ Runde {lap}: {reason} beendet das Rennen von {driver} – bitter für {team}.',
+                    '❌ Runde {lap}: Technischer Defekt: {reason} – {driver} stellt ab.',
+                    '❌ Runde {lap}: {driver} rollt aus – Diagnose {reason}.',
+                    '❌ Runde {lap}: {reason} auf P{pos} – für {driver} ist das Rennen vorbei.',
+                    '❌ Runde {lap}: Aus für {driver}: {reason} – die Punkte sind weg.',
+                    '❌ Runde {lap}: {driver} scheidet aus – technischer Defekt.',
+                    '❌ Runde {lap}: Das Auto von {driver} streikt – Rennende.',
+                    '❌ Runde {lap}: {driver} muss den Wagen abstellen – die Technik macht nicht mehr mit.',
+                    '❌ Runde {lap}: Defekt bei {driver} – von P{pos} aus dem Rennen.',
+                    '❌ Runde {lap}: {driver} wird langsamer und stellt ab – das war es für heute.',
+                    '❌ Runde {lap}: Wieder Technik-Pech: {driver} ist draußen.',
+                    '❌ Runde {lap}: Für {driver} ist Schluss – das Material hat versagt.'
+                ],
+                e10: [
+                    '❌ Runde {lap}: {reason} bei {driver} – das Auto steht, das Rennen ist vorbei.',
+                    '❌ Runde {lap}: {driver} ist raus – {reason}. Riesenfrust bei {team}.',
+                    '❌ Runde {lap}: {reason}! {driver} muss abstellen.',
+                    '❌ Runde {lap}: Bitteres Aus für {driver} – {reason}.',
+                    '❌ Runde {lap}: Das Auto von {driver} streikt – {reason}.',
+                    '❌ Runde {lap}: {reason} auf P{pos} – so schnell ist ein Rennen vorbei.',
+                    '❌ Runde {lap}: DNF für {driver} – {reason}.',
+                    '❌ Runde {lap}: {driver} stellt das Auto ab – technischer Defekt.',
+                    '❌ Runde {lap}: Aus für {driver} – die Technik streikt.',
+                    '❌ Runde {lap}: {driver} ist draußen – bitterer Moment für die {team}-Garage.',
+                    '❌ Runde {lap}: Defekt! {driver} verliert alles – P{pos} ist Geschichte.',
+                    '❌ Runde {lap}: Rennende für {driver} – das Auto macht nicht mehr mit.',
+                    '❌ Runde {lap}: {driver} rollt aus – null Weiterfahrt, null Punkte.',
+                    '❌ Runde {lap}: Technisches K.o. für {driver} – mitten im Rennen ist Schluss.'
+                ]
+            },
+            dnf_accident: {
+                e50: [
+                    '❌ Runde {lap}: {reason} bei {driver} – der Wagen steht abseits der Bahn.',
+                    '❌ Runde {lap}: {driver} kommt von der Bahn ab – {reason}, das Rennen ist zu Ende.',
+                    '❌ Runde {lap}: Schreckmoment: {reason} bei {driver} – er scheidet aus.',
+                    '❌ Runde {lap}: {reason}! Für {driver} ist der Grand Prix beendet.',
+                    '❌ Runde {lap}: {driver} verliert den Wagen – {reason} beendet seine Fahrt.',
+                    '❌ Runde {lap}: {reason} auf Platz {pos} – {driver} ist aus dem Rennen.',
+                    '❌ Runde {lap}: Die Bahn fordert ihren Tribut: {reason} bei {driver}.',
+                    '❌ Runde {lap}: {driver} fliegt von der Bahn – Rennende.',
+                    '❌ Runde {lap}: Zwischenfall! {driver} kann die Fahrt nicht fortsetzen.',
+                    '❌ Runde {lap}: {driver} rutscht von der Piste – der Wagen bleibt stehen, das Rennen ist vorbei.',
+                    '❌ Runde {lap}: Der Wagen von {driver} steht abseits der Bahn – Aufgabe.',
+                    '❌ Runde {lap}: Ein Zwischenfall beendet die Fahrt von {driver}.',
+                    '❌ Runde {lap}: Aus auf Platz {pos}: {driver} ist von der Bahn.',
+                    '❌ Runde {lap}: Jähes Ende für {driver} – das Rennen ist vorzeitig vorbei.'
+                ],
+                e62: [
+                    '❌ Runde {lap}: {reason} bei {driver} – das Rennen ist für ihn beendet.',
+                    '❌ Runde {lap}: {driver} scheidet nach {reason} aus.',
+                    '❌ Runde {lap}: {reason} – {driver} kann nicht weiterfahren.',
+                    '❌ Runde {lap}: Zwischenfall für {driver}: {reason}, Aufgabe.',
+                    '❌ Runde {lap}: {driver} ist draußen – {reason}, der Wagen steht.',
+                    '❌ Runde {lap}: {reason} auf Platz {pos} – bitteres Ende für {driver}.',
+                    '❌ Runde {lap}: Das Rennen von {driver} endet abrupt – {reason}.',
+                    '❌ Runde {lap}: {driver} kommt von der Strecke ab – Rennende.',
+                    '❌ Runde {lap}: Zwischenfall bei {driver} – er stellt den Wagen ab.',
+                    '❌ Runde {lap}: Unfall! {driver} ist aus dem Rennen.',
+                    '❌ Runde {lap}: {driver} bleibt neben der Strecke stehen – Aufgabe nach Zwischenfall.',
+                    '❌ Runde {lap}: Aus für {driver} – der Wagen ist zu stark beschädigt.',
+                    '❌ Runde {lap}: {driver} ist von der Bahn – aus Platz {pos} heraus endet sein Rennen.',
+                    '❌ Runde {lap}: Schrecksekunde – für {driver} geht es nicht weiter.'
+                ],
+                e76: [
+                    '❌ Runde {lap}: {reason}! {driver} ist raus!',
+                    '❌ Runde {lap}: {driver} fliegt ab – {reason}! Das Rennen ist gelaufen.',
+                    '❌ Runde {lap}: {reason} bei {driver} – der {team}-Renner steht!',
+                    '❌ Runde {lap}: Drama! {reason} beendet das Rennen von {driver}.',
+                    '❌ Runde {lap}: {driver} auf Platz {pos} – dann {reason}, dann Stillstand.',
+                    '❌ Runde {lap}: {reason} – und {driver} kann nur noch zuschauen.',
+                    '❌ Runde {lap}: Aus und vorbei: {reason} bei {driver}.',
+                    '❌ Runde {lap}: Unfall! {driver} ist draußen – das Auto steht.',
+                    '❌ Runde {lap}: {driver} kracht raus – Rennende!',
+                    '❌ Runde {lap}: Wilde Szene – {driver} kommt nicht mehr zurück ins Rennen.',
+                    '❌ Runde {lap}: Das Rennen spuckt {driver} aus – Unfall, Aufgabe.',
+                    '❌ Runde {lap}: Der Wagen von {driver} ist hinüber – Unfall!',
+                    '❌ Runde {lap}: Aus auf Platz {pos}! {driver} scheidet nach Unfall aus.',
+                    '❌ Runde {lap}: Schock für {team}: {driver} ist abgeflogen – Rennende.'
+                ],
+                e94: [
+                    '❌ Runde {lap}: {reason} bei {driver} – das Rennen ist vorbei.',
+                    '❌ Runde {lap}: {driver} ist raus – {reason}.',
+                    '❌ Runde {lap}: {reason}! {driver} kann nicht weiterfahren.',
+                    '❌ Runde {lap}: Rennende für {driver}: {reason} auf P{pos}.',
+                    '❌ Runde {lap}: {reason} – {driver} stellt den beschädigten Wagen ab.',
+                    '❌ Runde {lap}: Bitter für {team}: {reason} bei {driver}.',
+                    '❌ Runde {lap}: {driver} fällt aus – {reason} beendet alle Hoffnungen.',
+                    '❌ Runde {lap}: Unfall von {driver} – das Rennen ist für ihn beendet.',
+                    '❌ Runde {lap}: {driver} ist draußen – zu viel Schaden am Auto.',
+                    '❌ Runde {lap}: Zwischenfall! {driver} scheidet aus.',
+                    '❌ Runde {lap}: {driver} verliert P{pos} auf die harte Tour – Unfall, Rennende.',
+                    '❌ Runde {lap}: Das Auto von {driver} steht – Unfall, Aufgabe.',
+                    '❌ Runde {lap}: Rennen beendet: {driver} kommt nach einem Zwischenfall nicht mehr weiter.',
+                    '❌ Runde {lap}: {driver} rutscht ins Aus – bittere Szene für {team}.'
+                ],
+                e10: [
+                    '❌ Runde {lap}: {reason} bei {driver} – Rennen vorbei!',
+                    '❌ Runde {lap}: {driver} ist raus – {reason}.',
+                    '❌ Runde {lap}: {reason}! Das war es für {driver}.',
+                    '❌ Runde {lap}: Drama um {driver}: {reason} auf P{pos}.',
+                    '❌ Runde {lap}: {reason} – {driver} parkt das Auto unfreiwillig.',
+                    '❌ Runde {lap}: Riesen-Ärger bei {team}: {reason} bei {driver}.',
+                    '❌ Runde {lap}: DNF für {driver} – {reason}.',
+                    '❌ Runde {lap}: Unfall! {driver} ist aus dem Rennen.',
+                    '❌ Runde {lap}: {driver} fliegt ab – das Auto ist zu beschädigt, um weiterzufahren.',
+                    '❌ Runde {lap}: Crash-Alarm: {driver} kommt nicht mehr zurück auf die Strecke.',
+                    '❌ Runde {lap}: {driver} verliert P{pos} in einer Sekunde – Unfall, Rennende.',
+                    '❌ Runde {lap}: Bitteres Bild für {team}: das Auto von {driver} steht.',
+                    '❌ Runde {lap}: {driver} ist draußen – Zwischenfall, Aufgabe.',
+                    '❌ Runde {lap}: Rennende für {driver} – so schnell kann es gehen.'
+                ]
+            },
+            death: {
+                e50: [
+                    '💀 Runde {lap}: {driver} ist tödlich verunglückt.',
+                    '💀 Runde {lap}: Furchtbare Nachricht von der Strecke: {driver} ist tödlich verunglückt.',
+                    '💀 Runde {lap}: {driver} hat den Unfall nicht überlebt. Der Rennsport hält inne.',
+                    '💀 Runde {lap}: Tragödie: {driver} ist bei einem Unfall ums Leben gekommen.',
+                    '💀 Runde {lap}: Das Schlimmste ist eingetreten – {driver} ist tot.',
+                    '💀 Runde {lap}: {driver} verunglückt tödlich. Die Zeitnahme tritt in den Hintergrund.'
+                ],
+                e62: [
+                    '💀 Runde {lap}: {driver} ist tödlich verunglückt.',
+                    '💀 Runde {lap}: Schwarze Nachricht: {driver} hat den Unfall nicht überlebt.',
+                    '💀 Runde {lap}: {driver} ist bei einem Unfall ums Leben gekommen.',
+                    '💀 Runde {lap}: Tragischer Tag – {driver} ist tot.',
+                    '💀 Runde {lap}: Das Fahrerlager erhält die schlimmstmögliche Nachricht: {driver} ist tot.',
+                    '💀 Runde {lap}: {driver} verunglückt tödlich – die Gedanken sind bei seinen Angehörigen.'
+                ],
+                e76: [
+                    '💀 Runde {lap}: {driver} ist tödlich verunglückt.',
+                    '💀 Runde {lap}: Furchtbare Gewissheit: {driver} hat den Unfall nicht überlebt.',
+                    '💀 Runde {lap}: {driver} ist bei einem Unfall ums Leben gekommen. Alles andere ist jetzt Nebensache.',
+                    '💀 Runde {lap}: Tragödie an der Strecke – {driver} ist tot.',
+                    '💀 Runde {lap}: Die Nachricht, die niemand hören wollte: {driver} ist tot.',
+                    '💀 Runde {lap}: {driver} verunglückt tödlich – Stille über der Strecke.'
+                ],
+                e94: [
+                    '💀 Runde {lap}: {driver} ist tödlich verunglückt.',
+                    '💀 Runde {lap}: Traurige Gewissheit: {driver} hat den Unfall nicht überlebt.',
+                    '💀 Runde {lap}: {driver} ist bei einem Unfall ums Leben gekommen.',
+                    '💀 Runde {lap}: Schwärzester Moment des Tages – {driver} ist tot.',
+                    '💀 Runde {lap}: {driver} verunglückt tödlich. Die Gedanken sind bei Familie und Team.',
+                    '💀 Runde {lap}: Es gibt keine schonende Formulierung: {driver} ist tot.'
+                ],
+                e10: [
+                    '💀 Runde {lap}: {driver} ist tödlich verunglückt.',
+                    '💀 Runde {lap}: Traurige Gewissheit: {driver} hat den Unfall nicht überlebt.',
+                    '💀 Runde {lap}: {driver} ist bei einem Unfall ums Leben gekommen.',
+                    '💀 Runde {lap}: Furchtbare Nachricht: {driver} ist tot.',
+                    '💀 Runde {lap}: {driver} verunglückt tödlich – die Gedanken sind bei den Angehörigen und bei {team}.',
+                    '💀 Runde {lap}: Ein schwarzer Tag: {driver} ist tot.'
+                ]
+            },
+            finish: {
+                e50: [
+                    '🏁 Zielflagge! {driver} gewinnt den Grand Prix für {team}!',
+                    '🏁 Sieg für {driver}! Der {team}-Pilot überquert die Ziellinie als Erster.',
+                    '🏁 {driver} vollendet ein großes Rennen – der Sieg gehört ihm und {team}!',
+                    '🏁 Triumph für {driver}! Die Zuschauer feiern den Sieger des Tages.',
+                    '🏁 Die karierte Flagge fällt für {driver} – ein Sieg für die Chronik von {team}.',
+                    '🏁 {driver} siegt! Hut ab vor dieser Leistung.',
+                    '🏁 Der Lorbeer des Tages gehört {driver} – {team} jubelt.',
+                    '🏁 Ziel! {driver} gewinnt – Motorsport, wie er im Buche steht.'
+                ],
+                e62: [
+                    '🏁 Zielflagge: {driver} gewinnt für {team}!',
+                    '🏁 Sieg für {driver} – eine reife Leistung.',
+                    '🏁 {driver} überquert die Linie als Erster – Jubel bei {team}.',
+                    '🏁 Das Rennen ist entschieden: {driver} heißt der Sieger.',
+                    '🏁 {driver} gewinnt den Grand Prix – Glückwunsch an Fahrer und {team}.',
+                    '🏁 Karierte Flagge – und {driver} ist der Mann des Tages.',
+                    '🏁 Sieg! {driver} bringt den {team}-Wagen als Ersten nach Hause.',
+                    '🏁 {driver} macht den Sieg perfekt – ein Erfolg für {team}.'
+                ],
+                e76: [
+                    '🏁 Zielflagge! {driver} gewinnt – Riesenjubel bei {team}!',
+                    '🏁 Sieg für {driver}! Was für ein Rennen!',
+                    '🏁 {driver} holt sich den Sieg – die {team}-Box steht Kopf!',
+                    '🏁 Da ist die karierte Flagge – {driver} gewinnt den Grand Prix!',
+                    '🏁 Ganz oben: {driver}! Ein Triumph, der sich gewaschen hat.',
+                    '🏁 {driver} fährt als Erster über die Linie – Sieg für {team}!',
+                    '🏁 Gänsehaut an der Strecke: {driver} gewinnt!',
+                    '🏁 Der Sieg geht an {driver} – Champagner für {team}!'
+                ],
+                e94: [
+                    '🏁 Zielflagge: Sieg für {driver} und {team}!',
+                    '🏁 {driver} gewinnt den Grand Prix – Jubel an der {team}-Box.',
+                    '🏁 P1 für {driver} – die Arbeit des ganzen Teams zahlt sich aus.',
+                    '🏁 Sieg! {driver} bringt es ins Ziel – {team} feiert.',
+                    '🏁 Die karierte Flagge fällt: {driver} heißt der Sieger.',
+                    '🏁 {driver} kreuzt die Linie als Erster – ein perfekter Renntag für {team}.',
+                    '🏁 Das Ziel! {driver} gewinnt – Glückwunsch!',
+                    '🏁 Sieg für {driver} – dieser Grand Prix gehört ihm.'
+                ],
+                e10: [
+                    '🏁 Zielflagge! {driver} gewinnt das Rennen – großer Jubel bei {team}!',
+                    '🏁 P1! {driver} holt den Sieg!',
+                    '🏁 {driver} gewinnt! Die {team}-Garage explodiert vor Freude!',
+                    '🏁 Karierte Flagge – der Sieg geht an {driver}!',
+                    '🏁 Was für ein Tag für {team}: {driver} gewinnt den Grand Prix!',
+                    '🏁 {driver} bringt es nach Hause – Sieg!',
+                    '🏁 Ziel! {driver} steht ganz oben – Glückwunsch an {team}.',
+                    '🏁 Sieg für {driver}! {team} darf feiern.'
+                ]
+            }
+        };
+        // Ausfallgrund-Token (engl., aus dem Live-DNF-Pool) → fertiges dt. artikel-freies Nomen.
+        const DNF_REASON_DE = {
+            'Engine':'Motorschaden', 'Gearbox':'Getriebeschaden', 'Overheating':'Überhitzung',
+            'Oil pressure':'Öldruckverlust', 'Fuel system':'Benzinsystem-Defekt', 'Suspension':'Aufhängungsschaden',
+            'Halfshaft':'Halbwellenbruch', 'Magneto':'Magnetzünder-Defekt', 'Rear axle':'Hinterachsschaden',
+            'Brakes':'Bremsdefekt', 'Throttle':'Gasgestänge-Defekt', 'Oil leak':'Ölleck', 'Valve':'Ventilschaden',
+            'Clutch':'Kupplungsschaden', 'Driveshaft':'Antriebswellenbruch', 'Electrical':'Elektrikdefekt',
+            'Wheel':'Radschaden', 'Transmission':'Antriebsdefekt', 'Water leak':'Wasserleck', 'Fire':'Feuer',
+            'Hydraulics':'Hydraulikdefekt', 'Turbo':'Turboschaden', 'Wheel failure':'Radschaden',
+            'Fuel pressure':'Benzindruckverlust', 'MGU-K':'MGU-K-Defekt', 'Power unit':'Power-Unit-Defekt',
+            'Cooling':'Kühlungsproblem', 'Battery':'Batterie-Defekt',
+            'Accident':'Unfall', 'Collision':'Kollision', 'Spin':'Dreher', 'Off track':'Abflug', 'Crash':'schwerer Abflug'
+        };
+        const _LIVE_ERA_KEY = (year) =>
+            year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
+        const _liveLastPick = {};
+        function liveLine(event, ctx) {
+            ctx = ctx || {};
+            const pools = LIVE_COMMENTARY[event];
+            if (!pools) return '';
+            const pool = pools[_LIVE_ERA_KEY(ctx.year || 2000)] || pools.e10;
+            // Nur Templates, deren Slots alle im ctx belegt sind (fehlt z.B. {reason} → generisch)
+            let usable = pool.filter(t => !(t.match(/\{(\w+)\}/g) || []).some(s => {
+                const k = s.slice(1, -1);
+                return ctx[k] === undefined || ctx[k] === null || ctx[k] === '';
+            }));
+            if (!usable.length) usable = pool;
+            if (usable.length > 1 && _liveLastPick[event] !== undefined) {
+                usable = usable.filter(t => t !== _liveLastPick[event]);
+            }
+            const tpl = usable[Math.floor(Math.random() * usable.length)];
+            _liveLastPick[event] = tpl;
+            return tpl.replace(/\{(\w+)\}/g, (_, k) => (ctx[k] ?? ''));
+        }
+
         function addLiveEvent(message, type = 'neutral') {
             const feed = document.getElementById('liveEventsFeed');
             const eventDiv = document.createElement('div');
@@ -10262,7 +10794,7 @@
                         p.hasPitted = true;
                         p.tyreLaps = 0;
                         lapTime += 22; // Pit-Stopp Zeit
-                        addLiveEvent(`🔧 Runde ${lap}: ${p.name} - Box-Stopp! (${lapTime.toFixed(1)}s)`, 'warning');
+                        addLiveEvent(liveLine('pit', { driver: p.name, team: team.name, lap, totalLaps, pos: idx + 1, year: GAME_STATE.currentYear }), 'warning');
                     }
                 } else {
                     p.isPitting = false;
@@ -10307,7 +10839,7 @@
                                 p.dnfReason = _pool[Math.floor(Math.random() * _pool.length)];
                             }
                         }
-                        addLiveEvent(`❌ Runde ${lap}: ${p.name} scheidet aus (${p.dnfReason})!`, 'negative');
+                        addLiveEvent(liveLine(dnfType === 'accident' ? 'dnf_accident' : 'dnf_mechanical', { driver: p.name, team: team.name, lap, reason: DNF_REASON_DE[p.dnfReason], pos: idx + 1, year: GAME_STATE.currentYear }), 'negative');
                         
                         // Todes-Check – Zwei-Würfel-Modell: Session bereits in Training gewürfelt
                         // [SYNC simulateRace] Todes-Check: Änderungen hier ↔ simulateRace() synchron halten
@@ -10317,7 +10849,7 @@
                             p.fatalSession = 'race';
                             p.dnfReason = '💀 Tödlich';
                             _liveRaceDeathFired = true;
-                            addLiveEvent(`💀 TRAGISCH: ${p.name} ist tödlich verunglückt!`, 'negative');
+                            addLiveEvent(liveLine('death', { driver: p.name, team: team.name, lap, year: GAME_STATE.currentYear }), 'negative');
                         }
                     }
                 }
@@ -10348,7 +10880,7 @@
                         const aheadDriver = GAME_STATE.drivers.find(d => d.id === ahead.driver);
                         
                         if (currentDriver && aheadDriver && currentDriver.pace > aheadDriver.pace + 5) {
-                            addLiveEvent(`⚡ Runde ${lap}: ${current.name} überholt ${ahead.name}!`, 'positive');
+                            addLiveEvent(liveLine('overtake', { driver: current.name, victim: ahead.name, lap, pos: i, year: GAME_STATE.currentYear }), 'positive');
                         }
                     }
                 }
@@ -10823,7 +11355,7 @@
             document.getElementById('liveTickerPauseBtn').textContent = '⏸ Pause';
             
             // Start-Event
-            addLiveEvent(`🏁 Start! ${liveRaceState.positions.length} Fahrer auf ${liveRaceState.totalLaps} Runden`, 'positive');
+            addLiveEvent(liveLine('start', { fieldSize: liveRaceState.positions.length, totalLaps: liveRaceState.totalLaps, year: GAME_STATE.currentYear }), 'positive');
             
             // Simulation starten mit dynamischem Interval
             function runSimulation() {
@@ -11340,6 +11872,174 @@
             if (rest === 1) out = shown.join(', ') + ' und ein weiterer';
             else if (rest > 1) out = shown.join(', ') + ` und ${rest} weitere`;
             return out;
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // SAISON-VORSCHAU (Fable-Paket 4, v0.9.14.69) – Spiegelbild zu Paket B.
+        // Durchgehend spekulativ (Prognose VOR dem ersten Rennen). Deterministisch
+        // (Seed preview|year|champion|favorit). Ära-Register via RECAP_ERA_WORDS +
+        // PREVIEW_ERA_WORDS. 0 Bytes gespeichert.
+        // ══════════════════════════════════════════════════════════════════════
+        const PREVIEW_ERA_WORDS = [
+            { from: 1950, to: 1961, auftakt: 'vor der ersten Startaufstellung des Jahres', neulingSg: 'Neuling', neulingPl: 'Neulinge' },
+            { from: 1962, to: 1975, auftakt: 'zum Auftakt der neuen Saison', neulingSg: 'Neuling', neulingPl: 'Neulinge' },
+            { from: 1976, to: 1993, auftakt: 'vor dem ersten Startschuss des Jahres', neulingSg: 'Neuling', neulingPl: 'Neulinge' },
+            { from: 1994, to: 2009, auftakt: 'zum Saisonauftakt', neulingSg: 'Rookie', neulingPl: 'Rookies' },
+            { from: 2010, to: 9999, auftakt: 'vor dem ersten Lights-out des Jahres', neulingSg: 'Rookie', neulingPl: 'Rookies' }
+        ];
+        const PREVIEW_BANK = {
+            verteidiger: [
+                '{champion} geht als Titelverteidiger in die Saison {year} – und als Gejagter des gesamten Feldes.',
+                'alle Augen richten sich auf {champion}: Der Champion führt das Feld als Titelverteidiger ins neue Jahr.',
+                'die Krone {klasseGen} liegt bei {champion} – nun beginnt die Verteidigung.',
+                '{champion} übernimmt die Rolle des Gejagten – Titelverteidigung gilt als die schwerste aller Übungen.',
+                'der Maßstab heißt auch {year} zunächst {champion} – bis das Feld das Gegenteil beweist.',
+                'mit dem Titel im Rücken startet {champion} ins neue Jahr – wohl wissend, dass nun alle an ihm Maß nehmen.',
+                'vor dem ersten Kräftemessen stellt sich vor allem eine Frage: Kann {champion} seinen Titel verteidigen?',
+                'Titelverteidiger {champion} eröffnet das Jahr mit dem größten Ziel: den Coup zu wiederholen.'
+            ],
+            favorit: {
+                herausforderer: [
+                    'in der Favoritenrolle sehen viele allerdings {favorit} – das {favoritTeam}-Paket gilt als Maßstab der Winterarbeit.',
+                    '{favorit} gilt als erster Anwärter des neuen Jahres – die Papierform spricht für ihn und {favoritTeam}.',
+                    'wenn die Vorzeichen nicht täuschen, führt der Weg zum Titel {year} über {favorit} und {favoritTeam}.',
+                    'die Rolle des Gejagten könnte schnell wechseln: {favorit} gilt vielen als der Mann der Stunde.',
+                    '{presseNom} handelt vor allem einen Namen als Titelkandidaten: {favorit}.',
+                    'stark eingeschätzt wird {favorit} – bei {favoritTeam} deutet vieles auf ein konkurrenzfähiges Jahr.',
+                    'auf dem Papier bringt {favorit} das stärkste Gesamtpaket mit – doch Papier hat noch kein Rennen gewonnen.'
+                ],
+                verteidigerFavorit: [
+                    'und die Vorzeichen sprechen erneut für ihn: {favorit} gilt auch {year} als der Mann, den es zu schlagen gilt.',
+                    'wer ihn entthronen will, braucht ein großes Jahr: {favorit} geht auch diesmal als Favorit ins Rennen um die Krone.',
+                    'die Konkurrenz sucht noch nach Antworten – die Favoritenrolle liegt erneut bei {favorit}.',
+                    'auch die neue Saison beginnt mit einer alten Gewissheit: An {favorit} führt der Weg nur vorbei, wenn alles zusammenpasst.',
+                    '{presseNom} sieht ihn erneut vorn: {favorit} vereint Fahrer und Material weiterhin am überzeugendsten.'
+                ],
+                duo: [
+                    'als erste Anwärter gelten {favorit} und {favorit2} – zwei Namen, ein Ziel.',
+                    'die Favoritenfrage hat {year} zwei Antworten: {favorit} oder {favorit2}.',
+                    '{favorit} und {favorit2} gehen mit den besten Vorzeichen ins Jahr – und das Feld dazwischen wittert seine Chance.',
+                    'zwei Lager, zwei Hoffnungen: {favorit} und {favorit2} gelten als die Männer, die den Ton angeben dürften.',
+                    'wenn die Einschätzungen stimmen, läuft es {year} auf ein Duell hinaus: {favorit} gegen {favorit2}.'
+                ]
+            },
+            rookie: {
+                one: [
+                    'frisches Blut {klasseIn}: {rookieList} wagt in diesem Jahr den Sprung ins Feld.',
+                    'mit {rookieList} steht ein {neulingSg} am Start – was in ihm steckt, wird sich zeigen müssen.',
+                    '{rookieList} startet in seine erste Saison – jedes Debüt beginnt bei null.',
+                    'ein neues Gesicht im Feld: {rookieList} bestreitet sein erstes Jahr {klasseIn}.',
+                    'auch {year} wagt sich ein {neulingSg} ins Haifischbecken: {rookieList}.'
+                ],
+                many: [
+                    'gleich mehrere {neulingPl} wagen den Sprung: {rookieList} bestreiten ihr erstes Jahr {klasseIn}.',
+                    'das Feld bekommt frisches Blut: {rookieList} stehen vor ihrer Debüt-Saison.',
+                    'neue Namen, unbeschriebene Blätter: {rookieList} beginnen das Abenteuer {klasseIn}.',
+                    '{rookieList} – die {neulingPl} des Jahrgangs {year} müssen sich erst beweisen.',
+                    'die nächste Generation klopft an: {rookieList} debütieren in diesem Jahr.'
+                ]
+            },
+            wechsel: [
+                'für Gesprächsstoff sorgt der Wechsel von {wechselName} zu {wechselTeam} – neue Farben, neue Erwartungen.',
+                '{wechselName} fährt in diesem Jahr für {wechselTeam} – eine Verbindung, die neugierig macht.',
+                'der prominenteste Umzug des Winters: {wechselName} startet fortan für {wechselTeam}.',
+                'neues Kapitel für {wechselName}: Bei {wechselTeam} will er sich neu beweisen.',
+                'ob die neue Umgebung zündet? {wechselName} versucht sein Glück ab sofort bei {wechselTeam}.',
+                'die Boxengasse hat ein neues Gesprächsthema: {wechselName} in Diensten von {wechselTeam}.'
+            ],
+            closer: [
+                'die Antworten gibt wie immer nur die Strecke – {auftakt} beginnt die Suche.',
+                'ob Favoriten oder {neulingPl}: Abgerechnet wird am Saisonende.',
+                'die Prognosen sind geschrieben, die Wahrheit fährt auf der Strecke: {klasseNom} startet in ein neues Kapitel.',
+                'noch ist alles Theorie – {auftakt} wird aus Papierform Wirklichkeit.',
+                '{publikum} darf sich auf Antworten freuen – die Fragen liefert das neue Jahr von ganz allein.',
+                'eine lange Saison liegt voraus, und sie hat noch jede Vorhersage auf die Probe gestellt.',
+                'sicher ist nur eines: Auch dieses Jahr wird seine Geschichten schreiben.'
+            ]
+        };
+        function seasonPreviewText(ctx) {
+            ctx = ctx || {};
+            const year = ctx.year || 0;
+            const champion = ctx.champion && ctx.champion.name ? ctx.champion : null;
+            const favs = Array.isArray(ctx.favorits) ? ctx.favorits.filter(f => f && f.name) : [];
+            const rookies = Array.isArray(ctx.rookies) ? ctx.rookies.filter(Boolean) : [];
+            const wechsel = ctx.wechsel && ctx.wechsel.name && ctx.wechsel.team ? ctx.wechsel : null;
+            if (!champion && !favs.length) return '';
+            const era = RECAP_ERA_WORDS.find(e => year >= e.from && year <= e.to) || RECAP_ERA_WORDS[RECAP_ERA_WORDS.length - 1];
+            const pEra = PREVIEW_ERA_WORDS.find(e => year >= e.from && year <= e.to) || PREVIEW_ERA_WORDS[PREVIEW_ERA_WORDS.length - 1];
+            const T = {
+                year: String(year),
+                champion: champion ? champion.name : '',
+                favorit: favs[0] ? favs[0].name : '',
+                favoritTeam: favs[0] ? (favs[0].team || '') : '',
+                favorit2: favs[1] ? favs[1].name : '',
+                rookieList: _recapNameList(rookies),
+                wechselName: wechsel ? wechsel.name : '',
+                wechselTeam: wechsel ? wechsel.team : '',
+                klasseNom: era.klasseNom, klasseGen: era.klasseGen, klasseIn: era.klasseIn,
+                fahrerPl: era.fahrerPl, presseNom: era.presseNom, publikum: era.publikum,
+                auftakt: pEra.auftakt, neulingSg: pEra.neulingSg, neulingPl: pEra.neulingPl
+            };
+            const rng = _recapRng(_recapHash(`preview|${year}|${T.champion}|${T.favorit}`));
+            const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+            const s = [];
+            if (champion) s.push(cap(_recapFill(_recapPick(rng, PREVIEW_BANK.verteidiger), T)));
+            if (favs.length) {
+                const fPool = favs.length > 1 ? PREVIEW_BANK.favorit.duo
+                    : (champion && favs[0].name === champion.name) ? PREVIEW_BANK.favorit.verteidigerFavorit
+                    : PREVIEW_BANK.favorit.herausforderer;
+                s.push(cap(_recapFill(_recapPick(rng, fPool), T)));
+            }
+            if (wechsel) s.push(cap(_recapFill(_recapPick(rng, PREVIEW_BANK.wechsel), T)));
+            else if (rookies.length) s.push(cap(_recapFill(_recapPick(rng, PREVIEW_BANK.rookie[rookies.length === 1 ? 'one' : 'many']), T)));
+            s.push(cap(_recapFill(_recapPick(rng, PREVIEW_BANK.closer), T)));
+            return s.join(' ');
+        }
+        // Selektoren + Komposition der Vorschau für die kommende Saison (Live-State).
+        // Nur sinnvoll für die tatsächlich anstehende Saison (previewYear === currentYear).
+        function buildSeasonPreview(previewYear) {
+            const hist = GAME_STATE.history || [];
+            // Titelverteidiger = P1 der abgeschlossenen Vorsaison
+            const prev = hist.find(x => x.year === previewYear - 1);
+            let champion = null;
+            if (prev && prev.driverStandings) {
+                const p1 = Object.entries(prev.driverStandings).map(([id, s]) => ({ id, ...s }))
+                    .sort((a, b) => (b.points || 0) - (a.points || 0))[0];
+                if (p1 && p1.name) champion = { name: p1.name };
+            }
+            // Favoriten: reputation × team.speed über aktive Fahrer mit Cockpit
+            const teamById = {}; (GAME_STATE.teams || []).forEach(t => teamById[t.id] = t);
+            const scored = (GAME_STATE.drivers || [])
+                .filter(d => (!d.status || d.status === 'active') && d.team && teamById[d.team])
+                .map(d => {
+                    const rep = typeof d.reputation === 'number' ? d.reputation : 50;
+                    const spd = teamById[d.team].carSpeed || 50;
+                    return { name: d.name, team: teamById[d.team].name, score: rep * spd };
+                })
+                .sort((a, b) => b.score - a.score);
+            const favorits = [];
+            if (scored[0]) favorits.push({ name: scored[0].name, team: scored[0].team });
+            // zweiter Favorit nur wenn eng beisammen (≥92 % des Spitzenwerts) → duo
+            if (scored[1] && scored[0] && scored[1].score >= scored[0].score * 0.92)
+                favorits.push({ name: scored[1].name, team: scored[1].team });
+            // Rookies: Debütjahr = previewYear
+            const rookies = (GAME_STATE.drivers || [])
+                .filter(d => (!d.status || d.status === 'active') && d.team && d.debutYear === previewYear)
+                .map(d => d.name).slice(0, 3);
+            // Markanter Wechsel: höchstes Ansehen unter den Fahrern mit neuem Team diese Saison
+            let wechsel = null;
+            const movers = (GAME_STATE.seasonTransfers || [])
+                .filter(t => t.driverName && t.toTeam && t.toTeam !== 'Free Agent'
+                    && t.fromTeam && t.fromTeam !== '-' && t.type !== 'renewal' && t.type !== 'dismissed');
+            if (movers.length) {
+                const repOf = nm => {
+                    const d = (GAME_STATE.drivers || []).find(x => x.name === nm);
+                    return d && typeof d.reputation === 'number' ? d.reputation : 50;
+                };
+                const top = movers.slice().sort((a, b) => repOf(b.driverName) - repOf(a.driverName))[0];
+                wechsel = { name: top.driverName, team: top.toTeam };
+            }
+            return seasonPreviewText({ year: previewYear, champion, favorits, rookies, wechsel });
         }
 
         // ---------------------------------------------------------------------------
@@ -11924,6 +12624,612 @@
 
         // Real vs. generiert: reale Fahrer tragen einen histId-Slug; generierte haben
         // histId null bzw. Laufzeit-IDs mit gen-/jw/reserve-Präfix. Lore NUR bei real.
+        // ══════════════════════════════════════════════════════════════════════
+        // FAHRER-BIOS (Fable-Paket 2, v0.9.14.69) – NUR für generierte Fahrer.
+        // Reale Fahrer haben DRIVER_LORE (Paket C) → keine Duplikation.
+        // Kern (ära-spezifisch) × Farbe (ära-neutral); deterministisch (Seed drv.id).
+        // Kaliber-Leitplanken: schwache Fahrer → kaempfer (nie Tempo-Lob).
+        // ══════════════════════════════════════════════════════════════════════
+        const DRIVER_BIO_BANK = {
+            kern: {
+                regenmeister: {
+                    e50: [
+                        '{nationAdj}, der aufblüht, wenn der Regen über die Bahn peitscht – dann fährt {name} in einer eigenen Welt.',
+                        'wenn andere Piloten den Himmel fürchten, sucht {name} ihn – ein Fahrer für die nassen Tage.',
+                        '{nationAdj} mit einem seltenen Gespür für nasse Fahrbahn – je tückischer die Bedingungen, desto ruhiger seine Hand.',
+                        'im Trockenen ein solider Pilot, im Regen ein Gegner, den niemand gern im Rückspiegel sieht: {name}.',
+                        'man sagt, {name} höre den Regen gern auf dem Helm trommeln – auf rutschiger Bahn wächst dieser Pilot über sich hinaus.'
+                    ],
+                    e62: [
+                        '{nationAdj}, dessen Stärke mit jedem Regentropfen wächst – {name} gehört das nasse Element.',
+                        'ein Fahrer mit feinem Gefühl für wenig Grip: im Regen ist {name} in seinem Element.',
+                        'wenn die Bahn nass wird, beginnt seine Zeit: {name}, Spezialist für schwierige Verhältnisse.',
+                        '{nationAdj} mit ruhigem Gasfuß, wenn es glatt wird – Regenrennen sind seine Bühne.',
+                        'die Kollegen respektieren {name} bei jedem Wetter – bei Nässe fürchten sie ihn.'
+                    ],
+                    e76: [
+                        'wenn der Regen kommt, gehen die Blicke zu {name} – der Mann für die nassen Tage.',
+                        '{nationAdj}, der bei Nässe eine Klasse für sich sein kann – Aquaplaning scheint für ihn nicht zu existieren.',
+                        'im Trockenen ein solider Racer, im Regen ein Spektakel: {name}.',
+                        'grauer Himmel, glänzender Asphalt – beste Voraussetzungen für {name}.',
+                        '{name} und der Regen – eine Beziehung, von der andere Fahrer nur träumen können.'
+                    ],
+                    e94: [
+                        'die Stoppuhr kennt sein Geheimnis: sobald die Strecke nass ist, fährt {name} über seinem sonstigen Niveau.',
+                        '{nationAdj} mit außergewöhnlichem Gefühl für Grip – Regenrennen sind die Spezialität von {name}.',
+                        'wenn die Intermediates aufgezogen werden, steigt sein Aktienkurs: {name} liebt die Nässe.',
+                        'im Regen relativiert sich Material – und genau dann schlägt die Stunde von {name}.',
+                        'nasse Strecke, schlechte Sicht, wandernde Bremspunkte – Bedingungen, in denen {name} erst richtig aufwacht.'
+                    ],
+                    e10: [
+                        'Regenwarnung? Für {name} ist das eine Einladung – bei Nässe zählt er zu den Stärksten im Feld.',
+                        '{nationAdj}, der im Regen konstant liefert, wenn andere schwimmen: {name}.',
+                        'wenn der Regenradar anschlägt, lohnt der Blick auf {name} – Regen-Spezialist durch und durch.',
+                        'volle Gischt, kaum Sicht – und {name} mittendrin in seinem Element.',
+                        'die Ingenieure wissen: sobald es regnet, kommt der Speed von {name} von ganz allein.'
+                    ]
+                },
+                metronom: {
+                    e50: [
+                        '{nationAdj}, der Runde um Runde wie mit dem Lineal gezogen fährt – {name}, die Verlässlichkeit in Person.',
+                        'kein Draufgänger, kein Hasardeur – {name} bringt den Wagen mit eiserner Gleichmäßigkeit über die Distanz.',
+                        'seine Rundenzeiten gleichen einander wie Perlen an der Schnur: {name} fährt mit der Ruhe eines Uhrwerks.',
+                        '{name} gewinnt keinen Schönheitspreis für Spektakel – dafür weiß man immer, woran man mit ihm ist.',
+                        'ein Pilot der leisen Präzision: {name} macht wenig Fehler und noch weniger Aufhebens darum.'
+                    ],
+                    e62: [
+                        '{nationAdj} mit der Präzision eines Uhrmachers – {name} liefert Runde für Runde dieselbe Zeit.',
+                        'was ihm an letzter Schärfe fehlt, macht {name} mit seltener Konstanz wett – schwache Tage sind bei ihm die Ausnahme.',
+                        'die Mechaniker lieben ihn: {name} bringt das Material heil und die Zeiten stabil nach Hause.',
+                        '{name} fährt unauffällig – und genau das ist seine Stärke.',
+                        'kein Mann der großen Geste: {name} sammelt seine Meter mit stiller Zuverlässigkeit.'
+                    ],
+                    e76: [
+                        'während andere die Schlagzeilen suchen, sammelt {name} Rundenzeiten wie ein Metronom – tack, tack, tack.',
+                        '{nationAdj}, auf den Verlass ist: {name} fährt keine Fabelzeiten, aber auch kaum Fehler.',
+                        'im Zeittraining unauffällig, im Rennen unbestechlich – {name} ist die Sorte Fahrer, die Teams ruhig schlafen lässt.',
+                        '{name} liefert ab – nicht spektakulär, aber Woche für Woche.',
+                        'sein Fahrstil hat den Puls eines Schlafwandlers – und genau deshalb funktioniert er: {name}.'
+                    ],
+                    e94: [
+                        'die Telemetrie von {name} sieht aus wie kopiert: Runde für Runde nahezu identisch – Konstanz als Markenzeichen.',
+                        '{nationAdj}, der über eine Renndistanz kaum Zeit liegen lässt – {name} fährt mit Rennintelligenz statt Risiko.',
+                        'kein Fahrer für die Highlight-Rolle, aber einer für die Punktetabelle: {name} minimiert Fehler wie nur wenige.',
+                        '{name} fährt das Rennen wie ein Ingenieur: sauber, geplant, wiederholbar.',
+                        'die Strategen wissen, was sie an ihm haben: {name} setzt jeden Plan präzise um.'
+                    ],
+                    e10: [
+                        'Metronom-Modus: {name} klickt seine Runden ab, als wäre Reifenmanagement ein Kinderspiel.',
+                        '{nationAdj} mit maximaler Wiederholgenauigkeit – die Longruns von {name} sind das ruhige Rückgrat jedes Rennwochenendes.',
+                        'keine wilden Ausschläge, keine unnötigen Risiken: {name} liefert, was das Team einplant.',
+                        '{name} ist der Fahrer, dessen Rundenzeiten man stapeln kann – Konstanz pur.',
+                        'im Qualifying selten die Schlagzeile, im Rennen selten ein Fehler: {name}.'
+                    ]
+                },
+                draufgaenger: {
+                    e50: [
+                        '{nationAdj} mit schwerem Gasfuß und leichtem Herzen – {name} kennt nur eine Richtung: nach vorn.',
+                        'Vorsicht ist ein Wort, das {name} nur vom Hörensagen kennt – ein Pilot wie aus den wilden Anfangstagen des Sports.',
+                        'sein Mut ist größer als jede Kurve – {name} fährt, als gäbe es kein Morgen.',
+                        '{name} verlangt seinem Wagen alles ab – und manchmal mehr, als der Wagen geben kann.',
+                        'das Publikum liebt ihn, die Mechaniker fürchten seine Rechnungen: {name}, ein Mann des vollen Risikos.'
+                    ],
+                    e62: [
+                        '{nationAdj}, der schneller fährt, als es die Vernunft empfiehlt – {name} war nie ein Freund halber Sachen.',
+                        'zwischen Brillanz und Bruchlandung liegt bei {name} oft nur eine Kurve – langweilig wird es mit ihm nie.',
+                        '{name} hat Tempo im Überfluss – nur mit dem Zähmen steht er auf Kriegsfuß.',
+                        'ein Fahrer, der jede Lücke nimmt, auch die, die keine ist: {name}.',
+                        'sein Talent stand nie in Frage, seine Selbstbeherrschung schon: {name} fährt am Limit – und gern darüber.'
+                    ],
+                    e76: [
+                        'Vollgas oder gar nicht: {name} kennt kein Mittelmaß – jede Runde ein Drahtseilakt.',
+                        '{nationAdj}, der das Auto ans Limit prügelt – spektakulär, kompromisslos, unberechenbar: {name}.',
+                        '{name} fährt wie entfesselt – an guten Tagen unwiderstehlich, an schlechten unhaltbar.',
+                        'die Fans lieben {name} für genau das, was seinen Mechanikern graue Haare beschert: null Respekt vor dem Limit.',
+                        'wo andere lupfen, bleibt {name} drauf – ein Mann, der jedes Rennen zur Mutprobe macht.'
+                    ],
+                    e94: [
+                        'maximale Attacke als Grundeinstellung: {name} kennt im Datenblatt nur eine Spalte – Vollgas.',
+                        '{nationAdj} mit brutaler Grundschnelligkeit und einem Hang zum Übermut – {name} eben.',
+                        'die reine Pace von {name} ist unbestritten – die Frage ist nur, in welcher Reihenfolge Glanztat und Fehler kommen.',
+                        '{name} fährt jede Runde wie eine Qualifying-Runde – mit allen Konsequenzen.',
+                        'Risikomanagement ist für {name} ein Fremdwort – Geschwindigkeit nicht.'
+                    ],
+                    e10: [
+                        'Full Attack, immer: {name} fährt, als hätte jemand den Risiko-Regler abgerissen.',
+                        '{nationAdj} mit Mega-Speed und kurzer Zündschnur – {name} liefert Highlights in beide Richtungen.',
+                        'jede Runde ein Statement: {name} kennt kein Taktieren – nur Attacke.',
+                        'für {name} ist das Limit keine Grenze, sondern eine Einladung.',
+                        'schnell, mutig, manchmal zu viel von beidem: {name}.'
+                    ]
+                },
+                rohdiamant: {
+                    e50: [
+                        '{nationAdj}, jung an Jahren und reich an Talent – über {name} spricht man im Fahrerlager schon jetzt.',
+                        'noch trägt seine Fahrweise die Spuren der Lehrjahre, doch das Talent von {name} ist unübersehbar.',
+                        'die alten Hasen beobachten ihn genau: {name} hat das gewisse Etwas, das man nicht lernen kann.',
+                        'so jung, so schnell – {name} steht erst am Anfang, und schon horcht die Konkurrenz auf.',
+                        'man muss kein Prophet sein, um {name} eine große Zukunft vorherzusagen – wenn er die Geduld aufbringt, sie zu erreichen.'
+                    ],
+                    e62: [
+                        '{nationAdj} mit rohem, ungeschliffenem Talent – {name} braucht nur noch Zeit und Kilometer.',
+                        'jung, hungrig, lernwillig: {name} gilt vielen im Fahrerlager als kommender Mann.',
+                        'noch fehlt die Erfahrung, doch die Anlagen von {name} sind erstklassig.',
+                        'die Rundenzeiten sind noch unstet, das Talent ist es nicht: {name}.',
+                        '{name} fährt erst seit kurzem in dieser Klasse – und wirkt doch, als gehöre er längst hierher.'
+                    ],
+                    e76: [
+                        'ein Youngster mit Feuer: {name} hat mehr Talent als Starts – noch.',
+                        'die Teams tuscheln längst über {name} – der nächste große Name?',
+                        'jung, schnell, unerschrocken: {name} bringt alles mit – jetzt fehlt nur die Routine.',
+                        '{nationAdj}, der noch grün hinter den Ohren, aber giftig auf der Stoppuhr ist: {name}.',
+                        'rohes Talent trifft jugendlichen Übermut – {name} ist einer für die Zukunft, vielleicht schon für morgen.'
+                    ],
+                    e94: [
+                        'die Daten sind eindeutig: {name} bringt Grundspeed mit, den man nicht trainieren kann – der Rest ist Arbeit.',
+                        'ein Rohdiamant im besten Wortsinn: {name} glänzt schon, geschliffen wird noch.',
+                        'jung und noch unfertig – aber die schnellen Runden von {name} lassen aufhorchen.',
+                        '{nationAdj}, in den Beobachter große Erwartungen setzen: {name} gilt als Investition in die Zukunft.',
+                        'das Paket ist noch nicht komplett, die Basis umso vielversprechender: {name}.'
+                    ],
+                    e10: [
+                        'Rookie-Vibes, große Zukunft: {name} bringt genau die Art Speed mit, die man nicht kaufen kann.',
+                        'jung, furchtlos und lernschnell – {name} steht auf jeder Beobachtungsliste im Paddock.',
+                        'das Talent ist offensichtlich, die Feinarbeit läuft: {name} ist eine Aktie mit Potenzial.',
+                        '{nationAdj} mit hohem Potenzial und wenig Kilometern – {name} sammelt gerade das Einzige, was ihm fehlt: Erfahrung.',
+                        'noch nicht das fertige Produkt – aber {name} zeigt jetzt schon Momente, die man nicht lehren kann.'
+                    ]
+                },
+                routinier: {
+                    e50: [
+                        '{nationAdj} der alten Schule – {name} hat mehr Rennkilometer hinter sich als mancher Konkurrent Lebensjahre.',
+                        'kaum eine Situation, die {name} nicht schon erlebt hätte – Erfahrung ist seine schärfste Waffe.',
+                        'die Jungen drängen – doch {name} weiß Dinge über das Rennfahren, die in keinem Lehrbuch stehen.',
+                        'ein Veteran mit wachem Blick: {name} plant seine Duelle, bevor sie beginnen.',
+                        '{name} gehört zum Inventar des Fahrerlagers – und wird nur von denen unterschätzt, die allein auf das Alter schauen.'
+                    ],
+                    e62: [
+                        'Erfahrung, gepaart mit kühlem Kopf: {name} weiß in jeder Rennsituation, was zu tun ist.',
+                        '{nationAdj} mit vielen Jahren im Cockpit – {name} kennt die Tricks, die auf keiner Stoppuhr erscheinen.',
+                        'das Alter hat ihm nichts genommen außer Illusionen: {name} fährt klug, abwartend, effektiv.',
+                        'die Jungen sind schneller nervös als er müde: {name}, ein Mann der ruhigen Routine.',
+                        '{name} braucht keine Heldentaten mehr – er braucht nur die richtige Gelegenheit.'
+                    ],
+                    e76: [
+                        'ein alter Fuchs im Feld: {name} riecht Chancen, bevor sie entstehen.',
+                        '{nationAdj} mit reichlich Kilometern auf dem Buckel – {name} fährt mit dem Kopf, nicht mit dem Ego.',
+                        'abgezockt im besten Sinne: {name} lässt sich von niemandem aus der Ruhe bringen.',
+                        'die wilde Zeit ist vorbei, die schnelle nicht: {name} setzt seine Erfahrung wie ein Werkzeug ein.',
+                        '{name} kennt jeden Trick im Buch – und ein paar, die nie hineingeschrieben wurden.'
+                    ],
+                    e94: [
+                        'Erfahrung als Wettbewerbsvorteil: {name} liest Rennen wie andere die Boxentafel.',
+                        '{nationAdj}, der schon alles gesehen hat – {name} bleibt cool, wenn es hektisch wird.',
+                        'die Reflexe mögen nicht mehr die eines Zwanzigjährigen sein – das Rennhirn von {name} ist schärfer denn je.',
+                        '{name} kompensiert mit Klugheit, was die Jahre kosten – ein Profi durch und durch.',
+                        'kein spektakulärer, aber ein kompletter Fahrer: {name} weiß immer, wo die Punkte liegen.'
+                    ],
+                    e10: [
+                        'der Routinier im Feld: {name} hat für jede Rennsituation ein fertiges Programm im Kopf.',
+                        '{nationAdj} mit jahrelanger Erfahrung – {name} macht die Dinge nicht schneller, sondern richtiger.',
+                        'Erfahrung schlägt Übermut: {name} bleibt gelassen, wo Jüngere überziehen.',
+                        '{name} kennt jede Strecke, jede Situation, jeden Trick – das Alter ist sein Werkzeugkasten.',
+                        'am Funk die Ruhe selbst, auf der Strecke berechenbar stark: {name}.'
+                    ]
+                },
+                allrounder: {
+                    e50: [
+                        'ein Pilot ohne offene Flanke: {name} beherrscht sein Handwerk in allen Lagen.',
+                        '{nationAdj}, der auf jeder Bahn und bei jedem Wetter seinen Mann steht: {name}.',
+                        'weder Draufgänger noch Zauderer – {name} ist ein Rennfahrer aus einem Guss.',
+                        '{name} hat von allem genug und von nichts zu wenig – ein verlässlicher Allrounder.',
+                        'kein Spezialist, sondern ein Komplettpaket: {name} fährt solide durch alle Prüfungen.'
+                    ],
+                    e62: [
+                        'ausgewogen in allen Disziplinen: {name} hat keine Paradedisziplin – und keine Schwachstelle.',
+                        '{nationAdj} mit einem runden Gesamtpaket – {name} passt sich jeder Aufgabe an.',
+                        '{name} ist die Sorte Fahrer, die jedes Team gebrauchen kann: flexibel, solide, unkompliziert.',
+                        'kein Extrem, nirgends: {name} fährt ausgewogen und lässt wenig anbrennen.',
+                        'was {name} anpackt, macht er ordentlich – ein Fahrer der guten Mitte.'
+                    ],
+                    e76: [
+                        'ein Allrounder, wie er im Buche steht: {name} liefert auf jedem Streckentyp ab.',
+                        '{nationAdj} ohne Schwachpunkt im Repertoire – {name} ist überall gut, wenn auch nirgends unschlagbar.',
+                        '{name} kann schnell und kann konstant – je nachdem, was der Tag verlangt.',
+                        'solide Basis, breites Können: {name} muss sich vor keiner Aufgabe verstecken.',
+                        'die Mischung stimmt: {name} vereint Tempo, Übersicht und Nervenstärke zu einem stabilen Paket.'
+                    ],
+                    e94: [
+                        'das Datenblatt zeigt keine Ausreißer – nach oben wie nach unten: {name}, der Allrounder.',
+                        '{nationAdj} mit ausgeglichenem Profil – {name} ist auf jedem Streckentyp konkurrenzfähig.',
+                        'kein Spezialist, aber überall verwendbar: {name} ist die flexible Antwort auf jede Aufgabenstellung.',
+                        '{name} bringt ein komplettes Skillset mit – die Summe ist besser als jeder Einzelwert.',
+                        'verlässlich in der Breite: {name} liefert auf jedem Terrain solide Arbeit ab.'
+                    ],
+                    e10: [
+                        'kompletter Fahrer, kompletter Werkzeugkasten: {name} hat auf jede Frage eine Antwort.',
+                        '{nationAdj} mit ausgewogenem Profil – {name} performt auf jedem Streckentyp stabil.',
+                        'kein One-Trick-Pony: {name} nimmt jede Aufgabe eines Rennwochenendes an.',
+                        '{name} ist der Fahrer für alle Fälle – flexibel, stabil, unterschätzt.',
+                        'die Stärke von {name} ist, dass er keine Schwäche hat – zumindest keine, die man ausnutzen könnte.'
+                    ]
+                },
+                kaempfer: {
+                    e50: [
+                        'ein ehrlicher Arbeiter des Grand-Prix-Sports: {name} kämpft meist abseits des Rampenlichts – und kämpft doch immer.',
+                        '{nationAdj}, der keine Wunder verspricht: {name} fährt, was Wagen und Tag hergeben.',
+                        'die großen Schlagzeilen schreiben andere – {name} füllt derweil das Feld mit anständiger Arbeit.',
+                        'kein Star, kein Held der Chroniken: {name} gehört zu jenen, die diesen Sport am Laufen halten.',
+                        '{name} weiß um seine Grenzen – und begegnet ihnen mit einer Beharrlichkeit, die Respekt verdient.'
+                    ],
+                    e62: [
+                        'ein Mann aus dem Maschinenraum des Feldes: {name} fährt seine Rennen ohne Getöse.',
+                        '{nationAdj} ohne große Ansprüche auf Ruhm – {name} nimmt die Aufgaben, wie sie kommen.',
+                        'nicht jeder kann um Siege fahren – {name} füllt seine Rolle mit Anstand aus.',
+                        'kein Anwärter auf die großen Pokale, aber einer, der jede Runde ernst nimmt: {name}.',
+                        '{name} wird selten gefeiert und nie belächelt – Respekt verdient man sich auch weiter hinten.'
+                    ],
+                    e76: [
+                        'kein Kandidat für die Titelseiten: {name} verrichtet seine Arbeit dort, wo die Kameras selten hinschwenken.',
+                        '{nationAdj} mit begrenzten Mitteln und unbegrenztem Willen – {name} gibt nicht auf.',
+                        '{name} kämpft mehr mit dem Feld als um den Sieg – und bleibt trotzdem jede Woche dran.',
+                        'einer für die harten Meter: {name} fährt Rennen, die keine Pokale bringen, aber Charakter zeigen.',
+                        'zwischen Hoffen und Durchhalten: {name} kennt die zähe Seite dieses Sports besser als die glänzende.'
+                    ],
+                    e94: [
+                        'im Datenblatt kein Ausreißer nach oben – aber {name} bringt etwas mit, das dort nicht steht: Beharrlichkeit.',
+                        '{nationAdj}, der um jede Position kämpfen muss – {name} arbeitet unverdrossen an jedem Prozentpunkt.',
+                        'die Punkte hängen für ihn höher als für andere – {name} springt trotzdem jedes Wochenende.',
+                        'kein Highlight-Fahrer, kein Verzweifelter: {name} macht aus wenig Möglichkeiten ein ordentliches Handwerk.',
+                        '{name} gehört zu den Unauffälligen des Feldes – hartnäckig, geduldig, unbeirrbar.'
+                    ],
+                    e10: [
+                        'kein Fahrer für die Highlight-Reels – aber {name} bringt jede Woche vollen Einsatz.',
+                        '{nationAdj}, der ohne Vorschusslorbeeren auskommt: {name} definiert sich über Arbeit, nicht über Ansprüche.',
+                        'im Rampenlicht stehen andere – {name} kämpft derweil um jede einzelne Position.',
+                        'das Paket hat Grenzen, der Einsatz nicht: {name}.',
+                        '{name} wird keine Rekorde brechen – aber unterschätzen sollte man seinen Biss nicht.'
+                    ]
+                }
+            },
+            farbe: {
+                regenmeister: [
+                    'wenn die ersten Tropfen fallen, wird aus Respekt Vorfreude.',
+                    'sein Gefühl für wenig Haftung ist die Art Talent, die man hat oder nie bekommt.',
+                    'bei Nässe fährt er Linien, die sonst niemand sieht.',
+                    'schlechtes Wetter ist für ihn kein Risiko, sondern ein Verbündeter.',
+                    'je schwieriger die Bedingungen, desto kürzer wird die Liste seiner Gegner.',
+                    'was andere Fahrer Glückssache nennen, nennt er Handwerk.'
+                ],
+                metronom: [
+                    'seine größte Stärke sieht man erst in der Summe der Runden.',
+                    'er sammelt keine Schlagzeilen – er sammelt Zielankünfte.',
+                    'Fehler sind bei ihm nicht ausgeschlossen, aber selten genug, um aufzufallen.',
+                    'wer ihn schlagen will, muss es über die volle Distanz tun – Momente reichen nicht.',
+                    'er ist selten der Schnellste einer Runde – und oft der Stabilste eines Rennens.',
+                    'Aufregung ist für ihn ein Fremdwort, Präzision Muttersprache.'
+                ],
+                draufgaenger: [
+                    'sein Stil kennt keine halben Sachen – bewundert und gefürchtet zugleich.',
+                    'zwischen seinem besten und seinem schlechtesten Tag liegt ein ganzes Starterfeld.',
+                    'er fährt jede Runde, als wäre sie die letzte des Rennens.',
+                    'sicher ist bei ihm nur eines: langweilig wird es nie.',
+                    'sein Mut öffnet Türen, die seine Geduld gelegentlich wieder zuschlägt.',
+                    'man kann ihm vieles vorwerfen, aber niemals, dass er es nicht versucht hätte.'
+                ],
+                rohdiamant: [
+                    'was ihm an Erfahrung fehlt, ersetzt er vorerst mit Instinkt.',
+                    'die Lernkurve zeigt steil nach oben – die Frage ist nur, wie weit.',
+                    'noch macht er Fehler eines Anfängers – und Runden eines Könners.',
+                    'sein Name fällt immer öfter, wenn über die Zukunft gesprochen wird.',
+                    'die Anlagen sind da; jetzt entscheidet sich, was daraus wird.',
+                    'jeder Start bringt ihn näher an das, was in ihm steckt.'
+                ],
+                routinier: [
+                    'er hat gelernt, dass Rennen selten in der ersten Kurve gewonnen, aber oft dort verloren werden.',
+                    'seine Erfahrung ist die Art Vorsprung, die keine Stoppuhr misst.',
+                    'wo andere reagieren, hat er längst geplant.',
+                    'die Jahre haben sein Tempo kaum berührt – und sein Urteilsvermögen geschärft.',
+                    'er kennt seine Grenzen so genau, dass er sie selten braucht.',
+                    'Nervosität hat er irgendwann abgelegt wie einen alten Handschuh.'
+                ],
+                allrounder: [
+                    'seine Vielseitigkeit macht ihn für jedes Team zur einfachen Entscheidung.',
+                    'er hat keine Lieblingsbedingungen – und genau das ist der Punkt.',
+                    'wo immer man ihn einsetzt, kommt Brauchbares zurück.',
+                    'seine Stärke liegt nicht im Extrem, sondern im Zusammenspiel.',
+                    'unterschätzt wird er nur von denen, die noch nicht gegen ihn gefahren sind.',
+                    'er löst Aufgaben, statt Geschichten zu produzieren.'
+                ],
+                kaempfer: [
+                    'er weiß, dass nicht jeder Sonntag ein Feiertag ist – und fährt trotzdem jeden.',
+                    'sein Ehrgeiz fragt nicht nach den Erfolgsaussichten.',
+                    'wer weiter hinten kämpft, kämpft oft am härtesten.',
+                    'er nimmt, was das Rennen ihm lässt, und macht das Beste daraus.',
+                    'Aufgeben steht nicht in seinem Wortschatz – ganz gleich, wo er startet.',
+                    'sein Beitrag steht in keiner Siegerliste – im Fahrerlager kennt man ihn trotzdem.'
+                ]
+            }
+        };
+        // IOC-3 → deutsches Nationsadjektiv-Nomen als Nominativ-NP (kleiner Artikel; maskulin).
+        const _NATION_ADJ = {
+            GER:'der Deutsche', FRA:'der Franzose', ITA:'der Italiener', GBR:'der Brite', ESP:'der Spanier',
+            BRA:'der Brasilianer', ARG:'der Argentinier', USA:'der Amerikaner', CAN:'der Kanadier', MEX:'der Mexikaner',
+            AUS:'der Australier', NZL:'der Neuseeländer', JPN:'der Japaner', FIN:'der Finne', SWE:'der Schwede',
+            NED:'der Niederländer', BEL:'der Belgier', AUT:'der Österreicher', SUI:'der Schweizer', MON:'der Monegasse',
+            POR:'der Portugiese', POL:'der Pole', DEN:'der Däne', RUS:'der Russe', IRL:'der Ire', RSA:'der Südafrikaner',
+            CZE:'der Tscheche', HUN:'der Ungar', COL:'der Kolumbianer', VEN:'der Venezolaner', CHI:'der Chilene',
+            URU:'der Uruguayer', IND:'der Inder', CHN:'der Chinese', THA:'der Thailänder', TUR:'der Türke',
+            GRE:'der Grieche', MAS:'der Malaysier', INA:'der Indonesier', LIE:'der Liechtensteiner', LUX:'der Luxemburger'
+        };
+        // Archetyp-Klassifikator (feld-relativ, Kaliber-Leitplanken – s. Bank-Header).
+        function _bioArchetype(drv, year) {
+            const field = (GAME_STATE.drivers || []).filter(d => !d.status || d.status === 'active');
+            const nums = k => field.map(d => d[k] || 0).filter(Boolean);
+            const avg = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 70;
+            const paces = nums('pace').sort((a, b) => a - b);
+            const avgPace = avg(paces), avgRain = avg(nums('rain')), avgCons = avg(nums('consistency'));
+            const p75 = paces.length ? paces[Math.min(paces.length - 1, Math.floor(paces.length * 0.75))] : avgPace + 5;
+            const pace = drv.pace || 0, rain = drv.rain || 0, cons = drv.consistency || 0;
+            const exp = drv.experience || 0, starts = drv.starts || 0, pot = drv.potentialPace || pace;
+            const age = drv.birthYear ? year - drv.birthYear : null;
+            const rookieMax = (getEraValue(ERA_ROOKIE_AGE, year) || 22) + 3;
+            const retAge = getEraValue(ERA_RETIREMENT_AGE, year) || 34;
+            if (age !== null && age <= rookieMax && starts < 40 && pot >= avgPace + 3) return 'rohdiamant';
+            if (pace >= p75 && cons <= avgCons - 6) return 'draufgaenger';
+            if (rain >= avgRain + 6 && rain >= pace + 4) return 'regenmeister';
+            if (exp >= 82 && age !== null && age >= retAge - 2 && pace >= avgPace - 2) return 'routinier';
+            if (cons >= avgCons + 6 && pace >= avgPace - 3) return 'metronom';
+            if (pace >= avgPace && cons >= avgCons - 3 && rain >= avgRain - 3) return 'allrounder';
+            return 'kaempfer';   // Mittel-/Hinterfeld ohne Spezialstärke (Kaliber-Leitplanke)
+        }
+        function generatedDriverBio(drv, ctx) {
+            if (!drv || !drv.name) return '';
+            ctx = ctx || {};
+            const arch = DRIVER_BIO_BANK.kern[ctx.archetype] ? ctx.archetype : 'allrounder';
+            const year = ctx.year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : 2000);
+            const era = year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
+            const T = { name: drv.name, nationAdj: ctx.nationAdj || '' };
+            const avail = (pool) => {
+                const ok = pool.filter(t => !(t.match(/\{(\w+)\}/g) || []).some(s => !T[s.slice(1, -1)]));
+                return ok.length ? ok : pool;
+            };
+            const rng = _recapRng(_recapHash('bio|' + (drv.id || drv.name)));
+            const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+            return cap(_recapFill(_recapPick(rng, avail(DRIVER_BIO_BANK.kern[arch][era])), T)) + ' '
+                 + cap(_recapFill(_recapPick(rng, avail(DRIVER_BIO_BANK.farbe[arch])), T));
+        }
+        // Convenience: komponiert die Bio für ein Fahrer-Objekt (Nation → Adj, Ära → Jahr).
+        function driverBioFor(drv) {
+            if (!drv) return '';
+            return generatedDriverBio(drv, {
+                archetype: _bioArchetype(drv, GAME_STATE.currentYear),
+                nationAdj: _NATION_ADJ[_iocOf(drv.nation)] || '',
+                year: GAME_STATE.currentYear
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // RIVALITÄTS-/DUELL-TEXTE (Fable-Paket 5, v0.9.14.69).
+        // eng/dominanz aus h2hSeason (Teamkollege), fehde aus getH2HHistory (mehrjährig),
+        // augenhoehe aus WM-Wertung+Reputation (teamübergreifend). Seed PAAR-symmetrisch
+        // (sortierte IDs) → beide Profile identisch. NUR sportliches Duell aus State-Zahlen.
+        // ══════════════════════════════════════════════════════════════════════
+        const RIVALRY_BANK = {
+            eng: {
+                e50: [
+                    'zwischen {driver} und {rival} passt kein Blatt Papier – {h2hText}, und niemand vermag zu sagen, wer am Ende vorn liegt.',
+                    'das teaminterne Duell zwischen {driver} und {rival} hält die Mannschaft in Atem: {h2hText}.',
+                    '{driver} gegen {rival} – ein Kräftemessen auf des Messers Schneide: {h2hText}.',
+                    'im eigenen Lager tobt der engste Kampf: {driver} und {rival} trennt fast nichts – {h2hText}.',
+                    'wenn zwei Piloten desselben Stalls sich nichts schenken, schaut das ganze Fahrerlager hin: {h2hText} zwischen {driver} und {rival}.'
+                ],
+                e62: [
+                    'das Duell zwischen {driver} und {rival} ist so eng, wie es teamintern nur sein kann: {h2hText}.',
+                    '{driver} und {rival} nehmen sich kaum etwas – {h2hText}.',
+                    'stallintern geht es eng zu: zwischen {driver} und {rival} steht es {h2hText}.',
+                    'kaum ein Wochenende, an dem zwischen {driver} und {rival} nicht neu gemischt wird – {h2hText}.',
+                    'die vielleicht engste Messlatte liegt im eigenen Team: {driver} gegen {rival}, {h2hText}.'
+                ],
+                e76: [
+                    'Stallduell auf Augenhöhe: {driver} gegen {rival} – {h2hText}, enger geht es kaum.',
+                    'im Team wird nichts verschenkt: {driver} und {rival} trennt so gut wie nichts – {h2hText}.',
+                    '{driver} oder {rival}? Die Frage stellt sich jedes Wochenende neu – {h2hText}.',
+                    'die Box hat ihr eigenes Duell: {driver} gegen {rival}, aktuell {h2hText}.',
+                    'wer die beiden vergleichen will, braucht die Lupe: {h2hText} zwischen {driver} und {rival}.'
+                ],
+                e94: [
+                    'das teaminterne Duell ist statistisch ein Patt: {driver} gegen {rival}, {h2hText}.',
+                    '{driver} und {rival} liefern sich ein Duell auf Messers Schneide – {h2hText}.',
+                    'die Datenlage zwischen {driver} und {rival} ist so ausgeglichen wie selten: {h2hText}.',
+                    'im Team entscheidet aktuell die Tagesform: zwischen {driver} und {rival} steht es {h2hText}.',
+                    'kein klarer Erster im eigenen Haus: {driver} und {rival} trennt fast nichts – {h2hText}.'
+                ],
+                e10: [
+                    'teamintern herrscht Patt-Stimmung: {driver} vs. {rival} – {h2hText}.',
+                    'das engste Duell fährt im selben Auto: {driver} gegen {rival}, {h2hText}.',
+                    '{driver} und {rival} schenken sich nichts – {h2hText}, Ausgang offen.',
+                    'Stallduell mit offenem Visier: zwischen {driver} und {rival} steht es {h2hText}.',
+                    'wer hier die Team-Hierarchie sucht, sucht vergebens: {driver} gegen {rival}, {h2hText}.'
+                ]
+            },
+            dominanz: {
+                e50: [
+                    'im teaminternen Vergleich gibt {driver} den Ton an: {h2hText} gegen {rival} – die Bilanz spricht eine deutliche Sprache.',
+                    'das Stallduell hat einen klaren Herrn: {driver} hält {rival} mit {h2hText} auf Distanz.',
+                    'zwischen {driver} und {rival} ist die Rangordnung derzeit eindeutig – {h2hText}.',
+                    '{rival} beißt sich am eigenen Teamkollegen die Zähne aus: {driver} führt das Duell mit {h2hText} an.',
+                    'wer wissen will, wer im Team den Maßstab setzt, schaue auf die Bilanz: {driver} vor {rival}, {h2hText}.'
+                ],
+                e62: [
+                    'das teaminterne Duell verläuft einseitig: {driver} führt gegen {rival} mit {h2hText}.',
+                    '{driver} hat die Verhältnisse im Team geklärt – {h2hText} gegen {rival}.',
+                    'gegen den eigenen Teamkollegen findet {rival} derzeit kein Mittel: {driver} liegt mit {h2hText} vorn.',
+                    'die Bilanz lässt wenig Raum für Diskussionen: {driver} gegen {rival}, {h2hText}.',
+                    'im direkten Vergleich hat {driver} klar die Oberhand – {h2hText}.'
+                ],
+                e76: [
+                    'klare Ansage im eigenen Team: {driver} distanziert {rival} mit {h2hText}.',
+                    'das Stallduell? Momentan keines: {driver} dominiert gegen {rival} – {h2hText}.',
+                    '{rival} kommt an seinem Teamkollegen einfach nicht vorbei: {h2hText} für {driver}.',
+                    'im Team gibt es derzeit nur eine Richtung – {driver} vor {rival}, {h2hText}.',
+                    'die nackten Zahlen sind deutlich: {driver} führt das interne Duell mit {h2hText} an.'
+                ],
+                e94: [
+                    'die Statistik im Teamduell ist eindeutig: {driver} führt gegen {rival} mit {h2hText}.',
+                    '{driver} hat das interne Duell klar im Griff – {h2hText} gegen {rival}.',
+                    'für {rival} ist der eigene Teamkollege derzeit die höchste Hürde: {h2hText} für {driver}.',
+                    'wer die Team-Hierarchie sucht, findet sie in der Bilanz: {driver} vor {rival}, {h2hText}.',
+                    'im direkten Vergleich setzt {driver} derzeit den Maßstab: {h2hText}.'
+                ],
+                e10: [
+                    'das Teamduell hat eine klare Nummer eins: {driver} führt gegen {rival} mit {h2hText}.',
+                    '{driver} dominiert den internen Vergleich – {h2hText} gegen {rival}.',
+                    'Benchmark im eigenen Haus: an {driver} ist für {rival} derzeit kein Vorbeikommen – {h2hText}.',
+                    'die Zahlen im Stallduell sprechen für sich: {driver} vor {rival}, {h2hText}.',
+                    '{rival} sucht noch nach Antworten auf den Mann in der anderen Garagenhälfte: {h2hText} für {driver}.'
+                ]
+            },
+            augenhoehe: {
+                e50: [
+                    '{driver} und {rival} – zwei Namen, die derzeit über den anderen stehen und einander nichts schenken: {h2hText}.',
+                    'wenn {driver} und {rival} aufeinandertreffen, hält der Grand-Prix-Sport den Atem an – {h2hText}.',
+                    'ein Duell, wie es das Publikum liebt: {driver} gegen {rival}, Größe gegen Größe – {h2hText}.',
+                    'die Ehre der Ersten wird derzeit zwischen {driver} und {rival} verhandelt – {h2hText}.',
+                    '{driver} oder {rival}? An dieser Frage scheiden sich derzeit die Geister an den Strecken – {h2hText}.'
+                ],
+                e62: [
+                    'das Duell der Besten: {driver} gegen {rival} – {h2hText}.',
+                    '{driver} und {rival} fahren derzeit in einer eigenen Sphäre – und gegeneinander: {h2hText}.',
+                    'zwei Spitzenfahrer, ein Ziel: zwischen {driver} und {rival} entscheidet sich derzeit vieles – {h2hText}.',
+                    'wo {driver} ist, ist {rival} selten weit – {h2hText}.',
+                    'die Saison hat ihr großes Duell gefunden: {driver} gegen {rival}, {h2hText}.'
+                ],
+                e76: [
+                    'das große Duell dieser Tage: {driver} gegen {rival} – {h2hText}.',
+                    '{driver} und {rival} liefern sich einen Schlagabtausch der Extraklasse: {h2hText}.',
+                    'zwei Alphatiere, eine Spitze: {driver} gegen {rival} elektrisiert das Publikum – {h2hText}.',
+                    'wenn diese beiden auf derselben Strecke stehen, gibt es keine Nebenschauplätze: {driver} gegen {rival}, {h2hText}.',
+                    'die Frage des Jahres lautet {driver} oder {rival} – {h2hText}.'
+                ],
+                e94: [
+                    'das Topduell der Saison: {driver} gegen {rival} – {h2hText}.',
+                    '{driver} und {rival} trennen Nuancen, keine Klassen: {h2hText}.',
+                    'zwei Fahrer definieren derzeit die Spitze – {driver} und {rival}, {h2hText}.',
+                    'im Kampf um die Spitze schenken sich {driver} und {rival} nichts – {h2hText}.',
+                    'die Bestenliste hat aktuell zwei Namen: {driver} und {rival} – {h2hText}.'
+                ],
+                e10: [
+                    'das Duell, auf das alle schauen: {driver} gegen {rival} – {h2hText}.',
+                    '{driver} vs. {rival} ist DAS Duell dieser Saison – {h2hText}.',
+                    'zwei Ausnahmekönner, kaum Luft dazwischen: {driver} und {rival}, {h2hText}.',
+                    'Spitzenkampf pur: {driver} gegen {rival} – {h2hText}.',
+                    'wenn {driver} und {rival} aufeinandertreffen, wird jedes Duell zum Hauptereignis – {h2hText}.'
+                ]
+            },
+            fehde: {
+                e50: [
+                    'was {driver} und {rival} verbindet, ist mehr als eine Saison: {seasonsText} messen sich die beiden nun schon – {h2hText}.',
+                    'dieses Duell hat Geschichte: {driver} und {rival} kennen einander {seasonsText} – die Bilanz: {h2hText}.',
+                    'alte Bekannte: {seasonsText} teilen sich {driver} und {rival} nun schon dieselbe Box – {h2hText}.',
+                    'manche Duelle überdauern die Jahre: {driver} gegen {rival}, ausgetragen {seasonsText} – {h2hText}.',
+                    'im Fahrerlager kennt man dieses Kräftemessen längst: {driver} und {rival}, Seite an Seite und doch gegeneinander, {seasonsText} – {h2hText}.'
+                ],
+                e62: [
+                    'das Duell {driver} gegen {rival} läuft nun schon {seasonsText} – {h2hText}.',
+                    'zwei, die sich kennen wie sonst niemand im Feld: {driver} und {rival}, Teamkollegen {seasonsText} – {h2hText}.',
+                    'aus Rennen wurde Routine, aus Routine Rivalität: {driver} und {rival} messen sich {seasonsText} – {h2hText}.',
+                    'die Akte {driver} gegen {rival} füllt sich {seasonsText}: {h2hText}.',
+                    'kaum ein internes Duell hat mehr Kapitel: {driver} und {rival}, {seasonsText} – {h2hText}.'
+                ],
+                e76: [
+                    'diese Rivalität hat Patina: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    '{seasonsText} teilen sich {driver} und {rival} nun schon die Garage – der Zwischenstand: {h2hText}.',
+                    'was als Stallduell begann, ist längst ein Dauerbrenner: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'im Team kennt jeder diese Konstellation: {driver} und {rival}, aneinander gemessen {seasonsText} – {h2hText}.',
+                    'zwei Teamkollegen, eine lange Geschichte: {seasonsText} läuft dieses Duell nun – {h2hText}.'
+                ],
+                e94: [
+                    'dieses Duell hat eine eigene Statistik-Seite verdient: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'die Langzeit-Bilanz spricht Bände: {driver} und {rival} messen sich {seasonsText} – {h2hText}.',
+                    'kaum zwei Fahrer kennen die Daten des anderen besser: {driver} und {rival}, Teamkollegen {seasonsText} – {h2hText}.',
+                    'ein Duell mit Historie: {seasonsText} vergleichen sich {driver} und {rival} nun im selben Material – {h2hText}.',
+                    'im Archiv dieses Teams füllt das Duell zwischen {driver} und {rival} ganze Ordner: {seasonsText}, {h2hText}.'
+                ],
+                e10: [
+                    'dieses Stallduell ist ein Dauerbrenner: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    '{driver} und {rival} kennen jede Stärke und jede Schwäche des anderen – {seasonsText} im selben Team, {h2hText}.',
+                    'die Langzeit-Rivalität im eigenen Haus: {seasonsText} messen sich {driver} und {rival} nun schon – {h2hText}.',
+                    'kaum ein Duell hat mehr Datenpunkte: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'manche Paarungen halten länger als andere: {driver} und {rival}, {seasonsText} – {h2hText}.'
+                ]
+            }
+        };
+        function rivalryText(drv, rival, ctx) {
+            if (!drv || !rival || !drv.name || !rival.name) return '';
+            ctx = ctx || {};
+            let type = RIVALRY_BANK[ctx.type] ? ctx.type : 'eng';
+            if (type === 'fehde' && !ctx.seasonsText) type = 'eng';
+            if (!ctx.h2hText) return '';
+            const year = ctx.year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : 2000);
+            const era = year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
+            const idA = String(drv.id), idB = String(rival.id);
+            const pairKey = idA < idB ? idA + '|' + idB : idB + '|' + idA;
+            const rng = _recapRng(_recapHash(`rivalry|${pairKey}|${year}`));
+            const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+            const T = { driver: drv.name, rival: rival.name, h2hText: ctx.h2hText, seasonsText: ctx.seasonsText || '' };
+            return cap(_recapFill(_recapPick(rng, RIVALRY_BANK[type][era]), T));
+        }
+        // Wählt die markanteste Rivalität für ein Fahrer-Profil (nur aktive Fahrer).
+        // Kanonische Paar-Reihenfolge (kleinere ID = {driver}) für nicht-direktionale Typen
+        // → beide Profile zeigen exakt denselben Satz (Seed + Argument-Reihenfolge identisch).
+        function driverRivalryLine(driver) {
+            if (!driver || !driver.id) return '';
+            const year = GAME_STATE.currentYear;
+            const active = (GAME_STATE.drivers || []).filter(d => !d.status || d.status === 'active');
+            const zw = n => _OBIT_ZAHLWORT[n] || n;
+            // 1) Teamkollegen-Duell (fehde > eng/dominanz)
+            const mate = driver.team ? active.find(d => d.team === driver.team && d.id !== driver.id) : null;
+            if (mate) {
+                const [A, B] = String(driver.id) < String(mate.id) ? [driver, mate] : [mate, driver];
+                const hist = (typeof getH2HHistory === 'function') ? getH2HHistory(A.id, B.id) : null;
+                if (hist && hist.seasons >= 2 && (hist.rW + hist.rL) >= 8) {
+                    return rivalryText(A, B, { type: 'fehde', h2hText: `${hist.rW}:${hist.rL} in den Rennen`,
+                        seasonsText: `über ${zw(hist.seasons)} gemeinsame Jahre`, year });
+                }
+                const hsA = (A.h2hSeason && A.h2hSeason._year === year && A.h2hSeason.tmId === B.id) ? A.h2hSeason : null;
+                if (hsA && (hsA.rW + hsA.rL) >= 4) {
+                    const diff = Math.abs(hsA.rW - hsA.rL);
+                    if (diff <= 2) return rivalryText(A, B, { type: 'eng', h2hText: `${hsA.rW}:${hsA.rL} in den Rennen`, year });
+                    // dominanz: Führenden nach vorn
+                    return (hsA.rW >= hsA.rL)
+                        ? rivalryText(A, B, { type: 'dominanz', h2hText: `${hsA.rW}:${hsA.rL} in den Rennen`, year })
+                        : rivalryText(B, A, { type: 'dominanz', h2hText: `${hsA.rL}:${hsA.rW} in den Rennen`, year });
+                }
+            }
+            // 2) Augenhöhe – Topfahrer-Duell aus WM-Wertung + Reputation (teamübergreifend)
+            const standings = Object.entries(GAME_STATE.driverStandings || {})
+                .map(([id, s]) => ({ id, points: s.points || 0, name: s.name }))
+                .sort((a, b) => b.points - a.points);
+            const idx = standings.findIndex(s => s.id === driver.id);
+            if (idx >= 0 && idx <= 4 && standings[idx].points > 0 && (driver.reputation || 0) >= 68) {
+                const cand = [standings[idx - 1], standings[idx + 1]].filter(Boolean)
+                    .map(n => ({ n, drv: active.find(d => d.id === n.id) }))
+                    .filter(x => x.drv && (x.drv.reputation || 0) >= 68)
+                    .sort((a, b) => Math.abs(a.n.points - standings[idx].points) - Math.abs(b.n.points - standings[idx].points))[0];
+                if (cand) {
+                    const gap = Math.abs(cand.n.points - standings[idx].points);
+                    if (gap <= 15) {
+                        const h2hText = gap === 0 ? 'punktgleich in der Wertung'
+                            : `nur ${gap <= 12 ? zw(gap) : gap} ${gap === 1 ? 'Punkt' : 'Punkte'} Abstand in der Wertung`;
+                        const [A, B] = String(driver.id) < String(cand.drv.id) ? [driver, cand.drv] : [cand.drv, driver];
+                        return rivalryText(A, B, { type: 'augenhoehe', h2hText, year });
+                    }
+                }
+            }
+            return '';
+        }
+
         function _obitIsReal(drv) {
             if (!drv || !drv.histId) return false;
             return !/^(gen-|jw|reserve-)/.test(String(drv.histId));
@@ -11956,6 +13262,108 @@
         //   mode   'death' | 'retire'
         //   ctx    optional: { age, retireType: 'age'|'gaveup' }
         // ---------------------------------------------------------------------------
+        // ── Karriere-Bogen beim Rücktritt (Fable-Paket 3, v0.9.14.69) ──────────
+        // Werdegang-Satz zwischen open und stats; {seasonsText} (temporal) + {peakText}
+        // (zeitfreies prädikatives Nominal, kann leer → ohneZenit). Nur mode 'retire'.
+        OBIT_BANK.abschied.werdegang = {
+            champion: {
+                mitZenit: [
+                    '{seasonsText} tritt ein Meister ab – einer, der über Jahre {peakText} war.',
+                    'Der Weg vom Debüt bis zum Titel war weit: über weite Strecken war er {peakText}.',
+                    'Ehe die Krone kam, war er {peakText} – {seasonsText} endet diese Laufbahn.',
+                    'Zwischen erstem und letztem Start lag ein weiter Weg: streckenweise war er {peakText}, am Ende ein Champion.',
+                    'Man vergisst über dem Titel leicht die Jahre davor, in denen er {peakText} war – nun, {seasonsText}, ist beides Geschichte.'
+                ],
+                ohneZenit: [
+                    '{seasonsText} verlässt ein Champion das Feld, das er lange prägte.',
+                    'Vom ersten Start bis zum Titel: {seasonsText} schließt sich ein großer Kreis.',
+                    'Was als Neulingssaison begann, endet {seasonsText} mit dem Nimbus eines Meisters.',
+                    'den Weg vom Herausforderer zum Champion hat er vollendet – {seasonsText}.',
+                    '{seasonsText} legt ein Weltmeister den Helm ab – der Weg dorthin war das eigentliche Denkmal.'
+                ]
+            },
+            star: {
+                mitZenit: [
+                    '{seasonsText} geht einer der Schnellen – in seinen besten Jahren war er {peakText}.',
+                    'Sein Weg kannte klare Höhepunkte: zeitweise war er {peakText}.',
+                    'Ehe die Jahre ihren Tribut forderten, war er {peakText} – nun, {seasonsText}, ist Schluss.',
+                    'Der Bogen dieser Laufbahn spannte sich weit – an seinem höchsten Punkt war er {peakText}.'
+                ],
+                ohneZenit: [
+                    '{seasonsText} nimmt ein vertrautes Gesicht der Spitzengruppe den Helm ab.',
+                    'Vom hoffnungsvollen Debüt bis heute reicht sein Weg – {seasonsText} endet er.',
+                    '{seasonsText} verliert die vordere Region des Feldes einen ihrer Stammgäste.',
+                    'Er gehörte so lange zum Bild an der Spitze, dass man es für selbstverständlich hielt – {seasonsText} ist damit Schluss.'
+                ]
+            },
+            backmarker: {
+                mitZenit: [
+                    '{seasonsText} tritt einer ab, der selten vorn, aber immer dabei war – in seinen besten Momenten war er {peakText}.',
+                    'Große Schlagzeilen blieben aus, doch in seinen stärksten Rennen war er {peakText}.',
+                    '{seasonsText} endet eine Laufbahn der leisen Art – ihr bestes Kapitel: {peakText}.',
+                    'Wer genau hinsah, fand die Glanzpunkte dieser Jahre: zwischenzeitlich war er {peakText}.'
+                ],
+                ohneZenit: [
+                    '{seasonsText} verabschiedet sich einer der Unermüdlichen des Mittelfelds.',
+                    'Vom ersten bis zum letzten Start blieb er sich treu – {seasonsText} ist die Fahrt vorbei.',
+                    'Ausdauer statt Schlagzeilen – {seasonsText} endet ein ehrliches Fahrerleben.',
+                    'Er war da, Jahr für Jahr, Startaufstellung für Startaufstellung – {seasonsText} endet diese Beständigkeit.'
+                ]
+            },
+            talent: {
+                mitZenit: [
+                    '{seasonsText} ist überraschend früh Schluss – dabei war er {peakText}.',
+                    'Kaum entfaltet, schon vorbei: in seiner besten Phase war er {peakText}.',
+                    'In guten Momenten war er {peakText} – {seasonsText} endet die Laufbahn zu früh.',
+                    'Die Anlage war unübersehbar – schon früh war er {peakText}.'
+                ],
+                ohneZenit: [
+                    '{seasonsText} geht ein Talent, dessen Geschichte kaum begonnen hatte.',
+                    'Der Weg war kurz, aber vielversprechend – {seasonsText} endet er schon wieder.',
+                    '{seasonsText} verliert das Feld ein Versprechen, das unerfüllt bleibt.',
+                    'Was dieser Laufbahn fehlte, war nicht Können, sondern Zeit – {seasonsText} ist sie vorbei.'
+                ]
+            },
+            generic: {
+                mitZenit: [
+                    '{seasonsText} endet eine Laufbahn, die ihre Kapitel hatte – das beste: {peakText}.',
+                    'Ganz ohne Glanz war der Weg nicht: eine Zeit lang war er {peakText}.',
+                    '{seasonsText} geht einer, der an guten Tagen {peakText} war.',
+                    'Zwischen Debüt und Abschied lag ein ganzes Fahrerleben – auf dessen Höhe war er {peakText}.'
+                ],
+                ohneZenit: [
+                    '{seasonsText} schließt sich ein weiteres Kapitel des Fahrerlagers.',
+                    'Vom Debüt bis heute war er Teil des Feldes – {seasonsText} ist damit Schluss.',
+                    '{seasonsText} verabschiedet sich ein Name, der viele Rennsonntage begleitet hat.',
+                    'Sein erster Start liegt lange zurück – nun, {seasonsText}, ist sein letzter gefahren.'
+                ]
+            },
+            gaveup: {
+                mitZenit: [
+                    '{seasonsText} zieht er den Schlussstrich – dabei war er einst {peakText}.',
+                    'Es gab bessere Zeiten, in denen er {peakText} war – doch der Antrieb schwand.',
+                    'Einst war er {peakText} – geblieben ist die Müdigkeit, und {seasonsText} ist Schluss.',
+                    'Wer nur das Ende sieht, unterschätzt den Anfang: es gab Jahre, da war er {peakText}.'
+                ],
+                ohneZenit: [
+                    '{seasonsText} räumt er das Cockpit – ohne Groll, aber ohne Kraft für ein weiteres Jahr.',
+                    '{seasonsText} war die Kraft aufgebraucht – er geht.',
+                    'Ohne großen Abgang, nur leise, geht er – {seasonsText} ist der Traum auserzählt.',
+                    'Irgendwann wog jedes Rennwochenende schwerer als das davor – {seasonsText} legt er die Last ab.'
+                ]
+            }
+        };
+        OBIT_BANK.abschied.close.push(
+            'Was er dem Sport gegeben hat, steht in keiner Wertung.',
+            'Ein Cockpit wird frei – die Geschichten daraus bleiben.',
+            'Wo immer künftig über alte Rennen gesprochen wird, fährt er mit.',
+            'Die Saisons kommen und gehen – mancher Name bleibt hängen. Seiner gehört dazu.',
+            'Von nun an gehören die Rennsonntage ihm allein.',
+            'Abschiede wie dieser erinnern daran, wie schnell die Jahre an der Strecke vergehen.'
+        );
+        const _OBIT_ZAHLWORT = ['null','ein','zwei','drei','vier','fünf','sechs','sieben','acht','neun','zehn',
+            'elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'];
+
         function obituaryText(name, drv, stats, year, mode, ctx) {
             if (!name) return '';
             ctx = ctx || {};
@@ -11985,18 +13393,44 @@
             const rng = _recapRng(_recapHash(`${mode}|${name}|${year}`));
             const era = RECAP_ERA_WORDS.find(e => year >= e.from && year <= e.to)
                 || RECAP_ERA_WORDS[RECAP_ERA_WORDS.length - 1];
+
+            // Werdegang-Slots (Paket 3): {seasonsText} temporal, {peakText} zeitfreies Nominal.
+            let seasonsText = '';
+            const _debut = drv && (drv.debutYear || drv.histDebutYear);
+            if (_debut && year > _debut) {
+                const _yrs = year - _debut;
+                const _loc = _recapPick(rng, ['im Feld', 'im Cockpit', 'an der Strecke']);
+                if (_yrs >= 20) seasonsText = `nach über zwei Jahrzehnten ${_loc}`;
+                else if (_yrs >= 11 && rng() < 0.4) seasonsText = `nach über einem Jahrzehnt ${_loc}`;
+                else if (_yrs <= 1) seasonsText = `nach nur einer Saison ${_loc}`;
+                else seasonsText = `nach ${_OBIT_ZAHLWORT[_yrs] || _yrs} Jahren ${_loc}`;
+            }
+            let peakText = '';   // leer = kein klarer Zenit → ohneZenit-Pool
+            if (titles >= 1) peakText = 'ein Titelanwärter';
+            else if (wins >= 2) peakText = 'ein mehrfacher Rennsieger';
+            else if (wins === 1) peakText = 'ein Rennsieger';
+            else if (podiums >= 2) peakText = 'ein Podestkandidat';
+            else if (podiums === 1) peakText = 'ein Podestfahrer';
+
             const T = {
                 name: name,
                 nameE: lore ? `${name}, ${lore},` : name,
                 bilanz: _obitBilanz(stats),
                 klasseNom: era.klasseNom, klasseGen: era.klasseGen, klasseIn: era.klasseIn,
-                fahrerPl: era.fahrerPl
+                fahrerPl: era.fahrerPl,
+                seasonsText, peakText
             };
 
             // Satzanfang groß (Tokens wie {klasseNom}='die Formel 1' können vorn stehen)
             const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
             const s = [];
             s.push(cap(_recapFill(_recapPick(rng, pool), T)));
+            // Werdegang-Satz (nur Rücktritt, nur wenn Debütjahr bekannt) – zwischen open und stats
+            if (T.seasonsText && bank.werdegang) {
+                const wg = bank.werdegang[cat] || bank.werdegang.generic;
+                const wpool = (T.peakText && wg.mitZenit.length) ? wg.mitZenit.concat(wg.ohneZenit) : wg.ohneZenit;
+                s.push(cap(_recapFill(_recapPick(rng, wpool), T)));
+            }
             if (T.bilanz) s.push(cap(_recapFill(_recapPick(rng, bank.stats), T)));
             s.push(cap(_recapFill(_recapPick(rng, bank.close), T)));
             return s.join(' ');
@@ -21568,7 +23002,20 @@ Empfohlene Wertebereiche:
                         ` : ''}
                     </div>
                 </div>
-                
+
+                ${(() => {
+                    // Kurzporträt (Fable-Paket 2) nur für GENERIERTE Fahrer (nicht real, kein Feeder, keine Legende)
+                    if (isLegend || _obitIsReal(driver) || driver.feederFictionalSkills) return '';
+                    const _bio = driverBioFor(driver);
+                    return _bio ? `<div class="card p-4 rounded-lg mb-4"><h4 class="font-bold mb-2">📝 Kurzporträt</h4><div class="text-sm text-secondary" style="line-height:1.55">${_bio}</div></div>` : '';
+                })()}
+                ${(() => {
+                    // Duell/Rivalität (Fable-Paket 5) – nur für aktuell aktive Fahrer
+                    if (!isCurrentlyActive) return '';
+                    const _riv = driverRivalryLine(driver);
+                    return _riv ? `<div class="card p-4 rounded-lg mb-4"><h4 class="font-bold mb-2">⚔️ Duell der Saison</h4><div class="text-sm text-secondary" style="line-height:1.55">${_riv}</div></div>` : '';
+                })()}
+
                 <!-- Alter & Karriere -->
                 <div class="card p-4 rounded-lg mb-4">
                     <h4 class="font-bold mb-3">👤 ${isLegend ? 'Karriere-Daten' : 'Alter & Karriere'}</h4>
