@@ -53,9 +53,11 @@ const BUCKET = { 5: 90, 4: 45, 3: 26, 2: 12, 1: 2 };
 // Torso → Pool (echte Gewichte), Rest bis Total → Tails (Gewicht 1).
 // modernDup: wie viele Fore-Torso-Namen zusätzlich (gedeckelt) ins modern-Fenster.
 const CLASSES = {
-    big:   { sur: 340, fore: 240, surT: 240, foreT: 150, modDup: 80 },
-    mid:   { sur: 260, fore: 180, surT: 180, foreT: 120, modDup: 60 },
-    small: { sur: 170, fore: 110, surT: 120, foreT: 80,  modDup: 40 }
+    // v4 (Variante B) – Kapazität für Jahrhunderte × dichte Lokalszenen. Torso = gewichteter
+    // Kopf (Ära-Kopf bleibt via curated-base geschützt), Masse in kompakte weight-1-Tails.
+    big:   { sur: 1500, fore: 600, surT: 450, foreT: 260, modDup: 120 },
+    mid:   { sur: 1000, fore: 450, surT: 340, foreT: 210, modDup: 90 },
+    small: { sur:  600, fore: 320, surT: 240, foreT: 150, modDup: 60 }
 };
 
 // ── Transliteration & Basis-Filter (aus extract-tails.js portiert) ─────────
@@ -344,6 +346,8 @@ function processNation(nat, cfg) {
             name = name.trim();
             if (cfg.translit && hasCyrillic(name)) name = translit(name);
             if (hasCyrillic(name) || !isLatinName(name) || name.length < 3) continue;
+            // Junk-Filter (v4): kein Vokal → Daten-Artefakt/Abkürzung (z.B. "Dbs", "Xzy")
+            if (!/[aeiouyàâäáéèêëíïîóôöúùûüøåÿ]/i.test(name)) continue;
             if (cfg.rename && cfg.rename[name]) name = cfg.rename[name];
             name = fixName(nat, name);
             if (name !== name.charAt(0).toUpperCase() + name.slice(1) && !/^(De |Da |Van |Von |El |Le |La |Du |O'|Mc|Mac|St-)/.test(name)) continue;
