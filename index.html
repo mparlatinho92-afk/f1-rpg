@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.67</title>
+    <title>F1 RPG v0.9.14.68</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.67 (aktuell) - 12.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.68 (aktuell) - 12.07.2026</div>
+                            <div>&#8226; NEU: Team-Generator mit nationskohaerenten Fiktiv-Namen (Gruender + Aera-Sponsor ab e76)</div>
+                            <div>&#8226; NEU: Grid-Editor-Button 'Feld auffuellen' - ergaenzt Privatier-Rennstaelle bis 10 Teams</div>
+                            <div>&#8226; FIX: Zufallsteam-Wuerfel nutzt jetzt kohaerente Paket-6-Pools statt Platzhalter</div>
+                            <div class="font-bold text-slate-400">v0.9.14.67 - 12.07.2026</div>
                             <div>&#8226; FIX: Zukunfts-Saisons starten chronologisch (Frühjahr zuerst) statt in 1950er-Reihenfolge</div>
                             <div>&#8226;  kein doppelter US-GP mehr</div>
                             <div>&#8226; FIX: generierter Kalender nutzt moderne Strecken – French GP → Paul Ricard, Austrian GP → Spielberg, German GP 60 statt 15 Runden</div>
@@ -2946,7 +2950,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.67';
+        const VERSION = '0.9.14.68';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -9365,10 +9369,18 @@
                     }).join('')}
                 </div>
 
-                <button onclick="editorShowAddTeamForm()" class="w-full py-2 rounded-lg text-sm mb-4"
-                        style="border:2px dashed rgba(255,255,255,0.12);color:var(--text-muted);background:none">
-                    + Team hinzufügen
-                </button>
+                <div class="flex gap-2 mb-4">
+                    <button onclick="editorShowAddTeamForm()" class="flex-1 py-2 rounded-lg text-sm"
+                            style="border:2px dashed rgba(255,255,255,0.12);color:var(--text-muted);background:none">
+                        + Team hinzufügen
+                    </button>
+                    <button onclick="editorFillGrid()" class="flex-1 py-2 rounded-lg text-sm"
+                            title="Fiktives Privatier-Team generieren (bis 10 Teams)"
+                            style="border:2px dashed rgba(255,255,255,0.12);color:${teams.length>=10?'#555':'var(--text-muted)'};background:none"
+                            ${teams.length>=10?'disabled':''}>
+                        🏁 Feld auffüllen (${teams.length}/10)
+                    </button>
+                </div>
 
                 ${_showAddTeamForm ? renderAddTeamForm() : ''}
 
@@ -9490,29 +9502,136 @@
                 </div>`;
         }
 
-        // Interim-Bausteine für Zufallsteams – bewusst FIKTIV (kein realer Rennstall/Sponsor).
-        // Wird von Fable Paket 6 (nationskohärente Pools) abgelöst.
-        const _RANDOM_TEAM_BASE = ['Aurelia','Bergwind','Corsair','Delphi','Everest','Falkner','Grandezza',
-            'Helios','Ibarra','Jansen','Königstern','Larimar','Meridian','Nordkap','Orion','Pallas','Quintus',
-            'Renard','Solstice','Talon','Ultima','Vanguard','Westfeld','Zenith'];
-        const _RANDOM_TEAM_SUFFIX = ['Racing','Motorsport','Corse','Engineering','Automobili','Grand Prix','Racing Team','Autosport'];
+        // ══════════════════════════════════════════════════════════════════════
+        // TEAM-GENERATOR (Fable-Paket 6, v0.9.14.68) – nationskohärente Fiktiv-Namen.
+        // Löst die Interim-Bausteine _RANDOM_TEAM_BASE/_SUFFIX ab. Gründername aus dem
+        // nationsgleichen Paket-A-Pool (pickPooledName), Ära-Mix, Sponsor-Präfix ab e76.
+        // Fiktivität kollisionsgeprüft gegen reale Rennställe (Deliverable-Header).
+        // ══════════════════════════════════════════════════════════════════════
+        const TEAM_NAME_POOLS = {
+            // Konstrukteurs-Templates je Nation ({name} = Gründer-Nachname).
+            constructorPattern: {
+                it: ['Scuderia {name}','Automobili {name}','{name} Corse','Squadra Corse {name}','Officine {name}','{name} Competizione','{name} Motori','Fratelli {name}'],
+                gb: ['{name} Racing','{name} Engineering','{name} Motorsport','{name} Grand Prix','{name} Racing Organisation','{name} Cars','Team {name}','{name} Autosport'],
+                fr: ['Écurie {name}','Automobiles {name}','Équipe {name}','{name} Compétition','{name} Sport Automobile','{name} Course'],
+                de: ['{name} Motorsport','{name} Rennsport','Rennstall {name}','Team {name}','{name} Racing','{name} Automobiltechnik'],
+                us: ['{name} Racing','{name} Racing Enterprises','{name} Motorsports','Team {name}','{name} Special','{name} Speed Equipment'],
+                jp: ['Team {name}','{name} Racing','{name} Motorsports','{name} Racing Project','{name} Technica'],
+                br: ['Equipe {name}','{name} Racing','Escuderia {name}','Team {name}','{name} Competições'],
+                es: ['Escudería {name}','Automóviles {name}','{name} Competición','Equipo {name}','{name} Racing'],
+                generic: ['{name} Racing','Team {name}','{name} Grand Prix','{name} Motorsport','{name} Autosport','{name} International']
+            },
+            // Fiktive Titelsponsoren je Ära (Präfix); e50 bewusst leer (vor der Sponsor-Ära).
+            sponsorTitle: {
+                e50: [],
+                e62: ['Aurora Oil','Blue Crest','Vandermeer','Regatta'],
+                e76: ['Corsaro','Silverline','Blue Panther','Royal Falcon','Petrolux','Antares','Gran Oro','Meridiana'],
+                e94: ['Digitron','Teleon','Helion','Omnitex','Solaron','Maxvolt','Vertex Systems','Cobalt Telecom'],
+                e10: ['Nexora','Veltra','Quantix','Volteon','Skyre','Cortexa','Lumeon','Zephyra']
+            },
+            // Komplette Fantasienamen je Ära (ohne Gründer, nations-neutral).
+            standaloneNames: {
+                e50: ['Scuderia Aquila','Écurie Azur','Atlas Grand Prix','Meridian Motors','Vanguard Racing','Leone Corse'],
+                e62: ['Kestrel Racing','Condor Grand Prix','Aurora Racing Team','Delta Sport','Écurie Griffon','Tempesta Corse'],
+                e76: ['Talon Racing','Polaris Grand Prix','Boreas Racing','Vulkan Grand Prix','Sirius Racing Team','Grandezza Corse'],
+                e94: ['Apex Grand Prix','Sapphire Racing','Centurion Grand Prix','Meteor Grand Prix','Zenith Grand Prix','Nordwind Racing'],
+                e10: ['Hyperion Racing','Vortex Grand Prix','Aeon Grand Prix','Pulsar F1 Team','Kinetiq Racing','Astera F1 Team']
+            }
+        };
+        // IOC-3 → constructorPattern-Key; alles andere → 'generic' (Team-Pool hat generic-Fallback).
+        const TEAM_NATION_KEY = { ITA:'it',GBR:'gb',FRA:'fr',GER:'de',USA:'us',JPN:'jp',BRA:'br',ESP:'es' };
+        // Ära-Register aus Jahr (konsistent zu Paket B/Strecken: e50/e62/e76/e94/e10).
+        function _teamEraKey(year) {
+            return year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
+        }
+        // Neutrale Not-Nachnamen, falls Paket-A-Pool fehlt (pickPooledName === null).
+        const _TEAM_FALLBACK_SURNAMES = ['Marlow','Rennick','Vance','Delmar','Cortez','Halden','Brenner','Sartor'];
+        // Komponiert EINEN Teamnamen nationskohärent. usedNames = Set bereits vergebener Namen
+        // (kleingeschrieben) für Dedup. Standalone-/Sponsor-Anteile je Ära lt. Deliverable-Empfehlung.
+        function composeTeamName(ioc, year, usedNames) {
+            const key = TEAM_NATION_KEY[ioc] || 'generic';
+            const era = _teamEraKey(year);
+            const standaloneProb = { e50:0.15, e62:0.15, e76:0.20, e94:0.25, e10:0.30 }[era];
+            const sponsorProb    = { e50:0.00, e62:0.10, e76:0.45, e94:0.55, e10:0.60 }[era];
+            const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+            for (let t = 0; t < 12; t++) {
+                let name;
+                if (Math.random() < standaloneProb) {
+                    name = pick(TEAM_NAME_POOLS.standaloneNames[era]);
+                } else {
+                    const pooled = (typeof pickPooledName === 'function') ? pickPooledName(ioc, year, null) : null;
+                    const surname = (pooled && pooled.lastName) || pick(_TEAM_FALLBACK_SURNAMES);
+                    name = pick(TEAM_NAME_POOLS.constructorPattern[key]).replace('{name}', surname);
+                    const sponsors = TEAM_NAME_POOLS.sponsorTitle[era];
+                    if (sponsors.length && Math.random() < sponsorProb) {
+                        const sp = pick(sponsors);
+                        // Lange Kombis → Kurzform '{sponsor} {name} Racing'
+                        name = (sp + ' ' + name).length > 28 ? `${sp} ${surname} Racing` : `${sp} ${name}`;
+                    }
+                }
+                if (!usedNames || !usedNames.has(name.toLowerCase())) return name;
+            }
+            return pick(TEAM_NAME_POOLS.standaloneNames[era]);   // Not-Fallback nach 12 Kollisionen
+        }
+        // Erzeugt ein vollständiges, fiktives Privatier-Team-Objekt (eher Hinterfeld).
+        // nation optional (IOC-3); ohne Angabe über den Motorsport-Frequenz-Trichter.
+        window.generateTeam = function(year, nation) {
+            year = year || (typeof GAME_STATE !== 'undefined' && GAME_STATE.currentYear) || 1990;
+            const ioc = nation || pickNationMotorsport(year, true);
+            const usedNames = new Set([
+                ...((GAME_STATE.teams || []).map(t => (t.name || '').toLowerCase())),
+                ...(((_pendingEdits && _pendingEdits.teamAdds) || []).map(t => (t.name || '').toLowerCase()))
+            ]);
+            const name = composeTeamName(ioc, year, usedNames);
+            // Balancing: an das aktuelle Hinterfeld anlehnen, leicht darunter (Privatier).
+            const sorted = [...(GAME_STATE.teams || [])].sort((a, b) =>
+                ((GAME_STATE.teamStandings?.[b.id]?.points) || b.carSpeed || 0) -
+                ((GAME_STATE.teamStandings?.[a.id]?.points) || a.carSpeed || 0));
+            const n = sorted.length, mEnd = 3 + Math.ceil((n - 3) / 2);
+            const ref = sorted.slice(mEnd);
+            const base = ref.length ? ref : (sorted.length ? sorted : null);
+            const backAvg = k => base ? Math.round(base.reduce((s, t) => s + (t[k] || 55), 0) / base.length) : 52;
+            const clamp = v => Math.max(30, Math.min(97, v));
+            const rnd = m => Math.floor(Math.random() * (m + 1));
+            return {
+                id: 'gen-team-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now(),
+                name,
+                color: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
+                histId: null,
+                nation: ioc,
+                carSpeed:    clamp(backAvg('carSpeed')    - rnd(5)),
+                reliability: clamp(backAvg('reliability') - rnd(5)),
+                strategy:    clamp(backAvg('strategy')    - rnd(5)),
+                generated: true
+            };
+        };
+        // Editor-🎲: füllt das Formular mit einem kohärenten Zufallsteam (Name aus der Nation).
         window.editorRandomizeTeamForm = function() {
             const yr = GAME_STATE.currentYear || 1990;
-            const base = _RANDOM_TEAM_BASE[Math.floor(Math.random() * _RANDOM_TEAM_BASE.length)];
-            const suffix = _RANDOM_TEAM_SUFFIX[Math.floor(Math.random() * _RANDOM_TEAM_SUFFIX.length)];
-            const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
-            setVal('editor-new-team-name', Math.random() < 0.55 ? `${base} ${suffix}` : base);
-            // Nation über den Motorsport-Frequenz-Trichter (USA gedämpft)
+            // Nation zuerst (Motorsport-Trichter, USA gedämpft) → Name kohärent dazu.
             const ioc = pickNationMotorsport(yr, true);
+            const usedNames = new Set((GAME_STATE.teams || []).map(t => (t.name || '').toLowerCase()));
+            const name = composeTeamName(ioc, yr, usedNames);
+            const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+            setVal('editor-new-team-name', name);
             const natName = (NATION_OPTIONS.find(([c]) => c === ioc) || [])[1];
             setVal('editor-new-team-nation', natName ? `${natName} (${ioc})` : (ioc || ''));
-            // Zufällige Farbe
             setVal('editor-new-team-color', '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'));
             // Tier gewichtet (Privatiers eher hinten); Stat-Overrides leeren → Tier-Schnitt greift
             const tier = ['back','back','back','mid','mid','top'][Math.floor(Math.random() * 6)];
             const radio = document.querySelector(`input[name="editor-tier"][value="${tier}"]`);
             if (radio) radio.checked = true;
             ['editor-new-team-speed','editor-new-team-rain','editor-new-team-cons'].forEach(id => setVal(id, ''));
+        };
+        // Manueller Grid-Fill: pro Klick 1 fiktives Privatier-Team in die Pending-Edits,
+        // solange effektiv < 10 Teams. Nutzer prüft + speichert wie üblich (kein Auto-Hook).
+        window.editorFillGrid = function() {
+            if (!_pendingEdits) return;
+            const effCount = GAME_STATE.teams.filter(t => !_pendingEdits.teamRemovals.includes(t.id)).length
+                + _pendingEdits.teamAdds.length;
+            if (effCount >= 10) return;
+            _pendingEdits.teamAdds.push(generateTeam(GAME_STATE.currentYear));
+            renderContent();
         };
 
         // ══════════════════════════════════════════════════════════════════════
