@@ -1,8 +1,8 @@
 # Junior-Welt-Speicher: Seed-Regeneration — Umsetzungs-Fahrplan
 
-> **▶ SESSION-START STUFE 2:** Lies diese Datei komplett (v.a. §„Umsetzungs-Schritte → Stufe 2" + §„Erkenntnisse aus dem echten Code"), verifiziere `advanceJuniorWorld` / `idbJDetailPut` / `_renderJuniorSeason` gegen den aktuellen Code (Zeilennummern driften — via `functions.schema.json`), mach einen kurzen **Plan-Check mit dem Nutzer** (Persistenz + Migration = Risiko!), dann baue. Stufe 1 (v0.9.14.72) ist das getestete Fundament.
+> **▶ SESSION-START STUFE 3:** Lies diese Datei komplett (v.a. §„Umsetzungs-Schritte → Stufe 3" + §„Erkenntnisse aus dem echten Code"), verifiziere `_foldJuniorAggregates` / `advanceJuniorWorld` / `heavy.spine` gegen den aktuellen Code (Zeilennummern driften — via `functions.schema.json`), mach einen kurzen **Plan-Check mit dem Nutzer** (Persistenz + Migration = Risiko!), dann baue. Stufen 1+2 (v0.9.14.72/.73) sind das getestete Fundament.
 
-**Status:** **Stufe 1 EINGEBAUT (v0.9.14.72).** Stufen 2–4 offen. Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
+**Status:** **Stufe 1 EINGEBAUT (v0.9.14.72). Stufe 2 EINGEBAUT (v0.9.14.73).** Stufen 3–4 offen. Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
 was deterministische Funktion gespeicherter Anker ist, wird beim Ansehen in RAM neu erzeugt statt
 persistiert. Speicher wächst über Jahrhunderte unbegrenzt; Rechenzeit ist transient und fällt nur
 an, wenn jemand hinschaut.
@@ -134,10 +134,13 @@ Ansehbarkeit — jede Alt-Saison ist auf Klick wieder da, nur aus RAM.
 - `_simulateJuniorSeriesSeason(…, seed)` vollständig deterministisch (11× `Math.random`→`rng=_recapRng(seed)`; Kalender per **salted** Sub-Seed `seed^0x9e3779b9` isoliert → Kalender-Existenz verschiebt Renn-Stream nicht). Season-Seed = `_recapHash(worldSeed|seriesId|year)`. `heavy.seed`+`heavy.spine:[]` selbstbeschreibend.
 - Node-Test 8/8 grün (gleicher Seed→byte-identisch; anderer Seed→anders; Kalender-Isolation; Todes-Modus deterministisch). Null Player-Impact (rng() uniform wie Math.random).
 
-### Stufe 2 — Races droppen (offen, der eigentliche Speicher-Gewinn)
-- `advanceJuniorWorld`/`idbJDetailPut`: `heavy.races` NICHT mehr persistieren (nur Snapshot+seed).
-- `_renderJuniorSeason` (~L18527): kein heavy-Blob → aus Snapshot+seed regenerieren, Session-Cache. Alt-Saves mit gespeicherten `races` = Fallback.
-- ⚠️ Gotcha: `_foldJuniorAggregates` läuft schon inkrementell aus `sim.heavy` (bleibt), also allTimeStats unabhängig von der races-Persistenz.
+### Stufe 2 — Races droppen ✅ EINGEBAUT (v0.9.14.73)
+- `advanceJuniorWorld` (Persist): `heavy.races` werden vor `idbJDetailPut` gestrippt (`heavyLean`, ~90 % der Masse weg); **standings/drivers/teamPoints bleiben** → Rendering bleibt sofort, kein Regen beim Ansehen.
+- `_simulateJuniorSeriesSeason`: 6. Param `deathsFlag` + neue eingefrorene Kontextfelder im `heavy` (`racesCount, deathsOn, teams[id/strength/reliability], calendar, seriesName`) — byte-exakte Regen unabhängig von Live-Drift (Teams wachsen per Scale → avgRel; Kalender lebt am Live-Objekt; deathsOn = 2 Extra-rng-Draws bei DNF).
+- Neu `_regenJuniorRaces(year, heavy)` (~L15995) + Session-Cache `_jRegenRacesCache`: baut Pseudo-Series aus Snapshot, ruft die Sim → races; Champion-Anker-Drift-Warnung (Spine autoritativ); Alt-Save mit `races` = Fallback ohne Regen.
+- `rebuildJuniorAggregates`: fehlt `races` → `_regenJuniorRaces`, sonst gespeicherte nutzen. `_foldJuniorAggregates` unverändert (folded weiter inkrementell aus `sim.heavy` im RAM bei advance → allTimeStats unberührt).
+- **KEINE destruktive Migration:** Alt-Records mit `races` bleiben lauffähig (Fallback), neue Saisons schrumpfen. Node-Test `tests/junior-seed-regen-stufe2.js` 10/10 grün (byte-identisch inkl. Todes-Modus; deathsOn-Snapshot als zwingend bewiesen; Cache; Seed-Negativkontrolle).
+- **Rendering-Erkenntnis:** `_renderJuniorSeason`/`openJuniorDriver` lesen NIE `races`, nur `standings`+`drivers` → der Fahrplan-Entwurf „Regen beim Ansehen" war unnötig; races-Regen braucht aktuell nur der Aggregat-Rebuild.
 
 ### Stufe 3 — allTimeStats prunen (offen)
 - Nur „notable" (Champions/Aufsteiger/Rekordhalter) persistieren; Filler regenerierbar. `heavy.spine` füllen.
