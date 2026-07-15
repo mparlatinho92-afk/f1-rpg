@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.72</title>
+    <title>F1 RPG v0.9.14.73</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.72 (aktuell) - 15.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.73 (aktuell) - 15.07.2026</div>
+                            <div>&#8226; NEU: Junior-Detaildaten sparen ~90% Speicher - Rennergebnisse werden bei Bedarf deterministisch aus Seed regeneriert statt gespeichert</div>
+                            <div>&#8226; FIX: Alt-Saves bleiben kompatibel (Fallback)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.72 - 15.07.2026</div>
                             <div>&#8226; NEU: Deterministische Junior-Saison-Sim (seed-basiert) als Fundament fuer Speicher-Regeneration</div>
                             <div>&#8226; NEU: worldSeed + era-bewusstes Serien-Register (kind/startYear) - flexibel fuer spaetere Serien-Erweiterungen</div>
                             <div class="font-bold text-slate-400">v0.9.14.71 - 12.07.2026</div>
@@ -2966,7 +2969,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.72';
+        const VERSION = '0.9.14.73';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -15845,11 +15848,13 @@
         // Eine Saison einer Serie simulieren → { light: Summary, heavy: volle Daten }.
         // Schritt 3.5: F1-nahes Modell – Auto-Stärke (A), Konstanz/Tagesform (B), DNF nach
         // Team-Zuverlässigkeit (C), Quali bestimmt Startgitter mit Grid-Bonus im Rennen (D).
-        function _simulateJuniorSeriesSeason(series, drivers, races, year, seed) {
+        function _simulateJuniorSeriesSeason(series, drivers, races, year, seed, deathsFlag) {
             // Stufe 1 (Seed-Regen): vollständig deterministisch aus seed. Gleicher (series-Kalender,
             // drivers, races, seed) → BYTE-IDENTISCHE races/standings. seed = _recapHash(worldSeed|seriesId|year).
             // Alle Math.random durch rng() ersetzt; Reihenfolge der rng-Zieh­ungen ist fixiert (Fahrer-Array-
             // Ordnung, Runden-Ordnung), daher reproduzierbar. Fundament für Stufe 2 (races nicht mehr persistieren).
+            // Stufe 2: deathsFlag explizit übergebbar (Regen muss den historischen Todes-Modus nutzen – der
+            //   Modus verschiebt den rng-Strom, s.u.); undefined → Live-Toggle (Normalbetrieb).
             const rng = _recapRng((seed >>> 0) || 1);
             const teamById = {};
             (series.teams || []).forEach(t => teamById[t.id] = t);
@@ -15858,7 +15863,7 @@
             const standings = {};
             drivers.forEach(d => standings[d.id] = { id: d.id, name: d.name, histId: d.histId, points: 0, wins: 0, podiums: 0, poles: 0, dnfs: 0, fastestLaps: 0 });
             const dead = new Set();   // 5f: tödliche Unfälle (nur wenn GAME_STATE.juniorDeaths)
-            const deathsOn = !!GAME_STATE.juniorDeaths;
+            const deathsOn = deathsFlag === undefined ? !!GAME_STATE.juniorDeaths : !!deathsFlag;
             const raceRecs = [];
             // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3).
             // Eigener SALTED Sub-Seed → unabhängig vom Renn-rng-Strom: ob der Kalender schon existiert
@@ -15925,7 +15930,15 @@
                 dead: [...dead],   // 5f: histId===id in Junior-Welt
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
-                heavy: { seriesId: series.id, seed: (seed >>> 0) || 1, spine: [], standings, teamPoints: teamPts,
+                heavy: { seriesId: series.id, seriesName: series.name, seed: (seed >>> 0) || 1, spine: [],
+                    // Stufe 2 (Regen-Kontext): alles, was die Sim byte-exakt reproduziert, OHNE races.
+                    // teams (id/strength/reliability) friert avgRel + Auto-Werte ein (Teams wachsen sonst per
+                    // Scale nach → avgRel driftet); calendar friert die Streckenfolge ein (lebt sonst am Live-
+                    // Objekt); deathsOn friert den Todes-Modus ein (2 Extra-rng-Draws bei DNF → Strom-Versatz).
+                    racesCount: races, deathsOn: deathsOn,
+                    teams: teamArr.map(t => ({ id: t.id, strength: t.strength, reliability: t.reliability })),
+                    calendar: (series.calendar || []).slice(0, races),
+                    standings, teamPoints: teamPts,
                     drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, number: d.number, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, rain: d.rain, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
@@ -15976,6 +15989,27 @@
                 }
             }
         }
+        // ── Stufe 2: Renn-/Quali-Daten aus Snapshot+Seed regenerieren (RAM, nicht persistiert) ──
+        // heavy.races werden ab Stufe 2 nicht mehr gespeichert. Wer sie braucht (aktuell nur der
+        // Aggregat-Rebuild; Rendering nutzt standings), regeneriert sie deterministisch aus dem
+        // gefrorenen Kontext (seed + drivers + teams + calendar + racesCount + deathsOn). Session-Cache
+        // → wiederholtes Ansehen kostet nichts. Alt-Saves mit heavy.races nutzen diese direkt.
+        const _jRegenRacesCache = new Map();   // key: `${year}|${seriesId}` → races[]
+        function _regenJuniorRaces(year, heavy) {
+            if (heavy.races) return heavy.races;   // Alt-Save (vor Stufe 2) – Fallback ohne Regen
+            const key = year + '|' + heavy.seriesId;
+            if (_jRegenRacesCache.has(key)) return _jRegenRacesCache.get(key);
+            const pseudoSeries = { id: heavy.seriesId, name: heavy.seriesName || heavy.seriesId,
+                teams: heavy.teams || [], calendar: (heavy.calendar || []).slice() };
+            const racesN = heavy.racesCount || (heavy.calendar || []).length || 0;
+            const sim = _simulateJuniorSeriesSeason(pseudoSeries, heavy.drivers || [], racesN, year, heavy.seed || 1, !!heavy.deathsOn);
+            // Spine ist autoritativ: bei Generator-Änderung driftet die Regen → protokollieren (nicht überschreiben).
+            const anchor = Object.values(heavy.standings || {}).sort((a, b) => b.points - a.points)[0];
+            if (anchor && sim.light && anchor.histId !== sim.light.championHistId)
+                logWarning('JUNIOR', `Regen-Drift ${year}/${heavy.seriesId}: Champion ${sim.light.championHistId} ≠ Anker ${anchor.histId} (Generator geändert?)`);
+            _jRegenRacesCache.set(key, sim.heavy.races);
+            return sim.heavy.races;
+        }
         // Streaming-Rebuild (lazy): All-Time/Strecken aus den junior_detail-Records neu aufbauen,
         // jede Saison einzeln laden→falten→verwerfen (RAM bounded). Für Alt-'world'-Saves (vor Schritt 3)
         // oder Reparatur nach Import. Über window aufrufbar.
@@ -15986,7 +16020,11 @@
             const light = await idbJHistGetAll();
             for (const rec of light) {
                 const detail = await idbJDetailGet(rec.year);
-                for (const heavy of (detail && detail.series || [])) _foldJuniorAggregates(fresh, heavy);
+                for (const h of (detail && detail.series || [])) {
+                    // Stufe 2: keine gespeicherten races mehr → aus Snapshot+Seed regenerieren (Alt-Saves = Fallback)
+                    const heavy = h.races ? h : { ...h, races: _regenJuniorRaces(rec.year, h) };
+                    _foldJuniorAggregates(fresh, heavy);
+                }
             }
             jw.allTimeStats = fresh.allTimeStats;
             jw.circuitIndex = fresh.circuitIndex;
@@ -16037,7 +16075,11 @@
             if (_idbAvailable) {
                 try {
                     await idbJHistPut(year, lightRec);
-                    await idbJDetailPut(year, { year, series: heavySeries });
+                    // Stufe 2: races NICHT mehr persistieren (~90 % der Masse) – nur Snapshot+Seed.
+                    // Aggregate wurden oben schon aus sim.heavy (mit races, im RAM) gefaltet → unberührt.
+                    // Races sind bei Bedarf via _regenJuniorRaces deterministisch reproduzierbar.
+                    const heavyLean = heavySeries.map(h => { const { races, ...rest } = h; return rest; });
+                    await idbJDetailPut(year, { year, series: heavyLean });
                 } catch (e) { logWarning('JUNIOR', 'Persist fehlgeschlagen: ' + e); }
             }
         }
