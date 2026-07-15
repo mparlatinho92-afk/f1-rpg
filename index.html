@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.74</title>
+    <title>F1 RPG v0.9.14.75</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.74 (aktuell) - 15.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.75 (aktuell) - 16.07.2026</div>
+                            <div>&#8226; NEU: Junior-Saisondaten markieren jetzt die Anker-Fahrer (Basis fuer kuenftige Speicher- und Crossover-Features)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.74 - 15.07.2026</div>
                             <div>&#8226; NEU: Ewige Junior-Bestenliste bleibt schlank - Filler ohne Titel/Sieg werden im Ruhestand entfernt (F2 groesszuegiger als F3), Profile bleiben abrufbar</div>
                             <div>&#8226; NEU: Schalter 'Speicher optimieren' + Button in der Junior-Welt (bestehende Saves: Optin)</div>
                             <div class="font-bold text-slate-400">v0.9.14.73 - 15.07.2026</div>
@@ -2972,7 +2974,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.74';
+        const VERSION = '0.9.14.75';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16008,6 +16010,13 @@
         // aktiv → hatte durchgehend vollen Eintrag → beim Sieg wird notable gesetzt, Historie komplett.
         // Retroaktiv = Optin: nur wenn jw.pruneAllTime (neue Welt AN, Alt-Save AUS bis Nutzer einschaltet).
         // Legacy-Migration: Alt-Einträge ohne notable-Flag → notable = (titles>0||wins>0), beim 1. Sweep.
+        // Stufe-4-Prep: Anker-Identitäten (notable) einer Saison → heavy.spine. Im späteren Voll-Replay
+        // behalten Spine-Fahrer ihre gespeicherte Identität, der Rest ist Filler (aus Seed regenerierbar);
+        // auch Fundament der Crossover-Welt (echte F1-Fahrer als Gäste). Bounded durch #notable, ~0 Bytes.
+        function _juniorSeasonSpine(drivers, allTimeStats) {
+            const st = allTimeStats || {};
+            return (drivers || []).filter(d => st[d.histId] && st[d.histId].notable).map(d => d.histId);
+        }
         function _pruneJuniorAllTime(jw) {
             if (!jw || !jw.pruneAllTime || !jw.allTimeStats) return 0;
             const st = jw.allTimeStats;
@@ -16112,7 +16121,15 @@
                     // Stufe 2: races NICHT mehr persistieren (~90 % der Masse) – nur Snapshot+Seed.
                     // Aggregate wurden oben schon aus sim.heavy (mit races, im RAM) gefaltet → unberührt.
                     // Races sind bei Bedarf via _regenJuniorRaces deterministisch reproduzierbar.
-                    const heavyLean = heavySeries.map(h => { const { races, ...rest } = h; return rest; });
+                    // Stufe-4-Prep: heavy.spine = notable-Teilnehmer dieser Saison (Anker-Identitäten).
+                    // Im späteren Voll-Replay behalten Spine-Fahrer ihre gespeicherte Identität, das restliche
+                    // Feld ist Filler (aus Seed regenerierbar). Auch Fundament der Crossover-Welt (echte
+                    // F1-Fahrer als Gäste). Bounded durch #notable, ~0 Bytes. Wird aktuell nur geschrieben.
+                    const heavyLean = heavySeries.map(h => {
+                        const { races, ...rest } = h;
+                        rest.spine = _juniorSeasonSpine(rest.drivers, jw.allTimeStats);
+                        return rest;
+                    });
                     await idbJDetailPut(year, { year, series: heavyLean });
                 } catch (e) { logWarning('JUNIOR', 'Persist fehlgeschlagen: ' + e); }
             }
