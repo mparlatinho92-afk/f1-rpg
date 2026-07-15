@@ -1,8 +1,8 @@
 # Junior-Welt-Speicher: Seed-Regeneration — Umsetzungs-Fahrplan
 
-> **▶ SESSION-START STUFE 4:** Lies diese Datei komplett (v.a. §„Umsetzungs-Schritte → Stufe 4" + §„Erkenntnisse aus dem echten Code"), verifiziere die Roster-Evolutions-Kette (`_makeJuniorDriver`/`_assignJuniorNumber`/`_developJuniorDriver`/`_ageAndRetireJuniors`/`_ensureJuniorTeams`/`_juniorContractMoves` + Namens-Kette) gegen den aktuellen Code, mach einen **Plan-Check mit dem Nutzer** (Determinismus der GESAMTEN Evolution = hohes Risiko!), dann baue. Stufen 1–3 (v0.9.14.72/.73/.74) sind das getestete Fundament. **⚠️ Stufe 4 ist optional/experimentell** — Stufe 2+3 lösen das Speicherproblem schon (~28 MB/5 Jh Snapshots + geprunte Aggregate); Stufe 4 nur nötig fürs 500-Kart-Extrem.
+> **▶ SEED-REGEN WEITGEHEND ABGESCHLOSSEN.** Stufen 1–3 + Stufe-4-Prep (heavy.spine) eingebaut & getestet. **Stufe 4 (Voll-Replay) bewusst AUFGESCHOBEN** (Nutzer-Entscheidung 2026-07-16) — bei 2 Serien speicher-neutral, hoch-riskant (geteilter F1-Namenscode, Identitäts-Drift). Trigger + Bau-Details unten in §„Stufe 4". Nicht ohne erneuten Plan-Check bauen.
 
-**Status:** **Stufe 1 EINGEBAUT (v0.9.14.72). Stufe 2 EINGEBAUT (v0.9.14.73). Stufe 3 EINGEBAUT (v0.9.14.74).** Stufe 4 offen (optional). Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
+**Status:** **Stufe 1 (v0.9.14.72) · Stufe 2 (v0.9.14.73) · Stufe 3 (v0.9.14.74) · Stufe-4-Prep heavy.spine (v0.9.14.75) — alle EINGEBAUT.** Stufe 4 aufgeschoben (Trigger: viele Serien). Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
 was deterministische Funktion gespeicherter Anker ist, wird beim Ansehen in RAM neu erzeugt statt
 persistiert. Speicher wächst über Jahrhunderte unbegrenzt; Rechenzeit ist transient und fällt nur
 an, wenn jemand hinschaut.
@@ -171,6 +171,11 @@ Umgesetzt wie unten geplant. **8 Stellen:** (1) `_foldJuniorAggregates` setzt `s
 - Node-Test: Fold→Prune → notable bleiben, Ruhestands-Filler weg, aktiver Filler bleibt, Filler-der-spät-gewinnt behält volle Historie, Profil-Totals = Summe der Streams, Flag AUS → nichts gelöscht.
 </details>
 
-### Stufe 4 — Voll-Replay (offen, optional/später)
-- Roster-Evolution aus `worldSeed` deterministisch: `_makeJuniorDriver`, `_assignJuniorNumber`, `_developJuniorDriver`, `_ageAndRetireJuniors`, `_ensureJuniorTeams`, `_juniorContractMoves` + Namens-Kette (`pickNationMotorsport`/`pickPooledName`) seeded. Dann Snapshot droppen. `genVersion`-Feld für Generator-Versionierung.
-- Entscheidet, ob 500-Kart-Extrem tatsächlich geht.
+### Stufe-4-Prep — heavy.spine füllen ✅ EINGEBAUT (v0.9.14.75)
+- Neu `_juniorSeasonSpine(drivers, allTimeStats)`: notable histIds einer Saison → `heavy.spine` (in `advanceJuniorWorld`-Persist gesetzt, ersetzt das leere `spine:[]` aus Stufe 1). Anker-Identitäten für späteren Voll-Replay (Spine behält Identität, Rest = Filler) + Fundament der Crossover-Welt (echte F1-Fahrer als Gäste). ~0 Bytes, KEIN Eingriff in geteilten Code. Aktuell nur geschrieben, noch nicht gelesen. Node-Test `tests/junior-spine-stufe4prep.js` 6/6.
+
+### Stufe 4 — Voll-Replay (AUFGESCHOBEN, optional — Trigger: viele Serien)
+**Entscheidung 2026-07-16 (Nutzer): NICHT jetzt bauen.** Bei aktuell **2 Serien** (F2/F3) ist der Snapshot-Overhead ~0,6 MB/5 Jh — Stufe 4 würde *nichts* sparen (eher mehr wegen Settings-Log+genVersion). Speicherproblem ist mit Stufe 2+3 gelöst.
+- **Trigger zum Bauen:** erst wenn die Welt real auf **viele Serien wächst** (Größenordnung >~10–20), sodass die kumulierten Roster-Snapshots (~28 MB/5 Jh bei 91 Serien) relevant werden.
+- **Warum riskant (bei Bau beachten):** (1) Namens-/Nations-Kette (`pickNationMotorsport`/`pickPooledName`/`pickNameRegion`/`weightedPick`) ist **mit der F1 geteilt** → Seeden gefährdet F1-Generierung; (2) **Settings-Pfadabhängigkeit** — Rostergröße hängt an Live-`juniorDriversPerSeries`/`juniorRaces`/`juniorDeaths`, aus `worldSeed` allein nicht rekonstruierbar → Settings-Änderungen pro Jahr mitloggen nötig; (3) **Identitäts-Drift** — jede künftige Formel-Änderung ändert die historische Realität (Champion 2087 bekommt anderen Teamkollegen), `genVersion` mildert nur.
+- **Umfang bei Bau:** ~16 `Math.random` in der Kette + Namens-Kette seeden (`_makeJuniorDriver`/`_assignJuniorNumber`/`_developJuniorDriver`/`_ageAndRetireJuniors`/`_ensureJuniorTeams`/`_juniorContractMoves`), Snapshot droppen, `genVersion`. Node-Test muss Byte-Identität über mehrere Replay-Jahre beweisen. `heavy.spine` (Prep oben) liefert die Anker.
