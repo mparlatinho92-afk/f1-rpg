@@ -1,6 +1,6 @@
 # Junior-Welt-Speicher: Seed-Regeneration — Umsetzungs-Fahrplan
 
-**Status:** DESIGN, noch NICHT gebaut. Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
+**Status:** **Stufe 1 EINGEBAUT (v0.9.14.72).** Stufen 2–4 offen. Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
 was deterministische Funktion gespeicherter Anker ist, wird beim Ansehen in RAM neu erzeugt statt
 persistiert. Speicher wächst über Jahrhunderte unbegrenzt; Rechenzeit ist transient und fällt nur
 an, wenn jemand hinschaut.
@@ -118,10 +118,28 @@ Ansehbarkeit — jede Alt-Saison ist auf Klick wieder da, nur aus RAM.
 
 ---
 
-## Offene Umsetzungs-Schritte (wenn grünes Licht)
-1. `_simulateJuniorSeriesSeason` + `_makeJuniorDriver` auf seeded RNG umstellen (durchgängig).
-2. `fillerDriver()` + deterministischer Namens-Pick (`pickPooledName` seeded).
-3. Spine-Persist-Umbau: Live-Sim schreibt nur Spine, kein heavy-Blob mehr.
-4. Regen-Trigger + Session-Cache in `_renderJuniorSeason`.
-5. `allTimeStats`-Pruning auf „notable".
-6. `genVersion`-Feld für Generator-Versionierung.
+## Erkenntnisse aus dem echten Code (2026-07-15, bei Stufe-1-Bau bestätigt)
+- **Pfadabhängigkeit:** `advanceJuniorWorld` ist eine Kette (altern→Rücktritt→Aufstieg→Transfer→Nachrücker→Sim), das `jw.drivers`-Roster evolviert Jahr für Jahr. Season Y lässt sich NICHT aus einem reinen Season-Seed isoliert regenerieren — der Roster-Zustand bei Y ist Produkt aller Vorjahre. **Darum:** Stufe 2 speichert den Roster-Snapshot + Seed und regeneriert nur `races`; erst Stufe 4 (Voll-Replay der Evolution) darf den Snapshot droppen.
+- **Der heavy-Record hat 2 Teile:** `drivers` (Roster-Snapshot, klein) + `races` (Ergebnisse/Quali jeder Runde, ~90 % der Masse). Stufe 2 = `races` regenerieren spart das meiste.
+- **Spine/Filler ist PRO TEILNEHMER, nicht pro Serie** — Grundlage für die spätere Crossover-Chaos-Welt (echte F1-Fahrer fahren zusätzlich Le Mans/Tasman etc.): deren Teilnahme+Ergebnis = Spine (gespeichert), Rest des Feldes = Filler (regenerierbar). Bleibt durch #Spine-Entitäten begrenzt, nicht durch Gesamt-Teilnahmen. `heavy.spine:[]`-Feld ist in Stufe 1 schon angelegt (leer).
+- **Serien dynamisch/era-abhängig:** Register ist append-only mit `startYear`/`endYear`/`kind`. Serien hinzufügen/abschaffen berührt eingefrorene Alt-Saisons nie.
+- **Skalierung:** Stufe 2 (Snapshots) trägt ~91 Serien (~28 MB/5 Jh) locker; ~500 Kart-Serien brauchen Stufe 4 (Snapshots droppen → ~5 MB, wenn Determinismus der Evolution hält).
+
+## Umsetzungs-Schritte
+### Stufe 1 — Fundament ✅ EINGEBAUT (v0.9.14.72)
+- `jw.worldSeed` (in `_emptyJuniorWorld`, Backfill in `advanceJuniorWorld`).
+- Era-Register: `kind`/`startYear`/`endYear` an `JUNIOR_SERIES_DEFS` + Backfill in `_ensureJuniorRoster`.
+- `_simulateJuniorSeriesSeason(…, seed)` vollständig deterministisch (11× `Math.random`→`rng=_recapRng(seed)`; Kalender per **salted** Sub-Seed `seed^0x9e3779b9` isoliert → Kalender-Existenz verschiebt Renn-Stream nicht). Season-Seed = `_recapHash(worldSeed|seriesId|year)`. `heavy.seed`+`heavy.spine:[]` selbstbeschreibend.
+- Node-Test 8/8 grün (gleicher Seed→byte-identisch; anderer Seed→anders; Kalender-Isolation; Todes-Modus deterministisch). Null Player-Impact (rng() uniform wie Math.random).
+
+### Stufe 2 — Races droppen (offen, der eigentliche Speicher-Gewinn)
+- `advanceJuniorWorld`/`idbJDetailPut`: `heavy.races` NICHT mehr persistieren (nur Snapshot+seed).
+- `_renderJuniorSeason` (~L18527): kein heavy-Blob → aus Snapshot+seed regenerieren, Session-Cache. Alt-Saves mit gespeicherten `races` = Fallback.
+- ⚠️ Gotcha: `_foldJuniorAggregates` läuft schon inkrementell aus `sim.heavy` (bleibt), also allTimeStats unabhängig von der races-Persistenz.
+
+### Stufe 3 — allTimeStats prunen (offen)
+- Nur „notable" (Champions/Aufsteiger/Rekordhalter) persistieren; Filler regenerierbar. `heavy.spine` füllen.
+
+### Stufe 4 — Voll-Replay (offen, optional/später)
+- Roster-Evolution aus `worldSeed` deterministisch: `_makeJuniorDriver`, `_assignJuniorNumber`, `_developJuniorDriver`, `_ageAndRetireJuniors`, `_ensureJuniorTeams`, `_juniorContractMoves` + Namens-Kette (`pickNationMotorsport`/`pickPooledName`) seeded. Dann Snapshot droppen. `genVersion`-Feld für Generator-Versionierung.
+- Entscheidet, ob 500-Kart-Extrem tatsächlich geht.
