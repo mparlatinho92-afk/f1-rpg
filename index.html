@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.71</title>
+    <title>F1 RPG v0.9.14.72</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.71 (aktuell) - 12.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.72 (aktuell) - 15.07.2026</div>
+                            <div>&#8226; NEU: Deterministische Junior-Saison-Sim (seed-basiert) als Fundament fuer Speicher-Regeneration</div>
+                            <div>&#8226; NEU: worldSeed + era-bewusstes Serien-Register (kind/startYear) - flexibel fuer spaetere Serien-Erweiterungen</div>
+                            <div class="font-bold text-slate-400">v0.9.14.71 - 12.07.2026</div>
                             <div>&#8226; NEU: Namens-Pools massiv vertieft - Nachnamen bis 1500/Nation (~4-5x), mehr Vielfalt fuer Langzeit- und Nachwuchs-Szenarien</div>
                             <div>&#8226; NEU: Junk-Filter entfernt vokallose Daten-Artefakte</div>
                             <div>&#8226; FIX: Aera-korrekte Vornamen-Koepfe (1950er etc.) bleiben erhalten</div>
@@ -2963,7 +2966,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.71';
+        const VERSION = '0.9.14.72';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3452,7 +3455,9 @@
         // → Lazy+gzip greifen automatisch. Schwere Junior-Saison-Felder (results/drivers/…) in
         // IDB_JDETAIL (komprimiert), leichte (Standings/Champion) in IDB_JHIST.
         function _emptyJuniorWorld() {
-            return { drivers: [], series: [], history: [], allTimeStats: {}, circuitIndex: {} };
+            // worldSeed (Stufe 1 Seed-Regen): Wurzel für deterministische Season-Seeds; für Alt-Saves
+            // in advanceJuniorWorld nachgetragen. Ein Integer, ~0 Bytes.
+            return { drivers: [], series: [], history: [], allTimeStats: {}, circuitIndex: {}, worldSeed: Math.floor(Math.random() * 0x7fffffff) || 1 };
         }
         function idbJHistPut(year, obj) {
             return new Promise((resolve, reject) => {
@@ -15661,9 +15666,12 @@
         // pro Saison parallel simuliert. Schwer (results/standings/snapshots) in junior_detail (gzip),
         // leicht (Champion-Summary) in juniorWorld.history. KEIN F1-Aufstieg.
         // 2a: Welt-Init + Fahrer-Pool + Saison-Sim + Persistenz (noch ohne Karriere-Entwicklung/Transfers).
+        // Stufe 1 (Seed-Regen): Register era-bewusst + append-only vorbereitet. kind = Serien-Typ
+        // (junior/sportscar/regional/kart…), startYear/endYear = Aktivfenster (null = seit/bis immer).
+        // Neue Serien einfach anhängen; entfernen via endYear – Alt-Saisons bleiben eingefrorene Records.
         const JUNIOR_SERIES_DEFS = [
-            { id: 'f3', name: 'Junior Formel 3', level: 3 },
-            { id: 'f2', name: 'Junior Formel 2', level: 2 }
+            { id: 'f3', name: 'Junior Formel 3', level: 3, kind: 'junior', startYear: null, endYear: null },
+            { id: 'f2', name: 'Junior Formel 2', level: 2, kind: 'junior', startYear: null, endYear: null }
         ];
         // Legacy: seit Paket A v3 zieht _makeJuniorDriver Nationen über pickNationMotorsport
         // (gewichtete Motorsport-Frequenz je Dekade). Liste nur noch als Referenz/Fallback.
@@ -15819,7 +15827,9 @@
         }
         // Serien + Roster auffüllen, falls leer (oder Scale erhöht/Sitze frei). Neuzugänge bekommen ein Team.
         function _ensureJuniorRoster(jw, year) {
-            if (!jw.series || jw.series.length === 0) jw.series = JUNIOR_SERIES_DEFS.map(s => ({ ...s }));
+            if (!jw.series || jw.series.length === 0) jw.series = JUNIOR_SERIES_DEFS.map(s => ({ ...s, startYear: year }));
+            // Stufe 1: neue Register-Felder auf Alt-Saves nachziehen (kind/startYear/endYear).
+            for (const s of jw.series) { if (s.kind === undefined) s.kind = 'junior'; if (s.startYear === undefined) s.startYear = null; if (s.endYear === undefined) s.endYear = null; }
             jw.drivers = jw.drivers || [];
             _ensureJuniorTeams(jw);
             const sc = _juniorScale();
@@ -15835,7 +15845,12 @@
         // Eine Saison einer Serie simulieren → { light: Summary, heavy: volle Daten }.
         // Schritt 3.5: F1-nahes Modell – Auto-Stärke (A), Konstanz/Tagesform (B), DNF nach
         // Team-Zuverlässigkeit (C), Quali bestimmt Startgitter mit Grid-Bonus im Rennen (D).
-        function _simulateJuniorSeriesSeason(series, drivers, races, year) {
+        function _simulateJuniorSeriesSeason(series, drivers, races, year, seed) {
+            // Stufe 1 (Seed-Regen): vollständig deterministisch aus seed. Gleicher (series-Kalender,
+            // drivers, races, seed) → BYTE-IDENTISCHE races/standings. seed = _recapHash(worldSeed|seriesId|year).
+            // Alle Math.random durch rng() ersetzt; Reihenfolge der rng-Zieh­ungen ist fixiert (Fahrer-Array-
+            // Ordnung, Runden-Ordnung), daher reproduzierbar. Fundament für Stufe 2 (races nicht mehr persistieren).
+            const rng = _recapRng((seed >>> 0) || 1);
             const teamById = {};
             (series.teams || []).forEach(t => teamById[t.id] = t);
             const teamArr = series.teams || [];
@@ -15845,53 +15860,57 @@
             const dead = new Set();   // 5f: tödliche Unfälle (nur wenn GAME_STATE.juniorDeaths)
             const deathsOn = !!GAME_STATE.juniorDeaths;
             const raceRecs = [];
-            // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3)
+            // Strecken-Kalender pro Serie (stabil über Jahre → sinnvoller Strecken-Index, Schritt 3).
+            // Eigener SALTED Sub-Seed → unabhängig vom Renn-rng-Strom: ob der Kalender schon existiert
+            // oder neu gewürfelt wird, verschiebt die Haupt-Sequenz NICHT (Regen bleibt stabil).
             if (!series.calendar || series.calendar.length < races) {
-                const pool = [...JUNIOR_CIRCUITS].sort(() => Math.random() - 0.5);
+                const crng = _recapRng(((seed >>> 0) ^ 0x9e3779b9) || 1);
+                const pool = [...JUNIOR_CIRCUITS];
+                for (let i = pool.length - 1; i > 0; i--) { const j = (crng() * (i + 1)) | 0; const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
                 series.calendar = Array.from({ length: races }, (_, i) => pool[i % pool.length]);
             }
             const nGrid = drivers.length;
             for (let r = 0; r < races; r++) {
-                const wet = Math.random() < 0.18;   // 5b: ~18% Regenrennen
+                const wet = rng() < 0.18;   // 5b: ~18% Regenrennen
                 // (D) QUALI: Pace + Auto + wenig Rauschen → Startgitter
                 const qOrder = drivers.map(d => {
                     const t = teamById[d.team] || {};
-                    return { id: d.id, q: (d.pace || 60) * 0.62 + (t.strength || 60) * 0.30 + Math.random() * 9 };
+                    return { id: d.id, q: (d.pace || 60) * 0.62 + (t.strength || 60) * 0.30 + rng() * 9 };
                 }).sort((a, b) => b.q - a.q);
                 const grid = {}; qOrder.forEach((o, i) => grid[o.id] = i + 1);
-                const quali = qOrder.map((o, i) => ({ d: o.id, p: i + 1, t: 88000 + i * 300 + ((Math.random() * 800) | 0) }));
+                const quali = qOrder.map((o, i) => ({ d: o.id, p: i + 1, t: 88000 + i * 300 + ((rng() * 800) | 0) }));
                 standings[qOrder[0].id].poles++;
                 // RENNEN: Performance je Fahrer (A Auto, B Konstanz, D Grid-Bonus) + DNF (C)
                 const perf = [];
                 for (const d of drivers) {
                     const t = teamById[d.team] || {};
                     const relFactor = 1 + (avgRel - (t.reliability || 80)) / 100;   // (C) schlechtere Teams häufiger DNF
-                    if (Math.random() < Math.max(2, Math.min(35, 10 * relFactor)) / 100) {
+                    if (rng() < Math.max(2, Math.min(35, 10 * relFactor)) / 100) {
                         standings[d.id].dnfs++;
                         // 5f: ~Hälfte Unfälle; bei aktiviertem Modus seltener tödlich (1% der Unfälle)
-                        if (deathsOn && Math.random() < 0.5 && Math.random() < 0.01) dead.add(d.id);
+                        if (deathsOn && rng() < 0.5 && rng() < 0.01) dead.add(d.id);
                         perf.push({ id: d.id, dnf: true, score: -1e9 }); continue;
                     }
                     const con = d.consistency ?? 75;                               // (B) Tagesform
-                    const goodDay = Math.random() < con / 100 ? 1 : 0.55;
+                    const goodDay = rng() < con / 100 ? 1 : 0.55;
                     const halfVar = (6 + (100 - con) * 0.10) * (wet ? 1.6 : 1);     // 5b: Nässe → mehr Varianz/Überraschungen
                     const gridBonus = nGrid > 1 ? (nGrid - (grid[d.id] || nGrid)) / (nGrid - 1) * 6 : 0;
                     const skill = wet ? ((d.pace || 60) * 0.4 + (d.rain || 70) * 0.6) : (d.pace || 60);   // 5b: bei Nässe zählt Regen-Können
                     const score = skill * goodDay * 0.50 + (t.strength || 60) * 0.18
-                        + _jwExperience(d) * 0.12 + gridBonus + (Math.random() - 0.5) * 2 * halfVar;
+                        + _jwExperience(d) * 0.12 + gridBonus + (rng() - 0.5) * 2 * halfVar;
                     perf.push({ id: d.id, dnf: false, score });
                 }
                 const finishers = perf.filter(p => !p.dnf).sort((a, b) => b.score - a.score);
                 const dnfList = perf.filter(p => p.dnf);
                 const order = [...finishers, ...dnfList];
-                const results = order.map((p, pos) => ({ d: p.id, p: pos + 1, dnf: p.dnf, t: p.dnf ? null : 90000 + pos * 350 + ((Math.random() * 1200) | 0) }));
+                const results = order.map((p, pos) => ({ d: p.id, p: pos + 1, dnf: p.dnf, t: p.dnf ? null : 90000 + pos * 350 + ((rng() * 1200) | 0) }));
                 finishers.slice(0, 10).forEach((p, pos) => standings[p.id].points += _JW_PTS[pos]);
                 if (finishers[0]) standings[finishers[0].id].wins++;
                 finishers.slice(0, 3).forEach(p => standings[p.id].podiums++);
                 // 5e: schnellste Runde – zufällig unter der vorderen Hälfte der Finisher (schnelle Autos)
                 if (finishers.length) {
                     const flPool = Math.max(1, Math.ceil(finishers.length / 2));
-                    standings[finishers[(Math.random() * flPool) | 0].id].fastestLaps++;
+                    standings[finishers[(rng() * flPool) | 0].id].fastestLaps++;
                 }
                 raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], wet, results, qualifying: quali });
             }
@@ -15906,7 +15925,7 @@
                 dead: [...dead],   // 5f: histId===id in Junior-Welt
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
-                heavy: { seriesId: series.id, standings, teamPoints: teamPts,
+                heavy: { seriesId: series.id, seed: (seed >>> 0) || 1, spine: [], standings, teamPoints: teamPts,
                     drivers: drivers.map(d => ({ id: d.id, histId: d.histId, name: d.name, nation: d.nation, number: d.number, team: d.team, pace: d.pace, potential: d.potential, consistency: d.consistency, rain: d.rain, age: d.age, points: standings[d.id].points })),
                     races: raceRecs }
             };
@@ -15981,6 +16000,7 @@
         async function advanceJuniorWorld(year) {
             if (GAME_STATE.juniorMode !== 'world') return;
             const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
+            if (!jw.worldSeed) jw.worldSeed = Math.floor(Math.random() * 0x7fffffff) || 1;   // Stufe 1: Backfill für Alt-Saves
             const retired = _ageAndRetireJuniors(jw);   // 2b: Returner altern, Karriere-Enden raus
             _ensureJuniorTeams(jw);            // 2c: Teams sicherstellen (+ teamlose zuordnen)
             const promoted = _promoteJuniors(jw);       // 2c: beste F3 → offene F2-Sitze
@@ -15993,7 +16013,8 @@
             const deadIds = [];
             for (const s of jw.series) {
                 const roster = jw.drivers.filter(d => d.seriesId === s.id);
-                const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year);
+                const seed = _recapHash(jw.worldSeed + '|' + s.id + '|' + year);   // Stufe 1: deterministischer Season-Seed
+                const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year, seed);
                 lightSeries.push(sim.light); heavySeries.push(sim.heavy);
                 _foldJuniorAggregates(jw, sim.heavy);   // Schritt 3: inkrementell All-Time/Strecken
                 (sim.dead || []).forEach(id => deadIds.push(id));
