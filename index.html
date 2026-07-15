@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.73</title>
+    <title>F1 RPG v0.9.14.74</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.73 (aktuell) - 15.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.74 (aktuell) - 15.07.2026</div>
+                            <div>&#8226; NEU: Ewige Junior-Bestenliste bleibt schlank - Filler ohne Titel/Sieg werden im Ruhestand entfernt (F2 groesszuegiger als F3), Profile bleiben abrufbar</div>
+                            <div>&#8226; NEU: Schalter 'Speicher optimieren' + Button in der Junior-Welt (bestehende Saves: Optin)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.73 - 15.07.2026</div>
                             <div>&#8226; NEU: Junior-Detaildaten sparen ~90% Speicher - Rennergebnisse werden bei Bedarf deterministisch aus Seed regeneriert statt gespeichert</div>
                             <div>&#8226; FIX: Alt-Saves bleiben kompatibel (Fallback)</div>
                             <div class="font-bold text-slate-400">v0.9.14.72 - 15.07.2026</div>
@@ -2969,7 +2972,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.73';
+        const VERSION = '0.9.14.74';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3460,7 +3463,9 @@
         function _emptyJuniorWorld() {
             // worldSeed (Stufe 1 Seed-Regen): Wurzel für deterministische Season-Seeds; für Alt-Saves
             // in advanceJuniorWorld nachgetragen. Ein Integer, ~0 Bytes.
-            return { drivers: [], series: [], history: [], allTimeStats: {}, circuitIndex: {}, worldSeed: Math.floor(Math.random() * 0x7fffffff) || 1 };
+            // pruneAllTime (Stufe 3): neue Welten prunen allTimeStats von Anfang an (Aktiv-oder-notable);
+            // Alt-Saves bleiben undefined → default AUS, bis der Nutzer es per Toggle einschaltet (retroaktiv Optin).
+            return { drivers: [], series: [], history: [], allTimeStats: {}, circuitIndex: {}, worldSeed: Math.floor(Math.random() * 0x7fffffff) || 1, pruneAllTime: true };
         }
         function idbJHistPut(year, obj) {
             return new Promise((resolve, reject) => {
@@ -15954,6 +15959,10 @@
             const racesCount = races.length;
             const standArr = Object.values(heavy.standings || {}).sort((a, b) => b.points - a.points);
             const champHistId = standArr[0] && standArr[0].histId;
+            // Stufe 3: Notable-Latte serien-abhängig ("höhere Serie wichtiger"). level ≤2 (F2+) = großzügig
+            // (Titel/Sieg/Podest/Pole), ≥3 (F3) = streng (Titel/Sieg). Setzt s.notable → steuert das Prunen
+            // in _pruneJuniorAllTime (Ruhestands-Filler ohne notable werden gelöscht, Profil regenerierbar).
+            const _generousSeries = _juniorSeriesLevel(heavy.seriesId) <= 2;
             // 5e: bestes Renn-Ergebnis (kleinste Position, Nicht-DNF) je Fahrer in dieser Saison
             const bestPos = {};
             for (const r of races) for (const res of (r.results || [])) {
@@ -15976,6 +15985,8 @@
                 if (bp != null && (s.bestFinish == null || bp < s.bestFinish)) s.bestFinish = bp;
                 s.seasons += 1;
                 if (k === champHistId) s.titles += 1;
+                // Stufe 3: notable, sobald die serien-abhängige Latte je erfüllt wurde (nie zurückgesetzt)
+                if (k === champHistId || (sd.wins || 0) > 0 || (_generousSeries && ((sd.podiums || 0) > 0 || (sd.poles || 0) > 0))) s.notable = true;
             }
             for (const r of races) {
                 const circuit = r.circuit || r.name;
@@ -15988,6 +15999,26 @@
                     w.wins += 1;
                 }
             }
+        }
+        // ── Stufe 3: allTimeStats prunen (Aktiv-oder-notable-Retention) ──
+        // Einziger unbegrenzt wachsender Posten der Junior-Welt. Behalten: Fahrer die AKTIV sind (in
+        // jw.drivers, bounded) ODER notable (Latte serien-abhängig in _foldJuniorAggregates gesetzt).
+        // Ruhestands-Filler → gelöscht; ihre Karriere bleibt aus den Stufe-2-Snapshots regenerierbar
+        // (openJuniorDriver streamt sie). Kein Backfill nötig: ein spät gewinnender Filler war bis dahin
+        // aktiv → hatte durchgehend vollen Eintrag → beim Sieg wird notable gesetzt, Historie komplett.
+        // Retroaktiv = Optin: nur wenn jw.pruneAllTime (neue Welt AN, Alt-Save AUS bis Nutzer einschaltet).
+        // Legacy-Migration: Alt-Einträge ohne notable-Flag → notable = (titles>0||wins>0), beim 1. Sweep.
+        function _pruneJuniorAllTime(jw) {
+            if (!jw || !jw.pruneAllTime || !jw.allTimeStats) return 0;
+            const st = jw.allTimeStats;
+            const active = new Set((jw.drivers || []).map(d => d.histId));
+            let pruned = 0;
+            for (const k of Object.keys(st)) {
+                const s = st[k];
+                if (s.notable === undefined) s.notable = ((s.titles || 0) > 0 || (s.wins || 0) > 0);   // Alt-Save-Migration
+                if (!s.notable && !active.has(k)) { delete st[k]; pruned++; }
+            }
+            return pruned;
         }
         // ── Stufe 2: Renn-/Quali-Daten aus Snapshot+Seed regenerieren (RAM, nicht persistiert) ──
         // heavy.races werden ab Stufe 2 nicht mehr gespeichert. Wer sie braucht (aktuell nur der
@@ -16028,6 +16059,7 @@
             }
             jw.allTimeStats = fresh.allTimeStats;
             jw.circuitIndex = fresh.circuitIndex;
+            _pruneJuniorAllTime(jw);   // Stufe 3: nach Voll-Rebuild geprunt (Optin via jw.pruneAllTime)
             await saveGame();
             if (typeof syncJuniorWorldUI === 'function') syncJuniorWorldUI();
             logInfo('JUNIOR', `🌍 Aggregate neu aufgebaut: ${Object.keys(fresh.allTimeStats).length} Fahrer, ${Object.keys(fresh.circuitIndex).length} Strecken`);
@@ -16063,6 +16095,8 @@
                 deadIds.forEach(id => jw.memoriam.push({ histId: id, name: nameById[id] || id, year }));
                 jw.drivers = jw.drivers.filter(d => !deadIds.includes(d.id));
             }
+            const pruned = _pruneJuniorAllTime(jw);   // Stufe 3: Ruhestands-Filler aus allTimeStats entfernen (Optin)
+            if (pruned) logInfo('JUNIOR', `🧹 allTimeStats geprunt: ${pruned} Filler entfernt (${Object.keys(jw.allTimeStats || {}).length} bleiben)`);
             const events = { retired, promoted, newcomers, deaths: deadIds.length };
             const lightRec = { year, series: lightSeries, events };
             jw.history = jw.history || [];
@@ -18570,6 +18604,8 @@
                         ${numInput('drivers', 'Fahrer/Serie', 2, sc.driversPerSeries)}
                         ${numInput('races', 'Rennen/Serie', 1, sc.races)}
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;"><input type="checkbox" ${GAME_STATE.juniorDeaths ? 'checked' : ''} onchange="juniorToggleDeaths(this.checked)"> Todesfälle (selten)</label>
+                        <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;" title="All-Time-Statistik schlank halten: Fahrer im Ruhestand ohne Titel/Sieg (F2 auch ohne Podest/Pole) werden entfernt – ihr Profil bleibt aus den Saison-Daten abrufbar."><input type="checkbox" ${jw.pruneAllTime ? 'checked' : ''} onchange="juniorTogglePrune(this.checked)"> Speicher optimieren</label>
+                        ${jw.pruneAllTime ? '' : `<button onclick="juniorOptimizeNow()" class="text-xs px-2 py-1 rounded" style="background:var(--bg-tertiary);border:1px solid var(--border-color);">🧹 Jetzt optimieren</button>`}
                         <span class="text-xs text-tertiary">(wirkt ab nächster Saison)</span>
                     </div>
                     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${subBtn('season', '🏁 Saison')}${subBtn('alltime', '🏆 All-Time')}${subBtn('circuits', '📍 Strecken')}</div>
@@ -18579,6 +18615,22 @@
         }
         window.juniorSubTab = function(t) { _juniorSubTab = t; renderContent(); };
         window.juniorToggleDeaths = function(on) { GAME_STATE.juniorDeaths = !!on; saveGame(); };
+        // Stufe 3: Speicher-Optimierung (allTimeStats prunen) ein/aus. Beim Einschalten sofort einmal prunen
+        // (retroaktiv, Optin) – so schrumpft ein Alt-Save direkt statt erst nach der nächsten Saison.
+        window.juniorTogglePrune = function(on) {
+            const jw = GAME_STATE.juniorWorld; if (!jw) return;
+            jw.pruneAllTime = !!on;
+            const n = on ? _pruneJuniorAllTime(jw) : 0;
+            if (n) logInfo('JUNIOR', `🧹 allTimeStats geprunt: ${n} Filler entfernt (${Object.keys(jw.allTimeStats || {}).length} bleiben)`);
+            saveGame(); renderContent();
+        };
+        window.juniorOptimizeNow = function() {
+            const jw = GAME_STATE.juniorWorld; if (!jw) return;
+            jw.pruneAllTime = true;   // manuelle Optimierung = dauerhaftes Optin
+            const n = _pruneJuniorAllTime(jw);
+            logInfo('JUNIOR', `🧹 Manuell optimiert: ${n} Filler aus allTimeStats entfernt (${Object.keys(jw.allTimeStats || {}).length} bleiben)`);
+            saveGame(); renderContent();
+        };
         window.juniorSetScale = function(field, val) {
             const n = parseInt(val) || 0;
             if (field === 'drivers') GAME_STATE.juniorDriversPerSeries = Math.max(2, n);
@@ -18606,6 +18658,8 @@
             const seriesBadge = sid => `<span class="px-2 py-1 rounded text-xs font-bold" style="background-color:${sid === 'f2' ? '#4363d8' : '#e6194b'}22;color:${sid === 'f2' ? '#4363d8' : '#e6194b'}">${seriesName(sid)}</span>`;
             // Karriere aus den Detail-Records streamen (eine Zeile je Serie/Saison)
             const rows = [];
+            const seasonRecs = [];   // Stufe 3: heavy-Refs je Saison (für Filler-Totals aus Snapshots)
+            let snapName = null, snapNation = null;   // Name/Nation aus Snapshot (falls allTimeStats-Eintrag geprunt)
             for (const h of (jw.history || [])) {
                 const det = await idbJDetailGet(h.year);
                 for (const s of (det && det.series || [])) {
@@ -18614,8 +18668,11 @@
                     const sorted = Object.values(s.standings).sort((a, b) => b.points - a.points);
                     const pos = sorted.findIndex(x => x.histId === histId) + 1;
                     const drv = (s.drivers || []).find(d => d.id === histId) || {};
+                    if (drv.name) { snapName = drv.name; snapNation = drv.nation; }
                     const t = teamObj(s.seriesId, drv.team);
-                    rows.push({ year: h.year, seriesId: s.seriesId, teamName: t.name || '–', teamColor: t.color || '#888', pos, points: sd.points, wins: sd.wins, podiums: sd.podiums, poles: sd.poles, champ: sorted[0] && sorted[0].histId === histId });
+                    const champ = sorted[0] && sorted[0].histId === histId;
+                    rows.push({ year: h.year, seriesId: s.seriesId, teamName: t.name || '–', teamColor: t.color || '#888', pos, points: sd.points, wins: sd.wins, podiums: sd.podiums, poles: sd.poles, champ });
+                    seasonRecs.push({ year: h.year, s, sd, champ });
                 }
             }
             rows.sort((a, b) => b.year - a.year || _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));   // neuestes Jahr oben (wie F1)
@@ -18623,9 +18680,29 @@
             const at = (jw.allTimeStats || {})[histId] || {};
             const active = (jw.drivers || []).find(d => d.id === histId);
             const dead = (jw.memoriam || []).find(m => m.histId === histId);
-            const flag = typeof renderFlag === 'function' ? renderFlag(at.nation, at.name, null) : '';
-            const crown = (at.titles || 0) >= 3 ? ' 👑' : '';
-            const name = at.name || (active && active.name) || histId;
+            // Stufe 3: notable/aktive Fahrer haben einen autoritativen allTimeStats-Eintrag (at); geprunte
+            // Filler nicht → Totals aus den gestreamten Snapshots rechnen (identisch zur Karriere-Tabelle,
+            // kein Widerspruch zum Leaderboard). bestFinish via Stufe-2-Regen (gecacht).
+            let tot;
+            if (at.seasons != null) {
+                tot = at;
+            } else {
+                tot = { name: snapName, nation: snapNation, titles: 0, wins: 0, podiums: 0, poles: 0, points: 0, dnfs: 0, fastestLaps: 0, starts: 0, seasons: 0, bestFinish: null };
+                for (const rec of seasonRecs) {
+                    const sd = rec.sd;
+                    tot.wins += sd.wins || 0; tot.podiums += sd.podiums || 0; tot.poles += sd.poles || 0;
+                    tot.points += sd.points || 0; tot.dnfs += sd.dnfs || 0; tot.fastestLaps += sd.fastestLaps || 0;
+                    tot.starts += rec.s.racesCount || (rec.s.races ? rec.s.races.length : 0) || 0;
+                    tot.seasons += 1; if (rec.champ) tot.titles += 1;
+                    for (const r of (_regenJuniorRaces(rec.year, rec.s) || [])) for (const res of (r.results || [])) {
+                        if (res.dnf || res.d !== histId) continue;
+                        if (tot.bestFinish == null || res.p < tot.bestFinish) tot.bestFinish = res.p;
+                    }
+                }
+            }
+            const flag = typeof renderFlag === 'function' ? renderFlag(tot.nation, tot.name, null) : '';
+            const crown = (tot.titles || 0) >= 3 ? ' 👑' : '';
+            const name = tot.name || (active && active.name) || histId;
             const curTeam = active ? teamObj(active.seriesId, active.team) : null;
             const box = (val, label) => `<div class="p-2 bg-secondary rounded-lg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem"><div class="text-xl md:text-2xl font-bold">${val}</div><div class="text-xs md:text-sm text-tertiary">${label}</div></div>`;
             let career = `<div class="table-responsive max-h-64 overflow-y-auto"><table class="w-full text-sm">`
@@ -18659,14 +18736,14 @@
                             ${active && active.number ? `<span class="text-2xl font-bold text-tertiary">#${active.number}</span>` : ''}
                             ${active ? seriesBadge(active.seriesId) : ''}
                         </div>
-                        <div class="text-sm text-secondary">${at.nation || ''} · Debüt ${debutYear != null ? debutYear : '–'}</div>
+                        <div class="text-sm text-secondary">${tot.nation || ''} · Debüt ${debutYear != null ? debutYear : '–'}</div>
                     </div>
                 </div>
                 <div class="card p-4 rounded-lg mb-4">
                     <h4 class="font-bold mb-3">🏆 Karriere-Bilanz</h4>
                     <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-center">
-                        ${box(at.titles || 0, 'Titel')}${box(at.wins || 0, 'Siege')}${box(at.podiums || 0, 'Podien')}${box(at.poles || 0, 'Poles')}${box(at.fastestLaps || 0, 'Schn. R.')}
-                        ${box(at.points || 0, 'Punkte')}${box(at.starts || 0, 'Starts')}${box(at.bestFinish != null ? 'P' + at.bestFinish : '–', 'Bestes')}${box(at.seasons || 0, 'Saisons')}${box(at.dnfs || 0, 'DNF')}
+                        ${box(tot.titles || 0, 'Titel')}${box(tot.wins || 0, 'Siege')}${box(tot.podiums || 0, 'Podien')}${box(tot.poles || 0, 'Poles')}${box(tot.fastestLaps || 0, 'Schn. R.')}
+                        ${box(tot.points || 0, 'Punkte')}${box(tot.starts || 0, 'Starts')}${box(tot.bestFinish != null ? 'P' + tot.bestFinish : '–', 'Bestes')}${box(tot.seasons || 0, 'Saisons')}${box(tot.dnfs || 0, 'DNF')}
                     </div>
                 </div>
                 <div class="card p-4 rounded-lg mb-4">
