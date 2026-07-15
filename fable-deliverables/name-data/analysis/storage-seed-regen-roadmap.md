@@ -142,8 +142,29 @@ Ansehbarkeit — jede Alt-Saison ist auf Klick wieder da, nur aus RAM.
 - **KEINE destruktive Migration:** Alt-Records mit `races` bleiben lauffähig (Fallback), neue Saisons schrumpfen. Node-Test `tests/junior-seed-regen-stufe2.js` 10/10 grün (byte-identisch inkl. Todes-Modus; deathsOn-Snapshot als zwingend bewiesen; Cache; Seed-Negativkontrolle).
 - **Rendering-Erkenntnis:** `_renderJuniorSeason`/`openJuniorDriver` lesen NIE `races`, nur `standings`+`drivers` → der Fahrplan-Entwurf „Regen beim Ansehen" war unnötig; races-Regen braucht aktuell nur der Aggregat-Rebuild.
 
-### Stufe 3 — allTimeStats prunen (offen)
-- Nur „notable" (Champions/Aufsteiger/Rekordhalter) persistieren; Filler regenerierbar. `heavy.spine` füllen.
+### Stufe 3 — allTimeStats prunen (GEPLANT, Entscheidungen fix — Bau offen)
+**Problem:** `jw.allTimeStats` (Live-`GAME_STATE`-Objekt) bekommt via `_foldJuniorAggregates` einen Eintrag pro je gefahrenem Fahrer inkl. P14-Filler → einziger unbegrenzt wachsender Posten (~5 MB/Jh, 5 Jh ~24 MB). Eintrag ~100–130 B.
+
+**Kernidee „Aktiv-oder-notable"-Retention (backfill-frei):** Eintrag bleibt wenn Fahrer **aktiv** (in `jw.drivers`, bounded ~2872, konstant) **ODER notable**. Reine Filler im Ruhestand → gelöscht (Karriere aus Stufe-2-Snapshots regenerierbar, Profil streamt weiter). **Kein Backfill nötig:** ein Filler der erst spät gewinnt war bis dahin *aktiv* → hatte durchgehend vollen Eintrag → beim Sieg wird `notable` gesetzt, Historie komplett.
+
+**Notable-Latte (serien-abhängig, „höhere Serie wichtiger", via `_juniorSeriesLevel`):**
+- **F3 (streng):** Titel ODER Rennsieg.
+- **F2 (großzügig):** Titel ODER Sieg ODER Podest ODER Pole.
+- Generalisierung: level ≤2 = großzügig, ≥3 = streng → spätere höhere Serien automatisch großzügig. Rein aus `heavy.standings` ableitbar (rebuild-sicher, KEIN Aufstiegs-Tracking).
+- Speicher: ~1.300–1.800 Einträge/Jh → **~1,4 MB / 5 Jh** (+0,35 MB flat aktiv) vs. ~24 MB unbeschnitten.
+
+**Retroaktiv = OPTIN (`jw.pruneAllTime`):** neue Welt default AN; **bestehende Welt default AUS** (nichts wird rückwirkend gelöscht bis der Nutzer per Debug-Toggle „Junior-Speicher optimieren" einschaltet). Sweep läuft nur wenn Flag AN.
+
+**Änderungen (Diff):**
+1. `_foldJuniorAggregates`: `s.notable = true` sobald serien-abhängige Latte erfüllt (Titel/Sieg/[F2:]Podest/Pole).
+2. Neu `_pruneJuniorAllTime(jw)`: nur wenn `jw.pruneAllTime`; Aktiv-Set aus `jw.drivers`; fehlendes `notable` legacy-ableiten (`titles>0||wins>0` → migriert Alt-Saves beim ersten Sweep); löschen wo `!notable && !aktiv`.
+3. `advanceJuniorWorld` (nach Fold/Roster): `_pruneJuniorAllTime(jw)` (1×/Saison, O(#Einträge), bounded).
+4. `rebuildJuniorAggregates`: am Ende `_pruneJuniorAllTime(jw)`.
+5. `openJuniorDriver`: Totals aus gestreamten Saison-Zeilen rechnen (statt aus `at`) → geprunte Filler behalten volles Profil; `dnfs/fastestLaps` aus `heavy.standings`, `bestFinish` via `_regenJuniorRaces` (gecacht).
+6. `renderJuniorAllTime`: Zähler auf notable filtern (kosmetisch). Debug-Toggle für `jw.pruneAllTime` + einmaliger „optimieren"-Button.
+7. `_emptyJuniorWorld`: `pruneAllTime: true` für neue Welten.
+8. `heavy.spine` füllen: **auf Stufe 4 verschoben** (Scope klein halten).
+- Node-Test: Fold→Prune → notable bleiben, Ruhestands-Filler weg, aktiver Filler bleibt, Filler-der-spät-gewinnt behält volle Historie, Profil-Totals = Summe der Streams, Flag AUS → nichts gelöscht.
 
 ### Stufe 4 — Voll-Replay (offen, optional/später)
 - Roster-Evolution aus `worldSeed` deterministisch: `_makeJuniorDriver`, `_assignJuniorNumber`, `_developJuniorDriver`, `_ageAndRetireJuniors`, `_ensureJuniorTeams`, `_juniorContractMoves` + Namens-Kette (`pickNationMotorsport`/`pickPooledName`) seeded. Dann Snapshot droppen. `genVersion`-Feld für Generator-Versionierung.
