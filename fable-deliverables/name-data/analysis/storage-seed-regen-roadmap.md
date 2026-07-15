@@ -1,5 +1,7 @@
 # Junior-Welt-Speicher: Seed-Regeneration — Umsetzungs-Fahrplan
 
+> **▶ SESSION-START STUFE 2:** Lies diese Datei komplett (v.a. §„Umsetzungs-Schritte → Stufe 2" + §„Erkenntnisse aus dem echten Code"), verifiziere `advanceJuniorWorld` / `idbJDetailPut` / `_renderJuniorSeason` gegen den aktuellen Code (Zeilennummern driften — via `functions.schema.json`), mach einen kurzen **Plan-Check mit dem Nutzer** (Persistenz + Migration = Risiko!), dann baue. Stufe 1 (v0.9.14.72) ist das getestete Fundament.
+
 **Status:** **Stufe 1 EINGEBAUT (v0.9.14.72).** Stufen 2–4 offen. Leitprinzip (Nutzer): **„RAM statt Speicher"** — alles,
 was deterministische Funktion gespeicherter Anker ist, wird beim Ansehen in RAM neu erzeugt statt
 persistiert. Speicher wächst über Jahrhunderte unbegrenzt; Rechenzeit ist transient und fällt nur
