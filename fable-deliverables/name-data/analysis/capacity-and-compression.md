@@ -117,3 +117,20 @@ am Spielstand zu sparen. **Schlechter Deal — gzip ist die pragmatische Decke.*
 - ② **Seed-Regeneration = 0 Bytes**: Fahrername = deterministische Funktion der ID → nur ID speichern,
   Name beim Laden regenerieren. Wörtlich die „0 Bytes, Regeneration zur Laufzeit"-Philosophie der
   Fable-Bänke (Pakete 2–5). → Details in `storage-seed-regen-roadmap.md`.
+
+  > ### ⚠️ PRÄZISIERUNG (2026-07-17) — ② gilt NUR für Filler, nicht pauschal
+  > So wie oben formuliert ist ② **zu grob**. Maßgeblich ist die **Spine/Filler-Grenzregel**
+  > aus `storage-seed-regen-roadmap.md`: **Notable** (Champion, Kletterer, allTimeStats-Eintrag)
+  > behalten ihre **persistierten Namen**; nur **reine Filler** werden regeneriert (Name = f(id)).
+  >
+  > **Grund:** Der regenerierte Name ist eine Funktion **des Pools** — einer *veränderlichen
+  > Datentabelle*. Eine Vertiefung (`pyramid-300kart-nation-demand.md` §7/§9) verschiebt jede
+  > Ziehung. Bei Filler ist das der von der Roadmap akzeptierte „Identitäts-Drift"; bei Notable
+  > hieße es, **der Meister von 2087 heißt nach dem Update anders** — das darf nicht passieren.
+  > (Unterschied zu `heavy.races`: die hängen an Seed + gefrorenem Kontext, an nichts, was sich
+  > durch ein Update ändert.)
+  >
+  > **Reihenfolge-Konsequenz:** Die entschiedene Pyramide (15 F4-Serien + Kart-WM/EM)
+  > **überschreitet den Stufe-4-Trigger** („>~10–20 Serien"). → **Vertiefung VOR Stufe 4 ziehen**,
+  > damit der Filler-Drift einmal und früh passiert, statt gewachsene Saves umzubenennen.
+  > Details: `pyramid-300kart-nation-demand.md` §10. **Hebel ① bleibt unberührt gültig.**

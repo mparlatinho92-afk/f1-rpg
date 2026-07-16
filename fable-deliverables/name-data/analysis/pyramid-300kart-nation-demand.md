@@ -287,3 +287,72 @@ Wenn die Vertiefung kommt, gehört **Blob+gzip als Schritt 0** davor — dann ko
 („names.js → ~1,8 MB, Monolith ~6,5 MB") nichts mehr, sondern landet bei ~0,73 MB und der
 Monolith bleibt unter seinem heutigen Stand. Reihenfolge: Blob-Umbau → `TOP_N`-Neulauf →
 Cap-Formel → `usedLast` entschärfen.
+
+## 10. Spielstand + die verworfene Seed-Regeneration für Namen (2026-07-17)
+
+### Die drei Kosten sauber getrennt (werden ständig verwechselt)
+| | Kostet? | Maßnahme |
+|---|---|---|
+| **Monolith-Dateigröße** | **JA** — bei jedem Laden, dauerhaft | gzip-Blob (§9) |
+| **RAM** | nein — 8→20 MB tut keinem weh | **nichts tun** |
+| **Spielstand** | nein — s. u. | **nichts tun** |
+
+### gzip JA, lazy NEIN
+Der CPU-Preis des Blobs fällt **einmal beim Boot** an (ein `DecompressionStream`-Durchlauf,
+Millisekunden), danach ist alles materialisiert wie heute. **Kleine Datei UND schnelle
+Ziehungen — kein Entweder-oder.** Lazy-Materialisierung kauft *nur* RAM und kostet CPU pro
+Ziehung. Da RAM nicht das Problem ist: **nicht lazy bauen.** (§9 beschreibt den Lazy-Hook —
+er wird für den Blob-Decode gebraucht, nicht für Lazyness pro Nation.)
+
+### Unbenutzte Namen können nicht im Save landen
+**Strukturell unmöglich.** Das Wörterbuch lebt im **Monolithen**, nicht im Save. Ein Name
+kommt erst dann in den Spielstand, wenn ein Fahrer ihn trägt — „ungenutzt" und „im Save"
+schließen sich per Konstruktion aus. Die Sorge ist unbegründet.
+
+### Was tatsächlich im Save liegt — und warum es egal ist
+Namen **existierender** Fahrer, konkret in `heavy.drivers` je Saison
+(`index.html:15960`: `{ id, histId, name, nation, number, team, pace, potential, … }`).
+Bei 648 Sitzen × 500 Jahren ≈ **324.000 Fahrer-Saison-Datensätze** → grob 6,5 MB roh nur für
+Namen → **~3 MB gzip**.
+
+Unkritisch, weil das **schwere** Daten sind: IndexedDB via `idbJDetailPut` + `_gzipEncode`,
+Quota = Anteil der Platte (hunderte MB–GB). Das **8-MB-localStorage-Limit betrifft nur die
+leichten Daten** (s. `capacity-and-compression.md` §5).
+
+### Seed-Regeneration für Namen: gilt nur für FILLER — und kollidiert mit der Vertiefung
+
+`capacity-and-compression.md` §5 ② formuliert den Hebel **pauschal**: *„Fahrername =
+deterministische Funktion der ID → nur ID speichern"*. **So pauschal ist er falsch** — und
+`storage-seed-regen-roadmap.md` weiß das bereits besser (**Spine/Filler-Grenzregel**):
+
+> Fahrer, die der Spine kennt (Champion, Kletterer, allTimeStats-Eintrag) behalten ihre
+> **persistierte Identität/Namen**; reine Filler werden aus dem Seed neu erzeugt (Name = f(id)).
+> So bleibt der Meister von 2087 immer derselbe, aber das P14-Feld dahinter kostet nichts.
+
+Das ist die **richtige** Auflösung: Notable-Namen persistiert = versionsstabil, Filler-Namen
+regeneriert = dürfen driften. Die Roadmap benennt „**Identitäts-Drift** — jede künftige
+Formel-Änderung ändert die historische Realität, `genVersion` mildert nur" bereits als eines
+der drei Risiken von **Stufe 4 (Voll-Replay), die bewusst AUFGESCHOBEN ist**.
+
+### Der neue Befund: Vertiefung IST ein Identitäts-Drift-Ereignis
+Der Namens-**Pool** ist eine **veränderliche Datentabelle**. Eine Vertiefung (§7/§9)
+verschiebt jede Ziehung → in Altsaves heißen alle **Filler** anders. Die Roadmap akzeptiert
+Filler-Drift ausdrücklich, das ist also **kein Blocker** — aber es ist ein **Reihenfolge**-Problem:
+
+- **Stufe-4-Trigger laut Roadmap:** „erst wenn die Welt real auf viele Serien wächst
+  (Größenordnung **>~10–20**)".
+- **Die entschiedene Linie (§7) hat 15 F4-Serien + Kart-WM/EM** → **sie überschreitet den
+  Trigger genau.** Stufe 4 wird also relevant, sobald die Pyramide gebaut wird.
+
+**→ Konsequenz: die Vertiefung VOR Stufe 4 ziehen.** Dann passiert der Filler-Drift **einmal,
+früh**, bevor lange Saves existieren. Umgekehrt (erst Stufe 4, dann vertiefen) würde man
+gewachsene Spielstände nachträglich umbenennen — technisch erlaubt, aber unnötig ärgerlich.
+Ein zweiter Grund für dieselbe Reihenfolge: Stufe 4 nennt als Risiko (1) die **mit der F1
+geteilte Namens-/Nations-Kette** (`pickPooledName`/`pickNameRegion`/`weightedPick`) — die will
+man nicht zweimal anfassen.
+
+### Was NICHT geht
+Namen **aller** Fahrer regenerieren (inkl. Notable). Dann würde der Meister von 2087 nach
+jedem Pool-Update anders heißen. Genau davor schützt die Spine/Filler-Grenzregel — sie darf
+beim Bau nicht aufgeweicht werden. **`capacity-and-compression.md` §5 ② ist entsprechend
+präzisiert.**
