@@ -31,9 +31,9 @@ genau so viele produzieren, nicht weniger und nicht mehr.
 > ### ⚠️ KORREKTUR (später in derselben Session) — diese Zahl ist zu hoch
 > Sie unterstellt, dass **jeder Sitz** neue Fahrer erzeugt (Sitze ÷ Verweildauer). In einem
 > echten Trichter mit **Beförderung** entstehen neue Fahrer aber **nur beim Eintritt**:
-> F3 und F1 erzeugen **null** frische Fahrer, die kommen alle von unten. Siehe §8.
+> F3 und F1 erzeugen **null** frische Fahrer, die kommen alle von unten. **Siehe §7.**
 > Die Tabellen in §2/§4 bleiben gültig (sie sind Verhältnisse), aber die **absoluten**
-> Fahrerzahlen und Dup-Zahlen sind mit dem Faktor aus §8 zu skalieren.
+> Fahrerzahlen und Dup-Zahlen sind mit dem Faktor aus §7 zu skalieren.
 
 **Nationen-Anteile:** aus `MOTORSPORT_NATION_BLEND[2020]` — **nicht** `DECADE_NATION_POOLS`.
 Die Junior-Welt zieht via `pickNationMotorsport` aus dem Blend, das ist also die richtige
@@ -64,7 +64,7 @@ Auslastung = gleichzeitige Fahrer der Nation ÷ effektiver Nachnamen-Pool.
 | NZL | 1,18 % | 134 | 32 | 96 | 140 % | 20.168 / — | keine Daten |
 | ITA | 4,59 % | 522 | 101 | 492 | 106 % | 18.960 / 1.053 | 18,0× |
 
-Vollständige 51-Nationen-Tabelle: Skripte in `scratchpad/master.js` (reproduzierbar, s. §6).
+Vollständige 51-Nationen-Tabelle: `cd scripts && node nation-demand.js 11372 500 6` (s. §6).
 
 ## 3. Der größte Befund: die datenlosen Nationen sind die schlimmsten
 
@@ -134,22 +134,24 @@ mit größerem `TOP_N` neu laufen.
 
 ## 6. Reproduktion
 
-Roh-CSVs: `fable-deliverables/name-data/F1 RPG Namenslisten & Namensgeneratoren/`
-(`surnames.csv` 382 MB, `forenames.csv` 226 MB, gitignored).
+**→ Alle Skripte liegen lauffähig in `scripts/` — dort laufen lassen, nicht neu ableiten.
+Befehle + Details: `scripts/README.md`.**
 
 ```
-# Bevölkerungs-eff je Land (streamend, O(1) Speicher: nur n/sum/sumsq bei count>=100)
-node pop-eff.js surnames.csv pop-sur.json ALL
-node pop-eff.js forenames.csv pop-fore.json M
-# Top-6000-Counts je Land für die eff(K)-Kurven
-node topk.js surnames.csv top-sur.json ALL 6000
-# Ist-Pools: names.js laden + ensureNamePoolsMerged() nachbilden (Tails w=1!), dann mix()/eff()
+cd scripts && node nation-demand.js          # Default: 648 Sitze (entschiedene Linie, §7)
+cd scripts && node nation-demand.js 11372 500 6   # Gegenprobe: Population-überall
 ```
+
+Die Bevölkerungs-Baseline (`pop-sur.json` / `pop-fore.json`, 18 KB) ist **eingecheckt** —
+sie spart ~6 min Streaming über 608 MB Roh-CSV. Die Roh-CSVs selbst liegen gitignored in
+`fable-deliverables/name-data/F1 RPG Namenslisten & Namensgeneratoren/`
+(`surnames.csv` 382 MB, `forenames.csv` 226 MB) und werden nur gebraucht, wenn die Baseline
+oder die eff(K)-Kurven (`topk.js`) neu erzeugt werden müssen.
 **Fallstrick:** Wer nur `NAME_POOLS_BY_NATION` zählt, sieht ~490 Nachnamen und hält v4 für
 nicht gebaut. Die Masse liegt in **`NAME_TAILS_BY_NATION`** und wird erst zur Laufzeit von
 `ensureNamePoolsMerged()` (index.html ~L4991) mit **Gewicht 1** eingemischt.
 
-## 8. Der Rechenfehler + die Architektur-Entscheidung (Session-Ende 2026-07-16)
+## 7. Der Rechenfehler + die Architektur-Entscheidung (Session-Ende 2026-07-16)
 
 ### Der Trichter ändert die Größenordnung
 Neue Fahrer entstehen **nur beim Eintritt**, nicht pro Sitz. Mit Beförderung
@@ -214,10 +216,74 @@ GBR produziert **6,1× mehr gleiche Vollnamen als die echte Bevölkerung**. Dies
 **Reproduktion aller Zahlen:** `scripts/` (Skripte + Bevölkerungs-Baseline eingecheckt,
 `node nation-demand.js`). **Fluss-Parameter:** `../../paketH-pyramide/BRIEF.md`.
 
-## 7. Offene Kollision mit dem Ziel-Kriterium
+## 8. Offene Kollision mit dem Ziel-Kriterium
 
 `_makeJuniorDriver` (index.html ~L15720) dedupliziert aktiv gegen `usedNames` **und
 `usedLast`** — es **verhindert** also genau die bevölkerungsnatürlichen Duplikate, die laut
 Kriterium erwünscht sind. Bei 548 gleichzeitigen Australiern aus 129 effektiven Nachnamen
 läuft dieser Dedup ohnehin leer. **Muss mitgeklärt werden, bevor die Caps steigen** —
 sonst arbeiten Pool-Tiefe und Laufzeit-Dedup gegeneinander.
+
+## 9. Blob + gzip: die Vertiefung wird praktisch gratis (gemessen 2026-07-16)
+
+**Kopfzahl: der VERTIEFTE Pool als gzip+base64-Blob kostet ~0,73 MB im Monolithen — der
+HEUTIGE, unvertiefte Pool kostet 747 KB.** Gleiche Dateigröße, **2,46× so viele Namen**.
+Damit kippt die Kosten-Nutzen-Rechnung aus §7: die Vertiefung ist nicht mehr „1,8 MB Bloat
+gegen 6,1× Duplikate", sondern „gleiche Größe wie heute, mehr Namen".
+
+### Gemessen (nicht geschätzt)
+
+| Variante | Datei im Monolithen | RAM |
+|---|---:|---:|
+| **heute** (JS-Literal `names.js`) | 747 KB | **8,2 MB** |
+| Blob roh (kein JS-Syntax) | 497 KB | — |
+| Blob gzip | 226 KB | — |
+| **Blob gzip+base64** (inline-fähig) | **302 KB** | ~1 MB als String |
+| vertieft, JS-Literal | ~1,8 MB | ~20 MB |
+| **vertieft, gzip+base64** | **~0,73 MB** | ~2,5 MB + materialisierte Nationen |
+
+Messung: `node --expose-gc`, heapUsed-Delta um Parse + `ensureNamePoolsMerged`-Nachbildung.
+
+### Warum der Overhead so groß ist
+747 KB Quelltext → **8,2 MB RAM**, Faktor **11**. Pro `[name, gewicht]`-Paar **130 Byte** bei
+~9 Byte Nutzdaten. Fast reiner V8-Objekt-Overhead: jeder Name ein String-Objekt mit Header,
+jedes Paar ein Array mit Header. **Die Daten sind winzig, die Verpackung ist alles.**
+
+### Die begriffliche Schärfung
+Im Monolithen heißt „noch nicht abgerufen" **nicht** „noch nicht geladen" — die Namen stehen
+in der Datei, die Datei ist geparst. Die Frage ist nur, ob sie als teure JS-Objekte oder als
+billiger String dastehen. Der richtige Begriff ist **„noch nicht materialisiert"**.
+
+### Der Bauplan (Aufhänger existiert schon)
+- **`ensureNamePoolsMerged()`** (index.html ~L4991) ist **bereits** ein Lazy-Init mit
+  `_namePoolsMerged`-Flag → exakt der Punkt, an dem der Blob-Decode hängt.
+- **`DecompressionStream` ist browser-nativ**, braucht **kein WASM**. §5 von
+  `capacity-and-compression.md` schließt brotli/zstd zu Recht aus — aber das gilt für
+  *Kompression*. gzip-**Decode** ist nativ, und `_gzipEncode` nutzt `CompressionStream`
+  bereits. **CLAUDE.md-Standalone-Regel bleibt unverletzt.**
+- **Fallstrick:** `DecompressionStream` ist **async**, `pickPooledName` ist **synchron**.
+  → Einmal beim Boot async entpacken → Blob-String im RAM → daraus **synchron** pro Nation
+  materialisieren (Lazy-Hook s.o.).
+- Blob-Format (Vorschlag, in der Messung verwendet):
+  `NAT|regionIdx|regionW|last:w,last:w|first...` je Zeile, Ära-Fenster mit `~` getrennt,
+  Tails als eigene `T`-Zeilen.
+
+### Zwei ehrliche Einschränkungen
+1. **Der RAM-Gewinn erodiert.** Über 5 Jahrhunderte wird jede der 51 Nationen irgendwann
+   gezogen → materialisiert → wieder ~20 MB. Lazy hilft beim Start und in kurzen Spielen.
+   Dauerhaft niedrig nur ohne Cache (pro Ziehung in den Blob indizieren = CPU statt RAM)
+   oder mit LRU.
+2. **20 MB RAM sind kein Problem.** Der Monolith ist selbst 5,5 MB; die Junior-Welt kämpfte
+   vor der Seed-Regeneration mit 279 MB. **RAM ist das schwächere Argument — der starke ist
+   die Dateigröße**, weil sie bei jedem Laden anfällt und dauerhaft ist.
+
+### Nicht verwechseln
+Das betrifft den **Pool** (Wörterbuch möglicher Namen) — muss immer da sein. Die **vergebenen**
+Namen im Spielstand sind eine andere Sache und schon gelöst: Seed-Regeneration,
+`capacity-and-compression.md` §5 ② („Fahrername = deterministische Funktion der ID → 0 Bytes").
+
+### Konsequenz für das Rezept in §7
+Wenn die Vertiefung kommt, gehört **Blob+gzip als Schritt 0** davor — dann kostet Schritt 4
+(„names.js → ~1,8 MB, Monolith ~6,5 MB") nichts mehr, sondern landet bei ~0,73 MB und der
+Monolith bleibt unter seinem heutigen Stand. Reihenfolge: Blob-Umbau → `TOP_N`-Neulauf →
+Cap-Formel → `usedLast` entschärfen.
