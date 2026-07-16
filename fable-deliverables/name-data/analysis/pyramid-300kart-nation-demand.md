@@ -356,3 +356,50 @@ Namen **aller** Fahrer regenerieren (inkl. Notable). Dann würde der Meister von
 jedem Pool-Update anders heißen. Genau davor schützt die Spine/Filler-Grenzregel — sie darf
 beim Bau nicht aufgeweicht werden. **`capacity-and-compression.md` §5 ② ist entsprechend
 präzisiert.**
+
+## 11. Der `early`-Stub — was Vertiefung prinzipiell NICHT löst (2026-07-17)
+
+Gemessen (effektive Größe, Simpson):
+
+| Fenster | GER | GBR | typische Nation |
+|---|---:|---:|---:|
+| `early` | **16 / eff 15** | **41 / eff 16** | **10 / eff 9** |
+| `mid` | 532 / eff 207 | 591 / eff 206 | ~470 / eff ~170 |
+| `modern` | 370 / eff 90 | 440 / eff 98 | ~335 / eff ~105 |
+
+**32 von 33 ära-gesplitteten Nationen haben `early` eff < 25** — meist exakt 10 Namen (eff ≈ 9).
+Ein NED-Fahrer von 1955 zieht seinen Vornamen aus **zwölf**. Das ist kein dünner Pool, das ist
+ein **Stub** — und der schlimmste Einzelbefund dieser Analyse.
+
+### Warum `TOP_N 6000` daran exakt nichts ändert
+1. Der Build schiebt Aggregat-Daten **nur nach `mid`** (+ gedeckelt via `modDup` nach `modern`).
+2. Der Laufzeit-Merge bestätigt: *„first → Gewicht 1 nur an mid+modern"* (`ensureNamePoolsMerged`,
+   ~L4991) → **die Tails erreichen `early` nie.**
+3. **Grundursache:** Kaggle ist ein **Gegenwarts-Schnappschuss**. Keine 1930er-Häufigkeiten drin.
+   Nachnamen datieren kaum (Smith bleibt Smith) — **Vornamen datieren hart**.
+
+**→ Das `early`-Problem ist orthogonal zur Vertiefung (§7/§9). Beide Wege lösen es nicht.**
+
+### Die Auflösung (Nutzer-Entscheidung 2026-07-17)
+- **28 Nationen flachlegen** (`ERA_SPLIT_KEEP` in `build-names-v3.js`) → sie ziehen in allen
+  Ären aus dem vollen tiefen Pool statt aus 10–17 Namen. Kauft milden Anachronismus, fällt bei
+  ihnen nicht auf (ihre Namen datieren kaum). **Opus-Seite, Build-Änderung.**
+- **5 Nationen** (GER/GBR/USA/FRA/ITA) behalten den Split und bekommen **echte
+  Geburtsjahrgangs-Verteilungen** → **Paket I** (`../../paketI-aera-vornamen/BRIEF.md`).
+
+### Warum Paket I billig ist
+Genau diese 5 Nationen haben die besten historischen Namensstatistiken: **SSA** (USA, volle
+Counts ab 1880), **INSEE** (FR, ab ~1900), **ONS** (GB, oft nur Top-100), **ISTAT** (IT, eher
+ab 1999), **GfdS** (DE — **kein amtliches Register, nur Ranglisten**).
+Jahrgangs-Versatz beachten: Debüt 1955 → Geburt ~1930.
+
+**Der GER-Rang-only-Fall** ist per **Zipf-Fit** lösbar — Exponent auf US/FR/GB kalibrieren
+(echte Counts), dann auf GER anwenden. Präzedenzfall: `capacity-and-compression.md` §1 nutzt
+Zipf bereits für FR-Nachnamen (s ≈ 0,469). Offene Frage an Fable: driftet s über die Ären?
+(Real hat die Vornamen-Konzentration abgenommen — „Hans" 1930 war ein größerer Anteil als
+„Leon" 2005.)
+
+**Nebenbefund:** Für diese 5 Nationen sind Jahrgangsdaten **auch für `mid`/`modern` besser**
+als Kaggle — Kaggles „mid" ist in Wahrheit ein Gegenwarts-Schnappschuss im mittleren Fenster.
+Paket I soll bewerten, ob Kaggle für ihre **Vornamen** ganz abgelöst wird. Nachnamen bleiben
+in jedem Fall Kaggle.

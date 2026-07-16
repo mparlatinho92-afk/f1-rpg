@@ -29,6 +29,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 | Paket | Brief | Status |
 |-------|-------|--------|
 | H | Nachwuchs-Pyramide (Fluss-Parameter & Trichter-Validierung) | `paketH-pyramide/BRIEF.md` — 📤 **BEAUFTRAGT** (2026-07-16), Fable-Lieferung offen. Leitet Verweildauern/Beförderungsquoten je Ebene+Ära, Intake-Nationenverteilung (Basis statt F1-Spitze) und die nationsspezifische Nicht-Beförderungsquote ab; Validierung = `DECADE_NATION_POOLS` muss hinten herausfallen. **Quereinstiege/fremde Serien/Namens-Caps ausdrücklich ausgeschlossen.** |
+| I | Ära-Vornamen aus Geburtsjahrgangs-Statistik | `paketI-aera-vornamen/BRIEF.md` — 📤 **BEAUFTRAGT** (2026-07-17), Fable-Lieferung offen. Repariert den `early`-Stub (32 von 33 Split-Nationen haben eff < 25; GER 16 Namen/eff 15) für **GER/GBR/USA/FRA/ITA** aus SSA/INSEE/ONS/GfdS-Jahrgangsdaten. Kaggle kann das prinzipiell nicht (Gegenwarts-Schnappschuss). Ära-Granularität = Fable-Messung (Fenster vs. Kurve `[peak,breite,amplitude]`); GER ist Rang-only → **Zipf auf US/FR/GB eichen**. Budget: Poolgröße wie heute. **Die anderen 28 werden flachgelegt = Opus-Seite.** |
 
 ## Frühere Pakete (bereits eingebaut)
 `paketA-*` Namens-Pools, `paketB-*` Saison-Rückblick, `paketC-*` Nachrufe, `paketD-validierung`,
