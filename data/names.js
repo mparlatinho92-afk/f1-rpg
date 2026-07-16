@@ -565,58 +565,39 @@ const NAME_POOLS_BY_NATION = {
     // ── BRA ──
     BRA: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['José',5],['Carlos',5],['Luiz',4],['Antônio',4],['Francisco',4],['Paulo',4],['Roberto',4],['Sérgio',3],['Marcos',3],['Fernando',3],['Ricardo',3],
-              ['Nelson',2],['Wilson',2],['Chico',2],['Emerson',1],['Ayrton',1]
-            ],
-            mid: [
-              ['Marcos',81],['Carlos',80],['Paulo',79],['Marcelo',66],['Bruno',69],['Felipe',65],['Rodrigo',64],['Eduardo',65],['André',58],['Gustavo',57],
-              ['Thiago',57],['Ricardo',55],['Fernando',62],['Leandro',58],['Anderson',60],['Diego',54],['Luciano',42],['Maurício',33],['Cristiano',32],['Rubens',17],
-              ['Tarso',2],['José',100],['João',97],['Lucas',95],['Antônio',79],['Francisco',79],['Gabriel',77],['Rafael',73],['Pedro',73],['Daniel',65],
-              ['Matheus',65],['Luiz',62],['Junior',59],['Guilherme',57],['Fabio',56],['Leonardo',54],['Marcio',51],['Alexandre',50],['Vinicius',47],['Edson',47],
-              ['Adriano',47],['Alex',47],['Roberto',46],['Tiago',45],['Douglas',43],['Mateus',42],['Víctor',42],['Henrique',42],['Sergio',41],['Renato',40],
-              ['Claudio',39],['Luis',39],['Vitor',38],['Rogerio',37],['Samuel',37],['Ronaldo',36],['Robson',35],['Jefferson',35],['Jorge',35],['Flavio',35],
-              ['Julio',34],['Igor',34],['Cicero',34],['Manoel',34],['Jean',33],['Danilo',33],['Wellington',33],['David',32],['Luan',32],['Emerson',31],['Wesley',31],
-              ['Renan',31],['Raimundo',31],['Davi',30],['Willian',30],['Jonas',29],['Alan',29],['William',29],['Fabiano',29],['Reginaldo',29],['Jeferson',29],
-              ['Caio',28],['Wagner',28],['Arthur',28],['Gilberto',28],['Juliano',28],['Everton',27],['Mario',27],['Diogo',27],['Fabricio',27],['Gilmar',26],
-              ['Alisson',26],['Sandro',26],['Leo',26],['Miguel',26],['César',25],['Valdir',25],['Wilson',25],['Adilson',25],['Alessandro',25],['Maicon',25],
-              ['Jonathan',24],['Elias',24],['João Paulo',24],['Iván',24],['Evandro',24],['Cleiton',24],['Jackson',24],['Ademir',24],['Gilson',23],['Jair',23],
-              ['Joel',23],['Pablo',22],['Nelson',22],['Vanderlei',22],['Edilson',22],['Mauro',22],['Sebastião',21],['Valmir',21],['Erick',21],['Jose Carlos',21],
-              ['Murilo',21],['Marco',20],['Allan',20],['Silvio',20],['Italo',20],['Emanuel',20],['Celso',20],['Helio',20],['Geraldo',20],['Augusto',20],['Israel',20],
-              ['Moises',19],['Neto',19],['Valdecir',19],['Jailson',19],['Vagner',19],['Kauan',19],['Nilson',19],['Michel',19],['Yuri',19],['Ruan',19],['Hugo',19],
-              ['Luiz Carlos',19],['Ismael',18],['Claudinei',18],['Charles',18],['Maycon',18],['Cleber',18],['Breno',18],['Nicolás',18],['João Pedro',18],
-              ['Gerson',18],['Romario',18],['João Vitor',18],['Reinaldo',18],['Sidnei',17],['Ailton',17],['Geovane',17],['Joaquim',17],['Claudemir',17],
-              ['Jhonatan',17],['Filipe',17],['Damião',17],['Osmar',17],['Edmilson',17],['Denilson',17],['Eder',17],['Patrick',17],['Kauã',17],['Marlon',17],
-              ['Alberto',17],['Ramón',16],['Beto',16],['Nilton',16],['Denis',16],['Elton',16],['Josué',16],['Alexsandro',16],['Raphael',16],['Sidney',16],
-              ['Vilmar',16],['Kaio',16],['Otavio',16],['Milton',16],['Michael',16],['Ezequiel',16],['Odair',16],['Airton',16],['Jairo',16],['Valter',16],
-              ['Juninho',15],['João Victor',15],['Wanderson',15],['Edvaldo',15],['Raúl',15],['Osvaldo',15],['Cristian',15],['Everaldo',15],['Moacir',15],
-              ['Orlando',15],['Lukas',15],['Valdemir',15],['Kleber',14],['Ryan',14],['Vicente',14],['Artur',14],['Walter',14],['Gilvan',14],['Edivaldo',14],
-              ['Maria',14],['Natan',14],['Richard',14],['Kaique',14],['Alison',14],['Nathan',14],['Laercio',14],['Roger',14],['Jaime',14],['Vilson',14],
-              ['Josimar',14],['Adão',14],['Natanael',14],['Juan',14],['Kaue',14],['Ivo',14],['Rodolfo',13],['Arnaldo',13],['Carlos Eduardo',13],['João Carlos',13],
-              ['Ivanildo',13],['Weslley',13],['Celio',13],['John',13],['Jardel',13],['Almir',13],['Nivaldo',13],['Severino',13],['Marcus',13],['Iago',13],
-              ['Isaac',13],['Isaias',13],['Angelo',13],['Giovani',13],['Higor',13],['Washington',13],['Romulo',13],['George',13],['Aparecido',13],['Ademar',12],
-              ['Enzo',12],['Deivid',12],['Manuel',12],['Agnaldo',12],['Chico',12],['Gean',12],['Paulinho',12],['Dirceu',12],['Domingos',12],['Pedro Henrique',12],
-              ['Cleverson',12],['Ederson',12],['Eric',12],['Maciel',12],['Lindomar',12],['Juárez',12],['Tony',12],['Max',12],['Antonio Carlos',12],['Gil',12],
-              ['Ednaldo',12],['Luiz Fernando',12],['Bernardo',12],['Valdeci',11],['Yago',11],['Rafa',11],['Benedito',11],['Humberto',11],['Naldo',11],['Kevin',11],
-              ['Saulo',11]
-            ],
-            modern: [
-              ['Gabriel',90],['Lucas',90],['Pedro',90],['Rafael',90],['Matheus',90],['João',90],['Enzo',45],['Felipe',45],['Guilherme',45],['Arthur',45],
-              ['Miguel',45],['Caio',26],['Vinícius',26],['Davi',26],['Bernardo',26],['Heitor',12],['José',14],['Antônio',14],['Francisco',14],['Daniel',14],
-              ['Luiz',14],['Junior',14],['Fabio',14],['Leonardo',14],['Marcio',14],['Alexandre',14],['Edson',14],['Adriano',14],['Alex',14],['Roberto',14],
-              ['Tiago',14],['Douglas',14],['Mateus',14],['Víctor',14],['Henrique',14],['Sergio',14],['Renato',14],['Claudio',14],['Luis',14],['Vitor',14],
-              ['Rogerio',14],['Samuel',14],['Ronaldo',14],['Robson',14],['Jefferson',14],['Jorge',14],['Flavio',14],['Julio',14],['Igor',14],['Cicero',14],
-              ['Manoel',14],['Jean',14],['Danilo',14],['Wellington',14],['David',14],['Luan',14],['Emerson',14],['Wesley',14],['Renan',14],['Raimundo',14],
-              ['Willian',14],['Jonas',14],['Alan',14],['William',14],['Fabiano',14],['Reginaldo',14],['Jeferson',14],['Wagner',14],['Gilberto',14],['Juliano',14],
-              ['Everton',14],['Mario',14],['Diogo',14],['Fabricio',14],['Gilmar',14],['Alisson',14],['Sandro',14],['Leo',14],['César',14],['Valdir',14],['Wilson',14],
-              ['Adilson',14],['Alessandro',14],['Maicon',14],['Jonathan',14],['Elias',14],['João Paulo',14],['Iván',14],['Evandro',14],['Cleiton',14],['Jackson',14],
-              ['Ademir',14],['Gilson',14],['Jair',14],['Joel',14],['Pablo',14],['Nelson',14],['Vanderlei',14],['Edilson',14],['Mauro',14],['Sebastião',14],
-              ['Valmir',14],['Erick',14],['Jose Carlos',14],['Murilo',14],['Marco',14],['Allan',14],['Silvio',14],['Italo',14],['Emanuel',14],['Celso',14],
-              ['Helio',14],['Geraldo',14],['Augusto',14],['Israel',14],['Moises',14],['Neto',14],['Valdecir',14],['Jailson',14],['Vagner',14],['Kauan',14],
-              ['Nilson',14],['Michel',14],['Yuri',14]
-            ]
-          },
+          first: [
+            ['José',100],['Carlos',80],['Luiz',62],['Antônio',79],['Francisco',79],['Paulo',79],['Roberto',46],['Sérgio',41],['Marcos',81],['Fernando',62],
+            ['Ricardo',55],['Nelson',22],['Wilson',25],['Chico',12],['Emerson',31],['Ayrton',2],['Marcelo',66],['Bruno',69],['Felipe',65],['Rodrigo',64],
+            ['Eduardo',65],['André',58],['Gustavo',57],['Thiago',57],['Leandro',58],['Anderson',60],['Diego',54],['Luciano',42],['Maurício',33],['Cristiano',32],
+            ['Rubens',17],['Tarso',2],['Gabriel',77],['Lucas',95],['Pedro',73],['Rafael',73],['Matheus',65],['João',97],['Enzo',12],['Guilherme',57],['Arthur',28],
+            ['Miguel',26],['Caio',28],['Vinícius',47],['Davi',30],['Bernardo',12],['Heitor',10],['Daniel',65],['Junior',59],['Fabio',56],['Leonardo',54],
+            ['Marcio',51],['Alexandre',50],['Edson',47],['Adriano',47],['Alex',47],['Tiago',45],['Douglas',43],['Mateus',42],['Víctor',42],['Henrique',42],
+            ['Renato',40],['Claudio',39],['Luis',39],['Vitor',38],['Rogerio',37],['Samuel',37],['Ronaldo',36],['Robson',35],['Jefferson',35],['Jorge',35],
+            ['Flavio',35],['Julio',34],['Igor',34],['Cicero',34],['Manoel',34],['Jean',33],['Danilo',33],['Wellington',33],['David',32],['Luan',32],['Wesley',31],
+            ['Renan',31],['Raimundo',31],['Willian',30],['Jonas',29],['Alan',29],['William',29],['Fabiano',29],['Reginaldo',29],['Jeferson',29],['Wagner',28],
+            ['Gilberto',28],['Juliano',28],['Everton',27],['Mario',27],['Diogo',27],['Fabricio',27],['Gilmar',26],['Alisson',26],['Sandro',26],['Leo',26],
+            ['César',25],['Valdir',25],['Adilson',25],['Alessandro',25],['Maicon',25],['Jonathan',24],['Elias',24],['João Paulo',24],['Iván',24],['Evandro',24],
+            ['Cleiton',24],['Jackson',24],['Ademir',24],['Gilson',23],['Jair',23],['Joel',23],['Pablo',22],['Vanderlei',22],['Edilson',22],['Mauro',22],
+            ['Sebastião',21],['Valmir',21],['Erick',21],['Jose Carlos',21],['Murilo',21],['Marco',20],['Allan',20],['Silvio',20],['Italo',20],['Emanuel',20],
+            ['Celso',20],['Helio',20],['Geraldo',20],['Augusto',20],['Israel',20],['Moises',19],['Neto',19],['Valdecir',19],['Jailson',19],['Vagner',19],
+            ['Kauan',19],['Nilson',19],['Michel',19],['Yuri',19],['Ruan',19],['Hugo',19],['Luiz Carlos',19],['Ismael',18],['Claudinei',18],['Charles',18],
+            ['Maycon',18],['Cleber',18],['Breno',18],['Nicolás',18],['João Pedro',18],['Gerson',18],['Romario',18],['João Vitor',18],['Reinaldo',18],['Sidnei',17],
+            ['Ailton',17],['Geovane',17],['Joaquim',17],['Claudemir',17],['Jhonatan',17],['Filipe',17],['Damião',17],['Osmar',17],['Edmilson',17],['Denilson',17],
+            ['Eder',17],['Patrick',17],['Kauã',17],['Marlon',17],['Alberto',17],['Ramón',16],['Beto',16],['Nilton',16],['Denis',16],['Elton',16],['Josué',16],
+            ['Alexsandro',16],['Raphael',16],['Sidney',16],['Vilmar',16],['Kaio',16],['Otavio',16],['Milton',16],['Michael',16],['Ezequiel',16],['Odair',16],
+            ['Airton',16],['Jairo',16],['Valter',16],['Juninho',15],['João Victor',15],['Wanderson',15],['Edvaldo',15],['Raúl',15],['Osvaldo',15],['Cristian',15],
+            ['Everaldo',15],['Moacir',15],['Orlando',15],['Lukas',15],['Valdemir',15],['Kleber',14],['Ryan',14],['Vicente',14],['Artur',14],['Walter',14],
+            ['Gilvan',14],['Edivaldo',14],['Maria',14],['Natan',14],['Richard',14],['Kaique',14],['Alison',14],['Nathan',14],['Laercio',14],['Roger',14],
+            ['Jaime',14],['Vilson',14],['Josimar',14],['Adão',14],['Natanael',14],['Juan',14],['Kaue',14],['Ivo',14],['Rodolfo',13],['Arnaldo',13],
+            ['Carlos Eduardo',13],['João Carlos',13],['Ivanildo',13],['Weslley',13],['Celio',13],['John',13],['Jardel',13],['Almir',13],['Nivaldo',13],
+            ['Severino',13],['Marcus',13],['Iago',13],['Isaac',13],['Isaias',13],['Angelo',13],['Giovani',13],['Higor',13],['Washington',13],['Romulo',13],
+            ['George',13],['Aparecido',13],['Ademar',12],['Deivid',12],['Manuel',12],['Agnaldo',12],['Gean',12],['Paulinho',12],['Dirceu',12],['Domingos',12],
+            ['Pedro Henrique',12],['Cleverson',12],['Ederson',12],['Eric',12],['Maciel',12],['Lindomar',12],['Juárez',12],['Tony',12],['Max',12],
+            ['Antonio Carlos',12],['Gil',12],['Ednaldo',12],['Luiz Fernando',12],['Valdeci',11],['Yago',11],['Rafa',11],['Benedito',11],['Humberto',11],
+            ['Naldo',11],['Kevin',11],['Saulo',11],['Edinaldo',11],['Jonatas',11],['Josias',11],['Robert',11],['Assis',11],['Christian',11],['Erik',11],
+            ['Amarildo',11],['Evaldo',11],['Everson',11],['Marciano',11],['Itamar',11],['Messias',11],['Mikael',11],['Andrey',11],['Fagner',11],['Erivaldo',11],
+            ['Edgar',11],['Carlinhos',11],['Carlos Alberto',11],['Clayton',11],['Kelvin',11],['Dudu',11],['Alvaro',11]
+          ],
           last: [
             ['Silva',100],['Santos',73],['Oliveira',61],['Souza',50],['Lima',50],['Alves',49],['Rodrigues',47],['Sousa',43],['Ferreira',43],['Pereira',42],
             ['Costa',33],['Gomes',38],['Martins',31],['Soares',30],['Ribeiro',30],['Fernandes',29],['Nascimento',28],['Lopes',27],['Carvalho',27],['Almeida',27],
@@ -671,57 +652,39 @@ const NAME_POOLS_BY_NATION = {
     // ── JPN ──
     JPN: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Hiroshi',4],['Kenji',3],['Akira',3],['Masahiro',3],['Takao',2],['Osamu',2],['Yoshio',2],['Shigeru',2],['Kazuyoshi',2],['Noritake',1],['Kunimitsu',1],
-              ['Tetsu',1]
-            ],
-            mid: [
-              ['Takashi',100],['Yusuke',85],['Daisuke',82],['Satoshi',79],['Hiroyuki',79],['Hiroki',75],['Ryo',75],['Atsushi',73],['Makoto',71],['Takahiro',69],
-              ['Naoki',68],['Takuya',69],['Koji',71],['Jun',69],['Ken',69],['Keisuke',62],['Yuji',61],['Tatsuya',59],['Takayuki',57],['Shinji',45],['Hideki',51],
-              ['Masanori',37],['Satoru',40],['Ukyo',2],['Toranosuke',2],['Hiroshi',97],['Yuki',86],['Kenji',81],['Akira',80],['Takeshi',80],['Masahiro',70],
-              ['Yuta',63],['Masaki',59],['Kazuki',54],['Hiroaki',53],['Kentaro',52],['Kohei',52],['Masato',51],['Koichi',51],['Kenta',50],['Tomohiro',50],
-              ['Ryota',49],['Takumi',49],['Masayuki',49],['Tetsuya',48],['Yasuhiro',48],['Yuya',48],['Kenichi',48],['Kazuhiro',48],['Kei',48],['Shinya',47],
-              ['Toru',47],['Masashi',47],['Yuichi',47],['Tsuyoshi',47],['Ryosuke',46],['Akihiro',46],['Hiro',46],['Shota',46],['Yutaka',45],['Yoshihiro',45],
-              ['Mohamed',45],['Kazuya',45],['Daiki',45],['Shinichi',45],['Shingo',45],['Eduardo',45],['Sergio',44],['Ali',44],['Fernando',44],['Yosuke',44],
-              ['Muhammad',44],['Kosuke',43],['Fabio',43],['Osamu',42],['Keita',42],['Shunsuke',42],['Mario',41],['Hitoshi',41],['Sho',40],['Minoru',40],['Eiji',40],
-              ['Marcio',39],['Naoya',39],['Edson',39],['Wataru',39],['Tomoyuki',39],['Rafael',39],['Shin',39],['Hideaki',39],['Tomoya',38],['Bruno',38],['Koki',38],
-              ['Kazuo',38],['Shun',38],['Shohei',38],['Junichi',37],['Yohei',37],['Naoto',37],['Shogo',37],['Yoshiaki',37],['Taro',37],['Alexandre',37],
-              ['Tadashi',37],['Rodrigo',36],['Lucas',36],['Kiyoshi',36],['Andre',36],['Kota',36],['Seiji',36],['Hayato',36],['Toshiyuki',35],['Masaya',35],
-              ['Kotaro',35],['Yoshinori',35],['Yoshiyuki',34],['Masaru',34],['James',34],['Shintaro',34],['Takuma',34],['Hideyuki',34],['Manabu',33],['Daichi',33],
-              ['Khan',33],['Tomoki',33],['Hideo',33],['Hajime',33],['Takao',33],['Masaaki',33],['Toshio',33],['Yuto',33],['Yoshiki',32],['Akio',32],['Takanori',32],
-              ['Yasushi',32],['William',32],['Shigeru',32],['Kensuke',32],['Anderson',32],['Chris',31],['Tsutomu',31],['Yoshio',31],['Julio',31],['Thiago',31],
-              ['Yukio',31],['Victor',31],['Kento',31],['Masahiko',31],['Gabriel',31],['Yoshitaka',31],['Nobuyuki',31],['Takaaki',31],['Shuhei',31],['Hirokazu',31],
-              ['Yuichiro',30],['Taku',30],['Nelson',30],['Hirofumi',30],['Kazuma',30],['Luiz',30],['Yoichi',30],['Taichi',30],['Masatoshi',30],['Masao',30],
-              ['Ryuji',30],['Claudio',30],['Yuuki',30],['Toshihiro',29],['Yoshi',29],['Keiichi',29],['Yasuyuki',29],['Kazunori',29],['Taiki',29],['Andrew',29],
-              ['Toshiaki',29],['Hisashi',29],['Felipe',29],['Hikaru',29],['Isao',28],['Masakazu',28],['Cesar',28],['Junya',28],['Ichiro',28],['Gustavo',28],
-              ['Ryohei',28],['Renato',28],['Taka',28],['Hiroto',28],['Hirotaka',28],['Kengo',27],['Mark',27],['Joe',27],['Leandro',27],['Richard',27],['Shoji',27],
-              ['Mike',27],['Tom',27],['Leonardo',27],['Kazuyuki',27],['Kai',27],['Takafumi',27],['Akihiko',27],['Mohammad',27],['Paul',27],['Shuichi',27],
-              ['Toshiki',27],['Diego',27],['Kazuhiko',27],['Tomoaki',27],['Tony',27],['Junior',27],['Keiji',26],['Mauricio',26],['Naoyuki',26],['Yasuo',26],
-              ['Masa',26],['Alberto',26],['Abdul',26],['Peter',26],['Marco',26],['Mitsuhiro',26],['Masayoshi',26],['Kazu',26],['Noboru',26],['Shinichiro',25],
-              ['Robert',25],['Susumu',25],['Tsubasa',25],['Mitsuru',25],['Sam',25],['Yuma',25],['Masataka',25],['Ryuichi',25],['Kaoru',25],['Miguel',25],
-              ['Nobuhiro',25],['Tetsuo',24],['Masafumi',24],['Ahmed',24],['Shuji',24],['Shinsuke',24],['Takeo',24],['Yukihiro',24],['Shigeki',24],['Kyohei',24],
-              ['Milton',24],['Yutaro',24],['Kaito',24],['Yoshikazu',24],['Oscar',24],['Hironori',23],['Mauro',23],['Ahmad',23],['Sato',23],['Katsuya',23],
-              ['Kazuaki',23],['Dai',23],['Noriyuki',23],['Leo',23],['Jason',23],['Malik',23],['Junji',23],['Toshi',23],['Guilherme',23],['Nobuo',23],['Wilson',23],
-              ['Koichiro',23],['Mamoru',23],['Seiya',23],['George',23],['Toshiya',23],['Rogerio',23],['Ryu',23],['Takuro',23],['Tomonori',23],['Tiago',23],['Shu',23],
-              ['Toshihiko',23],['Anthony',23],['Thomas',23],['Katsumi',22],['Ryuta',22],['Keigo',22],['Shoichi',22],['Yoshihiko',22]
-            ],
-            modern: [
-              ['Yuki',45],['Yuta',45],['Ren',45],['Haruto',45],['Sota',45],['Riku',45],['Yuto',45],['Kaito',45],['Takumi',26],['Kazuki',26],['Sho',26],['Kenta',26],
-              ['Daiki',26],['Ayumu',12],['Naoya',12],['Kamui',2],['Ritomo',2],['Hiroshi',14],['Kenji',14],['Akira',14],['Takeshi',14],['Masahiro',14],['Masaki',14],
-              ['Hiroaki',14],['Kentaro',14],['Kohei',14],['Masato',14],['Koichi',14],['Tomohiro',14],['Ryota',14],['Masayuki',14],['Tetsuya',14],['Yasuhiro',14],
-              ['Yuya',14],['Kenichi',14],['Kazuhiro',14],['Kei',14],['Shinya',14],['Toru',14],['Masashi',14],['Yuichi',14],['Tsuyoshi',14],['Ryosuke',14],
-              ['Akihiro',14],['Hiro',14],['Shota',14],['Yutaka',14],['Yoshihiro',14],['Mohamed',14],['Kazuya',14],['Shinichi',14],['Shingo',14],['Eduardo',14],
-              ['Sergio',14],['Ali',14],['Fernando',14],['Yosuke',14],['Muhammad',14],['Kosuke',14],['Fabio',14],['Osamu',14],['Keita',14],['Shunsuke',14],
-              ['Mario',14],['Hitoshi',14],['Minoru',14],['Eiji',14],['Marcio',14],['Edson',14],['Wataru',14],['Tomoyuki',14],['Rafael',14],['Shin',14],['Hideaki',14],
-              ['Tomoya',14],['Bruno',14],['Koki',14],['Kazuo',14],['Shun',14],['Shohei',14],['Junichi',14],['Yohei',14],['Naoto',14],['Shogo',14],['Yoshiaki',14],
-              ['Taro',14],['Alexandre',14],['Tadashi',14],['Rodrigo',14],['Lucas',14],['Kiyoshi',14],['Andre',14],['Kota',14],['Seiji',14],['Hayato',14],
-              ['Toshiyuki',14],['Masaya',14],['Kotaro',14],['Yoshinori',14],['Yoshiyuki',14],['Masaru',14],['James',14],['Shintaro',14],['Takuma',14],['Hideyuki',14],
-              ['Manabu',14],['Daichi',14],['Khan',14],['Tomoki',14],['Hideo',14],['Hajime',14],['Takao',14],['Masaaki',14],['Toshio',14],['Yoshiki',14],['Akio',14],
-              ['Takanori',14],['Yasushi',14],['William',14],['Shigeru',14],['Kensuke',14],['Anderson',14],['Chris',14],['Tsutomu',14],['Yoshio',14],['Julio',14],
-              ['Thiago',14],['Yukio',14]
-            ]
-          },
+          first: [
+            ['Hiroshi',97],['Kenji',81],['Akira',80],['Masahiro',70],['Takao',33],['Osamu',42],['Yoshio',31],['Shigeru',32],['Kazuyoshi',22],['Noritake',2],
+            ['Kunimitsu',2],['Tetsu',17],['Takashi',100],['Yusuke',85],['Daisuke',82],['Satoshi',79],['Hiroyuki',79],['Hiroki',75],['Ryo',75],['Atsushi',73],
+            ['Makoto',71],['Takahiro',69],['Naoki',68],['Takuya',69],['Koji',71],['Jun',69],['Ken',69],['Keisuke',62],['Yuji',61],['Tatsuya',59],['Takayuki',57],
+            ['Shinji',45],['Hideki',51],['Masanori',37],['Satoru',40],['Ukyo',2],['Toranosuke',2],['Yuki',86],['Yuta',63],['Ren',17],['Haruto',45],['Sota',17],
+            ['Riku',20],['Yuto',33],['Kaito',24],['Takumi',49],['Kazuki',54],['Sho',40],['Kenta',50],['Daiki',45],['Ayumu',12],['Naoya',39],['Kamui',2],
+            ['Ritomo',2],['Takeshi',80],['Masaki',59],['Hiroaki',53],['Kentaro',52],['Kohei',52],['Masato',51],['Koichi',51],['Tomohiro',50],['Ryota',49],
+            ['Masayuki',49],['Tetsuya',48],['Yasuhiro',48],['Yuya',48],['Kenichi',48],['Kazuhiro',48],['Kei',48],['Shinya',47],['Toru',47],['Masashi',47],
+            ['Yuichi',47],['Tsuyoshi',47],['Ryosuke',46],['Akihiro',46],['Hiro',46],['Shota',46],['Yutaka',45],['Yoshihiro',45],['Mohamed',45],['Kazuya',45],
+            ['Shinichi',45],['Shingo',45],['Eduardo',45],['Sergio',44],['Ali',44],['Fernando',44],['Yosuke',44],['Muhammad',44],['Kosuke',43],['Fabio',43],
+            ['Keita',42],['Shunsuke',42],['Mario',41],['Hitoshi',41],['Minoru',40],['Eiji',40],['Marcio',39],['Edson',39],['Wataru',39],['Tomoyuki',39],
+            ['Rafael',39],['Shin',39],['Hideaki',39],['Tomoya',38],['Bruno',38],['Koki',38],['Kazuo',38],['Shun',38],['Shohei',38],['Junichi',37],['Yohei',37],
+            ['Naoto',37],['Shogo',37],['Yoshiaki',37],['Taro',37],['Alexandre',37],['Tadashi',37],['Rodrigo',36],['Lucas',36],['Kiyoshi',36],['Andre',36],
+            ['Kota',36],['Seiji',36],['Hayato',36],['Toshiyuki',35],['Masaya',35],['Kotaro',35],['Yoshinori',35],['Yoshiyuki',34],['Masaru',34],['James',34],
+            ['Shintaro',34],['Takuma',34],['Hideyuki',34],['Manabu',33],['Daichi',33],['Khan',33],['Tomoki',33],['Hideo',33],['Hajime',33],['Masaaki',33],
+            ['Toshio',33],['Yoshiki',32],['Akio',32],['Takanori',32],['Yasushi',32],['William',32],['Kensuke',32],['Anderson',32],['Chris',31],['Tsutomu',31],
+            ['Julio',31],['Thiago',31],['Yukio',31],['Victor',31],['Kento',31],['Masahiko',31],['Gabriel',31],['Yoshitaka',31],['Nobuyuki',31],['Takaaki',31],
+            ['Shuhei',31],['Hirokazu',31],['Yuichiro',30],['Taku',30],['Nelson',30],['Hirofumi',30],['Kazuma',30],['Luiz',30],['Yoichi',30],['Taichi',30],
+            ['Masatoshi',30],['Masao',30],['Ryuji',30],['Claudio',30],['Yuuki',30],['Toshihiro',29],['Yoshi',29],['Keiichi',29],['Yasuyuki',29],['Kazunori',29],
+            ['Taiki',29],['Andrew',29],['Toshiaki',29],['Hisashi',29],['Felipe',29],['Hikaru',29],['Isao',28],['Masakazu',28],['Cesar',28],['Junya',28],
+            ['Ichiro',28],['Gustavo',28],['Ryohei',28],['Renato',28],['Taka',28],['Hiroto',28],['Hirotaka',28],['Kengo',27],['Mark',27],['Joe',27],['Leandro',27],
+            ['Richard',27],['Shoji',27],['Mike',27],['Tom',27],['Leonardo',27],['Kazuyuki',27],['Kai',27],['Takafumi',27],['Akihiko',27],['Mohammad',27],
+            ['Paul',27],['Shuichi',27],['Toshiki',27],['Diego',27],['Kazuhiko',27],['Tomoaki',27],['Tony',27],['Junior',27],['Keiji',26],['Mauricio',26],
+            ['Naoyuki',26],['Yasuo',26],['Masa',26],['Alberto',26],['Abdul',26],['Peter',26],['Marco',26],['Mitsuhiro',26],['Masayoshi',26],['Kazu',26],
+            ['Noboru',26],['Shinichiro',25],['Robert',25],['Susumu',25],['Tsubasa',25],['Mitsuru',25],['Sam',25],['Yuma',25],['Masataka',25],['Ryuichi',25],
+            ['Kaoru',25],['Miguel',25],['Nobuhiro',25],['Tetsuo',24],['Masafumi',24],['Ahmed',24],['Shuji',24],['Shinsuke',24],['Takeo',24],['Yukihiro',24],
+            ['Shigeki',24],['Kyohei',24],['Milton',24],['Yutaro',24],['Yoshikazu',24],['Oscar',24],['Hironori',23],['Mauro',23],['Ahmad',23],['Sato',23],
+            ['Katsuya',23],['Kazuaki',23],['Dai',23],['Noriyuki',23],['Leo',23],['Jason',23],['Malik',23],['Junji',23],['Toshi',23],['Guilherme',23],['Nobuo',23],
+            ['Wilson',23],['Koichiro',23],['Mamoru',23],['Seiya',23],['George',23],['Toshiya',23],['Rogerio',23],['Ryu',23],['Takuro',23],['Tomonori',23],
+            ['Tiago',23],['Shu',23],['Toshihiko',23],['Anthony',23],['Thomas',23],['Katsumi',22],['Ryuta',22],['Keigo',22],['Shoichi',22],['Yoshihiko',22],
+            ['Yudai',22],['Jin',22],['Helio',22],['Samuel',22],['Luciano',22],['Shotaro',22],['Tatsuo',22],['Jonathan',22],['Henrique',22],['Christian',22],
+            ['Akinori',22],['Nobuaki',22],['Celso',22],['Tanaka',22],['Alexander',22],['Hugo',22],['Jay',22],['Adriano',22]
+          ],
           last: [
             ['Sato',99],['Suzuki',100],['Takahashi',84],['Tanaka',92],['Watanabe',85],['Ito',73],['Yamamoto',79],['Nakamura',78],['Kobayashi',72],['Saito',68],
             ['Kato',65],['Yoshida',63],['Yamada',65],['Sasaki',53],['Matsumoto',56],['Inoue',57],['Kimura',54],['Hayashi',55],['Yamaguchi',53],['Shimizu',50],
@@ -777,50 +740,34 @@ const NAME_POOLS_BY_NATION = {
     // ── ARG ──
     ARG: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Juan',5],['Carlos',5],['José',4],['Roberto',4],['Jorge',4],['Oscar',3],['Alberto',3],['Ricardo',3],['Alejandro',3],['Miguel',3],['Raúl',3],
-              ['Néstor',2],['Rodolfo',2],['Onofre',1],['Froilán',1],['Clemar',1]
-            ],
-            mid: [
-              ['Juan',100],['Carlos',94],['Jorge',83],['Pablo',76],['Diego',71],['Marcelo',71],['Alejandro',68],['Gustavo',68],['Cristian',68],['Daniel',87],
-              ['Sebastián',51],['Matías',68],['Nicolás',59],['Martín',68],['Lucas',66],['Sergio',63],['Javier',58],['Fernando',58],['Ariel',58],['Agustín',53],
-              ['Esteban',37],['Federico',38],['Gonzalo',39],['Facundo',39],['Franco',52],['Gastón',40],['José',82],['Luis',74],['Miguel',61],['Gabriel',59],
-              ['Roberto',56],['Mario',56],['Óscar',54],['Eduardo',54],['Ricardo',52],['Walter',50],['Alberto',50],['Rubén',49],['Ezequiel',49],['Hugo',49],
-              ['Claudio',48],['Marcos',47],['Raúl',47],['David',46],['Héctor',46],['Juan Carlos',46],['Santiago',45],['Andrés',45],['Julio',45],['Fabián',44],
-              ['Rodrigo',43],['Víctor',43],['Adrián',43],['Dario',43],['Pedro',42],['Mariano',41],['Ramón',41],['Ángel',41],['Guillermo',40],['Francisco',40],
-              ['César',38],['Lautaro',38],['Leandro',38],['Damian',37],['Hernan',37],['Antonio',37],['Maxi',37],['Tomás',37],['Nico',36],['Nahuel',36],['Luciano',36],
-              ['Omar',36],['Leonardo',35],['Iván',35],['José Luis',35],['Leo',35],['Manuel',34],['Nestor',34],['Joaquín',33],['Mauro',33],['Alfredo',32],
-              ['Miguel Ángel',32],['German',31],['Emanuel',31],['Horacio',31],['Maximiliano',30],['Mauricio',30],['Ale',30],['Alan',30],['Julián',30],['Alexis',30],
-              ['Thiago',28],['Ignacio',28],['Kevin',28],['Enrique',28],['Osvaldo',27],['Jesús',27],['Brian',27],['Ramiro',26],['Fede',26],['Mateo',26],['Axel',25],
-              ['Alex',25],['Emiliano',25],['Enzo',25],['Elias',24],['Bruno',24],['Braian',24],['Facu',24],['Jonathan',24],['Nacho',23],['Benjamin',23],['Rodolfo',23],
-              ['Gerardo',23],['Leonel',23],['Carlos Alberto',23],['Nelson',22],['Rafael',22],['Ernesto',21],['Seba',21],['Santi',21],['Juan Jose',21],
-              ['Juan Pablo',20],['Juan Manuel',20],['Christian',20],['Valentin',20],['Joel',20],['Edgardo',20],['Emilio',19],['Luis Alberto',19],['Orlando',19],
-              ['Armando',19],['Norberto',19],['Felipe',19],['Abel',19],['Patricio',18],['Dylan',18],['Agus',18],['Dani',18],['Fran',18],['Maximo',18],['Anibal',18],
-              ['Aldo',18],['Alejo',18],['Jonatan',18],['Mati',17],['Dante',17],['Roman',17],['Beto',17],['Exequiel',17],['Santino',17],['Fabio',17],['Marco',16],
-              ['Ismael',16],['Tobias',16],['Lucho',16],['Rolando',16],['Fer',15],['Julio Cesar',15],['Samuel',15],['Gonza',15],['Bautista',15],['Tito',15],
-              ['Uriel',15],['Fabricio',15],['Edgar',15],['Manu',15],['Adolfo',15],['Javi',15],['Benja',14],['Guille',14],['Vicente',14],['Silvio',14],['Emmanuel',14],
-              ['Alexander',14],['Felix',14],['Lucio',14],['Ema',14],['Ulises',14],['Victor Hugo',14],['Roque',14],['Pepe',14],['Augusto',14],['Carlitos',14],
-              ['Luca',14],['Lorenzo',14],['Guido',13],['Edu',13],['Rene',13],['Jorge Luis',13],['Lisandro',13],['Jeremias',13],['Richard',13],['Gaby',13],
-              ['Alvaro',12],['Charly',12],['Humberto',12],['Ian',12],['Juan Cruz',12],['Lauty',12],['Arturo',12],['Domingo',12],['Tiago',12],['José María',12],
-              ['Santy',12],['Paulo',12],['Brandon',12],['Valentino',11],['Dany',11],['Jorge Alberto',11],['Milton',11],['Tiziano',11],['Thomas',11],['Sebas',11],
-              ['Gabi',11],['Tony',11],['Maty',11],['Tomi',11],['Lionel',11],['Rodri',11],['Mauri',11],['Renzo',11],['Emi',11],['Marce',11],['Jose Antonio',11],
-              ['Isaias',11],['Cacho',10],['Arnaldo',10],['Eric',10],['Juan Ignacio',10],['Simón',10],['Yoni',10],['Elio',10],['Salvador',10],['Maxii',10],
-              ['Bernardo',10]
-            ],
-            modern: [
-              ['Mateo',45],['Santiago',45],['Tomás',45],['Benjamín',26],['Joaquín',26],['Bautista',26],['Lautaro',26],['Thiago',26],['Franco',26],['Felipe',26],
-              ['Juan Manuel',12],['Valentino',12],['Bruno',12],['Máximo',12],['Ciro',2],['José',14],['Luis',14],['Miguel',14],['Gabriel',14],['Roberto',14],
-              ['Mario',14],['Óscar',14],['Eduardo',14],['Ricardo',14],['Walter',14],['Alberto',14],['Rubén',14],['Ezequiel',14],['Hugo',14],['Claudio',14],
-              ['Marcos',14],['Raúl',14],['David',14],['Héctor',14],['Juan Carlos',14],['Andrés',14],['Julio',14],['Fabián',14],['Rodrigo',14],['Víctor',14],
-              ['Adrián',14],['Dario',14],['Pedro',14],['Mariano',14],['Ramón',14],['Ángel',14],['Guillermo',14],['Francisco',14],['César',14],['Leandro',14],
-              ['Damian',14],['Hernan',14],['Antonio',14],['Maxi',14],['Nico',14],['Nahuel',14],['Luciano',14],['Omar',14],['Leonardo',14],['Iván',14],
-              ['José Luis',14],['Leo',14],['Manuel',14],['Nestor',14],['Mauro',14],['Alfredo',14],['Miguel Ángel',14],['German',14],['Emanuel',14],['Horacio',14],
-              ['Maximiliano',14],['Mauricio',14],['Ale',14],['Alan',14],['Julián',14],['Alexis',14],['Ignacio',14],['Kevin',14],['Enrique',14],['Osvaldo',14],
-              ['Jesús',14],['Brian',14],['Ramiro',14],['Fede',14],['Axel',14],['Alex',14],['Emiliano',14],['Enzo',14],['Elias',14],['Braian',14],['Facu',14],
-              ['Jonathan',14],['Nacho',14],['Rodolfo',14],['Gerardo',14],['Leonel',14],['Carlos Alberto',14]
-            ]
-          },
+          first: [
+            ['Juan',100],['Carlos',94],['José',82],['Roberto',56],['Jorge',83],['Oscar',54],['Alberto',50],['Ricardo',52],['Alejandro',68],['Miguel',61],
+            ['Raúl',47],['Néstor',34],['Rodolfo',23],['Onofre',2],['Froilán',2],['Clemar',2],['Pablo',76],['Diego',71],['Marcelo',71],['Gustavo',68],
+            ['Cristian',68],['Daniel',87],['Sebastián',51],['Matías',68],['Nicolás',59],['Martín',68],['Lucas',66],['Sergio',63],['Javier',58],['Fernando',58],
+            ['Ariel',58],['Agustín',53],['Esteban',37],['Federico',38],['Gonzalo',39],['Facundo',39],['Franco',52],['Gastón',40],['Mateo',26],['Santiago',45],
+            ['Tomás',37],['Benjamín',23],['Joaquín',33],['Bautista',15],['Lautaro',38],['Thiago',28],['Felipe',19],['Juan Manuel',20],['Valentino',11],['Bruno',24],
+            ['Máximo',18],['Ciro',9],['Luis',74],['Gabriel',59],['Mario',56],['Eduardo',54],['Walter',50],['Rubén',49],['Ezequiel',49],['Hugo',49],['Claudio',48],
+            ['Marcos',47],['David',46],['Héctor',46],['Juan Carlos',46],['Andrés',45],['Julio',45],['Fabián',44],['Rodrigo',43],['Víctor',43],['Adrián',43],
+            ['Dario',43],['Pedro',42],['Mariano',41],['Ramón',41],['Ángel',41],['Guillermo',40],['Francisco',40],['César',38],['Leandro',38],['Damian',37],
+            ['Hernan',37],['Antonio',37],['Maxi',37],['Nico',36],['Nahuel',36],['Luciano',36],['Omar',36],['Leonardo',35],['Iván',35],['José Luis',35],['Leo',35],
+            ['Manuel',34],['Mauro',33],['Alfredo',32],['Miguel Ángel',32],['German',31],['Emanuel',31],['Horacio',31],['Maximiliano',30],['Mauricio',30],['Ale',30],
+            ['Alan',30],['Julián',30],['Alexis',30],['Ignacio',28],['Kevin',28],['Enrique',28],['Osvaldo',27],['Jesús',27],['Brian',27],['Ramiro',26],['Fede',26],
+            ['Axel',25],['Alex',25],['Emiliano',25],['Enzo',25],['Elias',24],['Braian',24],['Facu',24],['Jonathan',24],['Nacho',23],['Gerardo',23],['Leonel',23],
+            ['Carlos Alberto',23],['Nelson',22],['Rafael',22],['Ernesto',21],['Seba',21],['Santi',21],['Juan Jose',21],['Juan Pablo',20],['Christian',20],
+            ['Valentin',20],['Joel',20],['Edgardo',20],['Emilio',19],['Luis Alberto',19],['Orlando',19],['Armando',19],['Norberto',19],['Abel',19],['Patricio',18],
+            ['Dylan',18],['Agus',18],['Dani',18],['Fran',18],['Anibal',18],['Aldo',18],['Alejo',18],['Jonatan',18],['Mati',17],['Dante',17],['Roman',17],
+            ['Beto',17],['Exequiel',17],['Santino',17],['Fabio',17],['Marco',16],['Ismael',16],['Tobias',16],['Lucho',16],['Rolando',16],['Fer',15],
+            ['Julio Cesar',15],['Samuel',15],['Gonza',15],['Tito',15],['Uriel',15],['Fabricio',15],['Edgar',15],['Manu',15],['Adolfo',15],['Javi',15],['Benja',14],
+            ['Guille',14],['Vicente',14],['Silvio',14],['Emmanuel',14],['Alexander',14],['Felix',14],['Lucio',14],['Ema',14],['Ulises',14],['Victor Hugo',14],
+            ['Roque',14],['Pepe',14],['Augusto',14],['Carlitos',14],['Luca',14],['Lorenzo',14],['Guido',13],['Edu',13],['Rene',13],['Jorge Luis',13],
+            ['Lisandro',13],['Jeremias',13],['Richard',13],['Gaby',13],['Alvaro',12],['Charly',12],['Humberto',12],['Ian',12],['Juan Cruz',12],['Lauty',12],
+            ['Arturo',12],['Domingo',12],['Tiago',12],['José María',12],['Santy',12],['Paulo',12],['Brandon',12],['Dany',11],['Jorge Alberto',11],['Milton',11],
+            ['Tiziano',11],['Thomas',11],['Sebas',11],['Gabi',11],['Tony',11],['Maty',11],['Tomi',11],['Lionel',11],['Rodri',11],['Mauri',11],['Renzo',11],
+            ['Emi',11],['Marce',11],['Jose Antonio',11],['Isaias',11],['Cacho',10],['Arnaldo',10],['Eric',10],['Juan Ignacio',10],['Simón',10],['Yoni',10],
+            ['Elio',10],['Salvador',10],['Maxii',10],['Bernardo',10],['Sandro',10],['Lauti',10],['Nazareno',10],['Max',10],['Jaime',10],['Lukas',10],['Elvio',10],
+            ['Alcides',10],['Joni',10],['Juani',10],['Eze',10],['Eugenio',10],['Juan Alberto',9],['Robert',9],['Jony',9],['Tomy',9],['Lean',9],['Octavio',9],
+            ['Joaco',9],['Camilo',9],['Aaron',9],['Fredy',9]
+          ],
           last: [
             ['González',100],['Rodríguez',89],['Gómez',90],['López',90],['Fernández',81],['Martínez',79],['Díaz',76],['Pérez',74],['Romero',64],['García',63],
             ['Sánchez',64],['Sosa',54],['Torres',52],['Flores',49],['Álvarez',47],['Ramírez',49],['Acosta',46],['Rojas',46],['Benítez',48],['Ruiz',44],
@@ -865,57 +812,38 @@ const NAME_POOLS_BY_NATION = {
     // ── ESP ──
     ESP: { regions: [
         { w: 0.8,
-          first: {
-            early: [
-              ['José',5],['Antonio',5],['Francisco',5],['Manuel',4],['Luis',4],['Juan',4],['Pedro',4],['Miguel',4],['Carlos',4],['Rafael',3],['Ángel',3],
-              ['Alfonso',2],['Emilio',2],['Vicente',2],['Paco',2],['Joaquín',2]
-            ],
-            mid: [
-              ['Javier',68],['David',76],['Carlos',69],['Daniel',52],['Sergio',52],['Fernando',47],['Jorge',48],['Alberto',48],['Ángel',50],['Alejandro',46],
-              ['Rafael',42],['Óscar',40],['Iván',42],['Raúl',43],['Diego',40],['José Luis',47],['José Antonio',47],['Rubén',39],['Álvaro',39],['Adrián',39],
-              ['Jaime',28],['Gonzalo',21],['José',100],['Antonio',91],['Juan',77],['Manuel',76],['Francisco',66],['Jesús',60],['Miguel',60],['Pedro',55],['Luis',53],
-              ['Pablo',47],['José Manuel',42],['Víctor',41],['Miguel Ángel',39],['Alex',38],['Juan Carlos',36],['Andrés',36],['Ramón',33],['Roberto',33],['Mario',32],
-              ['Enrique',32],['Vicente',31],['José María',31],['Eduardo',30],['Dani',29],['Joaquín',29],['Cristian',29],['Marcos',28],['Alfonso',28],
-              ['Juan Antonio',28],['Francisco Javier',28],['Ricardo',27],['Juan Jose',27],['Julio',26],['Toni',26],['Emilio',25],['Santiago',25],['Juan Manuel',23],
-              ['Gabriel',23],['Ismael',22],['Julián',22],['Salvador',22],['César',22],['Guillermo',22],['Tomás',22],['Josep',21],['Agustín',21],['Felix',21],
-              ['Nacho',20],['Albert',20],['Samuel',20],['Ignacio',19],['Héctor',19],['Alfredo',19],['Jonathan',18],['Borja',18],['Juanjo',18],['Jose Miguel',18],
-              ['Manu',18],['Felipe',18],['Martín',18],['Mariano',17],['Sebastián',17],['Francisco Jose',17],['Santi',17],['Hugo',16],['Domingo',16],['Christian',16],
-              ['Sergi',16],['Nicolás',16],['Jose Carlos',16],['Jaume',15],['Xavier',15],['Kevin',15],['Esteban',15],['Omar',15],['Cristobal',15],['Jose Ramon',15],
-              ['Juanma',15],['Rodrigo',15],['Arturo',14],['Abel',14],['German',14],['Edu',14],['Isaac',14],['Iñaki',14],['Moises',14],['Marco',14],['Joel',13],
-              ['Aaron',13],['Miquel',13],['Lucas',13],['Lorenzo',13],['Ahmed',13],['Gustavo',13],['Juan Luis',13],['Israel',13],['Jose Angel',13],['Luis Miguel',12],
-              ['Manel',12],['Ernesto',12],['Said',12],['Carles',12],['Eugenio',12],['Salva',12],['Tony',12],['Rachid',12],['Pere',12],['Adolfo',12],
-              ['Juan Francisco',12],['Eric',12],['Gregorio',11],['Kike',11],['Lluis',11],['Ali',11],['Francesc',11],['Gerardo',11],['Iñigo',11],['Robert',11],
-              ['Valentin',11],['Carmelo',11],['Eloy',11],['Isidro',11],['Juan Miguel',10],['Benito',10],['Abraham',10],['Kiko',10],['Edgar',10],['Alexis',10],
-              ['Armando',10],['Juan Pedro',10],['Pascual',10],['Ferran',10],['Hassan',10],['Bernardo',10],['Jose Ignacio',10],['Bruno',10],['Alexander',10],
-              ['Adri',10],['Enric',10],['Federico',10],['Moha',10],['John',10],['Florin',9],['Antonio Jesus',9],['Adrià',9],['Yeray',9],['Jairo',9],['Jonatan',9],
-              ['Richard',9],['Youssef',9],['Antonio Jose',9],['Victor Manuel',9],['Guillem',9],['Marcelo',9],['Dario',9],['Juan Ramon',9],['Mateo',9],['Elias',9],
-              ['Nico',9],['Guille',9],['Mohammed',9],['Leo',9],['Francis',9],['Claudio',9],['Karim',9],['Damian',9],['Adam',9],['Eduard',8],['Alonso',8],['Paul',8],
-              ['Jose Francisco',8],['Matías',8],['Khalid',8],['Aziz',8],['Leonardo',8],['Fermin',8],['Aurelio',8],['Lolo',8],['Blas',8],['Oliver',8],['Michael',8],
-              ['Jacinto',8],['Ion',8],['Frank',8],['Marius',8],['Pep',8],['Benjamin',8],['Igor',8],['Vicent',8],['Hicham',8],['Andreu',8],['Julen',8],['Antoni',8],
-              ['Marian',8],['Roman',8],['Joseba',8],['Hamid',8],['Saul',8],['Vasile',8],['Jose Vicente',8],['Peter',8],['Erik',8],['Tito',7],['Jose Javier',7],
-              ['Toño',7],['Santos',7],['Mamadou',7],['Rober',7],['Josue',7],['Jacobo',7],['Xabier',7],['Ramiro',7],['George',7],['Fabián',7],['Justo',7],
-              ['Eusebio',7],['Gines',7],['Fco Javier',7],['Mihai',7],['Juan Pablo',7],['Josu',7],['Marti',7],['Ricard',7],['Simón',7],['Fer',7],
-              ['Francisco Manuel',7],['Brian',7],['Andoni',7],['Ezequiel',7],['Mustapha',7],['Hamza',7],['Sebas',7],['Fidel',7],['Ionut',7],['Abdel',7],['Amador',7],
-              ['Josep Maria',7],['Bryan',7],['Mauricio',7],['Marcelino',7],['Tino',7],['Imanol',7],['Leandro',7],['Luis Alberto',7],['Manuel Jesus',7],['Isidoro',7],
-              ['Eneko',7],['Juan Jesus',7],['Jamal',7],['Joseluis',7],['Nestor',7],['Nelson',7],['Pedro Jose',6],['Gabi',6],['Orlando',6],['Patricio',6],
-              ['Antonio Manuel',6],['Ale',6],['Izan',6]
-            ],
-            modern: [
-              ['Alejandro',45],['Pablo',45],['Hugo',45],['Martín',45],['Lucas',45],['Diego',45],['Mario',26],['Marcos',26],['Adrián',26],['Álex',26],['Manuel',26],
-              ['Leo',12],['Bruno',12],['Izan',12],['Nico',12],['Pepe',2],['José',14],['Antonio',14],['Juan',14],['Francisco',14],['Jesús',14],['Miguel',14],
-              ['Pedro',14],['Luis',14],['José Manuel',14],['Víctor',14],['Miguel Ángel',14],['Juan Carlos',14],['Andrés',14],['Ramón',14],['Roberto',14],
-              ['Enrique',14],['Vicente',14],['José María',14],['Eduardo',14],['Dani',14],['Joaquín',14],['Cristian',14],['Alfonso',14],['Juan Antonio',14],
-              ['Francisco Javier',14],['Ricardo',14],['Juan Jose',14],['Julio',14],['Toni',14],['Emilio',14],['Santiago',14],['Juan Manuel',14],['Gabriel',14],
-              ['Ismael',14],['Julián',14],['Salvador',14],['César',14],['Guillermo',14],['Tomás',14],['Josep',14],['Agustín',14],['Felix',14],['Nacho',14],
-              ['Albert',14],['Samuel',14],['Ignacio',14],['Héctor',14],['Alfredo',14],['Jonathan',14],['Borja',14],['Juanjo',14],['Jose Miguel',14],['Manu',14],
-              ['Felipe',14],['Mariano',14],['Sebastián',14],['Francisco Jose',14],['Santi',14],['Domingo',14],['Christian',14],['Sergi',14],['Nicolás',14],
-              ['Jose Carlos',14],['Jaume',14],['Xavier',14],['Kevin',14],['Esteban',14],['Omar',14],['Cristobal',14],['Jose Ramon',14],['Juanma',14],['Rodrigo',14],
-              ['Arturo',14],['Abel',14],['German',14],['Edu',14],['Isaac',14],['Iñaki',14],['Moises',14],['Marco',14],['Joel',13],['Aaron',13],['Miquel',13],
-              ['Lorenzo',13],['Ahmed',13],['Gustavo',13],['Juan Luis',13],['Israel',13],['Jose Angel',13],['Luis Miguel',12],['Manel',12],['Ernesto',12],['Said',12],
-              ['Carles',12],['Eugenio',12],['Salva',12],['Tony',12],['Rachid',12],['Pere',12],['Adolfo',12],['Juan Francisco',12],['Eric',12],['Gregorio',11],
-              ['Kike',11],['Lluis',11],['Ali',11],['Francesc',11],['Gerardo',11],['Iñigo',11],['Robert',11],['Valentin',11]
-            ]
-          },
+          first: [
+            ['José',100],['Antonio',91],['Francisco',66],['Manuel',76],['Luis',53],['Juan',77],['Pedro',55],['Miguel',60],['Carlos',69],['Rafael',42],['Ángel',50],
+            ['Alfonso',28],['Emilio',25],['Vicente',31],['Paco',12],['Joaquín',29],['Javier',68],['David',76],['Daniel',52],['Sergio',52],['Fernando',47],
+            ['Jorge',48],['Alberto',48],['Alejandro',46],['Óscar',40],['Iván',42],['Raúl',43],['Diego',40],['José Luis',47],['José Antonio',47],['Rubén',39],
+            ['Álvaro',39],['Adrián',39],['Jaime',28],['Gonzalo',21],['Pablo',47],['Hugo',16],['Martín',18],['Lucas',13],['Mario',32],['Marcos',28],['Álex',38],
+            ['Leo',9],['Bruno',10],['Izan',6],['Nico',9],['Pepe',2],['Jesús',60],['José Manuel',42],['Víctor',41],['Miguel Ángel',39],['Juan Carlos',36],
+            ['Andrés',36],['Ramón',33],['Roberto',33],['Enrique',32],['José María',31],['Eduardo',30],['Dani',29],['Cristian',29],['Juan Antonio',28],
+            ['Francisco Javier',28],['Ricardo',27],['Juan Jose',27],['Julio',26],['Toni',26],['Santiago',25],['Juan Manuel',23],['Gabriel',23],['Ismael',22],
+            ['Julián',22],['Salvador',22],['César',22],['Guillermo',22],['Tomás',22],['Josep',21],['Agustín',21],['Felix',21],['Nacho',20],['Albert',20],
+            ['Samuel',20],['Ignacio',19],['Héctor',19],['Alfredo',19],['Jonathan',18],['Borja',18],['Juanjo',18],['Jose Miguel',18],['Manu',18],['Felipe',18],
+            ['Mariano',17],['Sebastián',17],['Francisco Jose',17],['Santi',17],['Domingo',16],['Christian',16],['Sergi',16],['Nicolás',16],['Jose Carlos',16],
+            ['Jaume',15],['Xavier',15],['Kevin',15],['Esteban',15],['Omar',15],['Cristobal',15],['Jose Ramon',15],['Juanma',15],['Rodrigo',15],['Arturo',14],
+            ['Abel',14],['German',14],['Edu',14],['Isaac',14],['Iñaki',14],['Moises',14],['Marco',14],['Joel',13],['Aaron',13],['Miquel',13],['Lorenzo',13],
+            ['Ahmed',13],['Gustavo',13],['Juan Luis',13],['Israel',13],['Jose Angel',13],['Luis Miguel',12],['Manel',12],['Ernesto',12],['Said',12],['Carles',12],
+            ['Eugenio',12],['Salva',12],['Tony',12],['Rachid',12],['Pere',12],['Adolfo',12],['Juan Francisco',12],['Eric',12],['Gregorio',11],['Kike',11],
+            ['Lluis',11],['Ali',11],['Francesc',11],['Gerardo',11],['Iñigo',11],['Robert',11],['Valentin',11],['Carmelo',11],['Eloy',11],['Isidro',11],
+            ['Juan Miguel',10],['Benito',10],['Abraham',10],['Kiko',10],['Edgar',10],['Alexis',10],['Armando',10],['Juan Pedro',10],['Pascual',10],['Ferran',10],
+            ['Hassan',10],['Bernardo',10],['Jose Ignacio',10],['Alexander',10],['Adri',10],['Enric',10],['Federico',10],['Moha',10],['John',10],['Florin',9],
+            ['Antonio Jesus',9],['Adrià',9],['Yeray',9],['Jairo',9],['Jonatan',9],['Richard',9],['Youssef',9],['Antonio Jose',9],['Victor Manuel',9],['Guillem',9],
+            ['Marcelo',9],['Dario',9],['Juan Ramon',9],['Mateo',9],['Elias',9],['Guille',9],['Mohammed',9],['Francis',9],['Claudio',9],['Karim',9],['Damian',9],
+            ['Adam',9],['Eduard',8],['Alonso',8],['Paul',8],['Jose Francisco',8],['Matías',8],['Khalid',8],['Aziz',8],['Leonardo',8],['Fermin',8],['Aurelio',8],
+            ['Lolo',8],['Blas',8],['Oliver',8],['Michael',8],['Jacinto',8],['Ion',8],['Frank',8],['Marius',8],['Pep',8],['Benjamin',8],['Igor',8],['Vicent',8],
+            ['Hicham',8],['Andreu',8],['Julen',8],['Antoni',8],['Marian',8],['Roman',8],['Joseba',8],['Hamid',8],['Saul',8],['Vasile',8],['Jose Vicente',8],
+            ['Peter',8],['Erik',8],['Tito',7],['Jose Javier',7],['Toño',7],['Santos',7],['Mamadou',7],['Rober',7],['Josue',7],['Jacobo',7],['Xabier',7],
+            ['Ramiro',7],['George',7],['Fabián',7],['Justo',7],['Eusebio',7],['Gines',7],['Fco Javier',7],['Mihai',7],['Juan Pablo',7],['Josu',7],['Marti',7],
+            ['Ricard',7],['Simón',7],['Fer',7],['Francisco Manuel',7],['Brian',7],['Andoni',7],['Ezequiel',7],['Mustapha',7],['Hamza',7],['Sebas',7],['Fidel',7],
+            ['Ionut',7],['Abdel',7],['Amador',7],['Josep Maria',7],['Bryan',7],['Mauricio',7],['Marcelino',7],['Tino',7],['Imanol',7],['Leandro',7],
+            ['Luis Alberto',7],['Manuel Jesus',7],['Isidoro',7],['Eneko',7],['Juan Jesus',7],['Jamal',7],['Joseluis',7],['Nestor',7],['Nelson',7],['Pedro Jose',6],
+            ['Gabi',6],['Orlando',6],['Patricio',6],['Antonio Manuel',6],['Ale',6],['Andrei',6],['Patxi',6],['Simo',6],['Jose Alberto',6],['Michel',6],
+            ['Luciano',6],['Brahim',6],['Bilal',6],['Alan',6],['Dany',6],['Marcel',6],['Muhammad',6],['Mark',6],['Camilo',6],['Ioan',6],['William',6],
+            ['Marco Antonio',6],['Samir',6],['Ayoub',6],['Stefan',6],['Jan',6],['Walter',6],['Emiliano',6]
+          ],
           last: [
             ['García',100],['Rodríguez',80],['López',79],['Martínez',75],['González',77],['Fernández',77],['Sánchez',75],['Pérez',73],['Gómez',55],['Martín',54],
             ['Ruiz',44],['Moreno',44],['Jiménez',50],['Hernández',47],['Díaz',43],['Muñoz',38],['Romero',36],['Álvarez',38],['Torres',32],['Alonso',31],
@@ -988,45 +916,32 @@ const NAME_POOLS_BY_NATION = {
     // ── NED ──
     NED: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Jan',5],['Henk',4],['Piet',3],['Kees',3],['Wim',3],['Theo',3],['Bert',3],['Cor',2],['Jaap',2],['Dries',1],['Carel',1],['Gijs',1]
-            ],
-            mid: [
-              ['Jeroen',60],['Mark',54],['Rob',59],['Dennis',54],['Marcel',53],['Paul',53],['Johan',52],['Patrick',51],['Frank',51],['Bart',49],['Marco',48],
-              ['Bas',48],['Erik',48],['Martijn',47],['Sander',43],['Robert',46],['Richard',49],['Tim',46],['Ronald',43],['Willem',45],['Tom',44],['Jos',40],
-              ['Christijan',2],['Jan',100],['Peter',83],['Hans',70],['Henk',70],['John',58],['Rene',50],['Wim',50],['Martin',45],['Bert',43],['Kees',43],['Rick',42],
-              ['Kevin',42],['Gerard',42],['Mike',41],['Michel',41],['Frans',40],['Nick',40],['Niels',40],['Roy',39],['Andre',39],['Piet',39],['Michael',39],
-              ['Theo',39],['Danny',38],['Stefan',38],['Pieter',38],['Robin',37],['Thomas',37],['Ron',37],['Daniel',37],['Marc',37],['Daan',36],['Ton',36],
-              ['Chris',36],['Ruud',36],['Edwin',36],['Maarten',35],['Eric',35],['Bram',35],['Ben',34],['Alex',34],['Wouter',34],['Joost',33],['Jaap',33],
-              ['Jeffrey',33],['Gerrit',32],['Harry',32],['Max',32],['Ali',32],['Arjan',32],['Erwin',31],['Remco',31],['David',31],['Vincent',30],['Mohamed',30],
-              ['Thijs',30],['Leo',30],['Fred',30],['Lars',30],['Nico',30],['Jasper',30],['Herman',30],['Koen',30],['Dirk',30],['Ruben',30],['Cor',29],['Joop',29],
-              ['Wesley',28],['Leon',28],['Dick',28],['Albert',27],['Roel',27],['Jack',27],['Cees',27],['Jelle',26],['Jordy',26],['Maurice',26],['Michiel',26],
-              ['Arie',26],['Bob',26],['Klaas',26],['Raymond',25],['Dave',25],['Joey',25],['Geert',25],['Pascal',25],['Sven',25],['Gijs',25],['Jesse',25],['Sam',24],
-              ['Luuk',24],['Rik',24],['Gert',24],['Sjoerd',23],['Simon',23],['Ricardo',23],['Steven',22],['Pim',22],['Joris',22],['Bjorn',22],['Ahmed',22],
-              ['Mustafa',22],['Justin',22],['Dylan',21],['Stijn',21],['Matthijs',21],['Niek',21],['Alexander',21],['Arno',21],['Stephan',21],['Brian',21],
-              ['Mohammed',20],['Anton',20],['Luc',20],['Menno',20],['Ramon',19],['Lucas',19],['Sebastiaan',19],['Joep',19],['Damian',19],['Stan',19],['William',19],
-              ['Arnold',19],['Mario',19],['Maikel',19],['Harm',19],['Mehmet',19],['Frits',19],['Floris',18],['Teun',18],['Ger',18],['Karel',18],['Roland',18],
-              ['Laurens',18],['Arjen',18],['Sjaak',18],['Stef',17],['Guus',17],['Timo',17],['Jacob',17],['Ivo',17],['Guido',17],['Coen',17],['Julian',17],
-              ['Henri',17],['Melvin',17],['Johnny',17],['Rens',17],['Harrie',17],['Hugo',17],['Koos',17],['Sem',17],['Eddy',17],['Twan',17],['Wilco',17],['Evert',17],
-              ['Job',17],['Huub',17],['Rutger',17],['Louis',17],['Omar',16],['Jim',16],['Hendrik',16],['Arthur',16],['Adam',16],['Christian',16],['Christiaan',16],
-              ['Toon',16],['Jurgen',16],['Hassan',16],['Barry',16],['George',16],['Henry',16],['Milan',16],['Aad',16],['Gerben',16],['Glenn',16],['Jordi',16],
-              ['Casper',16],['Freek',16],['Ibrahim',16],['Robbert',16],['Wil',16],['Ferry',16],['Walter',16],['Mitchell',16],['Han',16],['Ralph',16],['Bryan',15],
-              ['Jacco',15],['Jimmy',15],['Ahmet',15],['Ahmad',15],['Harold',15],['Said',15],['Ryan',15],['Thom',15],['Victor',15],['Hasan',15],['Corne',15],
-              ['Tony',15],['Wessel',15],['Roger',15],['Jochem',15],['Emiel',15],['Rogier',15],['Lex',15],['Mathijs',14],['Marijn',14],['Mart',14]
-            ],
-            modern: [
-              ['Daan',45],['Sem',45],['Lars',45],['Max',45],['Luuk',45],['Thijs',26],['Sven',26],['Finn',26],['Milan',26],['Bram',26],['Niek',12],['Joris',12],
-              ['Rik',12],['Teun',12],['Jan',14],['Peter',14],['Hans',14],['Henk',14],['John',14],['Rene',14],['Wim',14],['Martin',14],['Bert',14],['Kees',14],
-              ['Rick',14],['Kevin',14],['Gerard',14],['Mike',14],['Michel',14],['Frans',14],['Nick',14],['Niels',14],['Roy',14],['Andre',14],['Piet',14],
-              ['Michael',14],['Theo',14],['Danny',14],['Stefan',14],['Pieter',14],['Robin',14],['Thomas',14],['Ron',14],['Daniel',14],['Marc',14],['Ton',14],
-              ['Chris',14],['Ruud',14],['Edwin',14],['Maarten',14],['Eric',14],['Ben',14],['Alex',14],['Wouter',14],['Joost',14],['Jaap',14],['Jeffrey',14],
-              ['Gerrit',14],['Harry',14],['Ali',14],['Arjan',14],['Erwin',14],['Remco',14],['David',14],['Vincent',14],['Mohamed',14],['Leo',14],['Fred',14],
-              ['Nico',14],['Jasper',14],['Herman',14],['Koen',14],['Dirk',14],['Ruben',14],['Cor',14],['Joop',14],['Wesley',14],['Leon',14],['Dick',14],['Albert',14],
-              ['Roel',14],['Jack',14],['Cees',14],['Jelle',14],['Jordy',14],['Maurice',14],['Michiel',14],['Arie',14],['Bob',14],['Klaas',14],['Raymond',14],
-              ['Dave',14],['Joey',14],['Geert',14],['Pascal',14],['Gijs',14],['Jesse',14],['Sam',14]
-            ]
-          },
+          first: [
+            ['Jan',100],['Henk',70],['Piet',39],['Kees',43],['Wim',50],['Theo',39],['Bert',43],['Cor',29],['Jaap',33],['Dries',2],['Carel',2],['Gijs',25],
+            ['Jeroen',60],['Mark',54],['Rob',59],['Dennis',54],['Marcel',53],['Paul',53],['Johan',52],['Patrick',51],['Frank',51],['Bart',49],['Marco',48],
+            ['Bas',48],['Erik',48],['Martijn',47],['Sander',43],['Robert',46],['Richard',49],['Tim',46],['Ronald',43],['Willem',45],['Tom',44],['Jos',40],
+            ['Christijan',2],['Daan',36],['Sem',17],['Lars',30],['Max',32],['Luuk',24],['Thijs',30],['Sven',25],['Finn',8],['Milan',16],['Bram',35],['Niek',21],
+            ['Joris',22],['Rik',24],['Teun',18],['Peter',83],['Hans',70],['John',58],['Rene',50],['Martin',45],['Rick',42],['Kevin',42],['Gerard',42],['Mike',41],
+            ['Michel',41],['Frans',40],['Nick',40],['Niels',40],['Roy',39],['Andre',39],['Michael',39],['Danny',38],['Stefan',38],['Pieter',38],['Robin',37],
+            ['Thomas',37],['Ron',37],['Daniel',37],['Marc',37],['Ton',36],['Chris',36],['Ruud',36],['Edwin',36],['Maarten',35],['Eric',35],['Ben',34],['Alex',34],
+            ['Wouter',34],['Joost',33],['Jeffrey',33],['Gerrit',32],['Harry',32],['Ali',32],['Arjan',32],['Erwin',31],['Remco',31],['David',31],['Vincent',30],
+            ['Mohamed',30],['Leo',30],['Fred',30],['Nico',30],['Jasper',30],['Herman',30],['Koen',30],['Dirk',30],['Ruben',30],['Joop',29],['Wesley',28],
+            ['Leon',28],['Dick',28],['Albert',27],['Roel',27],['Jack',27],['Cees',27],['Jelle',26],['Jordy',26],['Maurice',26],['Michiel',26],['Arie',26],
+            ['Bob',26],['Klaas',26],['Raymond',25],['Dave',25],['Joey',25],['Geert',25],['Pascal',25],['Jesse',25],['Sam',24],['Gert',24],['Sjoerd',23],
+            ['Simon',23],['Ricardo',23],['Steven',22],['Pim',22],['Bjorn',22],['Ahmed',22],['Mustafa',22],['Justin',22],['Dylan',21],['Stijn',21],['Matthijs',21],
+            ['Alexander',21],['Arno',21],['Stephan',21],['Brian',21],['Mohammed',20],['Anton',20],['Luc',20],['Menno',20],['Ramon',19],['Lucas',19],
+            ['Sebastiaan',19],['Joep',19],['Damian',19],['Stan',19],['William',19],['Arnold',19],['Mario',19],['Maikel',19],['Harm',19],['Mehmet',19],['Frits',19],
+            ['Floris',18],['Ger',18],['Karel',18],['Roland',18],['Laurens',18],['Arjen',18],['Sjaak',18],['Stef',17],['Guus',17],['Timo',17],['Jacob',17],
+            ['Ivo',17],['Guido',17],['Coen',17],['Julian',17],['Henri',17],['Melvin',17],['Johnny',17],['Rens',17],['Harrie',17],['Hugo',17],['Koos',17],
+            ['Eddy',17],['Twan',17],['Wilco',17],['Evert',17],['Job',17],['Huub',17],['Rutger',17],['Louis',17],['Omar',16],['Jim',16],['Hendrik',16],['Arthur',16],
+            ['Adam',16],['Christian',16],['Christiaan',16],['Toon',16],['Jurgen',16],['Hassan',16],['Barry',16],['George',16],['Henry',16],['Aad',16],['Gerben',16],
+            ['Glenn',16],['Jordi',16],['Casper',16],['Freek',16],['Ibrahim',16],['Robbert',16],['Wil',16],['Ferry',16],['Walter',16],['Mitchell',16],['Han',16],
+            ['Ralph',16],['Bryan',15],['Jacco',15],['Jimmy',15],['Ahmet',15],['Ahmad',15],['Harold',15],['Said',15],['Ryan',15],['Thom',15],['Victor',15],
+            ['Hasan',15],['Corne',15],['Tony',15],['Wessel',15],['Roger',15],['Jochem',15],['Emiel',15],['Rogier',15],['Lex',15],['Mathijs',14],['Marijn',14],
+            ['Mart',14],['Rachid',14],['Dion',14],['Berry',14],['Karim',14],['Carlo',14],['Fabian',14],['Jason',14],['Johannes',14],['Benjamin',14],['Andy',14],
+            ['Jonathan',14],['Bennie',14],['Marcin',14],['Youri',14],['Jarno',14],['Murat',14],['Wout',14],['Roelof',14],['Jerry',13],['Joel',13],['Lorenzo',13],
+            ['Marvin',13],['Rinus',13]
+          ],
           last: [
             ['Jansen',100],['De Jong',96],['De Vries',89],['Van den Berg',72],['Bakker',77],['Van Dijk',75],['Visser',71],['Smit',67],['Meijer',60],['Mulder',60],
             ['De Boer',60],['De Groot',58],['Bos',60],['Vos',54],['Peters',55],['Hendriks',55],['Dekker',50],['Brouwer',47],['Van Leeuwen',47],['De Wit',47],
@@ -1074,45 +989,31 @@ const NAME_POOLS_BY_NATION = {
     // ── BEL ──
     BEL: { regions: [
         { w: 0.55,
-          first: {
-            early: [
-              ['Jean',4],['Pierre',4],['Paul',3],['Georges',3],['André',3],['Olivier',3],['Alain',3],['Lucien',2],['Willy',2],['Jacky',2]
-            ],
-            mid: [
-              ['Michel',79],['Philippe',79],['Nicolas',74],['Christophe',73],['Olivier',72],['Éric',71],['Alain',70],['Vincent',64],['Kevin',88],['David',90],
-              ['Thierry',54],['Laurent',56],['Marc',100],['Bertrand',18],['Patrick',94],['Thomas',84],['Luc',84],['Michael',77],['Pierre',64],['Daniel',62],
-              ['Pascal',62],['Jean',61],['Julien',61],['Paul',59],['Frédéric',59],['Jonathan',58],['Cédric',58],['Sébastien',57],['Guy',56],['Christian',55],
-              ['Maxime',53],['André',53],['Yves',53],['François',52],['Didier',51],['Frank',51],['Pieter',50],['Simon',50],['Alex',49],['Chris',48],['Kristof',48],
-              ['Benjamin',47],['Robin',47],['Bruno',47],['Jonas',47],['Louis',47],['Ahmed',47],['Dylan',46],['Anthony',46],['Gregory',46],['Steve',46],['Sam',46],
-              ['Nico',46],['Stéphane',45],['Jeroen',45],['Sven',45],['Robert',45],['Kurt',45],['Nick',44],['Filip',44],['Willy',44],['Arnaud',43],['Rudy',43],
-              ['Mario',43],['Jacques',43],['Bert',43],['Bernard',43],['Alexandre',43],['Dimitri',42],['John',42],['Serge',42],['Andy',42],['Benoît',42],
-              ['Antoine',42],['Ben',42],['Ronny',42],['Quentin',42],['Bjorn',41],['Roger',41],['Xavier',41],['Maarten',41],['Jens',40],['Mathieu',40],['Jérôme',40],
-              ['Jérémy',40],['Mike',40],['Bram',40],['Lucas',40],['Guillaume',40],['Hans',39],['Dominique',39],['Francis',39],['Niels',39],['Stefan',39],
-              ['Mohammed',39],['Martin',39],['Erik',39],['Wouter',39],['Davy',39],['Glenn',39],['Jos',38],['Yannick',38],['Freddy',38],['Abdel',38],['Jurgen',38],
-              ['Marcel',38],['Ruben',37],['Hugo',37],['Gilles',36],['Tony',36],['Nathan',36],['Karim',36],['Rudi',36],['Rachid',36],['Fabrice',36],['Loïc',35],
-              ['Dries',35],['Mathias',35],['Said',35],['Dieter',35],['Romain',35],['Claude',35],['Raphael',34],['Matthias',34],['René',34],['Youssef',34],
-              ['Jean-Pierre',34],['Denis',34],['Kenny',34],['Jimmy',34],['Geoffrey',34],['Jef',34],['Joris',33],['Jose',33],['Hassan',33],['Ludo',33],['Michiel',33],
-              ['Arthur',33],['Jelle',33],['Georges',33],['Jordan',33],['Johnny',33],['Guido',33],['Samuel',33],['Damien',33],['Victor',32],['Jason',32],
-              ['Frederik',32],['Gert',32],['Adrien',32],['Marco',32],['Bryan',32],['Florian',32],['Mustafa',32],['Benny',32],['Stefaan',32],['Walter',31],['Axel',31],
-              ['Omar',31],['William',31],['Ivan',31],['Joseph',31],['Henri',30],['Jordy',30],['Adam',30],['Antonio',30],['Stef',30],['Alexander',30],['Ibrahim',30],
-              ['Albert',30],['Ludovic',30],['Arne',30],['Roland',30],['Sander',30],['Mehdi',29],['Erwin',29],['Charles',29],['Wesley',29],['Lorenzo',29],['Théo',29],
-              ['Fabian',29],['Maxim',29],['Gaetan',29],['Max',29],['Samir',28],['Emmanuel',28],['Hamza',28],['Bilal',28],['Rik',28],['Karel',28],['Mehmet',28],
-              ['Robbe',28],['Giovanni',28],['Gino',28],['Dany',28],['Joeri',28],['Angelo',27],['Etienne',27],['Fred',27],['Luca',27],['Giuseppe',27],['Dennis',27],
-              ['Yassine',27],['Kenneth',27],['Joel',27],['Mark',27],['Salvatore',27],['Frans',27],['Momo',27],['Raf',26],['Philip',26],['Herman',26],['Manu',26],
-              ['Khalid',26],['Jasper',26],['Gérard',26],['Dave',26],['Valentin',26],['Arno',26],['Jean-Marie',26],['Brecht',25]
-            ],
-            modern: [
-              ['Lucas',45],['Hugo',45],['Noah',45],['Louis',45],['Arthur',45],['Nathan',26],['Théo',26],['Maxime',26],['Patrick',14],['Thomas',14],['Luc',14],
-              ['Michael',14],['Pierre',14],['Daniel',14],['Pascal',14],['Jean',14],['Julien',14],['Paul',14],['Frédéric',14],['Jonathan',14],['Cédric',14],
-              ['Sébastien',14],['Guy',14],['Christian',14],['André',14],['Yves',14],['François',14],['Didier',14],['Frank',14],['Pieter',14],['Simon',14],['Alex',14],
-              ['Chris',14],['Kristof',14],['Benjamin',14],['Robin',14],['Bruno',14],['Jonas',14],['Ahmed',14],['Dylan',14],['Anthony',14],['Gregory',14],['Steve',14],
-              ['Sam',14],['Nico',14],['Stéphane',14],['Jeroen',14],['Sven',14],['Robert',14],['Kurt',14],['Nick',14],['Filip',14],['Willy',14],['Arnaud',14],
-              ['Rudy',14],['Mario',14],['Jacques',14],['Bert',14],['Bernard',14],['Alexandre',14],['Dimitri',14],['John',14],['Serge',14],['Andy',14],['Benoît',14],
-              ['Antoine',14],['Ben',14],['Ronny',14],['Quentin',14],['Bjorn',14],['Roger',14],['Xavier',14],['Maarten',14],['Jens',14],['Mathieu',14],['Jérôme',14],
-              ['Jérémy',14],['Mike',14],['Bram',14],['Guillaume',14],['Hans',14],['Dominique',14],['Francis',14],['Niels',14],['Stefan',14],['Mohammed',14],
-              ['Martin',14],['Erik',14],['Wouter',14],['Davy',14],['Glenn',14],['Jos',14]
-            ]
-          },
+          first: [
+            ['Jean',61],['Pierre',64],['Paul',59],['Georges',33],['André',53],['Olivier',72],['Alain',70],['Lucien',19],['Willy',44],['Jacky',18],['Michel',79],
+            ['Philippe',79],['Nicolas',74],['Christophe',73],['Éric',71],['Vincent',64],['Kevin',88],['David',90],['Thierry',54],['Laurent',56],['Marc',100],
+            ['Bertrand',18],['Lucas',40],['Hugo',37],['Noah',25],['Louis',47],['Arthur',33],['Nathan',36],['Théo',29],['Maxime',53],['Patrick',94],['Thomas',84],
+            ['Michael',77],['Daniel',62],['Pascal',62],['Julien',61],['Frédéric',59],['Jonathan',58],['Cédric',58],['Sébastien',57],['Guy',56],['Christian',55],
+            ['Yves',53],['François',52],['Didier',51],['Frank',51],['Pieter',50],['Simon',50],['Alex',49],['Chris',48],['Kristof',48],['Benjamin',47],['Robin',47],
+            ['Bruno',47],['Jonas',47],['Ahmed',47],['Dylan',46],['Anthony',46],['Gregory',46],['Steve',46],['Sam',46],['Nico',46],['Stéphane',45],['Jeroen',45],
+            ['Sven',45],['Robert',45],['Kurt',45],['Nick',44],['Filip',44],['Arnaud',43],['Rudy',43],['Mario',43],['Jacques',43],['Bert',43],['Bernard',43],
+            ['Alexandre',43],['Dimitri',42],['John',42],['Serge',42],['Andy',42],['Benoît',42],['Antoine',42],['Ben',42],['Ronny',42],['Quentin',42],['Bjorn',41],
+            ['Roger',41],['Xavier',41],['Maarten',41],['Jens',40],['Mathieu',40],['Jérôme',40],['Jérémy',40],['Mike',40],['Bram',40],['Guillaume',40],['Hans',39],
+            ['Dominique',39],['Francis',39],['Niels',39],['Stefan',39],['Mohammed',39],['Martin',39],['Erik',39],['Wouter',39],['Davy',39],['Glenn',39],
+            ['Yannick',38],['Freddy',38],['Abdel',38],['Jurgen',38],['Ruben',37],['Gilles',36],['Tony',36],['Karim',36],['Rudi',36],['Rachid',36],['Fabrice',36],
+            ['Loïc',35],['Dries',35],['Mathias',35],['Said',35],['Dieter',35],['Romain',35],['Claude',35],['Raphael',34],['Matthias',34],['René',34],['Youssef',34],
+            ['Jean-Pierre',34],['Denis',34],['Kenny',34],['Jimmy',34],['Geoffrey',34],['Joris',33],['Jose',33],['Hassan',33],['Ludo',33],['Michiel',33],
+            ['Jelle',33],['Jordan',33],['Johnny',33],['Guido',33],['Samuel',33],['Damien',33],['Victor',32],['Jason',32],['Frederik',32],['Gert',32],['Adrien',32],
+            ['Marco',32],['Bryan',32],['Florian',32],['Mustafa',32],['Benny',32],['Stefaan',32],['Walter',31],['Axel',31],['Omar',31],['William',31],['Ivan',31],
+            ['Joseph',31],['Henri',30],['Jordy',30],['Adam',30],['Antonio',30],['Stef',30],['Alexander',30],['Ibrahim',30],['Albert',30],['Ludovic',30],
+            ['Roland',30],['Sander',30],['Mehdi',29],['Erwin',29],['Charles',29],['Wesley',29],['Lorenzo',29],['Fabian',29],['Maxim',29],['Gaetan',29],['Max',29],
+            ['Samir',28],['Emmanuel',28],['Hamza',28],['Bilal',28],['Rik',28],['Karel',28],['Mehmet',28],['Robbe',28],['Giovanni',28],['Gino',28],['Dany',28],
+            ['Joeri',28],['Angelo',27],['Etienne',27],['Fred',27],['Luca',27],['Giuseppe',27],['Dennis',27],['Yassine',27],['Kenneth',27],['Joel',27],['Mark',27],
+            ['Salvatore',27],['Momo',27],['Raf',26],['Philip',26],['Manu',26],['Khalid',26],['Jasper',26],['Gérard',26],['Dave',26],['Valentin',26],['Arno',26],
+            ['Jean-Marie',26],['Brecht',25],['Gabriel',25],['Diego',25],['Thibault',25],['Hicham',25],['Werner',25],['Franky',25],['Manuel',25],['Lionel',25],
+            ['Léo',24],['Thibaut',24],['Jamal',24],['Younes',24],['Miguel',24],['Richard',24],['Laurens',24],['Alexis',24],['Gunther',24],['Ayoub',24],
+            ['Ismail',24],['Logan',24]
+          ],
           last: [
             ['Dupont',55],['Dubois',61],['Lambert',54],['Leroy',41],['Simon',45],['Denis',42],['Lejeune',38],['Martin',50],['Collard',31],['Gérard',43],
             ['Charlier',34],['Renard',39],['Georges',25],['Massart',25],['François',46],['Dumont',42],['Noël',39],['Leclercq',39],['Petit',38],['Mathieu',37],
@@ -1138,18 +1039,11 @@ const NAME_POOLS_BY_NATION = {
             ['Pattyn',21],['Casier',21]
           ] },
         { w: 0.45,
-          first: {
-            early: [
-              ['Jos',3],['Herman',3],['Frans',3],['Marcel',3],['Luc',3],['Jef',2],['Willy',2],['Hugo',2]
-            ],
-            mid: [
-              ['Tom',83],['Bart',79],['Jan',82],['Peter',80],['Johan',69],['Dirk',69],['Steven',63],['Koen',56],['Kris',46],['Wim',59],['Geert',57],['Stijn',52],
-              ['Eddy',55],['Danny',54],['Tim',52]
-            ],
-            modern: [
-              ['Arne',26],['Wout',26],['Lars',26],['Milan',26],['Seppe',12],['Senne',12],['Thibo',12],['Stoffel',2],['Eddy',14],['Danny',14],['Tim',14]
-            ]
-          },
+          first: [
+            ['Jos',38],['Herman',26],['Frans',27],['Marcel',38],['Luc',84],['Jef',34],['Willy',44],['Hugo',37],['Tom',83],['Bart',79],['Jan',82],['Peter',80],
+            ['Johan',69],['Dirk',69],['Steven',63],['Koen',56],['Kris',46],['Wim',59],['Geert',57],['Stijn',52],['Arne',30],['Wout',22],['Lars',20],['Milan',21],
+            ['Seppe',24],['Senne',20],['Thibo',12],['Stoffel',2],['Eddy',55],['Danny',54],['Tim',52]
+          ],
           last: [
             ['Peeters',100],['Janssens',93],['Maes',86],['Jacobs',74],['Mertens',70],['Willems',69],['Claes',66],['Wouters',64],['Goossens',62],['Vermeulen',58],
             ['De Smet',57],['Hermans',56],['Pauwels',56],['Aerts',55],['Michiels',52],['Martens',51],['Smets',51],['De Vos',49],['Claeys',48],['Van Damme',47],
@@ -1176,45 +1070,31 @@ const NAME_POOLS_BY_NATION = {
     // ── SUI ──
     SUI: { regions: [
         { w: 0.52,
-          first: {
-            early: [
-              ['Hans',4],['Peter',4],['Kurt',3],['Heinz',3],['Bruno',3],['Ernst',3],['Walter',3],['Rudolf',2],['Fritz',2],['Jo',1]
-            ],
-            mid: [
-              ['Daniel',100],['Thomas',83],['Michael',77],['Patrick',74],['Stefan',69],['Markus',64],['Andreas',62],['Marcel',54],['Urs',50],['Martin',69],
-              ['Pascal',61],['Adrian',44],['Simon',56],['Roger',51],['Beat',44],['Reto',43],['Peter',76],['David',73],['Christian',73],['Manuel',57],['Marc',56],
-              ['Jose',54],['René',50],['André',50],['Kevin',48],['Mario',48],['Roland',47],['Michel',47],['Alex',47],['Fabian',44],['Hans',43],['Joel',42],
-              ['Rolf',42],['Lukas',42],['Sandro',41],['Christoph',41],['Giuseppe',41],['Samuel',40],['Florian',40],['Raphael',40],['Walter',38],['Philipp',38],
-              ['Jan',38],['Matthias',37],['Roman',37],['Luis',37],['Claudio',37],['Robert',37],['Dominik',36],['Oliver',36],['Pedro',36],['Paulo',36],['Paul',35],
-              ['Roberto',35],['Alexandre',34],['Mike',34],['Joao',34],['Stephan',34],['Ivan',34],['Éric',33],['Benjamin',33],['Heinz',33],['Kurt',33],['Tobias',33],
-              ['Francesco',33],['Julien',33],['Christophe',33],['Sven',32],['Miguel',32],['Stéphane',32],['Dario',32],['Werner',32],['Alessandro',32],['Pierre',32],
-              ['Fernando',31],['Yves',31],['Jonas',31],['Max',31],['Andrea',30],['Nico',30],['Alexander',30],['Remo',30],['Jürg',30],['Vincent',30],['Jorge',30],
-              ['Robin',29],['Thierry',29],['Nicola',29],['Chris',29],['Sergio',28],['Toni',28],['Andy',28],['Sascha',28],['Giovanni',28],['John',27],['Jonathan',27],
-              ['Léo',27],['Angelo',27],['Claude',26],['Davide',26],['Sebastian',26],['Denis',26],['Frédéric',26],['Salvatore',26],['François',26],['Stefano',26],
-              ['Tim',26],['Yannick',26],['Felix',25],['Michele',25],['Tom',25],['Rafael',25],['Jérôme',25],['Rui',25],['Richard',25],['Lucas',25],['Mehmet',24],
-              ['Dominic',24],['Filipe',24],['Jean',24],['Diego',24],['Mohamed',24],['Mathias',24],['Steve',24],['Hanspeter',24],['Dani',24],['Ruedi',23],
-              ['Patrik',23],['Francisco',23],['Mauro',23],['Franz',23],['Mustafa',23],['Paolo',23],['Victor',23],['Valentin',23],['Dominique',23],['Ernst',23],
-              ['Luigi',23],['Frank',23],['Lars',23],['Fritz',22],['Jérémy',22],['Bernard',22],['Silvan',22],['Noah',22],['Daniele',22],['Loïc',22],['Albert',22],
-              ['Hasan',22],['Julian',22],['Ahmed',21],['Ueli',21],['Josef',21],['Mark',21],['Renato',21],['Ramon',21],['Massimo',21],['Tony',21],['Vincenzo',21],
-              ['Guillaume',21],['Yann',21],['Anthony',21],['Bernhard',21],['Ibrahim',21],['Carlo',21],['Guido',20],['Marko',20],['Vitor',20],['Flavio',20],
-              ['Fabrice',20],['Erich',20],['Domenico',20],['Serge',20],['Antoine',20],['Jacques',20],['Dylan',20],['Juan',20],['Damien',20],['Sami',20],['Maxime',20],
-              ['Jean-Pierre',20],['Ruben',19],['Silvio',19],['Armin',19],['Steven',19],['Jörg',19],['Andi',19],['Ivo',19],['Louis',19],['Cyril',19],['Omar',19],
-              ['Mathieu',19],['Lorenzo',19],['Joaquim',18],['Maurizio',18],['Théo',18],['Arnaud',18],['Karim',18],['Erwin',18],['Elias',18],['Amir',18],['Nelson',18],
-              ['Lionel',18],['Leandro',18],['Gianluca',18],['Sam',17],['Simone',17],['Xavier',17],['Leonardo',17],['Gilles',17],['Rudolf',17],['Nikola',17],
-              ['Fabien',17],['Severin',17],['Nick',17],['Alfred',17],['Ahmet',17],['Jean-Claude',17],['Dragan',17],['Igor',17],['Karl',17]
-            ],
-            modern: [
-              ['Luca',45],['Nico',26],['Jan',26],['Noah',26],['Fabio',26],['Joel',26],['Levin',12],['Silvan',12],['Peter',14],['David',14],['Christian',14],
-              ['Manuel',14],['Marc',14],['Jose',14],['René',14],['André',14],['Kevin',14],['Mario',14],['Roland',14],['Michel',14],['Alex',14],['Fabian',14],
-              ['Hans',14],['Rolf',14],['Lukas',14],['Sandro',14],['Christoph',14],['Giuseppe',14],['Samuel',14],['Florian',14],['Raphael',14],['Walter',14],
-              ['Philipp',14],['Matthias',14],['Roman',14],['Luis',14],['Claudio',14],['Robert',14],['Dominik',14],['Oliver',14],['Pedro',14],['Paulo',14],['Paul',14],
-              ['Roberto',14],['Alexandre',14],['Mike',14],['Joao',14],['Stephan',14],['Ivan',14],['Éric',14],['Benjamin',14],['Heinz',14],['Kurt',14],['Tobias',14],
-              ['Francesco',14],['Julien',14],['Christophe',14],['Sven',14],['Miguel',14],['Stéphane',14],['Dario',14],['Werner',14],['Alessandro',14],['Pierre',14],
-              ['Fernando',14],['Yves',14],['Jonas',14],['Max',14],['Andrea',14],['Alexander',14],['Remo',14],['Jürg',14],['Vincent',14],['Jorge',14],['Robin',14],
-              ['Thierry',14],['Nicola',14],['Chris',14],['Sergio',14],['Toni',14],['Andy',14],['Sascha',14],['Giovanni',14],['John',14],['Jonathan',14],['Léo',14],
-              ['Angelo',14],['Claude',14],['Davide',14],['Sebastian',14],['Denis',14]
-            ]
-          },
+          first: [
+            ['Hans',43],['Peter',76],['Kurt',33],['Heinz',33],['Bruno',58],['Ernst',23],['Walter',38],['Rudolf',17],['Fritz',22],['Jo',2],['Daniel',100],
+            ['Thomas',83],['Michael',77],['Patrick',74],['Stefan',69],['Markus',64],['Andreas',62],['Marcel',54],['Urs',50],['Martin',69],['Pascal',61],
+            ['Adrian',44],['Simon',56],['Roger',51],['Beat',44],['Reto',43],['Luca',52],['Nico',30],['Jan',38],['Noah',22],['Fabio',43],['Joel',42],['Levin',12],
+            ['Silvan',22],['David',73],['Christian',73],['Manuel',57],['Marc',56],['Jose',54],['René',50],['Kevin',48],['Mario',48],['Roland',47],['Alex',47],
+            ['Fabian',44],['Rolf',42],['Lukas',42],['Sandro',41],['Christoph',41],['Giuseppe',41],['Samuel',40],['Florian',40],['Raphael',40],['Philipp',38],
+            ['Matthias',37],['Roman',37],['Luis',37],['Claudio',37],['Robert',37],['Dominik',36],['Oliver',36],['Pedro',36],['Paulo',36],['Paul',35],['Roberto',35],
+            ['Alexandre',34],['Mike',34],['Joao',34],['Stephan',34],['Ivan',34],['Éric',33],['Benjamin',33],['Tobias',33],['Francesco',33],['Julien',33],
+            ['Christophe',33],['Sven',32],['Miguel',32],['Stéphane',32],['Dario',32],['Werner',32],['Alessandro',32],['Fernando',31],['Yves',31],['Jonas',31],
+            ['Max',31],['Andrea',30],['Alexander',30],['Remo',30],['Jürg',30],['Vincent',30],['Jorge',30],['Robin',29],['Thierry',29],['Nicola',29],['Chris',29],
+            ['Sergio',28],['Toni',28],['Andy',28],['Sascha',28],['Giovanni',28],['John',27],['Jonathan',27],['Léo',27],['Angelo',27],['Davide',26],['Sebastian',26],
+            ['Denis',26],['Frédéric',26],['Salvatore',26],['François',26],['Stefano',26],['Tim',26],['Yannick',26],['Felix',25],['Michele',25],['Tom',25],
+            ['Rafael',25],['Jérôme',25],['Rui',25],['Richard',25],['Lucas',25],['Mehmet',24],['Dominic',24],['Filipe',24],['Diego',24],['Mohamed',24],
+            ['Mathias',24],['Steve',24],['Hanspeter',24],['Dani',24],['Ruedi',23],['Patrik',23],['Francisco',23],['Mauro',23],['Franz',23],['Mustafa',23],
+            ['Paolo',23],['Victor',23],['Valentin',23],['Dominique',23],['Luigi',23],['Frank',23],['Lars',23],['Jérémy',22],['Bernard',22],['Daniele',22],
+            ['Loïc',22],['Albert',22],['Hasan',22],['Julian',22],['Ahmed',21],['Ueli',21],['Josef',21],['Mark',21],['Renato',21],['Ramon',21],['Massimo',21],
+            ['Tony',21],['Vincenzo',21],['Guillaume',21],['Yann',21],['Anthony',21],['Bernhard',21],['Ibrahim',21],['Carlo',21],['Guido',20],['Marko',20],
+            ['Vitor',20],['Flavio',20],['Fabrice',20],['Erich',20],['Domenico',20],['Serge',20],['Antoine',20],['Jacques',20],['Dylan',20],['Juan',20],
+            ['Damien',20],['Sami',20],['Maxime',20],['Jean-Pierre',20],['Ruben',19],['Silvio',19],['Armin',19],['Steven',19],['Jörg',19],['Andi',19],['Ivo',19],
+            ['Cyril',19],['Omar',19],['Mathieu',19],['Lorenzo',19],['Joaquim',18],['Maurizio',18],['Arnaud',18],['Karim',18],['Erwin',18],['Elias',18],['Amir',18],
+            ['Nelson',18],['Lionel',18],['Leandro',18],['Gianluca',18],['Sam',17],['Simone',17],['Xavier',17],['Leonardo',17],['Gilles',17],['Nikola',17],
+            ['Fabien',17],['Severin',17],['Nick',17],['Alfred',17],['Ahmet',17],['Jean-Claude',17],['Dragan',17],['Igor',17],['Karl',17],['Ben',17],['Michi',17],
+            ['Anton',17],['Adrien',17],['Beni',17],['Leon',17],['Samir',17],['James',17],['Jean-Marc',17],['Mattia',17],['Alan',17],['Pietro',17],['Philip',17],
+            ['Adriano',17],['Quentin',17],['Charles',16],['Bryan',16],['Enrico',16],['Sylvain',16],['Fred',16],['Ralph',16],['Boris',16],['Murat',16]
+          ],
           last: [
             ['Müller',100],['Meier',75],['Schmid',65],['Keller',55],['Weber',51],['Schneider',51],['Huber',46],['Steiner',47],['Gerber',43],['Brunner',42],
             ['Frei',42],['Baumann',41],['Moser',40],['Fischer',44],['Zürcher',27],['Bühler',31],['Widmer',40],['Meyer',49],['Zimmermann',40],['Graf',39],
@@ -1249,18 +1129,10 @@ const NAME_POOLS_BY_NATION = {
             ['Walser',15],['Schaffner',15],['Osman',15],['Minder',15],['De Oliveira',15],['Achermann',15],['Zuber',15],['Swiss',15]
           ] },
         { w: 0.31,
-          first: {
-            early: [
-              ['Claude',3],['Michel',3],['Jean',3],['Pierre',3],['André',3],['Joseph',2]
-            ],
-            mid: [
-              ['Alain',37],['Olivier',36],['Laurent',31],['Sébastien',32],['Nicolas',49],['Didier',20],['Cédric',35],['Philippe',42],['Gabriel',30],['Hugo',26],
-              ['Romain',21]
-            ],
-            modern: [
-              ['Romain',26],['Louis',26],['Hugo',26],['Nathan',26],['Gabriel',26],['Théo',12],['Philippe',14]
-            ]
-          },
+          first: [
+            ['Claude',26],['Michel',47],['Jean',24],['Pierre',32],['André',50],['Joseph',14],['Alain',37],['Olivier',36],['Laurent',31],['Sébastien',32],
+            ['Nicolas',49],['Didier',20],['Cédric',35],['Romain',21],['Louis',19],['Hugo',26],['Nathan',16],['Gabriel',30],['Théo',18],['Philippe',42]
+          ],
           last: [
             ['Favre',27],['Girard',11],['Martin',38],['Rochat',19],['Bonvin',13],['Chevalley',13],['Duc',12],['Rossier',16],['Perret',15],['Monnier',12],
             ['Grandjean',14],['Berney',2],['Blanc',19],['Pittet',18],['Gross',16],['Maillard',15]
@@ -1289,47 +1161,33 @@ const NAME_POOLS_BY_NATION = {
     // ── AUT ──
     AUT: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Hans',4],['Karl',4],['Franz',4],['Helmut',3],['Dieter',3],['Kurt',3],['Harald',3],['Gerhard',3],['Josef',3],['Johann',3],['Otto',2],['Rupert',2],
-              ['Jochen',2],['Niki',1]
-            ],
-            mid: [
-              ['Michael',100],['Thomas',99],['Christian',96],['Andreas',90],['Markus',87],['Martin',84],['Stefan',83],['Peter',77],['Franz',69],['Wolfgang',63],
-              ['Gerhard',63],['Christoph',62],['Patrick',62],['Alexander',61],['Manuel',60],['Mario',60],['Robert',59],['Manfred',54],['Bernhard',48],['Roland',40],
-              ['Norbert',27],['Daniel',76],['Josef',61],['Lukas',57],['Florian',57],['Dominik',52],['David',51],['Johann',49],['Walter',47],['Philipp',47],
-              ['Karl',46],['Herbert',46],['Rene',45],['Helmut',45],['Harald',44],['Johannes',44],['Jürgen',42],['Matthias',42],['Werner',41],['Hannes',41],
-              ['Sebastian',40],['Marcel',40],['Gerald',40],['Alex',39],['Georg',39],['Klaus',38],['Marco',36],['Kevin',36],['Fabian',35],['Roman',35],['Simon',35],
-              ['Ali',34],['Hans',33],['Günter',33],['Erich',33],['Reinhard',32],['Tobias',32],['Paul',32],['Alfred',32],['Julian',32],['Max',31],['Kurt',31],
-              ['Günther',31],['Anton',30],['Oliver',29],['Richard',29],['Rudolf',29],['Erwin',29],['Benjamin',29],['Heinz',28],['Ernst',27],['Jakob',27],
-              ['Mathias',26],['Hermann',26],['Bernd',25],['Mustafa',25],['Felix',25],['Chris',24],['Alois',24],['Maximilian',24],['Christopher',24],['Raphael',24],
-              ['Hubert',24],['Mehmet',24],['Stephan',23],['Sascha',22],['Nico',22],['Armin',22],['Jan',22],['Dietmar',22],['Marko',21],['Siegfried',21],['Gernot',21],
-              ['Fritz',20],['Andi',20],['Horst',20],['Rainer',20],['Dragan',20],['Hasan',20],['Friedrich',20],['Tom',20],['Dieter',19],['Ahmet',19],['Gregor',19],
-              ['Mike',19],['Elias',19],['Clemens',19],['Pascal',19],['Gottfried',19],['Ewald',18],['Rudi',18],['Philip',18],['Ivan',18],['Murat',17],['Andre',17],
-              ['Flo',17],['Adrian',17],['Gabriel',17],['Leopold',17],['Leo',17],['Goran',17],['Niklas',17],['Ibrahim',17],['Marc',17],['Albert',16],['Willi',16],
-              ['Zoran',16],['Michi',16],['Dejan',16],['Ahmed',16],['Otto',16],['Toni',16],['Ahmad',16],['Jonas',16],['Dominic',16],['Luca',16],['Leon',15],
-              ['Wilhelm',15],['Moritz',15],['Mohammad',15],['Hüseyin',15],['Denis',15],['Ronald',15],['Patrik',15],['Samuel',15],['Marcus',15],['Sandro',15],
-              ['Reinhold',15],['Joachim',15],['Mohamed',14],['Ferdinand',14],['Aleksandar',14],['Yusuf',14],['Maxi',14],['Emanuel',14],['Nikola',14],['Andy',14],
-              ['Valentin',14],['Milan',14],['Ismail',14],['Emre',14],['Harry',13],['Rupert',13],['Eduard',13],['Ömer',13],['Amir',13],['Osman',13],['Sepp',13],
-              ['Lucas',13],['Lorenz',13],['Mark',13],['Ludwig',13],['Sasa',13],['Raimund',13],['Jörg',13],['Bruno',13],['Heinrich',12],['Christof',12],['Ramazan',12],
-              ['Joe',12],['Frank',12],['Fabio',12],['Marvin',12],['Danijel',12],['Adnan',12],['Viktor',12],['Konrad',12],['Abdullah',12],['Benedikt',11],['Adam',11],
-              ['Dennis',11],['Gerd',11],['Fatih',11],['John',11],['Robin',11],['Adem',11],['Eric',11],['Sven',11],['Arnold',11],['Ralf',11],['Zeljko',11],
-              ['Hakan',11],['Enes',11],['Nenad',11],['Nikolaus',11],['Igor',11],['Samir',11],['Darko',11],['Heimo',11],['Hans-Peter',11],['Omar',11],['Filip',11],
-              ['Uwe',10],['Adi',10],['Adolf',10],['Halil',10],['Marius',10],['Noah',10],['Antonio',10],['Erik',10],['Jochen',10],['Wilfried',10],['Ingo',10],
-              ['Boris',10],['Yasin',10],['Josip',10],['Herwig',10],['Tim',10],['Dani',10],['Emir',10],['Ralph',10]
-            ],
-            modern: [
-              ['Lukas',45],['Felix',45],['David',45],['Maximilian',45],['Leon',45],['Florian',45],['Dominik',45],['Tobias',26],['Simon',26],['Paul',26],['Jakob',26],
-              ['Elias',26],['Fabian',26],['Julian',26],['Daniel',14],['Josef',14],['Johann',14],['Walter',14],['Philipp',14],['Karl',14],['Herbert',14],['Rene',14],
-              ['Helmut',14],['Harald',14],['Johannes',14],['Jürgen',14],['Matthias',14],['Werner',14],['Hannes',14],['Sebastian',14],['Marcel',14],['Gerald',14],
-              ['Alex',14],['Georg',14],['Klaus',14],['Marco',14],['Kevin',14],['Roman',14],['Ali',14],['Hans',14],['Günter',14],['Erich',14],['Reinhard',14],
-              ['Alfred',14],['Max',14],['Kurt',14],['Günther',14],['Anton',14],['Oliver',14],['Richard',14],['Rudolf',14],['Erwin',14],['Benjamin',14],['Heinz',14],
-              ['Ernst',14],['Mathias',14],['Hermann',14],['Bernd',14],['Mustafa',14],['Chris',14],['Alois',14],['Christopher',14],['Raphael',14],['Hubert',14],
-              ['Mehmet',14],['Stephan',14],['Sascha',14],['Nico',14],['Armin',14],['Jan',14],['Dietmar',14],['Marko',14],['Siegfried',14],['Gernot',14],['Fritz',14],
-              ['Andi',14],['Horst',14],['Rainer',14],['Dragan',14],['Hasan',14],['Friedrich',14],['Tom',14],['Dieter',14],['Ahmet',14],['Gregor',14],['Mike',14],
-              ['Clemens',14],['Pascal',14],['Gottfried',14],['Ewald',14],['Rudi',14]
-            ]
-          },
+          first: [
+            ['Hans',33],['Karl',46],['Franz',69],['Helmut',45],['Dieter',19],['Kurt',31],['Harald',44],['Gerhard',63],['Josef',61],['Johann',49],['Otto',16],
+            ['Rupert',13],['Jochen',10],['Niki',9],['Michael',100],['Thomas',99],['Christian',96],['Andreas',90],['Markus',87],['Martin',84],['Stefan',83],
+            ['Peter',77],['Wolfgang',63],['Christoph',62],['Patrick',62],['Alexander',61],['Manuel',60],['Mario',60],['Robert',59],['Manfred',54],['Bernhard',48],
+            ['Roland',40],['Norbert',27],['Lukas',57],['Felix',25],['David',51],['Maximilian',24],['Leon',15],['Florian',57],['Dominik',52],['Tobias',32],
+            ['Simon',35],['Paul',32],['Jakob',27],['Elias',19],['Fabian',35],['Julian',32],['Daniel',76],['Walter',47],['Philipp',47],['Herbert',46],['Rene',45],
+            ['Johannes',44],['Jürgen',42],['Matthias',42],['Werner',41],['Hannes',41],['Sebastian',40],['Marcel',40],['Gerald',40],['Alex',39],['Georg',39],
+            ['Klaus',38],['Marco',36],['Kevin',36],['Roman',35],['Ali',34],['Günter',33],['Erich',33],['Reinhard',32],['Alfred',32],['Max',31],['Günther',31],
+            ['Anton',30],['Oliver',29],['Richard',29],['Rudolf',29],['Erwin',29],['Benjamin',29],['Heinz',28],['Ernst',27],['Mathias',26],['Hermann',26],
+            ['Bernd',25],['Mustafa',25],['Chris',24],['Alois',24],['Christopher',24],['Raphael',24],['Hubert',24],['Mehmet',24],['Stephan',23],['Sascha',22],
+            ['Nico',22],['Armin',22],['Jan',22],['Dietmar',22],['Marko',21],['Siegfried',21],['Gernot',21],['Fritz',20],['Andi',20],['Horst',20],['Rainer',20],
+            ['Dragan',20],['Hasan',20],['Friedrich',20],['Tom',20],['Ahmet',19],['Gregor',19],['Mike',19],['Clemens',19],['Pascal',19],['Gottfried',19],
+            ['Ewald',18],['Rudi',18],['Philip',18],['Ivan',18],['Murat',17],['Andre',17],['Flo',17],['Adrian',17],['Gabriel',17],['Leopold',17],['Leo',17],
+            ['Goran',17],['Niklas',17],['Ibrahim',17],['Marc',17],['Albert',16],['Willi',16],['Zoran',16],['Michi',16],['Dejan',16],['Ahmed',16],['Toni',16],
+            ['Ahmad',16],['Jonas',16],['Dominic',16],['Luca',16],['Wilhelm',15],['Moritz',15],['Mohammad',15],['Hüseyin',15],['Denis',15],['Ronald',15],
+            ['Patrik',15],['Samuel',15],['Marcus',15],['Sandro',15],['Reinhold',15],['Joachim',15],['Mohamed',14],['Ferdinand',14],['Aleksandar',14],['Yusuf',14],
+            ['Maxi',14],['Emanuel',14],['Nikola',14],['Andy',14],['Valentin',14],['Milan',14],['Ismail',14],['Emre',14],['Harry',13],['Eduard',13],['Ömer',13],
+            ['Amir',13],['Osman',13],['Sepp',13],['Lucas',13],['Lorenz',13],['Mark',13],['Ludwig',13],['Sasa',13],['Raimund',13],['Jörg',13],['Bruno',13],
+            ['Heinrich',12],['Christof',12],['Ramazan',12],['Joe',12],['Frank',12],['Fabio',12],['Marvin',12],['Danijel',12],['Adnan',12],['Viktor',12],
+            ['Konrad',12],['Abdullah',12],['Benedikt',11],['Adam',11],['Dennis',11],['Gerd',11],['Fatih',11],['John',11],['Robin',11],['Adem',11],['Eric',11],
+            ['Sven',11],['Arnold',11],['Ralf',11],['Zeljko',11],['Hakan',11],['Enes',11],['Nenad',11],['Nikolaus',11],['Igor',11],['Samir',11],['Darko',11],
+            ['Heimo',11],['Hans-Peter',11],['Omar',11],['Filip',11],['Uwe',10],['Adi',10],['Adolf',10],['Halil',10],['Marius',10],['Noah',10],['Antonio',10],
+            ['Erik',10],['Wilfried',10],['Ingo',10],['Boris',10],['Yasin',10],['Josip',10],['Herwig',10],['Tim',10],['Dani',10],['Emir',10],['Ralph',10],
+            ['Kemal',10],['Hansi',10],['Niko',10],['Sigi',10],['Kilian',10],['Rafael',10],['Luka',10],['Alen',10],['Ben',10],['Emil',10],['Mohammed',9],
+            ['Muhammed',9],['Egon',9],['Milos',9],['Kadir',9],['Serkan',9],['Bojan',9],['Orhan',9],['Tobi',9],['Mani',9],['Justin',9],['Kenan',9],['Nicolas',9],
+            ['Miroslav',9],['Charly',9]
+          ],
           last: [
             ['Gruber',100],['Huber',98],['Bauer',88],['Müller',88],['Wagner',81],['Steiner',79],['Moser',78],['Berger',78],['Pichler',78],['Hofer',78],['Mayer',73],
             ['Leitner',71],['Eder',69],['Fuchs',67],['Maier',72],['Winkler',64],['Fischer',63],['Schmid',62],['Schwarz',60],['Schneider',60],['Weber',60],
@@ -1374,46 +1232,32 @@ const NAME_POOLS_BY_NATION = {
     // ── SWE ──
     SWE: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Lars',4],['Gunnar',3],['Bengt',3],['Lennart',3],['Sven',3],['Bo',3],['Erik',3],['Torsten',2],['Åke',2],['Ulf',2],['Nils',2],['Ronnie',1]
-            ],
-            mid: [
-              ['Johan',100],['Anders',94],['Peter',87],['Fredrik',83],['Magnus',74],['Mikael',73],['Andreas',72],['Jonas',71],['Martin',68],['Stefan',67],
-              ['Daniel',82],['Henrik',60],['Erik',66],['Per',62],['Thomas',60],['Mattias',58],['Mats',57],['Patrik',54],['Marcus',54],['Björn',53],['Joakim',49],
-              ['Niclas',30],['Tomas',44],['Kenny',10],['Lars',67],['David',56],['Jan',54],['Robert',51],['Niklas',49],['Håkan',48],['Alexander',47],['Simon',46],
-              ['Hans',46],['Christer',44],['Tobias',44],['Göran',43],['Christian',43],['Ulf',43],['Michael',42],['Emil',42],['Tommy',41],['Anton',40],['Robin',40],
-              ['Adam',38],['Sebastian',38],['Bengt',37],['Roger',37],['Leif',36],['Jesper',36],['Lennart',36],['Jörgen',34],['Oscar',34],['Gustav',34],['Ahmad',33],
-              ['John',33],['Linus',33],['Markus',33],['Viktor',32],['Carl',32],['Ahmed',32],['Filip',32],['Jimmy',31],['Oskar',30],['Jonathan',30],['Ola',30],
-              ['Kjell',30],['Mohammed',30],['Christoffer',30],['Mathias',30],['Rickard',30],['Pontus',30],['Jens',29],['Victor',29],['Mohammad',29],['Gunnar',29],
-              ['Joel',29],['Richard',28],['Mohamed',28],['Elias',28],['Kenneth',28],['Olle',28],['Tony',28],['William',28],['Dennis',27],['Alex',27],['Rasmus',27],
-              ['Jakob',26],['Claes',26],['Axel',26],['Max',26],['Torbjörn',26],['Philip',26],['Kent',26],['Rolf',26],['Dan',26],['Jacob',25],['Nils',25],['Pär',24],
-              ['Kalle',24],['Samuel',24],['Eric',24],['Staffan',24],['Janne',24],['Johannes',24],['Sven',24],['Lasse',24],['Micke',23],['Karl',23],['Omar',23],
-              ['Hassan',23],['Åke',23],['Gabriel',23],['Albin',22],['Kim',22],['Nicklas',22],['Kristoffer',22],['Mohamad',22],['Hampus',22],['André',22],
-              ['Petter',21],['Oliver',21],['Kevin',21],['Felix',21],['Conny',21],['Roland',21],['Kristian',21],['Ibrahim',21],['Pelle',20],['Olof',20],['Mustafa',20],
-              ['Hugo',20],['Rikard',20],['Amir',20],['Johnny',20],['Bertil',19],['Tom',19],['Krister',19],['Pierre',19],['Tim',19],['Calle',19],['Urban',19],
-              ['Arne',19],['Ingemar',19],['Gustaf',18],['Paul',18],['Benny',18],['Ludvig',18],['Ronny',18],['Mahmoud',18],['Josef',18],['Stig',18],['George',18],
-              ['Patrick',18],['Isak',18],['Lucas',18],['Christopher',18],['Klas',17],['Leo',17],['Lukas',17],['Morgan',17],['Sam',17],['Jonny',17],['Jonatan',17],
-              ['Ove',16],['Benjamin',16],['Hussein',16],['Reza',16],['Mårten',16],['Khaled',16],['Sami',16],['Joachim',16],['Bosse',16],['Sören',16],['Adrian',16],
-              ['Jocke',15],['Arvid',15],['Hasse',15],['Samir',15],['Jim',15],['Peder',14],['Jon',14],['Ivan',14],['Sten',14],['Börje',14],['Hasan',14],['Hannes',14],
-              ['Hamid',14],['Fadi',14],['Jerry',13],['Abdi',13],['Måns',13],['Carlos',13],['Kurt',13],['Abdullah',13],['Patric',13],['Adnan',13],['Fabian',13],
-              ['Ted',13],['Rune',13],['Said',13],['Ingvar',13],['Frank',12],['Jack',12],['Örjan',12],['Ronnie',12],['Svante',12],['Edvin',12],['Abo',12],
-              ['Kristofer',12],['Charlie',12],['Joacim',12],['Bernt',12],['Alf',12],['Emanuel',12],['Glenn',12],['Samer',12],['Rami',11],['Lars-Erik',11],['Liam',11],
-              ['Ludwig',11],['Jan-Erik',11],['Mahdi',11],['Dick',11],['Alaa',11],['Mark',11],['Kaj',11],['Mostafa',11],['Gert',11],['Chris',11],['Tobbe',11],
-              ['Abbas',11],['Antonio',11],['Karim',11],['Kenth',11]
-            ],
-            modern: [
-              ['Oscar',45],['William',45],['Elias',45],['Lucas',45],['Emil',45],['Hugo',26],['Liam',26],['Noah',26],['Viktor',26],['Isak',26],['Felix',26],
-              ['Marcus',26],['Lars',14],['David',14],['Jan',14],['Robert',14],['Niklas',14],['Håkan',14],['Alexander',14],['Simon',14],['Hans',14],['Christer',14],
-              ['Tobias',14],['Göran',14],['Christian',14],['Ulf',14],['Michael',14],['Tommy',14],['Anton',14],['Robin',14],['Adam',14],['Sebastian',14],['Bengt',14],
-              ['Roger',14],['Leif',14],['Jesper',14],['Lennart',14],['Jörgen',14],['Gustav',14],['Ahmad',14],['John',14],['Linus',14],['Markus',14],['Carl',14],
-              ['Ahmed',14],['Filip',14],['Jimmy',14],['Oskar',14],['Jonathan',14],['Ola',14],['Kjell',14],['Mohammed',14],['Christoffer',14],['Mathias',14],
-              ['Rickard',14],['Pontus',14],['Jens',14],['Victor',14],['Mohammad',14],['Gunnar',14],['Joel',14],['Richard',14],['Mohamed',14],['Kenneth',14],
-              ['Olle',14],['Tony',14],['Dennis',14],['Alex',14],['Rasmus',14],['Jakob',14],['Claes',14],['Axel',14],['Max',14],['Torbjörn',14],['Philip',14],
-              ['Kent',14],['Rolf',14],['Dan',14],['Jacob',14],['Nils',14],['Pär',14],['Kalle',14],['Samuel',14],['Eric',14],['Staffan',14],['Janne',14],
-              ['Johannes',14],['Sven',14],['Lasse',14],['Micke',14],['Karl',14],['Omar',14],['Hassan',14],['Åke',14],['Gabriel',14],['Albin',14],['Kim',14]
-            ]
-          },
+          first: [
+            ['Lars',67],['Gunnar',29],['Bengt',37],['Lennart',36],['Sven',24],['Bo',26],['Erik',66],['Torsten',10],['Åke',23],['Ulf',43],['Nils',25],['Ronnie',12],
+            ['Johan',100],['Anders',94],['Peter',87],['Fredrik',83],['Magnus',74],['Mikael',73],['Andreas',72],['Jonas',71],['Martin',68],['Stefan',67],
+            ['Daniel',82],['Henrik',60],['Per',62],['Thomas',60],['Mattias',58],['Mats',57],['Patrik',54],['Marcus',54],['Björn',53],['Joakim',49],['Niclas',30],
+            ['Tomas',44],['Kenny',10],['Oscar',34],['William',28],['Elias',28],['Lucas',18],['Emil',42],['Hugo',20],['Liam',11],['Noah',10],['Viktor',32],
+            ['Isak',18],['Felix',21],['David',56],['Jan',54],['Robert',51],['Niklas',49],['Håkan',48],['Alexander',47],['Simon',46],['Hans',46],['Christer',44],
+            ['Tobias',44],['Göran',43],['Christian',43],['Michael',42],['Tommy',41],['Anton',40],['Robin',40],['Adam',38],['Sebastian',38],['Roger',37],['Leif',36],
+            ['Jesper',36],['Jörgen',34],['Gustav',34],['Ahmad',33],['John',33],['Linus',33],['Markus',33],['Carl',32],['Ahmed',32],['Filip',32],['Jimmy',31],
+            ['Oskar',30],['Jonathan',30],['Ola',30],['Kjell',30],['Mohammed',30],['Christoffer',30],['Mathias',30],['Rickard',30],['Pontus',30],['Jens',29],
+            ['Victor',29],['Mohammad',29],['Joel',29],['Richard',28],['Mohamed',28],['Kenneth',28],['Olle',28],['Tony',28],['Dennis',27],['Alex',27],['Rasmus',27],
+            ['Jakob',26],['Claes',26],['Axel',26],['Max',26],['Torbjörn',26],['Philip',26],['Kent',26],['Rolf',26],['Dan',26],['Jacob',25],['Pär',24],['Kalle',24],
+            ['Samuel',24],['Eric',24],['Staffan',24],['Janne',24],['Johannes',24],['Lasse',24],['Micke',23],['Karl',23],['Omar',23],['Hassan',23],['Gabriel',23],
+            ['Albin',22],['Kim',22],['Nicklas',22],['Kristoffer',22],['Mohamad',22],['Hampus',22],['André',22],['Petter',21],['Oliver',21],['Kevin',21],
+            ['Conny',21],['Roland',21],['Kristian',21],['Ibrahim',21],['Pelle',20],['Olof',20],['Mustafa',20],['Rikard',20],['Amir',20],['Johnny',20],['Bertil',19],
+            ['Tom',19],['Krister',19],['Pierre',19],['Tim',19],['Calle',19],['Urban',19],['Arne',19],['Ingemar',19],['Gustaf',18],['Paul',18],['Benny',18],
+            ['Ludvig',18],['Ronny',18],['Mahmoud',18],['Josef',18],['Stig',18],['George',18],['Patrick',18],['Christopher',18],['Klas',17],['Leo',17],['Lukas',17],
+            ['Morgan',17],['Sam',17],['Jonny',17],['Jonatan',17],['Ove',16],['Benjamin',16],['Hussein',16],['Reza',16],['Mårten',16],['Khaled',16],['Sami',16],
+            ['Joachim',16],['Bosse',16],['Sören',16],['Adrian',16],['Jocke',15],['Arvid',15],['Hasse',15],['Samir',15],['Jim',15],['Peder',14],['Jon',14],
+            ['Ivan',14],['Sten',14],['Börje',14],['Hasan',14],['Hannes',14],['Hamid',14],['Fadi',14],['Jerry',13],['Abdi',13],['Måns',13],['Carlos',13],['Kurt',13],
+            ['Abdullah',13],['Patric',13],['Adnan',13],['Fabian',13],['Ted',13],['Rune',13],['Said',13],['Ingvar',13],['Frank',12],['Jack',12],['Örjan',12],
+            ['Svante',12],['Edvin',12],['Abo',12],['Kristofer',12],['Charlie',12],['Joacim',12],['Bernt',12],['Alf',12],['Emanuel',12],['Glenn',12],['Samer',12],
+            ['Rami',11],['Lars-Erik',11],['Ludwig',11],['Jan-Erik',11],['Mahdi',11],['Dick',11],['Alaa',11],['Mark',11],['Kaj',11],['Mostafa',11],['Gert',11],
+            ['Chris',11],['Tobbe',11],['Abbas',11],['Antonio',11],['Karim',11],['Kenth',11],['Osman',11],['Michel',11],['Anas',11],['Eddie',11],['Henric',10],
+            ['Carl-Johan',10],['Hamza',10],['Alireza',10],['Fredric',10],['Allan',10],['Alfred',10],['Mike',10],['Henry',10],['Theo',10],['Yousef',10],['Mehdi',10],
+            ['Aziz',10],['Amin',10],['Ismail',10]
+          ],
           last: [
             ['Andersson',100],['Johansson',99],['Nilsson',80],['Karlsson',74],['Larsson',68],['Eriksson',68],['Persson',60],['Svensson',59],['Olsson',58],
             ['Gustafsson',44],['Pettersson',44],['Jonsson',54],['Carlsson',41],['Jansson',37],['Hansson',37],['Bengtsson',32],['Lindberg',31],['Lindgren',28],
@@ -1460,46 +1304,31 @@ const NAME_POOLS_BY_NATION = {
     // ── FIN ──
     FIN: { regions: [
         { w: 0.9,
-          first: {
-            early: [
-              ['Timo',3],['Juhani',3],['Kari',3],['Matti',3],['Pentti',2],['Hannu',2],['Mauri',2],['Esko',2],['Seppo',2],['Leo',2],['Keijo',1]
-            ],
-            mid: [
-              ['Mikko',100],['Juha',96],['Antti',92],['Mika',91],['Ville',91],['Janne',88],['Jari',88],['Sami',86],['Jani',80],['Jukka',80],['Matti',79],['Marko',78],
-              ['Teemu',76],['Pekka',74],['Petri',73],['Toni',68],['Jussi',67],['Ari',66],['Markku',65],['Timo',89],['Hannu',63],['Joni',64],['Kimi',14],['Kari',76],
-              ['Niko',68],['Markus',63],['Aleksi',62],['Tomi',62],['Joonas',62],['Heikki',61],['Juho',61],['Tuomas',61],['Pasi',61],['Harri',58],['Tommi',58],
-              ['Lauri',58],['Henri',56],['Tero',55],['Olli',55],['Jaakko',54],['Kimmo',53],['Jesse',53],['Jouni',52],['Seppo',51],['Jarmo',50],['Jere',50],
-              ['Vesa',50],['Eetu',49],['Jarkko',48],['Juuso',48],['Kalle',48],['Arto',48],['Esa',47],['Eero',44],['Mikael',44],['Joona',44],['Risto',44],
-              ['Matías',43],['Riku',43],['Arttu',42],['Jorma',42],['Valtteri',40],['Ilkka',40],['Aki',40],['Santeri',40],['Miika',40],['Juhani',39],['Jarno',39],
-              ['Tapio',39],['Pertti',39],['Samuli',39],['Erkki',38],['Tuomo',37],['Oskari',36],['Petteri',36],['Muhammad',36],['Jyrki',36],['Niklas',35],['Jouko',35],
-              ['Simo',35],['Roope',34],['Pentti',34],['Raimo',34],['Joel',34],['Lasse',33],['Reijo',33],['Otto',33],['Martti',32],['Ali',32],['Kai',32],['Anssi',32],
-              ['Atte',31],['Esko',30],['Elias',30],['Daniel',30],['Pauli',30],['Leevi',30],['Jan',30],['Samu',29],['Miikka',28],['Sakari',28],['Paavo',28],
-              ['Rasmus',28],['Anton',27],['Jyri',27],['Saku',27],['Miro',27],['Tapani',27],['Kristian',27],['Tuukka',27],['Topi',26],['Keijo',26],['Lassi',26],
-              ['Ossi',26],['Rami',26],['Jonne',26],['Veikko',26],['Tatu',26],['Roni',26],['Patrik',25],['Eemeli',25],['Veeti',25],['Peter',24],['Ismo',24],
-              ['Samuel',24],['Johannes',24],['Konsta',24],['Leo',23],['Alex',23],['Mohammed',23],['Ahmed',23],['Henry',23],['Mauri',23],['Vili',23],['Abdul',23],
-              ['Tony',23],['Iiro',22],['Johan',22],['Tom',22],['Nico',22],['Sebastian',22],['Mohamed',21],['Onni',21],['Asko',21],['Rauno',21],['Aapo',21],
-              ['Mohammad',21],['Julius',21],['Robert',21],['Sauli',21],['Akseli',21],['Jami',21],['Jimi',20],['Santtu',20],['Aaro',20],['Aku',20],['Perttu',20],
-              ['Miska',20],['Max',20],['Olavi',19],['Thomas',19],['Teppo',19],['Antero',19],['Ilari',19],['Veli-Matti',19],['Christian',19],['Panu',19],['Niilo',18],
-              ['Kalevi',18],['Sampo',18],['Erik',18],['Jonas',18],['Pyry',18],['Kasper',18],['Aatu',18],['Robin',18],['Ilpo',18],['Veijo',18],['Miko',18],
-              ['Topias',18],['Tino',17],['Oliver',17],['Tarmo',17],['Taneli',17],['Alexander',17],['John',17],['Eemil',17],['Teuvo',17],['Eino',17],['Osmo',17],
-              ['Juha-Pekka',17],['Juha-Matti',16],['Kaj',16],['Lari',16],['Benjamin',16],['Tomas',16],['Pete',15],['Martin',15],['Viljami',15],['Anders',15],
-              ['Kauko',15],['Severi',15],['Karri',15],['Andreas',15],['Stefan',15],['Veli',15],['Jori',15],['Kasperi',15],['Väinö',15],['Olli-Pekka',15],
-              ['Joakim',14],['Jukka-Pekka',14],['Raju',14],['Raja',14],['Ahmad',14],['Tommy',14],['Michael',14],['Ilmari',14],['Malik',14],['Erno',14],['Rajesh',14],
-              ['Reino',14],['Manu',14],['Joonatan',14],['Kyösti',14],['Oskar',14],['Jerry',14],['Elmeri',14],['Veli-Pekka',14],['Teijo',14],['Imran',13],
-              ['Fredrik',13],['Juhana',13]
-            ],
-            modern: [
-              ['Elias',45],['Aleksi',45],['Niko',45],['Onni',26],['Eino',26],['Leevi',26],['Oskari',26],['Väinö',12],['Juuso',12],['Eemil',12],['Miika',12],
-              ['Valtteri',2],['Kari',14],['Markus',14],['Tomi',14],['Joonas',14],['Heikki',14],['Juho',14],['Tuomas',14],['Pasi',14],['Harri',14],['Tommi',14],
-              ['Lauri',14],['Henri',14],['Tero',14],['Olli',14],['Jaakko',14],['Kimmo',14],['Jesse',14],['Jouni',14],['Seppo',14],['Jarmo',14],['Jere',14],
-              ['Vesa',14],['Eetu',14],['Jarkko',14],['Kalle',14],['Arto',14],['Esa',14],['Eero',14],['Mikael',14],['Joona',14],['Risto',14],['Matías',14],['Riku',14],
-              ['Arttu',14],['Jorma',14],['Ilkka',14],['Aki',14],['Santeri',14],['Juhani',14],['Jarno',14],['Tapio',14],['Pertti',14],['Samuli',14],['Erkki',14],
-              ['Tuomo',14],['Petteri',14],['Muhammad',14],['Jyrki',14],['Niklas',14],['Jouko',14],['Simo',14],['Roope',14],['Pentti',14],['Raimo',14],['Joel',14],
-              ['Lasse',14],['Reijo',14],['Otto',14],['Martti',14],['Ali',14],['Kai',14],['Anssi',14],['Atte',14],['Esko',14],['Daniel',14],['Pauli',14],['Jan',14],
-              ['Samu',14],['Miikka',14],['Sakari',14],['Paavo',14],['Rasmus',14],['Anton',14],['Jyri',14],['Saku',14],['Miro',14],['Tapani',14],['Kristian',14],
-              ['Tuukka',14],['Topi',14],['Keijo',14],['Lassi',14]
-            ]
-          },
+          first: [
+            ['Timo',89],['Juhani',39],['Kari',76],['Matti',79],['Pentti',34],['Hannu',63],['Mauri',23],['Esko',30],['Seppo',51],['Leo',23],['Keijo',26],
+            ['Mikko',100],['Juha',96],['Antti',92],['Mika',91],['Ville',91],['Janne',88],['Jari',88],['Sami',86],['Jani',80],['Jukka',80],['Marko',78],['Teemu',76],
+            ['Pekka',74],['Petri',73],['Toni',68],['Jussi',67],['Ari',66],['Markku',65],['Joni',64],['Kimi',14],['Elias',30],['Aleksi',62],['Niko',68],['Onni',21],
+            ['Eino',17],['Leevi',30],['Oskari',36],['Väinö',15],['Juuso',48],['Eemil',17],['Miika',40],['Valtteri',40],['Markus',63],['Tomi',62],['Joonas',62],
+            ['Heikki',61],['Juho',61],['Tuomas',61],['Pasi',61],['Harri',58],['Tommi',58],['Lauri',58],['Henri',56],['Tero',55],['Olli',55],['Jaakko',54],
+            ['Kimmo',53],['Jesse',53],['Jouni',52],['Jarmo',50],['Jere',50],['Vesa',50],['Eetu',49],['Jarkko',48],['Kalle',48],['Arto',48],['Esa',47],['Eero',44],
+            ['Mikael',44],['Joona',44],['Risto',44],['Matías',43],['Riku',43],['Arttu',42],['Jorma',42],['Ilkka',40],['Aki',40],['Santeri',40],['Jarno',39],
+            ['Tapio',39],['Pertti',39],['Samuli',39],['Erkki',38],['Tuomo',37],['Petteri',36],['Muhammad',36],['Jyrki',36],['Niklas',35],['Jouko',35],['Simo',35],
+            ['Roope',34],['Raimo',34],['Joel',34],['Lasse',33],['Reijo',33],['Otto',33],['Martti',32],['Ali',32],['Kai',32],['Anssi',32],['Atte',31],['Daniel',30],
+            ['Pauli',30],['Jan',30],['Samu',29],['Miikka',28],['Sakari',28],['Paavo',28],['Rasmus',28],['Anton',27],['Jyri',27],['Saku',27],['Miro',27],
+            ['Tapani',27],['Kristian',27],['Tuukka',27],['Topi',26],['Lassi',26],['Ossi',26],['Rami',26],['Jonne',26],['Veikko',26],['Tatu',26],['Roni',26],
+            ['Patrik',25],['Eemeli',25],['Veeti',25],['Peter',24],['Ismo',24],['Samuel',24],['Johannes',24],['Konsta',24],['Alex',23],['Mohammed',23],['Ahmed',23],
+            ['Henry',23],['Vili',23],['Abdul',23],['Tony',23],['Iiro',22],['Johan',22],['Tom',22],['Nico',22],['Sebastian',22],['Mohamed',21],['Asko',21],
+            ['Rauno',21],['Aapo',21],['Mohammad',21],['Julius',21],['Robert',21],['Sauli',21],['Akseli',21],['Jami',21],['Jimi',20],['Santtu',20],['Aaro',20],
+            ['Aku',20],['Perttu',20],['Miska',20],['Max',20],['Olavi',19],['Thomas',19],['Teppo',19],['Antero',19],['Ilari',19],['Veli-Matti',19],['Christian',19],
+            ['Panu',19],['Niilo',18],['Kalevi',18],['Sampo',18],['Erik',18],['Jonas',18],['Pyry',18],['Kasper',18],['Aatu',18],['Robin',18],['Ilpo',18],
+            ['Veijo',18],['Miko',18],['Topias',18],['Tino',17],['Oliver',17],['Tarmo',17],['Taneli',17],['Alexander',17],['John',17],['Teuvo',17],['Osmo',17],
+            ['Juha-Pekka',17],['Juha-Matti',16],['Kaj',16],['Lari',16],['Benjamin',16],['Tomas',16],['Pete',15],['Martin',15],['Viljami',15],['Anders',15],
+            ['Kauko',15],['Severi',15],['Karri',15],['Andreas',15],['Stefan',15],['Veli',15],['Jori',15],['Kasperi',15],['Olli-Pekka',15],['Joakim',14],
+            ['Jukka-Pekka',14],['Raju',14],['Raja',14],['Ahmad',14],['Tommy',14],['Michael',14],['Ilmari',14],['Malik',14],['Erno',14],['Rajesh',14],['Reino',14],
+            ['Manu',14],['Joonatan',14],['Kyösti',14],['Oskar',14],['Jerry',14],['Elmeri',14],['Veli-Pekka',14],['Teijo',14],['Imran',13],['Fredrik',13],
+            ['Juhana',13],['Amir',13],['Eelis',13],['Hannes',13],['Ram',13],['Khan',13],['Aimo',13],['Ahti',13],['Kenneth',13],['Ramesh',13],['Harry',13],
+            ['Ari-Pekka',13],['Timi',13],['Patrick',13],['Jesper',13],['David',12],['Simon',12],['Toivo',12],['Waltteri',12],['Jonathan',12],['Rainer',12]
+          ],
           last: [
             ['Virtanen',100],['Korhonen',98],['Nieminen',96],['Mäkinen',94],['Mäkelä',90],['Laine',87],['Koskinen',86],['Heikkinen',86],['Hämäläinen',85],
             ['Lehtonen',82],['Järvinen',82],['Lehtinen',81],['Saarinen',80],['Salminen',78],['Niemi',78],['Heikkilä',77],['Heinonen',76],['Salonen',76],
@@ -1554,47 +1383,32 @@ const NAME_POOLS_BY_NATION = {
     // ── DEN ──
     DEN: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Jens',3],['Ole',3],['Per',3],['Niels',3],['Erik',3],['Henning',2],['Kurt',2],['Poul',2],['Bent',2],['Tom',2]
-            ],
-            mid: [
-              ['Michael',100],['Thomas',99],['Peter',99],['Martin',92],['Henrik',91],['Lars',90],['Christian',87],['Morten',87],['Jesper',85],['Søren',84],
-              ['Anders',82],['Jan',76],['Kim',72],['Jacob',63],['Kasper',61],['Claus',60],['Per',60],['Jens',68],['Daniel',62],['Nicolas',15],['Mads',74],
-              ['Rasmus',74],['Mikkel',67],['Jonas',62],['Simon',60],['Andreas',58],['Ole',58],['Frederik',57],['Brian',56],['Mathias',55],['Niels',53],['John',53],
-              ['Jakob',53],['Carsten',52],['Lasse',51],['Torben',51],['René',51],['Emil',51],['Allan',51],['Kenneth',51],['Jørgen',50],['Kristian',49],['Erik',47],
-              ['Flemming',46],['Dennis',43],['Casper',43],['Sebastian',43],['Alexander',42],['Hans',41],['Oliver',40],['Tobias',40],['Steen',40],['Nicolai',39],
-              ['Ahmad',39],['Bjarne',38],['David',38],['Jeppe',37],['Nikolaj',37],['Patrick',37],['Frank',37],['Bent',36],['Klaus',36],['Finn',36],['Magnus',35],
-              ['Poul',35],['Benjamin',35],['Henning',34],['Mark',33],['Mogens',32],['Mohammed',32],['Tommy',32],['Johnny',32],['Rune',32],['Karsten',32],
-              ['Mohammad',32],['Leif',31],['Dan',31],['Stefan',31],['Kurt',30],['Steffen',30],['Alex',30],['Mustafa',29],['Nicklas',29],['Christoffer',28],
-              ['Ahmed',28],['Philip',28],['Mikael',28],['Adam',27],['Marcus',27],['Mohamed',27],['Tom',27],['Victor',27],['Preben',26],['Mike',26],['Ulrik',26],
-              ['Palle',25],['Troels',25],['Johan',25],['Hassan',24],['Mohamad',24],['Jonathan',24],['Ibrahim',24],['Benny',24],['Arne',24],['Jørn',24],['Bjørn',23],
-              ['Robert',23],['Lucas',23],['Kristoffer',23],['Omar',23],['Mehmet',23],['Svend',23],['Stig',23],['Knud',23],['Gert',23],['Gustav',22],['Chris',22],
-              ['Kevin',22],['William',21],['Johannes',21],['Sune',21],['Kent',20],['Mahmoud',20],['Lukas',20],['Anton',20],['Marc',20],['Ivan',20],['Nick',20],
-              ['Tim',20],['Esben',20],['Jimmy',20],['Keld',20],['Nicolaj',19],['Niklas',19],['Kaj',19],['Max',19],['Christopher',18],['Kjeld',18],['Asger',18],
-              ['Jon',18],['Hasan',18],['Khaled',18],['Bjarke',18],['Joachim',18],['André',17],['Paul',17],['Peder',17],['Jack',17],['Danny',17],['Marco',17],
-              ['Marius',17],['Carl',17],['Uffe',17],['Bilal',16],['Hussein',16],['Erling',16],['Sami',16],['Ove',16],['Thor',16],['Jimmi',16],['Oscar',16],
-              ['Ahmet',16],['Abdullah',16],['Osman',16],['Tonny',16],['Abdul',15],['Jannik',15],['Theis',15],['Amir',15],['Muhammad',15],['Elias',15],['Asbjørn',15],
-              ['Adnan',15],['Karl',15],['Ismail',15],['Malthe',14],['Murat',14],['Viktor',14],['Jes',14],['Noah',14],['Yusuf',14],['Ronni',14],['Adrian',14],
-              ['Phillip',14],['Nikolai',14],['Markus',14],['Joakim',13],['Janus',13],['Sven',13],['Malik',13],['Rolf',13],['Nils',13],['Poul Erik',13],['Malte',13],
-              ['Samir',13],['Abu',13],['Niclas',13],['Hamza',13],['Steven',13],['Albert',13],['Nicholas',13],['Ebbe',13],['Filip',13],['Leo',13],['Oskar',13],
-              ['Ken',12],['Helge',12],['Richard',12],['Gunnar',12],['Samuel',12],['Tomas',12],['Anas',12],['Muhammed',12],['Danni',12],['Walid',12],['Børge',12],
-              ['Jannick',12],['Jamal',12],['Khalid',12],['Freddy',12],['Birger',12],['Silas',12],['Huseyin',12],['James',12],['Lennart',12],['Bruno',12],['Alan',12],
-              ['Hamid',12],['Robin',12],['Gabriel',12]
-            ],
-            modern: [
-              ['Frederik',45],['William',45],['Oscar',45],['Emil',45],['Magnus',45],['Oliver',45],['Christian',45],['Mads',45],['Rasmus',45],['Mikkel',45],
-              ['Jonas',45],['Simon',26],['Malthe',26],['Victor',26],['Noah',26],['Kevin',12],['Andreas',14],['Ole',14],['Brian',14],['Mathias',14],['Niels',14],
-              ['John',14],['Jakob',14],['Carsten',14],['Lasse',14],['Torben',14],['René',14],['Allan',14],['Kenneth',14],['Jørgen',14],['Kristian',14],['Erik',14],
-              ['Flemming',14],['Dennis',14],['Casper',14],['Sebastian',14],['Alexander',14],['Hans',14],['Tobias',14],['Steen',14],['Nicolai',14],['Ahmad',14],
-              ['Bjarne',14],['David',14],['Jeppe',14],['Nikolaj',14],['Patrick',14],['Frank',14],['Bent',14],['Klaus',14],['Finn',14],['Poul',14],['Benjamin',14],
-              ['Henning',14],['Mark',14],['Mogens',14],['Mohammed',14],['Tommy',14],['Johnny',14],['Rune',14],['Karsten',14],['Mohammad',14],['Leif',14],['Dan',14],
-              ['Stefan',14],['Kurt',14],['Steffen',14],['Alex',14],['Mustafa',14],['Nicklas',14],['Christoffer',14],['Ahmed',14],['Philip',14],['Mikael',14],
-              ['Adam',14],['Marcus',14],['Mohamed',14],['Tom',14],['Preben',14],['Mike',14],['Ulrik',14],['Palle',14],['Troels',14],['Johan',14],['Hassan',14],
-              ['Mohamad',14],['Jonathan',14],['Ibrahim',14],['Benny',14],['Arne',14],['Jørn',14],['Bjørn',14],['Robert',14],['Lucas',14],['Kristoffer',14],
-              ['Omar',14]
-            ]
-          },
+          first: [
+            ['Jens',68],['Ole',58],['Per',60],['Niels',53],['Erik',47],['Henning',34],['Kurt',30],['Poul',35],['Bent',36],['Tom',27],['Michael',100],['Thomas',99],
+            ['Peter',99],['Martin',92],['Henrik',91],['Lars',90],['Christian',87],['Morten',87],['Jesper',85],['Søren',84],['Anders',82],['Jan',76],['Kim',72],
+            ['Jacob',63],['Kasper',61],['Claus',60],['Daniel',62],['Nicolas',15],['Frederik',57],['William',21],['Oscar',16],['Emil',51],['Magnus',35],
+            ['Oliver',40],['Mads',74],['Rasmus',74],['Mikkel',67],['Jonas',62],['Simon',60],['Malthe',14],['Victor',27],['Noah',14],['Kevin',22],['Andreas',58],
+            ['Brian',56],['Mathias',55],['John',53],['Jakob',53],['Carsten',52],['Lasse',51],['Torben',51],['René',51],['Allan',51],['Kenneth',51],['Jørgen',50],
+            ['Kristian',49],['Flemming',46],['Dennis',43],['Casper',43],['Sebastian',43],['Alexander',42],['Hans',41],['Tobias',40],['Steen',40],['Nicolai',39],
+            ['Ahmad',39],['Bjarne',38],['David',38],['Jeppe',37],['Nikolaj',37],['Patrick',37],['Frank',37],['Klaus',36],['Finn',36],['Benjamin',35],['Mark',33],
+            ['Mogens',32],['Mohammed',32],['Tommy',32],['Johnny',32],['Rune',32],['Karsten',32],['Mohammad',32],['Leif',31],['Dan',31],['Stefan',31],['Steffen',30],
+            ['Alex',30],['Mustafa',29],['Nicklas',29],['Christoffer',28],['Ahmed',28],['Philip',28],['Mikael',28],['Adam',27],['Marcus',27],['Mohamed',27],
+            ['Preben',26],['Mike',26],['Ulrik',26],['Palle',25],['Troels',25],['Johan',25],['Hassan',24],['Mohamad',24],['Jonathan',24],['Ibrahim',24],['Benny',24],
+            ['Arne',24],['Jørn',24],['Bjørn',23],['Robert',23],['Lucas',23],['Kristoffer',23],['Omar',23],['Mehmet',23],['Svend',23],['Stig',23],['Knud',23],
+            ['Gert',23],['Gustav',22],['Chris',22],['Johannes',21],['Sune',21],['Kent',20],['Mahmoud',20],['Lukas',20],['Anton',20],['Marc',20],['Ivan',20],
+            ['Nick',20],['Tim',20],['Esben',20],['Jimmy',20],['Keld',20],['Nicolaj',19],['Niklas',19],['Kaj',19],['Max',19],['Christopher',18],['Kjeld',18],
+            ['Asger',18],['Jon',18],['Hasan',18],['Khaled',18],['Bjarke',18],['Joachim',18],['André',17],['Paul',17],['Peder',17],['Jack',17],['Danny',17],
+            ['Marco',17],['Marius',17],['Carl',17],['Uffe',17],['Bilal',16],['Hussein',16],['Erling',16],['Sami',16],['Ove',16],['Thor',16],['Jimmi',16],
+            ['Ahmet',16],['Abdullah',16],['Osman',16],['Tonny',16],['Abdul',15],['Jannik',15],['Theis',15],['Amir',15],['Muhammad',15],['Elias',15],['Asbjørn',15],
+            ['Adnan',15],['Karl',15],['Ismail',15],['Murat',14],['Viktor',14],['Jes',14],['Yusuf',14],['Ronni',14],['Adrian',14],['Phillip',14],['Nikolai',14],
+            ['Markus',14],['Joakim',13],['Janus',13],['Sven',13],['Malik',13],['Rolf',13],['Nils',13],['Poul Erik',13],['Malte',13],['Samir',13],['Abu',13],
+            ['Niclas',13],['Hamza',13],['Steven',13],['Albert',13],['Nicholas',13],['Ebbe',13],['Filip',13],['Leo',13],['Oskar',13],['Ken',12],['Helge',12],
+            ['Richard',12],['Gunnar',12],['Samuel',12],['Tomas',12],['Anas',12],['Muhammed',12],['Danni',12],['Walid',12],['Børge',12],['Jannick',12],['Jamal',12],
+            ['Khalid',12],['Freddy',12],['Birger',12],['Silas',12],['Huseyin',12],['James',12],['Lennart',12],['Bruno',12],['Alan',12],['Hamid',12],['Robin',12],
+            ['Gabriel',12],['Ömer',12],['Jim',12],['Sam',12],['Sten',12],['Said',12],['Youssef',12],['August',12],['Yasin',12],['Vagn',12],['Deniz',11],['Egon',11],
+            ['Aksel',11],['Amin',11],['Matías',11],['Axel',11],['Julius',11],['Tony',11],['Holger',11],['Ramazan',11],['Paw',11],['Abo',11],['Stephan',11],
+            ['Kenn',11]
+          ],
           last: [
             ['Nielsen',100],['Jensen',99],['Hansen',94],['Andersen',79],['Pedersen',75],['Larsen',65],['Christensen',64],['Sørensen',61],['Rasmussen',57],
             ['Jørgensen',53],['Petersen',50],['Madsen',46],['Kristensen',43],['Olsen',39],['Thomsen',37],['Christiansen',33],['Møller',33],['Poulsen',32],
@@ -1638,19 +1452,12 @@ const NAME_POOLS_BY_NATION = {
     // ── AUS ──
     AUS: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Jack',4],['Frank',3],['Alan',3],['Ken',3],['Ron',3],['Bill',3],['Paul',3],['Keith',2],['Doug',2],['Les',2],['Tim',2],['Vern',1]
-            ],
-            mid: [
-              ['Mark',4],['David',4],['Daniel',4],['James',4],['Michael',4],['Craig',3],['Wayne',3],['Brett',3],['Shane',3],['Jason',3],['Ryan',3],['Scott',3],
-              ['Cameron',3],['Troy',2]
-            ],
-            modern: [
-              ['Jack',4],['Oscar',4],['Liam',4],['Noah',3],['Lachlan',3],['Cooper',3],['Riley',3],['Ethan',3],['Harrison',3],['Mitch',3],['Hunter',2],['Flynn',2],
-              ['Kai',2],['Broc',1]
-            ]
-          },
+          first: [
+            ['Jack',4],['Frank',3],['Alan',3],['Ken',3],['Ron',3],['Bill',3],['Paul',3],['Keith',2],['Doug',2],['Les',2],['Tim',2],['Vern',1],['Mark',4],
+            ['David',4],['Daniel',4],['James',4],['Michael',4],['Craig',3],['Wayne',3],['Brett',3],['Shane',3],['Jason',3],['Ryan',3],['Scott',3],['Cameron',3],
+            ['Troy',2],['Oscar',4],['Liam',4],['Noah',3],['Lachlan',3],['Cooper',3],['Riley',3],['Ethan',3],['Harrison',3],['Mitch',3],['Hunter',2],['Flynn',2],
+            ['Kai',2],['Broc',1]
+          ],
           last: [
             ['Smith',5],['Jones',4],['Williams',4],['Brown',4],['Wilson',4],['Taylor',4],['Johnson',3],['White',3],['Martin',3],['Anderson',3],['Thompson',3],
             ['Walker',3],['Kelly',3],['Murphy',3],['Campbell',3],['Harvey',2],['Mitchell',2],['Stewart',2],['Ryan',2],['McLaughlin',2],['O\'Brien',2],['Hartley',1],
@@ -1661,17 +1468,11 @@ const NAME_POOLS_BY_NATION = {
     // ── NZL ──
     NZL: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Chris',3],['Graham',2],['Tony',2],['Ross',2],['Graeme',2],['Ian',2],['Bob',2],['Bruce',2],['Howden',1],['Denny',1]
-            ],
-            mid: [
-              ['Scott',3],['Craig',3],['Greg',3],['Simon',3],['Andrew',3],['Matthew',3],['Daniel',3],['Mark',3],['Shane',2],['Brendon',2]
-            ],
-            modern: [
-              ['Liam',3],['Callum',3],['Oliver',3],['Ryan',3],['Marcus',2],['Hunter',2],['Mitchell',2],['Louis',2],['Flynn',2],['Jaxon',1]
-            ]
-          },
+          first: [
+            ['Chris',3],['Graham',2],['Tony',2],['Ross',2],['Graeme',2],['Ian',2],['Bob',2],['Bruce',2],['Howden',1],['Denny',1],['Scott',3],['Craig',3],['Greg',3],
+            ['Simon',3],['Andrew',3],['Matthew',3],['Daniel',3],['Mark',3],['Shane',2],['Brendon',2],['Liam',3],['Callum',3],['Oliver',3],['Ryan',3],['Marcus',2],
+            ['Hunter',2],['Mitchell',2],['Louis',2],['Flynn',2],['Jaxon',1]
+          ],
           last: [
             ['Smith',4],['Wilson',3],['Williams',3],['Brown',3],['Taylor',3],['Anderson',3],['Walker',3],['Clark',3],['Thomas',2],['Harris',2],['Scott',2],
             ['Mitchell',2],['Campbell',2],['Stewart',2],['McKenzie',2],['McRae',1],['O\'Sullivan',1],['Amon',1]
@@ -1681,42 +1482,29 @@ const NAME_POOLS_BY_NATION = {
     // ── CAN ──
     CAN: { regions: [
         { w: 0.55,
-          first: {
-            early: [
-              ['John',4],['George',3],['Peter',3],['Bill',3],['David',3],['Al',2],['Ron',2],['Eppie',1]
-            ],
-            mid: [
-              ['David',100],['Michael',95],['Mike',85],['Chris',85],['Kevin',76],['Ryan',75],['Andrew',76],['Jason',71],['Mark',70],['Scott',50],['Paul',72],
-              ['Greg',40],['Matt',58],['Justin',57],['Brian',56],['Adam',60],['John',96],['Alex',74],['James',68],['Peter',65],['Robert',61],['Steve',60],
-              ['Matthew',58],['Richard',56],['Dave',55],['Nick',54],['Jeff',54],['Tony',53],['Joe',52],['Jonathan',52],['Anthony',51],['Kyle',51],['Sam',51],
-              ['Dan',48],['Jordan',47],['Tyler',46],['Sean',46],['Rob',46],['Josh',45],['Steven',45],['Brandon',45],['George',45],['Ben',44],['Joseph',44],['Jay',43],
-              ['William',43],['Stephen',43],['Aaron',41],['Thomas',41],['Simon',41],['Tim',41],['Tom',40],['Christopher',40],['Ken',40],['Frank',39],['Ian',39],
-              ['Bob',39],['Nathan',38],['Shawn',38],['Marc',38],['Jim',38],['Jack',38],['Gary',38],['Andy',37],['Brad',37],['Carlos',36],['Jérémy',36],['Derek',36],
-              ['Christian',36],['Danny',35],['Bill',35],['Joshua',35],['Jacob',35],['André',34],['Charles',34],['Rick',34],['Mario',34],['Trevor',34],['Jesse',34],
-              ['Victor',33],['Jose',33],['Ron',32],['Dylan',32],['Colin',32],['Gabriel',32],['Omar',32],['Joel',32],['Vincent',32],['Jake',32],['Nicholas',31],
-              ['Jamie',31],['Craig',30],['Don',30],['Wayne',30],['Adrian',30],['Alexander',30],['Jon',30],['Shane',29],['Alan',29],['Terry',29],['Bryan',29],
-              ['Darren',29],['Doug',28],['Henry',28],['Luis',28],['Jimmy',28],['Max',28],['Nicolas',28],['Johnny',28],['Keith',28],['Francis',27],['Evan',27],
-              ['Dennis',27],['Raymond',27],['Juan',27],['Marco',27],['Randy',27],['Harry',27],['Lucas',26],['Luke',26],['Cody',26],['Ray',26],['Roger',26],
-              ['Neil',26],['François',26],['Bruce',26],['Hassan',26],['Benjamin',26],['Alain',25],['Chad',25],['Phil',25],['Cameron',25],['Amir',25],['Travis',25],
-              ['Philip',25],['Ivan',25],['Antonio',24],['Liam',24],['Edward',24],['Allan',24],['Will',24],['Jeffrey',24],['Brent',24],['Connor',24],['Austin',24],
-              ['Gurpreet',24],['Jerry',24],['Brett',24],['Joey',24],['Fred',24],['Ethan',24],['Sébastien',23],['Dean',23],['Larry',23],['Abdul',23],['Aman',23],
-              ['Léo',23],['Curtis',23],['Jorge',23],['Bobby',23],['Sunny',23],['Philippe',23],['Maxime',23],['Louis',22],['Todd',22],['Brendan',22],['Carl',22],
-              ['Albert',22],['Miguel',22],['Corey',22],['Cory',22],['Barry',22],['Ricardo',22],['Noah',22],['Julian',21],['Karan',21],['Ricky',21],['Guy',21],
-              ['Gordon',21],['Emmanuel',21],['Tommy',21],['Pat',21],['Taylor',21],['Dustin',21],['Robin',21],['Ibrahim',20],['Serge',20],['Marcus',20],['Jared',20],
-              ['Spencer',20],['Cole',20],['Zach',20],['Mitchell',20],['Sebastian',20],['Dominic',20],['Billy',20],['Graham',20],['Fernando',20],['Roberto',20],
-              ['Isaac',20],['Manuel',19],['Vince',19],['Bruno',19],['Ravi',19],['Dale',19]
-            ],
-            modern: [
-              ['Liam',26],['Ethan',26],['Owen',26],['Noah',26],['Jacob',26],['Lucas',26],['Tyler',26],['Lance',2],['John',14],['Alex',14],['James',14],['Peter',14],
-              ['Robert',14],['Steve',14],['Matthew',14],['Richard',14],['Dave',14],['Nick',14],['Jeff',14],['Tony',14],['Joe',14],['Jonathan',14],['Anthony',14],
-              ['Kyle',14],['Sam',14],['Dan',14],['Jordan',14],['Sean',14],['Rob',14],['Josh',14],['Steven',14],['Brandon',14],['George',14],['Ben',14],['Joseph',14],
-              ['Jay',14],['William',14],['Stephen',14],['Aaron',14],['Thomas',14],['Simon',14],['Tim',14],['Tom',14],['Christopher',14],['Ken',14],['Frank',14],
-              ['Ian',14],['Bob',14],['Nathan',14],['Shawn',14],['Marc',14],['Jim',14],['Jack',14],['Gary',14],['Andy',14],['Brad',14],['Carlos',14],['Jérémy',14],
-              ['Derek',14],['Christian',14],['Danny',14],['Bill',14],['Joshua',14],['André',14],['Charles',14],['Rick',14],['Mario',14],['Trevor',14],['Jesse',14],
-              ['Victor',14],['Jose',14],['Ron',14],['Dylan',14],['Colin',14],['Gabriel',14],['Omar',14],['Joel',14],['Vincent',14],['Jake',14],['Nicholas',14],
-              ['Jamie',14],['Craig',14],['Don',14],['Wayne',14],['Adrian',14],['Alexander',14],['Jon',14]
-            ]
-          },
+          first: [
+            ['John',96],['George',45],['Peter',65],['Bill',35],['David',100],['Al',12],['Ron',32],['Eppie',2],['Michael',95],['Mike',85],['Chris',85],['Kevin',76],
+            ['Ryan',75],['Andrew',76],['Jason',71],['Mark',70],['Scott',50],['Paul',72],['Greg',40],['Matt',58],['Justin',57],['Brian',56],['Adam',60],['Liam',24],
+            ['Ethan',24],['Owen',18],['Noah',22],['Jacob',35],['Lucas',26],['Tyler',46],['Lance',12],['Alex',74],['James',68],['Robert',61],['Steve',60],
+            ['Matthew',58],['Dave',55],['Nick',54],['Jeff',54],['Tony',53],['Joe',52],['Jonathan',52],['Anthony',51],['Kyle',51],['Sam',51],['Dan',48],
+            ['Jordan',47],['Sean',46],['Rob',46],['Josh',45],['Steven',45],['Brandon',45],['Ben',44],['Joseph',44],['Jay',43],['William',43],['Stephen',43],
+            ['Aaron',41],['Thomas',41],['Simon',41],['Tim',41],['Tom',40],['Christopher',40],['Ken',40],['Frank',39],['Ian',39],['Bob',39],['Shawn',38],['Marc',38],
+            ['Jim',38],['Jack',38],['Gary',38],['Andy',37],['Brad',37],['Carlos',36],['Jérémy',36],['Derek',36],['Christian',36],['Danny',35],['Joshua',35],
+            ['André',34],['Charles',34],['Rick',34],['Mario',34],['Trevor',34],['Jesse',34],['Victor',33],['Jose',33],['Dylan',32],['Colin',32],['Gabriel',32],
+            ['Omar',32],['Joel',32],['Vincent',32],['Jake',32],['Nicholas',31],['Jamie',31],['Craig',30],['Don',30],['Wayne',30],['Adrian',30],['Alexander',30],
+            ['Jon',30],['Shane',29],['Alan',29],['Terry',29],['Bryan',29],['Darren',29],['Doug',28],['Henry',28],['Luis',28],['Jimmy',28],['Max',28],['Nicolas',28],
+            ['Johnny',28],['Keith',28],['Francis',27],['Evan',27],['Dennis',27],['Raymond',27],['Juan',27],['Marco',27],['Randy',27],['Harry',27],['Luke',26],
+            ['Cody',26],['Ray',26],['Roger',26],['Neil',26],['François',26],['Bruce',26],['Hassan',26],['Benjamin',26],['Alain',25],['Chad',25],['Phil',25],
+            ['Cameron',25],['Amir',25],['Travis',25],['Philip',25],['Ivan',25],['Antonio',24],['Edward',24],['Allan',24],['Will',24],['Jeffrey',24],['Brent',24],
+            ['Connor',24],['Austin',24],['Gurpreet',24],['Jerry',24],['Brett',24],['Joey',24],['Fred',24],['Sébastien',23],['Dean',23],['Larry',23],['Abdul',23],
+            ['Aman',23],['Léo',23],['Curtis',23],['Jorge',23],['Bobby',23],['Sunny',23],['Philippe',23],['Maxime',23],['Louis',22],['Todd',22],['Brendan',22],
+            ['Carl',22],['Albert',22],['Miguel',22],['Corey',22],['Cory',22],['Barry',22],['Ricardo',22],['Julian',21],['Karan',21],['Ricky',21],['Guy',21],
+            ['Gordon',21],['Emmanuel',21],['Tommy',21],['Pat',21],['Taylor',21],['Dustin',21],['Robin',21],['Ibrahim',20],['Serge',20],['Marcus',20],['Jared',20],
+            ['Spencer',20],['Cole',20],['Zach',20],['Mitchell',20],['Sebastian',20],['Dominic',20],['Billy',20],['Graham',20],['Fernando',20],['Roberto',20],
+            ['Isaac',20],['Manuel',19],['Vince',19],['Bruno',19],['Ravi',19],['Dale',19],['Nelson',19],['Kenneth',19],['Harpreet',19],['Oscar',19],['Shaun',19],
+            ['Troy',19],['Tristan',19],['Rahul',19],['Donald',19],['Khalid',19],['Kamal',19],['Ronald',19],['Kris',19],['Sandeep',18],['Drew',18],['Erik',18],
+            ['Logan',18]
+          ],
           last: [
             ['Smith',66],['Brown',47],['Wilson',35],['Campbell',32],['Stewart',25],['MacDonald',28],['Taylor',32],['Anderson',31],['Johnson',40],['Williams',39],
             ['Scott',27],['Ross',22],['Murray',20],['Fraser',19],['Graham',20],['Hill',19],['Jones',36],['Miller',30],['James',30],['Thompson',30],['Joseph',29],
@@ -1746,18 +1534,11 @@ const NAME_POOLS_BY_NATION = {
             ['Gee',11],['Jacob',11],['Chapman',11],['Osman',11]
           ] },
         { w: 0.33,
-          first: {
-            early: [
-              ['Jean',3],['Claude',3],['Jacques',3],['Marcel',2],['Richard',2],['Gilles',2]
-            ],
-            mid: [
-              ['Patrick',53],['Alexandre',27],['Éric',61],['Stéphane',25],['Mathieu',26],['Sylvain',21],['Martin',41],['Michel',33],['Samuel',33],['Pierre',32],
-              ['Jean',29],['Denis',26],['Claude',22],['Luc',21],['Olivier',21],['Roy',20],['Jacques',20]
-            ],
-            modern: [
-              ['Félix',26],['Olivier',26],['Nathan',26],['Samuel',26],['Xavier',12],['Émile',12],['Martin',14],['Michel',14],['Pierre',14]
-            ]
-          },
+          first: [
+            ['Jean',29],['Claude',22],['Jacques',20],['Marcel',17],['Richard',56],['Gilles',16],['Patrick',53],['Alexandre',27],['Éric',61],['Stéphane',25],
+            ['Mathieu',26],['Sylvain',21],['Félix',16],['Olivier',21],['Nathan',38],['Samuel',33],['Xavier',15],['Émile',12],['Martin',41],['Michel',33],
+            ['Pierre',32],['Denis',26],['Luc',21],['Roy',20],['Guillaume',19]
+          ],
           last: [
             ['Tremblay',25],['Gagnon',21],['Roy',26],['Côté',19],['Bouchard',16],['Gauthier',19],['Morin',17],['Lavoie',15],['Fortin',14],['Bergeron',14],
             ['Pelletier',15],['Villeneuve',9],['Leblanc',20],['Belanger',16],['Levesque',15],['Poirier',14],['Gagné',14],['Boucher',14],['Fournier',13],
@@ -1783,50 +1564,34 @@ const NAME_POOLS_BY_NATION = {
     // ── MEX ──
     MEX: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['José',4],['Juan',4],['Carlos',4],['Pedro',3],['Ricardo',3],['Miguel',3],['Jesús',3],['Roberto',3],['Guillermo',2],['Rodolfo',2],['Héctor',2],
-              ['Moisés',1]
-            ],
-            mid: [
-              ['José',100],['Juan',87],['Luis',86],['Carlos',85],['Jesús',83],['Jorge',70],['Alejandro',67],['Miguel',62],['Ángel',65],['Manuel',60],['Eduardo',59],
-              ['Fernando',58],['Francisco',57],['Antonio',57],['Javier',56],['Ricardo',51],['Óscar',50],['Pedro',49],['Víctor',52],['Roberto',48],['Alberto',48],
-              ['Mario',48],['Sergio',46],['Gerardo',45],['Arturo',44],['Daniel',64],['David',53],['César',47],['Martín',45],['José Luis',44],['Raúl',43],
-              ['Armando',42],['Alex',42],['Héctor',42],['Omar',41],['Iván',40],['Diego',40],['Alfredo',40],['Edgar',40],['Enrique',39],['Adrián',38],['Rafael',37],
-              ['Andrés',37],['Julio',36],['Gabriel',36],['Juan Carlos',35],['Pablo',34],['Gustavo',33],['Jaime',32],['Rubén',32],['Miguel Ángel',31],['Hugo',31],
-              ['Marco',31],['Guillermo',31],['Alexis',30],['Ramón',30],['Alan',30],['Felipe',30],['Erick',30],['Jonathan',30],['Cristian',29],['Rodrigo',29],
-              ['Salvador',29],['Israel',28],['Ernesto',28],['Saul',28],['Kevin',27],['Marcos',27],['Joel',27],['Josue',26],['Santiago',26],['Emmanuel',26],
-              ['Alfonso',26],['Mauricio',25],['Abraham',25],['Leonardo',25],['Ismael',24],['Samuel',24],['Rodolfo',23],['Christian',23],['Rogelio',22],
-              ['Gilberto',22],['Humberto',22],['Uriel',22],['Esteban',22],['Brayan',22],['Juan Manuel',21],['Beto',21],['Rene',21],['Marco Antonio',21],
-              ['Jose Antonio',21],['Agustín',21],['Sebastián',21],['José Manuel',21],['Noe',21],['Pepe',21],['Lalo',20],['Moises',20],['Julián',20],['Ulises',20],
-              ['Ignacio',20],['Abel',19],['Leo',19],['Axel',19],['Brandon',19],['Vicente',19],['Alonso',19],['Fabián',19],['Ramiro',19],['Isaac',19],['Adan',19],
-              ['Emilio',18],['Aaron',18],['German',18],['Tomás',18],['Erik',18],['Francisco Javier',18],['Alvaro',18],['Adolfo',17],['Juan Jose',17],['Paco',17],
-              ['Octavio',17],['Alexander',17],['Aldo',17],['Efrain',17],['Tony',17],['Victor Manuel',17],['Joaquín',17],['Edwin',16],['Orlando',16],
-              ['Julio Cesar',16],['Gonzalo',16],['Charly',16],['Benjamin',16],['Felix',16],['Luis Alberto',16],['Osvaldo',16],['Toño',16],['Elias',16],['Bryan',16],
-              ['Emiliano',16],['Guadalupe',16],['Juan Pablo',15],['Leonel',15],['Nicolás',15],['Fer',15],['Misael',15],['Rolando',15],['Raymundo',15],['Lorenzo',14],
-              ['Luis Angel',14],['Juan Antonio',14],['Chuy',14],['Fidel',14],['Emanuel',14],['Roman',14],['Isidro',14],['Rigoberto',14],['Bernardo',14],
-              ['Jorge Luis',14],['Oswaldo',13],['Rafa',13],['Santos',13],['Gael',13],['Heriberto',13],['Benito',13],['Irving',13],['Gregorio',13],['Junior',13],
-              ['Valentin',13],['Fredy',13],['Max',13],['Ezequiel',13],['Luis Fernando',13],['Jose Angel',13],['Luis Enrique',12],['Genaro',12],['Efren',12],
-              ['Mariano',12],['Isaias',12],['Federico',12],['Damian',12],['Jair',12],['Nestor',12],['Pancho',11],['Mauro',11],['Kike',11],['Mike',11],['Frank',11],
-              ['Aurelio',11],['Ariel',11],['Jose Guadalupe',11],['Cruz',11],['Dany',11],['Jairo',11],['Jose Alfredo',11],['Brian',11],['Eric',11],['Mateo',11],
-              ['Jose Alberto',11],['Carlos Alberto',11],['Joseluis',11],['Jose Juan',11],['Lucio',11],['Yahir',11],['Oliver',10],['Marcelo',10],['Eleazar',10],
-              ['Richard',10],['Robert',10],['Horacio',10],['Braulio',10],['Rey',10],['Giovanni',10],['Yair',10],['Marcelino',10],['Dani',10],['Paul',10],
-              ['Victor Hugo',10],['Luis Antonio',10],['Reyes',10],['Eliseo',10],['Domingo',10],['Mario Alberto',10],['Roger',10],['Rigo',10],['Reynaldo',10],
-              ['Freddy',10],['Danny',10],['Bruno',10],['Jorge Alberto',9],['Dario',9],['Claudio',9],['Nacho',9],['Joshua',9]
-            ],
-            modern: [
-              ['Santiago',45],['Diego',45],['Mateo',45],['Sebastián',45],['Emiliano',26],['Leonardo',26],['Andrés',26],['Daniel',26],['Alexis',12],['Patricio',12],
-              ['Emilio',12],['Sergio',12],['David',14],['César',14],['Martín',14],['José Luis',14],['Raúl',14],['Armando',14],['Alex',14],['Héctor',14],['Omar',14],
-              ['Iván',14],['Alfredo',14],['Edgar',14],['Enrique',14],['Adrián',14],['Rafael',14],['Julio',14],['Gabriel',14],['Juan Carlos',14],['Pablo',14],
-              ['Gustavo',14],['Jaime',14],['Rubén',14],['Miguel Ángel',14],['Hugo',14],['Marco',14],['Guillermo',14],['Ramón',14],['Alan',14],['Felipe',14],
-              ['Erick',14],['Jonathan',14],['Cristian',14],['Rodrigo',14],['Salvador',14],['Israel',14],['Ernesto',14],['Saul',14],['Kevin',14],['Marcos',14],
-              ['Joel',14],['Josue',14],['Emmanuel',14],['Alfonso',14],['Mauricio',14],['Abraham',14],['Ismael',14],['Samuel',14],['Rodolfo',14],['Christian',14],
-              ['Rogelio',14],['Gilberto',14],['Humberto',14],['Uriel',14],['Esteban',14],['Brayan',14],['Juan Manuel',14],['Beto',14],['Rene',14],
-              ['Marco Antonio',14],['Jose Antonio',14],['Agustín',14],['José Manuel',14],['Noe',14],['Pepe',14],['Lalo',14],['Moises',14],['Julián',14],['Ulises',14],
-              ['Ignacio',14],['Abel',14],['Leo',14],['Axel',14],['Brandon',14],['Vicente',14],['Alonso',14],['Fabián',14],['Ramiro',14],['Isaac',14],['Adan',14],
-              ['Aaron',14],['German',14],['Tomás',14]
-            ]
-          },
+          first: [
+            ['José',100],['Juan',87],['Carlos',85],['Pedro',49],['Ricardo',51],['Miguel',62],['Jesús',83],['Roberto',48],['Guillermo',31],['Rodolfo',23],
+            ['Héctor',42],['Moisés',20],['Luis',86],['Jorge',70],['Alejandro',67],['Ángel',65],['Manuel',60],['Eduardo',59],['Fernando',58],['Francisco',57],
+            ['Antonio',57],['Javier',56],['Óscar',50],['Víctor',52],['Alberto',48],['Mario',48],['Sergio',46],['Gerardo',45],['Arturo',44],['Santiago',26],
+            ['Diego',40],['Mateo',11],['Sebastián',21],['Emiliano',16],['Leonardo',25],['Andrés',37],['Daniel',64],['Alexis',30],['Patricio',8],['Emilio',18],
+            ['David',53],['César',47],['Martín',45],['José Luis',44],['Raúl',43],['Armando',42],['Alex',42],['Omar',41],['Iván',40],['Alfredo',40],['Edgar',40],
+            ['Enrique',39],['Adrián',38],['Rafael',37],['Julio',36],['Gabriel',36],['Juan Carlos',35],['Pablo',34],['Gustavo',33],['Jaime',32],['Rubén',32],
+            ['Miguel Ángel',31],['Hugo',31],['Marco',31],['Ramón',30],['Alan',30],['Felipe',30],['Erick',30],['Jonathan',30],['Cristian',29],['Rodrigo',29],
+            ['Salvador',29],['Israel',28],['Ernesto',28],['Saul',28],['Kevin',27],['Marcos',27],['Joel',27],['Josue',26],['Emmanuel',26],['Alfonso',26],
+            ['Mauricio',25],['Abraham',25],['Ismael',24],['Samuel',24],['Christian',23],['Rogelio',22],['Gilberto',22],['Humberto',22],['Uriel',22],['Esteban',22],
+            ['Brayan',22],['Juan Manuel',21],['Beto',21],['Rene',21],['Marco Antonio',21],['Jose Antonio',21],['Agustín',21],['José Manuel',21],['Noe',21],
+            ['Pepe',21],['Lalo',20],['Julián',20],['Ulises',20],['Ignacio',20],['Abel',19],['Leo',19],['Axel',19],['Brandon',19],['Vicente',19],['Alonso',19],
+            ['Fabián',19],['Ramiro',19],['Isaac',19],['Adan',19],['Aaron',18],['German',18],['Tomás',18],['Erik',18],['Francisco Javier',18],['Alvaro',18],
+            ['Adolfo',17],['Juan Jose',17],['Paco',17],['Octavio',17],['Alexander',17],['Aldo',17],['Efrain',17],['Tony',17],['Victor Manuel',17],['Joaquín',17],
+            ['Edwin',16],['Orlando',16],['Julio Cesar',16],['Gonzalo',16],['Charly',16],['Benjamin',16],['Felix',16],['Luis Alberto',16],['Osvaldo',16],['Toño',16],
+            ['Elias',16],['Bryan',16],['Guadalupe',16],['Juan Pablo',15],['Leonel',15],['Nicolás',15],['Fer',15],['Misael',15],['Rolando',15],['Raymundo',15],
+            ['Lorenzo',14],['Luis Angel',14],['Juan Antonio',14],['Chuy',14],['Fidel',14],['Emanuel',14],['Roman',14],['Isidro',14],['Rigoberto',14],
+            ['Bernardo',14],['Jorge Luis',14],['Oswaldo',13],['Rafa',13],['Santos',13],['Gael',13],['Heriberto',13],['Benito',13],['Irving',13],['Gregorio',13],
+            ['Junior',13],['Valentin',13],['Fredy',13],['Max',13],['Ezequiel',13],['Luis Fernando',13],['Jose Angel',13],['Luis Enrique',12],['Genaro',12],
+            ['Efren',12],['Mariano',12],['Isaias',12],['Federico',12],['Damian',12],['Jair',12],['Nestor',12],['Pancho',11],['Mauro',11],['Kike',11],['Mike',11],
+            ['Frank',11],['Aurelio',11],['Ariel',11],['Jose Guadalupe',11],['Cruz',11],['Dany',11],['Jairo',11],['Jose Alfredo',11],['Brian',11],['Eric',11],
+            ['Jose Alberto',11],['Carlos Alberto',11],['Joseluis',11],['Jose Juan',11],['Lucio',11],['Yahir',11],['Oliver',10],['Marcelo',10],['Eleazar',10],
+            ['Richard',10],['Robert',10],['Horacio',10],['Braulio',10],['Rey',10],['Giovanni',10],['Yair',10],['Marcelino',10],['Dani',10],['Paul',10],
+            ['Victor Hugo',10],['Luis Antonio',10],['Reyes',10],['Eliseo',10],['Domingo',10],['Mario Alberto',10],['Roger',10],['Rigo',10],['Reynaldo',10],
+            ['Freddy',10],['Danny',10],['Bruno',10],['Jorge Alberto',9],['Dario',9],['Claudio',9],['Nacho',9],['Joshua',9],['Hilario',9],['Javi',9],
+            ['Jose De Jesus',9],['Fermin',9],['Gil',9],['Margarito',9],['Arnulfo',9],['Eder',9],['Lazaro',9],['Cristobal',9],['Xavier',9],['William',9],['Irvin',9],
+            ['Franco',9]
+          ],
           last: [
             ['Hernández',100],['García',85],['Martínez',82],['López',80],['González',70],['Rodríguez',69],['Pérez',65],['Sánchez',64],['Ramírez',59],['Flores',50],
             ['Torres',45],['Cruz',43],['Morales',43],['Reyes',42],['Gómez',45],['Mendoza',38],['Vázquez',41],['Díaz',39],['Castillo',35],['Ruiz',35],['Aguilar',34],
@@ -1870,40 +1635,27 @@ const NAME_POOLS_BY_NATION = {
     // ── RSA ──
     RSA: { regions: [
         { w: 0.4,
-          first: {
-            early: [
-              ['Tony',3],['Peter',3],['John',3],['Dave',3],['Ian',3],['Neville',2],['Doug',2],['Trevor',2],['Basil',1],['Paddy',1]
-            ],
-            mid: [
-              ['Gary',22],['Craig',30],['Kevin',39],['Mark',42],['Wayne',34],['Shaun',41],['Brad',12],['Grant',23],['John',83],['David',80],['Michael',72],
-              ['Peter',68],['Daniel',60],['Patrick',60],['Joseph',60],['Chris',60],['James',58],['Paul',56],['Simón',54],['George',53],['Nhlanhla',53],['Ayanda',53],
-              ['Simphiwe',52],['Thato',52],['Richard',51],['Sabelo',51],['Samuel',51],['Njabulo',51],['Charles',50],['Sizwe',50],['Mike',50],['Andrew',49],
-              ['William',49],['Prince',49],['Sfiso',49],['Brian',48],['Thomas',48],['Gift',48],['Víctor',47],['Martín',47],['Isaac',47],['Sello',47],['Musa',47],
-              ['Sihle',46],['Vincent',45],['Sam',44],['Mxolisi',44],['Teboho',44],['Emmanuel',43],['Robert',43],['Eric',42],['Sifiso',42],['Alex',42],['Bheki',42],
-              ['Godfrey',40],['Jacques',40],['Steven',40],['Jabulani',39],['Jason',39],['Christopher',39],['Sphamandla',39],['Lucas',39],['Itumeleng',39],
-              ['Lindokuhle',39],['Dumisani',38],['León',38],['Innocent',38],['Senzo',38],['Thokozani',38],['Frans',37],['Sthembiso',37],['Jonathan',36],['Joe',36],
-              ['Edward',36],['Louis',36],['Thando',36],['Ben',35],['Given',35],['Nathi',35],['Raymond',35],['Kenneth',35],['Anele',35],['Lawrence',35],['Ernest',35],
-              ['Siya',34],['Andries',34],['Junior',34],['Justin',34],['Nico',34],['Stephen',34],['Anthony',34],['Jacob',34],['Frank',33],['Alfred',33],['Sakhile',33],
-              ['Luyanda',33],['Sphiwe',33],['Linda',33],['Albert',33],['Jack',33],['Nelson',33],['Justice',32],['Bonginkosi',32],['Calvin',32],['Donald',32],
-              ['Brandon',32],['Trevor',32],['Henry',32],['Jabu',32],['Thabani',32],['Eugene',32],['Samkelo',32],['Marius',32],['Solly',32],['Elias',31],['Steve',31],
-              ['Aubrey',31],['Siyanda',31],['Kamogelo',31],['Nicholas',31],['Collen',31],['Sbonelo',30],['Syabonga',30],['Ryan',30],['Lerato',30],['Joshua',30],
-              ['Bafana',30],['Muzi',30],['Vuyo',30],['Sbu',30],['Ashley',30],['Pule',30],['Stanley',30],['Mzwandile',30],['Shane',30],['Lehlohonolo',30],
-              ['Wandile',29],['Amos',29],['Siphiwe',29],['Jimmy',29],['Kyle',29],['Walter',29],['Jerry',29],['Koketso',29],['Willie',29],['Skhumbuzo',29],
-              ['Ronald',29],['Zakhele',29],['Ricardo',29],['Kobus',29],['Lungelo',29],['Matthew',29],['Tony',28],['Edwin',28],['Lwazi',28],['Sboniso',28],
-              ['Norman',28],['Bradley',28],['Theo',28],['Blessing',28],['Percy',28],['Bonga',27],['Óscar',27],['Gerhard',27],['Eddie',27],['Kenny',27],
-              ['Nhlakanipho',27],['Siyabulela',27],['Lunga',27],['Matome',27],['Ian',27],['Elvis',26],['Sydney',26],['Anton',26]
-            ],
-            modern: [
-              ['Kyle',26],['Dylan',26],['Joshua',26],['Matthew',26],['Liam',26],['Jordan',12],['Ethan',12],['Callan',2],['John',14],['David',14],['Michael',14],
-              ['Peter',14],['Daniel',14],['Patrick',14],['Joseph',14],['Chris',14],['James',14],['Paul',14],['Simón',14],['George',14],['Nhlanhla',14],['Ayanda',14],
-              ['Simphiwe',14],['Thato',14],['Richard',14],['Sabelo',14],['Samuel',14],['Njabulo',14],['Charles',14],['Sizwe',14],['Mike',14],['Andrew',14],
-              ['William',14],['Prince',14],['Sfiso',14],['Brian',14],['Thomas',14],['Gift',14],['Víctor',14],['Martín',14],['Isaac',14],['Sello',14],['Musa',14],
-              ['Sihle',14],['Vincent',14],['Sam',14],['Mxolisi',14],['Teboho',14],['Emmanuel',14],['Robert',14],['Eric',14],['Sifiso',14],['Alex',14],['Bheki',14],
-              ['Godfrey',14],['Jacques',14],['Steven',14],['Jabulani',14],['Jason',14],['Christopher',14],['Sphamandla',14],['Lucas',14],['Itumeleng',14],
-              ['Lindokuhle',14],['Dumisani',14],['León',14],['Innocent',14],['Senzo',14],['Thokozani',14],['Frans',14],['Sthembiso',14],['Jonathan',14],['Joe',14],
-              ['Edward',14]
-            ]
-          },
+          first: [
+            ['Tony',28],['Peter',68],['John',83],['Dave',21],['Ian',27],['Neville',18],['Doug',12],['Trevor',32],['Basil',2],['Paddy',2],['Gary',22],['Craig',30],
+            ['Kevin',39],['Mark',42],['Wayne',34],['Shaun',41],['Brad',12],['Grant',23],['Kyle',29],['Dylan',26],['Joshua',30],['Matthew',29],['Liam',15],
+            ['Jordan',12],['Ethan',15],['Callan',2],['David',80],['Michael',72],['Daniel',60],['Patrick',60],['Joseph',60],['Chris',60],['James',58],['Paul',56],
+            ['Simón',54],['George',53],['Nhlanhla',53],['Ayanda',53],['Simphiwe',52],['Thato',52],['Richard',51],['Sabelo',51],['Samuel',51],['Njabulo',51],
+            ['Charles',50],['Sizwe',50],['Mike',50],['Andrew',49],['William',49],['Prince',49],['Sfiso',49],['Brian',48],['Thomas',48],['Gift',48],['Víctor',47],
+            ['Martín',47],['Isaac',47],['Sello',47],['Musa',47],['Sihle',46],['Vincent',45],['Sam',44],['Mxolisi',44],['Teboho',44],['Emmanuel',43],['Robert',43],
+            ['Eric',42],['Sifiso',42],['Alex',42],['Bheki',42],['Godfrey',40],['Jacques',40],['Steven',40],['Jabulani',39],['Jason',39],['Christopher',39],
+            ['Sphamandla',39],['Lucas',39],['Itumeleng',39],['Lindokuhle',39],['Dumisani',38],['León',38],['Innocent',38],['Senzo',38],['Thokozani',38],
+            ['Frans',37],['Sthembiso',37],['Jonathan',36],['Joe',36],['Edward',36],['Louis',36],['Thando',36],['Ben',35],['Given',35],['Nathi',35],['Raymond',35],
+            ['Kenneth',35],['Anele',35],['Lawrence',35],['Ernest',35],['Siya',34],['Andries',34],['Junior',34],['Justin',34],['Nico',34],['Stephen',34],
+            ['Anthony',34],['Jacob',34],['Frank',33],['Alfred',33],['Sakhile',33],['Luyanda',33],['Sphiwe',33],['Linda',33],['Albert',33],['Jack',33],['Nelson',33],
+            ['Justice',32],['Bonginkosi',32],['Calvin',32],['Donald',32],['Brandon',32],['Henry',32],['Jabu',32],['Thabani',32],['Eugene',32],['Samkelo',32],
+            ['Marius',32],['Solly',32],['Elias',31],['Steve',31],['Aubrey',31],['Siyanda',31],['Kamogelo',31],['Nicholas',31],['Collen',31],['Sbonelo',30],
+            ['Syabonga',30],['Ryan',30],['Lerato',30],['Bafana',30],['Muzi',30],['Vuyo',30],['Sbu',30],['Ashley',30],['Pule',30],['Stanley',30],['Mzwandile',30],
+            ['Shane',30],['Lehlohonolo',30],['Wandile',29],['Amos',29],['Siphiwe',29],['Jimmy',29],['Walter',29],['Jerry',29],['Koketso',29],['Willie',29],
+            ['Skhumbuzo',29],['Ronald',29],['Zakhele',29],['Ricardo',29],['Kobus',29],['Lungelo',29],['Edwin',28],['Lwazi',28],['Sboniso',28],['Norman',28],
+            ['Bradley',28],['Theo',28],['Blessing',28],['Percy',28],['Bonga',27],['Óscar',27],['Gerhard',27],['Eddie',27],['Kenny',27],['Nhlakanipho',27],
+            ['Siyabulela',27],['Lunga',27],['Matome',27],['Elvis',26],['Sydney',26],['Anton',26],['Sean',26],['Petrus',26],['Scelo',26],['Sphesihle',26],
+            ['Kwanele',26],['Tumi',26],['Maxwell',26],['Desmond',26],['Thobani',26],['Leonard',26],['Happy',26],['Moeketsi',26]
+          ],
           last: [
             ['Smith',60],['Brown',30],['Taylor',17],['Wilson',21],['Bennett',9],['Reed',12],['Duncan',12],['Scott',16],['Watson',11],['Harris',15],['Clarke',10],
             ['Foster',9],['Nash',2],['Jacobs',56],['Naidoo',53],['Williams',52],['Govender',46],['Pillay',46],['Adams',44],['Abrahams',37],['Davids',36],
@@ -1928,18 +1680,11 @@ const NAME_POOLS_BY_NATION = {
             ['Michael',17],['Mamabolo',17],['Van Den Berg',17],['Thabiso',17]
           ] },
         { w: 0.3,
-          first: {
-            early: [
-              ['Piet',3],['Johan',3],['Willem',3],['Jan',3],['Hennie',2],['Koos',2],['Danie',2],['Gert',2]
-            ],
-            mid: [
-              ['Pieter',48],['Jaco',40],['André',51],['Johan',69],['Riaan',33],['Christo',28],['Deon',36],['Ruan',23],['Johannes',50],['Jan',46],['Francois',36],
-              ['Willem',33],['Piet',33],['Danie',28],['Gert',27],['Hennie',27]
-            ],
-            modern: [
-              ['Ruan',12],['Heinrich',12],['Stefan',12],['Charl',12],['Kyle',12],['Divan',2],['Janco',2],['Wikus',2],['Johannes',14],['Jan',14]
-            ]
-          },
+          first: [
+            ['Piet',33],['Johan',69],['Willem',33],['Jan',46],['Hennie',27],['Koos',23],['Danie',28],['Gert',27],['Pieter',48],['Jaco',40],['André',51],
+            ['Riaan',33],['Christo',28],['Deon',36],['Ruan',23],['Heinrich',21],['Stefan',19],['Charl',20],['Kyle',29],['Divan',2],['Janco',2],['Wikus',2],
+            ['Johannes',50],['Francois',36],['Hendrik',26]
+          ],
           last: [
             ['Van der Merwe',39],['Botha',51],['Pretorius',40],['Venter',37],['Du Plessis',37],['Fourie',37],['Nel',39],['Coetzee',39],['Steyn',29],
             ['De Villiers',19],['Kruger',35],['Joubert',28],['Marais',27],['Swanepoel',28],['Viljoen',26],['Du Toit',30],['Van Wyk',44],['Louw',36],['Smit',36],
@@ -1954,7 +1699,7 @@ const NAME_POOLS_BY_NATION = {
             ['Sanele',55],['Nkosinathi',51],['Tumelo',51],['Moses',49],['Katlego',49],['Kabelo',49],['Karabo',46],['Mduduzi',43],['Kagiso',41],['Nkululeko',39],
             ['Neo',39],['Lebogang',38],['Ntokozo',37],['Mlungisi',37],['Phumlani',36],['Philani',36],['Phillip',35],['Ndumiso',34],['Mthokozisi',33],
             ['Tshepiso',31],['Lebohang',31],['Solomon',31],['Thami',30],['Lesego',30],['Thembinkosi',29],['Tshepang',29],['Mfundo',28],['Oupa',28],['Mthobisi',27],
-            ['Khulekani',26]
+            ['Khulekani',26],['Nkanyiso',26]
           ],
           last: [
             ['Ndlovu',100],['Dlamini',91],['Khumalo',87],['Nkosi',82],['Mokoena',70],['Sithole',67],['Mkhize',67],['Mahlangu',63],['Zulu',62],['Ngcobo',60],
@@ -1989,45 +1734,30 @@ const NAME_POOLS_BY_NATION = {
     // ── IRL ──
     IRL: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Patrick',4],['Michael',4],['John',4],['Seán',3],['Joe',2],['Tommy',2],['Derek',2],['Brendan',2],['Eamonn',2],['Paddy',2]
-            ],
-            mid: [
-              ['John',100],['David',73],['Michael',72],['Paul',71],['James',61],['Sean',65],['Mark',57],['Brian',54],['Stephen',53],['Kevin',51],['Conor',50],
-              ['Shane',49],['Patrick',48],['Martin',47],['Alan',46],['Niall',37],['Liam',41],['Ciarán',35],['Damien',26],['Gary',32],['Peter',44],['Joe',42],
-              ['Tom',41],['Jack',40],['Daniel',39],['Pat',38],['Thomas',38],['Brendan',36],['Robert',35],['Adam',35],['Tony',35],['Eoin',34],['Paddy',34],
-              ['Darren',34],['Noel',33],['Declan',33],['Andrew',33],['Anthony',33],['Barry',31],['Jason',31],['Keith',31],['Aaron',31],['Chris',30],['Kieran',30],
-              ['Colm',29],['Ian',29],['Richard',28],['Gerard',28],['Jamie',28],['Derek',28],['Cian',28],['Luke',28],['Dave',28],['Ryan',28],['Aidan',27],['Gerry',27],
-              ['Seamus',27],['Philip',27],['Ronan',27],['Dylan',27],['Jim',26],['Mike',26],['Darragh',25],['Tommy',25],['Alex',25],['Denis',24],['Adrian',24],
-              ['Frank',24],['Colin',24],['William',24],['Donal',24],['Ben',24],['Mick',24],['Gavin',24],['Cathal',24],['Matthew',23],['Eddie',22],['Padraig',22],
-              ['Dean',22],['Joseph',21],['Dermot',21],['Eamonn',21],['Ray',21],['Dan',21],['Johnny',20],['Jonathan',20],['Andy',20],['Danny',20],['Ger',20],
-              ['Jimmy',20],['Rory',20],['Simon',20],['Christopher',19],['Neil',19],['Karl',19],['Ross',19],['Billy',19],['Lee',19],['Sam',18],['Graham',18],
-              ['Cormac',18],['Craig',18],['Oisin',18],['Evan',18],['Steven',18],['Eoghan',18],['Rob',18],['Micheal',18],['George',18],['Ken',17],['Tim',17],
-              ['Owen',17],['Robbie',17],['Eamon',17],['Nathan',16],['Vincent',16],['Tomas',16],['Eric',16],['Jordan',16],['Josh',16],['Trevor',16],['Hugh',15],
-              ['Enda',15],['Eugene',15],['Harry',15],['Bernard',15],['Charlie',15],['Fergal',15],['Francis',15],['Damian',15],['Steve',15],['Richie',15],['Terry',15],
-              ['Jake',15],['Edward',15],['Wayne',14],['Greg',14],['Kyle',14],['Killian',14],['Diarmuid',14],['Kenneth',13],['Marcin',13],['Des',13],['Maurice',13],
-              ['Bryan',13],['Raymond',13],['Matt',13],['Bob',13],['Jay',13],['Shaun',13],['Piotr',13],['Gareth',13],['Jerry',13],['Oliver',12],['Cillian',12],
-              ['Willie',12],['Christy',12],['Tomasz',12],['Nigel',12],['Mikey',12],['Bill',12],['Ivan',12],['Emmet',12],['Krzysztof',12],['Justin',12],['Larry',12],
-              ['Scott',11],['Tadhg',11],['Leo',11],['Fergus',11],['Joey',11],['Stuart',11],['Bobby',11],['Marc',11],['Gearoid',11],['Nick',11],['Gabriel',11],
-              ['Glenn',11],['Padraic',11],['Phil',11],['Will',10],['Glen',10],['Dominic',10],['Daragh',10],['Henry',10],['Carl',10],['Ollie',10],['Don',10],
-              ['Leon',10],['Fintan',10],['Pawel',10],['Garry',10],['Victor',10],['Shay',10],['Lorcan',10],['Roy',9],['Grzegorz',9],['Ali',9],['Gordon',9],
-              ['Ruairi',9],['Marcus',9],['Charles',9],['Max',9],['Mariusz',9],['Dara',9],['Timmy',9],['Sebastian',9],['Con',9],['Marek',9],['Nicholas',9],
-              ['Callum',9],['Muhammad',9],['Fionn',9],['Fran',9],['Daire',9],['Marius',9],['Lukasz',9],['Finbarr',9],['Ethan',9],['Christian',9],['Brandon',8],
-              ['Paudie',8],['Jeff',8],['Michal',8],['Artur',8],['Nicky',8],['Daithi',8],['Arthur',8],['Anto',8],['Andrei',8]
-            ],
-            modern: [
-              ['Jack',45],['Conor',26],['Cian',26],['Darragh',26],['Seán',26],['Liam',26],['Adam',26],['Daniel',26],['Fionn',12],['Oisín',12],['Peter',14],['Joe',14],
-              ['Tom',14],['Pat',14],['Thomas',14],['Brendan',14],['Robert',14],['Tony',14],['Eoin',14],['Paddy',14],['Darren',14],['Noel',14],['Declan',14],
-              ['Andrew',14],['Anthony',14],['Barry',14],['Jason',14],['Keith',14],['Aaron',14],['Chris',14],['Kieran',14],['Colm',14],['Ian',14],['Richard',14],
-              ['Gerard',14],['Jamie',14],['Derek',14],['Luke',14],['Dave',14],['Ryan',14],['Aidan',14],['Gerry',14],['Seamus',14],['Philip',14],['Ronan',14],
-              ['Dylan',14],['Jim',14],['Mike',14],['Tommy',14],['Alex',14],['Denis',14],['Adrian',14],['Frank',14],['Colin',14],['William',14],['Donal',14],
-              ['Ben',14],['Mick',14],['Gavin',14],['Cathal',14],['Matthew',14],['Eddie',14],['Padraig',14],['Dean',14],['Joseph',14],['Dermot',14],['Eamonn',14],
-              ['Ray',14],['Dan',14],['Johnny',14],['Jonathan',14],['Andy',14],['Danny',14],['Ger',14],['Jimmy',14],['Rory',14],['Simon',14],['Christopher',14],
-              ['Neil',14],['Karl',14],['Ross',14],['Billy',14],['Lee',14],['Sam',14],['Graham',14],['Cormac',14],['Craig',14],['Evan',14],['Steven',14],['Eoghan',14],
-              ['Rob',14],['Micheal',14],['George',14],['Ken',14]
-            ]
-          },
+          first: [
+            ['Patrick',48],['Michael',72],['John',100],['Sean',65],['Joe',42],['Tommy',25],['Derek',28],['Brendan',36],['Eamonn',21],['Paddy',34],['David',73],
+            ['Paul',71],['James',61],['Mark',57],['Brian',54],['Stephen',53],['Kevin',51],['Conor',50],['Shane',49],['Martin',47],['Alan',46],['Niall',37],
+            ['Liam',41],['Ciarán',35],['Damien',26],['Gary',32],['Jack',40],['Cian',28],['Darragh',25],['Adam',35],['Daniel',39],['Fionn',9],['Oisín',18],
+            ['Peter',44],['Tom',41],['Pat',38],['Thomas',38],['Robert',35],['Tony',35],['Eoin',34],['Darren',34],['Noel',33],['Declan',33],['Andrew',33],
+            ['Anthony',33],['Barry',31],['Jason',31],['Keith',31],['Aaron',31],['Chris',30],['Kieran',30],['Colm',29],['Ian',29],['Richard',28],['Gerard',28],
+            ['Jamie',28],['Luke',28],['Dave',28],['Ryan',28],['Aidan',27],['Gerry',27],['Seamus',27],['Philip',27],['Ronan',27],['Dylan',27],['Jim',26],['Mike',26],
+            ['Alex',25],['Denis',24],['Adrian',24],['Frank',24],['Colin',24],['William',24],['Donal',24],['Ben',24],['Mick',24],['Gavin',24],['Cathal',24],
+            ['Matthew',23],['Eddie',22],['Padraig',22],['Dean',22],['Joseph',21],['Dermot',21],['Ray',21],['Dan',21],['Johnny',20],['Jonathan',20],['Andy',20],
+            ['Danny',20],['Ger',20],['Jimmy',20],['Rory',20],['Simon',20],['Christopher',19],['Neil',19],['Karl',19],['Ross',19],['Billy',19],['Lee',19],['Sam',18],
+            ['Graham',18],['Cormac',18],['Craig',18],['Evan',18],['Steven',18],['Eoghan',18],['Rob',18],['Micheal',18],['George',18],['Ken',17],['Tim',17],
+            ['Owen',17],['Robbie',17],['Eamon',17],['Nathan',16],['Vincent',16],['Tomas',16],['Eric',16],['Jordan',16],['Josh',16],['Trevor',16],['Hugh',15],
+            ['Enda',15],['Eugene',15],['Harry',15],['Bernard',15],['Charlie',15],['Fergal',15],['Francis',15],['Damian',15],['Steve',15],['Richie',15],['Terry',15],
+            ['Jake',15],['Edward',15],['Wayne',14],['Greg',14],['Kyle',14],['Killian',14],['Diarmuid',14],['Kenneth',13],['Marcin',13],['Des',13],['Maurice',13],
+            ['Bryan',13],['Raymond',13],['Matt',13],['Bob',13],['Jay',13],['Shaun',13],['Piotr',13],['Gareth',13],['Jerry',13],['Oliver',12],['Cillian',12],
+            ['Willie',12],['Christy',12],['Tomasz',12],['Nigel',12],['Mikey',12],['Bill',12],['Ivan',12],['Emmet',12],['Krzysztof',12],['Justin',12],['Larry',12],
+            ['Scott',11],['Tadhg',11],['Leo',11],['Fergus',11],['Joey',11],['Stuart',11],['Bobby',11],['Marc',11],['Gearoid',11],['Nick',11],['Gabriel',11],
+            ['Glenn',11],['Padraic',11],['Phil',11],['Will',10],['Glen',10],['Dominic',10],['Daragh',10],['Henry',10],['Carl',10],['Ollie',10],['Don',10],
+            ['Leon',10],['Fintan',10],['Pawel',10],['Garry',10],['Victor',10],['Shay',10],['Lorcan',10],['Roy',9],['Grzegorz',9],['Ali',9],['Gordon',9],
+            ['Ruairi',9],['Marcus',9],['Charles',9],['Max',9],['Mariusz',9],['Dara',9],['Timmy',9],['Sebastian',9],['Con',9],['Marek',9],['Nicholas',9],
+            ['Callum',9],['Muhammad',9],['Fran',9],['Daire',9],['Marius',9],['Lukasz',9],['Finbarr',9],['Ethan',9],['Christian',9],['Brandon',8],['Paudie',8],
+            ['Jeff',8],['Michal',8],['Artur',8],['Nicky',8],['Daithi',8],['Arthur',8],['Anto',8],['Andrei',8],['Connor',8],['Austin',8],['Andrzej',8],['Kenny',8],
+            ['Stefan',8],['Laurence',8],['Roger',8],['Marty',8],['Peadar',8],['Louis',8],['Igor',8],['Vinny',8],['Joshua',7]
+          ],
           last: [
             ['Murphy',100],['Kelly',87],['Byrne',79],['Ryan',74],['Walsh',73],['Doyle',61],['O\'Brien',45],['Lynch',50],['O\'Connor',45],['Dunne',48],['Murray',47],
             ['McCarthy',46],['Brennan',46],['Daly',45],['Burke',44],['Nolan',44],['O\'Sullivan',45],['Kennedy',43],['Farrell',42],['O\'Neill',45],['Quinn',40],
@@ -2072,47 +1802,32 @@ const NAME_POOLS_BY_NATION = {
     // ── POR ──
     POR: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['José',5],['António',4],['Manuel',4],['Carlos',4],['Mário',3],['Fernando',3],['Francisco',3],['Joaquim',2],['Américo',1],['Nuno',2]
-            ],
-            mid: [
-              ['Pedro',83],['João',100],['Carlos',65],['Paulo',65],['Ricardo',61],['Rui',61],['Nuno',59],['Miguel',59],['Tiago',58],['Luís',68],['Bruno',53],
-              ['Diogo',52],['Jorge',49],['André',52],['Filipe',41],['Hugo',38],['Daniel',39],['Duarte',20],['José',74],['Antonio',65],['Francisco',46],['Manuel',45],
-              ['Fernando',43],['Gonçalo',39],['Vitor',38],['Sérgio',35],['David',33],['Fábio',33],['Marco',33],['Rodrigo',32],['Mário',32],['Joaquim',30],
-              ['Rafael',29],['Alexandre',29],['Rubén',28],['Eduardo',26],['Nelson',26],['Helder',26],['Tomás',24],['Guilherme',23],['Henrique',22],['Afonso',22],
-              ['Vasco',21],['Bernardo',20],['Claudio',17],['Gabriel',17],['Leandro',16],['Artur',16],['Renato',16],['Marcio',16],['Víctor',15],['Alberto',15],
-              ['Armando',15],['Emanuel',15],['Joel',15],['Samuel',14],['Ivo',14],['Marcelo',14],['César',14],['Julio',14],['Flávio',14],['João Pedro',14],
-              ['Simão',13],['Rogério',13],['Leonardo',13],['Alvaro',13],['Martim',13],['Domingos',13],['José Carlos',13],['Gustavo',13],['Edgar',13],['Frederico',12],
-              ['Alex',12],['Cristiano',12],['Roberto',12],['José Manuel',12],['Telmo',12],['Lucas',12],['Marcos',12],['Jaime',12],['Augusto',12],['Raúl',11],
-              ['Angelo',11],['Orlando',11],['Adriano',11],['Dinis',11],['Igor',10],['João Paulo',10],['Sandro',10],['Alfredo',10],['Agostinho',10],['Mauro',10],
-              ['Valter',10],['Gil',9],['Americo',9],['Iván',9],['José Luis',9],['Leonel',9],['Humberto',9],['Manel',8],['Micael',8],['Abilio',8],['Luis Miguel',8],
-              ['Adelino',8],['Lourenço',8],['Óscar',8],['Hélio',8],['Abel',8],['Tony',8],['José António',8],['Armindo',8],['Rafa',8],['João Carlos',7],
-              ['Luis Filipe',7],['Dário',7],['Celso',7],['Salvador',7],['Wilson',7],['Anibal',7],['Gilberto',7],['Arlindo',7],['José Pedro',7],['Mateus',7],
-              ['Xavier',7],['Sebastião',7],['Lino',6],['Luciano',6],['Rodolfo',6],['Vicente',6],['Avelino',6],['Ernesto',6],['Albino',6],['Pedro Miguel',6],
-              ['Virgilio',6],['Luiz',6],['Arnaldo',6],['Felipe',6],['Davide',6],['Norberto',6],['Mauricio',6],['Hernani',6],['Leo',6],['Toze',6],['Carlos Alberto',6],
-              ['Junior',6],['Amilcar',6],['Gui',6],['Paulo Jorge',6],['Diego',6],['Patrick',6],['Silvio',6],['Ilidio',6],['Amadeu',6],['Martinho',6],['Michael',6],
-              ['Horacio',6],['Eugenio',5],['Valdemar',5],['Moises',5],['João Miguel',5],['Toni',5],['Eurico',5],['António José',5],['Serafim',5],['Rui Pedro',5],
-              ['Jacinto',5],['Thiago',5],['José Miguel',5],['José Maria',5],['Carlos Manuel',5],['Octavio',5],['Ismael',5],['John',5],['Fred',5],['Kevin',5],
-              ['Diamantino',5],['Amandio',5],['Antonio Manuel',5],['Nando',5],['Nuno Miguel',5],['Osvaldo',5],['Quim',5],['Romeu',5],['Santiago',5],['Beto',5],
-              ['Armenio',5],['Ramiro',5],['Maria',5],['Silva',5],['Dani',5],['Aurelio',5],['Adérito',5],['Matheus',5],['Milton',5],['Edson',5],['Nelio',5],
-              ['Acacio',5],['Albano',5],['Santos',4],['João Manuel',4],['Candido',4],['Delfim',4],['Danilo',4],['Tito',4],['Juan',4],['Rui Miguel',4],
-              ['José Augusto',4],['Michel',4],['Iuri',4],['Jonas',4],['Alcino',4],['Isaac',4],['Dany',4],['Licinio',4],['Anderson',4],['Fausto',4],['Adao',4],
-              ['Elio',4],['Dino',4],['José Alberto',4],['Mike',4],['Lucio',4],['Peter',4],['Bernardino',4],['Gaspar',4],['Cristóvão',4],['Antero',4],['Zé Pedro',4]
-            ],
-            modern: [
-              ['João',45],['Tomás',45],['Francisco',45],['Rodrigo',45],['Afonso',26],['Martim',26],['Santiago',26],['Diogo',26],['Gonçalo',26],['Guilherme',26],
-              ['Vasco',12],['Salvador',12],['José',14],['Antonio',14],['Manuel',14],['Fernando',14],['Vitor',14],['Sérgio',14],['David',14],['Fábio',14],['Marco',14],
-              ['Mário',14],['Joaquim',14],['Rafael',14],['Alexandre',14],['Rubén',14],['Eduardo',14],['Nelson',14],['Helder',14],['Henrique',14],['Bernardo',14],
-              ['Claudio',14],['Gabriel',14],['Leandro',14],['Artur',14],['Renato',14],['Marcio',14],['Víctor',14],['Alberto',14],['Armando',14],['Emanuel',14],
-              ['Joel',14],['Samuel',14],['Ivo',14],['Marcelo',14],['César',14],['Julio',14],['Flávio',14],['João Pedro',14],['Simão',13],['Rogério',13],
-              ['Leonardo',13],['Alvaro',13],['Domingos',13],['José Carlos',13],['Gustavo',13],['Edgar',13],['Frederico',12],['Alex',12],['Cristiano',12],
-              ['Roberto',12],['José Manuel',12],['Telmo',12],['Lucas',12],['Marcos',12],['Jaime',12],['Augusto',12],['Raúl',11],['Angelo',11],['Orlando',11],
-              ['Adriano',11],['Dinis',11],['Igor',10],['João Paulo',10],['Sandro',10],['Alfredo',10],['Agostinho',10],['Mauro',10],['Valter',10],['Gil',9],
-              ['Americo',9],['Iván',9],['José Luis',9],['Leonel',9],['Humberto',9],['Manel',8],['Micael',8],['Abilio',8],['Luis Miguel',8],['Adelino',8],
-              ['Lourenço',8],['Óscar',8],['Hélio',8],['Abel',8]
-            ]
-          },
+          first: [
+            ['José',74],['António',65],['Manuel',45],['Carlos',65],['Mário',32],['Fernando',43],['Francisco',46],['Joaquim',30],['Américo',9],['Nuno',59],
+            ['Pedro',83],['João',100],['Paulo',65],['Ricardo',61],['Rui',61],['Miguel',59],['Tiago',58],['Luís',68],['Bruno',53],['Diogo',52],['Jorge',49],
+            ['André',52],['Filipe',41],['Hugo',38],['Daniel',39],['Duarte',20],['Tomás',24],['Rodrigo',32],['Afonso',22],['Martim',13],['Santiago',5],
+            ['Gonçalo',39],['Guilherme',23],['Vasco',21],['Salvador',7],['Vitor',38],['Sérgio',35],['David',33],['Fábio',33],['Marco',33],['Rafael',29],
+            ['Alexandre',29],['Rubén',28],['Eduardo',26],['Nelson',26],['Helder',26],['Henrique',22],['Bernardo',20],['Claudio',17],['Gabriel',17],['Leandro',16],
+            ['Artur',16],['Renato',16],['Marcio',16],['Víctor',15],['Alberto',15],['Armando',15],['Emanuel',15],['Joel',15],['Samuel',14],['Ivo',14],['Marcelo',14],
+            ['César',14],['Julio',14],['Flávio',14],['João Pedro',14],['Simão',13],['Rogério',13],['Leonardo',13],['Alvaro',13],['Domingos',13],['José Carlos',13],
+            ['Gustavo',13],['Edgar',13],['Frederico',12],['Alex',12],['Cristiano',12],['Roberto',12],['José Manuel',12],['Telmo',12],['Lucas',12],['Marcos',12],
+            ['Jaime',12],['Augusto',12],['Raúl',11],['Angelo',11],['Orlando',11],['Adriano',11],['Dinis',11],['Igor',10],['João Paulo',10],['Sandro',10],
+            ['Alfredo',10],['Agostinho',10],['Mauro',10],['Valter',10],['Gil',9],['Iván',9],['José Luis',9],['Leonel',9],['Humberto',9],['Manel',8],['Micael',8],
+            ['Abilio',8],['Luis Miguel',8],['Adelino',8],['Lourenço',8],['Óscar',8],['Hélio',8],['Abel',8],['Tony',8],['José António',8],['Armindo',8],['Rafa',8],
+            ['João Carlos',7],['Luis Filipe',7],['Dário',7],['Celso',7],['Wilson',7],['Anibal',7],['Gilberto',7],['Arlindo',7],['José Pedro',7],['Mateus',7],
+            ['Xavier',7],['Sebastião',7],['Lino',6],['Luciano',6],['Rodolfo',6],['Vicente',6],['Avelino',6],['Ernesto',6],['Albino',6],['Pedro Miguel',6],
+            ['Virgilio',6],['Luiz',6],['Arnaldo',6],['Felipe',6],['Davide',6],['Norberto',6],['Mauricio',6],['Hernani',6],['Leo',6],['Toze',6],['Carlos Alberto',6],
+            ['Junior',6],['Amilcar',6],['Gui',6],['Paulo Jorge',6],['Diego',6],['Patrick',6],['Silvio',6],['Ilidio',6],['Amadeu',6],['Martinho',6],['Michael',6],
+            ['Horacio',6],['Eugenio',5],['Valdemar',5],['Moises',5],['João Miguel',5],['Toni',5],['Eurico',5],['António José',5],['Serafim',5],['Rui Pedro',5],
+            ['Jacinto',5],['Thiago',5],['José Miguel',5],['José Maria',5],['Carlos Manuel',5],['Octavio',5],['Ismael',5],['John',5],['Fred',5],['Kevin',5],
+            ['Diamantino',5],['Amandio',5],['Antonio Manuel',5],['Nando',5],['Nuno Miguel',5],['Osvaldo',5],['Quim',5],['Romeu',5],['Beto',5],['Armenio',5],
+            ['Ramiro',5],['Maria',5],['Silva',5],['Dani',5],['Aurelio',5],['Adérito',5],['Matheus',5],['Milton',5],['Edson',5],['Nelio',5],['Acacio',5],
+            ['Albano',5],['Santos',4],['João Manuel',4],['Candido',4],['Delfim',4],['Danilo',4],['Tito',4],['Juan',4],['Rui Miguel',4],['José Augusto',4],
+            ['Michel',4],['Iuri',4],['Jonas',4],['Alcino',4],['Isaac',4],['Dany',4],['Licinio',4],['Anderson',4],['Fausto',4],['Adao',4],['Elio',4],['Dino',4],
+            ['José Alberto',4],['Mike',4],['Lucio',4],['Peter',4],['Bernardino',4],['Gaspar',4],['Cristóvão',4],['Antero',4],['Zé Pedro',4],['Inacio',4],['Edu',4],
+            ['Alcides',4],['Custodio',4],['Reinaldo',4],['Johnny',4],['Celestino',4],['Danny',4],['Ferreira',4],['Zeca',4],['William',4],['Richard',4],
+            ['Adilson',4],['Nelo',4],['Jeronimo',4],['Aires',4],['Ana',4]
+          ],
           last: [
             ['Silva',100],['Santos',82],['Ferreira',70],['Pereira',67],['Oliveira',61],['Costa',60],['Rodrigues',58],['Martins',56],['Sousa',53],['Fernandes',52],
             ['Gomes',49],['Lopes',48],['Ribeiro',47],['Gonçalves',50],['Marques',45],['Carvalho',45],['Almeida',44],['Pinto',43],['Alves',43],['Dias',40],
@@ -2229,17 +1944,11 @@ const NAME_POOLS_BY_NATION = {
     // ── VEN ──
     VEN: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['José',4],['Luis',4],['Carlos',4],['Rafael',3],['Miguel',3],['Jesús',3],['Alejandro',3],['Ricardo',3],['Pedro',2],['Ramón',2]
-            ],
-            mid: [
-              ['José',4],['Luis',4],['Carlos',3],['Alejandro',3],['Rafael',3],['Ernesto',2],['Óscar',2],['Enrique',2],['Johnny',1],['Giancarlo',1]
-            ],
-            modern: [
-              ['Sebastián',3],['Santiago',3],['Diego',3],['Gabriel',3],['Daniel',3],['Samuel',2],['Adrián',2],['Jesús',2],['Andrés',2],['Manuel',2]
-            ]
-          },
+          first: [
+            ['José',4],['Luis',4],['Carlos',4],['Rafael',3],['Miguel',3],['Jesús',3],['Alejandro',3],['Ricardo',3],['Pedro',2],['Ramón',2],['Ernesto',2],
+            ['Óscar',2],['Enrique',2],['Johnny',1],['Giancarlo',1],['Sebastián',3],['Santiago',3],['Diego',3],['Gabriel',3],['Daniel',3],['Samuel',2],['Adrián',2],
+            ['Andrés',2],['Manuel',2]
+          ],
           last: [
             ['González',4],['Rodríguez',4],['García',4],['Pérez',3],['Hernández',3],['Martínez',3],['Rojas',3],['Blanco',2],['Salazar',2],['Medina',2],['Rivas',2],
             ['Mendoza',2],['Chacón',1],['Torrealba',1]
@@ -2249,49 +1958,33 @@ const NAME_POOLS_BY_NATION = {
     // ── COL ──
     COL: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Juan',4],['Carlos',4],['José',4],['Ricardo',3],['Andrés',3],['Óscar',3],['Roberto',2],['Germán',2],['Álvaro',2],['Camilo',3]
-            ],
-            mid: [
-              ['Andrés',100],['Juan',90],['Carlos',90],['José',87],['Luis',78],['Jorge',62],['David',59],['Diego',58],['Camilo',57],['Cristian',54],['Alejandro',53],
-              ['Óscar',52],['Javier',50],['Miguel',47],['Fernando',46],['Julián',45],['Mauricio',41],['Jairo',39],['William',39],['Juan Pablo',26],['Daniel',64],
-              ['Sebastián',58],['Jhon',55],['Santiago',55],['Alexander',47],['Jesús',42],['Manuel',40],['Alex',39],['Felipe',39],['Jaime',39],['Juan Carlos',39],
-              ['Edwin',38],['Víctor',37],['César',37],['Fabián',37],['Pedro',36],['Wilson',36],['Brayan',35],['Ricardo',35],['Alvaro',35],['Nicolás',34],
-              ['Nelson',34],['Kevin',34],['Gustavo',33],['Sergio',32],['Rafael',32],['Eduardo',32],['Orlando',32],['Héctor',32],['Leonardo',31],['Alberto',31],
-              ['Esteban',31],['Iván',31],['Julio',30],['Mario',30],['Edgar',30],['Juan David',30],['Omar',30],['Antonio',29],['Samuel',28],['German',28],['Fredy',28],
-              ['Ángel',28],['Johan',27],['John',27],['Francisco',27],['Gabriel',27],['Henry',27],['Guillermo',26],['Yeison',26],['Jhonatan',26],['Pablo',25],
-              ['Anderson',25],['Hernan',25],['Stiven',25],['Jonathan',24],['Jhon Jairo',24],['Fabio',24],['Mateo',23],['Alfonso',23],['Luis Fernando',23],
-              ['José Luis',23],['Andres Felipe',23],['Miguel Ángel',23],['Raúl',23],['Hernando',23],['Armando',22],['Rodrigo',22],['Wilmer',22],['Juan Camilo',22],
-              ['Alexis',22],['Rubén',21],['Duvan',21],['Dario',21],['Carlos Andres',21],['Hugo',21],['Alfredo',20],['Juan Jose',20],['Carlos Alberto',20],
-              ['Robinson',20],['Humberto',20],['Albeiro',20],['Luis Alberto',20],['Elkin',20],['Luis Carlos',20],['Maicol',19],['Roberto',19],['Enrique',19],
-              ['Martín',19],['Ferney',19],['Luis Eduardo',19],['Alejo',19],['Adrián',19],['Steven',19],['Yesid',19],['Edison',18],['Marlon',18],['Jeison',18],
-              ['Edinson',18],['Ramiro',17],['Freddy',17],['Harold',17],['Gerardo',17],['Arley',17],['Jair',17],['Nestor',17],['James',17],['Sebas',17],['Walter',16],
-              ['Juan Diego',16],['Jhoan',16],['Danilo',16],['Milton',16],['Junior',16],['Julio Cesar',16],['Gilberto',16],['Marcos',16],['Arturo',16],['Richard',16],
-              ['Juan Manuel',16],['Alirio',15],['Juan Esteban',15],['Wilmar',15],['Gonzalo',15],['Jorge Luis',15],['Juan Sebastian',15],['Jhon Fredy',15],
-              ['Libardo',15],['Jefferson',15],['Jaider',15],['Leo',15],['Giovanny',15],['Alonso',14],['Darwin',14],['Jhonny',14],['Edward',14],['Christian',14],
-              ['Marco',14],['Michael',14],['Ernesto',14],['Ronald',14],['Ever',14],['Jimmy',14],['Rodolfo',14],['Brandon',14],['Eduar',14],['Bryan',13],['Leonel',13],
-              ['Oswaldo',13],['Carlos Mario',13],['Ruben Dario',13],['Jeferson',13],['Didier',13],['Franklin',13],['Pipe',13],['Adolfo',12],['Carlos Arturo',12],
-              ['Estiven',12],['Efrain',12],['Edilberto',12],['Frank',12],['Mauro',12],['Luis Miguel',12],['Juan Felipe',12],['Dairo',12],['Tomás',12],
-              ['Cristhian',12],['Yeferson',12],['Jeisson',12],['Diego Fernando',12],['Bernardo',12],['Reinaldo',12],['Ramón',12],['Luis Alfonso',12],['Erick',12],
-              ['Uriel',11],['José Manuel',11],['Willian',11],['Eliecer',11],['John Jairo',11],['Elias',11],['Jean',11],['Felix',11],['Robert',11],
-              ['Cesar Augusto',11],['Saul',11],['Emanuel',11],['Jose Antonio',11],['Jose David',11],['Danny',11],['Aldemar',11],['Victor Manuel',11],['Ismael',11],
-              ['Ariel',11],['Dilan',11],['Luis Enrique',11],['Arnulfo',11],['Jorge Eliecer',11],['Cristian Camilo',11],['Edwar',11],['Jhon Alexander',11],
-              ['Miller',10],['Moises',10],['Lucho',10],['Giovanni',10],['Leandro',10],['Esneider',10],['Andrey',10],['Simón',10],['Joel',10]
-            ],
-            modern: [
-              ['Sebastián',45],['Santiago',45],['Nicolás',26],['Daniel',26],['Mateo',26],['Samuel',12],['Tomás',12],['Alejandro',26],['David',26],['Emiliano',12],
-              ['Jhon',14],['Alexander',14],['Jesús',14],['Manuel',14],['Alex',14],['Felipe',14],['Jaime',14],['Juan Carlos',14],['Edwin',14],['Víctor',14],
-              ['César',14],['Fabián',14],['Pedro',14],['Wilson',14],['Brayan',14],['Ricardo',14],['Alvaro',14],['Nelson',14],['Kevin',14],['Gustavo',14],
-              ['Sergio',14],['Rafael',14],['Eduardo',14],['Orlando',14],['Héctor',14],['Leonardo',14],['Alberto',14],['Esteban',14],['Iván',14],['Julio',14],
-              ['Mario',14],['Edgar',14],['Juan David',14],['Omar',14],['Antonio',14],['German',14],['Fredy',14],['Ángel',14],['Johan',14],['John',14],
-              ['Francisco',14],['Gabriel',14],['Henry',14],['Guillermo',14],['Yeison',14],['Jhonatan',14],['Pablo',14],['Anderson',14],['Hernan',14],['Stiven',14],
-              ['Jonathan',14],['Jhon Jairo',14],['Fabio',14],['Alfonso',14],['Luis Fernando',14],['José Luis',14],['Andres Felipe',14],['Miguel Ángel',14],
-              ['Raúl',14],['Hernando',14],['Armando',14],['Rodrigo',14],['Wilmer',14],['Juan Camilo',14],['Alexis',14],['Rubén',14],['Duvan',14],['Dario',14],
-              ['Carlos Andres',14],['Hugo',14],['Alfredo',14],['Juan Jose',14],['Carlos Alberto',14],['Robinson',14],['Humberto',14],['Albeiro',14],
-              ['Luis Alberto',14],['Elkin',14],['Luis Carlos',14],['Maicol',14],['Roberto',14],['Enrique',14],['Martín',14],['Ferney',14]
-            ]
-          },
+          first: [
+            ['Juan',90],['Carlos',90],['José',87],['Ricardo',35],['Andrés',100],['Óscar',52],['Roberto',19],['Germán',28],['Álvaro',35],['Camilo',57],['Luis',78],
+            ['Jorge',62],['David',59],['Diego',58],['Cristian',54],['Alejandro',53],['Javier',50],['Miguel',47],['Fernando',46],['Julián',45],['Mauricio',41],
+            ['Jairo',39],['William',39],['Juan Pablo',26],['Sebastián',58],['Santiago',55],['Nicolás',34],['Daniel',64],['Mateo',23],['Samuel',28],['Tomás',12],
+            ['Emiliano',6],['Jhon',55],['Alexander',47],['Jesús',42],['Manuel',40],['Alex',39],['Felipe',39],['Jaime',39],['Juan Carlos',39],['Edwin',38],
+            ['Víctor',37],['César',37],['Fabián',37],['Pedro',36],['Wilson',36],['Brayan',35],['Nelson',34],['Kevin',34],['Gustavo',33],['Sergio',32],['Rafael',32],
+            ['Eduardo',32],['Orlando',32],['Héctor',32],['Leonardo',31],['Alberto',31],['Esteban',31],['Iván',31],['Julio',30],['Mario',30],['Edgar',30],
+            ['Juan David',30],['Omar',30],['Antonio',29],['Fredy',28],['Ángel',28],['Johan',27],['John',27],['Francisco',27],['Gabriel',27],['Henry',27],
+            ['Guillermo',26],['Yeison',26],['Jhonatan',26],['Pablo',25],['Anderson',25],['Hernan',25],['Stiven',25],['Jonathan',24],['Jhon Jairo',24],['Fabio',24],
+            ['Alfonso',23],['Luis Fernando',23],['José Luis',23],['Andres Felipe',23],['Miguel Ángel',23],['Raúl',23],['Hernando',23],['Armando',22],['Rodrigo',22],
+            ['Wilmer',22],['Juan Camilo',22],['Alexis',22],['Rubén',21],['Duvan',21],['Dario',21],['Carlos Andres',21],['Hugo',21],['Alfredo',20],['Juan Jose',20],
+            ['Carlos Alberto',20],['Robinson',20],['Humberto',20],['Albeiro',20],['Luis Alberto',20],['Elkin',20],['Luis Carlos',20],['Maicol',19],['Enrique',19],
+            ['Martín',19],['Ferney',19],['Luis Eduardo',19],['Alejo',19],['Adrián',19],['Steven',19],['Yesid',19],['Edison',18],['Marlon',18],['Jeison',18],
+            ['Edinson',18],['Ramiro',17],['Freddy',17],['Harold',17],['Gerardo',17],['Arley',17],['Jair',17],['Nestor',17],['James',17],['Sebas',17],['Walter',16],
+            ['Juan Diego',16],['Jhoan',16],['Danilo',16],['Milton',16],['Junior',16],['Julio Cesar',16],['Gilberto',16],['Marcos',16],['Arturo',16],['Richard',16],
+            ['Juan Manuel',16],['Alirio',15],['Juan Esteban',15],['Wilmar',15],['Gonzalo',15],['Jorge Luis',15],['Juan Sebastian',15],['Jhon Fredy',15],
+            ['Libardo',15],['Jefferson',15],['Jaider',15],['Leo',15],['Giovanny',15],['Alonso',14],['Darwin',14],['Jhonny',14],['Edward',14],['Christian',14],
+            ['Marco',14],['Michael',14],['Ernesto',14],['Ronald',14],['Ever',14],['Jimmy',14],['Rodolfo',14],['Brandon',14],['Eduar',14],['Bryan',13],['Leonel',13],
+            ['Oswaldo',13],['Carlos Mario',13],['Ruben Dario',13],['Jeferson',13],['Didier',13],['Franklin',13],['Pipe',13],['Adolfo',12],['Carlos Arturo',12],
+            ['Estiven',12],['Efrain',12],['Edilberto',12],['Frank',12],['Mauro',12],['Luis Miguel',12],['Juan Felipe',12],['Dairo',12],['Cristhian',12],
+            ['Yeferson',12],['Jeisson',12],['Diego Fernando',12],['Bernardo',12],['Reinaldo',12],['Ramón',12],['Luis Alfonso',12],['Erick',12],['Uriel',11],
+            ['José Manuel',11],['Willian',11],['Eliecer',11],['John Jairo',11],['Elias',11],['Jean',11],['Felix',11],['Robert',11],['Cesar Augusto',11],['Saul',11],
+            ['Emanuel',11],['Jose Antonio',11],['Jose David',11],['Danny',11],['Aldemar',11],['Victor Manuel',11],['Ismael',11],['Ariel',11],['Dilan',11],
+            ['Luis Enrique',11],['Arnulfo',11],['Jorge Eliecer',11],['Cristian Camilo',11],['Edwar',11],['Jhon Alexander',11],['Miller',10],['Moises',10],
+            ['Lucho',10],['Giovanni',10],['Leandro',10],['Esneider',10],['Andrey',10],['Simón',10],['Joel',10],['Santi',10],['Anibal',10],['Emilio',10],
+            ['Jorge Enrique',10],['Brian',10],['Juancho',10],['Isaac',10],['Wilder',10],['Yair',10],['Samir',10],['Confiesate',10]
+          ],
           last: [
             ['Rodríguez',100],['López',88],['Gómez',85],['Martínez',84],['García',81],['Pérez',77],['Sánchez',76],['Hernández',75],['González',75],['Ramírez',72],
             ['Díaz',67],['Torres',62],['Rojas',58],['Moreno',55],['Vargas',54],['Muñoz',54],['Ortiz',52],['Castro',51],['Valencia',47],['Quintero',46],
@@ -2336,45 +2029,30 @@ const NAME_POOLS_BY_NATION = {
     // ── RUS ──
     RUS: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Sergei',4],['Vladimir',4],['Andrei',4],['Nikolai',3],['Viktor',3],['Yuri',3],['Boris',2],['Oleg',3],['Igor',3],['Mikhail',4]
-            ],
-            mid: [
-              ['Alexander',100],['Sergei',99],['Andrei',83],['Alexei',82],['Dmitri',73],['Evgeni',61],['Vladimir',60],['Maxim',54],['Ivan',55],['Igor',49],
-              ['Nikolai',47],['Denis',50],['Mikhail',45],['Oleg',45],['Roman',45],['Pavel',43],['Anton',41],['Vitali',34],['Ruslan',40],['Vadim',31],['Yuri',38],
-              ['Viktor',38],['Artem',47],['Kirill',36],['Konstantin',30],['Vlad',29],['Egor',28],['Artur',28],['Vyacheslav',27],['Anatoli',27],['Danil',25],
-              ['Vasili',25],['Valeri',25],['Vladislav',24],['Maks',23],['Alex',23],['Timur',22],['Alexandr',22],['Daniil',22],['Magomed',20],['Rustam',20],
-              ['Petr',19],['Stanislav',18],['Marat',18],['Ali',18],['Eduard',17],['Boris',16],['Stas',16],['Leonid',16],['Islam',15],['Shamil',15],['Aleks',15],
-              ['Gennadii',15],['Albert',14],['Yaroslav',14],['Semen',14],['Georgi',13],['David',13],['Grigori',13],['Fedor',13],['Stepan',13],['Arsen',13],
-              ['Murad',13],['Max',12],['Valentin',12],['Aslan',12],['Rinat',12],['Gleb',12],['Adam',12],['Azamat',11],['Akhmed',11],['Mark',11],['Ildar',11],
-              ['Said',11],['Ramil',11],['Rasul',11],['Alik',10],['Amir',10],['Damir',10],['Bogdan',10],['Ibragim',10],['Mihail',10],['Matvei',10],['Armen',10],
-              ['Ramazan',10],['Den',9],['Kamil',9],['Murat',9],['Andrew',9],['Timofei',9],['Lev',9],['Vitalik',9],['Zaur',9],['Renat',9],['Radik',9],['Alisher',8],
-              ['Eldar',8],['Robert',8],['Karen',8],['Ilyas',8],['Muslim',8],['Azat',8],['Yan',8],['Nik',8],['Umar',8],['Ilnur',8],['Rashid',8],['Almaz',8],
-              ['Arsenii',8],['Mansur',8],['Aziz',8],['Arkadii',8],['Mukhammad',8],['Emil',8],['Bulat',7],['Anvar',7],['German',7],['Alan',7],['Marsel',7],
-              ['Victor',7],['Aidar',7],['Arman',7],['Airat',7],['Ismail',7],['Bek',7],['Abdul',7],['Artyom',7],['Rodion',7],['Sanek',7],['Edik',6],['Rafael',6],
-              ['Zakhar',6],['Evgen',6],['Sultan',6],['Alim',6],['Samir',6],['Dimon',6],['Erik',6],['Dilshod',6],['Sherzod',6],['Ulugbek',6],['Garik',6],['Michael',6],
-              ['Khasan',6],['Ashot',6],['Nurik',6],['Sardor',6],['Nail',6],['Dinar',6],['Akmal',6],['Eugene',6],['Malik',6],['Gadzhi',6],['Tigran',6],['Muhammad',6],
-              ['Serzh',6],['Vasily',5],['John',5],['Samvel',5],['Tim',5],['Ravil',5],['Rustem',5],['Daniel',5],['Farid',5],['Edgar',5],['Aram',5],['Yakov',5],
-              ['Ainur',5],['Kurban',5],['Abu',5],['Nick',5],['Otabek',5],['Shukhrat',5],['Ilshat',5],['Serg',5],['Ramzan',5],['Anzor',5],['Zafar',5],['Vasiliy',5],
-              ['Tolik',5],['Azizbek',5],['Khabib',5],['Arslan',5],['George',5],['Tagir',5],['Gevorg',5],['Ilnar',5],['Ahmed',5],['Slavik',5],['Dzhon',4],
-              ['Salavat',4],['Umid',4],['Makhmud',4],['Filipp',4],['Mike',4],['Arthur',4],['Alikhan',4],['Yusup',4],['Anar',4],['Magamed',4],['Ilgiz',4],['Omar',4],
-              ['Artemii',4],['Svyatoslav',4],['Karim',4],['Gasan',4],['Farkhod',4],['Yarik',4],['Ivanov',4],['Rail',4],['Farrukh',4],['Rishat',4],['Paul',4],
-              ['Lenar',4],['Dzhamal',4],['Savelii',4],['Ilkhom',4],['Ilnaz',4],['Kolyan',4],['Kazbek',4],['Rostislav',4],['Radmir',4],['Seryi',4],['Rizvan',4],
-              ['Ramis',4],['Georgy',4],['Yusuf',4],['Rasim',4],['Grigory',4],['Makar',4],['Ilmir',4],['Sukhrob',4]
-            ],
-            modern: [
-              ['Artem',45],['Maxim',45],['Ivan',45],['Alexander',45],['Kirill',26],['Nikita',26],['Egor',26],['Roman',26],['Ilya',26],['Timur',12],['Matvei',12],
-              ['Fedor',12],['Daniil',12],['Konstantin',14],['Vlad',14],['Artur',14],['Vyacheslav',14],['Anatoli',14],['Danil',14],['Vasili',14],['Valeri',14],
-              ['Vladislav',14],['Maks',14],['Alex',14],['Alexandr',14],['Magomed',14],['Rustam',14],['Petr',14],['Stanislav',14],['Marat',14],['Ali',14],
-              ['Eduard',14],['Boris',14],['Stas',14],['Leonid',14],['Islam',14],['Shamil',14],['Aleks',14],['Gennadii',14],['Albert',14],['Yaroslav',14],['Semen',14],
-              ['Georgi',13],['David',13],['Grigori',13],['Stepan',13],['Arsen',13],['Murad',13],['Max',12],['Valentin',12],['Aslan',12],['Rinat',12],['Gleb',12],
-              ['Adam',12],['Azamat',11],['Akhmed',11],['Mark',11],['Ildar',11],['Said',11],['Ramil',11],['Rasul',11],['Alik',10],['Amir',10],['Damir',10],
-              ['Bogdan',10],['Ibragim',10],['Mihail',10],['Armen',10],['Ramazan',10],['Den',9],['Kamil',9],['Murat',9],['Andrew',9],['Timofei',9],['Lev',9],
-              ['Vitalik',9],['Zaur',9],['Renat',9],['Radik',9],['Alisher',8],['Eldar',8],['Robert',8],['Karen',8],['Ilyas',8],['Muslim',8],['Azat',8],['Yan',8],
-              ['Nik',8],['Umar',8],['Ilnur',8],['Rashid',8],['Almaz',8],['Arsenii',8],['Mansur',8],['Aziz',8],['Arkadii',8]
-            ]
-          },
+          first: [
+            ['Sergei',99],['Vladimir',60],['Andrei',83],['Nikolai',47],['Viktor',38],['Yuri',38],['Boris',16],['Oleg',45],['Igor',49],['Mikhail',45],
+            ['Alexander',100],['Alexei',82],['Dmitri',73],['Evgeni',61],['Maxim',54],['Ivan',55],['Denis',50],['Roman',45],['Pavel',43],['Anton',41],['Vitali',34],
+            ['Ruslan',40],['Vadim',31],['Artem',47],['Kirill',36],['Nikita',26],['Egor',28],['Ilya',26],['Timur',22],['Matvei',10],['Fedor',13],['Daniil',22],
+            ['Konstantin',30],['Vlad',29],['Artur',28],['Vyacheslav',27],['Anatoli',27],['Danil',25],['Vasili',25],['Valeri',25],['Vladislav',24],['Maks',23],
+            ['Alex',23],['Alexandr',22],['Magomed',20],['Rustam',20],['Petr',19],['Stanislav',18],['Marat',18],['Ali',18],['Eduard',17],['Stas',16],['Leonid',16],
+            ['Islam',15],['Shamil',15],['Aleks',15],['Gennadii',15],['Albert',14],['Yaroslav',14],['Semen',14],['Georgi',13],['David',13],['Grigori',13],
+            ['Stepan',13],['Arsen',13],['Murad',13],['Max',12],['Valentin',12],['Aslan',12],['Rinat',12],['Gleb',12],['Adam',12],['Azamat',11],['Akhmed',11],
+            ['Mark',11],['Ildar',11],['Said',11],['Ramil',11],['Rasul',11],['Alik',10],['Amir',10],['Damir',10],['Bogdan',10],['Ibragim',10],['Mihail',10],
+            ['Armen',10],['Ramazan',10],['Den',9],['Kamil',9],['Murat',9],['Andrew',9],['Timofei',9],['Lev',9],['Vitalik',9],['Zaur',9],['Renat',9],['Radik',9],
+            ['Alisher',8],['Eldar',8],['Robert',8],['Karen',8],['Ilyas',8],['Muslim',8],['Azat',8],['Yan',8],['Nik',8],['Umar',8],['Ilnur',8],['Rashid',8],
+            ['Almaz',8],['Arsenii',8],['Mansur',8],['Aziz',8],['Arkadii',8],['Mukhammad',8],['Emil',8],['Bulat',7],['Anvar',7],['German',7],['Alan',7],['Marsel',7],
+            ['Victor',7],['Aidar',7],['Arman',7],['Airat',7],['Ismail',7],['Bek',7],['Abdul',7],['Artyom',7],['Rodion',7],['Sanek',7],['Edik',6],['Rafael',6],
+            ['Zakhar',6],['Evgen',6],['Sultan',6],['Alim',6],['Samir',6],['Dimon',6],['Erik',6],['Dilshod',6],['Sherzod',6],['Ulugbek',6],['Garik',6],['Michael',6],
+            ['Khasan',6],['Ashot',6],['Nurik',6],['Sardor',6],['Nail',6],['Dinar',6],['Akmal',6],['Eugene',6],['Malik',6],['Gadzhi',6],['Tigran',6],['Muhammad',6],
+            ['Serzh',6],['Vasily',5],['John',5],['Samvel',5],['Tim',5],['Ravil',5],['Rustem',5],['Daniel',5],['Farid',5],['Edgar',5],['Aram',5],['Yakov',5],
+            ['Ainur',5],['Kurban',5],['Abu',5],['Nick',5],['Otabek',5],['Shukhrat',5],['Ilshat',5],['Serg',5],['Ramzan',5],['Anzor',5],['Zafar',5],['Vasiliy',5],
+            ['Tolik',5],['Azizbek',5],['Khabib',5],['Arslan',5],['George',5],['Tagir',5],['Gevorg',5],['Ilnar',5],['Ahmed',5],['Slavik',5],['Dzhon',4],
+            ['Salavat',4],['Umid',4],['Makhmud',4],['Filipp',4],['Mike',4],['Arthur',4],['Alikhan',4],['Yusup',4],['Anar',4],['Magamed',4],['Ilgiz',4],['Omar',4],
+            ['Artemii',4],['Svyatoslav',4],['Karim',4],['Gasan',4],['Farkhod',4],['Yarik',4],['Ivanov',4],['Rail',4],['Farrukh',4],['Rishat',4],['Paul',4],
+            ['Lenar',4],['Dzhamal',4],['Savelii',4],['Ilkhom',4],['Ilnaz',4],['Kolyan',4],['Kazbek',4],['Rostislav',4],['Radmir',4],['Seryi',4],['Rizvan',4],
+            ['Ramis',4],['Georgy',4],['Yusuf',4],['Rasim',4],['Grigory',4],['Makar',4],['Ilmir',4],['Sukhrob',4],['Askhab',4],['Mukhamed',4],['Nazar',4],
+            ['Diman',4],['Beslan',4],['Khamzat',4],['Akhmad',4],['Nurlan',4]
+          ],
           last: [
             ['Ivanov',100],['Smirnov',48],['Kuznetsov',49],['Popov',47],['Petrov',62],['Vasiliev',45],['Sokolov',34],['Volkov',38],['Novikov',34],['Morozov',34],
             ['Lebedev',26],['Kozlov',29],['Pavlov',34],['Orlov',29],['Fedorov',34],['Andreev',36],['Alekseev',32],['Makarov',33],['Nikitin',29],['Zaitsev',25],
@@ -2421,48 +2099,32 @@ const NAME_POOLS_BY_NATION = {
     // ── POL ──
     POL: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Jan',4],['Andrzej',3],['Krzysztof',4],['Marek',3],['Tomasz',3],['Piotr',4],['Stanisław',2],['Zbigniew',2],['Tadeusz',2],['Ryszard',2]
-            ],
-            mid: [
-              ['Piotr',100],['Marcin',95],['Krzysztof',90],['Paweł',86],['Tomasz',85],['Michał',85],['Łukasz',80],['Andrzej',77],['Marek',73],['Grzegorz',70],
-              ['Adam',70],['Mariusz',65],['Kamil',62],['Robert',60],['Rafał',59],['Jacek',56],['Maciej',54],['Damian',52],['Artur',51],['Dariusz',50],
-              ['Sebastian',49],['Dawid',56],['Mateusz',77],['Jan',49],['Jakub',49],['Daniel',48],['Patryk',47],['Wojciech',46],['Karol',43],['Adrian',43],
-              ['Szymon',42],['Zbigniew',41],['Janusz',41],['Bartosz',38],['Jerzy',37],['Kacper',36],['Dominik',35],['Ryszard',35],['Krystian',34],['Jarosław',33],
-              ['Arkadiusz',32],['Roman',32],['Przemek',31],['Przemysław',31],['Konrad',31],['Leszek',31],['Sławomir',30],['Pawel',30],['Maciek',29],['Darek',29],
-              ['Tadeusz',29],['Filip',29],['Stanisław',29],['Jarek',28],['Mirosław',28],['Bogdan',26],['Krzysiek',26],['Waldemar',26],['Michal',25],['Henryk',25],
-              ['Piotrek',25],['Hubert',24],['Józef',24],['Bartłomiej',24],['Arek',23],['Marian',23],['Radosław',23],['Mikołaj',23],['Radek',23],['Rafal',22],
-              ['Wiktor',22],['Wiesław',22],['Aleksander',21],['Sławek',21],['Lukasz',21],['Kazimierz',20],['Mirek',20],['Igor',19],['Oskar',18],['Sylwester',18],
-              ['Ireneusz',18],['Norbert',17],['Zbyszek',17],['Edward',16],['Cezary',16],['Zdzisław',16],['Witold',16],['Stefan',15],['Bogusław',15],['Stanislaw',15],
-              ['Błażej',15],['Miłosz',14],['Antoni',14],['Marcel',14],['Emil',14],['Grzesiek',13],['Eugeniusz',13],['Zygmunt',13],['Janek',13],['Zenon',13],
-              ['Mieczysław',12],['Jaroslaw',12],['Miroslaw',12],['Wieslaw',12],['Slawek',11],['Czesław',11],['Włodzimierz',11],['Slawomir',11],['Eryk',11],
-              ['Alan',11],['Waldek',11],['Jurek',11],['Irek',11],['Lech',10],['Remigiusz',10],['Władysław',10],['Franciszek',10],['Maks',10],['Franek',10],
-              ['Oliwier',10],['Olek',10],['Albert',9],['Seweryn',9],['Przemyslaw',9],['Nikodem',9],['Maksymilian',9],['Tom',9],['Alex',9],['Fabian',9],['Gabriel',9],
-              ['Zdzislaw',9],['Antek',9],['Martin',8],['Gracjan',8],['Denis',8],['Szczepan',8],['Tobiasz',8],['Bernard',8],['Witek',8],['Max',8],['Lucjan',8],
-              ['Ernest',8],['David',7],['Czarek',7],['Sylwek',7],['Kris',7],['Romek',7],['Leon',7],['Romuald',7],['Radoslaw',7],['Boguslaw',7],['Kornel',7],
-              ['Jędrzej',7],['Wacław',7],['Julian',7],['Olaf',7],['Borys',7],['Czeslaw',7],['Michael',7],['Seba',6],['Mar',6],['Mati',6],['Mieczyslaw',6],
-              ['Klaudiusz',6],['Mario',6],['Józek',6],['Ariel',6],['John',6],['Lukas',6],['Ivan',6],['Mikolaj',6],['Krzyś',6],['Kajetan',6],['Wiesiek',6],
-              ['Joachim',6],['Aleks',6],['Staszek',6],['Kazik',6],['Edmund',6],['Oleksandr',6],['Jasiek',6],['Mietek',6],['Oleg',6],['Wladyslaw',5],['Gerard',5],
-              ['Bogumił',5],['Bronisław',5],['Alek',5],['Tymoteusz',5],['Bart',5],['Bolesław',5],['Peter',5],['Pan',5],['Wlodzimierz',5],['Rysiek',5],['Amadeusz',5],
-              ['Zenek',5],['Roland',5],['Dorian',5],['Alfred',5],['Włodek',5],['Juliusz',5],['Tadek',5],['Natan',5],['Bartlomiej',5],['Rajmund',5],['Ignacy',5],
-              ['Przemo',5],['Tymek',5],['Maksym',5],['Pablo',5],['Jack',5],['Serhii',5],['Cyprian',5],['Beniamin',5],['Lesław',5],['Krzysiu',5],['Dima',5],['Greg',5],
-              ['Szymek',5],['Ludwik',4],['Sergiusz',4],['Aleksandr',4],['Anna',4],['Viktor',4],['Grześ',4],['Andrii',4],['Staś',4],['Bohdan',4],['Adaś',4],
-              ['Volodymyr',4],['Mat',4]
-            ],
-            modern: [
-              ['Jakub',45],['Kacper',45],['Mateusz',45],['Szymon',26],['Filip',26],['Bartosz',26],['Kamil',26],['Aleksander',26],['Antoni',26],['Wojciech',12],
-              ['Jan',14],['Daniel',14],['Patryk',14],['Karol',14],['Adrian',14],['Zbigniew',14],['Janusz',14],['Jerzy',14],['Dominik',14],['Ryszard',14],
-              ['Krystian',14],['Jarosław',14],['Arkadiusz',14],['Roman',14],['Przemek',14],['Przemysław',14],['Konrad',14],['Leszek',14],['Sławomir',14],['Pawel',14],
-              ['Maciek',14],['Darek',14],['Tadeusz',14],['Stanisław',14],['Jarek',14],['Mirosław',14],['Bogdan',14],['Krzysiek',14],['Waldemar',14],['Michal',14],
-              ['Henryk',14],['Piotrek',14],['Hubert',14],['Józef',14],['Bartłomiej',14],['Arek',14],['Marian',14],['Radosław',14],['Mikołaj',14],['Radek',14],
-              ['Rafal',14],['Wiktor',14],['Wiesław',14],['Sławek',14],['Lukasz',14],['Kazimierz',14],['Mirek',14],['Igor',14],['Oskar',14],['Sylwester',14],
-              ['Ireneusz',14],['Norbert',14],['Zbyszek',14],['Edward',14],['Cezary',14],['Zdzisław',14],['Witold',14],['Stefan',14],['Bogusław',14],['Stanislaw',14],
-              ['Błażej',14],['Miłosz',14],['Marcel',14],['Emil',14],['Grzesiek',13],['Eugeniusz',13],['Zygmunt',13],['Janek',13],['Zenon',13],['Mieczysław',12],
-              ['Jaroslaw',12],['Miroslaw',12],['Wieslaw',12],['Slawek',11],['Czesław',11],['Włodzimierz',11],['Slawomir',11],['Eryk',11],['Alan',11],['Waldek',11],
-              ['Jurek',11]
-            ]
-          },
+          first: [
+            ['Jan',49],['Andrzej',77],['Krzysztof',90],['Marek',73],['Tomasz',85],['Piotr',100],['Stanisław',29],['Zbigniew',41],['Tadeusz',29],['Ryszard',35],
+            ['Marcin',95],['Paweł',86],['Michał',85],['Łukasz',80],['Grzegorz',70],['Adam',70],['Mariusz',65],['Kamil',62],['Robert',60],['Rafał',59],['Jacek',56],
+            ['Maciej',54],['Damian',52],['Artur',51],['Dariusz',50],['Sebastian',49],['Dawid',56],['Jakub',49],['Kacper',36],['Mateusz',77],['Szymon',42],
+            ['Filip',29],['Bartosz',38],['Aleksander',21],['Antoni',14],['Wojciech',46],['Daniel',48],['Patryk',47],['Karol',43],['Adrian',43],['Janusz',41],
+            ['Jerzy',37],['Dominik',35],['Krystian',34],['Jarosław',33],['Arkadiusz',32],['Roman',32],['Przemek',31],['Przemysław',31],['Konrad',31],['Leszek',31],
+            ['Sławomir',30],['Pawel',30],['Maciek',29],['Darek',29],['Jarek',28],['Mirosław',28],['Bogdan',26],['Krzysiek',26],['Waldemar',26],['Michal',25],
+            ['Henryk',25],['Piotrek',25],['Hubert',24],['Józef',24],['Bartłomiej',24],['Arek',23],['Marian',23],['Radosław',23],['Mikołaj',23],['Radek',23],
+            ['Rafal',22],['Wiktor',22],['Wiesław',22],['Sławek',21],['Lukasz',21],['Kazimierz',20],['Mirek',20],['Igor',19],['Oskar',18],['Sylwester',18],
+            ['Ireneusz',18],['Norbert',17],['Zbyszek',17],['Edward',16],['Cezary',16],['Zdzisław',16],['Witold',16],['Stefan',15],['Bogusław',15],['Stanislaw',15],
+            ['Błażej',15],['Miłosz',14],['Marcel',14],['Emil',14],['Grzesiek',13],['Eugeniusz',13],['Zygmunt',13],['Janek',13],['Zenon',13],['Mieczysław',12],
+            ['Jaroslaw',12],['Miroslaw',12],['Wieslaw',12],['Slawek',11],['Czesław',11],['Włodzimierz',11],['Slawomir',11],['Eryk',11],['Alan',11],['Waldek',11],
+            ['Jurek',11],['Irek',11],['Lech',10],['Remigiusz',10],['Władysław',10],['Franciszek',10],['Maks',10],['Franek',10],['Oliwier',10],['Olek',10],
+            ['Albert',9],['Seweryn',9],['Przemyslaw',9],['Nikodem',9],['Maksymilian',9],['Tom',9],['Alex',9],['Fabian',9],['Gabriel',9],['Zdzislaw',9],['Antek',9],
+            ['Martin',8],['Gracjan',8],['Denis',8],['Szczepan',8],['Tobiasz',8],['Bernard',8],['Witek',8],['Max',8],['Lucjan',8],['Ernest',8],['David',7],
+            ['Czarek',7],['Sylwek',7],['Kris',7],['Romek',7],['Leon',7],['Romuald',7],['Radoslaw',7],['Boguslaw',7],['Kornel',7],['Jędrzej',7],['Wacław',7],
+            ['Julian',7],['Olaf',7],['Borys',7],['Czeslaw',7],['Michael',7],['Seba',6],['Mar',6],['Mati',6],['Mieczyslaw',6],['Klaudiusz',6],['Mario',6],
+            ['Józek',6],['Ariel',6],['John',6],['Lukas',6],['Ivan',6],['Mikolaj',6],['Krzyś',6],['Kajetan',6],['Wiesiek',6],['Joachim',6],['Aleks',6],['Staszek',6],
+            ['Kazik',6],['Edmund',6],['Oleksandr',6],['Jasiek',6],['Mietek',6],['Oleg',6],['Wladyslaw',5],['Gerard',5],['Bogumił',5],['Bronisław',5],['Alek',5],
+            ['Tymoteusz',5],['Bart',5],['Bolesław',5],['Peter',5],['Pan',5],['Wlodzimierz',5],['Rysiek',5],['Amadeusz',5],['Zenek',5],['Roland',5],['Dorian',5],
+            ['Alfred',5],['Włodek',5],['Juliusz',5],['Tadek',5],['Natan',5],['Bartlomiej',5],['Rajmund',5],['Ignacy',5],['Przemo',5],['Tymek',5],['Maksym',5],
+            ['Pablo',5],['Jack',5],['Serhii',5],['Cyprian',5],['Beniamin',5],['Lesław',5],['Krzysiu',5],['Dima',5],['Greg',5],['Szymek',5],['Ludwik',4],
+            ['Sergiusz',4],['Aleksandr',4],['Anna',4],['Viktor',4],['Grześ',4],['Andrii',4],['Staś',4],['Bohdan',4],['Adaś',4],['Volodymyr',4],['Mat',4],['Mike',4],
+            ['Anton',4],['Erwin',4],['Arnold',4],['Kevin',4],['Thomas',4],['Kordian',4],['Olivier',4],['Mark',4],['Alexander',4],['Paul',4],['Ksawery',4],
+            ['Milosz',4],['Maniek',4]
+          ],
           last: [
             ['Nowak',100],['Kowalski',60],['Wiśniewski',35],['Wójcik',51],['Kowalczyk',51],['Kamiński',33],['Lewandowski',32],['Zieliński',33],['Szymański',30],
             ['Woźniak',47],['Dąbrowski',29],['Mazur',43],['Kaczmarek',42],['Krawczyk',40],['Wieczorek',36],['Król',38],['Zając',37],['Sikora',33],['Adamczyk',33],
@@ -2509,45 +2171,29 @@ const NAME_POOLS_BY_NATION = {
     // ── CZE ──
     CZE: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Jan',4],['Petr',4],['Jiří',4],['Josef',3],['Václav',3],['Karel',3],['Miroslav',3],['František',2],['Zdeněk',2],['Ladislav',2]
-            ],
-            mid: [
-              ['Petr',100],['Martin',91],['Jan',83],['Tomáš',86],['Pavel',76],['Michal',72],['Jiří',76],['David',61],['Jakub',56],['Lukáš',63],['Josef',47],
-              ['Roman',47],['Milan',46],['Jaroslav',46],['Marek',45],['Radek',44],['Karel',42],['Miroslav',42],['Daniel',40],['Aleš',29],['Zdeněk',46],['Ondřej',39],
-              ['Václav',38],['Filip',37],['Adam',34],['Vladimír',33],['František',31],['Patrik',28],['Ladislav',27],['Dominik',27],['Matěj',26],['Libor',25],
-              ['Robert',24],['Stanislav',23],['Radim',22],['Ivan',22],['Luboš',22],['Vojtěch',22],['Mirek',20],['Richard',19],['Miloš',19],['Štěpán',19],
-              ['Antonín',18],['Kamil',18],['Michael',17],['Jaromír',17],['Míra',17],['Vašek',16],['Pepa',16],['Ivo',16],['Dušan',16],['Vít',15],['Vlastimil',15],
-              ['Jindřich',15],['Tom',15],['Luděk',15],['Viktor',15],['Dan',15],['Zbyněk',15],['Lubomír',15],['Miloslav',14],['Marcel',14],['Šimon',14],['Peter',13],
-              ['Standa',13],['Láďa',13],['Rudolf',13],['René',13],['Matyáš',12],['Rostislav',12],['Marian',12],['Oldřich',12],['Dalibor',12],['Kryštof',11],
-              ['Denis',11],['Alex',11],['Igor',10],['Robin',10],['Vladislav',10],['Fanda',10],['Štefan',10],['Bohumil',10],['Tonda',9],['Franta',9],['Radovan',9],
-              ['Erik',9],['Leoš',9],['Vláďa',9],['Tadeáš',9],['Alexandr',9],['Jozef',9],['Vítek',9],['Jára',9],['Honzík',8],['Mára',8],['Vítězslav',8],['Jindra',8],
-              ['Péťa',8],['Venca',8],['Jenda',8],['Eduard',8],['Rosťa',8],['Mates',8],['Andrej',8],['Emil',7],['Samuel',7],['Zdenda',7],['Hynek',7],['Matouš',7],
-              ['Radomír',7],['Víťa',7],['Sebastian',7],['Vasyl',7],['Luky',7],['Přemysl',7],['Bohuslav',7],['Alexander',7],['Olda',7],['Max',7],['Pája',7],['Maty',7],
-              ['John',7],['Thomas',6],['Vilém',6],['Jarek',6],['Ruda',6],['Jonáš',6],['Ludvík',6],['George',6],['Otakar',6],['Tony',6],['Vratislav',6],['Dave',6],
-              ['Míša',6],['Ota',6],['Kristian',6],['Anton',6],['Johny',6],['Boris',6],['Oliver',6],['Alois',6],['Lumír',6],['Evžen',6],['Slávek',6],['Míla',6],
-              ['Juraj',6],['Tibor',6],['Nikolas',6],['Bronislav',5],['Jura',5],['Vlasta',5],['Bedřich',5],['Oleg',5],['Mario',5],['Kája',5],['Mike',5],
-              ['Břetislav',5],['Jáchym',5],['Vasil',5],['Otto',5],['Marty',5],['Tobiáš',5],['Bohdan',5],['Arnošt',5],['Radoslav',5],['Bob',5],['Danny',5],
-              ['Gabriel',5],['Adrian',5],['Alan',5],['Paul',5],['Albert',5],['Karlos',5],['Patrick',5],['Marťas',4],['Mikuláš',4],['Pavol',4],['Maxim',4],
-              ['Svatopluk',4],['Saša',4],['Milda',4],['Vlastik',4],['Artur',4],['Jiřík',4],['Tomík',4],['Kevin',4],['Sam',4],['Andrey',4],['Pepe',4],['Mark',4],
-              ['Ruslan',4],['Slavomír',4],['Pepino',4],['Sergey',4],['Nikita',4],['Leo',4],['Kubík',4],['Pepik',4],['Eda',4],['Julius',4],['Andrei',4],['Venda',4],
-              ['Mojmír',4],['Nicolas',4],['Luke',4],['Hugo',4],['Ali',4],['Andrew',4],['Sláva',4],['Přemek',4],['James',4],['Miro',4],['Johnny',4],['Tommy',4],
-              ['Norbert',4],['Vlastislav',4],['Bořek',4],['Oto',4],['Sergej',4],['Hanz',4],['Oskar',4],['Dawe',4],['Nikola',4],['Ion',4],['Lucas',4],['Marco',4],
-              ['Vlad',4],['Ladik',4],['Lubor',4],['Hans',3]
-            ],
-            modern: [
-              ['Jakub',45],['Adam',45],['Lukáš',45],['David',45],['Ondřej',26],['Matyáš',26],['Filip',26],['Vojtěch',26],['Daniel',26],['Marek',26],['Zdeněk',14],
-              ['Václav',14],['Vladimír',14],['František',14],['Patrik',14],['Ladislav',14],['Dominik',14],['Matěj',14],['Libor',14],['Robert',14],['Stanislav',14],
-              ['Radim',14],['Ivan',14],['Luboš',14],['Mirek',14],['Richard',14],['Miloš',14],['Štěpán',14],['Antonín',14],['Kamil',14],['Michael',14],['Jaromír',14],
-              ['Míra',14],['Vašek',14],['Pepa',14],['Ivo',14],['Dušan',14],['Vít',14],['Vlastimil',14],['Jindřich',14],['Tom',14],['Luděk',14],['Viktor',14],
-              ['Dan',14],['Zbyněk',14],['Lubomír',14],['Miloslav',14],['Marcel',14],['Šimon',14],['Peter',13],['Standa',13],['Láďa',13],['Rudolf',13],['René',13],
-              ['Rostislav',12],['Marian',12],['Oldřich',12],['Dalibor',12],['Kryštof',11],['Denis',11],['Alex',11],['Igor',10],['Robin',10],['Vladislav',10],
-              ['Fanda',10],['Štefan',10],['Bohumil',10],['Tonda',9],['Franta',9],['Radovan',9],['Erik',9],['Leoš',9],['Vláďa',9],['Tadeáš',9],['Alexandr',9],
-              ['Jozef',9],['Vítek',9],['Jára',9],['Honzík',8],['Mára',8],['Vítězslav',8],['Jindra',8],['Péťa',8],['Venca',8],['Jenda',8],['Eduard',8],['Rosťa',8],
-              ['Mates',8],['Andrej',8],['Emil',7],['Samuel',7],['Zdenda',7],['Hynek',7],['Matouš',7],['Radomír',7]
-            ]
-          },
+          first: [
+            ['Jan',83],['Petr',100],['Jiří',76],['Josef',47],['Václav',38],['Karel',42],['Miroslav',42],['František',31],['Zdeněk',46],['Ladislav',27],
+            ['Martin',91],['Tomáš',86],['Pavel',76],['Michal',72],['David',61],['Jakub',56],['Lukáš',63],['Roman',47],['Milan',46],['Jaroslav',46],['Marek',45],
+            ['Radek',44],['Daniel',40],['Aleš',29],['Adam',34],['Ondřej',39],['Matyáš',12],['Filip',37],['Vojtěch',22],['Vladimír',33],['Patrik',28],['Dominik',27],
+            ['Matěj',26],['Libor',25],['Robert',24],['Stanislav',23],['Radim',22],['Ivan',22],['Luboš',22],['Mirek',20],['Richard',19],['Miloš',19],['Štěpán',19],
+            ['Antonín',18],['Kamil',18],['Michael',17],['Jaromír',17],['Míra',17],['Vašek',16],['Pepa',16],['Ivo',16],['Dušan',16],['Vít',15],['Vlastimil',15],
+            ['Jindřich',15],['Tom',15],['Luděk',15],['Viktor',15],['Dan',15],['Zbyněk',15],['Lubomír',15],['Miloslav',14],['Marcel',14],['Šimon',14],['Peter',13],
+            ['Standa',13],['Láďa',13],['Rudolf',13],['René',13],['Rostislav',12],['Marian',12],['Oldřich',12],['Dalibor',12],['Kryštof',11],['Denis',11],
+            ['Alex',11],['Igor',10],['Robin',10],['Vladislav',10],['Fanda',10],['Štefan',10],['Bohumil',10],['Tonda',9],['Franta',9],['Radovan',9],['Erik',9],
+            ['Leoš',9],['Vláďa',9],['Tadeáš',9],['Alexandr',9],['Jozef',9],['Vítek',9],['Jára',9],['Honzík',8],['Mára',8],['Vítězslav',8],['Jindra',8],['Péťa',8],
+            ['Venca',8],['Jenda',8],['Eduard',8],['Rosťa',8],['Mates',8],['Andrej',8],['Emil',7],['Samuel',7],['Zdenda',7],['Hynek',7],['Matouš',7],['Radomír',7],
+            ['Víťa',7],['Sebastian',7],['Vasyl',7],['Luky',7],['Přemysl',7],['Bohuslav',7],['Alexander',7],['Olda',7],['Max',7],['Pája',7],['Maty',7],['John',7],
+            ['Thomas',6],['Vilém',6],['Jarek',6],['Ruda',6],['Jonáš',6],['Ludvík',6],['George',6],['Otakar',6],['Tony',6],['Vratislav',6],['Dave',6],['Míša',6],
+            ['Ota',6],['Kristian',6],['Anton',6],['Johny',6],['Boris',6],['Oliver',6],['Alois',6],['Lumír',6],['Evžen',6],['Slávek',6],['Míla',6],['Juraj',6],
+            ['Tibor',6],['Nikolas',6],['Bronislav',5],['Jura',5],['Vlasta',5],['Bedřich',5],['Oleg',5],['Mario',5],['Kája',5],['Mike',5],['Břetislav',5],
+            ['Jáchym',5],['Vasil',5],['Otto',5],['Marty',5],['Tobiáš',5],['Bohdan',5],['Arnošt',5],['Radoslav',5],['Bob',5],['Danny',5],['Gabriel',5],['Adrian',5],
+            ['Alan',5],['Paul',5],['Albert',5],['Karlos',5],['Patrick',5],['Marťas',4],['Mikuláš',4],['Pavol',4],['Maxim',4],['Svatopluk',4],['Saša',4],['Milda',4],
+            ['Vlastik',4],['Artur',4],['Jiřík',4],['Tomík',4],['Kevin',4],['Sam',4],['Andrey',4],['Pepe',4],['Mark',4],['Ruslan',4],['Slavomír',4],['Pepino',4],
+            ['Sergey',4],['Nikita',4],['Leo',4],['Kubík',4],['Pepik',4],['Eda',4],['Julius',4],['Andrei',4],['Venda',4],['Mojmír',4],['Nicolas',4],['Luke',4],
+            ['Hugo',4],['Ali',4],['Andrew',4],['Sláva',4],['Přemek',4],['James',4],['Miro',4],['Johnny',4],['Tommy',4],['Norbert',4],['Vlastislav',4],['Bořek',4],
+            ['Oto',4],['Sergej',4],['Hanz',4],['Oskar',4],['Dawe',4],['Nikola',4],['Ion',4],['Lucas',4],['Marco',4],['Vlad',4],['Ladik',4],['Lubor',4],['Hans',3],
+            ['Miky',3],['Artem',3],['Vadim',3],['Volodymyr',3],['Vladan',3],['Misha',3],['Oleksandr',3],['Mykola',3],['Miki',3]
+          ],
           last: [
             ['Novák',100],['Svoboda',71],['Novotný',72],['Dvořák',65],['Černý',58],['Procházka',53],['Kučera',51],['Veselý',48],['Horák',44],['Němec',43],
             ['Marek',44],['Pokorný',42],['Král',42],['Krejčí',44],['Hájek',41],['Pospíšil',39],['Beneš',40],['Fiala',38],['Sedláček',37],['Urban',35],
@@ -2590,45 +2236,30 @@ const NAME_POOLS_BY_NATION = {
     // ── HUN ──
     HUN: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['László',3],['Zoltán',3],['István',3],['Ferenc',3],['János',3],['Gábor',3],['Attila',3],['Sándor',2],['József',3],['Károly',2]
-            ],
-            mid: [
-              ['László',100],['Gábor',96],['Zoltán',96],['Attila',86],['Tamás',89],['Péter',92],['István',87],['Zsolt',75],['János',71],['Csaba',63],['Ferenc',63],
-              ['József',71],['Balázs',65],['Tibor',58],['Sándor',63],['András',62],['Norbert',47],['Krisztián',49],['György',45],['Róbert',50],['Dávid',57],
-              ['Ádám',57],['Dániel',51],['Bence',48],['Máté',43],['Imre',41],['Gergő',41],['Roland',38],['Ákos',38],['Gergely',38],['Márk',38],['Szabolcs',37],
-              ['Lajos',37],['Bálint',36],['Miklós',36],['Gyula',35],['Viktor',35],['Béla',34],['Károly',34],['Richárd',33],['Mihály',31],['Levente',29],['Márton',27],
-              ['Kristóf',27],['Kovács',26],['Martin',25],['Pál',25],['Szabó',24],['Tóth',24],['Árpád',24],['Patrik',23],['Horváth',23],['Antal',23],['Géza',21],
-              ['Szilárd',20],['Alex',20],['Milán',20],['Áron',20],['Marcell',20],['Kiss',20],['Dani',19],['Barnabás',19],['Dominik',19],['Mátyás',18],['Varga',18],
-              ['Erik',18],['Laci',18],['Olivér',17],['Endre',17],['Zsombor',17],['Zoli',16],['Kornél',16],['Molnár',16],['Kálmán',16],['Benjamin',16],['Dénes',15],
-              ['Németh',15],['Jenő',15],['Botond',15],['Nándor',14],['Tomi',14],['Ernő',14],['Benedek',14],['Adrián',14],['Peti',13],['Balogh',13],['Marci',13],
-              ['Barna',13],['Farkas',13],['Norbi',12],['Ottó',12],['Vilmos',12],['Simon',12],['Dezső',12],['Iván',11],['Kevin',11],['Andor',11],['Jani',10],
-              ['Arnold',10],['Ricsi',10],['Papp',10],['Ervin',10],['Takács',10],['Bertalan',10],['Szilveszter',10],['Tibi',10],['Sanyi',10],['Soma',10],['Albert',10],
-              ['Andris',10],['Ali',10],['Juhász',9],['Csongor',9],['Robi',9],['Márió',9],['Márkó',9],['Gyuri',9],['Zalán',9],['Győző',9],['Rudolf',9],['Lóránt',9],
-              ['Zsolti',9],['Fekete',9],['Ábel',9],['Donát',9],['Csabi',9],['Alexander',9],['Henrik',8],['Lakatos',8],['Misi',8],['Bendegúz',8],['Józsi',8],
-              ['Domonkos',8],['Vince',8],['Mészáros',8],['Feri',8],['Kis',8],['John',8],['Krisztofer',8],['Emil',7],['Renátó',7],['Miki',7],['Gusztáv',7],['Szabi',7],
-              ['Tivadar',7],['Thomas',7],['Szilágyi',7],['Imi',7],['George',7],['Kocsis',7],['Lóránd',7],['Magyar',7],['Fehér',7],['Noel',7],['Mohamed',7],['Rácz',7],
-              ['Ahmed',7],['Pisti',7],['Elek',7],['Ágoston',7],['Gáspár',7],['Gál',7],['Jakab',7],['Flórián',7],['Ármin',7],['Hegedűs',7],['Oláh',6],['Török',6],
-              ['Joci',6],['Levi',6],['Bíró',6],['Boldizsár',6],['Michael',6],['Sipos',6],['Illés',6],['Pintér',6],['Hunor',6],['Beni',6],['Bogdán',6],['Zsigmond',6],
-              ['Király',6],['Orsós',6],['Ede',6],['Valentin',6],['Elemér',6],['Fodor',6],['Gabi',6],['Lukács',6],['Pista',6],['Mohammad',6],['Stefan',6],
-              ['Gellért',6],['Rajmund',6],['Fülöp',6],['Kelemen',6],['Ambrus',6],['Tom',6],['Fábián',5],['Sebestyén',5],['Roli',5],['Katona',5],['Szalai',5],
-              ['Jocó',5],['Amir',5],['Lali',5],['Boros',5],['Joe',5],['Artúr',5],['Geri',5],['Álmos',5],['Samuel',5],['Rafael',5],['Vincze',5],['Csanád',5],
-              ['Frigyes',5],['Chris',5],['Andrew',5],['Somogyi',5],['Igor',5],['Sebastian',5],['Ahmad',5],['Koppány',5],['Gabriel',5],['Gulyás',5],['Matyi',5],
-              ['Pap',5],['Lacika',5],['Frank',5],['Kerekes',5],['Paul',5]
-            ],
-            modern: [
-              ['Bence',45],['Máté',45],['Ádám',45],['Dávid',45],['Dániel',45],['Levente',26],['Dominik',26],['Márk',26],['Balázs',26],['Milán',12],['Zalán',12],
-              ['Imre',14],['Gergő',14],['Roland',14],['Ákos',14],['Gergely',14],['Szabolcs',14],['Lajos',14],['Bálint',14],['Miklós',14],['Gyula',14],['Viktor',14],
-              ['Béla',14],['Károly',14],['Richárd',14],['Mihály',14],['Márton',14],['Kristóf',14],['Kovács',14],['Martin',14],['Pál',14],['Szabó',14],['Tóth',14],
-              ['Árpád',14],['Patrik',14],['Horváth',14],['Antal',14],['Géza',14],['Szilárd',14],['Alex',14],['Áron',14],['Marcell',14],['Kiss',14],['Dani',14],
-              ['Barnabás',14],['Mátyás',14],['Varga',14],['Erik',14],['Laci',14],['Olivér',14],['Endre',14],['Zsombor',14],['Zoli',14],['Kornél',14],['Molnár',14],
-              ['Kálmán',14],['Benjamin',14],['Dénes',14],['Németh',14],['Jenő',14],['Botond',14],['Nándor',14],['Tomi',14],['Ernő',14],['Benedek',14],['Adrián',14],
-              ['Peti',13],['Balogh',13],['Marci',13],['Barna',13],['Farkas',13],['Norbi',12],['Ottó',12],['Vilmos',12],['Simon',12],['Dezső',12],['Iván',11],
-              ['Kevin',11],['Andor',11],['Jani',10],['Arnold',10],['Ricsi',10],['Papp',10],['Ervin',10],['Takács',10],['Bertalan',10],['Szilveszter',10],['Tibi',10],
-              ['Sanyi',10],['Soma',10],['Albert',10],['Andris',10]
-            ]
-          },
+          first: [
+            ['László',100],['Zoltán',96],['István',87],['Ferenc',63],['János',71],['Gábor',96],['Attila',86],['Sándor',63],['József',71],['Károly',34],['Tamás',89],
+            ['Péter',92],['Zsolt',75],['Csaba',63],['Balázs',65],['Tibor',58],['András',62],['Norbert',47],['Krisztián',49],['György',45],['Róbert',50],
+            ['Bence',48],['Máté',43],['Ádám',57],['Dávid',57],['Dániel',51],['Levente',29],['Dominik',19],['Márk',38],['Milán',20],['Zalán',9],['Imre',41],
+            ['Gergő',41],['Roland',38],['Ákos',38],['Gergely',38],['Szabolcs',37],['Lajos',37],['Bálint',36],['Miklós',36],['Gyula',35],['Viktor',35],['Béla',34],
+            ['Richárd',33],['Mihály',31],['Márton',27],['Kristóf',27],['Kovács',26],['Martin',25],['Pál',25],['Szabó',24],['Tóth',24],['Árpád',24],['Patrik',23],
+            ['Horváth',23],['Antal',23],['Géza',21],['Szilárd',20],['Alex',20],['Áron',20],['Marcell',20],['Kiss',20],['Dani',19],['Barnabás',19],['Mátyás',18],
+            ['Varga',18],['Erik',18],['Laci',18],['Olivér',17],['Endre',17],['Zsombor',17],['Zoli',16],['Kornél',16],['Molnár',16],['Kálmán',16],['Benjamin',16],
+            ['Dénes',15],['Németh',15],['Jenő',15],['Botond',15],['Nándor',14],['Tomi',14],['Ernő',14],['Benedek',14],['Adrián',14],['Peti',13],['Balogh',13],
+            ['Marci',13],['Barna',13],['Farkas',13],['Norbi',12],['Ottó',12],['Vilmos',12],['Simon',12],['Dezső',12],['Iván',11],['Kevin',11],['Andor',11],
+            ['Jani',10],['Arnold',10],['Ricsi',10],['Papp',10],['Ervin',10],['Takács',10],['Bertalan',10],['Szilveszter',10],['Tibi',10],['Sanyi',10],['Soma',10],
+            ['Albert',10],['Andris',10],['Ali',10],['Juhász',9],['Csongor',9],['Robi',9],['Márió',9],['Márkó',9],['Gyuri',9],['Győző',9],['Rudolf',9],['Lóránt',9],
+            ['Zsolti',9],['Fekete',9],['Ábel',9],['Donát',9],['Csabi',9],['Alexander',9],['Henrik',8],['Lakatos',8],['Misi',8],['Bendegúz',8],['Józsi',8],
+            ['Domonkos',8],['Vince',8],['Mészáros',8],['Feri',8],['Kis',8],['John',8],['Krisztofer',8],['Emil',7],['Renátó',7],['Miki',7],['Gusztáv',7],['Szabi',7],
+            ['Tivadar',7],['Thomas',7],['Szilágyi',7],['Imi',7],['George',7],['Kocsis',7],['Lóránd',7],['Magyar',7],['Fehér',7],['Noel',7],['Mohamed',7],['Rácz',7],
+            ['Ahmed',7],['Pisti',7],['Elek',7],['Ágoston',7],['Gáspár',7],['Gál',7],['Jakab',7],['Flórián',7],['Ármin',7],['Hegedűs',7],['Oláh',6],['Török',6],
+            ['Joci',6],['Levi',6],['Bíró',6],['Boldizsár',6],['Michael',6],['Sipos',6],['Illés',6],['Pintér',6],['Hunor',6],['Beni',6],['Bogdán',6],['Zsigmond',6],
+            ['Király',6],['Orsós',6],['Ede',6],['Valentin',6],['Elemér',6],['Fodor',6],['Gabi',6],['Lukács',6],['Pista',6],['Mohammad',6],['Stefan',6],
+            ['Gellért',6],['Rajmund',6],['Fülöp',6],['Kelemen',6],['Ambrus',6],['Tom',6],['Fábián',5],['Sebestyén',5],['Roli',5],['Katona',5],['Szalai',5],
+            ['Jocó',5],['Amir',5],['Lali',5],['Boros',5],['Joe',5],['Artúr',5],['Geri',5],['Álmos',5],['Samuel',5],['Rafael',5],['Vincze',5],['Csanád',5],
+            ['Frigyes',5],['Chris',5],['Andrew',5],['Somogyi',5],['Igor',5],['Sebastian',5],['Ahmad',5],['Koppány',5],['Gabriel',5],['Gulyás',5],['Matyi',5],
+            ['Pap',5],['Lacika',5],['Frank',5],['Kerekes',5],['Paul',5],['Bruno',5],['Béci',5],['Steve',5],['Christian',5],['Kozma',5],['Mike',5],['Ati',5],
+            ['Marco',5],['Fazekas',5],['Krisz',5],['Karesz',5]
+          ],
           last: [
             ['Nagy',100],['Kovács',96],['Tóth',92],['Szabó',90],['Horváth',88],['Kiss',74],['Varga',70],['Molnár',61],['Németh',57],['Farkas',50],['Balogh',47],
             ['Papp',39],['Takács',40],['Juhász',37],['Simon',33],['Fekete',31],['Mészáros',33],['Bíró',26],['Lakatos',30],['Szilágyi',29],['Rácz',29],['Kis',28],
@@ -2725,36 +2356,24 @@ const NAME_POOLS_BY_NATION = {
     // ── ISR ──
     ISR: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['David',4],['Moshe',3],['Yossi',3],['Avi',3],['Dan',3],['Uri',3],['Gil',2],['Eyal',2],['Ronen',2],['Chanoch',1]
-            ],
-            mid: [
-              ['David',100],['Daniel',99],['Avi',85],['Moshe',77],['Yossi',61],['Eli',69],['Guy',74],['Lior',68],['Roy',46],['Tomer',67],['Alon',62],['Eyal',61],
-              ['Oren',48],['Nir',59],['Michael',78],['Alex',72],['Tal',68],['Amit',65],['Omer',65],['Idan',61],['Yuval',61],['Rami',59],['Shay',59],['Ben',59],
-              ['Adam',58],['Ron',57],['Ido',56],['Noam',55],['Matan',55],['Itay',54],['Gal',54],['Abed',53],['Khaled',52],['Ori',52],['Yaniv',51],['Asaf',51],
-              ['Ariel',50],['Abo',50],['Elad',50],['Dor',50],['Abu',50],['Shlomi',50],['Omri',50],['Ameer',50],['Haim',50],['Alaa',49],['Yosef',48],['Eran',47],
-              ['Nadav',47],['Ilan',47],['Dan',47],['Igor',47],['Maor',46],['Gil',45],['Meir',45],['Aviv',45],['Kobi',45],['Yair',44],['Bar',43],['Fadi',43],
-              ['Ofir',43],['Yoav',43],['Ran',43],['Boris',42],['Sami',42],['Yonatan',42],['Samer',42],['Ofer',42],['Israel',41],['Shai',41],['Ronen',41],
-              ['Shahar',41],['Adi',41],['Shimon',41],['Yaron',40],['Erez',39],['Amer',39],['Alexander',39],['Yosi',39],['Doron',39],['Uri',39],['Vladimir',39],
-              ['Itzik',38],['Yoni',38],['Anas',38],['Dima',38],['Tom',38],['Osama',37],['Moti',37],['Sergey',36],['Yazan',36],['Oleg',36],['Shlomo',36],['Ohad',36],
-              ['Tamir',36],['Gilad',36],['Eitan',35],['Itamar',35],['Ofek',35],['Majd',35],['Roi',35],['Ayman',35],['Mark',35],['Ziv',34],['Shadi',34],['Roni',34],
-              ['Tamer',34],['Niv',34],['Mahmod',34],['Ashraf',34],['Roman',34],['Yakov',34],['Saleh',34],['Hamza',33],['Hasan',33],['Netanel',33],['Sharon',33],
-              ['Dror',33],['Liran',33],['Eliran',33],['Sagi',33],['Yehuda',33],['Barak',32],['Raz',32],['Adir',32],['Dani',31],['Jamal',31],['Abd',31],['Oded',31],
-              ['Andrey',31],['Emad',31],['Leonid',31],['Mostafa',30],['Raed',30],['Assaf',30],['Rafi',30],['Shmuel',30],['Jonathan',30],['Yarin',30],['Amjad',29],
-              ['Eden',29],['Maher',29],['Itai',29],['Almog',29],['Ibrahem',29],['Noor',29],['Abood',29],['Rotem',28],['Kfir',28],['Mohmad',28],['Orel',28],
-              ['Arie',28],['Elias',28],['Basel',28],['Arik',28],['Igal',28],['Liron',27],['Abdallah',27],['Chen',27],['Victor',27],['Naor',27],['Max',27],
-              ['Benny',27],['Danny',27]
-            ],
-            modern: [
-              ['Daniel',45],['Ariel',26],['Itay',26],['Noam',26],['Omer',26],['Yonatan',26],['Roy',26],['Tomer',26],['Ido',12],['Alon',12],['Michael',14],['Alex',14],
-              ['Tal',14],['Amit',14],['Idan',14],['Yuval',14],['Rami',14],['Shay',14],['Ben',14],['Adam',14],['Ron',14],['Matan',14],['Gal',14],['Abed',14],
-              ['Khaled',14],['Ori',14],['Yaniv',14],['Asaf',14],['Abo',14],['Elad',14],['Dor',14],['Abu',14],['Shlomi',14],['Omri',14],['Ameer',14],['Haim',14],
-              ['Alaa',14],['Yosef',14],['Eran',14],['Nadav',14],['Ilan',14],['Dan',14],['Igor',14],['Maor',14],['Gil',14],['Meir',14],['Aviv',14],['Kobi',14],
-              ['Yair',14],['Bar',14],['Fadi',14],['Ofir',14],['Yoav',14],['Ran',14],['Boris',14],['Sami',14],['Samer',14],['Ofer',14],['Israel',14],['Shai',14],
-              ['Ronen',14],['Shahar',14],['Adi',14],['Shimon',14]
-            ]
-          },
+          first: [
+            ['David',100],['Moshe',77],['Yossi',61],['Avi',85],['Dan',47],['Uri',39],['Gil',45],['Eyal',61],['Ronen',41],['Chanoch',2],['Daniel',99],['Eli',69],
+            ['Guy',74],['Lior',68],['Roy',46],['Tomer',67],['Alon',62],['Oren',48],['Nir',59],['Ariel',50],['Itay',54],['Noam',55],['Omer',65],['Yonatan',42],
+            ['Ido',56],['Michael',78],['Alex',72],['Tal',68],['Amit',65],['Idan',61],['Yuval',61],['Rami',59],['Shay',59],['Ben',59],['Adam',58],['Ron',57],
+            ['Matan',55],['Gal',54],['Abed',53],['Khaled',52],['Ori',52],['Yaniv',51],['Asaf',51],['Abo',50],['Elad',50],['Dor',50],['Abu',50],['Shlomi',50],
+            ['Omri',50],['Ameer',50],['Haim',50],['Alaa',49],['Yosef',48],['Eran',47],['Nadav',47],['Ilan',47],['Igor',47],['Maor',46],['Meir',45],['Aviv',45],
+            ['Kobi',45],['Yair',44],['Bar',43],['Fadi',43],['Ofir',43],['Yoav',43],['Ran',43],['Boris',42],['Sami',42],['Samer',42],['Ofer',42],['Israel',41],
+            ['Shai',41],['Shahar',41],['Adi',41],['Shimon',41],['Yaron',40],['Erez',39],['Amer',39],['Alexander',39],['Yosi',39],['Doron',39],['Vladimir',39],
+            ['Itzik',38],['Yoni',38],['Anas',38],['Dima',38],['Tom',38],['Osama',37],['Moti',37],['Sergey',36],['Yazan',36],['Oleg',36],['Shlomo',36],['Ohad',36],
+            ['Tamir',36],['Gilad',36],['Eitan',35],['Itamar',35],['Ofek',35],['Majd',35],['Roi',35],['Ayman',35],['Mark',35],['Ziv',34],['Shadi',34],['Roni',34],
+            ['Tamer',34],['Niv',34],['Mahmod',34],['Ashraf',34],['Roman',34],['Yakov',34],['Saleh',34],['Hamza',33],['Hasan',33],['Netanel',33],['Sharon',33],
+            ['Dror',33],['Liran',33],['Eliran',33],['Sagi',33],['Yehuda',33],['Barak',32],['Raz',32],['Adir',32],['Dani',31],['Jamal',31],['Abd',31],['Oded',31],
+            ['Andrey',31],['Emad',31],['Leonid',31],['Mostafa',30],['Raed',30],['Assaf',30],['Rafi',30],['Shmuel',30],['Jonathan',30],['Yarin',30],['Amjad',29],
+            ['Eden',29],['Maher',29],['Itai',29],['Almog',29],['Ibrahem',29],['Noor',29],['Abood',29],['Rotem',28],['Kfir',28],['Mohmad',28],['Orel',28],
+            ['Arie',28],['Elias',28],['Basel',28],['Arik',28],['Igal',28],['Liron',27],['Abdallah',27],['Chen',27],['Victor',27],['Naor',27],['Max',27],
+            ['Benny',27],['Danny',27],['Ehab',27],['Jacob',27],['Mor',27],['Waleed',26],['Dvir',26],['Vadim',26],['Shalom',26],['Salah',26],['Nati',26],
+            ['George',26]
+          ],
           last: [
             ['Cohen',100],['Levi',57],['Levy',44],['Mizrahi',29],['Peretz',27],['Friedman',14],['Katz',25],['Biton',27],['Dahan',30],['Avraham',24],['Azoulay',11],
             ['Amar',27],['Ohayon',21],['Shapiro',10],['Ben-David',7],['Malka',25],['Ohana',19],['Nissany',2],['Bar',26],['Tal',26],['Yosef',24],['Mor',24],
@@ -2892,36 +2511,24 @@ const NAME_POOLS_BY_NATION = {
     // ── INA ──
     INA: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Agus',4],['Budi',4],['Bambang',4],['Eko',3],['Iwan',3],['Hendra',3],['Herman',3],['Rudy',3],['Eddy',3],['Imam',2]
-            ],
-            mid: [
-              ['Agus',100],['Budi',74],['Hendra',60],['Indra',55],['Andi',62],['Agung',50],['Adi',49],['Wahyu',41],['Eko',55],['Dimas',26],['Fajar',30],['Arya',21],
-              ['Muhammad',98],['Bambang',72],['Ahmad',70],['Iwan',57],['Rudy',55],['Achmad',50],['Eddy',49],['David',46],['Herman',45],['Edy',43],['Ali',43],
-              ['Andy',42],['Daniel',41],['Imam',41],['Benny',40],['Herry',40],['Irwan',40],['Ferry',40],['Yudi',40],['Hadi',40],['Arief',39],['Heru',39],['Ade',39],
-              ['Rudi',39],['Edi',39],['Arif',39],['Anton',39],['Andreas',38],['Muhamad',38],['Joko',38],['Erwin',38],['Dwi',37],['Ari',37],['Harry',37],['Ricky',37],
-              ['Andri',37],['Michael',36],['Gunawan',36],['Teguh',36],['Nur',36],['Tri',36],['Henry',35],['Asep',35],['Tony',35],['Johan',34],['Denny',33],
-              ['Chandra',33],['Andre',33],['John',33],['Bayu',33],['Ivan',33],['Putra',32],['Teddy',32],['Surya',32],['Heri',32],['Dedy',32],['Tommy',31],
-              ['Mohammad',31],['William',31],['Wawan',30],['Kevin',30],['Jimmy',30],['Yohanes',30],['Alex',30],['Antonius',30],['Yusuf',30],['Slamet',30],
-              ['Ronny',30],['Hari',30],['Dedi',30],['Hasan',30],['Hendri',29],['Roy',29],['Aditya',29],['Hery',29],['Djoko',29],['Edwin',28],['Aris',28],['Reza',28],
-              ['Ridwan',28],['Robert',28],['Hartono',28],['Abu',28],['Bang',27],['Richard',27],['Hendry',27],['Steven',27],['Samuel',27],['Dede',27],['Eka',27],
-              ['Willy',27],['Rahmat',27],['Faisal',27],['Sigit',27],['Arie',27],['Hendro',27],['Bagus',27],['Ryan',27],['Made',27],['Lukman',26],['Albert',26],
-              ['Mohamad',26],['Kang',26],['Firman',26],['Moch',26],['Alexander',26],['Dicky',26],['Angga',26],['Rizal',26],['Robby',26],['Donny',26],['Taufik',25],
-              ['Freddy',25],['Thomas',25],['Ilham',25],['Frans',25],['Deddy',25],['Wayan',25],['Hengky',25],['Raden',25],['Tan',25],['Susanto',25],['Rio',24],
-              ['Amin',24],['Sugeng',24],['Akhmad',24],['Christian',24],['Hendrik',24],['Didik',24],['Irfan',24],['Iman',24],['Yanto',24],['Peter',24],['Alvin',24],
-              ['Ketut',24],['Didi',23],['Irawan',23],['Mulyadi',23],['Nanang',23],['Paulus',23],['Muh',23],['Anthony',23],['Anto',23],['Wisnu',23],['Edward',23],
-              ['Rizky',23],['Victor',23],['Leo',23],['Eric',23],['Santoso',23]
-            ],
-            modern: [
-              ['Rizky',26],['Aditya',26],['Kevin',12],['Daniel',12],['Dimas',12],['Fajar',12],['Putra',12],['Arya',12],['Bagus',2],['Presly',2],['Muhammad',14],
-              ['Bambang',14],['Ahmad',14],['Iwan',14],['Rudy',14],['Achmad',14],['Eddy',14],['David',14],['Herman',14],['Edy',14],['Ali',14],['Andy',14],['Imam',14],
-              ['Benny',14],['Herry',14],['Irwan',14],['Ferry',14],['Yudi',14],['Hadi',14],['Arief',14],['Heru',14],['Ade',14],['Rudi',14],['Edi',14],['Arif',14],
-              ['Anton',14],['Andreas',14],['Muhamad',14],['Joko',14],['Erwin',14],['Dwi',14],['Ari',14],['Harry',14],['Ricky',14],['Andri',14],['Michael',14],
-              ['Gunawan',14],['Teguh',14],['Nur',14],['Tri',14],['Henry',14],['Asep',14],['Tony',14],['Johan',14],['Denny',14],['Chandra',14],['Andre',14],
-              ['John',14],['Bayu',14],['Ivan',14],['Teddy',14],['Surya',14],['Heri',14],['Dedy',14],['Tommy',14],['Mohammad',14],['William',14],['Wawan',14]
-            ]
-          },
+          first: [
+            ['Agus',100],['Budi',74],['Bambang',72],['Eko',55],['Iwan',57],['Hendra',60],['Herman',45],['Rudy',55],['Eddy',49],['Imam',41],['Indra',55],['Andi',62],
+            ['Agung',50],['Adi',49],['Wahyu',41],['Dimas',26],['Fajar',30],['Arya',21],['Rizky',23],['Aditya',29],['Kevin',30],['Daniel',41],['Putra',32],
+            ['Bagus',27],['Presly',2],['Muhammad',98],['Ahmad',70],['Achmad',50],['David',46],['Edy',43],['Ali',43],['Andy',42],['Benny',40],['Herry',40],
+            ['Irwan',40],['Ferry',40],['Yudi',40],['Hadi',40],['Arief',39],['Heru',39],['Ade',39],['Rudi',39],['Edi',39],['Arif',39],['Anton',39],['Andreas',38],
+            ['Muhamad',38],['Joko',38],['Erwin',38],['Dwi',37],['Ari',37],['Harry',37],['Ricky',37],['Andri',37],['Michael',36],['Gunawan',36],['Teguh',36],
+            ['Nur',36],['Tri',36],['Henry',35],['Asep',35],['Tony',35],['Johan',34],['Denny',33],['Chandra',33],['Andre',33],['John',33],['Bayu',33],['Ivan',33],
+            ['Teddy',32],['Surya',32],['Heri',32],['Dedy',32],['Tommy',31],['Mohammad',31],['William',31],['Wawan',30],['Jimmy',30],['Yohanes',30],['Alex',30],
+            ['Antonius',30],['Yusuf',30],['Slamet',30],['Ronny',30],['Hari',30],['Dedi',30],['Hasan',30],['Hendri',29],['Roy',29],['Hery',29],['Djoko',29],
+            ['Edwin',28],['Aris',28],['Reza',28],['Ridwan',28],['Robert',28],['Hartono',28],['Abu',28],['Bang',27],['Richard',27],['Hendry',27],['Steven',27],
+            ['Samuel',27],['Dede',27],['Eka',27],['Willy',27],['Rahmat',27],['Faisal',27],['Sigit',27],['Arie',27],['Hendro',27],['Ryan',27],['Made',27],
+            ['Lukman',26],['Albert',26],['Mohamad',26],['Kang',26],['Firman',26],['Moch',26],['Alexander',26],['Dicky',26],['Angga',26],['Rizal',26],['Robby',26],
+            ['Donny',26],['Taufik',25],['Freddy',25],['Thomas',25],['Ilham',25],['Frans',25],['Deddy',25],['Wayan',25],['Hengky',25],['Raden',25],['Tan',25],
+            ['Susanto',25],['Rio',24],['Amin',24],['Sugeng',24],['Akhmad',24],['Christian',24],['Hendrik',24],['Didik',24],['Irfan',24],['Iman',24],['Yanto',24],
+            ['Peter',24],['Alvin',24],['Ketut',24],['Didi',23],['Irawan',23],['Mulyadi',23],['Nanang',23],['Paulus',23],['Muh',23],['Anthony',23],['Anto',23],
+            ['Wisnu',23],['Edward',23],['Victor',23],['Leo',23],['Eric',23],['Santoso',23],['Moh',23],['Deni',22],['Toni',22],['Adrian',22],['Amir',22],
+            ['Sonny',22],['Gatot',22],['Dadang',22],['Yan',22],['Lie',22],['Ronald',22],['Budiman',22]
+          ],
           last: [
             ['Wijaya',100],['Gunawan',94],['Setiawan',81],['Santoso',78],['Kurniawan',72],['Susanto',61],['Putra',61],['Hidayat',61],['Wibowo',57],['Nugroho',54],
             ['Saputra',51],['Hartono',50],['Chandra',63],['Halim',64],['Siregar',44],['Salim',43],['Pratama',41],['Kusuma',42],['Widjaja',59],['Tanuwidjaja',12],
@@ -3039,46 +2646,32 @@ const NAME_POOLS_BY_NATION = {
     // ── NOR ──
     NOR: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Ole',4],['Per',4],['Kjell',4],['Odd',3],['Arne',3],['Knut',3],['Gunnar',3],['Leif',3],['Rolf',2],['Einar',2],['Ivar',2],['Reidar',1]
-            ],
-            mid: [
-              ['Lars',88],['Morten',91],['Espen',74],['Geir',76],['Terje',76],['Rune',77],['Bjørn',89],['Erik',81],['Thomas',100],['Tor',57],['Frode',58],
-              ['Kjetil',60],['Trond',70],['Stig',47],['Roger',46],['Petter',57],['Henrik',61],['Marius',71],['Kristian',70],['Anders',84],['Jan',87],['Andreas',86],
-              ['Martin',85],['Daniel',82],['Per',76],['Christian',74],['Ole',74],['Stian',72],['Fredrik',69],['Knut',68],['Øyvind',67],['Magnus',66],['Eirik',66],
-              ['Arne',62],['Tore',61],['Kjell',61],['Svein',61],['Jonas',60],['Tom',59],['John',58],['Jørgen',57],['Øystein',56],['Alexander',56],['Kenneth',56],
-              ['Jon',54],['Harald',53],['Håkon',53],['Robert',53],['Kristoffer',52],['Tommy',52],['Frank',51],['Håvard',51],['Hans',51],['Pål',50],['Steinar',50],
-              ['Vidar',50],['Gunnar',49],['Helge',49],['Arild',49],['Olav',48],['Kim',48],['Simen',48],['Eivind',47],['André',47],['David',46],['Vegard',46],
-              ['Michael',46],['Sindre',45],['Sondre',44],['Rolf',44],['Odd',44],['Joakim',44],['Erlend',43],['Dag',43],['Einar',43],['Ola',42],['Stein',42],
-              ['Mathias',42],['Sebastian',41],['Johan',41],['Mats',40],['Aleksander',39],['Lasse',39],['Nils',39],['Ronny',38],['Peter',38],['Mohammad',38],
-              ['Jarle',38],['Emil',38],['Jostein',38],['Ahmad',38],['Roy',37],['Adrian',37],['Even',37],['Simon',37],['Magne',37],['Jens',37],['Henning',37],
-              ['Markus',37],['Roar',36],['Robin',36],['Egil',36],['Ivar',36],['Torbjørn',36],['Atle',35],['Leif',35],['Christoffer',35],['Sverre',34],['Adam',34],
-              ['Jørn',34],['Joachim',34],['Benjamin',34],['Bjørnar',33],['Ove',33],['Kåre',33],['Johannes',33],['Sigurd',32],['Tobias',32],['Marcus',32],
-              ['Erling',32],['Alex',32],['Johnny',32],['Richard',31],['Paul',31],['Sander',31],['Glenn',30],['Thor',30],['Asbjørn',30],['Ståle',29],['Tomas',29],
-              ['Torstein',29],['Ørjan',29],['Christopher',29],['Steffen',29],['Reidar',29],['Mads',29],['Arve',29],['Arvid',29],['Christer',29],['Chris',29],
-              ['Audun',29],['Kai',29],['Bård',29],['Trygve',28],['Finn',28],['Kevin',28],['Karl',28],['Raymond',28],['Runar',28],['William',28],['Bjarne',28],
-              ['Inge',28],['Patrick',28],['Alf',27],['Piotr',27],['Truls',27],['Torgeir',26],['Stefan',26],['Øivind',26],['Oddvar',26],['Jakob',26],['Mohamad',26],
-              ['Marcin',25],['Elias',25],['Mikael',25],['Ruben',25],['Tony',25],['Cato',25],['Ragnar',24],['Sven',24],['Peder',24],['Jacob',24],['Tomasz',24],
-              ['Tormod',24],['Krzysztof',24],['Herman',23],['Ketil',23],['Jonathan',23],['Haakon',23],['Endre',23],['Jonny',23],['Dan',23],['Jan Erik',23],
-              ['Carl',23],['Kurt',23],['Preben',23],['Åge',23],['Amir',22],['Gaute',22],['Bendik',22],['Nicolai',22],['Halvor',22],['Nikolai',22],['Bjarte',22],
-              ['Abdi',22],['Are',22],['Yngve',21],['James',21],['Jesper',21],['Kent',21],['Hussein',21],['Arnfinn',21],['Vetle',21],['Victor',21],['Ivan',20],
-              ['Dennis',20],['Oscar',20],['Sigmund',20],['Dagfinn',20],['Åsmund',20],['Samuel',20],['Marek',20],['Philip',20],['Bernt',20],['Roald',20],['Sami',20],
-              ['Mikkel',20],['Sveinung',20],['Aksel',20],['Oskar',20],['Grzegorz',20],['Børge',20],['Mariusz',19],['Mahmoud',19],['Oliver',19],['Said',19],['Tim',19],
-              ['Willy',19],['Andrzej',19],['Eric',19]
-            ],
-            modern: [
-              ['Emil',45],['Sander',45],['Markus',45],['Jonas',45],['Mathias',45],['Magnus',45],['Oskar',26],['Sebastian',26],['Oliver',26],['Filip',26],['Noah',26],
-              ['Dennis',12],['Sondre',12],['Aksel',12],['Eirik',12],['Theodor',12],['Jan',14],['Andreas',14],['Martin',14],['Daniel',14],['Per',14],['Christian',14],
-              ['Ole',14],['Stian',14],['Fredrik',14],['Knut',14],['Øyvind',14],['Arne',14],['Tore',14],['Kjell',14],['Svein',14],['Tom',14],['John',14],['Jørgen',14],
-              ['Øystein',14],['Alexander',14],['Kenneth',14],['Jon',14],['Harald',14],['Håkon',14],['Robert',14],['Kristoffer',14],['Tommy',14],['Frank',14],
-              ['Håvard',14],['Hans',14],['Pål',14],['Steinar',14],['Vidar',14],['Gunnar',14],['Helge',14],['Arild',14],['Olav',14],['Kim',14],['Simen',14],
-              ['Eivind',14],['André',14],['David',14],['Vegard',14],['Michael',14],['Sindre',14],['Rolf',14],['Odd',14],['Joakim',14],['Erlend',14],['Dag',14],
-              ['Einar',14],['Ola',14],['Stein',14],['Johan',14],['Mats',14],['Aleksander',14],['Lasse',14],['Nils',14],['Ronny',14],['Peter',14],['Mohammad',14],
-              ['Jarle',14],['Jostein',14],['Ahmad',14],['Roy',14],['Adrian',14],['Even',14],['Simon',14],['Magne',14],['Jens',14],['Henning',14],['Roar',14],
-              ['Robin',14],['Egil',14],['Ivar',14],['Torbjørn',14],['Atle',14],['Leif',14],['Christoffer',14],['Sverre',14],['Adam',14],['Jørn',14]
-            ]
-          },
+          first: [
+            ['Ole',74],['Per',76],['Kjell',61],['Odd',44],['Arne',62],['Knut',68],['Gunnar',49],['Leif',35],['Rolf',44],['Einar',43],['Ivar',36],['Reidar',29],
+            ['Lars',88],['Morten',91],['Espen',74],['Geir',76],['Terje',76],['Rune',77],['Bjørn',89],['Erik',81],['Thomas',100],['Tor',57],['Frode',58],
+            ['Kjetil',60],['Trond',70],['Stig',47],['Roger',46],['Petter',57],['Henrik',61],['Marius',71],['Kristian',70],['Anders',84],['Emil',38],['Sander',31],
+            ['Markus',37],['Jonas',60],['Mathias',42],['Magnus',66],['Oskar',20],['Sebastian',41],['Oliver',19],['Filip',18],['Noah',9],['Dennis',20],['Sondre',44],
+            ['Aksel',20],['Eirik',66],['Theodor',11],['Jan',87],['Andreas',86],['Martin',85],['Daniel',82],['Christian',74],['Stian',72],['Fredrik',69],
+            ['Øyvind',67],['Tore',61],['Svein',61],['Tom',59],['John',58],['Jørgen',57],['Øystein',56],['Alexander',56],['Kenneth',56],['Jon',54],['Harald',53],
+            ['Håkon',53],['Robert',53],['Kristoffer',52],['Tommy',52],['Frank',51],['Håvard',51],['Hans',51],['Pål',50],['Steinar',50],['Vidar',50],['Helge',49],
+            ['Arild',49],['Olav',48],['Kim',48],['Simen',48],['Eivind',47],['André',47],['David',46],['Vegard',46],['Michael',46],['Sindre',45],['Joakim',44],
+            ['Erlend',43],['Dag',43],['Ola',42],['Stein',42],['Johan',41],['Mats',40],['Aleksander',39],['Lasse',39],['Nils',39],['Ronny',38],['Peter',38],
+            ['Mohammad',38],['Jarle',38],['Jostein',38],['Ahmad',38],['Roy',37],['Adrian',37],['Even',37],['Simon',37],['Magne',37],['Jens',37],['Henning',37],
+            ['Roar',36],['Robin',36],['Egil',36],['Torbjørn',36],['Atle',35],['Christoffer',35],['Sverre',34],['Adam',34],['Jørn',34],['Joachim',34],
+            ['Benjamin',34],['Bjørnar',33],['Ove',33],['Kåre',33],['Johannes',33],['Sigurd',32],['Tobias',32],['Marcus',32],['Erling',32],['Alex',32],['Johnny',32],
+            ['Richard',31],['Paul',31],['Glenn',30],['Thor',30],['Asbjørn',30],['Ståle',29],['Tomas',29],['Torstein',29],['Ørjan',29],['Christopher',29],
+            ['Steffen',29],['Mads',29],['Arve',29],['Arvid',29],['Christer',29],['Chris',29],['Audun',29],['Kai',29],['Bård',29],['Trygve',28],['Finn',28],
+            ['Kevin',28],['Karl',28],['Raymond',28],['Runar',28],['William',28],['Bjarne',28],['Inge',28],['Patrick',28],['Alf',27],['Piotr',27],['Truls',27],
+            ['Torgeir',26],['Stefan',26],['Øivind',26],['Oddvar',26],['Jakob',26],['Mohamad',26],['Marcin',25],['Elias',25],['Mikael',25],['Ruben',25],['Tony',25],
+            ['Cato',25],['Ragnar',24],['Sven',24],['Peder',24],['Jacob',24],['Tomasz',24],['Tormod',24],['Krzysztof',24],['Herman',23],['Ketil',23],['Jonathan',23],
+            ['Haakon',23],['Endre',23],['Jonny',23],['Dan',23],['Jan Erik',23],['Carl',23],['Kurt',23],['Preben',23],['Åge',23],['Amir',22],['Gaute',22],
+            ['Bendik',22],['Nicolai',22],['Halvor',22],['Nikolai',22],['Bjarte',22],['Abdi',22],['Are',22],['Yngve',21],['James',21],['Jesper',21],['Kent',21],
+            ['Hussein',21],['Arnfinn',21],['Vetle',21],['Victor',21],['Ivan',20],['Oscar',20],['Sigmund',20],['Dagfinn',20],['Åsmund',20],['Samuel',20],
+            ['Marek',20],['Philip',20],['Bernt',20],['Roald',20],['Sami',20],['Mikkel',20],['Sveinung',20],['Grzegorz',20],['Børge',20],['Mariusz',19],
+            ['Mahmoud',19],['Said',19],['Tim',19],['Willy',19],['Andrzej',19],['Eric',19],['Khalid',19],['Mark',19],['Ken',18],['Vegar',18],['Gabriel',18],
+            ['Khaled',18],['Abdullah',18],['Birger',18],['Isak',18],['Osman',18],['Oddbjørn',18],['Rasmus',18],['Sigbjørn',18],['Adnan',18],['Axel',18],
+            ['Ismail',18],['Georg',18],['Viktor',18],['Max',18],['Jack',18],['Bent',18],['Hasan',17],['Edvard',17],['Anton',17],['Arnt',17]
+          ],
           last: [
             ['Hansen',100],['Olsen',95],['Johansen',93],['Andersen',83],['Larsen',81],['Pedersen',78],['Nilsen',74],['Kristiansen',62],['Jensen',60],['Johnsen',58],
             ['Karlsen',56],['Berg',55],['Eriksen',54],['Pettersen',53],['Haugen',47],['Hagen',45],['Johannessen',45],['Jacobsen',44],['Dahl',43],['Andreassen',42],
@@ -3189,19 +2782,12 @@ const NAME_POOLS_BY_NATION = {
     // ── TUR ──
     TUR: { regions: [
         { w: 1,
-          first: {
-            early: [
-              ['Mehmet',4],['Ahmet',4],['Mustafa',4],['Ali',3],['Hasan',3],['Hüseyin',3],['İbrahim',3],['Osman',2],['Süleyman',2],['Kemal',2],['Orhan',2],['Erol',2]
-            ],
-            mid: [
-              ['Murat',4],['Emre',4],['Hakan',4],['Gökhan',3],['Serkan',3],['Volkan',3],['Tolga',3],['Burak',3],['Onur',3],['Özgür',3],['Cem',3],['Barış',3],
-              ['Serdar',3],['Selçuk',2],['Erhan',2],['Tayfun',2],['Kenan',2],['Levent',2]
-            ],
-            modern: [
-              ['Arda',4],['Mert',4],['Can',4],['Kerem',4],['Ege',3],['Deniz',3],['Efe',3],['Emir',3],['Yiğit',3],['Alp',2],['Berkay',2],['Kuzey',1],['Çınar',1],
-              ['Ayaz',1]
-            ]
-          },
+          first: [
+            ['Mehmet',4],['Ahmet',4],['Mustafa',4],['Ali',3],['Hasan',3],['Hüseyin',3],['İbrahim',3],['Osman',2],['Süleyman',2],['Kemal',2],['Orhan',2],['Erol',2],
+            ['Murat',4],['Emre',4],['Hakan',4],['Gökhan',3],['Serkan',3],['Volkan',3],['Tolga',3],['Burak',3],['Onur',3],['Özgür',3],['Cem',3],['Barış',3],
+            ['Serdar',3],['Selçuk',2],['Erhan',2],['Tayfun',2],['Kenan',2],['Levent',2],['Arda',4],['Mert',4],['Can',4],['Kerem',4],['Ege',3],['Deniz',3],['Efe',3],
+            ['Emir',3],['Yiğit',3],['Alp',2],['Berkay',2],['Kuzey',1],['Çınar',1],['Ayaz',1]
+          ],
           last: [
             ['Yılmaz',100],['Kaya',97],['Demir',91],['Çelik',79],['Can',78],['Öztürk',73],['Yıldız',72],['Özdemir',67],['Aydın',67],['Yıldırım',66],['Arslan',64],
             ['Doğan',63],['Aslan',59],['Kara',57],['Yilmaz',49],['Kurt',48],['Koç',48],['Gül',46],['Korkmaz',45],['Polat',44],['Özkan',42],['Acar',42],
@@ -3872,25 +3458,23 @@ const NAME_TAILS_BY_NATION = {
     BRA: [
         { r: 0,
           first: [
-            'Edinaldo','Jonatas','Josias','Robert','Assis','Christian','Erik','Amarildo','Evaldo','Everson','Marciano','Itamar','Messias','Mikael','Andrey',
-            'Fagner','Erivaldo','Edgar','Carlinhos','Carlos Alberto','Clayton','Kelvin','Dudu','Alvaro','Joelson','James','Emanoel','Altair','Heitor','Elizeu',
-            'Paulo Henrique','Genilson','Valdinei','Amauri','Jonatan','Gui','Andrei','José Roberto','Alexandro','Adrián','Cleyton','Elvis','Adailton','Aldo',
-            'Irineu','Alysson','Ari','Adalberto','Luis Carlos','Valdemar','Julio Cesar','Jurandir','Levi','Silva','Josiel','Ewerton','Jadson','Cassio','Lucio',
-            'Marcello','Nando','Giovane','Edmar','Armando','Silvano','Edivan','Luiz Henrique','Adenilson','Caique','Darlan','Magno','Edimar','Arlindo','Clovis',
-            'Edison','Ariel','Wallace','Gelson','Nonato','Johnny','Alcides','Regis','Jailton','Erivan','Afonso','Marciel','Maikon','Wanderley','Cezar','Alfredo',
-            'Eliseu','Nildo','Paulo Roberto','Edvan','Clodoaldo','Sidinei','Amilton','Josenildo','Eudes','Biel','Lauro','Will','Edu','Eliel','Erinaldo','Geovani',
-            'Yan','Romildo','Frank','Óscar','Edenilson','Lourival','Darci','Rian','João Batista','Wilton','Bryan','Giovanni','Jaison','Maykon','Cassiano','Adriel',
-            'Ray','Jhon','Paulo Cesar','Hiago','Cauã','Wendel','Vando','Thomas','Djalma','Thales','Eraldo','Silas','Tarcisio','Donizete','Isaque','Vanderson','Ney',
-            'Marcilio','Hamilton','Franklin','Josemar','Josivan','Aguinaldo','Helton','Francinaldo','Welington','Gleison','Ygor','Jhonny','Osni','Micael',
-            'Genivaldo','Carlos Henrique','Hudson','Roni','Dario','Tadeu','Edimilson','Ronald','Weverton','Nei','Adair','Iran','Roberio','Genival','Rony','Thyago',
-            'Dinho','Jhony','Luiz Felipe','Jhonata','Marcel','Ana','Alef','Kennedy','Isac','Batista','Givanildo','Savio','Valmor','Santos','Helder','Valdomiro',
-            'Eliezer','Valdeir','Peterson','Anthony','Wilian','Paulo Sergio','Oliveira','Rivaldo','Val','Icaro','Adelson','Chagas','Elson','Luis Fernando',
-            'Janderson','Anselmo','Jean Carlos','Ian','Pietro','Marcondes','Izaias','Inacio','Welton','Cosme','Rick','Fellipe','Expedito','Marquinhos','Valdenir',
-            'Jesús','Germano','Enio','Josivaldo','Junio','Marco Antonio','Erasmo','Rui','Cleberson','Brunno','Vini','Rinaldo','Elcio','Fred','Ademilson',
-            'Marcelino','Toninho','Abel','Volnei','Wendell','Mauri','Cosmo','Lazaro','Leomar','Dione','Vinicios','Vitinho','Aldair','Edinho','Dede','Marcone',
-            'Pedrinho','Givaldo','Alceu','Roque','Misael','Claudecir','Gildo','Netinho','Glauber','Fabinho','Rai','Eugenio','Zezinho','Rodrigues','Janio','Dimas',
-            'Jakson','Weliton','Jhonathan','Iranildo','Alyson','Jacson','Marcos Antonio','Brayan','Haroldo','Luiz Gustavo','Rene','Mariano','Waldir','Victor Hugo',
-            'Antonio Marcos','Ernandes'
+            'Joelson','James','Emanoel','Altair','Elizeu','Paulo Henrique','Genilson','Valdinei','Amauri','Jonatan','Gui','Andrei','José Roberto','Alexandro',
+            'Adrián','Cleyton','Elvis','Adailton','Aldo','Irineu','Alysson','Ari','Adalberto','Luis Carlos','Valdemar','Julio Cesar','Jurandir','Levi','Silva',
+            'Josiel','Ewerton','Jadson','Cassio','Lucio','Marcello','Nando','Giovane','Edmar','Armando','Silvano','Edivan','Luiz Henrique','Adenilson','Caique',
+            'Darlan','Magno','Edimar','Arlindo','Clovis','Edison','Ariel','Wallace','Gelson','Nonato','Johnny','Alcides','Regis','Jailton','Erivan','Afonso',
+            'Marciel','Maikon','Wanderley','Cezar','Alfredo','Eliseu','Nildo','Paulo Roberto','Edvan','Clodoaldo','Sidinei','Amilton','Josenildo','Eudes','Biel',
+            'Lauro','Will','Edu','Eliel','Erinaldo','Geovani','Yan','Romildo','Frank','Óscar','Edenilson','Lourival','Darci','Rian','João Batista','Wilton','Bryan',
+            'Giovanni','Jaison','Maykon','Cassiano','Adriel','Ray','Jhon','Paulo Cesar','Hiago','Cauã','Wendel','Vando','Thomas','Djalma','Thales','Eraldo','Silas',
+            'Tarcisio','Donizete','Isaque','Vanderson','Ney','Marcilio','Hamilton','Franklin','Josemar','Josivan','Aguinaldo','Helton','Francinaldo','Welington',
+            'Gleison','Ygor','Jhonny','Osni','Micael','Genivaldo','Carlos Henrique','Hudson','Roni','Dario','Tadeu','Edimilson','Ronald','Weverton','Nei','Adair',
+            'Iran','Roberio','Genival','Rony','Thyago','Dinho','Jhony','Luiz Felipe','Jhonata','Marcel','Ana','Alef','Kennedy','Isac','Batista','Givanildo','Savio',
+            'Valmor','Santos','Helder','Valdomiro','Eliezer','Valdeir','Peterson','Anthony','Wilian','Paulo Sergio','Oliveira','Rivaldo','Val','Icaro','Adelson',
+            'Chagas','Elson','Luis Fernando','Janderson','Anselmo','Jean Carlos','Ian','Pietro','Marcondes','Izaias','Inacio','Welton','Cosme','Rick','Fellipe',
+            'Expedito','Marquinhos','Valdenir','Jesús','Germano','Enio','Josivaldo','Junio','Marco Antonio','Erasmo','Rui','Cleberson','Brunno','Vini','Rinaldo',
+            'Elcio','Fred','Ademilson','Marcelino','Toninho','Abel','Volnei','Wendell','Mauri','Cosmo','Lazaro','Leomar','Dione','Vinicios','Vitinho','Aldair',
+            'Edinho','Dede','Marcone','Pedrinho','Givaldo','Alceu','Roque','Misael','Claudecir','Gildo','Netinho','Glauber','Fabinho','Rai','Eugenio','Zezinho',
+            'Rodrigues','Janio','Dimas','Jakson','Weliton','Jhonathan','Iranildo','Alyson','Jacson','Marcos Antonio','Brayan','Haroldo','Luiz Gustavo','Rene',
+            'Mariano','Waldir','Victor Hugo','Antonio Marcos','Ernandes'
           ],
           last: [
             'Cipriano','Mourão','Klein','Tomé','Cassia','Lessa','Karoline','Lucio','Marcio','Renato','Samuel','Cristine','Fraga','Nacimento','Casagrande','Diogo',
@@ -3957,24 +3541,22 @@ const NAME_TAILS_BY_NATION = {
     JPN: [
         { r: 0,
           first: [
-            'Yudai','Jin','Helio','Samuel','Luciano','Shotaro','Tatsuo','Jonathan','Henrique','Christian','Akinori','Nobuaki','Kazuyoshi','Celso','Tanaka',
-            'Alexander','Hugo','Jay','Adriano','Andy','Kenichiro','Tsukasa','Noriaki','Takehiro','Dan','Tetsuro','Brian','Tomo','Teppei','Masami','Mohammed',
-            'Martin','Ben','Norio','Haruki','Yasunori','Suguru','Nick','Jiro','Aki','Ryutaro','Kouji','Takeru','Ryan','Mitsuo','Shinnosuke','Kaz','Kousuke',
-            'Hidenori','Joao','Ryoji','Adam','Ryotaro','Suzuki','Motoki','Emerson','Tomohiko','Riku','Soichiro','Naohiro','Mikio','Matthew','Kazumasa','Yoshinobu',
-            'Vinicius','Yoshifumi','Akihito','Gen','Christopher','Flavio','Ryoichi','Fumio','Frank','Dinesh','Douglas','Joseph','Steven','Ivan','Max','Eiichi',
-            'Takahashi','Isamu','Silvio','Issei','Simon','Katsuhiro','Jumpei','Walter','Shiro','Kouki','Hidetoshi','Shunichi','Nao','Patrick','Deepak','Hiroya',
-            'Hide','Fumiya','Kouichi','Takaya','Hiromi','Singh','Kouhei','Yasuaki','Tomokazu','Yoshihisa','Masahito','Masaharu','Krishna','Henry','Katsuhiko',
-            'Ronaldo','Matt','Erick','Wagner','Steve','Takayoshi','Willian','Jaime','Robson','Gaku','Hiromitsu','Toshikazu','Francisco','Watanabe','Tatsuro',
-            'Shigeo','Joshua','Matheus','Kazutaka','Taishi','Amir','Alan','Manoj','Hidekazu','Daigo','Manuel','Nakamura','Sean','Yasutaka','Javier','Mehmet',
-            'Ryusuke','Hideto','Ren','Justin','Tatsuki','Takehiko','Tetsu','Alessandro','Kodai','Taisuke','Takahiko','Mizuki','Alejandro','Ito','Yasuhiko','Takuto',
-            'Jack','Prakash','Charles','Hiromichi','Hasan','Rana','Omar','Kazuto','Yuri','Shimpei','Kamal','Shigeyuki','Seiichi','Ram','Yasu','Genki','Michio',
-            'Sota','Yamamoto','Nicolas','Stephen','Johnny','Taiga','Katsunori','Shaikh','Kazushi','Diogo','Yamada','Yoichiro','Masanobu','Yusaku','Danilo',
-            'Brandon','Rei','Haruo','Sandro','Keiichiro','Yoshimasa','Yuhei','Shunji','Akito','Kenzo','Takahisa','Yoshiharu','Raj','Jeff','Rui','Denis','Kunihiko',
-            'Kunio','Junpei','Ryoma','Yousuke','Rajesh','Saito','Kozo','Kyosuke','Fabiano','Fumiaki','Yoshihito','Ippei','Benjamin','Ian','Suresh','Lee','Hassan',
-            'Harry','Katsuyuki','Toshiro','Renan','Igor','Ramesh','Hiroyasu','Jimmy','Reo','Yoshida','Caio','Josh','Roshan','Kato','Kent','Kazunari','Mustafa',
-            'Hiromasa','Michel','Nobuhiko','Kobayashi','Erik','Kazuhisa','Roger','Yushi','Shunya','Imran','Aaron','Yoji','Kazuhito','Gilberto','Prince','Abdullah',
-            'Bryan','Yuzo','Lahiru','Kunihiro','Raúl','Kiyotaka','Kenny','Felix','Hiromu','Hironobu','Hisao','Santosh','Norihiro','Pablo','Raju','Takahito','Roy',
-            'Edgar','Tim','Mahesh','Shinobu'
+            'Andy','Kenichiro','Tsukasa','Noriaki','Takehiro','Dan','Tetsuro','Brian','Tomo','Teppei','Masami','Mohammed','Martin','Ben','Norio','Haruki',
+            'Yasunori','Suguru','Nick','Jiro','Aki','Ryutaro','Kouji','Takeru','Ryan','Mitsuo','Shinnosuke','Kaz','Kousuke','Hidenori','Joao','Ryoji','Adam',
+            'Ryotaro','Suzuki','Motoki','Emerson','Tomohiko','Soichiro','Naohiro','Mikio','Matthew','Kazumasa','Yoshinobu','Vinicius','Yoshifumi','Akihito','Gen',
+            'Christopher','Flavio','Ryoichi','Fumio','Frank','Dinesh','Douglas','Joseph','Steven','Ivan','Max','Eiichi','Takahashi','Isamu','Silvio','Issei',
+            'Simon','Katsuhiro','Jumpei','Walter','Shiro','Kouki','Hidetoshi','Shunichi','Nao','Patrick','Deepak','Hiroya','Hide','Fumiya','Kouichi','Takaya',
+            'Hiromi','Singh','Kouhei','Yasuaki','Tomokazu','Yoshihisa','Masahito','Masaharu','Krishna','Henry','Katsuhiko','Ronaldo','Matt','Erick','Wagner',
+            'Steve','Takayoshi','Willian','Jaime','Robson','Gaku','Hiromitsu','Toshikazu','Francisco','Watanabe','Tatsuro','Shigeo','Joshua','Matheus','Kazutaka',
+            'Taishi','Amir','Alan','Manoj','Hidekazu','Daigo','Manuel','Nakamura','Sean','Yasutaka','Javier','Mehmet','Ryusuke','Hideto','Justin','Tatsuki',
+            'Takehiko','Alessandro','Kodai','Taisuke','Takahiko','Mizuki','Alejandro','Ito','Yasuhiko','Takuto','Jack','Prakash','Charles','Hiromichi','Hasan',
+            'Rana','Omar','Kazuto','Yuri','Shimpei','Kamal','Shigeyuki','Seiichi','Ram','Yasu','Genki','Michio','Yamamoto','Nicolas','Stephen','Johnny','Taiga',
+            'Katsunori','Shaikh','Kazushi','Diogo','Yamada','Yoichiro','Masanobu','Yusaku','Danilo','Brandon','Rei','Haruo','Sandro','Keiichiro','Yoshimasa',
+            'Yuhei','Shunji','Akito','Kenzo','Takahisa','Yoshiharu','Raj','Jeff','Rui','Denis','Kunihiko','Kunio','Junpei','Ryoma','Yousuke','Rajesh','Saito',
+            'Kozo','Kyosuke','Fabiano','Fumiaki','Yoshihito','Ippei','Benjamin','Ian','Suresh','Lee','Hassan','Harry','Katsuyuki','Toshiro','Renan','Igor','Ramesh',
+            'Hiroyasu','Jimmy','Reo','Yoshida','Caio','Josh','Roshan','Kato','Kent','Kazunari','Mustafa','Hiromasa','Michel','Nobuhiko','Kobayashi','Erik',
+            'Kazuhisa','Roger','Yushi','Shunya','Imran','Aaron','Yoji','Kazuhito','Gilberto','Prince','Abdullah','Bryan','Yuzo','Lahiru','Kunihiro','Raúl',
+            'Kiyotaka','Kenny','Felix','Hiromu','Hironobu','Hisao','Santosh','Norihiro','Pablo','Raju','Takahito','Roy','Edgar','Tim','Mahesh','Shinobu'
           ],
           last: [
             'Hideki','Manabe','Otake','Yoshi','Johnson','Brown','Jin','Kurosawa','Ishiguro','Horikawa','Shinoda','Miyahara','Kido','Kuwabara','Ikegami','Kawase',
@@ -4022,22 +3604,21 @@ const NAME_TAILS_BY_NATION = {
     ESP: [
         { r: 0,
           first: [
-            'Andrei','Patxi','Simo','Jose Alberto','Michel','Luciano','Brahim','Bilal','Alan','Dany','Marcel','Muhammad','Mark','Camilo','Ioan','William',
-            'Marco Antonio','Samir','Ayoub','Stefan','Jan','Walter','Emiliano','Fabio','Rogelio','Adil','Jhon','Moussa','Nando','Juanjose','Jose Juan','Jeronimo',
-            'Maikel','Maria','Teo','Gaspar','Juan Diego','Rodolfo','Bartolome','Juanito','Denis','Dan','Angel Luis','Ximo','Yassin','Suso','Kamal','Joaquim',
-            'Migue','Mauro','Edwin','Bernat','Isma','Andy','Candido','Henry','Alexandru','Max','Fede','Serafin','Anthony','Ian','Yago','Jony','Aritz','Danny',
-            'Gheorghe','Luis Manuel','Oskar','Jose David','Abdo','Anton','Eladio','Constantin','Quim','Modesto','Pepito','Jose Enrique','Wilson','Jose M',
-            'Pedro Antonio','Dionisio','Mustafa','Freddy','Florencio','Mostafa','Faustino','Octavio','Luismi','Joni','Mike','Salah','Abdul','Pedro Luis','Charly',
-            'Noel','James','Nabil','Maximo','Txema','Marcial','Juanmi','Catalin','Sorin','Cayetano','Ibrahim','Luis Fernando','Maxi','Clemente','Abdellah','Brais',
-            'Carlos Alberto','Driss','Junior','Segundo','Iban','Amin','Ignasi','Goyo','Iago','Xabi','Anibal','Paulino','Nicolae','Ariel','Bogdan','Adan',
-            'Juancarlos','Steven','Jesus Manuel','Juan Ignacio','Viorel','Teodoro','Avelino','Jose Mari','Alain','Paulo','Humberto','Biel','Nil','Evaristo','Ibai',
-            'Luis Angel','Cristo','Jimmy','Manuel Angel','Alin','Agus','Giovanni','Samu','Patrick','Hilario','Brayan','Willy','Roque','Erick','Miki',
-            'Carlos Javier','Anas','Josemanuel','Josemaria','Sam','Basilio','Costel','Abderrahim','Yassine','Ildefonso','Juan Angel','Augusto','Ionel','Johnny',
-            'Chris','Abdou','Luis Carlos','Jonay','Axel','Jose Andres','Juanfran','Xisco','Ibrahima','Cecilio','Rufino','Eliseo','Tarik','Rene','Tomeu',
-            'Victoriano','Younes','Nicu','Pako','Cosmin','Hernan','Ronald','Jorge Luis','Gaizka','Juanan','Nano','Alexandre','Koldo','Luca','Loren','Julio Cesar',
-            'Norberto','Vladimir','Farid','Jose Joaquin','Josema','Kilian','Alejo','Juanlu','Iulian','Eloi','Lazaro','Jacob','Joseantonio','Thomas','Josemi','Ibon',
-            'Florentino','Celso','Christopher','Juan Andres','Jordan','Jawad','Narciso','Artur','Juli','Rafel','Raimundo','Fausto','Pelayo','Karlos',
-            'Francisco Jesus','Antonio Luis','Sandro','Lucio','Ana','Luis Antonio','Perico','Amadou','Juan Vicente','Carlitos','Joseph'
+            'Fabio','Rogelio','Adil','Jhon','Moussa','Nando','Juanjose','Jose Juan','Jeronimo','Maikel','Maria','Teo','Gaspar','Juan Diego','Rodolfo','Bartolome',
+            'Juanito','Denis','Dan','Angel Luis','Ximo','Yassin','Suso','Kamal','Joaquim','Migue','Mauro','Edwin','Bernat','Isma','Andy','Candido','Henry',
+            'Alexandru','Max','Fede','Serafin','Anthony','Ian','Yago','Jony','Aritz','Danny','Gheorghe','Luis Manuel','Oskar','Jose David','Abdo','Anton','Eladio',
+            'Constantin','Quim','Modesto','Pepito','Jose Enrique','Wilson','Jose M','Pedro Antonio','Dionisio','Mustafa','Freddy','Florencio','Mostafa','Faustino',
+            'Octavio','Luismi','Joni','Mike','Salah','Abdul','Pedro Luis','Charly','Noel','James','Nabil','Maximo','Txema','Marcial','Juanmi','Catalin','Sorin',
+            'Cayetano','Ibrahim','Luis Fernando','Maxi','Clemente','Abdellah','Brais','Carlos Alberto','Driss','Junior','Segundo','Iban','Amin','Ignasi','Goyo',
+            'Iago','Xabi','Anibal','Paulino','Nicolae','Ariel','Bogdan','Adan','Juancarlos','Steven','Jesus Manuel','Juan Ignacio','Viorel','Teodoro','Avelino',
+            'Jose Mari','Alain','Paulo','Humberto','Biel','Nil','Evaristo','Ibai','Luis Angel','Cristo','Jimmy','Manuel Angel','Alin','Agus','Giovanni','Samu',
+            'Patrick','Hilario','Brayan','Willy','Roque','Erick','Miki','Carlos Javier','Anas','Josemanuel','Josemaria','Sam','Basilio','Costel','Abderrahim',
+            'Yassine','Ildefonso','Juan Angel','Augusto','Ionel','Johnny','Chris','Abdou','Luis Carlos','Jonay','Axel','Jose Andres','Juanfran','Xisco','Ibrahima',
+            'Cecilio','Rufino','Eliseo','Tarik','Rene','Tomeu','Victoriano','Younes','Nicu','Pako','Cosmin','Hernan','Ronald','Jorge Luis','Gaizka','Juanan','Nano',
+            'Alexandre','Koldo','Luca','Loren','Julio Cesar','Norberto','Vladimir','Farid','Jose Joaquin','Josema','Kilian','Alejo','Juanlu','Iulian','Eloi',
+            'Lazaro','Jacob','Joseantonio','Thomas','Josemi','Ibon','Florentino','Celso','Christopher','Juan Andres','Jordan','Jawad','Narciso','Artur','Juli',
+            'Rafel','Raimundo','Fausto','Pelayo','Karlos','Francisco Jesus','Antonio Luis','Sandro','Lucio','Ana','Luis Antonio','Perico','Amadou','Juan Vicente',
+            'Carlitos','Joseph'
           ],
           last: [
             'Martinez Rodriguez','Cid','Sarr','Aragon','Juárez','Real','Mihai','Jimenez Garcia','Gomes','Orellana','Cuadrado','Carrion','Jaramillo','Moreira',
@@ -4112,22 +3693,22 @@ const NAME_TAILS_BY_NATION = {
     ARG: [
         { r: 0,
           first: [
-            'Sandro','Lauti','Nazareno','Max','Jaime','Lukas','Elvio','Alcides','Joni','Juani','Eze','Eugenio','Juan Alberto','Robert','Jony','Tomy','Lean',
-            'Octavio','Joaco','Camilo','Aaron','Fredy','Wilson','Lalo','Juanjo','Flavio','Valen','Carlo','Rogelio','Ruben Dario','Nano','Santos','Cris','Jere',
-            'Freddy','Ciro','Jorge Daniel','Rafa','Yonatan','León','Dilan','Juan Ramon','Gregorio','Danilo','Tincho','Maria','Willy','Yamil','Josue','Geronimo',
-            'Junior','Jose Alberto','Benito','Matii','Demian','Yoel','Saul','Denis','Coco','Juancarlos','Juan Antonio','Jona','Yonathan','Alee','Elian','Fabri',
-            'Toto','Osmar','Ever','Carlos Daniel','Emma','Jairo','Reinaldo','Alfonso','Rober','Jorge Omar','Andy','Roberto Carlos','Fabrizio','Pablito','Juanma',
-            'Ricky','Jhon','Gus','Juancho','Laureano','Genaro','Mario Alberto','Joseluis','William','Migue','Erik','Sergio Daniel','Favio','Cristhian','Pascual',
-            'Fidel','Pancho','Nahu','Teo','Oscar Alberto','Juan Marcelo','Paul','Isaac','Exe','Bauti','Abraham','Santii','Tato','Roger','Atilio','Dardo',
-            'Daniel Alberto','Eliseo','Segundo','Jonas','Lito','Marito','Blas','Michael','Pato','Gaspar','Juampi','Marcelino','Ceferino','Richar','Fermin','Gabii',
-            'Rodrii','Celso','Juan Martin','Jorge Eduardo','Juancito','Moises','Chelo','Juan Domingo','Edwin','Tomii','Isidro','Fausto','Maxy','Dami','Carmelo',
-            'Eloy','Jhonny','Nicoo','Marcial','Efrain','Daniel Alejandro','Juli','Brayan','Joako','Danii','Juanchi','Jorge Antonio','Kike','Jeronimo','Michel',
-            'Yair','Mirko','Pablo Daniel','Danny','John','Gustavo Daniel','Albert','Ayrton','Quique','Fabi','Hugo Alberto','Adriano','Rolo','Juanca','Lazaro',
-            'Lolo','Frank','Negro','Marcelo Alejandro','Jacinto','Facuu','Toni','Justo','Misael','Erick','Ivo','Ari','Tadeo','Maicol','Aron','Leito','Americo',
-            'Marcelo Fabian','Leopoldo','Joan','Rami','Carlito','Mingo','Mathias','Gino','Gusty','Heber','Luisito','Luis Angel','Carlos Eduardo','Gero',
-            'José Manuel','Paco','Nestor Fabian','Adan','Ezee','Henry','Gian','Bastian','Herreria','Naza','Giuliano','Colo','Javii','Lautii','Jorgito',
-            'Juan Gabriel','Pocho','Raul Alberto','Luis Miguel','Luka','Renato','Hugo Daniel','Gilberto','Lea','Gael','Chicho','Benicio','Peter','Cristobal',
-            'Chino','Reynaldo','Juan Eduardo','Aurelio','Derlis','Daniel Eduardo','Adriel'
+            'Wilson','Lalo','Juanjo','Flavio','Valen','Carlo','Rogelio','Ruben Dario','Nano','Santos','Cris','Jere','Freddy','Jorge Daniel','Rafa','Yonatan','León',
+            'Dilan','Juan Ramon','Gregorio','Danilo','Tincho','Maria','Willy','Yamil','Josue','Geronimo','Junior','Jose Alberto','Benito','Matii','Demian','Yoel',
+            'Saul','Denis','Coco','Juancarlos','Juan Antonio','Jona','Yonathan','Alee','Elian','Fabri','Toto','Osmar','Ever','Carlos Daniel','Emma','Jairo',
+            'Reinaldo','Alfonso','Rober','Jorge Omar','Andy','Roberto Carlos','Fabrizio','Pablito','Juanma','Ricky','Jhon','Gus','Juancho','Laureano','Genaro',
+            'Mario Alberto','Joseluis','William','Migue','Erik','Sergio Daniel','Favio','Cristhian','Pascual','Fidel','Pancho','Nahu','Teo','Oscar Alberto',
+            'Juan Marcelo','Paul','Isaac','Exe','Bauti','Abraham','Santii','Tato','Roger','Atilio','Dardo','Daniel Alberto','Eliseo','Segundo','Jonas','Lito',
+            'Marito','Blas','Michael','Pato','Gaspar','Juampi','Marcelino','Ceferino','Richar','Fermin','Gabii','Rodrii','Celso','Juan Martin','Jorge Eduardo',
+            'Juancito','Moises','Chelo','Juan Domingo','Edwin','Tomii','Isidro','Fausto','Maxy','Dami','Carmelo','Eloy','Jhonny','Nicoo','Marcial','Efrain',
+            'Daniel Alejandro','Juli','Brayan','Joako','Danii','Juanchi','Jorge Antonio','Kike','Jeronimo','Michel','Yair','Mirko','Pablo Daniel','Danny','John',
+            'Gustavo Daniel','Albert','Ayrton','Quique','Fabi','Hugo Alberto','Adriano','Rolo','Juanca','Lazaro','Lolo','Frank','Negro','Marcelo Alejandro',
+            'Jacinto','Facuu','Toni','Justo','Misael','Erick','Ivo','Ari','Tadeo','Maicol','Aron','Leito','Americo','Marcelo Fabian','Leopoldo','Joan','Rami',
+            'Carlito','Mingo','Mathias','Gino','Gusty','Heber','Luisito','Luis Angel','Carlos Eduardo','Gero','José Manuel','Paco','Nestor Fabian','Adan','Ezee',
+            'Henry','Gian','Bastian','Herreria','Naza','Giuliano','Colo','Javii','Lautii','Jorgito','Juan Gabriel','Pocho','Raul Alberto','Luis Miguel','Luka',
+            'Renato','Hugo Daniel','Gilberto','Lea','Gael','Chicho','Benicio','Peter','Cristobal','Chino','Reynaldo','Juan Eduardo','Aurelio','Derlis',
+            'Daniel Eduardo','Adriel','Manolo','Juaquin','Matu','Aguss','Franko','Rama','Ronald','Matia','Giovanni','Nehuen','Juan Francisco','Tano','Florencio',
+            'Juan Bautista','Hector Daniel','Natanael','Tobi','Riki','Gustavo Javier','Rosa','Dieguito','Titi','Sixto'
           ],
           last: [
             'Navarrete','Rueda','Villafañe','Casco','Alaniz','Sepulveda','Muller','Lemos','Espinola','Velásquez','Santana','Nicolás','Lorenzo','Olguin','Orellano',
@@ -4178,20 +3759,20 @@ const NAME_TAILS_BY_NATION = {
     NED: [
         { r: 0,
           first: [
-            'Rachid','Dion','Berry','Karim','Carlo','Fabian','Jason','Johannes','Benjamin','Andy','Jonathan','Bennie','Marcin','Youri','Jarno','Murat','Wout',
-            'Roelof','Jerry','Joel','Lorenzo','Marvin','Rinus','Jeremy','Ronnie','Oscar','Rien','Cas','Willy','Anthony','Adrie','Hennie','Piotr','Gertjan','Pierre',
-            'Henny','Rico','Edward','Abdel','Angelo','Hein','Gert-Jan','Samir','Jay','Giovanni','Jacques','Joshua','Mick','Bertus','Noah','Sjors','Olaf','Ismail',
-            'Bastiaan','Jelmer','Jesper','Yannick','Carlos','Leroy','Gino','Khalid','Bilal','Philip','Adriaan','Sebastian','Youssef','Rudy','Jens','Maurits',
-            'Pepijn','Quinten','Charles','Mitchel','Appie','Anne','Rolf','Randy','Hamza','Jan Willem','Joeri','Dani','Reinier','Luca','Douwe','Ronny','Krzysztof',
-            'Martien','Jamal','Tomasz','Levi','Yusuf','Leen','Mees','Berend','Aart','Remy','James','Roberto','Tommy','Don','Wilfred','Olivier','Marius','Manuel',
-            'Alfred','Jorn','Freddy','Davy','Marinus','Mohammad','Osman','Amir','Nicky','Colin','Hamid','Xander','Tristan','Arend','Tonny','Ivan','Andries','Kamil',
-            'Bernard','Marten','Loek','Emre','Robbie','Hidde','Gerwin','Ernst','Aziz','Jan-Willem','Boris','Mohamad','Boy','Nathan','Iwan','Kenneth','Eduard',
-            'Tobias','Rein','Ray','Lennart','Samuel','Wilbert','Perry','Antonio','Tonnie','Arnoud','Ian','Fons','Diego','Adrian','Łukasz','Mariusz','Kay','Jules',
-            'Egbert','Marnix','Adri','Remko','Cornelis','Werner','Onno','Rudi','Jaco','Raoul','Sami','Jorrit','Aron','Chiel','Otto','Mitch','Luke','Davey','Jean',
-            'Abdullah','Eelco','Remon','Tjeerd','Sjef','Mateusz','Ralf','Tijmen','Delano','Pedro','Donny','Paweł','Marek','Toine','Emile','Huib','Steve','Huseyin',
-            'Nigel','Eddie','Hakan','Fatih','Dimitri','Tijn','Auke','Ted','Hicham','Ayoub','Grzegorz','Amin','Jamie','Andrew','Benny','Brandon','Jari','Andrzej',
-            'Ties','Thijmen','Nino','Jeff','Giel','Rowan','Derk','Jose','Boudewijn','Alwin','Dawid','Wiebe','Tarik','Yassine','Ilias','Farid','Felix','Kasper',
-            'Ricky','Yassin','Mats','Jac','Kelvin','Antoine','Diederik','Zakaria','Lukas','Nils'
+            'Jeremy','Ronnie','Oscar','Rien','Cas','Willy','Anthony','Adrie','Hennie','Piotr','Gertjan','Pierre','Henny','Rico','Edward','Abdel','Angelo','Hein',
+            'Gert-Jan','Samir','Jay','Giovanni','Jacques','Joshua','Mick','Bertus','Noah','Sjors','Olaf','Ismail','Bastiaan','Jelmer','Jesper','Yannick','Carlos',
+            'Leroy','Gino','Khalid','Bilal','Philip','Adriaan','Sebastian','Youssef','Rudy','Jens','Maurits','Pepijn','Quinten','Charles','Mitchel','Appie','Anne',
+            'Rolf','Randy','Hamza','Jan Willem','Joeri','Dani','Reinier','Luca','Douwe','Ronny','Krzysztof','Martien','Jamal','Tomasz','Levi','Yusuf','Leen','Mees',
+            'Berend','Aart','Remy','James','Roberto','Tommy','Don','Wilfred','Olivier','Marius','Manuel','Alfred','Jorn','Freddy','Davy','Marinus','Mohammad',
+            'Osman','Amir','Nicky','Colin','Hamid','Xander','Tristan','Arend','Tonny','Ivan','Andries','Kamil','Bernard','Marten','Loek','Emre','Robbie','Hidde',
+            'Gerwin','Ernst','Aziz','Jan-Willem','Boris','Mohamad','Boy','Nathan','Iwan','Kenneth','Eduard','Tobias','Rein','Ray','Lennart','Samuel','Wilbert',
+            'Perry','Antonio','Tonnie','Arnoud','Ian','Fons','Diego','Adrian','Łukasz','Mariusz','Kay','Jules','Egbert','Marnix','Adri','Remko','Cornelis','Werner',
+            'Onno','Rudi','Jaco','Raoul','Sami','Jorrit','Aron','Chiel','Otto','Mitch','Luke','Davey','Jean','Abdullah','Eelco','Remon','Tjeerd','Sjef','Mateusz',
+            'Ralf','Tijmen','Delano','Pedro','Donny','Paweł','Marek','Toine','Emile','Huib','Steve','Huseyin','Nigel','Eddie','Hakan','Fatih','Dimitri','Tijn',
+            'Auke','Ted','Hicham','Ayoub','Grzegorz','Amin','Jamie','Andrew','Benny','Brandon','Jari','Andrzej','Ties','Thijmen','Nino','Jeff','Giel','Rowan',
+            'Derk','Jose','Boudewijn','Alwin','Dawid','Wiebe','Tarik','Yassine','Ilias','Farid','Felix','Kasper','Ricky','Yassin','Mats','Jac','Kelvin','Antoine',
+            'Diederik','Zakaria','Lukas','Nils','Norbert','Will','Omer','Aaron','Jaimy','Ramazan','Gerald','Yasin','Adil','Artur','Kadir','Quincy','Marlon','Maik',
+            'Antoon','Dominique','Stanley','Sergio','Robbin','Juan','Harmen','Younes','Willie'
           ],
           last: [
             'Hagen','Burgers','Schenk','Westerhof','Van Keulen','De Waard','Van Der Ven','Brugman','Kerkhof','Staal','Westra','Hollander','Hoogland','Huizinga',
@@ -4247,21 +3828,21 @@ const NAME_TAILS_BY_NATION = {
     BEL: [
         { r: 0,
           first: [
-            'Gabriel','Diego','Thibault','Hicham','Werner','Franky','Noah','Manuel','Lionel','Seppe','Léo','Thibaut','Jamal','Younes','Miguel','Richard','Laurens',
-            'Alexis','Gunther','Ayoub','Ismail','Logan','Amine','Ilias','Aziz','Ahmet','Christopher','Rob','Joachim','Jozef','Corentin','Brent','Hasan',
-            'Jean-Claude','Raymond','Maurice','Brahim','Jean-Luc','Gilbert','Gianni','Lieven','Daan','Carlos','Jean Pierre','Bob','Ward','Wout','Adil','Jules',
-            'Kim','Hendrik','Toon','Murat','Elias','Milan','Willem','Renaud','Greg','Yvan','Rayan','Clément','Tristan','Carl','Jeffrey','Sami','Hamid','Stephan',
-            'Yassin','Jean-Marc','Nabil','Lars','Emile','Jean-Paul','Florent','James','Quinten','Brian','Sylvain','Patrice','Roel','Robby','Pedro','Zakaria','Leon',
-            'Piet','Ronald','Aurélien','Senne','Ken','Alessandro','Francesco','Brandon','Jean-François','Dorian','Hubert','Ahmad','Ivo','Carlo','Rémy','Fabio',
-            'Gauthier','Matteo','Mustapha','Aaron','Timothy','Jack','Roberto','Ryan','Lucien','Hakim','Sacha','Cyril','Anas','Jarne','Bastien','Wilfried','Tommy',
-            'Mickaël','Farid','Soufiane','Adrian','Jacky','Yusuf','Matthieu','Fouad','Boris','Mourad','Walid','George','Jean Marie','Enzo','Justin','Lukas',
-            'Franck','Marius','Kobe','Karl','Franco','Lennert','Amaury','Fabien','Osman','Alessio','Amir','Emiel','Emre','Omer','Andreas','Pol','Thijs','Luigi',
-            'Lander','Jean Claude','Marnix','Kamal','Tarik','Jean-Louis','Gunter','Tanguy','Alan','Anton','Dan','Wannes','Maxence','Joren','Jochen','Martijn',
-            'Driss','Tibo','Ilyas','Harry','Kadir','Noël','Liam','Mounir','Ismael','Florin','Junior','Amin','Fernand','Ramazan','Vincenzo','Pieter-Jan','Sebastian',
-            'Juan','Baptiste','Jeff','Dario','Claudio','Salim','Jordi','Felix','Edwin','Huseyin','Imad','Massimo','Reda','Sergio','Joost','Vasile','Johny','Luis',
-            'Rafael','Rony','Mohammad','Mostafa','Henk','Abdullah','Toni','Andrei','Moha','Roy','Yasin','Pablo','Donovan','Nils','Christof','Jim','Abdellah',
-            'Julian','Edouard','Jawad','Fatih','Xander','Sandro','Lode','Ricardo','Marvin','Igor','Oussama','Ian','Phil','Stan','Mimoun','Sammy','Adem','Paolo',
-            'Jean-Michel','Halil'
+            'Amine','Ilias','Aziz','Ahmet','Christopher','Rob','Joachim','Jozef','Corentin','Brent','Hasan','Jean-Claude','Raymond','Maurice','Brahim','Jean-Luc',
+            'Gilbert','Gianni','Lieven','Daan','Carlos','Jean Pierre','Bob','Ward','Adil','Jules','Kim','Hendrik','Toon','Murat','Elias','Willem','Renaud','Greg',
+            'Yvan','Rayan','Clément','Tristan','Carl','Jeffrey','Sami','Hamid','Stephan','Yassin','Jean-Marc','Nabil','Emile','Jean-Paul','Florent','James',
+            'Quinten','Brian','Sylvain','Patrice','Roel','Robby','Pedro','Zakaria','Leon','Piet','Ronald','Aurélien','Ken','Alessandro','Francesco','Brandon',
+            'Jean-François','Dorian','Hubert','Ahmad','Ivo','Carlo','Rémy','Fabio','Gauthier','Matteo','Mustapha','Aaron','Timothy','Jack','Roberto','Ryan','Hakim',
+            'Sacha','Cyril','Anas','Jarne','Bastien','Wilfried','Tommy','Mickaël','Farid','Soufiane','Adrian','Yusuf','Matthieu','Fouad','Boris','Mourad','Walid',
+            'George','Jean Marie','Enzo','Justin','Lukas','Franck','Marius','Kobe','Karl','Franco','Lennert','Amaury','Fabien','Osman','Alessio','Amir','Emiel',
+            'Emre','Omer','Andreas','Pol','Thijs','Luigi','Lander','Jean Claude','Marnix','Kamal','Tarik','Jean-Louis','Gunter','Tanguy','Alan','Anton','Dan',
+            'Wannes','Maxence','Joren','Jochen','Martijn','Driss','Tibo','Ilyas','Harry','Kadir','Noël','Liam','Mounir','Ismael','Florin','Junior','Amin','Fernand',
+            'Ramazan','Vincenzo','Pieter-Jan','Sebastian','Juan','Baptiste','Jeff','Dario','Claudio','Salim','Jordi','Felix','Edwin','Huseyin','Imad','Massimo',
+            'Reda','Sergio','Joost','Vasile','Johny','Luis','Rafael','Rony','Mohammad','Mostafa','Henk','Abdullah','Toni','Andrei','Moha','Roy','Yasin','Pablo',
+            'Donovan','Nils','Christof','Jim','Abdellah','Julian','Edouard','Jawad','Fatih','Xander','Sandro','Lode','Ricardo','Marvin','Igor','Oussama','Ian',
+            'Phil','Stan','Mimoun','Sammy','Adem','Paolo','Jean-Michel','Halil','Seb','Hannes','Nicky','Hervé','Adnan','Joe','Mihai','Moussa','Hakan','Christoph',
+            'Armand','Nicola','Hugues','Ionut','Carmelo','Mohamad','Jean-Philippe','Ignace','Orhan','Viktor','Ghislain','Andrea','Oscar','Jesse','Marian','Vince',
+            'Artur','Jarno'
           ],
           last: [
             'Urbain','Jacquet','Melis','Laenen','Samyn','Dewitte','Dobbelaere','Lecocq','Denys','Bertels','Timmerman','Belgium','Dupuis','Pirard','Horemans',
@@ -4322,20 +3903,20 @@ const NAME_TAILS_BY_NATION = {
     SUI: [
         { r: 0,
           first: [
-            'Ben','Michi','Anton','Adrien','Beni','Leon','Samir','James','Jean-Marc','Mattia','Alan','Pietro','Philip','Adriano','Quentin','Charles','Bryan',
-            'Enrico','Sylvain','Fred','Ralph','Boris','Murat','Georges','Nils','Mirko','Timo','Manfred','Fabrizio','Dennis','Yvan','Fredy','Arthur','Rico','Damian',
-            'Pablo','Manu','Giorgio','Willy','Riccardo','Luc','Ralf','Eduardo','Emanuel','Ismail','Sacha','Joe','Dejan','Dieter','Kilian','Ahmad','Enzo','Adam',
-            'Bekim','Gérard','William','Ronny','Dave','Goran','Oscar','Arben','Ludovic','Emmanuel','Benoît','Dany','Aleksandar','Helder','Armando','Alexis','Zoran',
-            'Herbert','Milan','Jason','Cristian','Hansruedi','Mirco','Dan','Jack','Cyrill','Nino','Burim','Dino','Pasquale','Lorenz','Alban','Adnan','Johannes',
-            'Hassan','Willi','Jimmy','Patrice','Luciano','Aaron','Danilo','Raffaele','Gilbert','Georg','Marius','Rocco','Patric','Blerim','Mohammad','Agron',
-            'Jakob','Gabriele','Colin','Axel','Joseph','Vito','Maurice','Wolfgang','Mischa','Klaus','Gregory','Ilir','Christopher','Norbert','Etienne','Hüseyin',
-            'Francis','Besnik','Gian','Joshua','Jean-Luc','Elia','Mehdi','Bastien','Moritz','Fatmir','Justin','Rodrigo','Besim','Gerhard','Valon','Edi','Raymond',
-            'Mohammed','Pierre-Alain','Ulrich','Jens','Marcus','Johnny','Osman','Livio','George','Dimitri','Harry','Edgar','Jeton','Naim','Matthieu','Julio',
-            'Lucien','Rainer','Bertrand','Gregor','Afrim','Alfredo','Andrés','Andrin','Adem','Federico','Johann','Javier','Hans-Peter','Guy','Jürgen','Filippo',
-            'Marcello','Bujar','Wedi','Giacomo','Christof','Driton','Viktor','Aziz','Phil','Don','Bashkim','Danny','Luka','Deniz','Pius','Björn','Erik','Raúl',
-            'Micha','Enver','Aldo','Johan','Alois','Florent','Agim','Yusuf','Noël','Hervé','Fredi','Alejandro','Carmine','Naser','Hermann','Timon','Ardian','Avni',
-            'Tino','Adi','Marvin','Brian','Andrew','Artur','Filip','Kai','Emil','Tomas','Emanuele','Bajram','Dirk','Egzon','Halil','Vladimir','Darko','Charly',
-            'Cesar','Otto','Raffael','Enis','Marcos','Sasa','Arsim','Hansueli','Armend','Luan','Ryan','Hamid','Reza','Liridon','Carmelo','Emilio','Orlando'
+            'Georges','Nils','Mirko','Timo','Manfred','Fabrizio','Dennis','Yvan','Fredy','Arthur','Rico','Damian','Pablo','Manu','Giorgio','Willy','Riccardo','Luc',
+            'Ralf','Eduardo','Emanuel','Ismail','Sacha','Joe','Dejan','Dieter','Kilian','Ahmad','Enzo','Adam','Bekim','Gérard','William','Ronny','Dave','Goran',
+            'Oscar','Arben','Ludovic','Emmanuel','Benoît','Dany','Aleksandar','Helder','Armando','Alexis','Zoran','Herbert','Milan','Jason','Cristian','Hansruedi',
+            'Mirco','Dan','Jack','Cyrill','Nino','Burim','Dino','Pasquale','Lorenz','Alban','Adnan','Johannes','Hassan','Willi','Jimmy','Patrice','Luciano','Aaron',
+            'Danilo','Raffaele','Gilbert','Georg','Marius','Rocco','Patric','Blerim','Mohammad','Agron','Jakob','Gabriele','Colin','Axel','Vito','Maurice',
+            'Wolfgang','Mischa','Klaus','Gregory','Ilir','Christopher','Norbert','Etienne','Hüseyin','Francis','Besnik','Gian','Joshua','Jean-Luc','Elia','Mehdi',
+            'Bastien','Moritz','Fatmir','Justin','Rodrigo','Besim','Gerhard','Valon','Edi','Raymond','Mohammed','Pierre-Alain','Ulrich','Jens','Marcus','Johnny',
+            'Osman','Livio','George','Dimitri','Harry','Edgar','Jeton','Naim','Matthieu','Julio','Lucien','Rainer','Bertrand','Gregor','Afrim','Alfredo','Andrés',
+            'Andrin','Adem','Federico','Johann','Javier','Hans-Peter','Guy','Jürgen','Filippo','Marcello','Bujar','Wedi','Giacomo','Christof','Driton','Viktor',
+            'Aziz','Phil','Don','Bashkim','Danny','Luka','Deniz','Pius','Björn','Erik','Raúl','Micha','Enver','Aldo','Johan','Alois','Florent','Agim','Yusuf',
+            'Noël','Hervé','Fredi','Alejandro','Carmine','Naser','Hermann','Timon','Ardian','Avni','Tino','Adi','Marvin','Brian','Andrew','Artur','Filip','Kai',
+            'Emil','Tomas','Emanuele','Bajram','Dirk','Egzon','Halil','Vladimir','Darko','Charly','Cesar','Otto','Raffael','Enis','Marcos','Sasa','Arsim',
+            'Hansueli','Armend','Luan','Ryan','Hamid','Reza','Liridon','Carmelo','Emilio','Orlando','Fadil','Nenad','Henri','Gaetano','Eduard','Sepp','Maik','Uwe',
+            'Selim','Hubert','Hakan','Tenzin','Donato','Greg','Emir','Juerg','Tristan','Niklaus','Gino','Hansjörg','Jean-Paul','Elvis','Milos','Nik','Albin'
           ],
           last: [
             'Kidane','Gfeller','Murati','Tschanz','Von Arx','Felder','Maliqi','Emmenegger','Monney','Buchs','Schönenberger','Roos','Fournier','Zeqiri','Manser',
@@ -4382,7 +3963,7 @@ const NAME_TAILS_BY_NATION = {
           ] },
         { r: 1,
           first: [
-            'Nathan'
+            
           ],
           last: [
             'Meylan','Chappuis','Gaillard','Genoud','Emery','Pasche','Morand','Nicole','Savary','Aubert','Besson','Roduit','Jaquier','Jaccard','Tissot','Dubuis',
@@ -4406,20 +3987,20 @@ const NAME_TAILS_BY_NATION = {
     AUT: [
         { r: 0,
           first: [
-            'Kemal','Hansi','Niko','Sigi','Kilian','Rafael','Luka','Alen','Ben','Emil','Mohammed','Muhammed','Egon','Milos','Kadir','Serkan','Bojan','Orhan','Tobi',
-            'Mani','Justin','Kenan','Nicolas','Miroslav','Charly','Reza','Niki','Ulrich','Ronny','Ivica','Engelbert','Angelo','Edin','Zoltán','Karl-Heinz','Domi',
-            'Edi','Phillip','Elmar','Metin','Mirko','Attila','Juergen','Burak','Damir','Sami','Petar','Deniz','Timo','Arno','Gerold','Marian','Helmuth','Hassan',
-            'Salih','Mohamad','Luis','Reini','Can','Karim','Dalibor','Musa','Oskar','Gustav','Mert','Elvis','Florin','Guenter','George','Hamza','Bilal','Albin',
-            'Don','Udo','Ivo','Sinan','Furkan','Dario','Claus','August','Luki','Gökhan','Bayram','Nino','Konstantin','Erkan','Bastian','Fred','Artur','Berni',
-            'Steve','Vladimir','Benni','Sam','Didi','Jonathan','Otmar','Hans Peter','Aaron','Yunus','Othmar','Mladen','Jovan','Guenther','Heribert','Roberto',
-            'Constantin','Julius','Almir','Ismet','Leonhard','Raffael','Karlheinz','Hamid','Nick','Steven','Erol','Edwin','Dave','Arthur','Kaan','Senad','Ilija',
-            'Jasmin','Haris','Dan','Miki','Boban','Mahmoud','Phil','Tommy','Thorsten','Anto','Wolfi','Slobodan','Mesut','Hansjörg','Matteo','Hugo','Mahmut','Manu',
-            'Serdar','Kai','Kristian','Willibald','Ercan','Kamil','Recep','Ayhan','Cristian','Geri','Klemens','Mile','Mirsad','Alessandro','Selim','Jens','Benny',
-            'Harun','Nemanja','Edmund','Said','Yasar','Emrah','James','Marek','Piotr','Yilmaz','Arif','Gert','Mahdi','Aziz','Andrei','Amin','Branko','Samet','Eren',
-            'Wolf','Bogdan','Onur','Dino','Oswald','Ugur','Cemal','Ferhat','Abbas','Süleyman','Jack','Bekir','Muhamed','Khaled','Engin','Predrag','Laurenz',
-            'Krzysztof','Cengiz','Emin','Vasile','Zlatko','Volkan','Eugen','Tibor','Tony','Umut','Rade','Zsolt','Chrisi','Hussein','Fredi','Fabi','Silvio','Adis',
-            'Gerry','Aleks','Abdul','Victor','Michel','Kristijan','Johnny','Nermin','Sebi','Björn','Beni','Enver','Joseph','Isa','Mihai','Gábor','Pierre','Tarik',
-            'Jimmy','Nebojsa','Bülent','Claudio','Axel','Dusan','Admir','Erdal','Volker','Chri'
+            'Reza','Ulrich','Ronny','Ivica','Engelbert','Angelo','Edin','Zoltán','Karl-Heinz','Domi','Edi','Phillip','Elmar','Metin','Mirko','Attila','Juergen',
+            'Burak','Damir','Sami','Petar','Deniz','Timo','Arno','Gerold','Marian','Helmuth','Hassan','Salih','Mohamad','Luis','Reini','Can','Karim','Dalibor',
+            'Musa','Oskar','Gustav','Mert','Elvis','Florin','Guenter','George','Hamza','Bilal','Albin','Don','Udo','Ivo','Sinan','Furkan','Dario','Claus','August',
+            'Luki','Gökhan','Bayram','Nino','Konstantin','Erkan','Bastian','Fred','Artur','Berni','Steve','Vladimir','Benni','Sam','Didi','Jonathan','Otmar',
+            'Hans Peter','Aaron','Yunus','Othmar','Mladen','Jovan','Guenther','Heribert','Roberto','Constantin','Julius','Almir','Ismet','Leonhard','Raffael',
+            'Karlheinz','Hamid','Nick','Steven','Erol','Edwin','Dave','Arthur','Kaan','Senad','Ilija','Jasmin','Haris','Dan','Miki','Boban','Mahmoud','Phil',
+            'Tommy','Thorsten','Anto','Wolfi','Slobodan','Mesut','Hansjörg','Matteo','Hugo','Mahmut','Manu','Serdar','Kai','Kristian','Willibald','Ercan','Kamil',
+            'Recep','Ayhan','Cristian','Geri','Klemens','Mile','Mirsad','Alessandro','Selim','Jens','Benny','Harun','Nemanja','Edmund','Said','Yasar','Emrah',
+            'James','Marek','Piotr','Yilmaz','Arif','Gert','Mahdi','Aziz','Andrei','Amin','Branko','Samet','Eren','Wolf','Bogdan','Onur','Dino','Oswald','Ugur',
+            'Cemal','Ferhat','Abbas','Süleyman','Jack','Bekir','Muhamed','Khaled','Engin','Predrag','Laurenz','Krzysztof','Cengiz','Emin','Vasile','Zlatko',
+            'Volkan','Eugen','Tibor','Tony','Umut','Rade','Zsolt','Chrisi','Hussein','Fredi','Fabi','Silvio','Adis','Gerry','Aleks','Abdul','Victor','Michel',
+            'Kristijan','Johnny','Nermin','Sebi','Björn','Beni','Enver','Joseph','Isa','Mihai','Gábor','Pierre','Tarik','Jimmy','Nebojsa','Bülent','Claudio','Axel',
+            'Dusan','Admir','Erdal','Volker','Chri','Adel','Ioan','Faruk','Karl Heinz','Okan','Vincent','László','Jonny','Yakup','Tomislav','Aydin','Alexandru',
+            'Naser','Ljubisa','Heli','Edgar','Alfons','Tomas','Ionut','Irfan','Ricardo','Ümit','Csaba','Guido','Tamás','Tarek'
           ],
           last: [
             'Stiegler','Pölzl','Aschauer','Kapeller','Unterweger','Scharf','Keskin','Falkner','Klinger','Schachinger','Schiefer','Reich','Rechberger','Kirchmair',
@@ -4471,20 +4052,20 @@ const NAME_TAILS_BY_NATION = {
     SWE: [
         { r: 0,
           first: [
-            'Osman','Michel','Anas','Eddie','Henric','Carl-Johan','Hamza','Alireza','Fredric','Allan','Alfred','Mike','Henry','Theo','Yousef','Mehdi','Aziz','Amin',
-            'Ismail','Ammar','Sune','Alan','Mario','Juan','Tord','Douglas','Amer','Marko','Mehmet','Marco','Isac','Toni','Tore','James','Micael','Lars-Göran',
-            'Khalid','Albert','Joseph','Harry','Torsten','Christofer','Vincent','Per-Olof','Noah','Jamal','Hadi','Milad','Sture','Nabil','Muhammad','Jerker','Love',
-            'Luis','Abbe','Yusuf','Harald','Otto','Leon','Dag','Bilal','Bert','Hossein','August','Elliot','Walid','Lars-Åke','Nisse','Maher','Omid','Jimmie',
-            'Jorge','Adel','Kari','Casper','Cristian','Ayman','Mohsen','Per-Erik','Stellan','Roberto','Farhad','Gösta','Jose','Mika','Sven-Erik','Khalil','Clas',
-            'Osama','Tarek','Abdirahman','Majid','Matti','Salah','Owe','Edward','Aron','Herman','Curt','Morteza','Roy','Abdul','Wilhelm','Fred','Greger','Jari',
-            'Kamal','Bashar','Andrew','Emad','Naser','Bassam','Charles','Hani','Olov','Melker','Melvin','Hamed','Inge','Saad','Abu','Bruno','Ulrik','Danne',
-            'Abdullahi','Theodor','Nicolas','Sonny','Ahmet','Arash','Ziad','Wille','Ragnar','Kasper','Per-Anders','Birger','Manuel','Ricardo','Youssef','Farid',
-            'Wael','Tor','Edwin','Ville','Andy','Malte','Ivar','Ari','Stephan','Habib','Yngve','Yasin','Jean','Jan-Olof','Torgny','Ruben','Danny','Timo','Miguel',
-            'Nick','Tommie','Nader','Denis','Billy','Vladimir','Robban','Ralf','Ben','Artur','Petri','Azad','Noel','Uffe','Imad','Firas','Juha','Dani','Steve',
-            'Saeed','Bjarne','Haidar','Salim','Marc','Mazen','Yahya','Masoud','Timmy','Saleh','Per-Arne','Kennet','Piotr','Fernando','Issa','Malek','Abed','Shadi',
-            'Murat','Peo','Yosef','Per-Åke','Georg','Anthony','Basel','Ken','Igor','Nicholas','Matthias','Frans','Dragan','Ian','Nour','Yazan','Bashir','Andrzej',
-            'Marcin','Zakaria','Pekka','Karl-Erik','Abd','Majd','Freddy','Alvin','Willy','Muhammed','Julius','Reine','Thorbjörn','Majed','Saif','Yasser','Aram',
-            'Nikola','Ehsan','Viggo','Marwan','Rafael','Kai','Steven','Henke','Akram'
+            'Ammar','Sune','Alan','Mario','Juan','Tord','Douglas','Amer','Marko','Mehmet','Marco','Isac','Toni','Tore','James','Micael','Lars-Göran','Khalid',
+            'Albert','Joseph','Harry','Christofer','Vincent','Per-Olof','Jamal','Hadi','Milad','Sture','Nabil','Muhammad','Jerker','Love','Luis','Abbe','Yusuf',
+            'Harald','Otto','Leon','Dag','Bilal','Bert','Hossein','August','Elliot','Walid','Lars-Åke','Nisse','Maher','Omid','Jimmie','Jorge','Adel','Kari',
+            'Casper','Cristian','Ayman','Mohsen','Per-Erik','Stellan','Roberto','Farhad','Gösta','Jose','Mika','Sven-Erik','Khalil','Clas','Osama','Tarek',
+            'Abdirahman','Majid','Matti','Salah','Owe','Edward','Aron','Herman','Curt','Morteza','Roy','Abdul','Wilhelm','Fred','Greger','Jari','Kamal','Bashar',
+            'Andrew','Emad','Naser','Bassam','Charles','Hani','Olov','Melker','Melvin','Hamed','Inge','Saad','Abu','Bruno','Ulrik','Danne','Abdullahi','Theodor',
+            'Nicolas','Sonny','Ahmet','Arash','Ziad','Wille','Ragnar','Kasper','Per-Anders','Birger','Manuel','Ricardo','Youssef','Farid','Wael','Tor','Edwin',
+            'Ville','Andy','Malte','Ivar','Ari','Stephan','Habib','Yngve','Yasin','Jean','Jan-Olof','Torgny','Ruben','Danny','Timo','Miguel','Nick','Tommie',
+            'Nader','Denis','Billy','Vladimir','Robban','Ralf','Ben','Artur','Petri','Azad','Noel','Uffe','Imad','Firas','Juha','Dani','Steve','Saeed','Bjarne',
+            'Haidar','Salim','Marc','Mazen','Yahya','Masoud','Timmy','Saleh','Per-Arne','Kennet','Piotr','Fernando','Issa','Malek','Abed','Shadi','Murat','Peo',
+            'Yosef','Per-Åke','Georg','Anthony','Basel','Ken','Igor','Nicholas','Matthias','Frans','Dragan','Ian','Nour','Yazan','Bashir','Andrzej','Marcin',
+            'Zakaria','Pekka','Karl-Erik','Abd','Majd','Freddy','Alvin','Willy','Muhammed','Julius','Reine','Thorbjörn','Majed','Saif','Yasser','Aram','Nikola',
+            'Ehsan','Viggo','Marwan','Rafael','Kai','Steven','Henke','Akram','Yaser','Roman','Alejandro','Zoran','Matts','Uno','Boris','Karam','Ghassan','Taha',
+            'Jan-Åke','Marcel','Karl-Johan','Maximilian','Hussam','Pedro','Jani','Fouad','Pablo','Lars-Olof','Hanna'
           ],
           last: [
             'Palmgren','Landström','Sjölander','Amiri','Broström','Bergsten','Carlberg','Lidén','Henningsson','Nordlander','Söderman','Lidström','Edman','Stark',
@@ -4537,20 +4118,20 @@ const NAME_TAILS_BY_NATION = {
     FIN: [
         { r: 0,
           first: [
-            'Amir','Eelis','Hannes','Ram','Khan','Aimo','Ahti','Kenneth','Ramesh','Harry','Ari-Pekka','Timi','Patrick','Jesper','David','Simon','Toivo','Waltteri',
-            'Jonathan','Rainer','Aarne','Paul','Veikka','Suresh','Tauno','Klaus','Raj','Otso','Sunil','Hassan','Taisto','Jasper','Mats','Yrjö','Muhammed','Viktor',
-            'Manoj','Mauno','Mathias','Anil','Omar','Hans','Sampsa','Mohd','Erkka','Terho','Alpo','Sanjay','Artturi','Vijay','Mustafa','Reima','Aaron','Asif',
-            'Ibrahim','Justus','Nuutti','Leif','Santosh','Andrei','Sam','Ravi','Niki','Eeli','Verneri','Ajay','Jose','Tobias','Kumar','Mark','Rana','Victor','Lars',
-            'Jens','Rakesh','Bilal','Dan','Sandeep','Ashok','Eerik','Aulis','Faisal','Sergei','Arun','Shahid','Osku','Rahul','Abdullah','Vinod','Visa','Jiri',
-            'Christer','Magnus','Irfan','Sonu','Roger','Luukas','Taavi','Kaapo','Khalid','Jaska','Prince','Rene','Richard','Vilho','Kamal','Rauli','Jeremias',
-            'Dennis','Lucas','Adnan','Iikka','Abu','Samppa','William','Raine','Johnny','Christoffer','Krister','James','Dinesh','Syed','Heimo','Henkka','Mani',
-            'Marco','Jimmy','Casper','Arvo','Rashid','Noor','Peetu','Mahesh','Björn','Jon','Anwar','Hamza','Jake','Nikke','Elmo','Unto','Make','Vertti','Frans',
-            'Sajid','Adam','Hasan','Mukesh','Vladimir','Urpo','Igor','Ismail','Ben','Jan-Erik','Kaarlo','Jari-Pekka','Antton','Aleksandr','Jonatan','Nasir','Mike',
-            'Touko','Hugo','Saeed','Eric','Krishna','Miki','Arjun','Aarni','Albert','Zahid','Abbas','Ivan','Denis','Aleksei','Kalervo','Lenni','Sasu','Felix',
-            'Jalmari','Luka','Rolf','Deepak','Oiva','Filip','Frank','Linus','Mahmoud','Isto','Hermanni','Dani','Lukas','Kosti','Asad','Juri','Abid','Turo','Aarno',
-            'Pietari','Mico','Karim','Petrus','Tim','Sakke','Wille','Tenho','Paulus','Nadeem','Arif','Ralf','Mirko','Viljo','Samir','Pavel','Saleem','Jonni',
-            'Allan','Roy','Umar','Ashraf','Jim','Waseem','Babu','Eppu','Mikke','Kjell','Said','Saif','Ville-Veikko','Peña','Sultan','Aleksanteri','Ganesh',
-            'Hussein','Tuure','Suraj'
+            'Aarne','Paul','Veikka','Suresh','Tauno','Klaus','Raj','Otso','Sunil','Hassan','Taisto','Jasper','Mats','Yrjö','Muhammed','Viktor','Manoj','Mauno',
+            'Mathias','Anil','Omar','Hans','Sampsa','Mohd','Erkka','Terho','Alpo','Sanjay','Artturi','Vijay','Mustafa','Reima','Aaron','Asif','Ibrahim','Justus',
+            'Nuutti','Leif','Santosh','Andrei','Sam','Ravi','Niki','Eeli','Verneri','Ajay','Jose','Tobias','Kumar','Mark','Rana','Victor','Lars','Jens','Rakesh',
+            'Bilal','Dan','Sandeep','Ashok','Eerik','Aulis','Faisal','Sergei','Arun','Shahid','Osku','Rahul','Abdullah','Vinod','Visa','Jiri','Christer','Magnus',
+            'Irfan','Sonu','Roger','Luukas','Taavi','Kaapo','Khalid','Jaska','Prince','Rene','Richard','Vilho','Kamal','Rauli','Jeremias','Dennis','Lucas','Adnan',
+            'Iikka','Abu','Samppa','William','Raine','Johnny','Christoffer','Krister','James','Dinesh','Syed','Heimo','Henkka','Mani','Marco','Jimmy','Casper',
+            'Arvo','Rashid','Noor','Peetu','Mahesh','Björn','Jon','Anwar','Hamza','Jake','Nikke','Elmo','Unto','Make','Vertti','Frans','Sajid','Adam','Hasan',
+            'Mukesh','Vladimir','Urpo','Igor','Ismail','Ben','Jan-Erik','Kaarlo','Jari-Pekka','Antton','Aleksandr','Jonatan','Nasir','Mike','Touko','Hugo','Saeed',
+            'Eric','Krishna','Miki','Arjun','Aarni','Albert','Zahid','Abbas','Ivan','Denis','Aleksei','Kalervo','Lenni','Sasu','Felix','Jalmari','Luka','Rolf',
+            'Deepak','Oiva','Filip','Frank','Linus','Mahmoud','Isto','Hermanni','Dani','Lukas','Kosti','Asad','Juri','Abid','Turo','Aarno','Pietari','Mico','Karim',
+            'Petrus','Tim','Sakke','Wille','Tenho','Paulus','Nadeem','Arif','Ralf','Mirko','Viljo','Samir','Pavel','Saleem','Jonni','Allan','Roy','Umar','Ashraf',
+            'Jim','Waseem','Babu','Eppu','Mikke','Kjell','Said','Saif','Ville-Veikko','Peña','Sultan','Aleksanteri','Ganesh','Hussein','Tuure','Suraj','Urho',
+            'Amit','Prakash','Voitto','Aslam','Göran','Joose','Arshad','Joku','Mattias','Naresh','Nikolai','Jamal','Vesa-Matti','Hamid','Artur','Ulf','Mohamad',
+            'Sunny','Ghulam'
           ],
           last: [
             'Pekkarinen','Airaksinen','Kauhanen','Palomäki','Sallinen','Koivuniemi','Kämäräinen','Ruohonen','Marttinen','Oikarinen','Joensuu','Lehti','Huuskonen',
@@ -4612,20 +4193,20 @@ const NAME_TAILS_BY_NATION = {
     DEN: [
         { r: 0,
           first: [
-            'Ömer','Jim','Sam','Sten','Said','Youssef','August','Yasin','Vagn','Deniz','Egon','Aksel','Amin','Matías','Axel','Julius','Tony','Holger','Ramazan',
-            'Paw','Abo','Stephan','Kenn','Valdemar','Sonny','Khalil','Nicki','Kenny','Glenn','Torsten','Tue','Yousef','Heine','Aske','Tage','Leon','George',
-            'Andrei','Nichlas','Abbas','Abdi','Ronnie','Mario','Otto','Viggo','Felix','Reza','Karim','Toke','Thorbjørn','Claes','Hans Jørgen','Louis','Hakan',
-            'Rami','Salah','Villy','Alaa','Frede','Adem','Henry','Andy','Sigurd','Laurits','Fatih','Aage','Fadi','Sean','Denis','Amer','Eric','Charlie','Carlos',
-            'Bogdan','Julian','Ulrich','Samer','Marcin','Steffan','Adel','Peer','Jonatan','Andrew','Michel','Ian','Kamal','Kai','Kåre','Tarek','Jess','Soren',
-            'Kemal','Mikail','Hans Christian','Imran','Ayman','Jens Peter','Piotr','Antonio','Hadi','Georg','Josef','Verner','Orla','Pelle','Nabil','Azad',
-            'Bastian','Kenni','Matthias','Ruben','Hans Henrik','Halil','Tonni','Johnni','Metin','Joe','Mehdi','Jeff','Kaare','Alfred','Tomasz','Mahdi','Aleksander',
-            'Thorkild','Ammar','Cristian','Emre','Maher','Orhan','Yunus','Serkan','Hugo','Mihai','Jens Christian','Kris','Luca','Abdallah','Younes','Florin',
-            'Ronny','Stephen','Hjalte','Musa','Krzysztof','Imad','Harry','Osama','Svend Erik','Kenan','Aziz','Mickey','Marcel','Gorm','Yahya','Enes','Sinan',
-            'Knud Erik','Pierre','Saleh','Ernst','Lau','Kian','Willy','Kresten','Saeed','Caspar','Jean','Joseph','Erkan','Vincent','Hans-Henrik','Bayram','Harald',
-            'Ionut','Bob','Fredrik','Kennet','Teddy','Jason','Farid','Farhad','Alexandru','Marek','Ben','Michal','Nico','Poul-Erik','Zakaria','Juan','Emad',
-            'Cengiz','Rico','Mick','Bertram','Salih','Ayhan','Saad','Tahir','Heino','Ejvind','Mostafa','Hans Peter','Hani','Bekir','Ziad','Irfan','Wael','Rudi',
-            'Pedro','Sander','Sofus','Roman','Tore','Mahmut','Ryan','Yasar','Mesut','Dani','Grzegorz','Majid','Kadir','Kalle','Adil','Rachid','Marwan','Bassam',
-            'Salim','Ferhat','Charles','Haci','Nis','Tor','Frans','Anker','Hussain','Bave','Igor','Niels Jørgen','Kaspar'
+            'Valdemar','Sonny','Khalil','Nicki','Kenny','Glenn','Torsten','Tue','Yousef','Heine','Aske','Tage','Leon','George','Andrei','Nichlas','Abbas','Abdi',
+            'Ronnie','Mario','Otto','Viggo','Felix','Reza','Karim','Toke','Thorbjørn','Claes','Hans Jørgen','Louis','Hakan','Rami','Salah','Villy','Alaa','Frede',
+            'Adem','Henry','Andy','Sigurd','Laurits','Fatih','Aage','Fadi','Sean','Denis','Amer','Eric','Charlie','Carlos','Bogdan','Julian','Ulrich','Samer',
+            'Marcin','Steffan','Adel','Peer','Jonatan','Andrew','Michel','Ian','Kamal','Kai','Kåre','Tarek','Jess','Soren','Kemal','Mikail','Hans Christian',
+            'Imran','Ayman','Jens Peter','Piotr','Antonio','Hadi','Georg','Josef','Verner','Orla','Pelle','Nabil','Azad','Bastian','Kenni','Matthias','Ruben',
+            'Hans Henrik','Halil','Tonni','Johnni','Metin','Joe','Mehdi','Jeff','Kaare','Alfred','Tomasz','Mahdi','Aleksander','Thorkild','Ammar','Cristian','Emre',
+            'Maher','Orhan','Yunus','Serkan','Hugo','Mihai','Jens Christian','Kris','Luca','Abdallah','Younes','Florin','Ronny','Stephen','Hjalte','Musa',
+            'Krzysztof','Imad','Harry','Osama','Svend Erik','Kenan','Aziz','Mickey','Marcel','Gorm','Yahya','Enes','Sinan','Knud Erik','Pierre','Saleh','Ernst',
+            'Lau','Kian','Willy','Kresten','Saeed','Caspar','Jean','Joseph','Erkan','Vincent','Hans-Henrik','Bayram','Harald','Ionut','Bob','Fredrik','Kennet',
+            'Teddy','Jason','Farid','Farhad','Alexandru','Marek','Ben','Michal','Nico','Poul-Erik','Zakaria','Juan','Emad','Cengiz','Rico','Mick','Bertram','Salih',
+            'Ayhan','Saad','Tahir','Heino','Ejvind','Mostafa','Hans Peter','Hani','Bekir','Ziad','Irfan','Wael','Rudi','Pedro','Sander','Sofus','Roman','Tore',
+            'Mahmut','Ryan','Yasar','Mesut','Dani','Grzegorz','Majid','Kadir','Kalle','Adil','Rachid','Marwan','Bassam','Salim','Ferhat','Charles','Haci','Nis',
+            'Tor','Frans','Anker','Hussain','Bave','Igor','Niels Jørgen','Kaspar','Tarik','Burhan','Jamil','Omid','Abed','Burak','Gregers','Jalal','Tariq',
+            'Roberto','Luis','Mohsen','Firat','Erol','Frits','Kamil','Ricky','Ejnar','Ghassan','Miguel','Yasser','Naser','Ibo'
           ],
           last: [
             'Kock','Jæger','Abdallah','Caspersen','Vedel','Bergmann','Voss','Astrup','Koyuncu','Philipsen','Bjerrum','Safi','Johnson','Kassem','Kragelund',
@@ -4676,20 +4257,21 @@ const NAME_TAILS_BY_NATION = {
     NOR: [
         { r: 0,
           first: [
-            'Khalid','Mark','Ken','Vegar','Gabriel','Khaled','Abdullah','Birger','Isak','Osman','Oddbjørn','Rasmus','Sigbjørn','Adnan','Axel','Ismail','Georg',
-            'Viktor','Max','Filip','Jack','Bent','Hasan','Edvard','Anton','Arnt','Artur','Tord','Snorre','Kjartan','Gard','Remi','Amund','Ulf','Jim','Ingar','Asle',
-            'Bjorn','Trym','Henry','Sivert','Mike','Alan','René','Magnar','Hamid','Julian','Reza','Jimmy','Paweł','Niklas','Carlos','Bilal','Pawel','Kamil','Sam',
-            'Gustav','Gjermund','Abdirahman','Mario','Lukas','Didrik','Freddy','Hallvard','Gisle','Eskil','Michal','Ronald','Jamal','Vebjørn','Hamza','Jose','Hugo',
-            'Luis','Fred','Michał','Sigve','Karsten','Harry','Jacek','Brian','Odin','Imran','Jan-Erik','Olaf','Kasper','Asgeir','Łukasz','Per Arne','Amin','Brage',
-            'Hans Petter','Ole Kristian','Ulrik','Andrew','Mehmet','Samir','Fabian','Karim','Dariusz','Juan','Felix','Roman','Otto','Bengt','Lars Erik','Gøran',
-            'Leon','Yonas','Abdullahi','Mateusz','Halvard','Damian','Marco','Rafal','George','Mehdi','Albert','Steven','Viggo','Børre','Arnstein','Dawid','Joar',
-            'Sjur','Alfred','Antonio','Abbas','Paal','Patrik','Yousef','Arthur','Thorbjørn','Tarjei','Ottar','Leo','Ahmet','Krister','Andy','Aslak','Nicolas',
-            'Iver','Lucas','Aron','Sturla','Steve','Abo','Ole Martin','Sten','Asad','Øistein','Jorge','Idar','Lukasz','Maciej','Mattias','Jarl','Yusuf','Nicholas',
-            'Hallgeir','Zbigniew','Svein Erik','Salah','Faisal','Matías','Nick','Stephen','Kyrre','Kamal','Janis','Darius','Cristian','Wedi','Oddmund','Edgar',
-            'Mostafa','Jone','Imad','Jason','Ben','Malik','Klaus','Frederik','Wilhelm','Werner','Wojciech','Scott','Anas','Usman','Khalil','Ludvig','Kjell Arne',
-            'Danny','Charles','Claus','Dani','Alaa','Aziz','Igor','Torfinn','Bjørn Tore','Manuel','Rafał','Joseph','Torleif','Andrius','Jøran','Michel','Edward',
-            'Jakub','Bogdan','Carsten','Farid','Abel','Bjørn Erik','Nicolay','Thore','Ricardo','Erland','Theodor','Allan','Amer','Vladimir','Omid','Yasin',
-            'Francisco','Marcel','Josef','Aage','Jan Tore','Mahdi','Anwar','Jonatan','Khan','Ingvar','Ole Christian','Karol','Adel','Kay','Pedro'
+            'Artur','Tord','Snorre','Kjartan','Gard','Remi','Amund','Ulf','Jim','Ingar','Asle','Bjorn','Trym','Henry','Sivert','Mike','Alan','René','Magnar',
+            'Hamid','Julian','Reza','Jimmy','Paweł','Niklas','Carlos','Bilal','Pawel','Kamil','Sam','Gustav','Gjermund','Abdirahman','Mario','Lukas','Didrik',
+            'Freddy','Hallvard','Gisle','Eskil','Michal','Ronald','Jamal','Vebjørn','Hamza','Jose','Hugo','Luis','Fred','Michał','Sigve','Karsten','Harry','Jacek',
+            'Brian','Odin','Imran','Jan-Erik','Olaf','Kasper','Asgeir','Łukasz','Per Arne','Amin','Brage','Hans Petter','Ole Kristian','Ulrik','Andrew','Mehmet',
+            'Samir','Fabian','Karim','Dariusz','Juan','Felix','Roman','Otto','Bengt','Lars Erik','Gøran','Leon','Yonas','Abdullahi','Mateusz','Halvard','Damian',
+            'Marco','Rafal','George','Mehdi','Albert','Steven','Viggo','Børre','Arnstein','Dawid','Joar','Sjur','Alfred','Antonio','Abbas','Paal','Patrik','Yousef',
+            'Arthur','Thorbjørn','Tarjei','Ottar','Leo','Ahmet','Krister','Andy','Aslak','Nicolas','Iver','Lucas','Aron','Sturla','Steve','Abo','Ole Martin','Sten',
+            'Asad','Øistein','Jorge','Idar','Lukasz','Maciej','Mattias','Jarl','Yusuf','Nicholas','Hallgeir','Zbigniew','Svein Erik','Salah','Faisal','Matías',
+            'Nick','Stephen','Kyrre','Kamal','Janis','Darius','Cristian','Wedi','Oddmund','Edgar','Mostafa','Jone','Imad','Jason','Ben','Malik','Klaus','Frederik',
+            'Wilhelm','Werner','Wojciech','Scott','Anas','Usman','Khalil','Ludvig','Kjell Arne','Danny','Charles','Claus','Dani','Alaa','Aziz','Igor','Torfinn',
+            'Bjørn Tore','Manuel','Rafał','Joseph','Torleif','Andrius','Jøran','Michel','Edward','Jakub','Bogdan','Carsten','Farid','Abel','Bjørn Erik','Nicolay',
+            'Thore','Ricardo','Erland','Allan','Amer','Vladimir','Omid','Yasin','Francisco','Marcel','Josef','Aage','Jan Tore','Mahdi','Anwar','Jonatan','Khan',
+            'Ingvar','Ole Christian','Karol','Adel','Kay','Pedro','Konrad','Mindaugas','Tor Arne','Brede','Florin','Anthony','Odd Arne','Ernst','Awet','Amanuel',
+            'Abu','Yahya','Tomek','Ari','Oddgeir','Bob','Walid','Per Kristian','Shahid','Abraham','Torgrim','Yngvar','Edvin','Samer','Stephan','Ole Petter',
+            'Per Christian'
           ],
           last: [
             'Myrvold','Sundby','Flaten','Bergan','Berglund','Krogstad','Nes','Melby','Rygh','Bjørklund','Krogh','Opheim','Schmidt','Huseby','Robertsen','Saleh',
@@ -4740,20 +4322,20 @@ const NAME_TAILS_BY_NATION = {
     CAN: [
         { r: 0,
           first: [
-            'Nelson','Kenneth','Harpreet','Oscar','Shaun','Troy','Tristan','Rahul','Donald','Khalid','Kamal','Ronald','Kris','Sandeep','Drew','Erik','Logan',
-            'Julien','Charlie','Kenny','Devon','Calvin','Moe','Grant','Glenn','Owen','Amit','Mitch','Diego','Abdullah','Walter','Ted','Harman','Karl',
-            'Jean-Francois','Glen','Douglas','Riley','Hamza','Reza','Timothy','Ross','Stefan','Hugo','Zachary','Pedro','Geoff','Arthur','Angelo','Bradley',
-            'Eduardo','Antoine','Gregory','Gerry','Lawrence','Garry','Benoît','Eddie','Gavin','Mathew','Sergio','Mohamad','Alejandro','Allen','Mustafa','Edwin',
-            'Devin','Darryl','Bernard','Imran','Kelly','Sheldon','Felix','Blake','Mandeep','Pete','Rafael','Deep','Manpreet','Samir','Prince','Mehdi','Khaled',
-            'Warren','Junior','Youssef','Andrés','Oliver','Sami','Igor','Cam','Dwayne','Gagan','Jamal','Francisco','Leon','Gerald','Roman','Kelvin','Caleb','Sahil',
-            'Aidan','Russell','René','Stuart','Rod','Ajay','Eddy','Wilson','Saad','Blair','Elias','Darcy','Zack','Julio','Eugene','Jackson','Ralph','Amrit','Nabil',
-            'Alvin','Gord','Vishal','Bilal','Rohan','Pablo','Rohit','Derrick','Wesley','Georges','Tyson','Kirk','Howard','Norman','Cesar','Carlo','Noël','Stanley',
-            'Javier','Sukh','Alexis','Stan','Alberto','Jan','Nigel','Phillip','Bryce','Vladimir','Vijay','Maurice','Hasan','Dany','Anton','Clayton','Manny',
-            'Faisal','Jas','Lloyd','Jatinder','Anil','Adnan','Tanner','Harsh','Jérôme','Robbie','Said','Marvin','Arun','Rodrigo','Roland','Ranjit','Elie','Deepak',
-            'Amandeep','Murray','Rajesh','Ravinder','Héctor','Sanjay','Nate','Jaswinder','Amar','Abhishek','Edgar','Jaime','Kent','Gaurav','Sunil','Fadi','Saeed',
-            'Akash','Harold','Jacky','Parminder','Nathaniel','Surinder','Avtar','Felipe','Cristian','Boris','Mauricio','Sammy','Raphael','Yannick','Paulo',
-            'Giovanni','Malcolm','Daryl','Lance','Wes','Preet','Alfred','Damian','Winston','Andrei','Davinder','Kurt','Carter','Walid','Gustavo','Hardeep','Rich',
-            'Duncan','Manjit','Jaspreet','Rami'
+            'Julien','Charlie','Kenny','Devon','Calvin','Moe','Grant','Glenn','Amit','Mitch','Diego','Abdullah','Walter','Ted','Harman','Karl','Jean-Francois',
+            'Glen','Douglas','Riley','Hamza','Reza','Timothy','Ross','Stefan','Hugo','Zachary','Pedro','Geoff','Arthur','Angelo','Bradley','Eduardo','Antoine',
+            'Gregory','Gerry','Lawrence','Garry','Benoît','Eddie','Gavin','Mathew','Sergio','Mohamad','Alejandro','Allen','Mustafa','Edwin','Devin','Darryl',
+            'Bernard','Imran','Kelly','Sheldon','Blake','Mandeep','Pete','Rafael','Deep','Manpreet','Samir','Prince','Mehdi','Khaled','Warren','Junior','Youssef',
+            'Andrés','Oliver','Sami','Igor','Cam','Dwayne','Gagan','Jamal','Francisco','Leon','Gerald','Roman','Kelvin','Caleb','Sahil','Aidan','Russell','René',
+            'Stuart','Rod','Ajay','Eddy','Wilson','Saad','Blair','Elias','Darcy','Zack','Julio','Eugene','Jackson','Ralph','Amrit','Nabil','Alvin','Gord','Vishal',
+            'Bilal','Rohan','Pablo','Rohit','Derrick','Wesley','Georges','Tyson','Kirk','Howard','Norman','Cesar','Carlo','Noël','Stanley','Javier','Sukh','Alexis',
+            'Stan','Alberto','Jan','Nigel','Phillip','Bryce','Vladimir','Vijay','Maurice','Hasan','Dany','Anton','Clayton','Manny','Faisal','Jas','Lloyd',
+            'Jatinder','Anil','Adnan','Tanner','Harsh','Jérôme','Robbie','Said','Marvin','Arun','Rodrigo','Roland','Ranjit','Elie','Deepak','Amandeep','Murray',
+            'Rajesh','Ravinder','Héctor','Sanjay','Nate','Jaswinder','Amar','Abhishek','Edgar','Jaime','Kent','Gaurav','Sunil','Fadi','Saeed','Akash','Harold',
+            'Jacky','Parminder','Nathaniel','Surinder','Avtar','Felipe','Cristian','Boris','Mauricio','Sammy','Raphael','Yannick','Paulo','Giovanni','Malcolm',
+            'Daryl','Wes','Preet','Alfred','Damian','Winston','Andrei','Davinder','Kurt','Carter','Walid','Gustavo','Hardeep','Rich','Duncan','Manjit','Jaspreet',
+            'Rami','Raman','Salman','Asif','Wade','Salim','Raúl','Bhupinder','Morgan','Garrett','Eli','Chase','Amine','Adil','Nolan','Benny','Brady','Colton',
+            'Rakesh','Darrell','Mason','Leonardo','Marc-André'
           ],
           last: [
             'Pannu','Malhi','Kong','Barrett','Yee','Craig','Dunn','Warren','Wan','Cunningham','Giesbrecht','Michelle','Parsons','Atwal','Mah','Jensen','Noël',
@@ -4794,7 +4376,7 @@ const NAME_TAILS_BY_NATION = {
           ] },
         { r: 1,
           first: [
-            'Guillaume','Yves','Pascal','Marcel','Gilles','Frédéric','Xavier'
+            'Yves','Pascal','Frédéric'
           ],
           last: [
             'Dupuis','Michaud','Nadeau','Boudreau','Grenier','Leclerc','Martel','Proulx','Poulin','Lemieux','Bernier','Ouellet','Renaud','Demers','Couture',
@@ -4804,7 +4386,7 @@ const NAME_TAILS_BY_NATION = {
           ] },
         { r: 2,
           first: [
-            'Hamid','Mahmoud','Hussein','Amin','Singh','Aziz','Malik'
+            'Hamid','Mahmoud','Hussein','Amin','Singh','Aziz','Malik','Iqbal','Kim'
           ],
           last: [
             'Mirza','Mistry','Dang','Hoang','Abbas','Chaudhry','Duong','Mohammad','Jung','Raza','Rashid','Kapoor','Das','Chaudhary','Bui','Rehman','Muhammad',
@@ -4814,9 +4396,8 @@ const NAME_TAILS_BY_NATION = {
     MEX: [
         { r: 0,
           first: [
-            'Hilario','Javi','Jose De Jesus','Fermin','Gil','Margarito','Arnulfo','Eder','Lazaro','Cristobal','Xavier','William','Irvin','Franco','Juan Luis',
-            'Everardo','Fausto','Isai','Christopher','Juanito','Ale','Chava','Noel','Jared','George','Jose Carlos','Gera','Pascual','Jonatan','Ray','Gabino','Yael',
-            'Leobardo','Johan','Cris','Eloy','Norberto','Patricio','Polo','Hernan','Porfirio','Manolo','Leopoldo','Memo','Jimmy','Joseph','Cristopher','Ever',
+            'Juan Luis','Everardo','Fausto','Isai','Christopher','Juanito','Ale','Chava','Noel','Jared','George','Jose Carlos','Gera','Pascual','Jonatan','Ray',
+            'Gabino','Yael','Leobardo','Johan','Cris','Eloy','Norberto','Polo','Hernan','Porfirio','Manolo','Leopoldo','Memo','Jimmy','Joseph','Cristopher','Ever',
             'Anthony','Luis Manuel','Eugenio','Tavo','Poncho','Simón','Rosendo','John','Filiberto','Aldair','Artemio','Jesus Manuel','Edson','Jose Francisco',
             'León','Jerry','Dante','Andy','Luciano','Iker','Amado','Abelardo','Chucho','Jhon','Adalberto','Obed','Faustino','Ian','Edmundo','Juan Francisco',
             'Peter','Tadeo','Gabo','Albert','Eddy','Roy','Chris','Tito','Ubaldo','Delfino','Maximiliano','Michel','Jose Miguel','Said','Joan','Jacinto','Cristhian',
@@ -4829,7 +4410,8 @@ const NAME_TAILS_BY_NATION = {
             'Hernández','Florentino','Valente','Jhonny','Mane','Lauro','Maximo','Marcial','Abdiel','Renato','Richar','Servando','Yoni','Juan Ramon','Bernabe',
             'Walter','Charlie','Jack','James','Tino','Jona','Yovani','López','Sebas','Ricky','Jorge Antonio','Cornelio','Jeronimo','Evaristo','Osiel','Fredi',
             'Mark','Luis Armando','Ciro','Edward','García','Sabino','Feliciano','Teo','Roque','Rufino','Antoni','Juventino','Angelito','Candido','Carlos Eduardo',
-            'Macario','Santi','Carlos Daniel','Rosario','Juan Daniel','Carlo'
+            'Macario','Santi','Carlos Daniel','Rosario','Juan Daniel','Carlo','Willy','Eli','Gildardo','Xavi','Maximino','Gio','Apolinar','Andre','Williams',
+            'Nahum','Fidencio','Johnny','Vale','Jonny','Rosalio'
           ],
           last: [
             'Guadalupe','Amaya','Rojo','Pedraza','Bello','Roque','Barrientos','Betancourt','Cuellar','Avendaño','Alcala','Hidalgo','Loera','Meneses','Acuña',
@@ -4883,19 +4465,19 @@ const NAME_TAILS_BY_NATION = {
     RSA: [
         { r: 0,
           first: [
-            'Sean','Petrus','Scelo','Sphesihle','Kwanele','Tumi','Maxwell','Dylan','Desmond','Thobani','Leonard','Happy','Moeketsi','Sphelele','Bongane','Clement',
-            'Jeffrey','Abel','Ofentse','Dennis','King','Gavin','Lindani','Luthando','Nathan','Obakeng','Aaron','Benjamin','Banele','Joel','Dean','Morne','Ishmael',
-            'Johnny','Adam','Melusi','Herman','Vuyani','Ali','Warren','Gerald','Jerome','Rodney','Khaya','Aphiwe','Dan','Asanda','Clive','Owen','Sinethemba',
-            'Timothy','Bernard','Mario','Katleho','Lindo','Hannes','Luvuyo','Donovan','Mondli','Freddy','Mojalefa','Werner','Danny','Clinton','Abongile','Wesley',
-            'Boitumelo','Fanie','Iván','Bruce','Max','Neil','Johann','Sivuyile','Sammy','Adrián','Keith','Kgomotso','Kgotso','Pierre','Menzi','Spha','Dirk','Billy',
-            'Akhona','Wiseman','Arthur','Marco','Samson','Lloyd','Quinton','Abram','Ephraim','Lwando','Gabriel','Colin','Siphamandla','Harry','Lee','Zama','Dave',
-            'Bandile','Syanda','Yusuf','Olwethu','Kgothatso','Mzwakhe','Lesiba','Siphesihle','Benny','Lefa','Jay','Andy','Yanga','Unathi','Muhammad','Mongezi',
-            'Manqoba','Arnold','Lungisani','Nick','Abraham','Gideon','Tebza','Shadrack','Ronnie','Clifford','Wonder','Pat','Juan','Glen','Luke','Stefan','Derrick',
-            'Loyiso','Elton','Douglas','Jonas','Adriaan','Lesley','Antonio','Christiaan','Evans','Mohau','Duncan','Zolani','Mohammed','Austin','Romeo','Fana',
-            'France','Stephan','Jeff','Mohamed','Graham','Lungile','Jackson','Mzamo','Carlos','Sicelo','Wilson','Bongumusa','Kamohelo','Marcus','Kelvin','Abdul',
-            'Carl','Fortune','Luzuko','Lonwabo','Francis','Ahmed','Thuso','Lionel','Alan','Neville','Reuben','Manuel','Enock','Jannie','Olebogeng','Smanga','Rudi',
-            'Lihle','Lubabalo','Charlie','Cameron','Julius','Siphelele','Sylvester','Thulane','Lesedi','Monde','Athenkosi','Petros','Jean','Lovemore','Tom',
-            'Vernon','Shawn','Tinashe','Welcome','Brendon'
+            'Sphelele','Bongane','Clement','Jeffrey','Abel','Ofentse','Dennis','King','Gavin','Lindani','Luthando','Nathan','Obakeng','Aaron','Benjamin','Banele',
+            'Joel','Dean','Morne','Ishmael','Johnny','Adam','Melusi','Herman','Vuyani','Ali','Warren','Gerald','Jerome','Rodney','Khaya','Aphiwe','Dan','Asanda',
+            'Clive','Owen','Sinethemba','Timothy','Bernard','Mario','Katleho','Lindo','Hannes','Luvuyo','Donovan','Mondli','Freddy','Mojalefa','Werner','Danny',
+            'Clinton','Abongile','Wesley','Boitumelo','Fanie','Iván','Bruce','Max','Neil','Johann','Sivuyile','Sammy','Adrián','Keith','Kgomotso','Kgotso','Pierre',
+            'Menzi','Spha','Dirk','Billy','Akhona','Wiseman','Arthur','Marco','Samson','Lloyd','Quinton','Abram','Ephraim','Lwando','Gabriel','Colin','Siphamandla',
+            'Harry','Lee','Zama','Bandile','Syanda','Yusuf','Olwethu','Kgothatso','Mzwakhe','Lesiba','Siphesihle','Benny','Lefa','Jay','Andy','Yanga','Unathi',
+            'Muhammad','Mongezi','Manqoba','Arnold','Lungisani','Nick','Abraham','Gideon','Tebza','Shadrack','Ronnie','Clifford','Wonder','Pat','Juan','Glen',
+            'Luke','Derrick','Loyiso','Elton','Douglas','Jonas','Adriaan','Lesley','Antonio','Christiaan','Evans','Mohau','Duncan','Zolani','Mohammed','Austin',
+            'Romeo','Fana','France','Stephan','Jeff','Mohamed','Graham','Lungile','Jackson','Mzamo','Carlos','Sicelo','Wilson','Bongumusa','Kamohelo','Marcus',
+            'Kelvin','Abdul','Carl','Fortune','Luzuko','Lonwabo','Francis','Ahmed','Thuso','Lionel','Alan','Reuben','Manuel','Enock','Jannie','Olebogeng','Smanga',
+            'Rudi','Lihle','Lubabalo','Charlie','Cameron','Julius','Siphelele','Sylvester','Thulane','Lesedi','Monde','Athenkosi','Petros','Jean','Lovemore','Tom',
+            'Vernon','Shawn','Tinashe','Welcome','Brendon','Ayabonga','Reginald','Julián','Zuko','Gregory','Ismail','Derick','José','Malibongwe','Odwa','Zola',
+            'Roger','Sandiso','Sbongiseni','Sibongiseni','Darren','Luvo','Terrence','Aviwe','Gilbert'
           ],
           last: [
             'Makhoba','Klaas','Lubisi','Ayanda','Innocent','Van Schalkwyk','Badenhorst','Myburgh','Malgas','Nyoni','Samuels','Aphane','Matthews','Mathenjwa',
@@ -4935,16 +4517,16 @@ const NAME_TAILS_BY_NATION = {
           ] },
         { r: 1,
           first: [
-            'Hendrik','Koos','Heinrich','Charl'
+            'Tiaan'
           ],
           last: [
             'Vermeulen','Lombard','Naude','Bosman','Boshoff','Brits','Cronje','Claassen','Malan','Terblanche','Vermaak','Conradie','Uys','Marx','Meiring'
           ] },
         { r: 2,
           first: [
-            'Nkanyiso','Thamsanqa','Nkosi','Mdu','Lebo','Mbongeni','Mbuso','Ntuthuko','Ntando','Mahlatse','Bulelani','Mpumelelo','Philip','Tshidiso','Thembelani',
-            'Mbulelo','Zweli','Lethabo','Letlhogonolo','Mashudu','Khutso','Mthoko','Msizi','Xolile','Mncedisi','Nduduzo','Nkosana','Nkosikhona','Buhle',
-            'Tshegofatso','Xolisa','Tsepo','Mpendulo'
+            'Thamsanqa','Nkosi','Mdu','Lebo','Mbongeni','Mbuso','Ntuthuko','Ntando','Mahlatse','Bulelani','Mpumelelo','Philip','Tshidiso','Thembelani','Mbulelo',
+            'Zweli','Lethabo','Letlhogonolo','Mashudu','Khutso','Mthoko','Msizi','Xolile','Mncedisi','Nduduzo','Nkosana','Nkosikhona','Buhle','Tshegofatso',
+            'Xolisa','Tsepo','Mpendulo'
           ],
           last: [
             'Mkhonza','Masina','Mkhonto','Hlungwani','Mthimunye','Masilo','Mpungose','Mashinini','Mashigo','Mashiane','Nkwanyana','Phasha','Msweli','Ntombi',
@@ -4960,21 +4542,21 @@ const NAME_TAILS_BY_NATION = {
     IRL: [
         { r: 0,
           first: [
-            'Connor','Austin','Andrzej','Kenny','Stefan','Laurence','Roger','Marty','Peadar','Louis','Igor','Vinny','Joshua','Ahmed','Lucas','Rafal','Jonny','Ted',
-            'Pauric','Paweł','Morgan','Clive','Jan','Maciej','Samuel','Frankie','Mario','Garrett','Jacek','Kamil','Aiden','Jon','Dillon','Ricky','Łukasz','Fred',
-            'Mateusz','Terence','Benny','Pete','Mickey','Bruno','Warren','Albert','Dariusz','Dennis','Carlos','Dawid','Antonio','Kev','Jakub','Cyril','Mohamed',
-            'Florin','Ned','Pierce','Robin','Gerald','Patryk','Emmett','Vasile','Daryl','Fiachra','Michał','Timothy','Patsy','Finn','Wesley','Marco','Myles',
-            'Desmond','Mihai','Ion','Dale','Podge','Rafael','Ronnie','Pedro','Corey','Mohammed','John Paul','Jeremy','Karol','Wojciech','Cameron','Leonard','Roman',
-            'Alexandru','Ionut','Oscar','Marian','Paraic','Diarmaid','Bogdan','Kian','Abdul','Geoff','Colum','Cristian','Malcolm','Alexander','Allan','Tiernan',
-            'Oran','Dessie','Davy','Keelan','Val','Reece','Emmanuel','Mohammad','Jacob','Stevie','Donnacha','Pearse','Caolan','Norman','Diego','Walter','Sergiu',
-            'Seanie','Lukas','Ricardo','Hugo','Graeme','Matty','Conall','Vladimir','Fernando','Conal','Darius','Calvin','Gregory','Janis','Rhys','Donie','Hassan',
-            'Jarlath','Iain','Jose','Jerome','Phillip','Lar','Dick','Dominik','Rodrigo','Eanna','Douglas','Roberto','Calum','Kieron','Rian','Paulo','Derry',
-            'Malachy','Kelvin','Bartosz','Thiago','Rafał','Vinnie','Leslie','Felipe','Przemek','Luca','Eduardo','Julian','Oleg','Hughie','Vlad','Anton','Donagh',
-            'Tadgh','Tristan','Bart','Fabio','Damo','Ron','Andre','Benjamin','Mindaugas','Filip','Andrius','Tomek','Leigh','Ste','Fearghal','Isaac','Miguel',
-            'Finbar','Paschal','Edmond','Edwin','Bren','Ultan','Gav','Krystian','Szymon','Prince','Allen','Barney','Kacper','Gheorghe','Zach','Ahmad','Norbert',
-            'Les','Jeffrey','Pavel','Hubert','Bartek','Kealan','Omar','Lewis','Sorin','Dwayne','Senan','Jody','Catalin','Garreth','Leonardo','Edgars','Marcel',
-            'Constantin','Arkadiusz','Alin','Felix','Kris','Jarek','Alessandro','Mary','Ashley','Mantas','Joel','Abdullah','Jude','Luis','John Joe','Gar','Mervyn',
-            'Wojtek'
+            'Ahmed','Lucas','Rafal','Jonny','Ted','Pauric','Paweł','Morgan','Clive','Jan','Maciej','Samuel','Frankie','Mario','Garrett','Jacek','Kamil','Aiden',
+            'Jon','Dillon','Ricky','Łukasz','Fred','Mateusz','Terence','Benny','Pete','Mickey','Bruno','Warren','Albert','Dariusz','Dennis','Carlos','Dawid',
+            'Antonio','Kev','Jakub','Cyril','Mohamed','Florin','Ned','Pierce','Robin','Gerald','Patryk','Emmett','Vasile','Daryl','Fiachra','Michał','Timothy',
+            'Patsy','Finn','Wesley','Marco','Myles','Desmond','Mihai','Ion','Dale','Podge','Rafael','Ronnie','Pedro','Corey','Mohammed','John Paul','Jeremy',
+            'Karol','Wojciech','Cameron','Leonard','Roman','Alexandru','Ionut','Oscar','Marian','Paraic','Diarmaid','Bogdan','Kian','Abdul','Geoff','Colum',
+            'Cristian','Malcolm','Alexander','Allan','Tiernan','Oran','Dessie','Davy','Keelan','Val','Reece','Emmanuel','Mohammad','Jacob','Stevie','Donnacha',
+            'Pearse','Caolan','Norman','Diego','Walter','Sergiu','Seanie','Lukas','Ricardo','Hugo','Graeme','Matty','Conall','Vladimir','Fernando','Conal','Darius',
+            'Calvin','Gregory','Janis','Rhys','Donie','Hassan','Jarlath','Iain','Jose','Jerome','Phillip','Lar','Dick','Dominik','Rodrigo','Eanna','Douglas',
+            'Roberto','Calum','Kieron','Rian','Paulo','Derry','Malachy','Kelvin','Bartosz','Thiago','Rafał','Vinnie','Leslie','Felipe','Przemek','Luca','Eduardo',
+            'Julian','Oleg','Hughie','Vlad','Anton','Donagh','Tadgh','Tristan','Bart','Fabio','Damo','Ron','Andre','Benjamin','Mindaugas','Filip','Andrius','Tomek',
+            'Leigh','Ste','Fearghal','Isaac','Miguel','Finbar','Paschal','Edmond','Edwin','Bren','Ultan','Gav','Krystian','Szymon','Prince','Allen','Barney',
+            'Kacper','Gheorghe','Zach','Ahmad','Norbert','Les','Jeffrey','Pavel','Hubert','Bartek','Kealan','Omar','Lewis','Sorin','Dwayne','Senan','Jody',
+            'Catalin','Garreth','Leonardo','Edgars','Marcel','Constantin','Arkadiusz','Alin','Felix','Kris','Jarek','Alessandro','Mary','Ashley','Mantas','Joel',
+            'Abdullah','Jude','Luis','John Joe','Gar','Mervyn','Wojtek','Pablo','Gustavo','Pascal','Marko','Bradley','Radek','Andris','Ioan','Imran','Neal','Emil',
+            'Odhran','Colman'
           ],
           last: [
             'Sinnott','Hoey','Bracken','O Regan','O Dwyer','Flannery','Corbett','Waters','Lacey','Richardson','Stafford','Fay','Downes','Omeara','Black','Staunton',
@@ -5025,10 +4607,9 @@ const NAME_TAILS_BY_NATION = {
     POR: [
         { r: 0,
           first: [
-            'Inacio','Edu','Alcides','Custodio','Reinaldo','Johnny','Celestino','Danny','Ferreira','Zeca','William','Richard','Adilson','Nelo','Jeronimo','Aires',
-            'Ana','Miguel Angelo','Jota','Walter','Chico','Josué','Elias','Hilario','Marcelino','Vitor Manuel','Jonathan','Gerson','Paulinho','Singh','Rui Manuel',
-            'Yuri','Silvino','Adolfo','Paul','José Fernando','Luis Carlos','Edmundo','Isidro','Oliveira','Roger','Casimiro','Anselmo','Jesús','João Luis','Belmiro',
-            'Kiko','Ronaldo','Jorge Manuel','Tomé','Ezequiel','Douglas','Ion','Andrei','Costa','Denis','Valentim','Vinicius','Emidio','Oleg','Manu','Max','Pereira',
+            'Miguel Angelo','Jota','Walter','Chico','Josué','Elias','Hilario','Marcelino','Vitor Manuel','Jonathan','Gerson','Paulinho','Singh','Rui Manuel','Yuri',
+            'Silvino','Adolfo','Paul','José Fernando','Luis Carlos','Edmundo','Isidro','Oliveira','Roger','Casimiro','Anselmo','Jesús','João Luis','Belmiro','Kiko',
+            'Ronaldo','Jorge Manuel','Tomé','Ezequiel','Douglas','Ion','Andrei','Costa','Denis','Valentim','Vinicius','Emidio','Oleg','Manu','Max','Pereira',
             'Roman','Pablo','Jean','Bento','Christian','Martins','Arthur','Rodrigues','Ulisses','Eric','Luis Manuel','Amaro','Paulo Alexandre','Justino','Nilton',
             'Vitor Hugo','Ricky','Herminio','Vitorino','Berto','Sousa','Benjamim','Paulino','Cristian','Firmino','Caio','Emilio','Raphael','Bruno Miguel','Andriy',
             'Elton','Camilo','Germano','Evandro','Albertino','Lopes','Vasile','Gilson','Ruy','Stefan','Wagner','Fabiano','Jony','Xico','Mamadu','Gomes','Muhammad',
@@ -5041,7 +4622,8 @@ const NAME_TAILS_BY_NATION = {
             'João Francisco','Felisberto','Mariano','Adalberto','Almeida','Alexandru','Ruslan','Mikael','José João','Carvalho','Steve','Frank','Fernando Jorge',
             'Mário Rui','Antonio Carlos','Marcus','Joseph','Felix','Ricardo Jorge','Teixeira','Euclides','Marinho','Celio','Guga','Dias','Steven','Sam','Vitaliy',
             'Viriato','Andrey','Monteiro','Sidney','Prince','Marlon','Caetano','Gheorghe','Dimas','Pedro Nuno','Christopher','Alejandro','Manuel Antonio',
-            'Gonçalves'
+            'Gonçalves','Cris','Eusebio','Ian','Marc','Fernando Manuel','Isac','Lisandro','Jefferson','Antonino','Aristides','Ailton','Marco Paulo','Dan','Jonny',
+            'Wellington','Nicolae','Elson'
           ],
           last: [
             'Sardinha','Durão','Beatriz','Geraldes','Cândido','Assis','Elias','Djalo','Eusébio','Soeiro','Souto','Vilhena','Sales','Rei','Mariano','Perdigão',
@@ -5092,24 +4674,24 @@ const NAME_TAILS_BY_NATION = {
     COL: [
         { r: 0,
           first: [
-            'Santi','Anibal','Emilio','Jorge Enrique','Brian','Juancho','Isaac','Wilder','Yair','Samir','Confiesate','Eder','Nilson','Octavio','Luis Felipe',
-            'Luis Alfredo','Gildardo','Luis Angel','Emmanuel','Hermes','Camilo Andres','Jader','Jonatan','Josue','Vicente','Edilson','Carlos Eduardo','Augusto',
-            'Jean Carlos','Juancarlos','Diego Alejandro','Fercho','Carlos Julio','Luis Antonio','Roger','Francisco Javier','Jose Miguel','Gerson','Benjamin',
-            'Matías','Jhony','Emerson','Israel','Abel','Elver','Anthony','Julian Andres','Jesus David','Joaquín','Beto','Jorge Ivan','Joan','Rigoberto','Bladimir',
-            'Eider','Yerson','Breiner','Norbey','Misael','Arbey','Henrry','Juan Fernando','Federico','Norberto','Ronal','Jerson','Robin','Juan Andres','Rene',
-            'Jhojan','Deivis','Joseph','Sneider','Dagoberto','Lucas','Maikol','Segundo','Gregorio','Ignacio','Alan','Eduard','Neider','Luis Alejandro','Wilfredo',
-            'Elmer','Andy','Jeronimo','Leider','Keiner','Ivan Dario','Victor Hugo','Cristian David','Reinel','Jorge Andres','Gustavo Adolfo','Aldair','Rolando',
-            'Argemiro','Heriberto','Rafa','Alcides','Ciro','Efren','Agustín','Tito','Horacio','Edgardo','Yeiner','Hector Fabio','Abelardo','Edier','Geovanny',
-            'Maria','Thomas','Elvis','Adalberto','Kamilo','Ronaldo','Dani','Damian','Jose Fernando','Albert','Jesus Antonio','Faber','Victor Alfonso','Angelo',
-            'Silvio','Duban','Cristobal','Yorman','Nando','Luis Hernando','Diego Andres','Deimer','Luis David','Richar','Jose Daniel','Abraham','Marco Antonio',
-            'Ovidio','Juan Guillermo','Dylan','Juanes','Willy','Jhonathan','Sergio Andres','Vladimir','Kike','Harol','Evelio','Diego Armando','Fidel','Antony',
-            'Marino','Alveiro','Deiby','John Fredy','Julian David','George','Isaias','Oliver','Jordan','Miguel Antonio','Juank','Edisson','Kmilo','Jose Gregorio',
-            'Javi','Bairon','Franco','Oscar Javier','Carlitos','Farid','Janer','Marcelo','Jesus Alberto','Osvaldo','Jorge Alberto','Wilber','Juan Gabriel','Emiro',
-            'Johnny','Reynaldo','Daniel Felipe','Pedro Pablo','Sandro','Rogelio','Carlos Enrique','Santy','Huber','Jorge Armando','Rey','Salomon','Dairon','Herney',
-            'Pacho','Nixon','Jacobo','Yamid','Mao','Jhonier','Wilman','Pedro Antonio','Andres Camilo','Nico','Jaiver','Eduin','Wilfrido','Isidro','Jose Alfredo',
-            'Erik','Karlos','Luis Guillermo','Yonatan','Jose Alberto','Paulo','Ezequiel','Jose Angel','Diomedes','Arnold','Nacho','León','Enrrique','Jhon Freddy',
-            'Jose Ignacio','Ancizar','Brahian','Pepe','Emiliano','Salvador','Jose Alejandro','Deiner','Wilian','Fredi','Luiz','Yeisson','Rubiel','Lisandro','Duver',
-            'Juanda'
+            'Eder','Nilson','Octavio','Luis Felipe','Luis Alfredo','Gildardo','Luis Angel','Emmanuel','Hermes','Camilo Andres','Jader','Jonatan','Josue','Vicente',
+            'Edilson','Carlos Eduardo','Augusto','Jean Carlos','Juancarlos','Diego Alejandro','Fercho','Carlos Julio','Luis Antonio','Roger','Francisco Javier',
+            'Jose Miguel','Gerson','Benjamin','Matías','Jhony','Emerson','Israel','Abel','Elver','Anthony','Julian Andres','Jesus David','Joaquín','Beto',
+            'Jorge Ivan','Joan','Rigoberto','Bladimir','Eider','Yerson','Breiner','Norbey','Misael','Arbey','Henrry','Juan Fernando','Federico','Norberto','Ronal',
+            'Jerson','Robin','Juan Andres','Rene','Jhojan','Deivis','Joseph','Sneider','Dagoberto','Lucas','Maikol','Segundo','Gregorio','Ignacio','Alan','Eduard',
+            'Neider','Luis Alejandro','Wilfredo','Elmer','Andy','Jeronimo','Leider','Keiner','Ivan Dario','Victor Hugo','Cristian David','Reinel','Jorge Andres',
+            'Gustavo Adolfo','Aldair','Rolando','Argemiro','Heriberto','Rafa','Alcides','Ciro','Efren','Agustín','Tito','Horacio','Edgardo','Yeiner','Hector Fabio',
+            'Abelardo','Edier','Geovanny','Maria','Thomas','Elvis','Adalberto','Kamilo','Ronaldo','Dani','Damian','Jose Fernando','Albert','Jesus Antonio','Faber',
+            'Victor Alfonso','Angelo','Silvio','Duban','Cristobal','Yorman','Nando','Luis Hernando','Diego Andres','Deimer','Luis David','Richar','Jose Daniel',
+            'Abraham','Marco Antonio','Ovidio','Juan Guillermo','Dylan','Juanes','Willy','Jhonathan','Sergio Andres','Vladimir','Kike','Harol','Evelio',
+            'Diego Armando','Fidel','Antony','Marino','Alveiro','Deiby','John Fredy','Julian David','George','Isaias','Oliver','Jordan','Miguel Antonio','Juank',
+            'Edisson','Kmilo','Jose Gregorio','Javi','Bairon','Franco','Oscar Javier','Carlitos','Farid','Janer','Marcelo','Jesus Alberto','Osvaldo',
+            'Jorge Alberto','Wilber','Juan Gabriel','Emiro','Johnny','Reynaldo','Daniel Felipe','Pedro Pablo','Sandro','Rogelio','Carlos Enrique','Santy','Huber',
+            'Jorge Armando','Rey','Salomon','Dairon','Herney','Pacho','Nixon','Jacobo','Yamid','Mao','Jhonier','Wilman','Pedro Antonio','Andres Camilo','Nico',
+            'Jaiver','Eduin','Wilfrido','Isidro','Jose Alfredo','Erik','Karlos','Luis Guillermo','Yonatan','Jose Alberto','Paulo','Ezequiel','Jose Angel',
+            'Diomedes','Arnold','Nacho','León','Enrrique','Jhon Freddy','Jose Ignacio','Ancizar','Brahian','Pepe','Salvador','Jose Alejandro','Deiner','Wilian',
+            'Fredi','Luiz','Yeisson','Rubiel','Lisandro','Duver','Juanda','Otoniel','Juandavid','Aurelio','Oskar','Dany','Deiver','Bayron','Hamilton','Eugenio',
+            'Jackson','Domingo','Davinson'
           ],
           last: [
             'Pereira','Porras','Villalobos','Varela','Robles','Lugo','Durango','Pulgarin','Calle','Arroyave','Ojeda','Lopera','Macias','Puerta','Parada','Machado',
@@ -5161,13 +4743,13 @@ const NAME_TAILS_BY_NATION = {
     RUS: [
         { r: 0,
           first: [
-            'Askhab','Mukhamed','Nazar','Diman','Beslan','Khamzat','Akhmad','Nurlan','Adel','Gennady','Vovan','Dan','Ignat','Asker','Shavkat','Daniyar','Khalid',
-            'Bakhtier','Taras','Ravshan','Zamir','Gadzhimurad','Idris','Khusein','Ayub','Imran','Bobur','Radzhab','Vladik','Oibek','Tamerlan','Dzhabrail','Niyaz',
-            'Suleiman','Jasur','Khurshed','Yunus','Peter','Kot','Sanzhar','Salim','Rafik','Vsevolod','Bakhrom','Matvey','Nariman','Aleksander','Feliks','Leo',
-            'Irek','Akbar','Alexsandr','Sanjar','Vadik','Askar','Samat','Fanis','Daler','Linar','Oybek','Firuz','Bakhtiyar','Nurbek','Timofey','Sergej','Gusein',
-            'Abdurakhman','Art','Amin','Rakhim','Danis','Kiril','Takhir','Ildus','Bekzod','Jon','Mukhammed','Aibek','Sergo','Zurab','Temur','Artak','Soslan',
-            'Hasan','Serge','Mukhtar','Ahmad','Farrux','Astemir','Jack','Zakir','Salman','Andre','Jahongir','Doston','Viacheslav','Usman','Osman','Zhasur',
-            'Muzaffar','Sergio','Parviz','Dimitrii','Rusik','Sam','Gamzat','Farkhad','Kamal','Firdavs','Farit','Efim','Ilfat'
+            'Adel','Gennady','Vovan','Dan','Ignat','Asker','Shavkat','Daniyar','Khalid','Bakhtier','Taras','Ravshan','Zamir','Gadzhimurad','Idris','Khusein','Ayub',
+            'Imran','Bobur','Radzhab','Vladik','Oibek','Tamerlan','Dzhabrail','Niyaz','Suleiman','Jasur','Khurshed','Yunus','Peter','Kot','Sanzhar','Salim','Rafik',
+            'Vsevolod','Bakhrom','Matvey','Nariman','Aleksander','Feliks','Leo','Irek','Akbar','Alexsandr','Sanjar','Vadik','Askar','Samat','Fanis','Daler','Linar',
+            'Oybek','Firuz','Bakhtiyar','Nurbek','Timofey','Sergej','Gusein','Abdurakhman','Art','Amin','Rakhim','Danis','Kiril','Takhir','Ildus','Bekzod','Jon',
+            'Mukhammed','Aibek','Sergo','Zurab','Temur','Artak','Soslan','Hasan','Serge','Mukhtar','Ahmad','Farrux','Astemir','Jack','Zakir','Salman','Andre',
+            'Jahongir','Doston','Viacheslav','Usman','Osman','Zhasur','Muzaffar','Sergio','Parviz','Dimitrii','Rusik','Sam','Gamzat','Farkhad','Kamal','Firdavs',
+            'Farit','Efim','Ilfat'
           ],
           last: [
             'Mamaev','Kudryashov','Bobrov','Korotkov','Osmanov','Martynenko','Larin','Gerasimenko','Ignatenko','Babenko','Idrisov','Velichko','Naumenko','Agafonov',
@@ -5200,20 +4782,20 @@ const NAME_TAILS_BY_NATION = {
     POL: [
         { r: 0,
           first: [
-            'Mike','Anton','Erwin','Arnold','Kevin','Thomas','Kordian','Olivier','Mark','Alexander','Paul','Ksawery','Milosz','Maniek','Heniek','Marceli','Rob',
-            'Adi','Ruslan','Chris','Andrew','Tymon','Krzychu','Vitalii','Edek','Jaś','Jasiu','Kewin','Benedykt','Gregor','Dmytro','Artem','Luk','Samuel','Jaro',
-            'Olgierd','Piter','Don','Bruno','Matt','Mieszko','Fryderyk','Leonard','Sergey','Vlad','Iwo','Stasiu','Blazej','Vasyl','Gustaw','Wlodek','Jędrek','Daro',
-            'Alojzy','Julek','Brajan','Oliwer','Ali','Pavel','Bolek','Rafael','Agnieszka','Yurii','Remik','Władek','Jonasz','Zibi','Ewa','Art','Taras','Pio','Miki',
-            'Stan','Boleslaw','Dan','Zygfryd','Oliver','Vladimir','Feliks','Raf','Waclaw','Emanuel','Patrick','Marco','Maurycy','Andrei','Andrey','Mykola','Rudolf',
-            'Florian','Kasper','Stasiek','Johny','Lucas','Monika','Miro','Hieronim','Andreas','Aleksy','Emilian','Andy','Patrycjusz','Victor','Oleh','Vladyslav',
-            'Gienek','Jonatan','Jeremi','Denys','Simon','Bronislaw','Teodor','Bob','Oktawian','Barbara','Kasia','Jacob','Tomas','Mac','Marko','Waldi','Katarzyna',
-            'Miron','Jerry','Tomi','Wojtas','Bar','Vitaliy','Roberto','Ihor','Antonio','Stachu','Dar','Grzesiu','Woj','Bogumil','Ahmed','James','Nazar','Dario',
-            'Edwin','Sasha','George','Wladek','Yaroslav','Andre','Nikita','Albin','Anatol','Małgorzata','Vadim','Roger','Jeremiasz','Remek','Vova','Bronek','Ania',
-            'Marta','Olo','Wacek','Kajtek','Misiek','Nicolas','Ziemowit','Leslaw','Paw','Richard','Markus','Krzy','Pat','Joanna','Mateo','Eliasz','Leo',
-            'Korneliusz','Krystyna','Gregory','Kryspin','Pavlo','Andriy','Magdalena','Vadym','Christian','Rafi','Przem','Benek','Petro','Matthew','Wincenty',
-            'Maria','Alexandr','Jaromir','Beata','Dmitry','Konstanty','Luke','Oleksii','Stanislav','Oli','Roma','Misha','Carlos','Luki','Rysiu','Bodzio','Kriss',
-            'Mich','Niko','Karolina','Tytus','Sergii','Ben','Gabryś','Nataniel','Tommy','Oscar','Rad','Johnny','Walter','Magda','Dorota','Arthur','Kam','Brunon',
-            'Sam','Hans','Henio','Teresa','Mohamed','Mały','Nikolas','Stanley','Leopold','Iwan','Majkel','Danuta','Luka','Aron','Stepan','Boguś'
+            'Heniek','Marceli','Rob','Adi','Ruslan','Chris','Andrew','Tymon','Krzychu','Vitalii','Edek','Jaś','Jasiu','Kewin','Benedykt','Gregor','Dmytro','Artem',
+            'Luk','Samuel','Jaro','Olgierd','Piter','Don','Bruno','Matt','Mieszko','Fryderyk','Leonard','Sergey','Vlad','Iwo','Stasiu','Blazej','Vasyl','Gustaw',
+            'Wlodek','Jędrek','Daro','Alojzy','Julek','Brajan','Oliwer','Ali','Pavel','Bolek','Rafael','Agnieszka','Yurii','Remik','Władek','Jonasz','Zibi','Ewa',
+            'Art','Taras','Pio','Miki','Stan','Boleslaw','Dan','Zygfryd','Oliver','Vladimir','Feliks','Raf','Waclaw','Emanuel','Patrick','Marco','Maurycy','Andrei',
+            'Andrey','Mykola','Rudolf','Florian','Kasper','Stasiek','Johny','Lucas','Monika','Miro','Hieronim','Andreas','Aleksy','Emilian','Andy','Patrycjusz',
+            'Victor','Oleh','Vladyslav','Gienek','Jonatan','Jeremi','Denys','Simon','Bronislaw','Teodor','Bob','Oktawian','Barbara','Kasia','Jacob','Tomas','Mac',
+            'Marko','Waldi','Katarzyna','Miron','Jerry','Tomi','Wojtas','Bar','Vitaliy','Roberto','Ihor','Antonio','Stachu','Dar','Grzesiu','Woj','Bogumil','Ahmed',
+            'James','Nazar','Dario','Edwin','Sasha','George','Wladek','Yaroslav','Andre','Nikita','Albin','Anatol','Małgorzata','Vadim','Roger','Jeremiasz','Remek',
+            'Vova','Bronek','Ania','Marta','Olo','Wacek','Kajtek','Misiek','Nicolas','Ziemowit','Leslaw','Paw','Richard','Markus','Krzy','Pat','Joanna','Mateo',
+            'Eliasz','Leo','Korneliusz','Krystyna','Gregory','Kryspin','Pavlo','Andriy','Magdalena','Vadym','Christian','Rafi','Przem','Benek','Petro','Matthew',
+            'Wincenty','Maria','Alexandr','Jaromir','Beata','Dmitry','Konstanty','Luke','Oleksii','Stanislav','Oli','Roma','Misha','Carlos','Luki','Rysiu','Bodzio',
+            'Kriss','Mich','Niko','Karolina','Tytus','Sergii','Ben','Gabryś','Nataniel','Tommy','Oscar','Rad','Johnny','Walter','Magda','Dorota','Arthur','Kam',
+            'Brunon','Sam','Hans','Henio','Teresa','Mohamed','Mały','Nikolas','Stanley','Leopold','Iwan','Majkel','Danuta','Luka','Aron','Stepan','Boguś',
+            'Christopher','Artek','Bogusz','Robson','Milan','Sergei','Dmitriy','Kubuś','Lolek','Seb','Radomir','Hugo','Dave','Maksim'
           ],
           last: [
             'Kwiatek','Misiak','Skoczylas','Prokop','Małecki','Sojka','Matuszewski','Mroczek','Dąbek','Cygan','Skowronek','Kaszuba','Jastrzębski','Piotr',
@@ -5266,20 +4848,20 @@ const NAME_TAILS_BY_NATION = {
     CZE: [
         { r: 0,
           first: [
-            'Miky','Artem','Vadim','Volodymyr','Vladan','Misha','Oleksandr','Mykola','Miki','Dima','Nick','Gustav','Vena','Jack','Prokop','Bruno','Jacob','Don',
-            'Majkl','Joe','Pedro','Čestmír','Bohumír','Janek','Adolf','Bohouš','Antonio','Viliam','Dmitry','Bogdan','Karol','Victor','Jerry','Aleksandr','Cyril',
-            'Chris','Stanley','Kirill','Taras','Marko','Jana','Carlos','Rastislav','Danek','André','Andreas','Ráďa','Christian','Mirda','Vasja','Matty','Joseph',
-            'Lukyn','Yuriy','Konstantin','Jurij','Frank','Hubert','Pablo','Ahmed','Vitaliy','Vilda','Mohamed','Kolja','Filda','Lojza','Jarin','Andy','Olin',
-            'Valentin','Roland','Alexey','Ben','Dany','Andriy','Ctibor','Vincent','Dennis','Zbyšek','Vitalij','Alda','Tomášek','Rob','Vlado','Denny','Renda','Dejv',
-            'Ríša','Oleh','Květoslav','Karl','Charlie','Steve','Henry','Jeník','Matt','Peťan','Ilya','Nikolay','Roberto','Dmytro','Fíla','Dmitrij','Benjamin',
-            'Georg','Miras','Jose','Mar','Bobo','Čeněk','Ferda','Yaroslav','Ihor','Jarmil','Marcus','Jaro','Erich','Dom','Radan','Alexandru','Petro','Ilja','Majk',
-            'Leon','Emanuel','Mikhail','Radomil','Drahomír','Johan','Ferdinand','William','Domča','Matthew','Ivoš','Matúš','Darek','Sasha','Branislav','Damian',
-            'Fany','Markus','Hanys','Rado','Vasile','Pepča','Ctirad','Stan','Mihai','Vráťa','Rudy','Bořivoj','Georgi','Teodor','Lenka','Páťa','Hung','Jaryn','Tomi',
-            'Tomasz','Vova','Tim','Theodor','Imrich','Alexej','Luk','Philip','Nazar','Nguyen','Eric','Máca','Jorge','Sergei','Drahoslav','Čenda','Lubo','Miguel',
-            'Pan','Florin','Lucky','Pepek','Andrii','Radko','Fery','Danda','Felix','Sergiu','Ian','Serhiy','Timur','Vašík','Lucie','Leopold','Kubajz','Deny','Nik',
-            'Luis','Jay','Ladis','Janko','Cristian','Anthony','Mihail','Pat','Palo','Francesco','Maroš','Lukášek','Ernest','Eva','Tuan','Los','Tomino','Dmitriy',
-            'Nikolaj','Yura','Alfred','Egor','Martínek','Tomy','Eugen','Edward','Piotr','Malej','Jason','Juan','Marius','Harry','Luki','Boban','Luca','Váša',
-            'Diego','Mykhaylo','Mirko','Vitalik','Marie','Andrea','Paolo','Omar','Ionut'
+            'Dima','Nick','Gustav','Vena','Jack','Prokop','Bruno','Jacob','Don','Majkl','Joe','Pedro','Čestmír','Bohumír','Janek','Adolf','Bohouš','Antonio',
+            'Viliam','Dmitry','Bogdan','Karol','Victor','Jerry','Aleksandr','Cyril','Chris','Stanley','Kirill','Taras','Marko','Jana','Carlos','Rastislav','Danek',
+            'André','Andreas','Ráďa','Christian','Mirda','Vasja','Matty','Joseph','Lukyn','Yuriy','Konstantin','Jurij','Frank','Hubert','Pablo','Ahmed','Vitaliy',
+            'Vilda','Mohamed','Kolja','Filda','Lojza','Jarin','Andy','Olin','Valentin','Roland','Alexey','Ben','Dany','Andriy','Ctibor','Vincent','Dennis','Zbyšek',
+            'Vitalij','Alda','Tomášek','Rob','Vlado','Denny','Renda','Dejv','Ríša','Oleh','Květoslav','Karl','Charlie','Steve','Henry','Jeník','Matt','Peťan',
+            'Ilya','Nikolay','Roberto','Dmytro','Fíla','Dmitrij','Benjamin','Georg','Miras','Jose','Mar','Bobo','Čeněk','Ferda','Yaroslav','Ihor','Jarmil','Marcus',
+            'Jaro','Erich','Dom','Radan','Alexandru','Petro','Ilja','Majk','Leon','Emanuel','Mikhail','Radomil','Drahomír','Johan','Ferdinand','William','Domča',
+            'Matthew','Ivoš','Matúš','Darek','Sasha','Branislav','Damian','Fany','Markus','Hanys','Rado','Vasile','Pepča','Ctirad','Stan','Mihai','Vráťa','Rudy',
+            'Bořivoj','Georgi','Teodor','Lenka','Páťa','Hung','Jaryn','Tomi','Tomasz','Vova','Tim','Theodor','Imrich','Alexej','Luk','Philip','Nazar','Nguyen',
+            'Eric','Máca','Jorge','Sergei','Drahoslav','Čenda','Lubo','Miguel','Pan','Florin','Lucky','Pepek','Andrii','Radko','Fery','Danda','Felix','Sergiu',
+            'Ian','Serhiy','Timur','Vašík','Lucie','Leopold','Kubajz','Deny','Nik','Luis','Jay','Ladis','Janko','Cristian','Anthony','Mihail','Pat','Palo',
+            'Francesco','Maroš','Lukášek','Ernest','Eva','Tuan','Los','Tomino','Dmitriy','Nikolaj','Yura','Alfred','Egor','Martínek','Tomy','Eugen','Edward',
+            'Piotr','Malej','Jason','Juan','Marius','Harry','Luki','Boban','Luca','Váša','Diego','Mykhaylo','Mirko','Vitalik','Marie','Andrea','Paolo','Omar',
+            'Ionut','Walter','Jéňa'
           ],
           last: [
             'Sojka','Mařík','Křivánek','Vojta','Homola','Hradil','Janík','Barták','Vaníček','Sokol','Tuček','Prchal','Votava','Morávek','Jakub','Kratochvilova',
@@ -5311,20 +4893,20 @@ const NAME_TAILS_BY_NATION = {
     HUN: [
         { r: 0,
           first: [
-            'Bruno','Béci','Steve','Christian','Kozma','Mike','Ati','Marco','Fazekas','Krisz','Karesz','Isti','Vass','Andreas','Omar','Samu','Előd','Konrád',
-            'Karcsi','Veres','Victor','Patrick','Kolos','Váradi','Balog','Mohammed','Alfred','Demeter','Budai','Lehel','Lázár','Bandi','Huba','Joseph','Lengyel',
-            'Virág','Ferencz','Szőke','Pataki','Árpi','Tihamér','Nemes','Pásztor','Deák','Domokos','Halász','Rezső','Gyuszi','Szekeres','Andrea','Barni','Ádi',
-            'Abdul','Vida','Lackó','Székely','Roberto','Orbán','Mezei','Nándi','Orosz','Vörös','Josef','Bognár','Jancsi','Sanyika','Kulcsár','Bakos','Lőrinc',
-            'Soós','Baranyai','Brendon','Berki','Müller','Norman','Kertész','Zénó','Armand','Carlos','Béres','Bakó','Robin','Vendel','Erdei','Marius','Bertold',
-            'Polgár','Novák','Alessandro','Szász','Jácint','Márkus','Bodnár','Greg','Ignác','Zolika','Oszkár','Rajmond','Végh','Ibrahim','Kádár','Ács','James',
-            'Aladár','Reza','Lőrincz','Dobos','Senki','Schmidt','Adorján','Bartha','Örs','Csonka','Antonio','Seres','Mahmoud','Boti','Baranyi','Atilla','Győri',
-            'Barta','Tony','Tommy','Hassan','Mayer','Berta','Pali','Laca','Kalmár','Szigeti','Mester','Kende','Ödön','Karim','Herceg','Erdélyi','Ricardo','Leo',
-            'Dorián','Koncz','Hamza','Pedro','Pityu','Dan','Kun','Lénárd','Kurucz','Hajdu','Urbán','Vajda','Balla','Kardos','Gaál','Jan','Christopher','Valter',
-            'Faragó','Császár','Dömötör','Mehdi','Boldi','Leslie','Baráth','Janó','Vajk','Dave','Domi','Zsiga','Rózsa','Denis','Bazsi','Luis','Bencze','Abdullah',
-            'Berci','Stephen','Giovanni','Joel','Szántó','Gery','Pető','Sanya','Ferenczi','Shayan','Alireza','Max','Szakács','Toni','Bán','Raúl','Kecskés','Jenei',
-            'Mustafa','Szegedi','Georg','Jack','Dudás','Walter','Fejes','Keresztes','Fecó','Huszár','Manuel','Bali','Borbély','Marc','Amin','Sina','Andy','Mohamad',
-            'Robika','Bernát','Lovas','Angyal','Jonatán','Sebők','Guszti','Szarvas','Bende','Sam','Bene','Lorenzo','Kárpáti','Raymond','Cristian','Galambos','Vili',
-            'Hegyi','Garai','Marcel','Józsa','Ábrahám','Vadász','Öcsi','Bokor','Ben','Vas','Muhammad','Csabika','Nikolasz'
+            'Isti','Vass','Andreas','Omar','Samu','Előd','Konrád','Karcsi','Veres','Victor','Patrick','Kolos','Váradi','Balog','Mohammed','Alfred','Demeter',
+            'Budai','Lehel','Lázár','Bandi','Huba','Joseph','Lengyel','Virág','Ferencz','Szőke','Pataki','Árpi','Tihamér','Nemes','Pásztor','Deák','Domokos',
+            'Halász','Rezső','Gyuszi','Szekeres','Andrea','Barni','Ádi','Abdul','Vida','Lackó','Székely','Roberto','Orbán','Mezei','Nándi','Orosz','Vörös','Josef',
+            'Bognár','Jancsi','Sanyika','Kulcsár','Bakos','Lőrinc','Soós','Baranyai','Brendon','Berki','Müller','Norman','Kertész','Zénó','Armand','Carlos','Béres',
+            'Bakó','Robin','Vendel','Erdei','Marius','Bertold','Polgár','Novák','Alessandro','Szász','Jácint','Márkus','Bodnár','Greg','Ignác','Zolika','Oszkár',
+            'Rajmond','Végh','Ibrahim','Kádár','Ács','James','Aladár','Reza','Lőrincz','Dobos','Senki','Schmidt','Adorján','Bartha','Örs','Csonka','Antonio',
+            'Seres','Mahmoud','Boti','Baranyi','Atilla','Győri','Barta','Tony','Tommy','Hassan','Mayer','Berta','Pali','Laca','Kalmár','Szigeti','Mester','Kende',
+            'Ödön','Karim','Herceg','Erdélyi','Ricardo','Leo','Dorián','Koncz','Hamza','Pedro','Pityu','Dan','Kun','Lénárd','Kurucz','Hajdu','Urbán','Vajda',
+            'Balla','Kardos','Gaál','Jan','Christopher','Valter','Faragó','Császár','Dömötör','Mehdi','Boldi','Leslie','Baráth','Janó','Vajk','Dave','Domi','Zsiga',
+            'Rózsa','Denis','Bazsi','Luis','Bencze','Abdullah','Berci','Stephen','Giovanni','Joel','Szántó','Gery','Pető','Sanya','Ferenczi','Shayan','Alireza',
+            'Max','Szakács','Toni','Bán','Raúl','Kecskés','Jenei','Mustafa','Szegedi','Georg','Jack','Dudás','Walter','Fejes','Keresztes','Fecó','Huszár','Manuel',
+            'Bali','Borbély','Marc','Amin','Sina','Andy','Mohamad','Robika','Bernát','Lovas','Angyal','Jonatán','Sebők','Guszti','Szarvas','Bende','Sam','Bene',
+            'Lorenzo','Kárpáti','Raymond','Cristian','Galambos','Vili','Hegyi','Garai','Marcel','Józsa','Ábrahám','Vadász','Öcsi','Bokor','Ben','Vas','Muhammad',
+            'Csabika','Nikolasz','Vámos','Boda','Michel','Péter Pál','Sárközi','Egon','Jimmy','Steven','Hasan','Charles','Hans'
           ],
           last: [
             'Emese','Beatrix','Sári','Ujvári','Soltész','Veress','Komáromi','Bárány','Almási','Csík','Klaudia','Gyöngyi','Fischer','Tomi','Tolnai','Gerencsér',
@@ -5527,14 +5109,14 @@ const NAME_TAILS_BY_NATION = {
     ISR: [
         { r: 0,
           first: [
-            'Ehab','Jacob','Mor','Waleed','Dvir','Vadim','Shalom','Salah','Nati','George','Asher','Wael','Mohamd','Dudu','Yoram','Roei','Pavel','Denis','Anan',
-            'Yotam','Hani','Saeed','Boaz','Adel','Morad','Yuri','Mahmood','Belal','Firas','Maxim','Yakir','Udi','Leon','Natan','Zohar','Shalev','Aviad','Karam',
-            'Gabi','Waseem','Eyad','Lidor','Ilya','Adnan','Dudi','Marwan','Kamal','Harel','Nader','Tarek','Nimrod','Mosa','Evgeny','Saed','Fares','Simon','Wesam',
-            'Slava','Bilal','Sahar','Mhmad','Ahmd','Zeev','Anton','Hosam','Miki','Avraham','Mhmod','Amos','Joseph','Osher','Tareq','Bashar','Ami','Gadi','Shaked',
-            'Yarden','Roee','Albert','Khalid','Reuven','Nissim','Aviel','Naser','Zvi','Ibraheem','Amnon','Hanan','Dmitry','Vlad','Lev','Sasha','Jehad','Akram',
-            'Oday','Issa','Sameer','Aharon','Ammar','Mohanad','Yoel','Ziad','Islam','Ameen','Misha','Shachar','Shmulik','Gabriel','Saar','Shaul','Bahaa','Kareem',
-            'Snir','Avner','Feras','Jawad','Mohmmad','Sam','Golan','Ram','Nisim','Rani','Stav','Refael','Stas','Hen','Ilay','Nedal','Robert','Rafael','Murad',
-            'Liad','Iyad','Malek','Nidal','Yaser','Mike','Baruch','Saleem','Hamada','Nitzan','Alexey','Saher','Mousa','Thaer','John'
+            'Asher','Wael','Mohamd','Dudu','Yoram','Roei','Pavel','Denis','Anan','Yotam','Hani','Saeed','Boaz','Adel','Morad','Yuri','Mahmood','Belal','Firas',
+            'Maxim','Yakir','Udi','Leon','Natan','Zohar','Shalev','Aviad','Karam','Gabi','Waseem','Eyad','Lidor','Ilya','Adnan','Dudi','Marwan','Kamal','Harel',
+            'Nader','Tarek','Nimrod','Mosa','Evgeny','Saed','Fares','Simon','Wesam','Slava','Bilal','Sahar','Mhmad','Ahmd','Zeev','Anton','Hosam','Miki','Avraham',
+            'Mhmod','Amos','Joseph','Osher','Tareq','Bashar','Ami','Gadi','Shaked','Yarden','Roee','Albert','Khalid','Reuven','Nissim','Aviel','Naser','Zvi',
+            'Ibraheem','Amnon','Hanan','Dmitry','Vlad','Lev','Sasha','Jehad','Akram','Oday','Issa','Sameer','Aharon','Ammar','Mohanad','Yoel','Ziad','Islam',
+            'Ameen','Misha','Shachar','Shmulik','Gabriel','Saar','Shaul','Bahaa','Kareem','Snir','Avner','Feras','Jawad','Mohmmad','Sam','Golan','Ram','Nisim',
+            'Rani','Stav','Refael','Stas','Hen','Ilay','Nedal','Robert','Rafael','Murad','Liad','Iyad','Malek','Nidal','Yaser','Mike','Baruch','Saleem','Hamada',
+            'Nitzan','Alexey','Saher','Mousa','Thaer','John'
           ],
           last: [
             'Abutbul','Dana','Amit','Shachar','Hussein','Naor','Shalabi','Shimon','Adler','Rozenberg','Khalaf','Eid','Barzilay','Toledano','Arad','Michael',
@@ -5652,16 +5234,16 @@ const NAME_TAILS_BY_NATION = {
     INA: [
         { r: 0,
           first: [
-            'Moh','Deni','Toni','Adrian','Amir','Sonny','Gatot','Dadang','Yan','Lie','Ronald','Budiman','Arifin','Doni','Erick','James','Tonny','Zainal','Iskandar',
-            'Agustinus','Dian','Mochamad','Hans','Haris','Andry','Sandy','Aan','Roni','Andrew','Haji','Aji','Danny','Johanes','Jonathan','Nyoman','Joni','Dani',
-            'Stefanus','Anwar','Toto','Ibnu','Umar','Lalu','Ian','Jack','Abi','Satria','Franky','Vincent','Darwin','Petrus','Maulana','Setiawan','Syamsul','Yoga',
-            'Haryanto','Felix','Lim','Saiful','Rama','Charles','Abdullah','Andika','Bobby','Putu','Randy','Joseph','Sam','Billy','Adhi','Sofyan','Simon','Joe',
-            'Ardi','Untung','Doddy','Sony','Cak','Yudhi','Syaiful','Fahmi','Candra','Dody','Martin','Budhi','Raymond','Ignatius','Rachmat','Kiki','Johnny','Hary',
-            'Dodi','Teuku','Lucky','Hermanto','Rusli','Lukas','Farid','Samsul','Aries','Rizki','Mochammad','Danang','Ary','Maman','Dewa','Mario','Halim','Fery',
-            'Riza','Adam','Endang','Kurniawan','Sugianto','Johny','Erik','Wahyudi','Totok','Paul','Nugroho','Rendy','Steve','Salim','Yudha','Zul','Handy','Pak',
-            'Iqbal','Irvan','Jhon','Widodo','Ibrahim','Deny','Satrio','Ady','Basuki','Boy','Hendy','Rony','Suwandi','Nico','Zaenal','Yogi','Welly','Wijaya','Djoni',
-            'Handoko','Handi','Johannes','Suryadi','Jeffrey','Firdaus','Udin','Hermawan','Rahman','Supri','Hardi','Arman','Jason','Fauzi','Sutrisno','Tatang',
-            'Wong','Jerry','Setyo','Jaya','Anang','Santo','Syarif','Erwan'
+            'Arifin','Doni','Erick','James','Tonny','Zainal','Iskandar','Agustinus','Dian','Mochamad','Hans','Haris','Andry','Sandy','Aan','Roni','Andrew','Haji',
+            'Aji','Danny','Johanes','Jonathan','Nyoman','Joni','Dani','Stefanus','Anwar','Toto','Ibnu','Umar','Lalu','Ian','Jack','Abi','Satria','Franky','Vincent',
+            'Darwin','Petrus','Maulana','Setiawan','Syamsul','Yoga','Haryanto','Felix','Lim','Saiful','Rama','Charles','Abdullah','Andika','Bobby','Putu','Randy',
+            'Joseph','Sam','Billy','Adhi','Sofyan','Simon','Joe','Ardi','Untung','Doddy','Sony','Cak','Yudhi','Syaiful','Fahmi','Candra','Dody','Martin','Budhi',
+            'Raymond','Ignatius','Rachmat','Kiki','Johnny','Hary','Dodi','Teuku','Lucky','Hermanto','Rusli','Lukas','Farid','Samsul','Aries','Rizki','Mochammad',
+            'Danang','Ary','Maman','Dewa','Mario','Halim','Fery','Riza','Adam','Endang','Kurniawan','Sugianto','Johny','Erik','Wahyudi','Totok','Paul','Nugroho',
+            'Rendy','Steve','Salim','Yudha','Zul','Handy','Pak','Iqbal','Irvan','Jhon','Widodo','Ibrahim','Deny','Satrio','Ady','Basuki','Boy','Hendy','Rony',
+            'Suwandi','Nico','Zaenal','Yogi','Welly','Wijaya','Djoni','Handoko','Handi','Johannes','Suryadi','Jeffrey','Firdaus','Udin','Hermawan','Rahman','Supri',
+            'Hardi','Arman','Jason','Fauzi','Sutrisno','Tatang','Wong','Jerry','Setyo','Jaya','Anang','Santo','Syarif','Erwan','Guntur','Junaidi','Abd','Budy',
+            'Jeffry','Ujang','Effendi','Yulianto','Ismail','Gusti','Aldi','Agoes'
           ],
           last: [
             'Fitri','Han','Tjahjono','Jakarta','Gunadi','Udin','Suryani','Junaidi','Setiono','Faisal','Irwan','Rahmat','Indah','Adrian','Syarif','Bong','Wongso',
