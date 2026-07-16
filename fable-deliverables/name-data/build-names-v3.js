@@ -247,7 +247,9 @@ const NEW_POOLS = {
 const KNOWLEDGE = {
     THA: { r: 0,
         first: [['Somsak',2],['Sompong',2],['Prasert',2],['Suchart',2],['Wichai',2],['Narong',2],['Manop',2],['Anucha',2],['Chaiwat',2],['Sakda',2],['Sombat',2],['Thawatchai',2],['Wirot',1],['Kriangkrai',1],['Suthep',1],['Boonmee',1],['Kamon',1],['Teerapat',1],['Thanawat',1],['Sarawut',1]],
-        last:  [['Yoovidhya',1],['Srivaddhanaprabha',1],['Kittikachorn',1],['Sathienthirakul',1],['Suksawat',1],['Jaroensuk',1],['Boonsong',1],['Thongsuk',1],['Chaiprasit',1],['Ruangroj',1],['Saengchan',1],['Prasertsri',1],['Wattanakul',1],['Siriwan',1],['Klomchit',1]] },
+        // Synthetisch aus Thai-Morphemen (keine realen Familien; ersetzt Yoovidhya/Srivaddhanaprabha/
+        // Kittikachorn etc. = reale prominente Familien). Thai-Nachnamen sind unikat pro Familie → NIE reale.
+        last:  [['Chairat',1],['Chanyothin',1],['Charoenchart',1],['Kaewphon',1],['Kittimongkol',1],['Naruthong',1],['Phansuk',1],['Phromsuk',1],['Prasertphan',1],['Sirirat',1],['Sombatrat',1],['Suksak',1],['Tawanchai',1],['Ananthong',1],['Boonwatthana',1],['Chaikit',1],['Kaewkit',1],['Maneechart',1],['Mongkolchart',1],['Nakasuk',1],['Phansri',1],['Piyakit',1],['Ratanayothin',1],['Rungphan',1],['Sukmongkol',1]] },
     MON: [
         { r: 0,
           first: [['Raphaël',2],['Mathis',2],['Baptiste',2],['Romain',2],['Alexandre',2],['Nicolas',2],['Julien',2],['Sacha',1],['Côme',1],['Aurélien',1]],

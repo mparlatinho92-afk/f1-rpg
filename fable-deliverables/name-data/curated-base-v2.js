@@ -302,6 +302,8 @@ const NAME_POOLS_BY_NATION = {
     ] },
 
     // ── Simbabwe/Rhodesien (60er-Ära; keine Datenbasis) ─────────────
+    //    Motorsport = weiße Oberschicht (real: Sam Tingle, John Love, Clive Puzey = britische Namen).
+    //    build-names-v3.js BORROW leiht zusätzlich 60 GB-Nachnamen + KNOWLEDGE.ZIM ergänzt GB-Vornamen. ──
     ZIM: { regions: [ { w: 1,
         first: [['John',3],['Mike',3],['Peter',3],['Sam',2],['Clive',2],['Ray',2],['Ian',2],['Gary',2],['Doug',2],['Brendan',1]],
         last:  [['Smith',3],['Walker',2],['Brown',2],['Fraser',2],['Campbell',2],['Watson',2],['Henderson',2],['Marshall',2],['Reid',2],['Currie',1]]
@@ -426,7 +428,7 @@ const NAME_POOLS_BY_NATION = {
     // ── Thailand (keine Datenbasis — wissensbasiert) ────────────────
     THA: { regions: [ { w: 1,
         first: [['Somchai',3],['Nattapong',2],['Thanapat',2],['Chai',2],['Anan',2],['Prasit',2],['Kittipol',1],['Pasin',1],['Chayapol',1],['Niran',1],['Alex',1],['Sandy',1]],
-        last:  [['Srisawat',2],['Chaiyasit',2],['Rattanakul',2],['Charoensuk',2],['Wongsawat',2],['Sukhum',1],['Kasemsarn',1],['Phromsawan',1],['Bhirombhakdi',1],['Vorachart',1]]
+        last:  [['Sirimongkol',2],['Boonsuk',2],['Charoenwatthana',2],['Rungcharoen',2],['Phromchai',2],['Kitticharoen',1],['Ratanasopha',1],['Sakdaphan',1],['Maneesri',1],['Tawanthong',1],['Phaibunsri',1],['Chananan',1],['Mongkolsuk',1],['Nakarat',1],['Piyaphon',1]]
     } ] },
 
     // ── Marokko (Vornamen-Daten defekt kodiert → wissensbasiert; dient
