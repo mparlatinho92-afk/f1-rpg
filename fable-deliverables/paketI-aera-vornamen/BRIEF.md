@@ -3,6 +3,14 @@
 **Auftraggeber:** Opus (im Namen des Nutzers) · **Bearbeiter:** Fable · **Sprache:** Deutsch
 **Datum:** 2026-07-17 · **Typ:** Daten-/Ableitungspaket (kein Text-Paket → `FABLE-GRUNDREGELN.md` gilt hier **nicht**)
 
+> ### ⛔ HARTE GRENZE — du lieferst NUR Dateien
+> **Schreibe ausschließlich in `fable-deliverables/paketI-aera-vornamen/`. Sonst nirgends.**
+> **Opus committet UND baut ein — beides.** Du tust keins von beidem.
+> **Verboten:** `index.html`, `data/*` (`names.js` ist GENERIERT), `build-names-v3.js`,
+> `curated-base-v2.js`, andere `paket*`-Ordner, jedes `git`-Kommando, `./manage-v`.
+> Wenn dein Ergebnis eine Code-Änderung nahelegt: **beschreib sie in der METHODIK, führ sie
+> nicht aus.** Ein Einbau von dir würde nur Konflikte mit Opus' chirurgischen Edits erzeugen.
+
 ---
 
 ## Problem
@@ -177,3 +185,29 @@ Ordner: `fable-deliverables/paketI-aera-vornamen/`
   Sag, wie die letzte Kohorte fortgeschrieben wird (einfrieren? extrapolieren?) — **nicht
   raten, sondern die Regel benennen.**
 - **Prosa vermeiden.** Wie bei F/G/H: Tabellen + Skript + METHODIK.
+
+---
+
+## Lieferung, Committen, Grenzen (gilt für dieses Paket)
+
+**Du lieferst nur Dateien in diesen Ordner. Du committest NICHT.**
+`manage-v` erfasst `fable-deliverables/` nicht — **Opus schiebt nach deiner Lieferung einen
+Sync-Commit nach** (Hausregel 5b) und baut das Deliverable danach ein. Kein `git`-Kommando
+von dir nötig.
+
+**Nicht anfassen:**
+- `index.html` — Opus-Gebiet (der Einbau ist eine separate, chirurgische Aufgabe).
+- `data/names.js` — **GENERIERT** von `build-names-v3.js`, „NIE von Hand editieren".
+- `data/f1db.js`, `data/seasons.js`, `data/hist.js` — Datenquellen, nur lesen.
+- Andere `paket*`-Ordner.
+
+**Fleißarbeit gehört in ein Skript, nicht in Handarbeit.** Präzedenz: Paket F lieferte
+`derive-smoothed-pools.js`, Paket G `derive-market-corpus.js` — jeweils Skript **+** Ergebnis
+**+** METHODIK. Wenn deine Aufgabe hunderte Namen/Zeilen sortiert: schreib den Klassifikator,
+lass ihn laufen, liefere beides. Ein reproduzierbares Skript schlägt eine handkuratierte Liste,
+weil Opus es nach einer Quellen-Änderung neu laufen lassen kann.
+
+**Perfektion ist nicht das Ziel** (Nutzer-Vorgabe): „nichts kann/muss 100 % perfekt sein".
+Plausibel schlägt perfekt (vgl. `CLAUDE.md`: *„plausibel vor perfekt"*). Wo du unsicher bist:
+**kennzeichnen und weitermachen** — eine ehrlich markierte Schätzung ist brauchbar, eine
+unmarkierte Erfindung nicht.
