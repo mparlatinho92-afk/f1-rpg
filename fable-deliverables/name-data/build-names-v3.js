@@ -351,6 +351,43 @@ for (const [nat, spec] of Object.entries(KNOWLEDGE)) {
     for (const s of Array.isArray(spec) ? spec : [spec]) appendKnowledge(nat, s);
 }
 
+// ── Ära-Split-Flachlegung (v0.9.14.78, Nutzer-Entscheidung 2026-07-17) ──────
+// Nur bei diesen 5 Nationen ist der native Vornamen-Trendwandel wirklich auffällig
+// (DE Karl-Heinz/Horst → Leon/Luca; GB/US Nigel/Graham → Jack/Harry; FR Jean/Guy → Hugo/Léo;
+// IT mild). Alle anderen: flach.
+//
+// WARUM: Der Split machte `early` zum Stub — 32 von 33 gesplitteten Nationen hatten
+// eff < 25, meist exakt 10 Namen (eff ~9). Ein NED-Fahrer von 1955 zog seinen Vornamen
+// aus zwölf. Und das war mit Daten NICHT heilbar: die Aggregat-Masse fließt nur nach
+// mid (+modDup→modern), `early` bekam nie etwas, weil die Kaggle-Quelle ein
+// Gegenwarts-Schnappschuss ohne 1930er-Häufigkeiten ist.
+// Flach = voller tiefer Pool in ALLEN Ären. Kauft milden Anachronismus, der bei diesen
+// Nationen nicht auffällt (ihre Namen datieren kaum).
+// Die 5 Keep-Nationen bekommen echte Geburtsjahrgangs-Verteilungen → Fable-Paket I.
+// Analyse: fable-deliverables/name-data/analysis/pyramid-300kart-nation-demand.md §11
+const ERA_SPLIT_KEEP = new Set(['GER', 'GBR', 'USA', 'FRA', 'ITA']);
+
+let _flattened = 0;
+for (const [nat, pool] of Object.entries(POOLS)) {
+    if (ERA_SPLIT_KEEP.has(nat)) continue;
+    for (const region of pool.regions) {
+        if (!region.first || Array.isArray(region.first)) continue;   // schon flach
+        // Union über die 3 Fenster, dedup nach key(). Alle Gewichte stehen hier noch auf
+        // der kuratierten 1–5-Skala (der Daten-Merge kommt erst danach) → max() ist fair.
+        const merged = new Map();
+        for (const win of ['early', 'mid', 'modern']) {
+            for (const [n, w] of (region.first[win] || [])) {
+                const k = key(n);
+                const prev = merged.get(k);
+                if (!prev || w > prev[1]) merged.set(k, [n, w]);
+            }
+        }
+        region.first = [...merged.values()];
+        _flattened++;
+    }
+}
+console.log(`Ära-Split flachgelegt: ${_flattened} Regionen in ${Object.keys(POOLS).length - [...ERA_SPLIT_KEEP].filter(n => POOLS[n]).length} Nationen (Keep: ${[...ERA_SPLIT_KEEP].join('/')})`);
+
 // Kern: eine Nation+Art (first/last) aus den Daten mergen
 const report = [];
 function processNation(nat, cfg) {

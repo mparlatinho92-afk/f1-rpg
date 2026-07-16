@@ -155,11 +155,22 @@ Ordner: `fable-deliverables/paketI-aera-vornamen/`
   südasiatisch; FRA, USA, ITA ähnlich). Die Jahrgangsstatistik ist **national**, kennt die
   Regionen nicht. Sag klar, ob deine Tabelle für Region 0 gilt oder für die Nation gesamt —
   ein Fehler hier verschiebt die Gewichte still.
-- **⚠️ Konflikt mit den bestehenden Filtern:** `GER` hat in `build-names-v3.js` ein
-  `banFirst` mit türkischen Vornamen (Ali/Mehmet/Mustafa/…). Eine 2005er-Geburtskohorte
-  enthält die **real**. Deine Daten würden den demografischen Wandel also **korrekt** zeigen,
-  der bestehende Filter unterdrückt ihn. **Nicht eigenmächtig auflösen** — benennen, Zahlen
-  liefern (welcher Anteil je Kohorte), Entscheidung dem Nutzer überlassen.
+- **⚠️ `banFirst` ist NICHT das Thema dieses Pakets — nicht „reparieren".**
+  Nutzer-Klarstellung 2026-07-17: Das Ziel ist **nicht**, türkische Vornamen aus Deutschland
+  zu unterdrücken, sondern **ethnisch-kulturelle Kohärenz von Vor- UND Nachname**:
+  „Mohammed Schneider" und „Sven Dogan" sollen nicht entstehen — **„Mehmet Dogan" schon**,
+  wenn die Quelle die Paarung belegt. Das ist Sache des **Regionen-Mechanismus** (eigenes
+  Paket, s. u.), nicht deiner Ära-Tabellen.
+  **Für dich heißt das:** Liefere die Jahrgangs-Verteilung so, wie die Quelle sie zeigt —
+  inklusive Einwanderungsnamen in den späten Kohorten — und **melde deren Anteil je Kohorte
+  separat**, damit das Regionen-Paket damit arbeiten kann. **Nichts filtern, nichts
+  unterdrücken, `banFirst` nicht anfassen.**
+- **Golfstaaten-Expats bleiben ausgeschlossen** (SAU/UAE/QAT via `foreCap0`/`surCap0`) —
+  falls du darüber stolperst: **so gewollt, nicht melden als Fehler.** Begründung des Nutzers:
+  Die Kaggle-Aggregate der Golfstaaten sind expat-dominiert (indisch/pakistanisch), und diese
+  Bevölkerung stellt keine Motorsport-Fahrer — „ein indischer Bauarbeiter wird eher in der
+  UAE League Fußball spielen als sich ein Kart leisten". Betrifft dieses Paket ohnehin nicht
+  (nur GER/GBR/USA/FRA/ITA).
 - **Männlich only.** Wo die Quelle beide Geschlechter führt: filtern und die Regel nennen
   (unisex-Namen sind der Grenzfall).
 - **Zukunft nach ~2005:** Das Spiel läuft über den Datenhorizont hinaus (Debüts 2030+).
