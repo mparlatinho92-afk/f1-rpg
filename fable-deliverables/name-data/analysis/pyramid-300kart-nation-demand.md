@@ -27,11 +27,19 @@ genau so viele produzieren, nicht weniger und nicht mehr.
 | **gleichzeitig gesamt** | | **11.372** |
 
 Ø 6 Jahre im System → **1.895 neue Fahrer/Jahr** → **947.667 Fahrer / 5 Jh**.
-(Zum Vergleich: das alte 50-Kartserien-Szenario ergab 2.870 Sitze / 48.000 pro Jh — der
-neue Bedarf ist **~20×** so groß.)
 
-Anteile aus `DECADE_NATION_POOLS[2020]` (Code-Fallback für alle Zukunftsdekaden:
-`if (!pool) pool = DECADE_NATION_POOLS[2020]`).
+> ### ⚠️ KORREKTUR (später in derselben Session) — diese Zahl ist zu hoch
+> Sie unterstellt, dass **jeder Sitz** neue Fahrer erzeugt (Sitze ÷ Verweildauer). In einem
+> echten Trichter mit **Beförderung** entstehen neue Fahrer aber **nur beim Eintritt**:
+> F3 und F1 erzeugen **null** frische Fahrer, die kommen alle von unten. Siehe §8.
+> Die Tabellen in §2/§4 bleiben gültig (sie sind Verhältnisse), aber die **absoluten**
+> Fahrerzahlen und Dup-Zahlen sind mit dem Faktor aus §8 zu skalieren.
+
+**Nationen-Anteile:** aus `MOTORSPORT_NATION_BLEND[2020]` — **nicht** `DECADE_NATION_POOLS`.
+Die Junior-Welt zieht via `pickNationMotorsport` aus dem Blend, das ist also die richtige
+Verteilung für Junior-Bedarf. (Fallstrick: die beiden Konstanten liegen 38 Zeilen auseinander,
+~L4839 vs. ~L4877 — ein großzügiges Slice erwischt die falsche. Der reine F1-Pool ist deutlich
+konzentrierter: GBR 16,81 % statt 12,26 %, MON 2,48 %.)
 
 ## 2. Ist-Zustand — der Pool bricht
 
@@ -140,6 +148,71 @@ node topk.js surnames.csv top-sur.json ALL 6000
 **Fallstrick:** Wer nur `NAME_POOLS_BY_NATION` zählt, sieht ~490 Nachnamen und hält v4 für
 nicht gebaut. Die Masse liegt in **`NAME_TAILS_BY_NATION`** und wird erst zur Laufzeit von
 `ensureNamePoolsMerged()` (index.html ~L4991) mit **Gewicht 1** eingemischt.
+
+## 8. Der Rechenfehler + die Architektur-Entscheidung (Session-Ende 2026-07-16)
+
+### Der Trichter ändert die Größenordnung
+Neue Fahrer entstehen **nur beim Eintritt**, nicht pro Sitz. Mit Beförderung
+(50 %-Annahme) und der **Nutzer-Entscheidung, wo die Population endet**:
+
+**Population:** F1, F2, F3, **F4 (~15 Serien)**, **Kart-WM/EM** (Handvoll, überlappende
+Felder). **Verteilung** (nie simuliert, nur eine Rate): die unübersichtliche Kart-Masse.
+
+| Ebene | Sitze | Verweild. | Eintritte/J | befördert | **frisch/J** |
+|---|---:|---:|---:|---:|---:|
+| F1 | 26 | 8,0 | 3 | 3 | **0** |
+| F2 | 22 | 2,0 | 11 | 8 | 4 |
+| F3 | 30 | 2,0 | 15 | 15 | **0** |
+| F4 (15 Serien) | 420 | 1,5 | 280 | 25 | **255** |
+| Kart-WM/EM | 150 | 3,0 | 50 | 0 | 50 |
+
+**→ 648 sichtbare Sitze · 309 frisch/Jahr · 154.250 Fahrer / 5 Jh** (statt 947.667).
+
+**Struktureller Fund:** F4 braucht 280 Neuzugänge/Jahr, die Kart-Elite liefert nur ~25 →
+**~91 % der F4-Einsteiger kommen frisch aus der unsichtbaren Masse**. Das Elitefeld ist
+Faktor ~3 zu klein für 15 F4-Serien — passt zur Realität (nationale F4 wird von *nationalem*
+Kartsport gespeist, nicht von der CIK-FIA-Elite). **Die Zahl hängt an der 50-%-Quote und ist
+der wackeligste Wert im Modell** → Paket H soll sie ersetzen.
+
+### Folge: Namens-Vertiefung ist NICHT erzwungen
+| | Population überall | Entschiedene Linie |
+|---|---:|---:|
+| GBR gleichzeitig | 1.394 | **79** |
+| GBR Nachnamen-Auslastung | 319 % ⚠️ | **18 %** ✅ |
+| `names.js` | ~1,8 MB nötig | **747 KB reichen** |
+
+Der **Dedup-Engpass ist weg**. `data/names.js` bleibt unangetastet, der `TOP_N`-Neulauf
+von `aggregate-names.js` wurde **nicht** ausgeführt.
+
+### ABER: das ist eine Geschmacks-, keine Kapazitätsfrage
+**Der Nutzer hat ausdrücklich offengelassen, die Vielfalt doch zu wollen** („vielleicht
+brauche ich die Namensvielfalt doch"). Was bleibt, ist nämlich der **Duplikat-Faktor**:
+GBR produziert **6,1× mehr gleiche Vollnamen als die echte Bevölkerung**. Dieser Faktor ist
+**skalen-invariant** — er hängt nur an der Pool-Konzentration, nicht an der Fahrerzahl
+(beide gehen mit D²). Die Trichtergröße entscheidet nur, *ob es auffällt*:
+- 30-Jahre-Save: ~15 Doppelnamen unter ~1.100 Briten → verschmerzbar.
+- 5-Jahrhunderte-Save: **22 % aller Briten** teilen sich einen Vollnamen.
+
+### Rezept, falls die Vertiefung doch kommt (Reihenfolge zwingend)
+1. **Blocker zuerst:** `sur_agg.csv` / `fore_agg.csv` sind auf **exakt 1500/600 pro Land
+   vorgeschnitten** (GB Rang 1500 = „Holman", 986 Träger — weit über der Müllgrenze).
+   **`CLASSES` hochziehen bewirkt allein NICHTS.** Erst:
+   ```
+   node aggregate-names.js ".../forenames.csv" fore_agg.csv M   6000
+   node aggregate-names.js ".../surnames.csv"  sur_agg.csv  ALL 6000
+   ```
+2. **Cap-Formel** (ersetzt big/mid/small in `build-names-v3.js`):
+   `cap = K, sodass eff(TopK) ≥ min(3 × gleichzeitige_Fahrer, eff_Bevölkerung)`
+   — Bevölkerungs-Deckel erhält die natürlichen Duplikate und verhindert
+   Transliterationsmüll bei JPN/KOR/EST. Mini-Nationen: Floor ~70–200 (Überraschung).
+   eff(K)-Kurven: `scripts/topk.js`.
+3. **Erst dann** `usedLast`-Dedup entschärfen (§7) — vorher maskiert er die Flachheit;
+   nimmt man ihn früher raus, gibt es Smith/Smith/Smith.
+4. Kosten bei voller Formel: 50.645 → 124.592 Namen, `names.js` → ~1,8 MB
+   (Monolith ~5,5 → ~6,5 MB).
+
+**Reproduktion aller Zahlen:** `scripts/` (Skripte + Bevölkerungs-Baseline eingecheckt,
+`node nation-demand.js`). **Fluss-Parameter:** `../../paketH-pyramide/BRIEF.md`.
 
 ## 7. Offene Kollision mit dem Ziel-Kriterium
 

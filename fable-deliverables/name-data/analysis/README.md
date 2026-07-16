@@ -21,6 +21,14 @@ Verwandte Memos: `project_name_pool_deepening`, `feedback_name_data_sources`,
 | `raw-name-counts.md` | Echte Roh-Distinct-Zahlen pro Land (≥50/≥100-Träger), Vollname-Kombinationsraum, 66 Nicht-Spiel-Länder |
 | `capacity-and-compression.md` | Kapazitäts-Szenarien (Top-400 vs 2000), Renn-Pyramide-Bedarf, Kompression bei Bevölkerungs-Häufigkeit, Codec-Vergleich |
 | `storage-seed-regen-roadmap.md` | Junior-Welt-Speicher: Spine/Filler-Trennung, Speicher↔RAM-Spektrum, Determinismus-Mechanik, Umsetzungs-Fahrplan |
+| `pyramid-300kart-nation-demand.md` | **Neuer Stand 2026-07-16.** Bedarf aller 51 Nationen bei 300 Kartserien × 5 Jh; **effektive** Poolgröße (Simpson) statt Rohzahl; Architektur-Entscheidung + Vertiefungs-Rezept in §8 |
+| `scripts/` | **Lauffähige Skripte + Bevölkerungs-Baseline** (`node nation-demand.js`). Hier laufen lassen statt neu ableiten |
+
+> ⚠️ **Reihenfolge beim Lesen:** `capacity-and-compression.md` rechnet noch mit **Rohzahlen**
+> und ist an dieser Stelle **überholt** — `pyramid-300kart-nation-demand.md` stellt auf die
+> **effektive** Poolgröße um (GBR: 1.322 Nachnamen verhalten sich wie 437) und korrigiert die
+> Bedarfsrechnung (neue Fahrer entstehen nur beim **Eintritt**, nicht pro Sitz).
+> Bei Widerspruch gilt das neuere Dokument.
 
 ---
 
