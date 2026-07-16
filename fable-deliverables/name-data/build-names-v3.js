@@ -170,7 +170,15 @@ const CFG = {
     INA: { iso:'ID', cls:'small' },
     KOR: { iso:'KR', cls:'small', foreCap0:true }, // KR-Vornamen sind Hangul → kuratiert (romanisiert)
     EST: { iso:'EE', cls:'small', route:[[/(ov|ev|in|yn|enko|chuk)$|^(Ivanov|Smirnov|Petrov|Kuznetsov|Popov|Volkov|Sokolov|Nikitin|Orlov|Fjodorov|Fyodorov|Vassiljev|Vasiljev|Aleksejev|Andrejev|Sergejev|Mihhailov|Pavlov|Bogdanov|Stepanov|Semjonov|Tarassov|Kolesnik)/,1]], banLast:[/(ova|eva|ina|yna|aya)$/i], banFirst:[/^(Aleksandr|Sergei|Andrei|Dmitri|Aleksei|Vladimir|Igor|Roman|Oleg|Artur|Maksim|Jevgeni|Pavel|Anton|Nikolai|Aleksander|Sander)$/] },
-    MAR: { iso:'MA', cls:'small', foreCap0:true, banLast:[/^(El|Ben|Da|De|Ell|Kech|Wac|None|Ced|Dh|Df|Eh|Ef|Jef|Simo|Fati|Abdo|Amine|Said|Rachid|Hassan|Ahmed|Ali|Youssef|Aziz|Karim|Kamal|Adam|Mohamed)$/i] }
+    MAR: { iso:'MA', cls:'small', foreCap0:true, banLast:[/^(El|Ben|Da|De|Ell|Kech|Wac|None|Ced|Dh|Df|Eh|Ef|Jef|Simo|Fati|Abdo|Amine|Said|Rachid|Hassan|Ahmed|Ali|Youssef|Aziz|Karim|Kamal|Adam|Mohamed)$/i] },
+    // Neue Nationen 2026-07-16. CHI/PER/EGY: Aggregat sauber → data-driven (curated Kopf + Aggregat).
+    CHI: { iso:'CL', cls:'small', banLast:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH] },
+    PER: { iso:'PE', cls:'small', banLast:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH] },
+    EGY: { iso:'EG', cls:'small', banLast:[SOUTH_ASIAN,EAST_ASIAN], banFirst:[SOUTH_ASIAN,EAST_ASIAN] },
+    // Golf: Roh-Aggregat = südasiatische Expats → foreCap0+surCap0 unterdrückt es, nur curated Gulf-Arabisch.
+    SAU: { iso:'SA', cls:'small', foreCap0:true, surCap0:true },
+    UAE: { iso:'AE', cls:'small', foreCap0:true, surCap0:true },
+    QAT: { iso:'QA', cls:'small', foreCap0:true, surCap0:true }
 };
 
 // ── Kurationspass (aus curate-tails.js portiert, wirkt jetzt auf die Masse) ──
@@ -239,7 +247,28 @@ const NEW_POOLS = {
     // Südkorea (bisher INT — Nachnamen-Daten latein (Kim/Lee/Park), Vornamen romanisiert kuratiert)
     KOR: { regions: [ { w: 1,
         first: [['Min-jun',3],['Seo-jun',3],['Do-yun',3],['Ji-ho',3],['Ha-jun',3],['Ji-hoon',3],['Min-seok',3],['Hyun-woo',3],['Dong-hyun',3],['Sung-min',3],['Jun-seo',2],['Jae-hyun',2],['Woo-jin',2],['Joon-ho',2],['Young-ho',2],['Sang-hoon',2],['Seung-hyun',2],['Jin-woo',2],['Tae-yang',1],['Kyung-min',1]],
-        last:  [] } ] }
+        last:  [] } ] },
+    // ── Neue Nationen 2026-07-16 ────────────────────────────────────
+    // CHI/PER/EGY: curated Kopf, Aggregat (CL/PE/EG) füllt den Rest via CFG.iso auto-gewichtet.
+    CHI: { regions: [ { w:1,
+        first: [['Juan',5],['Luis',4],['Carlos',4],['José',4],['Jorge',3],['Cristián',3],['Francisco',3],['Rodrigo',3],['Felipe',3],['Sebastián',2],['Matías',2],['Vicente',2]],
+        last:  [] } ] },
+    PER: { regions: [ { w:1,
+        first: [['Luis',5],['Carlos',4],['José',4],['Juan',4],['Jorge',3],['César',3],['Miguel',3],['Víctor',3],['Julio',2],['Diego',2],['Fernando',2],['Renato',2]],
+        last:  [['Quispe',3],['Mamani',2],['Huamán',2]] } ] },   // indigene Kern-Nachnamen curated, Aggregat ergänzt
+    EGY: { regions: [ { w:1,
+        first: [['Ahmed',5],['Mohamed',5],['Mahmoud',4],['Mostafa',3],['Omar',3],['Ali',3],['Amr',3],['Khaled',2],['Hassan',2],['Youssef',2],['Karim',2],['Tarek',2]],
+        last:  [] } ] },
+    // Golf: curated Gulf-Arabisch (Aggregat = Expats, via CFG surCap0/foreCap0 unterdrückt). Vornamen geteilt, Nachnamen nationseigen (Al-Stamm).
+    SAU: { regions: [ { w:1,
+        first: [['Mohammed',5],['Abdullah',4],['Ahmed',4],['Ali',3],['Khalid',3],['Faisal',3],['Fahad',3],['Sultan',3],['Nasser',2],['Saeed',2],['Salman',2],['Turki',2],['Bandar',2],['Saud',2],['Abdulaziz',2],['Nawaf',1],['Majid',1],['Rashid',1]],
+        last:  [['Al-Qahtani',3],['Al-Ghamdi',3],['Al-Dosari',3],['Al-Harbi',3],['Al-Otaibi',3],['Al-Shammari',2],['Al-Zahrani',2],['Al-Mutairi',2],['Al-Shehri',2],['Al-Amri',2],['Al-Malki',2],['Al-Subaie',1],['Al-Juhani',1],['Al-Anazi',1],['Al-Balawi',1]] } ] },
+    UAE: { regions: [ { w:1,
+        first: [['Mohammed',5],['Ahmed',4],['Ali',3],['Khalid',3],['Rashid',3],['Saeed',3],['Hamad',3],['Zayed',2],['Sultan',2],['Abdullah',2],['Mansour',2],['Hamdan',2],['Nasser',2],['Majid',2],['Omar',1],['Saif',1]],
+        last:  [['Al-Maktoum',3],['Al-Nahyan',3],['Al-Mansoori',3],['Al-Shamsi',3],['Al-Qasimi',2],['Al-Zaabi',2],['Al-Marri',2],['Al-Ali',2],['Al-Hammadi',2],['Al-Suwaidi',2],['Al-Blooshi',1],['Al-Ketbi',1],['Al-Falasi',1],['Al-Nuaimi',1],['Al-Mheiri',1]] } ] },
+    QAT: { regions: [ { w:1,
+        first: [['Mohammed',5],['Ahmed',4],['Ali',3],['Khalid',3],['Hamad',3],['Nasser',3],['Jassim',2],['Abdullah',2],['Tamim',2],['Khalifa',2],['Faisal',2],['Rashid',2],['Saad',2],['Saif',1],['Yousef',1]],
+        last:  [['Al-Thani',3],['Al-Attiyah',3],['Al-Kuwari',3],['Al-Marri',2],['Al-Emadi',2],['Al-Sulaiti',2],['Al-Mannai',2],['Al-Ansari',2],['Al-Mohannadi',2],['Al-Naimi',2],['Al-Hajri',2],['Al-Dosari',1],['Al-Ibrahim',1],['Al-Kubaisi',1],['Al-Malki',1]] } ] }
 };
 
 // ── Wissensbasierte Erweiterungen (Nationen OHNE Datenbasis; kuratierte Skala 1–3) ──
@@ -336,7 +365,7 @@ function processNation(nat, cfg) {
 
     for (const kind of ['last', 'first']) {
         const raw = kind === 'last' ? surBy.get(cfg.iso) : foreBy.get(cfg.iso);
-        if (!raw || (kind === 'first' && cfg.foreCap0)) continue;
+        if (!raw || (kind === 'first' && cfg.foreCap0) || (kind === 'last' && cfg.surCap0)) continue;
         const bans = (kind === 'first' ? cfg.banFirst : cfg.banLast) || [];
         const damps = (kind === 'first' ? cfg.dampFirst : cfg.dampLast) || [];
         const drops = new Set((ops.drop && ops.drop[kind]) || []);
