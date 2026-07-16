@@ -24,6 +24,12 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 
 **ALLE 8 PAKETE ✅ GELIEFERT (2026-07-11).** Offen ist nur noch die **Opus-Seite**: (1) Paket-7-Fixes H1–H3 + M1 (M1 VOR dem Paket-1-Einbau!), (2) die 6 Einbauten (1/2/3/4/5/6 — Klassifikatoren, Maps, Verdrahtung, je Schema/Changelog/manage-v), (3) für Paket 8 zuerst das Streckeneditor-Feature (Nutzer-Entscheidung).
 
+## Daten-/Ableitungspakete (kein Text → `FABLE-GRUNDREGELN.md` gilt dort NICHT)
+
+| Paket | Brief | Status |
+|-------|-------|--------|
+| H | Nachwuchs-Pyramide (Fluss-Parameter & Trichter-Validierung) | `paketH-pyramide/BRIEF.md` — 📤 **BEAUFTRAGT** (2026-07-16), Fable-Lieferung offen. Leitet Verweildauern/Beförderungsquoten je Ebene+Ära, Intake-Nationenverteilung (Basis statt F1-Spitze) und die nationsspezifische Nicht-Beförderungsquote ab; Validierung = `DECADE_NATION_POOLS` muss hinten herausfallen. **Quereinstiege/fremde Serien/Namens-Caps ausdrücklich ausgeschlossen.** |
+
 ## Frühere Pakete (bereits eingebaut)
 `paketA-*` Namens-Pools, `paketB-*` Saison-Rückblick, `paketC-*` Nachrufe, `paketD-validierung`,
 `paketE-validierung`, `paketF-nation-smoothing`, `paketG-driver-market`, `name-data/`, `nation-data/`
