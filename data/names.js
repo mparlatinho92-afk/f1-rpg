@@ -2792,9 +2792,11 @@ const NAME_POOLS_BY_NATION = {
             ['Sombat',2],['Thawatchai',2],['Wirot',1],['Kriangkrai',1],['Suthep',1],['Boonmee',1],['Kamon',1],['Teerapat',1],['Thanawat',1],['Sarawut',1]
           ],
           last: [
-            ['Srisawat',2],['Chaiyasit',2],['Rattanakul',2],['Charoensuk',2],['Wongsawat',2],['Sukhum',1],['Kasemsarn',1],['Phromsawan',1],['Bhirombhakdi',1],
-            ['Vorachart',1],['Yoovidhya',1],['Srivaddhanaprabha',1],['Kittikachorn',1],['Sathienthirakul',1],['Suksawat',1],['Jaroensuk',1],['Boonsong',1],
-            ['Thongsuk',1],['Chaiprasit',1],['Ruangroj',1],['Saengchan',1],['Prasertsri',1],['Wattanakul',1],['Siriwan',1],['Klomchit',1]
+            ['Sirimongkol',2],['Boonsuk',2],['Charoenwatthana',2],['Rungcharoen',2],['Phromchai',2],['Kitticharoen',1],['Ratanasopha',1],['Sakdaphan',1],
+            ['Maneesri',1],['Tawanthong',1],['Phaibunsri',1],['Chananan',1],['Mongkolsuk',1],['Nakarat',1],['Piyaphon',1],['Chairat',1],['Chanyothin',1],
+            ['Charoenchart',1],['Kaewphon',1],['Kittimongkol',1],['Naruthong',1],['Phansuk',1],['Phromsuk',1],['Prasertphan',1],['Sirirat',1],['Sombatrat',1],
+            ['Suksak',1],['Tawanchai',1],['Ananthong',1],['Boonwatthana',1],['Chaikit',1],['Kaewkit',1],['Maneechart',1],['Mongkolchart',1],['Nakasuk',1],
+            ['Phansri',1],['Piyakit',1],['Ratanayothin',1],['Rungphan',1],['Sukmongkol',1]
           ] }
     ] },
 
