@@ -17,7 +17,7 @@ Copy-Item index.html $NewFileName
 
 # 2b. JS-Datendateien inlinieren (data/*.js -> Standalone-Monolith)
 $Content = Get-Content $NewFileName -Raw -Encoding UTF8
-$DataFiles = @("data/f1db.js", "data/hist.js", "data/seasons.js", "data/names.js")
+$DataFiles = @("data/f1db.js", "data/hist.js", "data/seasons.js", "data/names.js", "data/era-first-names.js")
 foreach ($jsFile in $DataFiles) {
     if (Test-Path $jsFile) {
         $JsContent = Get-Content $jsFile -Raw -Encoding UTF8
