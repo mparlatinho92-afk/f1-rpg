@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.81</title>
+    <title>F1 RPG v0.9.14.82</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.81 (aktuell) - 17.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.82 (aktuell) - 17.07.2026</div>
+                            <div>&#8226; NEU: Vornamen stufenlos nach Geburtsjahrgang (Paket I, Bauform B) - 1955er heissen Peter/Klaus, 2005er Lukas/Leon</div>
+                            <div>&#8226; NEU: era-first-names.js mit 2641 Gauss-Kurven, ersetzt die 3 starren Aera-Fenster fuer 5 Nationen</div>
+                            <div class="font-bold text-slate-400">v0.9.14.81 - 17.07.2026</div>
                             <div>&#8226; FIX: Schweizer Fahrer ziehen keine albanischen Nachnamen mehr (6 fehlende Namen ergaenzt)</div>
                             <div class="font-bold text-slate-400">v0.9.14.80 - 17.07.2026</div>
                             <div>&#8226; NEU: Vornamen folgen jetzt der Namensregion - inkohaerente Namen wie 'Jacques Peeters' strukturell unmoeglich</div>
@@ -2732,6 +2735,7 @@
     <script src="data/hist.js"></script>
     <script src="data/seasons.js"></script>
     <script src="data/names.js"></script>
+    <script src="data/era-first-names.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -2993,7 +2997,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.81';
+        const VERSION = '0.9.14.82';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5106,18 +5110,57 @@
             return list[list.length - 1];
         }
 
+        // Paket I: Ära-Vornamen-Kurven (Bauform B) → Gewichtsarray je (Nation, Geburtsjahr),
+        // gecacht. Ersetzt die 3 starren first-Fenster (early/mid/modern) durch stufenlose
+        // Gauß-Kurven pro Name für GER/GBR/USA/FRA/ITA (nur nationale Region 0). Format je
+        // Name: [peak,sigma,amp] oder [p1,s1,a1,p2,s2,a2] (Revival-Doppelkurve). Gewicht am
+        // Geburtsjahr by: w = Σ_k amp_k·exp(−½((by−peak_k)/sigma_k)²). Daten: era-first-names.js.
+        const _eraFirstCache = {};
+        function eraFirstArr(nation, birthYear) {
+            if (typeof ERA_FIRST_NAMES === 'undefined') return null;
+            const curves = ERA_FIRST_NAMES[nation];
+            if (!curves) return null;
+            const cl = ERA_FIRST_CLAMP[nation];
+            let by = birthYear;
+            if (cl) { if (by < cl[0]) by = cl[0]; else if (by > cl[1]) by = cl[1]; }
+            const key = nation + by;
+            if (_eraFirstCache[key]) return _eraFirstCache[key];
+            const arr = [];
+            for (const name in curves) {
+                const c = curves[name];
+                let w = 0;
+                for (let k = 0; k + 2 < c.length; k += 3) {
+                    const z = (by - c[k]) / c[k + 1];
+                    w += c[k + 2] * Math.exp(-0.5 * z * z);
+                }
+                if (w > 0.01) arr.push([name, w]);   // Rauschfilter: <0.01 bp am Jahrgang irrelevant
+            }
+            return (_eraFirstCache[key] = arr);
+        }
+
         // Nationskohärenten Namen ziehen: Vor- UND Nachname aus DERSELBEN Region.
         // Gibt null zurück, wenn kein Pool existiert → Aufrufer nutzt Flat-Fallback.
-        function pickPooledName(nation, year, usedLastNames) {
+        // birthYear (optional, Paket I): Geburtsjahr für die Ära-Vornamen-Kurven; fehlt es,
+        // Fallback year−24 (Debütalter-Median-Korridor). Nur Region 0 der 5 Kurven-Nationen.
+        function pickPooledName(nation, year, usedLastNames, birthYear) {
             ensureNamePoolsMerged();
             if (typeof NAME_POOLS_BY_NATION === 'undefined') return null;
             const fb = (typeof NATION_NAME_FALLBACK !== 'undefined' && NATION_NAME_FALLBACK[nation]) || 'INT';
             const pool = NAME_POOLS_BY_NATION[nation] || NAME_POOLS_BY_NATION[fb] || NAME_POOLS_BY_NATION['INT'];
             if (!pool || !pool.regions || !pool.regions.length) return null;
             const region = pickNameRegion(pool.regions, year);
-            const era = year < 1975 ? 'early' : year < 2010 ? 'mid' : 'modern';
-            const firstArr = Array.isArray(region.first) ? region.first : (region.first[era] || region.first.mid);
-            const firstName = weightedPick(firstArr);
+            let firstName = null;
+            // Paket I: nationale Region 0 der 5 Kurven-Nationen → Kurven statt Ära-Fenster.
+            // Diaspora-Regionen (GBR r1, FRA r1 …) behalten ihre kuratierten Listen.
+            if (region === pool.regions[0] && typeof ERA_FIRST_NAMES !== 'undefined' && ERA_FIRST_NAMES[nation]) {
+                const arr = eraFirstArr(nation, birthYear != null ? birthYear : year - 24);
+                if (arr && arr.length) firstName = weightedPick(arr);
+            }
+            if (firstName === null) {
+                const era = year < 1975 ? 'early' : year < 2010 ? 'mid' : 'modern';
+                const firstArr = Array.isArray(region.first) ? region.first : (region.first[era] || region.first.mid);
+                firstName = weightedPick(firstArr);
+            }
             // Nachname: Dedup gegen aktive Fahrer, bei leerem Rest voller Regions-Pool
             let lastArr = region.last;
             if (usedLastNames) {
@@ -5138,7 +5181,9 @@
             const stats = { _meta: { samples, year }, _nations: {}, byNation: {} };
             for (let i = 0; i < samples; i++) {
                 const n = pickNationByDecade(year);
-                const p = pickPooledName(n, year, null);
+                // Paket I: year hier als GEBURTSJAHRGANG interpretiert → reproduziert REPORT §4
+                // (Top-5 je Jahrgang). Für Nicht-Kurven-Nationen ist birthYear irrelevant.
+                const p = pickPooledName(n, year, null, year);
                 const fn = p ? p.firstName : weightedPick(FIRST_NAMES_W);
                 const ln = p ? p.lastName : weightedPick(LAST_NAMES_W);
                 stats._nations[n] = (stats._nations[n] || 0) + 1;
@@ -15810,11 +15855,12 @@
             // an der Basis angewandt. Der Abfluss in eigene Welten (USA→NASCAR etc.) wirkt
             // jetzt an der richtigen Stelle: beim Aufstieg, via PYRAMID_NATION_LADDER.
             const nation = pickNationIntake(year);
+            const age = 17 + ((Math.random() * 4) | 0);     // 17–20 Einstiegsalter (Paket I: → Geburtsjahr)
             const usedNames = new Set((jw.drivers || []).map(d => d.name));
             const usedLast  = new Set((jw.drivers || []).map(d => d.name.split(' ').slice(-1)[0]));
             let name = '';
             for (let t = 0; t < 40; t++) {
-                const p = pickPooledName(nation, year, usedLast);
+                const p = pickPooledName(nation, year, usedLast, year - age);
                 name = p ? `${p.firstName} ${p.lastName}` : (weightedPick(FIRST_NAMES_W) + ' ' + weightedPick(LAST_NAMES_W));
                 if (!usedNames.has(name)) break;
             }
@@ -15827,7 +15873,7 @@
                 potential: Math.min(99, pace + 5 + ((Math.random() * 18) | 0)),   // 3.5E: Ceiling – Stars vs. Mitläufer
                 consistency: 60 + ((Math.random() * 35) | 0),                     // 3.5B: 60–94 Tagesform-Stabilität
                 rain: 55 + ((Math.random() * 40) | 0),                            // 5b: Regen-Können 55–94 (zählt bei Nässe)
-                age: 17 + ((Math.random() * 4) | 0),     // 17–20 Einstiegsalter
+                age,     // 17–20 Einstiegsalter (oben gezogen → Geburtsjahr für Paket-I-Kurven)
                 _retireAge: 24 + ((Math.random() * 6) | 0),  // 24–29, pro Fahrer variabel
                 contractEnd: year + 1 + ((Math.random() * 3) | 0),   // 5c: Vertrag 1–3 Jahre
                 seriesId, debutYear: year
