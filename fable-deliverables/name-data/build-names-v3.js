@@ -166,7 +166,7 @@ const CFG = {
     FIN: { iso:'FI', cls:'mid', route:[[/(berg|ström|strom|holm|qvist|kvist|lund|gren|blad|felt|man|sson|stedt|näs|vik|by|backa|fors)$/,1]], banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     DEN: { iso:'DK', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     NOR: { iso:'NO', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST], banFirst:[/^(Mohammed|Mohamed|Muhammad|Ahmed|Ali|Omar|Hassan|Ibrahim|Abdul|Mustafa)$/i] },
-    CAN: { iso:'CA', cls:'mid', route:[[/^(Tremblay|Gagnon|Roy|Côté|Cote|Bouchard|Gauthier|Morin|Lavoie|Fortin|Bergeron|Pelletier|Villeneuve|Leblanc|Belanger|Bélanger|Levesque|Lévesque|Girard|Simard|Boucher|Caron|Beaulieu|Cloutier|Dubé|Dube|Poirier|Fournier|Lapointe|Leclerc|Lefebvre|Poulin|Thibault|Nadeau|Martel|Mercier|Bédard|Bedard|Grenier|Lessard|Bernier|Savard|Gagné|Gagne|Ouellet|Paquette|Desjardins|Demers|Perreault|Boudreau|Couture|Laflamme|Larouche|Lachance|Vachon|Dionne|Gosselin|Turcotte|Rioux|Bilodeau|Dufour|Tessier|Lemieux|Charbonneau|Brisson|Beaudoin|Deschamps|Dupuis|Fontaine|Gendron|Giroux|Houle|Labelle|Lacroix|Lambert|Langlois|Lapierre|Larose|Legault|Lemay|Marcoux|Ménard|Menard|Michaud|Moreau|Paradis|Parent|Plante|Proulx|Renaud|Robitaille|Séguin|Seguin|St-Pierre|Therrien|Trudeau|Vaillancourt)$/,1],[new RegExp(SOUTH_ASIAN.source+'|'+EAST_ASIAN.source,'i'),2]], banLast:[ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_NARROW,IBERIAN_PT,HISPANIC] },
+    CAN: { iso:'CA', cls:'mid', route:[[/^(Tremblay|Gagnon|Roy|Côté|Cote|Bouchard|Gauthier|Morin|Lavoie|Fortin|Bergeron|Pelletier|Villeneuve|Leblanc|Belanger|Bélanger|Levesque|Lévesque|Girard|Simard|Boucher|Caron|Beaulieu|Cloutier|Dubé|Dube|Poirier|Fournier|Lapointe|Leclerc|Lefebvre|Poulin|Thibault|Nadeau|Martel|Mercier|Bédard|Bedard|Grenier|Lessard|Bernier|Savard|Gagné|Gagne|Ouellet|Paquette|Desjardins|Demers|Perreault|Boudreau|Couture|Laflamme|Larouche|Lachance|Vachon|Dionne|Gosselin|Turcotte|Rioux|Bilodeau|Dufour|Tessier|Lemieux|Charbonneau|Brisson|Beaudoin|Deschamps|Dupuis|Fontaine|Gendron|Giroux|Houle|Labelle|Lacroix|Lambert|Langlois|Lapierre|Larose|Legault|Lemay|Marcoux|Ménard|Menard|Michaud|Moreau|Paradis|Parent|Plante|Proulx|Renaud|Robitaille|Séguin|Seguin|St-Pierre|Therrien|Trudeau|Vaillancourt)$/,1],[SOUTH_ASIAN,2],[EAST_ASIAN,3]], banLast:[ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_NARROW,IBERIAN_PT,HISPANIC] },
     MEX: { iso:'MX', cls:'mid' },
     RSA: { iso:'ZA', cls:'mid', route:[[/^(Van |Van[dr]|Du |Le Roux|De [A-Z]|Botha|Pretorius|Venter|Fourie|Nel|Coetzee|Steyn|Kruger|Joubert|Marais|Swanepoel|Viljoen|Vorster|Erasmus|Bezuidenhout|Oosthuizen|Potgieter|Grobler|Meiring|Snyman|Strydom|Uys|Visagie|Wessels|Barnard|Bester|Boshoff|Bosman|Brits|Burger|Claassen|Conradie|Cronje|Engelbrecht|Ferreira|Havenga|Heyns|Jansen|Jordaan|Kotze|Lombard|Lotter|Louw|Malan|Marx|Meyer|Muller|Naude|Olivier|Prinsloo|Rossouw|Scheepers|Schoeman|Smit|Steenkamp|Terblanche|Theron|Truter|Vermaak|Vermeulen)$/,1],[/^(N[dgkctz]|M[bcdfgkhlmnpstv]h?|Dl|Kh[ou]|Zul|Zw|Ts|Hl|X[hou]|S[ei]th|Gum|Bu|Mo[kf]|Ma[bhs]|Ra[md]|Se[bk]|Le[bkt]|Ph|Th[ae]m|Nx|Nq|Gc|Mc[au])/,2]], banLast:[SOUTH_ASIAN,EAST_ASIAN,IBERIAN_PT,HISPANIC] },
     IRL: { iso:'IE', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
@@ -229,7 +229,7 @@ const OPS = {
     SWE: { drop: { first: ['Ali'] } },
     DEN: { drop: { first: ['Ali'] } },
     NOR: { drop: { first: ['Thomas Andre'] } },
-    CAN: { move: { last: { 'Lau':2,'Cheng':2,'Chung':2,'Saini':2,'Randhawa':2,'Mann':2 },
+    CAN: { move: { last: { 'Lau':3,'Cheng':3,'Chung':3,'Saini':2,'Randhawa':2,'Mann':2 },
                    first: { 'Jean':1,'Claude':1,'Jacques':1,'Gilles':1,'Marcel':1,'Alexandre':1,'Mathieu':1,'Sylvain':1,'Xavier':1,'Olivier':1,'Samuel':1,'Guillaume':1,'Francois':1,'Frédéric':1,'Frederic':1,'Pascal':1,'Rejean':1,'Réjean':1,'Yves':1,'Andre':1,'Luc':1,'Pierre':1,'Michel':1,'Denis':1,'Martin':1,'Stephane':1,'Stéphane':1,'Éric':1 } } },
     RSA: { drop: { last: ['Precious'] },
            move: { first: { 'Thabiso':2,'Lucky':2,'Mandla':2,'Thapelo':2,'Vusi':2,'Sbusiso':2,'Sanele':2,'Thabo':2,'Sipho':2,'Bongani':2,'Tshepo':2,'Themba':2,'Sibusiso':2,'Xolani':2,'Andile':2,'Thulani':2,'Kagiso':2,'Lebogang':2,'Katlego':2,'Tumelo':2,'Karabo':2,'Lesego':2,'Neo':2,'Kabelo':2,'Oupa':2,'Solomon':2,'Moses':2,'Enoch':2,'Piet':1,'Johan':1,'Willem':1,'Jan':1,'Hennie':1,'Koos':1,'Danie':1,'Gert':1,'Pieter':1,'Jaco':1,'Riaan':1,'Christo':1,'Deon':1,'Ruan':1,'Heinrich':1,'Charl':1,'Divan':1,'Janco':1,'Wikus':1,'Hendrik':1,'Francois':1,'Wian':1,'Tiaan':1,'Johannes':1,'Stephanus':1,'Cornelius':1 },
@@ -369,6 +369,11 @@ for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // per banFirst durch echtes Trennen. Anhängen hier statt in curated-base-v2.js →
 // die eingefrorene v2-Kuration bleibt unangetastet, der Build bleibt idempotent.
 for (const [nat, region] of Object.entries(JDEFS.NEW_REGIONS)) POOLS[nat].regions.push(deepCopy(region));
+// AUSBAU: Patches auf BESTEHENDE Regionen (CAN r2 → rein südasiatisch, minYear 1990).
+// Reihenfolge: NACH NEW_REGIONS-push, VOR WEIGHT_PROPOSALS (dessen Längen-Check 4 CAN-Regionen erwartet).
+for (const [nat, patches] of Object.entries(JDEFS.REGION_PATCHES || {}))
+    for (const [ri, patch] of Object.entries(patches))
+        Object.assign(POOLS[nat].regions[ri], deepCopy(patch));
 // Nur RSA/IND/GER sind Änderungen; die übrigen Gewichte hat Paket J D3 als Ist-Stand
 // bestätigt (Belege je Zeile in region-defs.js WEIGHT_PROPOSALS).
 for (const [nat, p] of Object.entries(JDEFS.WEIGHT_PROPOSALS)) {
