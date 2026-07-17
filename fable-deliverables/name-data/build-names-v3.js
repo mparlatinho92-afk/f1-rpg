@@ -45,6 +45,10 @@
 'use strict';
 const fs = require('fs');
 const BASE = require('./curated-base-v2.js');
+// Paket J (2026-07-17): Vornamen-Router je Ethno-Region. Die Deliverables bleiben
+// die Quelle der Wahrheit (classify-forenames.js misst gegen dieselben Regexe).
+const J = require('../paketJ-ethno-regionen/region-routes.js');
+const JDEFS = require('../paketJ-ethno-regionen/region-defs.js');
 
 const ALPHA = 0.6, SCALE = 100, MODERN_CAP = 14;
 // Kuratierte Namen ohne Datenbeleg: 1–5-Bucket → neue Skala (log-artig, s. analyze-weights)
@@ -87,6 +91,10 @@ const SLAVIC_NARROW = /(ov|ev|enko|chuk|shvili|adze)$/;
 const IBERIAN_PT = /^(Silva|Santos|Ferreira|Pereira|Oliveira|Costa|Rodrigues|Martins|Sousa|Souza|Fernandes|Gomes|Lopes|Ribeiro|Gonçalves|Goncalves|Marques|Carvalho|Almeida|Pinto|Alves|Dias|Teixeira|Correia|Mendes|Moreira|Soares|Da Silva|Dos Santos|De Sousa|Nunes|Freitas|Cardoso|Rocha|Barbosa|Cruz|Neves|Coelho|Cunha|Vieira|Monteiro|Batista|Fonseca|Machado|Da Costa|Reis|Antunes|Matos|Fereira|Miranda|Nogueira|Ramos|Tavares|Azevedo|Barros|Borges|Brito|Cavalcante|Castro|Duarte|Farias|Andrade|Araujo|Araújo|Assis|Aguiar|Abreu|Amorim|Anjos|Amaral)$/i;
 const HISPANIC = /^(Garcia|García|Rodriguez|Rodríguez|Martinez|Martínez|Lopez|López|Gonzalez|González|Hernandez|Hernández|Perez|Pérez|Sanchez|Sánchez|Ramirez|Ramírez|Torres|Flores|Rivera|Gomez|Gómez|Diaz|Díaz|Reyes|Morales|Ortiz|Gutierrez|Gutiérrez|Chavez|Chávez|Ramos|Ruiz|Mendoza|Alvarez|Álvarez|Castillo|Jimenez|Jiménez|Vasquez|Vásquez|Vazquez|Vázquez|Moreno|Herrera|Medina|Aguilar|Vargas|Guzman|Guzmán|Mendez|Méndez|Munoz|Muñoz|Rojas|Salazar|Contreras|Suarez|Suárez|Delgado|Pena|Peña|Rios|Ríos|Cabrera|Campos|Vega|Fuentes|Carrillo|Leon|León|Santiago|Dominguez|Domínguez|Maldonado|Espinoza|Valdez|Juarez|Juárez|Molina|Acosta|Ayala|Zamora|Villarreal|Trevino|Treviño|Cortez|Cortés|Soto|Serrano|Solis|Solís|Rosales|Estrada|Zuniga|Zúñiga|Nunez|Núñez|Ochoa|Cardenas|Cárdenas|Navarro|Padilla|Barrera|Camacho|Cervantes|Marquez|Márquez|Escobar|Galvan|Galván|Velasquez|Velásquez|Velazquez|Velázquez|Ibarra|Cisneros|Bautista|Meza|Villanueva|Orozco|Avila|Ávila|Robles|Sandoval|Bravo|Lara|Cano|Quintero|Bermudez|Bermúdez|Osorio|Valencia|Franco|Guerrero|Paredes|Bustamante|Ponce|Salinas|Arroyo|Montoya|Palacios|Zapata|Miranda|Mora|Rincon|Rincón|Uribe|Restrepo|Ospina|Giraldo|Cardona|Correa|Betancur|Zuluaga|Arango|Bedoya|Agudelo|Henao|Sierra|Villa|Gallego|Montes)$/i;
 const NORDIC_FOREIGN = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + TURKISH.source + '|' + BALKAN.source, 'i');
+// Paket J: GER braucht TURKISH ban-frei, sonst frisst der Ban die türkischen
+// Nachnamen bevor ROUTE_LAST_ADD.GER sie nach Region 1 routen kann (Bans laufen
+// in Schritt 1, die Route erst in Schritt 3).
+const NORDIC_FOREIGN_NO_TR = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + BALKAN.source, 'i');
 const GIVEN_AS_SURNAME = /^(Maria|Jose|José|Juan|Ana|Luis|Luiz|Carlos|Jorge|Pedro|Paulo|Henrique|Antonio|António|Miguel|Manuel|Francisco|Fernando|Ricardo|Eduardo|Daniel|Rafael|Gabriel|Marcos|Mohamed|Ahmed|Ali|Hassan|Omar|Ibrahim|Said|Rachid|Karim|Amine|Youssef|Aziz|Kamal|Adam|Peter|Hans|Johan|Anna|Marie|Jean|Michel|Andre|André|Bernard|Claude|Laurent|Pascal|Christian|Martin|Thomas|Simon|David|Vincent|Robert|Richard|Denis|Georges|Antoine|Julien|Olivier|Rene|René|Roger|Alain|Marcel|Franck|Frank)$/i;
 // Weibliche griechische Nachnamensformen (Genitiv-Paare: -poulos→-poulou usw.)
 const GREEK_FEMALE = /(opoulou|poulou|idou|iadou|adou|aki)$/i;
@@ -130,7 +138,15 @@ function fixName(nat, n) {
 // translit, rename {von:zu} (Stil-Angleichung, Counts werden gemerged)
 const CFG = {
     GBR: { iso:'GB', cls:'big', route:[[SOUTH_ASIAN,1]], banLast:[EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC,/^(Murphy|Kelly|Walsh|Byrne|Doyle|Ryan|O'|Mc|Mac)/] },
-    GER: { iso:'DE', cls:'big', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST,/ski$|cki$/], banFirst:[/^(Ali|Mehmet|Mustafa|Murat|Ahmet|Hasan|Hüseyin|Ibrahim|Mohammed|Mohammad|Muhammed|Ahmad|Omar|Osman|Emre|Can|Cem|Deniz|Kadir|Kemal|Yusuf|Halil|Süleyman|Ismail|Recep|Fatih|Serkan|Erkan|Metin|Sinan|Volkan|Hakan|Burak|Baris|Onur|Ugur|Cengiz|Orhan|Adem|Aydin|Bülent|Dursun|Erdal|Ferhat|Gökhan|Harun|Ilhan|Kenan|Levent|Mesut|Nuri|Ramazan|Salih|Tarkan|Yasin|Zeki)$/i] },
+    // banLast: NORDIC_FOREIGN_NO_TR statt NORDIC_FOREIGN (Paket J — türkische
+    // Nachnamen werden jetzt nach r1 geroutet statt gebannt). banFirst/routeFirst
+    // kommen aus region-routes.js (s. Paket-J-Wiring unter CFG).
+    // SLAVIC_NARROW statt SLAVIC_EAST (wie FRA/CAN): die -in$-Branch traf Klein (DE-Rang 14),
+    // Stein (70), Hein, Lein — deutsche Kernnamen. Türkische -in-Namen (Şahin/Aydin/Çetin)
+    // gehen jetzt per GER_TURKISH_LAST nach r1 statt in den Ban. Iwanow/Petrow bleiben
+    // über -ov/-ev draußen. Kein /ski$|cki$/-Ban mehr: Kowalski/Kaminski/Grabowski/Jankowski
+    // sind ruhrpott-deutsch (vgl. Podolski/Klose), keine Fremdkörper.
+    GER: { iso:'DE', cls:'big', banLast:[NORDIC_FOREIGN_NO_TR,IBERIAN_PT,HISPANIC,SLAVIC_NARROW] },
     ITA: { iso:'IT', cls:'big', banLast:[NORDIC_FOREIGN,HISPANIC,IBERIAN_PT] },
     FRA: { iso:'FR', cls:'big', route:[[ARABIC_MAGHREB,1],[/^(Mohamed|Mehdi|Karim|Yanis|Rayan|Sami|Bilal|Ibrahim|Mamadou|Moussa|Amine|Hamza|Sofiane|Youssef|Abdoulaye|Ousmane|Yassine|Rachid|Farid|Nabil|Malik|Idriss|Souleymane)$/i,1]], banLast:[SOUTH_ASIAN,EAST_ASIAN,TURKISH,BALKAN,IBERIAN_PT,HISPANIC,SLAVIC_NARROW] },
     // USA-Dämpfungen (Census-verankert): Hispanic s.o.; Südasiatisch massiv verzerrt
@@ -181,10 +197,23 @@ const CFG = {
     QAT: { iso:'QA', cls:'small', foreCap0:true, surCap0:true }
 };
 
+// ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
+// routeFirst wirkt NUR auf Vornamen, cfg.route NUR noch auf Nachnamen. Vorher lief
+// cfg.route auf beide Arten — aber die Muster sind Nachnamen-Regexe, also fiel die
+// gesamte Vornamens-Datenmasse in Region 0 (Minderheitsregionen lebten von 9–32
+// kuratierten Vornamen). Belege + Wirkung: paketJ-ethno-regionen/REPORT.md §1.
+for (const [nat, routes] of Object.entries(J.ROUTE_FIRST)) CFG[nat].routeFirst = routes;
+for (const [nat, bans] of Object.entries(J.BAN_FIRST)) CFG[nat].banFirst = bans;
+for (const [nat, add] of Object.entries(J.ROUTE_LAST_ADD)) CFG[nat].route = [...(CFG[nat].route || []), ...add];
+for (const [nat, add] of Object.entries(J.BAN_LAST_ADD)) CFG[nat].banLast = [...(CFG[nat].banLast || []), ...add];
+
 // ── Kurationspass (aus curate-tails.js portiert, wirkt jetzt auf die Masse) ──
 const OPS = {
     GBR: { drop: { last: ['Louise'] } },
-    GER: { drop: { first: ['Ali'], last: ['Can'] } },
+    // Paket J: 'Ali' nicht mehr droppen — wird nach r1 geroutet.
+    // Tin/Rin: Daten-Artefakte, keine deutschen Nachnamen (der alte -in$-Ban hatte sie
+    // versehentlich miterschlagen; nach dem Wechsel auf SLAVIC_NARROW brauchts den Drop).
+    GER: { drop: { last: ['Can','Tin','Rin'] } },
     ITA: { drop: { last: ['Giuseppe','Mauro','Salvatore','Marco','Francesco','Luca','Simone'] } },
     FRA: { drop: { last: ['Ben','Lou','Bou'] },
            move: { last: { 'Ndiaye':1,'Diaby':1,'Diarra':1,'Benoit':0 }, first: { 'Benjamin':0 } } },
@@ -335,6 +364,19 @@ const TAILS = {}; // wird komplett neu erzeugt
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 
+// ── Paket J: neue Regionen anhängen + Regionsgewichte (D2/D3) ───────────────
+// GER r1 türkisch-deutsch (w 0.04, minYear 1985) ersetzt das bisherige Unterdrücken
+// per banFirst durch echtes Trennen. Anhängen hier statt in curated-base-v2.js →
+// die eingefrorene v2-Kuration bleibt unangetastet, der Build bleibt idempotent.
+for (const [nat, region] of Object.entries(JDEFS.NEW_REGIONS)) POOLS[nat].regions.push(deepCopy(region));
+// Nur RSA/IND/GER sind Änderungen; die übrigen Gewichte hat Paket J D3 als Ist-Stand
+// bestätigt (Belege je Zeile in region-defs.js WEIGHT_PROPOSALS).
+for (const [nat, p] of Object.entries(JDEFS.WEIGHT_PROPOSALS)) {
+    if (p.action !== 'change') continue;
+    if (POOLS[nat].regions.length !== p.w.length) throw new Error(`${nat}: Gewichts-Vorschlag hat ${p.w.length} Regionen, Pool hat ${POOLS[nat].regions.length}`);
+    p.w.forEach((w, i) => { POOLS[nat].regions[i].w = w; });
+}
+
 // Wissens-Erweiterungen anhängen (Dedup gegen Bestand)
 function appendKnowledge(nat, spec) {
     const region = POOLS[nat].regions[spec.r];
@@ -437,12 +479,18 @@ function processNation(nat, cfg) {
         const maxC = list[0].count;
         for (const e of list) e.w = Math.max(1, Math.round(SCALE * Math.pow(e.count / maxC, ALPHA)));
 
-        // 3) Routing in Regionen
+        // 3) Routing in Regionen. Vornamen nutzen routeFirst, Nachnamen cfg.route
+        //    (Paket J). Ziel darf ein Array sein = "geteilter Name": in Flandern UND
+        //    Wallonien belegte Formen (Kevin/David) kommen in beide Regionen.
+        const routes = kind === 'first' ? cfg.routeFirst : cfg.route;
         for (const e of list) {
             e.r = 0;
-            if (cfg.route) for (const [re, ri] of cfg.route) { if (re.test(e.name)) { e.r = ri; break; } }
-            if (moves[e.name] !== undefined) e.r = moves[e.name];
-            if (!pool.regions[e.r]) e.r = 0;
+            if (routes) for (const [re, ri] of routes) { if (re.test(e.name)) { e.r = ri; break; } }
+            if (moves[e.name] !== undefined) e.r = moves[e.name];   // OPS.move gewinnt über die Route
+            if (Array.isArray(e.r)) {
+                e.r = e.r.filter(i => pool.regions[i]);
+                if (!e.r.length) e.r = 0;
+            } else if (!pool.regions[e.r]) e.r = 0;
         }
 
         // 4) Kuratierte Treffer: echtes Datengewicht setzen (Anzeigeform kuratiert),
@@ -473,35 +521,45 @@ function processNation(nat, cfg) {
         const torsoCap = kind === 'last' ? cls.surT : cls.foreT;
         let placed = 0, torso = 0;
         const tailsByR = new Map();
+        const tailSlot = (ri) => {
+            if (!tailsByR.has(ri)) tailsByR.set(ri, { first: [], last: [] });
+            return tailsByR.get(ri);
+        };
         for (const e of list) {
             if (placed >= totalCap) break;
             if (usedKeys.has(key(e.name))) continue; // schon als kuratierter Treffer drin
-            const region = pool.regions[e.r];
-            if (kind === 'last') {
-                const have = new Set(region.last.map(x => key(x[0])));
-                if (have.has(key(e.name))) continue;
-                if (torso < torsoCap) { region.last.push([e.name, e.w]); torso++; }
-                else { if (!tailsByR.has(e.r)) tailsByR.set(e.r, { first: [], last: [] }); tailsByR.get(e.r).last.push(e.name); natReport.tailsSur++; }
-            } else {
-                if (Array.isArray(region.first)) {
+            // Geteilte Namen (e.r = Array) werden in jede Zielregion kopiert, zählen aber
+            // nur 1× gegen torso/placed — sonst halbiert der BEL-Default die Nationskapazität.
+            const inTorso = torso < torsoCap;
+            let usedAnywhere = false;
+            for (const ri of (Array.isArray(e.r) ? e.r : [e.r])) {
+                const region = pool.regions[ri];
+                if (kind === 'last') {
+                    const have = new Set(region.last.map(x => key(x[0])));
+                    if (have.has(key(e.name))) continue;
+                    if (inTorso) region.last.push([e.name, e.w]);
+                    else { tailSlot(ri).last.push(e.name); natReport.tailsSur++; }
+                } else if (Array.isArray(region.first)) {
                     const have = new Set(region.first.map(x => key(x[0])));
                     if (have.has(key(e.name))) continue;
-                    if (torso < torsoCap) { region.first.push([e.name, e.w]); torso++; }
-                    else { if (!tailsByR.has(e.r)) tailsByR.set(e.r, { first: [], last: [] }); tailsByR.get(e.r).first.push(e.name); natReport.tailsFore++; }
+                    if (inTorso) region.first.push([e.name, e.w]);
+                    else { tailSlot(ri).first.push(e.name); natReport.tailsFore++; }
                 } else {
                     const haveMid = new Set(region.first.mid.map(x => key(x[0])));
                     if (haveMid.has(key(e.name))) continue;
-                    if (torso < torsoCap) {
+                    if (inTorso) {
                         region.first.mid.push([e.name, e.w]);
                         // Top-Masse zusätzlich (gedeckelt) ins modern-Fenster – Vielfalt ohne Ära-Bruch
                         if (torso < cls.modDup) {
                             const haveMod = new Set(region.first.modern.map(x => key(x[0])));
                             if (!haveMod.has(key(e.name))) region.first.modern.push([e.name, Math.min(e.w, MODERN_CAP)]);
                         }
-                        torso++;
-                    } else { if (!tailsByR.has(e.r)) tailsByR.set(e.r, { first: [], last: [] }); tailsByR.get(e.r).first.push(e.name); natReport.tailsFore++; }
+                    } else { tailSlot(ri).first.push(e.name); natReport.tailsFore++; }
                 }
+                usedAnywhere = true;
             }
+            if (!usedAnywhere) continue;   // in allen Zielregionen schon vorhanden
+            if (inTorso) torso++;
             placed++;
             if (kind === 'last') natReport.sur++; else natReport.fore++;
         }
