@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.78</title>
+    <title>F1 RPG v0.9.14.79</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.78 (aktuell) - 17.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.79 (aktuell) - 17.07.2026</div>
+                            <div>&#8226; FIX: Junior-Nationen liefen rueckwaerts - Neuzugaenge ziehen jetzt aus der Basis-Verteilung statt aus der F1-Spitze</div>
+                            <div>&#8226; NEU: Leiter-Quote je Nation und Aera - US-Talente gehen nach Indy/NASCAR, Finnen fast immer nach Europa</div>
+                            <div>&#8226; NEU: F3-Aufstieg gewichtet nach Punkten x Nationen-Leiterquote statt strikter Bestenliste</div>
+                            <div class="font-bold text-slate-400">v0.9.14.78 - 17.07.2026</div>
                             <div>&#8226; FIX: Fahrer der 1950er-Jahre hatten nur ~10 Vornamen je Nation zur Auswahl - jetzt voller Pool (20x mehr Vielfalt)</div>
                             <div>&#8226; NEU: Deutschland/GB/USA/Frankreich/Italien behalten ihre Aera-typischen Vornamen</div>
                             <div class="font-bold text-slate-400">v0.9.14.77 - 16.07.2026</div>
@@ -2982,7 +2986,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.78';
+        const VERSION = '0.9.14.79';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4910,6 +4914,74 @@
                 w = weights[nations[i]];
                 if (decade < 2000 && MODERN_ONLY_NATIONS.has(nations[i])) w = 0;   // Golf/Ägypten erst ab 2000
                 if (dampUSA && nations[i] === 'USA') w *= 0.5;
+                cum += w;
+                if (rand <= cum) return nations[i];
+            }
+            return nations[nations.length - 1];
+        }
+
+        // ── Nachwuchs-Pyramide: Intake + Leiter (Fable Paket H) ─────────────
+        // Der strukturelle Fix: DECADE_NATION_POOLS und MOTORSPORT_NATION_BLEND sind
+        // ÜBERLEBENDEN-Verteilungen (F1-Spitze bzw. Wikidata = Leute mit Enzyklopädie-
+        // Eintrag). Sie an der BASIS zu ziehen läuft rückwärts — man kann die
+        // Kindergarten-Population nicht aus der Professoren-Population ableiten.
+        //
+        // INTAKE_NATION_SHARES = Verteilung der FRISCHEN Einsteiger an der Basis:
+        // Motorsport-Kultur-Breite (Wikidata ALLE Serien → enthält NASCAR/Supercars/
+        // Rally) ^0.75 (Bias-Dämpfung), gedeckelt durch einen Pro-Kopf-Deckel
+        // (Bevölkerung × 25). Daher liegen USA/AUS/JPN hier weit ÜBER ihrem F1-Anteil
+        // (USA 2020: Intake 19,0 % vs. F1 1,4 %) und MON/LIE/LUX bei ~ε.
+        // Der Abfluss in die eigenen Welten passiert NICHT hier, sondern in
+        // PYRAMID_NATION_LADDER — dort ist er eine Quote, keine Mechanik.
+        // Quelle: fable-deliverables/paketH-pyramide/ — NICHT von Hand editieren.
+        // Validiert (D4): renorm(INTAKE × LADDER) ≈ DECADE_NATION_POOLS, TVD Ø 0.127.
+        const INTAKE_NATION_SHARES = {
+            1950: { USA:0.1819,FRA:0.1335,ITA:0.111,GBR:0.1088,GER:0.0661,ARG:0.0287,SUI:0.025,BEL:0.0236,ESP:0.0229,AUS:0.0189,SWE:0.0177,AUT:0.0166,JPN:0.0159,RUS:0.015,CAN:0.0142,CZE:0.0138,FIN:0.0131,RSA:0.0125,NED:0.0112,BRA:0.0094,POL:0.009,NZL:0.008,POR:0.008,CHI:0.0075,EST:0.0065,GRE:0.0064,NOR:0.0064,IRL:0.0053,ROU:0.0053,TUR:0.0053,KEN:0.0047,DEN:0.0042,HUN:0.0042,PER:0.0042,ZIM:0.0042,MEX:0.0034,URU:0.0034,SRB:0.0028,VEN:0.0028,CIV:0.0022,PHI:0.0022,BUL:0.0019,CHN:0.0019,COL:0.0019,EGY:0.0019,INA:0.0019,IND:0.0019,ISR:0.0019,KOR:0.0019,LIE:0.0019,LUX:0.0019,MAR:0.0019,MAS:0.0019,MON:0.0019,QAT:0.0019,SAU:0.0019,THA:0.0019,UAE:0.0019,UKR:0.0019 },
+            1960: { USA:0.1456,FRA:0.1157,ITA:0.0722,GBR:0.0673,GER:0.0654,JPN:0.0475,ARG:0.0303,AUS:0.0303,AUT:0.0295,ESP:0.0295,SWE:0.0295,BEL:0.0253,SUI:0.0246,CAN:0.0218,FIN:0.0199,CZE:0.019,NED:0.017,POL:0.0151,RUS:0.0141,RSA:0.013,NZL:0.011,BRA:0.0107,DEN:0.0095,MEX:0.0095,POR:0.0095,HUN:0.0083,NOR:0.0083,GRE:0.007,IRL:0.007,EST:0.0057,KEN:0.0057,BUL:0.0042,CHI:0.0042,COL:0.0042,INA:0.0042,IND:0.0042,ISR:0.0042,SRB:0.0042,TUR:0.0042,MAR:0.0025,PER:0.0025,UKR:0.0025,URU:0.0025,VEN:0.0025,ZIM:0.0025,CHN:0.0019,CIV:0.0019,EGY:0.0019,KOR:0.0019,LIE:0.0019,LUX:0.0019,MAS:0.0019,MON:0.0019,PHI:0.0019,QAT:0.0019,ROU:0.0019,SAU:0.0019,THA:0.0019,UAE:0.0019 },
+            1970: { USA:0.151,FRA:0.0965,ITA:0.0634,GBR:0.0586,GER:0.0537,JPN:0.0408,ARG:0.0373,ESP:0.033,BEL:0.0316,CAN:0.0309,RUS:0.0301,SWE:0.0296,AUT:0.0231,CZE:0.0231,SUI:0.022,AUS:0.0188,NED:0.0188,BRA:0.0179,FIN:0.0171,POL:0.0142,POR:0.0142,KEN:0.0123,NOR:0.0123,MEX:0.0112,RSA:0.0112,NZL:0.0104,IRL:0.0079,TUR:0.0079,UKR:0.0079,CHI:0.0066,CHN:0.0054,CIV:0.0054,DEN:0.0054,HUN:0.0054,PER:0.0054,EST:0.0051,GRE:0.0039,ISR:0.0039,ZIM:0.0039,COL:0.0024,INA:0.0024,IND:0.0024,ROU:0.0024,THA:0.0024,URU:0.0024,VEN:0.0024,BUL:0.002,EGY:0.002,KOR:0.002,LIE:0.002,LUX:0.002,MAR:0.002,MAS:0.002,MON:0.002,PHI:0.002,QAT:0.002,SAU:0.002,SRB:0.002,UAE:0.002 },
+            1980: { USA:0.1742,FRA:0.0759,ITA:0.0708,GBR:0.0615,JPN:0.0591,GER:0.0575,ESP:0.0289,RUS:0.0283,BEL:0.0276,ARG:0.0264,SWE:0.0261,BRA:0.0237,CAN:0.0223,AUS:0.0216,NED:0.0209,SUI:0.0202,CHN:0.0172,CZE:0.0172,POR:0.0172,AUT:0.0165,FIN:0.0152,HUN:0.0132,NOR:0.013,POL:0.0107,NZL:0.0102,DEN:0.0098,TUR:0.0098,MEX:0.0079,GRE:0.0068,RSA:0.0068,ROU:0.0058,UKR:0.0058,EST:0.0047,PER:0.0046,BUL:0.0034,CHI:0.0034,CIV:0.0034,IND:0.0034,IRL:0.0034,ISR:0.0034,KEN:0.0034,MAS:0.0034,PHI:0.0034,COL:0.002,EGY:0.002,INA:0.002,KOR:0.002,LIE:0.002,LUX:0.002,MAR:0.002,MON:0.002,QAT:0.002,SAU:0.002,SRB:0.002,THA:0.002,UAE:0.002,URU:0.002,VEN:0.002,ZIM:0.002 },
+            1990: { USA:0.1519,JPN:0.0635,FRA:0.0631,GBR:0.0595,ITA:0.0503,GER:0.0446,ARG:0.0426,BRA:0.038,ESP:0.0327,AUS:0.0294,NED:0.0247,CZE:0.0235,POR:0.0229,BEL:0.0217,CAN:0.0217,RUS:0.0217,SWE:0.0205,POL:0.0192,SUI:0.0165,HUN:0.0157,AUT:0.0143,MEX:0.0143,FIN:0.0137,DEN:0.0129,CHN:0.0122,NOR:0.0122,IRL:0.0105,NZL:0.0101,RSA:0.0097,TUR:0.0081,UKR:0.0081,CHI:0.0072,BUL:0.0062,IND:0.0062,THA:0.0062,VEN:0.0053,GRE:0.0042,MAS:0.0042,ROU:0.0042,SRB:0.0042,EST:0.0039,MAR:0.0032,URU:0.0032,CIV:0.002,COL:0.002,EGY:0.002,INA:0.002,ISR:0.002,KEN:0.002,KOR:0.002,LIE:0.002,LUX:0.002,MON:0.002,PER:0.002,PHI:0.002,QAT:0.002,SAU:0.002,UAE:0.002,ZIM:0.002 },
+            2000: { USA:0.1492,GBR:0.0763,FRA:0.0567,GER:0.0518,ARG:0.051,ITA:0.048,BRA:0.0414,JPN:0.0392,ESP:0.032,AUS:0.03,NED:0.029,RUS:0.0264,SWE:0.0216,SUI:0.0185,AUT:0.0169,CZE:0.0169,CAN:0.0163,BEL:0.0158,CHN:0.0158,MEX:0.0138,POL:0.0138,POR:0.0131,TUR:0.0131,FIN:0.0127,NOR:0.0118,UKR:0.0112,IRL:0.0104,NZL:0.0103,DEN:0.0097,HUN:0.0083,IND:0.0083,INA:0.0075,RSA:0.0075,THA:0.0075,CHI:0.0066,BUL:0.0058,MAS:0.0058,PER:0.0058,VEN:0.0058,GRE:0.0048,KOR:0.0048,PHI:0.0048,ROU:0.0048,SRB:0.0039,URU:0.0039,EST:0.0034,EGY:0.003,MAR:0.003,CIV:0.002,COL:0.002,ISR:0.002,KEN:0.002,LIE:0.002,LUX:0.002,MON:0.002,QAT:0.002,SAU:0.002,UAE:0.002,ZIM:0.002 },
+            2010: { USA:0.1607,GBR:0.0811,ARG:0.0542,FRA:0.0501,ITA:0.0453,GER:0.0398,ESP:0.0381,JPN:0.0381,BRA:0.0304,RUS:0.0285,NED:0.024,BEL:0.0226,SWE:0.0225,AUS:0.0219,CAN:0.0219,AUT:0.0194,MEX:0.0184,SUI:0.0184,HUN:0.017,CHN:0.0155,POL:0.0147,CZE:0.0139,COL:0.0131,DEN:0.0127,FIN:0.0121,NOR:0.0116,MAS:0.0114,RSA:0.0114,NZL:0.0107,IND:0.0106,INA:0.0087,THA:0.0087,ISR:0.0078,POR:0.0078,TUR:0.0078,IRL:0.0068,VEN:0.0068,ROU:0.0057,BUL:0.0046,PER:0.0034,UAE:0.0034,URU:0.0034,EST:0.003,CHI:0.002,CIV:0.002,EGY:0.002,GRE:0.002,KEN:0.002,KOR:0.002,LIE:0.002,LUX:0.002,MAR:0.002,MON:0.002,PHI:0.002,QAT:0.002,SAU:0.002,SRB:0.002,UKR:0.002,ZIM:0.002 },
+            2020: { USA:0.1899,GBR:0.0709,FRA:0.0597,GER:0.0533,ITA:0.0485,ARG:0.0437,ESP:0.0397,BRA:0.0344,NED:0.0333,AUS:0.0277,JPN:0.0254,MEX:0.0242,RUS:0.0192,BEL:0.0164,AUT:0.0151,CZE:0.0151,HUN:0.0151,POL:0.0151,CAN:0.0136,RSA:0.0136,SWE:0.0136,CHN:0.0122,SUI:0.0122,DEN:0.0121,FIN:0.0115,NOR:0.0113,IND:0.0089,NZL:0.0089,POR:0.0089,MAR:0.0073,PER:0.0073,PHI:0.0073,THA:0.0073,TUR:0.0073,UAE:0.0073,URU:0.0073,VEN:0.0073,COL:0.0053,INA:0.0053,IRL:0.0053,ISR:0.0053,KOR:0.0053,ROU:0.0053,BUL:0.0032,CHI:0.0032,MAS:0.0032,EST:0.0027,CIV:0.002,EGY:0.002,GRE:0.002,KEN:0.002,LIE:0.002,LUX:0.002,MON:0.002,QAT:0.002,SAU:0.002,SRB:0.002,UKR:0.002,ZIM:0.002 }
+        };
+
+        // Leiter-Modifikator: Anteil je Nation, der die europäische Formel-Leiter
+        // ÜBERHAUPT nimmt (Feld-Schnitt = 1.0). Hier steckt der Abfluss in die eigenen
+        // Welten als QUOTE (kein Quereinstieg-Modell): USA 0.04 (NASCAR/Indy),
+        // AUS 0.85 (Supercars), JPN 0.50 (Super Formula/SGT), Ostblock 0.05 vor 1990
+        // (politisches Tor). > 1 = Überconversion: FIN 3.10 (Häkkinen→Bottas).
+        // GENAU EINMAL pro Fahrer anwenden (Europa-Commit-Stufe) — nie je Stufe,
+        // sonst quadriert sich der Effekt. Ära-Register identisch zu _teamEraKey().
+        // Quelle: fable-deliverables/paketH-pyramide/ — NICHT von Hand editieren.
+        const PYRAMID_NATION_LADDER = {
+            e50: { BUL:0.05,CZE:0.05,EST:0.05,HUN:0.05,JPN:0.05,POL:0.05,ROU:0.05,RUS:0.05,UKR:0.05,AUT:0.10,CHN:0.10,FIN:0.10,INA:0.10,IND:0.10,KOR:0.10,MAS:0.10,PHI:0.10,SRB:0.10,SWE:0.20,EGY:0.30,QAT:0.30,SAU:0.30,UAE:0.30,USA:0.30,CIV:0.40,ESP:0.40,ISR:0.40,KEN:0.40,MAR:0.40,TUR:0.40,ZIM:0.40,CAN:0.45,AUS:0.50,MEX:0.50,RSA:0.50,CHI:0.60,COL:0.60,GRE:0.60,NZL:0.60,PER:0.60,VEN:0.60,FRA:0.65,BRA:0.70,THA:0.80,URU:0.80,ITA:0.85,GER:0.95,DEN:1.00,IRL:1.00,LIE:1.00,LUX:1.00,MON:1.00,NED:1.00,NOR:1.00,POR:1.00,SUI:1.00,GBR:1.55,BEL:1.80,ARG:1.90 },
+            e62: { BUL:0.05,CZE:0.05,EST:0.05,HUN:0.05,POL:0.05,ROU:0.05,RUS:0.05,UKR:0.05,CHN:0.10,INA:0.10,IND:0.10,KOR:0.10,MAS:0.10,PHI:0.10,SRB:0.10,ESP:0.15,JPN:0.15,NOR:0.15,POR:0.15,ARG:0.30,EGY:0.30,FIN:0.30,QAT:0.30,SAU:0.30,THA:0.30,UAE:0.30,DEN:0.40,CHI:0.45,COL:0.45,PER:0.45,URU:0.45,VEN:0.45,CAN:0.50,CIV:0.50,GER:0.50,ISR:0.50,KEN:0.50,MAR:0.50,TUR:0.50,USA:0.50,FRA:0.55,GRE:0.60,NED:0.60,SWE:0.60,BEL:0.75,AUT:0.85,ITA:0.90,BRA:0.95,IRL:1.00,LIE:1.00,LUX:1.00,MEX:1.00,MON:1.00,AUS:1.05,SUI:1.30,ZIM:1.90,GBR:2.30,NZL:2.40,RSA:2.90 },
+            e76: { BUL:0.08,CZE:0.08,EST:0.08,HUN:0.08,POL:0.08,ROU:0.08,RUS:0.08,UKR:0.08,USA:0.08,NOR:0.10,CHN:0.15,INA:0.15,IND:0.15,KOR:0.15,MAS:0.15,PHI:0.15,SRB:0.15,DEN:0.20,POR:0.20,RSA:0.25,AUS:0.30,EGY:0.30,QAT:0.30,SAU:0.30,SWE:0.30,THA:0.30,UAE:0.30,ARG:0.35,CAN:0.35,CIV:0.35,ESP:0.35,ISR:0.35,KEN:0.35,MAR:0.35,MEX:0.35,TUR:0.35,ZIM:0.35,BEL:0.40,CHI:0.40,COL:0.40,JPN:0.40,NED:0.40,NZL:0.40,PER:0.40,URU:0.40,VEN:0.40,GRE:0.60,GER:0.70,SUI:0.80,LIE:1.00,LUX:1.00,MON:1.00,FIN:1.10,GBR:1.30,FRA:1.35,AUT:1.50,BRA:1.60,IRL:2.00,ITA:2.20 },
+            e94: { USA:0.04,BEL:0.10,NOR:0.10,RUS:0.10,SWE:0.10,RSA:0.12,ARG:0.20,SUI:0.25,BUL:0.30,CZE:0.30,DEN:0.30,EGY:0.30,EST:0.30,HUN:0.30,MEX:0.30,NZL:0.30,QAT:0.30,ROU:0.30,SAU:0.30,SRB:0.30,UAE:0.30,UKR:0.30,AUS:0.35,CIV:0.35,ISR:0.35,KEN:0.35,MAR:0.35,TUR:0.35,ZIM:0.35,CAN:0.40,CHI:0.40,CHN:0.40,INA:0.40,IND:0.40,KOR:0.40,MAS:0.40,PER:0.40,PHI:0.40,POR:0.40,THA:0.40,URU:0.40,VEN:0.40,POL:0.45,COL:0.60,GRE:0.60,FRA:0.70,JPN:0.90,IRL:1.00,LIE:1.00,LUX:1.00,MON:1.00,NED:1.00,GBR:1.10,ESP:1.20,ITA:1.35,AUT:1.40,BRA:1.95,GER:1.95,FIN:3.20 },
+            e10: { USA:0.04,ARG:0.10,AUT:0.10,NOR:0.10,POR:0.15,RSA:0.15,SUI:0.25,SWE:0.30,BUL:0.35,CHN:0.35,CZE:0.35,EST:0.35,HUN:0.35,ROU:0.35,SRB:0.35,UKR:0.35,POL:0.40,BEL:0.45,CIV:0.45,ISR:0.45,KEN:0.45,MAR:0.45,TUR:0.45,ZIM:0.45,CHI:0.50,COL:0.50,JPN:0.50,NZL:0.50,PER:0.50,URU:0.50,VEN:0.50,ITA:0.55,GRE:0.60,INA:0.65,IND:0.65,KOR:0.65,MAS:0.65,PHI:0.65,EGY:0.70,QAT:0.70,SAU:0.70,UAE:0.70,CAN:0.80,THA:0.80,AUS:0.85,MEX:0.85,DEN:1.00,IRL:1.00,LIE:1.00,LUX:1.00,MON:1.00,RUS:1.00,NED:1.10,BRA:1.15,GBR:1.30,ESP:1.40,FRA:1.40,GER:2.20,FIN:3.10 }
+        };
+
+        // Nationen-Ziehung für FRISCHE Einsteiger an der Basis der Pyramide (Paket H).
+        // Gegenstück zu pickNationByDecade (F1-Spitze) und pickNationMotorsport
+        // (F1-naher Trichter): NUR für Neuzugänge der Junior-Welt verwenden.
+        // Kein dampUSA-Äquivalent — die USA-Dämpfung passiert hier korrekt über
+        // PYRAMID_NATION_LADDER (0.04–0.50 je Ära) statt per Ad-hoc-Faktor.
+        function pickNationIntake(year) {
+            var decade = Math.floor(year / 10) * 10;
+            if (decade < 1950) decade = 1950;
+            if (decade > 2020) decade = 2020;
+            var weights = INTAKE_NATION_SHARES[decade] || INTAKE_NATION_SHARES[2020];
+            var nations = Object.keys(weights), total = 0, i, w;
+            for (i = 0; i < nations.length; i++) {
+                w = weights[nations[i]];
+                if (decade < 2000 && MODERN_ONLY_NATIONS.has(nations[i])) w = 0;   // Golf/Ägypten erst ab 2000
+                total += w;
+            }
+            var rand = Math.random() * total, cum = 0;
+            for (i = 0; i < nations.length; i++) {
+                w = weights[nations[i]];
+                if (decade < 2000 && MODERN_ONLY_NATIONS.has(nations[i])) w = 0;
                 cum += w;
                 if (rand <= cum) return nations[i];
             }
@@ -15725,9 +15797,12 @@
             const pace = 58 + ((Math.random() * 28) | 0);   // 58–85 Einstieg
             // Nation ZUERST → nationskohärenter Name aus denselben Paket-A-Pools wie die F1
             // (kein "Jacques Müller": Vor+Nachname stammen aus derselben Region der Nation).
-            // Gewichtete Motorsport-Frequenz je Dekade (Fable Paket A v3) statt gleichgewichtet;
-            // dampUSA=true für die europäisch geprägten F3/F2-Junior-Grids (en-Wiki-Bias).
-            const nation = pickNationMotorsport(year, true);
+            // Paket H: Junior-Neuzugänge sind EINSTEIGER an der Basis → INTAKE-Verteilung
+            // (Kultur-Breite × Pro-Kopf-Deckel). Vorher zog das den F1-nahen Trichter
+            // (pickNationMotorsport) — das lief rückwärts: eine Verteilung von der Spitze
+            // an der Basis angewandt. Der Abfluss in eigene Welten (USA→NASCAR etc.) wirkt
+            // jetzt an der richtigen Stelle: beim Aufstieg, via PYRAMID_NATION_LADDER.
+            const nation = pickNationIntake(year);
             const usedNames = new Set((jw.drivers || []).map(d => d.name));
             const usedLast  = new Set((jw.drivers || []).map(d => d.name.split(' ').slice(-1)[0]));
             let name = '';
@@ -15812,17 +15887,30 @@
             for (const t of s.teams) if ((counts[t.id] || 0) < JW_SEATS_PER_TEAM) return t.id;
             return s.teams[0].id;
         }
-        // Aufstieg: beste F3-Fahrer (nach Vorsaison-Punkten) füllen die durch Rücktritte offenen F2-Sitze.
-        function _promoteJuniors(jw) {
+        // Aufstieg F3→F2: füllt die durch Rücktritte offenen F2-Sitze.
+        // Paket H: Das ist die EUROPA-COMMIT-STUFE — hier entscheidet sich, wer die
+        // europäische Formel-Leiter überhaupt nimmt. Gewicht = sportlich (Vorsaison-
+        // Punkte) × PYRAMID_NATION_LADDER[Ära][Nation]. Der Ladder bildet den Abfluss
+        // in die eigenen Welten als Quote ab: ein Top-Amerikaner (0.04 in e10) geht
+        // meistens nach Indy/NASCAR statt nach Europa, ein Finne (3.10) fast nie.
+        // Gewichtete Ziehung statt strikter Bestenliste, weil D4 genau
+        // renorm(INTAKE × LADDER) validiert hat (TVD Ø 0.127 vs. DECADE_NATION_POOLS).
+        // Der Ladder wird NUR hier angewandt — nie zusätzlich an einer anderen Stufe.
+        function _promoteJuniors(jw, year) {
             const f2 = (jw.series || []).find(s => s.id === 'f2');
             const f3 = (jw.series || []).find(s => s.id === 'f3');
             if (!f2 || !f3) return 0;
             const open = Math.max(0, _juniorScale().driversPerSeries - jw.drivers.filter(d => d.seriesId === 'f2').length);
             if (open <= 0) return 0;
-            const f3sorted = jw.drivers.filter(d => d.seriesId === 'f3').sort((a, b) => (b._lastPoints || 0) - (a._lastPoints || 0));
+            const lad = PYRAMID_NATION_LADDER[_teamEraKey(year)] || PYRAMID_NATION_LADDER.e10;
+            const pool = jw.drivers.filter(d => d.seriesId === 'f3');
             let promoted = 0;
-            for (let i = 0; i < open && i < f3sorted.length; i++) {
-                const d = f3sorted[i];
+            for (let i = 0; i < open && pool.length; i++) {
+                // Sockel +1: auch Punktlose können aufsteigen (dünne Grids, frühe Saisons).
+                const w = pool.map(d => ((d._lastPoints || 0) + 1) * (lad[d.nation] || 1.0));
+                let rand = Math.random() * w.reduce((s, x) => s + x, 0), idx = 0;
+                for (; idx < w.length - 1; idx++) { rand -= w[idx]; if (rand <= 0) break; }
+                const d = pool.splice(idx, 1)[0];
                 d.seriesId = 'f2'; d.team = _openJuniorSeat(jw, 'f2'); promoted++;
             }
             return promoted;   // 5f: für Saison-Zusammenfassung
@@ -16096,7 +16184,7 @@
             if (!jw.worldSeed) jw.worldSeed = Math.floor(Math.random() * 0x7fffffff) || 1;   // Stufe 1: Backfill für Alt-Saves
             const retired = _ageAndRetireJuniors(jw);   // 2b: Returner altern, Karriere-Enden raus
             _ensureJuniorTeams(jw);            // 2c: Teams sicherstellen (+ teamlose zuordnen)
-            const promoted = _promoteJuniors(jw);       // 2c: beste F3 → offene F2-Sitze
+            const promoted = _promoteJuniors(jw, year); // 2c: F3 → offene F2-Sitze (Paket H: Leiter-Quote je Nation)
             _juniorContractMoves(jw, year);    // 5c: vertragsgetriebene Transfers (Auslaufverträge → Aufstieg)
             _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
             const newcomers = jw.drivers.filter(d => d.debutYear === year).length;
