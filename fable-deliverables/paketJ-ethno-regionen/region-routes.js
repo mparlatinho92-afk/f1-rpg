@@ -219,7 +219,12 @@ const BAN_LAST_ADD = {
     MAS: [/^(Man|Lan|Keong|Hong|Jack|Rock|Amira|Boy|Long|Anak|Ming|Wai|Love|Hidayah|Hossain|Seng|Rai|Husna|Sam|Chandran|Muniandy|Subramaniam)$/i],
     // albanische Nachnamen ausserhalb des BALKAN-Regex (CH-Daten: Hoti u.a.) —
     // Empfehlung: global in BALKAN ergänzen, hier als SUI-Ban geliefert
-    SUI: [/^(Hoti|Zeqiri|Rexhepi|Ademi|Selimi|Osmani|Shabani|Bytyci|Bytyçi|Halimi|Kastrati|Elezi|Ismaili|Salihu|Hasani|Emini|Zymeri|Abazi|Krasniqi-?\w*|Jashari|Kryeziu|Limani|Musliu|Ramadani-?\w*|Rushiti|Sadiku|Sejdiu|Shaqiri|Veseli)$/i,
+    // Nachtrag Opus 2026-07-17 (Paket-J-Ausbau): Thaqi/Maliqi/Idrizi/Kabashi/Ahmetaj/Rexhaj
+    // fehlten in der Liste — zusammen 1:396 der CH-Nachnamen-Ziehmasse (gemessen am gebauten
+    // Pool). Der von METHODIK §3.3 empfohlene GLOBALE BALKAN-Ausbau wurde dagegen VERWORFEN:
+    // Gewinn AUT 1:1913, GER 1:1602, SWE 1:6003, DEN/FRA null — und Hasani/Ismaili/Osmani/
+    // Ademi/Selimi sind albanisch UND arabisch (MAR: Ismaili 2546, Hasani 1374 = echte Namen).
+    SUI: [/^(Hoti|Zeqiri|Rexhepi|Ademi|Selimi|Osmani|Shabani|Bytyci|Bytyçi|Halimi|Kastrati|Elezi|Ismaili|Salihu|Hasani|Emini|Zymeri|Abazi|Krasniqi-?\w*|Jashari|Kryeziu|Limani|Musliu|Ramadani-?\w*|Rushiti|Sadiku|Sejdiu|Shaqiri|Veseli|Thaqi|Maliqi|Idrizi|Kabashi|Ahmetaj|Rexhaj)$/i,
           // eritreisch/äthiopische Namen (CH-Daten, keine Region)
           /^(Kidane|Tesfay|Tesfaye|Berhane|Gebre\w*|Haile\w*|Weldu|Yohannes|Tewelde)$/i]
 };
