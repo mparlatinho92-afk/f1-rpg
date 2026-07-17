@@ -70,11 +70,28 @@ const SUI_SHARED_DE_FR = /^(Pascal|Marcel|Raphael|Raphaël|Yannick|Vincent|Eric|
 const SUI_SHARED_DE_IT = /^(Marco|Luca|Fabio|Sandro|Dario|Nino-?\w+|Reto-?\w+|Remo|Silvan-?o?|Elia|Nevio|Livio-?\w+|Timo-?\w+|Diego|Ivan|Toni)$/i;
 const SUI_SHARED_ALL = /^(David|Michael|Patrick|Daniel|Thomas|Simon|Alex|Nico|Jonas|Manuel|Oliver|Dominik|Dominic|Roman|Adrian|Fabian|Florian|Leo|Leon|Julian|Tim|Tom|Max|Nils|Sascha|Sven|Chris|Christian|Martin|Stefan-?\w*|Benjamin|Jan|Lukas|Lucas|Matthias|Mathias|Mike|Andy|Sebastian|Tobias|Philipp|Felix|Noah|Elias|Levin|Nevin|Andrin|Laurin|Jannik|Yanik|Janick|Sandro-?\w+)$/i;
 
-// ── CAN: distinkt Québec (R1), Neukanadier (R2, minYear 2000), geteilt [0,1].
-//    Prinzip: frz. Schreibform → R1 (Marc/Mark, Nicolas/Nicholas, Denis/Dennis,
-//    Philippe/Philip, Christophe/Christopher trennen die Regionen sauber).
+// ── CAN: distinkt Québec (R1), Neukanadier — AUSBAU 2026-07-17: r2 aufgespalten
+//    in r2 südasiatisch / r3 ostasiatisch (BRIEF-AUSBAU D2: 1 von 27 CAN-Fahrern
+//    hieß „Sandeep Tsang"). Prinzip: frz. Schreibform → R1 (Marc/Mark, Nicolas/
+//    Nicholas, Denis/Dennis, Philippe/Philip trennen die Regionen sauber).
 const CAN_QC_FIRST = /^(Jean|Jean-\w+|Marc-\w+|Pierre-\w+|Louis-\w+|Charles-\w+|Claude|Jacques|Gilles|Marcel|Alexandre|Mathieu|Sylvain|Guillaume|François|Francois|Frédéric|Frederic|Pascal|Réjean|Rejean|Yves|Luc|Pierre|Michel|Denis|Stéphane|Stephane|Éric|Sébastien|Sebastien|Benoit|Benoît|Ghislain|Gaétan|Gaetan|Fernand|Normand|Gérard|Gerard|Maxime|Étienne|Etienne|Félix|Émile|Emile|Alexis|Cédric|Cedric|Patrice|Rémi|Remi|Rémy|Remy|Serge|Antoine|Hugo|Thierry|René|Rene|André|Andre|Yvan|Roch|Fabien|Julien|Nicolas|Philippe|Christophe|Jérémie|Jeremie|Jérôme|Jerome|Olivier|Marc|Mathis|Thomas-?\w+|Raphaël|Raphael|Léo|Leo|Loïc|Loic|Yannick|Vincent-?\w+|Xavier|Sacha|Samu?el-?\w+|Tristan|Zachary-?\w+|Dominique|Bernard|Bertrand|Bruno|Camille|Armand|Aurèle|Aurele|Conrad|Damien|Delphis|Donat|Edgar|Edmond|Eugène|Eugene|Ferdinand|Florent|Gaston|Georges|Guy|Henri|Hervé|Herve|Honoré|Honore|Jocelyn|Laurent|Lionel|Ludovic|Marius|Maurice|Napoléon|Napoleon|Octave|Onésime|Onesime|Ovila|Philémon|Philemon|Placide|Réal|Real|Rodrigue|Roland|Romain|Rosaire|Théo|Theo|Ulric|Wilfrid|Zéphirin|Zephirin|Mathias-?\w+|Alain|Didier|Fabrice|Gaël|Gael|Steeve)$/i;
-const CAN_NEW_FIRST = /^(Mohamed|Mohammed|Mohammad|Muhammad|Ali|Ahmed|Ahmad|Omar|Hassan|Hussein|Amir|Syed|Raj|Arjun|Vikram|Nikhil|Rohan|Sanjay|Amit|Anil|Rahul|Karan|Aryan|Krish|Gurpreet|Harpreet|Jaspreet|Manpreet|Amandeep|Navdeep|Sandeep|Rajesh|Suresh|Ramesh|Deepak|Vijay|Ravi|Kiran|Wei|Jun|Ming|Feng|Hao|Jin|Cheng|Yong|Xin|Bilal|Hamza|Usman|Imran|Tariq|Khalid|Zain|Karim|Samir|Rashid|Faisal|Waleed|Yusuf|Ibrahim|Mustafa|Abdullah|Abdul\w*|Harsh|Aditya|Akshay|Ankit|Gaurav|Kunal|Manish|Mayank|Neeraj|Piyush|Pranav|Rohit|Sahil|Siddharth|Varun|Vishal|Jaswinder|Kulwinder|Parminder|Ranjit|Sukhwinder|Baljit|Davinder|Gurdeep|Harjit|Iqbal|Kirpal|Mohinder|Rajinder|Surinder)$/i;
+// AUSBAU (ersetzt CAN_NEW_FIRST): südasiatisch → r2. Die 9 Pinyin-Tokens
+// (Wei/Jun/Ming/Feng/Hao/Jin/Cheng/Yong/Xin) sind raus — sie hatten 0 % Ziehmasse
+// (kommen in den CA-Vornamendaten nicht vor) und gehören zu r3.
+const CAN_SA_FIRST = /^(Mohamed|Mohammed|Mohammad|Muhammad|Ali|Ahmed|Ahmad|Omar|Hassan|Hussein|Amir|Syed|Raj|Arjun|Vikram|Nikhil|Rohan|Sanjay|Amit|Anil|Rahul|Karan|Aryan|Krish|Gurpreet|Harpreet|Jaspreet|Manpreet|Amandeep|Navdeep|Sandeep|Rajesh|Suresh|Ramesh|Deepak|Vijay|Ravi|Kiran|Bilal|Hamza|Usman|Imran|Tariq|Khalid|Zain|Karim|Samir|Rashid|Faisal|Waleed|Yusuf|Ibrahim|Mustafa|Abdullah|Abdul\w*|Harsh|Aditya|Akshay|Ankit|Gaurav|Kunal|Manish|Mayank|Neeraj|Piyush|Pranav|Rohit|Sahil|Siddharth|Varun|Vishal|Jaswinder|Kulwinder|Parminder|Ranjit|Sukhwinder|Baljit|Davinder|Gurdeep|Harjit|Iqbal|Kirpal|Mohinder|Rajinder|Surinder)$/i;
+// AUSBAU: ostasiatische Vornamen r3 — zwei Sorten:
+// (a) Pinyin/Kantonesisch/Viet/Koreanisch (1,5. Generation; in den CA-Daten
+//     praktisch masselos → wirken nur über den kuratierten r3-Kopf, region-defs.js);
+const CAN_EA_PINYIN_FIRST = /^(Wei|Jun|Ming|Feng|Hao|Jin|Cheng|Yong|Xin|Kai|Tao|Lei|Peng|Minh|Duc|Jae|Dong-?\w*|Ho-?\w+)$/i;
+// (b) HK-typische westliche Rufnamen (2. Generation; Daten-Realität wie MAS_CN_FIRST:
+//     chinesisch-kanadische Fahrer heißen Kevin/Jason, nicht Xiu) → GETEILT [0,3],
+//     denn dieselben Namen sind legitim anglo. Disjunkt zu CAN_SHARED_FIRST halten!
+const CAN_EA_WESTERN_FIRST = /^(Kelvin|Alvin|Calvin|Wilson|Winston|Desmond|Edmund|Melvin|Elvin|Terence|Stanley|Nelson|Raymond|Sunny|Jacky|Hank)$/i;
+// AUSBAU: [0,1] → [0,1,3] — die internationale Restmasse (David/Kevin/Justin …)
+// ist anglo UND franko UND ostasiatisch-kanadisch belegt (Bsp. Samantha Tan,
+// chinesisch-kanadische GT-Fahrerin — westlicher Rufname). NICHT r2: dessen
+// Daten-Vornamensmasse ist zu 69 % südasiatisch, der westliche Anteil kommt
+// dort aus dem kuratierten Kopf (Ryan/Justin/Kevin/Daniel, bleibt).
 const CAN_SHARED_FIRST = /^(Martin|Simon|David|Daniel|Samuel|Gabriel|Nathan|Vincent|Patrick|Eric|Erik|Felix|Dominic|Robert|Richard|Charles|Victor|Jonathan|Kevin|Anthony|Benjamin|Christian|Noah|Liam-?\w*|Lucas|Alex|Adam|Marco?us|Justin|Joel|Olivier-?\w+|William|Zachary|Jacob|Tommy|Steve|Danny|Dave|Mario|Bruno|Denis-?\w+|Michael-?\w+)$/i;
 
 // ── ESP: Katalanisch (R1), Baskisch (R2). Distinkte Sprachformen — die
@@ -115,9 +132,19 @@ const EST_RU_FIRST = /^(Aleksandr|Alexandr|Deniss|Sergei|Sergey|Andrei|Andrey|Al
 const BEL_FL_LAST_ADD = /^(Thijs|Bauwens|Moens|Heylen|Gielen|Goethals|Lievens|Ceulemans|Nijs|Cuypers|Matthys|Roels|Somers|Andries|Declerck|Dewulf|Jans|Smeets|Decock|Claus|Leemans|Huysmans|Coenen|Baeyens|Deckers|Smits|Geens|Engelen|Sterckx|Houben|Engels|Dierickx|Peters|Simons|Joris|Callens|Mortier|Mahieu|Beckers|Laeremans|Dewaele|Tack|Verbruggen|Vergauwen|Theys|Bollen|Helsen|Cornelissen|Maertens|Moors|Bogers|Bosch|Brouwers|Bruynseels|Buyens|Buysse|Casteels|Colpaert|Daelemans|Dhaenens|Dhaene|Gys|Gyssels|Haesaert|Kerremans|Lambrecht|Lodewijckx|Meeus|Mommens|Nuyts|Opdebeeck|Pelgrims|Poot|Roosen|Schellekens|Schoeters|Sels|Stroobants|Teugels|Uyttendaele|Vercammen|Wijnants|Wynants)$/;
 // ⚠ Callens/Mortier/Mahieu/Beckers sind west-/grenzflämisch mit wallonischem
 //   Vorkommen — flämische Lesart dominiert (Kennzeichnung METHODIK §2.1).
-// CAN: ost-/südasiatische Nachnamen ausserhalb von EAST_ASIAN/SOUTH_ASIAN
-// (Fung/Yuen/Liang/Chu … standen in den CA-Top-300 und landeten anglo).
-const CAN_ASIAN_LAST_ADD = /^(Yu|Chang|Rai|Bains|Chahal|Chu|Sekhon|Fung|Yuen|Johal|Liang|Toor|Chiu|Deol|Ly|Bhullar|Tsang|Hu|Truong|Mak|Woo|Yee|Tse|Luu|Trinh|Phan|Cai|Vo|Vu|Basra|Sran|Bal|Uppal|Purewal|Pannu|Nijjar|Mangat|Hundal|Hayer|Gosal|Garcha|Dhindsa|Atwal|Bassi|Khela|Sohi|Islam|Uddin|Hossain|Saha|Sarkar|Dey|Nath|Jain|Aulakh|Tong|Minhas|Arora|Thind|Huynh|Shen|Song|Cao|Deng|Xie|Zeng|Zheng|Gao|Luo|Tian|Yuan|Pan|Jiang|Du|Ye|Su|Lu|Ding|Ren|Fang|Qin|Xue|Hou|Shao)$/;
+// CAN — AUSBAU: die alte gemischte Liste CAN_ASIAN_LAST_ADD (alles → r2) ist in
+// zwei Ziel-Listen aufgespalten. Zusammen decken sie exakt die alte Menge ab.
+// (a) südasiatisch → r2 (Sikh-Namen Fraser Valley/Surrey + bengalisch + AUSBAU-
+//     Nachlese der CA-Top-Daten: Shaikh (Variante von Sheikh, 962!), Sangha,
+//     Rana, Joshi, Desai, Gandhi, Kahlon, Aujla, Prasad (indo-karibisch:
+//     Persaud), Alam/Hasan (bengalisch), Dsouza (goanisch-indisch)):
+const CAN_SA_LAST_ADD = /^(Rai|Bains|Chahal|Sekhon|Johal|Toor|Deol|Bhullar|Basra|Sran|Bal|Uppal|Purewal|Pannu|Nijjar|Mangat|Hundal|Hayer|Gosal|Garcha|Dhindsa|Atwal|Bassi|Khela|Sohi|Islam|Uddin|Hossain|Saha|Sarkar|Dey|Nath|Jain|Aulakh|Minhas|Arora|Thind|Shaikh|Shaik|Sheik|Persaud|Parmar|Sahota|Sangha|Rana|Joshi|Desai|Gandhi|Kahlon|Aujla|Prasad|Alam|Hasan|Dsouza|D'Souza)$/;
+// (b) ostasiatisch → r3 (kantonesisch/Mandarin/vietnamesisch, ausserhalb
+//     EAST_ASIAN + AUSBAU-Nachlese: Lo/Lai/Tam/Kwan/Chau/Yan/Kwok/Fong/Chin/
+//     Chong/Hui/Yip — HK-kantonesische CA-Topnamen, landeten anglo):
+const CAN_EA_LAST_ADD = /^(Yu|Chang|Chu|Fung|Yuen|Liang|Chiu|Ly|Tsang|Hu|Truong|Mak|Woo|Yee|Tse|Luu|Trinh|Phan|Cai|Vo|Vu|Tong|Huynh|Shen|Song|Cao|Deng|Xie|Zeng|Zheng|Gao|Luo|Tian|Yuan|Pan|Jiang|Du|Ye|Su|Lu|Ding|Ren|Fang|Qin|Xue|Hou|Shao|Lo|Lai|Tam|Kwan|Chau|Yan|Kwok|Fong|Chin|Chong|Hui|Yip)$/;
+// Alte kombinierte Liste bleibt für Doku/Tests exportiert (DEPRECATED, ungenutzt im Build):
+const CAN_ASIAN_LAST_ADD = new RegExp(CAN_SA_LAST_ADD.source.slice(0, -2) + '|' + CAN_EA_LAST_ADD.source.slice(2));
 // RSA: Bantu-Nachnamen, die die Präfix-Heuristik verfehlt (Makhanya = M-a-k,
 // das Muster prüft M+Konsonant; Shabalala/Zuma/Kunene … Top-150 ungeroutet).
 const RSA_ZU_LAST_ADD = /^(Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|Majola|Kekana|Kunene|Modise|Zuma|Mudau|Khanyile|Nhlapo|Simelane|Banda|Malatji|Nyathi|Skosana|Mathe|Mohlala|Kubheka|Thwala|Zondo|Nene|Sibisi|Bhengu|Matlala|Duma|Malinga|Biyela|Magagula|Luthuli|Mogale|Motloung|Mulaudzi|Maphumulo|Madonsela|Mohale|Tau|Madlala|Makhanya|Sibeko|Dhlamini|Ledwaba|Sambo|Mavuso|Thabethe|Miya|Zitha|Makhubela|Magwaza|Mosia|Moloto|Gwala|Myeni|Qwabe|Maake|Maduna|Skhosana|Sibanyoni|Rikhotso|Zama|Moeketsi|Makhubele|Maphosa|Malope|Manana|Kgomo|Kganyago|Lekota|Mailula|Makgoba|Maponya|Masango|Maseko|Masilela|Masondo|Mathonsi|Mayisela|Mazila|Mbeki|Mgidi|Mnguni|Mnisi|Radebe|Ramaphosa|Rikhoto|Selepe|Senosi|Shivambu|Sithebe|Ndlela|Nxumalo|Mthiyane|Msimango|Ngubane|Mashaba|Motsepe|Tembe|Maleka|Makola|Zikhali|Lukhele)$/;
@@ -126,6 +153,41 @@ const RSA_ZU_LAST_ADD = /^(Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|
 const SUI_PT_LAST_ADD = /^(Pires|Lima|Morais|Magalhães|Magalhaes|Henriques|Guerreiro|Salgado|Valente|Vaz|Ramalho|Furtado|Cabral|Camacho|Faria|Gaspar|Leal|Macedo|Maia|Matias|Melo|Mota|Moura|Pacheco|Paiva|Pinheiro|Queiroz|Rebelo|Sequeira|Silveira|Simao|Simão|Vicente|Baptista|Esteves|Figueiredo|Freire|Garcia-?Portug\w*|Loureiro|Louro|Neto|Padrão|Padrao|Peixoto|Resende|Sa|Sá|Salvador|Sampaio|Santana|Torres-?\w+|Varela)$/;
 // RSA: Afrikaans-Nachnamen ausserhalb der bestehenden Liste (Pienaar/Cloete …).
 const RSA_AF_LAST_ADD = /^(Cloete|Booysen|Swart|Pienaar|Pieterse|Pietersen|Beukes|Visser|Groenewald|Basson|Barnardt|Blignaut|Bothma|Breytenbach|Cilliers|De Beer|De Bruyn|De Klerk|De Kock|De Lange|De Wet|Delport|Dreyer|Du Preez|Du Randt|Eloff|Els|Fouche|Fuchs|Geldenhuys|Greyling|Grove|Hattingh|Heunis|Human|Jacobsz|Janse Van Rensburg|Jonker|Kirsten|Koekemoer|Labuschagne|Landman|Le Grange|Liebenberg|Maree|Meintjies|Mostert|Myburgh|Nortje|Odendaal|Oberholzer|Opperman|Pelser|Pienke|Pretorius-?\w*|Raubenheimer|Redelinghuys|Roux|Schutte|Slabbert|Smuts|Stander|Steynberg|Swiegers|Taljaard|Van Rensburg|Venter-?\w*|Verster|Victor|Wilken|Wolmarans)$/;
+
+// ── GRE (AUSBAU D1): 43,9 % der Nachnamen-Ziehmasse war kein Griechisch ──────
+// Griechische Männer-Familiennamen enden praktisch immer auf -s oder -ou
+// (Nominativ -os/-as/-is/-es bzw. eingefrorener Genitiv -ou). Der STRUKTUR-Ban
+// dreht die Beweislast um: statt Fremdes aufzuzählen (die §5.3-Falle), wird
+// alles verworfen, was der griechischen Morphologie nicht folgt. Gegen die
+// VOLLE Datenmasse geprüft (nicht nur Kopf — §5.1): die Nicht-s/-ou-Masse ist
+// zu >99 % albanisch/südasiatisch/türkisch/weiblich/Junk, kein legitimer
+// griechischer Männer-Nachname verliert (Belege METHODIK-AUSBAU §2).
+const GRE_STRUCT_LAST = /^(?!.*(?:s|ou)$).*$/i;
+// -s/-ou-Fremdkörper (Volldurchsicht der 501 Überlebenden; Cavus=Çavuş türkisch,
+// Bains Sikh, Kots/Papadopoylos Artefakte):
+const GRE_FOREIGN_SOU_LAST = /^(Chris|Ilyas|Waqas|Younas|Bains|Jones|Cavus|Kots|Papadopoylos)$/i;
+// Vornamen-als-Nachname, Fortführung der bestehenden GRE-banLast-Liste
+// (Nikos|Dimitris|… bleibt im Build bestehen; hier die -s-Formen, die sie
+// nicht abdeckt). ⚠ Panos/Manos/Stathis/Kosmas/Ilias/Loukas sind AUCH als
+// echte Nachnamen belegt — für Konsistenz mit der bestehenden Liste gebannt,
+// kostet zusammen ~1 % Ziehmasse (METHODIK-AUSBAU §2.3).
+const GRE_GIVEN_LAST = /^(Andreas|Alexandros|Petros|Stelios|Thanasis|Thanassis|Spiros|Spyros|Marios|Aris|Takis|Sakis|Tasos|Tassos|Vaggelis|Athanasios|Theodoros|Kyriakos|Stefanos|Nikolas|Aggelos|Manolis|Manos|Ilias|Loukas|Stathis|Kosmas|Pantelis|Sotiris|Fotis|Panos|Mykonos|Xristos|Mixalis|Stratos|Zisis|Savvas|Vasilios)$/i;
+// Weibliche -ou-Paarformen: die männliche -s/-os-Form steht im Pool daneben
+// (Vlachos→Vlachou, Kontos→Kontou …). NUR gepaarte Fälle — patronymische
+// Männer-Genitive (Georgiou/Nikolaou/Ioannou/Stamou/Palaiologou) bleiben,
+// Grenze dokumentiert METHODIK-AUSBAU §2.2:
+const GRE_FEMALE_OU_LAST = /^(Vlachou|Kontou|Spanou|Roussou|Kritikou|Katsarou|Zervou|Florou|Drakou|Liakou|Nakou|Orfanou|Nomikou|Komninou|Moschou|Kokkinou|Papadatou|Rizou|Manou|Thanou|Exarchou|Kourou)$/i;
+
+// GRE-Vornamen (D1c): dieselbe Struktur-Logik — griechische Männer-Vornamen
+// enden auf -s (Nominativ). Whitelist der belegten Ausnahmen (biblische Formen
+// Emmanouil/Michail/Rafail; Μιχαήλ mit Gewicht 12 in den GR-Daten).
+const GRE_STRUCT_FIRST = /^(?!(?:Emmanouil|Michail|Rafail)$)(?!.*s$).*$/i;
+// -s-Fremdkörper: pakistanisch (Waqas/Abbas/Awais), albanisch (Elvis/Ervis/
+// Fatos/Aleks), anglo/franko (Chris/James/Denis/Nicolas/Harris):
+const GRE_FOREIGN_S_FIRST = /^(Waqas|Abbas|Awais|Anas|Ilyas|Younas|Idris|Chris|James|Denis|Dennis|Nicolas|Nicholas|Harris|Elvis|Ervis|Aleks|Fatos)$/i;
+// Greeklish-Tastatur-Artefakte (w=ω, h=η, mp=μπ, u=υ, gg-Fehler): die korrekte
+// Form steht jeweils mit höherem Gewicht im Pool (Giorgos 73 vs Giwrgos 28):
+const GRE_GREEKLISH_FIRST = /^(Giwrgos|Kwstas|Kwnstantinos|Xrhstos|Giannhs|Mixalhs|Panagiwths|Panagiwtis|Hlias|Mpampis|Stauros|Baggelis|Agelos|Labros)$/i;
 
 // ============================================================================
 // EXPORT — Struktur wie cfg.route: [[regex, ziel], …]; ziel int ODER int[]
@@ -143,7 +205,11 @@ const ROUTE_FIRST = {
           [SUI_SHARED_DE_FR, [0, 1]], [SUI_SHARED_DE_IT, [0, 2]], [SUI_SHARED_ALL, [0, 1, 2]]],
     //   ^ SUI-Default = 0 (Deutschschweiz): unklassifizierte Restmasse der
     //     CH-Daten ist überwiegend alemannisch.
-    CAN: [[CAN_NEW_FIRST, 2], [CAN_QC_FIRST, 1], [CAN_SHARED_FIRST, [0, 1]]],
+    // AUSBAU: r2/r3-Split. Reihenfolge wichtig (erster Treffer gewinnt):
+    // distinkt südasiatisch → 2, Pinyin → 3, HK-westlich → [0,3], Québec → 1,
+    // internationale Restmasse → [0,1,3].
+    CAN: [[CAN_SA_FIRST, 2], [CAN_EA_PINYIN_FIRST, 3], [CAN_EA_WESTERN_FIRST, [0, 3]],
+          [CAN_QC_FIRST, 1], [CAN_SHARED_FIRST, [0, 1, 3]]],
     ESP: [[ESP_BAS_FIRST, 2], [ESP_CAT_FIRST, 1]],
     RSA: [[RSA_ZU_FIRST, 2], [RSA_AF_FIRST, 1]],
     FIN: [[FIN_SV_FIRST, 1], [FIN_SHARED_FIRST, [0, 1]]],
@@ -196,7 +262,13 @@ const BAN_FIRST = {
     // Zulu-Name, liest sich im Spiel aber weiblich → raus; dito Pretty/Portia).
     RSA: [/^(Linda|Pretty|Portia|Precious|Beauty)$/i],
     // EST: banFirst ENTFÄLLT ersatzlos (russische Namen werden jetzt geroutet).
-    EST: []
+    EST: [],
+    // GRE (AUSBAU D1c): ERSETZT das bisherige banFirst aus build-names-v3.js
+    // (Mohamed|…|George|John|Peter|Mike|Maria — alles non-s, vom Struktur-Ban
+    // abgedeckt). Kein Routing: Albaner/Pakistanis in GR haben keine
+    // Motorsport-Region (D1d, Golf-Regel), die Muslim-Minderheit Thrakiens
+    // ebenso wenig — Filter, nicht Region.
+    GRE: [GRE_STRUCT_FIRST, GRE_FOREIGN_S_FIRST, GRE_GREEKLISH_FIRST]
 };
 
 // NEU: Nachnamen-Zusatz-Bans (Mechanik wie banLast, in NEUER Konfiguration
@@ -209,7 +281,9 @@ const BAN_LAST_ADD = {
     BEL: [/^(Bxl|Bruxelles|Marc|Maria|Momo|Man)$/i],
     // weibliche südasiatische Formen (Begum/Bibi nur Frauen, Kaur = Sikh-Frauen)
     GBR: [/^(Begum|Bibi|Kaur)$/i],
-    CAN: [/^(Begum|Bibi|Kaur|Ann|Anne)$/i],   // + Ann/Anne (Daten-Artefakte)
+    // + Ann/Anne/Elizabeth/Dawn (weibl. Daten-Artefakte), Canada/Mac (Junk),
+    //   Abdi (somalisch — keine Region, landete anglo)  [AUSBAU-Nachlese]
+    CAN: [/^(Begum|Bibi|Kaur|Ann|Anne|Elizabeth|Dawn|Canada|Mac|Abdi)$/i],
     // SA-indische Gemeinschaft (Durban) ohne Region (analog Golf-Regel) +
     // Junk/Vornamen-als-Nachname der ZA-Daten
     RSA: [/^(Naidoo|Govender|Pillay|Moodley|Chetty|Padayachee|Maharaj)$/i,
@@ -226,7 +300,11 @@ const BAN_LAST_ADD = {
     // Ademi/Selimi sind albanisch UND arabisch (MAR: Ismaili 2546, Hasani 1374 = echte Namen).
     SUI: [/^(Hoti|Zeqiri|Rexhepi|Ademi|Selimi|Osmani|Shabani|Bytyci|Bytyçi|Halimi|Kastrati|Elezi|Ismaili|Salihu|Hasani|Emini|Zymeri|Abazi|Krasniqi-?\w*|Jashari|Kryeziu|Limani|Musliu|Ramadani-?\w*|Rushiti|Sadiku|Sejdiu|Shaqiri|Veseli|Thaqi|Maliqi|Idrizi|Kabashi|Ahmetaj|Rexhaj)$/i,
           // eritreisch/äthiopische Namen (CH-Daten, keine Region)
-          /^(Kidane|Tesfay|Tesfaye|Berhane|Gebre\w*|Haile\w*|Weldu|Yohannes|Tewelde)$/i]
+          /^(Kidane|Tesfay|Tesfaye|Berhane|Gebre\w*|Haile\w*|Weldu|Yohannes|Tewelde)$/i],
+    // GRE (AUSBAU D1): wird an das bestehende banLast ANGEHÄNGT (NORDIC_FOREIGN,
+    // GREEK_FEMALE, IBERIAN_PT, HISPANIC + Nikos|Dimitris|…-Liste bleiben).
+    // Wirkung: 43,9 % → ~1 % Fremdmasse, Pool bleibt gesund (REPORT-AUSBAU §1).
+    GRE: [GRE_STRUCT_LAST, GRE_FOREIGN_SOU_LAST, GRE_GIVEN_LAST, GRE_FEMALE_OU_LAST]
 };
 
 // Nachnamen-Routen ERGÄNZEN (an cfg.route anfügen; GER hatte bisher keine route).
@@ -234,21 +312,36 @@ const BAN_LAST_ADD = {
 const ROUTE_LAST_ADD = {
     GER: [[GER_TURKISH_LAST, 1]],
     BEL: [[BEL_FL_LAST_ADD, 1]],
-    CAN: [[CAN_ASIAN_LAST_ADD, 2]],
+    // AUSBAU: gesplittet (alt: [[CAN_ASIAN_LAST_ADD, 2]])
+    CAN: [[CAN_SA_LAST_ADD, 2], [CAN_EA_LAST_ADD, 3]],
     RSA: [[RSA_AF_LAST_ADD, 1], [RSA_ZU_LAST_ADD, 2]],
     SUI: [[SUI_PT_LAST_ADD, 3]],
     // chinesische Nachnamen ausserhalb der bestehenden MAS-Route („Roslan Cheong")
     MAS: [[/^(Cheong|Teh|Chen|Yow|Chng|Chuah|Khaw|Hui|Beh|Peng|Siew|Yow|Chng)$/, 1]]
 };
 
+// AUSBAU — ⛳ PFLICHT-BUILD-EDIT (a): CFG.CAN.route in build-names-v3.js hat als
+// zweiten Eintrag den KOMBINIERTEN Regex [SOUTH_ASIAN|EAST_ASIAN → 2]. Da der
+// erste Treffer gewinnt, wäre der Split oben wirkungslos, solange dieser Eintrag
+// steht. Opus ersetzt ihn durch die zwei getrennten Einträge (SOUTH_ASIAN/
+// EAST_ASIAN sind die Build-Konstanten):
+//   alt:  [new RegExp(SOUTH_ASIAN.source+'|'+EAST_ASIAN.source,'i'), 2]
+//   neu:  [SOUTH_ASIAN, 2], [EAST_ASIAN, 3]
+// Dokumentiert als Datenobjekt für den Regressionscheck:
+const ROUTE_LAST_REPLACE_NOTE = { CAN: 'CFG.route Eintrag 2 splitten: [SOUTH_ASIAN,2],[EAST_ASIAN,3]' };
+
 module.exports = {
-    ROUTE_FIRST, BAN_FIRST, ROUTE_LAST_ADD, BAN_LAST_ADD,
+    ROUTE_FIRST, BAN_FIRST, ROUTE_LAST_ADD, BAN_LAST_ADD, ROUTE_LAST_REPLACE_NOTE,
     BEL_FL_LAST_ADD, CAN_ASIAN_LAST_ADD, RSA_ZU_LAST_ADD, RSA_AF_LAST_ADD, SUI_PT_LAST_ADD,
+    // AUSBAU (CAN-Split + GRE):
+    CAN_SA_LAST_ADD, CAN_EA_LAST_ADD, CAN_SA_FIRST, CAN_EA_PINYIN_FIRST, CAN_EA_WESTERN_FIRST,
+    GRE_STRUCT_LAST, GRE_FOREIGN_SOU_LAST, GRE_GIVEN_LAST, GRE_FEMALE_OU_LAST,
+    GRE_STRUCT_FIRST, GRE_FOREIGN_S_FIRST, GRE_GREEKLISH_FIRST,
     // Für Tests/Doku:
     GER_TURKISH_FIRST, GER_TURKISH_LAST, FRA_ARAB_WAF_FIRST, GBR_SOUTH_ASIAN_FIRST,
     BEL_FR_FIRST, BEL_FL_FIRST, BEL_SHARED_FIRST,
     SUI_FR_FIRST, SUI_IT_FIRST, SUI_PT_FIRST, SUI_SHARED_DE_FR, SUI_SHARED_DE_IT, SUI_SHARED_ALL,
-    CAN_QC_FIRST, CAN_NEW_FIRST, CAN_SHARED_FIRST,
+    CAN_QC_FIRST, CAN_SHARED_FIRST,
     ESP_CAT_FIRST, ESP_BAS_FIRST, RSA_AF_FIRST, RSA_ZU_FIRST,
     FIN_SV_FIRST, FIN_SHARED_FIRST, IND_SOUTH_FIRST, IND_SHARED_FIRST,
     MAS_MALAY_FIRST, MAS_CN_FIRST, EST_RU_FIRST

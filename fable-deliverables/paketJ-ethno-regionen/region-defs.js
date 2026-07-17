@@ -6,11 +6,30 @@
 //      bleibt unangetastet — Anhängen im Build wie NEW_POOLS/KNOWLEDGE, ODER
 //      direkt in curated-base-v2.js §GER; beides funktioniert, Build-Anhang ist
 //      idempotenter). regions[0].w von 1 auf 0.96 senken.
+//      [ERLEDIGT v0.9.14.80 — build-names-v3.js Z.371 pusht NEW_REGIONS generisch,
+//       CAN r3 (AUSBAU) läuft über dieselbe Schleife automatisch mit.]
 //   2. WEIGHT_PROPOSALS: nur RSA + IND sind ÄNDERUNGEN, Rest ist bestätigter
-//      Ist-Stand (Beleg je Zeile; Langfassung METHODIK §4).
+//      Ist-Stand (Beleg je Zeile; Langfassung METHODIK §4). [CAN jetzt 'change' — AUSBAU]
 //   3. EST: banFirst ersatzlos streichen (region-routes.js BAN_FIRST.EST = []),
 //      Route EST_RU_FIRST → 1 übernimmt die Trennung. KEIN minYear (die
 //      russischsprachige Minderheit ist alteingesessen, kein Einwanderungs-Gate).
+//
+// EINBAU AUSBAU 2026-07-17 (Opus) — DREI Build-Edits nötig, sonst wirkungslos:
+//   (a) CFG.CAN.route: kombinierten Eintrag [SOUTH_ASIAN|EAST_ASIAN → 2]
+//       durch [SOUTH_ASIAN, 2], [EAST_ASIAN, 3] ersetzen (region-routes.js
+//       ROUTE_LAST_REPLACE_NOTE — erster Treffer gewinnt, sonst frisst der
+//       Kombi-Regex alles nach r2).
+//   (b) OPS.CAN.move.last: 'Lau':2,'Cheng':2,'Chung':2 → jeweils :3 ändern
+//       (Saini/Randhawa/Mann bleiben :2). Moves gewinnen über Routen.
+//   (c) NEUE Wiring-Schleife für REGION_PATCHES (nach der NEW_REGIONS-Schleife,
+//       vor WEIGHT_PROPOSALS):
+//         for (const [nat, patches] of Object.entries(JDEFS.REGION_PATCHES || {}))
+//             for (const [ri, patch] of Object.entries(patches))
+//                 Object.assign(POOLS[nat].regions[ri], deepCopy(patch));
+//   Reihenfolge im Build: NEW_REGIONS-push → REGION_PATCHES → WEIGHT_PROPOSALS
+//   (der Längen-Check der Gewichts-Schleife verlangt 4 CAN-Regionen).
+//   GRE braucht KEINEN Build-Edit — BAN_FIRST.GRE/BAN_LAST_ADD.GRE laufen über
+//   die bestehende Paket-J-Verdrahtung.
 // ============================================================================
 'use strict';
 
@@ -27,7 +46,32 @@
 // Anzeigeform: türkische Orthographie (İ/ı/ğ/ş) NUR wo die Daten sie belegen —
 // die DE-Daten schreiben überwiegend deutsch-tastaturiert (Yilmaz 4724 vs.
 // Yılmaz 605) → Kuration folgt der häufigeren Form, GER steht in NO_ACCENT_NATIONS.
+// ── CAN Region 3: ostasiatisch-kanadisch (AUSBAU D2 — Split von r2) ─────────
+// w: 0.05        — Chinesisch (4,7 %) + Koreanisch/Vietnamesisch (~1,5 %) der
+//                  Bevölkerung (Census 2021), Motorsport-Anker: Samantha Tan
+//                  (chinesisch-kanadische GT-Fahrerin/Teamgründerin ST Racing).
+// minYear: 1990  — Gemeinden seit dem Eisenbahnbau (1880er), aber Head Tax 1885
+//                  + Exclusion Act 1923–47 hielten sie klein; Motorsport-fähige
+//                  Mittelschicht in Breite erst mit Punktesystem 1967 + Hongkong-
+//                  Welle der 1970er/80er → deren in Kanada geborene Kinder
+//                  debütieren ab ~1990 (Korrektur des zu späten minYear 2000).
+// Vornamen: westliche Rufnamen sind die Daten-Realität der 2. Generation
+// (das 0-%-Problem der Pinyin-Namen ist KEIN Datenfehler); der kuratierte Kopf
+// unten hält zusätzlich eine kleine 1,5.-Generation-Präsenz (Wei/Ming/Minh/Jae).
 const NEW_REGIONS = {
+    CAN: {
+        w: 0.05, minYear: 1990, // ostasiatisch-kanadisch (r3)
+        first: [
+            ['Kevin', 3], ['Jason', 3], ['Eric', 3], ['Andrew', 2], ['Brian', 2], ['Victor', 2],
+            ['Ryan', 2], ['Justin', 2], ['Brandon', 2], ['Kelvin', 2], ['Alvin', 1], ['Wilson', 1],
+            ['Wei', 1], ['Jun', 1], ['Ming', 1], ['Kai', 1], ['Minh', 1], ['Jae', 1]
+        ],
+        last: [
+            ['Wong', 3], ['Chan', 3], ['Lee', 3], ['Li', 3], ['Chen', 2], ['Wang', 2],
+            ['Zhang', 2], ['Liu', 2], ['Cheung', 2], ['Lam', 2], ['Nguyen', 2], ['Tran', 2],
+            ['Kim', 2], ['Park', 1], ['Tsang', 1], ['Yuen', 1]
+        ]
+    },
     GER: {
         w: 0.04, minYear: 1985, // türkisch-deutsch
         first: [
@@ -49,6 +93,26 @@ const NEW_REGIONS = {
     }
 };
 
+// ── AUSBAU: Patches auf BESTEHENDE Regionen (Wiring-Schleife s. Kopf, Edit c) ──
+// CAN r2 wird rein südasiatisch: minYear 2000→1990 (Sikh-Gemeinde BC seit 1905,
+// Continuous-Journey-Sperre 1908–47 hielt sie klein; Punktesystem 1967 +
+// Prosperität der 1970er/80er (Transport/Handel Surrey/Brampton) → in Kanada
+// geborene Generation debütiert ab ~1990). Kuratierte first bleiben unverändert
+// (Ryan/Justin/Kevin/Daniel/Arjun/Raj/Vikram/Nikhil — 2.-Generation-Mix ist
+// datenreal); last verliert die ostasiatischen Köpfe an r3 (Wong/Chan/Lee/
+// Nguyen/Kim), Rest unverändert.
+const REGION_PATCHES = {
+    CAN: {
+        2: {
+            minYear: 1990,
+            last: [
+                ['Singh', 4], ['Patel', 4], ['Gill', 3], ['Sharma', 3], ['Khan', 3], ['Sandhu', 3],
+                ['Sidhu', 2], ['Dhaliwal', 2], ['Brar', 2]
+            ]
+        }
+    }
+};
+
 // ── D3: Regionsgewichte — Vorschlag + Beleg (Kurzform; METHODIK §4 = Langform) ──
 // action: 'keep' = Ist-Stand bestätigt | 'change' = Änderung vorgeschlagen
 const WEIGHT_PROPOSALS = {
@@ -61,9 +125,14 @@ const WEIGHT_PROPOSALS = {
         beleg: 'Romandie+Tessin (42 %) bewusst über Bevölkerung (~31 %): 6 der ~10 CH-F1-Fahrer sind ' +
                'romand/tessinisch (Regazzoni TI, Moser TI, Siffert FR, de Graffenried VD, Buemi VD, Grosjean GE) ' +
                'gegen Surer BS, Foitek ZH. R3 portugiesisch 0.06 ≈ Bevölkerungsanteil (~3 %) ×2 — vertretbar, Diaspora jung.' },
-    CAN: { action: 'keep', w: [0.55, 0.33, 0.12],
+    // AUSBAU: 'keep' [0.55,0.33,0.12] → 'change' (r2-Split). r0/r1 unangetastet;
+    // r2 0.12 wird 0.07 südasiatisch + 0.05 ostasiatisch (Census 2021: 2,6 Mio.
+    // Südasiaten (7,1 %) vs. 1,7 Mio. Chinesen + Koreaner/Vietnamesen (~6 %);
+    // Motorsport neutral bis leicht ostasiatisch (Samantha Tan) → Census-Ratio).
+    CAN: { action: 'change', w: [0.55, 0.33, 0.07, 0.05], wAlt: [0.55, 0.33, 0.12],
         beleg: 'Québec 33 % > Bevölkerung 22 % ist motorsport-belegt: Villeneuve×2, Carpentier, Tagliani = ' +
-               'Mehrheit der CAN-F1/Champcar-Fahrer; anglo: Stroll (Montréal, anglophon), Latifi (Toronto).' },
+               'Mehrheit der CAN-F1/Champcar-Fahrer; anglo: Stroll (Montréal, anglophon), Latifi (Toronto). ' +
+               'AUSBAU: r2-Split 0.07/0.05 nach Census-Verhältnis Südasiaten:Ostasiaten ≈ 7:6.' },
     ESP: { action: 'keep', w: [0.80, 0.13, 0.07],
         beleg: 'Katalonien 13 % ≈ Bevölkerung (16 %), Motorsport-Kern Barcelona (Gené×2, de la Rosa, Alguersuari) ' +
                'stützt eher mehr; Baskenland 7 % ≥ Bevölkerung (5 %) — ohne prominenten Fahrer-Anker, ⚠ Setzung ok.' },
@@ -97,4 +166,4 @@ const WEIGHT_PROPOSALS = {
                'bisher per banFirst unterdrückt statt getrennt (D2-Kernfall).' }
 };
 
-module.exports = { NEW_REGIONS, WEIGHT_PROPOSALS };
+module.exports = { NEW_REGIONS, WEIGHT_PROPOSALS, REGION_PATCHES };

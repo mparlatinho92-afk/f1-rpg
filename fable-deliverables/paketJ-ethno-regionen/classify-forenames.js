@@ -43,6 +43,8 @@ const TURKISH = /^(Yilmaz|Yılmaz|Kaya|Demir|Sahin|Şahin|Celik|Çelik|Yildiz|Y�
 const BALKAN = /(ić|ic|ovic|ović|evic|ević|inac|adzic|adžić|oski|evski|ovski|iu|escu|eanu|oglu|oğlu)$|^(Krasniqi|Gashi|Berisha|Shala|Hoxha|Kelmendi|Morina|Bytyqi|Zeka|Rama|Dervishi|Marku|Gjoka|Leka|Prela)$/i;
 const SLAVIC_EAST = /(ov|ev|in|yn|enko|chuk|shvili|adze|yan|ian)$/;
 const SLAVIC_NARROW = /(ov|ev|enko|chuk|shvili|adze)$/;
+// AUSBAU: GRE im Scope (Kopie build-names-v3.js Stand v0.9.14.81)
+const GREEK_FEMALE = /(opoulou|poulou|idou|iadou|adou|aki)$/i;
 const IBERIAN_PT = /^(Silva|Santos|Ferreira|Pereira|Oliveira|Costa|Rodrigues|Martins|Sousa|Souza|Fernandes|Gomes|Lopes|Ribeiro|Gonçalves|Goncalves|Marques|Carvalho|Almeida|Pinto|Alves|Dias|Teixeira|Correia|Mendes|Moreira|Soares|Da Silva|Dos Santos|De Sousa|Nunes|Freitas|Cardoso|Rocha|Barbosa|Cruz|Neves|Coelho|Cunha|Vieira|Monteiro|Batista|Fonseca|Machado|Da Costa|Reis|Antunes|Matos|Fereira|Miranda|Nogueira|Ramos|Tavares|Azevedo|Barros|Borges|Brito|Cavalcante|Castro|Duarte|Farias|Andrade|Araujo|Araújo|Assis|Aguiar|Abreu|Amorim|Anjos|Amaral)$/i;
 const HISPANIC = /^(Garcia|García|Rodriguez|Rodríguez|Martinez|Martínez|Lopez|López|Gonzalez|González|Hernandez|Hernández|Perez|Pérez|Sanchez|Sánchez|Ramirez|Ramírez|Torres|Flores|Rivera|Gomez|Gómez|Diaz|Díaz|Reyes|Morales|Ortiz|Gutierrez|Gutiérrez|Chavez|Chávez|Ramos|Ruiz|Mendoza|Alvarez|Álvarez|Castillo|Jimenez|Jiménez|Vasquez|Vásquez|Vazquez|Vázquez|Moreno|Herrera|Medina|Aguilar|Vargas|Guzman|Guzmán|Mendez|Méndez|Munoz|Muñoz|Rojas|Salazar|Contreras|Suarez|Suárez|Delgado|Pena|Peña|Rios|Ríos|Cabrera|Campos|Vega|Fuentes|Carrillo|Leon|León|Santiago|Dominguez|Domínguez|Maldonado|Espinoza|Valdez|Juarez|Juárez|Molina|Acosta|Ayala|Zamora|Villarreal|Trevino|Treviño|Cortez|Cortés|Soto|Serrano|Solis|Solís|Rosales|Estrada|Zuniga|Zúñiga|Nunez|Núñez|Ochoa|Cardenas|Cárdenas|Navarro|Padilla|Barrera|Camacho|Cervantes|Marquez|Márquez|Escobar|Galvan|Galván|Velasquez|Velásquez|Velazquez|Velázquez|Ibarra|Cisneros|Bautista|Meza|Villanueva|Orozco|Avila|Ávila|Robles|Sandoval|Bravo|Lara|Cano|Quintero|Bermudez|Bermúdez|Osorio|Valencia|Franco|Guerrero|Paredes|Bustamante|Ponce|Salinas|Arroyo|Montoya|Palacios|Zapata|Miranda|Mora|Rincon|Rincón|Uribe|Restrepo|Ospina|Giraldo|Cardona|Correa|Betancur|Zuluaga|Arango|Bedoya|Agudelo|Henao|Sierra|Villa|Gallego|Montes)$/i;
 const NORDIC_FOREIGN = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + TURKISH.source + '|' + BALKAN.source, 'i');
@@ -63,7 +65,18 @@ const CFG = {
     FIN: { iso:'FI', cls:'mid', route:[[/(berg|ström|strom|holm|qvist|kvist|lund|gren|blad|felt|man|sson|stedt|näs|vik|by|backa|fors)$/,1]], banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     IND: { iso:'IN', cls:'small', route:[[/^(Reddy|Nair|Menon|Rao|Iyer|Iyengar|Krishnan|Pillai|Naidu|Naicker|Gowda|Shetty|Hegde|Kamath|Bhat|Nayak|Acharya|Adiga|Kulkarni|Deshpande|Joshi|Patil|Chari|Raman|Rajan|Srinivasan|Subramanian|Subramaniam|Venkatesh|Ramachandran|Balasubramanian|Natarajan|Sundaram|Swamy|Murthy|Murty|Chandran|Menen|Varma|Warrier|Kurup|Panicker|Namboothiri)$/,1]] },
     MAS: { iso:'MY', cls:'small', route:[[/^(Tan|Lee|Lim|Wong|Ng|Chan|Chong|Chin|Ong|Yap|Yong|Teo|Goh|Ho|Chua|Khoo|Toh|Sim|Foo|Gan|Low|Loh|Koh|Tay|Seah|Chew|Cheng|Chia|Yeo|Ang|Oh|Soh|Neo|Kwek|Leong|Liew|Ling|Loke|Mah|Mok|Pang|Phang|Poh|Quah|See|Seow|Sia|Siow|Soo|Tee|Ting|Tong|Wan[g]?|Wee|Yam|Yeap|Yen|Yip|Chai|Chang|Chee|Cheah|Cheok|Chiam|Chiew|Chik|Choo|Chow|Choy|Chu|Chung|Eng|Fong|Fung|Gooi|Heng|Hii|Hoo|Kam|Kang|Kee|Khaw|Khor|Kong|Koo|Kuan|Kwan|Lai|Lam|Lau|Law|Leow|Loo|Lua|Lye|Ma|Nga|Ngu|Oon|Ooi|Ow|Pua|Puah|Saw|Sng|Soong|Su|Sua|Tam|Tang|Tham|Thoo|Tiong|Voon|Wu|Yau|Yew|Yii|Yu|Yuen)$/,1]], banLast:[SOUTH_ASIAN] },
-    EST: { iso:'EE', cls:'small', route:[[/(ov|ev|in|yn|enko|chuk)$|^(Ivanov|Smirnov|Petrov|Kuznetsov|Popov|Volkov|Sokolov|Nikitin|Orlov|Fjodorov|Fyodorov|Vassiljev|Vasiljev|Aleksejev|Andrejev|Sergejev|Mihhailov|Pavlov|Bogdanov|Stepanov|Semjonov|Tarassov|Kolesnik)/,1]], banLast:[/(ova|eva|ina|yna|aya)$/i], banFirst:[/^(Aleksandr|Sergei|Andrei|Dmitri|Aleksei|Vladimir|Igor|Roman|Oleg|Artur|Maksim|Jevgeni|Pavel|Anton|Nikolai|Aleksander|Sander)$/] }
+    EST: { iso:'EE', cls:'small', route:[[/(ov|ev|in|yn|enko|chuk)$|^(Ivanov|Smirnov|Petrov|Kuznetsov|Popov|Volkov|Sokolov|Nikitin|Orlov|Fjodorov|Fyodorov|Vassiljev|Vasiljev|Aleksejev|Andrejev|Sergejev|Mihhailov|Pavlov|Bogdanov|Stepanov|Semjonov|Tarassov|Kolesnik)/,1]], banLast:[/(ova|eva|ina|yna|aya)$/i], banFirst:[/^(Aleksandr|Sergei|Andrei|Dmitri|Aleksei|Vladimir|Igor|Roman|Oleg|Artur|Maksim|Jevgeni|Pavel|Anton|Nikolai|Aleksander|Sander)$/] },
+    // AUSBAU: GRE (Kopie build-names-v3.js v0.9.14.81 — 'old' = Live-Stand;
+    // 'new' zieht BAN_FIRST.GRE/BAN_LAST_ADD.GRE aus region-routes.js).
+    GRE: { iso:'GR', cls:'mid', banLast:[NORDIC_FOREIGN,GREEK_FEMALE,IBERIAN_PT,HISPANIC,/^(Papa|Mustafa|Ahmet|Mehmet|Hasan|Osman|Hussein|Ali Osman|Huseyin|Hüseyin|Ismail|Ramadan|Nikos|Dimitris|Giorgos|Kostas|Giannis|Christos|Vasilis|Vassilis|Panagiotis|Stavros|Michalis|Antonis|Georgios|Konstantinos|Dimitrios|Ioannis|Nikolaos|George|Christo)$/i], banFirst:[/^(Mohamed|Mohammed|Muhammad|Ali|Ahmed|Ahmad|Hassan|Hussein|Omar|George|John|Peter|Mike|Maria)$/i] }
+};
+
+// AUSBAU: GRE-Pool-Skelett (Kopie build-names-v3.js NEW_POOLS.GRE — GRE steht
+// nicht in curated-base-v2.js, der Build hängt den Pool selbst ein).
+const POOL_EXTRA = {
+    GRE: { regions: [ { w: 1,
+        first: [['Giorgos',5],['Dimitris',5],['Nikos',5],['Kostas',4],['Giannis',4],['Panagiotis',4],['Vassilis',3],['Christos',3],['Alexandros',3],['Stavros',2],['Michalis',3],['Thanasis',2],['Spyros',2],['Antonis',3]],
+        last:  [['Papadopoulos',4],['Papadakis',3],['Oikonomou',3],['Georgiou',3],['Dimitriou',3],['Nikolaou',3],['Vlachos',2],['Makris',2],['Alexiou',2]] } ] }
 };
 
 // ── OPS-Kopie (nur Scope; drops/moves wirken in ALT und NEU identisch) ───────
@@ -86,7 +99,8 @@ const OPS = {
     IND: { drop: { first: ['Mohd'], last: ['Kumari'] } },
     MAS: { drop: { first: ['Mohd','Muhd','Mohamad','Muhamad','Abdul','Mohammad','Wan','Tan','Lee'], last: ['Mohd','Raj'] }, move: { last: { 'Yee':1 } } },
     EST: { drop: { first: ['Alex'], last: ['Ivanova','Smirnova','Petrova','Kuznetsova','Vassiljeva','Pavlova','Olen','Kadri','Kristi'] },
-           move: { first: { 'Denis':1,'Viktor':1 }, last: { 'Hein':0 } } }
+           move: { first: { 'Denis':1,'Viktor':1 }, last: { 'Hein':0 } } },
+    GRE: { drop: { first: ['Kostas Alt'], last: ['Ali Khan'] } }
 };
 const SCOPE = Object.keys(CFG);
 
@@ -106,9 +120,16 @@ const surBy = readAgg('sur_agg.csv');
 const deep = o => JSON.parse(JSON.stringify(o));
 
 // Kuratierte Pools: first-Fenster flachlegen (Union, max Gewicht)
-function flatPool(nat, withGerR1) {
-    const pool = deep(BASE.NAME_POOLS_BY_NATION[nat]);
-    if (nat === 'GER' && withGerR1) { pool.regions[0].w = 0.96; pool.regions.push(deep(RD.NEW_REGIONS.GER)); }
+function flatPool(nat, withNew) {
+    const pool = deep(BASE.NAME_POOLS_BY_NATION[nat] || POOL_EXTRA[nat]);
+    if (nat === 'GER' && withNew) { pool.regions[0].w = 0.96; pool.regions.push(deep(RD.NEW_REGIONS.GER)); }
+    // AUSBAU: CAN-Split — emuliert NEW_REGIONS.CAN (push r3) + REGION_PATCHES
+    // (r2 südasiatisch, minYear 1990) + WEIGHT_PROPOSALS.CAN (0.55/0.33/0.07/0.05)
+    if (nat === 'CAN' && withNew) {
+        pool.regions.push(deep(RD.NEW_REGIONS.CAN));
+        Object.assign(pool.regions[2], deep(RD.REGION_PATCHES.CAN[2]));
+        RD.WEIGHT_PROPOSALS.CAN.w.forEach((w, i) => { pool.regions[i].w = w; });
+    }
     for (const r of pool.regions) {
         if (r.first && !Array.isArray(r.first)) {
             const merged = new Map();
@@ -141,11 +162,18 @@ function build(nat, mode) {
         if (mode === 'new' && kind === 'last' && RR.BAN_LAST_ADD[nat]) bans = bans.concat(RR.BAN_LAST_ADD[nat]);
         let drops = new Set((ops.drop && ops.drop[kind]) || []);
         if (mode === 'new' && nat === 'GER' && kind === 'first') drops = new Set(); // Ali wird geroutet, nicht gedroppt
-        const moves = (ops.move && ops.move[kind]) || {};
+        let moves = (ops.move && ops.move[kind]) || {};
+        // AUSBAU: emuliert Build-Edit (b) — ostasiatische Moves r2 → r3
+        if (mode === 'new' && nat === 'CAN' && kind === 'last')
+            moves = Object.assign({}, moves, { Lau: 3, Cheng: 3, Chung: 3 });
 
         let routes;
         if (kind === 'last') routes = (cfg.route || []).concat(mode === 'new' ? (RR.ROUTE_LAST_ADD[nat] || []) : []);
         else routes = mode === 'new' ? (RR.ROUTE_FIRST[nat] || []) : (cfg.route || []); // ALT: Nachnamen-Regexe auf Vornamen (der Ist-Bug)
+        // AUSBAU: emuliert Build-Edit (a) — kombinierten CAN-Eintrag [SA|EA → 2]
+        // durch getrennte Einträge ersetzen (erster Treffer gewinnt!)
+        if (mode === 'new' && nat === 'CAN' && kind === 'last')
+            routes = [cfg.route[0], [SOUTH_ASIAN, 2], [EAST_ASIAN, 3]].concat(RR.ROUTE_LAST_ADD.CAN);
 
         const merged = new Map();
         for (let [name, count] of raw) {
@@ -244,9 +272,9 @@ const REGION_LABELS = {
     GBR: ['britisch', 'südasiatisch (1995+)'], GER: ['deutsch', 'türkisch-dt. (1985+) NEU'],
     FRA: ['französisch', 'maghreb/westafr. (1995+)'], ESP: ['kastilisch', 'katalanisch', 'baskisch'],
     BEL: ['wallonisch/frankophon', 'flämisch'], SUI: ['Deutschschweiz', 'Romandie', 'Tessin', 'portugiesisch (2000+)'],
-    CAN: ['anglophon', 'Québec', 'Neukanadier (2000+)'], RSA: ['anglophon', 'Afrikaans', 'afrikanisch (1995+)'],
+    CAN: ['anglophon', 'Québec', 'südasiat. (1990+)', 'ostasiat. (1990+) NEU'], RSA: ['anglophon', 'Afrikaans', 'afrikanisch (1995+)'],
     FIN: ['finnisch', 'finnlandschwedisch'], IND: ['Nord', 'Süd'], MAS: ['malaiisch', 'chinesisch-malays.'],
-    EST: ['estnisch', 'russischsprachig']
+    EST: ['estnisch', 'russischsprachig'], GRE: ['griechisch']
 };
 for (const nat of SCOPE) {
     const o = results[nat].old.pool, n = results[nat].neu.pool;
@@ -255,6 +283,54 @@ for (const nat of SCOPE) {
         const eo = ro ? eff(ro.first) : 0, en = eff(rn.first);
         const po = ro ? ro.first.length : 0, pn = rn.first.length;
         console.log(`${nat.padEnd(7)} r${i} ${String(REGION_LABELS[nat][i] || '').padEnd(24)} ${String(eo).padStart(6)} ${String(en).padStart(7)} ${String(po).padStart(8)} ${String(pn).padStart(7)}`);
+    }
+}
+
+// ── AUSBAU D1/D2-Messung: Klassen-Ziehmasse (Pool+Tails vereint, „1 von N") ──
+console.log('\n== AUSBAU: GRE-Nachnamen-Klassen (Ziehmasse ALT → NEU) ==');
+const GRE_CLS = [
+    ['griechisch männl. (-s/-ou)', n => /(s|ou)$/i.test(n) && !RR.GRE_FOREIGN_SOU_LAST.test(n) && !RR.GRE_GIVEN_LAST.test(n) && !RR.GRE_FEMALE_OU_LAST.test(n)],
+    ['weibl. -ou-Paarform', n => RR.GRE_FEMALE_OU_LAST.test(n)],
+    ['Vorname-als-Nachname (-s)', n => RR.GRE_GIVEN_LAST.test(n)],
+    ['fremd/Junk (-s/-ou)', n => RR.GRE_FOREIGN_SOU_LAST.test(n)],
+    ['nicht -s/-ou (alb./südasiat./türk./weibl./Junk)', n => !/(s|ou)$/i.test(n)]
+];
+for (const mode of ['old', 'neu']) {
+    const arr = results.GRE[mode].pool.regions[0].last;
+    const tot = arr.reduce((s, [, w]) => s + w, 0);
+    const parts = GRE_CLS.map(([label, fn]) => {
+        const m = arr.filter(([n]) => fn(n)).reduce((s, [, w]) => s + w, 0);
+        return `${label}: ${(100 * m / tot).toFixed(1)}%${m ? ` (1 von ${Math.round(tot / m)})` : ''}`;
+    });
+    console.log(`${mode === 'old' ? 'ALT' : 'NEU'} (${arr.length} Namen, eff ${eff(arr)}): ${parts.join(' · ')}`);
+}
+console.log('\n== AUSBAU: CAN r2/r3 — „Sandeep Tsang"-Wahrscheinlichkeit ==');
+{
+    // Mess-Regex sauber verankert (^…$) — unverankerte Fragmente würden
+    // Substrings matchen („Kelly" ⊃ „Ly", „Hunter" ⊃ „Hu") und die Messung verzerren.
+    const SA_F = RR.CAN_SA_FIRST,
+          EA_L = new RegExp('^(' + EAST_ASIAN.source.slice(2, -2) + '|' + RR.CAN_EA_LAST_ADD.source.slice(2, -2) + '|Lau|Cheng|Chung)$', 'i');
+    for (const mode of ['old', 'neu']) {
+        const regs = results.CAN[mode].pool.regions;
+        let p = 0;
+        for (let i = 0; i < regs.length; i++) {
+            const f = regs[i].first, l = regs[i].last;
+            const ft = f.reduce((s, [, w]) => s + w, 0), lt = l.reduce((s, [, w]) => s + w, 0);
+            if (!ft || !lt) continue;
+            const sa = f.filter(([n]) => SA_F.test(n)).reduce((s, [, w]) => s + w, 0) / ft;
+            const ea = l.filter(([n]) => EA_L.test(n)).reduce((s, [, w]) => s + w, 0) / lt;
+            p += regs[i].w * sa * ea;
+        }
+        console.log(`${mode === 'old' ? 'ALT' : 'NEU'}: P(südasiat. Vorname × ostasiat. Nachname) = ${(100 * p).toFixed(2)} % aller CAN-Fahrer${p > 0 ? ' = 1 von ' + Math.round(1 / p) : ''}`);
+        if (process.argv.includes('--dbg2')) {
+            const regs2 = results.CAN[mode].pool.regions;
+            regs2.forEach((r, i) => {
+                const ft = r.first.reduce((s, [, w]) => s + w, 0), lt = r.last.reduce((s, [, w]) => s + w, 0);
+                const saN = r.first.filter(([n]) => SA_F.test(n)), eaN = r.last.filter(([n]) => EA_L.test(n));
+                const sa = saN.reduce((s, [, w]) => s + w, 0) / (ft || 1), ea = eaN.reduce((s, [, w]) => s + w, 0) / (lt || 1);
+                console.log(` ${mode} r${i}: w=${r.w} saF=${(100 * sa).toFixed(1)}% [${saN.slice(0, 8).map(x => x[0] + ':' + x[1]).join(',')}] eaL=${(100 * ea).toFixed(1)}% [${eaN.slice(0, 8).map(x => x[0] + ':' + x[1]).join(',')}]`);
+            });
+        }
     }
 }
 
@@ -293,7 +369,16 @@ const PROBES = [
     ['ESP', 'Jordi', 'Etxeberria', false], ['ESP', 'Mikel', 'Puig', false], ['ESP', 'Jordi', 'Puig', true],
     ['FRA', 'Matthias', 'Depardieu', false], ['FRA', 'Mohamed', 'Martin', false], ['FRA', 'Mohamed', 'Benali', true],
     ['GBR', 'Mohammed', 'Smith', false], ['GBR', 'Mohammed', 'Khan', true],
-    ['EST', 'Sergei', 'Tamm', false], ['EST', 'Sergei', 'Ivanov', true]
+    ['EST', 'Sergei', 'Tamm', false], ['EST', 'Sergei', 'Ivanov', true],
+    // AUSBAU (BRIEF-AUSBAU §7 Prüfstein):
+    ['GRE', 'Nikos', 'Hoxhaj', false], ['GRE', 'Dimitris', 'Malaj', false],
+    ['GRE', 'Giorgos', 'Shahzad', false], ['GRE', 'Kostas', 'Pappa', false],
+    ['GRE', 'Giorgos', 'Papadopoulos', true], ['GRE', 'Nikos', 'Georgiou', true],
+    ['CAN', 'Sandeep', 'Tsang', false], ['CAN', 'Anil', 'Phan', false],
+    ['CAN', 'Wei', 'Dhillon', false],
+    ['CAN', 'Sandeep', 'Singh', true], ['CAN', 'Kevin', 'Tsang', true],
+    // D3: BEL r2 maghrebinisch BEGRABEN (Filter bleibt — Doku-Probe):
+    ['BEL', 'Mohamed', 'Peeters', false]
 ];
 let fails = 0;
 for (const [nat, f, l, wanted] of PROBES) {
