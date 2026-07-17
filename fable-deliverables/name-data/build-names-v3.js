@@ -616,6 +616,26 @@ for (const b of BORROW) {
     }
 }
 
+// ── Paket I §7.5: Region-0-Vornamen der 5 Kurven-Nationen eindampfen ─────────
+// era-first-names.js (Gauß-Kurven, eraFirstArr in pickPooledName) besitzt zur
+// Laufzeit die Region-0-Vornamen von GER/GBR/USA/FRA/ITA. Die vollen Kaggle-/
+// kuratierten first-Fenster in Region 0 sind damit toter Ballast (nie gezogen) →
+// auf eine kompakte Fallback-Liste kürzen (greift nur, falls die Kurven mal nicht
+// laden). Diaspora-Regionen (r1+, routeFirst-Ziele) und Nachnamen bleiben VOLL.
+{
+    const trim = (arr, n) => (arr || []).slice().sort((a, b) => (b[1] || 0) - (a[1] || 0)).slice(0, n);
+    for (const nat of ERA_SPLIT_KEEP) {
+        const pool = POOLS[nat];
+        if (!pool) continue;
+        const r0 = pool.regions[0];
+        if (r0 && r0.first && !Array.isArray(r0.first)) {
+            r0.first = { early: trim(r0.first.early, 16), mid: trim(r0.first.mid, 40), modern: trim(r0.first.modern, 30) };
+        }
+        const t = TAILS[nat] && TAILS[nat].find(x => x.r === 0);   // r0-first-Tails sind ebenfalls tot
+        if (t) t.first = [];
+    }
+}
+
 // ============================================================================
 // Validierung (Schema-Asserts) + Serialisierung
 // ============================================================================
