@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.93</title>
+    <title>F1 RPG v0.9.14.94</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.93 (aktuell) - 18.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.94 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; NEU: Monte-Carlo fuer den Fahrermarkt - erster Test der Transferlogik ueberhaupt</div>
+                            <div>&#8226; FIX: Landsmann-Multiplikator fuer Kleinstkonstrukteure von 5,0 auf 6,0 - Rueckrechnung war zu konservativ</div>
+                            <div>&#8226; PRUEFUNG: alle vier Klassen treffen jetzt ihre F1DB-Zielwerte (1,44 / 1,71 / 2,31 / 3,32)</div>
+                            <div class="font-bold text-slate-400">v0.9.14.93 - 18.07.2026</div>
                             <div>&#8226; NEU: vierte Konstrukteursklasse unter Backmarker - Kleinteams fahren Teilsaisons wie historisch</div>
                             <div>&#8226; FIX: Meldungen 1978 von 34,8 auf 29,0 (real 27,6) - Werksfahrer kleiner Teams meldeten jedes Rennen</div>
                             <div>&#8226; NEU: Landsmann-Bonus nach Groesse und Tier statt nach Aera - war ab 1980 komplett abgeschaltet</div>
@@ -3043,7 +3047,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.93';
+        const VERSION = '0.9.14.94';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -15650,7 +15654,7 @@
                                 (team.histId || team.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-')
                             ];
                             if (_homeNation && c.driver.nation === _homeNation) {
-                                c.score *= team._smallCtor ? 5.0     // Ziel ~3,3×
+                                c.score *= team._smallCtor ? 6.0     // Ziel ~3,3×
                                          : isTopTeam       ? 1.6     // Ziel ~1,44×
                                          : isMidTeam       ? 2.0     // Ziel ~1,66×
                                          :                   3.2;    // Backmarker, Ziel ~2,24×
