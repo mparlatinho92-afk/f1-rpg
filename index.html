@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.90</title>
+    <title>F1 RPG v0.9.14.91</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.90 (aktuell) - 18.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.91 (aktuell) - 18.07.2026</div>
+                            <div>&#8226; FIX: Monaco-Startfeld aera-genau - 16 galt 1958-71, nicht 26 Jahre lang</div>
+                            <div>&#8226;  1972-74 und ab 1987 kein Sonderfall</div>
+                            <div>&#8226; NEU: Vor-Qualifikation 1977/79/81/82/83 ergaenzt - vorher fehlten sie ganz</div>
+                            <div>&#8226; FIX: 1978 lief Vor-Quali an jedem Wochenende statt an 8 von 16 - doppelt so viele DNPQ wie real</div>
+                            <div>&#8226; FIX: Startfeld 1955 auf 22 korrigiert</div>
+                            <div class="font-bold text-slate-400">v0.9.14.90 - 18.07.2026</div>
                             <div>&#8226; NEU: Privateers ziehen ihre Startzahl saisonweise - Einmal-Starter jetzt der haeufigste Fall wie historisch</div>
                             <div>&#8226; NEU: Startrennen aera-abhaengig verteilt - 1950er verstreut, ab 1970ern geballt</div>
                             <div>&#8226; FIX: alter Wuerfel lieferte fuer 1960 nur 2 Prozent Einmal-Starter statt 55</div>
@@ -3027,7 +3033,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.90';
+        const VERSION = '0.9.14.91';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3993,7 +3999,7 @@
         // 1950–1960: Indy 500 (33 Starter) aus Jahresschnitt herausgerechnet
         const GRID_SIZES = {
             1950: 20, 1951: 21, 1952: 24, 1953: 24, 1954: 21,
-            1955: 20, 1956: 20, 1957: 18, 1958: 19, 1959: 19,
+            1955: 22, 1956: 20, 1957: 18, 1958: 19, 1959: 19,   // 1955 korrigiert: real Ø 22,5 Starter
             1960: 19, 1961: 24, 1962: 20, 1963: 20, 1964: 20,
             1965: 19, 1966: 19, 1967: 19, 1968: 19, 1969: 17,
             1970: 21, 1971: 24, 1972: 26, 1973: 24, 1974: 26,
@@ -4012,13 +4018,33 @@
 
         // Vorqualifikations-Daten: pool = Anzahl Autos die preQual müssen, through = Anzahl die durchkommen
         // DNPQ pro Rennen = pool − through · Basiert auf F1DB-Durchschnittswerten pro Jahr
+        // Vor-Qualifikation: pool = wie viele müssen antreten, through = wie viele
+        // kommen durch. Differenz = DNPQ pro Rennen MIT Vor-Quali.
+        // Ob ein Rennen überhaupt eine hat, entscheidet die Melderzahl (s. simulateQualifying)
+        // — 1978/1982/1992 hatten sie nur an einem Teil der Wochenenden, und genau
+        // dort, wo zu viele gemeldet hatten. Emergent statt getabellt.
+        // Gegen F1DB geprüft (DNPQ/Saison real vs. Rennen mit Vor-Quali):
+        // pool = wie viele müssen antreten, through = wie viele kommen durch
+        // (Differenz = DNPQ je Rennen MIT Vor-Quali), prob = Anteil der Wochenenden
+        // mit Vor-Quali. Zusätzlich muss die Melderzahl über der Grid-Größe liegen.
+        //
+        // Warum prob und nicht rein emergent aus der Melderzahl: 1977/79/81/83 hatten
+        // an EINEM Wochenende eine Vor-Quali — das war eine Ad-hoc-Entscheidung des
+        // Veranstalters, kein Melderdruck über die Saison. Ein reiner Melder-Trigger
+        // feuerte dort an jedem Rennen und machte aus 6 realen DNPQ über 100.
+        // Alle Werte gegen F1DB gerechnet: (pool−through) × Rennen × prob ≈ real.
         const PRE_QUAL_DATA = {
-            1978: { pool: 5, through: 2 },   // Ø ~3 DNPQ (nur manche Rennen, daher niedriger Pool)
-            1988: { pool: 4, through: 3 },   // Ø ~1 DNPQ (nur neue Teams)
-            1989: { pool: 14, through: 5 },  // Ø ~9 DNPQ (Hochphase)
-            1990: { pool: 8, through: 4 },   // Ø ~4 DNPQ
-            1991: { pool: 8, through: 4 },   // Ø ~4 DNPQ
-            1992: { pool: 4, through: 3 },   // Ø ~1–2 DNPQ
+            1977: { pool: 14, through:  8, prob: 0.06 },  //   6 DNPQ,  1 von 17 Rennen
+            1978: { pool:  7, through:  4, prob: 0.50 },  //  23 DNPQ,  8 von 16
+            1979: { pool:  3, through:  2, prob: 0.07 },  //   1 DNPQ,  1 von 15
+            1981: { pool:  9, through:  4, prob: 0.07 },  //   5 DNPQ,  1 von 15
+            1982: { pool:  8, through:  6, prob: 0.31 },  //  10 DNPQ,  5 von 16
+            1983: { pool:  5, through:  3, prob: 0.07 },  //   2 DNPQ,  1 von 15
+            1988: { pool:  4, through:  3, prob: 0.81 },  //  13 DNPQ, 13 von 16 (nur neue Teams)
+            1989: { pool: 14, through:  5, prob: 1.00 },  // 143 DNPQ, 16 von 16 — Hochphase, 39 Melder auf 26 Plätze
+            1990: { pool:  8, through:  4, prob: 0.88 },  //  62 DNPQ, 14 von 16
+            1991: { pool:  8, through:  4, prob: 1.00 },  //  58 DNPQ, 16 von 16
+            1992: { pool:  4, through:  3, prob: 0.50 },  //  12 DNPQ,  8 von 16
         };
 
         // Grid-Größe für ein spezifisches Rennen (berücksichtigt Strecken-Ausnahmen)
@@ -4027,9 +4053,18 @@
             if (!race) return base;
             const name    = (race.name    || '').toLowerCase();
             const circuit = (race.circuit || '').toLowerCase();
-            // Monaco: engere Strecke → kleineres Grid
+            // Monaco: engere Strecke → kleineres Grid. ÄRA-GENAU (v0.9.14.91) — die
+            // alte Regel „16 vor 1976, sonst 20" dehnte ein 14-Jahre-Fenster auf 26 Jahre
+            // und deckelte die Moderne zu hart. Gemessen (F1DB, echte Starter):
+            //   1950–57  19/23/17/18       → kein Sonderfall, Jahresschnitt
+            //   1958–71  16 (13× exakt 16) → harte Begrenzung
+            //   1972–74  25/25/25          → Begrenzung ausgesetzt
+            //   1975–86  20 (11× exakt 20) → wieder gedeckelt
+            //   1987–    24/26/26/26 …     → folgt dem Feld (2010–12 sogar 24)
             if (name.includes('monaco') || circuit.includes('monaco')) {
-                return year < 1976 ? 16 : 20;
+                if (year >= 1958 && year <= 1971) return 16;
+                if (year >= 1975 && year <= 1986) return 20;
+                return base;   // 1950–57, 1972–74, ab 1987: kein Sonderfall
             }
             // Nürburgring / Nordschleife (bis 1976): größeres Grid möglich
             if ((circuit.includes('nürburgring') || circuit.includes('nurburgring')) && year <= 1976) {
@@ -9400,7 +9435,15 @@
             // Nur die schnellsten M kommen weiter – Rest erhält DNPQ.
             const _preQual = PRE_QUAL_DATA[year];
             const _dnpqEntries = [];
-            if (_preQual && !isIndyRace && activeDrivers.length > 0) {
+            // Auslöser (v0.9.14.91): NUR wenn mehr gemeldet haben als Startplätze da sind.
+            // Vorher lief die Vor-Quali an JEDEM Wochenende eines Vor-Quali-Jahres —
+            // für 1978 doppelt so viele DNPQ wie real (48 statt 23), weil nur 8 von 16
+            // Rennen eine hatten. Historisch entschied das die Melderzahl, nicht der
+            // Kalender: 1989 waren es 39 Melder auf 26 Plätze, also jedes Rennen;
+            // 1978 nur an den vollen Wochenenden. Damit ergibt sich das von selbst.
+            const _pqGrid = getGridSize(year, race);
+            const _pqHappens = _preQual && (_preQual.prob == null || Math.random() < _preQual.prob);
+            if (_pqHappens && !isIndyRace && activeDrivers.length > _pqGrid) {
                 const _bySpeed = [...activeDrivers].sort((a, b) => {
                     const ta = GAME_STATE.teams.find(t => t.id === a.team);
                     const tb = GAME_STATE.teams.find(t => t.id === b.team);
