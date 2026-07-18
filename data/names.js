@@ -1547,7 +1547,7 @@ const NAME_POOLS_BY_NATION = {
 
     // ── RSA ──
     RSA: { regions: [
-        { w: 0.45,
+        { w: 0.43,
           first: [
             ['Tony',28],['Peter',68],['John',83],['Dave',21],['Ian',27],['Neville',18],['Doug',12],['Trevor',32],['Basil',2],['Paddy',2],['Gary',22],['Craig',30],
             ['Kevin',39],['Mark',42],['Wayne',34],['Shaun',41],['Brad',12],['Grant',23],['Kyle',29],['Dylan',26],['Joshua',30],['Matthew',29],['Liam',15],
@@ -1556,25 +1556,22 @@ const NAME_POOLS_BY_NATION = {
             ['Vincent',45],['Sam',44],['Emmanuel',43],['Robert',43],['Eric',42],['Alex',42],['Godfrey',40],['Steven',40],['Jason',39],['Christopher',39],
             ['Lucas',39],['Jonathan',36],['Joe',36],['Edward',36],['Ben',35],['Raymond',35],['Kenneth',35],['Lawrence',35],['Phillip',35],['Ernest',35],
             ['Junior',34],['Justin',34],['Stephen',34],['Anthony',34],['Jacob',34],['Frank',33],['Alfred',33],['Albert',33],['Jack',33],['Nelson',33],['Calvin',32],
-            ['Donald',32],['Brandon',32],['Henry',32],['Eugene',32],['Marius',32],['Elias',31],['Steve',31],['Aubrey',31],['Nicholas',31],['Collen',31],['Ryan',30],
-            ['Ashley',30],['Pule',30],['Stanley',30],['Shane',30],['Lehlohonolo',30],['Amos',29],['Jimmy',29],['Walter',29],['Jerry',29],['Koketso',29],
-            ['Willie',29],['Ronald',29],['Edwin',28],['Norman',28],['Bradley',28],['Theo',28],['Percy',28],['Eddie',27],['Kenny',27],['Lunga',27],['Matome',27],
-            ['Elvis',26],['Sydney',26],['Anton',26],['Sean',26],['Scelo',26],['Kwanele',26],['Tumi',26],['Maxwell',26],['Desmond',26],['Thobani',26],['Leonard',26],
-            ['Happy',26],['Moeketsi',26],['Clement',26],['Jeffrey',25],['Abel',25]
+            ['Donald',32],['Brandon',32],['Henry',32],['Eugene',32],['Marius',32],['Elias',31],['Steve',31],['Aubrey',31],['Nicholas',31],['Collen',31],['Pule',30],
+            ['Stanley',30],['Shane',30],['Amos',29],['Jimmy',29],['Walter',29],['Jerry',29],['Willie',29],['Ronald',29],['Edwin',28],['Norman',28],['Theo',28],
+            ['Percy',28],['Eddie',27],['Kenny',27],['Matome',27],['Elvis',26],['Sydney',26],['Anton',26],['Sean',26],['Scelo',26],['Kwanele',26],['Tumi',26],
+            ['Maxwell',26],['Desmond',26],['Leonard',26],['Happy',26],['Clement',26],['Jeffrey',25],['Abel',25],['Dennis',25],['King',25],['Gavin',25]
           ],
           last: [
             ['Smith',60],['Brown',30],['Taylor',17],['Wilson',21],['Bennett',9],['Reed',12],['Duncan',12],['Scott',16],['Watson',11],['Harris',15],['Clarke',10],
-            ['Foster',9],['Nash',2],['Jacobs',56],['Williams',52],['Adams',44],['Abrahams',37],['Davids',36],['Van Zyl',33],['Hendricks',33],['Petersen',31],
-            ['Johnson',31],['Van Niekerk',30],['Daniels',30],['Joseph',28],['Van Rooyen',27],['James',27],['King',27],['Jones',25],['Isaacs',24],['George',24],
-            ['Van Der Westhuizen',23],['Fortuin',23],['Van Heerden',22],['Arendse',22],['Swartz',22],['September',21],['Johannes',21],['Van Der Walt',21],
-            ['Naicker',21],['Solomons',20],['Van Staden',20],['Jackson',19],['Lewis',19],['Plaatjies',19],['Jantjies',19],['Samuel',19],['Twala',19],['May',19],
-            ['Alexander',19],['Titus',19],['Willemse',19],['Jali',18],['Witbooi',18],['Solomon',18],['De Jager',18],['April',18],['Jonas',18],['Tebogo',18],
-            ['Botes',18],['Gouws',18],['Patrick',18],['Gama',18],['Lawrence',18],['Roberts',18],['Cupido',18],['Patricia',17],['Fredericks',17],['Van Vuuren',17],
-            ['Lucas',17],['Swarts',17],['Paul',17],['Michael',17],['Van Den Berg',17],['Klaas',17],['Ayanda',17],['Van Schalkwyk',17],['Badenhorst',17],
-            ['Malgas',17],['Nyoni',17],['Samuels',17],['Aphane',16],['Matthews',16],['Scholtz',16],['Van Tonder',16],['Charles',16],['Peters',16],['Thompson',16],
-            ['White',16],['Jooste',16],['Nhlanhla',16]
+            ['Foster',9],['Nash',2],['Jacobs',56],['Williams',52],['Adams',44],['Abrahams',37],['Davids',36],['Van Zyl',33],['Petersen',31],['Johnson',31],
+            ['Van Niekerk',30],['Daniels',30],['Joseph',28],['Van Rooyen',27],['James',27],['King',27],['Jones',25],['Isaacs',24],['George',24],
+            ['Van Der Westhuizen',23],['Van Heerden',22],['Swartz',22],['Johannes',21],['Van Der Walt',21],['Naicker',21],['Solomons',20],['Van Staden',20],
+            ['Jackson',19],['Lewis',19],['Samuel',19],['May',19],['Alexander',19],['Titus',19],['Willemse',19],['Solomon',18],['De Jager',18],['Jonas',18],
+            ['Botes',18],['Gouws',18],['Patrick',18],['Gama',18],['Lawrence',18],['Roberts',18],['Fredericks',17],['Van Vuuren',17],['Lucas',17],['Swarts',17],
+            ['Paul',17],['Michael',17],['Van Den Berg',17],['Van Schalkwyk',17],['Badenhorst',17],['Samuels',17],['Matthews',16],['Scholtz',16],['Van Tonder',16],
+            ['Charles',16],['Peters',16],['Thompson',16],['White',16],['Jooste',16],['Ismail',16],['Prins',16],['Green',16],['Stevens',16]
           ] },
-        { w: 0.35,
+        { w: 0.33,
           first: [
             ['Piet',33],['Johan',69],['Willem',33],['Jan',46],['Hennie',27],['Koos',23],['Danie',28],['Gert',27],['Pieter',48],['Jaco',40],['André',51],
             ['Riaan',33],['Christo',28],['Deon',36],['Ruan',23],['Heinrich',21],['Stefan',19],['Charl',20],['Kyle',29],['Divan',2],['Janco',2],['Wikus',2],
@@ -1589,9 +1586,9 @@ const NAME_POOLS_BY_NATION = {
             ['Pieterse',23],['Van Rensburg',23],['Prinsloo',22],['Beukes',22],['Grobler',22],['Bester',21],['Pietersen',21],['Snyman',21],['Rossouw',21],
             ['Scheepers',21],['Visagie',20],['Burger',20],['Kotze',20],['Basson',20],['Steenkamp',20],['Groenewald',19],['Schoeman',19],['Labuschagne',19],
             ['Theron',18],['Vorster',18],['Janse Van Rensburg',18],['Roux',18],['De Klerk',17],['Wessels',17],['Vermeulen',17],['Lombard',17],['Naude',17],
-            ['Myburgh',17]
+            ['Myburgh',17],['Bosman',16],['Mostert',16],['De Lange',16],['Boshoff',16],['Els',16]
           ] },
-        { w: 0.2, minYear: 1995,
+        { w: 0.19, minYear: 1995,
           first: [
             ['Thabo',100],['Sipho',76],['Bongani',81],['Tshepo',83],['Thabang',78],['Themba',69],['Mpho',71],['Sandile',69],['Siyabonga',68],['Tebogo',64],
             ['Sibusiso',63],['Xolani',63],['Andile',60],['Thulani',59],['Thabiso',76],['Lucky',71],['Mandla',57],['Thapelo',57],['Vusi',57],['Sbusiso',56],
@@ -1602,9 +1599,10 @@ const NAME_POOLS_BY_NATION = {
             ['Phumlani',36],['Philani',36],['Thando',36],['Given',35],['Nathi',35],['Anele',35],['Siya',34],['Ndumiso',34],['Mthokozisi',33],['Sakhile',33],
             ['Luyanda',33],['Sphiwe',33],['Justice',32],['Bonginkosi',32],['Jabu',32],['Thabani',32],['Samkelo',32],['Solly',32],['Tshepiso',31],['Siyanda',31],
             ['Kamogelo',31],['Lebohang',31],['Solomon',31],['Sbonelo',30],['Thami',30],['Syabonga',30],['Lerato',30],['Bafana',30],['Muzi',30],['Vuyo',30],
-            ['Lesego',30],['Sbu',30],['Mzwandile',30],['Wandile',29],['Siphiwe',29],['Thembinkosi',29],['Skhumbuzo',29],['Tshepang',29],['Zakhele',29],
-            ['Lungelo',29],['Lwazi',28],['Sboniso',28],['Mfundo',28],['Oupa',28],['Blessing',28],['Bonga',27],['Mthobisi',27],['Nhlakanipho',27],['Siyabulela',27],
-            ['Khulekani',26],['Nkanyiso',26],['Sphesihle',26],['Sphelele',26],['Thamsanqa',26],['Bongane',26],['Ofentse',25]
+            ['Lesego',30],['Sbu',30],['Mzwandile',30],['Lehlohonolo',30],['Wandile',29],['Siphiwe',29],['Koketso',29],['Thembinkosi',29],['Skhumbuzo',29],
+            ['Tshepang',29],['Zakhele',29],['Lungelo',29],['Lwazi',28],['Sboniso',28],['Mfundo',28],['Oupa',28],['Blessing',28],['Bonga',27],['Mthobisi',27],
+            ['Nhlakanipho',27],['Siyabulela',27],['Lunga',27],['Khulekani',26],['Nkanyiso',26],['Sphesihle',26],['Thobani',26],['Moeketsi',26],['Sphelele',26],
+            ['Thamsanqa',26],['Bongane',26],['Ofentse',25]
           ],
           last: [
             ['Ndlovu',100],['Dlamini',91],['Khumalo',87],['Nkosi',82],['Mokoena',70],['Sithole',67],['Mkhize',67],['Mahlangu',63],['Zulu',62],['Ngcobo',60],
@@ -1613,24 +1611,36 @@ const NAME_POOLS_BY_NATION = {
             ['Nxumalo',44],['Cele',44],['Mathebula',43],['Maseko',42],['Mabaso',40],['Molefe',40],['Ngubane',40],['Ngobeni',39],['Sibanda',39],['Mtshali',38],
             ['Maluleke',37],['Motaung',37],['Moloi',37],['Mchunu',36],['Mkhwanazi',36],['Phiri',36],['Mnguni',35],['Mnisi',35],['Zungu',35],['Dladla',34],
             ['Zondi',34],['Hlongwane',34],['Hadebe',34],['Nkuna',34],['Vilakazi',33],['Xaba',33],['Langa',33],['Shabangu',32],['Majola',32],['Hlatshwayo',32],
-            ['Mhlanga',32],['Kekana',32],['Kunene',31],['Mdluli',31],['Modise',31],['Mlambo',31],['Shabalala',31],['Zuma',31],['Mbhele',30],['Mudau',30],
-            ['Xulu',30],['Mashaba',30],['Khanyile',30],['Nkomo',29],['Ndaba',29],['Shezi',29],['Mabuza',29],['Nhlapo',29],['Simelane',28],['Masuku',28],
-            ['Banda',28],['Ngema',28],['Malatji',28],['Shongwe',28],['Masango',27],['Mabunda',27],['Khuzwayo',27],['Msomi',27],['Ntombela',27],['Mokwena',27],
-            ['Tsotetsi',27],['Mpho',27],['Nyathi',27],['Skosana',26],['Mathe',26],['Mohlala',26],['Kubheka',26],['Thwala',26],['Zondo',25],['Nene',25],['Mpofu',25],
-            ['Mabena',25],['Sibisi',25],['Bhengu',25],['Matlala',25],['Mthombeni',25],['Mngomezulu',25],['Duma',25],['Masilela',24],['Malinga',24],['Biyela',24],
-            ['Msibi',24],['Magagula',24],['Luthuli',24],['Mogale',24],['Mashego',24],['Skhosana',24],['Ndou',24],['Motloung',24],['Shange',24],['Ndlela',24],
-            ['Mulaudzi',24],['Ngobese',24],['Maphumulo',23],['Hlophe',23],['Ntshangase',23],['Mabasa',23],['Madonsela',23],['Mohale',23],['Tau',23],['Madlala',23],
-            ['Makhanya',23],['Sibeko',23],['Nzimande',23],['Mkhabela',23],['Ndebele',22],['Dhlamini',22],['Khosa',22],['Mncube',22],['Ledwaba',22],['Mbele',22],
-            ['Sambo',22],['Sibanyoni',22],['Nkabinde',22],['Mavuso',22],['Mpanza',22],['Thabethe',22],['Ngwane',22],['Miya',21],['Ngidi',21],['Mdlalose',21],
-            ['Shandu',21],['Mbambo',21],['Zitha',21],['Makhubela',21],['Mdletshe',21],['Mphahlele',21],['Magwaza',21],['Ngomane',21],['Mashele',21],['Mosia',21],
-            ['Mbali',21],['Moloto',20],['Masemola',20],['Mvelase',20],['Mlangeni',20],['Gwala',20],['Masondo',20],['Myeni',20],['Qwabe',20],['Letsoalo',20],
-            ['Nzama',20],['Lebo',19],['Maake',19],['Msimango',19],['Maduna',19],['Ndwandwe',19],['Mtsweni',19],['Phakathi',19],['Mokone',19],['Maluleka',19],
-            ['Themba',19],['Munyai',19],['Maphanga',19],['Thusi',19],['Ndhlovu',19],['Gumbi',19],['Mngadi',19],['Mbanjwa',19],['Selepe',19],['Maleka',19],
-            ['Msiza',19],['Mathonsi',18],['Nzuza',18],['Nkambule',18],['Dlomo',18],['Zikhali',18],['Mthimkhulu',18],['Manana',18],['Mthiyane',18],['Matlou',18],
+            ['Mhlanga',32],['Kekana',32],['Kunene',31],['Mdluli',31],['Mlambo',31],['Shabalala',31],['Zuma',31],['Mbhele',30],['Mudau',30],['Xulu',30],
+            ['Mashaba',30],['Khanyile',30],['Nkomo',29],['Ndaba',29],['Shezi',29],['Mabuza',29],['Nhlapo',29],['Simelane',28],['Masuku',28],['Banda',28],
+            ['Ngema',28],['Malatji',28],['Shongwe',28],['Masango',27],['Mabunda',27],['Khuzwayo',27],['Msomi',27],['Ntombela',27],['Mokwena',27],['Tsotetsi',27],
+            ['Mpho',27],['Nyathi',27],['Skosana',26],['Mathe',26],['Mohlala',26],['Kubheka',26],['Thwala',26],['Zondo',25],['Nene',25],['Mpofu',25],['Mabena',25],
+            ['Sibisi',25],['Bhengu',25],['Matlala',25],['Mthombeni',25],['Mngomezulu',25],['Duma',25],['Masilela',24],['Malinga',24],['Biyela',24],['Msibi',24],
+            ['Magagula',24],['Luthuli',24],['Mogale',24],['Mashego',24],['Skhosana',24],['Ndou',24],['Motloung',24],['Shange',24],['Ndlela',24],['Mulaudzi',24],
+            ['Ngobese',24],['Maphumulo',23],['Hlophe',23],['Ntshangase',23],['Mabasa',23],['Madonsela',23],['Mohale',23],['Tau',23],['Madlala',23],['Makhanya',23],
+            ['Sibeko',23],['Nzimande',23],['Mkhabela',23],['Ndebele',22],['Dhlamini',22],['Khosa',22],['Mncube',22],['Ledwaba',22],['Mbele',22],['Sambo',22],
+            ['Sibanyoni',22],['Nkabinde',22],['Mavuso',22],['Mpanza',22],['Thabethe',22],['Ngwane',22],['Miya',21],['Ngidi',21],['Mdlalose',21],['Shandu',21],
+            ['Mbambo',21],['Zitha',21],['Makhubela',21],['Mdletshe',21],['Mphahlele',21],['Magwaza',21],['Ngomane',21],['Mashele',21],['Mosia',21],['Mbali',21],
+            ['Moloto',20],['Masemola',20],['Mvelase',20],['Mlangeni',20],['Gwala',20],['Masondo',20],['Myeni',20],['Qwabe',20],['Letsoalo',20],['Nzama',20],
+            ['Lebo',19],['Maake',19],['Msimango',19],['Maduna',19],['Ndwandwe',19],['Mtsweni',19],['Phakathi',19],['Mokone',19],['Twala',19],['Maluleka',19],
+            ['Munyai',19],['Maphanga',19],['Thusi',19],['Ndhlovu',19],['Gumbi',19],['Mngadi',19],['Mbanjwa',19],['Selepe',19],['Maleka',19],['Msiza',19],
+            ['Jali',18],['Mathonsi',18],['Nzuza',18],['Nkambule',18],['Dlomo',18],['Zikhali',18],['Mthimkhulu',18],['Manana',18],['Mthiyane',18],['Matlou',18],
             ['Mlotshwa',18],['Pule',18],['Rikhotso',18],['Tembe',18],['Masinga',18],['Maphosa',18],['Lukhele',18],['Mtolo',18],['Modiba',18],['Tshepo',17],
             ['Ndimande',17],['Phillips',17],['Zama',17],['Manzini',17],['Tladi',17],['Magubane',17],['Mohapi',17],['Moeketsi',17],['Tshuma',17],['Mahlaba',17],
-            ['Mamabolo',17],['Makhoba',17],['Mkhonza',17],['Lubisi',17],['Mathenjwa',16],['Makhubele',16],['Makhathini',16],['Masina',16],['Mkhonto',16],
-            ['Memela',16]
+            ['Mamabolo',17],['Makhoba',17],['Mkhonza',17],['Lubisi',17],['Nyoni',17],['Aphane',16],['Mathenjwa',16],['Makhubele',16],['Makhathini',16],
+            ['Masina',16],['Mkhonto',16],['Nhlanhla',16],['Memela',16],['Moeng',16],['Pitso',16],['Hlungwani',16],['Shozi',16]
+          ] },
+        { w: 0.05, minYear: 1995,
+          first: [
+            ['Ashley',30],['Wayne',34],['Chad',16],['Denzil',12],['Bradley',28],['Shaun',41],['Clint',12],['Jerome',24],['Randall',12],['Ashwin',12],['Ricardo',12],
+            ['Lee',21],['Damian',12],['Marlon',12],['Quinton',21],['Garth',12],['Byron',16],['Kurt',12],['Dean',25],['Ryan',30],['Craig',30],['Warren',24],
+            ['Rowan',2],['Delano',2],['Cheslin',2],['Juan',2],['Elton',19],['Keegan',12],['Devon',12],['Mogamat',12],['Achmat',12],['Yusuf',12],['Faried',2],
+            ['Riedwaan',2],['Nazeem',2],['Shafiek',2],['Igshaan',2],['Tauriq',2]
+          ],
+          last: [
+            ['Hendricks',33],['Fortuin',23],['Arendse',22],['September',21],['Plaatjies',19],['Witbooi',18],['Cupido',18],['Malgas',17],['Julies',13],['Damons',11],
+            ['Adonis',15],['Afrika',12],['Baartman',11],['Maarman',10],['Sampson',10],['Appolis',2],['Kleinsmit',2],['Windvogel',9],['Klaasen',2],['Rooi',9],
+            ['October',9],['Januarie',2],['Februarie',2],['Plaatje',2],['Hendrikse',2],['Jantjies',19],['April',18],['Klaas',17]
           ] }
     ] },
 
@@ -4343,49 +4353,40 @@ const NAME_TAILS_BY_NATION = {
     RSA: [
         { r: 0,
           first: [
-            'Dennis','King','Gavin','Nathan','Aaron','Benjamin','Joel','Dean','Morne','Ishmael','Johnny','Adam','Warren','Gerald','Jerome','Rodney','Dan','Clive',
-            'Owen','Timothy','Bernard','Mario','Donovan','Freddy','Werner','Danny','Clinton','Wesley','Bruce','Max','Neil','Johann','Sammy','Keith','Philip',
-            'Pierre','Billy','Arthur','Marco','Samson','Lloyd','Quinton','Abram','Ephraim','Gabriel','Colin','Harry','Lee','Benny','Jay','Andy','Arnold','Nick',
-            'Abraham','Shadrack','Ronnie','Clifford','Pat','Glen','Luke','Derrick','Elton','Douglas','Jonas','Adriaan','Lesley','Antonio','Christiaan','Evans',
-            'Duncan','Austin','Romeo','France','Stephan','Jeff','Graham','Jackson','Wilson','Marcus','Kelvin','Carl','Francis','Lionel','Alan','Reuben','Manuel',
-            'Enock','Charlie','Cameron','Julius','Sylvester','Petros','Jean','Tom','Vernon','Shawn','Brendon','Reginald','Gregory','Derick','Roger','Darren',
-            'Terrence','Gilbert','Christian','Zakes','Ebrahim','Morgan','Angelo','Modise','Malcolm','Jacobus','Barry','Roy','Promise','Cebo','Yamkela','Siviwe',
-            'Terence'
+            'Nathan','Aaron','Benjamin','Joel','Morne','Ishmael','Johnny','Adam','Gerald','Rodney','Dan','Clive','Owen','Timothy','Bernard','Mario','Donovan',
+            'Freddy','Werner','Danny','Clinton','Wesley','Bruce','Max','Neil','Johann','Sammy','Keith','Philip','Pierre','Billy','Arthur','Marco','Samson','Lloyd',
+            'Abram','Ephraim','Gabriel','Colin','Harry','Benny','Jay','Andy','Arnold','Nick','Abraham','Shadrack','Ronnie','Clifford','Pat','Glen','Luke','Derrick',
+            'Douglas','Jonas','Adriaan','Lesley','Antonio','Christiaan','Evans','Duncan','Austin','Romeo','France','Stephan','Jeff','Graham','Jackson','Wilson',
+            'Marcus','Kelvin','Carl','Francis','Lionel','Alan','Reuben','Manuel','Enock','Charlie','Cameron','Julius','Sylvester','Petros','Jean','Tom','Vernon',
+            'Shawn','Brendon','Reginald','Gregory','Derick','Roger','Darren','Terrence','Gilbert','Christian','Zakes','Ebrahim','Morgan','Angelo','Modise',
+            'Malcolm','Jacobus','Barry','Roy','Promise','Cebo','Terence','Micheal','Marvin','Lazarus'
           ],
           last: [
-            'Ismail','Karabo','Pitso','Prins','Green','Stevens','Shozi','Zanele','Cynthia','Jiyane','Isaac','Linda','Sbiya','Emmanuel','Nelson','Stuurman',
-            'Koopman','Oliphant','Prudence','Benjamin','Sangweni','Coetzer','William','Goliath','Dyantyi','Zee','Myeza','Mzimela','Morris','Fisher','Anderson',
-            'Francis','Frans','Chabalala','Mzobe','Chiloane','Tumi','Nelly','Adonis','Britz','Andrews','Shai','Nyembe','Lottering','Shangase','Gasa','Komane',
-            'Fakude','Dee','Esterhuizen','Andile','Ruiters','Love','Jele','Kay','Cebekhulu','Nana','Van Dyk','Sandile','Cossa','Miller','Neo','Mitchell','Zinhle',
-            'Amanda','De Bruin','Gordon','Gerber','Lourens','Morgan','Tom','Man','Roos','Jacob','Small','Julies','Godfrey','Anthony','Julius','Jobe','Pearl',
-            'Bekker','Strauss','Pieters','Jafta','Kriel','Nsele','Vusi','Palesa','Mwelase','Nyawo','Du Plooy','Mzizi','Joe','More','Olifant','Sanele','Ross','Jama',
-            'Chonco','Goosen','Bailey','Chris','Eric','Tumelo','Itumeleng','Parker','Brian','Chiliza','Bila','Kok','Alex','Black','Happiness','Gugu','Tee',
-            'Ebrahim','Dineo','Young','Sokhela','Harmse','Blom','Sbusiso','Davis','Diedericks','Brand','Chirwa','Afrika','General','Gloria','Brink','Zikalala',
-            'Moosa','Kock','Sarah','Nhleko','Nhlapho','Diale','Collins','Sbu','Tebza','Shoba','Bosch','Sharon','Horn','Carelse','Walker','Peterson','Snyders',
-            'Van Deventer','Minnaar','Fortunate','Nell','Lindiwe','Plaatjie','January','Koen','Elias','Samson','Greeff','Donald','Esau','Naidu','Jansen Van Vuuren',
-            'Jane','Njabulo','Bopape','Julia','Blose','Kemp','Otto','Hoffman','Nathi','Sfiso','Zikode','Booi','Jabu','Claasen','Campbell','Kleynhans',
-            'Van Der Berg','August','Edwards','Bouwer','Richards','Kabelo','Ximba','Bee','Gamede','Grootboom','Sabelo','Ernest','Cornelius','Paulse','Herbst',
-            'Faku','Dewet','Salie','Damons','Robertson','Mazet','Mjoli','Agnes','Bae','Oliver','Edward','Alfred','Joy','Moore','Nonhlanhla','Boitumelo','Evans',
-            'Shelembe','Saayman','Van Den Heever','Wendy','Hugo','Sylvia','Moonsamy','Andrew','Kelly','Gladys','Diko','Simons','Links','Lihle','Lizzy','Koketso',
-            'Sosibo','Hanekom','Ben','Jay','Dimakatso','Chuene','Eunice','Constance','Arends','Leeuw','Baartman','West','Lydia','Van Aswegen','Mentoor','Michaels',
-            'Shenge','Ubisi','Sphiwe','Neethling','Cooper','Andries','Van Jaarsveld','Jaftha','Robinson','Alberts','Nyandeni','Lamola','Sauls','Barnes','Sampson',
-            'Bam','Yvonne','Wright','Pat','Anele','Stone','Henning','Lolo','Ellis','Amos','Annah','Andy','Norman','Yende','Pinky','Brandt','Nyirenda','Felix',
-            'Roman','Osman','Nokuthula','Saunders','Lloyd','Nhlabathi','Theunissen','Shabane','Innocentia','Van Eeden','Skhakhane','Carstens','Shumba','Chili',
-            'Petrus','Sono','Max','November','Cassim','Lisa','Steven','Kamogelo','Hill','Perumal','Kenneth','Collen','Moss','Maarman','Henry','Chuma','Murray',
-            'Vosloo','Baker','Rebecca','Asanda','Vuyo','Eksteen','Caroline','Leonard','Percy','Goba','Marcus','Jonkers','Lindo','Lindokuhle','Nyambose','Shaik',
-            'Rautenbach','Wentzel','Maxwell','Goodman','Valentine','Blaauw','Kenny','Gatsheni','Clark','Vezi','Bonga','Kabini','Ally','Nicholas','Allie',
-            'Nieuwoudt','Florence','Soko','Nobuhle','Bell','Calvin','Jonathan','Mqadi','Jan','Ziqubu','Dumakude','Nonyane','Christopher','Loots','Cindi','Mulder',
-            'Kgomotso'
+            'Isaac','Emmanuel','Nelson','Stuurman','Koopman','Oliphant','Benjamin','Coetzer','William','Zee','Morris','Fisher','Anderson','Francis','Frans','Tumi',
+            'Nelly','Britz','Andrews','Shai','Lottering','Gasa','Dee','Esterhuizen','Love','Jele','Kay','Nana','Van Dyk','Miller','Mitchell','De Bruin','Gordon',
+            'Gerber','Lourens','Morgan','Tom','Man','Roos','Jacob','Small','Godfrey','Anthony','Julius','Jobe','Pearl','Bekker','Strauss','Pieters','Kriel','Vusi',
+            'Du Plooy','Joe','More','Olifant','Ross','Jama','Goosen','Bailey','Chris','Eric','Itumeleng','Parker','Brian','Bila','Kok','Alex','Black','Gugu','Tee',
+            'Ebrahim','Young','Harmse','Blom','Davis','Brand','General','Brink','Moosa','Kock','Collins','Bosch','Sharon','Horn','Carelse','Walker','Peterson',
+            'Van Deventer','Minnaar','Nell','January','Koen','Elias','Samson','Greeff','Donald','Jansen Van Vuuren','Jane','Kemp','Otto','Hoffman','Booi','Claasen',
+            'Campbell','Kleynhans','Van Der Berg','August','Edwards','Bouwer','Richards','Bee','Grootboom','Ernest','Cornelius','Paulse','Herbst','Faku','Dewet',
+            'Salie','Robertson','Mazet','Agnes','Bae','Oliver','Edward','Alfred','Joy','Moore','Evans','Saayman','Van Den Heever','Wendy','Hugo','Moonsamy',
+            'Andrew','Kelly','Gladys','Diko','Simons','Links','Lizzy','Hanekom','Ben','Jay','Arends','Leeuw','West','Van Aswegen','Mentoor','Michaels','Neethling',
+            'Cooper','Andries','Van Jaarsveld','Robinson','Alberts','Sauls','Barnes','Bam','Wright','Stone','Henning','Lolo','Ellis','Amos','Annah','Andy','Norman',
+            'Pinky','Brandt','Felix','Roman','Osman','Saunders','Lloyd','Theunissen','Van Eeden','Carstens','Petrus','Sono','Max','November','Cassim','Lisa',
+            'Steven','Hill','Perumal','Kenneth','Collen','Moss','Henry','Murray','Vosloo','Baker','Eksteen','Leonard','Percy','Goba','Marcus','Jonkers','Shaik',
+            'Rautenbach','Wentzel','Maxwell','Goodman','Blaauw','Kenny','Clark','Vezi','Ally','Nicholas','Allie','Nieuwoudt','Soko','Bell','Calvin','Jonathan',
+            'Jan','Christopher','Loots','Mulder','Walters','Raymond','Stewart','Cindy','Stanley','Carter','Mavis','Jordan','Walter','Jansen Van Rensburg',
+            'Laubscher','Wood','Goodness','Gee','Betty','Fana','Van Der Linde','Bobo','Arries','Roets','Davies','Lucy','Héctor','Fritz'
           ] },
         { r: 1,
           first: [
             'Herman','Hannes','Fanie','Dirk','Gideon','Jannie','Rudi','Tiaan','Wynand'
           ],
           last: [
-            'Bosman','Mostert','De Lange','Boshoff','Els','Liebenberg','Brits','Cronje','Hattingh','Human','Maritz','Claassen','De Kock','Malan','Terblanche',
-            'Geldenhuys','Vermaak','Stander','Dreyer','Delport','Conradie','Opperman','De Bruyn','Koekemoer','Greyling','Nortje','Bothma','Lubbe','Mouton','Jonker',
-            'Fouche','Maree','Uys','Slabbert','Odendaal','Grobbelaar','Schutte','Moolman','Cilliers','Marx','Taljaard','Blignaut','Oberholzer','Matthee','Meiring',
-            'Pelser','Truter'
+            'Liebenberg','Brits','Cronje','Hattingh','Human','Maritz','Claassen','De Kock','Malan','Terblanche','Geldenhuys','Vermaak','Stander','Dreyer','Delport',
+            'Conradie','Opperman','De Bruyn','Koekemoer','Greyling','Nortje','Bothma','Lubbe','Mouton','Jonker','Fouche','Maree','Uys','Slabbert','Odendaal',
+            'Grobbelaar','Schutte','Moolman','Cilliers','Marx','Taljaard','Blignaut','Oberholzer','Matthee','Meiring','Pelser','Truter','Breytenbach','De Wet',
+            'Wolmarans'
           ] },
         { r: 2,
           first: [
@@ -4396,27 +4397,40 @@ const NAME_TAILS_BY_NATION = {
             'Loyiso','Mthoko','Msizi','Xolile','Mncedisi','Mohau','Zolani','Nduduzo','Fana','Nkosana','Lungile','Nkosikhona','Mzamo','Sicelo','Bongumusa',
             'Kamohelo','Buhle','Fortune','Luzuko','Lonwabo','Thuso','Tshegofatso','Olebogeng','Smanga','Xolisa','Lihle','Lubabalo','Siphelele','Thulane','Lesedi',
             'Monde','Tsepo','Athenkosi','Lovemore','Tinashe','Welcome','Mpendulo','Ayabonga','Zuko','Malibongwe','Odwa','Zola','Sandiso','Sbongiseni','Sibongiseni',
-            'Luvo','Aviwe','Zamani','Nyiko','Sphe','Vusumuzi','Tshiamo'
+            'Luvo','Aviwe','Zamani','Nyiko','Sphe','Vusumuzi','Tshiamo','Yamkela','Siviwe','Tsietsi','Phuti','Sive','Siphosethu','Lindelani','Tiisetso'
           ],
           last: [
-            'Moeng','Hlungwani','Mthimunye','Madondo','Masilo','Mavundla','Majozi','Mpungose','Mashinini','Mashigo','Mangena','Mukwevho','Mashiane','Monareng',
-            'Kheswa','Nkwanyana','Tlou','Malope','Phasha','Morake','Makola','Msweli','Ntombi','Moagi','Legodi','Moremi','Motha','Nxele','Thobejane','Lebogang',
-            'Motau','Hlongwa','Sikhosana','Phungula','Buys','Mkhatshwa','Madiba','Mntungwa','Manganyi','Molepo','Mshengu','Ngubo','Manqele','Mbokazi','Khambule',
-            'Sekgobela','Mahlalela','Molapo','Buhle','Mash','Mncwabe','Mphuthi','Maila','Moletsane','Mashabela','Sikhakhane','Ngubeni','Mlaba','Mashilo','Marumo',
-            'Mamba','Masombuka','Ngcongo','Mathibela','Mojela','Motsamai','Philander','Mnyandu','Malepe','Makua','Nkoana','Simango','Mavimbela','Phala','Motsepe',
-            'Khanye','Kgomo','Mbuyazi','Maswanganyi','Mngoma','Mashile','Sibuyi','Nkala','Mosala','Nkadimeng','Matiwane','Maloka','Mahomed','Mntambo','Makofane',
-            'Mogotsi','Moeti','Mashishi','Mphela','Molefi','Sebola','Kumalo','Lebza','Nthabiseng','Mothibi','Makhetha','Malaza','Mahlobo','Thembi','Msimanga',
-            'Mbuyisa','Mbedzi','Mogapi','Mothapo','Rams','Mokhele','Motsoeneng','Nzima','Madikizela','Zwide','Ngoma','Malatjie','Khanyi','Xolani','Ndamase',
-            'Malapane','Mfeka','Monama','Mdunge','Kubayi','Malete','Mdaka','Mabusela','Molete','Sitoe','Maponya','Mokgadi','Thobela','Mashiloane','Dludla',
-            'Sindane','Matome','Lekalakala','Makhubo','Makhubu','Maja','Makhaye','Madikane','Msane','Mncwango','Maile','Mdakane','Mtshweni','Moloko','Maine',
-            'Mothupi','Mabote','Matjila','Ntokozo','Mbonambi','Manganye','Manamela','Makwela','Mogorosi','Seleke','Ndala','Mali','Mawela','Khomo','Mahlatsi',
-            'Mayekiso','Mbonani','Khwela','Molokomme','Manaka','Moabi','Lethabo','Makamu','Thabede','Mkansi','Ndlazi','Moleko','Malindi','Mbuli','Mhlungu',
-            'Mogashoa','Siwela','Mabe','Ngoepe','Molebatsi','Moatshe','Singo','Ndlangamandla','Malema','Mahlatse','Tshabangu','Modisane','Kubeka','Mokgosi',
-            'Lebese','Mdhluli','Madolo','Monyela','Machava','Mhlaba','Madela','Lushaba','Masha','Maimela','Mongwe','Matabane','Mdingi','Mabizela','Tshepiso',
-            'Mailula','Mabula','Mvubu','Mojapelo','Zweni','Mashao','Mooketsi','Tshehla','Phetla','Kula','Mathaba','Molele','Ntosh','Hlengwa','Nkosinathi','Ncwane',
-            'Malele','Malesa','Nkwana','Malunga','Thebe','Maredi','Siziba','Sibande','Hlalele','Masenya','Mkwanazi','Mabika','Phindile','Mabuya','Busi','Mndebele',
-            'Lungile','Busisiwe','Mabitsela','Mashabane','Mathibe','Phillip','Makhado','Mongale','Mashau','Mabhena','Mbili','Lebepe','Mondlane','Maruping',
-            'Ngoveni','Motshabi'
+            'Mthimunye','Madondo','Jiyane','Masilo','Mavundla','Majozi','Sbiya','Mpungose','Mashinini','Mashigo','Mangena','Sangweni','Mukwevho','Mashiane',
+            'Monareng','Kheswa','Dyantyi','Nkwanyana','Tlou','Myeza','Mzimela','Malope','Chabalala','Phasha','Mzobe','Chiloane','Morake','Makola','Msweli','Ntombi',
+            'Moagi','Legodi','Moremi','Motha','Nxele','Nyembe','Thobejane','Shangase','Lebogang','Komane','Fakude','Motau','Hlongwa','Sikhosana','Phungula','Buys',
+            'Mkhatshwa','Cebekhulu','Madiba','Mntungwa','Manganyi','Molepo','Mshengu','Ngubo','Manqele','Mbokazi','Cossa','Khambule','Sekgobela','Mahlalela',
+            'Molapo','Buhle','Mash','Mncwabe','Mphuthi','Maila','Moletsane','Mashabela','Sikhakhane','Ngubeni','Mlaba','Mashilo','Marumo','Mamba','Masombuka',
+            'Ngcongo','Mathibela','Mojela','Jafta','Motsamai','Philander','Mnyandu','Malepe','Nsele','Makua','Nkoana','Mwelase','Simango','Nyawo','Mavimbela',
+            'Phala','Motsepe','Khanye','Kgomo','Mzizi','Sanele','Mbuyazi','Maswanganyi','Chonco','Mngoma','Mashile','Sibuyi','Nkala','Mosala','Chiliza','Nkadimeng',
+            'Matiwane','Maloka','Mahomed','Mntambo','Makofane','Mogotsi','Moeti','Sokhela','Mashishi','Mphela','Molefi','Sebola','Chirwa','Kumalo','Lebza',
+            'Nthabiseng','Mothibi','Makhetha','Malaza','Mahlobo','Zikalala','Thembi','Msimanga','Mbuyisa','Mbedzi','Mogapi','Mothapo','Rams','Nhleko','Mokhele',
+            'Nhlapho','Motsoeneng','Nzima','Madikizela','Diale','Shoba','Zwide','Ngoma','Malatjie','Khanyi','Xolani','Ndamase','Malapane','Mfeka','Monama','Mdunge',
+            'Kubayi','Malete','Mdaka','Mabusela','Molete','Sitoe','Maponya','Mokgadi','Bopape','Thobela','Mashiloane','Dludla','Blose','Sindane','Matome','Zikode',
+            'Lekalakala','Makhubo','Makhubu','Maja','Ximba','Makhaye','Madikane','Msane','Mncwango','Maile','Mdakane','Gamede','Mtshweni','Moloko','Maine',
+            'Mothupi','Mabote','Matjila','Ntokozo','Mbonambi','Manganye','Manamela','Makwela','Mogorosi','Seleke','Mjoli','Ndala','Mali','Mawela','Khomo',
+            'Mahlatsi','Mayekiso','Shelembe','Mbonani','Khwela','Molokomme','Manaka','Moabi','Lethabo','Makamu','Sosibo','Chuene','Thabede','Mkansi','Ndlazi',
+            'Moleko','Malindi','Shenge','Ubisi','Mbuli','Mhlungu','Mogashoa','Siwela','Mabe','Ngoepe','Molebatsi','Jaftha','Moatshe','Singo','Ndlangamandla',
+            'Nyandeni','Malema','Mahlatse','Lamola','Tshabangu','Modisane','Kubeka','Mokgosi','Lebese','Mdhluli','Madolo','Monyela','Machava','Mhlaba','Madela',
+            'Yende','Lushaba','Nyirenda','Masha','Maimela','Mongwe','Matabane','Mdingi','Nhlabathi','Mabizela','Shabane','Skhakhane','Tshepiso','Mailula','Mabula',
+            'Shumba','Chili','Mvubu','Mojapelo','Zweni','Mashao','Mooketsi','Tshehla','Phetla','Kula','Mathaba','Molele','Ntosh','Hlengwa','Nkosinathi','Ncwane',
+            'Malele','Malesa','Nkwana','Nyambose','Malunga','Thebe','Maredi','Siziba','Sibande','Hlalele','Masenya','Mkwanazi','Mabika','Gatsheni','Phindile',
+            'Mabuya','Busi','Mndebele','Kabini','Lungile','Busisiwe','Mabitsela','Mashabane','Mathibe','Phillip','Makhado','Mongale','Mashau','Mabhena','Mbili',
+            'Lebepe','Mqadi','Ziqubu','Dumakude','Mondlane','Nonyane','Maruping','Ngoveni','Cindi','Motshabi','Mtungwa','Sithebe','Mmola','Mageba','Hlabisa',
+            'Ndawonde','Moseki','Gumbo','Mgidi','Motsumi','Ntanzi','Mzolo','Mseleku','Gwebu','Tembo','Mboweni','Magoro','Zimba','Ntando','Gabela','Mwale','Tshaka',
+            'Baloi','Vundla','Makeleni','Luyanda','Seleka','Hlela','Mothiba','Teffo','Masia','Ntshingila','Nsibande','Ndabeni','Machete','Selowa','Seema',
+            'Ramoshaba','Thulo','Lebelo','Machaba','Moyana','Mbiza','Msuthu','Makgoba','Swartbooi','Maepa','Motlhabane','Mabona'
+          ] },
+        { r: 3,
+          first: [
+            
+          ],
+          last: [
+            'Goliath','Ruiters','Diedericks','Snyders','Plaatjie','Esau','Carolus'
           ] },
     ],
     IRL: [
