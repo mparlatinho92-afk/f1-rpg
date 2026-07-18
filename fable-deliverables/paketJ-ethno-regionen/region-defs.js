@@ -80,6 +80,33 @@
 //   w 0.12 (aspirational-fair wie RSA r2; Grids blieben weiß-dominiert).
 //   Kuratiert (Shona/Ndebele) — ZIM hat keine Datenbasis.
 const NEW_REGIONS = {
+    // WELLE 4 (2026-07-18): RSA r3 — kapmalaiisch / Cape Coloured, minYear 1995.
+    // Vornamen sind bewusst afrikaans-/englischsprachig, NICHT Nguni: die Gruppe
+    // spricht Afrikaans bzw. Englisch als Erstsprache. Deshalb eine eigene Region
+    // statt die Namen nach r2 (Zulu/Xhosa/Sotho) zu schieben — „Thabo Plaatjies"
+    // wäre genauso falsch wie „Christopher Plaatjies" im Jahr 1962.
+    // Der kapmalaiisch-muslimische Anteil (Mogamat, Achmat, Yusuf, Faried) ist
+    // Teil derselben Gruppe und hier mit drin.
+    RSA: {
+        w: 0.05, minYear: 1995,
+        first: [
+            ['Ashley', 3], ['Wayne', 3], ['Chad', 3], ['Denzil', 2], ['Bradley', 3], ['Shaun', 3],
+            ['Clint', 2], ['Jerome', 2], ['Randall', 2], ['Ashwin', 2], ['Ricardo', 2], ['Lee', 2],
+            ['Damian', 2], ['Marlon', 2], ['Quinton', 2], ['Garth', 2], ['Byron', 2], ['Kurt', 2],
+            ['Dean', 2], ['Ryan', 3], ['Craig', 2], ['Warren', 2], ['Rowan', 1], ['Delano', 1],
+            ['Cheslin', 1], ['Juan', 1], ['Elton', 1], ['Keegan', 2], ['Devon', 2],
+            // kapmalaiisch-muslimisch
+            ['Mogamat', 2], ['Achmat', 2], ['Yusuf', 2], ['Faried', 1], ['Riedwaan', 1],
+            ['Nazeem', 1], ['Shafiek', 1], ['Igshaan', 1], ['Tauriq', 1]
+        ],
+        last: [
+            ['Hendricks', 4], ['Fortuin', 3], ['Arendse', 3], ['September', 3], ['Plaatjies', 3],
+            ['Witbooi', 2], ['Cupido', 2], ['Malgas', 2], ['Julies', 2], ['Damons', 2],
+            ['Adonis', 2], ['Afrika', 2], ['Baartman', 2], ['Maarman', 2], ['Sampson', 2],
+            ['Appolis', 1], ['Kleinsmit', 1], ['Windvogel', 1], ['Klaasen', 1], ['Rooi', 1],
+            ['October', 1], ['Januarie', 1], ['Februarie', 1], ['Plaatje', 1], ['Hendrikse', 1]
+        ]
+    },
     USA: {
         w: 0.12, // hispanisch — KEIN minYear
         // Anglo-Kopf (Michael…Tyler) bewusst mit drin: 2./3. Generation trägt
@@ -230,11 +257,20 @@ const WEIGHT_PROPOSALS = {
     FRA: { action: 'keep', w: [0.90, 0.10],
         beleg: 'Maghreb/Westafrika 10 %: Anker Isack Hadjar (algerischstämmig, F1 2025) + Kart-Basis Banlieue; ' +
                'minYear 1995 passt (Hauptzuzug 1960er–70er, 2. Generation debütiert ab ~1990ern).' },
-    RSA: { action: 'change', w: [0.45, 0.35, 0.20], wAlt: [0.40, 0.30, 0.30],
+    // WELLE 4 (2026-07-18): r3 kapmalaiisch/Cape Coloured ergänzt, minYear 1995.
+    // Die Namen (Plaatjies, Arendse, Cupido, Fortuin, September, Witbooi …) lagen
+    // bis dahin ungegated in r0 = 7,8 % der Ziehungen → „Christopher Plaatjies"
+    // war 1962 ziehbar. In der Apartheid-Ära war der Rundstreckensport für
+    // Coloured-Fahrer genauso verschlossen wie für schwarze, also dasselbe Gate.
+    // 0.05 statt Bevölkerungsanteil (8,9 %): dieselbe Motorsport-Untergewichtung
+    // wie bei r2, plus die mehrdeutigen Namen bleiben in r0 (s.u.) und tragen
+    // faktisch einen Teil dieser Gruppe schon.
+    RSA: { action: 'change', w: [0.43, 0.33, 0.19, 0.05], wAlt: [0.45, 0.35, 0.20],
         beleg: 'R2 (afrikanisch) 30 % überzeichnet die Motorsport-Realität: SA-Rundstrecken-Grids sind auch ' +
                'nach 1995 mehrheitlich weiß; schwarze Fahrer existieren (Gugu Zulu, Tschops Sipuka) aber als ' +
-               'Minderheit. 20 % bleibt aspirational-fair, 45/35 spiegelt anglo/afrikaans-Rennszene (Scheckter×2 ' +
-               'anglo; van der Merwe, Niemann afrikaans).' },
+               'Minderheit. 19 % bleibt aspirational-fair, 43/33 spiegelt anglo/afrikaans-Rennszene (Scheckter×2 ' +
+               'anglo; van der Merwe, Niemann afrikaans). R3 Coloured 5 % — Kapstadt-Kartszene belegt ' +
+               '(Killarney), aber keine F1-Präzedenz.' },
     IND: { action: 'change', w: [0.50, 0.50], wAlt: [0.60, 0.40],
         beleg: 'Indiens Motorsport-Kernland ist der SÜDEN (Chennai/Coimbatore: MMRT, Kari Speedway): ' +
                'BEIDE indischen F1-Fahrer sind Südinder (Karthikeyan/Coimbatore, Chandhok/Chennai). ' +

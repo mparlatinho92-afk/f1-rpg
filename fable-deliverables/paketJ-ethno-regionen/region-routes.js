@@ -104,7 +104,7 @@ const ESP_BAS_FIRST = /^(Mikel|Iker|Ander|Unai|Aitor|Asier|Gorka|Jon|Ion|Iñaki|
 //    ⚠ KEINE generischen Präfix-Regexe (Th-, M-): "Thomas"/"Martin" wären
 //    Beifang — nur belegte Namen + enge Präfixe.
 const RSA_AF_FIRST = /^(Johan|Pieter|Piet|Willem|Jan|Hennie|Koos|Danie|Gert|Jaco|Riaan|Christo|Deon|Ruan|Heinrich|Charl|Divan|Janco|Wikus|Hendrik|Francois|François|Wian|Tiaan|Johannes|Stephanus|Cornelius|Andries|Frans|Dawie|Fanie|Sarel|Tinus|Wynand|Schalk|Abrie|Barend|Jacques|Andre|André|Nico|Leon|Louis|Kobus|Gerhard|Gideon|Hannes|Hansie|Herman-?\w*|Jannie|Japie|Lodewyk|Lourens|Marthinus|Nicolaas|Ockert|Petrus|Phillipus|Rudi|Rudolf|Sakkie|Servaas|Theuns|Thys|Wessel|Attie|Bennie|Boeta|Braam|Buks|Cobus|Corne|Corné|Dirk-?\w*|Driekus|Etienne-?\w*|Faan|Flip|Gawie|Giel|Hein|Henning-?\w*|Izak|Jurie|Kallie|Karel|Lukas-?\w+|Manie|Naas|Neels|Niekie|Okkie|Paulus|Pikkie|Ras|Roelof|Schoeman|Stoffel|Tertius|Vlam|Wouter-?\w*|Wynie)$/i;
-const RSA_ZU_FIRST = /^(Thabo|Tshepo|Bongani|Lebohang|Olwethu|Thami|Nkanyiso|Bonga|Mpendulo|Letlhogonolo|Ayabonga|Lesiba|Thabang|Sipho|Thabiso|Mpho|Themba|Sandile|Siyabonga|Tebogo|Sibusiso|Xolani|Andile|Thulani|Mandla|Thapelo|Vusi|Sbusiso|Sanele|Nhlanhla|Ayanda|Simphiwe|Thato|Sabelo|Nkosinathi|Tumelo|Njabulo|Sizwe|Katlego|Sfiso|Kabelo|Sello|Musa|Sihle|Karabo|Mxolisi|Teboho|Mduduzi|Sifiso|Bheki|Kagiso|Jabulani|Nkululeko|Sphamandla|Neo|Itumeleng|Lindokuhle|Lebogang|Dumisani|Senzo|Thokozani|Ntokozo|Mlungisi|Sthembiso|Phumlani|Philani|Thando|Nathi|Anele|Ndumiso|Mthokozisi|Sakhile|Luyanda|Sphiwe|Bonginkosi|Siya|Lucky|Gift|Prince|Innocent|Given|Justice|Blessing|Wiseman|Goodwill|Welcome|Mzwandile|Bhekani|Bandile|Lwazi|Melusi|Mfundo|Minenhle|Mpumelelo|Msizi|Muzi|Mzukisi|Nceba|Nkosana|Nqobile|Ntando|Phila|Phumelele|Qiniso|Sanele-?\w*|Sazi|Sechaba|Senzeni|Simo|Sinethemba|Siphelele|Siphesihle|Siphiwe|Sizwe-?\w*|Skhumbuzo|Solly|Songezo|Thamsanqa|Thembinkosi|Vukani|Vuyani|Wandile|Xolile|Zamokuhle|Zenzele|Zolani|Zwelethu|Bafana|Bhekizizwe|Dingane|Fikile|Gugulethu|Hlengiwe|Jabu|Khaya|Khulekani|Lindani|Lungelo|Makhosi|Mangaliso|Mzwakhe|Ndabenhle|Nhlakanipho|Nyiko|Rethabile|Sandi|Sbonelo|Sicelo|Sindiso|Siphamandla|Thulasizwe|Velaphi|Vusumuzi|Zakhele|Bongane|Ofentse|Luthando|Nkosi|Mdu|Lebo|Obakeng|Banele|Mbongeni|Mbuso|Ntuthuko|Aphiwe|Mahlatse|Bulelani|Asanda|Katleho|Lindo|Luvuyo|Mondli|Mojalefa|Abongile|Boitumelo|Sivuyile|Kgomotso|Kgotso|Menzi|Spha|Tshidiso|Akhona|Thembelani|Mbulelo|Zweli|Lwando|Zama|Lethabo|Syanda|Kgothatso|Lefa|Yanga|Unathi|Mongezi|Manqoba|Lungisani|Mashudu|Tebza|Khutso|Loyiso|Mthoko|Mncedisi|Mohau|Nduduzo|Fana|Lungile|Nkosikhona|Mzamo|Bongumusa|Kamohelo|Buhle|Luzuko|Lonwabo|Thuso|Tshegofatso|Olebogeng|Smanga|Xolisa|Lihle|Lubabalo|Thulane|Lesedi|Monde|Tsepo|Athenkosi|Zuko|Malibongwe|Odwa|Zola|Sandiso|Sbongiseni|Sibongiseni|Luvo|Aviwe|Tinashe|Lovemore|Fortune|Wonder)$/i;
+const RSA_ZU_FIRST = /^(Phuti|Koketso|Thobani|Moeketsi|Yamkela|Tsietsi|Lindelani|Tiisetso|Siphosethu|Lehlohonolo|Siviwe|Sive|Lunga|Thabo|Tshepo|Bongani|Lebohang|Olwethu|Thami|Nkanyiso|Bonga|Mpendulo|Letlhogonolo|Ayabonga|Lesiba|Thabang|Sipho|Thabiso|Mpho|Themba|Sandile|Siyabonga|Tebogo|Sibusiso|Xolani|Andile|Thulani|Mandla|Thapelo|Vusi|Sbusiso|Sanele|Nhlanhla|Ayanda|Simphiwe|Thato|Sabelo|Nkosinathi|Tumelo|Njabulo|Sizwe|Katlego|Sfiso|Kabelo|Sello|Musa|Sihle|Karabo|Mxolisi|Teboho|Mduduzi|Sifiso|Bheki|Kagiso|Jabulani|Nkululeko|Sphamandla|Neo|Itumeleng|Lindokuhle|Lebogang|Dumisani|Senzo|Thokozani|Ntokozo|Mlungisi|Sthembiso|Phumlani|Philani|Thando|Nathi|Anele|Ndumiso|Mthokozisi|Sakhile|Luyanda|Sphiwe|Bonginkosi|Siya|Lucky|Gift|Prince|Innocent|Given|Justice|Blessing|Wiseman|Goodwill|Welcome|Mzwandile|Bhekani|Bandile|Lwazi|Melusi|Mfundo|Minenhle|Mpumelelo|Msizi|Muzi|Mzukisi|Nceba|Nkosana|Nqobile|Ntando|Phila|Phumelele|Qiniso|Sanele-?\w*|Sazi|Sechaba|Senzeni|Simo|Sinethemba|Siphelele|Siphesihle|Siphiwe|Sizwe-?\w*|Skhumbuzo|Solly|Songezo|Thamsanqa|Thembinkosi|Vukani|Vuyani|Wandile|Xolile|Zamokuhle|Zenzele|Zolani|Zwelethu|Bafana|Bhekizizwe|Dingane|Fikile|Gugulethu|Hlengiwe|Jabu|Khaya|Khulekani|Lindani|Lungelo|Makhosi|Mangaliso|Mzwakhe|Ndabenhle|Nhlakanipho|Nyiko|Rethabile|Sandi|Sbonelo|Sicelo|Sindiso|Siphamandla|Thulasizwe|Velaphi|Vusumuzi|Zakhele|Bongane|Ofentse|Luthando|Nkosi|Mdu|Lebo|Obakeng|Banele|Mbongeni|Mbuso|Ntuthuko|Aphiwe|Mahlatse|Bulelani|Asanda|Katleho|Lindo|Luvuyo|Mondli|Mojalefa|Abongile|Boitumelo|Sivuyile|Kgomotso|Kgotso|Menzi|Spha|Tshidiso|Akhona|Thembelani|Mbulelo|Zweli|Lwando|Zama|Lethabo|Syanda|Kgothatso|Lefa|Yanga|Unathi|Mongezi|Manqoba|Lungisani|Mashudu|Tebza|Khutso|Loyiso|Mthoko|Mncedisi|Mohau|Nduduzo|Fana|Lungile|Nkosikhona|Mzamo|Bongumusa|Kamohelo|Buhle|Luzuko|Lonwabo|Thuso|Tshegofatso|Olebogeng|Smanga|Xolisa|Lihle|Lubabalo|Thulane|Lesedi|Monde|Tsepo|Athenkosi|Zuko|Malibongwe|Odwa|Zola|Sandiso|Sbongiseni|Sibongiseni|Luvo|Aviwe|Tinashe|Lovemore|Fortune|Wonder)$/i;
 // ⚠ WELLE-3-NACHLESE (Apartheid-Gate, 2026-07-18): die 80 Namen ab |Bongane sind
 // die komplette afrikanische Restmasse aus dem r0-TAIL des gebauten Pools —
 // „Mbongeni Smith" war 1962 ziehbar, weil die explizite Liste sie verfehlte
@@ -168,7 +168,7 @@ const CAN_EA_LAST_ADD = /^(Yu|Chang|Chu|Fung|Yuen|Liang|Chiu|Ly|Tsang|Hu|Truong|
 const CAN_ASIAN_LAST_ADD = new RegExp(CAN_SA_LAST_ADD.source.slice(0, -2) + '|' + CAN_EA_LAST_ADD.source.slice(2));
 // RSA: Bantu-Nachnamen, die die Präfix-Heuristik verfehlt (Makhanya = M-a-k,
 // das Muster prüft M+Konsonant; Shabalala/Zuma/Kunene … Top-150 ungeroutet).
-const RSA_ZU_LAST_ADD = /^(Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|Majola|Kekana|Kunene|Modise|Zuma|Mudau|Khanyile|Nhlapo|Simelane|Banda|Malatji|Nyathi|Skosana|Mathe|Mohlala|Kubheka|Thwala|Zondo|Nene|Sibisi|Bhengu|Matlala|Duma|Malinga|Biyela|Magagula|Luthuli|Mogale|Motloung|Mulaudzi|Maphumulo|Madonsela|Mohale|Tau|Madlala|Makhanya|Sibeko|Dhlamini|Ledwaba|Sambo|Mavuso|Thabethe|Miya|Zitha|Makhubela|Magwaza|Mosia|Moloto|Gwala|Myeni|Qwabe|Maake|Maduna|Skhosana|Sibanyoni|Rikhotso|Zama|Moeketsi|Makhubele|Maphosa|Malope|Manana|Kgomo|Kganyago|Lekota|Mailula|Makgoba|Maponya|Masango|Maseko|Masilela|Masondo|Mathonsi|Mayisela|Mazila|Mbeki|Mgidi|Mnguni|Mnisi|Radebe|Ramaphosa|Rikhoto|Selepe|Senosi|Shivambu|Sithebe|Ndlela|Nxumalo|Mthiyane|Msimango|Ngubane|Mashaba|Motsepe|Tembe|Maleka|Makola|Zikhali|Lukhele|Thabede|Thebe)$/;
+const RSA_ZU_LAST_ADD = /^(Modise|Pule|Diale|Bopape|Blose|Zikode|Gamede|Shelembe|Chuene|Shenge|Yende|Shabane|Skhakhane|Dumakude|Nonyane|Mwale|Nsibande|Aphane|Jiyane|Komane|Fakude|Nsele|Mwelase|Sanele|Shangase|Nyembe|Chiloane|Sangweni|Mzobe|Dyantyi|Nyoni|Shozi|Twala|Pitso|Nhlanhla|Mzizi|Mjoli|Chili|Kabini|Cindi|Ximba|Nhlapho|Jali|Nyawo|Nyandeni|Lamola|Nyambose|Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|Majola|Kekana|Kunene|Modise|Zuma|Mudau|Khanyile|Nhlapo|Simelane|Banda|Malatji|Nyathi|Skosana|Mathe|Mohlala|Kubheka|Thwala|Zondo|Nene|Sibisi|Bhengu|Matlala|Duma|Malinga|Biyela|Magagula|Luthuli|Mogale|Motloung|Mulaudzi|Maphumulo|Madonsela|Mohale|Tau|Madlala|Makhanya|Sibeko|Dhlamini|Ledwaba|Sambo|Mavuso|Thabethe|Miya|Zitha|Makhubela|Magwaza|Mosia|Moloto|Gwala|Myeni|Qwabe|Maake|Maduna|Skhosana|Sibanyoni|Rikhotso|Zama|Moeketsi|Makhubele|Maphosa|Malope|Manana|Kgomo|Kganyago|Lekota|Mailula|Makgoba|Maponya|Masango|Maseko|Masilela|Masondo|Mathonsi|Mayisela|Mazila|Mbeki|Mgidi|Mnguni|Mnisi|Radebe|Ramaphosa|Rikhoto|Selepe|Senosi|Shivambu|Sithebe|Ndlela|Nxumalo|Mthiyane|Msimango|Ngubane|Mashaba|Motsepe|Tembe|Maleka|Makola|Zikhali|Lukhele|Thabede|Thebe)$/;
 // Welle-3-Nachlese: Thabede/Thebe standen im r0-TAIL (Apartheid-Gate-Leak).
 // SUI: portugiesische Nachnamen ausserhalb von IBERIAN_PT (Pires/Lima standen
 // in den CH-Daten und landeten Deutschschweiz → „Ben Pires" in r0).
@@ -185,7 +185,24 @@ const SUI_PT_LAST_ADD = /^(Pires|Lima|Morais|Magalhães|Magalhaes|Henriques|Guer
 // Negativ-Lookahead nur für anglo-Namen, die zufällig auf Vokal enden.
 // Zweiter Zweig: Sotho-Namen auf -ng/-tse/-tso (Moeng, Monareng, Motsoeneng),
 // die trotz Bantu-Struktur konsonantisch enden.
+// WELLE-4-NACHLESE: die Praefix-Allowlist unten verfehlte Ap-/Ji-/Ko-/Ch-/Ny-
+// (Aphane, Jiyane, Koketso, Chiloane, Nyoni). Zweite, praefix-freie Regel:
+// Bantu-/Sotho-Nachnamen enden auf -a/-o/-u/-i, die europaeischen in DIESEM Pool
+// auf -e/-ie/-ee (Jooste, Willemse, Clarke, George, Lawrence, Harmse, Carelse).
+// An den echten Poolnamen gemessen: 54 Treffer, 0 europaeische Fehlalarme.
+// Die -e-Endungen bleiben deshalb bewusst draussen; die Bantu-Namen darunter
+// (Aphane, Komane, Fakude, Nsele) stehen in RSA_ZU_LAST_ADD explizit.
+const RSA_ZU_LAST_VOWEL = /^(?!(Moosa|Vosloo|Prinsloo|Rossouw|Naidu|Sithole|Costa|Correia|Silva|Souza|Pereira|Rocha|Cunha)$)[A-Z][a-z]{3,}[aoui]$/;
+
 const RSA_ZU_LAST_STRUCT = /^(?!(Moore|Munro|Milne|Meade|Malone|More|Moosa|Marie|Mare|Mabe|Monroe|Moule|Mode|Male|Mole|Mule|Manning|Morning|Mustang|Lansing)$)(Ma|Mo|Me|Mi|Mu|Le|Se|Ra|Tl|Th|Kh|Ph|Ts|Si|Zo|Lu|Bu|Ku|Pu|Mm|Nt|Nd|Ng)[a-z]+([aeiou]|ng|tse|tso)$/;
+
+// WELLE 4: eindeutig kapmalaiisch/Cape Coloured → r3 (minYear 1995).
+// NUR die unstrittigen. Jacobs/Adams/Abrahams/Davids/Petersen/Daniels/Isaacs/
+// Swartz/Titus/Solomon/Samuels/Lewis (zusammen 15,6 % der r0-Nachnamen) bleiben
+// BEWUSST in r0 — das sind zugleich weiße anglo- und jüdisch-südafrikanische
+// Namen. Sie mit zu verschieben würde einen neuen Fehler einbauen, statt einen
+// zu beheben: „Jacobs" steht in der kuratierten r0-Basis von curated-base-v2.js.
+const RSA_CO_LAST = /^(April|Plaatjie|Goliath|Carolus|Ruiters|Diedericks|Snyders|Esau|Jephta|Kannemeyer|Jantjies|Klaas|Plaatjies|Plaatje|Arendse|Cupido|Fortuin|Julies|Damons|Baartman|Witbooi|September|October|Januarie|Februarie|Maarman|Malgas|Appolis|Kleinsmit|Windvogel|Rooi|Klaasen|Adonis|Afrika|Sampson|Hendricks|Hendrikse)$/;
 
 // Afrikaanse Namen auf Vokal-Endung — müssen VOR dem Struktur-Netz greifen,
 // sonst zieht sie die Morphologie-Regel fälschlich nach r2.
@@ -384,10 +401,10 @@ const BAN_LAST_ADD = {
           // (Minnie/Lucia/Lulu/Martha/Monica/Mary), teils Nguni-Vornamen
           // (Musa/Sipho/Thato/Thulani/Zodwa) — als Nachname in JEDER Region Junk.
           // NICHT drin: Lucas/Marcus/Maxwell/Moss/May — echte englische Nachnamen.
-          /^(Mike|Minnie|Lucia|Lulu|Martha|Monica|Mary|Musa|Sipho|Siya|Sizwe|Sihle|Simphiwe|Siyabonga|Thabiso|Thandi|Thato|Thapelo|Thulani|Thuli|Zodwa|Lesego|Lunga|Mandla|Sibusiso|Thandeka|Thabang|Promise)$/i,
+          /^(Mike|Minnie|Lucia|Lulu|Martha|Monica|Mary|Musa|Sipho|Siya|Sizwe|Sihle|Simphiwe|Siyabonga|Thabiso|Thandi|Thato|Thapelo|Thulani|Thuli|Zodwa|Lesego|Lunga|Mandla|Sibusiso|Thandeka|Thabang|Promise|Tebogo|Karabo|Kagiso|Neo|Zanele|Vuyo|Kgomotso|Sarah|Caroline|Christine|Ayanda|Sphiwe|Siphosethu|Andile|Sipho|Nkosi|Sandile|Bonga|Themba|Sizwe|Patricia|Cynthia|Linda|Amanda|Gloria|Julia|Sylvia|Lydia|Prudence|Eunice|Constance|Yvonne|Rebecca|Florence|Innocentia|Fortunate|Valentine|Nokuthula|Nonhlanhla|Zinhle|Lindiwe|Nobuhle|Palesa|Dineo|Dimakatso|Boitumelo|Asanda|Anele|Lihle|Chuma|Tebza|Sbusiso|Njabulo|Sfiso|Kabelo|Sabelo|Tumelo|Koketso|Nathi|Lindo|Lindokuhle|Kamogelo|Mzamo|Winnie|Naidu|Jabu|Sbu|Modise)$/i,
           // WELLE 4: „Tugendnamen" der ZA-Daten — im südafrikanischen Englisch als
           // VORname vergeben (Innocent Chukwuma-Typ), nie als Nachname.
-          /^(Innocent|Hope|Queen|Blessing|Fortune|Faith|Patience|Given|Zandile|Nomsa|Justice|Wiseman|Welcome|Goodwill|Lovemore|Charity|Comfort|Princess|Wonder)$/i,
+          /^(Innocent|Hope|Queen|Blessing|Fortune|Faith|Patience|Given|Zandile|Nomsa|Justice|Wiseman|Welcome|Goodwill|Lovemore|Charity|Comfort|Princess|Wonder|Happiness|Pat|Precious|Nkosana|Success|Talent|Trust|Gentle)$/i,
           // WELLE 4: dieselbe Allowlist-Lücke wie oben, nur als Nachname —
           // Martín/Ángel/Simón/Víctor = 3,0 % der r0-Nachnamen. Spanische
           // Akutformen haben in keiner der drei RSA-Regionen einen Beleg.
@@ -429,7 +446,7 @@ const ROUTE_LAST_ADD = {
     CAN: [[CAN_SA_LAST_ADD, 2], [CAN_EA_LAST_ADD, 3]],
     // Reihenfolge kritisch: die beiden Allowlists zuerst, das Struktur-Netz zuletzt —
     // so gewinnen bekannte afrikaanse Namen (Lubbe, Matthee) vor der Morphologie.
-    RSA: [[RSA_AF_LAST_ADD, 1], [RSA_AF_LAST_STRUCT_KEEP, 1], [RSA_ZU_LAST_ADD, 2], [RSA_ZU_LAST_STRUCT, 2]],
+    RSA: [[RSA_AF_LAST_ADD, 1], [RSA_AF_LAST_STRUCT_KEEP, 1], [RSA_CO_LAST, 3], [RSA_ZU_LAST_ADD, 2], [RSA_ZU_LAST_STRUCT, 2], [RSA_ZU_LAST_VOWEL, 2]],
     SUI: [[SUI_PT_LAST_ADD, 3]],
     // WELLE 3: SWE ex-jugoslawische Nachnamen → r1 (braucht Build-Edit e,
     // sonst frisst der BALKAN-Ban sie vor der Route)
@@ -452,7 +469,7 @@ const ROUTE_LAST_REPLACE_NOTE = { CAN: 'CFG.route Eintrag 2 splitten: [SOUTH_ASI
 
 module.exports = {
     ROUTE_FIRST, BAN_FIRST, ROUTE_LAST_ADD, BAN_LAST_ADD, ROUTE_LAST_REPLACE_NOTE,
-    BEL_FL_LAST_ADD, CAN_ASIAN_LAST_ADD, RSA_ZU_LAST_ADD, RSA_AF_LAST_ADD, SUI_PT_LAST_ADD,
+    BEL_FL_LAST_ADD, CAN_ASIAN_LAST_ADD, RSA_ZU_LAST_ADD, RSA_AF_LAST_ADD, RSA_CO_LAST, RSA_ZU_LAST_VOWEL, SUI_PT_LAST_ADD,
     // AUSBAU (CAN-Split + GRE):
     CAN_SA_LAST_ADD, CAN_EA_LAST_ADD, CAN_SA_FIRST, CAN_EA_PINYIN_FIRST, CAN_EA_WESTERN_FIRST,
     GRE_STRUCT_LAST, GRE_FOREIGN_SOU_LAST, GRE_GIVEN_LAST, GRE_FEMALE_OU_LAST,
