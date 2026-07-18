@@ -58,7 +58,10 @@ const FIRST_CLASSES = {
     // Fernando (ital. real) — die Kurven-Exclude-Generierung hätte sie sonst
     // aus den GER/ITA/FRA-Kurven verbannt. USA routet sie weiter nach r1
     // (USA_HISP_R1_FIRST ist unabhängig von dieser Klasse).
-    HISPANIC: /^(Jose|José|Juan|Carlos|Luis|Miguel|Jorge|Jesus|Jesús|Pedro|Alejandro|Javier|Ricardo|Francisco|Angel|Ángel|Andres|Andrés|Julio|Enrique|Salvador|Ramon|Ramón|Raul|Raúl|Cesar|César|Hector|Héctor|Pablo|Jaime|Gustavo|Guillermo|Felipe|Rodrigo|Santiago|Ignacio|Joaquin|Joaquín|Gonzalo|Marcelo|Mauricio|Humberto|Osvaldo|Juan Carlos|Jose Luis|José Luis|Paco|Pepe|Manolo|Juanjo|Juanma)$/
+    // 2026-07-18 (ITA-Tail-Vertiefung): Osvaldo (Bagnoli), Gustavo (Thöni) und
+    // unakzentuiertes Raul (Bova) ebenfalls raus — italienisch-nativ, standen
+    // in den vertieften ITA-Kurven; „Raúl" mit Akzent bleibt distinkt spanisch.
+    HISPANIC: /^(Jose|José|Juan|Carlos|Luis|Miguel|Jorge|Jesus|Jesús|Pedro|Alejandro|Javier|Ricardo|Francisco|Angel|Ángel|Andres|Andrés|Julio|Enrique|Salvador|Ramon|Ramón|Raúl|Cesar|César|Hector|Héctor|Pablo|Jaime|Guillermo|Felipe|Rodrigo|Santiago|Ignacio|Joaquin|Joaquín|Gonzalo|Marcelo|Mauricio|Humberto|Juan Carlos|Jose Luis|José Luis|Paco|Pepe|Manolo|Juanjo|Juanma)$/
 };
 
 // Nationen, für die eine Klasse NATIV ist (kein Ban — der eigene Namensstock):

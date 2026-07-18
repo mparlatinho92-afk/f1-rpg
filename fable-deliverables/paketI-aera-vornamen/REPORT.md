@@ -10,11 +10,19 @@ Alle Zahlen reproduzierbar: `scripts/README.md`; Rohwerte: `data/fit-report.json
 | GBR | 539 | 590 | **590** |
 | USA | 588 | 590 | **590** |
 | FRA | 430 | 550 | **551** |
-| ITA | 590 | 590 | **407** ⚠ |
+| ITA | 590 | 590 | **407** ⚠ → **457** (Nachtrag s. u.) |
 
 Kein Aufblähen; GER/ITA unter Budget, weil die Jahrgangs-Quellen nicht mehr hergeben
 (METHODIK §8) — bewusst **nicht** mit Kaggle-Gegenwartsnamen aufgefüllt. ITA hat dafür
 erstmals eine echte Zeitachse statt eines undatierten Blobs.
+
+> **Nachtrag ITA-Tail-Vertiefung (2026-07-18, `scripts/deepen-ita-ranks.js`):** Die
+> kuratierten Dekadenlisten 1900–1990 wurden von 50 auf 120 Namen je Dekade vertieft
+> (Union 113 → 241; Tail-Genauigkeit ±15 Ränge statt ±5, s. `_meta.tail`). Wirkung:
+> Pool 407 → **457**, eff je Jahrgang 1930: 27 → **35** (85 → 191 aktiv), 1955: 37 →
+> **51**, 1980: 42 → **57**; modern bleibt ISTAT-gebunden (~52). Kopf-Anker intakt:
+> Giuseppe 1930 8,6 % (Korridor ~9 %), Reihenfolge unverändert. Die Zahlen-Tabellen
+> unten zeigen den Stand VOR dem Nachtrag; aktuelle Werte: `data/fit-report.json`.
 
 ## 2. Effektive Größe (Simpson `1/Σp²`) — das Erfolgsmaß
 

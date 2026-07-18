@@ -12,6 +12,12 @@ node derive-era-first-names.js   # 6. D2: ../era-first-names.js + fit-report + i
 node vorher-eff.js               # 7. D4-Baseline: eff-Größen des HEUTIGEN Pools (liest data/names.js, nur lesend)
 ```
 
+`deepen-ita-ranks.js` (Nachtrag 2026-07-18) hat die ITA-Dekadenlisten einmalig
+50 → 120 je Dekade vertieft — bereits in `ita-decade-ranks.json` enthalten,
+NICHT erneut laufen lassen (wirft dann Duplikat-Fehler). Nach jeder Kurven-
+Änderung: `data/era-first-names.js` ersetzen + `paketJ-ethno-regionen/
+gen-era-curve-excludes.js` neu generieren (ERA_FIRST_EXCLUDE in index.html).
+
 Schritte 4–7 laufen **ohne** Rohdaten — die eingecheckten `../data/cohorts-*.json`
 + Rang-Dateien reichen. Schritte 1–3 nur nötig, wenn die Quellen aktualisiert werden.
 
