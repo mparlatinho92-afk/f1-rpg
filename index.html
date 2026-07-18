@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.92</title>
+    <title>F1 RPG v0.9.14.93</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.92 (aktuell) - 18.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.93 (aktuell) - 18.07.2026</div>
+                            <div>&#8226; NEU: vierte Konstrukteursklasse unter Backmarker - Kleinteams fahren Teilsaisons wie historisch</div>
+                            <div>&#8226; FIX: Meldungen 1978 von 34,8 auf 29,0 (real 27,6) - Werksfahrer kleiner Teams meldeten jedes Rennen</div>
+                            <div>&#8226; NEU: Landsmann-Bonus nach Groesse und Tier statt nach Aera - war ab 1980 komplett abgeschaltet</div>
+                            <div>&#8226; PRUEFUNG: Nuerburgring-Startfeld bleibt bei plus 4, aera-genaue Variante war messbar schlechter</div>
+                            <div class="font-bold text-slate-400">v0.9.14.92 - 18.07.2026</div>
                             <div>&#8226; NEU: Suedafrika bekommt vierte Namensregion (kapmalaiisch/Cape Coloured) mit 1995-Gate</div>
                             <div>&#8226; FIX: 14,5 Prozent ungeroutete Bantu-Nachnamen in Region 0 - Aphane, Jiyane, Koketso wurden von der Praefix-Regel verfehlt</div>
                             <div>&#8226; FIX: neue Regel ueber die Wortendung statt ueber Praefixe - 0 Fehlalarme bei europaeischen Namen</div>
@@ -3038,7 +3043,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.92';
+        const VERSION = '0.9.14.93';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4071,7 +4076,14 @@
                 if (year >= 1975 && year <= 1986) return 20;
                 return base;   // 1950–57, 1972–74, ab 1987: kein Sonderfall
             }
-            // Nürburgring / Nordschleife (bis 1976): größeres Grid möglich
+            // Nürburgring / Nordschleife (bis 1976): größeres Grid möglich.
+            // GEPRÜFT 2026-07-18 (v0.9.14.93) — +4 bleibt, obwohl das gemessene
+            // Residuum gegen den Jahresschnitt nur +3,0 beträgt (1951–55 +4,7,
+            // 1956–76 +2,6; ab 1984 GP-Strecke +0,2, Regel greift dort schon nicht).
+            // Eine ära-gestaffelte Variante (+5 / +3) wurde getestet und war
+            // MESSBAR SCHLECHTER: mittlerer Fehler 3,2 statt 2,9 über 13 Stichjahre.
+            // Grund: die Jahresschwankung schlägt jeden Ära-Offset — 1953 hatte 36
+            // Starter, 1954 nur 21. Nicht weiter feintunen, das Rauschen gewinnt.
             if ((circuit.includes('nürburgring') || circuit.includes('nurburgring')) && year <= 1976) {
                 return Math.min(base + 4, 30);
             }
@@ -5620,16 +5632,64 @@
             return block.slice(0, n).sort((a, b) => a - b);
         }
 
+        // === KLEINSTKONSTRUKTEURE (v0.9.14.93) ===
+        // Vierte Klasse UNTERHALB des Dreier-Systems (Top/Mittelfeld/Backmarker).
+        // Sie ist über GRÖSSE definiert, nicht über Tempo: Minardi ist Backmarker,
+        // fährt aber 2 Autos die ganze Saison; Klodwig fährt ein Auto bei zwei Rennen.
+        //
+        // Gemessen an F1DB (Konstrukteure nach Lebensdauer-Rennstarts):
+        //   Lebensdauer | Ø Autos/Rennen | Ø Saisonanteil | davon <2 Autos
+        //   <20 Starts  |      1,56      |      39 %      |     69 %
+        //   20–99       |      2,03      |      86 %      |     38 %
+        //   100–299     |      2,20      |      92 %      |     15 %
+        //   >=300       |      2,22      |      98 %      |      6 %
+        // Scharfer Bruch: alles ab 20 Starts fährt fast die ganze Saison.
+        //
+        // WARUM erst ab 1970: davor deckt der Privateer-Mechanismus das schon ab —
+        // in den 50ern/60ern sind die meisten Fahrer Privateers (1965: 39 von 51)
+        // und tauchen über ihren Startplan ohnehin nur partiell auf. Gegengeprüft:
+        // 1955 lieferte 26,2 Melder gegen real 26,0, 1965 19,9 gegen 19,6.
+        // Ab 1978 sind die meisten Fahrer WERKSfahrer (30 von 47) — dort fehlte er.
+        // Anteil der Teams, die als Kleinstkonstrukteur gelten (an den Melderzahlen
+        // kalibriert, s. tests/privateer-schedule-mc.js-Kommentar):
+        function _smallConstructorShare(year) {
+            // Ab 1986 niedriger: die Kleinteams der Vor-Quali-Ära meldeten gerade
+            // JEDES Rennen — deswegen gab es die Vor-Quali überhaupt (1989: 39 Melder
+            // auf 26 Plätze). Sie scheiterten am Freitag, nicht an der Nennung.
+            return year < 1970 ? 0
+                 : year < 1986 ? 0.35
+                 :               0.12;
+        }
+
+        // Markiert die schwächsten Teams als Kleinstkonstrukteure. Nur Teams mit
+        // wenigen Fahrern — ein Team mit 4+ Fahrern ist per Definition kein Winzling
+        // und hat ohnehin schon Privateers, die partiell melden.
+        function markSmallConstructors(teams, drivers, year) {
+            (teams || []).forEach(t => { t._smallCtor = false; });
+            const share = _smallConstructorShare(year);
+            if (!share || !teams || !teams.length) return;
+            const cnt = {};
+            drivers.forEach(d => { if (d.team) cnt[d.team] = (cnt[d.team] || 0) + 1; });
+            const cands = teams.filter(t => (cnt[t.id] || 0) > 0 && (cnt[t.id] || 0) <= 2)
+                .sort((a, b) => (a.speed || a.carSpeed || 70) - (b.speed || b.carSpeed || 70));
+            const n = Math.min(cands.length, Math.round(teams.length * share));
+            for (let i = 0; i < n; i++) cands[i]._smallCtor = true;
+        }
+
         // Setzt d.scheduledRaces (Liste von circuitIds, lowercase) für alle Privateers
         // OHNE homeOnly — die sind schon über ihr Heimrennen terminiert und würden hier
         // doppelt gezählt. Speicherung als circuitId statt Index: identisch zu
         // homeCircuits, immun gegen Index-Verschiebung durch Kalender-Edits.
-        function assignPrivateerSchedules(drivers, races, year) {
+        // Seit v0.9.14.93 auch für WERKSfahrer von Kleinstkonstrukteuren — deren Team
+        // fährt nur eine Teilsaison, also fahren sie es auch.
+        function assignPrivateerSchedules(drivers, races, year, teams) {
             const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
             if (!cal.length) return;
             const ids = cal.map(r => r.circuitId.toLowerCase());
+            const small = new Set((teams || []).filter(t => t._smallCtor).map(t => t.id));
             drivers.forEach(d => {
-                if (!d.isPrivateer || d.homeOnly) { d.scheduledRaces = null; return; }
+                const isSmall = d.team && small.has(d.team);
+                if ((!d.isPrivateer && !isSmall) || d.homeOnly) { d.scheduledRaces = null; return; }
                 if (d.status && d.status !== 'active') { d.scheduledRaces = null; return; }
                 const n = _drawPrivateerCount(year, cal.length);
                 d.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
@@ -5645,9 +5705,11 @@
                 return (d.homeCircuits?.includes(race.circuitId?.toLowerCase()) ?? false)
                     && Math.random() < 0.80;
             }
-            if (!d.isPrivateer) return true;
+            // Startplan gewinnt vor isPrivateer: Werksfahrer von Kleinstkonstrukteuren
+            // haben einen Plan, obwohl sie keine Privateers sind (v0.9.14.93).
             const cid = race.circuitId?.toLowerCase();
             if (Array.isArray(d.scheduledRaces)) return cid ? d.scheduledRaces.includes(cid) : false;
+            if (!d.isPrivateer) return true;
             // Alt-Saves ohne Startplan (vor v0.9.14.90): der frühere Per-Race-Würfel,
             // damit ein laufender Spielstand nicht plötzlich leere Grids bekommt.
             // startNewSeason zieht beim nächsten Saisonwechsel einen echten Plan.
@@ -5946,9 +6008,11 @@
                 // Restliche Privateers (inkl. generierter Fahrer) generisch nachziehen –
                 // kuratierte Einträge bleiben unangetastet.
                 assignGenericHomeOnly(drivers, _races, year);
+                // Kleinstkonstrukteure VOR der Startplan-Vergabe markieren.
+                markSmallConstructors(teams, drivers, year);
                 // Startplan für alle übrigen Privateers. MUSS nach der Home-Only-Vergabe
                 // laufen — homeOnly-Fahrer sind ausgenommen, sonst doppelt terminiert.
-                assignPrivateerSchedules(drivers, _races, year);
+                assignPrivateerSchedules(drivers, _races, year, teams);
 
                 return {
                     name: `${year}`,
@@ -15564,14 +15628,32 @@
                             ? Math.max(5, 50 + diff * 3)
                             : Math.max(5, 100 - Math.abs(diff) * 3);
                         if (c.type === 'pool') c.score += 5; // hist. Fahrer leicht bevorzugt
-                        // Landsmann-Bonus (Ansatz B): Ära-basiert, nur für nicht-Nationality-Only-Teams
+                        // Landsmann-Bonus — v0.9.14.93 auf GRÖSSE/TIER statt Ära umgestellt.
+                        //
+                        // Die alte Staffelung (1,5× bis 1964, 1,25× bis 1979, danach 1,0)
+                        // ist an F1DB widerlegt: der Effekt ist NICHT ära-begrenzt. Gemessen
+                        // an 3.562 Fahrer-Konstrukteur-Paaren gegen die Zufallserwartung aus
+                        // den Randverteilungen (Landsmann-Anteil / Faktor):
+                        //   Top 25 % / 1,44×  ·  Mittelfeld 27 % / 1,66×  ·  Backmarker 25 % / 2,24×
+                        //   ohne Konstrukteurswertung 63 % / 3,30×   ← die eigentliche Gruppe
+                        // Über die Ären stabil: große Konstrukteure 1,45–1,76× von 1950 bis
+                        // heute, kleine 2,37–2,75×. Der alte Wert 1,0 ab 1980 hätte den
+                        // Effekt in der Moderne komplett abgeschaltet, real sind es ~1,8×.
+                        //
+                        // ACHTUNG: das hier sind SCORE-Multiplikatoren in einer gewichteten
+                        // Zufallsauswahl, keine Ergebnis-Faktoren. Bei einem Landsmann-Anteil
+                        // p unter den Kandidaten ergibt Multiplikator m den Faktor
+                        // m/(m·p + 1 − p) — für p≈0,2 liefert m=1,6 rund 1,4× und m=3,2
+                        // rund 2,2×. Die Werte unten sind entsprechend umgerechnet.
                         if (!_allowedNations) {
                             const _homeNation = CONSTRUCTOR_HOME_NATIONS[
                                 (team.histId || team.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-')
                             ];
                             if (_homeNation && c.driver.nation === _homeNation) {
-                                const _lmBonus = currentYear <= 1964 ? 1.5 : currentYear <= 1979 ? 1.25 : 1.0;
-                                c.score *= _lmBonus;
+                                c.score *= team._smallCtor ? 5.0     // Ziel ~3,3×
+                                         : isTopTeam       ? 1.6     // Ziel ~1,44×
+                                         : isMidTeam       ? 2.0     // Ziel ~1,66×
+                                         :                   3.2;    // Backmarker, Ziel ~2,24×
                             }
                         }
                     });
@@ -17267,8 +17349,9 @@
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
             assignGenericHomeOnly(GAME_STATE.drivers, GAME_STATE.races, newYear);
+            markSmallConstructors(GAME_STATE.teams, GAME_STATE.drivers, newYear);
             // Startplan für die neue Saison neu ziehen (nach Home-Only, s. dort).
-            assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear);
+            assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear, GAME_STATE.teams);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
