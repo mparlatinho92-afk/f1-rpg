@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.87</title>
+    <title>F1 RPG v0.9.14.88</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.87 (aktuell) - 18.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.88 (aktuell) - 18.07.2026</div>
+                            <div>&#8226; NEU: Generierte Privateers der 1950-80er melden als Einmal-Starter beim Heimrennen (Kyalami, Fuji, Watkins Glen)</div>
+                            <div>&#8226; NEU: Heimstrecken aus dem Saisonkalender abgeleitet statt getabellt - automatisch aera-korrekt</div>
+                            <div>&#8226; FIX: HOME_ONLY_ENTRIES griff nur bei realen Fahrern, generierte fuhren volle Saisons</div>
+                            <div class="font-bold text-slate-400">v0.9.14.87 - 18.07.2026</div>
                             <div>&#8226; NEU: Italienische Vornamen-Vielfalt deutlich vertieft (Dekaden-Tails 1900-1990, Pool 407->457)</div>
                             <div>&#8226; FIX: Osvaldo/Gustavo/Raul faelschlich als spanisch gebannt</div>
                             <div class="font-bold text-slate-400">v0.9.14.86 - 18.07.2026</div>
@@ -3013,7 +3017,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.87';
+        const VERSION = '0.9.14.88';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5358,6 +5362,80 @@
             </div>`;
         }
 
+        // === GENERISCHE HOME-ONLY-ZUWEISUNG (v0.9.14.88) ===
+        // HOME_ONLY_ENTRIES (data/f1db.js) deckt nur real belegte Fahrer ab – der Lookup
+        // läuft über den F1DB-histId-Slug. Generierte Fahrer bekamen dadurch NIE homeOnly
+        // und fuhren volle Saisons. Historisch falsch: in den 1960/70ern war der Großteil
+        // der RSA/JPN/USA-Melder ein Einmal-Starter beim eigenen Heimrennen (East London,
+        // Kyalami, Fuji, Watkins Glen) – ein lokaler Privatier mit gekauftem Kundenauto.
+        //
+        // Heimstrecken werden bewusst NICHT hart getabellt, sondern aus dem Saisonkalender
+        // abgeleitet (race.country trägt seit buildRacesForYear den IOC-Code) → die Ära
+        // ergibt sich automatisch: 1963 findet die Funktion east-london, 1972 kyalami.
+        // Rhodesier (Love, Tingle, Puzey) hatten kein eigenes Heimrennen und meldeten
+        // ausschließlich in Südafrika – dafür der Proxy.
+        const HOME_RACE_PROXY = { ZIM: 'RSA' };
+
+        // Grundwahrscheinlichkeit, dass ein Privateer reiner Heimrennen-Melder ist.
+        // Spiegelt die Privateer-Ära: Höhepunkt 1960er, erloschen mit den
+        // Werks-/Sponsorenteams der frühen 1980er.
+        function _homeOnlyEraRate(year) {
+            return year < 1960 ? 0.50
+                 : year < 1970 ? 0.65
+                 : year < 1975 ? 0.55
+                 : year < 1980 ? 0.35
+                 : year < 1983 ? 0.15
+                 :               0;
+        }
+
+        // Weist Privateers ohne kuratierten HOME_ONLY_ENTRIES-Eintrag probabilistisch
+        // homeOnly + homeCircuits zu. Idempotent: kuratierte Einträge werden nie
+        // überschrieben, bereits gesetzte generische werden neu gegen den aktuellen
+        // Kalender geprüft (Strecke aus dem Kalender gefallen → Flag fällt weg).
+        function assignGenericHomeOnly(drivers, races, year) {
+            const rate = _homeOnlyEraRate(year);
+            // Kalender nach IOC-Land indizieren (Indy zählt nicht als Heimrennen –
+            // das Indy-500-Feld läuft über einen eigenen Pool und eigene Filter).
+            const byCountry = {};
+            (races || []).forEach(r => {
+                // circuitId-Pflicht: der Filter in simulateRace vergleicht gegen
+                // race.circuitId – fehlt die (generierter Fallback-Kalender), würde ein
+                // homeOnly-Fahrer NIE starten. Lieber gar kein Flag als ein totes.
+                if (r.isIndy || !r.country || !r.circuitId) return;
+                const c = r.country.length === 3 ? r.country : convertEmojiToIOC(r.country);
+                if (!c) return;
+                (byCountry[c] = byCountry[c] || []).push(r.circuitId.toLowerCase());
+            });
+
+            drivers.forEach(d => {
+                if (d._homeOnlyCurated) return;             // kuratiert = Wahrheit, nie anfassen
+                if (!d.isPrivateer) return;
+                if (d.status && d.status !== 'active') return;
+
+                const nat = (d.nation && d.nation.length === 3) ? d.nation : convertEmojiToIOC(d.nation);
+                const home = byCountry[HOME_RACE_PROXY[nat] || nat];
+                // Kein Heimrennen im Kalender → generisches Flag zurücknehmen.
+                if (!home || !home.length || rate <= 0) {
+                    if (d.homeOnly && !d._homeOnlyCurated) { d.homeOnly = false; d.homeCircuits = null; }
+                    return;
+                }
+                if (d.homeOnly) { d.homeCircuits = home; return; }   // schon generisch gesetzt
+
+                // Schwache Fahrer sind die typischen Lokalmatadoren; wer echtes Tempo hat,
+                // fand auch ein Cockpit für den Rest des Kalenders.
+                const p = d.pace || 50;
+                const paceFactor = p <= 45 ? 1.25 : p <= 55 ? 1.0 : p <= 65 ? 0.55 : 0.2;
+                // Reale Fahrer ohne kuratierten Eintrag fuhren meist doch mehrere Rennen –
+                // HOME_ONLY_ENTRIES ist für sie die geprüfte Quelle, hier nur ein Rest-Risiko.
+                const realFactor = d.histId ? 0.35 : 1.0;
+
+                if (Math.random() < rate * paceFactor * realFactor) {
+                    d.homeOnly = true;
+                    d.homeCircuits = home;
+                }
+            });
+        }
+
         function generateDriver(teamId, year, isRookie = true, nationSource = 'decade') {
             // Prüfe ob dies ein Indy-500-only Team ist
             const team = GAME_STATE.teams?.find(t => t.id === teamId);
@@ -5655,8 +5733,13 @@
                         d.homeOnly = true;
                         d.homeCircuits = homeCircuits;
                         d.isPrivateer = true;
+                        d._homeOnlyCurated = true;   // vor assignGenericHomeOnly geschützt
                     }
                 });
+
+                // Restliche Privateers (inkl. generierter Fahrer) generisch nachziehen –
+                // kuratierte Einträge bleiben unangetastet.
+                assignGenericHomeOnly(drivers, _races, year);
 
                 return {
                     name: `${year}`,
@@ -16971,6 +17054,10 @@
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
             fillEmptyTeamSeats(newYear);   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
+            // Heimrennen-Melder gegen den NEUEN Kalender neu bestimmen – nach fillEmptyTeamSeats,
+            // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
+            // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
+            assignGenericHomeOnly(GAME_STATE.drivers, GAME_STATE.races, newYear);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
