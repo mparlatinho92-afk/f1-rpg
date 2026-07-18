@@ -350,12 +350,19 @@ const KNOWLEDGE = {
 // ── Daten-Leihe für Nationen ohne eigenen Datensatz (→ Gewicht-1-Tails) ─────
 // Kulturell begründet: AUS/NZL/ZIM-Namensstock ist anglo-keltisch (GB+IE),
 // VEN-Namensstock ist der gleiche spanische wie CO (minus Antioquia-Marker).
+// WELLE 4 (2026-07-18): HISPANIC/IBERIAN_PT sind Namens-Allowlists — „Martín" stand
+// nicht drin und landete als ZIM-Nachname im GB-Leihpool („Sam Martín", Rhodesien).
+// Struktureller Nachbrenner: spanische Akutformen können in einem GB-Datensatz nie
+// legitim sein. Nur auf die GB-Leihen, NICHT auf die IE-Leihen — irische Namen
+// tragen Fada (á/í/ó/ú) und wären hier Fehlalarm.
+const IBERIAN_ACCENT = /[áíóúñÁÍÓÚÑ]/;
+
 const BORROW = [
-    { nat:'AUS', iso:'GB', r:0, sur:120, fore:40, bans:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC] },
+    { nat:'AUS', iso:'GB', r:0, sur:120, fore:40, bans:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC,IBERIAN_ACCENT] },
     { nat:'AUS', iso:'IE', r:0, sur:30,  fore:0,  bans:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
-    { nat:'NZL', iso:'GB', r:0, sur:80,  fore:30, bans:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC] },
+    { nat:'NZL', iso:'GB', r:0, sur:80,  fore:30, bans:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC,IBERIAN_ACCENT] },
     { nat:'NZL', iso:'IE', r:0, sur:20,  fore:0,  bans:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
-    { nat:'ZIM', iso:'GB', r:0, sur:60,  fore:0,  bans:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC] },
+    { nat:'ZIM', iso:'GB', r:0, sur:60,  fore:0,  bans:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,IBERIAN_PT,HISPANIC,IBERIAN_ACCENT] },
     { nat:'VEN', iso:'CO', r:0, sur:100, fore:40, bans:[NORDIC_FOREIGN,/^(Restrepo|Ospina|Zuluaga|Bedoya|Agudelo|Henao|Arango|Betancur|Giraldo|Cardona|Montoya|Echeverri|Mejia|Mejía)$/] }
 ];
 

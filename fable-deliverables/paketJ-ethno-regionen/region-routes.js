@@ -112,6 +112,21 @@ const RSA_ZU_FIRST = /^(Thabo|Tshepo|Bongani|Lebohang|Olwethu|Thami|Nkanyiso|Bon
 // Biblische Namen (Abraham/Ephraim/Abram/Samson) bleiben bewusst r0 —
 // Afrikaaner-Namenstradition, in der Apartheid-Ära weiß belegt.
 
+// ⚠ WELLE-4 (2026-07-18): Die Welle-3-Nachlese oben war eine EXPLIZITE Liste und
+// hat erneut 13 Namen verfehlt (Thabani, Samkelo, Tshepiso, Siyanda, Kamogelo,
+// Syabonga, Vuyo, Sbu, Tshepang, Siyabulela, Collen, Lerato, Sibusiso-Varianten)
+// = 8,0 % der r0-Vornamen-Ziehungen. Messung: ein RSA-Fahrer von 1962 war mit
+// ~1:12 „Samkelo Molepo" — das Apartheid-Gate (r2 minYear 1995) lief ins Leere.
+//
+// LEHRE: Allowlist-Regex gegen eine offene Datenmasse verliert dieses Rennen
+// strukturell. Deshalb hier eine MORPHOLOGIE-Regel als Auffangnetz. Sie greift
+// nur auf Nguni/Sotho-Silbenanfänge, die in englischen ODER afrikaansen Namen
+// nicht vorkommen können (Konsonantencluster wie Tsh-/Nhl-/Mkh-/Zw-/Ngc-).
+// Kuratierte r0-Namen sind ban-immun, das Netz sieht nur die Daten-Tails.
+// Bewusst NICHT drin: Th- (Thomas), Si- (Simon), Ma-/Mo- (Martin/Morne),
+// Le- (Leon), Ka- (Karel) — dort wäre die Kollision mit r0 garantiert.
+const RSA_ZU_FIRST_STRUCT = /^(Tsh|Nhl|Mkh|Mth|Ngc|Nqo|Nkw|Nkos|Mzw|Sph|Sbo|Sbu|Zwe|Xol|Vuy|Luy|Ndu|Dlam|Hlo|Mdu|Mpu|Nts|Ntu|Qin|Sikh|Siy|Thok|Zam|Zol|Bhek|Kgo|Kga|Mah|Mash|Lera|Kamo|Samk|Syab|Thab(?:an|en))\w*$/i;
+
 // ── FIN: finnlandschwedisch (R1). ⚠ Konservativ: nur klar schwedische Formen;
 //    Emil/Elias/Otto/Joel sind (auch) finnische Modenamen → R0/geteilt.
 const FIN_SV_FIRST = /^(Johan|Niklas|Mikael|Kristian|Christoffer|Kristoffer|Fredrik|Henrik|Patrik|Anders|Kaj|Kim|Kenneth|Björn|Bjorn|Axel|Oscar|Marcus|Sebastian|Jan|Jens|Gustav|Gustaf|Alexander-?\w*|Robin-?\w+|Andreas-?\w+|Carl|Carl-\w+|Christer|Christian-?\w+|Claes|Dan-?\w+|Erik-?\w+|Gunnar-?\w+|Göran|Goran|Hans-?\w+|Håkan|Hakan-?\w*|Ingmar|Ingvar|Jarl|Joakim-?\w+|John-?Erik|Jonas-?\w+|Karl-\w+|Kjell|Klas|Krister|Lars-\w+|Leif-?\w+|Lennart-?\w*|Magnus-?\w+|Mats-?\w+|Nils-\w+|Olof|Ove|Per-\w+|Pontus|Ragnar|Rickard|Roald|Roger-?\w+|Rolf-?\w+|Rune-?\w*|Staffan|Stefan-?\w+|Stig|Sten|Sture|Sven-\w+|Tage|Tor-?\w+|Torbjörn|Torbjorn|Ulf-?\w*|Valdemar|Vidar|Viking|Wilhelm|Yngve|Åke|Ake)$/i;
@@ -158,6 +173,24 @@ const RSA_ZU_LAST_ADD = /^(Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|
 // SUI: portugiesische Nachnamen ausserhalb von IBERIAN_PT (Pires/Lima standen
 // in den CH-Daten und landeten Deutschschweiz → „Ben Pires" in r0).
 const SUI_PT_LAST_ADD = /^(Pires|Lima|Morais|Magalhães|Magalhaes|Henriques|Guerreiro|Salgado|Valente|Vaz|Ramalho|Furtado|Cabral|Camacho|Faria|Gaspar|Leal|Macedo|Maia|Matias|Melo|Mota|Moura|Pacheco|Paiva|Pinheiro|Queiroz|Rebelo|Sequeira|Silveira|Simao|Simão|Vicente|Baptista|Esteves|Figueiredo|Freire|Garcia-?Portug\w*|Loureiro|Louro|Neto|Padrão|Padrao|Peixoto|Resende|Sa|Sá|Salvador|Sampaio|Santana|Torres-?\w+|Varela)$/;
+// ⚠ WELLE 4 (2026-07-18): Bantu-NACHnamen im r0-Tail = 17,6 % der Ziehungen.
+// Die bestehende Präfix-Heuristik in build-names-v3.js (CFG.RSA.route[1]) deckt
+// nur Mo[kf]/Ma[bhs] ab und verfehlte die ganzen Mal-/Map-/Mat-/Mam-/Mak-Familien
+// (Maluleka, Maphanga, Matlou, Mamabolo, Makhoba, Molepo, Tladi, Pule …).
+// Sichtbar wurde es erst im echten Spiellauf: „Andy Tladi", Südafrika 1962.
+//
+// Struktur-Netz: Sotho/Nguni-Nachnamen enden praktisch immer auf einen Vokal,
+// afrikaanse fast nie (Malan/Maritz/Mouton/Moolman = -n/-z/-n/-n). Genau das
+// trennt die beiden Familien trotz gleicher Anfangssilbe.
+// Negativ-Lookahead nur für anglo-Namen, die zufällig auf Vokal enden.
+// Zweiter Zweig: Sotho-Namen auf -ng/-tse/-tso (Moeng, Monareng, Motsoeneng),
+// die trotz Bantu-Struktur konsonantisch enden.
+const RSA_ZU_LAST_STRUCT = /^(?!(Moore|Munro|Milne|Meade|Malone|More|Moosa|Marie|Mare|Mabe|Monroe|Moule|Mode|Male|Mole|Mule|Manning|Morning|Mustang|Lansing)$)(Ma|Mo|Me|Mi|Mu|Le|Se|Ra|Tl|Th|Kh|Ph|Ts|Si|Zo|Lu|Bu|Ku|Pu|Mm|Nt|Nd|Ng)[a-z]+([aeiou]|ng|tse|tso)$/;
+
+// Afrikaanse Namen auf Vokal-Endung — müssen VOR dem Struktur-Netz greifen,
+// sonst zieht sie die Morphologie-Regel fälschlich nach r2.
+const RSA_AF_LAST_STRUCT_KEEP = /^(Lubbe|Matthee|Mouton|Moolman|Maritz|Labuschagne|Nienaber|Coetzee|Kotze|Cronje|Naude|Fouche|Fouché|Steenkampe|Bothma|Wiese|Le Roux|Roode|Grobbelaar|Swanepoele)$/;
+
 // RSA: Afrikaans-Nachnamen ausserhalb der bestehenden Liste (Pienaar/Cloete …).
 const RSA_AF_LAST_ADD = /^(Cloete|Booysen|Swart|Pienaar|Pieterse|Pietersen|Beukes|Visser|Groenewald|Basson|Barnardt|Blignaut|Bothma|Breytenbach|Cilliers|De Beer|De Bruyn|De Klerk|De Kock|De Lange|De Wet|Delport|Dreyer|Du Preez|Du Randt|Eloff|Els|Fouche|Fuchs|Geldenhuys|Greyling|Grove|Hattingh|Heunis|Human|Jacobsz|Janse Van Rensburg|Jonker|Kirsten|Koekemoer|Labuschagne|Landman|Le Grange|Liebenberg|Maree|Meintjies|Mostert|Myburgh|Nortje|Odendaal|Oberholzer|Opperman|Pelser|Pienke|Pretorius-?\w*|Raubenheimer|Redelinghuys|Roux|Schutte|Slabbert|Smuts|Stander|Steynberg|Swiegers|Taljaard|Van Rensburg|Venter-?\w*|Verster|Victor|Wilken|Wolmarans)$/;
 
@@ -261,7 +294,7 @@ const ROUTE_FIRST = {
     CAN: [[CAN_SA_FIRST, 2], [CAN_EA_PINYIN_FIRST, 3], [CAN_EA_WESTERN_FIRST, [0, 3]],
           [CAN_QC_FIRST, 1], [CAN_SHARED_FIRST, [0, 1, 3]]],
     ESP: [[ESP_BAS_FIRST, 2], [ESP_CAT_FIRST, 1]],
-    RSA: [[RSA_ZU_FIRST, 2], [RSA_AF_FIRST, 1]],
+    RSA: [[RSA_ZU_FIRST, 2], [RSA_ZU_FIRST_STRUCT, 2], [RSA_AF_FIRST, 1]],
     FIN: [[FIN_SV_FIRST, 1], [FIN_SHARED_FIRST, [0, 1]]],
     IND: [[IND_SOUTH_FIRST, 1], [IND_SHARED_FIRST, [0, 1]]],
     MAS: [[MAS_CN_FIRST, 1], [MAS_MALAY_FIRST, 0]],
@@ -313,7 +346,12 @@ const BAN_FIRST = {
           /^(Kiko|Toño|Adri|Nacho|Manu|Santi|Edu|Juanjo|Juanma|Lolo|Tono|Chema|Quique|Curro)$/],
     // RSA: weiblich lesbare Daten-Vornamen (Linda ist in ZA ein männlicher
     // Zulu-Name, liest sich im Spiel aber weiblich → raus; dito Pretty/Portia).
-    RSA: [/^(Linda|Pretty|Portia|Precious|Beauty)$/i],
+    RSA: [/^(Linda|Pretty|Portia|Precious|Beauty)$/i,
+          // WELLE 4: spanische Akutformen aus dem ZA-Datensatz (Simón, Víctor,
+          // Martín, León, Óscar, Iván, Adrián, Julián) = 4,4 % der r0-Ziehungen.
+          // Kein RSA-Beleg, keine Region → echter Filter statt Routing.
+          // NUR á/í/ó/ú/ñ — é bleibt zu, sonst fiele André (Afrikaans, r1) mit.
+          /[áíóúñÁÍÓÚÑ]/],
     // EST: banFirst ENTFÄLLT ersatzlos (russische Namen werden jetzt geroutet).
     EST: [],
     // GRE (AUSBAU D1c): ERSETZT das bisherige banFirst aus build-names-v3.js
@@ -341,7 +379,20 @@ const BAN_LAST_ADD = {
     // Junk/Vornamen-als-Nachname der ZA-Daten
     RSA: [/^(Naidoo|Govender|Pillay|Moodley|Chetty|Padayachee|Maharaj)$/i,
           // + Katlego/Bongani/Kagiso/Bongi (Vornamen-als-Nachname, Welle-3-Nachlese r0-TAIL)
-          /^(Gift|Thabo|Lucky|Thando|Junior|Angel|Pretty|Portia|Lerato|Rose|Sam|John|Jack|Moses|Sello|Prince|Sthole|Maria|Ali|Beauty|Elizabeth|Christina|Grace|Joyce|Happy|Katlego|Bongani|Kagiso|Bongi)$/i],
+          /^(Gift|Thabo|Lucky|Thando|Junior|Angel|Pretty|Portia|Lerato|Rose|Sam|John|Jack|Moses|Sello|Prince|Sthole|Maria|Ali|Beauty|Elizabeth|Christina|Grace|Joyce|Happy|Katlego|Bongani|Kagiso|Bongi)$/i,
+          // WELLE 4: weitere Vornamen-als-Nachname aus dem r0-Tail. Teils weiblich
+          // (Minnie/Lucia/Lulu/Martha/Monica/Mary), teils Nguni-Vornamen
+          // (Musa/Sipho/Thato/Thulani/Zodwa) — als Nachname in JEDER Region Junk.
+          // NICHT drin: Lucas/Marcus/Maxwell/Moss/May — echte englische Nachnamen.
+          /^(Mike|Minnie|Lucia|Lulu|Martha|Monica|Mary|Musa|Sipho|Siya|Sizwe|Sihle|Simphiwe|Siyabonga|Thabiso|Thandi|Thato|Thapelo|Thulani|Thuli|Zodwa|Lesego|Lunga|Mandla|Sibusiso|Thandeka|Thabang|Promise)$/i,
+          // WELLE 4: „Tugendnamen" der ZA-Daten — im südafrikanischen Englisch als
+          // VORname vergeben (Innocent Chukwuma-Typ), nie als Nachname.
+          /^(Innocent|Hope|Queen|Blessing|Fortune|Faith|Patience|Given|Zandile|Nomsa|Justice|Wiseman|Welcome|Goodwill|Lovemore|Charity|Comfort|Princess|Wonder)$/i,
+          // WELLE 4: dieselbe Allowlist-Lücke wie oben, nur als Nachname —
+          // Martín/Ángel/Simón/Víctor = 3,0 % der r0-Nachnamen. Spanische
+          // Akutformen haben in keiner der drei RSA-Regionen einen Beleg.
+          // é bleibt erlaubt (Fouché, Théron = hugenottisch-afrikaans).
+          /[áíóúñÁÍÓÚÑ]/],
     // MY-Junk (Man/Lan/Keong/Hong/Ming = Namensbestandteile, Jack/Rock/Love/
     // Hidayah = Artefakte) + Hossain (bengalische Gastarbeiter, keine Region)
     MAS: [/^(Man|Lan|Keong|Hong|Jack|Rock|Amira|Boy|Long|Anak|Ming|Wai|Love|Hidayah|Hossain|Seng|Rai|Husna|Sam|Chandran|Muniandy|Subramaniam)$/i],
@@ -376,7 +427,9 @@ const ROUTE_LAST_ADD = {
     BEL: [[BEL_FL_LAST_ADD, 1]],
     // AUSBAU: gesplittet (alt: [[CAN_ASIAN_LAST_ADD, 2]])
     CAN: [[CAN_SA_LAST_ADD, 2], [CAN_EA_LAST_ADD, 3]],
-    RSA: [[RSA_AF_LAST_ADD, 1], [RSA_ZU_LAST_ADD, 2]],
+    // Reihenfolge kritisch: die beiden Allowlists zuerst, das Struktur-Netz zuletzt —
+    // so gewinnen bekannte afrikaanse Namen (Lubbe, Matthee) vor der Morphologie.
+    RSA: [[RSA_AF_LAST_ADD, 1], [RSA_AF_LAST_STRUCT_KEEP, 1], [RSA_ZU_LAST_ADD, 2], [RSA_ZU_LAST_STRUCT, 2]],
     SUI: [[SUI_PT_LAST_ADD, 3]],
     // WELLE 3: SWE ex-jugoslawische Nachnamen → r1 (braucht Build-Edit e,
     // sonst frisst der BALKAN-Ban sie vor der Route)
