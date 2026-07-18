@@ -95,6 +95,11 @@ const NORDIC_FOREIGN = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source +
 // Nachnamen bevor ROUTE_LAST_ADD.GER sie nach Region 1 routen kann (Bans laufen
 // in Schritt 1, die Route erst in Schritt 3).
 const NORDIC_FOREIGN_NO_TR = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + BALKAN.source, 'i');
+// Welle 3 (2026-07-18): SWE bekommt eine ex-jugoslawische Region r1 — der
+// BALKAN-Ban muss die -ić/-ović-Namen freigeben (Ban läuft vor Route), bannt
+// aber weiter albanisch/rumänisch/mazedonisch/-oglu (keine SWE-Region):
+const NORDIC_FOREIGN_NO_BLK = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + TURKISH.source, 'i');
+const BALKAN_SWE_REST = /(inac|oski|evski|ovski|iu|escu|eanu|oglu|oğlu)$|^(Krasniqi|Gashi|Berisha|Shala|Hoxha|Kelmendi|Morina|Bytyqi|Zeka|Rama|Dervishi|Marku|Gjoka|Leka|Prela|Hoti|Zeqiri|Rexhepi|Ademi|Selimi|Osmani|Shabani)$/i;
 const GIVEN_AS_SURNAME = /^(Maria|Jose|José|Juan|Ana|Luis|Luiz|Carlos|Jorge|Pedro|Paulo|Henrique|Antonio|António|Miguel|Manuel|Francisco|Fernando|Ricardo|Eduardo|Daniel|Rafael|Gabriel|Marcos|Mohamed|Ahmed|Ali|Hassan|Omar|Ibrahim|Said|Rachid|Karim|Amine|Youssef|Aziz|Kamal|Adam|Peter|Hans|Johan|Anna|Marie|Jean|Michel|Andre|André|Bernard|Claude|Laurent|Pascal|Christian|Martin|Thomas|Simon|David|Vincent|Robert|Richard|Denis|Georges|Antoine|Julien|Olivier|Rene|René|Roger|Alain|Marcel|Franck|Frank)$/i;
 // Weibliche griechische Nachnamensformen (Genitiv-Paare: -poulos→-poulou usw.)
 const GREEK_FEMALE = /(opoulou|poulou|idou|iadou|adou|aki)$/i;
@@ -153,7 +158,11 @@ const CFG = {
     // (Patel: Daten 93k/Smith 177k = 0,52 — Census 230k/2,44M = 0,094 → ~0,25);
     // Ostasiatisch fast korrekt (Nguyen Census-Ratio 0,179 vs. Daten 0,183 → 0,85).
     // Zusätzlich philippinisch verzerrte Namen (Cruz: Daten 91k = 12× Census-Ratio) → 0,1
-    USA: { iso:'US', cls:'big', dampLast:[[/^(Cruz|Santos|De La Cruz|Dela Cruz|Bautista|Villanueva|Ocampo|Aquino|Manalo)$/i,0.1],[HISPANIC,US_HISP_DAMP],[SOUTH_ASIAN,0.25],[EAST_ASIAN,0.85]], dampFirst:[[US_HISP_FIRST,US_HISP_DAMP]] },
+    // Welle 3: route [[HISPANIC,1]] — hispanische Nachnamen (Census-gedämpft,
+    // Dämpfung bleibt!) ziehen in Region 1, Paarung nur noch mit r1-Vornamen
+    // (USA_HISP_R1_FIRST + Shared). „Carlos Anderson" (1:11) wird unmöglich,
+    // Kaggle-Gewichte unverändert.
+    USA: { iso:'US', cls:'big', route:[[HISPANIC,1]], dampLast:[[/^(Cruz|Santos|De La Cruz|Dela Cruz|Bautista|Villanueva|Ocampo|Aquino|Manalo)$/i,0.1],[HISPANIC,US_HISP_DAMP],[SOUTH_ASIAN,0.25],[EAST_ASIAN,0.85]], dampFirst:[[US_HISP_FIRST,US_HISP_DAMP]] },
     BRA: { iso:'BR', cls:'big', banLast:[NORDIC_FOREIGN] },
     JPN: { iso:'JP', cls:'big', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC], banFirst:[/^(Ricardo|Carlos|Jose|Juan|Luis|Marcos|Paulo|Pedro|Antonio|Daniel|David|Michael|John|Kevin|Alex|Eric|Jun Ho|Min)$/i] },
     ESP: { iso:'ES', cls:'big', route:[[/^(Puig|Vila|Serra|Ferrer|Roca|Soler|Font|Bosch|Mas|Casals|Pujol|Rovira|Sala|Torrent|Riera|Grau|Camps|Comas|Vives|Prat|Ripoll|Batlle|Segarra|Codina)$/,1],[/^(Etxeberria|Agirre|Aguirre|Ibarra|Zubizarreta|Urrutia|Garmendia|Mendizabal|Otegi|Goikoetxea|Zabala|Aranburu|Elorza|Iturbe|Arrieta|Lasa|Zubiri|Etxarri|Olaizola|Larranaga|Larrañaga)$/,2]], banLast:[NORDIC_FOREIGN] },
@@ -162,7 +171,9 @@ const CFG = {
     BEL: { iso:'BE', cls:'mid', route:[[/^(Van|Vande|Vander|De [A-Z]|D'|Ver[a-z]|Claes|Peeters|Janssens|Maes|Mertens|Willems|Wouters|Goossens|Pauwels|Aerts|Michiels|Smets|Martens|Segers|Hendrickx|Vervoort|Vandenberghe|Vanden|Bogaert|Bogaerts|Cools|Coppens|Daems|Dierckx|Geerts|Hermans|Jacobs|Lenaerts|Luyten|Moons|Naessens|Nys|Pittoors|Raes|Roggeman|Smolders|Stevens|Swinnen|Thys|Tielemans|Torfs|Truyens|Verheyen|Verhoeven|Vermeiren|Verstraete|Vos|Wuyts)/,1]], banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC] },
     SUI: { iso:'CH', cls:'mid', route:[[/^(Favre|Rochat|Bonvin|Chevalley|Duc|Rossier|Perret|Monnier|Grandjean|Berney|Pittet|Bovay|Cornuz|Curdy|Dubuis|Fardel|Gaillard|Genoud|Jaquier|Maillard|Mermoud|Nicollier|Pasche|Rappaz|Rochaix|Savary|Tissot|Vuille|Berthoud|Besson|Bovet|Chappuis|Cretton|Delaloye|Ducret|Dupertuis|Emery|Gross|Magnin|Marclay|Michellod|Morand|Pellaud|Praz|Quennoz|Rausis|Roduit|Terrettaz|Vouillamoz|Aubert|Badan|Blanc|Bourgeois|Braillard|Buffat|Chapuis|Cherpillod|Corboz|Cosandey|Delessert|Desmeules|Gillieron|Jaccard|Jaccoud|Longchamp|Mercier|Meylan|Nicole|Paccaud|Panchaud|Regamey|Vallotton|Vulliamy)$/,1],[/^(Bernasconi|Rossi|Bianchi|Ferrari|Fontana|Galli|Crivelli|Pedrazzini|Albertini|Beretta|Bettosini|Bianda|Bomio|Cattaneo|Colombo|Delco|Delcò|Foletti|Genazzi|Gianinazzi|Guidotti|Lepori|Lucchini|Mazzoleni|Molteni|Mombelli|Pagani|Pedretti|Pellegrini|Piattini|Poretti|Quadri|Realini|Regazzoni|Rezzonico|Riva|Robbiani|Sala|Solari|Storni|Taddei|Vanoni|Vassalli|Zanetti|Zanini)$/,2],[IBERIAN_PT,3]], banLast:[SOUTH_ASIAN,EAST_ASIAN,ARABIC_MAGHREB,TURKISH,BALKAN,SLAVIC_EAST,HISPANIC] },
     AUT: { iso:'AT', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,/ski$|cki$|ic$|ić$/] },
-    SWE: { iso:'SE', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
+    // Welle 3: BALKAN aus dem Ban gelöst (Route SWE_EXYU_LAST → r1 via
+    // ROUTE_LAST_ADD.SWE), Rest-Balkan bleibt gebannt (BALKAN_SWE_REST).
+    SWE: { iso:'SE', cls:'mid', banLast:[NORDIC_FOREIGN_NO_BLK,BALKAN_SWE_REST,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     FIN: { iso:'FI', cls:'mid', route:[[/(berg|ström|strom|holm|qvist|kvist|lund|gren|blad|felt|man|sson|stedt|näs|vik|by|backa|fors)$/,1]], banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     DEN: { iso:'DK', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     NOR: { iso:'NO', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST], banFirst:[/^(Mohammed|Mohamed|Muhammad|Ahmed|Ali|Omar|Hassan|Ibrahim|Abdul|Mustafa)$/i] },
@@ -206,6 +217,15 @@ for (const [nat, routes] of Object.entries(J.ROUTE_FIRST)) CFG[nat].routeFirst =
 for (const [nat, bans] of Object.entries(J.BAN_FIRST)) CFG[nat].banFirst = bans;
 for (const [nat, add] of Object.entries(J.ROUTE_LAST_ADD)) CFG[nat].route = [...(CFG[nat].route || []), ...add];
 for (const [nat, add] of Object.entries(J.BAN_LAST_ADD)) CFG[nat].banLast = [...(CFG[nat].banLast || []), ...add];
+// Welle 3 (2026-07-18): GLOBALE Vornamen-Ethnien-Klassen. Ein Klassen-Name wird
+// je Nation nur gebannt, wenn sie ihn nicht routet und er nicht nativ ist —
+// die Guard ersetzt den banFirst-Flickenteppich (NED/AUT/DEN hatten keinen,
+// NORs scheiterte an Schreibvarianten). MUSS nach dem routeFirst-Wiring laufen.
+const GF = require('../paketJ-ethno-regionen/global-first-filters.js');
+for (const [nat, cfg] of Object.entries(CFG)) {
+    const guard = GF.makeFirstGuard(nat, cfg.routeFirst);
+    if (guard) cfg.banFirst = [...(cfg.banFirst || []), guard];
+}
 
 // ── Kurationspass (aus curate-tails.js portiert, wirkt jetzt auf die Masse) ──
 const OPS = {
@@ -226,7 +246,7 @@ const OPS = {
                    first: { 'Eddy':1,'Danny':1,'Tim':1,'Tom':1,'Bart':1,'Jan':1,'Koen':1,'Kris':1,'Wim':1,'Geert':1,'Stijn':1,'Dirk':1,'Steven':1 } } },
     SUI: { drop: { first: ['Carlos','Ali'], last: ['Bajrami','Ramadani','Fernandez','Schmidt'] },
            move: { first: { 'Antonio':2,'Philippe':1,'Alain':1,'Olivier':1,'Laurent':1,'Nicolas':1,'Cédric':1,'Cedric':1,'Didier':1,'Romain':1,'Hugo':1,'Nathan':1,'Gabriel':1,'Bruno':3,'Tiago':3,'Ricardo':3,'Nuno':3,'Diogo':3 } } },
-    SWE: { drop: { first: ['Ali'] } },
+    SWE: { drop: { first: ['Ali','Hanna'] } }, // Hanna = weiblich in SE (Welle-3-Sichtprobe)
     DEN: { drop: { first: ['Ali'] } },
     NOR: { drop: { first: ['Thomas Andre'] } },
     CAN: { move: { last: { 'Lau':3,'Cheng':3,'Chung':3,'Saini':2,'Randhawa':2,'Mann':2 },

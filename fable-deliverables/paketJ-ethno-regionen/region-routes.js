@@ -104,7 +104,13 @@ const ESP_BAS_FIRST = /^(Mikel|Iker|Ander|Unai|Aitor|Asier|Gorka|Jon|Ion|Iñaki|
 //    ⚠ KEINE generischen Präfix-Regexe (Th-, M-): "Thomas"/"Martin" wären
 //    Beifang — nur belegte Namen + enge Präfixe.
 const RSA_AF_FIRST = /^(Johan|Pieter|Piet|Willem|Jan|Hennie|Koos|Danie|Gert|Jaco|Riaan|Christo|Deon|Ruan|Heinrich|Charl|Divan|Janco|Wikus|Hendrik|Francois|François|Wian|Tiaan|Johannes|Stephanus|Cornelius|Andries|Frans|Dawie|Fanie|Sarel|Tinus|Wynand|Schalk|Abrie|Barend|Jacques|Andre|André|Nico|Leon|Louis|Kobus|Gerhard|Gideon|Hannes|Hansie|Herman-?\w*|Jannie|Japie|Lodewyk|Lourens|Marthinus|Nicolaas|Ockert|Petrus|Phillipus|Rudi|Rudolf|Sakkie|Servaas|Theuns|Thys|Wessel|Attie|Bennie|Boeta|Braam|Buks|Cobus|Corne|Corné|Dirk-?\w*|Driekus|Etienne-?\w*|Faan|Flip|Gawie|Giel|Hein|Henning-?\w*|Izak|Jurie|Kallie|Karel|Lukas-?\w+|Manie|Naas|Neels|Niekie|Okkie|Paulus|Pikkie|Ras|Roelof|Schoeman|Stoffel|Tertius|Vlam|Wouter-?\w*|Wynie)$/i;
-const RSA_ZU_FIRST = /^(Thabo|Tshepo|Bongani|Lebohang|Olwethu|Thami|Nkanyiso|Bonga|Mpendulo|Letlhogonolo|Ayabonga|Lesiba|Thabang|Sipho|Thabiso|Mpho|Themba|Sandile|Siyabonga|Tebogo|Sibusiso|Xolani|Andile|Thulani|Mandla|Thapelo|Vusi|Sbusiso|Sanele|Nhlanhla|Ayanda|Simphiwe|Thato|Sabelo|Nkosinathi|Tumelo|Njabulo|Sizwe|Katlego|Sfiso|Kabelo|Sello|Musa|Sihle|Karabo|Mxolisi|Teboho|Mduduzi|Sifiso|Bheki|Kagiso|Jabulani|Nkululeko|Sphamandla|Neo|Itumeleng|Lindokuhle|Lebogang|Dumisani|Senzo|Thokozani|Ntokozo|Mlungisi|Sthembiso|Phumlani|Philani|Thando|Nathi|Anele|Ndumiso|Mthokozisi|Sakhile|Luyanda|Sphiwe|Bonginkosi|Siya|Lucky|Gift|Prince|Innocent|Given|Justice|Blessing|Wiseman|Goodwill|Welcome|Mzwandile|Bhekani|Bandile|Lwazi|Melusi|Mfundo|Minenhle|Mpumelelo|Msizi|Muzi|Mzukisi|Nceba|Nkosana|Nqobile|Ntando|Phila|Phumelele|Qiniso|Sanele-?\w*|Sazi|Sechaba|Senzeni|Simo|Sinethemba|Siphelele|Siphesihle|Siphiwe|Sizwe-?\w*|Skhumbuzo|Solly|Songezo|Thamsanqa|Thembinkosi|Vukani|Vuyani|Wandile|Xolile|Zamokuhle|Zenzele|Zolani|Zwelethu|Bafana|Bhekizizwe|Dingane|Fikile|Gugulethu|Hlengiwe|Jabu|Khaya|Khulekani|Lindani|Lungelo|Makhosi|Mangaliso|Mzwakhe|Ndabenhle|Nhlakanipho|Nyiko|Rethabile|Sandi|Sbonelo|Sicelo|Sindiso|Siphamandla|Thulasizwe|Velaphi|Vusumuzi|Zakhele)$/i;
+const RSA_ZU_FIRST = /^(Thabo|Tshepo|Bongani|Lebohang|Olwethu|Thami|Nkanyiso|Bonga|Mpendulo|Letlhogonolo|Ayabonga|Lesiba|Thabang|Sipho|Thabiso|Mpho|Themba|Sandile|Siyabonga|Tebogo|Sibusiso|Xolani|Andile|Thulani|Mandla|Thapelo|Vusi|Sbusiso|Sanele|Nhlanhla|Ayanda|Simphiwe|Thato|Sabelo|Nkosinathi|Tumelo|Njabulo|Sizwe|Katlego|Sfiso|Kabelo|Sello|Musa|Sihle|Karabo|Mxolisi|Teboho|Mduduzi|Sifiso|Bheki|Kagiso|Jabulani|Nkululeko|Sphamandla|Neo|Itumeleng|Lindokuhle|Lebogang|Dumisani|Senzo|Thokozani|Ntokozo|Mlungisi|Sthembiso|Phumlani|Philani|Thando|Nathi|Anele|Ndumiso|Mthokozisi|Sakhile|Luyanda|Sphiwe|Bonginkosi|Siya|Lucky|Gift|Prince|Innocent|Given|Justice|Blessing|Wiseman|Goodwill|Welcome|Mzwandile|Bhekani|Bandile|Lwazi|Melusi|Mfundo|Minenhle|Mpumelelo|Msizi|Muzi|Mzukisi|Nceba|Nkosana|Nqobile|Ntando|Phila|Phumelele|Qiniso|Sanele-?\w*|Sazi|Sechaba|Senzeni|Simo|Sinethemba|Siphelele|Siphesihle|Siphiwe|Sizwe-?\w*|Skhumbuzo|Solly|Songezo|Thamsanqa|Thembinkosi|Vukani|Vuyani|Wandile|Xolile|Zamokuhle|Zenzele|Zolani|Zwelethu|Bafana|Bhekizizwe|Dingane|Fikile|Gugulethu|Hlengiwe|Jabu|Khaya|Khulekani|Lindani|Lungelo|Makhosi|Mangaliso|Mzwakhe|Ndabenhle|Nhlakanipho|Nyiko|Rethabile|Sandi|Sbonelo|Sicelo|Sindiso|Siphamandla|Thulasizwe|Velaphi|Vusumuzi|Zakhele|Bongane|Ofentse|Luthando|Nkosi|Mdu|Lebo|Obakeng|Banele|Mbongeni|Mbuso|Ntuthuko|Aphiwe|Mahlatse|Bulelani|Asanda|Katleho|Lindo|Luvuyo|Mondli|Mojalefa|Abongile|Boitumelo|Sivuyile|Kgomotso|Kgotso|Menzi|Spha|Tshidiso|Akhona|Thembelani|Mbulelo|Zweli|Lwando|Zama|Lethabo|Syanda|Kgothatso|Lefa|Yanga|Unathi|Mongezi|Manqoba|Lungisani|Mashudu|Tebza|Khutso|Loyiso|Mthoko|Mncedisi|Mohau|Nduduzo|Fana|Lungile|Nkosikhona|Mzamo|Bongumusa|Kamohelo|Buhle|Luzuko|Lonwabo|Thuso|Tshegofatso|Olebogeng|Smanga|Xolisa|Lihle|Lubabalo|Thulane|Lesedi|Monde|Tsepo|Athenkosi|Zuko|Malibongwe|Odwa|Zola|Sandiso|Sbongiseni|Sibongiseni|Luvo|Aviwe|Tinashe|Lovemore|Fortune|Wonder)$/i;
+// ⚠ WELLE-3-NACHLESE (Apartheid-Gate, 2026-07-18): die 80 Namen ab |Bongane sind
+// die komplette afrikanische Restmasse aus dem r0-TAIL des gebauten Pools —
+// „Mbongeni Smith" war 1962 ziehbar, weil die explizite Liste sie verfehlte
+// (r2-minYear 1995 = Apartheid-Gate greift nur, wenn die Route trifft).
+// Biblische Namen (Abraham/Ephraim/Abram/Samson) bleiben bewusst r0 —
+// Afrikaaner-Namenstradition, in der Apartheid-Ära weiß belegt.
 
 // ── FIN: finnlandschwedisch (R1). ⚠ Konservativ: nur klar schwedische Formen;
 //    Emil/Elias/Otto/Joel sind (auch) finnische Modenamen → R0/geteilt.
@@ -147,7 +153,8 @@ const CAN_EA_LAST_ADD = /^(Yu|Chang|Chu|Fung|Yuen|Liang|Chiu|Ly|Tsang|Hu|Truong|
 const CAN_ASIAN_LAST_ADD = new RegExp(CAN_SA_LAST_ADD.source.slice(0, -2) + '|' + CAN_EA_LAST_ADD.source.slice(2));
 // RSA: Bantu-Nachnamen, die die Präfix-Heuristik verfehlt (Makhanya = M-a-k,
 // das Muster prüft M+Konsonant; Shabalala/Zuma/Kunene … Top-150 ungeroutet).
-const RSA_ZU_LAST_ADD = /^(Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|Majola|Kekana|Kunene|Modise|Zuma|Mudau|Khanyile|Nhlapo|Simelane|Banda|Malatji|Nyathi|Skosana|Mathe|Mohlala|Kubheka|Thwala|Zondo|Nene|Sibisi|Bhengu|Matlala|Duma|Malinga|Biyela|Magagula|Luthuli|Mogale|Motloung|Mulaudzi|Maphumulo|Madonsela|Mohale|Tau|Madlala|Makhanya|Sibeko|Dhlamini|Ledwaba|Sambo|Mavuso|Thabethe|Miya|Zitha|Makhubela|Magwaza|Mosia|Moloto|Gwala|Myeni|Qwabe|Maake|Maduna|Skhosana|Sibanyoni|Rikhotso|Zama|Moeketsi|Makhubele|Maphosa|Malope|Manana|Kgomo|Kganyago|Lekota|Mailula|Makgoba|Maponya|Masango|Maseko|Masilela|Masondo|Mathonsi|Mayisela|Mazila|Mbeki|Mgidi|Mnguni|Mnisi|Radebe|Ramaphosa|Rikhoto|Selepe|Senosi|Shivambu|Sithebe|Ndlela|Nxumalo|Mthiyane|Msimango|Ngubane|Mashaba|Motsepe|Tembe|Maleka|Makola|Zikhali|Lukhele)$/;
+const RSA_ZU_LAST_ADD = /^(Langa|Shabangu|Shabalala|Shezi|Shongwe|Shange|Shandu|Majola|Kekana|Kunene|Modise|Zuma|Mudau|Khanyile|Nhlapo|Simelane|Banda|Malatji|Nyathi|Skosana|Mathe|Mohlala|Kubheka|Thwala|Zondo|Nene|Sibisi|Bhengu|Matlala|Duma|Malinga|Biyela|Magagula|Luthuli|Mogale|Motloung|Mulaudzi|Maphumulo|Madonsela|Mohale|Tau|Madlala|Makhanya|Sibeko|Dhlamini|Ledwaba|Sambo|Mavuso|Thabethe|Miya|Zitha|Makhubela|Magwaza|Mosia|Moloto|Gwala|Myeni|Qwabe|Maake|Maduna|Skhosana|Sibanyoni|Rikhotso|Zama|Moeketsi|Makhubele|Maphosa|Malope|Manana|Kgomo|Kganyago|Lekota|Mailula|Makgoba|Maponya|Masango|Maseko|Masilela|Masondo|Mathonsi|Mayisela|Mazila|Mbeki|Mgidi|Mnguni|Mnisi|Radebe|Ramaphosa|Rikhoto|Selepe|Senosi|Shivambu|Sithebe|Ndlela|Nxumalo|Mthiyane|Msimango|Ngubane|Mashaba|Motsepe|Tembe|Maleka|Makola|Zikhali|Lukhele|Thabede|Thebe)$/;
+// Welle-3-Nachlese: Thabede/Thebe standen im r0-TAIL (Apartheid-Gate-Leak).
 // SUI: portugiesische Nachnamen ausserhalb von IBERIAN_PT (Pires/Lima standen
 // in den CH-Daten und landeten Deutschschweiz → „Ben Pires" in r0).
 const SUI_PT_LAST_ADD = /^(Pires|Lima|Morais|Magalhães|Magalhaes|Henriques|Guerreiro|Salgado|Valente|Vaz|Ramalho|Furtado|Cabral|Camacho|Faria|Gaspar|Leal|Macedo|Maia|Matias|Melo|Mota|Moura|Pacheco|Paiva|Pinheiro|Queiroz|Rebelo|Sequeira|Silveira|Simao|Simão|Vicente|Baptista|Esteves|Figueiredo|Freire|Garcia-?Portug\w*|Loureiro|Louro|Neto|Padrão|Padrao|Peixoto|Resende|Sa|Sá|Salvador|Sampaio|Santana|Torres-?\w+|Varela)$/;
@@ -189,6 +196,46 @@ const GRE_FOREIGN_S_FIRST = /^(Waqas|Abbas|Awais|Anas|Ilyas|Younas|Idris|Chris|J
 // Form steht jeweils mit höherem Gewicht im Pool (Giorgos 73 vs Giwrgos 28):
 const GRE_GREEKLISH_FIRST = /^(Giwrgos|Kwstas|Kwnstantinos|Xrhstos|Giannhs|Mixalhs|Panagiwths|Panagiwtis|Hlias|Mpampis|Stauros|Baggelis|Agelos|Labros)$/i;
 
+// ── WELLE 3 (2026-07-18): USA r1 hispanisch + SWE r1 ex-jugoslawisch ─────────
+// USA: Kopie von US_HISP_FIRST (build-names-v3.js, Damping-Klasse) MINUS der
+// mehrdeutigen Namen, die NICHT r1-exklusiv sein dürfen: Mario (Andretti!),
+// Antonio (italo-amerikanisch), Ivan (slawisch-amerik.), Oscar (anglo/skand.),
+// Omar (Omar Bradley), Israel (jüdisch-amerik.) → die wandern in die
+// Shared-Klasse [0,1]. „José/Juan/Carlos" bleiben r1-exklusiv.
+const USA_HISP_R1_FIRST = /^(Jose|Juan|Carlos|Luis|Miguel|Jorge|Jesus|Pedro|Rafael|Alejandro|Fernando|Ricardo|Roberto|Eduardo|Javier|Sergio|Alberto|Manuel|Francisco|Angel|Andres|Julio|Ruben|Armando|Enrique|Gerardo|Salvador|Arturo|Alfredo|Ramon|Raul|Cesar|Hector|Pablo|Jaime|Gustavo|Guillermo|Felipe|Rodrigo|Emilio|Ernesto|Diego|Santiago|Cristian|Alfonso|Ignacio|Rodolfo|Adolfo|Humberto|Gilberto|Osvaldo|Marcelo|Mauricio|Esteban|Federico|Gonzalo|Rigoberto|Efrain|Joaquin|Leonel|Lorenzo|Marcos|Fidel|Marco Antonio|Juan Carlos|Jose Luis)$/i;
+// Anglo-Kern + die 6 Mehrdeutigen: geteilt [0,1] — 2./3.-Generation-Hispanics
+// tragen überwiegend Anglo-Rufnamen („Kyle Gonzalez" ist der Real-Normalfall,
+// Anker Aric Almirola = „Aric"). NICHT die volle Restmasse teilen: r1 soll
+// hispanisch DOMINIERT bleiben (~60/40), sonst verwässert die Region.
+const USA_SHARED_FIRST = /^(Michael|David|Daniel|Anthony|Christopher|Chris|Alex|Alexander|Eric|Erik|Andrew|Andy|Danny|Johnny|Jimmy|Bobby|Ricky|Richard|Robert|Adrian|Marcus|Victor|Vincent|Frank|Frankie|Tony|Joe|Joey|George|Steven|Steve|Brandon|Kevin|Brian|Ryan|Jesse|Jason|Aaron|Adam|Nick|Nicholas|Sam|Sammy|Freddy|Eddie|Ray|Raymond|Rudy|Leo|Gabriel|Sebastian|Julian|Martin|Kyle|Tyler|Austin|Cody|Dylan|Justin|Jordan|Josh|Joshua|Matt|Matthew|Mike|Mario|Antonio|Ivan|Oscar|Omar|Israel|Edgar|Marco|Edwin|Christian)$/i;
+// USA-NACHNAMEN: Build-Edit (d) — CFG.USA.route = [[HISPANIC, 1]] mit der
+// BESTEHENDEN Build-Konstante (hier nicht dupliziert, 150-Namen-Regex).
+// Die Census-Dämpfung bleibt unverändert (wirkt auf Gewichte, Route auf Region).
+// DAZU die Nachlese der vollen US-Datenmasse (Top-1500!): 140 hispanische
+// Namen, die HISPANIC nicht kennt — angeführt von Cruz (90.877!), Fernandez,
+// Santos, Alvarado, Gonzales (Variante), Ortega, Garza (Texas-Kernname).
+// Filipino-Namen (Cruz/Santos/De La Cruz) bleiben zusätzlich 0.1-gedämpft;
+// portugiesische Diaspora (Gomes/Fernandes/Dias/Lopes/Alves/Matos/Rodrigues)
+// bleibt BEWUSST r0 — Portugiesisch-Amerikaner sind anglo-integriert, und
+// „Kevin Gomes" ist korrekt; ebenso Anglo-Beifang (Haynes/Graves/Davies) und
+// Marino (italienisch) nicht enthalten.
+const USA_HISP_LAST_ADD = /^(Cruz|Fernandez|Fernández|Santos|Alvarado|Gonzales|Gonsalez|Ortega|Garza|Rivas|Pineda|Arias|Guerra|Sosa|Salas|Cortes|Benitez|Benítez|Lozano|Melendez|Meléndez|Zavala|Macias|Macías|Valenzuela|Mercado|Marin|Marín|De Leon|De León|Deleon|Rosas|De La Cruz|Dela Cruz|Murillo|Velez|Vélez|Gallegos|Villegas|Huerta|Cuevas|Paz|Nuñez|Barajas|Cantu|Cantú|Barrios|Baez|Báez|Cordova|Córdova|Castellanos|Villalobos|Avalos|Esparza|Velasco|Enriquez|Enríquez|Nieves|Jaramillo|Granados|Canales|Quiroz|Segura|Solano|Saenz|Sáenz|Gamez|Gámez|Burgos|Olivares|Linares|De Jesus|De Jesús|Valdes|Valdés|De La Rosa|Aviles|Avilés|Galvez|Gálvez|Henriquez|Henríquez|Tellez|Téllez|Godinez|Godínez|Ojeda|Benavides|Vela|Casillas|Quinones|Quiñones|Yanez|Yáñez|Barrientos|Rodas|Venegas|Muniz|Muñiz|Villatoro|Jaimes|Valadez|Resendiz|Casas|De La Torre|Caceres|Cáceres|Ornelas|Martines|Frias|Frías|Valladares|Ordonez|Ordoñez|Angeles|Balderas|Ceballos|Cazares|Torrez|Taveras|Covarrubias|Ceja|Estevez|Estévez|Farias|Farías|Mireles|Tavarez|De Los Santos|Matias|Matías|Alvarenga|Sanches|Larios|Olivas|Bustos|Peres|Hernandes|Briones|Nevarez|Ramires|Turcios|Arenas|Corrales|Paez|Páez|Cavazos|Berrios|Berríos|Ontiveros|Perales|Iglesias|Menendez|Menéndez|Alaniz|Cifuentes|Narvaez|Narváez|Baca|Mares|Funes|Ybarra|Mazariegos|Recinos|Valles|Castro|Romero|Luna|Duran|Durán|Calderon|Calderón|Guevara|Portillo|Beltran|Beltrán|Acevedo|Orellana|Trujillo|Peralta|Colon|Colón|Castaneda|Castañeda|Salgado|Alfaro|Medrano|Parra|Lugo|Galindo|Vera|Caballero|Aguilera|Gallardo|Carranza|Reyna|Zepeda|Hurtado|Cordero|Quintana|Arevalo|Arévalo|Carmona|Olvera|Brito|Hidalgo|Chacon|Chacón|Marroquin|Marroquín|Soriano|Batista|Quezada|Saucedo|Coronado|Aleman|Alemán|Becerra|Corona|Argueta|Mejia|Mejía|Santana|Rubio|Rangel|Tapia|Trejo|Arellano|Mata|Escobedo|Montero|Nieto|Arredondo|Mena|Prado|Rosado|Tejada|Arteaga|Magana|Magaña|Renteria|Rentería|Lucero|Saldana|Saldaña|Najera|Nájera|Alarcon|Alarcón|Serna|Zambrano|Toledo|Barragan|Barragán|Saavedra|Marrero|Sotelo|Arriaga|Giron|Girón|Tejeda|Urbina|Prieto|Aquino|Figueroa|Gamboa|Ulloa)$/i;
+// Batch 2 (Scan 3, -ia/-ra/-o/-on-Endungen): Castro (47.631!) und Romero
+// (46.655!) führten; ambige bleiben draußen (Moran irisch, Roman/Barron/
+// Ventura/Bello/Mota anglo/italienisch/portugiesisch-geteilt).
+
+// SWE: bosnisch/ex-jugoslawisch → r1 (Anker Dino Beganovic). ⚠ Viele dieser
+// Vornamen sind AUCH türkisch/arabisch (Adnan/Emir/Kenan/Tarik) — die globale
+// Filter-Guard (global-first-filters.js) nimmt geroutete Namen automatisch vom
+// Ban aus, darum dürfen sie hier stehen, ohne DEN/NED/AUT aufzureißen.
+const SWE_EXYU_FIRST = /^(Dino|Armin|Edin|Emir|Adnan|Amar|Amer|Amel|Almir|Adis|Haris|Kenan|Tarik|Mirza|Damir|Semir|Senad|Eldar|Jasmin|Zlatan|Elvir|Mirsad|Nedim|Sanel|Ermin|Adin|Ajdin|Alen|Emin|Muamer|Nermin|Edvin-?Bego\w*)$/i;
+// Nachnamen: -ović/-ević voll, dazu kurze -ić/-ic-Formen. Generisches ic$ ist
+// in SCHWEDEN sicher (kein nativer Nachname endet -ic; theoretischer Beifang
+// „Eric" als Nachname kommt in den SE-Top-Daten nicht vor — geprüft).
+// Ban-Freigabe: Build-Edit (e) — SWE-banLast BALKAN → BALKAN_SWE_REST
+// (albanische Liste + escu/eanu/oglu/oski bleiben gebannt, Ban lief vor Route).
+const SWE_EXYU_LAST = /(ović|ovic|ević|evic|ić|ic)$/i;
+
 // ============================================================================
 // EXPORT — Struktur wie cfg.route: [[regex, ziel], …]; ziel int ODER int[]
 // (int[] = Kopie in jede genannte Region, s. Kopfkommentar Punkt 2).
@@ -196,7 +243,10 @@ const GRE_GREEKLISH_FIRST = /^(Giwrgos|Kwstas|Kwnstantinos|Xrhstos|Giannhs|Mixal
 // ============================================================================
 const ROUTE_FIRST = {
     GER: [[GER_TURKISH_FIRST, 1]],                       // Region 1 = NEU, s. region-defs.js
-    GBR: [[GBR_SOUTH_ASIAN_FIRST, 1]],
+    // WELLE 3: Jay/Kian/Rohan/Aman/Dev sind AUCH anglo Top-Namen — die Welle-1-
+    // Route beanspruchte sie r1-exklusiv, was sie aus der GBR-Kurve verbannt
+    // hätte („Jay Watson" unziehbar). Geteilt [0,1] VOR der Südasien-Route.
+    GBR: [[/^(Jay|Kian|Rohan|Aman|Dev)$/i, [0, 1]], [GBR_SOUTH_ASIAN_FIRST, 1]],
     FRA: [[FRA_ARAB_WAF_FIRST, 1]],
     BEL: [[BEL_FL_FIRST, 1], [BEL_FR_FIRST, 0], [BEL_SHARED_FIRST, [0, 1]], [/^/, [0, 1]]],
     //   ^ BEL-Default = geteilt: unklassifizierte Restmasse ist international
@@ -215,7 +265,10 @@ const ROUTE_FIRST = {
     FIN: [[FIN_SV_FIRST, 1], [FIN_SHARED_FIRST, [0, 1]]],
     IND: [[IND_SOUTH_FIRST, 1], [IND_SHARED_FIRST, [0, 1]]],
     MAS: [[MAS_CN_FIRST, 1], [MAS_MALAY_FIRST, 0]],
-    EST: [[EST_RU_FIRST, 1]]
+    EST: [[EST_RU_FIRST, 1]],
+    // WELLE 3:
+    USA: [[USA_HISP_R1_FIRST, 1], [USA_SHARED_FIRST, [0, 1]]],
+    SWE: [[SWE_EXYU_FIRST, 1]]
 };
 
 // D2: banFirst-ERSATZ. Nationen hier ersetzen ihr bisheriges banFirst komplett;
@@ -287,7 +340,8 @@ const BAN_LAST_ADD = {
     // SA-indische Gemeinschaft (Durban) ohne Region (analog Golf-Regel) +
     // Junk/Vornamen-als-Nachname der ZA-Daten
     RSA: [/^(Naidoo|Govender|Pillay|Moodley|Chetty|Padayachee|Maharaj)$/i,
-          /^(Gift|Thabo|Lucky|Thando|Junior|Angel|Pretty|Portia|Lerato|Rose|Sam|John|Jack|Moses|Sello|Prince|Sthole|Maria|Ali|Beauty|Elizabeth|Christina|Grace|Joyce|Happy)$/i],
+          // + Katlego/Bongani/Kagiso/Bongi (Vornamen-als-Nachname, Welle-3-Nachlese r0-TAIL)
+          /^(Gift|Thabo|Lucky|Thando|Junior|Angel|Pretty|Portia|Lerato|Rose|Sam|John|Jack|Moses|Sello|Prince|Sthole|Maria|Ali|Beauty|Elizabeth|Christina|Grace|Joyce|Happy|Katlego|Bongani|Kagiso|Bongi)$/i],
     // MY-Junk (Man/Lan/Keong/Hong/Ming = Namensbestandteile, Jack/Rock/Love/
     // Hidayah = Artefakte) + Hossain (bengalische Gastarbeiter, keine Region)
     MAS: [/^(Man|Lan|Keong|Hong|Jack|Rock|Amira|Boy|Long|Anak|Ming|Wai|Love|Hidayah|Hossain|Seng|Rai|Husna|Sam|Chandran|Muniandy|Subramaniam)$/i],
@@ -304,7 +358,15 @@ const BAN_LAST_ADD = {
     // GRE (AUSBAU D1): wird an das bestehende banLast ANGEHÄNGT (NORDIC_FOREIGN,
     // GREEK_FEMALE, IBERIAN_PT, HISPANIC + Nikos|Dimitris|…-Liste bleiben).
     // Wirkung: 43,9 % → ~1 % Fremdmasse, Pool bleibt gesund (REPORT-AUSBAU §1).
-    GRE: [GRE_STRUCT_LAST, GRE_FOREIGN_SOU_LAST, GRE_GIVEN_LAST, GRE_FEMALE_OU_LAST]
+    GRE: [GRE_STRUCT_LAST, GRE_FOREIGN_SOU_LAST, GRE_GIVEN_LAST, GRE_FEMALE_OU_LAST],
+    // ISR (WELLE 3, Nutzer-Fund „Daniel Khaled" im Spielstand): der bestehende
+    // Ban listet Khalil, aber nicht Khaled — insgesamt trugen 1 von 9 ISR-
+    // Fahrern einen arabischen Nachnamen (10,5 % Ziehmasse, 55 Namen; volle
+    // Messung gegen den gebauten Pool). Bestandsentscheidung bleibt: arabisch-
+    // israelische Namen sind Filter, keine Region (kein Motorsport-Anker).
+    // BEWUSST NICHT gebannt (auch jüdisch-israelisch): Abutbul (marokkanisch-
+    // jüdisch), Assaf (hebräisch), Sabag/Habib/Mualem (mizrachisch).
+    ISR: [/^(Yousef|Naser|Shaheen|Diab|Haj|Khaled|Khatib|Nasser|Masri|Younis|Saad|Halabi|Samara|Hamed|Abu|Hammad|Kabha|Badran|Sultan|Zoubi|Amara|Azzam|Ghanem|Othman|Safadi|Mustafa|Rayan|Yassin|Hussein|Shalabi|Egbaria|Zidan|Hijazi|Jabareen|Sawaed|Fares|Shibli|Bakri|Ismail|Farah|Bishara|Shehadeh|Wattad|Jubran|Rabah|Mahajna|Sarsour|Daoud|Asfour|Zaher)$/i]
 };
 
 // Nachnamen-Routen ERGÄNZEN (an cfg.route anfügen; GER hatte bisher keine route).
@@ -316,6 +378,11 @@ const ROUTE_LAST_ADD = {
     CAN: [[CAN_SA_LAST_ADD, 2], [CAN_EA_LAST_ADD, 3]],
     RSA: [[RSA_AF_LAST_ADD, 1], [RSA_ZU_LAST_ADD, 2]],
     SUI: [[SUI_PT_LAST_ADD, 3]],
+    // WELLE 3: SWE ex-jugoslawische Nachnamen → r1 (braucht Build-Edit e,
+    // sonst frisst der BALKAN-Ban sie vor der Route)
+    SWE: [[SWE_EXYU_LAST, 1]],
+    // WELLE 3: USA-Nachlese — hängt hinter CFG.USA.route [[HISPANIC,1]] (Edit d)
+    USA: [[USA_HISP_LAST_ADD, 1]],
     // chinesische Nachnamen ausserhalb der bestehenden MAS-Route („Roslan Cheong")
     MAS: [[/^(Cheong|Teh|Chen|Yow|Chng|Chuah|Khaw|Hui|Beh|Peng|Siew|Yow|Chng)$/, 1]]
 };
@@ -337,6 +404,8 @@ module.exports = {
     CAN_SA_LAST_ADD, CAN_EA_LAST_ADD, CAN_SA_FIRST, CAN_EA_PINYIN_FIRST, CAN_EA_WESTERN_FIRST,
     GRE_STRUCT_LAST, GRE_FOREIGN_SOU_LAST, GRE_GIVEN_LAST, GRE_FEMALE_OU_LAST,
     GRE_STRUCT_FIRST, GRE_FOREIGN_S_FIRST, GRE_GREEKLISH_FIRST,
+    // WELLE 3 (USA/SWE-Split):
+    USA_HISP_R1_FIRST, USA_SHARED_FIRST, USA_HISP_LAST_ADD, SWE_EXYU_FIRST, SWE_EXYU_LAST,
     // Für Tests/Doku:
     GER_TURKISH_FIRST, GER_TURKISH_LAST, FRA_ARAB_WAF_FIRST, GBR_SOUTH_ASIAN_FIRST,
     BEL_FR_FIRST, BEL_FL_FIRST, BEL_SHARED_FIRST,

@@ -58,7 +58,74 @@
 // Vornamen: westliche Rufnamen sind die Daten-Realität der 2. Generation
 // (das 0-%-Problem der Pinyin-Namen ist KEIN Datenfehler); der kuratierte Kopf
 // unten hält zusätzlich eine kleine 1,5.-Generation-Präsenz (Wei/Ming/Minh/Jae).
+// ═══ WELLE 3 (2026-07-18): USA r1 hispanisch · SWE r1 ex-jugoslawisch · ZIM r1 ═══
+//
+// USA r1: „Carlos Anderson" traf 1 von 11 US-Fahrern (hisp. Vorname × anglo
+//   Nachname, Zufallsprodukt im Ein-Topf). KEIN minYear — Hispanics sind seit
+//   jeher da; Motorsport-Anker Aric Almirola (NASCAR), Pedregon-Brüder (NHRA).
+//   w 0.12 ≈ gemessener Census-gedämpfter Nachnamen-Anteil (12,3 %).
+//   Anglo-Rufnamen bleiben via Shared-Route [0,1] ziehbar („Kyle Gonzalez" =
+//   häufigster Real-Fall der 2./3. Generation).
+// SWE r1: Anker Dino Beganovic (Ferrari-Junior, schwedische Lizenz). Bosnien-
+//   Flüchtlinge 1992–95 → in Schweden geborene Generation debütiert ab ~2015.
+//   w 0.03 (~2 % Bevölkerung ex-jugoslawisch, Motorsport-Anker rechtfertigt
+//   leichte Übergewichtung). Nachnamen kommen per Route aus dem BALKAN-Ban
+//   frei (Build-Edit e — Ban lief vor Route). ABGRENZUNG: der VERWORFENE
+//   Global-BALKAN-Ban (§4 BRIEF-AUSBAU) war ein Ban für 20 Nationen ohne
+//   Anker — dies ist eine Region für EINE Nation MIT Anker.
+// ZIM r1: Rhodesien-Pool war komplett weiß (GB-Leihe) — korrekt für die
+//   Kolonial-/UDI-Ära, aber nach 1980 fehlte die schwarze Mehrheit völlig.
+//   Anker Axcil Jefferies (schwarzer Simbabwer, GP2/F2 2010er). minYear 1995
+//   (Unabhängigkeit 1980 + Mittelschichts-Aufbau → Debüts ab Mitte 90er),
+//   w 0.12 (aspirational-fair wie RSA r2; Grids blieben weiß-dominiert).
+//   Kuratiert (Shona/Ndebele) — ZIM hat keine Datenbasis.
 const NEW_REGIONS = {
+    USA: {
+        w: 0.12, // hispanisch — KEIN minYear
+        // Anglo-Kopf (Michael…Tyler) bewusst mit drin: 2./3. Generation trägt
+        // überwiegend Anglo-Rufnamen — r1 heißt „hispanische FAMILIEN", nicht
+        // „spanische Vornamen". Dieselben Namen bleiben auch in r0 (geteilt).
+        first: [
+            ['José', 3], ['Juan', 3], ['Carlos', 3], ['Luis', 2], ['Miguel', 2], ['Jorge', 2],
+            ['Ricardo', 2], ['Roberto', 2], ['Javier', 2], ['Sergio', 2], ['Rafael', 1], ['Pedro', 1],
+            ['Alejandro', 1], ['Fernando', 1], ['Hector', 1], ['Cesar', 1], ['Ruben', 1], ['Raul', 1],
+            ['Michael', 3], ['David', 3], ['Chris', 2], ['Kevin', 2], ['Eric', 2], ['Anthony', 2],
+            ['Ryan', 2], ['Kyle', 2], ['Danny', 2], ['Justin', 2], ['Tyler', 2], ['Austin', 1],
+            ['Dylan', 1], ['Brandon', 1]
+        ],
+        last: [
+            ['Garcia', 4], ['Rodriguez', 4], ['Martinez', 4], ['Hernandez', 3], ['Lopez', 3],
+            ['Gonzalez', 3], ['Perez', 3], ['Sanchez', 3], ['Ramirez', 2], ['Torres', 2],
+            ['Flores', 2], ['Rivera', 2], ['Gomez', 2], ['Diaz', 2], ['Cruz', 1], ['Reyes', 1],
+            ['Morales', 1], ['Gutierrez', 1], ['Ortiz', 1], ['Chavez', 1], ['Ruiz', 1], ['Mendoza', 1]
+        ]
+    },
+    SWE: {
+        w: 0.03, minYear: 2015, // ex-jugoslawisch (bosnisch dominiert)
+        first: [
+            ['Dino', 3], ['Armin', 3], ['Edin', 2], ['Emir', 2], ['Adnan', 2], ['Amar', 2],
+            ['Almir', 2], ['Adis', 2], ['Haris', 2], ['Kenan', 2], ['Tarik', 1], ['Mirza', 1],
+            ['Damir', 1], ['Semir', 1], ['Senad', 1], ['Eldar', 1], ['Jasmin', 1], ['Zlatan', 1]
+        ],
+        last: [
+            ['Begović', 3], ['Hodžić', 3], ['Hadžić', 2], ['Delić', 2], ['Mujić', 2], ['Alić', 2],
+            ['Salihović', 2], ['Ibrahimović', 2], ['Kovačević', 2], ['Mehmedović', 1], ['Softić', 1],
+            ['Halilović', 1], ['Omerović', 1], ['Suljić', 1], ['Zukić', 1], ['Ahmetović', 1]
+        ]
+    },
+    ZIM: {
+        w: 0.12, minYear: 1995, // schwarz-simbabwisch (Shona/Ndebele)
+        first: [
+            ['Tapiwa', 3], ['Tendai', 3], ['Tinashe', 3], ['Farai', 2], ['Tafadzwa', 2],
+            ['Kudakwashe', 2], ['Takudzwa', 2], ['Tawanda', 2], ['Munyaradzi', 1], ['Simba', 2],
+            ['Panashe', 1], ['Anesu', 1], ['Munashe', 1], ['Nyasha', 1], ['Tanaka', 1], ['Blessing', 1]
+        ],
+        last: [
+            ['Moyo', 3], ['Ncube', 3], ['Sibanda', 3], ['Dube', 3], ['Ndlovu', 2], ['Nkomo', 2],
+            ['Mpofu', 2], ['Mhlanga', 2], ['Masuku', 1], ['Gumbo', 1], ['Shumba', 1], ['Marufu', 1],
+            ['Mutasa', 1], ['Makoni', 1], ['Chiweshe', 1], ['Mawere', 1], ['Nyoni', 1], ['Phiri', 1]
+        ]
+    },
     CAN: {
         w: 0.05, minYear: 1990, // ostasiatisch-kanadisch (r3)
         first: [
@@ -109,6 +176,23 @@ const REGION_PATCHES = {
                 ['Singh', 4], ['Patel', 4], ['Gill', 3], ['Sharma', 3], ['Khan', 3], ['Sandhu', 3],
                 ['Sidhu', 2], ['Dhaliwal', 2], ['Brar', 2]
             ]
+        }
+    },
+    // WELLE 3 — USA r0: kuratierte hispanische Köpfe ziehen nach r1 um
+    // (Kuration schlägt Route — ohne Patch blieben José/Garcia in r0 und
+    // „Carlos Anderson" ziehbar). modern-Fenster minus José/Juan/Carlos/Luis,
+    // last minus Garcia/Martinez/Hernandez/Rodriguez/Lopez/Rivera (alle stehen
+    // in NEW_REGIONS.USA.last). Nguyen/Patel bleiben bewusst r0: Anglo-Vorname
+    // + asiatischer Nachname ist der reale 2.-Generations-Normalfall, und
+    // asiatische VORNAMEN existieren in den US-Daten praktisch nicht.
+    USA: {
+        0: {
+            first: {
+                early:  [['Bill',5],['Jim',5],['Bob',5],['Jack',4],['Dan',4],['Sam',3],['Tony',3],['Eddie',3],['Johnny',3],['Don',3],['Chuck',2],['Gene',2],['Lee',2],['Richie',2],['Walt',1],['Rodger',1]],
+                mid:    [['Michael',5],['John',5],['David',5],['Chris',4],['Mark',4],['Scott',4],['Jeff',4],['Brian',4],['Kevin',4],['Eric',4],['Anthony',4],['Jason',4],['Ryan',3],['Josh',3],['Justin',3],['Brad',3],['Kyle',3],['Danny',3],['Casey',2],['Chad',2]],
+                modern: [['Tyler',4],['Austin',4],['Mason',4],['Ethan',4],['Jake',4],['Zach',4],['Connor',4],['Dylan',4],['Liam',4],['Noah',4],['Chase',3],['Cole',3],['Logan',3],['Colton',3],['Hunter',3],['Josef',1]]
+            },
+            last: [['Smith',5],['Johnson',5],['Williams',4],['Brown',4],['Jones',4],['Miller',4],['Davis',4],['Wilson',4],['Anderson',4],['Taylor',4],['Moore',4],['Jackson',3],['White',3],['Harris',3],['Thompson',3],['Robinson',3],['Clark',3],['Lewis',3],['Walker',3],['Hall',3],['Carter',3],['Young',2],['Allen',2],['Lee',2],['Mitchell',2],['Parker',2],['Turner',2],['Nguyen',1],['Patel',1]]
         }
     }
 };
@@ -163,7 +247,17 @@ const WEIGHT_PROPOSALS = {
                '(est. Fahrer dominieren: Märtin, Vips, Aron), aber Junior-Breite rechtfertigt Bevölkerungsanker.' },
     GER: { action: 'change', w: [0.96, 0.04], wAlt: [1.0],
         beleg: 'Neue Region 1 türkisch-deutsch (s. NEW_REGIONS.GER) — größte Einwanderungsgruppe, ' +
-               'bisher per banFirst unterdrückt statt getrennt (D2-Kernfall).' }
+               'bisher per banFirst unterdrückt statt getrennt (D2-Kernfall).' },
+    // ── WELLE 3 (2026-07-18) ──
+    USA: { action: 'change', w: [0.88, 0.12], wAlt: [1.0],
+        beleg: 'Neue Region 1 hispanisch (s. NEW_REGIONS.USA) — 12,3 % Census-gedämpfte Nachnamen-Masse; ' +
+               '„Carlos Anderson" traf 1:11 im Ein-Topf. Anker Almirola/Pedregon. Kein minYear.' },
+    SWE: { action: 'change', w: [0.97, 0.03], wAlt: [1.0],
+        beleg: 'Neue Region 1 ex-jugoslawisch (s. NEW_REGIONS.SWE) — Anker Dino Beganovic (Ferrari-Junior, ' +
+               'schwed. Lizenz); ~2 % Bevölkerung, minYear 2015 (Flüchtlinge 1992–95 → 2. Gen).' },
+    ZIM: { action: 'change', w: [0.88, 0.12], wAlt: [1.0],
+        beleg: 'Neue Region 1 schwarz-simbabwisch (s. NEW_REGIONS.ZIM) — Rhodesien-Ära korrekt weiß ' +
+               '(Apartheid-Analog), ab 1995 Anker Axcil Jefferies. Aspirational-fair wie RSA r2.' }
 };
 
 module.exports = { NEW_REGIONS, WEIGHT_PROPOSALS, REGION_PATCHES };

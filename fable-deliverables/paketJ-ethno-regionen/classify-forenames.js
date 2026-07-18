@@ -23,6 +23,7 @@ const path = require('path');
 const BASE = require('../name-data/curated-base-v2.js');
 const RR = require('./region-routes.js');
 const RD = require('./region-defs.js');
+const GF = require('./global-first-filters.js'); // Welle 3: globale Vornamen-Guard
 
 const ALPHA = 0.6, SCALE = 100;
 const BUCKET = { 5: 90, 4: 45, 3: 26, 2: 12, 1: 2 };
@@ -45,6 +46,11 @@ const SLAVIC_EAST = /(ov|ev|in|yn|enko|chuk|shvili|adze|yan|ian)$/;
 const SLAVIC_NARROW = /(ov|ev|enko|chuk|shvili|adze)$/;
 // AUSBAU: GRE im Scope (Kopie build-names-v3.js Stand v0.9.14.81)
 const GREEK_FEMALE = /(opoulou|poulou|idou|iadou|adou|aki)$/i;
+// WELLE 3: SWE-Ban-Umbau + USA-Dämpfung (Kopien build-names-v3.js Stand 2026-07-18)
+const NORDIC_FOREIGN_NO_BLK = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + TURKISH.source, 'i');
+const BALKAN_SWE_REST = /(inac|oski|evski|ovski|iu|escu|eanu|oglu|oğlu)$|^(Krasniqi|Gashi|Berisha|Shala|Hoxha|Kelmendi|Morina|Bytyqi|Zeka|Rama|Dervishi|Marku|Gjoka|Leka|Prela|Hoti|Zeqiri|Rexhepi|Ademi|Selimi|Osmani|Shabani)$/i;
+const US_HISP_FIRST = /^(Jose|Juan|Carlos|Luis|Miguel|Jorge|Jesus|Pedro|Rafael|Alejandro|Fernando|Ricardo|Roberto|Eduardo|Javier|Sergio|Alberto|Mario|Manuel|Francisco|Antonio|Angel|Andres|Julio|Ruben|Armando|Enrique|Gerardo|Salvador|Arturo|Alfredo|Ramon|Raul|Cesar|Hector|Oscar|Omar|Pablo|Jaime|Gustavo|Guillermo|Felipe|Rodrigo|Emilio|Ernesto|Diego|Santiago|Cristian|Alfonso|Ignacio|Rodolfo|Adolfo|Humberto|Gilberto|Osvaldo|Marcelo|Mauricio|Esteban|Federico|Gonzalo|Rigoberto|Efrain|Ismael|Israel|Ivan|Joaquin|Leonel|Lorenzo|Marco Antonio|Juan Carlos|Jose Luis)$/i;
+const US_HISP_DAMP = (1166120 / 2442977) / (250895 / 177637); // ≈ 0,338
 const IBERIAN_PT = /^(Silva|Santos|Ferreira|Pereira|Oliveira|Costa|Rodrigues|Martins|Sousa|Souza|Fernandes|Gomes|Lopes|Ribeiro|Gonçalves|Goncalves|Marques|Carvalho|Almeida|Pinto|Alves|Dias|Teixeira|Correia|Mendes|Moreira|Soares|Da Silva|Dos Santos|De Sousa|Nunes|Freitas|Cardoso|Rocha|Barbosa|Cruz|Neves|Coelho|Cunha|Vieira|Monteiro|Batista|Fonseca|Machado|Da Costa|Reis|Antunes|Matos|Fereira|Miranda|Nogueira|Ramos|Tavares|Azevedo|Barros|Borges|Brito|Cavalcante|Castro|Duarte|Farias|Andrade|Araujo|Araújo|Assis|Aguiar|Abreu|Amorim|Anjos|Amaral)$/i;
 const HISPANIC = /^(Garcia|García|Rodriguez|Rodríguez|Martinez|Martínez|Lopez|López|Gonzalez|González|Hernandez|Hernández|Perez|Pérez|Sanchez|Sánchez|Ramirez|Ramírez|Torres|Flores|Rivera|Gomez|Gómez|Diaz|Díaz|Reyes|Morales|Ortiz|Gutierrez|Gutiérrez|Chavez|Chávez|Ramos|Ruiz|Mendoza|Alvarez|Álvarez|Castillo|Jimenez|Jiménez|Vasquez|Vásquez|Vazquez|Vázquez|Moreno|Herrera|Medina|Aguilar|Vargas|Guzman|Guzmán|Mendez|Méndez|Munoz|Muñoz|Rojas|Salazar|Contreras|Suarez|Suárez|Delgado|Pena|Peña|Rios|Ríos|Cabrera|Campos|Vega|Fuentes|Carrillo|Leon|León|Santiago|Dominguez|Domínguez|Maldonado|Espinoza|Valdez|Juarez|Juárez|Molina|Acosta|Ayala|Zamora|Villarreal|Trevino|Treviño|Cortez|Cortés|Soto|Serrano|Solis|Solís|Rosales|Estrada|Zuniga|Zúñiga|Nunez|Núñez|Ochoa|Cardenas|Cárdenas|Navarro|Padilla|Barrera|Camacho|Cervantes|Marquez|Márquez|Escobar|Galvan|Galván|Velasquez|Velásquez|Velazquez|Velázquez|Ibarra|Cisneros|Bautista|Meza|Villanueva|Orozco|Avila|Ávila|Robles|Sandoval|Bravo|Lara|Cano|Quintero|Bermudez|Bermúdez|Osorio|Valencia|Franco|Guerrero|Paredes|Bustamante|Ponce|Salinas|Arroyo|Montoya|Palacios|Zapata|Miranda|Mora|Rincon|Rincón|Uribe|Restrepo|Ospina|Giraldo|Cardona|Correa|Betancur|Zuluaga|Arango|Bedoya|Agudelo|Henao|Sierra|Villa|Gallego|Montes)$/i;
 const NORDIC_FOREIGN = new RegExp(SOUTH_ASIAN.source + '|' + EAST_ASIAN.source + '|' + ARABIC_MAGHREB.source + '|' + TURKISH.source + '|' + BALKAN.source, 'i');
@@ -68,7 +74,11 @@ const CFG = {
     EST: { iso:'EE', cls:'small', route:[[/(ov|ev|in|yn|enko|chuk)$|^(Ivanov|Smirnov|Petrov|Kuznetsov|Popov|Volkov|Sokolov|Nikitin|Orlov|Fjodorov|Fyodorov|Vassiljev|Vasiljev|Aleksejev|Andrejev|Sergejev|Mihhailov|Pavlov|Bogdanov|Stepanov|Semjonov|Tarassov|Kolesnik)/,1]], banLast:[/(ova|eva|ina|yna|aya)$/i], banFirst:[/^(Aleksandr|Sergei|Andrei|Dmitri|Aleksei|Vladimir|Igor|Roman|Oleg|Artur|Maksim|Jevgeni|Pavel|Anton|Nikolai|Aleksander|Sander)$/] },
     // AUSBAU: GRE (Kopie build-names-v3.js v0.9.14.81 — 'old' = Live-Stand;
     // 'new' zieht BAN_FIRST.GRE/BAN_LAST_ADD.GRE aus region-routes.js).
-    GRE: { iso:'GR', cls:'mid', banLast:[NORDIC_FOREIGN,GREEK_FEMALE,IBERIAN_PT,HISPANIC,/^(Papa|Mustafa|Ahmet|Mehmet|Hasan|Osman|Hussein|Ali Osman|Huseyin|Hüseyin|Ismail|Ramadan|Nikos|Dimitris|Giorgos|Kostas|Giannis|Christos|Vasilis|Vassilis|Panagiotis|Stavros|Michalis|Antonis|Georgios|Konstantinos|Dimitrios|Ioannis|Nikolaos|George|Christo)$/i], banFirst:[/^(Mohamed|Mohammed|Muhammad|Ali|Ahmed|Ahmad|Hassan|Hussein|Omar|George|John|Peter|Mike|Maria)$/i] }
+    GRE: { iso:'GR', cls:'mid', banLast:[NORDIC_FOREIGN,GREEK_FEMALE,IBERIAN_PT,HISPANIC,/^(Papa|Mustafa|Ahmet|Mehmet|Hasan|Osman|Hussein|Ali Osman|Huseyin|Hüseyin|Ismail|Ramadan|Nikos|Dimitris|Giorgos|Kostas|Giannis|Christos|Vasilis|Vassilis|Panagiotis|Stavros|Michalis|Antonis|Georgios|Konstantinos|Dimitrios|Ioannis|Nikolaos|George|Christo)$/i], banFirst:[/^(Mohamed|Mohammed|Muhammad|Ali|Ahmed|Ahmad|Hassan|Hussein|Omar|George|John|Peter|Mike|Maria)$/i] },
+    // WELLE 3: USA (Split hispanisch) + SWE (Split ex-jugoslawisch) —
+    // 'old' = Live-Stand v0.9.14.84, 'new' = Welle 3.
+    USA: { iso:'US', cls:'big', dampLast:[[/^(Cruz|Santos|De La Cruz|Dela Cruz|Bautista|Villanueva|Ocampo|Aquino|Manalo)$/i,0.1],[HISPANIC,US_HISP_DAMP],[SOUTH_ASIAN,0.25],[EAST_ASIAN,0.85]], dampFirst:[[US_HISP_FIRST,US_HISP_DAMP]] },
+    SWE: { iso:'SE', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] }
 };
 
 // AUSBAU: GRE-Pool-Skelett (Kopie build-names-v3.js NEW_POOLS.GRE — GRE steht
@@ -100,7 +110,8 @@ const OPS = {
     MAS: { drop: { first: ['Mohd','Muhd','Mohamad','Muhamad','Abdul','Mohammad','Wan','Tan','Lee'], last: ['Mohd','Raj'] }, move: { last: { 'Yee':1 } } },
     EST: { drop: { first: ['Alex'], last: ['Ivanova','Smirnova','Petrova','Kuznetsova','Vassiljeva','Pavlova','Olen','Kadri','Kristi'] },
            move: { first: { 'Denis':1,'Viktor':1 }, last: { 'Hein':0 } } },
-    GRE: { drop: { first: ['Kostas Alt'], last: ['Ali Khan'] } }
+    GRE: { drop: { first: ['Kostas Alt'], last: ['Ali Khan'] } },
+    SWE: { drop: { first: ['Ali', 'Hanna'] } } // Hanna = weiblich (Welle-3-Sichtprobe)
 };
 const SCOPE = Object.keys(CFG);
 
@@ -129,6 +140,13 @@ function flatPool(nat, withNew) {
         pool.regions.push(deep(RD.NEW_REGIONS.CAN));
         Object.assign(pool.regions[2], deep(RD.REGION_PATCHES.CAN[2]));
         RD.WEIGHT_PROPOSALS.CAN.w.forEach((w, i) => { pool.regions[i].w = w; });
+    }
+    // WELLE 3: USA/SWE r1-Push (NEW_REGIONS + REGION_PATCHES + Gewichte, analog Build)
+    if ((nat === 'USA' || nat === 'SWE') && withNew) {
+        pool.regions.push(deep(RD.NEW_REGIONS[nat]));
+        for (const [ri, patch] of Object.entries(RD.REGION_PATCHES[nat] || {}))
+            Object.assign(pool.regions[ri], deep(patch));
+        RD.WEIGHT_PROPOSALS[nat].w.forEach((w, i) => { pool.regions[i].w = w; });
     }
     for (const r of pool.regions) {
         if (r.first && !Array.isArray(r.first)) {
@@ -159,7 +177,16 @@ function build(nat, mode) {
         if (mode === 'new' && kind === 'first' && RR.BAN_FIRST[nat] !== undefined) bans = RR.BAN_FIRST[nat];
         if (mode === 'new' && kind === 'last' && nat === 'GER')
             bans = [NORDIC_FOREIGN_NO_TR, IBERIAN_PT, HISPANIC, SLAVIC_EAST, /ski$|cki$/];
+        // WELLE 3: emuliert Build-Edit (e) — SWE-BALKAN-Freigabe für die Route
+        if (mode === 'new' && kind === 'last' && nat === 'SWE')
+            bans = [NORDIC_FOREIGN_NO_BLK, BALKAN_SWE_REST, IBERIAN_PT, HISPANIC, SLAVIC_EAST];
         if (mode === 'new' && kind === 'last' && RR.BAN_LAST_ADD[nat]) bans = bans.concat(RR.BAN_LAST_ADD[nat]);
+        // WELLE 3: emuliert Build-Edit (f) — globale Vornamen-Guard (nach dem
+        // BAN_FIRST-Replace, geroutete Namen sind automatisch ausgenommen)
+        if (mode === 'new' && kind === 'first') {
+            const guard = GF.makeFirstGuard(nat, RR.ROUTE_FIRST[nat]);
+            if (guard) bans = bans.concat(guard);
+        }
         let drops = new Set((ops.drop && ops.drop[kind]) || []);
         if (mode === 'new' && nat === 'GER' && kind === 'first') drops = new Set(); // Ali wird geroutet, nicht gedroppt
         let moves = (ops.move && ops.move[kind]) || {};
@@ -174,6 +201,10 @@ function build(nat, mode) {
         // durch getrennte Einträge ersetzen (erster Treffer gewinnt!)
         if (mode === 'new' && nat === 'CAN' && kind === 'last')
             routes = [cfg.route[0], [SOUTH_ASIAN, 2], [EAST_ASIAN, 3]].concat(RR.ROUTE_LAST_ADD.CAN);
+        // WELLE 3: emuliert Build-Edit (d) — USA-Nachnamen-Route [[HISPANIC,1]]
+        // + Nachlese aus ROUTE_LAST_ADD (Cruz/Fernandez/Garza …)
+        if (mode === 'new' && nat === 'USA' && kind === 'last')
+            routes = [[HISPANIC, 1]].concat(RR.ROUTE_LAST_ADD.USA || []);
 
         const merged = new Map();
         for (let [name, count] of raw) {
@@ -185,6 +216,10 @@ function build(nat, mode) {
             const curatedProtected = kind === 'last' && curatedLastKeys.has(key(name));
             if (kind === 'last' && GIVEN_AS_SURNAME.test(name) && !curatedProtected) continue;
             if (!curatedProtected && bans.some(b => b.test(name))) continue;
+            // WELLE 3: USA-Census-Dämpfung (Kopie der Build-Mechanik — wirkt auf
+            // Gewichte, unabhängig vom Routing)
+            for (const [re, f] of (kind === 'last' ? cfg.dampLast : cfg.dampFirst) || [])
+                if (re.test(name)) { count = Math.round(count * f); break; }
             const k = key(name);
             if (merged.has(k)) merged.get(k).count += count;
             else merged.set(k, { name, count });
@@ -274,7 +309,8 @@ const REGION_LABELS = {
     BEL: ['wallonisch/frankophon', 'flämisch'], SUI: ['Deutschschweiz', 'Romandie', 'Tessin', 'portugiesisch (2000+)'],
     CAN: ['anglophon', 'Québec', 'südasiat. (1990+)', 'ostasiat. (1990+) NEU'], RSA: ['anglophon', 'Afrikaans', 'afrikanisch (1995+)'],
     FIN: ['finnisch', 'finnlandschwedisch'], IND: ['Nord', 'Süd'], MAS: ['malaiisch', 'chinesisch-malays.'],
-    EST: ['estnisch', 'russischsprachig'], GRE: ['griechisch']
+    EST: ['estnisch', 'russischsprachig'], GRE: ['griechisch'],
+    USA: ['anglo', 'hispanisch NEU'], SWE: ['schwedisch', 'ex-jugosl. (2015+) NEU']
 };
 for (const nat of SCOPE) {
     const o = results[nat].old.pool, n = results[nat].neu.pool;
@@ -378,7 +414,18 @@ const PROBES = [
     ['CAN', 'Wei', 'Dhillon', false],
     ['CAN', 'Sandeep', 'Singh', true], ['CAN', 'Kevin', 'Tsang', true],
     // D3: BEL r2 maghrebinisch BEGRABEN (Filter bleibt — Doku-Probe):
-    ['BEL', 'Mohamed', 'Peeters', false]
+    ['BEL', 'Mohamed', 'Peeters', false],
+    // WELLE 3 — USA-Split:
+    ['USA', 'Carlos', 'Anderson', false], ['USA', 'Jose', 'Smith', false],
+    ['USA', 'Carlos', 'Garcia', true], ['USA', 'Jose', 'Rodriguez', true],
+    ['USA', 'Kyle', 'Gonzalez', true], ['USA', 'Kyle', 'Anderson', true],
+    ['USA', 'Mohammed', 'Smith', false],   // globale Guard (keine USA-Region/Route)
+    // WELLE 3 — SWE-Split (Anker Beganovic) + globale Guard:
+    ['SWE', 'Dino', 'Begovic', true], ['SWE', 'Dino', 'Andersson', false],
+    ['SWE', 'Erik', 'Begovic', false], ['SWE', 'Erik', 'Andersson', true],
+    ['SWE', 'Mohammed', 'Andersson', false], ['SWE', 'Adnan', 'Hodzic', true],
+    // WELLE 3 — Guard-Kollisionsschutz: geroutete Nationen bleiben unberührt:
+    ['GER', 'Mehmet', 'Yilmaz', true], ['FRA', 'Karim', 'Benali', true]
 ];
 let fails = 0;
 for (const [nat, f, l, wanted] of PROBES) {
