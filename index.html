@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.84</title>
+    <title>F1 RPG v0.9.14.85</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.84 (aktuell) - 17.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.85 (aktuell) - 18.07.2026</div>
+                            <div>&#8226; FIX: Neu generierte F1-Fahrer bekommen aera-genaue Vornamen - der Generator nutzt jetzt das echte Debuetalter (1950er ~35, heute ~22) statt pauschal year-24</div>
+                            <div>&#8226;  ein 1950er-Rookie heisst jetzt wie sein echter Jahrgang</div>
+                            <div class="font-bold text-slate-400">v0.9.14.84 - 17.07.2026</div>
                             <div>&#8226; OPTIMIERUNG: Namens-Daten ~35 KB verschlankt - die Aera-Vornamen der 5 grossen Nationen kommen jetzt allein aus den Paket-I-Kurven, das tote Fallback-Data wurde eingedampft</div>
                             <div class="font-bold text-slate-400">v0.9.14.83 - 17.07.2026</div>
                             <div>&#8226; FIX: Griechische Nachnamen bereinigt - 44% Fremdmasse (albanisch/suedasiat./Junk) raus, nur noch -s/-ou</div>
@@ -3002,7 +3005,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.84';
+        const VERSION = '0.9.14.85';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5350,10 +5353,19 @@
                     .map(d => d.name.split(' ').slice(-1)[0])
             );
 
+            // Geburtsjahr VORAB (Paket I: era-genauer Vorname). Rookie = era-abhängiges
+            // Debütalter (ERA_ROOKIE_AGE, ~28 in den 1950ern → ~22 heute), Erfahren = 26–33.
+            // Wird für den Vornamen UND das birthYear-Feld unten genutzt (konsistent) → der
+            // Namensgenerator zieht aus der richtigen Kohorte statt aus dem Fallback year−24.
+            const genAge = isRookie
+                ? Math.round((getEraValue(ERA_ROOKIE_AGE, year) || 25) + (Math.random() - 0.5) * 6)
+                : 26 + Math.floor(Math.random() * 8);   // 26–33 Jahre
+            const genBirthYear = year - genAge;
+
             // Namen aus NAME_POOLS_BY_NATION (regionskohärent, ära-sensibel).
             // Not-Fallback: alte flache FIRST_NAMES_W/LAST_NAMES_W (falls Pool-Konstante fehlt).
             let firstName, lastName;
-            const pooled = pickPooledName(nation, year, usedLastNames);
+            const pooled = pickPooledName(nation, year, usedLastNames, genBirthYear);
             if (pooled) {
                 firstName = pooled.firstName;
                 lastName = pooled.lastName;
@@ -5368,8 +5380,7 @@
                 // ROOKIE: Jung, niedriger aktueller Skill, aber hohes Potenzial
                 const potentialPace = 75 + Math.floor(Math.random() * 20); // Potenzial: 75-94
                 const currentPace = potentialPace - (12 + Math.floor(Math.random() * 6)); // Gap: 12-17
-                const rookieAge = getEraValue(ERA_ROOKIE_AGE, year) || 25;
-                
+
                 return {
                     id: 'gen-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                     name: `${firstName} ${lastName}`,
@@ -5390,7 +5401,7 @@
                     })(),
                     experience: 60 + Math.floor(Math.random() * 20),
                     starts: 60 + Math.floor(Math.random() * 20),
-                    birthYear: year - Math.round(rookieAge + (Math.random() - 0.5) * 6),
+                    birthYear: genBirthYear,
                     debutYear: year,
                     contractEnd: year + 1 + Math.floor(Math.random() * 2),
                     isIndyOnly: isIndyTeam  // Markierung für Indy-Fahrer
@@ -5402,8 +5413,7 @@
                 const potentialPace = 72 + Math.floor(Math.random() * 15);
                 const gap = 1 + Math.floor(Math.random() * 4); // Gap: 1-4 (fast ausgereizt)
                 const currentPace = potentialPace - gap;
-                const age = 26 + Math.floor(Math.random() * 8); // 26-33 Jahre
-                
+
                 return {
                     id: 'exp-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                     name: `${firstName} ${lastName}`,
@@ -5423,7 +5433,7 @@
                     })(),
                     experience: 80 + Math.floor(Math.random() * 15),
                     starts: 75 + Math.floor(Math.random() * 15),
-                    birthYear: year - age,
+                    birthYear: genBirthYear,
                     debutYear: year - (2 + Math.floor(Math.random() * 3)), // 2-4 Jahre "Erfahrung"
                     contractEnd: year + 1 + Math.floor(Math.random() * 3),
                     isIndyOnly: isIndyTeam  // Markierung für Indy-Fahrer
