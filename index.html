@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.88</title>
+    <title>F1 RPG v0.9.14.89</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.88 (aktuell) - 18.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.89 (aktuell) - 18.07.2026</div>
+                            <div>&#8226; FIX: Suedafrika Region 0 zog afrikanische Vor- UND Nachnamen (8 bzw. 18 Prozent) - umging das 1995-Gate</div>
+                            <div>&#8226; NEU: RSA/ZIM Vornamen nach Geburtsjahrgang gewichtet (Leihe der GBR-Kurven aus Paket I)</div>
+                            <div>&#8226; FIX: Morphologie-Regeln statt Allowlists - Bantu-Namen an der Vokal-Endung erkannt</div>
+                            <div>&#8226; FIX: spanische Akzentnamen und Vornamen-als-Nachname aus dem RSA/ZIM-Pool entfernt</div>
+                            <div class="font-bold text-slate-400">v0.9.14.88 - 18.07.2026</div>
                             <div>&#8226; NEU: Generierte Privateers der 1950-80er melden als Einmal-Starter beim Heimrennen (Kyalami, Fuji, Watkins Glen)</div>
                             <div>&#8226; NEU: Heimstrecken aus dem Saisonkalender abgeleitet statt getabellt - automatisch aera-korrekt</div>
                             <div>&#8226; FIX: HOME_ONLY_ENTRIES griff nur bei realen Fahrern, generierte fuhren volle Saisons</div>
@@ -3017,7 +3022,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.88';
+        const VERSION = '0.9.14.89';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5148,9 +5153,63 @@
             FRA: new Set(["Abdelkader","Adem","Ahmed","Ali","Amine","Amir","Anas","Antonio","Ayoub","Bilal","Carlos","Cesar","César","Diego","Elias","Farid","Fernando","Francisco","Hamza","Hector","Ibrahim","Idriss","Ilyas","Ilyes","Imran","Issa","José","Juan","Kamel","Karim","Manuel","Mehdi","Miguel","Mohamed","Moussa","Mustapha","Nabil","Nassim","Pablo","Paulo","Rachid","Rayan","Said","Sami","Samir","Samy","Sofiane","Tiago","Wassim","Yacine","Yanis","Yannis","Yassine","Younes","Youssef","Zakaria"]),
             USA: new Set(["Alejandro","Amir","Andres","Angel","Carlos","Cesar","Cristian","Diego","Eduardo","Fernando","Francisco","Hector","Jaime","Javier","Jesus","Jorge","Jose","Juan","Julio","Lorenzo","Luis","Manuel","Miguel","Pedro","Rafael","Ramon","Raul","Ricardo","Roberto","Ruben","Santiago","Sergio"]),
         };
+        // === KURVEN-LEIHE (v0.9.14.89) ===
+        // RSA r0 und ZIM r0 sind anglo-britischer Namensstock — dieselbe Substanz wie
+        // GBR, das Paket-I-Kurven hat. Ohne Leihe zieht ein Südafrikaner von 1962 aus
+        // demselben flachen Topf wie einer von 2024 (Dylan/Kyle neben Neville/Basil).
+        // Analog zum BORROW-Mechanismus im Build, der ZIM/AUS/NZL schon GB-NACHnamen
+        // leiht — hier dasselbe für die Jahrgangs-GEWICHTUNG der Vornamen.
+        //
+        // Zwei Modi, weil die beiden Pools ungleich tief sind:
+        //   'intersect' — die Kurve gewichtet NUR Namen aus dem eigenen r0-Pool.
+        //      Für RSA (140 eigene Vornamen, echte südafrikanische Auswahl): sonst
+        //      hieße ein Südafrikaner „Nigel" nach britischer Häufigkeit.
+        //   'union' — volle Geberkurve PLUS eigene Namen.
+        //      Für ZIM: der Pool hat nur 18 kuratierte Namen („keine Datenbasis",
+        //      curated-base-v2.js:304). Intersect drückte die effektive Poolgröße
+        //      auf 3–7 — jeder zweite Rhodesier hieße John oder Peter. ZIM ist
+        //      ohnehin als britischer Namensstock modelliert (BORROW leiht 60
+        //      GB-Nachnamen), also darf die Kurve hier voll liefern.
+        // Eigene Namen ohne Kurventreffer (Doug, Dave, Paddy, Rod, Des) behalten in
+        // beiden Modi ein Sockelgewicht — sonst verschwände die lokale Färbung.
+        const ERA_FIRST_ALIAS = {
+            RSA: { donor: 'GBR', mode: 'intersect' },
+            ZIM: { donor: 'GBR', mode: 'union' }
+        };
+        const _eraAliasFloor = 0.15;   // Anteil am Kurvenmittel für nicht abgedeckte Lokalnamen
+
+        // Vornamen-Set der Region 0 einer Nation (inkl. gemergter Tails), gecacht.
+        const _r0FirstCache = {};
+        function _r0FirstNames(nation) {
+            if (_r0FirstCache[nation]) return _r0FirstCache[nation];
+            const pool = NAME_POOLS_BY_NATION[nation];
+            const r0 = pool && pool.regions && pool.regions[0];
+            if (!r0) return (_r0FirstCache[nation] = null);
+            const f = r0.first;
+            const arr = Array.isArray(f) ? f : [...(f.early || []), ...(f.mid || []), ...(f.modern || [])];
+            return (_r0FirstCache[nation] = new Map(arr.map(x => [x[0], x[1]])));
+        }
+
         const _eraFirstCache = {};
         function eraFirstArr(nation, birthYear) {
             if (typeof ERA_FIRST_NAMES === 'undefined') return null;
+            const alias = ERA_FIRST_ALIAS[nation];
+            if (alias && !ERA_FIRST_NAMES[nation]) {
+                const key = nation + '<' + birthYear;
+                if (_eraFirstCache[key]) return _eraFirstCache[key];
+                const own = _r0FirstNames(nation);
+                const donor = eraFirstArr(alias.donor, birthYear);
+                if (!own || !donor || !donor.length) return null;
+                const arr = [], seen = new Set();
+                for (const [n, w] of donor) {
+                    if (alias.mode === 'intersect' && !own.has(n)) continue;
+                    arr.push([n, w]); seen.add(n);
+                }
+                if (!arr.length) return null;
+                const floor = (arr.reduce((s, x) => s + x[1], 0) / arr.length) * _eraAliasFloor;
+                for (const n of own.keys()) if (!seen.has(n)) arr.push([n, floor]);
+                return (_eraFirstCache[key] = arr);
+            }
             const curves = ERA_FIRST_NAMES[nation];
             if (!curves) return null;
             const cl = ERA_FIRST_CLAMP[nation];
@@ -5187,7 +5246,8 @@
             let firstName = null;
             // Paket I: nationale Region 0 der 5 Kurven-Nationen → Kurven statt Ära-Fenster.
             // Diaspora-Regionen (GBR r1, FRA r1 …) behalten ihre kuratierten Listen.
-            if (region === pool.regions[0] && typeof ERA_FIRST_NAMES !== 'undefined' && ERA_FIRST_NAMES[nation]) {
+            if (region === pool.regions[0] && typeof ERA_FIRST_NAMES !== 'undefined'
+                && (ERA_FIRST_NAMES[nation] || ERA_FIRST_ALIAS[nation])) {   // Alias: Kurven-Leihe
                 const arr = eraFirstArr(nation, birthYear != null ? birthYear : year - 24);
                 if (arr && arr.length) firstName = weightedPick(arr);
             }
