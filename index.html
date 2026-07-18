@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.85</title>
+    <title>F1 RPG v0.9.14.86</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.85 (aktuell) - 18.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.86 (aktuell) - 18.07.2026</div>
+                            <div>&#8226; NEU: Ethnien-Filter global (5 Namensklassen, Guard je Nation) statt Laenderlisten</div>
+                            <div>&#8226; NEU: USA hispanische Region, SWE ex-jugoslawisch (ab 2015), ZIM schwarz-simbabwisch (ab 1995)</div>
+                            <div>&#8226; FIX: Daniel Khaled (ISR), Mustafa Jensen (DEN), Apartheid-Leak RSA geschlossen</div>
+                            <div>&#8226; FIX: Aera-Kurven umgehen das Ethno-Routing nicht mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.14.85 - 18.07.2026</div>
                             <div>&#8226; FIX: Neu generierte F1-Fahrer bekommen aera-genaue Vornamen - der Generator nutzt jetzt das echte Debuetalter (1950er ~35, heute ~22) statt pauschal year-24</div>
                             <div>&#8226;  ein 1950er-Rookie heisst jetzt wie sein echter Jahrgang</div>
                             <div class="font-bold text-slate-400">v0.9.14.84 - 17.07.2026</div>
@@ -3005,7 +3010,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.85';
+        const VERSION = '0.9.14.86';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5123,6 +5128,19 @@
         // Gauß-Kurven pro Name für GER/GBR/USA/FRA/ITA (nur nationale Region 0). Format je
         // Name: [peak,sigma,amp] oder [p1,s1,a1,p2,s2,a2] (Revival-Doppelkurve). Gewicht am
         // Geburtsjahr by: w = Σ_k amp_k·exp(−½((by−peak_k)/sigma_k)²). Daten: era-first-names.js.
+        // Paket J Welle 3: Die Kurven basieren auf NATIONALEN Statistiken und enthalten
+        // Einwanderer-Vornamen — Region 0 darf die nicht ziehen, sonst umgeht die Kurve
+        // das Ethno-Routing der Pools („Mehmet Schneider", „Carlos Faure"). Namen, die
+        // per routeFirst in eine Diaspora-Region gehören oder effektiv gebannt sind:
+        // GENERIERT von fable-deliverables/paketJ-ethno-regionen/gen-era-curve-excludes.js
+        // — nach Kurven-/Routen-Änderungen dort neu laufen lassen und hier ersetzen.
+        const ERA_FIRST_EXCLUDE = {
+            GBR: new Set(["Abdul","Abdullah","Adil","Ahmad","Ahmed","Ali","Amir","Arjun","Aryan","Ayan","Bilal","Faisal","Hamza","Haroon","Hasan","Hassan","Ibrahim","Idris","Imran","Ismail","Jamal","Junaid","Luis","Mohamed","Mohammad","Mohammed","Muhammad","Muhammed","Musa","Mustafa","Omar","Qasim","Raja","Syed","Umar","Usman","Yusuf","Zain","Zakariya","Zayn"]),
+            GER: new Set(["Abdul","Ahmad","Ahmet","Ali","Amir","Arda","Burak","Bülent","Can","Carlos","Cem","Cengiz","Efe","Emre","Erkan","Fatih","Gökhan","Hakan","Hasan","Hüseyin","Ibrahim","Ilyas","Ismail","José","Juan","Kaan","Mehmet","Mert","Metin","Miguel","Mohammed","Murat","Mustafa","Onur","Orhan","Pepe","Ramazan","Ricardo","Said","Semih","Serkan","Sinan","Tarek","Yasin","Yusuf"]),
+            ITA: new Set(["Ahmed","Ali","Amin","Amine","Amir","Anwar","Ayan","Ayoub","Bilal","Hamza","Ibrahim","Ilyas","Imran","Ismail","Iyad","Karim","Luis","Mohamed","Mohammed","Muhammad","Nizar","Omar","Pablo","Raul","Reda","Saad","Samir","Santiago","Walid","Yassin","Yassine","Younes","Yousef","Youssef","Zakaria"]),
+            FRA: new Set(["Abdelkader","Adem","Ahmed","Ali","Amine","Amir","Anas","Antonio","Ayoub","Bilal","Carlos","Cesar","César","Diego","Elias","Farid","Fernando","Francisco","Hamza","Hector","Ibrahim","Idriss","Ilyas","Ilyes","Imran","Issa","José","Juan","Kamel","Karim","Manuel","Mehdi","Miguel","Mohamed","Moussa","Mustapha","Nabil","Nassim","Pablo","Paulo","Rachid","Rayan","Said","Sami","Samir","Samy","Sofiane","Tiago","Wassim","Yacine","Yanis","Yannis","Yassine","Younes","Youssef","Zakaria"]),
+            USA: new Set(["Alejandro","Amir","Andres","Angel","Carlos","Cesar","Cristian","Diego","Eduardo","Fernando","Francisco","Hector","Jaime","Javier","Jesus","Jorge","Jose","Juan","Julio","Lorenzo","Luis","Manuel","Miguel","Pedro","Rafael","Ramon","Raul","Ricardo","Roberto","Ruben","Santiago","Sergio"]),
+        };
         const _eraFirstCache = {};
         function eraFirstArr(nation, birthYear) {
             if (typeof ERA_FIRST_NAMES === 'undefined') return null;
@@ -5133,8 +5151,10 @@
             if (cl) { if (by < cl[0]) by = cl[0]; else if (by > cl[1]) by = cl[1]; }
             const key = nation + by;
             if (_eraFirstCache[key]) return _eraFirstCache[key];
+            const excl = ERA_FIRST_EXCLUDE[nation];
             const arr = [];
             for (const name in curves) {
+                if (excl && excl.has(name)) continue; // Welle 3: geroutet/gebannt → nicht in r0
                 const c = curves[name];
                 let w = 0;
                 for (let k = 0; k + 2 < c.length; k += 3) {
