@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.94</title>
+    <title>F1 RPG v0.9.14.95</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.94 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.95 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: Surtees galt als Kleinstkonstrukteur - John Watson fuhr nur sporadisch statt die Saison</div>
+                            <div>&#8226; NEU: Konstrukteurs-Groessenklassen aus F1DB statt Sortierung nach Tagesform</div>
+                            <div>&#8226; FIX: Kleinteam-Fahrer teilen jetzt EINEN Teamkalender statt Gaststarter-Sporadik</div>
+                            <div>&#8226; FIX: Landsmann-Bonus verglich Emoji gegen IOC-Code - feuerte fuer historische Fahrer nie</div>
+                            <div>&#8226; FIX: Nuerburgring-Startfeld von plus 4 auf plus 2</div>
+                            <div class="font-bold text-slate-400">v0.9.14.94 - 19.07.2026</div>
                             <div>&#8226; NEU: Monte-Carlo fuer den Fahrermarkt - erster Test der Transferlogik ueberhaupt</div>
                             <div>&#8226; FIX: Landsmann-Multiplikator fuer Kleinstkonstrukteure von 5,0 auf 6,0 - Rueckrechnung war zu konservativ</div>
                             <div>&#8226; PRUEFUNG: alle vier Klassen treffen jetzt ihre F1DB-Zielwerte (1,44 / 1,71 / 2,31 / 3,32)</div>
@@ -3047,7 +3053,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.94';
+        const VERSION = '0.9.14.95';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4081,15 +4087,18 @@
                 return base;   // 1950–57, 1972–74, ab 1987: kein Sonderfall
             }
             // Nürburgring / Nordschleife (bis 1976): größeres Grid möglich.
-            // GEPRÜFT 2026-07-18 (v0.9.14.93) — +4 bleibt, obwohl das gemessene
-            // Residuum gegen den Jahresschnitt nur +3,0 beträgt (1951–55 +4,7,
-            // 1956–76 +2,6; ab 1984 GP-Strecke +0,2, Regel greift dort schon nicht).
-            // Eine ära-gestaffelte Variante (+5 / +3) wurde getestet und war
-            // MESSBAR SCHLECHTER: mittlerer Fehler 3,2 statt 2,9 über 13 Stichjahre.
-            // Grund: die Jahresschwankung schlägt jeden Ära-Offset — 1953 hatte 36
-            // Starter, 1954 nur 21. Nicht weiter feintunen, das Rauschen gewinnt.
+            // Offset systematisch durchgerechnet über alle 22 Nordschleifen-Jahre
+            // (mittlerer Fehler gegen die echten Starterzahlen):
+            //   +0  3,18  ·  +2  2,73  ·  +3  3,00  ·  +4  3,27  ·  +5  3,64
+            // +2 gewinnt, obwohl das mittlere Residuum +3,0 beträgt: die Verteilung
+            // ist rechtsschief (1953 +11, 1954 ±0), und der mittlere Fehler wird vom
+            // MEDIAN minimiert, nicht vom Mittelwert. Jahre mit Fehler >=5 fallen
+            // dabei von 4 auf 2.
+            // Eine ära-gestaffelte Variante (+5 früh / +3 spät) war schlechter als
+            // beide — die Jahresschwankung schlägt jeden Ära-Offset.
+            // Deckel entfällt: base+2 erreicht auch 1974–76 nur 28.
             if ((circuit.includes('nürburgring') || circuit.includes('nurburgring')) && year <= 1976) {
-                return Math.min(base + 4, 30);
+                return base + 2;
             }
             return base;
         }
@@ -5636,6 +5645,34 @@
             return block.slice(0, n).sort((a, b) => a - b);
         }
 
+        // === KONSTRUKTEURS-GRÖSSENKLASSEN (v0.9.14.95) ===
+        // Aus F1DB totalRaceStarts generiert. GRÖSSE, nicht Tempo — Surtees war 1975
+        // schwach, aber mit 118 Lebenszeit-Starts ein etablierter Rennstall (real 11 von
+        // 14 Rennen). Die vorherige Auswahl nach aktueller Team-Stärke hat genau das
+        // verwechselt und Surtees zum Kleinstkonstrukteur gemacht.
+        // Gemessener Saisonanteil je Klasse: <20 Starts 39 % · 20–59 ~70 % · ab 60 86–98 %.
+        const CONSTRUCTOR_TINY = new Set([   // <20 Lebenszeit-Starts (112)
+            'adams','afm','alfa-special','alta','amon','andrea-moda','apollon','arzani-volpini',
+            'aston-butterworth','ats','audi','balsa','behra-porsche','bellasi','bmw','boro','brawn',
+            'bromme','brp','bugatti','cadillac','christensen','cisitalia','coloni','connaught','connew',
+            'de-tomaso','deidt','del-roy','derrington-francis','dunn','eifelland','elder','emeryson','emw',
+            'enb','epperly','era','eurobrun','ewing','ferguson','first','fondmetal',
+            'frank-williams-racing-cars','frazer-nash','fry','gilby','greifzu','hall','heck','hill','hwm',
+            'jbw','kauhsen','klenk','kojima','krakau','kurtis-kraft','kuzma','lancia','langley','lds','lec',
+            'lesovsky','life','lyncar','maki','marchese','martini','mcguire','merzario','meskowski',
+            'midland','modena','moore','nacke','nichels','olson','onyx','osca','pankratz','parnelli','pawl',
+            'phillips','politoys','protos','rae','rebaque','reif','scarab','schroeder','scirocco','shannon',
+            'sherman','simca-gordini','snowberger','spyker','stebro','stevens','sutton','talbot-lago',
+            'tec-mec','tecno','token','trevis','trojan','turner','venturi','veritas','watson','wetteroth',
+            'wolf-williams'
+        ]);
+        const CONSTRUCTOR_SMALL = new Set([  // 20–59 Starts (31)
+            'ags','caterham','eagle','forti','gordini','hesketh','hrt','iso-marlboro','kick-sauber',
+            'larrousse','leyton-house','lotus-racing','manor','pacific','penske','porsche','racing-bulls',
+            'racing-point','ram','rb','rial','simtek','spirit','stewart','super-aguri','theodore','toleman',
+            'vanwall','virgin','wolf','zakspeed'
+        ]);
+
         // === KLEINSTKONSTRUKTEURE (v0.9.14.93) ===
         // Vierte Klasse UNTERHALB des Dreier-Systems (Top/Mittelfeld/Backmarker).
         // Sie ist über GRÖSSE definiert, nicht über Tempo: Minardi ist Backmarker,
@@ -5670,14 +5707,19 @@
         // und hat ohnehin schon Privateers, die partiell melden.
         function markSmallConstructors(teams, drivers, year) {
             (teams || []).forEach(t => { t._smallCtor = false; });
-            const share = _smallConstructorShare(year);
-            if (!share || !teams || !teams.length) return;
-            const cnt = {};
-            drivers.forEach(d => { if (d.team) cnt[d.team] = (cnt[d.team] || 0) + 1; });
-            const cands = teams.filter(t => (cnt[t.id] || 0) > 0 && (cnt[t.id] || 0) <= 2)
-                .sort((a, b) => (a.speed || a.carSpeed || 70) - (b.speed || b.carSpeed || 70));
-            const n = Math.min(cands.length, Math.round(teams.length * share));
-            for (let i = 0; i < n; i++) cands[i]._smallCtor = true;
+            if (!_smallConstructorShare(year) || !teams || !teams.length) return;
+            teams.forEach(t => {
+                const key = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+                // WAHRSCHEINLICHKEIT, nicht Gewissheit: Lebenszeit-Starts messen
+                // „kurzlebig", nicht „Teilsaison". Gegenbeispiele aus 1975 — Frank
+                // Williams Racing Cars (12 Starts) fuhr ALLE 14 Rennen, Hesketh (52)
+                // ebenso; Maki (0) dagegen nur 5, Lyncar (1) genau eines.
+                // Ein Winzling fährt also meistens, aber nicht immer, eine Teilsaison.
+                // Alles ab 60 Lebenszeit-Starts ist nie Kleinstkonstrukteur — das hält
+                // Surtees (118), Ensign (99), Osella (130) und Minardi (339) draußen.
+                if (CONSTRUCTOR_TINY.has(key)) t._smallCtor = Math.random() < 0.70;
+                else if (CONSTRUCTOR_SMALL.has(key)) t._smallCtor = Math.random() < 0.30;
+            });
         }
 
         // Setzt d.scheduledRaces (Liste von circuitIds, lowercase) für alle Privateers
@@ -5690,11 +5732,41 @@
             const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
             if (!cal.length) return;
             const ids = cal.map(r => r.circuitId.toLowerCase());
-            const small = new Set((teams || []).filter(t => t._smallCtor).map(t => t.id));
+
+            // Kleinstkonstrukteure: EIN Plan pro TEAM, den alle seine Fahrer teilen.
+            // v0.9.14.95 — vorher bekam jeder Werksfahrer die Gaststarter-Verteilung
+            // aus _drawPrivateerCount (60 % Chance auf 1–3 Rennen). Das ist die
+            // falsche Population: ein Kleinteam fährt eine TEILSAISON, aber sein
+            // Stammfahrer fährt dann DEREN Rennen praktisch alle mit.
+            // Belegt am Spielbericht: Surtees 1975 hatte real 11 von 14 Rennen und
+            // John Watson saß bei allen 11 drin — das Spiel gab ihm 1–3.
+            // Teilnahmequote 40–90 % (Ø 65 %) deckt die reale Spanne ab:
+            // Theodore/Martini 7/16, Hesketh 6/16, Surtees 11/14, Fondmetal 13/16.
+            const teamPlan = {};
+            (teams || []).filter(t => t._smallCtor).forEach(t => {
+                const share = 0.40 + Math.random() * 0.50;
+                const n = Math.max(1, Math.min(cal.length, Math.round(cal.length * share)));
+                teamPlan[t.id] = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
+            });
+
             drivers.forEach(d => {
-                const isSmall = d.team && small.has(d.team);
-                if ((!d.isPrivateer && !isSmall) || d.homeOnly) { d.scheduledRaces = null; return; }
+                if (d.homeOnly) { d.scheduledRaces = null; return; }
                 if (d.status && d.status !== 'active') { d.scheduledRaces = null; return; }
+                if (d.team && teamPlan[d.team]) {
+                    // Werksfahrer eines Kleinstkonstrukteurs: Team-Kalender übernehmen.
+                    // Echte Privateers im selben Team behalten ihre eigene Sporadik,
+                    // dürfen aber nur an Rennen melden, an denen das Team antritt.
+                    if (!d.isPrivateer) { d.scheduledRaces = teamPlan[d.team].slice(); return; }
+                    const own = _drawPrivateerCount(year, teamPlan[d.team].length);
+                    const pool = teamPlan[d.team];
+                    const pick = [];
+                    const idx = pool.map((_, i) => i);
+                    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+                    idx.slice(0, own).sort((a, b) => a - b).forEach(i => pick.push(pool[i]));
+                    d.scheduledRaces = pick;
+                    return;
+                }
+                if (!d.isPrivateer) { d.scheduledRaces = null; return; }
                 const n = _drawPrivateerCount(year, cal.length);
                 d.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
             });
@@ -5718,6 +5790,17 @@
             // damit ein laufender Spielstand nicht plötzlich leere Grids bekommt.
             // startNewSeason zieht beim nächsten Saisonwechsel einen echten Plan.
             return Math.random() < (d.activityRate ?? 0.50);
+        }
+
+        // Fahrer-Nation als IOC-Code. GAME_STATE.drivers mischt zwei Formate:
+        // historische Fahrer aus SEASON_DATA tragen ein EMOJI (🇦🇹), generierte einen
+        // IOC-Code (AUT). Wer die beiden ungefiltert vergleicht, trifft nie.
+        // (v0.9.14.95 — der Landsmann-Bonus und der Nationality-Only-Filter taten
+        // genau das und waren fuer historische Fahrer tote Logik.)
+        function driverIOC(d) {
+            const n = d && d.nation;
+            if (!n) return null;
+            return n.length === 3 ? n : convertEmojiToIOC(n);
         }
 
         function generateDriver(teamId, year, isRookie = true, nationSource = 'decade') {
@@ -15570,7 +15653,7 @@
                     const _indyOk = d => !d.isIndyOnly;
                     // Landsmann-Filter: Nationality-Only-Konstrukteure nehmen nur eigene Nation
                     const _allowedNations = getNationalityOnlyNations(team.histId || team.id);
-                    const _nationOk = d => !_allowedNations || _allowedNations.includes(d.nation);
+                    const _nationOk = d => !_allowedNations || _allowedNations.includes(driverIOC(d));
 
                     // Free Agents: aktive F1-Fahrer ohne Team (inkl. mid-season entlassene, außer vom selben Team)
                     GAME_STATE.drivers
@@ -15653,7 +15736,7 @@
                             const _homeNation = CONSTRUCTOR_HOME_NATIONS[
                                 (team.histId || team.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-')
                             ];
-                            if (_homeNation && c.driver.nation === _homeNation) {
+                            if (_homeNation && driverIOC(c.driver) === _homeNation) {
                                 c.score *= team._smallCtor ? 6.0     // Ziel ~3,3×
                                          : isTopTeam       ? 1.6     // Ziel ~1,44×
                                          : isMidTeam       ? 2.0     // Ziel ~1,66×
