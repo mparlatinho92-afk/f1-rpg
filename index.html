@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.96</title>
+    <title>F1 RPG v0.9.14.97</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.96 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.97 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: Alpine hatte 2021-2023 keine Fahrer - Alonso, Ocon und Gasly waren AlphaTauri zugeordnet</div>
+                            <div>&#8226; FIX: dadurch fehlten dauerhaft zwei Starter pro Rennen in diesen Jahren</div>
+                            <div>&#8226; FIX: Kleinstkonstrukteur-Regel ab 1986 abgeschaltet - moderne Teams wie Racing Point galten faelschlich als Teilsaison-Teams</div>
+                            <div>&#8226; PRUEFUNG: Starterzahlen jetzt in 72 von 76 Jahren innerhalb eines Autos</div>
+                            <div class="font-bold text-slate-400">v0.9.14.96 - 19.07.2026</div>
                             <div>&#8226; FIX: Ersatzfahrer der modernen Aera meldeten sporadisch zu Rennen - jetzt nie (2005: 22,3 auf 20,0 Melder bei real 19,8)</div>
                             <div>&#8226; NEU: Wagenlimit je Konstrukteur aera-genau - ab 1986 hart zwei, davor bis 16</div>
                             <div>&#8226; NEU: Kleinstkonstrukteure melden meist nur ein Auto (gemessen 1,56 im Schnitt)</div>
@@ -3058,7 +3063,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.96';
+        const VERSION = '0.9.14.97';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5699,12 +5704,19 @@
         // Anteil der Teams, die als Kleinstkonstrukteur gelten (an den Melderzahlen
         // kalibriert, s. tests/privateer-schedule-mc.js-Kommentar):
         function _smallConstructorShare(year) {
-            // Ab 1986 niedriger: die Kleinteams der Vor-Quali-Ära meldeten gerade
-            // JEDES Rennen — deswegen gab es die Vor-Quali überhaupt (1989: 39 Melder
-            // auf 26 Plätze). Sie scheiterten am Freitag, nicht an der Nennung.
+            // Ab 1986 NULL. Zwei Gründe, beide gemessen:
+            // (a) Die Kleinteams der Vor-Quali-Ära meldeten gerade JEDES Rennen —
+            //     deswegen gab es die Vor-Quali überhaupt (1989: 39 Melder auf 26
+            //     Plätze). Sie scheiterten am Freitag, nicht an der Nennung.
+            // (b) Der Anteil echter Teilsaison-Konstrukteure fällt hart: 1970er 28 %,
+            //     1980er 4 %, 1990er 4 %, 2000er 2 %.
+            // Zusätzlich ein Modellfehler, den erst der Jahres-Sweep zeigte: moderne
+            // UMBENENNUNGEN haben wenige Lebenszeit-Starts (racing-point 38,
+            // alphatauri ~80) und fielen dadurch in CONSTRUCTOR_SMALL, obwohl sie
+            // volle Saisons fuhren — 2021–2023 stand deshalb je ein Team ohne Auto da.
             return year < 1970 ? 0
                  : year < 1986 ? 0.35
-                 :               0.12;
+                 :               0;
         }
 
         // Markiert die schwächsten Teams als Kleinstkonstrukteure. Nur Teams mit
