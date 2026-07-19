@@ -128,10 +128,18 @@ for (const klasse of ['top', 'mittelfeld', 'backmarker', 'kleinstCtr']) {
 }
 
 console.log('');
-console.log('Hinweis: gemessen wird der Auswahlschritt isoliert. Retention, Vertraege');
-console.log('und Abwerbung kommen NICHT vor — ein Landsmann, der schon im Team sitzt und');
-console.log('bleibt, taucht hier nicht auf. Die echten Anteile im Spiel liegen daher');
-console.log('etwas hoeher als der reine Auswahl-Faktor.');
+console.log('Gemessen wird der AUSWAHLSCHRITT isoliert — genau das, was die Multiplikatoren');
+console.log('steuern. Retention, Vertraege und Abwerbung kommen nicht vor.');
+console.log('');
+console.log('WICHTIG (Vollmarkt-Messung 2026-07-19, 100 Saisons / 2.297 Fahrer-Team-Paare');
+console.log('via initFromYear + runSeasonHeadless im Browser): der BESTANDS-Faktor im');
+console.log('laufenden Spiel liegt bei nur 1,15-1,31x statt der F1DB-Zielwerte 1,44-3,30x,');
+console.log('und die Tier-Differenzierung verschwindet fast. Gegenprobe: Multiplikatoren');
+console.log('auf 3,0/5,0/9,0/20,0 verdrei- bis versechsfacht -> Bestand nur 1,33/1,35/');
+console.log('1,66/1,35. Der Hiring-Bonus kann den Bestand also NICHT erreichen, weil der');
+console.log('Bestand von RETENTION dominiert wird, nicht von Neuverpflichtungen.');
+console.log('Deshalb bleiben die Werte auf den Auswahlschritt kalibriert (dieser Test);');
+console.log('die Bestandsluecke ist ein eigenes Thema (Grundungs-Ara der Teams).');
 console.log('');
 console.log(fail ? `FEHLER: ${fail} Abweichung(en)` : 'ALLE CHECKS GRÜN');
 process.exit(fail ? 1 : 0);
