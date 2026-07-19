@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.98</title>
+    <title>F1 RPG v0.9.14.99</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.98 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.99 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; NEU: Besitzer-Fahrer landen im eigenen Team sobald ihr Konstrukteur antritt - vorher hielt die Treue-Regel sie nur fest wenn sie schon drin waren</div>
+                            <div>&#8226; FIX: Ein-Auto-Konstrukteure wie McGuire oder Stebro starteten ohne ihren einzigen Fahrer - er wartete im Reservepool</div>
+                            <div>&#8226; PRUEFUNG: 46 Saisons im Mehrsaison-Lauf korrekt besetzt</div>
+                            <div class="font-bold text-slate-400">v0.9.14.98 - 19.07.2026</div>
                             <div>&#8226; NEU: Besitzer-Fahrer verlassen ihr eigenes Team nie - Brabham, Surtees, McLaren, Stroll und 17 weitere</div>
                             <div>&#8226; NEU: sie sind auch nicht abwerbbar und nicht rauskaufbar</div>
                             <div>&#8226; FIX: de Klerk stand faelschlich als Identitaets-Fahrer - er fuhr nach Alfa Special noch Brabham</div>
@@ -3068,7 +3072,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.98';
+        const VERSION = '0.9.14.99';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16218,6 +16222,40 @@
                 driver._movedThisSeason = true;
                 logInfo('OVERRIDE', `📋 ${driver.name} → ${team.name} (histor. Einmal-Zuweisung)`);
             });
+
+            // === BESITZER-FAHRER INS EIGENE TEAM (v0.9.14.99) ===
+            // Gegenstück zur Treue-Sperre aus v0.9.14.98: die hält einen Besitzer in
+            // seinem Team, sobald er drin ist — aber nichts setzte ihn HINEIN. Im
+            // Simulationslauf saß Fittipaldi 1976 bei Brabham, während sein eigener
+            // Konstrukteur antrat. Bei reinen Ein-Auto-Teams (Merzario, McGuire,
+            // Stebro) startete der Konstrukteur sonst ohne seinen einzigen Fahrer.
+            //
+            // Regel: existiert der Konstrukteur und lebt sein Besitzer noch aktiv,
+            // gehört er dorthin — egal wo der Transfermarkt ihn gerade hat.
+            // Zeitlich begrenzt sich das von selbst: Brabham fuhr bis 1970, sein
+            // Team bis 1992; nach dem Karriereende greift die Regel nicht mehr.
+            if (typeof LOYAL_OWNER_DRIVERS !== 'undefined') {
+                Object.entries(LOYAL_OWNER_DRIVERS).forEach(([cKey, ownerHistId]) => {
+                    const team = GAME_STATE.teams.find(t => {
+                        const k = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+                        return k === cKey || k.startsWith(cKey);
+                    });
+                    if (!team) return;
+                    // AUCH im Reserve-Pool suchen: Ein-Auto-Besitzer wie McGuire oder
+                    // Broeker sind oft gar nicht im aktiven Feld, sondern warten dort —
+                    // ihr Konstrukteur wäre sonst ohne seinen einzigen Fahrer gestartet.
+                    const _act = d => d.histId === ownerHistId && (!d.status || d.status === 'active');
+                    const owner = GAME_STATE.drivers.find(_act)
+                               || (GAME_STATE.reservePool || []).find(_act);
+                    if (!owner || owner.team === team.id) return;
+                    owner.team = team.id;
+                    owner.isReserve = false;
+                    owner._movedThisSeason = true;
+                    GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== owner.id);
+                    if (!GAME_STATE.drivers.find(x => x.id === owner.id)) GAME_STATE.drivers.push(owner);
+                    logInfo('OVERRIDE', `🔧 ${owner.name} → ${team.name} (Besitzer-Fahrer)`);
+                });
+            }
         }
 
         // Letztes Jahr mit PACE_RATINGS-Eintrag vor gegebenem Jahr
