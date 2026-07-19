@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.97</title>
+    <title>F1 RPG v0.9.14.98</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.97 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.98 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; NEU: Besitzer-Fahrer verlassen ihr eigenes Team nie - Brabham, Surtees, McLaren, Stroll und 17 weitere</div>
+                            <div>&#8226; NEU: sie sind auch nicht abwerbbar und nicht rauskaufbar</div>
+                            <div>&#8226; FIX: de Klerk stand faelschlich als Identitaets-Fahrer - er fuhr nach Alfa Special noch Brabham</div>
+                            <div>&#8226; FIX: Greifzu war gar kein Besitzer-Fahrer - das Auto fuhr Rudolf Krause</div>
+                            <div class="font-bold text-slate-400">v0.9.14.97 - 19.07.2026</div>
                             <div>&#8226; FIX: Alpine hatte 2021-2023 keine Fahrer - Alonso, Ocon und Gasly waren AlphaTauri zugeordnet</div>
                             <div>&#8226; FIX: dadurch fehlten dauerhaft zwei Starter pro Rennen in diesen Jahren</div>
                             <div>&#8226; FIX: Kleinstkonstrukteur-Regel ab 1986 abgeschaltet - moderne Teams wie Racing Point galten faelschlich als Teilsaison-Teams</div>
@@ -3063,7 +3068,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.97';
+        const VERSION = '0.9.14.98';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -15501,6 +15506,19 @@
                 }
 
                 const driverTeam = GAME_STATE.teams.find(t => t.id === driver.team);
+
+                // === TREUE BESITZER-FAHRER (v0.9.14.98) ===
+                // Wer sein eigenes Team fuhr, verliess es real nie: Brabham bis 1970,
+                // Surtees bis 1972, McLaren bis zum Tod, Stroll laufend. Solche Fahrer
+                // werden nicht abgeworben, nicht hoch-/runtergestuft, nicht entlassen.
+                // Konstrukteur-Ein/Austritt bleibt historisch — endet das Team, greifen
+                // die bestehenden Regeln (Austritt -> Fahrer pensioniert, Tod -> Team weg).
+                // Wer real doch wechselte, steht bewusst NICHT in der Tabelle
+                // (Gurney, Rebaque, Amon, Emery, de Klerk) — Beleg in data/hist.js.
+                if (driverTeam && isLoyalOwnerDriver(driver, driverTeam.histId || driverTeam.id)) {
+                    return;
+                }
+
                 const driverIsIndy = driver.isIndyOnly ||
                     isIndyOnlyDriver(driver.histId || driver.id) ||
                     (driverTeam && (isIndyOnlyConstructor(driverTeam.id) || isIndyOnlyConstructor(driverTeam.histId)));
@@ -15733,6 +15751,9 @@
                             if (!d.team || d._movedThisSeason) return false;
                             if (d.status && d.status !== 'active') return false;
                             if (d.team === team.id || !_indyOk(d) || !_nationOk(d)) return false;
+                            // Treue Besitzer-Fahrer sind unabwerbbar (v0.9.14.98)
+                            const _dt = GAME_STATE.teams.find(t => t.id === d.team);
+                            if (_dt && isLoyalOwnerDriver(d, _dt.histId || _dt.id)) return false;
                             const dRank = (teamRanking.findIndex(t => t.id === d.team) + 1) || 999;
                             if (dRank <= teamRank) return false;
                             if (!d.contractEnd || d.contractEnd > currentYear + 1) return false;
@@ -15748,6 +15769,9 @@
                                 if (!d.team || d._movedThisSeason) return false;
                                 if (d.status && d.status !== 'active') return false;
                                 if (d.team === team.id || !_indyOk(d) || !_nationOk(d)) return false;
+                            // Treue Besitzer-Fahrer sind unabwerbbar (v0.9.14.98)
+                            const _dt = GAME_STATE.teams.find(t => t.id === d.team);
+                            if (_dt && isLoyalOwnerDriver(d, _dt.histId || _dt.id)) return false;
                                 const dRank = (teamRanking.findIndex(t => t.id === d.team) + 1) || 999;
                                 if (dRank <= topTeamCount) return false;
                                 const ev = evaluateDriverPerformance(d.id);

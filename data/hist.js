@@ -3068,6 +3068,47 @@ const CONSTRUCTOR_DIES_WITH_FOUNDER = {
     'rebaque':      'hector-rebaque', // hatte Karriere außerhalb des eigenen Teams
 };
 
+// Besitzer-Fahrer, die ihrem eigenen Konstrukteur BIS ZUM KARRIEREENDE treu blieben.
+// Aus F1DB abgeleitet: letzter Renneinsatz erfolgte im eigenen Team.
+// Diese Fahrer werden nie abgeworben, nie hoch-/runtergestuft und nie entlassen,
+// solange ihr Konstrukteur existiert. Konstrukteur-Ein/Austritt bleibt historisch.
+// Wer NICHT drin steht, obwohl er ein eigenes Team hatte, wechselte real weiter:
+//   Gurney (Eagle -> McLaren 1970), Rebaque (-> Brabham 1981), Amon (-> Ensign 1976),
+//   Emery (-> Connaught 1958), de Klerk (Alfa Special bis 1965 -> Brabham 1970).
+const LOYAL_OWNER_DRIVERS = {
+    'brabham':           'jack-brabham',        // bis 1970
+    'surtees':           'john-surtees',        // bis 1972
+    'mclaren':           'bruce-mclaren',       // bis 1970 (Tod)
+    'aston-martin':      'lance-stroll',        // laufend
+    'shadow':            'jackie-oliver',       // bis 1977
+    'hill':              'graham-hill',         // bis 1975
+    'merzario':          'arturo-merzario',     // bis 1979
+    'jbw':               'brian-naylor',        // bis 1961
+    'bellasi':           'silvio-moser',        // bis 1971
+    'apollon':           'loris-kessel',        // bis 1977
+    'lec':               'david-purley',        // bis 1977
+    'gilby':             'keith-greene',        // bis 1962
+    'scarab':            'lance-reventlow',     // bis 1960
+    'scirocco':          'tony-settember',      // bis 1963
+    'behra-porsche':     'jean-behra',          // bis 1959 (Tod)
+    'aston-butterworth': 'bill-aston',          // bis 1952
+    'mcguire':           'brian-mcguire',       // bis 1977 (Tod)
+    'veritas':           'ernst-loof',          // bis 1953
+    'stebro':            'peter-broeker',       // bis 1963
+    'lds':               'doug-serrurier',      // bis 1965
+    // Fittipaldi: beide Brueder, der Konstrukteur ueberlebt beide nicht.
+    'fittipaldi':        'emerson-fittipaldi',  // bis 1980 (Wilson bis 1975)
+};
+
+// Ist dieser Fahrer der treue Besitzer GENAU dieses Teams?
+function isLoyalOwnerDriver(driver, teamHistIdOrId) {
+    if (!driver || !teamHistIdOrId) return false;
+    const key = String(teamHistIdOrId).toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const owner = LOYAL_OWNER_DRIVERS[key];
+    if (!owner) return false;
+    return driver.histId === owner;
+}
+
 // Konstrukteur = Fahrer-Identität: nur der Besitzer fährt, beide kommen und gehen gleichzeitig.
 // Bei Fahrertod → Konstrukteur sofort austragen.
 // Bei Konstrukteur-Ende (SEASON_DATA) → Fahrer pensioniert (kein Free Agent).
@@ -3077,9 +3118,7 @@ const CONSTRUCTOR_IDENTITY_DRIVERS = {
     'bellasi':      'silvio-moser',
     'lec':          'david-purley',
     'apollon':      'loris-kessel',
-    'alfa-special': 'peter-de-klerk',
     'jbw':          'brian-naylor',
-    'greifzu':      'greifzu',
     'mcguire':      'brian-mcguire',
     'stebro':       'peter-broeker',
 };
