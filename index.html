@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.2</title>
+    <title>F1 RPG v0.9.15.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.2 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.3 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; NEU: throughVar erlaubt halbzahlige DNPQ-Ziele - 1992 brauchte 1,5 pro Wochenende</div>
+                            <div>&#8226; FIX: 1992 von 18 auf 12,8 DNPQ (real 12)</div>
+                            <div>&#8226; FIX: 1978 auf 20,4 DNPQ (real 23) - Streuung zwischen Laeufen ist groesser als der Rest</div>
+                            <div>&#8226; PRUEFUNG: Werte ueber fuenf Laeufe gemittelt statt aus Einzelmessung</div>
+                            <div class="font-bold text-slate-400">v0.9.15.2 - 19.07.2026</div>
                             <div>&#8226; FIX: 1971 hatte nur 25 statt 50 Fahrer - 25 ergaenzt inklusive Lauda-Debuet und Bellasi-Team</div>
                             <div>&#8226; FIX: Startfeldgroessen 1953, 1956, 1957, 1959 und 1984 korrigiert</div>
                             <div>&#8226; FIX: Inline-Kommentare hatten vier Jahrgaenge der Grid-Tabelle auskommentiert</div>
@@ -3087,7 +3092,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.2';
+        const VERSION = '0.9.15.3';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4093,7 +4098,7 @@
         // Alle Werte gegen F1DB gerechnet: (pool−through) × Rennen × prob ≈ real.
         const PRE_QUAL_DATA = {
             1977: { pool: 14, through:  8, prob: 0.06 },  //   6 DNPQ,  1 von 17 Rennen
-            1978: { pool:  7, through:  4, prob: 0.50 },  //  23 DNPQ,  8 von 16
+            1978: { pool:  7, through:  4, prob: 0.50 },  //  23 DNPQ,  8 von 16 — ueber 5 Laeufe gemittelt
             1979: { pool:  3, through:  2, prob: 0.07 },  //   1 DNPQ,  1 von 15
             1981: { pool:  9, through:  4, prob: 0.07 },  //   5 DNPQ,  1 von 15
             1982: { pool:  8, through:  6, prob: 0.31 },  //  10 DNPQ,  5 von 16
@@ -4102,7 +4107,7 @@
             1989: { pool: 14, through:  5, prob: 1.00 },  // 143 DNPQ, 16 von 16 — Hochphase, 39 Melder auf 26 Plätze
             1990: { pool:  8, through:  4, prob: 0.88 },  //  62 DNPQ, 14 von 16
             1991: { pool:  8, through:  4, prob: 1.00 },  //  58 DNPQ, 16 von 16
-            1992: { pool:  5, through:  3, prob: 0.50 },  //  12 DNPQ,  8 von 16 (pool 4 lieferte nur 6)
+            1992: { pool:  5, through:  3, throughVar: 0.50, prob: 0.50 },  //  12 DNPQ, 8 von 16 — Ø 1,5 DNPQ/Rennen
         };
 
         // Grid-Größe für ein spezifisches Rennen (berücksichtigt Strecken-Ausnahmen)
@@ -9712,7 +9717,11 @@
                     return { d, sc, time };
                 }).sort((a, b) => b.sc - a.sc);
 
-                const throughCount = Math.min(_preQual.through, _pool.length);
+                // throughVar (v0.9.15.3): mit dieser Wahrscheinlichkeit kommt EINER MEHR
+                // durch. Nötig für halbzahlige Ziele — 1992 hatte real 12 DNPQ auf 8
+                // Wochenenden, also 1,5 pro Rennen; mit ganzzahligem through nicht treffbar.
+                const _thr = _preQual.through + ((_preQual.throughVar && Math.random() < _preQual.throughVar) ? 1 : 0);
+                const throughCount = Math.min(_thr, _pool.length);
                 const _passedIds = new Set(_preScores.slice(0, throughCount).map(x => x.d.id));
 
                 _preScores.forEach(entry => {
