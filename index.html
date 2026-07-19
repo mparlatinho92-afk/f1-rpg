@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.3</title>
+    <title>F1 RPG v0.9.15.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.3 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.4 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: Privateer-Markierung lief nur beim Spielstart - in langen Spielstaenden wurden alle Fahrer zu Werksfahrern und meldeten jedes Rennen</div>
+                            <div>&#8226; FIX: dadurch verschwanden sporadische Melder und DNQ komplett - die Felder wirkten zu ordentlich</div>
+                            <div>&#8226; NEU: markPrivateers als eigene Funktion, laeuft jetzt bei jedem Saisonstart</div>
+                            <div class="font-bold text-slate-400">v0.9.15.3 - 19.07.2026</div>
                             <div>&#8226; NEU: throughVar erlaubt halbzahlige DNPQ-Ziele - 1992 brauchte 1,5 pro Wochenende</div>
                             <div>&#8226; FIX: 1992 von 18 auf 12,8 DNPQ (real 12)</div>
                             <div>&#8226; FIX: 1978 auf 20,4 DNPQ (real 23) - Streuung zwischen Laeufen ist groesser als der Rest</div>
@@ -3092,7 +3096,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.3';
+        const VERSION = '0.9.15.4';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5755,6 +5759,26 @@
         // Markiert die schwächsten Teams als Kleinstkonstrukteure. Nur Teams mit
         // wenigen Fahrern — ein Team mit 4+ Fahrern ist per Definition kein Winzling
         // und hat ohnehin schon Privateers, die partiell melden.
+        // === PRIVATEER-MARKIERUNG (v0.9.15.4 als Funktion herausgezogen) ===
+        // Pro Team: die zwei Schnellsten sind Werksfahrer, der Rest fährt privat.
+        // MUSS JEDE SAISON NEU LAUFEN. Vorher stand das nur in expandSeasonData, also
+        // genau einmal beim Spielstart — in laufenden Spielständen behielten Fahrer ihr
+        // Flag, neu ankommende hatten gar keins (= Werksfahrer). Nach ein paar Saisons
+        // war jeder Werksfahrer und meldete jedes Rennen: die Felder wurden „zu
+        // ordentlich", Melder = Cockpits, DNQ verschwand komplett.
+        function markPrivateers(drivers) {
+            const byTeam = {};
+            (drivers || []).forEach(d => {
+                if (!d.team) { d.isPrivateer = false; return; }
+                if (d.status && d.status !== 'active') return;
+                (byTeam[d.team] = byTeam[d.team] || []).push(d);
+            });
+            Object.values(byTeam).forEach(td => {
+                td.sort((a, b) => (b.pace || 0) - (a.pace || 0));
+                td.forEach((d, i) => { d.isPrivateer = i >= 2; });
+            });
+        }
+
         function markSmallConstructors(teams, drivers, year) {
             (teams || []).forEach(t => { t._smallCtor = false; });
             if (!_smallConstructorShare(year) || !teams || !teams.length) return;
@@ -6163,12 +6187,7 @@
                 // Die Startzahl wird SAISONWEISE gezogen (assignPrivateerSchedules,
                 // unten nach der Home-Only-Vergabe), nicht mehr pro Rennen gewürfelt.
                 const _races = buildRacesForYear(year);
-                const _dByTeam = {};
-                drivers.forEach(d => { (_dByTeam[d.team] = _dByTeam[d.team] || []).push(d); });
-                Object.values(_dByTeam).forEach(td => {
-                    td.sort((a, b) => (b.pace || 0) - (a.pace || 0));
-                    td.forEach((d, i) => { d.isPrivateer = i >= 2; });
-                });
+                markPrivateers(drivers);
 
                 // === HOME-ONLY MARKIERUNG ===
                 // Fahrer aus HOME_ONLY_ENTRIES starten ausschließlich bei ihren Heimrennen –
@@ -17684,6 +17703,8 @@
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
             assignGenericHomeOnly(GAME_STATE.drivers, GAME_STATE.races, newYear);
+            // Privateer-Status JEDE Saison neu bestimmen — Kader ändern sich (s. markPrivateers)
+            markPrivateers(GAME_STATE.drivers);
             markSmallConstructors(GAME_STATE.teams, GAME_STATE.drivers, newYear);
             // Startplan für die neue Saison neu ziehen (nach Home-Only, s. dort).
             assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear, GAME_STATE.teams);
