@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.95</title>
+    <title>F1 RPG v0.9.14.96</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.95 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.14.96 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: Ersatzfahrer der modernen Aera meldeten sporadisch zu Rennen - jetzt nie (2005: 22,3 auf 20,0 Melder bei real 19,8)</div>
+                            <div>&#8226; NEU: Wagenlimit je Konstrukteur aera-genau - ab 1986 hart zwei, davor bis 16</div>
+                            <div>&#8226; NEU: Kleinstkonstrukteure melden meist nur ein Auto (gemessen 1,56 im Schnitt)</div>
+                            <div>&#8226; FIX: Limit greift pro Rennen, damit Fahrerwechsel mitten in der Saison weiter funktionieren</div>
+                            <div class="font-bold text-slate-400">v0.9.14.95 - 19.07.2026</div>
                             <div>&#8226; FIX: Surtees galt als Kleinstkonstrukteur - John Watson fuhr nur sporadisch statt die Saison</div>
                             <div>&#8226; NEU: Konstrukteurs-Groessenklassen aus F1DB statt Sortierung nach Tagesform</div>
                             <div>&#8226; FIX: Kleinteam-Fahrer teilen jetzt EINEN Teamkalender statt Gaststarter-Sporadik</div>
@@ -3053,7 +3058,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.95';
+        const VERSION = '0.9.14.96';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5719,6 +5724,11 @@
                 // Surtees (118), Ensign (99), Osella (130) und Minardi (339) draußen.
                 if (CONSTRUCTOR_TINY.has(key)) t._smallCtor = Math.random() < 0.70;
                 else if (CONSTRUCTOR_SMALL.has(key)) t._smallCtor = Math.random() < 0.30;
+                // Wagenzahl PRO SAISON (Nutzer-Entscheidung: nicht pro Rennen).
+                // Winzlinge fuhren im Schnitt 1,56 Autos, 69 % von ihnen unter zwei —
+                // also meistens eines, manchmal zwei. Alle anderen unbegrenzt (der
+                // Ära-Deckel in _maxCarsPerConstructor greift ohnehin).
+                t._carsThisSeason = t._smallCtor ? (Math.random() < 0.65 ? 1 : 2) : null;
             });
         }
 
@@ -5770,6 +5780,45 @@
                 const n = _drawPrivateerCount(year, cal.length);
                 d.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
             });
+        }
+
+        // === AUTOS JE KONSTRUKTEUR (v0.9.14.96) ===
+        // Harte Obergrenze der Meldungen eines Konstrukteurs pro Rennen. Gemessen
+        // an F1DB (Ø Autos je Konstrukteur und Rennen / Maximum / Anteil >2):
+        //   1950er 3,77 / 16 / 66 %   ·   1960er 2,95 / 13 / 48 %
+        //   1970er 2,00 /  7 / 21 %   ·   1980er 1,83 /  4 /  1 %
+        //   ab 1986 durchgehend 2,00 / 2 / 0 %  — letztes Drittauto: 1985.
+        //
+        // WARUM das nötig ist: SEASON_DATA listet alle Fahrer einer Saison. In der
+        // Moderne sind Fahrer jenseits der zwei Stammplätze ERSATZFAHRER — sie
+        // melden real nie, im Spiel aber sporadisch über ihren Privateer-Startplan.
+        // Der Cap greift pro RENNEN (nicht pro Saison), damit Fahrerwechsel mitten
+        // in der Saison weiter funktionieren: zwei Fahrer, die sich einen Sitz
+        // teilen, haben getrennte Startpläne und stoßen hier nicht aneinander.
+        function _maxCarsPerConstructor(year) {
+            return year < 1960 ? 99      // 1950er: bis zu 16 Autos belegt, kein Deckel
+                 : year < 1970 ? 99
+                 : year < 1980 ?  7
+                 : year < 1986 ?  3
+                 :                2;     // seit 1986 Regelwerk: zwei Autos
+        }
+
+        // Kappt je Team auf die Ära-Obergrenze; Kleinstkonstrukteure zusätzlich auf
+        // ihre Saison-Wagenzahl (t._carsThisSeason, meist 1 — gemessen 1,56).
+        // Wer wegfällt, wird nach Pace entschieden: der schnellste sitzt im Auto.
+        function applyConstructorCarCap(drivers, teams, year) {
+            const capEra = _maxCarsPerConstructor(year);
+            const byTeam = {};
+            drivers.forEach(d => { if (d.team) (byTeam[d.team] = byTeam[d.team] || []).push(d); });
+            const out = new Set(drivers.filter(d => !d.team));
+            for (const [tid, ds] of Object.entries(byTeam)) {
+                const t = (teams || []).find(x => x.id === tid);
+                const cap = Math.min(capEra, (t && t._carsThisSeason) || capEra);
+                if (ds.length <= cap) { ds.forEach(d => out.add(d)); continue; }
+                ds.slice().sort((a, b) => (b.pace || 0) - (a.pace || 0))
+                  .slice(0, cap).forEach(d => out.add(d));
+            }
+            return drivers.filter(d => out.has(d));
         }
 
         // [SYNC simulateRace] Einziger Melde-Entscheider für Privateers — von
@@ -8686,6 +8735,8 @@
             // [SYNC simulateRace] Logik zentral in privateerEntersRace — nicht hier inline.
             if (!isIndyRace) {
                 activeDrivers = activeDrivers.filter(d => privateerEntersRace(d, race));
+                // [SYNC simulateRace] Ära-Wagenlimit je Konstrukteur (v0.9.14.96)
+                activeDrivers = applyConstructorCarCap(activeDrivers, GAME_STATE.teams, GAME_STATE.currentYear);
             }
 
             // === GRID-CAP + GRID-FÜLLER (v0.9.9.7) ===
@@ -9440,6 +9491,7 @@
                 });
                 // [SYNC simulateRace] Logik zentral in privateerEntersRace.
                 activeDrivers = activeDrivers.filter(d => privateerEntersRace(d, race));
+                activeDrivers = applyConstructorCarCap(activeDrivers, GAME_STATE.teams, GAME_STATE.currentYear);
             }
 
             // Training-Performance (mehr Varianz als Qualifying – Freie Session, Setup-Läufe)
@@ -9584,6 +9636,7 @@
             if (!isIndyRace) {
                 // [SYNC simulateRace] Logik zentral in privateerEntersRace.
                 activeDrivers = activeDrivers.filter(d => privateerEntersRace(d, race));
+                activeDrivers = applyConstructorCarCap(activeDrivers, GAME_STATE.teams, GAME_STATE.currentYear);
             }
 
             // === VORQUALIFIKATION (DNPQ) ===
