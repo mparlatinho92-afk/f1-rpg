@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.5</title>
+    <title>F1 RPG v0.9.15.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.5 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.6 (aktuell) - 20.07.2026</div>
+                            <div>&#8226; NEU: Privateers die bei ihren Einsaetzen ueberzeugen steigen ins Werksteam ihrer Marke auf - Hawthorn zu Ferrari, Behra zu Maserati</div>
+                            <div>&#8226; NEU: der direkte Weg ins Werksteam bleibt - beide Wege era-realistisch gemischt (50er/60er 42 Prozent ueber Privateer, modern 0)</div>
+                            <div>&#8226; FIX: Grid-Fueller bekamen keinen Wertungs-Eintrag - sie fuhren, fehlten aber in der Fahrerwertung und die Team-Historie zeigte einen Strich</div>
+                            <div class="font-bold text-slate-400">v0.9.15.5 - 19.07.2026</div>
                             <div>&#8226; NEU: lange Spielstaende fuellen das Feld wieder auf die reale Grid-Groesse - vorher schrumpften alle Teams auf zwei Fahrer</div>
                             <div>&#8226; NEU: Zusatzfahrer haengen sich als Privateers an Kunden-Marken (Maserati, Cooper, Lotus, BRM) - erzeugt Faelle wie mehrere Cooper in einem Rennen</div>
                             <div>&#8226; FIX: Indy-Fahrer werden aus der Feld-Berechnung ausgeschlossen - eigenes System</div>
@@ -3100,7 +3104,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.5';
+        const VERSION = '0.9.15.6';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5945,6 +5949,13 @@
                 filler.scheduledRaces = chosen.sort((a, b) => a - b).map(i => ids[i]);
                 GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== filler.id);
                 if (!drivers.find(x => x.id === filler.id)) drivers.push(filler);
+                // WICHTIG (v0.9.15.6): Wertungs-Eintrag anlegen. applyRaceResults zählt
+                // nur Fahrer MIT driverStandings-Eintrag — ohne diesen fährt der Füller,
+                // erscheint aber nie in der Fahrerwertung und die Team-Historie zeigt „-".
+                if (!GAME_STATE.driverStandings[filler.id]) {
+                    GAME_STATE.driverStandings[filler.id] = { name: filler.name, team: filler.team,
+                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null };
+                }
             }
         }
 
@@ -15548,6 +15559,37 @@
             const changes = [];
             const currentYear = GAME_STATE.currentYear;
             GAME_STATE.seasonTransfers = [];
+
+            // === AUFSTIEG PRIVATEER → WERK (v0.9.15.6) ===
+            // Läuft VOR den Transferphasen, solange Grid-Füller und Privateers noch im
+            // Team sind (releaseGridFillers kommt erst in startNewSeason). Ein Privateer,
+            // der bei seinen wenigen Einsätzen überzeugt, hat sich schneller gezeigt als
+            // sein Wert vermuten ließ → Pace-/Potenzial-Schub. Damit wird er über das
+            // bestehende Pace-Fit-Signing zum ernsthaften Kandidaten für ein echtes
+            // Cockpit; ein Grid-Füller verliert dabei seinen Wegwerf-Status.
+            // Modell (Nutzer-Idee): nicht Score direkt zum Werksplatz, sondern
+            // „bewiesenes Tempo" — der Markt regelt den Rest.
+            GAME_STATE.drivers.forEach(d => {
+                if (!d.team || (d.status && d.status !== 'active')) return;
+                if (!d.isPrivateer && !d._gridFiller) return;
+                const st = GAME_STATE.driverStandings[d.id];
+                if (!st) return;
+                // Überperformance-Signal: Punkte oder Podien bei wenigen Starts.
+                const starts = st.races || (Array.isArray(d.scheduledRaces) ? d.scheduledRaces.length : 0);
+                if (starts < 1) return;
+                const impressed = (st.podiums || 0) >= 1 || (st.points || 0) >= 3
+                    || ((st.bestFinish != null) && st.bestFinish <= 6 && starts <= 6);
+                if (!impressed) return;
+                // Schub skaliert mit dem Erfolg, gedeckelt — kein Privateer wird über Nacht Star.
+                const bump = Math.min(6, 2 + (st.podiums || 0) * 2 + (st.wins || 0) * 2);
+                d.pace = Math.min(92, (d.pace || 60) + bump);
+                d.potentialPace = Math.max(d.potentialPace || 0, d.pace + 2);
+                if (typeof d.reputation === 'number') d.reputation = Math.min(100, d.reputation + bump * 2);
+                // Bewiesener Privateer: Marker für alle, plus Füller verlieren ihren
+                // Wegwerf-Status (releaseGridFillers lässt sie dann im Feld).
+                d._provenPrivateer = true;
+                if (d._gridFiller) d._gridFiller = false;
+            });
 
             // Offseason-Transfer-Flag zurücksetzen (verhindert Doppel-Transfer eines Fahrers)
             GAME_STATE.drivers.forEach(d => { delete d._movedThisSeason; }); // _midSeasonDismissed bleibt bis Phase 2
