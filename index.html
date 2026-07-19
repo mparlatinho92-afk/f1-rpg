@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.0</title>
+    <title>F1 RPG v0.9.15.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.0 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.1 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: Nicht-Verlaengerung war zu aggressiv und duennte die alten Fahrer aus - Deckel von 55 auf 30 Prozent</div>
+                            <div>&#8226; PRUEFUNG: Ruecktrittsalter jetzt im Median 0,6 Jahre von der Realitaet entfernt (vorher 1,4)</div>
+                            <div>&#8226; PRUEFUNG: flachere Alterskurve getestet und verworfen - der Schwanz wird von anderen Pfaden gekappt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.0 - 19.07.2026</div>
                             <div>&#8226; FIX: Besitzer-Fahrer konnten ueber drei ungeschuetzte Transferphasen doch ihr Team verlieren - Stroll haelt Aston Martin jetzt dauerhaft</div>
                             <div>&#8226; FIX: Besitzer-Einsetzung lief jenseits des Template-Horizonts nie und wurde vom Sitzfueller ueberschrieben</div>
                             <div>&#8226; NEU: Teams verlaengern Vertraege alter Fahrer nicht mehr automatisch - Vertraege werden aber gehalten</div>
@@ -3078,7 +3082,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.0';
+        const VERSION = '0.9.15.1';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -14648,6 +14652,10 @@
                 if (age && age > eraRetirementAge - 6) {
                     const yearsOver = age - (eraRetirementAge - 6);
                     let retireChance = 0;
+                    // Deckel 0.40 GEPRUEFT (v0.9.15.1): eine Absenkung auf 0.26 wurde
+                    // getestet und brachte nichts — der Schwanz der Oldies wird nicht von
+                    // dieser Kurve gekappt, sondern von den Pfaden career_end und
+                    // dismissed (s. Memo project_driver_career_length).
                     if (yearsOver >= 9) retireChance = 0.40;
                     else if (yearsOver >= 8) retireChance = 0.34;
                     else if (yearsOver >= 7) retireChance = 0.28;
@@ -15606,7 +15614,10 @@
                     const _age = driver.birthYear ? currentYear - driver.birthYear : null;
                     if (_age !== null && _age >= _retAge && !_isLockedOwner(driver)) {
                         const _st = GAME_STATE.driverStandings[driver.id] || {};
-                        let _noRenew = Math.min(0.55, (_age - _retAge + 1) * 0.13);
+                        // Deckel 0.30 statt 0.55 (v0.9.15.1): mit 0.55 duennte die
+                        // Nicht-Verlaengerung den Schwanz der Oldies aus — 1990er nur
+                        // noch 3 % ueber 38 statt realer 7 %. Der Median stimmt auch so.
+                        let _noRenew = Math.min(0.30, (_age - _retAge + 1) * 0.10);
                         if (_st.wins > 0) _noRenew *= 0.25;
                         else if (_st.podiums >= 2) _noRenew *= 0.5;
                         if (Math.random() < _noRenew) {
