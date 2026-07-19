@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.4</title>
+    <title>F1 RPG v0.9.15.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.4 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.5 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; NEU: lange Spielstaende fuellen das Feld wieder auf die reale Grid-Groesse - vorher schrumpften alle Teams auf zwei Fahrer</div>
+                            <div>&#8226; NEU: Zusatzfahrer haengen sich als Privateers an Kunden-Marken (Maserati, Cooper, Lotus, BRM) - erzeugt Faelle wie mehrere Cooper in einem Rennen</div>
+                            <div>&#8226; FIX: Indy-Fahrer werden aus der Feld-Berechnung ausgeschlossen - eigenes System</div>
+                            <div class="font-bold text-slate-400">v0.9.15.4 - 19.07.2026</div>
                             <div>&#8226; FIX: Privateer-Markierung lief nur beim Spielstart - in langen Spielstaenden wurden alle Fahrer zu Werksfahrern und meldeten jedes Rennen</div>
                             <div>&#8226; FIX: dadurch verschwanden sporadische Melder und DNQ komplett - die Felder wirkten zu ordentlich</div>
                             <div>&#8226; NEU: markPrivateers als eigene Funktion, laeuft jetzt bei jedem Saisonstart</div>
@@ -3096,7 +3100,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.4';
+        const VERSION = '0.9.15.5';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5849,6 +5853,113 @@
                 const n = _drawPrivateerCount(year, cal.length);
                 d.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
             });
+        }
+
+        // === KUNDEN-MARKEN (v0.9.15.5) ===
+        // Konstrukteure, die historisch Kundenwagen verkauften — an sie hängen sich
+        // die Grid-Füller als Privateers. Empirisch aus F1DB (meiste verschiedene
+        // Fahrer je Ära): Maserati/Cooper/Lotus/BRM/March/Brabham dominieren, dazu
+        // ära-spezifisch Connaught/Gordini/Lola/Ensign/Surtees/Shadow/Porsche/HWM.
+        // Ferrari NICHT — die vielen Fahrer dort sind 3–4 WERKSwagen, keine Kunden.
+        const CUSTOMER_MARQUES = new Set([
+            'maserati', 'cooper', 'lotus', 'brm', 'march', 'brabham', 'connaught',
+            'gordini', 'lola', 'ensign', 'surtees', 'shadow', 'porsche', 'hwm',
+            'veritas', 'talbot-lago', 'de-tomaso', 'iso-marlboro', 'lec', 'williams'
+        ]);
+        function _isCustomerMarque(team) {
+            if (!team) return false;
+            const k = (team.histId || team.name || team.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+            return [...CUSTOMER_MARQUES].some(m => k === m || k.startsWith(m));
+        }
+
+        // === GRID-FÜLLER (v0.9.15.5) ===
+        // Füllt das Feld auf die reale Grid-Größe, indem Reservepool-Fahrer als
+        // Privateers an Kunden-Marken gehängt werden. Nur nötig in FORTGESETZTEN
+        // Saisons: der generierte Kader schrumpft sonst auf 2 Fahrer/Team, das Feld
+        // wirkt „zu ordentlich" (Nutzer-Report). Frische Template-Saisons füllen sich
+        // aus den Template-Privateers und laufen hier ins Leere (Defizit ≈ 0).
+        //
+        // Modell (Nutzer-Idee): Grid pro Rennen ist das Ziel. Wo weniger melden als
+        // das Grid groß ist, wird aufgefüllt — praktisch immer erfolgreich, weil der
+        // Pool >200 Fahrer hat. Füller clustern auf Kunden-Marken → dein Maserati-×6.
+        // Kein absichtliches Überfüllen → keine künstlichen DNQ (1950er hatten real
+        // Meldeliste ≈ Grid). Echte DNQ entstehen nur, wo Privateers das Grid von
+        // selbst übersteigen, plus die Vor-Quali-Ära (eigene Mechanik).
+        function fillGridEntries(drivers, teams, races, year) {
+            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            if (!cal.length) return;
+            const ids = cal.map(r => r.circuitId.toLowerCase());
+            const idxOf = {}; ids.forEach((c, i) => { idxOf[c] = i; });
+
+            // Pro Rennen: wie viele melden schon? (aktive Fahrer, entry-Filter)
+            // Indy-Fahrer AUSSCHLIESSEN — sie starten keine Europarennen (eigenes Feld,
+            // s. simulateRace-Filter). Sonst zählt der Füller sie als Melder, sieht ein
+            // volles Feld und fügt nichts hinzu, obwohl real gemeldet werden müsste.
+            const entered = cal.map(() => 0);
+            const isIndyDriver = d => {
+                if (d.isIndyOnly) return true;
+                const t = (teams || []).find(x => x.id === d.team);
+                return !!t && (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId));
+            };
+            const active = drivers.filter(d => d.team && (!d.status || d.status === 'active') && !isIndyDriver(d));
+            active.forEach(d => {
+                cal.forEach((r, i) => { if (privateerEntersRace(d, r)) entered[i]++; });
+            });
+            const target = cal.map(r => getGridSize(year, r));
+            const deficit = target.map((t, i) => Math.max(0, t - entered[i]));
+            if (!deficit.some(d => d > 0)) return;
+
+            // Kunden-Marken der Saison (Fallback: gewichteter Zufall über alle
+            // Nicht-Indy-Teams — Option 2, falls keine Marke einen Eintrag hat).
+            const custTeams = (teams || []).filter(t => _isCustomerMarque(t)
+                && !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId));
+            const fallbackTeams = (teams || []).filter(t =>
+                !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId));
+            const pickTeam = () => {
+                const pool = custTeams.length ? custTeams : fallbackTeams;
+                return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+            };
+
+            const reserve = (GAME_STATE.reservePool || []).filter(d =>
+                (!d.status || d.status === 'active') && !d.team && (d.pace || 0) >= 50);
+            let ri = 0, guard = 0;
+            // Greedy: solange irgendwo ein Defizit klafft, einen Füller ziehen und
+            // ihn auf die aktuell knappsten Rennen setzen.
+            while (deficit.some(d => d > 0) && ri < reserve.length && guard++ < 200) {
+                const team = pickTeam(); if (!team) break;
+                const filler = reserve[ri++];
+                // Wie viele Rennen fährt dieser Füller? Ära-Sporadik wie ein Privateer.
+                const want = _drawPrivateerCount(year, cal.length);
+                // Rennen mit größtem Restdefizit zuerst.
+                const order = cal.map((_, i) => i).sort((a, b) => deficit[b] - deficit[a]);
+                const chosen = [];
+                for (const i of order) {
+                    if (chosen.length >= want) break;
+                    if (deficit[i] > 0) { chosen.push(i); deficit[i]--; }
+                }
+                if (!chosen.length) break;
+                filler.team = team.id;
+                filler.isPrivateer = true;
+                filler._gridFiller = true;
+                filler.isReserve = false;
+                filler.scheduledRaces = chosen.sort((a, b) => a - b).map(i => ids[i]);
+                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== filler.id);
+                if (!drivers.find(x => x.id === filler.id)) drivers.push(filler);
+            }
+        }
+
+        // Grid-Füller nach der Saison in den Pool zurückgeben — sie sind Gäste, keine
+        // festen Cockpits, und dürfen den Sitz im Folgejahr nicht blockieren.
+        function releaseGridFillers() {
+            const back = GAME_STATE.drivers.filter(d => d._gridFiller);
+            back.forEach(d => {
+                d.team = null; d.isPrivateer = false; d._gridFiller = false;
+                d.scheduledRaces = null; d.isReserve = true;
+                if (!(GAME_STATE.reservePool || []).find(x => x.id === d.id)) {
+                    (GAME_STATE.reservePool = GAME_STATE.reservePool || []).push(d);
+                }
+            });
+            GAME_STATE.drivers = GAME_STATE.drivers.filter(d => !d._gridFiller);
         }
 
         // === AUTOS JE KONSTRUKTEUR (v0.9.14.96) ===
@@ -17703,11 +17814,15 @@
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
             assignGenericHomeOnly(GAME_STATE.drivers, GAME_STATE.races, newYear);
+            // Grid-Füller des Vorjahres zuerst in den Pool zurück (v0.9.15.5).
+            releaseGridFillers();
             // Privateer-Status JEDE Saison neu bestimmen — Kader ändern sich (s. markPrivateers)
             markPrivateers(GAME_STATE.drivers);
             markSmallConstructors(GAME_STATE.teams, GAME_STATE.drivers, newYear);
             // Startplan für die neue Saison neu ziehen (nach Home-Only, s. dort).
             assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear, GAME_STATE.teams);
+            // Feld auf reale Grid-Größe auffüllen (nur wenn der Kader zu dünn ist).
+            fillGridEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
