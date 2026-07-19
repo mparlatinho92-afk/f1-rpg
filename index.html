@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.14.99</title>
+    <title>F1 RPG v0.9.15.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.14.99 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.0 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: Besitzer-Fahrer konnten ueber drei ungeschuetzte Transferphasen doch ihr Team verlieren - Stroll haelt Aston Martin jetzt dauerhaft</div>
+                            <div>&#8226; FIX: Besitzer-Einsetzung lief jenseits des Template-Horizonts nie und wurde vom Sitzfueller ueberschrieben</div>
+                            <div>&#8226; NEU: Teams verlaengern Vertraege alter Fahrer nicht mehr automatisch - Vertraege werden aber gehalten</div>
+                            <div>&#8226; NEU: Vertragslaenge nach Alter gedeckelt - keine Mehrjahresvertraege mehr fuer 42-Jaehrige</div>
+                            <div>&#8226; FIX: Fahrer traten bis zu sieben Jahre zu spaet zurueck</div>
+                            <div class="font-bold text-slate-400">v0.9.14.99 - 19.07.2026</div>
                             <div>&#8226; NEU: Besitzer-Fahrer landen im eigenen Team sobald ihr Konstrukteur antritt - vorher hielt die Treue-Regel sie nur fest wenn sie schon drin waren</div>
                             <div>&#8226; FIX: Ein-Auto-Konstrukteure wie McGuire oder Stebro starteten ohne ihren einzigen Fahrer - er wartete im Reservepool</div>
                             <div>&#8226; PRUEFUNG: 46 Saisons im Mehrsaison-Lauf korrekt besetzt</div>
@@ -3072,7 +3078,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.14.99';
+        const VERSION = '0.9.15.0';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -9991,7 +9997,7 @@
                     const len = p >= 85 ? (r < 0.10 ? 0 : r < 0.35 ? 1 : r < 0.70 ? 2 : 3)
                               : p >= 72 ? (r < 0.20 ? 0 : r < 0.65 ? 1 : r < 0.90 ? 2 : 3)
                               :           (r < 0.35 ? 0 : r < 0.85 ? 1 : 2);
-                    d.contractEnd = GAME_STATE.currentYear + len;
+                    d.contractEnd = GAME_STATE.currentYear + _ageCappedContractLen(d, GAME_STATE.currentYear, len);
                 }
             });
             // 3.5 driverStandings nachrüsten für alle aktiven Fahrer mit Team
@@ -14628,24 +14634,46 @@
                     }
                 }
 
-                // === 1. ALTERS-RÜCKTRITT ===
-                // Chance beginnt ERST wenn Alter > Ø-Rücktrittsalter der Ära
-                if (age && age > eraRetirementAge) {
-                    const yearsOver = age - eraRetirementAge;
-                    // 1 Jahr über Ø: 5%, 2 Jahre: 15%, 3 Jahre: 30%, 4 Jahre: 50%, 5+ Jahre: 75%
+                // === 1. ALTERS-RÜCKTRITT (v0.9.15.0 neu kalibriert) ===
+                // ERA_RETIREMENT_AGE ist der MEDIAN des realen Rücktrittsalters, nicht
+                // der Startpunkt. Vorher setzte die Kurve erst DARÜBER an (0 % beim
+                // Median, 5 % bei +1 …) — dadurch lag der Median im Spiel deutlich zu
+                // hoch. Gemessen Spiel vs. F1DB: 2010er 35 statt 28, 1990er 35 statt 31,
+                // 1960er 38 statt 33, 1970er 36 statt 32.
+                //
+                // Neu: die Kurve beginnt SECHS Jahre vor dem Median und steigt flach.
+                // Flach ist wesentlich — die reale Verteilung ist breit (1950er 25–75 %
+                // bei 31–41, Maximum 59). Eine steile Kurve trifft den Median, kappt
+                // aber den Schwanz der Oldies (Brabham fuhr bis 44, Fangio bis 47).
+                if (age && age > eraRetirementAge - 6) {
+                    const yearsOver = age - (eraRetirementAge - 6);
                     let retireChance = 0;
-                    if (yearsOver >= 5) retireChance = 0.75;
-                    else if (yearsOver >= 4) retireChance = 0.50;
-                    else if (yearsOver >= 3) retireChance = 0.30;
-                    else if (yearsOver >= 2) retireChance = 0.15;
-                    else if (yearsOver >= 1) retireChance = 0.05;
+                    if (yearsOver >= 9) retireChance = 0.40;
+                    else if (yearsOver >= 8) retireChance = 0.34;
+                    else if (yearsOver >= 7) retireChance = 0.28;
+                    else if (yearsOver >= 6) retireChance = 0.23;
+                    else if (yearsOver >= 5) retireChance = 0.18;
+                    else if (yearsOver >= 4) retireChance = 0.13;
+                    else if (yearsOver >= 3) retireChance = 0.09;
+                    else if (yearsOver >= 2) retireChance = 0.05;
+                    else if (yearsOver >= 1) retireChance = 0.02;
                     
                     // Erfolgreiche Fahrer bleiben länger
                     if (standing.wins > 0) retireChance *= 0.4; // -60% bei Sieg diese Saison
                     else if (standing.podiums >= 2) retireChance *= 0.6; // -40% bei 2+ Podien
                     
-                    // Läuft der Vertrag noch? Dann kein Alters-Rücktritt
-                    if (driver.contractEnd && driver.contractEnd > GAME_STATE.currentYear) retireChance = 0;
+                    // Vertrag ist Vertrag: läuft er noch, hört niemand altersbedingt auf,
+                    // und das Team löst auch nicht vorzeitig auf. EINZIGE Ausnahme ist ein
+                    // Leistungsabfall, der so deutlich ist, dass beide Seiten aussteigen —
+                    // dann trennt man sich auch mitten im Vertrag.
+                    // (v0.9.15.0: kurz war hier ein pauschales ×0.35, das JEDEN Alten aus
+                    // dem Vertrag spazieren ließ. Falsch — der Hebel gegen zu späte
+                    // Rücktritte ist die VERTRAGSLÄNGE, s. _ageCappedContractLen.)
+                    if (driver.contractEnd && driver.contractEnd > GAME_STATE.currentYear) {
+                        const _ev = evaluateDriverPerformance(driver.id);
+                        const _kollaps = _ev && _ev.score < 25;
+                        retireChance = _kollaps ? retireChance * 0.5 : 0;
+                    }
 
                     if (Math.random() < retireChance) {
                         driver.status = 'retired';
@@ -14997,6 +15025,30 @@
         }
 
         // Saison-Score eines Fahrers: feldrelativ, -0.6..1.03
+        // Treuer Besitzer-Fahrer in seinem eigenen Team? Dann ist er gegen JEDE
+        // unfreiwillige Bewegung immun — Entlassung, Abwerbung, Buyout, Zufallswechsel.
+        // Er hört auf, wenn er selbst aufhört (Alter/Tod) oder sein Team aussteigt.
+        // Vertragslänge nach Alter deckeln (v0.9.15.0). Verträge waren rein
+        // pace-basiert — ein 42-Jähriger bekam 2–3 Jahre und war damit gegen den
+        // Alters-Rücktritt immunisiert, weil ein laufender Vertrag gehalten wird.
+        // Real werden Verträge mit dem Alter kürzer; niemand gibt einem Fahrer am
+        // Karriereende noch eine Mehrjahresbindung.
+        // Deckel = wie viele Jahre bis knapp über das Ära-Rücktrittsalter, min. 1.
+        function _ageCappedContractLen(driver, year, wantedLen) {
+            const age = driver && driver.birthYear ? year - driver.birthYear : null;
+            if (age === null) return wantedLen;
+            const retAge = (typeof getEraValue === 'function' && typeof ERA_RETIREMENT_AGE !== 'undefined')
+                ? (getEraValue(ERA_RETIREMENT_AGE, year) || 32) : 32;
+            const maxLen = Math.max(1, Math.round(retAge - age));
+            return Math.min(wantedLen, maxLen);
+        }
+
+        function _isLockedOwner(driver) {
+            if (!driver || !driver.team) return false;
+            const t = GAME_STATE.teams.find(x => x.id === driver.team);
+            return !!t && isLoyalOwnerDriver(driver, t.histId || t.id);
+        }
+
         function _computeDriverSeasonScore(driverId) {
             const dnfPenalty = _getAvgDnfPenalty();
             const DNQ_SCORE = -0.30;
@@ -15374,6 +15426,7 @@
             activeDrivers
                 .filter(d => d.contractEnd && d.contractEnd > currentYear) // Vertrag läuft noch
                 .forEach(driver => {
+                    if (_isLockedOwner(driver)) return;   // treuer Besitzer (v0.9.15.0)
                     const eval_ = evaluateDriverPerformance(driver.id);
                     if (!eval_ || eval_.score >= 30) return;
 
@@ -15410,7 +15463,8 @@
                 const _poolAll = GAME_STATE.reservePool || [];
 
                 GAME_STATE.teams.forEach(team => {
-                    const _tDrivers = activeDrivers.filter(d => d.team === team.id && !d._movedThisSeason);
+                    const _tDrivers = activeDrivers.filter(d => d.team === team.id && !d._movedThisSeason
+                                                              && !_isLockedOwner(d));   // treuer Besitzer (v0.9.15.0)
                     if (_tDrivers.length === 0) return;
 
                     const _effPace = d => {
@@ -15473,7 +15527,7 @@
                         GAME_STATE.drivers.push(_nd);
                     } else {
                         _best.team = team.id;
-                        _best.contractEnd = currentYear + 1 + Math.floor(Math.random() * 2);
+                        _best.contractEnd = currentYear + _ageCappedContractLen(_best, currentYear, 1 + Math.floor(Math.random() * 2));
                         _best._movedThisSeason = true;
                     }
                     logInfo('TRANSFER', `🎯 Abgeworben: ${_best.name} (Eff:${Math.round(_bestEff)}) → ${team.name} (war: ${_weakest.name}, Eff:${Math.round(_weakEff)})`);
@@ -15540,6 +15594,28 @@
                     return;
                 }
 
+                // === ALTER BEI DER VERLÄNGERUNG (v0.9.15.0) ===
+                // Kein Vertragsbruch — sondern das Team verlängert schlicht nicht mehr.
+                // Vorher entschied AUSSCHLIESSLICH das Rating: ein exzellenter 40-Jähriger
+                // wurde endlos weiterbeschäftigt, wodurch das Rücktrittsalter im Spiel
+                // 3–7 Jahre über der Realität lag (2010er Median 35 statt 28).
+                // Greift erst ab dem Ära-Rücktrittsalter und steigt langsam; Sieger und
+                // Podestfahrer bekommen weiter ihren Vertrag.
+                {
+                    const _retAge = getEraValue(ERA_RETIREMENT_AGE, currentYear) || 32;
+                    const _age = driver.birthYear ? currentYear - driver.birthYear : null;
+                    if (_age !== null && _age >= _retAge && !_isLockedOwner(driver)) {
+                        const _st = GAME_STATE.driverStandings[driver.id] || {};
+                        let _noRenew = Math.min(0.55, (_age - _retAge + 1) * 0.13);
+                        if (_st.wins > 0) _noRenew *= 0.25;
+                        else if (_st.podiums >= 2) _noRenew *= 0.5;
+                        if (Math.random() < _noRenew) {
+                            executeTransfer(driver, null, 'contract_expired', changes);
+                            return;
+                        }
+                    }
+                }
+
                 const teamRank = eval_.teamRanking;
                 const isTopTeam = teamRank <= topTeamCount;
                 const isMidTeam = teamRank > topTeamCount && teamRank <= midTeamCount;
@@ -15573,7 +15649,7 @@
                             return;
                         }
                     }
-                    driver.contractEnd = currentYear + 2 + Math.floor(Math.random() * 2);
+                    driver.contractEnd = currentYear + _ageCappedContractLen(driver, currentYear, 2 + Math.floor(Math.random() * 2));
                     driver._movedThisSeason = true;
                     changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
                     logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (⭐)`);
@@ -15589,7 +15665,7 @@
                             return;
                         }
                     }
-                    driver.contractEnd = currentYear + 1 + Math.floor(Math.random() * 2);
+                    driver.contractEnd = currentYear + _ageCappedContractLen(driver, currentYear, 1 + Math.floor(Math.random() * 2));
                     driver._movedThisSeason = true;
                     changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
                     logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (✅)`);
@@ -15911,7 +15987,8 @@
             if (Math.random() < 0.20) {
                 const potentialMovers = activeDrivers.filter(d => 
                     d.team && !expiredContracts.includes(d) && 
-                    d.contractEnd && d.contractEnd === currentYear + 1
+                    d.contractEnd && d.contractEnd === currentYear + 1 &&
+                    !_isLockedOwner(d)   // treuer Besitzer (v0.9.15.0)
                 );
                 if (potentialMovers.length > 0) {
                     const mover = potentialMovers[Math.floor(Math.random() * potentialMovers.length)];
@@ -16223,17 +16300,26 @@
                 logInfo('OVERRIDE', `📋 ${driver.name} → ${team.name} (histor. Einmal-Zuweisung)`);
             });
 
-            // === BESITZER-FAHRER INS EIGENE TEAM (v0.9.14.99) ===
-            // Gegenstück zur Treue-Sperre aus v0.9.14.98: die hält einen Besitzer in
-            // seinem Team, sobald er drin ist — aber nichts setzte ihn HINEIN. Im
-            // Simulationslauf saß Fittipaldi 1976 bei Brabham, während sein eigener
-            // Konstrukteur antrat. Bei reinen Ein-Auto-Teams (Merzario, McGuire,
-            // Stebro) startete der Konstrukteur sonst ohne seinen einzigen Fahrer.
-            //
-            // Regel: existiert der Konstrukteur und lebt sein Besitzer noch aktiv,
-            // gehört er dorthin — egal wo der Transfermarkt ihn gerade hat.
-            // Zeitlich begrenzt sich das von selbst: Brabham fuhr bis 1970, sein
-            // Team bis 1992; nach dem Karriereende greift die Regel nicht mehr.
+            placeLoyalOwnerDrivers();
+        }
+
+        // === BESITZER-FAHRER INS EIGENE TEAM (v0.9.14.99) ===
+        // Gegenstück zur Treue-Sperre aus v0.9.14.98: die hält einen Besitzer in
+        // seinem Team, sobald er drin ist — aber nichts setzte ihn HINEIN. Im
+        // Simulationslauf saß Fittipaldi 1976 bei Brabham, während sein eigener
+        // Konstrukteur antrat. Bei reinen Ein-Auto-Teams (Merzario, McGuire,
+        // Stebro) startete der Konstrukteur sonst ohne seinen einzigen Fahrer.
+        //
+        // Regel: existiert der Konstrukteur und lebt sein Besitzer noch aktiv,
+        // gehört er dorthin — egal wo der Transfermarkt ihn gerade hat.
+        // Zeitlich begrenzt sich das von selbst: Brabham fuhr bis 1970, sein
+        // Team bis 1992; nach dem Karriereende greift die Regel nicht mehr.
+        //
+        // EIGENE FUNKTION seit v0.9.15.0: vorher stand der Block IN applyTeamEntryExit,
+        // also hinter dessen `if (!sd || !sd.t) return;`. Jenseits des SEASON_DATA-
+        // Horizonts lief er dadurch nie — Stroll verlor Aston Martin ab 2027, obwohl
+        // das Team existierte und er 29 war. Wird jetzt unbedingt aufgerufen.
+        function placeLoyalOwnerDrivers() {
             if (typeof LOYAL_OWNER_DRIVERS !== 'undefined') {
                 Object.entries(LOYAL_OWNER_DRIVERS).forEach(([cKey, ownerHistId]) => {
                     const team = GAME_STATE.teams.find(t => {
@@ -17558,7 +17644,13 @@
             initReservePool(newYear);
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
-            fillEmptyTeamSeats(newYear);   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
+            fillEmptyTeamSeats(newYear);
+            // ZULETZT und UNBEDINGT: Besitzer-Fahrer gehören in ihr Team, egal was
+            // Transfermarkt und Sitzfüller vorher entschieden haben. Muss NACH
+            // fillEmptyTeamSeats laufen, sonst überschreibt der Sitzfüller die
+            // Zuordnung wieder. Und außerhalb von applyTeamEntryExit, weil das
+            // jenseits des SEASON_DATA-Horizonts früh aussteigt.
+            placeLoyalOwnerDrivers();   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
             // Heimrennen-Melder gegen den NEUEN Kalender neu bestimmen – nach fillEmptyTeamSeats,
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
