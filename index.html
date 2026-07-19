@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.1</title>
+    <title>F1 RPG v0.9.15.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.1 (aktuell) - 19.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.2 (aktuell) - 19.07.2026</div>
+                            <div>&#8226; FIX: 1971 hatte nur 25 statt 50 Fahrer - 25 ergaenzt inklusive Lauda-Debuet und Bellasi-Team</div>
+                            <div>&#8226; FIX: Startfeldgroessen 1953, 1956, 1957, 1959 und 1984 korrigiert</div>
+                            <div>&#8226; FIX: Inline-Kommentare hatten vier Jahrgaenge der Grid-Tabelle auskommentiert</div>
+                            <div>&#8226; PRUEFUNG: Starterzahlen jetzt in allen 76 Jahren innerhalb eines Autos</div>
+                            <div class="font-bold text-slate-400">v0.9.15.1 - 19.07.2026</div>
                             <div>&#8226; FIX: Nicht-Verlaengerung war zu aggressiv und duennte die alten Fahrer aus - Deckel von 55 auf 30 Prozent</div>
                             <div>&#8226; PRUEFUNG: Ruecktrittsalter jetzt im Median 0,6 Jahre von der Realitaet entfernt (vorher 1,4)</div>
                             <div>&#8226; PRUEFUNG: flachere Alterskurve getestet und verworfen - der Schwanz wird von anderen Pfaden gekappt</div>
@@ -3082,7 +3087,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.1';
+        const VERSION = '0.9.15.2';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4047,13 +4052,17 @@
         // Ausnahmen (Monaco, Nürburgring/Nordschleife) werden in getGridSize() behandelt
         // 1950–1960: Indy 500 (33 Starter) aus Jahresschnitt herausgerechnet
         const GRID_SIZES = {
-            1950: 20, 1951: 21, 1952: 24, 1953: 24, 1954: 21,
-            1955: 22, 1956: 20, 1957: 18, 1958: 19, 1959: 19,   // 1955 korrigiert: real Ø 22,5 Starter
+            // Werte = gerundeter realer Ø Starter je Jahr (F1DB, Indy raus).
+            // ⚠ KEINE Inline-Kommentare zwischen den Eintraegen — ein // kommentiert
+            //   den Rest der ZEILE aus; 1954/1957/1958/1959 fielen so auf den
+            //   Fallback 20 zurueck und wanderten als Ausreisser durch den Sweep.
+            1950: 20, 1951: 21, 1952: 24, 1953: 25, 1954: 21,
+            1955: 22, 1956: 21, 1957: 19, 1958: 19, 1959: 18,
             1960: 19, 1961: 24, 1962: 20, 1963: 20, 1964: 20,
             1965: 19, 1966: 19, 1967: 19, 1968: 19, 1969: 17,
             1970: 21, 1971: 24, 1972: 26, 1973: 24, 1974: 26,
             1975: 25, 1976: 25, 1977: 24, 1978: 25, 1979: 24,
-            1980: 24, 1981: 24, 1982: 25, 1983: 26, 1984: 25,
+            1980: 24, 1981: 24, 1982: 25, 1983: 26, 1984: 26,
             1985: 25, 1986: 26, 1987: 26, 1988: 26, 1989: 26,
             1990: 26, 1991: 26, 1992: 26, 1993: 26, 1994: 26,
             1995: 25, 1996: 21, 1997: 22, 1998: 22, 1999: 22,
@@ -4093,7 +4102,7 @@
             1989: { pool: 14, through:  5, prob: 1.00 },  // 143 DNPQ, 16 von 16 — Hochphase, 39 Melder auf 26 Plätze
             1990: { pool:  8, through:  4, prob: 0.88 },  //  62 DNPQ, 14 von 16
             1991: { pool:  8, through:  4, prob: 1.00 },  //  58 DNPQ, 16 von 16
-            1992: { pool:  4, through:  3, prob: 0.50 },  //  12 DNPQ,  8 von 16
+            1992: { pool:  5, through:  3, prob: 0.50 },  //  12 DNPQ,  8 von 16 (pool 4 lieferte nur 6)
         };
 
         // Grid-Größe für ein spezifisches Rennen (berücksichtigt Strecken-Ausnahmen)
