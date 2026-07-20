@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.6</title>
+    <title>F1 RPG v0.9.15.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.6 (aktuell) - 20.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.7 (aktuell) - 20.07.2026</div>
+                            <div>&#8226; FIX: Team-Steckbrief ehemaliger Teams zeigte Strich statt Fahrer - Porsche lief mit bis zu 10 Fahrern, keiner wurde angezeigt</div>
+                            <div>&#8226; FIX: Ursache war Gross-Kleinschreibung - Race-Links liefern porsche klein, gespeichert ist Porsche gross</div>
+                            <div>&#8226; NEU: reiner Anzeige-Fix, repariert bestehende Spielstaende ohne Datenaenderung</div>
+                            <div class="font-bold text-slate-400">v0.9.15.6 - 20.07.2026</div>
                             <div>&#8226; NEU: Privateers die bei ihren Einsaetzen ueberzeugen steigen ins Werksteam ihrer Marke auf - Hawthorn zu Ferrari, Behra zu Maserati</div>
                             <div>&#8226; NEU: der direkte Weg ins Werksteam bleibt - beide Wege era-realistisch gemischt (50er/60er 42 Prozent ueber Privateer, modern 0)</div>
                             <div>&#8226; FIX: Grid-Fueller bekamen keinen Wertungs-Eintrag - sie fuhren, fehlten aber in der Fahrerwertung und die Team-Historie zeigte einen Strich</div>
@@ -3104,7 +3108,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.6';
+        const VERSION = '0.9.15.7';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -26633,7 +26637,15 @@ Empfohlene Wertebereiche:
                         actualTeamId = checkId;
                         break;
                     }
-                    const found = (season.teams || []).find(t => t.id === checkId || t.histId === checkId);
+                    // CASE-INSENSITIV (v0.9.15.7): ehemalige Teams werden je nach Einstieg
+                    // mit unterschiedlicher ID-Schreibweise geöffnet — Race-Result-Links
+                    // liefern den F1DB-Slug „porsche" (klein), season.teams speichert aber
+                    // histId „Porsche" (groß). Der frühere strikte === scheiterte daran,
+                    // wodurch actualTeamId null blieb und die Team-Historie ALLE Fahrer
+                    // wegließ („-"), obwohl sie fuhren (Nutzer-Report: Porsche 1960–64).
+                    const _cl = String(checkId).toLowerCase();
+                    const found = (season.teams || []).find(t =>
+                        String(t.id).toLowerCase() === _cl || String(t.histId || '').toLowerCase() === _cl);
                     if (found) {
                         actualTeamId = found.id;
                         teamStanding = season.teamStandings?.[found.id];
