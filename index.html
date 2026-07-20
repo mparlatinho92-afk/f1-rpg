@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.7</title>
+    <title>F1 RPG v0.9.15.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.7 (aktuell) - 20.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.8 (aktuell) - 20.07.2026</div>
+                            <div>&#8226; FIX: obere Historie-Tabelle (Karriere/Team) zeigte die laufende Saison nicht - nur die untere Rennergebnisse-Tabelle</div>
+                            <div>&#8226; NEU: laufende Saison wird aus dem Live-Stand ergaenzt, in Fahrer- und Team-Steckbrief</div>
+                            <div>&#8226; FIX: ohne Duplikat wenn die Saison schon abgeschlossen ist</div>
+                            <div class="font-bold text-slate-400">v0.9.15.7 - 20.07.2026</div>
                             <div>&#8226; FIX: Team-Steckbrief ehemaliger Teams zeigte Strich statt Fahrer - Porsche lief mit bis zu 10 Fahrern, keiner wurde angezeigt</div>
                             <div>&#8226; FIX: Ursache war Gross-Kleinschreibung - Race-Links liefern porsche klein, gespeichert ist Porsche gross</div>
                             <div>&#8226; NEU: reiner Anzeige-Fix, repariert bestehende Spielstaende ohne Datenaenderung</div>
@@ -3108,7 +3112,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.7';
+        const VERSION = '0.9.15.8';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -24776,8 +24780,39 @@ Empfohlene Wertebereiche:
                         }
                     }
                     
+                    // LAUFENDE SAISON anhängen (v0.9.15.8): GAME_STATE.history enthält nur
+                    // ABGESCHLOSSENE Saisons — die aktuelle wird erst am Saisonende dort
+                    // eingetragen. Die obere Karriere-Historie ließ sie deshalb weg, während
+                    // die untere Rennergebnisse-Tabelle (liest GAME_STATE.results) sie zeigt.
+                    // Hier die laufende Saison aus dem Live-Stand ergänzen, falls der Fahrer
+                    // dieses Jahr ein Team hat und noch nicht in der History steht.
+                    if (!fullCareer.some(h => h.year === GAME_STATE.currentYear)) {
+                        const _liveDrv = GAME_STATE.drivers.find(d => d.id === driver.id)
+                            || (GAME_STATE.reservePool || []).find(d => d.id === driver.id) || driver;
+                        const _liveStanding = GAME_STATE.driverStandings?.[driver.id];
+                        if (_liveDrv && _liveDrv.team && (!_liveDrv.status || _liveDrv.status === 'active')) {
+                            const _lt = GAME_STATE.teams.find(t => t.id === _liveDrv.team);
+                            const _pos = Object.entries(GAME_STATE.driverStandings || {})
+                                .map(([id, s]) => ({ id, points: s.points || 0 }))
+                                .sort((a, b) => b.points - a.points)
+                                .findIndex(d => d.id === driver.id) + 1;
+                            fullCareer.push({
+                                year: GAME_STATE.currentYear,
+                                team: _lt?.name || '-',
+                                teamId: _lt?.id || _liveDrv.team || null,
+                                teamColor: getTeamColors(_lt?.id || '', GAME_STATE.currentYear, _lt?.color)[0] || ensureReadable(_lt?.color || '#888'),
+                                races: _liveStanding?.races || 0,
+                                wins: _liveStanding?.wins || 0,
+                                podiums: _liveStanding?.podiums || 0,
+                                points: _liveStanding?.points || 0,
+                                position: _liveStanding ? (_pos || '-') : '-',
+                                isHistorical: false, isCurrent: true
+                            });
+                        }
+                    }
+
                     if (fullCareer.length === 0) return '';
-                    
+
                     // Sortiere nach Jahr absteigend
                     fullCareer.sort((a, b) => b.year - a.year);
                     
@@ -26679,8 +26714,38 @@ Empfohlene Wertebereiche:
                 }
             }
             
+            // LAUFENDE SAISON anhängen (v0.9.15.8) — dieselbe Lücke wie im Fahrerprofil:
+            // GAME_STATE.history hat nur abgeschlossene Saisons. Ist das Team dieses Jahr
+            // aktiv, aus dem Live-Stand ergänzen (Fahrer nach Punkten sortiert).
+            if (!teamHistory.some(h => h.year === GAME_STATE.currentYear)) {
+                const _liveTeam = GAME_STATE.teams.find(t => idsToCheck.includes(t.id)
+                    || idsToCheck.map(x => String(x).toLowerCase()).includes(String(t.histId || '').toLowerCase()));
+                if (_liveTeam) {
+                    const _ts = GAME_STATE.teamStandings?.[_liveTeam.id];
+                    const _drvObjs = GAME_STATE.drivers
+                        .filter(d => d.team === _liveTeam.id && (!d.status || d.status === 'active'))
+                        .map(d => {
+                            const w = d.name.trim().split(/\s+/);
+                            return { name: w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : d.name, id: d.id,
+                                points: GAME_STATE.driverStandings?.[d.id]?.points || 0 };
+                        })
+                        .sort((a, b) => (b.points || 0) - (a.points || 0))
+                        .map(d => ({ name: d.name, id: d.id }));
+                    teamHistory.push({
+                        year: GAME_STATE.currentYear,
+                        driverObjs: _drvObjs,
+                        wins: _ts?.wins || 0, podiums: _ts?.podiums || 0, points: _ts?.points || 0,
+                        position: Object.entries(GAME_STATE.teamStandings || {})
+                            .map(([id, s]) => ({ id, points: s.points || 0 }))
+                            .sort((a, b) => b.points - a.points)
+                            .findIndex(t => t.id === _liveTeam.id) + 1,
+                        isHistorical: false, isCurrent: true
+                    });
+                }
+            }
+
             if (teamHistory.length === 0) return '';
-            
+
             // Sortiere nach Jahr absteigend
             teamHistory.sort((a, b) => b.year - a.year);
             
