@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.9</title>
+    <title>F1 RPG v0.9.15.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.9 (aktuell) - 20.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.10 (aktuell) - 20.07.2026</div>
+                            <div>&#8226; FIX: Grid-Fueller aus aelteren Spielstaenden fehlten in Fahrerwertung, Jahres-Uebersicht und Team-Historie - jetzt beim Laden aus den Rennergebnissen rekonstruiert</div>
+                            <div>&#8226; NEU: reine Anzeige-Reparatur, Rennergebnisse bleiben die Wahrheit, kein Gameplay veraendert</div>
+                            <div>&#8226; FIX: betrifft Faelle wie Porsche das mit vielen Fahrern fuhr aber keinen in der Wertung zeigte</div>
+                            <div class="font-bold text-slate-400">v0.9.15.9 - 20.07.2026</div>
                             <div>&#8226; NEU: die laufende Saison in Karriere-Historie und Team-Historie wird mit Stern und oranger Farbe hervorgehoben</div>
                             <div>&#8226; NEU: Tooltip Saison laeuft noch beim Ueberfahren</div>
                             <div class="font-bold text-slate-400">v0.9.15.8 - 20.07.2026</div>
@@ -3115,7 +3119,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.9';
+        const VERSION = '0.9.15.10';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -7018,6 +7022,54 @@
                         }
                     }
                 });
+            }
+
+            // === ANZEIGE-SANITIZE v0.9.15.10: fehlende Wertungs-Einträge in der
+            // History aus den gespeicherten Rennergebnissen rekonstruieren. ===
+            // Grid-Füller (Spielstände vor v0.9.15.6) fuhren, standen aber nicht in
+            // driverStandings → fehlten in Fahrerwertung/Jahres-Übersicht (nicht
+            // anklickbar) und die Team-Historie ließ Fahrer weg. Die Rennergebnisse
+            // (res) SIND die Wahrheit — hier nur die Anzeige-Aggregate nachziehen,
+            // Gameplay bleibt unangetastet. Idempotent: nur fehlende Einträge, echte
+            // Ergebnisse werden nie überschrieben.
+            if (Array.isArray(sanitized.history)) {
+                let rebuilt = 0;
+                for (const season of sanitized.history) {
+                    if (!season || !Array.isArray(season.results)) continue;
+                    season.driverStandings = season.driverStandings || {};
+                    const nameById = {};
+                    (season.drivers || []).forEach(d => { if (d && d.id) nameById[d.id] = d.name; });
+                    for (const race of season.results) {
+                        const entries = race.res || race.results || [];
+                        for (const e of entries) {
+                            const id = e.d || e.driver;
+                            if (!id || e.dnq || e.dnpq) continue;
+                            if (season.driverStandings[id]) continue;   // echter Eintrag → nie anfassen
+                            // fehlt → aus ALLEN Rennen der Saison aggregieren (einmalig)
+                            let pts = 0, races = 0, wins = 0, podiums = 0, fl = 0, dnfs = 0, best = null;
+                            for (const r2 of season.results) {
+                                const m = (r2.res || r2.results || []).find(x => (x.d || x.driver) === id);
+                                if (!m || m.dnq || m.dnpq) continue;
+                                const pos = m.p != null ? m.p : m.position;
+                                races++; pts += (m.pt != null ? m.pt : m.points) || 0;
+                                if (m.dnf || m.fat) dnfs++;
+                                else {
+                                    if (pos === 1) wins++;
+                                    if (pos != null && pos <= 3) podiums++;
+                                    if (pos != null && (best == null || pos < best)) best = pos;
+                                }
+                                if (m.fl) fl++;
+                            }
+                            season.driverStandings[id] = {
+                                name: nameById[id] || id, team: null,
+                                points: pts, wins, podiums, poles: 0, fastestLaps: fl,
+                                dnfs, bestFinish: best, races
+                            };
+                            rebuilt++;
+                        }
+                    }
+                }
+                if (rebuilt) { logInfo('SANITIZE', `${rebuilt} fehlende Wertungs-Einträge aus Rennergebnissen rekonstruiert (Grid-Füller-Historie)`); migrationCount += rebuilt; }
             }
             return sanitized;
         }
