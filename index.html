@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.10</title>
+    <title>F1 RPG v0.9.15.11</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.10 (aktuell) - 20.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.11 (aktuell) - 22.07.2026</div>
+                            <div>&#8226; NEU: Meldeplan steht vor der Saison fest - kein Rennzeit-Wuerfel mehr, rein deterministisch</div>
+                            <div>&#8226; FIX: Lokalgastfahrer (Suedafrika/Rhodesien) melden garantiert und ausschliesslich ihr Heimrennen</div>
+                            <div>&#8226; NEU: Fahrer die 0 Rennen melden wandern in den Reserve-Pool - keine Fahrer mehr die nur mit Strichen in der Liste stehen</div>
+                            <div class="font-bold text-slate-400">v0.9.15.10 - 20.07.2026</div>
                             <div>&#8226; FIX: Grid-Fueller aus aelteren Spielstaenden fehlten in Fahrerwertung, Jahres-Uebersicht und Team-Historie - jetzt beim Laden aus den Rennergebnissen rekonstruiert</div>
                             <div>&#8226; NEU: reine Anzeige-Reparatur, Rennergebnisse bleiben die Wahrheit, kein Gameplay veraendert</div>
                             <div>&#8226; FIX: betrifft Faelle wie Porsche das mit vielen Fahrern fuhr aber keinen in der Wertung zeigte</div>
@@ -3119,7 +3123,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.10';
+        const VERSION = '0.9.15.11';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5852,7 +5856,17 @@
             });
 
             drivers.forEach(d => {
-                if (d.homeOnly) { d.scheduledRaces = null; return; }
+                // homeOnly-Gastfahrer (v0.9.15.11): Heimrennen DETERMINISTISCH in den Plan
+                // schreiben — kein Rennzeit-Würfel mehr (der 80 %-Roll konnte 0 Meldungen
+                // ergeben, Fahrer standen dann nur mit Strichen in der Liste).
+                // Grundphilosophie: der Meldeplan steht VOR der Saison fest; jeder ge-
+                // plante Fahrer meldet garantiert. Ist kein Heimrennen im Kalender, bleibt
+                // der Plan leer → der 0-Meldungs-Pass unten nimmt ihn aus der F1.
+                if (d.homeOnly) {
+                    const home = (d.homeCircuits || []).map(c => String(c).toLowerCase()).filter(c => ids.includes(c));
+                    d.scheduledRaces = home;
+                    return;
+                }
                 if (d.status && d.status !== 'active') { d.scheduledRaces = null; return; }
                 if (d.team && teamPlan[d.team]) {
                     // Werksfahrer eines Kleinstkonstrukteurs: Team-Kalender übernehmen.
@@ -5988,6 +6002,42 @@
             GAME_STATE.drivers = GAME_STATE.drivers.filter(d => !d._gridFiller);
         }
 
+        // === 0-MELDUNGS-PASS (v0.9.15.11) ===
+        // Nach der Meldeplan-Zuteilung: wer 0 Rennen meldet, gehört nicht ins Feld.
+        // Grundphilosophie „jeder geplante Fahrer meldet ≥1 Rennen". Betrifft v. a.
+        // homeOnly-Gastfahrer, deren Heimrennen in dieser Saison gar nicht stattfindet
+        // (z. B. SA-Gast ohne SA-GP im Kalender). Sie bleiben als Reserve verfügbar und
+        // kcommen zurück, sobald ihr Heimrennen wieder gefahren wird.
+        // Werksfahrer (kein scheduledRaces-Array = jedes Rennen) sind nie betroffen.
+        // Kern: findet Fahrer mit Plan aber 0 Meldungen (arbeitet auf beliebigen Arrays).
+        function _findZeroEntryDrivers(drivers, teams, races) {
+            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            if (!cal.length) return [];
+            return (drivers || []).filter(d => {
+                if (!d.team || (d.status && d.status !== 'active')) return false;
+                const t = (teams || []).find(x => x.id === d.team);
+                if (d.isIndyOnly || (t && (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId)))) return false;
+                if (!Array.isArray(d.scheduledRaces)) return false;   // Werksfahrer: jedes Rennen
+                return !cal.some(r => privateerEntersRace(d, r));
+            });
+        }
+
+        // GAME_STATE-Variante (startNewSeason): entfernte Fahrer → Reserve-Pool.
+        function pruneZeroEntryDrivers(year) {
+            const removed = _findZeroEntryDrivers(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races);
+            removed.forEach(d => {
+                d.team = null; d.scheduledRaces = null; d.isReserve = true;
+                d.isPrivateer = false; d.homeOnly = false;
+                if (!(GAME_STATE.reservePool || []).find(x => x.id === d.id)) {
+                    (GAME_STATE.reservePool = GAME_STATE.reservePool || []).push(d);
+                }
+            });
+            if (removed.length) {
+                GAME_STATE.drivers = GAME_STATE.drivers.filter(d => !removed.includes(d));
+                logInfo('POOL', `${removed.length} Fahrer ohne Meldung → Reserve-Pool (${year})`);
+            }
+        }
+
         // === AUTOS JE KONSTRUKTEUR (v0.9.14.96) ===
         // Harte Obergrenze der Meldungen eines Konstrukteurs pro Rennen. Gemessen
         // an F1DB (Ø Autos je Konstrukteur und Rennen / Maximum / Anteil >2):
@@ -6031,20 +6081,18 @@
         // simulateRace UND beiden Live-Ticker-Pfaden benutzt, damit die drei nicht
         // auseinanderlaufen (CLAUDE.md: Modus = Darstellung, nie Konsequenzen).
         // Reihenfolge: homeOnly → Startplan → Alt-Save-Fallback.
+        // [SYNC simulateRace] REIN DETERMINISTISCH (v0.9.15.11): der Meldeplan steht
+        // vor der Saison fest (assignPrivateerSchedules), zur Rennzeit wird nur noch
+        // abgelesen. Kein Würfel — Grundphilosophie „perfekter Plan vor der Saison".
+        // Frühere Zufallszweige (homeOnly 80 %, activityRate) sind raus; sie konnten
+        // 0 Meldungen erzeugen und machten den Plan un-deterministisch.
         function privateerEntersRace(d, race) {
-            if (d.homeOnly) {
-                return (d.homeCircuits?.includes(race.circuitId?.toLowerCase()) ?? false)
-                    && Math.random() < 0.80;
-            }
-            // Startplan gewinnt vor isPrivateer: Werksfahrer von Kleinstkonstrukteuren
-            // haben einen Plan, obwohl sie keine Privateers sind (v0.9.14.93).
             const cid = race.circuitId?.toLowerCase();
+            // Startplan (auch homeOnly + Kleinstkonstrukteur-Werksfahrer) gewinnt.
             if (Array.isArray(d.scheduledRaces)) return cid ? d.scheduledRaces.includes(cid) : false;
-            if (!d.isPrivateer) return true;
-            // Alt-Saves ohne Startplan (vor v0.9.14.90): der frühere Per-Race-Würfel,
-            // damit ein laufender Spielstand nicht plötzlich leere Grids bekommt.
-            // startNewSeason zieht beim nächsten Saisonwechsel einen echten Plan.
-            return Math.random() < (d.activityRate ?? 0.50);
+            // Kein Plan = Werksfahrer → jedes Rennen. (Privateers ohne Plan sind ein
+            // Alt-Save-Rest; startNewSeason zieht beim nächsten Wechsel einen Plan.)
+            return true;
         }
 
         // Fahrer-Nation als IOC-Code. GAME_STATE.drivers mischt zwei Formate:
@@ -6350,6 +6398,10 @@
                 // Startplan für alle übrigen Privateers. MUSS nach der Home-Only-Vergabe
                 // laufen — homeOnly-Fahrer sind ausgenommen, sonst doppelt terminiert.
                 assignPrivateerSchedules(drivers, _races, year, teams);
+                // 0-Meldungs-Pass (v0.9.15.11): Fahrer ohne Heimrennen im Kalender aus
+                // dem Template werfen — sie kommen später via initReservePool zurück.
+                const _zero = _findZeroEntryDrivers(drivers, teams, _races);
+                _zero.forEach(d => { const i = drivers.indexOf(d); if (i >= 0) drivers.splice(i, 1); });
 
                 return {
                     name: `${year}`,
@@ -17928,6 +17980,11 @@
             assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear, GAME_STATE.teams);
             // Feld auf reale Grid-Größe auffüllen (nur wenn der Kader zu dünn ist).
             fillGridEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
+            // JEDER GEPLANTE FAHRER MELDET ≥1 RENNEN (v0.9.15.11).
+            // Wer nach der Zuteilung 0 Meldungen hat (homeOnly ohne Heimrennen im
+            // Kalender, leerer Plan), gehört nicht in die Meldeliste — raus aus der F1,
+            // zurück in den Reserve-Pool. Kein Fahrer mehr, der nur mit Strichen dasteht.
+            pruneZeroEntryDrivers(newYear);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
