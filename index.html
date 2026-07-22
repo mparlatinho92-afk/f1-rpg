@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.11</title>
+    <title>F1 RPG v0.9.15.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.11 (aktuell) - 22.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.12 (aktuell) - 23.07.2026</div>
+                            <div>&#8226; FIX: Fahrer die nur DNQ hatten fehlten in der Fahrerwertung - jetzt zaehlt die Teilnahme am Rennwochenende, nicht nur der Start</div>
+                            <div>&#8226; NEU: Voraussetzung von 3 Rennen bzw. Punkten entfaellt - ein Wochenende (auch DNQ) genuegt fuer die Wertung</div>
+                            <div class="font-bold text-slate-400">v0.9.15.11 - 22.07.2026</div>
                             <div>&#8226; NEU: Meldeplan steht vor der Saison fest - kein Rennzeit-Wuerfel mehr, rein deterministisch</div>
                             <div>&#8226; FIX: Lokalgastfahrer (Suedafrika/Rhodesien) melden garantiert und ausschliesslich ihr Heimrennen</div>
                             <div>&#8226; NEU: Fahrer die 0 Rennen melden wandern in den Reserve-Pool - keine Fahrer mehr die nur mit Strichen in der Liste stehen</div>
@@ -3123,7 +3126,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.11';
+        const VERSION = '0.9.15.12';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -21005,9 +21008,10 @@
             // _avgPos frisch aus Rennergebnissen berechnen (wie Matrix) – robust gegen alte Saves
             // res.p = historische F1DB-Ergebnisse; res.position = Simulations-Ergebnisse → beide abdecken
             const _dsResults = isHistorical ? (historicalViewData?.results || []) : GAME_STATE.results;
-            const _dsStarts = {}, _dsPosSum = {};
+            const _dsStarts = {}, _dsPosSum = {}, _dsWeekends = {};
             // Alle Teams pro Fahrer sammeln (für Mehrfach-Team-Anzeige wie Herbert 1994)
             const _driverTeamsMap = {}; // driverId → Map(key → {id, name})
+            const _bumpWeekend = id => { if (id) _dsWeekends[id] = (_dsWeekends[id] || 0) + 1; };
             _dsResults.forEach(r => {
                 (r.res || r.results || []).forEach(res => {
                     const did = res.d || res.driver;
@@ -21016,6 +21020,9 @@
                         _dsStarts[did]  = (_dsStarts[did]  || 0) + 1;
                         _dsPosSum[did]  = (_dsPosSum[did]  || 0) + pos;
                     }
+                    // Teilnahme am Rennwochenende zählt für die Wertung — auch DNF/DNPQ
+                    // (Nutzer: „solange man einmal am Wochenende teilnimmt, wird man bewertet").
+                    if (!res.dnpq) _bumpWeekend(did);
                     const tnm = res.teamName || res.tmn;
                     const tid = res.team;
                     if (did && tnm) {
@@ -21024,6 +21031,10 @@
                         _driverTeamsMap[did].set(key, { id: tid || null, name: tnm });
                     }
                 });
+                // DNQ/DNPQ-Fahrer nahmen am Wochenende teil, ohne zu starten → mitzählen.
+                (r.dnq || []).forEach(_bumpWeekend);
+                (r.dnpq || []).forEach(_bumpWeekend);
+                (r.res || r.results || []).forEach(res => { if (res.dnpq) _bumpWeekend(res.d || res.driver); });
             });
 
             // Status-Sets für visuelle Markierung (nur aktuelle Saison, nicht historisch)
@@ -21034,10 +21045,11 @@
             const drivers = Object.entries(driverStandings || {})
                 .map(([id, s]) => {
                     const starts = _dsStarts[id] || 0;
-                    return { id, ...s, _starts: starts, _avgPos: starts > 0 ? _dsPosSum[id] / starts : undefined };
+                    return { id, ...s, _starts: starts, _weekends: _dsWeekends[id] || 0, _avgPos: starts > 0 ? _dsPosSum[id] / starts : undefined };
                 })
-                // Alle Fahrer die mindestens 1 Rennen/Qualifying gefahren sind – auch entlassene/verstorbene
-                .filter(d => d._starts > 0 || (d.races || 0) > 0 || d.wins > 0 || d.points > 0)
+                // Wer an mind. 1 Rennwochenende teilnahm (Start, DNF ODER DNQ) wird gewertet
+                // (v0.9.15.12) — vorher zählte nur ein echter Start/Punkt, DNQ-Fahrer fielen raus.
+                .filter(d => d._starts > 0 || d._weekends > 0 || (d.races || 0) > 0 || d.wins > 0 || d.points > 0)
                 .sort(getDriverSortFn());
 
             return `
