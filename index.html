@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.12</title>
+    <title>F1 RPG v0.9.15.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.12 (aktuell) - 23.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.13 (aktuell) - 23.07.2026</div>
+                            <div>&#8226; FIX: suedafrikanische/rhodesische Heimgaeste landeten auf Werksautos zu weit vorn (P5-P8)</div>
+                            <div>&#8226; NEU: Einmal-Heimgaeste fahren schwaecheres Geraet (carSpeed gekappt) - ihr echtes Fahrerkoennen bleibt, aber der Werkswagen-Vorteil faellt weg</div>
+                            <div>&#8226; PRUEFUNG: jetzt Hinterbaenkler mit gelegentlichem Ausreisser, Lederle behaelt seinen historischen Punkt 1962</div>
+                            <div class="font-bold text-slate-400">v0.9.15.12 - 23.07.2026</div>
                             <div>&#8226; FIX: Fahrer die nur DNQ hatten fehlten in der Fahrerwertung - jetzt zaehlt die Teilnahme am Rennwochenende, nicht nur der Start</div>
                             <div>&#8226; NEU: Voraussetzung von 3 Rennen bzw. Punkten entfaellt - ein Wochenende (auch DNQ) genuegt fuer die Wertung</div>
                             <div class="font-bold text-slate-400">v0.9.15.11 - 22.07.2026</div>
@@ -3126,7 +3130,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.12';
+        const VERSION = '0.9.15.13';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -9117,7 +9121,12 @@
                 // Karriere-carSpeed) nur als Fallback, wenn das Team keinen Wert hat – sonst würde ein
                 // Star-Fahrer die carSpeed seines echten Top-Teams zu einem Backmarker mitbringen
                 // (Paket-D HOCH#1, Befund b: „Auto folgt dem Fahrer"). [SYNC simulateRace]
-                const _effCarSpeed  = (team.carSpeed > 0) ? team.carSpeed : ((_prData && _prData[3] > 0) ? _prData[3] : 70);
+                let _effCarSpeed  = (team.carSpeed > 0) ? team.carSpeed : ((_prData && _prData[3] > 0) ? _prData[3] : 70);
+                // Lokalgast-Auto-Malus (v0.9.15.13): Einmal-Heimgäste fuhren privat gemeldete,
+                // ältere Chassis — nicht den aktuellen Werkswagen, auf dem sie in SEASON_DATA
+                // gelistet sind. Ihr Fahrer-Können (effPace/ELO) bleibt echt, aber das GERÄT ist
+                // schwächer. Ohne das trägt ein Werks-BRM/Lotus den Gast zu P5–P8 (Nutzer-Report).
+                if (driver.homeOnly) _effCarSpeed = Math.min(_effCarSpeed, 52);
                 // Konstanz = P(Skill-Zugriff): Schlechter Tag → Pace + Regen komplett weg
                 const _consVal = isRain ? (driver.rain ?? 75) : _effCon;
                 const _isGoodDay = Math.random() < (_consVal / 100);
