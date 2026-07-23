@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.16</title>
+    <title>F1 RPG v0.9.15.17</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.16 (aktuell) - 23.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.17 (aktuell) - 24.07.2026</div>
+                            <div>&#8226; NEU: Ersatzfahrer bei Tod UND Entlassung nutzen dieselbe Logik - echte Aussenwelt-Fahrer (Free Agent/Reserve) bekommen mid-season eine Chance</div>
+                            <div>&#8226; NEU: Zwei Regler - Echt-Anteil (echt vs. generiert) und Abwerben vs. Free Agent</div>
+                            <div>&#8226; FIX: Top-Teams holen keine generierten Debuetanten mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.15.16 - 23.07.2026</div>
                             <div>&#8226; NEU: Granulare KI-Sim-Regeln schon beim Spielstart waehlbar (Neuspiel-Screen), nicht erst beim Saisonwechsel</div>
                             <div class="font-bold text-slate-400">v0.9.15.15 - 23.07.2026</div>
                             <div>&#8226; NEU: KI-Simulation granular - Karriereenden, Entlassungen, Transfers, Tode und Non-WM-Tode einzeln schaltbar (Saison-Start-Dialog)</div>
@@ -3139,7 +3143,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.16';
+        const VERSION = '0.9.15.17';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6235,6 +6239,103 @@
             return Math.max(2, Math.ceil((totalTeams || 0) * 0.3));
         }
 
+        // v0.9.15.17: Tier eines Teams → Rookie-Chance beim Nachbesetzen. Rein nach Standings-Rang.
+        // Top-Tier = 0 (nie generierter Debütant, alter Bug), Mittelfeld 25 %, Backmarker/Kleinst 75 %.
+        function _seatRookieChance(teamId) {
+            const ranking = Object.entries(GAME_STATE.teamStandings || {})
+                .map(([id, s]) => ({ id, points: s.points || 0 }))
+                .sort((a, b) => b.points - a.points);
+            const rank = ranking.findIndex(t => t.id === teamId) + 1;
+            const total = (GAME_STATE.teams || []).length;
+            const top = getTopTeamCount(total);
+            const midEnd = Math.ceil(total * 0.7);
+            if (rank > 0 && rank <= top) return 0;            // Top-Tier: nie Debütant
+            if (rank > top && rank <= midEnd) return 0.25;    // Mittelfeld
+            return 0.75;                                       // Backmarker / Kleinstkonstrukteur
+        }
+
+        // v0.9.15.17: EINE geteilte Ersatzfahrer-Quelle für Tod + Entlassung (+ Live-Ticker-Tod, SYNC).
+        // Der Grund des Ausfalls ist egal – nur die Nachbesetzung zählt, überall identisch.
+        // Zwei Achsen: (1) Tier → Debütant-vs-Erfahren-Slot (_seatRookieChance, Top=0);
+        // (2) zwei Regler simRules.realPreference (echt vs. generiert) + poachPreference
+        //     (Free Agent vs. Abwerben). Echt wird ausgehebelt, wenn kein passender echter Fahrer da
+        //     ist (Auto-Fallback → generieren). Drei Quellen: Free Agent/Reserve-Pool · Abwerben von
+        //     anderem Team (bevorzugt Top-Leistung, Ziel-Team wird nachbesetzt) · Generieren.
+        // Rückgabe: { driver, source, poachedFromTeamId }. driver ist bereits ins Team gesetzt,
+        // Standings angelegt, generierte/aus-Pool geholte in GAME_STATE.drivers verschoben.
+        function acquireSeatDriver(teamId, year, opts = {}) {
+            const { excludeIds = null, dismissedFromTeamId = null, replacedVictim = null, allowPoach = true } = opts;
+            const rules = GAME_STATE.simRules || {};
+            const realPref  = (typeof rules.realPreference  === 'number' ? rules.realPreference  : 100) / 100;
+            const poachPref = (typeof rules.poachPreference === 'number' ? rules.poachPreference :  50) / 100;
+            const team = GAME_STATE.teams.find(t => t.id === teamId);
+            const teamIsIndy = !!team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId));
+            const wantRookie = Math.random() < _seatRookieChance(teamId);
+            const useReal    = Math.random() < realPref;
+
+            const _compat = d => { const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id); return teamIsIndy ? isIndy : !isIndy; };
+            const _excl   = d => !excludeIds || !excludeIds.has(d.id);
+            const _isBeginner = d => d.debutYear && (year - d.debutYear) < 1;
+            const _effPace = d => { const cur = d.currentPace || d.pace || 0; return cur * 0.7 + (d.potentialPace || cur) * 0.3; };
+            const _ensureStanding = (d, tid) => {
+                if (!GAME_STATE.driverStandings[d.id])
+                    GAME_STATE.driverStandings[d.id] = { name: d.name, team: tid, points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null };
+                GAME_STATE.driverStandings[d.id].team = tid;
+            };
+            const _mark = d => { if (replacedVictim) { d.replacedDriver = replacedVictim.id; d.replacedDriverName = replacedVictim.name; d.replacedInYear = year; } };
+
+            let picked = null, source = null, poachedFromTeamId = null;
+
+            if (useReal) {
+                // Echte Fahrer OHNE Cockpit: aktive Free Agents + Reserve-Pool (Außenwelt)
+                const noCockpit = [
+                    ...GAME_STATE.drivers.filter(d => !d.team && (!d.status || d.status === 'active') && _compat(d) && _excl(d)
+                        && (dismissedFromTeamId ? d._dismissedFromTeam !== dismissedFromTeamId : true)),
+                    ...(GAME_STATE.reservePool || []).filter(p => !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
+                ];
+                const profile = arr => wantRookie ? arr.filter(_isBeginner) : arr.filter(d => !_isBeginner(d));
+                const freeReal = profile(noCockpit).sort((a, b) => _effPace(b) - _effPace(a));
+
+                // Abwerben nur für Erfahren-Slots (Top-Leistung zuerst)
+                let poachReal = [];
+                if (allowPoach && !wantRookie) {
+                    poachReal = GAME_STATE.drivers.filter(d => d.team && d.team !== teamId && (!d.status || d.status === 'active')
+                        && _compat(d) && _excl(d) && !_isBeginner(d)).sort((a, b) => _effPace(b) - _effPace(a));
+                }
+
+                const preferPoach = Math.random() < poachPref;
+                const order = (preferPoach && poachReal.length) ? ['poach', 'free'] : ['free', 'poach'];
+                for (const src of order) {
+                    if (src === 'free'  && freeReal.length)  { picked = freeReal[0];  source = 'freeagent'; break; }
+                    if (src === 'poach' && poachReal.length) { picked = poachReal[0]; poachedFromTeamId = picked.team; source = 'poach'; break; }
+                }
+            }
+
+            if (picked) {
+                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(p => p !== picked);
+                if (!GAME_STATE.drivers.some(d => d === picked)) GAME_STATE.drivers.push(picked);
+                picked.status = 'active';
+                picked.isReserve = false;
+                picked.team = teamId;
+                picked.contractEnd = picked.contractEnd || (year + 1);
+                _mark(picked);
+                _ensureStanding(picked, teamId);
+                if (poachedFromTeamId) {
+                    // Abgeworbenes Team nachbesetzen – eine Ebene, keine Kette (allowPoach:false)
+                    const bf = acquireSeatDriver(poachedFromTeamId, year, { excludeIds, allowPoach: false });
+                    logInfo('DRIVER', `${GAME_STATE.teams.find(t => t.id === poachedFromTeamId)?.name || '?'}: ${bf.driver.name} (Backfill nach Abwerbung)`);
+                }
+                return { driver: picked, source, poachedFromTeamId };
+            }
+
+            // Generieren (echt nicht gewählt ODER keiner verfügbar = Auto-Fallback)
+            const gen = generateDriver(teamId, year, wantRookie);
+            _mark(gen);
+            GAME_STATE.drivers.push(gen);
+            _ensureStanding(gen, teamId);
+            return { driver: gen, source: wantRookie ? 'gen-rookie' : 'gen-exp', poachedFromTeamId: null };
+        }
+
         // v0.6.5: Universelle Ersatzfahrer-Suche (Mid-Season & Saisonende)
         // Holt erfahrenen Fahrer: 1. Arbeitslos, 2. Von niedrigerem Team "klauen"
         function findReplacementDriver(targetTeamId, year, minExperience = 1, excludeDriverIds = null) {
@@ -6442,7 +6543,7 @@
             deathRealism: 100,  // Default: 100% = Ära-Wert
             aiSimulation: true,   // Master-Preset (steuert simRules via UI-Toggle)
             // v0.9.15.15: granulare KI-Sim-Regeln – jede Mechanik einzeln schaltbar
-            simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true },
+            simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, realPreference: 100, poachPreference: 50 },
             liveTickerMode: false,  // v0.8.0: Live-Ticker vs. Klassische Simulation
             
             // Aktuelle Saison-Daten
@@ -6606,6 +6707,9 @@
                 ['careerEnd', 'dismissalMid', 'transferSeasonEnd', 'deaths', 'nonWmDeaths'].forEach(k => {
                     if (typeof _sr[k] !== 'boolean') _sr[k] = _on;
                 });
+                // v0.9.15.17: Ersatzfahrer-Regler (0–100). Fehlen in Alt-Ständen → sinnvolle Defaults.
+                if (typeof _sr.realPreference  !== 'number') _sr.realPreference  = 100;
+                if (typeof _sr.poachPreference !== 'number') _sr.poachPreference = 50;
                 sanitized.simRules = _sr;
             }
             sanitized.liveTickerMode = sanitized.liveTickerMode ?? false;  // v0.8.0
@@ -8624,7 +8728,7 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: 100,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
-                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true },  // v0.9.15.15
+                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, realPreference: 100, poachPreference: 50 },  // v0.9.15.15
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
                 juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
 
@@ -8712,7 +8816,7 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: existingDnfRate,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
-                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true },  // v0.9.15.15
+                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, realPreference: 100, poachPreference: 50 },  // v0.9.15.15
                 rookieProtection: false,
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
                 juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
@@ -9363,191 +9467,27 @@
 
                             logError('DEATH', `💀 ${driver.name} ist im Rennen bei ${race.name} tödlich verunglückt`);
                             
-                            // v0.6.5: KORREKTE Ersatzfahrer-Logik
-                            // Top-Teams "klauen" Fahrer von unten, Mittelfeld kann Rookie bekommen
-                            const teamRanking = Object.entries(GAME_STATE.teamStandings)
-                                .map(([id, s]) => ({ id, points: s.points || 0 }))
-                                .sort((a, b) => b.points - a.points);
-                            const teamRank = teamRanking.findIndex(t => t.id === driver.team) + 1;
-                            const totalTeams = GAME_STATE.teams.length;
-                            
-                            // Tier bestimmen (Top-Teams, Mittelfeld, Backmarker)
-                            const topTeamCount = getTopTeamCount(totalTeams);
-                            const midTeamEnd = Math.ceil(totalTeams * 0.7);
-                            const isTopTeam = teamRank > 0 && teamRank <= topTeamCount;
-                            const isMidTeam = teamRank > topTeamCount && teamRank <= midTeamEnd;
-                            
-                            const driverTeam = GAME_STATE.teams.find(t => t.id === driver.team);
-                            const tierText = isTopTeam ? '🏆 Top' : isMidTeam ? '📊 Mid' : '📉 Back';
-                            
-                            if (isTopTeam) {
-                                // === TOP-TEAM: Fahrer von unten "klauen" (NIEMALS Rookie) ===
-                                // v0.6.5c: Strikte Suche mit absteigenden Anforderungen
-                                // v0.6.8: Bereits verwendete Fahrer ausschließen
-                                let replacement = findReplacementDriver(driver.team, GAME_STATE.currentYear, 2, usedReplacementsThisRace);
-                                if (!replacement) replacement = findReplacementDriver(driver.team, GAME_STATE.currentYear, 1, usedReplacementsThisRace);
-                                if (!replacement) replacement = findReplacementDriver(driver.team, GAME_STATE.currentYear, 0, usedReplacementsThisRace);
-                                
-                                let actualReplacementDriver = null; // v0.6.8: Für seasonDeaths
-                                
-                                if (replacement && replacement.previousTeam) {
-                                    // Fahrer wurde von anderem Team geholt
-                                    replacement.driver.replacedDriver = driver.id;
-                                    replacement.driver.replacedDriverName = driver.name;
-                                    replacement.driver.replacedInYear = GAME_STATE.currentYear; // v0.6.7: Tracking wann ersetzt
-                                    actualReplacementDriver = replacement.driver;
-                                    
-                                    // Standings aktualisieren
-                                    GAME_STATE.driverStandings[replacement.driver.id] = GAME_STATE.driverStandings[replacement.driver.id] || {
-                                        name: replacement.driver.name,
-                                        team: replacement.driver.team,
-                                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                                    };
-                                    GAME_STATE.driverStandings[replacement.driver.id].team = driver.team;
-                                    
-                                    logInfo('TRANSFER', `⬆️ ${replacement.driver.name} ersetzt ${driver.name} bei ${driverTeam.name}`);
-                                    
-                                    // === FREIGEWORDENER PLATZ BEIM UNTEREN TEAM ===
-                                    // Bestimme Tier des vorherigen Teams
-                                    const prevTeamRank = teamRanking.findIndex(t => t.id === replacement.previousTeam.id) + 1;
-                                    const prevIsTopTeam = prevTeamRank > 0 && prevTeamRank <= topTeamCount;
-                                    const prevIsMidTeam = prevTeamRank > topTeamCount && prevTeamRank <= midTeamEnd;
-                                    
-                                    let backfillMidDriver = null;
-                                    let backfillMidIsExisting = false;
-                                    
-                                    if (prevIsTopTeam) {
-                                        // v0.6.5d: Top-Team Backfill → arbeitsloser Fahrer oder generiert (keine Kette!)
-                                        const unemployed = GAME_STATE.drivers.filter(d =>
-                                            (!d.status || d.status === 'active') &&
-                                            !d.team &&
-                                            d.debutYear && (GAME_STATE.currentYear - d.debutYear) >= 1 &&
-                                            d.currentPace >= 70
-                                        );
-                                        
-                                        if (unemployed.length > 0) {
-                                            unemployed.sort((a, b) => (b.currentPace || b.pace) - (a.currentPace || a.pace));
-                                            backfillMidDriver = unemployed[0];
-                                            backfillMidDriver.team = replacement.previousTeam.id;
-                                            backfillMidDriver.contractEnd = GAME_STATE.currentYear + 1;
-                                            backfillMidIsExisting = true;
-                                        } else {
-                                            backfillMidDriver = generateDriver(replacement.previousTeam.id, GAME_STATE.currentYear, false);
-                                        }
-                                    } else {
-                                        let rookieChance = 0;
-                                        if (prevIsMidTeam) {
-                                            rookieChance = 0.25;
-                                        } else {
-                                            rookieChance = 0.75;
-                                        }
-                                        const isRookie = Math.random() < rookieChance;
-                                        backfillMidDriver = generateDriver(replacement.previousTeam.id, GAME_STATE.currentYear, isRookie);
-                                    }
-                                    
-                                    backfillMidDriver.replacedDriver = replacement.driver.id;
-                                    backfillMidDriver.replacedDriverName = replacement.driver.name;
-                                    backfillMidDriver.replacedInYear = GAME_STATE.currentYear; // v0.6.7: Tracking wann ersetzt
-                                    
-                                    if (!backfillMidIsExisting) {
-                                        GAME_STATE.drivers.push(backfillMidDriver);
-                                    }
-                                    
-                                    GAME_STATE.driverStandings[backfillMidDriver.id] = {
-                                        name: backfillMidDriver.name, team: backfillMidDriver.team,
-                                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                                    };
-                                    
-                                    const prevTierText = prevIsTopTeam ? '🏆 Top' : prevIsMidTeam ? '📊 Mid' : '📉 Back';
-                                    logInfo('DRIVER', `${prevTierText} ${replacement.previousTeam.name}: ${backfillMidDriver.name} (Backfill)`);
-                                    
-                                } else if (replacement && replacement.driver) {
-                                    // Arbeitsloser Fahrer geholt
-                                    replacement.driver.replacedDriver = driver.id;
-                                    replacement.driver.replacedDriverName = driver.name;
-                                    replacement.driver.replacedInYear = GAME_STATE.currentYear; // v0.6.7: Tracking wann ersetzt
-                                    actualReplacementDriver = replacement.driver;
-                                    
-                                    GAME_STATE.driverStandings[replacement.driver.id] = {
-                                        name: replacement.driver.name, team: replacement.driver.team,
-                                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                                    };
-                                    
-                                    logInfo('DRIVER', `${tierText} ${driverTeam.name}: Arbeitsloser ${replacement.driver.name} geholt`);
-                                } else {
-                                    // KRITISCH: Sollte NIE passieren bei Top-Teams!
-                                    logError('DRIVER', `⚠️ KRITISCH: Top-Team ${driverTeam.name} konnte keinen Fahrer finden!`);
-                                    // Notfall: Erfahrenen generieren (sollte nie vorkommen)
-                                    const fallbackDriver = generateDriver(driver.team, GAME_STATE.currentYear, false);
-                                    fallbackDriver.replacedDriver = driver.id;
-                                    fallbackDriver.replacedDriverName = driver.name;
-                                    fallbackDriver.replacedInYear = GAME_STATE.currentYear; // v0.6.7: Tracking wann ersetzt
-                                    actualReplacementDriver = fallbackDriver;
-                                    GAME_STATE.drivers.push(fallbackDriver);
-                                    
-                                    GAME_STATE.driverStandings[fallbackDriver.id] = {
-                                        name: fallbackDriver.name, team: fallbackDriver.team,
-                                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                                    };
-                                    
-                                    logError('DRIVER', `⚠️ ${tierText} ${driverTeam.name}: NOTFALL-Fahrer ${fallbackDriver.name} generiert!`);
-                                }
-                                
-                                // v0.6.8: Tod in seasonDeaths speichern (Top-Team Pfad)
-                                if (actualReplacementDriver) {
-                                    // Markiere als verwendet in diesem Rennen
-                                    usedReplacementsThisRace.add(actualReplacementDriver.id);
-                                    
-                                    GAME_STATE.seasonDeaths.push({
-                                        driver: driver.id,
-                                        name: driver.name,
-                                        team: driverTeam?.name || '-',
-                                        race: raceIndex,
-                                        raceName: race.name,
-                                        raceCountry: race.country,
-                                        fatalSession: 'race',
-                                        replacement: actualReplacementDriver.name,
-                                        replacementId: actualReplacementDriver.id,
-                                        replacementTeam: actualReplacementDriver.team
-                                    });
-                                }
-                                
-                            } else {
-                                // === MITTELFELD/BACKMARKER: Normale Rookie-Verteilung ===
-                                let rookieChance = isMidTeam ? 0.25 : 0.75;
-                                const isRookie = Math.random() < rookieChance;
-                                
-                                const replacement = generateDriver(driver.team, GAME_STATE.currentYear, isRookie);
-                                replacement.replacedDriver = driver.id;
-                                replacement.replacedDriverName = driver.name;
-                                replacement.replacedInYear = GAME_STATE.currentYear; // v0.6.7: Tracking wann ersetzt
-                                GAME_STATE.drivers.push(replacement);
-                                
-                                GAME_STATE.driverStandings[replacement.id] = {
-                                    name: replacement.name, team: replacement.team,
-                                    points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                                };
-                                
-                                const typeText = isRookie ? 'Rookie' : 'Erfahrener';
-                                logInfo('DRIVER', `${tierText} ${driverTeam.name}: ${typeText} ${replacement.name} (${rookieChance * 100}% Rookie-Chance)`);
-                                
-                                // v0.6.8: Markiere als verwendet in diesem Rennen
-                                usedReplacementsThisRace.add(replacement.id);
-                                
-                                // v0.6.8: Tod in seasonDeaths speichern (Mittelfeld/Backmarker Pfad)
-                                GAME_STATE.seasonDeaths.push({
-                                    driver: driver.id,
-                                    name: driver.name,
-                                    team: driverTeam?.name || '-',
-                                    race: raceIndex,
-                                    raceName: race.name,
-                                    raceCountry: race.country,
-                                    fatalSession: 'race',
-                                    replacement: replacement.name,
-                                    replacementId: replacement.id,
-                                    replacementTeam: replacement.team
-                                });
-                            }
+                            // v0.9.15.17: geteilte Ersatzfahrer-Quelle (Tier + realPreference + poachPreference).
+                            // Ersetzt die alte top/mid/back-Verzweigung; Tier + Top=0 stecken im Helper.
+                            const _victimTeam = GAME_STATE.teams.find(t => t.id === driver.team);
+                            const _rep = acquireSeatDriver(driver.team, GAME_STATE.currentYear, {
+                                excludeIds: usedReplacementsThisRace,
+                                replacedVictim: { id: driver.id, name: driver.name }
+                            });
+                            usedReplacementsThisRace.add(_rep.driver.id);
+                            logInfo('DRIVER', `${_victimTeam?.name || '?'}: ${_rep.driver.name} ersetzt ${driver.name} (${_rep.source})`);
+                            GAME_STATE.seasonDeaths.push({
+                                driver: driver.id,
+                                name: driver.name,
+                                team: _victimTeam?.name || '-',
+                                race: raceIndex,
+                                raceName: race.name,
+                                raceCountry: race.country,
+                                fatalSession: 'race',
+                                replacement: _rep.driver.name,
+                                replacementId: _rep.driver.id,
+                                replacementTeam: _rep.driver.team
+                            });
                         }
                 }
             }
@@ -9877,15 +9817,7 @@
                     victim.deathRace = race.name;
                     logError('DEATH', `💀 ${victim.name} ist im Training bei ${race.name} tödlich verunglückt`);
 
-                    const replacement = generateDriver(victim.team, year, Math.random() < 0.5);
-                    replacement.replacedDriver = victim.id;
-                    replacement.replacedDriverName = victim.name;
-                    replacement.replacedInYear = year;
-                    GAME_STATE.drivers.push(replacement);
-                    GAME_STATE.driverStandings[replacement.id] = {
-                        name: replacement.name, team: replacement.team,
-                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                    };
+                    const _rep = acquireSeatDriver(victim.team, year, { replacedVictim: { id: victim.id, name: victim.name } });
 
                     if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
                     GAME_STATE.seasonDeaths.push({
@@ -9896,9 +9828,9 @@
                         raceName: race.name,
                         raceCountry: race.country,
                         fatalSession: 'training',
-                        replacement: replacement.name,
-                        replacementId: replacement.id,
-                        replacementTeam: replacement.team
+                        replacement: _rep.driver.name,
+                        replacementId: _rep.driver.id,
+                        replacementTeam: _rep.driver.team
                     });
                 }
             }
@@ -10101,15 +10033,7 @@
                     victim.deathRace = race.name;
                     logError('DEATH', `💀 ${victim.name} ist im Qualifying bei ${race.name} tödlich verunglückt`);
 
-                    const replacement = generateDriver(victim.team, year, Math.random() < 0.5);
-                    replacement.replacedDriver = victim.id;
-                    replacement.replacedDriverName = victim.name;
-                    replacement.replacedInYear = year;
-                    GAME_STATE.drivers.push(replacement);
-                    GAME_STATE.driverStandings[replacement.id] = {
-                        name: replacement.name, team: replacement.team,
-                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                    };
+                    const _rep = acquireSeatDriver(victim.team, year, { replacedVictim: { id: victim.id, name: victim.name } });
 
                     if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
                     GAME_STATE.seasonDeaths.push({
@@ -10120,9 +10044,9 @@
                         raceName: race.name,
                         raceCountry: race.country,
                         fatalSession: 'qualifying',
-                        replacement: replacement.name,
-                        replacementId: replacement.id,
-                        replacementTeam: replacement.team
+                        replacement: _rep.driver.name,
+                        replacementId: _rep.driver.id,
+                        replacementTeam: _rep.driver.team
                     });
                 }
             }
@@ -12053,175 +11977,27 @@
                     
                     logError('DEATH', `💀 ${driver.name} ist bei ${race.name} tödlich verunglückt`);
                     
-                    // Ersatzfahrer-Logik (identisch zu simulateRace)
-                    const teamRanking = Object.entries(GAME_STATE.teamStandings)
-                        .map(([id, s]) => ({ id, points: s.points || 0 }))
-                        .sort((a, b) => b.points - a.points);
-                    const teamRank = teamRanking.findIndex(t => t.id === driver.team) + 1;
-                    const totalTeams = GAME_STATE.teams.length;
-                    
-                    const topTeamCount = getTopTeamCount(totalTeams);
-                    const midTeamEnd = Math.ceil(totalTeams * 0.7);
-                    const isTopTeam = teamRank > 0 && teamRank <= topTeamCount;
-                    const isMidTeam = teamRank > topTeamCount && teamRank <= midTeamEnd;
-                    
-                    const driverTeam = GAME_STATE.teams.find(t => t.id === driver.team);
-                    const tierText = isTopTeam ? '🏆 Top' : isMidTeam ? '📊 Mid' : '📉 Back';
-                    
-                    if (isTopTeam) {
-                        // TOP-TEAM: Fahrer von unten "klauen"
-                        let replacement = findReplacementDriver(driver.team, GAME_STATE.currentYear, 2, usedReplacementsThisRace);
-                        if (!replacement) replacement = findReplacementDriver(driver.team, GAME_STATE.currentYear, 1, usedReplacementsThisRace);
-                        if (!replacement) replacement = findReplacementDriver(driver.team, GAME_STATE.currentYear, 0, usedReplacementsThisRace);
-                        
-                        let actualReplacementDriver = null;
-                        
-                        if (replacement && replacement.previousTeam) {
-                            // Fahrer wurde von anderem Team geholt
-                            replacement.driver.replacedDriver = driver.id;
-                            replacement.driver.replacedDriverName = driver.name;
-                            replacement.driver.replacedInYear = GAME_STATE.currentYear;
-                            actualReplacementDriver = replacement.driver;
-                            
-                            GAME_STATE.driverStandings[replacement.driver.id] = GAME_STATE.driverStandings[replacement.driver.id] || {
-                                name: replacement.driver.name,
-                                team: replacement.driver.team,
-                                points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                            };
-                            GAME_STATE.driverStandings[replacement.driver.id].team = driver.team;
-                            
-                            logInfo('TRANSFER', `⬆️ ${replacement.driver.name} ersetzt ${driver.name} bei ${driverTeam.name}`);
-                            
-                            // Freigewordener Platz beim unteren Team
-                            const prevTeamRank = teamRanking.findIndex(t => t.id === replacement.previousTeam.id) + 1;
-                            const prevIsTopTeam = prevTeamRank > 0 && prevTeamRank <= topTeamCount;
-                            const prevIsMidTeam = prevTeamRank > topTeamCount && prevTeamRank <= midTeamEnd;
-                            
-                            let backfillMidDriver = null;
-                            let backfillMidIsExisting = false;
-                            
-                            if (prevIsTopTeam) {
-                                const unemployed = GAME_STATE.drivers.filter(d =>
-                                    (!d.status || d.status === 'active') &&
-                                    !d.team &&
-                                    d.debutYear && (GAME_STATE.currentYear - d.debutYear) >= 1 &&
-                                    d.currentPace >= 70
-                                );
-                                
-                                if (unemployed.length > 0) {
-                                    unemployed.sort((a, b) => (b.currentPace || b.pace) - (a.currentPace || a.pace));
-                                    backfillMidDriver = unemployed[0];
-                                    backfillMidDriver.team = replacement.previousTeam.id;
-                                    backfillMidDriver.contractEnd = GAME_STATE.currentYear + 1;
-                                    backfillMidIsExisting = true;
-                                } else {
-                                    backfillMidDriver = generateDriver(replacement.previousTeam.id, GAME_STATE.currentYear, false);
-                                }
-                            } else {
-                                let rookieChance = prevIsMidTeam ? 0.25 : 0.75;
-                                const isRookie = Math.random() < rookieChance;
-                                backfillMidDriver = generateDriver(replacement.previousTeam.id, GAME_STATE.currentYear, isRookie);
-                            }
-                            
-                            backfillMidDriver.replacedDriver = replacement.driver.id;
-                            backfillMidDriver.replacedDriverName = replacement.driver.name;
-                            backfillMidDriver.replacedInYear = GAME_STATE.currentYear;
-                            
-                            if (!backfillMidIsExisting) {
-                                GAME_STATE.drivers.push(backfillMidDriver);
-                            }
-                            
-                            GAME_STATE.driverStandings[backfillMidDriver.id] = {
-                                name: backfillMidDriver.name, team: backfillMidDriver.team,
-                                points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                            };
-                            
-                            const prevTierText = prevIsTopTeam ? '🏆 Top' : prevIsMidTeam ? '📊 Mid' : '📉 Back';
-                            logInfo('DRIVER', `${prevTierText} ${replacement.previousTeam.name}: ${backfillMidDriver.name} (Backfill)`);
-                            
-                        } else if (replacement && replacement.driver) {
-                            // Arbeitsloser Fahrer geholt
-                            replacement.driver.replacedDriver = driver.id;
-                            replacement.driver.replacedDriverName = driver.name;
-                            replacement.driver.replacedInYear = GAME_STATE.currentYear;
-                            actualReplacementDriver = replacement.driver;
-                            
-                            GAME_STATE.driverStandings[replacement.driver.id] = {
-                                name: replacement.driver.name, team: replacement.driver.team,
-                                points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                            };
-                            
-                            logInfo('DRIVER', `${tierText} ${driverTeam.name}: Arbeitsloser ${replacement.driver.name} geholt`);
-                        } else {
-                            // Notfall: Erfahrenen generieren
-                            const fallbackDriver = generateDriver(driver.team, GAME_STATE.currentYear, false);
-                            fallbackDriver.replacedDriver = driver.id;
-                            fallbackDriver.replacedDriverName = driver.name;
-                            fallbackDriver.replacedInYear = GAME_STATE.currentYear;
-                            actualReplacementDriver = fallbackDriver;
-                            GAME_STATE.drivers.push(fallbackDriver);
-                            
-                            GAME_STATE.driverStandings[fallbackDriver.id] = {
-                                name: fallbackDriver.name, team: fallbackDriver.team,
-                                points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                            };
-                            
-                            logError('DRIVER', `⚠️ ${tierText} ${driverTeam.name}: NOTFALL-Fahrer ${fallbackDriver.name} generiert!`);
-                        }
-                        
-                        if (actualReplacementDriver) {
-                            usedReplacementsThisRace.add(actualReplacementDriver.id);
-                            
-                            if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
-                            GAME_STATE.seasonDeaths.push({
-                                driver: driver.id,
-                                name: driver.name,
-                                team: driverTeam?.name || '-',
-                                race: liveRaceState.raceIndex,
-                                raceName: race.name,
-                                raceCountry: race.country,
-                                fatalSession: p.fatalSession || 'race',
-                                replacement: actualReplacementDriver.name,
-                                replacementId: actualReplacementDriver.id,
-                                replacementTeam: actualReplacementDriver.team
-                            });
-                        }
-                        
-                    } else {
-                        // MITTELFELD/BACKMARKER: Normale Rookie-Verteilung
-                        let rookieChance = isMidTeam ? 0.25 : 0.75;
-                        const isRookie = Math.random() < rookieChance;
-                        
-                        const replacement = generateDriver(driver.team, GAME_STATE.currentYear, isRookie);
-                        replacement.replacedDriver = driver.id;
-                        replacement.replacedDriverName = driver.name;
-                        replacement.replacedInYear = GAME_STATE.currentYear;
-                        GAME_STATE.drivers.push(replacement);
-                        
-                        GAME_STATE.driverStandings[replacement.id] = {
-                            name: replacement.name, team: replacement.team,
-                            points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                        };
-                        
-                        const typeText = isRookie ? 'Rookie' : 'Erfahrener';
-                        logInfo('DRIVER', `${tierText} ${driverTeam.name}: ${typeText} ${replacement.name} (${rookieChance * 100}% Rookie-Chance)`);
-                        
-                        usedReplacementsThisRace.add(replacement.id);
-                        
-                        if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
-                        GAME_STATE.seasonDeaths.push({
-                            driver: driver.id,
-                            name: driver.name,
-                            team: driverTeam?.name || '-',
-                            race: liveRaceState.raceIndex,
-                            raceName: race.name,
-                            raceCountry: race.country,
-                            fatalSession: p.fatalSession || 'race',
-                            replacement: replacement.name,
-                            replacementId: replacement.id,
-                            replacementTeam: replacement.team
-                        });
-                    }
+                    // v0.9.15.17: geteilte Ersatzfahrer-Quelle (SYNC mit simulateRace) – Tier + Regler im Helper.
+                    const _victimTeam = GAME_STATE.teams.find(t => t.id === driver.team);
+                    const _rep = acquireSeatDriver(driver.team, GAME_STATE.currentYear, {
+                        excludeIds: usedReplacementsThisRace,
+                        replacedVictim: { id: driver.id, name: driver.name }
+                    });
+                    usedReplacementsThisRace.add(_rep.driver.id);
+                    logInfo('DRIVER', `${_victimTeam?.name || '?'}: ${_rep.driver.name} ersetzt ${driver.name} (${_rep.source})`);
+                    if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
+                    GAME_STATE.seasonDeaths.push({
+                        driver: driver.id,
+                        name: driver.name,
+                        team: _victimTeam?.name || '-',
+                        race: liveRaceState.raceIndex,
+                        raceName: race.name,
+                        raceCountry: race.country,
+                        fatalSession: p.fatalSession || 'race',
+                        replacement: _rep.driver.name,
+                        replacementId: _rep.driver.id,
+                        replacementTeam: _rep.driver.team
+                    });
                 });
             }
             
@@ -15191,67 +14967,18 @@
                     reason: `Mid-Season entlassen (Score ${(ss.seasonScore*100).toFixed(0)}, Kollegen +${(delta*100).toFixed(0)})`
                 };
 
-                // === ERSATZ ===
-                const _compat = d => {
-                    const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id);
-                    return teamIsIndy ? isIndy : !isIndy;
-                };
-
-                const _effPace = d => {
-                    const cur = d.currentPace || d.pace || 0;
-                    return cur * 0.7 + (d.potentialPace || cur) * 0.3;
-                };
-
-                // Andere Teams können sofort entlassene Fahrer verpflichten – außer beim Team das ihn entlassen hat
-                const freeAgents = activeDrivers.filter(d =>
-                    !d.team && d.id !== driver.id && _compat(d) && d._dismissedFromTeam !== oldTeam?.id
-                ).sort((a, b) => _effPace(b) - _effPace(a));
-
-                const poolCandidates = (GAME_STATE.reservePool || []).filter(p =>
-                    !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p)
-                ).sort((a, b) => _effPace(b) - _effPace(a));
-
-                if (freeAgents.length > 0) {
-                    const rep = freeAgents[0];
-                    _dismissalEntry.replacementName = rep.name;
-                    _dismissalEntry.replacementId = rep.id;
-                    rep.team = oldTeam.id;
-                    rep.contractEnd = currentYear;
-                    if (!GAME_STATE.driverStandings[rep.id])
-                        GAME_STATE.driverStandings[rep.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0 };
-                    GAME_STATE.driverStandings[rep.id].team = oldTeam.id;
-                    logInfo('TRANSFER', `➡️ ${rep.name} (FA) → ${oldTeam?.name} (ersetzt ${driver.name})`);
-                } else if (poolCandidates.length > 0) {
-                    const rep = poolCandidates[0];
-                    GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x !== rep);
-                    const nd = { ...rep, team: oldTeam.id, isReserve: false, contractEnd: currentYear };
-                    if (nd.histId && typeof PACE_RATINGS !== 'undefined') {
-                        const pr = PACE_RATINGS[nd.histId]?.[String(currentYear)] ?? null;
-                        if (pr) { nd.pace = pr[0]; nd.currentPace = pr[0]; nd.potentialPace = pr[1]; }
-                    }
-                    if (!GAME_STATE.driverStandings[nd.id])
-                        GAME_STATE.driverStandings[nd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0 };
-                    GAME_STATE.driverStandings[nd.id].team = oldTeam.id;
-                    GAME_STATE.drivers.push(nd);
-                    _dismissalEntry.replacementName = nd.name;
-                    _dismissalEntry.replacementId = nd.id;
-                    logInfo('TRANSFER', `➡️ ${nd.name} (Pool) → ${oldTeam?.name} (ersetzt ${driver.name})`);
-                } else if (oldTeam) {
-                    // Kein Free Agent, kein Pool-Kandidat (z.B. Pool nach SEASON_DATA-Horizont
-                    // erschöpft) → fiktiven Fahrer generieren statt den Sitz leer zu lassen.
-                    const nd = generateDriver(oldTeam.id, currentYear, Math.random() < 0.5);
-                    nd.contractEnd = currentYear;
-                    nd.replacedDriver = driver.id;
-                    nd.replacedDriverName = driver.name;
-                    nd.replacedInYear = currentYear;
-                    GAME_STATE.drivers.push(nd);
-                    GAME_STATE.driverStandings[nd.id] = {
-                        name: nd.name, team: nd.team,
-                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                    };
-                    _dismissalEntry.replacementName = nd.name;
-                    _dismissalEntry.replacementId = nd.id;
-                    logInfo('TRANSFER', `➡️ ${nd.name} (neu) → ${oldTeam.name} (ersetzt ${driver.name})`);
+                // === ERSATZ (v0.9.15.17: geteilt mit dem Todes-Pfad via acquireSeatDriver) ===
+                // Gleiche Logik egal warum der Sitz frei wurde: Tier + realPreference + poachPreference.
+                // dismissedFromTeamId verhindert, dass der eben Entlassene sofort zurückgeholt wird.
+                if (oldTeam) {
+                    const _rep = acquireSeatDriver(oldTeam.id, currentYear, {
+                        dismissedFromTeamId: oldTeam.id,
+                        replacedVictim: { id: driver.id, name: driver.name }
+                    });
+                    _rep.driver.contractEnd = currentYear;
+                    _dismissalEntry.replacementName = _rep.driver.name;
+                    _dismissalEntry.replacementId = _rep.driver.id;
+                    logInfo('TRANSFER', `➡️ ${_rep.driver.name} (${_rep.source}) → ${oldTeam.name} (ersetzt ${driver.name})`);
                 }
 
                 GAME_STATE.seasonRetirements.push(_dismissalEntry);
@@ -18693,7 +18420,15 @@
                                     <span class="text-sm">💀 Non-WM-Tode (außerhalb der Meisterschaft)</span>
                                 </label>
                             </div>
-                            <p class="text-xs text-tertiary mt-2">Alles aus = historischer Modus (fester Meldeplan). Vor jeder weiteren Saison erneut änderbar.</p>
+                            <div class="mt-3">
+                                <label class="text-sm flex justify-between"><span>🎭 Echt-Anteil (Free Agent/Reserve vs. generiert)</span><span id="simRealPrefVal">${GAME_STATE.simRules?.realPreference ?? 100}%</span></label>
+                                <input type="range" id="simRealPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.realPreference ?? 100}" class="w-full" oninput="document.getElementById('simRealPrefVal').textContent=this.value+'%'">
+                            </div>
+                            <div class="mt-2">
+                                <label class="text-sm flex justify-between"><span>🤝 Abwerben statt Free Agent</span><span id="simPoachPrefVal">${GAME_STATE.simRules?.poachPreference ?? 50}%</span></label>
+                                <input type="range" id="simPoachPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.poachPreference ?? 50}" class="w-full" oninput="document.getElementById('simPoachPrefVal').textContent=this.value+'%'">
+                            </div>
+                            <p class="text-xs text-tertiary mt-2">Alles aus = historischer Modus (fester Meldeplan). Vor jeder weiteren Saison erneut änderbar. „Echt-Anteil": wie oft echte Fahrer (statt generierte) nachrücken; 0 % = reiner Generator.</p>
                         </div>
 
                         <button onclick="startSelectedYear()" class="w-full mt-4 p-3 rounded-lg font-bold transition"
@@ -19341,8 +19076,16 @@
                             <span class="text-sm">💀 Non-WM-Tode (außerhalb der Meisterschaft)</span>
                         </label>
                     </div>
+                    <div class="mt-3">
+                        <label class="text-sm flex justify-between"><span>🎭 Echt-Anteil (Free Agent/Reserve vs. generiert)</span><span id="simRealPrefVal">${GAME_STATE.simRules?.realPreference ?? 100}%</span></label>
+                        <input type="range" id="simRealPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.realPreference ?? 100}" class="w-full" oninput="document.getElementById('simRealPrefVal').textContent=this.value+'%'">
+                    </div>
+                    <div class="mt-2">
+                        <label class="text-sm flex justify-between"><span>🤝 Abwerben statt Free Agent</span><span id="simPoachPrefVal">${GAME_STATE.simRules?.poachPreference ?? 50}%</span></label>
+                        <input type="range" id="simPoachPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.poachPreference ?? 50}" class="w-full" oninput="document.getElementById('simPoachPrefVal').textContent=this.value+'%'">
+                    </div>
                     <p class="text-xs text-tertiary mt-2">
-                        Alles aus = historischer Modus: der feste Meldeplan (v0.9.15.11) bleibt unangetastet. Einzeln schaltbar, um Mechaniken gezielt zu studieren.
+                        Alles aus = historischer Modus: der feste Meldeplan (v0.9.15.11) bleibt unangetastet. Einzeln schaltbar, um Mechaniken gezielt zu studieren. „Echt-Anteil": wie oft echte Fahrer statt generierte nachrücken (0 % = reiner Generator); „Abwerben": echt-erfahren lieber von anderem Team holen statt Free Agent.
                     </p>
                 </div>
 
@@ -19395,6 +19138,10 @@
                 const el = document.getElementById('simRule_' + k);
                 sr[k] = el ? el.checked : true;
             });
+            const rp = document.getElementById('simRealPref');
+            const pp = document.getElementById('simPoachPref');
+            sr.realPreference  = rp ? parseInt(rp.value) : 100;
+            sr.poachPreference = pp ? parseInt(pp.value) : 50;
             return sr;
         }
         
