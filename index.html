@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.15</title>
+    <title>F1 RPG v0.9.15.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.15 (aktuell) - 23.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.16 (aktuell) - 23.07.2026</div>
+                            <div>&#8226; NEU: Granulare KI-Sim-Regeln schon beim Spielstart waehlbar (Neuspiel-Screen), nicht erst beim Saisonwechsel</div>
+                            <div class="font-bold text-slate-400">v0.9.15.15 - 23.07.2026</div>
                             <div>&#8226; NEU: KI-Simulation granular - Karriereenden, Entlassungen, Transfers, Tode und Non-WM-Tode einzeln schaltbar (Saison-Start-Dialog)</div>
                             <div>&#8226; FIX: Historischer Modus (alles aus) friert den festen Meldeplan komplett ein</div>
                             <div class="font-bold text-slate-400">v0.9.15.14 - 23.07.2026</div>
@@ -3137,7 +3139,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.15';
+        const VERSION = '0.9.15.16';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -18661,7 +18663,39 @@
                         <div id="yearPreview" class="mt-3 p-3 rounded-lg bg-secondary text-sm">
                             <!-- Wird dynamisch gefüllt -->
                         </div>
-                        
+
+                        <!-- KI-Sim-Optionen schon vor Saison 1 (v0.9.15.16) -->
+                        <div class="mt-4 p-3 rounded-lg" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color);">
+                            <div class="font-bold mb-2 text-sm">🤖 KI-Simulation</div>
+                            <label class="flex items-center gap-2 cursor-pointer mb-2">
+                                <input type="checkbox" id="aiSimulationToggle" ${GAME_STATE.aiSimulation ? 'checked' : ''} class="w-4 h-4" onchange="toggleAllSimRules(this.checked)">
+                                <span class="text-sm font-semibold">Alle Mechaniken (Master)</span>
+                            </label>
+                            <div class="pl-3 border-l-2 border-white/10 flex flex-col gap-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="simRule_careerEnd" ${GAME_STATE.simRules?.careerEnd ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                                    <span class="text-sm">👴 Karriereenden (Saisonende)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="simRule_dismissalMid" ${GAME_STATE.simRules?.dismissalMid ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                                    <span class="text-sm">🚫 Entlassungen (Mid-Season)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="simRule_transferSeasonEnd" ${GAME_STATE.simRules?.transferSeasonEnd ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                                    <span class="text-sm">🔄 Transfers &amp; Sitz-Auffüllung (Saisonende)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="simRule_deaths" ${GAME_STATE.simRules?.deaths ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                                    <span class="text-sm">💀 Tode (Rennwochenende)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="simRule_nonWmDeaths" ${GAME_STATE.simRules?.nonWmDeaths ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                                    <span class="text-sm">💀 Non-WM-Tode (außerhalb der Meisterschaft)</span>
+                                </label>
+                            </div>
+                            <p class="text-xs text-tertiary mt-2">Alles aus = historischer Modus (fester Meldeplan). Vor jeder weiteren Saison erneut änderbar.</p>
+                        </div>
+
                         <button onclick="startSelectedYear()" class="w-full mt-4 p-3 rounded-lg font-bold transition"
                                 style="background-color: var(--accent-main); color: white;">
                             🏁 Saison starten
@@ -18702,6 +18736,10 @@
             }
             
             initFromYear(year);
+            // v0.9.15.16: KI-Sim-Optionen aus dem Neuspiel-Screen übernehmen (vor Saison 1).
+            // Muss NACH initFromYear laufen, das simRules auf die Defaults zurücksetzt.
+            GAME_STATE.simRules = _readSimRulesFromDom();
+            GAME_STATE.aiSimulation = Object.values(GAME_STATE.simRules).some(Boolean);
             closeDatasetManager();
             renderAll();
             promptJuniorMode();   // einmalige Junior-Modus-Wahl für neuen Spielstand
@@ -19350,18 +19388,22 @@
             const master = document.getElementById('aiSimulationToggle');
             if (master) master.checked = anyOn;
         };
+        // Liest die 5 granularen KI-Sim-Checkboxen aus dem DOM (geteilt: Saison-Start-Dialog + Neuspiel-Screen)
+        function _readSimRulesFromDom() {
+            const sr = {};
+            _SIM_RULE_KEYS.forEach(k => {
+                const el = document.getElementById('simRule_' + k);
+                sr[k] = el ? el.checked : true;
+            });
+            return sr;
+        }
         
         window.confirmSeasonStart = function() {
             // Einstellungen übernehmen
             GAME_STATE.deathRealism = parseInt(document.getElementById('deathRealismSlider').value);
             // v0.9.15.15: granulare KI-Sim-Regeln aus den Einzel-Checkboxen lesen
-            const _sr = {};
-            _SIM_RULE_KEYS.forEach(k => {
-                const el = document.getElementById('simRule_' + k);
-                _sr[k] = el ? el.checked : true;
-            });
-            GAME_STATE.simRules = _sr;
-            GAME_STATE.aiSimulation = Object.values(_sr).some(Boolean);  // Preset/Anzeige-Marker
+            GAME_STATE.simRules = _readSimRulesFromDom();
+            GAME_STATE.aiSimulation = Object.values(GAME_STATE.simRules).some(Boolean);  // Preset/Anzeige-Marker
             GAME_STATE.rookieProtection = document.getElementById('rookieProtectionToggle').checked;
             
             closeSeasonStartModal();
