@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.13</title>
+    <title>F1 RPG v0.9.15.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.13 (aktuell) - 23.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.14 (aktuell) - 23.07.2026</div>
+                            <div>&#8226; FIX: der Bewertungsbalken in der Uebersicht erschien erst ab Rennen 3 der Saison - jetzt sobald der Fahrer an einem Rennwochenende teilgenommen hat</div>
+                            <div>&#8226; NEU: der Balken ist damit ein Indikator ob jemand schon gefahren ist (auch DNQ zaehlt)</div>
+                            <div>&#8226; FIX: gleiches Saison-Gate im Team-Steckbrief entfernt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.13 - 23.07.2026</div>
                             <div>&#8226; FIX: suedafrikanische/rhodesische Heimgaeste landeten auf Werksautos zu weit vorn (P5-P8)</div>
                             <div>&#8226; NEU: Einmal-Heimgaeste fahren schwaecheres Geraet (carSpeed gekappt) - ihr echtes Fahrerkoennen bleibt, aber der Werkswagen-Vorteil faellt weg</div>
                             <div>&#8226; PRUEFUNG: jetzt Hinterbaenkler mit gelegentlichem Ausreisser, Lederle behaelt seinen historischen Punkt 1962</div>
@@ -3130,7 +3134,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.13';
+        const VERSION = '0.9.15.14';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20223,7 +20227,7 @@
                             GAME_STATE.currentYear,
                             reigningChampionId,
                             `${activeDrivers.length} Fahrer | ${GAME_STATE.teams.length} Teams | Todes-Realismus: ${GAME_STATE.deathRealism}% | KI-Simulation: ${GAME_STATE.aiSimulation ? 'AN' : 'AUS'}`,
-                            { showPoints: false, showSatisfaction: GAME_STATE.results.length >= 3, showBirthYear: true, showContractEnd: true }
+                            { showPoints: false, showSatisfaction: true, showBirthYear: true, showContractEnd: true }
                         )
                     }
                 </div>
@@ -26465,7 +26469,7 @@ Empfohlene Wertebereiche:
                                             <span class="font-bold">${driver.name}</span>
                                             ${driver.number ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
                                         </div>
-                                        ${GAME_STATE.results.length >= 3 ? (() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${c};font-weight:bold">${s}</span></div>`; })() : ''}
+                                        ${(() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${c};font-weight:bold">${s}</span></div>`; })()}
                                     </div>
                                     <div class="grid grid-cols-3 gap-2 text-center text-xs">
                                         <div>
