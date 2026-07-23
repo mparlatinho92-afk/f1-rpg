@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.14</title>
+    <title>F1 RPG v0.9.15.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.14 (aktuell) - 23.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.15 (aktuell) - 23.07.2026</div>
+                            <div>&#8226; NEU: KI-Simulation granular - Karriereenden, Entlassungen, Transfers, Tode und Non-WM-Tode einzeln schaltbar (Saison-Start-Dialog)</div>
+                            <div>&#8226; FIX: Historischer Modus (alles aus) friert den festen Meldeplan komplett ein</div>
+                            <div class="font-bold text-slate-400">v0.9.15.14 - 23.07.2026</div>
                             <div>&#8226; FIX: der Bewertungsbalken in der Uebersicht erschien erst ab Rennen 3 der Saison - jetzt sobald der Fahrer an einem Rennwochenende teilgenommen hat</div>
                             <div>&#8226; NEU: der Balken ist damit ein Indikator ob jemand schon gefahren ist (auch DNQ zaehlt)</div>
                             <div>&#8226; FIX: gleiches Saison-Gate im Team-Steckbrief entfernt</div>
@@ -3134,7 +3137,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.14';
+        const VERSION = '0.9.15.15';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6435,7 +6438,9 @@
             currentRace: 0,
             theme: 'slate',
             deathRealism: 100,  // Default: 100% = Ära-Wert
-            aiSimulation: true,
+            aiSimulation: true,   // Master-Preset (steuert simRules via UI-Toggle)
+            // v0.9.15.15: granulare KI-Sim-Regeln – jede Mechanik einzeln schaltbar
+            simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true },
             liveTickerMode: false,  // v0.8.0: Live-Ticker vs. Klassische Simulation
             
             // Aktuelle Saison-Daten
@@ -6590,6 +6595,17 @@
             sanitized.fontItalic = sanitized.fontItalic ?? false;
             sanitized.deathRealism = sanitized.deathRealism ?? 100;
             sanitized.aiSimulation = sanitized.aiSimulation ?? true;
+            // v0.9.15.15: granulare KI-Sim-Regeln. Migration: Alt-Stände ohne simRules erben
+            // das alte aiSimulation-Verhalten (an→alle an, aus→alle aus). Fehlende Einzelkeys
+            // werden aus aiSimulation gefüllt, damit Teilobjekte robust sind.
+            {
+                const _on = sanitized.aiSimulation !== false;
+                const _sr = (sanitized.simRules && typeof sanitized.simRules === 'object') ? sanitized.simRules : {};
+                ['careerEnd', 'dismissalMid', 'transferSeasonEnd', 'deaths', 'nonWmDeaths'].forEach(k => {
+                    if (typeof _sr[k] !== 'boolean') _sr[k] = _on;
+                });
+                sanitized.simRules = _sr;
+            }
             sanitized.liveTickerMode = sanitized.liveTickerMode ?? false;  // v0.8.0
             sanitized.rookieProtection = sanitized.rookieProtection ?? false;
             // v0.9.9.6: dnfRate ist jetzt Ära-Multiplikator 50–150 (war vorher absolute %-Rate 0–100)
@@ -8606,6 +8622,7 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: 100,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
+                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true },  // v0.9.15.15
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
                 juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
 
@@ -8693,6 +8710,7 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: existingDnfRate,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
+                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true },  // v0.9.15.15
                 rookieProtection: false,
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
                 juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
@@ -9730,6 +9748,9 @@
         // Würfel 2: Welcher Session wird der Tod zugeordnet? (raceFrac / trainFrac / qualiFrac)
         function _rollWeekendDeath(raceIndex) {
             if (_weekendDeath[raceIndex] !== undefined) return; // bereits gewürfelt
+            // Historischer Modus (deaths AUS): keine Mid-Season-Tode – der deterministische
+            // Meldeplan (v0.9.15.11) bleibt unangetastet, kein Fahrer verschwindet ungeplant.
+            if (!simRule('deaths')) { _weekendDeath[raceIndex] = null; return; }
             const race = GAME_STATE.races[raceIndex];
             if (!race) { _weekendDeath[raceIndex] = null; return; }
             const year = GAME_STATE.currentYear;
@@ -12503,6 +12524,9 @@
         function rollSeasonNonWMDeaths() {
             GAME_STATE.pendingNonWMDeaths = [];
             const year = GAME_STATE.currentYear;
+            // Historischer Modus (nonWmDeaths AUS): auch keine Non-WM-Tode terminieren –
+            // sonst reißt ein ungeplanter Tod ein Loch in den fixen Meldeplan (v0.9.15.11).
+            if (!simRule('nonWmDeaths')) return;
             if (!(GAME_STATE.deathRealism > 0)) return;
             const realism = GAME_STATE.deathRealism / 100;
             const f1Rate   = (getEraValue(ERA_NONWM_F1_DEATH_RATE, year)   || 0) * realism;
@@ -12570,12 +12594,28 @@
             });
         }
 
+        // === GRANULARE KI-SIM-REGELN (v0.9.15.15) ===
+        // Jede Sim-Mechanik einzeln schaltbar. simRule() liest GAME_STATE.simRules mit Fallback
+        // auf das alte aiSimulation-Verhalten (Alt-Stände / Objekt fehlt). anySimRuleOn() = ist
+        // überhaupt irgendeine Mechanik aktiv (sonst voller historischer Modus = alles eingefroren).
+        function simRule(key) {
+            const r = GAME_STATE.simRules;
+            if (r && typeof r[key] === 'boolean') return r[key];
+            return GAME_STATE.aiSimulation !== false;
+        }
+        function anySimRuleOn() {
+            return simRule('careerEnd') || simRule('dismissalMid') || simRule('transferSeasonEnd')
+                || simRule('deaths') || simRule('nonWmDeaths');
+        }
+
         // === SAISONENDE MODAL ===
         function processSeasonEndEvents() {
             // Guard: nicht doppelt ausführen (interaktiver Pfad ruft showSeasonEndModal() auf,
             // welches diese Funktion aufruft; startNewSeason() ruft sie nochmal → einmal reicht)
             if (GAME_STATE._seasonEndEventsProcessed) return;
-            if (!GAME_STATE.aiSimulation) return;
+            // Voller historischer Modus (alle Regeln aus) = alles eingefroren wie früher aiSimulation=false.
+            // Sonst laufen die Stat-Updates immer, die roster-verändernden Teile self-gaten intern.
+            if (!anySimRuleOn()) return;
 
             updateDriverCareerScores();
             updateDriverReputations();       // Welle 2: Reputation VOR processTeamChanges aktualisieren
@@ -14865,8 +14905,8 @@
         
         // === KARRIEREENDE CHECK (4 Typen: Tod, Alter, Entlassung, Aufgabe) ===
         function checkCareerEnds() {
-            if (!GAME_STATE.aiSimulation) {
-                logInfo('CAREER', 'Karriereende-Checks übersprungen (KI-Simulation deaktiviert)');
+            if (!simRule('careerEnd')) {
+                logInfo('CAREER', 'Karriereende-Checks übersprungen (careerEnd-Regel aus)');
                 return [];
             }
             
@@ -15079,7 +15119,7 @@
         // Wird nach jedem Rennen aufgerufen. Teamkollegen-relativer Score-Vergleich.
         // Entlässt Fahrer die ihren Peers um > 0.25 SeasonScore hinterherhinken (12% Chance/Rennen).
         function processMidSeasonDismissals() {
-            if (!GAME_STATE.aiSimulation) return;
+            if (!simRule('dismissalMid')) return;
             const currentYear = GAME_STATE.currentYear;
             const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
 
@@ -15221,7 +15261,7 @@
         // (z.B. Teamkollege fährt allein, weil ein entlassener Fahrer nie ersetzt wurde) und wird
         // bei jedem Saisonstart sowie beim Laden aufgerufen. Gibt die Anzahl gefüllter Sitze zurück.
         function fillEmptyTeamSeats(year) {
-            if (!GAME_STATE.aiSimulation) return 0;
+            if (!simRule('transferSeasonEnd')) return 0;
             let filled = 0;
             // Team-Ranking für Top-Team-Erkennung: generierte Rookies / Karriere-Anfänger
             // dürfen keinen Top-Team-Sitz auffüllen (Antonelli-Fall auch über die Hintertür).
@@ -15685,7 +15725,7 @@
         // Vorzeitige Vertragsauflösung: Score < 25 → Fahrer wird free agent
         
         function processTeamChanges() {
-            if (!GAME_STATE.aiSimulation) return [];
+            if (!simRule('transferSeasonEnd')) return [];
 
             const changes = [];
             const currentYear = GAME_STATE.currentYear;
@@ -19234,15 +19274,37 @@
                     </p>
                 </div>
                 
-                <!-- KI-Simulation Toggle -->
+                <!-- KI-Simulation (granular, v0.9.15.15) -->
                 <div class="card p-4 rounded-lg mb-4">
                     <h4 class="font-bold mb-3">🤖 KI-Simulation</h4>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" id="aiSimulationToggle" ${GAME_STATE.aiSimulation ? 'checked' : ''} class="w-5 h-5">
-                        <span>Automatische Rücktritte aktivieren</span>
+                    <label class="flex items-center gap-3 cursor-pointer mb-3">
+                        <input type="checkbox" id="aiSimulationToggle" ${GAME_STATE.aiSimulation ? 'checked' : ''} class="w-5 h-5" onchange="toggleAllSimRules(this.checked)">
+                        <span class="font-semibold">Alle Mechaniken (Master)</span>
                     </label>
+                    <div class="pl-3 border-l-2 border-white/10 flex flex-col gap-2">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="simRule_careerEnd" ${GAME_STATE.simRules?.careerEnd ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                            <span class="text-sm">👴 Karriereenden (Saisonende)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="simRule_dismissalMid" ${GAME_STATE.simRules?.dismissalMid ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                            <span class="text-sm">🚫 Entlassungen (Mid-Season)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="simRule_transferSeasonEnd" ${GAME_STATE.simRules?.transferSeasonEnd ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                            <span class="text-sm">🔄 Transfers &amp; Sitz-Auffüllung (Saisonende)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="simRule_deaths" ${GAME_STATE.simRules?.deaths ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                            <span class="text-sm">💀 Tode (Rennwochenende)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="simRule_nonWmDeaths" ${GAME_STATE.simRules?.nonWmDeaths ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
+                            <span class="text-sm">💀 Non-WM-Tode (außerhalb der Meisterschaft)</span>
+                        </label>
+                    </div>
                     <p class="text-xs text-tertiary mt-2">
-                        Bei AUS: Keine automatischen Rücktritte am Saisonende
+                        Alles aus = historischer Modus: der feste Meldeplan (v0.9.15.11) bleibt unangetastet. Einzeln schaltbar, um Mechaniken gezielt zu studieren.
                     </p>
                 </div>
 
@@ -19274,11 +19336,32 @@
         window.closeSeasonStartModal = function() {
             document.getElementById('seasonStartModal').style.display = 'none';
         };
+
+        // v0.9.15.15: Master-Checkbox setzt alle granularen Regeln; Kinder synchronisieren den Master
+        const _SIM_RULE_KEYS = ['careerEnd', 'dismissalMid', 'transferSeasonEnd', 'deaths', 'nonWmDeaths'];
+        window.toggleAllSimRules = function(on) {
+            _SIM_RULE_KEYS.forEach(k => {
+                const el = document.getElementById('simRule_' + k);
+                if (el) el.checked = on;
+            });
+        };
+        window.syncSimMaster = function() {
+            const anyOn = _SIM_RULE_KEYS.some(k => document.getElementById('simRule_' + k)?.checked);
+            const master = document.getElementById('aiSimulationToggle');
+            if (master) master.checked = anyOn;
+        };
         
         window.confirmSeasonStart = function() {
             // Einstellungen übernehmen
             GAME_STATE.deathRealism = parseInt(document.getElementById('deathRealismSlider').value);
-            GAME_STATE.aiSimulation = document.getElementById('aiSimulationToggle').checked;
+            // v0.9.15.15: granulare KI-Sim-Regeln aus den Einzel-Checkboxen lesen
+            const _sr = {};
+            _SIM_RULE_KEYS.forEach(k => {
+                const el = document.getElementById('simRule_' + k);
+                _sr[k] = el ? el.checked : true;
+            });
+            GAME_STATE.simRules = _sr;
+            GAME_STATE.aiSimulation = Object.values(_sr).some(Boolean);  // Preset/Anzeige-Marker
             GAME_STATE.rookieProtection = document.getElementById('rookieProtectionToggle').checked;
             
             closeSeasonStartModal();
@@ -23156,7 +23239,7 @@ Empfohlene Wertebereiche:
                 example: 'Piastri (24) in 2024 (Ø 27.3): KEIN Rücktritt weil unter Durchschnitt | Alonso (43): Hohe Chance aber Siege schützen',
                 variables: [
                     { name: 'ERA_RETIREMENT_AGE', type: 'era', desc: 'Ø Rücktrittsalter pro Jahrfünft' },
-                    { name: 'aiSimulation', type: 'toggle', desc: '🤖 KI-Toggle: Bei AUS keine automatischen Karriereenden' }
+                    { name: 'aiSimulation', type: 'toggle', desc: '🤖 KI-Toggle: Bei AUS keine Karriereenden, Entlassungen oder Mid-Season-Tode (historischer Modus)' }
                 ],
                 historyNote: 'ECHTE DATEN aus 872 Rücktritten: 1950s Ø38.3 → 2020s Ø27.3',
                 isHistorical: true,
