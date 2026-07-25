@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.20</title>
+    <title>F1 RPG v0.9.15.21</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.20 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.21 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; FIX: realPreference=100 generierte trotzdem Rookies mid-season, wenn der Reserve-Pool nur echte ERFAHRENE Fahrer hatte (Rookie-Slot fand keinen echten Rookie) - jetzt wird lieber ein echter erfahrener Fahrer verpflichtet, generiert nur bei echt-leerem Pool</div>
+                            <div class="font-bold text-slate-400">v0.9.15.20 - 25.07.2026</div>
                             <div>&#8226; FIX: generierter Fahrer aus Reserve-Pool/Free-Agent wurde als 'echt' angezeigt - jetzt ehrlich als generiert (histId entscheidet)</div>
                             <div>&#8226; FIX: realPreference=100 laesst keine generierten Fahrer mehr als 'echt' durch (histId-Pflicht bei echt-Auswahl)</div>
                             <div>&#8226; FIX: Non-WM-Tode nutzen die geteilte Ersatz-Logik (Herkunft + regelkonform statt immer generiert)</div>
@@ -3157,7 +3159,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.20';
+        const VERSION = '0.9.15.21';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6311,11 +6313,17 @@
                     ...(GAME_STATE.reservePool || []).filter(p => p.histId && !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
                 ];
                 const profile = arr => wantRookie ? arr.filter(_isBeginner) : arr.filter(d => !_isBeginner(d));
-                const freeReal = profile(noCockpit).sort((a, b) => _effPace(b) - _effPace(a));
+                let freeReal = profile(noCockpit).sort((a, b) => _effPace(b) - _effPace(a));
+                // v0.9.15.21: „echt" schlägt das Rookie/Erfahren-Profil. Gibt es keinen echten Fahrer
+                // im gewünschten Profil (z.B. Rookie-Slot, aber im Pool nur erfahrene echte Fahrer),
+                // dann lieber IRGENDEINEN echten verpflichten statt zu generieren — sonst produzierte
+                // realPreference=100 („nur echte") trotzdem generierte Rookies, weil echte Rookies fehlen.
+                if (!freeReal.length) freeReal = noCockpit.slice().sort((a, b) => _effPace(b) - _effPace(a));
 
-                // Abwerben nur für Erfahren-Slots (Top-Leistung zuerst) — ebenfalls nur echte Fahrer
+                // Abwerben (Top-Leistung zuerst) — nur echte Fahrer. Für Rookie-Slots erst als
+                // Rückfall, wenn kein echter Free Agent/Pool-Fahrer vorhanden ist (echt > generiert).
                 let poachReal = [];
-                if (allowPoach && !wantRookie) {
+                if (allowPoach && (!wantRookie || !freeReal.length)) {
                     poachReal = GAME_STATE.drivers.filter(d => d.histId && d.team && d.team !== teamId && (!d.status || d.status === 'active')
                         && _compat(d) && _excl(d) && !_isBeginner(d)).sort((a, b) => _effPace(b) - _effPace(a));
                 }
