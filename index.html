@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.19</title>
+    <title>F1 RPG v0.9.15.20</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.19 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.20 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; FIX: generierter Fahrer aus Reserve-Pool/Free-Agent wurde als 'echt' angezeigt - jetzt ehrlich als generiert (histId entscheidet)</div>
+                            <div>&#8226; FIX: realPreference=100 laesst keine generierten Fahrer mehr als 'echt' durch (histId-Pflicht bei echt-Auswahl)</div>
+                            <div>&#8226; FIX: Non-WM-Tode nutzen die geteilte Ersatz-Logik (Herkunft + regelkonform statt immer generiert)</div>
+                            <div>&#8226; NEU: Herkunft nie mehr leer - Kategorie 'aus Start-Saison' + 'Abgang' fuer Freisetzungen</div>
+                            <div class="font-bold text-slate-400">v0.9.15.19 - 25.07.2026</div>
                             <div>&#8226; NEU: Stats-Tab Transfers - chronologische Liste aller Bewegungen/Ersaetze mit Herkunft (intern+Tier / generiert / echt Free-Agent-Reserve)</div>
                             <div>&#8226; NEU: Stats-Tab Nekrolog - alle toedlichen Unfaelle chronologisch mit Ersatzfahrer</div>
                             <div>&#8226; NEU: Notnagel-Sitzfueller erscheinen in der Chronik mit Begruendung</div>
@@ -3152,7 +3157,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.19';
+        const VERSION = '0.9.15.20';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6296,19 +6301,22 @@
             let picked = null, source = null, poachedFromTeamId = null;
 
             if (useReal) {
-                // Echte Fahrer OHNE Cockpit: aktive Free Agents + Reserve-Pool (Außenwelt)
+                // Echte Fahrer OHNE Cockpit: aktive Free Agents + Reserve-Pool (Außenwelt).
+                // v0.9.15.20: histId-Pflicht — ein generierter Fahrer (kein histId), der im Pool
+                // oder als Free Agent herumliegt, ist KEIN echter Fahrer. Sonst konnte realPreference=100
+                // („nur echte") einen generierten Pool-Fahrer als „echt" verpflichten (Coulon-Bug).
                 const noCockpit = [
-                    ...GAME_STATE.drivers.filter(d => !d.team && (!d.status || d.status === 'active') && _compat(d) && _excl(d)
+                    ...GAME_STATE.drivers.filter(d => d.histId && !d.team && (!d.status || d.status === 'active') && _compat(d) && _excl(d)
                         && (dismissedFromTeamId ? d._dismissedFromTeam !== dismissedFromTeamId : true)),
-                    ...(GAME_STATE.reservePool || []).filter(p => !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
+                    ...(GAME_STATE.reservePool || []).filter(p => p.histId && !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
                 ];
                 const profile = arr => wantRookie ? arr.filter(_isBeginner) : arr.filter(d => !_isBeginner(d));
                 const freeReal = profile(noCockpit).sort((a, b) => _effPace(b) - _effPace(a));
 
-                // Abwerben nur für Erfahren-Slots (Top-Leistung zuerst)
+                // Abwerben nur für Erfahren-Slots (Top-Leistung zuerst) — ebenfalls nur echte Fahrer
                 let poachReal = [];
                 if (allowPoach && !wantRookie) {
-                    poachReal = GAME_STATE.drivers.filter(d => d.team && d.team !== teamId && (!d.status || d.status === 'active')
+                    poachReal = GAME_STATE.drivers.filter(d => d.histId && d.team && d.team !== teamId && (!d.status || d.status === 'active')
                         && _compat(d) && _excl(d) && !_isBeginner(d)).sort((a, b) => _effPace(b) - _effPace(a));
                 }
 
@@ -6370,35 +6378,64 @@
         function _seatOriginInfo(rep, year) {
             if (!rep) return null;
             const src = rep.source || null;
+            // v0.9.15.20: „echt" nur mit histId — ein generierter Fahrer bleibt generiert,
+            // auch wenn er aus Pool/Free-Agent-Liste kam.
+            const gen = rep.driver ? !rep.driver.histId : false;
             if (src === 'poach') {
                 const t = GAME_STATE.teams.find(x => x.id === rep.poachedFromTeamId);
-                return { kind: 'internal', source: 'poach', fromTeam: t?.name || '?', fromTier: _teamTierLabel(rep.poachedFromTeamId) };
+                return { kind: gen ? 'generated' : 'internal', source: 'poach', generated: gen, fromTeam: t?.name || '?', fromTier: _teamTierLabel(rep.poachedFromTeamId) };
             }
-            if (src === 'gen-rookie') return { kind: 'generated', source: 'gen-rookie' };
-            if (src === 'gen-exp')    return { kind: 'generated', source: 'gen-exp' };
-            if (src === 'reserve')    return { kind: 'real', source: 'reserve', poolGroup: rep.poolGroup || 'A' };
-            if (src === 'freeagent')  return { kind: 'real', source: 'freeagent' };
-            return { kind: 'real', source: src };
+            if (src === 'gen-rookie') return { kind: 'generated', source: 'gen-rookie', generated: true };
+            if (src === 'gen-exp')    return { kind: 'generated', source: 'gen-exp', generated: true };
+            if (src === 'reserve')    return { kind: gen ? 'generated' : 'real', source: 'reserve', generated: gen, poolGroup: rep.poolGroup || 'A' };
+            if (src === 'freeagent')  return { kind: gen ? 'generated' : 'real', source: 'freeagent', generated: gen };
+            return { kind: gen ? 'generated' : 'real', source: src, generated: gen };
         }
 
-        // v0.9.15.19: Herkunfts-Info in menschenlesbares Label + Emoji (für beide Chronik-Listen).
-        function _originBadge(o) {
-            if (!o) return '<span class="text-tertiary">Herkunft —</span>';
+        // v0.9.15.20: Fahrer per id in drivers ODER reservePool finden (für Herkunfts-Fallback).
+        function _findDriverAny(id) {
+            if (!id) return null;
+            return (GAME_STATE.drivers || []).find(d => d.id === id)
+                || (GAME_STATE.reservePool || []).find(d => d.id === id) || null;
+        }
+        // v0.9.15.20: generierte Fahrer sicher an der id erkennen (auch ohne Fahrer-Objekt / in Alt-Ständen).
+        function _isGeneratedId(id) { return /^(gen|exp)-/.test(String(id || '')); }
+
+        // v0.9.15.19/.20: Herkunfts-Info → Label+Emoji. driverId ermöglicht die WAHRHEIT:
+        // ein generierter Fahrer (id gen-/exp- oder kein histId) wird nie als „echt" gezeigt,
+        // auch wenn er aus Pool/Free-Agent kam (Coulon-Bug). Ohne explizite Herkunft wird der
+        // Fahrer klassifiziert (generiert / aus Start-Saison / echt-Bestand) statt „—".
+        function _originBadge(o, driverId) {
             const POOL = { A: 'Reserve', B: 'Testfahrer', C: 'kommend', F: 'Feeder' };
-            switch (o.source) {
-                case 'poach':     return `🏁 intern: ${o.fromTeam}${o.fromTier ? ` (${o.fromTier})` : ''}`;
-                case 'buyout':    return `💰 intern (Buyout): ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
-                case 'upgrade':
-                case 'downgrade':
-                case 'lateral':   return `🔁 intern: ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
-                case 'gen-rookie':return `🔧 generiert (Rookie)`;
-                case 'gen-exp':   return `🔧 generiert (erfahren)`;
-                case 'generated': return `🔧 generiert${o.isRookie != null ? ` (${o.isRookie ? 'Rookie' : 'erfahren'})` : ''}`;
-                case 'freeagent': return `🆓 echt: Free Agent`;
-                case 'reserve':
-                case 'pool':      return `🌟 echt: Reserve-Pool${o.poolGroup ? ` (${POOL[o.poolGroup] || o.poolGroup})` : ''}`;
-                default:          return `<span class="text-tertiary">Herkunft —</span>`;
+            const drv = driverId ? _findDriverAny(driverId) : null;
+            // generiert? id-Präfix ist auch in Alt-Ständen verlässlich; sonst fehlendes histId.
+            const isGen = (o && o.generated === true) || _isGeneratedId(driverId) || (drv && !drv.histId);
+
+            if (o && o.source) {
+                switch (o.source) {
+                    case 'poach':     return isGen ? `🔧 generiert (abgeworben)` : `🏁 intern: ${o.fromTeam}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                    case 'buyout':    return isGen ? `🔧 generiert (Buyout)` : `💰 intern (Buyout): ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                    case 'upgrade':
+                    case 'downgrade':
+                    case 'lateral':   return isGen ? `🔧 generiert` : `🔁 intern: ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                    case 'gen-rookie':return `🔧 generiert (Rookie)`;
+                    case 'gen-exp':   return `🔧 generiert (erfahren)`;
+                    case 'generated': return `🔧 generiert${o.isRookie != null ? ` (${o.isRookie ? 'Rookie' : 'erfahren'})` : ''}`;
+                    case 'freeagent': return isGen ? `🔧 generiert (Free Agent)` : `🆓 echt: Free Agent`;
+                    case 'reserve':
+                    case 'pool':      return isGen ? `🔧 generiert (aus Reserve-Pool)` : `🌟 echt: Reserve-Pool${o.poolGroup ? ` (${POOL[o.poolGroup] || o.poolGroup})` : ''}`;
+                }
             }
+
+            // Keine explizite Herkunft → Fahrer selbst klassifizieren (nie bares „—").
+            if (isGen) return o && o.departure ? `🔧 generiert (Abgang)` : `🔧 generiert`;
+            if (drv && drv.histId) {
+                const startY = parseInt(GAME_STATE.templateUsed) || null;
+                if (startY && drv.debutYear && drv.debutYear <= startY) return `🏛️ aus Start-Saison`;
+                return `🧑 echt (Bestand)`;
+            }
+            if (o && o.departure) return `<span class="text-tertiary">↷ Abgang</span>`;
+            return `<span class="text-tertiary">Herkunft —</span>`;
         }
 
         // v0.6.5: Universelle Ersatzfahrer-Suche (Mid-Season & Saisonende)
@@ -12426,23 +12463,20 @@
                 logError('DEATH', `💀 ${d.name} tödlich verunglückt (${p.venue}, ${timing})`);
                 // Ersatz wenn der Sitz noch DIESE Saison fährt (vor Saison + mitten drin);
                 // Off-Season-Tod (completedCount>=nRaces) braucht keinen – der Markt füllt nächstes Jahr.
-                let replacement = null;
+                // v0.9.15.19: geteilte acquireSeatDriver statt Direkt-generateDriver – gibt Herkunft
+                // und respektiert realPreference/poachPreference/externalTransfers wie alle Ersatz-Pfade.
+                let replacement = null, _repOrigin = null;
                 if (completedCount < nRaces && d.team) {
-                    replacement = generateDriver(d.team, year, Math.random() < 0.5);
-                    replacement.replacedDriver = d.id;
-                    replacement.replacedDriverName = d.name;
-                    replacement.replacedInYear = year;
-                    GAME_STATE.drivers.push(replacement);
-                    GAME_STATE.driverStandings[replacement.id] = {
-                        name: replacement.name, team: replacement.team,
-                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null
-                    };
+                    const _rep = acquireSeatDriver(d.team, year, { replacedVictim: { id: d.id, name: d.name } });
+                    replacement = _rep.driver;
+                    _repOrigin = _seatOriginInfo(_rep);
                 }
                 GAME_STATE.seasonDeaths.push({
                     driver: d.id, name: d.name, team: teamName,
                     race: null, raceName: p.venue, raceCountry: null,
                     fatalSession: 'nonwm', nonwmType: p.nonwmType, timing,
-                    replacement: replacement?.name, replacementId: replacement?.id, replacementTeam: replacement?.team
+                    replacement: replacement?.name, replacementId: replacement?.id, replacementTeam: replacement?.team,
+                    replacementOrigin: _repOrigin
                 });
             });
         }
@@ -22114,7 +22148,9 @@
                 case 'seatfill-fa':   return { source: 'freeagent' };
                 case 'seatfill-pool': return { source: 'reserve', poolGroup: e.poolGroup };
                 case 'seatfill-gen':  return { source: 'generated', isRookie: e.isRookie };
-                default:          return null;   // released/renewal/contract_expired/dismissed: keine Herkunft
+                case 'released': case 'early_release': case 'dismissed': case 'contract_expired':
+                                  return { departure: true };   // Abgang – keine Ankunfts-Herkunft
+                default:          return null;   // renewal (wird eh gefiltert)
             }
         }
 
@@ -22122,13 +22158,13 @@
         // mid-season (Tod/Entlassung) + Saisonende, chronologisch (neueste Saison oben).
         function renderTransferChronicle() {
             const seasons = _allChronSeasons();
-            const rowHtml = (emoji, main, sub, origin) => `
+            const rowHtml = (emoji, main, sub, origin, driverId) => `
                 <div class="flex items-start justify-between gap-3 py-2 px-3 rounded-lg" style="background:var(--bg-secondary);margin-bottom:4px;">
                     <div style="min-width:0;">
                         <div class="text-sm">${emoji} ${main}</div>
                         ${sub ? `<div class="text-xs text-tertiary mt-0.5">${sub}</div>` : ''}
                     </div>
-                    <div class="text-xs" style="white-space:nowrap;">${_originBadge(origin)}</div>
+                    <div class="text-xs" style="white-space:nowrap;">${_originBadge(origin, driverId)}</div>
                 </div>`;
 
             let totalRows = 0;
@@ -22143,7 +22179,7 @@
                     rows.push({ ord: round || 0, phase: 0, html: rowHtml('🪦',
                         `<b>${rep}</b> ersetzt <b>${d.name || '?'}</b>`,
                         `${d.team || '?'}${round ? ` · Runde ${round}` : ''} · nach Todesfall`,
-                        d.replacementOrigin) });
+                        d.replacementOrigin, d.replacementId) });
                 });
 
                 // --- MID-SEASON: Entlassungs-Ersätze ---
@@ -22153,7 +22189,7 @@
                     rows.push({ ord: round || 0, phase: 0, html: rowHtml('💢',
                         `<b>${r.replacementName}</b> ersetzt <b>${r.name || '?'}</b>`,
                         `${r.fromTeam || '?'}${round ? ` · Runde ${round}` : ''} · nach Entlassung`,
-                        r.replacementOrigin) });
+                        r.replacementOrigin, r.replacementId) });
                 });
 
                 // --- SAISONENDE: Bewegungen (ohne reine Verlängerung) ---
@@ -22178,7 +22214,7 @@
                     const sub = e.fill
                         ? `⚠️ ${e.fillReason || 'Notnagel-Auffüllung'}${e.typeText ? ` · ${e.typeText}` : ''}`
                         : `Saisonende${e.typeText ? ` · ${e.typeText}` : ''}`;
-                    rows.push({ ord: e.fill ? 10000 : 9999, phase: 1, html: rowHtml(emoji, main, sub, origin) });
+                    rows.push({ ord: e.fill ? 10000 : 9999, phase: 1, html: rowHtml(emoji, main, sub, origin, e.driverId) });
                 });
 
                 if (rows.length === 0) return '';
@@ -22216,7 +22252,7 @@
                             <div style="min-width:0;">
                                 <div class="text-sm">💀 <b>${d.name || '?'}</b> <span class="text-tertiary">(${d.team || '?'})</span></div>
                                 <div class="text-xs text-tertiary mt-0.5">${[where, sess].filter(Boolean).join(' · ')}${round}</div>
-                                ${rep ? `<div class="text-xs mt-0.5">↳ Sitz übernahm <b>${rep}</b> <span>${_originBadge(d.replacementOrigin)}</span></div>` : ''}
+                                ${rep ? `<div class="text-xs mt-0.5">↳ Sitz übernahm <b>${rep}</b> <span>${_originBadge(d.replacementOrigin, d.replacementId)}</span></div>` : ''}
                             </div>
                         </div>`;
                 }).join('');
