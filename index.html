@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.22</title>
+    <title>F1 RPG v0.9.15.23</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.22 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.23 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; NEU: Indy-Teams verpflichten echte Indy-500-Fahrer aus dem Reserve-Pool (era-passend) statt generierter Kunstfiguren - generiert nur noch wenn kein echter verfuegbar</div>
+                            <div>&#8226; NEU: Indy-Ersatz respektiert den realPreference-Regler wie der Rest</div>
+                            <div class="font-bold text-slate-400">v0.9.15.22 - 25.07.2026</div>
                             <div>&#8226; FIX: echte Feeder-Junioren (F2/F3, kein histId) wurden als 'generiert' gezaehlt/angezeigt - jetzt korrekt 'echt (Nachwuchs)' / 'Reserve-Pool (Feeder)'</div>
                             <div>&#8226; FIX: realPreference schloss Feeder faelschlich aus - 'generiert' zaehlt jetzt nur echte gen-/exp-Fahrer</div>
                             <div>&#8226; NEU: Herkunfts-Kategorie Nachwuchs/Feeder</div>
@@ -3163,7 +3166,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.22';
+        const VERSION = '0.9.15.23';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6413,6 +6416,45 @@
         }
         // v0.9.15.20: generierte Fahrer sicher an der id erkennen (auch ohne Fahrer-Objekt / in Alt-Ständen).
         function _isGeneratedId(id) { return /^(gen|exp)-/.test(String(id || '')); }
+
+        // v0.9.15.23: Indy-Cockpit besetzen — echte Indy-Fahrer (INDY_500_ONLY_DRIVERS, im Reserve-Pool
+        // era-passend mit Pace-Schätzung) VOR dem Generieren. realPreference-gesteuert wie mid-season.
+        // Geteilt von processTeamChanges + startNewSeason. Fahrer ist danach im Team + Standings.
+        // Rückgabe { driver, source: 'freeagent'|'pool'|'generated' }.
+        function _signIndyDriver(teamId, year) {
+            const realPref = (GAME_STATE.simRules?.realPreference ?? 100) / 100;
+            const _indyReal = d => (d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id)) && !_isGeneratedId(d.id);
+            let picked = null, source = null;
+            if (Math.random() < realPref) {
+                // 1. echter Indy-Free-Agent (ohne Cockpit)
+                picked = GAME_STATE.drivers.find(d => !d.team && (!d.status || d.status === 'active') && _indyReal(d));
+                if (picked) source = 'freeagent';
+                else {
+                    // 2. echter Indy-Fahrer aus Reserve-Pool (nicht schon aktiv, Alters-Gate wie sonst)
+                    const p = (GAME_STATE.reservePool || []).find(x => _indyReal(x)
+                        && !GAME_STATE.drivers.some(d => d.histId && d.histId === x.histId)
+                        && (typeof poolAgeGateOk !== 'function' || poolAgeGateOk(x, year)));
+                    if (p) {
+                        GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== p);
+                        if (!GAME_STATE.drivers.some(d => d === p)) GAME_STATE.drivers.push(p);
+                        picked = p; source = 'pool';
+                    }
+                }
+            }
+            if (picked) {
+                picked.team = teamId; picked.isIndyOnly = true; picked.status = 'active'; picked.isReserve = false;
+                picked.contractEnd = picked.contractEnd || (year + 1);
+                if (!GAME_STATE.driverStandings[picked.id])
+                    GAME_STATE.driverStandings[picked.id] = { name: picked.name, team: teamId, points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null };
+                GAME_STATE.driverStandings[picked.id].team = teamId;
+                return { driver: picked, source };
+            }
+            // Fallback: generieren (kein echter Indy-Fahrer verfügbar / realPreference)
+            const gen = generateDriver(teamId, year, Math.random() < 0.5);
+            gen.isIndyOnly = true;
+            GAME_STATE.drivers.push(gen);
+            return { driver: gen, source: 'generated' };
+        }
 
         // v0.9.15.19/.20: Herkunfts-Info → Label+Emoji. driverId ermöglicht die WAHRHEIT:
         // ein generierter Fahrer (id gen-/exp- oder kein histId) wird nie als „echt" gezeigt,
@@ -16043,15 +16085,17 @@
                 const spotsNeeded = 2 - teamDrivers.length;
 
                 for (let i = 0; i < spotsNeeded; i++) {
-                    // Indy-Teams: direkt generateDriver (US), kein Pool/Free-Agent-Matching
+                    // Indy-Teams: echte Indy-Fahrer (Free Agent → Reserve-Pool) vor Generierung (v0.9.15.23)
                     if (teamIsIndy) {
-                        const _ni = generateDriver(team.id, currentYear, Math.random() < 0.5);
-                        _ni.isIndyOnly = true;
-                        GAME_STATE.drivers.push(_ni);
-                        teamDrivers.push(_ni);
-                        _ni._movedThisSeason = true;
-                        changes.push({ driverId: _ni.id, driverName: _ni.name, type: 'generated', typeEmoji: '🇺🇸', typeText: 'Indy-Fahrer generiert', fromTeam: '-', toTeam: team.name });
-                        logInfo('DRIVER', `🇺🇸 Indy ${team.name}: ${_ni.name} generiert`);
+                        const _r = _signIndyDriver(team.id, currentYear);
+                        _r.driver._movedThisSeason = true;
+                        teamDrivers.push(_r.driver);
+                        const _gen = _r.source === 'generated';
+                        changes.push({ driverId: _r.driver.id, driverName: _r.driver.name,
+                            type: _gen ? 'generated' : _r.source === 'pool' ? 'pool-debut' : 'freeagent',
+                            typeEmoji: '🇺🇸', typeText: _gen ? 'Indy-Fahrer generiert' : 'Indy-Fahrer (echt)',
+                            fromTeam: '-', toTeam: team.name });
+                        logInfo('DRIVER', `🇺🇸 Indy ${team.name}: ${_r.driver.name} (${_gen ? 'generiert' : 'echt'})`);
                         continue;
                     }
 
@@ -17754,14 +17798,13 @@
                     );
                     if (teamDrivers.length >= 2) return;
 
-                    // Indy-Teams: generateDriver (US), kein Pool/Free-Agent-Matching
+                    // Indy-Teams: echte Indy-Fahrer vor Generierung (v0.9.15.23)
                     if (_teamIsIndy) {
-                        while (teamDrivers.length < 2) {
-                            const _d = generateDriver(team.id, newYear, Math.random() < 0.5);
-                            _d.isIndyOnly = true;
-                            GAME_STATE.drivers.push(_d);
-                            teamDrivers.push(_d);
-                            logInfo('DRIVER', `🇺🇸 SNetz Indy: ${_d.name} → ${team.name}`);
+                        let _guard = 0;
+                        while (teamDrivers.length < 2 && _guard++ < 4) {
+                            const _r = _signIndyDriver(team.id, newYear);
+                            teamDrivers.push(_r.driver);
+                            logInfo('DRIVER', `🇺🇸 SNetz Indy: ${_r.driver.name} (${_r.source === 'generated' ? 'generiert' : 'echt'}) → ${team.name}`);
                         }
                         return;
                     }
