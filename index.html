@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.24</title>
+    <title>F1 RPG v0.9.15.25</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -596,6 +596,9 @@
             transition: color 0.15s ease;
         }
         
+        .champ-card-name { cursor: pointer; text-decoration: none; }
+        .champ-card-name:hover { text-decoration: underline; text-underline-offset: 3px; opacity: 0.85; }
+
         .driver-link:hover, .team-link:hover, .race-link:hover {
             color: var(--accent-main);
             text-decoration-style: solid;
@@ -948,7 +951,14 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.24 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.25 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; NEU: DNQ/DNPQ werden in der Historie gespeichert und in der Ergebnis-Matrix auch fuer vergangene Saisons angezeigt</div>
+                            <div>&#8226; NEU: Fahrer-Skills sind erst nach Klick auf 'Skills bearbeiten' verschiebbar (kein versehentliches Verstellen auf dem Handy)</div>
+                            <div>&#8226; FIX: nicht gemeldete Fahrer haben in der Saison-Matrix leere Zellen statt '-'</div>
+                            <div>&#8226; FIX: laufende Saison in Karriere/Team-Tabelle einheitlich markiert (Jahr* unterstrichen orange)</div>
+                            <div>&#8226; FIX: Reserve-Liste merkt sich Auf/Zu pro Spielstand</div>
+                            <div>&#8226;  Saison-Header: groessere Titel + keine stoerende Unterstreichung</div>
+                            <div class="font-bold text-slate-400">v0.9.15.24 - 25.07.2026</div>
                             <div>&#8226; FIX: Saisonstart-Sitzfueller (SNetz + processTeamChanges) generierten trotz realPreference, wenn ihr Pace-Fit-Matching keinen echten fand - nehmen jetzt vorher jeden verfuegbaren echten/Feeder-Fahrer</div>
                             <div>&#8226; NEU: unvermeidbar generierte Fahrer (echter Pool war leer) tragen in Transfer-Chronik + Nekrolog den Hinweis 'Pool leer, unvermeidbar'</div>
                             <div class="font-bold text-slate-400">v0.9.15.23 - 25.07.2026</div>
@@ -3169,7 +3179,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.24';
+        const VERSION = '0.9.15.25';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6805,7 +6815,9 @@
         let standingsSubTab = 'drivers';
         let _pendingNewDrivers = []; // temporär für showNewDriversModal
         let _poolGroupFilter = 'all'; // aktiver Filter-Tab im Reserve-Pool
-        let _reservePoolCollapsed = false; // Reserve-Pool ein-/ausgeklappt
+        // v0.9.15.25: Reserve-Pool ein/ausgeklappt ist jetzt PER SAVE (GAME_STATE.reservePoolCollapsed),
+        // nicht mehr eine globale Session-Variable (die über Spielstände hinweg „hängen blieb").
+        // Default = zu (?? true), damit die Liste nicht ungewollt offen startet.
         const _weekendDeath = {}; // raceIndex → 'training'|'qualifying'|'race'|null (Zwei-Würfel-Modell)
         let _liveRaceDeathFired = false; // Live-Rennen: verhindert Mehrfachtode pro Wochenende
 
@@ -8095,7 +8107,7 @@
         }
 
         window.toggleReservePool = function() {
-            _reservePoolCollapsed = !_reservePoolCollapsed;
+            GAME_STATE.reservePoolCollapsed = !(GAME_STATE.reservePoolCollapsed ?? true);
             renderContent();
         };
 
@@ -8175,12 +8187,12 @@
                 <div class="card p-6 rounded-xl mt-6">
                     <div class="flex items-center justify-between mb-3">
                         <button onclick="toggleReservePool()" class="flex items-center gap-2 text-xl font-bold hover:opacity-70 transition" style="background:none;border:none;color:inherit;cursor:pointer;padding:0">
-                            <span>${_reservePoolCollapsed ? '▶' : '▼'}</span>
+                            <span>${(GAME_STATE.reservePoolCollapsed ?? true) ? '▶' : '▼'}</span>
                             <span>🔄 Reservefahrer (${pool.length})</span>
                         </button>
-                        ${_reservePoolCollapsed ? '' : `<div class="flex gap-2"><button onclick="exportReservePool()" class="btn-secondary px-3 py-1 text-sm rounded" title="Pool als JSON exportieren">⬇ Export</button><button onclick="openNewDriverModal()" class="btn-secondary px-3 py-1 text-sm rounded">+ Fahrer erstellen</button></div>`}
+                        ${(GAME_STATE.reservePoolCollapsed ?? true) ? '' : `<div class="flex gap-2"><button onclick="exportReservePool()" class="btn-secondary px-3 py-1 text-sm rounded" title="Pool als JSON exportieren">⬇ Export</button><button onclick="openNewDriverModal()" class="btn-secondary px-3 py-1 text-sm rounded">+ Fahrer erstellen</button></div>`}
                     </div>
-                    ${_reservePoolCollapsed ? '' : `
+                    ${(GAME_STATE.reservePoolCollapsed ?? true) ? '' : `
                     <div class="flex gap-2 mb-4 flex-wrap">
                         ${tabs.map(t => `
                             <button onclick="setPoolGroupFilter('${t.key}')" class="px-3 py-1 rounded text-sm font-medium transition"
@@ -17414,6 +17426,9 @@
                     rn: race.raceName,            // Race Name
                     rc: race.raceCountry,         // Country
                     rain: race.isRain ? 1 : 0,    // Rain (boolean als 0/1)
+                    // v0.9.15.25: DNQ-Fahrer stehen NICHT in res (nur als ID-Liste) → mitspeichern,
+                    // sonst gehen sie in der Historie/Matrix verloren. DNPQ steckt als Flag im res-Eintrag.
+                    dnq: (Array.isArray(race.dnq) && race.dnq.length) ? race.dnq.slice() : undefined,
                     res: race.results.map(r => ({
                         d: r.driver,              // Driver ID
                         p: r.position,            // Position
@@ -17421,6 +17436,7 @@
                         dnf: r.dnf ? 1 : 0,       // DNF
                         fl: r.fastestLap ? 1 : 0, // Fastest Lap
                         fat: r.fatal ? 1 : 0,     // Fatal
+                        dnpq: r.dnpq ? 1 : 0,     // DNPQ (v0.9.15.25 – vorher verworfen)
                         gsc: r.gapSec ?? undefined,        // Gap in Sekunden
                         wts: r.winnerTimeSec ?? undefined, // Sieger-Gesamtzeit (nur P1)
                         tmn: r.teamName || undefined       // Teamname zur Rennzeit
@@ -20601,13 +20617,13 @@
                     return `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="card p-4 rounded-xl text-center" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">
-                        <div class="text-xs text-black/70">🏆 Weltmeister</div>
-                        <div class="text-xl font-bold text-black ${champId ? 'driver-link cursor-pointer' : ''}" ${champId ? `onclick="openDriverProfile('${champId}')"` : ''}>${h.champion || (drivers[0]?.name) || '-'}</div>
+                        <div class="text-base font-semibold text-black/80">🏆 Weltmeister</div>
+                        <div class="text-xl font-bold text-black ${champId ? 'champ-card-name' : ''}" ${champId ? `onclick="openDriverProfile('${champId}')"` : ''}>${h.champion || (drivers[0]?.name) || '-'}</div>
                         <div class="text-sm text-black/80">${championPoints} Pkt</div>
                     </div>
                     <div class="card p-4 rounded-xl text-center" style="background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);">
-                        <div class="text-xs text-black/70">🏎️ Konstrukteur</div>
-                        <div class="text-xl font-bold text-black ${teamChampId ? 'team-link cursor-pointer' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamChampId}')"` : ''}>${h.teamChampion || (teams[0]?.name) || '-'}</div>
+                        <div class="text-base font-semibold text-black/80">🏎️ Konstrukteur</div>
+                        <div class="text-xl font-bold text-black ${teamChampId ? 'champ-card-name' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamChampId}')"` : ''}>${h.teamChampion || (teams[0]?.name) || '-'}</div>
                         <div class="text-sm text-black/80">${teamChampionPoints} Pkt</div>
                     </div>
                 </div>`;
@@ -21541,21 +21557,25 @@
                                             const raceResults = race.res || race.results || [];
                                             const result = raceResults.find(r => (r.d || r.driver) === d.id);
                                             if (!result) {
-                                                const isDNPQ = !isHistorical && (race.dnpq || []).includes(d.id);
-                                                const isDNQ  = !isHistorical && (race.dnq  || []).includes(d.id);
+                                                // v0.9.15.25: auch historisch (dnq-Liste wird jetzt gespeichert)
+                                                const isDNPQ = (race.dnpq || []).includes(d.id);
+                                                const isDNQ  = (race.dnq  || []).includes(d.id);
                                                 if (isDNPQ) return '<td class="p-2 text-center font-bold" style="background-color: #701A75; color: #F5D0FE;">DNPQ</td>';
                                                 if (isDNQ)  return '<td class="p-2 text-center font-bold" style="background-color: #5C1517; color: #C49494;">DNQ</td>';
-                                                return '<td class="p-2 text-center">-</td>';
+                                                // v0.9.15.25: nicht gemeldet (vor Verpflichtung / nach Ausscheiden) → leere Zelle statt „-"
+                                                return '<td class="p-2 text-center"></td>';
                                             }
                                             const pos = result.p || result.position;
                                             const dnf = result.dnf === 1 || result.dnf === true;
                                             const pt = (result.posText || '').toUpperCase();
                                             const raceName = race.rn || race.raceName || '';
-                                            const specialLabel = ['DNQ','DNPQ','DSQ','DNS','WD','EX'].includes(pt) ? pt : null;
+                                            // DNPQ steckt als Flag im Eintrag (res.dnpq) – gilt für aktuelle UND historische Saison
+                                            const isEntryDNPQ = result.dnpq === 1 || result.dnpq === true;
+                                            const specialLabel = isEntryDNPQ ? 'DNPQ' : (['DNQ','DNPQ','DSQ','DNS','WD','EX'].includes(pt) ? pt : null);
                                             const label = specialLabel || (dnf ? 'Ret' : pos);
-                                            const titleText = specialLabel ? `${raceName}: ${pt}` : `${raceName}: P${pos}${dnf ? ' (DNF)' : ''}`;
+                                            const titleText = specialLabel ? `${raceName}: ${specialLabel}` : `${raceName}: P${pos}${dnf ? ' (DNF)' : ''}`;
                                             return `
-                                                <td class="p-2 text-center font-bold" style="${getPosColor(pos, dnf, pt)}" title="${titleText}">
+                                                <td class="p-2 text-center font-bold" style="${getPosColor(pos, dnf, specialLabel || pt)}" title="${titleText}">
                                                     ${label}
                                                 </td>
                                             `;
@@ -24596,6 +24616,13 @@ Empfohlene Wertebereiche:
         }
         
         // === FAHRER-STECKBRIEF ===
+        // v0.9.15.25: Skill-Regler sind standardmäßig NICHT ziehbar (readonly) — erst „✏️ Editor"
+        // schaltet sie frei. Verhindert versehentliches Verschieben auf dem Handy.
+        let _driverSkillEdit = false;
+        window.toggleDriverSkillEdit = function(driverId) {
+            _driverSkillEdit = !_driverSkillEdit;
+            openDriverProfile(driverId);
+        };
         // Phase 3 Option A: async Wrapper – hydriert nur die Teilnahme-Jahre (leichter driverHistIds-Index),
         // rendert den (synchronen) Body, hängt danach wieder ab → Steady-State bleibt leicht.
         window.openDriverProfile = async function(driverId) {
@@ -24950,13 +24977,18 @@ Empfohlene Wertebereiche:
                         }
                         
                         return `
+                            ${isCurrentlyActive ? `<div class="flex justify-end mb-2">
+                                <button onclick="toggleDriverSkillEdit('${driverId}')" class="btn-secondary px-2 py-1 text-xs rounded" title="Skill-Regler zum Bearbeiten freischalten">
+                                    ${_driverSkillEdit ? '🔒 Fertig' : '✏️ Skills bearbeiten'}
+                                </button>
+                            </div>` : ''}
                             <!-- Pace mit Current/Potential -->
                             <div class="mb-4 py-2 bg-secondary rounded-lg" style="padding-left:0;padding-right:0">
                                 <div class="flex justify-between items-center mb-2" style="padding-left:0.25rem;padding-right:0.25rem">
                                     <span class="font-bold">Pace</span>
                                     <span class="text-sm" style="color: ${gapColor}">${statusText}</span>
                                 </div>
-                                ${isCurrentlyActive ? `
+                                ${(isCurrentlyActive && _driverSkillEdit) ? `
                                     ${editRow('Aktuell', paceInfo.current, 'currentPace', '#22C55E')}${_deltaHtml}
                                     ${editRow('Potenzial', paceInfo.potential, 'potentialPace', '#8B5CF6')}
                                 ` : `
@@ -24975,8 +25007,8 @@ Empfohlene Wertebereiche:
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            ${isCurrentlyActive ? editRow('Regen', driver.rain, 'rain', '#3B82F6') : skillBar('Regen', driver.rain)}
-                            ${isCurrentlyActive ? `
+                            ${(isCurrentlyActive && _driverSkillEdit) ? editRow('Regen', driver.rain, 'rain', '#3B82F6') : skillBar('Regen', driver.rain)}
+                            ${(isCurrentlyActive && _driverSkillEdit) ? `
                                 ${editRow('Konstanz', driver.consistency, 'consistency', '#F97316')}
                                 <div id="constWarn_${driverId}" style="display:${(driver.consistency??75) < 30 || (driver.consistency??75) >= 100 ? 'block' : 'none'}; color:#F97316; font-size:0.68rem; margin-top:2px; padding:2px 6px; background:rgba(249,115,22,0.12); border-radius:4px;">
                                     ${(driver.consistency??75) < 30 ? '⚠️ Unter 30: über 70 % der Rennen mit Performance-Malus!' : '⚠️ Konstanz 100 = Roboter – max. 97 empfohlen.'}
@@ -24984,7 +25016,7 @@ Empfohlene Wertebereiche:
                             ` : skillBar('Konstanz', driver.consistency)}
                         </div>
                         <div>
-                            ${isCurrentlyActive ? editRow('Erfahrung', driver.experience, 'experience', '#EAB308') : skillBar('Erfahrung', driver.experience)}
+                            ${(isCurrentlyActive && _driverSkillEdit) ? editRow('Erfahrung', driver.experience, 'experience', '#EAB308') : skillBar('Erfahrung', driver.experience)}
                         </div>
                     </div>
                 </div>
@@ -25338,7 +25370,7 @@ Empfohlene Wertebereiche:
                                     <tbody>
                                         ${fullCareer.map(h => `
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
-                                                <td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:${h.isCurrent ? '#FF9500' : 'var(--accent-main)'}" title="${h.isCurrent ? 'Saison läuft noch' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.isCurrent ? '⭐ ' : ''}${h.year}</span></td>
+                                                <td class="p-1 font-bold"><span class="cursor-pointer" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main)'};text-decoration:underline;text-underline-offset:2px;" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
                                                 <td class="p-1">
                                                     ${h.team !== '-' ?
                                                         renderTeamNameColored(h.team, h.teamId, h.year, h.teamColor) :
@@ -27270,7 +27302,7 @@ Empfohlene Wertebereiche:
                 const posClass = h.position === 1 ? 'accent-gold' : (h.position <= 3 && h.position !== '-' ? 'accent-blue' : '');
                 const rowClass = h.isHistorical ? ' opacity-75' : '';
                 html += '<tr class="border-t border-custom' + rowClass + '">';
-                html += '<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:' + (h.isCurrent ? '#FF9500' : 'var(--accent-main)') + '" title="' + (h.isCurrent ? 'Saison läuft noch' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + (h.isCurrent ? '⭐ ' : '') + h.year + '</span></td>';
+                html += '<td class="p-1 font-bold"><span class="cursor-pointer" style="color:' + (h.isCurrent ? '#f59e0b' : 'var(--accent-main)') + ';text-decoration:underline;text-underline-offset:2px;" title="' + (h.isCurrent ? 'Laufende Saison' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + h.year + (h.isCurrent ? '*' : '') + '</span></td>';
                 const dObjs = h.driverObjs || [];
                 let driversHtml;
                 if (dObjs.length === 0) {
