@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.18</title>
+    <title>F1 RPG v0.9.15.19</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.18 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.19 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; NEU: Stats-Tab Transfers - chronologische Liste aller Bewegungen/Ersaetze mit Herkunft (intern+Tier / generiert / echt Free-Agent-Reserve)</div>
+                            <div>&#8226; NEU: Stats-Tab Nekrolog - alle toedlichen Unfaelle chronologisch mit Ersatzfahrer</div>
+                            <div>&#8226; NEU: Notnagel-Sitzfueller erscheinen in der Chronik mit Begruendung</div>
+                            <div>&#8226; FIX: Todes-Realismus fiel bei Saison-Start still auf Aera-Default zurueck</div>
+                            <div class="font-bold text-slate-400">v0.9.15.18 - 25.07.2026</div>
                             <div>&#8226; NEU: Schalter 'Aussenwelt zulassen' - bei AUS nur Grid-interne Saisonende-Wechsel</div>
                             <div>&#8226; NEU: chronologisches Einstellungs-Protokoll (simSettingsLog) im JSON-Export</div>
                             <div>&#8226; NEU: Todes-Realismus-Regler schon im Neuspiel-Screen - greift ab Saison 1</div>
@@ -3147,7 +3152,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.18';
+        const VERSION = '0.9.15.19';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6316,6 +6321,10 @@
             }
 
             if (picked) {
+                // v0.9.15.19: Herkunft feiner trennen — Free Agent (Ex-Grid) vs. Reserve-Pool.
+                const _wasPool = (GAME_STATE.reservePool || []).some(p => p === picked);
+                if (source === 'freeagent' && _wasPool) source = 'reserve';
+                const _poolGroup = _wasPool ? (picked.poolGroup || 'A') : null;
                 GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(p => p !== picked);
                 if (!GAME_STATE.drivers.some(d => d === picked)) GAME_STATE.drivers.push(picked);
                 picked.status = 'active';
@@ -6329,7 +6338,7 @@
                     const bf = acquireSeatDriver(poachedFromTeamId, year, { excludeIds, allowPoach: false });
                     logInfo('DRIVER', `${GAME_STATE.teams.find(t => t.id === poachedFromTeamId)?.name || '?'}: ${bf.driver.name} (Backfill nach Abwerbung)`);
                 }
-                return { driver: picked, source, poachedFromTeamId };
+                return { driver: picked, source, poachedFromTeamId, poolGroup: _poolGroup };
             }
 
             // Generieren (echt nicht gewählt ODER keiner verfügbar = Auto-Fallback)
@@ -6337,7 +6346,59 @@
             _mark(gen);
             GAME_STATE.drivers.push(gen);
             _ensureStanding(gen, teamId);
-            return { driver: gen, source: wantRookie ? 'gen-rookie' : 'gen-exp', poachedFromTeamId: null };
+            return { driver: gen, source: wantRookie ? 'gen-rookie' : 'gen-exp', poachedFromTeamId: null, poolGroup: null };
+        }
+
+        // v0.9.15.19: Team-Tier-Label aus aktuellem Standings-Rang (Topteam/Mittelfeld/Backmarker).
+        function _teamTierLabel(teamId) {
+            if (!teamId) return null;
+            const ranking = Object.entries(GAME_STATE.teamStandings || {})
+                .map(([id, s]) => ({ id, points: s.points || 0 }))
+                .sort((a, b) => b.points - a.points);
+            const total = ranking.length || (GAME_STATE.teams || []).length;
+            const idx = ranking.findIndex(t => t.id === teamId);
+            if (idx < 0 || total === 0) return null;
+            const topN = getTopTeamCount(total);
+            const midN = Math.max(4, Math.ceil(total * 0.7));
+            const rank = idx + 1;
+            return rank <= topN ? 'Topteam' : rank <= midN ? 'Mittelfeld' : 'Backmarker';
+        }
+
+        // v0.9.15.19: Aus einem acquireSeatDriver-Rückgabewert eine kompakte, speicherbare
+        // Herkunfts-Info bauen (zum Zeitpunkt des Ereignisses – Tier wird eingefroren).
+        // { kind: 'internal'|'generated'|'real', source, fromTeam, fromTier, poolGroup }
+        function _seatOriginInfo(rep, year) {
+            if (!rep) return null;
+            const src = rep.source || null;
+            if (src === 'poach') {
+                const t = GAME_STATE.teams.find(x => x.id === rep.poachedFromTeamId);
+                return { kind: 'internal', source: 'poach', fromTeam: t?.name || '?', fromTier: _teamTierLabel(rep.poachedFromTeamId) };
+            }
+            if (src === 'gen-rookie') return { kind: 'generated', source: 'gen-rookie' };
+            if (src === 'gen-exp')    return { kind: 'generated', source: 'gen-exp' };
+            if (src === 'reserve')    return { kind: 'real', source: 'reserve', poolGroup: rep.poolGroup || 'A' };
+            if (src === 'freeagent')  return { kind: 'real', source: 'freeagent' };
+            return { kind: 'real', source: src };
+        }
+
+        // v0.9.15.19: Herkunfts-Info in menschenlesbares Label + Emoji (für beide Chronik-Listen).
+        function _originBadge(o) {
+            if (!o) return '<span class="text-tertiary">Herkunft —</span>';
+            const POOL = { A: 'Reserve', B: 'Testfahrer', C: 'kommend', F: 'Feeder' };
+            switch (o.source) {
+                case 'poach':     return `🏁 intern: ${o.fromTeam}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                case 'buyout':    return `💰 intern (Buyout): ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                case 'upgrade':
+                case 'downgrade':
+                case 'lateral':   return `🔁 intern: ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                case 'gen-rookie':return `🔧 generiert (Rookie)`;
+                case 'gen-exp':   return `🔧 generiert (erfahren)`;
+                case 'generated': return `🔧 generiert${o.isRookie != null ? ` (${o.isRookie ? 'Rookie' : 'erfahren'})` : ''}`;
+                case 'freeagent': return `🆓 echt: Free Agent`;
+                case 'reserve':
+                case 'pool':      return `🌟 echt: Reserve-Pool${o.poolGroup ? ` (${POOL[o.poolGroup] || o.poolGroup})` : ''}`;
+                default:          return `<span class="text-tertiary">Herkunft —</span>`;
+            }
         }
 
         // v0.6.5: Universelle Ersatzfahrer-Suche (Mid-Season & Saisonende)
@@ -9496,7 +9557,8 @@
                                 fatalSession: 'race',
                                 replacement: _rep.driver.name,
                                 replacementId: _rep.driver.id,
-                                replacementTeam: _rep.driver.team
+                                replacementTeam: _rep.driver.team,
+                                replacementOrigin: _seatOriginInfo(_rep)   // v0.9.15.19 Herkunft
                             });
                         }
                 }
@@ -9840,7 +9902,8 @@
                         fatalSession: 'training',
                         replacement: _rep.driver.name,
                         replacementId: _rep.driver.id,
-                        replacementTeam: _rep.driver.team
+                        replacementTeam: _rep.driver.team,
+                        replacementOrigin: _seatOriginInfo(_rep)   // v0.9.15.19 Herkunft
                     });
                 }
             }
@@ -10056,7 +10119,8 @@
                         fatalSession: 'qualifying',
                         replacement: _rep.driver.name,
                         replacementId: _rep.driver.id,
-                        replacementTeam: _rep.driver.team
+                        replacementTeam: _rep.driver.team,
+                        replacementOrigin: _seatOriginInfo(_rep)   // v0.9.15.19 Herkunft
                     });
                 }
             }
@@ -12006,7 +12070,8 @@
                         fatalSession: p.fatalSession || 'race',
                         replacement: _rep.driver.name,
                         replacementId: _rep.driver.id,
-                        replacementTeam: _rep.driver.team
+                        replacementTeam: _rep.driver.team,
+                        replacementOrigin: _seatOriginInfo(_rep)   // v0.9.15.19 Herkunft
                     });
                 });
             }
@@ -14988,6 +15053,7 @@
                     _rep.driver.contractEnd = currentYear;
                     _dismissalEntry.replacementName = _rep.driver.name;
                     _dismissalEntry.replacementId = _rep.driver.id;
+                    _dismissalEntry.replacementOrigin = _seatOriginInfo(_rep);   // v0.9.15.19 Herkunft
                     logInfo('TRANSFER', `➡️ ${_rep.driver.name} (${_rep.source}) → ${oldTeam.name} (ersetzt ${driver.name})`);
                 }
 
@@ -14999,9 +15065,21 @@
         // Free Agent → Reserve-Pool → generierter Fahrer (letzter Ausweg). Greift Altlasten auf
         // (z.B. Teamkollege fährt allein, weil ein entlassener Fahrer nie ersetzt wurde) und wird
         // bei jedem Saisonstart sowie beim Laden aufgerufen. Gibt die Anzahl gefüllter Sitze zurück.
-        function fillEmptyTeamSeats(year) {
+        function fillEmptyTeamSeats(year, recordTransfers = false) {
             if (!simRule('transferSeasonEnd')) return 0;
             let filled = 0;
+            // v0.9.15.19: Notnagel-Fills in die Transfer-Chronik schreiben – aber NUR beim
+            // Saisonstart (recordTransfers=true), nicht bei der Lade-Reparatur (sonst spammt
+            // jeder Reload). Begründung wird als fillReason mitgespeichert und angezeigt.
+            const _recFill = (drv, teamName, type, emoji, txt, extra) => {
+                if (!recordTransfers) return;
+                GAME_STATE.seasonTransfers = GAME_STATE.seasonTransfers || [];
+                GAME_STATE.seasonTransfers.push(Object.assign({
+                    driverId: drv.id, driverName: drv.name, type, typeEmoji: emoji, typeText: txt,
+                    fromTeam: '-', toTeam: teamName, fill: true,
+                    fillReason: 'Notnagel-Auffüllung – leerer Sitz garantiert gefüllt'
+                }, extra || {}));
+            };
             // Team-Ranking für Top-Team-Erkennung: generierte Rookies / Karriere-Anfänger
             // dürfen keinen Top-Team-Sitz auffüllen (Antonelli-Fall auch über die Hintertür).
             const _fillRanking = Object.entries(GAME_STATE.teamStandings)
@@ -15041,6 +15119,7 @@
                             GAME_STATE.driverStandings[fa.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0 };
                         GAME_STATE.driverStandings[fa.id].team = t.id;
                         logInfo('TRANSFER', `➡️ ${fa.name} (FA) → ${t.name} (Sitz aufgefüllt)`);
+                        _recFill(fa, t.name, 'seatfill-fa', '🆓', 'Sitz aufgefüllt (Free Agent)');
                         filled++;
                         continue;
                     }
@@ -15060,15 +15139,18 @@
                         GAME_STATE.drivers.push(nd);
                         GAME_STATE.driverStandings[nd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
                         logInfo('TRANSFER', `➡️ ${nd.name} (Pool) → ${t.name} (Sitz aufgefüllt)`);
+                        _recFill(nd, t.name, 'seatfill-pool', '🌟', 'Sitz aufgefüllt (Reserve-Pool)', { poolGroup: nd.poolGroup || 'A' });
                         filled++;
                         continue;
                     }
                     // 3. Letzter Ausweg: generierter Fahrer (Top-Team nie Rookie)
-                    const gd = generateDriver(t.id, year, isTopTeam ? false : Math.random() < 0.7);
+                    const _genRookie = isTopTeam ? false : Math.random() < 0.7;
+                    const gd = generateDriver(t.id, year, _genRookie);
                     gd.contractEnd = year + 1;
                     GAME_STATE.drivers.push(gd);
                     GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
                     logInfo('TRANSFER', `➡️ ${gd.name} (neu) → ${t.name} (Sitz aufgefüllt)`);
+                    _recFill(gd, t.name, 'seatfill-gen', '🔧', 'Sitz aufgefüllt (generiert – letzter Ausweg)', { isRookie: _genRookie });
                     filled++;
                 }
             });
@@ -17760,7 +17842,7 @@
             initReservePool(newYear);
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
-            fillEmptyTeamSeats(newYear);
+            fillEmptyTeamSeats(newYear, true);   // v0.9.15.19: Notnagel-Fills in die Transfer-Chronik aufnehmen
             // ZULETZT und UNBEDINGT: Besitzer-Fahrer gehören in ihr Team, egal was
             // Transfermarkt und Sitzfüller vorher entschieden haben. Muss NACH
             // fillEmptyTeamSeats laufen, sonst überschreibt der Sitzfüller die
@@ -18951,7 +19033,12 @@
         function showSeasonStartModal() {
             const nextYear = GAME_STATE.currentYear + 1;
             const eraDeathRate = getEraValue(ERA_DEATH_RATES, nextYear);
-            const defaultSlider = eraDeathRate > 0 ? 100 : 0;
+            // v0.9.15.19 FIX: zuletzt gewählten Wert behalten, nicht stur auf Ära-Default (100)
+            // zurücksetzen — sonst überschrieb ein unverändertes Bestätigen die Nutzer-Einstellung
+            // (z.B. 200 → 100) still. Ära-Default nur als Fallback, wenn noch nie gesetzt.
+            const defaultSlider = (typeof GAME_STATE.deathRealism === 'number')
+                ? GAME_STATE.deathRealism
+                : (eraDeathRate > 0 ? 100 : 0);
             const isDangerousEra = eraDeathRate >= 0.03;
             
             // === BEWEGUNGEN SAMMELN ===
@@ -21970,6 +22057,12 @@
                     <button onclick="setStATSSubTab('gps')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'gps' ? 'btn-primary' : 'bg-secondary'}">
                         🏁 Grand Prix
                     </button>
+                    <button onclick="setStATSSubTab('transfers')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'transfers' ? 'btn-primary' : 'bg-secondary'}">
+                        🔄 Transfers
+                    </button>
+                    <button onclick="setStATSSubTab('necrology')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'necrology' ? 'btn-primary' : 'bg-secondary'}">
+                        💀 Nekrolog
+                    </button>
                 </div>
 
                 ${stATSSubTab === 'drivers' ? renderAllTimeDrivers() : ''}
@@ -21977,6 +22070,8 @@
                 ${stATSSubTab === 'champions' ? renderChampions() : ''}
                 ${stATSSubTab === 'circuits' ? renderAllCircuits() : ''}
                 ${stATSSubTab === 'gps' ? renderAllGPs() : ''}
+                ${stATSSubTab === 'transfers' ? renderTransferChronicle() : ''}
+                ${stATSSubTab === 'necrology' ? renderNecrology() : ''}
             `;
         }
         
@@ -21986,6 +22081,157 @@
             stATSSearch = '';
             renderContent();
         };
+
+        // v0.9.15.19: Alle Saisons chronologisch (Historie + laufende Saison, ohne Dopplung).
+        function _allChronSeasons() {
+            const arr = (GAME_STATE.history || []).map(h => ({
+                year: h.year,
+                transfers: h.transfers || [],
+                deaths: h.deaths || [],
+                retirements: h.retirements || []
+            }));
+            arr.push({
+                year: GAME_STATE.currentYear,
+                transfers: GAME_STATE.seasonTransfers || [],
+                deaths: GAME_STATE.seasonDeaths || [],
+                retirements: GAME_STATE.seasonRetirements || []
+            });
+            return arr;
+        }
+
+        // v0.9.15.19: Herkunfts-Info aus einem Saisonende-Transfer-Eintrag (aus type/fromTeam
+        // rekonstruiert – die Felder liegen auch in Alt-Ständen vor).
+        function _endTransferOrigin(e) {
+            switch (e.type) {
+                case 'poached':   return { source: 'poach',  fromTeam: e.fromTeam, fromTier: e.fromTier };
+                case 'buyout':    return { source: 'buyout', fromTeam: e.fromTeam, fromTier: e.fromTier };
+                case 'upgrade': case 'downgrade': case 'lateral':
+                                  return { source: e.type,   fromTeam: e.fromTeam, fromTier: e.fromTier };
+                case 'freeagent': return { source: 'freeagent' };
+                case 'pool-debut': case 'pool-assign': case 'pool':
+                                  return { source: 'reserve' };
+                case 'generated': return { source: 'generated', isRookie: e.isRookie };
+                case 'seatfill-fa':   return { source: 'freeagent' };
+                case 'seatfill-pool': return { source: 'reserve', poolGroup: e.poolGroup };
+                case 'seatfill-gen':  return { source: 'generated', isRookie: e.isRookie };
+                default:          return null;   // released/renewal/contract_expired/dismissed: keine Herkunft
+            }
+        }
+
+        // v0.9.15.19: TRANSFER-CHRONIK — nur Bewegungen & Ersätze (keine reinen Verlängerungen),
+        // mid-season (Tod/Entlassung) + Saisonende, chronologisch (neueste Saison oben).
+        function renderTransferChronicle() {
+            const seasons = _allChronSeasons();
+            const rowHtml = (emoji, main, sub, origin) => `
+                <div class="flex items-start justify-between gap-3 py-2 px-3 rounded-lg" style="background:var(--bg-secondary);margin-bottom:4px;">
+                    <div style="min-width:0;">
+                        <div class="text-sm">${emoji} ${main}</div>
+                        ${sub ? `<div class="text-xs text-tertiary mt-0.5">${sub}</div>` : ''}
+                    </div>
+                    <div class="text-xs" style="white-space:nowrap;">${_originBadge(origin)}</div>
+                </div>`;
+
+            let totalRows = 0;
+            const blocks = seasons.slice().sort((a, b) => b.year - a.year).map(s => {
+                const rows = [];
+
+                // --- MID-SEASON: Todesfall-Ersätze ---
+                (s.deaths || []).forEach(d => {
+                    if (!d.replacement && !d.replacementName) return;
+                    const rep = d.replacement || d.replacementName;
+                    const round = (typeof d.race === 'number') ? d.race + 1 : null;
+                    rows.push({ ord: round || 0, phase: 0, html: rowHtml('🪦',
+                        `<b>${rep}</b> ersetzt <b>${d.name || '?'}</b>`,
+                        `${d.team || '?'}${round ? ` · Runde ${round}` : ''} · nach Todesfall`,
+                        d.replacementOrigin) });
+                });
+
+                // --- MID-SEASON: Entlassungs-Ersätze ---
+                (s.retirements || []).forEach(r => {
+                    if (!r.midSeason || !r.replacementName) return;
+                    const round = r.dismissRound || null;
+                    rows.push({ ord: round || 0, phase: 0, html: rowHtml('💢',
+                        `<b>${r.replacementName}</b> ersetzt <b>${r.name || '?'}</b>`,
+                        `${r.fromTeam || '?'}${round ? ` · Runde ${round}` : ''} · nach Entlassung`,
+                        r.replacementOrigin) });
+                });
+
+                // --- SAISONENDE: Bewegungen (ohne reine Verlängerung) ---
+                (s.transfers || []).forEach(e => {
+                    if (!e || e.type === 'renewal') return;
+                    const origin = _endTransferOrigin(e);
+                    const name = e.driverName || '?';
+                    const to = (e.toTeam && e.toTeam !== '-') ? e.toTeam : null;
+                    const from = (e.fromTeam && e.fromTeam !== '-' && e.fromTeam !== '–') ? e.fromTeam : null;
+                    let main, emoji = e.typeEmoji || '🔄';
+                    if (e.type === 'released' || e.type === 'early_release' || e.type === 'dismissed') {
+                        main = `<b>${name}</b> ${e.type === 'dismissed' ? 'entlassen' : 'freigesetzt'}${from ? ` (${from})` : ''} → Free Agent`;
+                    } else if (e.type === 'contract_expired') {
+                        main = `<b>${name}</b> nicht verlängert${from ? ` (${from})` : ''}`;
+                    } else if (to && from) {
+                        main = `<b>${name}</b>: ${from} → <b>${to}</b>`;
+                    } else if (to) {
+                        main = `<b>${name}</b> → <b>${to}</b>`;
+                    } else {
+                        main = `<b>${name}</b> · ${e.typeText || e.type}`;
+                    }
+                    const sub = e.fill
+                        ? `⚠️ ${e.fillReason || 'Notnagel-Auffüllung'}${e.typeText ? ` · ${e.typeText}` : ''}`
+                        : `Saisonende${e.typeText ? ` · ${e.typeText}` : ''}`;
+                    rows.push({ ord: e.fill ? 10000 : 9999, phase: 1, html: rowHtml(emoji, main, sub, origin) });
+                });
+
+                if (rows.length === 0) return '';
+                rows.sort((a, b) => a.phase - b.phase || a.ord - b.ord);
+                totalRows += rows.length;
+                return `
+                    <div class="mb-4">
+                        <div class="font-bold text-sm mb-1" style="color:var(--accent-main);">${s.year} <span class="text-xs text-tertiary">(${rows.length})</span></div>
+                        ${rows.map(r => r.html).join('')}
+                    </div>`;
+            }).filter(Boolean).join('');
+
+            return `
+                <div class="mb-3 text-sm text-tertiary">🔄 <b>${totalRows}</b> Bewegungen &amp; Ersätze · neueste Saison oben · Herkunft rechts (intern / generiert / echt)</div>
+                ${blocks || '<div class="text-tertiary text-sm p-4">Noch keine Transfers aufgezeichnet.</div>'}
+            `;
+        }
+
+        // v0.9.15.19: NEKROLOG — alle tödlichen Unfälle chronologisch (neueste Saison oben).
+        function renderNecrology() {
+            const seasons = _allChronSeasons();
+            const SESS = { training: '🔧 Training', qualifying: '⏱️ Qualifying', quali: '⏱️ Qualifying', race: '🏁 Rennen' };
+            let total = 0;
+            const blocks = seasons.slice().sort((a, b) => b.year - a.year).map(s => {
+                const deaths = (s.deaths || []).slice().sort((a, b) => (a.race || 0) - (b.race || 0));
+                if (deaths.length === 0) return '';
+                total += deaths.length;
+                const rows = deaths.map(d => {
+                    const round = (typeof d.race === 'number') ? ` · Runde ${d.race + 1}` : '';
+                    const sess = SESS[d.fatalSession] || '';
+                    const where = d.raceName ? d.raceName.replace(/^\d{4}\s+/, '') : '';
+                    const rep = d.replacement || d.replacementName;
+                    return `
+                        <div class="flex items-start justify-between gap-3 py-2 px-3 rounded-lg" style="background:var(--bg-secondary);margin-bottom:4px;">
+                            <div style="min-width:0;">
+                                <div class="text-sm">💀 <b>${d.name || '?'}</b> <span class="text-tertiary">(${d.team || '?'})</span></div>
+                                <div class="text-xs text-tertiary mt-0.5">${[where, sess].filter(Boolean).join(' · ')}${round}</div>
+                                ${rep ? `<div class="text-xs mt-0.5">↳ Sitz übernahm <b>${rep}</b> <span>${_originBadge(d.replacementOrigin)}</span></div>` : ''}
+                            </div>
+                        </div>`;
+                }).join('');
+                return `
+                    <div class="mb-4">
+                        <div class="font-bold text-sm mb-1" style="color:#f87171;">${s.year} <span class="text-xs text-tertiary">(${deaths.length})</span></div>
+                        ${rows}
+                    </div>`;
+            }).filter(Boolean).join('');
+
+            return `
+                <div class="mb-3 text-sm text-tertiary">💀 <b>${total}</b> tödliche Unfälle · neueste Saison oben</div>
+                ${blocks || '<div class="text-tertiary text-sm p-4">Keine tödlichen Unfälle – die Sicherheit hält.</div>'}
+            `;
+        }
         
         window.setStATSIndyFilter = function(mode) {
             stATSIndyFilter = mode;
@@ -28272,7 +28518,7 @@ Empfohlene Wertebereiche:
             const _savedSubStandings = localStorage.getItem('f1rpg_subtab_standings');
             if (_savedSubStandings && ['drivers','teams','matrix'].includes(_savedSubStandings)) standingsSubTab = _savedSubStandings;
             const _savedSubStats = localStorage.getItem('f1rpg_subtab_stats');
-            if (_savedSubStats && ['drivers','teams','champions','circuits','gps'].includes(_savedSubStats)) stATSSubTab = _savedSubStats;
+            if (_savedSubStats && ['drivers','teams','champions','circuits','gps','transfers','necrology'].includes(_savedSubStats)) stATSSubTab = _savedSubStats;
 
             renderAll();
             updateStorageMeter();
