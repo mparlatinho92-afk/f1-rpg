@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.23</title>
+    <title>F1 RPG v0.9.15.24</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.23 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.24 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; FIX: Saisonstart-Sitzfueller (SNetz + processTeamChanges) generierten trotz realPreference, wenn ihr Pace-Fit-Matching keinen echten fand - nehmen jetzt vorher jeden verfuegbaren echten/Feeder-Fahrer</div>
+                            <div>&#8226; NEU: unvermeidbar generierte Fahrer (echter Pool war leer) tragen in Transfer-Chronik + Nekrolog den Hinweis 'Pool leer, unvermeidbar'</div>
+                            <div class="font-bold text-slate-400">v0.9.15.23 - 25.07.2026</div>
                             <div>&#8226; NEU: Indy-Teams verpflichten echte Indy-500-Fahrer aus dem Reserve-Pool (era-passend) statt generierter Kunstfiguren - generiert nur noch wenn kein echter verfuegbar</div>
                             <div>&#8226; NEU: Indy-Ersatz respektiert den realPreference-Regler wie der Rest</div>
                             <div class="font-bold text-slate-400">v0.9.15.22 - 25.07.2026</div>
@@ -3166,7 +3169,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.23';
+        const VERSION = '0.9.15.24';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6367,6 +6370,7 @@
 
             // Generieren (echt nicht gewählt ODER keiner verfügbar = Auto-Fallback)
             const gen = generateDriver(teamId, year, wantRookie);
+            if (useReal) gen._genReason = 'pool-empty';   // echt versucht, keiner verfügbar → unvermeidbar
             _mark(gen);
             GAME_STATE.drivers.push(gen);
             _ensureStanding(gen, teamId);
@@ -6425,7 +6429,8 @@
             const realPref = (GAME_STATE.simRules?.realPreference ?? 100) / 100;
             const _indyReal = d => (d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id)) && !_isGeneratedId(d.id);
             let picked = null, source = null;
-            if (Math.random() < realPref) {
+            const _triedReal = Math.random() < realPref;
+            if (_triedReal) {
                 // 1. echter Indy-Free-Agent (ohne Cockpit)
                 picked = GAME_STATE.drivers.find(d => !d.team && (!d.status || d.status === 'active') && _indyReal(d));
                 if (picked) source = 'freeagent';
@@ -6452,8 +6457,52 @@
             // Fallback: generieren (kein echter Indy-Fahrer verfügbar / realPreference)
             const gen = generateDriver(teamId, year, Math.random() < 0.5);
             gen.isIndyOnly = true;
+            if (_triedReal) gen._genReason = 'pool-empty';   // echt versucht, keiner da → unvermeidbar
             GAME_STATE.drivers.push(gen);
             return { driver: gen, source: 'generated' };
+        }
+
+        // v0.9.15.24: reiner Finder — bester verfügbarer ECHTER/Feeder-Fahrer für ein Team
+        // (Free Agent → Reserve-Pool, ohne Tier/Pace-Gate, nur Indy-/Nation-Kompatibilität).
+        // KEINE Seiteneffekte. Rückgabe { driver, source, fromPool } oder null.
+        function _findRealSeatCandidate(teamId) {
+            const team = GAME_STATE.teams.find(t => t.id === teamId);
+            const teamIsIndy = !!team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId));
+            const _compat = d => { const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id); return teamIsIndy ? isIndy : !isIndy; };
+            const allowed = (typeof getNationalityOnlyNations === 'function') ? getNationalityOnlyNations(team && (team.histId || team.id)) : null;
+            const _nationOk = d => !allowed || (typeof driverIOC === 'function' ? allowed.includes(driverIOC(d)) : true);
+            const _ok = d => !_isGeneratedId(d.id) && _compat(d) && _nationOk(d);
+            const _pace = d => d.currentPace || d.pace || 0;
+            let pick = GAME_STATE.drivers.filter(d => !d.team && (!d.status || d.status === 'active') && _ok(d))
+                .sort((a, b) => _pace(b) - _pace(a))[0];
+            if (pick) return { driver: pick, source: 'freeagent', fromPool: false };
+            pick = (GAME_STATE.reservePool || []).filter(d => _ok(d)
+                && !GAME_STATE.drivers.some(x => x.histId && x.histId === d.histId))
+                .sort((a, b) => _pace(b) - _pace(a))[0];
+            if (pick) return { driver: pick, source: 'pool', fromPool: true };
+            return null;
+        }
+        // Gibt es überhaupt einen echten Fahrer für dieses Team? (für den Pool-leer-Hinweis)
+        function _realDriverAvailable(teamId) { return !!_findRealSeatCandidate(teamId); }
+
+        // Letzte echte Rückfall-Quelle für die Saisonende-Sitzfüller (SNetz, processTeamChanges).
+        // realPreference-gesteuert; setzt den Fahrer ins Team + Standings; { driver, source } | null.
+        function _lastResortRealDriver(teamId, year) {
+            const realPref = (GAME_STATE.simRules?.realPreference ?? 100) / 100;
+            if (Math.random() >= realPref) return null;   // realPreference erlaubt Generierung
+            const c = _findRealSeatCandidate(teamId);
+            if (!c) return null;
+            const pick = c.driver;
+            if (c.fromPool) {
+                GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== pick);
+                if (!GAME_STATE.drivers.some(x => x === pick)) GAME_STATE.drivers.push(pick);
+            }
+            pick.team = teamId; pick.status = 'active'; pick.isReserve = false;
+            pick.contractEnd = pick.contractEnd || (year + 1);
+            if (!GAME_STATE.driverStandings[pick.id])
+                GAME_STATE.driverStandings[pick.id] = { name: pick.name, team: teamId, points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null };
+            GAME_STATE.driverStandings[pick.id].team = teamId;
+            return { driver: pick, source: c.source };
         }
 
         // v0.9.15.19/.20: Herkunfts-Info → Label+Emoji. driverId ermöglicht die WAHRHEIT:
@@ -6468,24 +6517,40 @@
             const isGen = (o && o.generated === true) || _isGeneratedId(driverId) || _isGeneratedId(drv && drv.id);
             const isFeeder = /^feeder-/.test(String(driverId || '')) || (drv && (drv.feederInfo || drv.poolGroup === 'F'));
 
+            // v0.9.15.24: alle generierten Fahrer über EINE Stelle — mit Kontext-Zusatz und
+            // dem Pool-leer-Hinweis (unvermeidbar generiert, weil kein echter Fahrer verfügbar war).
+            if (isGen) {
+                const poolEmpty = drv && drv._genReason === 'pool-empty';
+                let ctx = '';
+                if (o && o.departure) ctx = ' (Abgang)';
+                else if (o && o.source) switch (o.source) {
+                    case 'poach':   ctx = ' (abgeworben)'; break;
+                    case 'buyout':  ctx = ' (Buyout)'; break;
+                    case 'freeagent': case 'seatfill-fa': ctx = ' (Free Agent)'; break;
+                    case 'reserve': case 'pool': case 'seatfill-pool': ctx = ' (aus Reserve-Pool)'; break;
+                    case 'gen-rookie': ctx = ' (Rookie)'; break;
+                    case 'gen-exp':    ctx = ' (erfahren)'; break;
+                    case 'generated': case 'seatfill-gen':
+                        ctx = o.isRookie != null ? (o.isRookie ? ' (Rookie)' : ' (erfahren)') : ''; break;
+                }
+                const note = poolEmpty ? ` <span class="text-tertiary">· Pool leer, unvermeidbar</span>` : '';
+                return `🔧 generiert${ctx}${note}`;
+            }
+
             if (o && o.source) {
                 switch (o.source) {
-                    case 'poach':     return isGen ? `🔧 generiert (abgeworben)` : `🏁 intern: ${o.fromTeam}${o.fromTier ? ` (${o.fromTier})` : ''}`;
-                    case 'buyout':    return isGen ? `🔧 generiert (Buyout)` : `💰 intern (Buyout): ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                    case 'poach':     return `🏁 intern: ${o.fromTeam}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                    case 'buyout':    return `💰 intern (Buyout): ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
                     case 'upgrade':
                     case 'downgrade':
-                    case 'lateral':   return isGen ? `🔧 generiert` : `🔁 intern: ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
-                    case 'gen-rookie':return `🔧 generiert (Rookie)`;
-                    case 'gen-exp':   return `🔧 generiert (erfahren)`;
-                    case 'generated': return `🔧 generiert${o.isRookie != null ? ` (${o.isRookie ? 'Rookie' : 'erfahren'})` : ''}`;
-                    case 'freeagent': return isGen ? `🔧 generiert (Free Agent)` : `🆓 echt: Free Agent`;
+                    case 'lateral':   return `🔁 intern: ${o.fromTeam || '?'}${o.fromTier ? ` (${o.fromTier})` : ''}`;
+                    case 'freeagent': return `🆓 echt: Free Agent`;
                     case 'reserve':
-                    case 'pool':      return isGen ? `🔧 generiert (aus Reserve-Pool)` : `🌟 echt: Reserve-Pool${o.poolGroup ? ` (${POOL[o.poolGroup] || o.poolGroup})` : ''}`;
+                    case 'pool':      return `🌟 echt: Reserve-Pool${o.poolGroup ? ` (${POOL[o.poolGroup] || o.poolGroup})` : ''}`;
                 }
             }
 
             // Keine explizite Herkunft → Fahrer selbst klassifizieren (nie bares „—").
-            if (isGen) return o && o.departure ? `🔧 generiert (Abgang)` : `🔧 generiert`;
             if (drv && drv.histId) {
                 const startY = parseInt(GAME_STATE.templateUsed) || null;
                 if (startY && drv.debutYear && drv.debutYear <= startY) return `🏛️ aus Start-Saison`;
@@ -15235,9 +15300,11 @@
                         filled++;
                         continue;
                     }
-                    // 3. Letzter Ausweg: generierter Fahrer (Top-Team nie Rookie)
+                    // 3. Letzter Ausweg: generierter Fahrer (Top-Team nie Rookie).
+                    // Wird nur erreicht, wenn Free Agents UND Reserve-Pool leer sind → Pool-leer-Fall.
                     const _genRookie = isTopTeam ? false : Math.random() < 0.7;
                     const gd = generateDriver(t.id, year, _genRookie);
+                    gd._genReason = 'pool-empty';   // v0.9.15.24
                     gd.contractEnd = year + 1;
                     GAME_STATE.drivers.push(gd);
                     GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
@@ -16249,6 +16316,26 @@
                         continue;
                     }
 
+                    // v0.9.15.24: vor dem Generieren jeden verfügbaren echten/Feeder-Fahrer nehmen
+                    // (realPreference). In historischen Ären ist der Pool groß genug für echte.
+                    {
+                        const _lr = _lastResortRealDriver(team.id, currentYear);
+                        if (_lr) {
+                            _lr.driver._movedThisSeason = true;
+                            teamDrivers.push(_lr.driver);
+                            changes.push({
+                                driverId: _lr.driver.id, driverName: _lr.driver.name,
+                                type: _lr.source === 'pool' ? 'pool-debut' : 'freeagent',
+                                typeEmoji: _lr.source === 'pool' ? '🌟' : '🆓',
+                                typeText: _lr.source === 'pool' ? 'Debüt aus Reserve-Pool' : 'Free Agent verpflichtet',
+                                contractSource: _lr.source === 'pool' ? 'transfer' : 'freeagent',
+                                fromTeam: '-', toTeam: team.name
+                            });
+                            logInfo('TRANSFER', `♻️ ${team.name} ← ${_lr.driver.name} (echt, letzter Rückfall statt Generierung)`);
+                            continue;
+                        }
+                    }
+
                     // === FALLBACK: generateDriver (Mid/Back + alle Indy-Teams) ===
                     if (!isTopTeam || teamIsIndy) {
                         const rookieChance = teamIsIndy ? 0.5 : isMidTeam ? 0.25 : 0.75;
@@ -16256,6 +16343,7 @@
                         const newDriver = generateDriver(team.id, currentYear, isRookie);
                         newDriver.debutYear = currentYear + 1; // Debüt in der kommenden Saison, nicht der abgeschlossenen
                         if (teamIsIndy) { newDriver.isIndyOnly = true; newDriver.nation = '🇺🇸'; }
+                        if (!_realDriverAvailable(team.id)) newDriver._genReason = 'pool-empty';   // wirklich keiner da
                         GAME_STATE.drivers.push(newDriver);
                         teamDrivers.push(newDriver);
                         const tierText = isMidTeam ? 'Midfield' : 'Backmarker';
@@ -17893,11 +17981,21 @@
                             assigned = true;
                         }
 
+                        // v0.9.15.24: echt-Rückfall vor Generierung (realPreference)
+                        if (!assigned) {
+                            const _lr = _lastResortRealDriver(team.id, newYear);
+                            if (_lr) {
+                                teamDrivers.push(_lr.driver);
+                                logInfo('DRIVER', `♻️ SNetz ${_lr.driver.name} (echt, statt Generierung) → ${team.name}`);
+                                assigned = true;
+                            }
+                        }
                         // ─ Fallback: generieren ──────────────────────────────
                         if (!assigned) {
                             if (isTopTeam_) logError('DRIVER', `⚠️ SNetz: Top-Team ${team.name} bekommt generierten Fahrer!`);
                             const rookieChance = isTopTeam_ ? 0 : (isMidTeam_ ? 0.25 : 0.75);
                             const newDriver = generateDriver(team.id, newYear, Math.random() < rookieChance);
+                            if (!_realDriverAvailable(team.id)) newDriver._genReason = 'pool-empty';
                             GAME_STATE.drivers.push(newDriver);
                             teamDrivers.push(newDriver);
                             logInfo('DRIVER', `🔧 SNetz generiert ${newDriver.name} → ${team.name}`);
