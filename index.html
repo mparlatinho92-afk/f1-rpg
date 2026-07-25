@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.17</title>
+    <title>F1 RPG v0.9.15.18</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.17 (aktuell) - 24.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.18 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; NEU: Schalter 'Aussenwelt zulassen' - bei AUS nur Grid-interne Saisonende-Wechsel</div>
+                            <div>&#8226; NEU: chronologisches Einstellungs-Protokoll (simSettingsLog) im JSON-Export</div>
+                            <div>&#8226; NEU: Todes-Realismus-Regler schon im Neuspiel-Screen - greift ab Saison 1</div>
+                            <div class="font-bold text-slate-400">v0.9.15.17 - 24.07.2026</div>
                             <div>&#8226; NEU: Ersatzfahrer bei Tod UND Entlassung nutzen dieselbe Logik - echte Aussenwelt-Fahrer (Free Agent/Reserve) bekommen mid-season eine Chance</div>
                             <div>&#8226; NEU: Zwei Regler - Echt-Anteil (echt vs. generiert) und Abwerben vs. Free Agent</div>
                             <div>&#8226; FIX: Top-Teams holen keine generierten Debuetanten mehr</div>
@@ -3143,7 +3147,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.17';
+        const VERSION = '0.9.15.18';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6543,7 +6547,8 @@
             deathRealism: 100,  // Default: 100% = Ära-Wert
             aiSimulation: true,   // Master-Preset (steuert simRules via UI-Toggle)
             // v0.9.15.15: granulare KI-Sim-Regeln – jede Mechanik einzeln schaltbar
-            simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, realPreference: 100, poachPreference: 50 },
+            simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, externalTransfers: true, realPreference: 100, poachPreference: 50 },
+            simSettingsLog: [],   // v0.9.15.18: chronologisches Sim-Einstellungs-Protokoll
             liveTickerMode: false,  // v0.8.0: Live-Ticker vs. Klassische Simulation
             
             // Aktuelle Saison-Daten
@@ -6697,6 +6702,7 @@
             sanitized.fontWeight = ([400, 500, 600, 700].includes(sanitized.fontWeight)) ? sanitized.fontWeight : 400;
             sanitized.fontItalic = sanitized.fontItalic ?? false;
             sanitized.deathRealism = sanitized.deathRealism ?? 100;
+            if (!Array.isArray(sanitized.simSettingsLog)) sanitized.simSettingsLog = [];   // v0.9.15.18
             sanitized.aiSimulation = sanitized.aiSimulation ?? true;
             // v0.9.15.15: granulare KI-Sim-Regeln. Migration: Alt-Stände ohne simRules erben
             // das alte aiSimulation-Verhalten (an→alle an, aus→alle aus). Fehlende Einzelkeys
@@ -6710,6 +6716,8 @@
                 // v0.9.15.17: Ersatzfahrer-Regler (0–100). Fehlen in Alt-Ständen → sinnvolle Defaults.
                 if (typeof _sr.realPreference  !== 'number') _sr.realPreference  = 100;
                 if (typeof _sr.poachPreference !== 'number') _sr.poachPreference = 50;
+                // v0.9.15.18: Wechsel-Reichweite (Außenwelt zulassen). Alt-Stände hatten immer Außenwelt → true.
+                if (typeof _sr.externalTransfers !== 'boolean') _sr.externalTransfers = true;
                 sanitized.simRules = _sr;
             }
             sanitized.liveTickerMode = sanitized.liveTickerMode ?? false;  // v0.8.0
@@ -8728,7 +8736,8 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: 100,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
-                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, realPreference: 100, poachPreference: 50 },  // v0.9.15.15
+                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, externalTransfers: true, realPreference: 100, poachPreference: 50 },  // v0.9.15.15
+                simSettingsLog: [],   // v0.9.15.18: chronologisches Sim-Einstellungs-Protokoll
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
                 juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
 
@@ -8816,7 +8825,8 @@
                 deathRealism: defaultDeathRealism,
                 dnfRate: existingDnfRate,  // v0.9.9.6: Ära-Multiplikator 50–150
                 aiSimulation: true,
-                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, realPreference: 100, poachPreference: 50 },  // v0.9.15.15
+                simRules: { careerEnd: true, dismissalMid: true, transferSeasonEnd: true, deaths: true, nonWmDeaths: true, externalTransfers: true, realPreference: 100, poachPreference: 50 },  // v0.9.15.15
+                simSettingsLog: [],   // v0.9.15.18: chronologisches Sim-Einstellungs-Protokoll
                 rookieProtection: false,
                 juniorMode: 'off',   // Junior-Welt: beim Neuspiel per promptJuniorMode() gewählt, danach gesperrt
                 juniorWorld: _emptyJuniorWorld(),   // Junior-Welt-Struktur (Schritt 1)
@@ -15036,9 +15046,10 @@
                     }
                     // 2. Reserve-Pool (echte Ex-Fahrer / Nachwuchs) – Alters-Gate: vergreiste
                     //    Pool-Talente überspringen → Schritt 3 generiert einen frischen Rookie.
-                    const cand = (GAME_STATE.reservePool || []).find(p =>
+                    //    Außenwelt nur wenn externalTransfers an (v0.9.15.18): sonst direkt zu Schritt 3 (generieren als letzter Ausweg).
+                    const cand = simRule('externalTransfers') ? (GAME_STATE.reservePool || []).find(p =>
                         !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) &&
-                        (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year));
+                        (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year)) : null;
                     if (cand) {
                         GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== cand);
                         const nd = { ...cand, team: t.id, isReserve: false, contractEnd: year + 1 };
@@ -15588,7 +15599,10 @@
                     const _teamRankIdx = teamRanking.findIndex(t => t.id === team.id);
                     const _cPoach = [
                         ...activeDrivers.filter(d => !d.team && !d._movedThisSeason),
-                        ..._poolAll.filter(d => d.histId && !GAME_STATE.drivers.some(x => x.histId === d.histId)),
+                        // Außenwelt (Reserve-Pool) nur wenn externalTransfers an (v0.9.15.18)
+                        ...(simRule('externalTransfers')
+                            ? _poolAll.filter(d => d.histId && !GAME_STATE.drivers.some(x => x.histId === d.histId))
+                            : []),
                         ...activeDrivers.filter(d => {
                             if (!d.team || d.team === team.id || d._movedThisSeason) return false;
                             if (d.contractEnd && d.contractEnd <= currentYear) return false; // auslaufend → Phase 2
@@ -15962,7 +15976,8 @@
                     }
 
                     // Reserve-Pool: nie für Top-Teams; histId-Pflicht entfernt → auch generierte Fahrer wieder verpflichtbar
-                    if (!isTopTeam) {
+                    // Außenwelt nur wenn externalTransfers an (v0.9.15.18)
+                    if (!isTopTeam && simRule('externalTransfers')) {
                         (GAME_STATE.reservePool || [])
                             .filter(d => (!d.status || d.status === 'active') &&
                                         (d.currentPace || d.pace || 0) >= 60 && _indyOk(d) && _nationOk(d) &&
@@ -18411,6 +18426,10 @@
                                     <input type="checkbox" id="simRule_transferSeasonEnd" ${GAME_STATE.simRules?.transferSeasonEnd ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
                                     <span class="text-sm">🔄 Transfers &amp; Sitz-Auffüllung (Saisonende)</span>
                                 </label>
+                                <label class="flex items-center gap-2 cursor-pointer pl-5">
+                                    <input type="checkbox" id="simExternalTransfers" ${GAME_STATE.simRules?.externalTransfers !== false ? 'checked' : ''} class="w-4 h-4">
+                                    <span class="text-sm">🌍 Außenwelt zulassen (Reserve-Pool + neue Fahrer)</span>
+                                </label>
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" id="simRule_deaths" ${GAME_STATE.simRules?.deaths ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
                                     <span class="text-sm">💀 Tode (Rennwochenende)</span>
@@ -18428,7 +18447,11 @@
                                 <label class="text-sm flex justify-between"><span>🤝 Abwerben statt Free Agent</span><span id="simPoachPrefVal">${GAME_STATE.simRules?.poachPreference ?? 50}%</span></label>
                                 <input type="range" id="simPoachPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.poachPreference ?? 50}" class="w-full" oninput="document.getElementById('simPoachPrefVal').textContent=this.value+'%'">
                             </div>
-                            <p class="text-xs text-tertiary mt-2">Alles aus = historischer Modus (fester Meldeplan). Vor jeder weiteren Saison erneut änderbar. „Echt-Anteil": wie oft echte Fahrer (statt generierte) nachrücken; 0 % = reiner Generator.</p>
+                            <div class="mt-2">
+                                <label class="text-sm flex justify-between"><span>💀 Todes-Realismus</span><span id="deathSliderValueNew">${GAME_STATE.deathRealism ?? 100}%</span></label>
+                                <input type="range" id="deathRealismSliderNew" min="0" max="200" step="5" value="${GAME_STATE.deathRealism ?? 100}" class="w-full" oninput="document.getElementById('deathSliderValueNew').textContent=this.value+'%'">
+                            </div>
+                            <p class="text-xs text-tertiary mt-2">Alles aus = historischer Modus (fester Meldeplan). Vor jeder weiteren Saison erneut änderbar. „Echt-Anteil": wie oft echte Fahrer (statt generierte) nachrücken; 0 % = reiner Generator. „Todes-Realismus" greift schon ab Saison 1.</p>
                         </div>
 
                         <button onclick="startSelectedYear()" class="w-full mt-4 p-3 rounded-lg font-bold transition"
@@ -18475,6 +18498,10 @@
             // Muss NACH initFromYear laufen, das simRules auf die Defaults zurücksetzt.
             GAME_STATE.simRules = _readSimRulesFromDom();
             GAME_STATE.aiSimulation = Object.values(GAME_STATE.simRules).some(Boolean);
+            // v0.9.15.18: Todes-Realismus schon ab Saison 1 (eigene ID, nicht der Saison-Start-Slider)
+            const _drNew = document.getElementById('deathRealismSliderNew');
+            if (_drNew) GAME_STATE.deathRealism = parseInt(_drNew.value);
+            _recordSimSettingsChange('new-game');
             closeDatasetManager();
             renderAll();
             promptJuniorMode();   // einmalige Junior-Modus-Wahl für neuen Spielstand
@@ -19067,6 +19094,10 @@
                             <input type="checkbox" id="simRule_transferSeasonEnd" ${GAME_STATE.simRules?.transferSeasonEnd ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
                             <span class="text-sm">🔄 Transfers &amp; Sitz-Auffüllung (Saisonende)</span>
                         </label>
+                        <label class="flex items-center gap-3 cursor-pointer pl-6">
+                            <input type="checkbox" id="simExternalTransfers" ${GAME_STATE.simRules?.externalTransfers !== false ? 'checked' : ''} class="w-4 h-4">
+                            <span class="text-sm">🌍 Außenwelt zulassen (Reserve-Pool + neue Fahrer)</span>
+                        </label>
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" id="simRule_deaths" ${GAME_STATE.simRules?.deaths ? 'checked' : ''} class="w-4 h-4" onchange="syncSimMaster()">
                             <span class="text-sm">💀 Tode (Rennwochenende)</span>
@@ -19142,9 +19173,33 @@
             const pp = document.getElementById('simPoachPref');
             sr.realPreference  = rp ? parseInt(rp.value) : 100;
             sr.poachPreference = pp ? parseInt(pp.value) : 50;
+            const et = document.getElementById('simExternalTransfers');
+            sr.externalTransfers = et ? et.checked : true;
             return sr;
         }
-        
+
+        // v0.9.15.18: Chronologisches Änderungs-Protokoll der Sim-Einstellungen.
+        // Bei jeder tatsächlichen Änderung (Saison-Start-Dialog ODER Neuspiel-Screen)
+        // wird ein Eintrag an GAME_STATE.simSettingsLog angehängt — mit Zeitstempel,
+        // betroffener Saison, vollem Snapshot und dem Diff zur vorigen Einstellung.
+        // Landet automatisch im Export (Top-Level-Feld) → nachvollziehbar, welche
+        // Regel (Wechsel/Tod/Ersatz/echt-unecht/Todesrate) ab wann galt.
+        function _recordSimSettingsChange(context) {
+            if (!Array.isArray(GAME_STATE.simSettingsLog)) GAME_STATE.simSettingsLog = [];
+            const snap = { ...(GAME_STATE.simRules || {}), deathRealism: GAME_STATE.deathRealism };
+            const log = GAME_STATE.simSettingsLog;
+            const prev = log.length ? log[log.length - 1].snapshot : null;
+            const changed = {};
+            const keys = new Set([...Object.keys(snap), ...(prev ? Object.keys(prev) : [])]);
+            keys.forEach(k => {
+                const a = prev ? prev[k] : undefined;
+                if (a !== snap[k]) changed[k] = [a ?? null, snap[k] ?? null];
+            });
+            // Nach der ersten Aufzeichnung nur bei echtem Diff protokollieren.
+            if (prev && Object.keys(changed).length === 0) return;
+            log.push({ ts: new Date().toISOString(), year: GAME_STATE.currentYear, context, snapshot: snap, changed });
+        }
+
         window.confirmSeasonStart = function() {
             // Einstellungen übernehmen
             GAME_STATE.deathRealism = parseInt(document.getElementById('deathRealismSlider').value);
@@ -19157,8 +19212,9 @@
             
             // Saison starten
             const newYear = startNewSeason();
+            _recordSimSettingsChange('season-start');   // v0.9.15.18: nach currentYear-Vorlauf → year = neue Saison
             renderAll();
-            
+
             logSuccess('SEASON', `Saison ${newYear} gestartet (Todes-Realismus: ${GAME_STATE.deathRealism}%, KI: ${GAME_STATE.aiSimulation ? 'AN' : 'AUS'})`);
         };
         
