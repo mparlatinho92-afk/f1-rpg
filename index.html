@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.25</title>
+    <title>F1 RPG v0.9.15.26</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -951,7 +951,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.25 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.26 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; FIX: kaputte Laenderflaggen (Mojibake) bei Lauda, Rodriguez, Jarier u.a. - in den Daten repariert + Alt-Saves zur Anzeige korrigiert</div>
+                            <div>&#8226; FIX: Pace-Werte (Aktuell/Potenzial) im Editor speichern jetzt zuverlaessig</div>
+                            <div>&#8226; FIX: Skill-Editor-Button aendert nur die Ziehbarkeit, nicht das Layout</div>
+                            <div>&#8226; FIX: rein historische Fahrer zeigten faelschlich eine laufende Saison</div>
+                            <div>&#8226; FIX: laufende-Saison-Markierung nur noch fuers aktuelle Jahr</div>
+                            <div class="font-bold text-slate-400">v0.9.15.25 - 25.07.2026</div>
                             <div>&#8226; NEU: DNQ/DNPQ werden in der Historie gespeichert und in der Ergebnis-Matrix auch fuer vergangene Saisons angezeigt</div>
                             <div>&#8226; NEU: Fahrer-Skills sind erst nach Klick auf 'Skills bearbeiten' verschiebbar (kein versehentliches Verstellen auf dem Handy)</div>
                             <div>&#8226; FIX: nicht gemeldete Fahrer haben in der Saison-Matrix leere Zellen statt '-'</div>
@@ -3009,8 +3015,12 @@
                 var cp1 = (0x1F1E6 + alpha2.charCodeAt(0) - 65).toString(16);
                 var cp2 = (0x1F1E6 + alpha2.charCodeAt(1) - 65).toString(16);
                 var twemojiUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/' + cp1 + '-' + cp2 + '.png';
+                // v0.9.15.26: zweiter CDN-Mirror BEVOR auf das native Emoji zurückgefallen wird
+                // (native Flaggen-Emojis rendern auf Windows als „MX"-Buchstaben). Erst jsdelivr,
+                // dann cdnjs, dann native.
+                var mirrorUrl = 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/' + cp1 + '-' + cp2 + '.png';
                 var nativeFb = String.fromCodePoint(alpha2.charCodeAt(0) + 127397, alpha2.charCodeAt(1) + 127397);
-                return '<img src="' + twemojiUrl + '" alt="' + alpha2 + '" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy" onerror="this.outerHTML=this.dataset.fb" data-fb="' + nativeFb + '">';
+                return '<img src="' + twemojiUrl + '" alt="' + alpha2 + '" class="inline-flag" style="height:1em;width:1.3em;vertical-align:-0.1em;" loading="lazy" data-mirror="' + mirrorUrl + '" data-fb="' + nativeFb + '" onerror="if(!this.dataset.m){this.dataset.m=1;this.src=this.dataset.mirror;}else{this.outerHTML=this.dataset.fb;}">';
             }
             
             // Native Emoji für alle anderen (Mobile, macOS, Linux, Firefox)
@@ -3088,7 +3098,24 @@
             return null;
         }
         
+        // v0.9.15.26: doppelt kodierte („Mojibake") Flaggen-Emojis reparieren, z.B. "ðŸ‡¦ðŸ‡¹" → "🇦🇹".
+        // Quelle war data/seasons.js (jetzt gefixt), aber bestehende Saves haben das im driver.nation.
+        function _repairMojibakeFlag(str) {
+            if (typeof str !== 'string' || str.indexOf('ðŸ‡') === -1) return str;
+            try {
+                var bytes = [];
+                for (var i = 0; i < str.length; i++) {
+                    var c = str.charCodeAt(i);
+                    if (c === 0x2021) c = 0x87;       // ‡ (cp1252)
+                    else if (c === 0x0178) c = 0x9F;  // Ÿ (cp1252)
+                    if (c > 0xFF) return str;         // unerwartet → unverändert
+                    bytes.push(c);
+                }
+                return decodeURIComponent(escape(String.fromCharCode.apply(null, bytes)));
+            } catch (e) { return str; }
+        }
         function renderFlag(input, entityName, year) {
+            if (typeof input === 'string') input = _repairMojibakeFlag(input);
             // Kein Input? Versuche per Name
             if (!input || input === '' || input === null || input === undefined) {
                 if (entityName) {
@@ -3179,7 +3206,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.25';
+        const VERSION = '0.9.15.26';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -24705,16 +24732,18 @@ Empfohlene Wertebereiche:
                 </div>
             `;
 
-            // Editierbarer Stat: Slider + Zahleneingabe (nur aktive Fahrer)
+            // Stat-Regler (aktive Fahrer): IMMER gleiches Aussehen (farbig), aber standardmäßig NICHT
+            // ziehbar (pointer-events:none). Erst der „✏️"-Button setzt _driverSkillEdit → ziehbar.
+            // So ändert der Editor-Toggle nichts am Layout (kein Springen mehr).
             const editRow = (label, value, field, color = '#3B82F6') => `
                 <div class="skill-bar-container" style="align-items:center; gap:6px;">
                     <div class="skill-label">${label}</div>
-                    <input type="range" min="0" max="100" value="${Math.round(value || 0)}"
-                           style="flex:1; cursor:pointer; accent-color:${color}; height:5px;"
-                           oninput="this.nextElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)">
-                    <input type="number" min="0" max="100" value="${Math.round(value || 0)}"
-                           style="width:44px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); text-align:center; padding:2px 4px; font-size:0.75rem;"
-                           oninput="this.previousElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)">
+                    <input type="range" min="0" max="100" value="${Math.round(value || 0)}" ${_driverSkillEdit ? '' : 'tabindex="-1"'}
+                           style="flex:1; accent-color:${color}; height:5px; cursor:${_driverSkillEdit ? 'pointer' : 'default'};${_driverSkillEdit ? '' : 'pointer-events:none;'}"
+                           ${_driverSkillEdit ? `oninput="this.nextElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)"` : ''}>
+                    <input type="number" min="0" max="100" value="${Math.round(value || 0)}" ${_driverSkillEdit ? '' : 'readonly tabindex="-1"'}
+                           style="width:44px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); text-align:center; padding:2px 4px; font-size:0.75rem;${_driverSkillEdit ? '' : 'pointer-events:none;'}"
+                           ${_driverSkillEdit ? `oninput="this.previousElementSibling.value=this.value; updateDriverStat('${driverId}','${field}',+this.value)"` : ''}>
                 </div>
             `;
             
@@ -24956,9 +24985,14 @@ Empfohlene Wertebereiche:
                             ? `<span style="color:${_careerDelta > 0 ? '#22C55E' : '#EF4444'};font-size:0.65rem;font-weight:500;margin-left:3px;opacity:0.6">Σ${_careerDelta > 0 ? '+' : ''}${_careerDelta}</span>`
                             : '';
                         const _deltaHtml = _trendHtml + _careerHtml;
-                        const paceInfo = _prDisp
-                            ? { current: _prDisp[0], potential: _prDisp[1], gap: _prDisp[1] - _prDisp[0], percent: Math.round(_prDisp[0] / Math.max(1, _prDisp[1]) * 100) }
-                            : getPaceDevelopmentInfo(driver);
+                        // v0.9.15.26: Aktiver Fahrer in der laufenden Saison → LIVE-Werte (driver.currentPace/
+                        // potentialPace), damit manuelle Pace-Edits greifen UND gespeichert bleiben. Nur die
+                        // historische Jahres-Ansicht liest die statischen PACE_RATINGS (era-korrekt).
+                        const paceInfo = (isCurrentlyActive && isViewingCurrentSeason)
+                            ? getPaceDevelopmentInfo(driver)
+                            : (_prDisp
+                                ? { current: _prDisp[0], potential: _prDisp[1], gap: _prDisp[1] - _prDisp[0], percent: Math.round(_prDisp[0] / Math.max(1, _prDisp[1]) * 100) }
+                                : getPaceDevelopmentInfo(driver));
                         const gapColor = paceInfo.gap === 0 ? '#22C55E' : paceInfo.gap <= 3 ? '#3B82F6' : paceInfo.gap <= 6 ? '#EAB308' : '#F97316';
                         
                         // Status basierend auf Gap UND Alter
@@ -24988,7 +25022,7 @@ Empfohlene Wertebereiche:
                                     <span class="font-bold">Pace</span>
                                     <span class="text-sm" style="color: ${gapColor}">${statusText}</span>
                                 </div>
-                                ${(isCurrentlyActive && _driverSkillEdit) ? `
+                                ${isCurrentlyActive ? `
                                     ${editRow('Aktuell', paceInfo.current, 'currentPace', '#22C55E')}${_deltaHtml}
                                     ${editRow('Potenzial', paceInfo.potential, 'potentialPace', '#8B5CF6')}
                                 ` : `
@@ -25007,8 +25041,8 @@ Empfohlene Wertebereiche:
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            ${(isCurrentlyActive && _driverSkillEdit) ? editRow('Regen', driver.rain, 'rain', '#3B82F6') : skillBar('Regen', driver.rain)}
-                            ${(isCurrentlyActive && _driverSkillEdit) ? `
+                            ${isCurrentlyActive ? editRow('Regen', driver.rain, 'rain', '#3B82F6') : skillBar('Regen', driver.rain)}
+                            ${isCurrentlyActive ? `
                                 ${editRow('Konstanz', driver.consistency, 'consistency', '#F97316')}
                                 <div id="constWarn_${driverId}" style="display:${(driver.consistency??75) < 30 || (driver.consistency??75) >= 100 ? 'block' : 'none'}; color:#F97316; font-size:0.68rem; margin-top:2px; padding:2px 6px; background:rgba(249,115,22,0.12); border-radius:4px;">
                                     ${(driver.consistency??75) < 30 ? '⚠️ Unter 30: über 70 % der Rennen mit Performance-Malus!' : '⚠️ Konstanz 100 = Roboter – max. 97 empfohlen.'}
@@ -25016,7 +25050,7 @@ Empfohlene Wertebereiche:
                             ` : skillBar('Konstanz', driver.consistency)}
                         </div>
                         <div>
-                            ${(isCurrentlyActive && _driverSkillEdit) ? editRow('Erfahrung', driver.experience, 'experience', '#EAB308') : skillBar('Erfahrung', driver.experience)}
+                            ${isCurrentlyActive ? editRow('Erfahrung', driver.experience, 'experience', '#EAB308') : skillBar('Erfahrung', driver.experience)}
                         </div>
                     </div>
                 </div>
@@ -25323,8 +25357,11 @@ Empfohlene Wertebereiche:
                     // Hier die laufende Saison aus dem Live-Stand ergänzen, falls der Fahrer
                     // dieses Jahr ein Team hat und noch nicht in der History steht.
                     if (!fullCareer.some(h => h.year === GAME_STATE.currentYear)) {
+                        // v0.9.15.26: KEIN `|| driver`-Fallback mehr — sonst bekam ein rein historischer
+                        // Fahrer (z.B. letztes Jahr 1959) über sein History-Objekt mit altem team-Feld
+                        // eine Phantom-Aktuell-Saison (2021*). Nur echte Fahrer im aktuellen Roster/Pool.
                         const _liveDrv = GAME_STATE.drivers.find(d => d.id === driver.id)
-                            || (GAME_STATE.reservePool || []).find(d => d.id === driver.id) || driver;
+                            || (GAME_STATE.reservePool || []).find(d => d.id === driver.id);
                         const _liveStanding = GAME_STATE.driverStandings?.[driver.id];
                         if (_liveDrv && _liveDrv.team && (!_liveDrv.status || _liveDrv.status === 'active')) {
                             const _lt = GAME_STATE.teams.find(t => t.id === _liveDrv.team);
@@ -25370,7 +25407,7 @@ Empfohlene Wertebereiche:
                                     <tbody>
                                         ${fullCareer.map(h => `
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
-                                                <td class="p-1 font-bold"><span class="cursor-pointer" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main)'};text-decoration:underline;text-underline-offset:2px;" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
+                                                <td class="p-1 font-bold"><span class="cursor-pointer ${h.isCurrent ? '' : 'hover:underline'}" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main)'};${h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : ''}" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
                                                 <td class="p-1">
                                                     ${h.team !== '-' ?
                                                         renderTeamNameColored(h.team, h.teamId, h.year, h.teamColor) :
@@ -27302,7 +27339,7 @@ Empfohlene Wertebereiche:
                 const posClass = h.position === 1 ? 'accent-gold' : (h.position <= 3 && h.position !== '-' ? 'accent-blue' : '');
                 const rowClass = h.isHistorical ? ' opacity-75' : '';
                 html += '<tr class="border-t border-custom' + rowClass + '">';
-                html += '<td class="p-1 font-bold"><span class="cursor-pointer" style="color:' + (h.isCurrent ? '#f59e0b' : 'var(--accent-main)') + ';text-decoration:underline;text-underline-offset:2px;" title="' + (h.isCurrent ? 'Laufende Saison' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + h.year + (h.isCurrent ? '*' : '') + '</span></td>';
+                html += '<td class="p-1 font-bold"><span class="cursor-pointer ' + (h.isCurrent ? '' : 'hover:underline') + '" style="color:' + (h.isCurrent ? '#f59e0b' : 'var(--accent-main)') + ';' + (h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : '') + '" title="' + (h.isCurrent ? 'Laufende Saison' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + h.year + (h.isCurrent ? '*' : '') + '</span></td>';
                 const dObjs = h.driverObjs || [];
                 let driversHtml;
                 if (dObjs.length === 0) {
