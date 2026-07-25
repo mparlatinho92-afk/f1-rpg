@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.21</title>
+    <title>F1 RPG v0.9.15.22</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -948,7 +948,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.21 (aktuell) - 25.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.22 (aktuell) - 25.07.2026</div>
+                            <div>&#8226; FIX: echte Feeder-Junioren (F2/F3, kein histId) wurden als 'generiert' gezaehlt/angezeigt - jetzt korrekt 'echt (Nachwuchs)' / 'Reserve-Pool (Feeder)'</div>
+                            <div>&#8226; FIX: realPreference schloss Feeder faelschlich aus - 'generiert' zaehlt jetzt nur echte gen-/exp-Fahrer</div>
+                            <div>&#8226; NEU: Herkunfts-Kategorie Nachwuchs/Feeder</div>
+                            <div class="font-bold text-slate-400">v0.9.15.21 - 25.07.2026</div>
                             <div>&#8226; FIX: realPreference=100 generierte trotzdem Rookies mid-season, wenn der Reserve-Pool nur echte ERFAHRENE Fahrer hatte (Rookie-Slot fand keinen echten Rookie) - jetzt wird lieber ein echter erfahrener Fahrer verpflichtet, generiert nur bei echt-leerem Pool</div>
                             <div class="font-bold text-slate-400">v0.9.15.20 - 25.07.2026</div>
                             <div>&#8226; FIX: generierter Fahrer aus Reserve-Pool/Free-Agent wurde als 'echt' angezeigt - jetzt ehrlich als generiert (histId entscheidet)</div>
@@ -3159,7 +3163,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.21';
+        const VERSION = '0.9.15.22';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6304,13 +6308,14 @@
 
             if (useReal) {
                 // Echte Fahrer OHNE Cockpit: aktive Free Agents + Reserve-Pool (Außenwelt).
-                // v0.9.15.20: histId-Pflicht — ein generierter Fahrer (kein histId), der im Pool
-                // oder als Free Agent herumliegt, ist KEIN echter Fahrer. Sonst konnte realPreference=100
-                // („nur echte") einen generierten Pool-Fahrer als „echt" verpflichten (Coulon-Bug).
+                // v0.9.15.20/.22: „echt" = NICHT generiert (id gen-/exp-). histId-Fahrer UND Feeder
+                // (feeder-<name>, echte F2/F3-Junioren ohne histId) zählen als echt — nur wirklich
+                // generierte Fahrer (gen-/exp-) sind ausgeschlossen. Sonst wurden reale Feeder als
+                // „unecht" behandelt und realPreference=100 generierte, obwohl echte Junioren da waren.
                 const noCockpit = [
-                    ...GAME_STATE.drivers.filter(d => d.histId && !d.team && (!d.status || d.status === 'active') && _compat(d) && _excl(d)
+                    ...GAME_STATE.drivers.filter(d => !_isGeneratedId(d.id) && !d.team && (!d.status || d.status === 'active') && _compat(d) && _excl(d)
                         && (dismissedFromTeamId ? d._dismissedFromTeam !== dismissedFromTeamId : true)),
-                    ...(GAME_STATE.reservePool || []).filter(p => p.histId && !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
+                    ...(GAME_STATE.reservePool || []).filter(p => !_isGeneratedId(p.id) && !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
                 ];
                 const profile = arr => wantRookie ? arr.filter(_isBeginner) : arr.filter(d => !_isBeginner(d));
                 let freeReal = profile(noCockpit).sort((a, b) => _effPace(b) - _effPace(a));
@@ -6324,7 +6329,7 @@
                 // Rückfall, wenn kein echter Free Agent/Pool-Fahrer vorhanden ist (echt > generiert).
                 let poachReal = [];
                 if (allowPoach && (!wantRookie || !freeReal.length)) {
-                    poachReal = GAME_STATE.drivers.filter(d => d.histId && d.team && d.team !== teamId && (!d.status || d.status === 'active')
+                    poachReal = GAME_STATE.drivers.filter(d => !_isGeneratedId(d.id) && d.team && d.team !== teamId && (!d.status || d.status === 'active')
                         && _compat(d) && _excl(d) && !_isBeginner(d)).sort((a, b) => _effPace(b) - _effPace(a));
                 }
 
@@ -6386,9 +6391,9 @@
         function _seatOriginInfo(rep, year) {
             if (!rep) return null;
             const src = rep.source || null;
-            // v0.9.15.20: „echt" nur mit histId — ein generierter Fahrer bleibt generiert,
-            // auch wenn er aus Pool/Free-Agent-Liste kam.
-            const gen = rep.driver ? !rep.driver.histId : false;
+            // v0.9.15.20/.22: „generiert" = id-Präfix gen-/exp-. Feeder (feeder-<name>, echte
+            // Junioren ohne histId) sind KEINE generierten Fahrer.
+            const gen = rep.driver ? _isGeneratedId(rep.driver.id) : false;
             if (src === 'poach') {
                 const t = GAME_STATE.teams.find(x => x.id === rep.poachedFromTeamId);
                 return { kind: gen ? 'generated' : 'internal', source: 'poach', generated: gen, fromTeam: t?.name || '?', fromTier: _teamTierLabel(rep.poachedFromTeamId) };
@@ -6416,8 +6421,10 @@
         function _originBadge(o, driverId) {
             const POOL = { A: 'Reserve', B: 'Testfahrer', C: 'kommend', F: 'Feeder' };
             const drv = driverId ? _findDriverAny(driverId) : null;
-            // generiert? id-Präfix ist auch in Alt-Ständen verlässlich; sonst fehlendes histId.
-            const isGen = (o && o.generated === true) || _isGeneratedId(driverId) || (drv && !drv.histId);
+            // v0.9.15.22: generiert = NUR id-Präfix gen-/exp-. Feeder (feeder-<name>, echte
+            // F2/F3-Junioren ohne histId) sind echt — NICHT über fehlendes histId als generiert werten.
+            const isGen = (o && o.generated === true) || _isGeneratedId(driverId) || _isGeneratedId(drv && drv.id);
+            const isFeeder = /^feeder-/.test(String(driverId || '')) || (drv && (drv.feederInfo || drv.poolGroup === 'F'));
 
             if (o && o.source) {
                 switch (o.source) {
@@ -6442,6 +6449,7 @@
                 if (startY && drv.debutYear && drv.debutYear <= startY) return `🏛️ aus Start-Saison`;
                 return `🧑 echt (Bestand)`;
             }
+            if (isFeeder) return `🌱 echt (Nachwuchs)`;   // reale F2/F3-Junioren ohne histId
             if (o && o.departure) return `<span class="text-tertiary">↷ Abgang</span>`;
             return `<span class="text-tertiary">Herkunft —</span>`;
         }
