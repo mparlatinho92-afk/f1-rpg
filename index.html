@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.34</title>
+    <title>F1 RPG v0.9.15.35</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.34 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.35 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; NEU: 10 weitere Team-Logos - Porsche, Lancia, Lola, O.S.C.A., Venturi, Leyton House, Prost, Stewart, Parnelli und Kick Sauber (jetzt 112 von 178 Teams)</div>
+                            <div>&#8226; FIX: Maserati zeigte seit jeher das 2006er Logo - jetzt drei Aera-Logos (1943-51, 1951-54, 1954-83)</div>
+                            <div>&#8226; FIX: Teams mit Punkten im Namen (O.S.C.A.) fanden ihr Logo nie - Lookup ergaenzt um satzzeichenfreie Variante</div>
+                            <div>&#8226; FIX: Lola bekommt das Marken-Logo ab 1958 und deckt alle Spieljahre 1962-1997 ab statt nur 1997</div>
+                            <div class="font-bold text-slate-400">v0.9.15.34 - 26.07.2026</div>
                             <div>&#8226; NEU: 75 weitere Team-Logos - von Arrows und March bis Talbot-Lago, ATS, Connaught und Toro Rosso (26 von 178 Teams hatten eins, jetzt 102)</div>
                             <div>&#8226; NEU: Teams mit mehreren Logo-Aeren jahresgenau (Arrows 9 Epochen 1978-2002, Shadow 4, Footwork 4, HRT 3)</div>
                             <div>&#8226; FIX: Honda-Logo war unter falschem Schluessel hinterlegt und wurde nie angezeigt</div>
@@ -3278,7 +3283,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.34';
+        const VERSION = '0.9.15.35';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -17044,20 +17049,40 @@
         // Stufe 1 (Seed-Regen): Register era-bewusst + append-only vorbereitet. kind = Serien-Typ
         // (junior/sportscar/regional/kart…), startYear/endYear = Aktivfenster (null = seit/bis immer).
         // Neue Serien einfach anhängen; entfernen via endYear – Alt-Saisons bleiben eingefrorene Records.
+        // Serien-Editor: level = Ebene (klein = hoch). Serien mit GLEICHEM level liegen PARALLEL
+        // nebeneinander (Formel Regional neben Junior F3), verschiedene level untereinander.
+        // order = Position innerhalb der Ebene. grid/races sind PRO SERIE (globale Regler nur noch Vorgabe).
+        // Diese Liste ist nur der Startwert NEUER Welten – bestehende jw.series bleiben unangetastet.
         const JUNIOR_SERIES_DEFS = [
-            { id: 'f3', name: 'Junior Formel 3', level: 3, kind: 'junior', startYear: null, endYear: null },
-            { id: 'f2', name: 'Junior Formel 2', level: 2, kind: 'junior', startYear: null, endYear: null }
+            { id: 'f2',       name: 'Junior Formel 2', level: 2, order: 0, kind: 'junior',   grid: 22, races: 10, startYear: null, endYear: null },
+            { id: 'f3',       name: 'Junior Formel 3', level: 3, order: 0, kind: 'junior',   grid: 26, races: 12, startYear: null, endYear: null },
+            { id: 'regional', name: 'Formel Regional', level: 3, order: 1, kind: 'regional', grid: 24, races: 10, startYear: null, endYear: null },
+            { id: 'f4',       name: 'Formel 4',        level: 4, order: 0, kind: 'junior',   grid: 30, races: 14, startYear: null, endYear: null }
         ];
         // Legacy: seit Paket A v3 zieht _makeJuniorDriver Nationen über pickNationMotorsport
         // (gewichtete Motorsport-Frequenz je Dekade). Liste nur noch als Referenz/Fallback.
         const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NED','SWE','FIN','BEL','DEN','AUT','SUI','ARG'];
         const _JW_PTS = [25,18,15,12,10,8,6,4,2,1];
 
+        // Globale VORGABE: gilt nur noch als Startwert neuer Serien + Fallback für Serien ohne
+        // eigene Werte (Alt-Saves vor dem Editor). Verbindlich ist _juniorSeriesScale(s).
         function _juniorScale() {
             return {
                 driversPerSeries: Math.max(2, (GAME_STATE.juniorDriversPerSeries | 0) || 22),
                 races:            Math.max(1, (GAME_STATE.juniorRaces | 0) || 10)
             };
+        }
+        // Verbindliche Skalierung EINER Serie: eigener Wert → globale Vorgabe → Default.
+        function _juniorSeriesScale(s) {
+            const g = _juniorScale();
+            return {
+                grid:  Math.max(2, ((s && s.grid)  | 0) || g.driversPerSeries),
+                races: Math.max(1, ((s && s.races) | 0) || g.races)
+            };
+        }
+        // Ebenen der Welt, aufsteigend + lückenlos indizierbar (Ebene 1 = höchste Serie).
+        function _juniorLevels(jw) {
+            return [...new Set(((jw || {}).series || []).map(s => s.level ?? 99))].sort((a, b) => a - b);
         }
         function _jwRand(arr) { return arr[(Math.random() * arr.length) | 0]; }
 
@@ -17140,9 +17165,10 @@
         const JW_SEATS_PER_TEAM = 2;
         // Teams je Serie anlegen (falls fehlend) + teamlose Fahrer (Alt-Saves/Neuzugänge) auf offene Sitze.
         function _ensureJuniorTeams(jw) {
-            // Anzahl Teams folgt der Skalierung; bei Erhöhung (5a) werden Teams NACHGELEGT (nie entfernt).
-            const need = Math.max(1, Math.ceil(_juniorScale().driversPerSeries / JW_SEATS_PER_TEAM));
+            // Anzahl Teams folgt der Skalierung DIESER Serie; bei Erhöhung werden Teams NACHGELEGT
+            // (nie entfernt – sonst bräche der eingefrorene Regen-Kontext alter Saisons).
             for (const s of (jw.series || [])) {
+                const need = Math.max(1, Math.ceil(_juniorSeriesScale(s).grid / JW_SEATS_PER_TEAM));
                 if (!s.teams) s.teams = [];
                 while (s.teams.length < need) {
                     const i = s.teams.length;
@@ -17177,21 +17203,32 @@
         // renorm(INTAKE × LADDER) validiert hat (TVD Ø 0.127 vs. DECADE_NATION_POOLS).
         // Der Ladder wird NUR hier angewandt — nie zusätzlich an einer anderen Stufe.
         function _promoteJuniors(jw, year) {
-            const f2 = (jw.series || []).find(s => s.id === 'f2');
-            const f3 = (jw.series || []).find(s => s.id === 'f3');
-            if (!f2 || !f3) return 0;
-            const open = Math.max(0, _juniorScale().driversPerSeries - jw.drivers.filter(d => d.seriesId === 'f2').length);
-            if (open <= 0) return 0;
+            const series = jw.series || [];
+            const levels = _juniorLevels(jw);
+            if (series.length < 2 || levels.length < 2) return 0;
             const lad = PYRAMID_NATION_LADDER[_teamEraKey(year)] || PYRAMID_NATION_LADDER.e10;
-            const pool = jw.drivers.filter(d => d.seriesId === 'f3');
             let promoted = 0;
-            for (let i = 0; i < open && pool.length; i++) {
-                // Sockel +1: auch Punktlose können aufsteigen (dünne Grids, frühe Saisons).
-                const w = pool.map(d => ((d._lastPoints || 0) + 1) * (lad[d.nation] || 1.0));
-                let rand = Math.random() * w.reduce((s, x) => s + x, 0), idx = 0;
-                for (; idx < w.length - 1; idx++) { rand -= w[idx]; if (rand <= 0) break; }
-                const d = pool.splice(idx, 1)[0];
-                d.seriesId = 'f2'; d.team = _openJuniorSeat(jw, 'f2'); promoted++;
+            // Ebenen von oben nach unten: jede Ebene zieht aus der NÄCHSTTIEFEREN besetzten Ebene nach.
+            // Diese Reihenfolge ist Absicht – erst leert sich die Spitze, das Loch wandert nach unten
+            // durch (Kaskade). Parallele Serien einer Ebene werden nach order bedient (deterministisch).
+            for (let li = 0; li < levels.length - 1; li++) {
+                const feeder = new Set(series.filter(s => (s.level ?? 99) === levels[li + 1]).map(s => s.id));
+                if (!feeder.size) continue;
+                const targets = series.filter(s => (s.level ?? 99) === levels[li])
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
+                for (const tgt of targets) {
+                    const open = Math.max(0, _juniorSeriesScale(tgt).grid - jw.drivers.filter(d => d.seriesId === tgt.id).length);
+                    if (open <= 0) continue;
+                    const pool = jw.drivers.filter(d => feeder.has(d.seriesId));
+                    for (let i = 0; i < open && pool.length; i++) {
+                        // Sockel +1: auch Punktlose können aufsteigen (dünne Grids, frühe Saisons).
+                        const w = pool.map(d => ((d._lastPoints || 0) + 1) * (lad[d.nation] || 1.0));
+                        let rand = Math.random() * w.reduce((s, x) => s + x, 0), idx = 0;
+                        for (; idx < w.length - 1; idx++) { rand -= w[idx]; if (rand <= 0) break; }
+                        const d = pool.splice(idx, 1)[0];
+                        d.seriesId = tgt.id; d.team = _openJuniorSeat(jw, tgt.id); promoted++;
+                    }
+                }
             }
             return promoted;   // 5f: für Saison-Zusammenfassung
         }
@@ -17221,13 +17258,24 @@
         function _ensureJuniorRoster(jw, year) {
             if (!jw.series || jw.series.length === 0) jw.series = JUNIOR_SERIES_DEFS.map(s => ({ ...s, startYear: year }));
             // Stufe 1: neue Register-Felder auf Alt-Saves nachziehen (kind/startYear/endYear).
-            for (const s of jw.series) { if (s.kind === undefined) s.kind = 'junior'; if (s.startYear === undefined) s.startYear = null; if (s.endYear === undefined) s.endYear = null; }
+            // Editor: grid/races/order/level nachziehen – Alt-Saves erben EINMALIG die globale Vorgabe,
+            // danach sind die Serien-Werte verbindlich und der globale Regler nur noch Vorgabe.
+            const g = _juniorScale();
+            for (const s of jw.series) {
+                if (s.kind === undefined)      s.kind = 'junior';
+                if (s.startYear === undefined) s.startYear = null;
+                if (s.endYear === undefined)   s.endYear = null;
+                if (s.level === undefined)     s.level = 99;
+                if (s.order === undefined)     s.order = 0;
+                if (s.grid === undefined)      s.grid = g.driversPerSeries;
+                if (s.races === undefined)     s.races = g.races;
+            }
             jw.drivers = jw.drivers || [];
             _ensureJuniorTeams(jw);
-            const sc = _juniorScale();
             for (const s of jw.series) {
+                const need = _juniorSeriesScale(s).grid;
                 let have = jw.drivers.filter(d => d.seriesId === s.id).length;
-                for (; have < sc.driversPerSeries; have++) {
+                for (; have < need; have++) {
                     const d = _makeJuniorDriver(jw, s.id, year);
                     d.team = _openJuniorSeat(jw, s.id);
                     jw.drivers.push(d);
@@ -17343,10 +17391,11 @@
             const racesCount = races.length;
             const standArr = Object.values(heavy.standings || {}).sort((a, b) => b.points - a.points);
             const champHistId = standArr[0] && standArr[0].histId;
-            // Stufe 3: Notable-Latte serien-abhängig ("höhere Serie wichtiger"). level ≤2 (F2+) = großzügig
-            // (Titel/Sieg/Podest/Pole), ≥3 (F3) = streng (Titel/Sieg). Setzt s.notable → steuert das Prunen
-            // in _pruneJuniorAllTime (Ruhestands-Filler ohne notable werden gelöscht, Profil regenerierbar).
-            const _generousSeries = _juniorSeriesLevel(heavy.seriesId) <= 2;
+            // Stufe 3: Notable-Latte serien-abhängig ("höhere Serie wichtiger"). Die OBEREN ZWEI Ebenen =
+            // großzügig (Titel/Sieg/Podest/Pole), alles darunter = streng (Titel/Sieg). Setzt s.notable →
+            // steuert das Prunen in _pruneJuniorAllTime (Ruhestands-Filler ohne notable werden gelöscht).
+            // Relativ zur Ebenen-Liste statt hart level<=2: der Editor darf Ebenen frei umnummerieren.
+            const _generousSeries = _juniorLevels(GAME_STATE.juniorWorld).indexOf(_juniorSeriesLevel(heavy.seriesId)) <= 1;
             // 5e: bestes Renn-Ergebnis (kleinste Position, Nicht-DNF) je Fahrer in dieser Saison
             const bestPos = {};
             for (const r of races) for (const res of (r.results || [])) {
@@ -17468,14 +17517,16 @@
             _juniorContractMoves(jw, year);    // 5c: vertragsgetriebene Transfers (Auslaufverträge → Aufstieg)
             _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
             const newcomers = jw.drivers.filter(d => d.debutYear === year).length;
-            const sc = _juniorScale();
             const lightSeries = [], heavySeries = [];
             const nameById = {}; jw.drivers.forEach(d => nameById[d.id] = d.name);
             const deadIds = [];
-            for (const s of jw.series) {
+            // Ebenen von oben nach unten, parallele Serien nach order – die Reihenfolge bestimmt die
+            // Record-Reihenfolge in light/heavy und bleibt so über Saisons stabil.
+            const simOrder = [...jw.series].sort((a, b) => (a.level ?? 99) - (b.level ?? 99) || (a.order || 0) - (b.order || 0));
+            for (const s of simOrder) {
                 const roster = jw.drivers.filter(d => d.seriesId === s.id);
                 const seed = _recapHash(jw.worldSeed + '|' + s.id + '|' + year);   // Stufe 1: deterministischer Season-Seed
-                const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year, seed);
+                const sim = _simulateJuniorSeriesSeason(s, roster, _juniorSeriesScale(s).races, year, seed);
                 lightSeries.push(sim.light); heavySeries.push(sim.heavy);
                 _foldJuniorAggregates(jw, sim.heavy);   // Schritt 3: inkrementell All-Time/Strecken
                 (sim.dead || []).forEach(id => deadIds.push(id));
@@ -20153,24 +20204,35 @@
         let _juniorSubTab = 'season';
         // Höhere Klasse zuerst: F2 (level 2) vor F3 (level 3) → aufsteigend nach level.
         function _juniorSeriesLevel(id) { return (GAME_STATE.juniorWorld?.series || []).find(x => x.id === id)?.level ?? 99; }
+        // Badge-Farbe je EBENE (Index in _juniorLevels), oben nach unten. Reicht die Palette nicht,
+        // wiederholt sie sich – Serien werden zusätzlich über ihren Namen unterschieden.
+        const JW_LEVEL_COLORS = ['#4363d8', '#e6194b', '#f58231', '#3cb44b', '#911eb4', '#42d4f4'];
+        // Sortier-Rang: Ebene zuerst, dann Position innerhalb der Ebene (parallele Serien).
+        function _juniorSeriesRank(id) {
+            const s = (GAME_STATE.juniorWorld?.series || []).find(x => x.id === id);
+            return (s?.level ?? 99) * 100 + (s?.order || 0);
+        }
         function renderJuniorWorld() {
             if (GAME_STATE.juniorMode !== 'world') {
                 return '<div class="card p-4 rounded-lg">Die Junior-Welt ist für diesen Spielstand nicht aktiv.</div>';
             }
             const jw = GAME_STATE.juniorWorld || _emptyJuniorWorld();
             const years = (jw.history || []).map(h => h.year);
-            if (!years.length) {
-                return '<div class="card p-4 rounded-lg">🌍 Junior-Welt aktiv – noch keine Saison simuliert. Schalte eine Saison weiter, dann erscheinen hier die Tabellen.</div>';
-            }
-            if (_juniorViewYear == null || !years.includes(_juniorViewYear)) _juniorViewYear = years[years.length - 1];
             const sub = _juniorSubTab || 'season';
             const subBtn = (id, label) => `<button onclick="juniorSubTab('${id}')" class="px-3 py-1 rounded text-sm ${sub === id ? 'btn-primary' : 'bg-secondary'}">${label}</button>`;
             let body;
-            if (sub === 'alltime') {
+            // Editor ZUERST prüfen: er muss auch vor der allerersten Saison erreichbar sein
+            // (die Leiter richtet man ein, BEVOR man weiterschaltet).
+            if (sub === 'editor') {
+                body = renderJuniorEditor(jw);
+            } else if (!years.length) {
+                body = '<div class="card p-4 rounded-lg">🌍 Junior-Welt aktiv – noch keine Saison simuliert. Richte unter <b>🧩 Serien</b> die Leiter ein und schalte dann eine Saison weiter.</div>';
+            } else if (sub === 'alltime') {
                 body = renderJuniorAllTime(jw);
             } else if (sub === 'circuits') {
                 body = renderJuniorCircuits(jw);
             } else {
+                if (_juniorViewYear == null || !years.includes(_juniorViewYear)) _juniorViewYear = years[years.length - 1];
                 const opts = years.slice().reverse().map(y => `<option value="${y}" ${y === _juniorViewYear ? 'selected' : ''}>${y}</option>`).join('');
                 setTimeout(() => _renderJuniorSeason(_juniorViewYear), 0);   // async Detail nachladen
                 const evt = ((jw.history || []).find(h => h.year === _juniorViewYear) || {}).events;
@@ -20179,21 +20241,17 @@
                         <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select></label>${evtNote}</div>
                     <div id="junior-season-tables"><div class="text-tertiary p-4">Lade Saison ${_juniorViewYear}…</div></div>`;
             }
-            const sc = _juniorScale();
-            const numInput = (field, label, min, val) => `<label class="text-xs text-tertiary">${label} <input type="number" min="${min}" value="${val}" onchange="juniorSetScale('${field}', this.value)" style="width:56px;padding:2px 6px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);"></label>`;
             return `
                 <div class="card p-4 rounded-lg mb-4">
                     <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
-                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken${(jw.memoriam || []).length ? ` · ✝ ${jw.memoriam.length}` : ''}</div>
+                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien auf ${_juniorLevels(jw).length} Ebenen · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken${(jw.memoriam || []).length ? ` · ✝ ${jw.memoriam.length}` : ''}</div>
                     <div style="display:flex;gap:0.7rem;flex-wrap:wrap;align-items:center;margin-bottom:0.6rem;">
-                        ${numInput('drivers', 'Fahrer/Serie', 2, sc.driversPerSeries)}
-                        ${numInput('races', 'Rennen/Serie', 1, sc.races)}
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;"><input type="checkbox" ${GAME_STATE.juniorDeaths ? 'checked' : ''} onchange="juniorToggleDeaths(this.checked)"> Todesfälle (selten)</label>
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;" title="All-Time-Statistik schlank halten: Fahrer im Ruhestand ohne Titel/Sieg (F2 auch ohne Podest/Pole) werden entfernt – ihr Profil bleibt aus den Saison-Daten abrufbar."><input type="checkbox" ${jw.pruneAllTime ? 'checked' : ''} onchange="juniorTogglePrune(this.checked)"> Speicher optimieren</label>
                         ${jw.pruneAllTime ? '' : `<button onclick="juniorOptimizeNow()" class="text-xs px-2 py-1 rounded" style="background:var(--bg-tertiary);border:1px solid var(--border-color);">🧹 Jetzt optimieren</button>`}
                         <span class="text-xs text-tertiary">(wirkt ab nächster Saison)</span>
                     </div>
-                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${subBtn('season', '🏁 Saison')}${subBtn('alltime', '🏆 All-Time')}${subBtn('circuits', '📍 Strecken')}</div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">${subBtn('season', '🏁 Saison')}${subBtn('alltime', '🏆 All-Time')}${subBtn('circuits', '📍 Strecken')}${subBtn('editor', '🧩 Serien')}</div>
                 </div>
                 ${body}
             `;
@@ -20223,13 +20281,146 @@
             saveGame();
             renderContent();
         };
+        // ══ Serien-Editor (Sub-Tab „🧩 Serien") ══════════════════════════════════════════════
+        // Ebenen liegen UNTEREINANDER (Hierarchie, oben = höchste Serie), Serien einer Ebene
+        // NEBENEINANDER (parallel). Drag & Drop nativ über HTML5 – keine Library, der Monolith
+        // bleibt abhängigkeitsfrei. Ziehen auf eine Ebenen-Zeile = Ebenenwechsel, auf einen
+        // Zwischenstreifen = neue Ebene dazwischen. Struktur/Größen wirken ab der NÄCHSTEN Saison
+        // (laufende Saison ist bereits simuliert bzw. ihr Regen-Kontext eingefroren).
+        let _jwDragSeries = null;
+        function _jwEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        // Nach jeder Struktur-Änderung: Ebenen auf 1..n verdichten, order je Ebene lückenlos.
+        // Erlaubt fraktionale Zwischen-Ebenen (2.5) beim Einfügen – die werden hier zu echten Ebenen.
+        function _juniorNormalizeLevels(jw) {
+            const series = jw.series || [];
+            const lv = [...new Set(series.map(s => s.level ?? 99))].sort((a, b) => a - b);
+            const map = {}; lv.forEach((v, i) => map[v] = i + 1);
+            for (const s of series) s.level = map[s.level ?? 99];
+            for (const l of new Set(series.map(s => s.level))) {
+                series.filter(s => s.level === l)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    .forEach((s, i) => s.order = i);
+            }
+        }
+        function renderJuniorEditor(jw) {
+            const series = [...(jw.series || [])].sort((a, b) => (a.level ?? 99) - (b.level ?? 99) || (a.order || 0) - (b.order || 0));
+            const levels = _juniorLevels(jw);
+            const g = _juniorScale();
+            const inp = (id, field, val, min) => `<label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:3px;">${field === 'grid' ? 'Gitter' : 'Rennen'}
+                <input type="number" min="${min}" value="${val}" onchange="juniorSetSeriesField('${id}','${field}',this.value)"
+                       style="width:52px;padding:2px 5px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);"></label>`;
+            const card = (s) => {
+                const sc = _juniorSeriesScale(s);
+                const n = (jw.drivers || []).filter(d => d.seriesId === s.id).length;
+                return `<div draggable="true" ondragstart="juniorEditorDragStart(event,'${s.id}')" ondragend="juniorEditorDragEnd(event)"
+                        style="cursor:grab;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:8px;padding:0.5rem 0.6rem;min-width:200px;">
+                    <div style="display:flex;align-items:center;gap:5px;">
+                        <span class="text-tertiary" title="Ziehen zum Verschieben" style="cursor:grab;">⠿</span>
+                        <input value="${_jwEsc(s.name)}" onchange="juniorSetSeriesField('${s.id}','name',this.value)"
+                               style="flex:1;min-width:0;padding:2px 5px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:0.85rem;">
+                        <button onclick="juniorRemoveSeries('${s.id}')" title="Serie entfernen"
+                                style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:0.9rem;">✕</button>
+                    </div>
+                    <div style="display:flex;gap:0.6rem;margin-top:6px;">${inp(s.id, 'grid', sc.grid, 2)}${inp(s.id, 'races', sc.races, 1)}</div>
+                    <div class="text-xs text-tertiary" style="margin-top:4px;">${n} Fahrer aktiv${(s.teams || []).length ? ` · ${s.teams.length} Teams` : ''}</div>
+                </div>`;
+            };
+            const strip = (lvl) => `<div ondragover="juniorEditorOver(event)" ondragleave="juniorEditorLeave(event)" ondrop="juniorEditorDropNewLevel(event,${lvl})"
+                    style="height:16px;border-radius:8px;margin:3px 0;border:1px dashed transparent;"></div>`;
+            let rows = strip(levels.length ? levels[0] - 0.5 : 1);
+            levels.forEach((l, i) => {
+                const inRow = series.filter(x => (x.level ?? 99) === l);
+                rows += `<div ondragover="juniorEditorOver(event)" ondragleave="juniorEditorLeave(event)" ondrop="juniorEditorDrop(event,${l})"
+                        class="card rounded-lg" style="display:flex;align-items:flex-start;gap:0.6rem;padding:0.6rem;border:1px solid transparent;">
+                    <div class="text-xs text-tertiary" style="min-width:78px;padding-top:0.4rem;">Ebene ${i + 1}${i === 0 ? ' ▲ Spitze' : (i === levels.length - 1 ? ' ▼ Basis' : '')}</div>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;flex:1;align-items:stretch;">
+                        ${inRow.map(card).join('')}
+                        <button onclick="juniorAddSeries(${l})" class="text-xs"
+                                style="min-width:96px;border:1px dashed var(--border-color);border-radius:8px;background:none;color:var(--text-tertiary);cursor:pointer;">+ Serie</button>
+                    </div>
+                </div>`;
+                rows += strip(l + 0.5);
+            });
+            return `<div class="card p-4 rounded-lg mb-4">
+                    <div class="text-sm" style="margin-bottom:0.3rem;"><b>Leiter bearbeiten</b></div>
+                    <div class="text-xs text-tertiary" style="margin-bottom:0.8rem;">Serien per ⠿ ziehen: auf eine Ebene = parallel dazu, auf einen schmalen Zwischenstreifen = neue Ebene. Aufstieg läuft immer von der Ebene darunter nach oben. Änderungen wirken ab der nächsten Saison.</div>
+                    ${rows}
+                    <div style="display:flex;gap:0.7rem;flex-wrap:wrap;align-items:center;margin-top:0.9rem;padding-top:0.7rem;border-top:1px solid var(--border-color);">
+                        <span class="text-xs text-tertiary">Vorgabe für neue Serien:</span>
+                        <label class="text-xs text-tertiary">Gitter <input type="number" min="2" value="${g.driversPerSeries}" onchange="juniorSetScale('drivers',this.value)" style="width:52px;padding:2px 5px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);"></label>
+                        <label class="text-xs text-tertiary">Rennen <input type="number" min="1" value="${g.races}" onchange="juniorSetScale('races',this.value)" style="width:52px;padding:2px 5px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);"></label>
+                    </div>
+                </div>`;
+        }
+        window.juniorEditorDragStart = function(ev, id) {
+            _jwDragSeries = id;
+            if (ev.dataTransfer) { ev.dataTransfer.effectAllowed = 'move'; try { ev.dataTransfer.setData('text/plain', id); } catch (e) {} }
+        };
+        window.juniorEditorDragEnd = function() { _jwDragSeries = null; };
+        window.juniorEditorOver = function(ev) {
+            ev.preventDefault();
+            if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+            ev.currentTarget.style.borderColor = 'var(--accent-main)';
+        };
+        window.juniorEditorLeave = function(ev) { ev.currentTarget.style.borderColor = 'transparent'; };
+        function _jwDropped(ev) {
+            ev.preventDefault(); ev.stopPropagation();
+            ev.currentTarget.style.borderColor = 'transparent';
+            const jw = GAME_STATE.juniorWorld;
+            const id = _jwDragSeries || (ev.dataTransfer && ev.dataTransfer.getData('text/plain'));
+            return { jw, s: jw && (jw.series || []).find(x => x.id === id) };
+        }
+        window.juniorEditorDrop = function(ev, level) {
+            const { jw, s } = _jwDropped(ev); if (!s) return;
+            s.level = level; s.order = 999;   // ans Ende der Zielebene, Normalisierung räumt auf
+            _juniorNormalizeLevels(jw); saveGame(); renderContent();
+        };
+        window.juniorEditorDropNewLevel = function(ev, lvl) {
+            const { jw, s } = _jwDropped(ev); if (!s) return;
+            s.level = lvl; s.order = 0;       // fraktional (x.5) → Normalisierung macht eine echte Ebene daraus
+            _juniorNormalizeLevels(jw); saveGame(); renderContent();
+        };
+        window.juniorSetSeriesField = function(id, field, val) {
+            const jw = GAME_STATE.juniorWorld; if (!jw) return;
+            const s = (jw.series || []).find(x => x.id === id); if (!s) return;
+            if (field === 'name') s.name = String(val).trim().slice(0, 40) || s.name;
+            else if (field === 'grid') s.grid = Math.max(2, parseInt(val) || 0);
+            else if (field === 'races') s.races = Math.max(1, parseInt(val) || 0);
+            saveGame();   // kein renderContent: das Feld hat gerade erst den Fokus verloren
+        };
+        window.juniorAddSeries = function(level) {
+            const jw = GAME_STATE.juniorWorld; if (!jw) return;
+            const g = _juniorScale();
+            let n = 1, id;
+            do { id = 'js' + (n++); } while ((jw.series || []).some(s => s.id === id));
+            jw.series = jw.series || [];
+            jw.series.push({ id, name: 'Neue Serie ' + (n - 1), level, order: 999, kind: 'junior',
+                grid: g.driversPerSeries, races: g.races, startYear: GAME_STATE.currentYear, endYear: null, teams: [] });
+            _juniorNormalizeLevels(jw); saveGame(); renderContent();
+            logInfo('JUNIOR', `🧩 Serie „${id}" angelegt (Ebene ${level}) – füllt sich beim nächsten Saisonstart`);
+        };
+        window.juniorRemoveSeries = function(id) {
+            const jw = GAME_STATE.juniorWorld; if (!jw) return;
+            const s = (jw.series || []).find(x => x.id === id); if (!s) return;
+            if ((jw.series || []).length <= 1) { alert('Die letzte Serie kann nicht entfernt werden – die Junior-Welt braucht mindestens eine.'); return; }
+            const n = (jw.drivers || []).filter(d => d.seriesId === id).length;
+            if (!confirm(`„${s.name}" entfernen?` + (n ? `\n\n${n} aktive Fahrer verlieren ihr Cockpit und rücken beim nächsten Saisonstart in die unterste verbleibende Serie.` : '')
+                + `\n\nBereits gefahrene Saisons bleiben in Historie und All-Time-Statistik erhalten.`)) return;
+            jw.series = jw.series.filter(x => x.id !== id);
+            // Fahrer NICHT löschen – sie landen in der untersten verbleibenden Ebene und bekommen
+            // beim nächsten _ensureJuniorTeams einen Sitz. Ihre Historie bleibt dadurch zusammenhängend.
+            const low = [...jw.series].sort((a, b) => (b.level ?? 0) - (a.level ?? 0))[0];
+            for (const d of (jw.drivers || [])) if (d.seriesId === id) { d.seriesId = low.id; d.team = null; }
+            _juniorNormalizeLevels(jw); saveGame(); renderContent();
+            logInfo('JUNIOR', `🧩 Serie „${s.name}" entfernt${n ? ` – ${n} Fahrer nach „${low.name}" verschoben` : ''}`);
+        };
         window.juniorSelectYear = function(y) { _juniorViewYear = y; _renderJuniorSeason(y); };
         async function _renderJuniorSeason(year) {
             const cont = document.getElementById('junior-season-tables');
             if (!cont) return;
             const detail = await idbJDetailGet(year);
             if (!detail || !detail.series) { cont.innerHTML = '<div class="text-tertiary p-4">Keine Daten für diese Saison.</div>'; return; }
-            const ordered = [...detail.series].sort((a, b) => _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));   // F2 vor F3
+            const ordered = [...detail.series].sort((a, b) => _juniorSeriesRank(a.seriesId) - _juniorSeriesRank(b.seriesId));   // höhere Ebene zuerst, dann parallele nach Position
             cont.innerHTML = ordered.map(s => _renderJuniorSeriesTable(s, year)).join('');
         }
         // Anklickbarer Junior-Steckbrief – nutzt den bestehenden F1-Steckbrief-Rahmen
@@ -20240,7 +20431,17 @@
             if (!jw) return;
             const seriesName = id => (jw.series || []).find(s => s.id === id)?.name || id;
             const teamObj = (sid, tid) => ((jw.series || []).find(s => s.id === sid)?.teams || []).find(t => t.id === tid) || {};
-            const seriesBadge = sid => `<span class="px-2 py-1 rounded text-xs font-bold" style="background-color:${sid === 'f2' ? '#4363d8' : '#e6194b'}22;color:${sid === 'f2' ? '#4363d8' : '#e6194b'}">${seriesName(sid)}</span>`;
+            // Badge-Farbe folgt der EBENE, nicht der Serien-ID (früher hart f2=blau/Rest=rot – bei
+            // vier Serien wäre alles außer F2 gleich rot). Parallele Serien einer Ebene teilen die
+            // Farbe bewusst: gleiche Stufe = gleiche Farbe, unterschieden über den Namen.
+            // fallback = seriesName aus dem heavy-Record: eine im Editor GELÖSCHTE Serie steht nicht
+            // mehr im Register, ihre alten Saisons sollen trotzdem den Klarnamen zeigen statt der ID.
+            const seriesBadge = (sid, fallback) => {
+                const li = _juniorLevels(jw).indexOf(_juniorSeriesLevel(sid));
+                const c = JW_LEVEL_COLORS[(li < 0 ? 1 : li) % JW_LEVEL_COLORS.length];
+                const nm = (jw.series || []).find(s => s.id === sid)?.name || fallback || sid;
+                return `<span class="px-2 py-1 rounded text-xs font-bold" style="background-color:${c}22;color:${c}">${nm}</span>`;
+            };
             // Karriere aus den Detail-Records streamen (eine Zeile je Serie/Saison)
             const rows = [];
             const seasonRecs = [];   // Stufe 3: heavy-Refs je Saison (für Filler-Totals aus Snapshots)
@@ -20256,11 +20457,11 @@
                     if (drv.name) { snapName = drv.name; snapNation = drv.nation; }
                     const t = teamObj(s.seriesId, drv.team);
                     const champ = sorted[0] && sorted[0].histId === histId;
-                    rows.push({ year: h.year, seriesId: s.seriesId, teamName: t.name || '–', teamColor: t.color || '#888', pos, points: sd.points, wins: sd.wins, podiums: sd.podiums, poles: sd.poles, champ });
+                    rows.push({ year: h.year, seriesId: s.seriesId, seriesName: s.seriesName, teamName: t.name || '–', teamColor: t.color || '#888', pos, points: sd.points, wins: sd.wins, podiums: sd.podiums, poles: sd.poles, champ });
                     seasonRecs.push({ year: h.year, s, sd, champ });
                 }
             }
-            rows.sort((a, b) => b.year - a.year || _juniorSeriesLevel(a.seriesId) - _juniorSeriesLevel(b.seriesId));   // neuestes Jahr oben (wie F1)
+            rows.sort((a, b) => b.year - a.year || _juniorSeriesRank(a.seriesId) - _juniorSeriesRank(b.seriesId));   // neuestes Jahr oben (wie F1)
             const debutYear = rows.length ? Math.min(...rows.map(r => r.year)) : null;
             const at = (jw.allTimeStats || {})[histId] || {};
             const active = (jw.drivers || []).find(d => d.id === histId);
@@ -20300,7 +20501,7 @@
                 const posClass = r.pos === 1 ? 'accent-gold' : (r.pos && r.pos <= 3 ? 'accent-blue' : '');
                 career += `<tr class="border-t border-custom">`
                     + `<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:var(--accent-main)" onclick="closeDriverProfile();_juniorSubTab='season';_juniorViewYear=${r.year};renderContent()">${r.year}</span></td>`
-                    + `<td class="p-1">${seriesBadge(r.seriesId)}</td>`
+                    + `<td class="p-1">${seriesBadge(r.seriesId, r.seriesName)}</td>`
                     + `<td class="p-1"><span style="color:${r.teamColor};font-weight:600">${r.teamName}</span></td>`
                     + `<td class="p-1 text-center jw-hide-mobile ${r.wins > 0 ? 'accent-gold font-bold' : ''}">${r.wins || 0}</td>`
                     + `<td class="p-1 text-center jw-hide-mobile">${r.podiums || 0}</td>`
@@ -26940,7 +27141,7 @@ Empfohlene Wertebereiche:
             // === Nachtrag v0.9.15.34: Logos aus Logopedia Category:Formula One constructors.
             // Nur Teams mit EXPLIZIT datiertem Abschnitt auf der Quellseite - keine geratenen Zeitraeume.
             "honda": [ // 1964–2008 im Spiel; Key "honda-team" wurde nie getroffen
-                { from: 1964, to: 1968, url: "https://static.wikia.nocookie.net/logopedia/images/b/bc/Honda_f1_60s.jpg/revision/latest?cb=20240519184355" },
+                { from: 1964, to: 1968, url: "https://static.wikia.nocookie.net/logopedia/images/4/4a/HondaF164.jpg/revision/latest?cb=20260323170615" },
                 { from: 2006, to: 2008, url: "https://static.wikia.nocookie.net/logopedia/images/2/2a/Logo_Honda_F1_Racing.svg/revision/latest?cb=20200425130049" }
             ],
             "arrows": [ // 1978–2002 im Spiel
@@ -27158,8 +27359,10 @@ Empfohlene Wertebereiche:
                 { from: 2012, to: 2014, url: "https://static.wikia.nocookie.net/logopedia/images/d/d1/Marussiaf1.png/revision/latest?cb=20250826150443" },
                 { from: 2015, to: 2015, url: "https://static.wikia.nocookie.net/logopedia/images/5/59/Manor_F1_Team_logo.png/revision/latest?cb=20150806160651" }
             ],
-            "maserati": [ // 1950–1960 im Spiel
-                { from: 1950, to: 1957, url: "https://static.wikia.nocookie.net/logopedia/images/8/85/Maserati_2006.svg/revision/latest?cb=20180305200055" }
+            "maserati": [ // 1950–1960 im Spiel; Aera-Logos der Markenseite
+                { from: 1943, to: 1951, url: "https://static.wikia.nocookie.net/logopedia/images/f/fa/Maserati_1943.svg/revision/latest?cb=20220524093759" },
+                { from: 1951, to: 1954, url: "https://static.wikia.nocookie.net/logopedia/images/d/d0/Maserati_1951.svg/revision/latest?cb=20220524104413" },
+                { from: 1954, to: 1983, url: "https://static.wikia.nocookie.net/logopedia/images/2/24/Maserati_1954.svg/revision/latest?cb=20220524105217" }
             ],
             "midland": [ // 2006–2006 im Spiel
                 { from: 2006, to: 2006, url: "https://static.wikia.nocookie.net/logopedia/images/f/ff/MidlandF1.png/revision/latest?cb=20250826171016" }
@@ -27197,15 +27400,51 @@ Empfohlene Wertebereiche:
             "afm": [ // 1952–1953 im Spiel
                 { from: 1952, to: 1953, url: "https://static.wikia.nocookie.net/logopedia/images/d/d0/Alex_von_Falkenhausen_Motorenbau_logo.png/revision/latest?cb=20240701085246" }
             ],
+            // Nachtrag v0.9.15.35: Marken-/Team-Seiten ausserhalb der Konstrukteurs-Kategorie
+            "lola": [ // 1962–1997 im Spiel
+                { from: 1958, to: 2099, url: "https://static.wikia.nocookie.net/logopedia/images/f/fe/Lola_Cars.svg/revision/latest?cb=20260327224346" }
+            ],
+            "osca": [ // 1951–1958 im Spiel
+                { from: 1947, to: 1967, url: "https://static.wikia.nocookie.net/logopedia/images/0/08/Soimpressivez.jpg/revision/latest?cb=20151103002947" }
+            ],
+            "porsche": [ // 1957–1964 im Spiel
+                { from: 1952, to: 1963, url: "https://static.wikia.nocookie.net/logopedia/images/c/c3/Porsche_50s.jpg/revision/latest?cb=20220729132839" },
+                { from: 1963, to: 1994, url: "https://static.wikia.nocookie.net/logopedia/images/6/61/Porsche_60s.jpg/revision/latest?cb=20220729132747" }
+            ],
+            "lancia": [ // 1954–1955 im Spiel
+                { from: 1950, to: 1957, url: "https://static.wikia.nocookie.net/logopedia/images/5/5f/Lancia_1950.svg/revision/latest?cb=20221111112009" }
+            ],
+            "prost": [ // 1997–2001 im Spiel
+                { from: 1998, to: 2000, url: "https://static.wikia.nocookie.net/logopedia/images/1/12/ProstF11998.jpg/revision/latest?cb=20260329042337" }
+            ],
+            "stewart": [ // 1997–1999 im Spiel
+                { from: 1997, to: 1999, url: "https://static.wikia.nocookie.net/logopedia/images/4/43/Stewart_Grand_Prix.webp/revision/latest?cb=20260421124355" }
+            ],
+            "parnelli": [ // 1974–1975 im Spiel
+                { from: 1969, to: 1977, url: "https://static.wikia.nocookie.net/logopedia/images/d/d0/Velspjracinglogo19691977.png/revision/latest?cb=20251129034040" }
+            ],
+            "leyton-house": [ // 1990–1991 im Spiel
+                { from: 1985, to: 1987, url: "https://static.wikia.nocookie.net/logopedia/images/1/16/Leyton_House_1986_logo.png/revision/latest?cb=20240427165152" },
+                { from: 1987, to: 1998, url: "https://static.wikia.nocookie.net/logopedia/images/f/f8/Leyton_House_1987_logo.png/revision/latest?cb=20240427165258" }
+            ],
+            "kick-sauber": [ // 2024–2025 im Spiel
+                { from: 2024, to: 2025, url: "https://static.wikia.nocookie.net/logopedia/images/7/79/Kick_sauber.png/revision/latest?cb=20240122094924" }
+            ],
+            "venturi": [ // 1992–1992 im Spiel
+                { from: 1989, to: 2001, url: "https://static.wikia.nocookie.net/logopedia/images/6/63/Venturi_1989.svg/revision/latest?cb=20230209090736" }
+            ],
         };
 
         function getTeamLogoUrl(teamId, year) {
             // Suche mit mehreren ID-Varianten: original, lowercase, Bindestrich↔Leerzeichen
+            // und zuletzt satzzeichenfrei via teamSlug — sonst findet "O.S.C.A." nie den
+            // Key 'osca' (keine der Varianten oben entfernt die Punkte).
             const id = teamId || '';
             const logos = TEAM_LOGOS[id]
                 || TEAM_LOGOS[id.toLowerCase()]
                 || TEAM_LOGOS[id.toLowerCase().replace(/\s+/g, '-')]
-                || TEAM_LOGOS[id.toLowerCase().replace(/-/g, ' ')];
+                || TEAM_LOGOS[id.toLowerCase().replace(/-/g, ' ')]
+                || TEAM_LOGOS[teamSlug(id)];
             if (!logos || logos.length === 0) return null;
             // Bei Überlappungen: neuerer Eintrag (größeres from) gewinnt
             const matches = logos.filter(l => year >= (l.from || 0) && year <= (l.to || 9999));
