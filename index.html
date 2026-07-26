@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.31</title>
+    <title>F1 RPG v0.9.15.32</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -599,6 +599,26 @@
         .champ-card-name { cursor: pointer; text-decoration: none; }
         .champ-card-name:hover { text-decoration: underline; text-underline-offset: 3px; opacity: 0.85; }
 
+        /* Champion-Karten (vergangene Saison): Team-Livery als Hintergrund, Bild links, Flagge rechts */
+        .champ-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; overflow: hidden; }
+        .champ-card-media { flex-shrink: 0; }
+        .champ-card-media .profile-photo-wrap { width: 62px; height: 74px; border-radius: 8px; border-width: 1px; }
+        .champ-card-media .profile-logo-wrap { width: 62px; height: 62px; border-radius: 8px; border-width: 1px; }
+        .champ-card-body { flex: 1; min-width: 0; }
+        .champ-card-label { font-size: 0.78rem; font-weight: 600; opacity: 0.85; }
+        .champ-card-title { font-size: 1.15rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .champ-card-sub { font-size: 0.8rem; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .champ-card-flag { flex-shrink: 0; font-size: 2.1rem; line-height: 1; display: flex; align-items: center; }
+
+        /* Saisonverlauf-Matrix: kompakte Fahrerspalte (Platz, Flagge, Name, Team) */
+        .matrix-drv-cell { max-width: 230px; }
+        .matrix-drv { display: flex; align-items: center; gap: 6px; }
+        .matrix-pos { min-width: 1.5em; text-align: right; font-weight: bold; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+        .matrix-flag { flex-shrink: 0; display: inline-flex; align-items: center; }
+        .matrix-drv-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+        .matrix-drv-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .matrix-drv-team { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .driver-link:hover, .team-link:hover, .race-link:hover {
             color: var(--accent-main);
             text-decoration-style: solid;
@@ -637,6 +657,21 @@
 
             /* Junior-Welt: Nebenspalten auf Mobile ausblenden (Kernspalten bleiben) */
             .jw-hide-mobile { display: none !important; }
+
+            /* Saisonverlauf: Fahrerspalte bleibt sichtbar, wird aber schmal + zweizeilig */
+            .matrix-drv-cell { max-width: 152px; padding-right: 0.35rem !important; }
+            .matrix-drv { gap: 4px; }
+            .matrix-pos { min-width: 1.2em; font-size: 0.65rem; }
+            .matrix-flag { font-size: 0.8rem; }
+            .matrix-drv-name { font-size: 0.72rem; }
+            .matrix-drv-team, .matrix-drv-team .text-xs { font-size: 0.62rem; }
+
+            /* Champion-Karten kompakter */
+            .champ-card { gap: 9px; padding: 10px; }
+            .champ-card-media .profile-photo-wrap { width: 50px; height: 60px; }
+            .champ-card-media .profile-logo-wrap { width: 50px; height: 50px; }
+            .champ-card-title { font-size: 1rem; }
+            .champ-card-flag { font-size: 1.6rem; }
             
             /* Modal auf Mobile */
             .modal-content {
@@ -951,7 +986,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.31 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.32 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; NEU: Saisonverlauf zeigt Platz, Flagge und Team je Fahrer - mobil schmal und zweizeilig</div>
+                            <div>&#8226; NEU: Weltmeister- und Konstrukteurs-Karte mit Foto/Logo, Flagge und Livery der Saison</div>
+                            <div>&#8226; FIX: Ehemalige Teams (March, Shadow, Osella ...) in der globalen Suche auffindbar</div>
+                            <div>&#8226; FIX: Teamfarben ohne Aera-Livery (Ferrari, Williams, Benetton) fielen auf Grau zurueck statt auf die Saisonfarbe</div>
+                            <div class="font-bold text-slate-400">v0.9.15.31 - 26.07.2026</div>
                             <div>&#8226; FIX: Ehemalige Teams (March, Brawn, Marussia, Lotus F1 ...) zeigten weder Saison-Historie noch Rennergebnisse</div>
                             <div>&#8226; FIX: Team-Zuordnung verwechselte aehnlich benannte Rennstaelle - March zog Marchese, Williams zog Wolf Williams, Lotus zog Lotus Racing in die Statistik</div>
                             <div>&#8226; FIX: Profil-Titel zeigte teils das interne Kuerzel statt des Teamnamens (BGP statt Brawn)</div>
@@ -3231,7 +3271,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.31';
+        const VERSION = '0.9.15.32';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20685,22 +20725,54 @@
                 
                 <h2 class="text-3xl font-bold mb-6">🏁 Saison ${h.year}</h2>
                 
-                <!-- Weltmeister-Karten (kompakt) -->
+                <!-- Weltmeister-Karten: Foto/Logo links, Flagge rechts, Livery der Saison als Hintergrund -->
                 ${(() => {
                     const champId = h.championId || (typeof HIST_CHAMPIONS !== 'undefined' && HIST_CHAMPIONS[h.year]) || '';
                     const teamChampId = h.teamChampionId ||
                         (h.teamStandings && Object.entries(h.teamStandings).sort((a,b)=>(b[1].points||0)-(a[1].points||0))[0]?.[0]) || '';
+                    const champName = h.champion || (drivers[0]?.name) || '-';
+                    const teamChampName = h.teamChampion || (teams[0]?.name) || '-';
+
+                    // Team des Champions: aus der Meldeliste des Jahres (deckt historisch + simuliert ab)
+                    const _champTeam = entryList.find(t => (t.drivers || []).some(dr =>
+                        (champId && dr.id === champId) || (dr.name && dr.name === champName)));
+                    const _champDrv = _champTeam && (_champTeam.drivers || []).find(dr =>
+                        (champId && dr.id === champId) || dr.name === champName);
+                    // Konstrukteurs-Champion: erst per ID/Name in der Meldeliste, sonst nur Name
+                    const _tcName = String(teamChampName).toLowerCase();
+                    const _tcTeam = entryList.find(t => (teamChampId && (t.id === teamChampId || t.histId === teamChampId))
+                        || String(t.name || '').toLowerCase() === _tcName);
+
+                    // Ära-korrekte Livery; Fallback bleibt Gold/Silber wenn keine Teamfarbe bekannt ist
+                    const _bg = (teamId, baseColor, fallback) => {
+                        const cols = getTeamColors(teamId || '', h.year, baseColor);
+                        if (!cols || !cols.length || cols[0] === '#888888') return { bg: fallback, txt: 'color:#111111;' };
+                        return { bg: getTeamHeaderGradient(cols), txt: getTeamHeaderTextStyle(cols) };
+                    };
+                    const champStyle = _bg(_champTeam?.id, _champTeam?.color, 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)');
+                    const tcStyle    = _bg(_tcTeam?.id || teamChampId, _tcTeam?.color, 'linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%)');
+
+                    const _photoId = h.championHistId || champId;
+                    const _tcLogoId = _tcTeam?.histId || _tcTeam?.id || teamChampId || teamChampName;
                     return `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div class="card p-4 rounded-xl text-center" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">
-                        <div class="text-base font-semibold text-black/80">🏆 Weltmeister</div>
-                        <div class="text-xl font-bold text-black ${champId ? 'champ-card-name' : ''}" ${champId ? `onclick="openDriverProfile('${champId}')"` : ''}>${h.champion || (drivers[0]?.name) || '-'}</div>
-                        <div class="text-sm text-black/80">${championPoints} Pkt</div>
+                    <div class="card champ-card" style="background: ${champStyle.bg};">
+                        <div class="champ-card-media">${renderDriverPhotoHtml(_photoId)}</div>
+                        <div class="champ-card-body" style="${champStyle.txt}">
+                            <div class="champ-card-label">🏆 Weltmeister</div>
+                            <div class="champ-card-title ${champId ? 'champ-card-name' : ''}" ${champId ? `onclick="openDriverProfile('${champId}')"` : ''}>${champName}</div>
+                            <div class="champ-card-sub">${championPoints} Pkt${_champTeam ? ` · ${_champTeam.name}` : ''}</div>
+                        </div>
+                        <div class="champ-card-flag">${renderFlag(_champDrv?.nation, champName, h.year)}</div>
                     </div>
-                    <div class="card p-4 rounded-xl text-center" style="background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);">
-                        <div class="text-base font-semibold text-black/80">🏎️ Konstrukteur</div>
-                        <div class="text-xl font-bold text-black ${teamChampId ? 'champ-card-name' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamChampId}')"` : ''}>${h.teamChampion || (teams[0]?.name) || '-'}</div>
-                        <div class="text-sm text-black/80">${teamChampionPoints} Pkt</div>
+                    <div class="card champ-card" style="background: ${tcStyle.bg};">
+                        <div class="champ-card-media">${renderTeamLogoHtml(_tcLogoId, h.year, getTeamColors(_tcTeam?.id || teamChampId || '', h.year, _tcTeam?.color)[0], teamChampName)}</div>
+                        <div class="champ-card-body" style="${tcStyle.txt}">
+                            <div class="champ-card-label">🏎️ Konstrukteur</div>
+                            <div class="champ-card-title ${teamChampId ? 'champ-card-name' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamChampId}')"` : ''}>${teamChampName}</div>
+                            <div class="champ-card-sub">${teamChampionPoints} Pkt</div>
+                        </div>
+                        <div class="champ-card-flag">${renderFlag(_tcTeam?.nation, teamChampName, h.year)}</div>
                     </div>
                 </div>`;
                 })()}
@@ -21077,6 +21149,19 @@
             return String(s || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         }
 
+        // F1DB-Konstrukteur-Slug → Anzeigename ('march' → 'March', 'brm' → 'BRM').
+        // Gleiche Sonderfall-Tabelle wie in buildEntryList/prettyTeam – zentral, weil jetzt
+        // auch Matrix und globale Suche echte Namen statt roher Slugs zeigen müssen.
+        const _CONSTR_NAME_FIX = { 'fry':'Fry','red':'Red','mclaren':'McLaren','osca':'O.S.C.A.','alphatauri':'AlphaTauri',
+                                   'de':'De','del':'Del','roy':'Roy','iso':'Iso','rae':'Rae' };
+        function formatConstructorName(id) {
+            if (!id) return '';
+            if (String(id).toLowerCase() === 'iso-marlboro') return 'Iso-Marlboro';
+            return String(id).split('-').map(w =>
+                _CONSTR_NAME_FIX[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))
+            ).join(' ');
+        }
+
         // Alias-Matcher für den Abgleich Team ↔ F1DB-Konstrukteur-ID.
         // Zwei Fallen, die Historie und Renn-Raster gleichermassen zerlegt haben:
         // 1. Profile werden oft mit dem SEASON_DATA-Kurzkey geöffnet ('MA1' = March,
@@ -21123,13 +21208,15 @@
             // Normalisiere F1DB-ID → SEASON_DATA-Key: erst aktuelles Jahr, dann alle Jahre als Fallback
             const lookupId = unpackEnteredTeamId(teamId);
             let resolvedId = lookupId;
+            let sdYearColor = null;   // Template-Farbe GENAU dieses Jahres (s. Fallback unten)
             if (lookupId && typeof SEASON_DATA !== 'undefined') {
                 const words = lookupId.replace(/-/g, ' ').toLowerCase().split(' ').filter(w => w.length > 3);
                 const match = (sd) => sd?.t.find(t => t[0].toLowerCase() === lookupId.toLowerCase()
                     || (words.length && words.some(w => t[1].toLowerCase().replace(/[^a-z0-9]/g,"").includes(w))));
-                const sdT = match(SEASON_DATA[String(year)])
-                    || Object.values(SEASON_DATA).map(match).find(Boolean);
+                const sdSameYear = match(SEASON_DATA[String(year)]);
+                const sdT = sdSameYear || Object.values(SEASON_DATA).map(match).find(Boolean);
                 if (sdT) resolvedId = sdT[0];
+                if (sdSameYear && sdSameYear[2] && sdSameYear[2] !== '#888888') sdYearColor = sdSameYear[2];
             }
             const extra = TEAM_COLORS_EXTRA[String(year)];
             if (extra && resolvedId && extra[resolvedId]) return extra[resolvedId];
@@ -21137,7 +21224,11 @@
             for (const [from, to, id, colors] of TEAM_COLORS_RANGES) {
                 if (id === resolvedId && y >= from && y <= to) return colors;
             }
-            return [baseColor || '#888888'];
+            // Keine Ära-Livery hinterlegt (Ferrari, Williams, Benetton u.v.m. haben GAR KEINEN
+            // TEAM_COLORS_RANGES-Eintrag): dann die SEASON_DATA-Farbe des Jahres statt Grau.
+            // Bewusst nur die des ANGEFRAGTEN Jahres – die Alle-Jahre-Suche oben liefert sonst
+            // wieder die moderne Farbe für eine historische Saison.
+            return [baseColor || sdYearColor || '#888888'];
         }
 
         // Diagonaler Gradient für Colored-Header (135°)
@@ -21598,6 +21689,20 @@
                 });
             });
 
+            // Team(s) je Fahrer aus den Rennergebnissen – deckt Mid-Season-Wechsel ab.
+            // Simuliert: res.teamName + res.team (ID). Historisch (F1DB): res.tmn = Konstrukteur-Slug.
+            const _mxTeams = {}; // driverId → Map(key → {id, name})
+            results.forEach(r => {
+                (r.res || r.results || []).forEach(res => {
+                    const did = res.d || res.driver;
+                    const tName = res.teamName || (res.tmn ? formatConstructorName(res.tmn) : null);
+                    if (!did || !tName) return;
+                    const tId = res.team || res.tmn || null;
+                    if (!_mxTeams[did]) _mxTeams[did] = new Map();
+                    _mxTeams[did].set(tId || tName, { id: tId, name: tName });
+                });
+            });
+
             const driverStandings = Object.entries(driverStandingsData || {})
                 .map(([id, s]) => {
                     const resolvedName = (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) || s.name || id;
@@ -21637,7 +21742,7 @@
                     <table class="w-full text-xs">
                         <thead class="bg-secondary">
                             <tr>
-                                <th class="p-2 text-left sticky left-0 bg-secondary z-10">Fahrer</th>
+                                <th class="p-2 text-left sticky left-0 bg-secondary z-10 matrix-drv-cell">Fahrer</th>
                                 ${results.map((r, idx) => {
                                     // Komprimierte oder normale Daten
                                     const raceName = r.rn || r.raceName || `R${idx + 1}`;
@@ -21694,10 +21799,24 @@
                         <tbody>
                             ${driverStandings.map((d, dIdx) => {
                                 const driver = driversList.find(dr => dr.id === d.id);
+                                // Fahrerspalte: Platz + Flagge + Name + Team (mobil zweizeilig, s. .matrix-drv-*)
+                                const _mxTeamList = _mxTeams[d.id] ? [..._mxTeams[d.id].values()] : [];
+                                const _mxTeamCell = _mxTeamList.length
+                                    ? _mxTeamList.map(t => renderTeamNameColored(t.name, t.id, matrixYear, null)).join('<span class="text-tertiary"> / </span>')
+                                    : (d.team || d.teamId
+                                        ? renderTeamNameColored(d.team || d.teamId, d.teamId || null, matrixYear, null)
+                                        : '');
                                 return `
                                     <tr class="border-t border-custom">
-                                        <td class="p-2 sticky left-0 bg-primary z-10">
-                                            <span class="driver-link" onclick="openDriverProfile('${d.id}')">${d.name}</span>
+                                        <td class="p-2 sticky left-0 bg-primary z-10 matrix-drv-cell">
+                                            <div class="matrix-drv">
+                                                <span class="matrix-pos">${dIdx + 1}</span>
+                                                <span class="matrix-flag">${renderFlag(driver?.nation, d.name, matrixYear)}</span>
+                                                <span class="matrix-drv-txt">
+                                                    <span class="driver-link matrix-drv-name" onclick="openDriverProfile('${d.id}')">${d.name}</span>
+                                                    <span class="matrix-drv-team">${_mxTeamCell}</span>
+                                                </span>
+                                            </div>
                                         </td>
                                         ${results.map(race => {
                                             // Komprimierte oder normale Ergebnisse
@@ -22856,6 +22975,54 @@
         // === GLOBALES SUCHFELD ===
         let _gsResults = [];   // aktuelle Trefferliste (für Tastatur-Navigation)
         let _gsActive = -1;    // Index des markierten Treffers
+
+        // Ehemalige Teams für die Suche. Vorher kannte das Suchfeld nur GAME_STATE.teams,
+        // also ausschliesslich das aktuelle Feld – March, Shadow, Brawn & Co. waren
+        // unauffindbar, obwohl ihre Steckbriefe existieren. Vier Quellen, weil keine
+        // allein vollstaendig ist: F1DB kennt alle 178 Konstrukteure (aber nur als Slug),
+        // SEASON_DATA/TEAM_HIST liefern die gepflegten Anzeigenamen, allTimeStATS die
+        // Teams der eigenen simulierten Welt. Einmalig gebaut und gecacht.
+        let _formerTeamIdx = null;
+        function getFormerTeamIndex() {
+            if (_formerTeamIdx) return _formerTeamIdx;
+            const out = new Map(); // teamSlug → { name, from, to }
+            const add = (name, from, to) => {
+                if (!name) return;
+                const key = teamSlug(name);
+                if (!key) return;
+                const cur = out.get(key);
+                if (!cur) { out.set(key, { name, from: from || null, to: to || null }); return; }
+                if (from) cur.from = cur.from ? Math.min(cur.from, from) : from;
+                if (to)   cur.to   = cur.to   ? Math.max(cur.to, to)     : to;
+            };
+            // 1. SEASON_DATA – gepflegte Anzeigenamen je Template-Jahr
+            if (typeof SEASON_DATA !== 'undefined') {
+                for (const y of Object.keys(SEASON_DATA)) {
+                    const yr = +y;
+                    for (const t of (SEASON_DATA[y]?.t || [])) add(t[1], yr, yr);
+                }
+            }
+            // 2. TEAM_HIST – 43 Teams mit Saison-Historie
+            if (typeof TEAM_HIST !== 'undefined') {
+                for (const [name, seasons] of Object.entries(TEAM_HIST)) {
+                    const yrs = (seasons || []).map(s => s[0]).filter(Number.isFinite);
+                    add(name, yrs.length ? Math.min(...yrs) : null, yrs.length ? Math.max(...yrs) : null);
+                }
+            }
+            // 3. F1DB-Konstrukteure – die vollstaendige Liste (Slug → Anzeigename)
+            if (typeof getF1DBConstructorYearIndex === 'function') {
+                for (const [cid, yrs] of Object.entries(getF1DBConstructorYearIndex())) {
+                    const ys = [...yrs];
+                    add(formatConstructorName(cid), ys.length ? Math.min(...ys) : null, ys.length ? Math.max(...ys) : null);
+                }
+            }
+            // 4. Eigene Welt: Teams aus allTimeStATS (auch generierte Konstrukteure)
+            for (const [key, t] of Object.entries(GAME_STATE.allTimeStATS?.teams || {})) {
+                add(t?.name || key, t?.firstYear || null, t?.lastYear || null);
+            }
+            _formerTeamIdx = [...out.values()];
+            return _formerTeamIdx;
+        }
         window.globalSearchInput = function(value) {
             const dd = document.getElementById('global-search-dd');
             if (!dd) return;
@@ -22870,9 +23037,12 @@
                 seen.add('d:'+id);
                 if (_nrm(name).includes(qn)) results.push({ type:'driver', id, name, sub });
             };
+            // Dedupe ueber den Namens-Slug statt der ID: dasselbe Team taucht je Quelle
+            // unter verschiedenen IDs auf ('MA1', 'march', 'March') – sonst dreifacher Treffer.
             const addTeam = (id, name, sub) => {
-                if (seen.has('t:'+id)) return;
-                seen.add('t:'+id);
+                const key = 't:' + (teamSlug(name) || String(id).toLowerCase());
+                if (seen.has(key)) return;
+                seen.add(key);
                 if (_nrm(name).includes(qn)) results.push({ type:'team', id, name, sub });
             };
 
@@ -22882,6 +23052,14 @@
                 addDriver(d.histId||d.id, d.name, tname || 'Aktiv');
             });
             (GAME_STATE.teams || []).forEach(t => addTeam(t.histId||t.id||t.name, t.name, 'Konstrukteur'));
+
+            // Ehemalige Teams (Anzeigename als ID – openTeamProfile loest darueber auf).
+            // Bewusst VOR den historischen Fahrern: die Trefferliste wird auf 12 gekappt,
+            // und ~900 HIST_NAMES wuerden ein Team wie "Williams" sonst verdraengen.
+            for (const t of getFormerTeamIndex()) {
+                const span = t.from && t.to ? ` · ${t.from}${t.to !== t.from ? '–' + t.to : ''}` : '';
+                addTeam(t.name, t.name, `Ehemaliges Team${span}`);
+            }
 
             // Historische Fahrer
             if (typeof HIST_NAMES !== 'undefined') {
