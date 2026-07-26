@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.29</title>
+    <title>F1 RPG v0.9.15.30</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -951,7 +951,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.29 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.30 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; FIX: Teams ohne Historien-Eintrag (March, Osella, Ensign, Shadow ...) zeigten gar kein Rennergebnis-Raster - die Jahre kommen jetzt direkt aus den F1DB-Daten</div>
+                            <div>&#8226; FIX: In der Team-Historie dieser Teams stand in der WM-Spalte immer nur ein Schriftrollen-Symbol statt der Platzierung</div>
+                            <div class="font-bold text-slate-400">v0.9.15.29 - 26.07.2026</div>
                             <div>&#8226; FIX: Alte Spielstaende zeigten bei ehemaligen Teams und historischen Fahrern leere Profile - der Verlaufs-Index wurde exakt nach Gross-/Kleinschreibung verglichen, das Jahr deshalb nie nachgeladen</div>
                             <div>&#8226; FIX: Klick auf historische Fahrer blieb wirkungslos, wenn die ID aus einem Namen mit Akzent abgeleitet wurde</div>
                             <div>&#8226; FIX: Weltmeister-Liste - historische Champions hatten gar keine ID hinterlegt, der Klick lief immer ins Leere</div>
@@ -3224,7 +3227,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.29';
+        const VERSION = '0.9.15.30';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -27160,6 +27163,30 @@ Empfohlene Wertebereiche:
                 .sort((a, b) => b[1] - a[1])
                 .map(([id, p], i) => ({ id, points: p, position: i + 1 }));
         }
+
+        // Konstrukteur → Jahre, EINMALIG aus den ROHEN F1DB-Ergebnissen (e[4] = constrId).
+        // Bewusst nicht über getF1DBYear: das würde jedes Jahr voll aufbereiten und cachen.
+        // Hintergrund: TEAM_HIST kennt nur 43 der 178 Teams (March, Osella, Ensign, Shadow …).
+        // renderTeamRaceGrid zog seine Jahresliste ausschliesslich daraus → für alle anderen
+        // Teams blieb das Renn-Raster komplett leer, sobald ihre Jahre vor dem Spielstart lagen.
+        let _f1dbConstrYearIndex = null;
+        function getF1DBConstructorYearIndex() {
+            if (_f1dbConstrYearIndex) return _f1dbConstrYearIndex;
+            const idx = {};
+            if (typeof F1DB_RESULTS !== 'undefined') {
+                for (const y in F1DB_RESULTS) {
+                    const yr = +y;
+                    for (const race of F1DB_RESULTS[y]) {
+                        for (const e of (race[2] || [])) {
+                            if (!e[4]) continue;
+                            (idx[e[4]] = idx[e[4]] || new Set()).add(yr);
+                        }
+                    }
+                }
+            }
+            _f1dbConstrYearIndex = idx;
+            return idx;
+        }
         
         // Alle ID-Formen eines Teams innerhalb EINER gespeicherten Saison einsammeln.
         // Nötig, weil teamStandings, teams[] und drivers[].team nicht dieselbe Schreibweise
@@ -27396,13 +27423,23 @@ Empfohlene Wertebereiche:
                             // Sortiere Fahrer nach Punkten
                             drivers.sort((a, b) => (b.points || 0) - (a.points || 0));
                             
+                            // WM-Position aus der berechneten Konstrukteurs-Wertung statt '📜'.
+                            // Dieser Zweig greift für Teams ohne TEAM_HIST-Eintrag (136 von 178),
+                            // die deshalb bisher NIE eine Platzierung zeigten.
+                            let _fbPos = '📜';
+                            if (typeof getF1DBConstructorStandings === 'function') {
+                                const _st = getF1DBConstructorStandings(yearNum);
+                                const _hit = _st && _st.find(s => constructorIds.includes(s.id)
+                                    || constructorIds.some(cid => s.id.includes(cid) || cid.includes(s.id)));
+                                if (_hit) _fbPos = _hit.position;
+                            }
                             teamHistory.push({
                                 year: yearNum,
                                 driverObjs: drivers.map(d => ({ name: d.name, id: d.id })),
                                 wins: drivers.reduce((sum, d) => sum + (d.wins || 0), 0),
                                 podiums: drivers.reduce((sum, d) => sum + (d.podiums || 0), 0),
                                 points: drivers.reduce((sum, d) => sum + (d.points || 0), 0),
-                                position: '📜', // Keine WM-Position verfügbar
+                                position: _fbPos,
                                 isHistorical: true
                             });
                         }
@@ -27682,6 +27719,15 @@ Empfohlene Wertebereiche:
                         if (lower.includes(k.toLowerCase())) { found=v; break; }
                 }
                 if (found) found.forEach(e=>{ if (e[0]<startYear) f1dbYearsSet.add(e[0]); });
+                // Kein TEAM_HIST-Eintrag (gilt für 136 der 178 Teams): Jahre direkt aus F1DB
+                // ableiten, sonst bleibt das Raster für diese Teams komplett leer.
+                if (!found) {
+                    const _cIdx = getF1DBConstructorYearIndex();
+                    for (const cid in _cIdx) {
+                        if (!matchesTeam(cid)) continue;
+                        _cIdx[cid].forEach(y => { if (y < startYear) f1dbYearsSet.add(y); });
+                    }
+                }
             }
 
             // ── Laufende Saison ───────────────────────────────────
