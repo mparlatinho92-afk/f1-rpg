@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.30</title>
+    <title>F1 RPG v0.9.15.31</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -951,7 +951,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.30 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.31 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; FIX: Ehemalige Teams (March, Brawn, Marussia, Lotus F1 ...) zeigten weder Saison-Historie noch Rennergebnisse</div>
+                            <div>&#8226; FIX: Team-Zuordnung verwechselte aehnlich benannte Rennstaelle - March zog Marchese, Williams zog Wolf Williams, Lotus zog Lotus Racing in die Statistik</div>
+                            <div>&#8226; FIX: Profil-Titel zeigte teils das interne Kuerzel statt des Teamnamens (BGP statt Brawn)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.30 - 26.07.2026</div>
                             <div>&#8226; FIX: Teams ohne Historien-Eintrag (March, Osella, Ensign, Shadow ...) zeigten gar kein Rennergebnis-Raster - die Jahre kommen jetzt direkt aus den F1DB-Daten</div>
                             <div>&#8226; FIX: In der Team-Historie dieser Teams stand in der WM-Spalte immer nur ein Schriftrollen-Symbol statt der Platzierung</div>
                             <div class="font-bold text-slate-400">v0.9.15.29 - 26.07.2026</div>
@@ -3227,7 +3231,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.30';
+        const VERSION = '0.9.15.31';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -21068,6 +21072,53 @@
             return null;
         }
 
+        // Einheitlicher Team-Slug: Leerzeichen → '-', Satzzeichen weg ("O.S.C.A." → "osca")
+        function teamSlug(s) {
+            return String(s || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        }
+
+        // Alias-Matcher für den Abgleich Team ↔ F1DB-Konstrukteur-ID.
+        // Zwei Fallen, die Historie und Renn-Raster gleichermassen zerlegt haben:
+        // 1. Profile werden oft mit dem SEASON_DATA-Kurzkey geöffnet ('MA1' = March,
+        //    'BGP' = Brawn). Der ist weder Anzeigename noch F1DB-Slug → kein Treffer,
+        //    Profil ohne Saison-Tabelle und ohne Rennergebnisse. Deshalb den Key hier
+        //    über seasonDataTeamName() zum echten Namen auflösen.
+        // 2. Die Enthält-Heuristik ist zu grob: 'march' zieht 'marchese', 'williams'
+        //    zieht 'wolf-williams', 'lotus' zieht 'lotus-racing'/'lotus-f1'. Sie greift
+        //    daher nur noch, wenn KEIN Alias exakt auf eine F1DB-ID passt.
+        function makeTeamMatcher(names, ids) {
+            const all = new Set();
+            for (const n of (names || [])) if (n) all.add(n);
+            // Kurzkeys, die auf einen ANDEREN Namen zeigen, fliegen als Alias raus: 'ATS'
+            // ist der SEASON_DATA-Key von "ATS Wheels" (1977-84), zugleich aber der echte
+            // Konstrukteur ATS von 1963 – sonst landen beide im selben Profil.
+            const drop = new Set();
+            for (const id of (ids || [])) {
+                const resolved = seasonDataTeamName(unpackEnteredTeamId(id));
+                if (!resolved) continue;
+                all.add(resolved);
+                if (teamSlug(resolved) !== teamSlug(id)) drop.add(teamSlug(id));
+            }
+            const slugs = [...new Set(Array.from(all).map(teamSlug).filter(s => s && !drop.has(s)))];
+            const exact = new Set(slugs);
+            let strict = false;
+            if (typeof getF1DBConstructorYearIndex === 'function') {
+                strict = Object.keys(getF1DBConstructorYearIndex()).some(cid => exact.has(teamSlug(cid)));
+            }
+            return {
+                names: all,
+                slugs,
+                strict,
+                matches(c) {
+                    const cl = teamSlug(c);
+                    if (!cl) return false;
+                    if (exact.has(cl)) return true;
+                    if (strict) return false;
+                    return slugs.some(id => cl.includes(id) || id.includes(cl));
+                }
+            };
+        }
+
         function getTeamColors(teamId, year, baseColor) {
             // Normalisiere F1DB-ID → SEASON_DATA-Key: erst aktuelles Jahr, dann alle Jahre als Fallback
             const lookupId = unpackEnteredTeamId(teamId);
@@ -26872,6 +26923,10 @@ Empfohlene Wertebereiche:
                         }
                     }
                     const _cnNation = (typeof CONSTRUCTOR_NATIONS !== 'undefined' && CONSTRUCTOR_NATIONS[teamId.toUpperCase()]) || null;
+                    // Kurzkey als Titel vermeiden ("BGP", "LTF"): TEAM_HIST kennt teils den
+                    // Key selbst, dann blieb histName der Key statt "Brawn" / "Lotus F1".
+                    const _sdName = seasonDataTeamName(unpackEnteredTeamId(teamId));
+                    if (_sdName) histName = _sdName;
                     if (thEntry) {
                         team = {
                             id: teamId, histId: teamId, name: histName,
@@ -27278,18 +27333,19 @@ Empfohlene Wertebereiche:
                 teamNames.add(histName);
             }
             
+            // Kurzkey-Auflösung ('MA1' → March) + exakte Treffer vor der Enthält-Heuristik
+            const _tm = makeTeamMatcher(teamNames, [teamId, histId]);
+            _tm.names.forEach(n => teamNames.add(n));
+
             // Helper: alle Fahrer eines Teams in einem Jahr, sortiert nach WM-Punkten DESC
-            const constructorIds = Array.from(teamNames).map(n => n.toLowerCase().replace(/\s+/g, '-'));
+            const constructorIds = _tm.slugs;
             const getDriversForTeamYear = (year) => {
                 if (typeof getDriverConstructors !== 'function' || typeof HIST_SEASONS === 'undefined') return [];
                 const drivers = [];
                 for (const [driverId, seasons] of Object.entries(HIST_SEASONS)) {
                     const yearCons = (getDriverConstructors(driverId) || {})[year];
                     if (!yearCons) continue;
-                    const matched = yearCons.find(c =>
-                        constructorIds.includes(c.toLowerCase()) ||
-                        constructorIds.some(id => c.toLowerCase().includes(id) || (c.toLowerCase().length >= 4 && id.includes(c.toLowerCase())))
-                    );
+                    const matched = yearCons.find(c => _tm.matches(c));
                     if (!matched) continue;
                     const seasonData = seasons.find(s => s[0] === year);
                     if (!seasonData) continue;
@@ -27351,14 +27407,7 @@ Empfohlene Wertebereiche:
                         if (!wmPos || wmPos === '?' || wmPos === '📜') {
                             const constrStandings = getF1DBConstructorStandings(year);
                             if (constrStandings) {
-                                // Finde konstrukteur-ID (verwende teamId oder leite von Name ab)
-                                const searchIds = Array.from(teamNames).map(n => 
-                                    n.toLowerCase().replace(/\s+/g, '-')
-                                );
-                                const found = constrStandings.find(s => 
-                                    searchIds.includes(s.id) ||
-                                    searchIds.some(sid => s.id.includes(sid) || sid.includes(s.id))
-                                );
+                                const found = constrStandings.find(s => _tm.matches(s.id));
                                 wmPos = found ? found.position : '?';
                             } else {
                                 wmPos = '?';
@@ -27381,8 +27430,8 @@ Empfohlene Wertebereiche:
                     // Finde alle Fahrer die für dieses Team gefahren sind
                     if (typeof HIST_SEASONS !== 'undefined' && typeof getDriverConstructors === 'function') {
                         const yearDrivers = {}; // Jahr -> [Fahrer-Daten]
-                        const constructorIds = Array.from(teamNames).map(n => n.toLowerCase().replace(/\s+/g, '-'));
-                        
+                        const constructorIds = _tm.slugs;
+
                         // Durchsuche alle Fahrer
                         for (const [driverId, seasons] of Object.entries(HIST_SEASONS)) {
                             const constructors = getDriverConstructors(driverId);
@@ -27392,10 +27441,7 @@ Empfohlene Wertebereiche:
                                 if (yearNum >= startYear) continue;
                                 
                                 // Prüfe ob dieser Fahrer für unser Team fuhr
-                                const matchedConstructor = yearConstructors?.find(c => 
-                                    constructorIds.includes(c.toLowerCase()) ||
-                                    constructorIds.some(id => c.toLowerCase().includes(id) || (c.toLowerCase().length >= 4 && id.includes(c.toLowerCase())))
-                                );
+                                const matchedConstructor = yearConstructors?.find(c => _tm.matches(c));
                                 
                                 if (matchedConstructor) {
                                     // Finde Season-Daten für diesen Fahrer
@@ -27429,8 +27475,7 @@ Empfohlene Wertebereiche:
                             let _fbPos = '📜';
                             if (typeof getF1DBConstructorStandings === 'function') {
                                 const _st = getF1DBConstructorStandings(yearNum);
-                                const _hit = _st && _st.find(s => constructorIds.includes(s.id)
-                                    || constructorIds.some(cid => s.id.includes(cid) || cid.includes(s.id)));
+                                const _hit = _st && _st.find(s => _tm.matches(s.id));
                                 if (_hit) _fbPos = _hit.position;
                             }
                             teamHistory.push({
@@ -27684,12 +27729,10 @@ Empfohlene Wertebereiche:
             teamNames.add(teamId.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '));
             if (stATSId&&stATSId!==teamId)
                 teamNames.add(stATSId.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '));
-            const constructorSlugs = Array.from(teamNames).map(n=>n.toLowerCase().replace(/\s+/g,'-'));
-            const matchesTeam = c => {
-                if (!c) return false;
-                const cl = String(c).toLowerCase().replace(/\s+/g,'-');
-                return constructorSlugs.some(id=>cl===id||cl.includes(id)||id.includes(cl));
-            };
+            // Kurzkey-Auflösung + exakte Treffer vor der Enthält-Heuristik (s. makeTeamMatcher)
+            const _tm = makeTeamMatcher(teamNames, [teamId, stATSId]);
+            _tm.names.forEach(n => teamNames.add(n));
+            const matchesTeam = c => _tm.matches(c);
 
             // ── Simulierte Vergangenheit ──────────────────────────
             const simYearMap = {};
