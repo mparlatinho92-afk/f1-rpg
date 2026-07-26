@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.28</title>
+    <title>F1 RPG v0.9.15.29</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -951,7 +951,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.28 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.29 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; FIX: Alte Spielstaende zeigten bei ehemaligen Teams und historischen Fahrern leere Profile - der Verlaufs-Index wurde exakt nach Gross-/Kleinschreibung verglichen, das Jahr deshalb nie nachgeladen</div>
+                            <div>&#8226; FIX: Klick auf historische Fahrer blieb wirkungslos, wenn die ID aus einem Namen mit Akzent abgeleitet wurde</div>
+                            <div>&#8226; FIX: Weltmeister-Liste - historische Champions hatten gar keine ID hinterlegt, der Klick lief immer ins Leere</div>
+                            <div>&#8226; FIX: WM-Leader, Team-Leader und die Weltmeister-Karten am Saisonende sahen klickbar aus, ohne es zu sein</div>
+                            <div>&#8226; FIX: Team-Leader-Karte oeffnete ein Team, war aber als Fahrer-Link ausgezeichnet</div>
+                            <div class="font-bold text-slate-400">v0.9.15.28 - 26.07.2026</div>
                             <div>&#8226; FIX: Teamfarben zeigen wieder die Farbe der jeweiligen Saison - McLaren nicht mehr ueberall orange, Sauber nicht mehr ueberall gruen</div>
                             <div>&#8226; FIX: Klick auf ein waehrend der Simulation eingestiegenes Team oeffnete ein Geisterteam (Ent_SAU_1993) statt des echten Profils</div>
                             <div>&#8226; NEU: Mehrere Teams einer Saison bekommen je eigenen Link und eigene Aera-Farbe (Williams / Red Bull)</div>
@@ -3218,7 +3224,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.28';
+        const VERSION = '0.9.15.29';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3858,23 +3864,47 @@
         // dehydriert. Gibt die frisch hydrierten Records zurück (für die Dehydrierung im Profil-Wrapper).
         async function _hydrateProfileYears(id, kind) {
             const idxField = kind === 'team' ? 'teamHistIds' : 'driverHistIds';
-            const idSet = new Set([id]);   // stabile Identitäts-Schlüssel (id + histId) aus dem RAM sammeln
+            const norm = v => String(v || '').toLowerCase();
+            // Vergleich CASE-INSENSITIV und über alle bekannten Schreibweisen. Der Index
+            // speichert `histId || id` (~L17532), bei mid-season eingestiegenen Teams also
+            // den ANZEIGENAMEN ("Shadow"), während Links den Slug ("shadow") schicken.
+            // Ein Miss hieß bisher: das Jahr wird NIE hydriert → h.drivers/h.teams fehlen
+            // (beide stehen in HISTORY_HEAVY_FIELDS) → ehemalige Teams wirkten historienlos.
+            // Betrifft nur Saves mit gesplittetem Verlauf — im frischen Spielstand unsichtbar.
+            const idSet = new Set([norm(id)]);
             if (kind === 'team') {
-                const t = (GAME_STATE.teams || []).find(t => t.id === id || t.histId === id);
-                if (t) { idSet.add(t.id); if (t.histId) idSet.add(t.histId); }
+                const t = (GAME_STATE.teams || []).find(t => norm(t.id) === norm(id) || norm(t.histId) === norm(id));
+                if (t) { idSet.add(norm(t.id)); if (t.histId) idSet.add(norm(t.histId)); if (t.name) idSet.add(norm(t.name)); }
+                const un = typeof unpackEnteredTeamId === 'function' ? unpackEnteredTeamId(id) : id;
+                if (un) idSet.add(norm(un));
+                const sdName = typeof seasonDataTeamName === 'function' ? seasonDataTeamName(un) : null;
+                if (sdName) idSet.add(norm(sdName));
             } else {
-                const d = (GAME_STATE.drivers || []).find(d => d.id === id || d.histId === id)
-                       || (GAME_STATE.reservePool || []).find(d => d.id === id || d.histId === id);
-                if (d) { idSet.add(d.id); if (d.histId) idSet.add(d.histId); }
+                const d = (GAME_STATE.drivers || []).find(d => norm(d.id) === norm(id) || norm(d.histId) === norm(id))
+                       || (GAME_STATE.reservePool || []).find(d => norm(d.id) === norm(id) || norm(d.histId) === norm(id));
+                if (d) { idSet.add(norm(d.id)); if (d.histId) idSet.add(norm(d.histId)); }
             }
             const recs = [];
+            let sawIndex = false, matchedAny = false;
             for (const h of GAME_STATE.history || []) {
                 const idx = h[idxField];
-                const relevant = !Array.isArray(idx) || idx.some(x => idSet.has(x));   // kein Index → konservativ
+                if (Array.isArray(idx)) sawIndex = true;
+                const relevant = !Array.isArray(idx) || idx.some(x => idSet.has(norm(x)));   // kein Index → konservativ
                 if (!relevant) continue;
+                matchedAny = true;
                 if (HISTORY_HEAVY_FIELDS.some(k => k in h)) continue;   // schon schwer (Fallback/hydriert)
                 const detail = await getHistoryDetail(h.year);
                 if (detail) { Object.assign(h, detail); recs.push(h); }
+            }
+            // Kein einziger Treffer TROTZ vorhandenem Index: fast immer eine abweichende
+            // Schreibweise, nicht echte Abwesenheit. Dann lieber alles laden als ein leeres
+            // Profil zeigen — langsamer, aber korrekt. Greift nur im Fehlerfall.
+            if (sawIndex && !matchedAny) {
+                for (const h of GAME_STATE.history || []) {
+                    if (HISTORY_HEAVY_FIELDS.some(k => k in h)) continue;
+                    const detail = await getHistoryDetail(h.year);
+                    if (detail) { Object.assign(h, detail); recs.push(h); }
+                }
             }
             return recs;
         }
@@ -14618,13 +14648,13 @@
                 <!-- Weltmeister -->
                 <div class="card p-4 rounded-lg mb-4 text-center" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">
                     <div class="text-sm text-black/70">Fahrer-Weltmeister</div>
-                    <div class="text-2xl font-bold text-black driver-link cursor-pointer" onclick="openDriverProfile('${champion?.id}')">${champion?.name || 'N/A'}</div>
+                    <div class="text-2xl font-bold text-black${champion?.id ? ' driver-link cursor-pointer' : ''}"${champion?.id ? ` onclick="openDriverProfile('${champion.id}')"` : ''}>${champion?.name || 'N/A'}</div>
                     <div class="text-lg text-black/80">${champion?.points || 0} Punkte | ${champion?.wins || 0} Siege</div>
                 </div>
 
                 <div class="card p-4 rounded-lg mb-4 text-center" style="background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);">
                     <div class="text-sm text-black/70">Konstrukteurs-Weltmeister</div>
-                    <div class="text-2xl font-bold text-black team-link cursor-pointer" onclick="openTeamProfile('${teamChampion?.id}')">${teamChampion?.name || 'N/A'}</div>
+                    <div class="text-2xl font-bold text-black${teamChampion?.id ? ' team-link cursor-pointer' : ''}"${teamChampion?.id ? ` onclick="openTeamProfile('${teamChampion.id}')"` : ''}>${teamChampion?.name || 'N/A'}</div>
                     <div class="text-lg text-black/80">${teamChampion?.points || 0} Punkte</div>
                 </div>
             `;
@@ -20408,12 +20438,12 @@
                     </div>
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-sm font-bold mb-2 text-secondary">🏆 WM-Leader</h3>
-                        <p class="text-xl font-bold driver-link" onclick="openDriverProfile('${leader?.id}')">${leader?.name || '-'}</p>
+                        <p class="text-xl font-bold${leader?.id ? ' driver-link' : ''}"${leader?.id ? ` onclick="openDriverProfile('${leader.id}')"` : ''}>${leader?.name || '-'}</p>
                         <p class="text-2xl accent-gold">${leader?.points || 0} Punkte</p>
                     </div>
                     <div class="card p-6 rounded-xl">
                         <h3 class="text-sm font-bold mb-2 text-secondary">🏎️ Team-Leader</h3>
-                        <p class="text-xl font-bold driver-link" onclick="openTeamProfile('${teamLeader?.id}')">${teamLeader?.name || '-'}</p>
+                        <p class="text-xl font-bold${teamLeader?.id ? ' team-link' : ''}"${teamLeader?.id ? ` onclick="openTeamProfile('${teamLeader.id}')"` : ''}>${teamLeader?.name || '-'}</p>
                         <p class="text-2xl accent-blue">${teamLeader?.points || 0} Punkte</p>
                     </div>
                 </div>
@@ -22741,7 +22771,7 @@
                                     <td class="p-3 accent-gold">
                                         ${h.driverId && !h.isHistorical
                                             ? `<span class="driver-link" onclick="event.stopPropagation(); openDriverProfile('${h.championId || h.driverId}')">${h.champion}</span>`
-                                            : `<span class="driver-link" onclick="event.stopPropagation(); openDriverProfile('${h.driverId || ''}')">${h.champion}</span>`}
+                                            : `<span class="driver-link" onclick="event.stopPropagation(); openDriverProfile('${h.driverId || h.championId || h.champion || ''}')">${h.champion}</span>`}
                                     </td>
                                     <td class="p-3 text-center">${h.championPoints || '-'}</td>
                                     <td class="p-3 accent-blue">
@@ -24738,6 +24768,25 @@ Empfohlene Wertebereiche:
                     // Jeder Link auf einen Fahrer ausserhalb dieses Fensters lief vorher ins
                     // Leere — Klick ohne jede Wirkung (Nutzer-Report: tote Links bei
                     // historischen Fahrern). HIST_NAMES/HIST_DRIVERS decken alle 915 Slugs ab.
+                    // Viele Aufrufer haben keine echte ID und leiten sie aus dem NAMEN ab
+                    // (renderEntryListCards ~L21150: name.toLowerCase().replace(/\s+/g,'-')).
+                    // Bei Akzenten/Punkten trifft das den HIST-Slug nicht mehr
+                    // ("josé-froilán-gonzález" statt "jose-froilan-gonzalez") → Klick ohne
+                    // Wirkung. Diakritikfrei gegen Slugs UND Anzeigenamen auflösen und mit
+                    // der kanonischen ID neu einsteigen, damit auch allTimeStATS/History greifen.
+                    const _slugNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+                        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                    if (typeof HIST_NAMES !== 'undefined' && !HIST_NAMES[driverId]) {
+                        const _want = _slugNorm(driverId);
+                        if (_want) {
+                            for (const [_slug, _full] of Object.entries(HIST_NAMES)) {
+                                if (_slugNorm(_slug) === _want || _slugNorm(_full) === _want) {
+                                    if (_slug !== driverId) return _openDriverProfileBody(_slug);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     const _hName = (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[driverId]) || null;
                     const _hd = (typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[driverId]) || null;
                     if (_hName || _hd) {
