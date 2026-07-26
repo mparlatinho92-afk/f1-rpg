@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.27</title>
+    <title>F1 RPG v0.9.15.28</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -951,7 +951,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.27 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.28 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; FIX: Teamfarben zeigen wieder die Farbe der jeweiligen Saison - McLaren nicht mehr ueberall orange, Sauber nicht mehr ueberall gruen</div>
+                            <div>&#8226; FIX: Klick auf ein waehrend der Simulation eingestiegenes Team oeffnete ein Geisterteam (Ent_SAU_1993) statt des echten Profils</div>
+                            <div>&#8226; NEU: Mehrere Teams einer Saison bekommen je eigenen Link und eigene Aera-Farbe (Williams / Red Bull)</div>
+                            <div>&#8226; FIX: Ehemalige Teams zeigten in der Team-Historie keine Fahrer trotz vorhandener Statistik</div>
+                            <div>&#8226; FIX: Team-Historie - Jahr und Fahrerspalte klebten aneinander</div>
+                            <div class="font-bold text-slate-400">v0.9.15.27 - 26.07.2026</div>
                             <div>&#8226; FIX: Team-Steckbrief zeigte jede Saison der Ergebnis-Matrix doppelt</div>
                             <div>&#8226; FIX: Team-Historie - S/P/Pkt/WM klebten zusammen und wurden rechts abgeschnitten, Spalten jetzt fest und immer sichtbar</div>
                             <div>&#8226; NEU: WM-Titel als Gold-Badge - Siege nicht mehr goldfarben wie ein Meistertitel</div>
@@ -3212,7 +3218,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.27';
+        const VERSION = '0.9.15.28';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -21006,12 +21012,36 @@
             [1958, 1958, 'OSC', ['#CC0000', '#CC0000', '#C0C0C0']], // Rot-Rot-Silber (F2/S)
         ];
 
+        // Teams die WÄHREND der Simulation einsteigen tragen die generierte ID
+        // `ent_<SEASON_DATA-Key>_<Jahr>` (applyTeamEntryExit ~L16688), z.B. `ent_SAU_1993`.
+        // Ohne Entpacken scheitert jede ID-Auflösung — der Präfix ist unbekannt UND die
+        // Wort-Heuristik unten filtert `ent`/`sau`/`mcl` als zu kurz weg. Folge:
+        // getTeamColors fiel auf die generische SEASON_DATA-Basisfarbe zurück, und die ist
+        // zufällig die MODERNE (MCL #FF8000 orange, SAU #52E252 grün) → "McLaren überall
+        // orange", "Sauber überall grün". Die korrekten Ära-Ranges existierten längst.
+        function unpackEnteredTeamId(teamId) {
+            const m = /^ent_(.+)_\d{4}$/i.exec(String(teamId || ''));
+            return m ? m[1] : teamId;
+        }
+
+        // SEASON_DATA-Kurzkey ('SAU') → Anzeigename ('Sauber'), jahresübergreifend
+        function seasonDataTeamName(sdKey) {
+            if (!sdKey || typeof SEASON_DATA === 'undefined') return null;
+            const k = String(sdKey).toLowerCase();
+            for (const y of Object.keys(SEASON_DATA)) {
+                const hit = (SEASON_DATA[y]?.t || []).find(t => String(t[0]).toLowerCase() === k);
+                if (hit) return hit[1];
+            }
+            return null;
+        }
+
         function getTeamColors(teamId, year, baseColor) {
             // Normalisiere F1DB-ID → SEASON_DATA-Key: erst aktuelles Jahr, dann alle Jahre als Fallback
-            let resolvedId = teamId;
-            if (teamId && typeof SEASON_DATA !== 'undefined') {
-                const words = teamId.replace(/-/g, ' ').toLowerCase().split(' ').filter(w => w.length > 3);
-                const match = (sd) => sd?.t.find(t => t[0].toLowerCase() === teamId.toLowerCase()
+            const lookupId = unpackEnteredTeamId(teamId);
+            let resolvedId = lookupId;
+            if (lookupId && typeof SEASON_DATA !== 'undefined') {
+                const words = lookupId.replace(/-/g, ' ').toLowerCase().split(' ').filter(w => w.length > 3);
+                const match = (sd) => sd?.t.find(t => t[0].toLowerCase() === lookupId.toLowerCase()
                     || (words.length && words.some(w => t[1].toLowerCase().replace(/[^a-z0-9]/g,"").includes(w))));
                 const sdT = match(SEASON_DATA[String(year)])
                     || Object.values(SEASON_DATA).map(match).find(Boolean);
@@ -25268,6 +25298,10 @@ Empfohlene Wertebereiche:
                         // Hole Konstrukteur aus kompakten Daten
                         let teamName = '-';
                         let teamColor = '#888';
+                        // Je Team ein eigener Eintrag {name,id,color} — vorher wurden mehrere
+                        // Teams einer Saison zu EINEM String zusammengeklebt und bekamen einen
+                        // gemeinsamen Link + eine gemeinsame Farbe (Nutzer-Report Williams/Red Bull).
+                        const teamList = [];
                         if (typeof getDriverConstructors === 'function') {
                             const constructors = getDriverConstructors(stATSId || driver.id);
                             const yearConstructors = constructors[s[0]];
@@ -25277,6 +25311,8 @@ Empfohlene Wertebereiche:
                                 const teamNames = [];
                                 yearConstructors.forEach(c => {
                                     let foundName = null;
+                                    let foundId = c;
+                                    let foundColor = null;
                                     const normF = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
                                     const cNorm = normF(c);
                                     if (seasonData?.t) {
@@ -25287,16 +25323,20 @@ Empfohlene Wertebereiche:
                                         });
                                         if (teamData) {
                                             foundName = teamData[1];
-                                            if (!teamColor || teamColor === '#888') teamColor = getTeamColors(teamData[0], s[0], teamData[2])[0] || ensureReadable(teamData[2]);
+                                            foundId = teamData[0];
+                                            foundColor = getTeamColors(teamData[0], s[0], teamData[2])[0] || ensureReadable(teamData[2]);
+                                            if (!teamColor || teamColor === '#888') teamColor = foundColor;
                                         }
                                     }
                                     if (!foundName) {
                                         // cross-year fallback via getConstructorColor
                                         const col = getConstructorColor(c, s[0]);
+                                        if (col !== '#888') foundColor = foundColor || col;
                                         if (col !== '#888' && teamColor === '#888') teamColor = col;
                                         foundName = c.split('-').map(w => w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                                     }
                                     teamNames.push(foundName);
+                                    teamList.push({ name: foundName, id: foundId, color: foundColor });
                                 });
                                 teamName = teamNames.join(' / ');
                             }
@@ -25310,6 +25350,7 @@ Empfohlene Wertebereiche:
                         fullCareer.push({
                             year: s[0],
                             team: teamName,
+                            teams: teamList,
                             teamId: firstConstrId,
                             teamColor: teamColor,
                             races: '-',
@@ -25376,6 +25417,14 @@ Empfohlene Wertebereiche:
                             const _teamDisplay = _teamsFromRaces.size > 1
                                 ? [..._teamsFromRaces.values()].join(' / ')
                                 : (team?.name || [..._teamsFromRaces.values()][0] || histDriver?.team || '-');
+                            // Pro Team ein Eintrag → eigener Link + eigene Ära-Farbe
+                            const _teamList = [..._teamsFromRaces.entries()].map(([tid, tname]) => {
+                                const _t = _sTeams.find(t => t.id === tid || t.histId === tid || t.name === tname);
+                                return { name: tname, id: _t?.id || tid, color: _t?.color };
+                            });
+                            if (_teamList.length === 0 && (team || histDriver?.team)) {
+                                _teamList.push({ name: _teamDisplay, id: team?.id || histDriver?.team, color: team?.color });
+                            }
 
                             const position = Object.entries(season.driverStandings || {})
                                 .map(([id, s]) => ({ id, points: s.points || 0 }))
@@ -25385,6 +25434,7 @@ Empfohlene Wertebereiche:
                             fullCareer.push({
                                 year: season.year,
                                 team: _teamDisplay,
+                                teams: _teamList,
                                 teamId: team?.id || histDriver?.team || null,
                                 teamColor: getTeamColors(team?.id || '', season.year, team?.color)[0] || ensureReadable(team?.color || '#888'),
                                 races: driverStanding?.races || 0,
@@ -25419,6 +25469,7 @@ Empfohlene Wertebereiche:
                             fullCareer.push({
                                 year: GAME_STATE.currentYear,
                                 team: _lt?.name || '-',
+                                teams: _lt ? [{ name: _lt.name, id: _lt.id, color: _lt.color }] : [],
                                 teamId: _lt?.id || _liveDrv.team || null,
                                 teamColor: getTeamColors(_lt?.id || '', GAME_STATE.currentYear, _lt?.color)[0] || ensureReadable(_lt?.color || '#888'),
                                 races: _liveStanding?.races || 0,
@@ -25456,9 +25507,11 @@ Empfohlene Wertebereiche:
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
                                                 <td class="p-1 font-bold"><span class="cursor-pointer ${h.isCurrent ? '' : 'hover:underline'}" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main)'};${h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : ''}" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
                                                 <td class="p-1">
-                                                    ${h.team !== '-' ?
-                                                        renderTeamNameColored(h.team, h.teamId, h.year, h.teamColor) :
-                                                        '<span class="text-tertiary text-xs">-</span>'}
+                                                    ${(h.teams && h.teams.length)
+                                                        ? h.teams.map(t => renderTeamNameColored(t.name, t.id, h.year, t.color)).join('<span class="text-tertiary text-xs"> / </span>')
+                                                        : (h.team !== '-'
+                                                            ? renderTeamNameColored(h.team, h.teamId, h.year, h.teamColor)
+                                                            : '<span class="text-tertiary text-xs">-</span>')}
                                                 </td>
                                                 <td class="p-1 text-center ${h.wins > 0 ? 'accent-gold font-bold' : ''}">${h.wins}</td>
                                                 <td class="p-1 text-center">${h.podiums}</td>
@@ -26697,6 +26750,14 @@ Empfohlene Wertebereiche:
             finally { for (const r of _recs) for (const k of HISTORY_HEAVY_FIELDS) delete r[k]; }
         };
         function _openTeamProfileBody(teamId) {
+            // Mid-Season-Einsteiger tragen die ID `ent_<SD-Key>_<Jahr>`. Ist das Team nicht
+            // mehr im aktuellen Feld, scheiterte JEDE Auflösung weiter unten und das Profil
+            // zeigte ein Geisterteam ("Ent_SAU_1993 (Ehemaliges Team)", alles 0). Auf den
+            // echten SEASON_DATA-Namen umschreiben — damit greifen allTimeStATS/TEAM_HIST.
+            if (/^ent_.+_\d{4}$/i.test(String(teamId)) && !GAME_STATE.teams.some(t => t.id === teamId)) {
+                const _realName = seasonDataTeamName(unpackEnteredTeamId(teamId));
+                if (_realName) teamId = _realName;
+            }
             // Suche per id ODER per histId ODER per Name (inkl. Slug-Konvertierung "red-bull" → "red bull")
             const teamIdLower = String(teamId).toLowerCase();
             const teamIdSlug = teamIdLower.replace(/-/g, ' ');
@@ -27051,6 +27112,25 @@ Empfohlene Wertebereiche:
                 .map(([id, p], i) => ({ id, points: p, position: i + 1 }));
         }
         
+        // Alle ID-Formen eines Teams innerhalb EINER gespeicherten Saison einsammeln.
+        // Nötig, weil teamStandings, teams[] und drivers[].team nicht dieselbe Schreibweise
+        // führen müssen: Standings stehen z.B. unter 'lotus', drivers[].team dagegen unter
+        // der generierten Einsteiger-ID 'ent_LOT_1993' (applyTeamEntryExit ~L16688).
+        // Ein strikter === ließ dadurch ganze Fahrerfelder weg ("-" trotz Team-Statistik).
+        function collectTeamIdAliases(season, baseIds) {
+            const set = new Set();
+            const add = v => { if (v) set.add(String(v).toLowerCase()); };
+            (baseIds || []).forEach(add);
+            for (const t of (season?.teams || [])) {
+                if (set.has(String(t.id).toLowerCase())
+                    || set.has(String(t.histId || '').toLowerCase())
+                    || set.has(String(t.name || '').toLowerCase())) {
+                    add(t.id); add(t.histId); add(t.name);
+                }
+            }
+            return set;
+        }
+
         function renderTeamHistory(teamId, histId = null) {
             const teamHistory = [];
             const idsToCheck = [teamId];
@@ -27309,8 +27389,9 @@ Empfohlene Wertebereiche:
                 }
                 
                 if (teamStanding || actualTeamId) {
+                    const _idSet = collectTeamIdAliases(season, [...idsToCheck, actualTeamId]);
                     const seasonDriverObjs = (season.drivers || [])
-                        .filter(d => d.team === actualTeamId)
+                        .filter(d => _idSet.has(String(d.team || '').toLowerCase()))
                         .map(d => {
                             const w = d.name.trim().split(/\s+/);
                             const displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : d.name;
@@ -27374,19 +27455,22 @@ Empfohlene Wertebereiche:
             // Layout: Fahrerspalte bekommt width:100% und schluckt den freien Platz links,
             // die Zahlenspalten stehen dadurch rechtsbündig mit fester Eigenbreite statt
             // zusammenzukleben (Nutzer-Report: "4 16349 3" unlesbar bei dreistelligen Punkten).
-            // table-layout:fixed — die Zahlenspalten haben feste Breiten und koennen dadurch
-            // NIE mehr aus dem Modal geschoben werden. Vorher forderte die nowrap-Fahrerspalte
-            // 473px in einem 618px breiten Modal; S/P/Pkt/WM landeten im Overflow.
+            // Die Fahrerspalte ist die einzige flexible: th width:100% + td max-width:0 nimmt
+            // ihren Inhalt aus der Mindestbreiten-Rechnung heraus, sie schrumpft also auf den
+            // Restplatz und kürzt mit Ellipsis. Alle Zahlenspalten behalten ihre natürliche
+            // Inhaltsbreite und können NIE aus dem Modal geschoben werden.
+            // (Feste rem-Breiten waren hier falsch: die Schriftgröße ist einstellbar, dadurch
+            // klebten Jahr und Fahrerspalte aneinander — "1994-".)
             const NUMTH = 'padding:0.25rem 0.55rem;text-align:right;white-space:nowrap';
             const NUMTD = NUMTH + ';font-variant-numeric:tabular-nums';
-            html += '<div class="table-responsive max-h-64 overflow-y-auto"><table class="text-sm" style="width:100%;table-layout:fixed">';
+            html += '<div class="table-responsive max-h-64 overflow-y-auto"><table class="text-sm" style="width:100%">';
             html += '<thead class="sticky top-0 bg-secondary"><tr class="text-tertiary text-xs">';
-            html += '<th class="text-left p-1" style="width:3.3rem">Jahr</th>';
-            html += '<th class="text-left p-1">Fahrer</th>';
-            html += '<th style="' + NUMTH + ';width:2.4rem" title="Siege">S</th>';
-            html += '<th style="' + NUMTH + ';width:2.4rem" title="Podien">P</th>';
-            html += '<th style="' + NUMTH + ';width:3.4rem" title="Punkte">Pkt</th>';
-            html += '<th style="' + NUMTH + ';width:3rem" title="WM-Platzierung des Teams">WM</th>';
+            html += '<th class="text-left" style="padding:0.25rem 0.6rem 0.25rem 0.25rem;white-space:nowrap">Jahr</th>';
+            html += '<th class="text-left p-1" style="width:100%">Fahrer</th>';
+            html += '<th style="' + NUMTH + '" title="Siege">S</th>';
+            html += '<th style="' + NUMTH + '" title="Podien">P</th>';
+            html += '<th style="' + NUMTH + '" title="Punkte">Pkt</th>';
+            html += '<th style="' + NUMTH + '" title="WM-Platzierung des Teams">WM</th>';
             html += '</tr></thead><tbody>';
 
             // Zahlen-Zelle: 0/fehlend gedimmt, Werte > 0 fett — die Betonung entsteht
@@ -27424,8 +27508,10 @@ Empfohlene Wertebereiche:
                     // ist per CSS auf ~600px gedeckelt (L433), am Desktop also unabhaengig von der
                     // Fensterbreite. Der alte Wert 88 galt fuer ein 1400px-Fenster und sprengte
                     // deshalb jedes Mal die Tabelle.
+                    // Nur noch eine Heuristik dafuer, WANN das "+N" erscheint — die Spalten
+                    // sind per CSS ohnehin gegen Overflow gesichert.
                     const _tblW = Math.min(window.innerWidth - 32, 660);
-                    const _avail = Math.max(90, _tblW - 232);      // 232px = feste Spalten Jahr/S/P/Pkt/WM
+                    const _avail = Math.max(90, _tblW - 232);      // ~232px fuer Jahr/S/P/Pkt/WM
                     const LINE_LIMIT = Math.floor(_avail / 9.3);   // ~9.3px je Zeichen bei 0.75rem
                     const makeLink = ({ d, display }) => d.id
                         ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${display}</span>`
@@ -27472,7 +27558,7 @@ Empfohlene Wertebereiche:
                         }
                     }
                 }
-                html += '<td class="p-1 text-xs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + driversHtml + '</td>';
+                html += '<td class="p-1 text-xs" style="max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + driversHtml + '</td>';
                 html += numCell(h.wins);
                 html += numCell(h.podiums);
                 html += numCell(h.points);
@@ -27521,9 +27607,15 @@ Empfohlene Wertebereiche:
 
             // ── Simulierte Vergangenheit ──────────────────────────
             const simYearMap = {};
+            const simIdSets = {};   // Jahr → alle ID-Formen des Teams in dieser Saison
             for (const h of (GAME_STATE.history||[])) {
-                if ((h.drivers||[]).some(d=>d.team===teamId||(stATSId&&d.team===stATSId)))
+                // Gegen ALLE ID-Formen prüfen: sonst fehlt eine Saison komplett, sobald
+                // drivers[].team die Einsteiger-ID trägt und teamId der Slug ist.
+                const _set = collectTeamIdAliases(h, [teamId, stATSId]);
+                if ((h.drivers||[]).some(d=>_set.has(String(d.team||'').toLowerCase()))) {
                     simYearMap[h.year] = h;
+                    simIdSets[h.year] = _set;
+                }
             }
 
             // ── F1DB-Jahre aus TEAM_HIST ──────────────────────────
@@ -27631,8 +27723,8 @@ Empfohlene Wertebereiche:
                 // Simulierte Vergangenheit
                 if (simYearMap[year]) {
                     const h=simYearMap[year];
-                    const tid=curTeam?.id||teamId;
-                    const teamDrivers=(h.drivers||[]).filter(d=>d.team===tid||d.team===teamId);
+                    const _set=simIdSets[year]||collectTeamIdAliases(h,[teamId,stATSId,curTeam?.id]);
+                    const teamDrivers=(h.drivers||[]).filter(d=>_set.has(String(d.team||'').toLowerCase()));
                     const sortedSt=sortStandings(h.driverStandings);
                     const driverRows=teamDrivers.map(d=>{
                         const cells=(h.results||[]).map(race=>{
