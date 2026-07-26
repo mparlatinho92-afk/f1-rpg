@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.33</title>
+    <title>F1 RPG v0.9.15.34</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.33 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.34 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; NEU: 75 weitere Team-Logos - von Arrows und March bis Talbot-Lago, ATS, Connaught und Toro Rosso (26 von 178 Teams hatten eins, jetzt 102)</div>
+                            <div>&#8226; NEU: Teams mit mehreren Logo-Aeren jahresgenau (Arrows 9 Epochen 1978-2002, Shadow 4, Footwork 4, HRT 3)</div>
+                            <div>&#8226; FIX: Honda-Logo war unter falschem Schluessel hinterlegt und wurde nie angezeigt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.33 - 26.07.2026</div>
                             <div>&#8226; FIX: Brawn 2009 mit eigener Livery (2/3 Weiss + 1/3 Fluo-Gelb) statt Gold-Silber-Fallback</div>
                             <div>&#8226; NEU: Brawn-GP-Logo ergaenzt - Champion-Karte und Meldeliste zeigen die echte Wortmarke</div>
                             <div class="font-bold text-slate-400">v0.9.15.32 - 26.07.2026</div>
@@ -3274,7 +3278,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.33';
+        const VERSION = '0.9.15.34';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -26931,6 +26935,267 @@ Empfohlene Wertebereiche:
             // Füllung ist die Primärfarbe (Weiß) auf weißem Logo-Hintergrund = praktisch unsichtbar.
             "brawn": [
                 { from: 2009, to: 2009, url: "https://static.wikia.nocookie.net/logopedia/images/1/15/Brawn_GP.svg/revision/latest?cb=20260309105607" }
+            ],
+
+            // === Nachtrag v0.9.15.34: Logos aus Logopedia Category:Formula One constructors.
+            // Nur Teams mit EXPLIZIT datiertem Abschnitt auf der Quellseite - keine geratenen Zeitraeume.
+            "honda": [ // 1964–2008 im Spiel; Key "honda-team" wurde nie getroffen
+                { from: 1964, to: 1968, url: "https://static.wikia.nocookie.net/logopedia/images/b/bc/Honda_f1_60s.jpg/revision/latest?cb=20240519184355" },
+                { from: 2006, to: 2008, url: "https://static.wikia.nocookie.net/logopedia/images/2/2a/Logo_Honda_F1_Racing.svg/revision/latest?cb=20200425130049" }
+            ],
+            "arrows": [ // 1978–2002 im Spiel
+                { from: 1978, to: 1980, url: "https://static.wikia.nocookie.net/logopedia/images/1/11/Warsteiner_20Racing_20Team_20logo_large.jpg/revision/latest?cb=20190222063328" },
+                { from: 1981, to: 1981, url: "https://static.wikia.nocookie.net/logopedia/images/7/74/Arrows11.png/revision/latest?cb=20191009054806" },
+                { from: 1982, to: 1984, url: "https://static.wikia.nocookie.net/logopedia/images/3/3d/Arrows1.png/revision/latest?cb=20191009055324" },
+                { from: 1985, to: 1986, url: "https://static.wikia.nocookie.net/logopedia/images/7/7c/Arrows2.png/revision/latest?cb=20191008122653" },
+                { from: 1987, to: 1989, url: "https://static.wikia.nocookie.net/logopedia/images/d/d7/200px-ArrowsF1.svg.png/revision/latest?cb=20191013054117" },
+                { from: 1997, to: 1998, url: "https://static.wikia.nocookie.net/logopedia/images/7/78/Arrows-1997.png/revision/latest?cb=20260426195935" },
+                { from: 1999, to: 1999, url: "https://static.wikia.nocookie.net/logopedia/images/7/7f/Arrows1999.png/revision/latest?cb=20260407215104" },
+                { from: 2000, to: 2000, url: "https://static.wikia.nocookie.net/logopedia/images/a/a8/ArrowsF1Team12000.jpg/revision/latest?cb=20260426201835" },
+                { from: 2001, to: 2002, url: "https://static.wikia.nocookie.net/logopedia/images/b/bc/Orangearrows.png/revision/latest?cb=20260426195733" }
+            ],
+            "march": [ // 1970–1992 im Spiel
+                { from: 1969, to: 1988, url: "https://static.wikia.nocookie.net/logopedia/images/7/77/March_f1_logo.jpg/revision/latest?cb=20240628113358" },
+                { from: 1989, to: 1992, url: "https://static.wikia.nocookie.net/logopedia/images/0/0f/March_1989.jpg/revision/latest?cb=20240519234704" }
+            ],
+            "osella": [ // 1980–1990 im Spiel
+                { from: 1980, to: 1990, url: "https://static.wikia.nocookie.net/logopedia/images/9/9a/Osella.svg/revision/latest?cb=20240416201156" }
+            ],
+            "ensign": [ // 1973–1982 im Spiel
+                { from: 1973, to: 1978, url: "https://static.wikia.nocookie.net/logopedia/images/7/78/Ensign.png/revision/latest?cb=20240124114945" },
+                { from: 1978, to: 1982, url: "https://static.wikia.nocookie.net/logopedia/images/4/41/Ensign2.png/revision/latest?cb=20240124115043" }
+            ],
+            "surtees": [ // 1971–1978 im Spiel
+                { from: 1970, to: 1978, url: "https://static.wikia.nocookie.net/logopedia/images/a/a3/Surtees_f1.jpg/revision/latest?cb=20240519203737" }
+            ],
+            "shadow": [ // 1973–1980 im Spiel
+                { from: 1973, to: 1975, url: "https://static.wikia.nocookie.net/logopedia/images/9/95/Uop_shadow_1973.jpg/revision/latest?cb=20240519015458" },
+                { from: 1975, to: 1976, url: "https://static.wikia.nocookie.net/logopedia/images/b/b8/Shadow_f1_1975.jpg/revision/latest?cb=20240519015530" },
+                { from: 1976, to: 1981, url: "https://static.wikia.nocookie.net/logopedia/images/6/6f/Shadow_f1_logo_1980.png/revision/latest?cb=20240628122052" },
+                { from: 1979, to: 1980, url: "https://static.wikia.nocookie.net/logopedia/images/a/ad/Samson_Shadow_Racing_Team.png/revision/latest?cb=20240520220754" }
+            ],
+            "fittipaldi": [ // 1975–1982 im Spiel
+                { from: 1975, to: 1979, url: "https://static.wikia.nocookie.net/logopedia/images/5/52/Copercucar_fitipaldi_logo.jpg/revision/latest?cb=20240628113121" },
+                { from: 1980, to: 1982, url: "https://static.wikia.nocookie.net/logopedia/images/9/93/Escuderia_Skol_Fittipaldi_1980_1982.svg/revision/latest?cb=20240628112623" }
+            ],
+            "matra": [ // 1966–1972 im Spiel
+                { from: 1967, to: 1971, url: "https://static.wikia.nocookie.net/logopedia/images/7/75/Matra_Sports_logo_1967.gif/revision/latest?cb=20190315175225" }
+            ],
+            "ats": [ // 1963–1963 im Spiel
+                { from: 1963, to: 1963, url: "https://static.wikia.nocookie.net/logopedia/images/0/06/Ats.png/revision/latest?cb=20200825110133" }
+            ],
+            "ats-wheels": [ // 1978–1984 im Spiel
+                { from: 1978, to: 1984, url: "https://static.wikia.nocookie.net/logopedia/images/1/16/ATS.svg.png/revision/latest?cb=20200924114541" }
+            ],
+            "hwm": [ // 1951–1955 im Spiel
+                { from: 1951, to: 1955, url: "https://static.wikia.nocookie.net/logopedia/images/1/1f/Hwm_logo.jpg/revision/latest?cb=20240519185721" }
+            ],
+            "gordini": [ // 1952–1956 im Spiel
+                { from: 1950, to: 1956, url: "https://static.wikia.nocookie.net/logopedia/images/a/af/Gordini_old_logo.svg/revision/latest?cb=20220721235249" }
+            ],
+            "simca-gordini": [ // 1950–1953 im Spiel
+                { from: 1950, to: 1953, url: "https://static.wikia.nocookie.net/logopedia/images/a/af/Gordini_old_logo.svg/revision/latest?cb=20220721235249" }
+            ],
+            "vanwall": [ // 1954–1958 im Spiel
+                { from: 1954, to: 1960, url: "https://static.wikia.nocookie.net/logopedia/images/c/c6/250px-Vanwall_logo.jpg/revision/latest?cb=20190321194251" }
+            ],
+            "hesketh": [ // 1974–1978 im Spiel
+                { from: 1972, to: 1978, url: "https://static.wikia.nocookie.net/logopedia/images/5/58/Logo_HeskethRacing_Landscape.png/revision/latest?cb=20240514193614" }
+            ],
+            "dallara": [ // 1988–1992 im Spiel
+                { from: 1988, to: 1992, url: "https://static.wikia.nocookie.net/logopedia/images/f/f5/Bms_scuderia_italia_%28dallara%29.jpg/revision/latest?cb=20240519220331" }
+            ],
+            "de-tomaso": [ // 1961–1970 im Spiel
+                { from: 1961, to: 1970, url: "https://static.wikia.nocookie.net/logopedia/images/5/53/De_Tomaso_Logo.jpg/revision/latest?cb=20101127025444" }
+            ],
+            "eurobrun": [ // 1988–1990 im Spiel
+                { from: 1988, to: 1990, url: "https://static.wikia.nocookie.net/logopedia/images/2/23/EuroBrunRacing.svg/revision/latest?cb=20260503024553" }
+            ],
+            "emeryson": [ // 1956–1962 im Spiel
+                { from: 1958, to: 1962, url: "https://static.wikia.nocookie.net/logopedia/images/9/94/Badge-1.jpg/revision/latest?cb=20240122071559" }
+            ],
+            "ferguson": [ // 1961–1961 im Spiel
+                { from: 1961, to: 1961, url: "https://static.wikia.nocookie.net/logopedia/images/d/df/Ferguson-logo.png/revision/latest?cb=20240125154649" }
+            ],
+            "forti": [ // 1995–1996 im Spiel
+                { from: 1995, to: 1996, url: "https://static.wikia.nocookie.net/logopedia/images/9/9d/Ttdd.png/revision/latest?cb=20190308194311" }
+            ],
+            "frank-williams-racing-cars": [ // 1975–1975 im Spiel
+                { from: 1969, to: 1971, url: "https://static.wikia.nocookie.net/logopedia/images/9/95/Frank_Williams_Racing_Cars.jpg/revision/latest?cb=20240519002357" },
+                { from: 1972, to: 1972, url: "https://static.wikia.nocookie.net/logopedia/images/6/63/B03a43676b9450919d1a03d198ee0291.png/revision/latest?cb=20251223114154" },
+                { from: 1973, to: 1975, url: "https://static.wikia.nocookie.net/logopedia/images/9/91/Isomarlboro.png/revision/latest?cb=20251025194429" }
+            ],
+            "iso-marlboro": [ // 1973–1974 im Spiel
+                { from: 1973, to: 1975, url: "https://static.wikia.nocookie.net/logopedia/images/9/91/Isomarlboro.png/revision/latest?cb=20251025194429" }
+            ],
+            "wolf-williams": [ // 1976–1976 im Spiel
+                { from: 1976, to: 1976, url: "https://static.wikia.nocookie.net/logopedia/images/b/bd/Walter-wolf-racing-alt.jpg/revision/latest?cb=20240519005252" }
+            ],
+            "maki": [ // 1974–1976 im Spiel
+                { from: 1974, to: 1976, url: "https://static.wikia.nocookie.net/logopedia/images/c/c3/MakiF1.jpg/revision/latest?cb=20260503003902" }
+            ],
+            "theodore": [ // 1982–1983 im Spiel
+                { from: 1977, to: 1983, url: "https://static.wikia.nocookie.net/logopedia/images/8/8d/TheodoreRacing.svg/revision/latest?cb=20260503025136" }
+            ],
+            "wolf": [ // 1977–1979 im Spiel
+                { from: 1977, to: 1979, url: "https://static.wikia.nocookie.net/logopedia/images/0/03/WalterWolfRacing.png/revision/latest?cb=20260503005606" }
+            ],
+            "connew": [ // 1972–1972 im Spiel
+                { from: 1972, to: 1972, url: "https://static.wikia.nocookie.net/logopedia/images/2/23/Connew.png/revision/latest?cb=20230401082742" }
+            ],
+            "eifelland": [ // 1972–1972 im Spiel
+                { from: 1972, to: 1972, url: "https://static.wikia.nocookie.net/logopedia/images/7/7d/Eifelland_F1_logo.png/revision/latest?cb=20240512164303" }
+            ],
+            "pacific": [ // 1994–1995 im Spiel
+                { from: 1994, to: 1994, url: "https://static.wikia.nocookie.net/logopedia/images/e/e9/Pacific_Grand_Prix.png/revision/latest?cb=20251025185538" },
+                { from: 1995, to: 1995, url: "https://static.wikia.nocookie.net/logopedia/images/4/48/Pacificteamlotus.png/revision/latest?cb=20251025191154" }
+            ],
+            "lotus-racing": [ // 2010–2011 im Spiel
+                { from: 2010, to: 2010, url: "https://static.wikia.nocookie.net/logopedia/images/4/47/LotusRacing.svg/revision/latest?cb=20230403153358" },
+                { from: 2011, to: 2011, url: "https://static.wikia.nocookie.net/logopedia/images/b/b5/TeamLotus.svg/revision/latest?cb=20230403153424" }
+            ],
+            "lotus-f1": [ // 2012–2015 im Spiel
+                { from: 2012, to: 2015, url: "https://static.wikia.nocookie.net/logopedia/images/1/1a/Lotus_F1_Team.svg/revision/latest?cb=20250826145950" }
+            ],
+            "bugatti": [ // 1956–1956 im Spiel
+                { from: 1956, to: 1956, url: "https://static.wikia.nocookie.net/logopedia/images/1/12/Bugatti_1909.svg/revision/latest?cb=20220729191310" }
+            ],
+            "bmw": [ // 1969–1969 im Spiel
+                { from: 1967, to: 1969, url: "https://static.wikia.nocookie.net/logopedia/images/f/f9/BMW_Logo.svg/revision/latest?cb=20180223121644" }
+            ],
+            "derrington-francis": [ // 1964–1964 im Spiel
+                { from: 1964, to: 1964, url: "https://static.wikia.nocookie.net/logopedia/images/f/f4/Derrington-francis.png/revision/latest?cb=20240120082924" }
+            ],
+            "enb": [ // 1962–1962 im Spiel
+                { from: 1962, to: 1962, url: "https://static.wikia.nocookie.net/logopedia/images/a/a4/ENB.png/revision/latest?cb=20240122091507" }
+            ],
+            "emw": [ // 1953–1953 im Spiel
+                { from: 1953, to: 1953, url: "https://static.wikia.nocookie.net/logopedia/images/1/1d/Eisenacher_Motorenwerk.svg/revision/latest?cb=20240122071134" }
+            ],
+            "hill": [ // 1975–1975 im Spiel
+                { from: 1973, to: 1975, url: "https://static.wikia.nocookie.net/logopedia/images/9/90/Embassy_hill.jpg/revision/latest?cb=20240520001014" }
+            ],
+            "rb": [ // 2024–2025 im Spiel
+                { from: 2024, to: 2025, url: "https://static.wikia.nocookie.net/logopedia/images/a/a7/Racing_Bulls.svg/revision/latest?cb=20240206041248" }
+            ],
+            "andrea-moda": [ // 1992–1992 im Spiel
+                { from: 1992, to: 1992, url: "https://static.wikia.nocookie.net/logopedia/images/1/1b/Andrea_moda.png/revision/latest?cb=20190312195814" }
+            ],
+            "alta": [ // 1950–1952 im Spiel
+                { from: 1950, to: 1952, url: "https://static.wikia.nocookie.net/logopedia/images/8/8e/Alta.png/revision/latest?cb=20190220165047" }
+            ],
+            "amon": [ // 1974–1974 im Spiel
+                { from: 1974, to: 1974, url: "https://static.wikia.nocookie.net/logopedia/images/f/fc/Amon_%28Formula_One_team%29_%28logo%29.png/revision/latest?cb=20191007121751" }
+            ],
+            "apollon": [ // 1977–1977 im Spiel
+                { from: 1977, to: 1977, url: "https://static.wikia.nocookie.net/logopedia/images/a/ae/Apollon_logo.gif/revision/latest?cb=20191007122510" }
+            ],
+            "arzani-volpini": [ // 1955–1955 im Spiel
+                { from: 1955, to: 1955, url: "https://static.wikia.nocookie.net/logopedia/images/0/07/Volpini.jpg/revision/latest?cb=20200922032715" }
+            ],
+            "aston-butterworth": [ // 1952–1952 im Spiel
+                { from: 1952, to: 1952, url: "https://static.wikia.nocookie.net/logopedia/images/9/93/Astonlogo.png/revision/latest?cb=20240701083723" }
+            ],
+            "ags": [ // 1986–1991 im Spiel
+                { from: 1986, to: 1991, url: "https://static.wikia.nocookie.net/logopedia/images/f/f8/Ags_logo_%28F1%29.png/revision/latest?cb=20240701085820" }
+            ],
+            "bellasi": [ // 1970–1971 im Spiel
+                { from: 1970, to: 1971, url: "https://static.wikia.nocookie.net/logopedia/images/0/06/Bellasi.gif/revision/latest?cb=20200924114805" }
+            ],
+            "boro": [ // 1976–1977 im Spiel
+                { from: 1976, to: 1977, url: "https://static.wikia.nocookie.net/logopedia/images/c/c1/Borof1.gif/revision/latest?cb=20210114150809" }
+            ],
+            "caterham": [ // 2012–2014 im Spiel
+                { from: 2012, to: 2013, url: "https://static.wikia.nocookie.net/logopedia/images/e/ec/CaterhamF12012green.svg/revision/latest?cb=20260402141345" },
+                { from: 2014, to: 2014, url: "https://static.wikia.nocookie.net/logopedia/images/d/d6/Caterham_F1_Team_2014.svg/revision/latest?cb=20230403153239" }
+            ],
+            "cisitalia": [ // 1952–1952 im Spiel
+                { from: 1952, to: 1952, url: "https://static.wikia.nocookie.net/logopedia/images/9/9e/Cisitalia-logo.png/revision/latest?cb=20210218145525" }
+            ],
+            "coloni": [ // 1987–1991 im Spiel
+                { from: 1987, to: 1991, url: "https://static.wikia.nocookie.net/logopedia/images/0/09/Enzo_Coloni_Racing.svg/revision/latest?cb=20260313151718" }
+            ],
+            "connaught": [ // 1952–1959 im Spiel
+                { from: 1952, to: 1959, url: "https://static.wikia.nocookie.net/logopedia/images/8/83/Connaught.jpg/revision/latest?cb=20210219112956" }
+            ],
+            "era": [ // 1950–1951 im Spiel
+                { from: 1950, to: 1952, url: "https://static.wikia.nocookie.net/logopedia/images/2/2b/English-racing-automobiles.svg/revision/latest?cb=20240124115346" }
+            ],
+            "fondmetal": [ // 1992–1992 im Spiel
+                { from: 1991, to: 1992, url: "https://static.wikia.nocookie.net/logopedia/images/d/d5/Fondmetal1.svg/revision/latest?cb=20260421100429" }
+            ],
+            "footwork": [ // 1991–1996 im Spiel
+                { from: 1991, to: 1991, url: "https://static.wikia.nocookie.net/logopedia/images/4/47/Footwork1991.png/revision/latest?cb=20200916100631" },
+                { from: 1992, to: 1993, url: "https://static.wikia.nocookie.net/logopedia/images/f/fc/Footwork1992.png/revision/latest?cb=20200916101015" },
+                { from: 1994, to: 1994, url: "https://static.wikia.nocookie.net/logopedia/images/3/36/Footwork_logo.png/revision/latest?cb=20200916102906" },
+                { from: 1995, to: 1996, url: "https://static.wikia.nocookie.net/logopedia/images/c/c6/Footwork-logo.png/revision/latest?cb=20200916103207" }
+            ],
+            "frazer-nash": [ // 1952–1952 im Spiel
+                { from: 1952, to: 1952, url: "https://static.wikia.nocookie.net/logopedia/images/8/83/Frazer_Nash_Logo.png/revision/latest?cb=20240306082204" }
+            ],
+            "gilby": [ // 1961–1963 im Spiel
+                { from: 1961, to: 1963, url: "https://static.wikia.nocookie.net/logopedia/images/4/45/Gilby.webp/revision/latest?cb=20250426150752" }
+            ],
+            "hrt": [ // 2010–2012 im Spiel
+                { from: 2010, to: 2010, url: "https://static.wikia.nocookie.net/logopedia/images/3/39/Hispania_Racing_F1_Team.svg/revision/latest?cb=20250825234534" },
+                { from: 2011, to: 2011, url: "https://static.wikia.nocookie.net/logopedia/images/1/10/Hispania_Racing_2011.png/revision/latest?cb=20250825235452" },
+                { from: 2012, to: 2012, url: "https://static.wikia.nocookie.net/logopedia/images/5/53/HRT_F1_Team.svg/revision/latest?cb=20260318015528" }
+            ],
+            "jaguar": [ // 2000–2004 im Spiel
+                { from: 2000, to: 2002, url: "https://static.wikia.nocookie.net/logopedia/images/d/dd/Jaguar_Racing_2000.svg/revision/latest?cb=20260322013500" },
+                { from: 2003, to: 2004, url: "https://static.wikia.nocookie.net/logopedia/images/3/3d/JaguarRacing2003.jpg/revision/latest?cb=20260501190503" }
+            ],
+            "jbw": [ // 1959–1961 im Spiel
+                { from: 1957, to: 1961, url: "https://static.wikia.nocookie.net/logopedia/images/5/54/Jbw.png/revision/latest?cb=20251226111006" }
+            ],
+            "larrousse": [ // 1993–1994 im Spiel
+                { from: 1987, to: 1994, url: "https://static.wikia.nocookie.net/logopedia/images/0/05/Larrousse_f1.jpg/revision/latest?cb=20240519221958" }
+            ],
+            "manor": [ // 2016–2016 im Spiel
+                { from: 2016, to: 2016, url: "https://static.wikia.nocookie.net/logopedia/images/d/d0/ManorRacing.png/revision/latest?cb=20260327174633" }
+            ],
+            "marussia": [ // 2012–2015 im Spiel
+                { from: 2012, to: 2014, url: "https://static.wikia.nocookie.net/logopedia/images/d/d1/Marussiaf1.png/revision/latest?cb=20250826150443" },
+                { from: 2015, to: 2015, url: "https://static.wikia.nocookie.net/logopedia/images/5/59/Manor_F1_Team_logo.png/revision/latest?cb=20150806160651" }
+            ],
+            "maserati": [ // 1950–1960 im Spiel
+                { from: 1950, to: 1957, url: "https://static.wikia.nocookie.net/logopedia/images/8/85/Maserati_2006.svg/revision/latest?cb=20180305200055" }
+            ],
+            "midland": [ // 2006–2006 im Spiel
+                { from: 2006, to: 2006, url: "https://static.wikia.nocookie.net/logopedia/images/f/ff/MidlandF1.png/revision/latest?cb=20250826171016" }
+            ],
+            "spyker": [ // 2007–2007 im Spiel
+                { from: 2007, to: 2007, url: "https://static.wikia.nocookie.net/logopedia/images/0/0c/Spyker_F1_Team.png/revision/latest?cb=20240117211747" }
+            ],
+            "super-aguri": [ // 2006–2008 im Spiel
+                { from: 2006, to: 2008, url: "https://static.wikia.nocookie.net/logopedia/images/9/97/Super_Aguri.svg/revision/latest?cb=20250826151028" }
+            ],
+            "talbot-lago": [ // 1950–1951 im Spiel
+                { from: 1950, to: 1951, url: "https://static.wikia.nocookie.net/logopedia/images/2/26/Talbotlago.png/revision/latest?cb=20190219125216" }
+            ],
+            "toleman": [ // 1981–1985 im Spiel
+                { from: 1981, to: 1985, url: "https://static.wikia.nocookie.net/logopedia/images/3/37/Toleman_logo.png/revision/latest?cb=20190329175500" }
+            ],
+            "toro-rosso": [ // 2006–2019 im Spiel
+                { from: 2006, to: 2018, url: "https://static.wikia.nocookie.net/logopedia/images/b/b9/Scuderia_Toro_Rosso_2006.svg/revision/latest?cb=20230403155101" },
+                { from: 2018, to: 2019, url: "https://static.wikia.nocookie.net/logopedia/images/4/4f/Scuderia_Toro_Rosso_logo.svg/revision/latest?cb=20230403154951" }
+            ],
+            "virgin": [ // 2010–2011 im Spiel
+                { from: 2010, to: 2010, url: "https://static.wikia.nocookie.net/logopedia/images/9/97/VirginRacing2010.svg/revision/latest?cb=20260504191136" },
+                { from: 2011, to: 2011, url: "https://static.wikia.nocookie.net/logopedia/images/2/29/Marussia_Virgin_Racing.svg/revision/latest?cb=20260302031344" }
+            ],
+            "racing-point": [ // 2019–2020 im Spiel
+                { from: 2019, to: 2019, url: "https://static.wikia.nocookie.net/logopedia/images/1/1a/Racing_Point_2019.svg/revision/latest?cb=20250826185340" },
+                { from: 2020, to: 2020, url: "https://static.wikia.nocookie.net/logopedia/images/0/00/BWT_Racing_Point.svg/revision/latest?cb=20250826185439" }
+            ],
+            "bmw-sauber": [ // 2006–2009 im Spiel
+                { from: 2006, to: 2009, url: "https://static.wikia.nocookie.net/logopedia/images/f/f6/BMW_Sauber_F1_Team_%282006%29.svg/revision/latest?cb=20220614201857" }
+            ],
+            "brp": [ // 1963–1964 im Spiel
+                { from: 1958, to: 1964, url: "https://static.wikia.nocookie.net/logopedia/images/3/38/British_Racing_Partnership_logo.png/revision/latest?cb=20191216215637" }
+            ],
+            "afm": [ // 1952–1953 im Spiel
+                { from: 1952, to: 1953, url: "https://static.wikia.nocookie.net/logopedia/images/d/d0/Alex_von_Falkenhausen_Motorenbau_logo.png/revision/latest?cb=20240701085246" }
             ],
         };
 
