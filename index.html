@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.26</title>
+    <title>F1 RPG v0.9.15.27</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -951,7 +951,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.26 (aktuell) - 26.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.27 (aktuell) - 26.07.2026</div>
+                            <div>&#8226; FIX: Team-Steckbrief zeigte jede Saison der Ergebnis-Matrix doppelt</div>
+                            <div>&#8226; FIX: Team-Historie - S/P/Pkt/WM klebten zusammen und wurden rechts abgeschnitten, Spalten jetzt fest und immer sichtbar</div>
+                            <div>&#8226; NEU: WM-Titel als Gold-Badge - Siege nicht mehr goldfarben wie ein Meistertitel</div>
+                            <div>&#8226; FIX: Links auf rein historische Fahrer oeffneten kein Profil (14 Faelle schon im 2024-Save)</div>
+                            <div>&#8226; FIX: Karriere-Historie liess Teams weg, wenn im Rennergebnis nur ID oder nur Name stand</div>
+                            <div class="font-bold text-slate-400">v0.9.15.26 - 26.07.2026</div>
                             <div>&#8226; FIX: kaputte Laenderflaggen (Mojibake) bei Lauda, Rodriguez, Jarier u.a. - in den Daten repariert + Alt-Saves zur Anzeige korrigiert</div>
                             <div>&#8226; FIX: Pace-Werte (Aktuell/Potenzial) im Editor speichern jetzt zuverlaessig</div>
                             <div>&#8226; FIX: Skill-Editor-Button aendert nur die Ziehbarkeit, nicht das Layout</div>
@@ -3206,7 +3212,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.26';
+        const VERSION = '0.9.15.27';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -24697,8 +24703,33 @@ Empfohlene Wertebereiche:
                         debutYear: allTimeData.firstYear
                     };
                 } else {
-                    console.warn('Fahrer nicht gefunden:', driverId);
-                    return;
+                    // Fallback auf die reine Vorgeschichte: allTimeStATS wird nur aus
+                    // HIST_DRIVERS mit firstYear < Spielbeginn geseedet (data/hist.js ~L3290).
+                    // Jeder Link auf einen Fahrer ausserhalb dieses Fensters lief vorher ins
+                    // Leere — Klick ohne jede Wirkung (Nutzer-Report: tote Links bei
+                    // historischen Fahrern). HIST_NAMES/HIST_DRIVERS decken alle 915 Slugs ab.
+                    const _hName = (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[driverId]) || null;
+                    const _hd = (typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[driverId]) || null;
+                    if (_hName || _hd) {
+                        const _races = _hd ? _hd[4] : 0;
+                        const _first = _hd ? _hd[6] : null;
+                        driver = {
+                            id: driverId,
+                            histId: driverId,
+                            name: _hName || driverId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                            nation: '🏁',
+                            number: 0,
+                            team: null,
+                            pace: 0, rain: 0, consistency: 0, experience: 0,
+                            starts: _races || 0,
+                            birthYear: _first ? _first - 25 : null,
+                            debutYear: _first
+                        };
+                    } else {
+                        console.warn('Fahrer nicht gefunden:', driverId);
+                        if (typeof logWarning === 'function') logWarning('UI', 'Fahrerprofil nicht auffindbar: ' + driverId);
+                        return;
+                    }
                 }
             }
             
@@ -25314,21 +25345,37 @@ Empfohlene Wertebereiche:
                         if (driverStanding || histDriver) {
                             // Teams aus Rennergebnissen ableiten – unterstützt komprimiertes (res/d/tmn) und unkomprimiertes Format
                             const _teamsFromRaces = new Map();
+                            // Fahrer-ID kann je Saison als id ODER histId gespeichert sein — alle
+                            // Kandidaten pruefen, sonst bleibt die Team-Spalte komplett leer.
+                            const _idCandidates = [histDriver?.id, ...searchIds].filter(Boolean);
+                            const _sTeams = season.teams || [];
                             for (const race of season.results || []) {
                                 const raceResults = race.res || race.results || [];
-                                const dId = histDriver?.id || searchIds[0];
-                                const _r = raceResults.find(e => (e.d || e.driver) === dId);
-                                if (_r) {
-                                    const tName = _r.teamName || _r.tmn;
-                                    const tId = _r.team || (tName && (season.teams||[]).find(t => t.name === tName)?.id);
-                                    if (tId && tName) _teamsFromRaces.set(tId, tName);
+                                const _r = raceResults.find(e => _idCandidates.includes(e.d || e.driver));
+                                if (!_r) continue;
+                                let tId = _r.team || null;
+                                let tName = _r.teamName || _r.tmn || null;
+                                if (!tId && tName) {
+                                    const _n = String(tName).toLowerCase();
+                                    tId = _sTeams.find(t => String(t.name || '').toLowerCase() === _n
+                                        || String(t.id || '').toLowerCase() === _n
+                                        || String(t.histId || '').toLowerCase() === _n)?.id || null;
                                 }
+                                if (tId && !tName) {
+                                    const _t = _sTeams.find(t => t.id === tId || t.histId === tId);
+                                    tName = _t?.name || String(tId).split('-')
+                                        .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                }
+                                // Vorher `if (tId && tName)`: fehlte EINES von beiden, verschwand das
+                                // Team spurlos aus der Karriere-Historie (Nutzer-Report: fehlende Teams).
+                                // Komprimierte Saisons speichern je nach Alter mal nur `tmn`, mal nur `team`.
+                                if (tId || tName) _teamsFromRaces.set(tId || tName, tName || tId);
                             }
                             const _primaryTeamId = _teamsFromRaces.size > 0 ? [..._teamsFromRaces.keys()].pop() : histDriver?.team;
                             const team = (season.teams || []).find(t => t.id === _primaryTeamId);
                             const _teamDisplay = _teamsFromRaces.size > 1
                                 ? [..._teamsFromRaces.values()].join(' / ')
-                                : (team?.name || histDriver?.team || '-');
+                                : (team?.name || [..._teamsFromRaces.values()][0] || histDriver?.team || '-');
 
                             const position = Object.entries(season.driverStandings || {})
                                 .map(([id, s]) => ({ id, points: s.points || 0 }))
@@ -27324,20 +27371,47 @@ Empfohlene Wertebereiche:
             
             let html = '<div class="card p-4 rounded-lg mt-4">';
             html += '<h4 class="font-bold mb-3">📜 Team-Historie</h4>';
-            html += '<div class="table-responsive max-h-64 overflow-y-auto overflow-x-auto"><table class="text-sm" style="min-width:100%">';
+            // Layout: Fahrerspalte bekommt width:100% und schluckt den freien Platz links,
+            // die Zahlenspalten stehen dadurch rechtsbündig mit fester Eigenbreite statt
+            // zusammenzukleben (Nutzer-Report: "4 16349 3" unlesbar bei dreistelligen Punkten).
+            // table-layout:fixed — die Zahlenspalten haben feste Breiten und koennen dadurch
+            // NIE mehr aus dem Modal geschoben werden. Vorher forderte die nowrap-Fahrerspalte
+            // 473px in einem 618px breiten Modal; S/P/Pkt/WM landeten im Overflow.
+            const NUMTH = 'padding:0.25rem 0.55rem;text-align:right;white-space:nowrap';
+            const NUMTD = NUMTH + ';font-variant-numeric:tabular-nums';
+            html += '<div class="table-responsive max-h-64 overflow-y-auto"><table class="text-sm" style="width:100%;table-layout:fixed">';
             html += '<thead class="sticky top-0 bg-secondary"><tr class="text-tertiary text-xs">';
-            html += '<th class="text-left p-1">Jahr</th>';
+            html += '<th class="text-left p-1" style="width:3.3rem">Jahr</th>';
             html += '<th class="text-left p-1">Fahrer</th>';
-            html += '<th class="text-center p-1">S</th>';
-            html += '<th class="text-center p-1">P</th>';
-            html += '<th class="text-center p-1">Pkt</th>';
-            html += '<th class="text-center p-1">WM</th>';
+            html += '<th style="' + NUMTH + ';width:2.4rem" title="Siege">S</th>';
+            html += '<th style="' + NUMTH + ';width:2.4rem" title="Podien">P</th>';
+            html += '<th style="' + NUMTH + ';width:3.4rem" title="Punkte">Pkt</th>';
+            html += '<th style="' + NUMTH + ';width:3rem" title="WM-Platzierung des Teams">WM</th>';
             html += '</tr></thead><tbody>';
+
+            // Zahlen-Zelle: 0/fehlend gedimmt, Werte > 0 fett — die Betonung entsteht
+            // aus dem Kontrast, nicht aus Farbe. Gold bleibt allein dem WM-Titel vorbehalten.
+            const numCell = (v) => {
+                const n = typeof v === 'number' ? v : NaN;
+                const dim = (n === 0 || isNaN(n)) ? 'opacity:.45' : 'font-weight:700';
+                const txt = isNaN(n) ? v : Math.round(n);
+                return '<td style="' + NUMTD + ';' + dim + '">' + txt + '</td>';
+            };
             
             teamHistory.forEach(h => {
-                const winsClass = h.wins > 0 && h.wins !== '-' ? 'accent-gold font-bold' : '';
-                const posClass = h.position === 1 ? 'accent-gold' : (h.position <= 3 && h.position !== '-' ? 'accent-blue' : '');
                 const rowClass = h.isHistorical ? ' opacity-75' : '';
+                // WM-Zelle: Titel als Gold-BADGE statt goldener Schrift. Vorher trugen Siege
+                // und Titel dieselbe Goldfarbe — ein Team mit 1 Sieg sah aus wie ein Champion.
+                const wmRaw = (h.position && h.position !== 'None') ? h.position : '-';
+                const wmNum = Number(wmRaw);
+                let wmCell;
+                if (wmNum === 1) {
+                    wmCell = '<td style="' + NUMTD + '"><span title="Konstrukteurs-Titel" style="display:inline-block;min-width:1.35rem;padding:0 .3rem;border-radius:.25rem;background:#b8942a;color:#141414;font-weight:700">1</span></td>';
+                } else if (wmNum >= 2 && wmNum <= 3) {
+                    wmCell = '<td class="accent-blue" style="' + NUMTD + ';font-weight:700">' + wmRaw + '</td>';
+                } else {
+                    wmCell = '<td style="' + NUMTD + (isNaN(wmNum) ? ';opacity:.45' : '') + '">' + wmRaw + '</td>';
+                }
                 html += '<tr class="border-t border-custom' + rowClass + '">';
                 html += '<td class="p-1 font-bold"><span class="cursor-pointer ' + (h.isCurrent ? '' : 'hover:underline') + '" style="color:' + (h.isCurrent ? '#f59e0b' : 'var(--accent-main)') + ';' + (h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : '') + '" title="' + (h.isCurrent ? 'Laufende Saison' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + h.year + (h.isCurrent ? '*' : '') + '</span></td>';
                 const dObjs = h.driverObjs || [];
@@ -27346,7 +27420,13 @@ Empfohlene Wertebereiche:
                     driversHtml = '-';
                 } else {
                     const isMobile = window.innerWidth < 640;
-                    const LINE_LIMIT = isMobile ? 65 : window.innerWidth < 1024 ? 44 : window.innerWidth < 1280 ? 70 : 88;
+                    // Bezugsgroesse ist die MODAL-Breite, nicht window.innerWidth: .modal-content
+                    // ist per CSS auf ~600px gedeckelt (L433), am Desktop also unabhaengig von der
+                    // Fensterbreite. Der alte Wert 88 galt fuer ein 1400px-Fenster und sprengte
+                    // deshalb jedes Mal die Tabelle.
+                    const _tblW = Math.min(window.innerWidth - 32, 660);
+                    const _avail = Math.max(90, _tblW - 232);      // 232px = feste Spalten Jahr/S/P/Pkt/WM
+                    const LINE_LIMIT = Math.floor(_avail / 9.3);   // ~9.3px je Zeichen bei 0.75rem
                     const makeLink = ({ d, display }) => d.id
                         ? `<span class="driver-link cursor-pointer" onclick="event.stopPropagation();openDriverProfile('${d.id}')">${display}</span>`
                         : display;
@@ -27392,11 +27472,11 @@ Empfohlene Wertebereiche:
                         }
                     }
                 }
-                html += '<td class="p-1 text-xs" style="white-space:nowrap">' + driversHtml + '</td>';
-                html += '<td class="p-1 text-center ' + winsClass + '">' + h.wins + '</td>';
-                html += '<td class="p-1 text-center">' + h.podiums + '</td>';
-                html += '<td class="p-1 text-center">' + (typeof h.points === 'number' ? Math.round(h.points) : h.points) + '</td>';
-                html += '<td class="p-1 text-center font-bold ' + posClass + '">' + (h.position && h.position !== 'None' ? h.position : '-') + '</td>';
+                html += '<td class="p-1 text-xs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + driversHtml + '</td>';
+                html += numCell(h.wins);
+                html += numCell(h.podiums);
+                html += numCell(h.points);
+                html += wmCell;
                 html += '</tr>';
             });
             
@@ -27448,7 +27528,10 @@ Empfohlene Wertebereiche:
 
             // ── F1DB-Jahre aus TEAM_HIST ──────────────────────────
             const f1dbYearsSet = new Set();
-            const startYear = GAME_STATE.currentYear||2100;
+            // Grenze = Template-Startjahr wie in renderTeamHistory (~L27105). Mit currentYear
+            // galten alle bereits SIMULIERTEN Jahre zusätzlich als F1DB-Jahre → jeder
+            // Jahres-Block erschien doppelt (Nutzer-Report Ferrari 2003–2006).
+            const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear || 2100;
             if (typeof TEAM_HIST!=='undefined') {
                 let found = null;
                 for (const n of teamNames) { if (TEAM_HIST[n]) { found=TEAM_HIST[n]; break; } }
@@ -27464,8 +27547,9 @@ Empfohlene Wertebereiche:
             const currentY = GAME_STATE.currentYear;
             const hasCurrentTeam = !!(curTeam&&(GAME_STATE.results||[]).length>0);
 
-            const allYears = [...f1dbYearsSet,...Object.keys(simYearMap).map(Number),
-                ...(hasCurrentTeam?[currentY]:[])].sort((a,b)=>b-a);
+            // Set-Dedupe: ein Jahr kann aus mehreren Quellen kommen (F1DB + simuliert + laufend)
+            const allYears = [...new Set([...f1dbYearsSet,...Object.keys(simYearMap).map(Number),
+                ...(hasCurrentTeam?[currentY]:[])])].sort((a,b)=>b-a);
             if (allYears.length===0) return '';
 
             // ── Hilfsfunktionen ───────────────────────────────────
