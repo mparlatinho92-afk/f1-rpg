@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.36</title>
+    <title>F1 RPG v0.9.15.37</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.36 (aktuell) - 27.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.37 (aktuell) - 27.07.2026</div>
+                            <div>&#8226; NEU: Junior-Rennen laufen im F1-Rundentakt - gleichmaessig ueber den Kalender verteilt, der Zwischenstand waechst mit jedem F1-Rennen mit</div>
+                            <div>&#8226; NEU: All-Time, Strecken und Nekrolog rechnen die laufende Saison mit</div>
+                            <div>&#8226; NEU: Vorlagen-Wahl vor Spielstart - Eingleisig (4 Serien) oder Original-Breite (14 Serien, 342 Startplaetze) mit den realen Meisterschaften</div>
+                            <div>&#8226; FIX: Formula Regional lag faelschlich auf derselben Ebene wie Formula 3 - jetzt eine Stufe darunter, wie in der echten Leiter</div>
+                            <div>&#8226; NEU: Serien heissen jetzt Formula statt Formel</div>
+                            <div class="font-bold text-slate-400">v0.9.15.36 - 27.07.2026</div>
                             <div>&#8226; NEU: 19 weitere Team-Logos - Kurtis Kraft, Eagle, Zakspeed, Tecno, Merzario, Rial, Modena, LEC, Life, Martini, Token, RAM, Spirit, Lyncar, Penske, Kauhsen, Simtek, Onyx (jetzt 130 von 178 Teams)</div>
                             <div>&#8226; NEU: Prost zeigt 1997 und 2001 das Clean-Logo, 1998-2000 die Gauloises-Variante</div>
                             <div>&#8226; NEU: Zwoelf Logos ohne CDN-Quelle direkt eingebettet - als WebP von f1colours.sebpatrick.co.uk, 219 KB auf 70 KB, kein Hotlinking</div>
@@ -3289,7 +3295,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.36';
+        const VERSION = '0.9.15.37';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -17077,14 +17083,46 @@
             if (ov) ov.remove();
             saveGame();
             if (typeof syncDummyJuniorUI === 'function') syncDummyJuniorUI();
-            // Welt sofort aufbauen: Saison 1 bringt ihre Junior-Welt mit (Register, Grids, erste
-            // Junior-Saison), statt erst beim Wechsel auf Saison 2 zu erscheinen.
-            if (mode === 'world') {
-                bootstrapJuniorWorld(GAME_STATE.currentYear).then(() => {
-                    saveGame();
-                    if (typeof renderContent === 'function') renderContent();
-                }).catch(e => logWarning('JUNIOR', 'Bootstrap fehlgeschlagen: ' + e));
-            }
+            // Nur im Welt-Modus folgt die zweite Wahl: welche Leiter soll es sein? Erst danach
+            // wird die Welt aufgebaut – das Register hängt an der Vorlage.
+            if (mode === 'world') promptJuniorLadder();
+        };
+        // Zweiter Schritt der Neuspiel-Wahl (nur Modus 'world'): Startaufstellung der Junior-Welt.
+        function promptJuniorLadder() {
+            const old = document.getElementById('juniorLadderModal');
+            if (old) old.remove();
+            const ov = document.createElement('div');
+            ov.id = 'juniorLadderModal';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
+            const opt = (key) => {
+                const p = JUNIOR_LADDER_PRESETS[key];
+                const drivers = p.series.reduce((s, x) => s + x.grid, 0);
+                const levels = new Set(p.series.map(s => s.level)).size;
+                return `<button onclick="setJuniorLadder('${key}')" style="display:block;width:100%;text-align:left;margin:0.4rem 0;padding:0.7rem 0.9rem;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;">
+                    <div style="font-weight:600;">${p.label}</div>
+                    <div style="font-size:0.82rem;color:var(--text-muted);margin-top:0.2rem;">${p.desc}</div>
+                    <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">${p.series.length} Serien · ${levels} Ebenen · ${drivers} Startplätze</div>
+                </button>`;
+            };
+            ov.innerHTML = `<div style="max-width:520px;width:92%;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:1.2rem;">
+                <div style="font-size:1.05rem;font-weight:700;margin-bottom:0.3rem;">🌍 Aufbau der Junior-Welt</div>
+                <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.8rem;">Jederzeit im Junior-Tab unter 🧩 Serien änderbar – Serien lassen sich ergänzen, verschieben und entfernen.</div>
+                ${opt('lean')}${opt('broad')}
+            </div>`;
+            document.body.appendChild(ov);
+        }
+        window.setJuniorLadder = function(key) {
+            const preset = JUNIOR_LADDER_PRESETS[key] || JUNIOR_LADDER_PRESETS.lean;
+            const ov = document.getElementById('juniorLadderModal');
+            if (ov) ov.remove();
+            const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
+            jw.series = preset.series.map(s => ({ ...s, startYear: GAME_STATE.currentYear, endYear: null }));
+            jw.ladderPreset = key;
+            logInfo('JUNIOR', `🌍 Junior-Welt-Vorlage „${preset.label}": ${jw.series.length} Serien`);
+            bootstrapJuniorWorld(GAME_STATE.currentYear).then(() => {
+                saveGame();
+                if (typeof renderContent === 'function') renderContent();
+            }).catch(e => logWarning('JUNIOR', 'Bootstrap fehlgeschlagen: ' + e));
         };
 
         // ═══ Junior-Welt-Generator (Schritt 2) ═══
@@ -17099,12 +17137,43 @@
         // nebeneinander (Formel Regional neben Junior F3), verschiedene level untereinander.
         // order = Position innerhalb der Ebene. grid/races sind PRO SERIE (globale Regler nur noch Vorgabe).
         // Diese Liste ist nur der Startwert NEUER Welten – bestehende jw.series bleiben unangetastet.
-        const JUNIOR_SERIES_DEFS = [
-            { id: 'f2',       name: 'Junior Formel 2', level: 2, order: 0, kind: 'junior',   grid: 22, races: 10, startYear: null, endYear: null },
-            { id: 'f3',       name: 'Junior Formel 3', level: 3, order: 0, kind: 'junior',   grid: 26, races: 12, startYear: null, endYear: null },
-            { id: 'regional', name: 'Formel Regional', level: 3, order: 1, kind: 'regional', grid: 24, races: 10, startYear: null, endYear: null },
-            { id: 'f4',       name: 'Formel 4',        level: 4, order: 0, kind: 'junior',   grid: 30, races: 14, startYear: null, endYear: null }
-        ];
+        // Zwei Startaufstellungen, vor Spielbeginn wählbar (nur im Modus 'world').
+        // Reale Leiter: F2 → F3 → Formula Regional → F4. Regional ist eine Stufe UNTER F3,
+        // nicht daneben – parallel liegen nur die nationalen Meisterschaften derselben Stufe.
+        const JUNIOR_LADDER_PRESETS = {
+            lean: {
+                label: '🪜 Eingleisig',
+                desc: 'Eine Meisterschaft je Stufe: Formula 2 → Formula 3 → Formula Regional → Formula 4. Schlank, schneller zu überblicken.',
+                series: [
+                    { id: 'f2',       name: 'Formula 2',        level: 1, order: 0, kind: 'junior',   grid: 22, races: 14 },
+                    { id: 'f3',       name: 'Formula 3',        level: 2, order: 0, kind: 'junior',   grid: 30, races: 10 },
+                    { id: 'regional', name: 'Formula Regional', level: 3, order: 0, kind: 'regional', grid: 24, races: 10 },
+                    { id: 'f4',       name: 'Formula 4',        level: 4, order: 0, kind: 'junior',   grid: 30, races: 21 }
+                ]
+            },
+            broad: {
+                label: '🌍 Original-Breite',
+                desc: 'Die realen aktuellen Meisterschaften: fünf Regional-Serien und sieben F4-Serien nebeneinander (Italien, Großbritannien, Spanien …). Viel dichter – und deutlich mehr Fahrer.',
+                series: [
+                    { id: 'f2',           name: 'Formula 2',                    level: 1, order: 0, kind: 'junior',   grid: 22, races: 14 },
+                    { id: 'f3',           name: 'Formula 3',                    level: 2, order: 0, kind: 'junior',   grid: 30, races: 10 },
+                    { id: 'fr-europe',    name: 'Formula Regional Europa',      level: 3, order: 0, kind: 'regional', grid: 30, races: 10 },
+                    { id: 'fr-mideast',   name: 'Formula Regional Nahost',      level: 3, order: 1, kind: 'regional', grid: 25, races: 15 },
+                    { id: 'fr-oceania',   name: 'Formula Regional Ozeanien',    level: 3, order: 2, kind: 'regional', grid: 20, races: 15 },
+                    { id: 'fr-japan',     name: 'Formula Regional Japan',       level: 3, order: 3, kind: 'regional', grid: 20, races: 16 },
+                    { id: 'fr-americas',  name: 'Formula Regional Amerika',     level: 3, order: 4, kind: 'regional', grid: 15, races: 15 },
+                    { id: 'f4-italy',     name: 'Formula 4 Italien',            level: 4, order: 0, kind: 'junior',   grid: 35, races: 21 },
+                    { id: 'f4-britain',   name: 'Formula 4 Großbritannien',     level: 4, order: 1, kind: 'junior',   grid: 25, races: 30 },
+                    { id: 'f4-spain',     name: 'Formula 4 Spanien',            level: 4, order: 2, kind: 'junior',   grid: 25, races: 21 },
+                    { id: 'f4-japan',     name: 'Formula 4 Japan',              level: 4, order: 3, kind: 'junior',   grid: 25, races: 15 },
+                    { id: 'f4-uae',       name: 'Formula 4 VAE',                level: 4, order: 4, kind: 'junior',   grid: 30, races: 15 },
+                    { id: 'f4-brazil',    name: 'Formula 4 Brasilien',          level: 4, order: 5, kind: 'junior',   grid: 20, races: 18 },
+                    { id: 'f4-china',     name: 'Formula 4 China',              level: 4, order: 6, kind: 'junior',   grid: 20, races: 15 }
+                ]
+            }
+        };
+        // Fallback-Register (Alt-Saves ohne Preset-Wahl, und wenn nichts gewählt wurde).
+        const JUNIOR_SERIES_DEFS = JUNIOR_LADDER_PRESETS.lean.series.map(s => ({ ...s, startYear: null, endYear: null }));
         // Legacy: seit Paket A v3 zieht _makeJuniorDriver Nationen über pickNationMotorsport
         // (gewichtete Motorsport-Frequenz je Dekade). Liste nur noch als Referenz/Fallback.
         const JUNIOR_NATIONS = ['ITA','FRA','GER','GBR','ESP','BRA','JPN','NED','SWE','FIN','BEL','DEN','AUT','SUI','ARG'];
@@ -17338,7 +17407,21 @@
         // Eine Saison einer Serie simulieren → { light: Summary, heavy: volle Daten }.
         // Schritt 3.5: F1-nahes Modell – Auto-Stärke (A), Konstanz/Tagesform (B), DNF nach
         // Team-Zuverlässigkeit (C), Quali bestimmt Startgitter mit Grid-Bonus im Rennen (D).
-        function _simulateJuniorSeriesSeason(series, drivers, races, year, seed, deathsFlag) {
+        // S2 – Renn-Kalender an den F1-Rundentakt koppeln. Junior-Rennen k (0-basiert) von n fällt auf
+        // F1-Runde floor((k+0.5)*f1Total/n). Eine Formel für beide Richtungen: bei n > f1Total teilen
+        // sich Runden mehrere Rennen, bei n < f1Total entstehen Lücken – immer gleichmäßig verteilt.
+        // Rückgabe: wie viele der n Rennen nach `roundsDone` gefahrenen F1-Runden gelaufen sind.
+        function _juniorRacesDoneBy(roundsDone, n, f1Total) {
+            if (!n || !f1Total) return 0;
+            let k = 0;
+            for (let i = 0; i < n; i++) if (Math.floor((i + 0.5) * f1Total / n) < roundsDone) k++;
+            return k;
+        }
+        // limitRaces (S2): nur die ersten k Rennen fahren. Das ist ein echtes PRÄFIX – der Renn-Loop
+        // zieht aus EINEM sequentiellen rng-Strom, die ersten k Runden sind daher identisch mit den
+        // ersten k Runden des vollen Laufs. Deshalb braucht der Zwischenstand weder Seeds pro Rennen
+        // noch eigene Persistenz: er ist jederzeit reproduzierbar (Speicherkosten null).
+        function _simulateJuniorSeriesSeason(series, drivers, races, year, seed, deathsFlag, limitRaces) {
             // Stufe 1 (Seed-Regen): vollständig deterministisch aus seed. Gleicher (series-Kalender,
             // drivers, races, seed) → BYTE-IDENTISCHE races/standings. seed = _recapHash(worldSeed|seriesId|year).
             // Alle Math.random durch rng() ersetzt; Reihenfolge der rng-Zieh­ungen ist fixiert (Fahrer-Array-
@@ -17365,7 +17448,11 @@
                 series.calendar = Array.from({ length: races }, (_, i) => pool[i % pool.length]);
             }
             const nGrid = drivers.length;
-            for (let r = 0; r < races; r++) {
+            // Kalender wird IMMER für die volle Saison gebaut (oben, eigener Salt-Strom); gefahren
+            // werden nur runRaces. partial = Zwischenstand, darf nie persistiert werden.
+            const runRaces = Math.max(0, Math.min(races, limitRaces == null ? races : limitRaces));
+            const partial = runRaces < races;
+            for (let r = 0; r < runRaces; r++) {
                 const wet = rng() < 0.18;   // 5b: ~18% Regenrennen
                 // (D) QUALI: Pace + Auto + wenig Rauschen → Startgitter
                 const qOrder = drivers.map(d => {
@@ -17410,7 +17497,9 @@
                 raceRecs.push({ round: r + 1, name: `${series.name} R${r + 1}`, circuit: series.calendar[r], wet, results, qualifying: quali });
             }
             let champ = drivers[0];
-            drivers.forEach(d => { d._lastPoints = standings[d.id].points; if (standings[d.id].points > standings[champ.id].points) champ = d; });
+            // _lastPoints steuert den Aufstieg und darf NUR aus einer vollständigen Saison stammen –
+            // ein Zwischenstand würde die Aufstiegs-Gewichtung mit halben Punkteständen verfälschen.
+            drivers.forEach(d => { if (!partial) d._lastPoints = standings[d.id].points; if (standings[d.id].points > standings[champ.id].points) champ = d; });
             // Team-Champion (Summe der Fahrerpunkte je Team)
             const teamPts = {};
             drivers.forEach(d => { if (d.team) teamPts[d.team] = (teamPts[d.team] || 0) + standings[d.id].points; });
@@ -17421,6 +17510,7 @@
                 light: { seriesId: series.id, seriesName: series.name, champion: champ.name, championHistId: champ.histId, championPoints: standings[champ.id].points,
                     teamChampion: teamChampName, teamChampionId: teamChampId },
                 heavy: { seriesId: series.id, seriesName: series.name, seed: (seed >>> 0) || 1, spine: [],
+                    partial, racesRun: runRaces,   // S2: Zwischenstand-Kennung (nie persistieren)
                     // Stufe 2 (Regen-Kontext): alles, was die Sim byte-exakt reproduziert, OHNE races.
                     // teams (id/strength/reliability) friert avgRel + Auto-Werte ein (Teams wachsen sonst per
                     // Scale nach → avgRel driftet); calendar friert die Streckenfolge ein (lebt sonst am Live-
@@ -17566,9 +17656,85 @@
             if (GAME_STATE.juniorMode !== 'world') return;
             const jw = GAME_STATE.juniorWorld || (GAME_STATE.juniorWorld = _emptyJuniorWorld());
             _ensureJuniorSeriesRegister(jw, year);
-            await advanceJuniorWorld(year);
+            startJuniorSeason(jw, year);   // S2: nur Kader aufstellen – gefahren wird im F1-Rundentakt
         }
-        // Orchestriert eine Junior-Saison: Roster sichern, je Serie simulieren, leicht in
+        // S2 – SAISONSTART: Kader für `year` aufstellen (altern, aufsteigen, Verträge, Sitze füllen).
+        // Bewusst OHNE Simulation: die Rennen fallen über das Jahr verteilt (siehe _juniorRacesDoneBy),
+        // der Zwischenstand wird bei Bedarf abgeleitet. Vorher fuhr der Bootstrap die komplette
+        // Junior-Saison sofort – sie war fertig, bevor das erste F1-Rennen lief.
+        // Idempotent über jw.liveYear: mehrfaches Aufrufen im selben Jahr ändert nichts.
+        function startJuniorSeason(jw, year) {
+            if (GAME_STATE.juniorMode !== 'world') return null;
+            if (jw.liveYear === year) return null;
+            if (!jw.worldSeed) jw.worldSeed = Math.floor(Math.random() * 0x7fffffff) || 1;   // Stufe 1: Backfill für Alt-Saves
+            const retired = _ageAndRetireJuniors(jw);   // 2b: Returner altern, Karriere-Enden raus
+            _ensureJuniorTeams(jw);                     // 2c: Teams sicherstellen (+ teamlose zuordnen)
+            const promoted = _promoteJuniors(jw, year); // 2c: Aufstieg Ebene für Ebene (Paket H: Leiter-Quote je Nation)
+            _juniorContractMoves(jw, year);             // 5c: vertragsgetriebene Transfers
+            _ensureJuniorRoster(jw, year);              // freie Plätze mit Nachrückern füllen
+            const newcomers = jw.drivers.filter(d => d.debutYear === year).length;
+            jw.liveYear = year;
+            jw.liveEvents = { retired, promoted, newcomers };   // winzig, für die Saison-Notizen
+            logInfo('JUNIOR', `🌍 Junior-Saison ${year} aufgestellt: ${jw.drivers.length} Fahrer in ${jw.series.length} Serien · Rücktritte ${retired}, Aufstiege ${promoted}, Neu ${newcomers}`);
+            if (typeof syncJuniorWorldUI === 'function') syncJuniorWorldUI();
+            return jw.liveEvents;
+        }
+        // S2 – LAUFENDER ZWISCHENSTAND, rein abgeleitet (nichts gespeichert). Nutzt die Präfix-
+        // Eigenschaft von _simulateJuniorSeriesSeason: die ersten k Rennen sind identisch mit den
+        // ersten k Rennen der fertigen Saison. k folgt dem F1-Rundenstand.
+        function deriveJuniorLiveSeason(year) {
+            const jw = GAME_STATE.juniorWorld;
+            if (!jw || !jw.series || !jw.series.length) return null;
+            const f1Total = (GAME_STATE.races || []).length || 1;
+            const roundsDone = Math.min(GAME_STATE.currentRace || 0, f1Total);
+            const ordered = [...jw.series].sort((a, b) => (a.level ?? 99) - (b.level ?? 99) || (a.order || 0) - (b.order || 0));
+            const series = [], dead = [];
+            const nameById = {}; jw.drivers.forEach(d => nameById[d.id] = d.name);
+            for (const s of ordered) {
+                const roster = jw.drivers.filter(d => d.seriesId === s.id);
+                const sc = _juniorSeriesScale(s);
+                const k = _juniorRacesDoneBy(roundsDone, sc.races, f1Total);
+                const seed = _recapHash(jw.worldSeed + '|' + s.id + '|' + year);
+                // deathsFlag bewusst undefined: derselbe Live-Toggle wie im Abschlusslauf, sonst
+                // verschiebt sich der rng-Strom und der Zwischenstand wäre kein echtes Präfix mehr.
+                const sim = _simulateJuniorSeriesSeason(s, roster, sc.races, year, seed, undefined, k);
+                series.push(sim.heavy);
+                // Tode nur MELDEN, nie den Roster ändern: würde ein Fahrer mitten in der Saison aus
+                // jw.drivers verschwinden, änderte sich die Startaufstellung der Folgerennen und der
+                // Zwischenstand wäre kein Präfix der fertigen Saison mehr. Entfernt wird am Saisonende.
+                (sim.dead || []).forEach(id => dead.push({ histId: id, name: nameById[id] || id, year }));
+            }
+            return { year, live: true, roundsDone, f1Total, series, dead };
+        }
+        // S2 – Aggregate INKLUSIVE laufender Saison. All-Time, Strecken und Nekrolog sollen mitwachsen,
+        // statt bis zum Jahresende auf 0 zu stehen. Gefaltet wird in eine KOPIE – die persistierten
+        // Aggregate bleiben unberührt, sonst würde die laufende Saison bei jedem Render erneut
+        // eingerechnet und die Statistik liefe hoch. Ergebnis ist rein abgeleitet (kein Speicher).
+        // Cache je (Jahr, F1-Runde), weil das Falten über alle Serien sonst bei jedem Render neu läuft.
+        let _jwLiveAggCache = null;
+        function _juniorLiveAggregates(jw) {
+            const base = { allTimeStats: jw.allTimeStats || {}, circuitIndex: jw.circuitIndex || {}, memoriam: jw.memoriam || [], live: false };
+            if (!jw || !jw.liveYear) return base;
+            const roundsDone = Math.min(GAME_STATE.currentRace || 0, (GAME_STATE.races || []).length || 1);
+            const key = jw.liveYear + '|' + roundsDone + '|' + (jw.history || []).length + '|' + (jw.series || []).length;
+            if (_jwLiveAggCache && _jwLiveAggCache.key === key) return _jwLiveAggCache.value;
+            const live = deriveJuniorLiveSeason(jw.liveYear);
+            if (!live) return base;
+            const target = {
+                allTimeStats: JSON.parse(JSON.stringify(jw.allTimeStats || {})),
+                circuitIndex: JSON.parse(JSON.stringify(jw.circuitIndex || {}))
+            };
+            for (const h of live.series) if (h.racesRun > 0) _foldJuniorAggregates(target, h);
+            const value = {
+                allTimeStats: target.allTimeStats,
+                circuitIndex: target.circuitIndex,
+                memoriam: [...(jw.memoriam || []), ...(live.dead || [])],
+                live: true, liveYear: jw.liveYear, roundsDone
+            };
+            _jwLiveAggCache = { key, value };
+            return value;
+        }
+        // Orchestriert das SAISONENDE einer Junior-Saison: voll simulieren, Aggregate falten, leicht in
         // juniorWorld.history (core, klein) + schwer in junior_detail (gzip) persistieren.
         async function advanceJuniorWorld(year) {
             if (GAME_STATE.juniorMode !== 'world') return;
@@ -17576,13 +17742,14 @@
             // Jahres-Sperre: Bootstrap (Saison 1) und Saisonwechsel dürfen sich überlappen, ohne dass
             // ein Jahr zweimal in history/junior_detail landet. Auch Schutz beim Nachholen von Alt-Saves.
             if ((jw.history || []).some(h => h.year === year)) return;
-            if (!jw.worldSeed) jw.worldSeed = Math.floor(Math.random() * 0x7fffffff) || 1;   // Stufe 1: Backfill für Alt-Saves
-            const retired = _ageAndRetireJuniors(jw);   // 2b: Returner altern, Karriere-Enden raus
-            _ensureJuniorTeams(jw);            // 2c: Teams sicherstellen (+ teamlose zuordnen)
-            const promoted = _promoteJuniors(jw, year); // 2c: F3 → offene F2-Sitze (Paket H: Leiter-Quote je Nation)
-            _juniorContractMoves(jw, year);    // 5c: vertragsgetriebene Transfers (Auslaufverträge → Aufstieg)
-            _ensureJuniorRoster(jw, year);     // freie Plätze mit Nachrückern füllen
-            const newcomers = jw.drivers.filter(d => d.debutYear === year).length;
+            _ensureJuniorSeriesRegister(jw, year);
+            // Kader aufstellen, falls das Jahr nie gestartet wurde (Alt-Save-Nachholung, Import).
+            const started = startJuniorSeason(jw, year);
+            const retired = (started || jw.liveEvents || {}).retired || 0;
+            const promoted = (started || jw.liveEvents || {}).promoted || 0;
+            // Altern/Aufstieg/Verträge/Roster sind bereits in startJuniorSeason passiert – hier NICHT
+            // wiederholen, sonst würden die Fahrer im selben Jahr zweimal altern.
+            const newcomers = (started || jw.liveEvents || {}).newcomers || jw.drivers.filter(d => d.debutYear === year).length;
             const lightSeries = [], heavySeries = [];
             const nameById = {}; jw.drivers.forEach(d => nameById[d.id] = d.name);
             const deadIds = [];
@@ -17609,6 +17776,8 @@
             const lightRec = { year, series: lightSeries, events };
             jw.history = jw.history || [];
             jw.history.push(lightRec);
+            // Saison abgeschlossen → liveYear freigeben, damit startJuniorSeason das Folgejahr aufstellt.
+            jw.liveYear = null; jw.liveEvents = null;
             // 2d/5f: Log – Champions + Saison-Zusammenfassung
             logInfo('JUNIOR', `🌍 Junior-Welt ${year}: ` + lightSeries.map(s => `${s.seriesName || s.seriesId}-Champion ${s.champion}`).join(', ')
                 + ` · Rücktritte ${retired}, Aufstiege ${promoted}, Neu ${newcomers}` + (deadIds.length ? `, ✝ ${deadIds.length}` : ''));
@@ -17769,7 +17938,13 @@
                     // Bootstrap hat Saison 1 ihre Welt bereits. Der erste Aufruf holt nur bei Alt-Saves
                     // das archivierte Jahr nach (Jahres-Sperre macht ihn sonst zum No-Op), damit in der
                     // Historie keine Lücke entsteht; danach läuft das neue Jahr. (async, fire-and-forget)
-                    advanceJuniorWorld(_js.year).then(() => advanceJuniorWorld(newYear));
+                    // S2: erst die abgelaufene Junior-Saison abschließen (voll simulieren + persistieren),
+                    // dann den Kader für das neue Jahr aufstellen. Gefahren wird das neue Jahr NICHT hier,
+                    // sondern verteilt über die F1-Runden – der Zwischenstand wird abgeleitet.
+                    advanceJuniorWorld(_js.year).then(() => {
+                        startJuniorSeason(GAME_STATE.juniorWorld, newYear);
+                        saveGame();
+                    });
                 }
 
                 GAME_STATE.allTimeStATS.totalSeasons++;
@@ -20294,7 +20469,11 @@
                 return '<div class="card p-4 rounded-lg">Die Junior-Welt ist für diesen Spielstand nicht aktiv.</div>';
             }
             const jw = GAME_STATE.juniorWorld || _emptyJuniorWorld();
-            const years = (jw.history || []).map(h => h.year);
+            const done = (jw.history || []).map(h => h.year);
+            // S2: die laufende Saison ist noch nicht in history – sie wird abgeleitet, gehört aber
+            // in den Selektor, sonst wäre das aktuelle Jahr im Junior-Tab unsichtbar.
+            const years = (jw.liveYear && !done.includes(jw.liveYear)) ? [...done, jw.liveYear] : done;
+            const agg = _juniorLiveAggregates(jw);   // All-Time/Strecken/Nekrolog inkl. laufender Saison
             const sub = _juniorSubTab || 'season';
             const subBtn = (id, label) => `<button onclick="juniorSubTab('${id}')" class="px-3 py-1 rounded text-sm ${sub === id ? 'btn-primary' : 'bg-secondary'}">${label}</button>`;
             let body;
@@ -20309,14 +20488,15 @@
                     Richte unter <b>🧩 Serien</b> die Leiter ein und starte die Welt:
                     <div style="margin-top:0.7rem;"><button onclick="juniorBootstrapNow()" class="btn-primary px-3 py-1 rounded text-sm">🌍 Junior-Welt für ${GAME_STATE.currentYear} aufbauen</button></div></div>`;
             } else if (sub === 'alltime') {
-                body = renderJuniorAllTime(jw);
+                body = renderJuniorAllTime({ ...jw, allTimeStats: agg.allTimeStats });
             } else if (sub === 'circuits') {
-                body = renderJuniorCircuits(jw);
+                body = renderJuniorCircuits({ ...jw, circuitIndex: agg.circuitIndex });
             } else {
                 if (_juniorViewYear == null || !years.includes(_juniorViewYear)) _juniorViewYear = years[years.length - 1];
                 const opts = years.slice().reverse().map(y => `<option value="${y}" ${y === _juniorViewYear ? 'selected' : ''}>${y}</option>`).join('');
                 setTimeout(() => _renderJuniorSeason(_juniorViewYear), 0);   // async Detail nachladen
-                const evt = ((jw.history || []).find(h => h.year === _juniorViewYear) || {}).events;
+                const evt = ((jw.history || []).find(h => h.year === _juniorViewYear) || {}).events
+                    || (jw.liveYear === _juniorViewYear ? jw.liveEvents : null);
                 const evtNote = evt ? `<div class="text-xs text-tertiary mt-2">Saison-Notizen: ${evt.newcomers || 0} Neulinge · ${evt.promoted || 0} Aufstiege · ${evt.retired || 0} Rücktritte${evt.deaths ? ` · ✝ ${evt.deaths} Todesfälle` : ''}</div>` : '';
                 body = `<div class="card p-4 rounded-lg mb-4"><label class="text-sm">Saison
                         <select onchange="juniorSelectYear(parseInt(this.value))" class="bg-tertiary rounded px-2 py-1 ml-1">${opts}</select></label>${evtNote}</div>
@@ -20325,7 +20505,7 @@
             return `
                 <div class="card p-4 rounded-lg mb-4">
                     <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
-                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien auf ${_juniorLevels(jw).length} Ebenen · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(jw.allTimeStats || {}).length} All-Time-Fahrer · ${Object.keys(jw.circuitIndex || {}).length} Strecken${(jw.memoriam || []).length ? ` · ✝ ${jw.memoriam.length}` : ''}</div>
+                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien auf ${_juniorLevels(jw).length} Ebenen · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(agg.allTimeStats).length} All-Time-Fahrer · ${Object.keys(agg.circuitIndex).length} Strecken${agg.memoriam.length ? ` · ✝ ${agg.memoriam.length}` : ''}${agg.live ? ' · <span style="color:var(--accent-main)">laufende Saison eingerechnet</span>' : ''}</div>
                     <div style="display:flex;gap:0.7rem;flex-wrap:wrap;align-items:center;margin-bottom:0.6rem;">
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;"><input type="checkbox" ${GAME_STATE.juniorDeaths ? 'checked' : ''} onchange="juniorToggleDeaths(this.checked)"> Todesfälle (selten)</label>
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;" title="All-Time-Statistik schlank halten: Fahrer im Ruhestand ohne Titel/Sieg (F2 auch ohne Podest/Pole) werden entfernt – ihr Profil bleibt aus den Saison-Daten abrufbar."><input type="checkbox" ${jw.pruneAllTime ? 'checked' : ''} onchange="juniorTogglePrune(this.checked)"> Speicher optimieren</label>
@@ -20531,10 +20711,17 @@
         async function _renderJuniorSeason(year) {
             const cont = document.getElementById('junior-season-tables');
             if (!cont) return;
-            const detail = await idbJDetailGet(year);
+            // S2: laufende Saison wird abgeleitet (nichts persistiert), abgeschlossene aus junior_detail.
+            const jw = GAME_STATE.juniorWorld || {};
+            const isLive = jw.liveYear === year;
+            const detail = isLive ? deriveJuniorLiveSeason(year) : await idbJDetailGet(year);
             if (!detail || !detail.series) { cont.innerHTML = '<div class="text-tertiary p-4">Keine Daten für diese Saison.</div>'; return; }
             const ordered = [...detail.series].sort((a, b) => _juniorSeriesRank(a.seriesId) - _juniorSeriesRank(b.seriesId));   // höhere Ebene zuerst, dann parallele nach Position
-            cont.innerHTML = ordered.map(s => _renderJuniorSeriesTable(s, year)).join('');
+            const note = isLive
+                ? `<div class="card p-3 rounded-lg mb-4 text-sm">🟢 <b>Laufende Saison ${year}</b> – F1-Runde ${detail.roundsDone} von ${detail.f1Total}. Die Junior-Rennen sind gleichmäßig über den F1-Kalender verteilt; der Stand wächst mit jedem F1-Rennen mit.
+                    <div class="text-xs text-tertiary mt-1">${ordered.map(s => `${s.seriesName || s.seriesId}: ${s.racesRun}/${s.racesCount}`).join(' · ')}</div></div>`
+                : '';
+            cont.innerHTML = note + ordered.map(s => _renderJuniorSeriesTable(s, year)).join('');
         }
         // Anklickbarer Junior-Steckbrief – nutzt den bestehenden F1-Steckbrief-Rahmen
         // (#driverProfileModal / -Title / -Body) + dieselbe visuelle Sprache (Header, Stat-Karten, Verlauf).
