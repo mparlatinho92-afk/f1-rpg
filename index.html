@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.37</title>
+    <title>F1 RPG v0.9.15.38</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.37 (aktuell) - 27.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.38 (aktuell) - 27.07.2026</div>
+                            <div>&#8226; NEU: Junior-Saison-Records ohne Duplikate gespeichert - 25 Prozent weniger Speicher, gemessen an fuenf Saisons der Original-Breite</div>
+                            <div>&#8226; NEU: Rekonstruierte Vor-Karriere fuer die Startkohorte - wer in Formula 2 oder 3 startet, zeigt seinen Weg durch die unteren Serien (abgeleitet, kein Speicherbedarf, kursiv gekennzeichnet)</div>
+                            <div>&#8226; NEU: 10 weitere Team-Logos - Racing Bulls, Audi, Cadillac, Veritas, Tec-Mec, Scarab, LDS, Scirocco, Shannon, Trojan (jetzt 140 von 187 Konstrukteuren)</div>
+                            <div>&#8226; NEU: Tec-Mec und Scarab freigestellt und zentriert - die Abzeichen-Fotos lagen auf Karosserie bzw. hellem Untergrund</div>
+                            <div>&#8226; FIX: Fahrer-ID stand dreimal und der Name zweimal pro Fahrer im Junior-Saison-Record</div>
+                            <div class="font-bold text-slate-400">v0.9.15.37 - 27.07.2026</div>
                             <div>&#8226; NEU: Junior-Rennen laufen im F1-Rundentakt - gleichmaessig ueber den Kalender verteilt, der Zwischenstand waechst mit jedem F1-Rennen mit</div>
                             <div>&#8226; NEU: All-Time, Strecken und Nekrolog rechnen die laufende Saison mit</div>
                             <div>&#8226; NEU: Vorlagen-Wahl vor Spielstart - Eingleisig (4 Serien) oder Original-Breite (14 Serien, 342 Startplaetze) mit den realen Meisterschaften</div>
@@ -3295,7 +3301,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.37';
+        const VERSION = '0.9.15.38';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -17633,7 +17639,7 @@
             const fresh = { allTimeStats: {}, circuitIndex: {} };
             const light = await idbJHistGetAll();
             for (const rec of light) {
-                const detail = await idbJDetailGet(rec.year);
+                const detail = await juniorDetailGet(rec.year);
                 for (const h of (detail && detail.series || [])) {
                     // Stufe 2: keine gespeicherten races mehr → aus Snapshot+Seed regenerieren (Alt-Saves = Fallback)
                     const heavy = h.races ? h : { ...h, races: _regenJuniorRaces(rec.year, h) };
@@ -17734,6 +17740,51 @@
             _jwLiveAggCache = { key, value };
             return value;
         }
+        // ── P1: Duplikate aus den persistierten Saison-Records (gemessen 29 % gzip an 5 Saisons) ──
+        // In der Junior-Welt ist id === histId (_makeJuniorDriver setzt beides auf 'jw'+seq). Trotzdem
+        // stand die ID dreimal pro Fahrer im Record (standings-Schlüssel, standings.id, standings.histId)
+        // und der Name zweimal (standings.name + drivers[].name). Das sind EINZIGARTIGE Zeichenketten –
+        // genau die, die gzip nicht wegkomprimiert, im Gegensatz zu wiederholten Feldnamen.
+        //   entfernt: standings.id/.histId/.name · drivers[].histId/.points · teamPoints
+        //   BEHALTEN: calendar. Der lebt am Serien-Objekt und ist über Jahre stabil; aus dem Jahres-Seed
+        //   wäre er NICHT identisch reproduzierbar, und _regenJuniorRaces braucht ihn exakt so.
+        //   teamPoints wird nirgends gelesen (nur der teamChampion, und der steht im leichten Record)
+        //   → wird beim Lesen bewusst NICHT rekonstruiert.
+        function _leanJuniorHeavy(h) {
+            const st = {};
+            for (const [k, v] of Object.entries(h.standings || {})) {
+                const { id, histId, name, ...rest } = v;
+                st[k] = rest;
+            }
+            return { ...h, standings: st, teamPoints: undefined,
+                drivers: (h.drivers || []).map(({ histId, points, ...rest }) => rest) };
+        }
+        // Gegenstück: beim Lesen die weggelassenen Felder wieder herstellen. Altstände tragen sie noch,
+        // dort passiert nichts (jede Zuweisung ist mit === undefined bewacht). Idempotent über _hyd.
+        function _hydrateJuniorHeavy(h) {
+            if (!h || h._hyd) return h;
+            const byId = {};
+            for (const d of (h.drivers || [])) {
+                if (d.histId === undefined) d.histId = d.id;
+                byId[d.id] = d;
+            }
+            const st = h.standings || {};
+            for (const k of Object.keys(st)) {
+                const s = st[k];
+                if (s.id === undefined)     s.id = k;
+                if (s.histId === undefined) s.histId = k;
+                if (s.name === undefined)   s.name = (byId[k] || {}).name || k;
+            }
+            for (const d of (h.drivers || [])) if (d.points === undefined) d.points = (st[d.id] || {}).points || 0;
+            h._hyd = true;
+            return h;
+        }
+        // Einziger Lesepfad für persistierte Junior-Saisons – hydriert immer.
+        async function juniorDetailGet(year) {
+            const d = await idbJDetailGet(year);
+            if (d && d.series) d.series.forEach(_hydrateJuniorHeavy);
+            return d;
+        }
         // Orchestriert das SAISONENDE einer Junior-Saison: voll simulieren, Aggregate falten, leicht in
         // juniorWorld.history (core, klein) + schwer in junior_detail (gzip) persistieren.
         async function advanceJuniorWorld(year) {
@@ -17793,10 +17844,11 @@
                     // Im späteren Voll-Replay behalten Spine-Fahrer ihre gespeicherte Identität, das restliche
                     // Feld ist Filler (aus Seed regenerierbar). Auch Fundament der Crossover-Welt (echte
                     // F1-Fahrer als Gäste). Bounded durch #notable, ~0 Bytes. Wird aktuell nur geschrieben.
+                    // P1: zusätzlich die Duplikate raus (siehe _leanJuniorHeavy) – gemessen 29 % gzip.
                     const heavyLean = heavySeries.map(h => {
                         const { races, ...rest } = h;
                         rest.spine = _juniorSeasonSpine(rest.drivers, jw.allTimeStats);
-                        return rest;
+                        return _leanJuniorHeavy(rest);
                     });
                     await idbJDetailPut(year, { year, series: heavyLean });
                 } catch (e) { logWarning('JUNIOR', 'Persist fehlgeschlagen: ' + e); }
@@ -20456,6 +20508,60 @@
         let _juniorSubTab = 'season';
         // Höhere Klasse zuerst: F2 (level 2) vor F3 (level 3) → aufsteigend nach level.
         function _juniorSeriesLevel(id) { return (GAME_STATE.juniorWorld?.series || []).find(x => x.id === id)?.level ?? 99; }
+        // ══ Rekonstruierte Vor-Karriere (nur Startkohorte) ═══════════════════════════════════
+        // Beim Weltaufbau entstehen ALLE Fahrer gleichzeitig als Debütanten – die Formula 2 der
+        // ersten Saison besteht dann aus Siebzehn- bis Zwanzigjährigen ohne einen einzigen Start.
+        // Die Pyramide startet flach: niemand ist je aufgestiegen.
+        //
+        // GRENZEN (nicht verhandelbar):
+        //  · NUR die Startkohorte (debutYear <= Weltstartjahr). Wer im Spiel debütiert hat, ist
+        //    wirklich durch die F4 gekommen – seine Historie liegt in junior_detail und wird
+        //    niemals überschrieben oder nacherzählt. Erfundenes darf Simuliertes nie ersetzen.
+        //  · NUR Anzeige. Nichts davon wird persistiert oder in allTimeStats gefaltet, sonst
+        //    zählten erfundene Siege mit und die Invariante "Rebuild == inkrementell" bräche.
+        //  · Unterste Ebene bekommt nichts: dort fängt jede Karriere an. Das ist zugleich die
+        //    "hot"-Bedingung – wer oben mitfährt, hat etwas darunter, ein F4-Fahrer nicht.
+        //
+        // Verankert an potential/pace, NICHT am laufenden Tabellenstand: sonst änderte sich die
+        // Vergangenheit eines Fahrers mit jedem F1-Rennen, weil der Zwischenstand wandert.
+        // Deterministisch aus worldSeed|histId – ohne Seed hätte derselbe Fahrer bei jedem Öffnen
+        // seines Steckbriefs eine andere Vorgeschichte.
+        // Selbstauflösend: nach ein paar Saisons ist jeder in der F2 dort wirklich hochgefahren.
+        function _juniorWorldStartYear(jw) {
+            const ys = ((jw || {}).series || []).map(s => s.startYear).filter(y => y);
+            return ys.length ? Math.min(...ys) : null;
+        }
+        // Landsmann-Bonus: ein Japaner fuhr eher die japanische F4 als die brasilianische.
+        const _JW_NATION_SERIES = { JPN: 'Japan', ITA: 'Italien', GBR: 'Großbritannien', ESP: 'Spanien',
+            BRA: 'Brasilien', CHN: 'China', UAE: 'VAE', NZL: 'Ozeanien', AUS: 'Ozeanien', USA: 'Amerika' };
+        function deriveJuniorPrehistory(jw, drv) {
+            if (!jw || !drv || !drv.histId) return [];
+            const start = _juniorWorldStartYear(jw);
+            if (start == null || (drv.debutYear || 0) > start) return [];   // im Spiel debütiert → echte Historie
+            const levels = _juniorLevels(jw);
+            const below = levels.filter(l => l > _juniorSeriesLevel(drv.seriesId));
+            if (!below.length) return [];                                   // unterste Ebene = Karrierestart
+            const steps = Math.min(below.length, Math.max(0, (drv.age || 18) - 16));
+            if (steps <= 0) return [];
+            const rng = _recapRng((_recapHash(jw.worldSeed + '|' + drv.histId + '|pre') >>> 0) || 1);
+            const s = Math.max(0, Math.min(1, ((drv.potential ?? drv.pace ?? 70) - 55) / 40));
+            const rows = [];
+            for (let i = 0; i < steps; i++) {
+                const pool = (jw.series || []).filter(x => (x.level ?? 99) === below[i]);
+                if (!pool.length) continue;
+                const pref = _JW_NATION_SERIES[drv.nation];
+                const nat = pref ? pool.filter(x => (x.name || '').includes(pref)) : [];
+                const cand = nat.length ? nat : pool;
+                const ser = cand[(rng() * cand.length) | 0] || pool[0];
+                const grid = _juniorSeriesScale(ser).grid;
+                // Je weiter zurück, desto schwächer – Talent setzt sich erst nach oben hin durch.
+                const rel = Math.max(0, Math.min(1, (1 - s * (1 - i * 0.12)) * 0.75 + (rng() - 0.5) * 0.25));
+                const pos = Math.max(1, Math.min(grid, 1 + Math.round(rel * (grid - 1))));
+                rows.push({ year: start - 1 - i, seriesId: ser.id, seriesName: ser.name,
+                    pos, champ: pos === 1, reconstructed: true });
+            }
+            return rows;
+        }
         // Badge-Farbe je EBENE (Index in _juniorLevels), oben nach unten. Reicht die Palette nicht,
         // wiederholt sie sich – Serien werden zusätzlich über ihren Namen unterschieden.
         const JW_LEVEL_COLORS = ['#4363d8', '#e6194b', '#f58231', '#3cb44b', '#911eb4', '#42d4f4'];
@@ -20714,7 +20820,7 @@
             // S2: laufende Saison wird abgeleitet (nichts persistiert), abgeschlossene aus junior_detail.
             const jw = GAME_STATE.juniorWorld || {};
             const isLive = jw.liveYear === year;
-            const detail = isLive ? deriveJuniorLiveSeason(year) : await idbJDetailGet(year);
+            const detail = isLive ? deriveJuniorLiveSeason(year) : await juniorDetailGet(year);
             if (!detail || !detail.series) { cont.innerHTML = '<div class="text-tertiary p-4">Keine Daten für diese Saison.</div>'; return; }
             const ordered = [...detail.series].sort((a, b) => _juniorSeriesRank(a.seriesId) - _juniorSeriesRank(b.seriesId));   // höhere Ebene zuerst, dann parallele nach Position
             const note = isLive
@@ -20747,7 +20853,7 @@
             const seasonRecs = [];   // Stufe 3: heavy-Refs je Saison (für Filler-Totals aus Snapshots)
             let snapName = null, snapNation = null;   // Name/Nation aus Snapshot (falls allTimeStats-Eintrag geprunt)
             for (const h of (jw.history || [])) {
-                const det = await idbJDetailGet(h.year);
+                const det = await juniorDetailGet(h.year);
                 for (const s of (det && det.series || [])) {
                     const sd = (s.standings || {})[histId];
                     if (!sd) continue;
@@ -20762,9 +20868,14 @@
                 }
             }
             rows.sort((a, b) => b.year - a.year || _juniorSeriesRank(a.seriesId) - _juniorSeriesRank(b.seriesId));   // neuestes Jahr oben (wie F1)
-            const debutYear = rows.length ? Math.min(...rows.map(r => r.year)) : null;
             const at = (jw.allTimeStats || {})[histId] || {};
             const active = (jw.drivers || []).find(d => d.id === histId);
+            // Startkohorte: Vor-Karriere anhängen (abgeleitet, nie gespeichert – s. deriveJuniorPrehistory).
+            // Muss VOR debutYear stehen, sonst zeigt der Kopf "Debüt –", solange noch keine echte
+            // Saison gefahren ist – obwohl die Tabelle darunter drei rekonstruierte Jahre listet.
+            const preRows = active ? deriveJuniorPrehistory(jw, active) : [];
+            const allRows = [...rows, ...preRows];
+            const debutYear = allRows.length ? Math.min(...allRows.map(r => r.year)) : null;
             const dead = (jw.memoriam || []).find(m => m.histId === histId);
             // Stufe 3: notable/aktive Fahrer haben einen autoritativen allTimeStats-Eintrag (at); geprunte
             // Filler nicht → Totals aus den gestreamten Snapshots rechnen (identisch zur Karriere-Tabelle,
@@ -20796,9 +20907,22 @@
                 + `<th class="text-left p-1">Jahr</th><th class="text-left p-1">Serie</th><th class="text-left p-1">Team</th>`
                 + `<th class="text-center p-1 jw-hide-mobile">S</th><th class="text-center p-1 jw-hide-mobile">P</th>`
                 + `<th class="text-center p-1">Pkt</th><th class="text-center p-1">Platz</th></tr></thead><tbody>`;
-            for (const r of rows) {
+            for (const r of allRows) {
                 const posCell = r.pos === 1 ? '1. 🏆' : (r.pos ? r.pos + '.' : '-');
                 const posClass = r.pos === 1 ? 'accent-gold' : (r.pos && r.pos <= 3 ? 'accent-blue' : '');
+                if (r.reconstructed) {
+                    // Gedämpft und ohne Zahlenspalten: die Platzierung ist abgeleitet, Punkte/Siege
+                    // wären erfundene Genauigkeit. Jahr NICHT klickbar – die Saison existiert nicht.
+                    career += `<tr class="border-t border-custom" style="opacity:0.55;font-style:italic;">`
+                        + `<td class="p-1 font-bold">${r.year}</td>`
+                        + `<td class="p-1">${seriesBadge(r.seriesId, r.seriesName)}</td>`
+                        + `<td class="p-1 text-tertiary">–</td>`
+                        + `<td class="p-1 text-center jw-hide-mobile text-tertiary">–</td>`
+                        + `<td class="p-1 text-center jw-hide-mobile text-tertiary">–</td>`
+                        + `<td class="p-1 text-center text-tertiary">–</td>`
+                        + `<td class="p-1 text-center font-bold ${posClass}">${posCell}</td></tr>`;
+                    continue;
+                }
                 career += `<tr class="border-t border-custom">`
                     + `<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:var(--accent-main)" onclick="closeDriverProfile();_juniorSubTab='season';_juniorViewYear=${r.year};renderContent()">${r.year}</span></td>`
                     + `<td class="p-1">${seriesBadge(r.seriesId, r.seriesName)}</td>`
@@ -20809,6 +20933,7 @@
                     + `<td class="p-1 text-center font-bold ${posClass}">${posCell}</td></tr>`;
             }
             career += '</tbody></table></div>';
+            if (preRows.length) career += `<div class="text-xs text-tertiary mt-1" style="font-style:italic;">Kursive Jahre: vor Spielbeginn, aus Stärke und Alter rekonstruiert – nicht simuliert.</div>`;
 
             document.getElementById('driverProfileTitle').innerHTML = `${flag} ${name}${crown}`;
             document.getElementById('driverProfileBody').innerHTML = `
@@ -20826,7 +20951,7 @@
                     </div>
                 </div>
                 <div class="card p-4 rounded-lg mb-4">
-                    <h4 class="font-bold mb-3">🏆 Karriere-Bilanz</h4>
+                    <h4 class="font-bold mb-3">🏆 Karriere-Bilanz${preRows.length ? ' <span class="text-xs text-tertiary font-normal">seit Spielbeginn</span>' : ''}</h4>
                     <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-center">
                         ${box(tot.titles || 0, 'Titel')}${box(tot.wins || 0, 'Siege')}${box(tot.podiums || 0, 'Podien')}${box(tot.poles || 0, 'Poles')}${box(tot.fastestLaps || 0, 'Schn. R.')}
                         ${box(tot.points || 0, 'Punkte')}${box(tot.starts || 0, 'Starts')}${box(tot.bestFinish != null ? 'P' + tot.bestFinish : '–', 'Bestes')}${box(tot.seasons || 0, 'Saisons')}${box(tot.dnfs || 0, 'DNF')}
@@ -27795,6 +27920,42 @@ Empfohlene Wertebereiche:
             ],
             "penske": [
                 { from: 1974, to: 1977, url: "data:image/webp;base64,UklGRhIJAABXRUJQVlA4WAoAAAAgAAAAlQAAlQAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDggJAcAALAqAJ0BKpYAlgA+MRiLQ6IhoRJpnQggAwSyt26v3WqJHes7wBtIHUp/XT1Afq56vHeAfEB1EvoAeWz+oHwifZn7AGaMdhv8q/GPrSO8Hp3+5mgV+o/078cPzH9jnfEv45/RPxt/KHj5pbvxA+AL0y+ef37+gftp/Wdcj/NP7n+YvNF0AP5T/Yf9l92Pwsf4P+C88Xyt/wv7/8BH8e/nH+a/tH+M/6n+e///1T+vL0Nf18JBtzvrZN8BESJ7JvgIiROR5fU0ehqgFXJJS+m/ChJZgD3AkwctVUosBqbhAt6ilQkiyym+ri5U5sh0VEweqs9GEubehBn4qul8Nht4o9ZE5+KTdUTJRu9ezrN8P0vRpBG8pqRp4HWlo2FmBOqh/LS4ZHCLTjK3E9tfQatYoByRAcRltH0HmktgfZLyczMoiABJw2WW+FGaquYzjDXUgERInsm+AiJE9k3wERFwAP7+iRgAAAPrplvjwxXb2C4SEnfV+Ygn6J8dOOqzOoGY/I1uSPYem/HtzKxN/eeHtHNipqLROqW0P7F2jpSDKaBn93/zT+GrN9+HCrP+AsaQAum41H4C/uWqYG3sfNwXpiYL/qbc80w2Du1AkFO4KejNVebZTNCJs1gBhUGDE5DBITOYOt0SUX7M/mDLIEXEAZaYrpWy1rGUXfEDwT5rTbb3VkNDJaefvI9fbXUJyPvxI0GiiyH63KqpJ66UeZ/+Zb9KY3wvjASAD+/x+K+1eWg/6YpddbH/kh2wfvg2P/WR+76ciAnV1nXYvhtGfWCvh2K/3/oD2qG55Klzw1Z85H6UqeCu4hfk/wyQEvEmPohUyXILsn6FVoDKReDDgm2uHm604Hy0HU/7Hkw0tnDP9QZ7PEbUefHbHac25YBaP0ZPKjNMA19n3gbC0sx6460okMdckB7XQnxukkiffIIyE05//6fVVoGk2DkaWw+YL68yfu9is4haKhIHfPRbMSAulVk+OjIMip8i6O8Wnr3c8Z99h7IwFJtehaBBV28JrjTOxvUn0U7+L3QlaWnqZg+ayGMPgdsqN2kfv7fMWMSJfqn8nz+GuGEqsKu4gUObaYZCPRTJfvOvmutP5mz/OO7acIyegGgV9zcuSoKqspL1AtP3CwLO6fl41XOK/9Wka1r6+cYQXClnBPt9O8dVNAUaxHNrhTUPrI00v6bi2rcIPWqO9FRu4sNTOQJtiE+pd114ph+/vcQlKI/DACJdxrHv8SKEEFN6iNIv7NuTvOTKZLf6j7ec5Ilq/obed1/1RzjH2raGNRQ7j3fGRR8OBUlIfqL1NMGdSmGDdbvLFL30gpCrdiFwHNOwfawDCTzpr7k6lJqq0TWBSwmP3v8vgaVDvl6TkqFo9rEDgihWyaeG1ISm7GRlFUOnW7KPY7GavULP+dLD749RmhNVn/R/RcYZnSoLEspHP0i3RK+GXvo/zH//vWbLzfExe7qnKnJw5Is3gwt24ZGk1JryHMOdL+X8PKhTfKhTUtk5ESU1nLAEMnJTQHiELH1sTpAbFl4GW0iDe+pO1eJC/p6jJH9hNO38T1w4X/7AQYviAcO3Pypqs/PZKguf/G0+RtKC4yg3Xqfq0kEyNkfaV4yWB5hCCa0qNTxmqgXoPTJiBrvwRxqfLVsZWBVbnpTexNrECjFG/z/+CF7/ny+coX1eaGpurPxz6Nd8sU2rFXmJdgy8O167vNMrie8O3gR9ne1liU9Ymg9wPJk+vQ03RauvQOygPPxa4EMIFXk7EmuEfAsz4aGqsgCnLXe/EMYmFrxFuaGGz7PviJ8OlN6S9XkoAA9e8iWQ/jgPiMdgVfmnX26UhHZdaJQBtVfbteZIZAxoaglQhcstnkpR4PeGPtHRr04+btpBiGqt28WUN63Inin0Nb/73S1Rl4mer7HJ/tSo2MV46f/SlAqFo+ADpkT++YVsz9uN/3bPoXvB92NbeSLMikwShATThtQK8c3v8G8Dy9vx+DX3qhijendhrRsdjMv3Ynk2sb0f6Z+TRJPYMiPtCuq0ZpBfOQOT3u8Ob8h/PMrdjqyPDVp+acQQszw3YFsO26MSWaJCzBUgGL0yU1kuevtF57LSD/Xw2d87HDxUIw7mPWQrI/+d/9dfAeENdFTSVVjR1D8HP7+uFOfdlx4q9zkYDS9SuR0/8bMsvzEMBDPjTf/jW4pBsQUyA9e4Ip9A4/mIHEuHTzlBXiWA1DybzEm31KYV3S56DfT2W3Mz78qvvhJf1nS8t5Mb9yOqHDTv/j7/tHwwUbs9BM2YDYtV/0qPFCOIdj29vsxOmLlT6Y8UZjwK6eWjTToKZPNiQKydXCEM0KDoo19YvbDma6P833yzO5oRfPyL+MXrkFE1ujcLKf8v7xUv+WrjMph+iGk7Lboq42FNnyvboiole5/GNj9dfei1mqrsrUFmy9rphiyXtsAAAAAAAAA=" }
+            ],
+        
+            // Nachtrag v0.9.15.38 - Wunschliste des Nutzers. Zwei Quellen:
+            //   Logopedia (Wikia-CDN, wie der gesamte Bestand) fuer die aktuellen Marken.
+            //   Wikimedia fuer die historischen Kleinkonstrukteure. WICHTIG: bei Dateien ueber
+            //   256 px die von der API (iiurlwidth) gelieferte thumburl nehmen - selbst gebaute
+            //   /thumb/-Pfade antworten mit HTTP 400. commons/ = frei lizenziert, en|fr/ = lokal.
+            "racing-bulls": [
+                { from: 2025, to: 2099, url: "https://static.wikia.nocookie.net/logopedia/images/a/a7/Racing_Bulls.svg/revision/latest?cb=20240206041248" }
+            ],
+            "audi": [ // vier Ringe (Markenlogo), Einstieg 2026
+                { from: 2026, to: 2099, url: "https://static.wikia.nocookie.net/logopedia/images/7/7d/Audi_2016.svg/revision/latest?cb=20260614040148" }
+            ],
+            "cadillac": [ // F1-Teamlogo, 2025 vorgestellt, Einstieg 2026
+                { from: 2026, to: 2099, url: "https://static.wikia.nocookie.net/logopedia/images/e/e2/CadillacF1_2025.svg/revision/latest?cb=20250504100403" }
+            ],
+            "veritas": [
+                { from: 1951, to: 1953, url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Veritas_logo.png/330px-Veritas_logo.png" }
+            ],
+            "tec-mec": [ // Kuehlergrill-Emblem, freigestellt + zentriert (Foto lag auf roter Karosserie)
+                { from: 1959, to: 1959, url: "data:image/webp;base64,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" }
+            ],
+            "scarab": [ // Emailleabzeichen, freigestellt + zentriert (Foto lag auf hellem Untergrund)
+                { from: 1960, to: 1960, url: "data:image/webp;base64,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" }
+            ],
+            "lds": [
+                { from: 1962, to: 1968, url: "https://upload.wikimedia.org/wikipedia/en/4/46/LDS_%28car_logo%29.png" }
+            ],
+            "scirocco": [ // Foto des Logos (Goodwood Revival 2014), kein reines Markenzeichen verfuegbar
+                { from: 1963, to: 1964, url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Scirocco_logo%2C_Goodwood_Revival_2014.jpg/330px-Scirocco_logo%2C_Goodwood_Revival_2014.jpg" }
+            ],
+            "shannon": [
+                { from: 1966, to: 1966, url: "https://upload.wikimedia.org/wikipedia/fr/8/85/Shannon_Racing_Cars_logo.png" }
+            ],
+            "trojan": [
+                { from: 1974, to: 1974, url: "https://upload.wikimedia.org/wikipedia/fr/2/21/Logo_Trojan_F1.gif" }
             ],
         };
 
