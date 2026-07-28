@@ -115,6 +115,14 @@ if (Test-Path "update-functions-index.ps1") {
 
 # 7. Git
 git add $NewFileName index.html data/ schemas/functions.schema.json schemas/game-state.schema.json
+# Die Werkzeuge selbst mitversionieren: manage-v.ps1 stand nicht in seiner eigenen Add-Liste,
+# Aenderungen am Skript blieben dadurch lokal liegen und erreichten das Repo nie.
+git add manage-v.ps1 update-functions-index.ps1 manage-v
+# Archivierte Monolithen abmelden: Schritt 6 verschiebt die alte Version nach archive/ (gitignored),
+# die Loeschung im Wurzelverzeichnis blieb aber ungestaged und sammelte sich Version fuer Version an
+# (zuletzt neun offene Loeschungen ueber .31 bis .39). -u wirkt nur auf BEREITS GETRACKTE Dateien und
+# ist per Pfadmuster eingegrenzt - so kann kein fremder Arbeitsstand einer Parallel-Session mitgehen.
+git add -u -- "f1-rpg-v*.html"
 git commit -m "v$NewVersion - $CommitMsg"
 git push origin master
 
