@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.42</title>
+    <title>F1 RPG v0.9.15.43</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.42 (aktuell) - 28.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.43 (aktuell) - 28.07.2026</div>
+                            <div>&#8226; NEU: Knopf 'Wirklich nachzaehlen' im Speicher-Bereich - zaehlt die Speicherbereiche durch und schreibt die echten Groessen ins Debug-Log, statt sich auf die Browser-Schaetzung zu verlassen</div>
+                            <div>&#8226; NEU: Warnung im Log, wenn die Schaetzung deutlich ueber den tatsaechlichen Daten liegt - dann ist es belegtes Kontingent und nicht der Spielstand</div>
+                            <div>&#8226; FIX: Import meldete die Zahl der gelesenen statt der geschriebenen Junior-Saisons</div>
+                            <div class="font-bold text-slate-400">v0.9.15.42 - 28.07.2026</div>
                             <div>&#8226; FIX: Verwaiste Junior-Saisons werden beim Laden und beim Importieren automatisch entfernt - nach dem Zuruecksetzen von F1-Saisons blieben sie im Speicher stehen und zeigten Champions aus Jahren, die es nicht mehr gibt</div>
                             <div>&#8226; FIX: Saisons loeschen rollt die Junior-Welt jetzt mit zurueck statt sie stehenzulassen</div>
                             <div>&#8226; FIX: Quick-Save meldete Erfolg, bevor ueberhaupt geschrieben war - jetzt drei ehrliche Ergebnisse inklusive Warnung, wenn nur der Notfall-Speicher griff</div>
@@ -3318,7 +3322,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.42';
+        const VERSION = '0.9.15.43';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4223,6 +4227,53 @@
             if (typeof syncDummyJuniorUI === 'function') syncDummyJuniorUI();
         }
 
+        // Bodenprobe: zaehlt zusammen, was TATSAECHLICH in den IndexedDB-Speicherbereichen liegt, und
+        // stellt es der Browser-Schaetzung gegenueber. navigator.storage.estimate() meldet belegtes
+        // Kontingent, nicht Nutzdaten – zwei getrennte Herkuenfte lieferten dieselbe Zahl auf die
+        // Nachkommastelle, die Schaetzung taugt also nicht als Mass fuer den Spielstand.
+        // Ausgabe geht ins Debug-Log, damit dafuer nichts in die Konsole kopiert werden muss.
+        window.storageReport = async function() {
+            const MB = b => (b / 1048576).toFixed(2) + ' MB';
+            // Bytes, NICHT RAM: .length ohne *2 entspricht UTF-8 bei ueberwiegend ASCII-Inhalt.
+            // json.length*2 waere die UTF-16-Groesse im Arbeitsspeicher und damit rund doppelt zu hoch
+            // (gleiche Falle wie bei exportSave, wo deshalb blob.size verwendet wird).
+            const size = v => v == null ? 0
+                : v instanceof ArrayBuffer ? v.byteLength
+                : ArrayBuffer.isView(v) ? v.byteLength
+                : v instanceof Blob ? v.size
+                : typeof v === 'string' ? v.length
+                : (() => { try { return JSON.stringify(v).length; } catch (e) { return 0; } })();
+            try {
+                const db = await idbOpen();
+                let total = 0;
+                const rows = [];
+                for (const name of [...db.objectStoreNames]) {
+                    const r = await new Promise(res => {
+                        let n = 0, b = 0;
+                        const req = db.transaction(name, 'readonly').objectStore(name).openCursor();
+                        req.onsuccess = e => {
+                            const c = e.target.result;
+                            if (!c) return res({ n, b });
+                            b += size(c.value); n++; c.continue();
+                        };
+                        req.onerror = () => res({ n, b });
+                    });
+                    total += r.b;
+                    rows.push({ name, n: r.n, b: r.b });
+                }
+                const est = await getStorageEstimate();
+                logInfo('SPEICHER', '📊 Bodenprobe der Speicherbereiche:');
+                rows.forEach(r => logInfo('SPEICHER', `   ${r.name}: ${r.n} Einträge, ${MB(r.b)}`));
+                logInfo('SPEICHER', `   ⇒ tatsächliche Nutzdaten: ${MB(total)}`);
+                logInfo('SPEICHER', `   ⇒ Browser-Schätzung: ${MB(est.usage)} von ${MB(est.quota)} Kontingent`);
+                const factor = total > 0 ? (est.usage / total) : 0;
+                if (factor > 2) logWarning('SPEICHER', `   ⚠ Die Schätzung liegt um das ${factor.toFixed(1)}-fache über den Nutzdaten – belegtes Kontingent, nicht dein Spielstand.`);
+                return { stores: rows, totalBytes: total, estimateBytes: est.usage };
+            } catch (e) {
+                logError('SPEICHER', 'Bodenprobe fehlgeschlagen: ' + (e.message || e));
+                return null;
+            }
+        };
         // HTML für aufgeklappten Detail-Bereich: Aufschlüsselung + Verlauf
         // est = getStorageEstimate()-Ergebnis (echte Origin-Belegung inkl. IndexedDB)
         function renderStorageDetails(est) {
@@ -4238,7 +4289,13 @@
             if (est && est.real) {
                 const idbBytes = Math.max(0, est.usage - usage.totalBytes);
                 idbRow = `<div style="display:flex;justify-content:space-between;gap:1rem;">`
-                    + `<span>IndexedDB (Spielstände)</span><span style="color:var(--text-muted);">${formatBytes(idbBytes)}</span></div>`;
+                    + `<span>IndexedDB (Spielstände)</span><span style="color:var(--text-muted);">${formatBytes(idbBytes)}</span></div>`
+                    // Die Zahl oben ist die BROWSER-SCHÄTZUNG (belegtes Kontingent), nicht die Menge
+                    // deiner Daten. Der Knopf zählt die Speicherbereiche wirklich durch.
+                    + `<div style="margin-top:0.4rem;"><button onclick="event.stopPropagation(); storageReport();" `
+                    + `style="font-size:0.75rem;padding:2px 8px;border-radius:4px;border:1px solid var(--border-color);`
+                    + `background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;">📊 Wirklich nachzählen</button>`
+                    + `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;">Ergebnis erscheint im Log</span></div>`;
             }
             // Junior-Ballast (Stresstest) – nur Größe, kein Inhalt → test-neutral.
             // Volle Größenrechnung nur wenn Panel offen & nicht im Mega-Sim (sonst nur Saison-Zahl, billig).
@@ -19578,7 +19635,7 @@
                         if (keep.length) jwi.history = keep.map(j => j.light).filter(Boolean).sort((a,b) => a.year - b.year);
                         if (jstats) { jwi.allTimeStats = jstats; await persistJuniorStats(); }
                     }
-                    if (juniors.length) logSuccess('IMPORT', `Junior-Welt importiert: ${juniors.length} Saisons${jstats ? ', ' + Object.keys(jstats).length + ' All-Time-Fahrer' : ''}`);
+                    if (keep.length) logSuccess('IMPORT', `Junior-Welt importiert: ${keep.length} Saisons${jstats ? ', ' + Object.keys(jstats).length + ' All-Time-Fahrer' : ''}`);
                     else if (core.juniorMode === 'world') logWarning('IMPORT', 'Junior-Welt aktiv, aber die Datei enthält keine Junior-Saisons (Export vor v0.9.15.39) – Saisontabellen und Karriere-Historien bleiben leer.');
                 } catch (e) { logWarning('IMPORT', 'Junior-Stores nicht vollständig importiert: ' + e); }
             }
