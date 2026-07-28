@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.38</title>
+    <title>F1 RPG v0.9.15.39</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.38 (aktuell) - 27.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.39 (aktuell) - 28.07.2026</div>
+                            <div>&#8226; FIX: Export enthielt die F1-Renndaten nur zufaellig - je nachdem welche Saisons die Sitzung vorher geladen hatte</div>
+                            <div>&#8226;  jetzt wird jedes Jahr beim Export nachgeladen</div>
+                            <div>&#8226; FIX: Die Junior-Welt fehlte im Export komplett - nach einem Import waren alle Junior-Saisontabellen und Karriere-Historien leer</div>
+                            <div>&#8226; NEU: Import warnt, wenn eine aeltere Datei ohne Junior-Saisons geladen wird</div>
+                            <div class="font-bold text-slate-400">v0.9.15.38 - 27.07.2026</div>
                             <div>&#8226; NEU: Junior-Saison-Records ohne Duplikate gespeichert - 25 Prozent weniger Speicher, gemessen an fuenf Saisons der Original-Breite</div>
                             <div>&#8226; NEU: Rekonstruierte Vor-Karriere fuer die Startkohorte - wer in Formula 2 oder 3 startet, zeigt seinen Weg durch die unteren Serien (abgeleitet, kein Speicherbedarf, kursiv gekennzeichnet)</div>
                             <div>&#8226; NEU: 10 weitere Team-Logos - Racing Bulls, Audi, Cadillac, Veritas, Tec-Mec, Scarab, LDS, Scirocco, Shannon, Trojan (jetzt 140 von 187 Konstrukteuren)</div>
@@ -3301,7 +3306,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.38';
+        const VERSION = '0.9.15.39';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -19296,7 +19301,7 @@
         // Zeile 1 = Meta-Header, Zeile 2 = core (GAME_STATE OHNE history, bounded ~0.7MB),
         // danach je Saison genau 1 Zeile. Der Blob fügt die Teile zusammen, ohne sie zu
         // einem JS-String zu konkatenieren → kein "Invalid string length" mehr.
-        window.exportSave = function() {
+        window.exportSave = async function() {
             try {
                 const hist = GAME_STATE.history || [];
                 const parts = [];
@@ -19310,8 +19315,33 @@
                 }) + '\n');
                 // core: _stringifyCore tauscht history temporär raus (synchron) → bounded
                 parts.push(_stringifyCore({ _t: 'core' }) + '\n');
+                // F1-Saisons: Detail je Jahr NACHLADEN und sofort wieder verwerfen (RAM bleibt bounded).
+                // GAME_STATE.history hält seit Speicher-Phase 3 nur die LEICHTEN Records – ohne dieses
+                // Merge hing der Inhalt des Exports davon ab, welche Saisons die Sitzung zufällig
+                // hydriert hatte: derselbe Spielstand lieferte einmal 7,07 MB und einmal 0,61 MB
+                // Renndaten. loadHistoryMerged() war dafür vorgesehen, wurde aber nie verdrahtet.
                 for (const h of hist) {
-                    parts.push(JSON.stringify({ _t: 'season', d: h }) + '\n');   // je Saison bounded
+                    let full = h;
+                    if (_idbAvailable && h && h.year != null && !h.results) {
+                        try {
+                            const det = await idbHistDetailGet(h.year);
+                            if (det) { migrateHistoryDetail(h.year, det); full = { ...h, ...det }; }
+                        } catch (e) { /* Saison ohne Detail: leichter Record ist besser als nichts */ }
+                    }
+                    parts.push(JSON.stringify({ _t: 'season', d: full }) + '\n');   // je Saison bounded
+                }
+                // Junior-Welt: liegt in EIGENEN Stores und war bisher gar nicht im Export. Nach einem
+                // Import waren dadurch alle Junior-Saisontabellen und Karriere-Historien leer, obwohl
+                // der Core (Serien/Fahrer/Champions/All-Time) den Eindruck einer heilen Welt machte.
+                let jCount = 0;
+                if (_idbAvailable && GAME_STATE.juniorMode === 'world') {
+                    try {
+                        for (const rec of (await idbJHistGetAll())) {
+                            const det = await idbJDetailGet(rec.year);
+                            parts.push(JSON.stringify({ _t: 'junior', d: { year: rec.year, light: rec, heavy: det || null } }) + '\n');
+                            jCount++;
+                        }
+                    } catch (e) { logWarning('EXPORT', 'Junior-Welt nicht vollständig exportiert: ' + e); }
                 }
 
                 const blob = new Blob(parts, { type: 'application/x-ndjson' });
@@ -19323,8 +19353,8 @@
                 URL.revokeObjectURL(url);
 
                 // blob.size = echte UTF-8-Dateigröße (json.length*2 wäre UTF-16/In-RAM, ~2x zu groß)
-                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(blob.size)}, NDJSON, ${hist.length} Saisons)`);
-                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nSaisons: ${hist.length}\nDateigröße: ${formatBytes(blob.size)}`);
+                logSuccess('EXPORT', `Spielstand exportiert (${formatBytes(blob.size)}, NDJSON, ${hist.length} Saisons${jCount ? ', ' + jCount + ' Junior-Saisons' : ''})`);
+                alert(`💾 Exportiert: Saison ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}\nSaisons: ${hist.length}${jCount ? `\nJunior-Saisons: ${jCount}` : ''}\nDateigröße: ${formatBytes(blob.size)}`);
             } catch (e) {
                 logError('EXPORT', 'Export fehlgeschlagen: ' + (e.message || e));
                 alert('❌ Export fehlgeschlagen.\n\n' + (e.message || e) + '\n\nDeine Daten sind sicher im Browser gespeichert (IndexedDB) – der Datei-Export ist nur für Backup/Transfer gedacht.');
@@ -19384,6 +19414,7 @@
             let buf = '';
             let core = null;
             const seasons = [];
+            const juniors = [];   // Junior-Welt: eigene Stores, kamen vor v0.9.15.39 nicht mit
             let sawHeader = false;
             const handleLine = (line) => {
                 if (!line.trim()) return;
@@ -19392,6 +19423,7 @@
                 sawHeader = true;
                 if (rec._t === 'core') core = rec.state;
                 else if (rec._t === 'season' && rec.d) seasons.push(rec.d);
+                else if (rec._t === 'junior' && rec.d) juniors.push(rec.d);
             };
             while (true) {
                 const { value, done } = await reader.read();
@@ -19407,6 +19439,19 @@
             if (!core) throw new Error('NDJSON-Datei ohne core-Datensatz');
             core.history = seasons;
             await _applyImportedState(core);
+            // Junior-Stores NACH dem State schreiben: _applyImportedState räumt die F1-Stores auf und
+            // speichert. Erst leeren, damit eine importierte Welt nicht auf Resten der alten liegt.
+            if (_idbAvailable) {
+                try {
+                    await idbJClear();
+                    for (const j of juniors) {
+                        if (j.light) await idbJHistPut(j.year, j.light);
+                        if (j.heavy) await idbJDetailPut(j.year, j.heavy);
+                    }
+                    if (juniors.length) logSuccess('IMPORT', `Junior-Welt importiert: ${juniors.length} Saisons`);
+                    else if (core.juniorMode === 'world') logWarning('IMPORT', 'Junior-Welt aktiv, aber die Datei enthält keine Junior-Saisons (Export vor v0.9.15.39) – Saisontabellen und Karriere-Historien bleiben leer.');
+                } catch (e) { logWarning('IMPORT', 'Junior-Stores nicht vollständig importiert: ' + e); }
+            }
         }
 
         // Alt-Pfad: komplette Datei via FileReader (kleine Einzel-JSON-Stände, abwärtskompatibel).
