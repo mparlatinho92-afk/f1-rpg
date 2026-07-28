@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.45</title>
+    <title>F1 RPG v0.9.15.46</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.45 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.46 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; FIX: Der Speicher-Verlauf zeigte weiter minus 102 MB aus alten Schaetzwerten, weil die Bereinigung erst beim naechsten Speichern griff - jetzt werden Eintraege anderer Messgrundlage schon beim Anzeigen ignoriert</div>
+                            <div>&#8226; NEU: Der Verlauf baut sich nach zwei gemessenen Speicherungen von selbst wieder auf</div>
+                            <div class="font-bold text-slate-400">v0.9.15.45 - 29.07.2026</div>
                             <div>&#8226; FIX: Ueberschrift und Verlauf der Speicher-Aufschluesselung zogen weiter die Browser-Schaetzung - der Verlauf behauptete, vier Speicherungen haetten 257 MB erzeugt</div>
                             <div>&#8226; NEU: Die Bodenprobe laeuft automatisch einmal pro Sitzung, der Knopf ist nur noch fuer Zwischendurch</div>
                             <div>&#8226; NEU: Ist noch nichts gemessen, steht 'geschaetzt' an der Zahl statt sie als Tatsache auszugeben</div>
@@ -3331,7 +3334,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.45';
+        const VERSION = '0.9.15.46';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4372,6 +4375,11 @@
             let hist = [];
             try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) {}
             if (!Array.isArray(hist)) hist = [];
+            // Nur Eintraege derselben Grundlage vergleichen. pushStorageHistory verwirft die alten beim
+            // Wechsel – das greift aber erst beim naechsten Speichern. Bis dahin stuenden hier Schaetz-
+            // werte gegen Messwerte, was einen Sprung von ueber 100 MB vortaeuscht, der nie stattfand.
+            const histBasis = headScan ? 1 : 0;
+            hist = hist.filter(h => (h.m || 0) === histBasis);
             let histHtml = '';
             if (hist.length >= 2) {
                 const first = hist[0], last = hist[hist.length - 1];
