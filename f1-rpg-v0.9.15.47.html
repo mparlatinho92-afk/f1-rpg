@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.46</title>
+    <title>F1 RPG v0.9.15.47</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.46 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.47 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; FIX: Die Speicheranzeige im Header zeigte weiter die Browser-Schaetzung - bei Firefox 250 MB fuer einen 3,6-MB-Spielstand</div>
+                            <div>&#8226;  jetzt der gemessene Wert, Balken und Prozent inklusive</div>
+                            <div>&#8226; NEU: Ist noch nichts gemessen, steht eine Tilde vor der Zahl statt sie als Tatsache auszugeben</div>
+                            <div class="font-bold text-slate-400">v0.9.15.46 - 29.07.2026</div>
                             <div>&#8226; FIX: Der Speicher-Verlauf zeigte weiter minus 102 MB aus alten Schaetzwerten, weil die Bereinigung erst beim naechsten Speichern griff - jetzt werden Eintraege anderer Messgrundlage schon beim Anzeigen ignoriert</div>
                             <div>&#8226; NEU: Der Verlauf baut sich nach zwei gemessenen Speicherungen von selbst wieder auf</div>
                             <div class="font-bold text-slate-400">v0.9.15.45 - 29.07.2026</div>
@@ -15783,7 +15787,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.46';
+        const VERSION = '0.9.15.47';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16671,7 +16675,12 @@ const ERA_FIRST_NAMES = {
             const badge = document.getElementById('storage-badge');
             if (!badge) return;
             const est = await getStorageEstimate();
-            const pct = est.percent;
+            // Badge auf die MESSUNG stellen. est.usage ist bei Firefox seitenuebergreifend und zeigte
+            // hier 250 MB fuer einen 3,6-MB-Spielstand. Solange nichts gemessen ist, bleibt die
+            // Schaetzung – dann aber mit "~" gekennzeichnet.
+            const scan = _lastStorageScan;
+            const shownBytes = scan ? scan.bytes : est.usage;
+            const pct = est.quota > 0 ? Math.min(100, shownBytes / est.quota * 100) : est.percent;
             const color = _storageColor(pct);
             const pctTxt = pct < 10 ? pct.toFixed(1) : String(Math.round(pct));
             const isAlarm = pct >= STORAGE_WARN_PCT;
@@ -16685,7 +16694,7 @@ const ERA_FIRST_NAMES = {
                 const fillW = Math.round(barW * Math.min(100, pct) / 100);
                 const bar = `<span style="display:inline-block;width:${barW}px;height:8px;background:var(--bg-tertiary,#334155);border-radius:4px;overflow:hidden;vertical-align:middle;">`
                     + `<span style="display:block;width:${fillW}px;height:100%;background:${color};"></span></span>`;
-                badge.innerHTML = `${isAlarm ? '⚠️ ' : ''}💾 ${formatBytes(est.usage)}/${formatBytes(est.quota)} (${pctTxt}%) ${bar}`;
+                badge.innerHTML = `${isAlarm ? '⚠️ ' : ''}💾 ${scan ? '' : '~'}${formatBytes(shownBytes)}/${formatBytes(est.quota)} (${pctTxt}%) ${bar}`;
             }
             badge.style.color = color;
 
