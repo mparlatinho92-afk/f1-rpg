@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.40</title>
+    <title>F1 RPG v0.9.15.41</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.40 (aktuell) - 28.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.41 (aktuell) - 28.07.2026</div>
+                            <div>&#8226; NEU: Junior-Ewigkeitsstatistik und -Historie liegen in eigenen Speicherbereichen statt im Hauptstand - der wird bei jedem Speichern neu geschrieben, die Statistik nur noch einmal pro Saison</div>
+                            <div>&#8226; NEU: Beim Laden werden beide automatisch nachgezogen, alte Spielstaende wandern beim naechsten Saisonende von selbst um</div>
+                            <div>&#8226; FIX: manage-v meldet die archivierten Monolithen jetzt selbst bei Git ab - zuletzt hingen neun Loeschungen fest</div>
+                            <div class="font-bold text-slate-400">v0.9.15.40 - 28.07.2026</div>
                             <div>&#8226; NEU: 9 weitere Team-Logos - Nichels, Bromme, Turner, Klenk, Stebro, Protos, Politoys, Rebaque und FIRST (jetzt 139 von 187 Konstrukteuren)</div>
                             <div>&#8226; NEU: Alle neun freigestellt und eingebettet - kein Hotlinking, transparenter Hintergrund statt weissem Kasten</div>
                             <div>&#8226; FIX: Politoys zeigt das Logo von 1972 statt der Marke Polistil ab 1980</div>
@@ -3310,7 +3314,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.40';
+        const VERSION = '0.9.15.41';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -7672,11 +7676,50 @@
         // === SPEICHER-FUNKTIONEN (IndexedDB v2: core + History-Store, Fallback localStorage) ===
         // Serialisiert GAME_STATE OHNE history (history → eigener Store, write-once).
         // Tauscht history temporär aus statt zu klonen (synchron, threadsicher).
+        // P2: Auch die beiden schweren Junior-Felder werden temporär ausgeklinkt.
+        //   juniorWorld.history  – liegt ohnehin doppelt im Store junior_history (reine Duplizierung)
+        //   juniorWorld.allTimeStats – eigener kv-Eintrag, geschrieben nur wenn er sich ändert
+        // Gemessen an einem 2090er-Stand (65 Saisons, Original-Breite) machte juniorWorld 71 % des
+        // Core aus (1058 von 1460 KB, 3089 All-Time-Einträge) – und der Core wird bei JEDEM Speichern
+        // komplett neu geschrieben. Über einen Mega-Sim summiert sich das auf Gigabytes Schreibvolumen.
+        // Wie beim history-Swap: synchron, mit finally-Restore, damit nichts den Zwischenzustand sieht.
+        const IDB_JSTATS_KEY = 'f1rpg_junior_alltime';
         function _stringifyCore(extra) {
             const histRef = GAME_STATE.history;
+            const jw = GAME_STATE.juniorWorld;
+            const jHistRef = jw && jw.history, jStatsRef = jw && jw.allTimeStats;
             GAME_STATE.history = [];
+            if (jw) { jw.history = []; jw.allTimeStats = {}; }
             try { return JSON.stringify(extra ? { ...extra, state: GAME_STATE } : GAME_STATE); }
-            finally { GAME_STATE.history = histRef; }
+            finally {
+                GAME_STATE.history = histRef;
+                if (jw) { jw.history = jHistRef; jw.allTimeStats = jStatsRef; }
+            }
+        }
+        // Schreibt allTimeStats in den kv-Store. Bewusst NICHT in saveGame(): dort liefe es wieder bei
+        // jedem Speichern. Aufgerufen an den einzigen Mutationspunkten (Saisonende, Prune, Rebuild).
+        async function persistJuniorStats() {
+            const jw = GAME_STATE.juniorWorld;
+            if (!_idbAvailable || !jw) return;
+            try { await idbSet(IDB_JSTATS_KEY, JSON.stringify(jw.allTimeStats || {})); }
+            catch (e) { logWarning('JUNIOR', 'All-Time-Statistik nicht gespeichert: ' + e); }
+        }
+        // Gegenstück beim Laden: beide Felder aus ihren Stores nachziehen. Wird auf das ROHE Objekt
+        // angewandt, BEVOR es GAME_STATE wird – dieselbe Reihenfolge-Regel wie bei der F1-Historie
+        // (sonst sieht ein paralleles saveGame() einen leeren Zwischenstand). Alt-Saves tragen die
+        // Felder noch im Core; dann wird nichts überschrieben und sie wandern beim nächsten
+        // Saisonende von selbst in die Stores.
+        async function _hydrateJuniorCore(state) {
+            const jw = state && state.juniorWorld;
+            if (!jw || !_idbAvailable) return state;
+            try {
+                if (!Array.isArray(jw.history) || !jw.history.length) jw.history = await idbJHistGetAll();
+                if (!jw.allTimeStats || !Object.keys(jw.allTimeStats).length) {
+                    const raw = await idbGet(IDB_JSTATS_KEY);
+                    if (raw) jw.allTimeStats = JSON.parse(raw);
+                }
+            } catch (e) { logWarning('JUNIOR', 'Junior-Aggregate nicht geladen: ' + e); }
+            return state;
         }
 
         // Speicher-Serialisierung (Datenverlust-Schutz): saveGame() wird quer durch die App OHNE await
@@ -7723,6 +7766,7 @@
                     const loaded = JSON.parse(core);
                     loaded.history = await idbHistGetAll();          // Phase 3: nur LEICHTE Records in den RAM
                     await _backfillLightHistFields(loaded.history);  // Alt-Saves: leichte Index-Felder einmalig setzen
+                    await _hydrateJuniorCore(loaded);                // P2: Junior-Historie + All-Time aus ihren Stores
                     GAME_STATE = sanitizeGameState(loaded);
                     _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                     logSuccess('LOAD', `Spielstand geladen: Jahr ${GAME_STATE.currentYear}, ${GAME_STATE.history.length} Saisons (History-Store, leicht)`);
@@ -7780,6 +7824,7 @@
                     restored.history = await idbHistGetAll();   // Phase 3: nur LEICHTE Records
                     await _backfillLightHistFields(restored.history);
                 }
+                await _hydrateJuniorCore(restored);             // P2: gleiche Reihenfolge-Regel wie oben
                 GAME_STATE = sanitizeGameState(restored);
                 _persistedHistoryYears = new Set((GAME_STATE.history || []).map(h => h.year).filter(y => y != null));
                 renderAll();
@@ -17658,6 +17703,7 @@
             jw.allTimeStats = fresh.allTimeStats;
             jw.circuitIndex = fresh.circuitIndex;
             _pruneJuniorAllTime(jw);   // Stufe 3: nach Voll-Rebuild geprunt (Optin via jw.pruneAllTime)
+            await persistJuniorStats();   // P2
             await saveGame();
             if (typeof syncJuniorWorldUI === 'function') syncJuniorWorldUI();
             logInfo('JUNIOR', `🌍 Aggregate neu aufgebaut: ${Object.keys(fresh.allTimeStats).length} Fahrer, ${Object.keys(fresh.circuitIndex).length} Strecken`);
@@ -17831,6 +17877,7 @@
                 jw.drivers = jw.drivers.filter(d => !deadIds.includes(d.id));
             }
             const pruned = _pruneJuniorAllTime(jw);   // Stufe 3: Ruhestands-Filler aus allTimeStats entfernen (Optin)
+            persistJuniorStats();   // P2: All-Time nur bei Änderung schreiben, nicht bei jedem Save
             if (pruned) logInfo('JUNIOR', `🧹 allTimeStats geprunt: ${pruned} Filler entfernt (${Object.keys(jw.allTimeStats || {}).length} bleiben)`);
             const events = { retired, promoted, newcomers, deaths: deadIds.length };
             const lightRec = { year, series: lightSeries, events };
@@ -19340,6 +19387,11 @@
                 let jCount = 0;
                 if (_idbAvailable && GAME_STATE.juniorMode === 'world') {
                     try {
+                        // P2: allTimeStats steckt seit v0.9.15.41 nicht mehr im Core → eigene Zeile,
+                        // sonst käme eine importierte Welt ohne Ewigkeitsstatistik an.
+                        const jwx = GAME_STATE.juniorWorld || {};
+                        if (jwx.allTimeStats && Object.keys(jwx.allTimeStats).length)
+                            parts.push(JSON.stringify({ _t: 'jstats', d: jwx.allTimeStats }) + '\n');
                         for (const rec of (await idbJHistGetAll())) {
                             const det = await idbJDetailGet(rec.year);
                             parts.push(JSON.stringify({ _t: 'junior', d: { year: rec.year, light: rec, heavy: det || null } }) + '\n');
@@ -19419,6 +19471,7 @@
             let core = null;
             const seasons = [];
             const juniors = [];   // Junior-Welt: eigene Stores, kamen vor v0.9.15.39 nicht mit
+            let jstats = null;    // P2: allTimeStats liegt seit v0.9.15.41 nicht mehr im Core
             let sawHeader = false;
             const handleLine = (line) => {
                 if (!line.trim()) return;
@@ -19428,6 +19481,7 @@
                 if (rec._t === 'core') core = rec.state;
                 else if (rec._t === 'season' && rec.d) seasons.push(rec.d);
                 else if (rec._t === 'junior' && rec.d) juniors.push(rec.d);
+                else if (rec._t === 'jstats' && rec.d) jstats = rec.d;   // P2: All-Time separat
             };
             while (true) {
                 const { value, done } = await reader.read();
@@ -19452,7 +19506,15 @@
                         if (j.light) await idbJHistPut(j.year, j.light);
                         if (j.heavy) await idbJDetailPut(j.year, j.heavy);
                     }
-                    if (juniors.length) logSuccess('IMPORT', `Junior-Welt importiert: ${juniors.length} Saisons`);
+                    const jwi = GAME_STATE.juniorWorld;
+                    if (jwi) {
+                        // P2: Historie aus den importierten Leicht-Records, All-Time aus der jstats-Zeile.
+                        // Fehlt jstats (Alt-Export), bleibt die Statistik leer - rebuildJuniorAggregates()
+                        // kann sie aus den Saison-Records wieder aufbauen.
+                        if (juniors.length) jwi.history = juniors.map(j => j.light).filter(Boolean).sort((a,b) => a.year - b.year);
+                        if (jstats) { jwi.allTimeStats = jstats; await persistJuniorStats(); }
+                    }
+                    if (juniors.length) logSuccess('IMPORT', `Junior-Welt importiert: ${juniors.length} Saisons${jstats ? ', ' + Object.keys(jstats).length + ' All-Time-Fahrer' : ''}`);
                     else if (core.juniorMode === 'world') logWarning('IMPORT', 'Junior-Welt aktiv, aber die Datei enthält keine Junior-Saisons (Export vor v0.9.15.39) – Saisontabellen und Karriere-Historien bleiben leer.');
                 } catch (e) { logWarning('IMPORT', 'Junior-Stores nicht vollständig importiert: ' + e); }
             }
@@ -20686,6 +20748,7 @@
             const jw = GAME_STATE.juniorWorld; if (!jw) return;
             jw.pruneAllTime = !!on;
             const n = on ? _pruneJuniorAllTime(jw) : 0;
+            persistJuniorStats();   // P2
             if (n) logInfo('JUNIOR', `🧹 allTimeStats geprunt: ${n} Filler entfernt (${Object.keys(jw.allTimeStats || {}).length} bleiben)`);
             saveGame(); renderContent();
         };
@@ -20693,6 +20756,7 @@
             const jw = GAME_STATE.juniorWorld; if (!jw) return;
             jw.pruneAllTime = true;   // manuelle Optimierung = dauerhaftes Optin
             const n = _pruneJuniorAllTime(jw);
+            persistJuniorStats();   // P2
             logInfo('JUNIOR', `🧹 Manuell optimiert: ${n} Filler aus allTimeStats entfernt (${Object.keys(jw.allTimeStats || {}).length} bleiben)`);
             saveGame(); renderContent();
         };
