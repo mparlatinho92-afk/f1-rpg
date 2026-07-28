@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.41</title>
+    <title>F1 RPG v0.9.15.42</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.41 (aktuell) - 28.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.42 (aktuell) - 28.07.2026</div>
+                            <div>&#8226; FIX: Verwaiste Junior-Saisons werden beim Laden und beim Importieren automatisch entfernt - nach dem Zuruecksetzen von F1-Saisons blieben sie im Speicher stehen und zeigten Champions aus Jahren, die es nicht mehr gibt</div>
+                            <div>&#8226; FIX: Saisons loeschen rollt die Junior-Welt jetzt mit zurueck statt sie stehenzulassen</div>
+                            <div>&#8226; FIX: Quick-Save meldete Erfolg, bevor ueberhaupt geschrieben war - jetzt drei ehrliche Ergebnisse inklusive Warnung, wenn nur der Notfall-Speicher griff</div>
+                            <div class="font-bold text-slate-400">v0.9.15.41 - 28.07.2026</div>
                             <div>&#8226; NEU: Junior-Ewigkeitsstatistik und -Historie liegen in eigenen Speicherbereichen statt im Hauptstand - der wird bei jedem Speichern neu geschrieben, die Statistik nur noch einmal pro Saison</div>
                             <div>&#8226; NEU: Beim Laden werden beide automatisch nachgezogen, alte Spielstaende wandern beim naechsten Saisonende von selbst um</div>
                             <div>&#8226; FIX: manage-v meldet die archivierten Monolithen jetzt selbst bei Git ab - zuletzt hingen neun Loeschungen fest</div>
@@ -15763,7 +15767,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.41';
+        const VERSION = '0.9.15.42';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16308,6 +16312,42 @@ const ERA_FIRST_NAMES = {
             return _gzipDecode(raw);
         }
         // Voll-Reset beider Junior-Stores (Import/clearAllData/Modus-Reset)
+        // Einzelne Junior-Jahrgaenge loeschen (Schluessel = Jahr), beide Stores in EINER Transaktion.
+        function idbJDelete(years) {
+            return new Promise((resolve) => {
+                if (!years || !years.length) return resolve(0);
+                idbOpen().then(db => {
+                    const tx = db.transaction([IDB_JHIST, IDB_JDETAIL], 'readwrite');
+                    const h = tx.objectStore(IDB_JHIST), d = tx.objectStore(IDB_JDETAIL);
+                    for (const y of years) { h.delete(y); d.delete(y); }
+                    tx.oncomplete = () => resolve(years.length);
+                    tx.onerror = () => resolve(0);
+                }).catch(() => resolve(0));
+            });
+        }
+        // Ballast-Abgleich: Junior-Saisons, die ueber die letzte ARCHIVIERTE F1-Saison hinausgehen,
+        // koennen nicht legitim sein – beide werden im selben Moment geschrieben (startNewSeason) und
+        // laufen im Gleichschritt. Auseinander laufen sie nur, wenn der F1-Stand zurueckgerollt wird
+        // (Saisons loeschen, Auto-Save, Import): der Core geht mit, die Junior-Stores blieben stehen.
+        // An einem echten 2090er-Stand lagen so 93 Waisen-Jahre bis 2182 (~10 MB) im Store, die der
+        // laufende Stand nie gesehen hat – bis P2 die Historie aus dem Store holt und sie sichtbar
+        // wuerden. Anker ist bewusst die letzte F1-Saison und nicht currentYear: die Junior-Saison
+        // wird im selben Durchlauf geschrieben, in dem currentYear hochgezaehlt wird, ein Schnitt bei
+        // currentYear koennte also einen gerade erst geschriebenen Jahrgang treffen.
+        async function _reconcileJuniorStores(state) {
+            if (!_idbAvailable) return 0;
+            const years = ((state && state.history) || []).map(h => h && h.year).filter(y => y != null);
+            if (!years.length) return 0;   // frisches Spiel ohne F1-Historie: nichts zu vergleichen
+            const maxF1 = Math.max(...years);
+            try {
+                const orphans = (await idbJHistGetAll()).map(r => r.year).filter(y => y != null && y > maxF1);
+                if (!orphans.length) return 0;
+                await idbJDelete(orphans);
+                logWarning('JUNIOR', `🧹 ${orphans.length} verwaiste Junior-Saisons nach ${maxF1} entfernt `
+                    + `(${Math.min(...orphans)}–${Math.max(...orphans)}) – Rest eines zurueckgerollten Spielstands.`);
+                return orphans.length;
+            } catch (e) { logWarning('JUNIOR', 'Ballast-Abgleich fehlgeschlagen: ' + e); return 0; }
+        }
         function idbJClear() {
             return new Promise((resolve) => {
                 idbOpen().then(db => {
@@ -20162,7 +20202,11 @@ const ERA_FIRST_NAMES = {
             const jw = state && state.juniorWorld;
             if (!jw || !_idbAvailable) return state;
             try {
+                // Erst aufräumen, dann nachziehen – sonst holt die Historie den Ballast mit ins RAM.
+                await _reconcileJuniorStores(state);
+                const maxF1 = Math.max(0, ...((state.history || []).map(h => h && h.year).filter(y => y != null)));
                 if (!Array.isArray(jw.history) || !jw.history.length) jw.history = await idbJHistGetAll();
+                else if (maxF1) jw.history = jw.history.filter(h => h && h.year != null && h.year <= maxF1);
                 if (!jw.allTimeStats || !Object.keys(jw.allTimeStats).length) {
                     const raw = await idbGet(IDB_JSTATS_KEY);
                     if (raw) jw.allTimeStats = JSON.parse(raw);
@@ -20192,17 +20236,20 @@ const ERA_FIRST_NAMES = {
                 } else {
                     const json = JSON.stringify(GAME_STATE);   // Fallback: voller Blob (kein Split)
                     _lastSaveBytes = json.length * 2;
-                    if (!safeSetItem('f1rpg_gamestate', json)) return;
+                    if (!safeSetItem('f1rpg_gamestate', json)) return false;
                 }
                 updateSaveStatus('💾 Gespeichert: ' + new Date().toLocaleTimeString('de-DE'));
                 logSuccess('SAVE', 'Spielstand gespeichert');
                 pushStorageHistory();
                 updateStorageMeter();
+                return true;   // Ergebnis nach oben geben: quickSave meldete sonst Erfolg ins Blaue
             } catch (e) {
                 logError('SAVE', 'Fehler beim Speichern: ' + (e.message || e));
                 updateSaveStatus('⚠️ Speicherfehler – Fallback localStorage');
                 // Sicherheitsnetz: voller Blob nach localStorage (keine Teilstände im core-Key)
-                try { safeSetItem('f1rpg_gamestate', JSON.stringify(GAME_STATE)); } catch (e2) {}
+                // 'fallback' statt true: geschrieben wurde, aber nur ueber das Sicherheitsnetz.
+                try { if (safeSetItem('f1rpg_gamestate', JSON.stringify(GAME_STATE))) return 'fallback'; } catch (e2) {}
+                return false;
             }
         }
 
@@ -31441,7 +31488,16 @@ const ERA_FIRST_NAMES = {
             
             // Löschabsicht gilt genau für DIESEN Speichervorgang – danach zurücksetzen, damit ein
             // späteres unawaited saveGame() nicht versehentlich unter Löschfreigabe läuft.
-            saveGame().then(() => { _historyClearIntent = false; }, () => { _historyClearIntent = false; });
+            // URSACHE des Junior-Ballasts: hier wird die F1-Historie gekappt, die Junior-Stores blieben
+            // aber stehen – ab dem naechsten Laden zeigte die Junior-Welt Saisons aus einer Zeitlinie,
+            // die das Spiel nicht mehr hat. Jetzt mitrollen, in derselben Aktion.
+            _reconcileJuniorStores(GAME_STATE).then(n => {
+                const jw = GAME_STATE.juniorWorld;
+                if (n && jw && Array.isArray(jw.history)) {
+                    jw.history = jw.history.filter(h => h && h.year != null && h.year < fromYear);
+                }
+                return saveGame();
+            }).then(() => { _historyClearIntent = false; }, () => { _historyClearIntent = false; });
             closeResetCenter();
             renderAll();
             alert(`✅ Saisons ab ${fromYear} gelöscht\nFahrer auf Stand ${fromYear - 1} zurückgesetzt`);
@@ -31950,17 +32006,25 @@ const ERA_FIRST_NAMES = {
             // speichert. Erst leeren, damit eine importierte Welt nicht auf Resten der alten liegt.
             if (_idbAvailable) {
                 try {
+                    // Ballast schon beim Import aussortieren, nicht erst beim naechsten Laden: sonst
+                    // schreibt der Import die Waisen erneut in die Stores und die Junior-Welt zeigt
+                    // bis zum Neustart Saisons aus einer Zeitlinie, die es nicht gibt. Anker wie beim
+                    // Abgleich: die letzte archivierte F1-Saison der IMPORTIERTEN Datei.
+                    const impMax = Math.max(0, ...((GAME_STATE.history || []).map(h => h && h.year).filter(y => y != null)));
+                    const keep = impMax ? juniors.filter(j => j.year != null && j.year <= impMax) : juniors;
+                    const dropped = juniors.length - keep.length;
                     await idbJClear();
-                    for (const j of juniors) {
+                    for (const j of keep) {
                         if (j.light) await idbJHistPut(j.year, j.light);
                         if (j.heavy) await idbJDetailPut(j.year, j.heavy);
                     }
+                    if (dropped) logWarning('IMPORT', `🧹 ${dropped} verwaiste Junior-Saisons nach ${impMax} beim Import verworfen.`);
                     const jwi = GAME_STATE.juniorWorld;
                     if (jwi) {
                         // P2: Historie aus den importierten Leicht-Records, All-Time aus der jstats-Zeile.
                         // Fehlt jstats (Alt-Export), bleibt die Statistik leer - rebuildJuniorAggregates()
                         // kann sie aus den Saison-Records wieder aufbauen.
-                        if (juniors.length) jwi.history = juniors.map(j => j.light).filter(Boolean).sort((a,b) => a.year - b.year);
+                        if (keep.length) jwi.history = keep.map(j => j.light).filter(Boolean).sort((a,b) => a.year - b.year);
                         if (jstats) { jwi.allTimeStats = jstats; await persistJuniorStats(); }
                     }
                     if (juniors.length) logSuccess('IMPORT', `Junior-Welt importiert: ${juniors.length} Saisons${jstats ? ', ' + Object.keys(jstats).length + ' All-Time-Fahrer' : ''}`);
@@ -32204,9 +32268,13 @@ const ERA_FIRST_NAMES = {
             setTimeout(step, 0);
         };
         
-        window.quickSave = function() {
-            saveGame();
-            alert('⚡ Quick-Save erfolgreich!');
+        // Muss awaiten: saveGame() liefert seit der Speicher-Serialisierung eine VERKETTETE Zusage,
+        // der Schreibvorgang kann also noch hinter einem anderen in der Warteschlange hängen. Vorher
+        // erschien "erfolgreich", bevor irgendetwas geschrieben war – und auch dann, wenn es scheiterte.
+        window.quickSave = async function() {
+            const ok = await saveGame();
+            if (ok) alert('⚡ Quick-Save erfolgreich!');
+            else alert('❌ Quick-Save fehlgeschlagen.\n\nEinzelheiten stehen im Debug-Log. Der letzte erfolgreiche Stand ist unverändert – bitte vor weiteren Schritten pruefen.');
         };
         
         // === SAISONSTART MODAL mit Todes-Slider ===
