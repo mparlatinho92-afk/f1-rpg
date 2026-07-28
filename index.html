@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.43</title>
+    <title>F1 RPG v0.9.15.44</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.43 (aktuell) - 28.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.44 (aktuell) - 28.07.2026</div>
+                            <div>&#8226; FIX: Die Speicheranzeige zeigte eine Browser-Schaetzung als Groesse des Spielstands - bei Firefox zaehlt die alle Seiten zusammen und meldete fuer ein leeres Spiel dieselben 253 MB wie fuer einen vollen Stand</div>
+                            <div>&#8226;  jetzt wird der gemessene Wert angezeigt</div>
+                            <div>&#8226; FIX: Die Bodenprobe blaehte komprimierte Junior-Daten um das 20-fache auf, weil sie sie als Text mass - jetzt werden Byte-Arrays direkt gezaehlt</div>
+                            <div>&#8226; NEU: Warnung im Log nennt Firefox beim Namen, wenn Schaetzung und Messung auseinanderlaufen</div>
+                            <div class="font-bold text-slate-400">v0.9.15.43 - 28.07.2026</div>
                             <div>&#8226; NEU: Knopf 'Wirklich nachzaehlen' im Speicher-Bereich - zaehlt die Speicherbereiche durch und schreibt die echten Groessen ins Debug-Log, statt sich auf die Browser-Schaetzung zu verlassen</div>
                             <div>&#8226; NEU: Warnung im Log, wenn die Schaetzung deutlich ueber den tatsaechlichen Daten liegt - dann ist es belegtes Kontingent und nicht der Spielstand</div>
                             <div>&#8226; FIX: Import meldete die Zahl der gelesenen statt der geschriebenen Junior-Saisons</div>
@@ -3322,7 +3327,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.43';
+        const VERSION = '0.9.15.44';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4232,17 +4237,28 @@
         // Kontingent, nicht Nutzdaten – zwei getrennte Herkuenfte lieferten dieselbe Zahl auf die
         // Nachkommastelle, die Schaetzung taugt also nicht als Mass fuer den Spielstand.
         // Ausgabe geht ins Debug-Log, damit dafuer nichts in die Konsole kopiert werden muss.
+        let _lastStorageScan = null;   // Ergebnis der letzten Bodenprobe – speist die Anzeige
         window.storageReport = async function() {
             const MB = b => (b / 1048576).toFixed(2) + ' MB';
-            // Bytes, NICHT RAM: .length ohne *2 entspricht UTF-8 bei ueberwiegend ASCII-Inhalt.
-            // json.length*2 waere die UTF-16-Groesse im Arbeitsspeicher und damit rund doppelt zu hoch
-            // (gleiche Falle wie bei exportSave, wo deshalb blob.size verwendet wird).
-            const size = v => v == null ? 0
-                : v instanceof ArrayBuffer ? v.byteLength
-                : ArrayBuffer.isView(v) ? v.byteLength
-                : v instanceof Blob ? v.size
-                : typeof v === 'string' ? v.length
-                : (() => { try { return JSON.stringify(v).length; } catch (e) { return 0; } })();
+            // REKURSIV messen, nicht ueber JSON.stringify. Grund: die junior_detail-Records enthalten
+            // gzip-Bytes als typisiertes Array. JSON.stringify macht daraus {"0":31,"1":139,…} und
+            // blaeht sie rund fuenffach auf – die erste Fassung meldete 22,78 MB, wo Chromium 7,55 MB
+            // misst. Typisierte Arrays zaehlen nur mit ihrer byteLength, egal wie tief sie liegen.
+            // Bytes, nicht RAM: String-.length ohne *2 entspricht UTF-8 bei ueberwiegend ASCII.
+            const size = (v, d) => {
+                d = d || 0;
+                if (v == null || typeof v === 'boolean') return 1;
+                if (typeof v === 'number') return 8;
+                if (typeof v === 'string') return v.length;
+                if (v instanceof ArrayBuffer) return v.byteLength;
+                if (ArrayBuffer.isView(v)) return v.byteLength;
+                if (typeof Blob !== 'undefined' && v instanceof Blob) return v.size;
+                if (v instanceof Date) return 8;
+                if (d > 12) return 0;                       // Reissleine gegen pathologische Tiefe
+                if (Array.isArray(v)) { let s = 2; for (const x of v) s += size(x, d + 1); return s; }
+                if (typeof v === 'object') { let s = 2; for (const k of Object.keys(v)) s += k.length + 2 + size(v[k], d + 1); return s; }
+                return 0;
+            };
             try {
                 const db = await idbOpen();
                 let total = 0;
@@ -4266,8 +4282,15 @@
                 rows.forEach(r => logInfo('SPEICHER', `   ${r.name}: ${r.n} Einträge, ${MB(r.b)}`));
                 logInfo('SPEICHER', `   ⇒ tatsächliche Nutzdaten: ${MB(total)}`);
                 logInfo('SPEICHER', `   ⇒ Browser-Schätzung: ${MB(est.usage)} von ${MB(est.quota)} Kontingent`);
+                // Firefox liefert hier eine SEITENÜBERGREIFENDE Zahl: ein leeres Spiel und ein voller
+                // 65-Saison-Stand meldeten beide 253,93 MB, Kontingent 465 GB. Chromium (Opera) meldet
+                // dagegen exakt den Seitenwert (7,55 MB, deckungsgleich mit der Bodenprobe). Die
+                // Schätzung taugt also nur browserabhängig – die Bodenprobe ist die verlässliche Zahl.
                 const factor = total > 0 ? (est.usage / total) : 0;
-                if (factor > 2) logWarning('SPEICHER', `   ⚠ Die Schätzung liegt um das ${factor.toFixed(1)}-fache über den Nutzdaten – belegtes Kontingent, nicht dein Spielstand.`);
+                if (factor > 2) logWarning('SPEICHER', `   ⚠ Die Schätzung liegt um das ${factor.toFixed(1)}-fache über den Nutzdaten. `
+                    + `Bei Firefox zählt sie ALLE Seiten zusammen, nicht nur diese – dann ist sie kein Maß für deinen Spielstand.`);
+                _lastStorageScan = { bytes: total, at: Date.now() };
+                if (typeof updateStorageMeter === 'function') updateStorageMeter();
                 return { stores: rows, totalBytes: total, estimateBytes: est.usage };
             } catch (e) {
                 logError('SPEICHER', 'Bodenprobe fehlgeschlagen: ' + (e.message || e));
@@ -4287,9 +4310,14 @@
             // Spielstände liegen in IndexedDB → eigene Zeile (Differenz Estimate − localStorage)
             let idbRow = '';
             if (est && est.real) {
-                const idbBytes = Math.max(0, est.usage - usage.totalBytes);
+                // Gemessener Wert schlaegt Schaetzung: est.usage ist bei Firefox SEITENUEBERGREIFEND
+                // (leeres Spiel und 65-Saison-Stand meldeten beide 253,93 MB). Solange noch nicht
+                // nachgezaehlt wurde, bleibt die Schaetzung – aber als solche gekennzeichnet.
+                const scan = _lastStorageScan;
+                const idbBytes = scan ? scan.bytes : Math.max(0, est.usage - usage.totalBytes);
                 idbRow = `<div style="display:flex;justify-content:space-between;gap:1rem;">`
-                    + `<span>IndexedDB (Spielstände)</span><span style="color:var(--text-muted);">${formatBytes(idbBytes)}</span></div>`
+                    + `<span>IndexedDB (Spielstände)${scan ? '' : ' <span style="color:var(--text-muted);font-size:0.7rem;">(geschätzt)</span>'}</span>`
+                    + `<span style="color:var(--text-muted);">${formatBytes(idbBytes)}</span></div>`
                     // Die Zahl oben ist die BROWSER-SCHÄTZUNG (belegtes Kontingent), nicht die Menge
                     // deiner Daten. Der Knopf zählt die Speicherbereiche wirklich durch.
                     + `<div style="margin-top:0.4rem;"><button onclick="event.stopPropagation(); storageReport();" `
