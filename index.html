@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.44</title>
+    <title>F1 RPG v0.9.15.45</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.44 (aktuell) - 28.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.45 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; FIX: Ueberschrift und Verlauf der Speicher-Aufschluesselung zogen weiter die Browser-Schaetzung - der Verlauf behauptete, vier Speicherungen haetten 257 MB erzeugt</div>
+                            <div>&#8226; NEU: Die Bodenprobe laeuft automatisch einmal pro Sitzung, der Knopf ist nur noch fuer Zwischendurch</div>
+                            <div>&#8226; NEU: Ist noch nichts gemessen, steht 'geschaetzt' an der Zahl statt sie als Tatsache auszugeben</div>
+                            <div class="font-bold text-slate-400">v0.9.15.44 - 28.07.2026</div>
                             <div>&#8226; FIX: Die Speicheranzeige zeigte eine Browser-Schaetzung als Groesse des Spielstands - bei Firefox zaehlt die alle Seiten zusammen und meldete fuer ein leeres Spiel dieselben 253 MB wie fuer einen vollen Stand</div>
                             <div>&#8226;  jetzt wird der gemessene Wert angezeigt</div>
                             <div>&#8226; FIX: Die Bodenprobe blaehte komprimierte Junior-Daten um das 20-fache auf, weil sie sie als Text mass - jetzt werden Byte-Arrays direkt gezaehlt</div>
@@ -3327,7 +3331,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.44';
+        const VERSION = '0.9.15.45';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4183,7 +4187,13 @@
                 try { hist = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]'); } catch (e) { hist = []; }
                 if (!Array.isArray(hist)) hist = [];
                 const now = Date.now();
-                const entry = { t: new Date().toISOString(), bytes: est.usage, year: (GAME_STATE && GAME_STATE.currentYear) || null };
+                // Gemessene Belegung bevorzugen (m:1 markiert die Grundlage). Wechselt die Grundlage,
+                // wird der Verlauf einmalig verworfen – sonst entsteht ein Sprung von 250 MB, der nur
+                // den Messwechsel abbildet und nicht den Spielstand.
+                const scan = _lastStorageScan;
+                const entry = { t: new Date().toISOString(), bytes: scan ? scan.bytes : est.usage,
+                    m: scan ? 1 : 0, year: (GAME_STATE && GAME_STATE.currentYear) || null };
+                if (hist.length && (hist[hist.length - 1].m || 0) !== entry.m) hist = [];
                 const last = hist[hist.length - 1];
                 // Coalesce: letzter Eintrag <2 Min alt UND <1 KB Differenz → überschreiben statt anhängen
                 if (last && (now - new Date(last.t).getTime()) < 120000 && Math.abs(est.usage - last.bytes) < 1024) {
@@ -4230,7 +4240,15 @@
             const details = document.getElementById('storage-details');
             if (details) details.innerHTML = renderStorageDetails(est);
             if (typeof syncDummyJuniorUI === 'function') syncDummyJuniorUI();
+            // Einmal pro Sitzung von selbst nachzaehlen, damit die Anzeige nicht auf der Schaetzung
+            // sitzenbleibt, bis jemand den Knopf findet. storageReport() setzt _lastStorageScan, bevor
+            // es hierher zurueckruft – die Bedingung schliesst sich also selbst, keine Endlosschleife.
+            if (!_lastStorageScan && !_storageScanPending && _idbAvailable && typeof storageReport === 'function') {
+                _storageScanPending = true;
+                Promise.resolve(storageReport()).catch(() => {}).then(() => { _storageScanPending = false; });
+            }
         }
+        let _storageScanPending = false;
 
         // Bodenprobe: zaehlt zusammen, was TATSAECHLICH in den IndexedDB-Speicherbereichen liegt, und
         // stellt es der Browser-Schaetzung gegenueber. navigator.storage.estimate() meldet belegtes
@@ -4301,7 +4319,10 @@
         // est = getStorageEstimate()-Ergebnis (echte Origin-Belegung inkl. IndexedDB)
         function renderStorageDetails(est) {
             const usage = getStorageUsage();   // localStorage-Aufschlüsselung (kleine Keys)
-            const headBytes = est ? est.usage : usage.totalBytes;
+            // Kopfzahl: gemessene Belegung bevorzugen. est.usage ist bei Firefox seitenuebergreifend
+            // (257 MB fuer ein 3,6-MB-Spiel) und taugt weder als Groesse noch als Vergleichsbasis.
+            const headScan = _lastStorageScan;
+            const headBytes = headScan ? (headScan.bytes + usage.totalBytes) : (est ? est.usage : usage.totalBytes);
             const headQuota = est ? est.quota : usage.limitBytes;
             const rows = usage.breakdown.map(b =>
                 `<div style="display:flex;justify-content:space-between;gap:1rem;">`
@@ -4359,7 +4380,7 @@
                 histHtml = `<div style="margin-top:0.4rem;color:var(--text-muted);">📈 Verlauf: ${sign}${formatBytes(Math.abs(diff))} über letzte ${hist.length} Speicherungen</div>`;
             }
             return `<div style="padding:0.25rem 0 0.5rem;border-bottom:1px solid var(--border-color);margin-bottom:0.5rem;">`
-                + `<div style="font-weight:bold;margin-bottom:0.3rem;">📦 Speicher-Aufschlüsselung (${formatBytes(headBytes)} / ${formatBytes(headQuota)})</div>`
+                + `<div style="font-weight:bold;margin-bottom:0.3rem;">📦 Speicher-Aufschlüsselung (${formatBytes(headBytes)}${headScan ? '' : ' geschätzt'} / ${formatBytes(headQuota)})</div>`
                 + body + histHtml + `</div>`;
         }
 
