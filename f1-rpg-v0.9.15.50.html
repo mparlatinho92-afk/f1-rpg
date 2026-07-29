@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.49</title>
+    <title>F1 RPG v0.9.15.50</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.49 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.50 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; NEU: Der Speicher-Kopf nennt jetzt zwei Belegungen - diese Seite und den Rest des Browsers - statt die Groesse einem Kontingent gegenueberzustellen, das ohnehin feststeht</div>
+                            <div>&#8226; NEU: Das Kontingent steht nur noch im Tooltip</div>
+                            <div>&#8226; NEU: Wo der Browser seitenbezogen misst (Chromium), entfaellt der Zusatz, weil es dort keinen Fremdanteil gibt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.49 - 29.07.2026</div>
                             <div>&#8226; FIX: Inhalt und tatsaechliche Belegung standen unkommentiert nebeneinander und sahen aus, als wuerde eine von beiden luegen - jetzt sagt jede Zeile, was sie misst</div>
                             <div>&#8226; NEU: Hinweis im Log, wenn die Belegung unter dem Inhalt liegt - dann komprimiert der Browser die Daten zusaetzlich</div>
                             <div class="font-bold text-slate-400">v0.9.15.48 - 29.07.2026</div>
@@ -15793,7 +15797,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.49';
+        const VERSION = '0.9.15.50';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16799,6 +16803,10 @@ const ERA_FIRST_NAMES = {
             const headScan = _lastStorageScan;
             const headBytes = headScan ? (headScan.bytes + usage.totalBytes) : (est ? est.usage : usage.totalBytes);
             const headQuota = est ? est.quota : usage.limitBytes;
+            // Liegt die Schaetzung deutlich ueber der eigenen Groesse, umfasst sie mehr als diese
+            // Herkunft (Firefox zaehlt alle Seiten) – die Differenz ist der Rest des Browsers.
+            // Bei Chromium ist die Schaetzung seitenbezogen und oft KLEINER (Komprimierung) → kein Rest.
+            const headRest = (est && headScan && est.usage > headBytes * 1.2) ? (est.usage - headBytes) : 0;
             const rows = usage.breakdown.map(b =>
                 `<div style="display:flex;justify-content:space-between;gap:1rem;">`
                 + `<span>${b.key}</span><span style="color:var(--text-muted);">${formatBytes(b.bytes)}</span></div>`
@@ -16860,7 +16868,16 @@ const ERA_FIRST_NAMES = {
                 histHtml = `<div style="margin-top:0.4rem;color:var(--text-muted);">📈 Verlauf: ${sign}${formatBytes(Math.abs(diff))} über letzte ${hist.length} Speicherungen</div>`;
             }
             return `<div style="padding:0.25rem 0 0.5rem;border-bottom:1px solid var(--border-color);margin-bottom:0.5rem;">`
-                + `<div style="font-weight:bold;margin-bottom:0.3rem;">📦 Speicher-Aufschlüsselung (${formatBytes(headBytes)}${headScan ? '' : ' geschätzt'} / ${formatBytes(headQuota)})</div>`
+                // Zwei Belegungen statt Groesse-gegen-Kontingent: diese Seite und der Rest des Browsers.
+                // Das Kontingent ist eine Konstante und sagt ueber den Spielstand nichts – es steht nur
+                // noch im Tooltip. Uebersteigt die Browser-Schaetzung die eigene Groesse deutlich, deckt
+                // sie mehr als diese Herkunft ab (Firefox); die Differenz ist dann der Rest.
+                + `<div style="font-weight:bold;margin-bottom:0.3rem;" title="Kontingent des Browsers: ${formatBytes(headQuota)}">`
+                + `📦 Speicher-Aufschlüsselung: ${formatBytes(headBytes)}${headScan ? '' : ' (geschätzt)'} hier`
+                + (headRest > 0
+                    ? `<span style="font-weight:normal;color:var(--text-muted);font-size:0.75rem;"> · rund ${formatBytes(headRest)} übrige Seiten des Browsers</span>`
+                    : '')
+                + `</div>`
                 + body + histHtml + `</div>`;
         }
 
