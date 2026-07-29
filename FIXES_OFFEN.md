@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Doc-ID `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, Doc-Stand 2026-07-29).
 
-**Abgeglichen gegen:** `index.html` @ v0.9.15.51 (Commit `baa9274`), Prüfdatum **2026-07-29**.
+**Abgeglichen gegen:** `index.html` @ v0.9.15.53 (Commit `52ff319`), Prüfdatum **2026-07-29**.
 **Methode:** Grep/Read gegen den Code. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 Zeilennummern verschieben sich; bei Abweichung `grep -n` + `./update-functions-index.ps1`.
@@ -13,8 +13,8 @@ Zeilennummern verschieben sich; bei Abweichung `grep -n` + `./update-functions-i
 ## 🟡 Teilweise erledigt
 
 ### H2H: Teams mit 3+ Fahrern erzeugen keine Duelle
-`trackTeammateDuels` (index.html:10241) zählt korrekt pro Session (Quali **und** Rennen), bricht aber bei
-`pair.length !== 2` ab (:10249). In der klassischen Ära mit 3+ Autos pro Konstrukteur entsteht dadurch
+`trackTeammateDuels` (index.html:10274) zählt korrekt pro Session (Quali **und** Rennen), bricht aber bei
+`pair.length !== 2` ab (:10282). In der klassischen Ära mit 3+ Autos pro Konstrukteur entsteht dadurch
 **gar kein** Duell-Eintrag → erklärt „nicht bei jedem Steckbrief, nicht mit jedem Teamkollegen".
 
 Ebenfalls offen aus dem Doc:
@@ -22,11 +22,27 @@ Ebenfalls offen aus dem Doc:
 - Graham-Hill-Fall: Fahrer taucht im eigenen H2H auf (ausgegraut, 0:0) — neutral ist vertretbar, aber Ersatzfahrer-Verlinkung (John Russell) fehlt in der Schlagzeile
 - aktuelle Saison separat anzeigen ist gewünscht, nicht Bug
 
+### Doppelter Fahrer: Feeder-Import gehärtet, Ursache nicht bewiesen
+Betrifft `Matías Zagazeta` (zweimal im selben Chinese GP, P1 **und** P3, beide McLaren) und die
+Karriere-Historie, die über 14 Saisons durchgehend „Red Bull / McLaren" zeigt.
+
+Befund: Zagazeta und Fornaroli stehen **nur** in `FEEDER_DRIVERS` (index.html:8088), nicht in SEASON_DATA —
+der Doppelgänger entsteht also im Feeder-Import, nicht in `autoAddNewDrivers`. `injectFeederDrivers` prüfte
+gegen aktives Roster + Reserve-Pool, aber **nicht** gegen Historie, Rücktritte und Tode (`autoAddNewDrivers`
+:9249 tut das). Ein Feeder, der im Fenster 19–26 kurzzeitig in keiner der beiden Listen steht, konnte ein
+zweites Mal eingespeist werden — und weil `feederSlug` deterministisch ist, trägt der zweite Import
+**dieselbe id**: zwei Objekte, gleiche ID, gleicher Name, eigene Team-Zuordnung.
+
+v0.9.15.53 gleicht die Prüfung an und sichert zusätzlich gegen die ID ab (:8281 ff.).
+**Offen:** (a) am Save verifizieren — Zagazeta ist Jahrgang 2003, Fenster 2022–2029, der Screenshot zeigt
+2027–2041; das passt, beweist es aber nicht. (b) **Bestehende** Duplikate werden nicht bereinigt, nur neue
+verhindert — dafür bräuchte es eine Aufräumroutine in `sanitizeGameState` und einen betroffenen Spielstand.
+
 ### Reserve-Pool: Anzeige & Sortierung
-`renderReservePool` (index.html:8586).
-- ✅ Talente/Free-Agents/Testfahrer/Kommend/Indy als eigene Tabs (:8606–8613, `isPoolTalent`)
-- ❌ **kein Potential-Pace-Wert** in der Zeile — nur ein Pace-Balken (:8666–8672)
-- ❌ **keine freie Sortierung**; fest `lastRacedYear` → `pace`, absteigend (:8601)
+`renderReservePool` (index.html:8619).
+- ✅ Talente/Free-Agents/Testfahrer/Kommend/Indy als eigene Tabs (:8639–8646, `isPoolTalent`)
+- ❌ **kein Potential-Pace-Wert** in der Zeile — nur ein Pace-Balken (:8699–8705)
+- ❌ **keine freie Sortierung**; fest `lastRacedYear` → `pace`, absteigend (:8634)
 - ❌ realistisches Durchschnittsalter für Talente (Doc-Idee: FP1-Freitagsfahrer als Referenz)
 
 ---
@@ -34,23 +50,23 @@ Ebenfalls offen aus dem Doc:
 ## ❌ Offen — UI & Statistiken
 
 ### Weltmeister-Tab
-`renderChampions` (index.html:23881).
-- Jahre **vor** Spielstart liefern hart `championPoints: '-'`, `teamChampion: '-'`, `teamChampionPoints: '-'` (:23893)
+`renderChampions` (index.html:23923).
+- Jahre **vor** Spielstart liefern hart `championPoints: '-'`, `teamChampion: '-'`, `teamChampionPoints: '-'` (:23935)
   → das ist der gemeldete „Felder sind leer"-Bug, kein Render-Fehler
 - gewünscht: zusätzliche Tab-Auswahl mit Detail-Tabellen nach Wikipedia-Vorbild, **Vorlage auf Deutsch**
   - <https://en.wikipedia.org/wiki/List_of_Formula_One_World_Drivers%27_Champions>
   - <https://en.wikipedia.org/wiki/List_of_Formula_One_World_Constructors%27_Champions>
 
 ### All-Time-Statistiken
-- Fahrer-Tabelle: **keine Flaggen** neben dem Aktiv-Status (`renderAllTimeDrivers`, :23784 — nur 🏎️/👴/📜)
-- Team-Tabelle: **keine Spalte Konstrukteurs-WM** (`renderAllTimeTeams`, Spalten :23851–23857)
+- Fahrer-Tabelle: **keine Flaggen** neben dem Aktiv-Status (`renderAllTimeDrivers`, :23826 — nur 🏎️/👴/📜)
+- Team-Tabelle: **keine Spalte Konstrukteurs-WM** (`renderAllTimeTeams`, Spalten :23893–23899)
 
 ### Saisonverlauf
 - Konstrukteurs-Matrix als Ergänzung — existiert nicht.
   Vorgabe: nur **bestes Team-Ergebnis pro Rennen** zeigen (Tabelle flach halten), Warnhinweis oben.
 
 ### Einstellungen
-- Sim-Modus-Toggle: `liveTickerMode` existiert nur als GAME_STATE-Flag (:7162) mit Auswahl-Modal (:2966/2975).
+- Sim-Modus-Toggle: `liveTickerMode` existiert nur als GAME_STATE-Flag (:7170) mit Auswahl-Modal (:2966/2975).
   Gewünscht: **fester Standard in den Einstellungen**, damit ein einzelner Klick genügt.
 
 ### Sonstiges UI
@@ -113,7 +129,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❌ Offen — Bewertungssystem (eigenes Teilprojekt)
 
-Nur `_computeDriverSeasonScore` (index.html:15606) als Vorstufe vorhanden. Das Konzept aus dem Doc verlangt eine
+Nur `_computeDriverSeasonScore` (index.html:15643) als Vorstufe vorhanden. Das Konzept aus dem Doc verlangt eine
 eigene Markdown, da es sich laufend verfeinern soll.
 
 **Zeitfenster:** letzte 5 Saisons als EMA, je frischer desto relevanter (im Doc selbst hinterfragt: „gilt das
@@ -184,18 +200,39 @@ unabhängig von der Schuld.
 
 ## ❓ Nicht prüfbar ohne reproduzierenden Spielstand
 
-- Streckenliste bekommt nach mehreren simulierten Saisons **Duplikate mit Rechtschreibfehlern** + nur
-  Chequered-Flag-Fallback (Screenshot im Doc angekündigt)
-- **Auto-Save zerstörte erstelltes Team**; neue Saison löscht erstellte Teams
-  → gewünscht: freie Wahl, ob die aktuelle Saison überlebt, bis zur manuellen Löschung
-- **doppelter Fahrer in angeblich zwei Teams** (`Screenshot 2026-07-17 201041.png`, `…200914.png`)
-- **Zufriedenheitsverlauf:** soll sofort starten statt ab Rennen 3, Ampelfarben; die Zufriedenheit der *aktuellen*
-  Saison bleibt ab Rennen 3, davor im Verlauf als „?"
-- **Zakspeed-Logo** zeigt nur das „Z" — Logo-Bestand wurde in .15.34 erneuert, Darstellung im Spiel gegenprüfen
+- **doppelter Fahrer in angeblich zwei Teams** — Screenshots ausgewertet (2026-07-29), Härtung in v0.9.15.53
+  eingebaut, aber **nicht am Save verifiziert**. Details unter „Teilweise erledigt".
+- **Auto-Save zerstörte erstelltes Team** — die Saisonwechsel-Ursache ist behoben (v0.9.15.52, siehe Erledigt-
+  Tabelle). Falls der Verlust weiterhin auftritt, ist es ein anderer Pfad: das **Reset-Center**
+  (`restartCurrentSeason` / `deleteCurrentSeason` / `deleteSelectedSeasons`) stellt Teams aus dem History-
+  Snapshot der Vorsaison wieder her — ein mitten in der Saison erstelltes Team steht dort nicht drin.
+  Das ist gewolltes Reset-Verhalten, könnte aber wie ein Auto-Save-Bug aussehen.
+- **Zufriedenheitsverlauf, Rest:** Verlauf, Ampelfarben und Start ab Rennen 1 sind erledigt (siehe unten).
+  Offen bleibt nur: bei einem Fahrer ganz ohne Score verschwindet die **komplette** Karte
+  (`return ''`, index.html:26527) statt „?" anzuzeigen. Außerdem zeigt der Verlauf nur die letzten
+  5 Saisons — falls „über die Jahre" alle meinte, ist das noch offen.
 
 ---
 
-## ✅ Seit dem Doc-Stand erledigt (verifiziert 2026-07-29)
+## ✅ In dieser Sitzung behoben (v0.9.15.52 / .53, 2026-07-29)
+
+| Doc-Punkt | Ursache & Fix |
+|---|---|
+| **Streckenliste: Duplikate mit „Rechtschreibfehlern"** („Paul ricard", „Marina bay", „Yas marina", „Mexico city", „Las vegas", „Spa", zweiter „Nürburgring") | Circuit-IDs kamen aus zwei Quellen mit verschiedener Schreibweise: F1DB liefert Slugs (`paul-ricard`), `generateRacesForYear` Klartext (`Paul Ricard`). Blankes `.toLowerCase()` ließ beide getrennt stehen, der Anzeigename fiel auf `capitalize(cid)` zurück. Neue `canonicalCircuitId` (:24214) an 9 Stellen — wirkt rückwirkend auf bestehende Saves, da beim Index-Bau. **v0.9.15.52** |
+| **Streckenliste: Chequered-Flag-Fallback** | **Kein eigenes Problem** — alle 78 Strecken haben einen `CIRCUIT_COUNTRY`-Eintrag. Das 🏁 saß exakt auf den Duplikaten (`CIRCUIT_COUNTRY['marina bay']` = undefined). Mit derselben Kanonisierung erledigt. **v0.9.15.52** |
+| **Neue Saison löscht erstellte Teams** | `applyTeamExits` (:17093) trug jedes Team aus, das nicht in `SEASON_DATA[newYear]` steht — selbst erstellte Teams stehen dort per Definition nie. Marker `userCreated` beim Editor-Commit (:10950) + Ausnahme im Exit + Sanitize-Migration für Altstände über die ID `gen-team-…`. Teams bleiben jetzt bis zur manuellen Löschung. **v0.9.15.52** |
+| **Zufriedenheit: Ampelfarben statt Gold/Blau** | Verlauf und Kacheln liefen auf Gold/Grün/**Blau**/Rot — Blau (40–54) las sich wie „gut", obwohl zweitschlechteste Stufe. Jetzt Grün/Gelb/Orange/Rot bei unveränderten Schwellen 75/55/40 (:26536). Gilt auch für die Badges des 5-Saisons-Verlaufs. **v0.9.15.52** |
+| **Zakspeed-Logo zeigt nur das „Z"** | Kein Render-Bug: die hinterlegte Datei `Zakspeed (Logo).png` **ist** nur das Z-Signet. Ersetzt durch `Zakspeed.png` aus demselben Wiki (Z + Schriftzug). Logopedia und Wikimedia Commons führen kein Zakspeed-Logo. **v0.9.15.52** |
+| **Vertragsstatus: Farbe passte nicht zum Text** | Farbe lief auf 70/50/35, `statusText` auf 75/55/40 — Score 72 war grün, hieß aber „Sicher" statt „Sehr sicher". Beide jetzt 75/55/40 (:29725). *(Eigener Befund, vom Nutzer beauftragt.)* **v0.9.15.53** |
+| **Doppelter Fahrer** | Feeder-Import gehärtet — Details oben unter „Teilweise erledigt", **nicht am Save verifiziert**. **v0.9.15.53** |
+
+**Zufriedenheitsverlauf** war schon vor dieser Sitzung weitgehend erledigt: `_computeDriverSeasonScore`
+(:15865) liefert ab **einem** Eintrag, die 3-Rennen-Sperre gilt nur noch für Entlassungen (:15644).
+Verlauf über die Jahre existiert als `careerScores` (:26513 ff.) inkl. live eingemischter aktueller Saison.
+
+---
+
+## ✅ Vor dieser Sitzung erledigt (verifiziert 2026-07-29)
 
 | Doc-Punkt | Beleg |
 |---|---|
@@ -203,8 +240,8 @@ unabhängig von der Schuld.
 | DNQ wird nicht in der Historie gespeichert; ganze DNQ-Saison ohne Eintrag; Karriere-Historie zeigt Strich statt Team | v0.9.15.12 (Wochenend-Teilnahme statt Start) + v0.9.15.25 (Historie/Matrix) |
 | Teamnamen in Rennergebnissen nicht in Teamfarbe | `renderTeamNameColored` im Steckbrief (:26773/26775) |
 | Ehemalige Teams: kein Pace-Verlauf-Button, fehlende Teams in der Fahrer-Historie, tote Links | v0.9.15.27–.32 (`makeTeamMatcher`, `collectTeamIdAliases`, `getFormerTeamIndex`) |
-| Reserve-Pool: Talente vs. Free Agents trennen | `isPoolTalent` + Tabs in `renderReservePool` (:8606–8613) |
-| H2H pro Rennwochenende statt nur pro Saison | `trackTeammateDuels` (:10241) — aber Einschränkung oben beachten |
+| Reserve-Pool: Talente vs. Free Agents trennen | `isPoolTalent` + Tabs in `renderReservePool` (:8639–8646) |
+| H2H pro Rennwochenende statt nur pro Saison | `trackTeammateDuels` (:10274) — aber Einschränkung oben beachten |
 
 ---
 
