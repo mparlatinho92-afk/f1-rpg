@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.50</title>
+    <title>F1 RPG v0.9.15.51</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.50 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.51 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; NEU: Der Header zeigt bei Firefox nur noch den Speicherbedarf dieser Seite - Kontingent, Prozent und Balken entfallen dort, weil sie sich auf den ganzen Browser bezogen und immer 0,0 Prozent ergaben</div>
+                            <div>&#8226; NEU: Die Einzelheiten stehen im Tooltip des Speicher-Symbols</div>
+                            <div class="font-bold text-slate-400">v0.9.15.50 - 29.07.2026</div>
                             <div>&#8226; NEU: Der Speicher-Kopf nennt jetzt zwei Belegungen - diese Seite und den Rest des Browsers - statt die Groesse einem Kontingent gegenueberzustellen, das ohnehin feststeht</div>
                             <div>&#8226; NEU: Das Kontingent steht nur noch im Tooltip</div>
                             <div>&#8226; NEU: Wo der Browser seitenbezogen misst (Chromium), entfaellt der Zusatz, weil es dort keinen Fremdanteil gibt</div>
@@ -15797,7 +15800,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.50';
+        const VERSION = '0.9.15.51';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -16690,6 +16693,10 @@ const ERA_FIRST_NAMES = {
             // Schaetzung – dann aber mit "~" gekennzeichnet.
             const scan = _lastStorageScan;
             const shownBytes = scan ? scan.bytes : est.usage;
+            // Deckt die Schaetzung mehr ab als diese Herkunft (Firefox), ist das Kontingent browserweit.
+            // Prozent und Balken waeren dann sinnlos – 4 MB von 465 GB sind immer 0,0 % und ein leerer
+            // Balken. In dem Fall nur die eigene Groesse zeigen.
+            const browserWide = !!(est && scan && est.usage > shownBytes * 1.2);
             const pct = est.quota > 0 ? Math.min(100, shownBytes / est.quota * 100) : est.percent;
             const color = _storageColor(pct);
             const pctTxt = pct < 10 ? pct.toFixed(1) : String(Math.round(pct));
@@ -16697,7 +16704,12 @@ const ERA_FIRST_NAMES = {
             let mode = localStorage.getItem('f1rpg_storage_display') || 'full';
             if (isAlarm) mode = 'full'; // Alarm-Override: Warnung nie verstecken
 
-            if (mode === 'mini') {
+            if (browserWide) {
+                // Kein Kontingent, kein Prozent, kein Balken – nur der eigene Verbrauch.
+                badge.innerHTML = `💾 ${formatBytes(shownBytes)}`;
+                badge.title = `Speicherbedarf dieser Seite. Der Browser meldet ${formatBytes(est.usage)} für alle Seiten zusammen `
+                    + `(Kontingent ${formatBytes(est.quota)}) – daraus lässt sich für diese Seite kein Prozentwert bilden.`;
+            } else if (mode === 'mini') {
                 badge.innerHTML = `💾 ${pctTxt}%`;
             } else {
                 const barW = 70;
