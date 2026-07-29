@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.51</title>
+    <title>F1 RPG v0.9.15.52</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.51 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.52 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; FIX: Strecken erscheinen nicht mehr doppelt - Sim-Kalender und F1DB nutzen jetzt dieselbe Strecken-ID (Paul ricard/Marina bay/Spa/Nuerburgring)</div>
+                            <div>&#8226; FIX: Selbst erstellte Teams ueberleben den Saisonwechsel bis zur manuellen Loeschung</div>
+                            <div>&#8226; FIX: Performance-Bewertung im Ampelsystem statt Gold und Blau - auch im 5-Saisons-Verlauf</div>
+                            <div>&#8226; FIX: Zakspeed-Logo zeigt Schriftzug statt nur das Z</div>
+                            <div class="font-bold text-slate-400">v0.9.15.51 - 29.07.2026</div>
                             <div>&#8226; NEU: Der Header zeigt bei Firefox nur noch den Speicherbedarf dieser Seite - Kontingent, Prozent und Balken entfallen dort, weil sie sich auf den ganzen Browser bezogen und immer 0,0 Prozent ergaben</div>
                             <div>&#8226; NEU: Die Einzelheiten stehen im Tooltip des Speicher-Symbols</div>
                             <div class="font-bold text-slate-400">v0.9.15.50 - 29.07.2026</div>
@@ -15800,7 +15805,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.51';
+        const VERSION = '0.9.15.52';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20063,6 +20068,15 @@ const ERA_FIRST_NAMES = {
                 team.carSpeed = team.carSpeed ?? 75;
                 team.reliability = team.reliability ?? 75;
                 team.strategy = team.strategy ?? 75;
+
+                // === MIGRATION v0.9.15.52: erstellte Teams vor applyTeamExits schützen ===
+                // Die ID 'gen-team-…' vergibt ausschließlich generateTeam(), und das läuft nur
+                // über den Team-Editor (manuell + „Feld auffüllen"-Button). Der automatische
+                // Grid-Füller (fillGridEntries) erzeugt nur Fahrer, nie Teams – solche IDs sind
+                // also immer eine Nutzer-Entscheidung und dürfen den Saisonwechsel überleben.
+                if (team.userCreated === undefined && String(team.id || '').startsWith('gen-team-')) {
+                    team.userCreated = true;
+                }
                 
                 // Zukünftige Felder hier hinzufügen:
                 // team.budget = team.budget ?? 100000000;
@@ -23358,8 +23372,12 @@ const ERA_FIRST_NAMES = {
                 GAME_STATE.teams = GAME_STATE.teams.filter(t => t.id !== tid);
             });
             // 2. Team-Hinzufügungen (inkl. teamStandings-Eintrag)
+            // userCreated: Marker für applyTeamExits – vom Nutzer angelegte Teams stehen nie in
+            // SEASON_DATA und würden dort sonst beim nächsten Saisonwechsel ausgetragen.
+            // Nur der Editor-Pfad setzt ihn; der automatische Grid-Füller läuft nicht über
+            // _pendingEdits und bleibt damit weiterhin saisonal.
             _pendingEdits.teamAdds.forEach(t => {
-                GAME_STATE.teams.push(t);
+                GAME_STATE.teams.push({ ...t, userCreated: true });
                 if (!GAME_STATE.teamStandings[t.id])
                     GAME_STATE.teamStandings[t.id] = { name: t.name, points: 0, wins: 0, podiums: 0 };
             });
@@ -29503,6 +29521,11 @@ const ERA_FIRST_NAMES = {
             const expectedNames = new Set(sd.t.map(t => t[1]));
             const _sdHasIndy = sd.t.some(t => isIndyOnlyConstructor(t[0]) || isIndyOnlyConstructor(t[1]));
             const toExit = GAME_STATE.teams.filter(t => {
+                // Vom Nutzer erstellte Teams stehen per Definition nicht in SEASON_DATA und
+                // wurden deshalb bei JEDEM Saisonwechsel wieder ausgetragen ("neue Saison
+                // löscht erstellte Teams"). Sie bleiben jetzt bis zur manuellen Löschung
+                // im Team-Editor bestehen.
+                if (t.userCreated) return false;
                 if (expectedNames.has(t.name)) return false;
                 if (t.isIndyOnly) return _sdHasIndy;
                 return true;
@@ -36607,6 +36630,24 @@ const ERA_FIRST_NAMES = {
 
         let _gpCICache = null, _gpCIKey = '', _gpCIPartial = false, _gpCIBuilding = false;
 
+        // Strecken-IDs kommen aus ZWEI Quellen mit verschiedener Schreibweise:
+        //   F1DB (echte Jahre)          → Slug:      'paul-ricard', 'nurburgring', 'las-vegas'
+        //   generateRacesForYear (Sim)  → Klartext:  'Paul Ricard', 'Nürburgring', 'Las Vegas'
+        // Ein blankes .toLowerCase() ließ beide getrennt stehen → dieselbe Strecke tauchte in der
+        // Strecken-Liste zweimal auf (einmal 1971–2022, einmal ab Sim-Jahr), und der Anzeigename
+        // fiel auf capitalize(cid) zurück: „Paul ricard", „Marina bay", „Yas marina", „Mexico city".
+        // Leerzeichen→Bindestrich + Diakritika-Strip deckt alle Fälle ab bis auf echte Namens-
+        // varianten – dafür die Alias-Tabelle.
+        const CIRCUIT_ID_ALIASES = {
+            'spa': 'spa-francorchamps',
+        };
+        function canonicalCircuitId(raw) {
+            const cid = String(raw || '').toLowerCase().trim()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '')   // 'nürburgring' → 'nurburgring'
+                .replace(/\s+/g, '-');
+            return CIRCUIT_ID_ALIASES[cid] || cid;
+        }
+
         // Phase 3 Group 4: Kern-Assembler – baut cIdx/gpIdx aus F1DB-Historie + den übergebenen Sim-Saison-
         // Daten (schwere Felder müssen bereitstehen) + aktueller Saison. histSeasons: [{year,races,results,
         // drivers,qualis}]. Getrennt vom Cache/Streaming, damit Sync- und Async-Pfad dieselbe Logik teilen.
@@ -36624,7 +36665,7 @@ const ERA_FIRST_NAMES = {
                 if (!races) continue;
                 for (const race of races) {
                     if (race.isIndy) continue;
-                    const cid = (race.circuit || '').toLowerCase();
+                    const cid = canonicalCircuitId(race.circuit);
                     if (!cid) continue;
                     const gpKey = extractGPCanonical(race.name || '');
                     const winner = race.entries.find(e => e.posNum === 1);
@@ -36649,7 +36690,7 @@ const ERA_FIRST_NAMES = {
                     const res = rr.res || rr.results || [];
                     const rt = (races || [])[ri];
                     if (!rt) continue;
-                    const cid = (rt.circuit || rt.circuitId || '').toLowerCase();
+                    const cid = canonicalCircuitId(rt.circuit || rt.circuitId);
                     if (!cid) continue;
                     const gpKey = extractGPCanonical(rr.rn || rr.raceName || rt.name || '');
                     const w = res.find(r => (r.p ?? r.position) === 1);
@@ -36723,7 +36764,7 @@ const ERA_FIRST_NAMES = {
             </div>`;
             if (_circuitsMapView === 'map') return tabBar + renderCircuitWorldMap('circuits', filterYear);
             const { cIdx } = buildGameCircuitGPIndex();
-            const activeCircuits = new Set((GAME_STATE.races || []).map(r => (r.circuit || r.circuitId || '').toLowerCase()));
+            const activeCircuits = new Set((GAME_STATE.races || []).map(r => canonicalCircuitId(r.circuit || r.circuitId)));
             const list = Object.entries(cIdx)
                 .map(([cid, entries]) => {
                     const wc = {};
@@ -36823,13 +36864,13 @@ const ERA_FIRST_NAMES = {
             const gpKeyForYear = {};
             let activeCircuits;
             if (yr === GAME_STATE.currentYear) {
-                activeCircuits = new Set((GAME_STATE.races || []).map(r => (r.circuit || r.circuitId || '').toLowerCase()).filter(Boolean));
-                (GAME_STATE.races || []).forEach(r => { const c = (r.circuit || r.circuitId || '').toLowerCase(); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
+                activeCircuits = new Set((GAME_STATE.races || []).map(r => canonicalCircuitId(r.circuit || r.circuitId)).filter(Boolean));
+                (GAME_STATE.races || []).forEach(r => { const c = canonicalCircuitId(r.circuit || r.circuitId); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
             } else {
                 const histSeason = (GAME_STATE.history || []).find(h => h.year === yr);
                 const sched = histSeason ? (histSeason.races || []) : ((getF1DBYear(yr) || []).filter(r => !r.isIndy));
-                activeCircuits = new Set(sched.map(r => (r.circuit || r.circuitId || '').toLowerCase()).filter(Boolean));
-                sched.forEach(r => { const c = (r.circuit || r.circuitId || '').toLowerCase(); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
+                activeCircuits = new Set(sched.map(r => canonicalCircuitId(r.circuit || r.circuitId)).filter(Boolean));
+                sched.forEach(r => { const c = canonicalCircuitId(r.circuit || r.circuitId); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
             }
             const gpByCid = {};
             for (const [gpKey, entries] of Object.entries(gpIdx)) {
@@ -38915,8 +38956,14 @@ Empfohlene Wertebereiche:
 
                     if (!seasonScore && careerScores.length === 0) return '';
 
+                    // Ampelsystem statt Gold/Grün/BLAU/Rot: Blau (40–54) las sich wie „gut",
+                    // obwohl es die zweitschlechteste Stufe ist, und Gold ist seit v0.9.15.27
+                    // den Titeln vorbehalten. Gilt für beide Kacheln UND den 5-Saisons-Verlauf,
+                    // der dieselben Helfer nutzt.
+                    // Schwellen bleiben 75/55/40 – identisch mit ratingText/ratingEmoji aus
+                    // evaluateDriverPerformance (~L15950), das direkt daneben ausgegeben wird.
                     const getScoreEmoji = (score) => score >= 75 ? '⭐' : score >= 55 ? '✅' : score >= 40 ? '➖' : '⚠️';
-                    const getScoreColor = (score) => score >= 75 ? '#FFD700' : score >= 55 ? '#22C55E' : score >= 40 ? '#3B82F6' : '#EF4444';
+                    const getScoreColor = (score) => score >= 75 ? '#22C55E' : score >= 55 ? '#EAB308' : score >= 40 ? '#F97316' : '#EF4444';
 
                     const _careerLabel = _preSimCount > 0
                         ? `Karriere-Ø <span title="Zeitgewichtet: aktuelle Saison ×4, vorletzte ×3 … + ${_preSimCount} hist. Vorsaison${_preSimCount !== 1 ? 'en' : ''}" style="cursor:help;font-size:0.7em">ℹ️</span>`
@@ -40676,7 +40723,10 @@ Empfohlene Wertebereiche:
                 { from: 1979, to: 1979, url: "https://static.wikia.nocookie.net/formel1wiki/images/0/06/Kauhsen.svg/revision/latest?cb=20131108095733" }
             ],
             "zakspeed": [
-                { from: 1985, to: 1989, url: "https://static.wikia.nocookie.net/formel1wiki/images/2/25/Zakspeed_%28Logo%29.png/revision/latest?cb=20110101224203" }
+                // War „Zakspeed (Logo).png" – diese Datei ist NUR das blaue Z-Signet ohne
+                // Schriftzug (kein Zuschnitt-Fehler der Anzeige, die Quelldatei selbst ist so).
+                // „Zakspeed.png" aus demselben Wiki zeigt Z + Schriftzug.
+                { from: 1985, to: 1989, url: "https://static.wikia.nocookie.net/formel1wiki/images/1/15/Zakspeed.png/revision/latest?cb=20091206105325" }
             ],
             // f1colours.sebpatrick.co.uk war die einzige Quelle fuer diese zwoelf. Weil das eine PRIVATE
             // WordPress-Seite ist (keine CDN), stehen sie hier NICHT als Link, sondern als data-URI:
@@ -42335,7 +42385,7 @@ Empfohlene Wertebereiche:
         window.openGameCircuitProfile = function(circuitId) {
             _gpDetailLast = { type: 'circuit', id: circuitId };
             const { cIdx } = buildGameCircuitGPIndex();
-            const cid = (circuitId || '').toLowerCase();
+            const cid = canonicalCircuitId(circuitId);
             const all = cIdx[cid] || [];
             const history = _gpDetailFilter === 'played' ? all.filter(e => !e.isHistorical) : all;
             const displayName = getCircuitDisplayName(cid);
@@ -42592,7 +42642,7 @@ Empfohlene Wertebereiche:
                 return d?.team || '';
             };
             
-            const _rdCid = (race.circuit || race.circuitId || '').toLowerCase();
+            const _rdCid = canonicalCircuitId(race.circuit || race.circuitId);
             const _rdGpKey = extractGPCanonical(race.name || '');
             const _rdCircuitName = getCircuitDisplayName(_rdCid);
             let html = `
