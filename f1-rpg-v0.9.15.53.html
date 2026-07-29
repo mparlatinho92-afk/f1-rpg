@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.52</title>
+    <title>F1 RPG v0.9.15.53</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.52 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.53 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; FIX: Vertragsstatus - Farbe und Text nutzen dieselben Schwellen (Score 72 war gruen aber nur 'Sicher')</div>
+                            <div>&#8226; FIX: Echte F2/F3-Aufsteiger koennen nicht mehr doppelt eingespeist werden - Pruefung deckt jetzt auch Historie, Ruecktritte und Tode ab</div>
+                            <div class="font-bold text-slate-400">v0.9.15.52 - 29.07.2026</div>
                             <div>&#8226; FIX: Strecken erscheinen nicht mehr doppelt - Sim-Kalender und F1DB nutzen jetzt dieselbe Strecken-ID (Paul ricard/Marina bay/Spa/Nuerburgring)</div>
                             <div>&#8226; FIX: Selbst erstellte Teams ueberleben den Saisonwechsel bis zur manuellen Loeschung</div>
                             <div>&#8226; FIX: Performance-Bewertung im Ampelsystem statt Gold und Blau - auch im 5-Saisons-Verlauf</div>
@@ -15805,7 +15808,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.52';
+        const VERSION = '0.9.15.53';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20710,9 +20713,23 @@ const ERA_FIRST_NAMES = {
                 }
             }
             const sdNames = _feederSeasonDataNames || new Set();
+            // Dedup deckte nur aktives Roster + Pool ab. Ein Feeder, der zwischenzeitlich in
+            // KEINER der beiden Listen steht (bereits gefahren, zurückgetreten, verstorben),
+            // konnte im 19–26-Fenster ein ZWEITES Mal eingespeist werden – derselbe Mensch
+            // existierte dann doppelt. Deshalb zusätzlich Historie/Rücktritte/Tode prüfen,
+            // analog autoAddNewDrivers (~L9230), plus die ID selbst: feederSlug ist
+            // deterministisch, ein zweiter Import trüge exakt dieselbe id.
             const knownNames = new Set([
                 ...GAME_STATE.drivers.map(d => norm(d.name)).filter(Boolean),
-                ...GAME_STATE.reservePool.map(d => norm(d.name)).filter(Boolean)
+                ...GAME_STATE.reservePool.map(d => norm(d.name)).filter(Boolean),
+                ...(GAME_STATE.history || []).flatMap(s => (s.drivers || []).map(d => norm(d.name))).filter(Boolean),
+                ...(GAME_STATE._recentlyRetiredNames || []).map(n => norm(n)).filter(Boolean),
+                ...(GAME_STATE.history || []).flatMap(s => (s.deaths || []).map(d => norm(d.name))).filter(Boolean),
+                ...(GAME_STATE.seasonDeaths || []).map(d => norm(d.name)).filter(Boolean)
+            ]);
+            const knownIds = new Set([
+                ...GAME_STATE.drivers.map(d => d.id).filter(Boolean),
+                ...GAME_STATE.reservePool.map(d => d.id).filter(Boolean)
             ]);
             let added = 0;
             for (const entry of FEEDER_DRIVERS) {
@@ -20721,8 +20738,10 @@ const ERA_FIRST_NAMES = {
                 if (age < 19 || age > 26) continue;                       // Erst-Erscheinungs-Fenster
                 const key = norm(name);
                 if (knownNames.has(key) || sdNames.has(key)) continue;     // aktiv / im Pool / echte F1-Karte
+                if (knownIds.has(feederSlug(name))) continue;              // schon einmal eingespeist
                 GAME_STATE.reservePool.push(makeFeederDriver(entry, year));
                 knownNames.add(key);
+                knownIds.add(feederSlug(name));
                 added++;
             }
             if (added) logInfo('RESERVE', `Feeder: ${added} echte F2/F3-Aufsteiger eingespeist (${year})`);
@@ -42149,7 +42168,10 @@ Empfohlene Wertebereiche:
             const isOffseason = (GAME_STATE.races || []).length > 0 &&
                                 GAME_STATE.currentRace >= (GAME_STATE.races || []).length;
             const score = isOffseason && driver.seasonScore != null ? driver.seasonScore : eval_.score;
-            const color = score >= 70 ? '#22C55E' : score >= 50 ? '#EAB308' : score >= 35 ? '#F97316' : '#EF4444';
+            // Farbe und Text liefen auf verschiedenen Schwellen (70/50/35 vs. 75/55/40):
+            // Score 72 war grün, hieß aber „Sicher" statt „Sehr sicher". Jetzt beide auf
+            // 75/55/40 – identisch mit ratingText (~L15950) und der Performance-Bewertung.
+            const color = score >= 75 ? '#22C55E' : score >= 55 ? '#EAB308' : score >= 40 ? '#F97316' : '#EF4444';
             const statusText = score >= 75 ? 'Sehr sicher' : score >= 55 ? 'Sicher' : score >= 40 ? 'Wackelig' : 'Gefährdet';
 
             let html = '<div class="card p-4 rounded-lg mb-4">';
