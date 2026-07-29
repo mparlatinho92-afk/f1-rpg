@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.48</title>
+    <title>F1 RPG v0.9.15.49</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.48 (aktuell) - 29.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.49 (aktuell) - 29.07.2026</div>
+                            <div>&#8226; FIX: Inhalt und tatsaechliche Belegung standen unkommentiert nebeneinander und sahen aus, als wuerde eine von beiden luegen - jetzt sagt jede Zeile, was sie misst</div>
+                            <div>&#8226; NEU: Hinweis im Log, wenn die Belegung unter dem Inhalt liegt - dann komprimiert der Browser die Daten zusaetzlich</div>
+                            <div class="font-bold text-slate-400">v0.9.15.48 - 29.07.2026</div>
                             <div>&#8226; FIX: Die Browser-Schaetzung stand als nackte Zahl im Log, die Einordnung erst zwei Zeilen darunter - jetzt steht direkt in der Zeile, dass sie alle Seiten zusammenzaehlt</div>
                             <div>&#8226; NEU: Der Zusatz erscheint nur, wenn Schaetzung und Messung auseinanderlaufen - in Chromium stimmen sie ueberein und die Zeile bleibt schlicht</div>
                             <div class="font-bold text-slate-400">v0.9.15.47 - 29.07.2026</div>
@@ -3341,7 +3344,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.48';
+        const VERSION = '0.9.15.49';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4315,10 +4318,16 @@
                 rows.forEach(r => logInfo('SPEICHER', `   ${r.name}: ${r.n} Einträge, ${MB(r.b)}`));
                 // Die Einschraenkung gehoert IN die Zeile, nicht darunter: eine nackte Zahl wird als
                 // Aussage ueber den Spielstand gelesen, auch wenn zwei Zeilen weiter das Gegenteil steht.
+                // Beide Zahlen beschriften statt auf Schwellwerte zu vertrauen: sie messen Verschiedenes
+                // und koennen in BEIDE Richtungen auseinanderlaufen. Nach oben, wenn Firefox alle Seiten
+                // zusammenzaehlt (gesehen: 257 MB fuer 3,6 MB Inhalt). Nach unten, weil Firefox
+                // IndexedDB-Werte zusaetzlich komprimiert ablegt (gesehen: 2,81 MB belegt fuer 4,32 MB
+                // Inhalt) – ohne Beschriftung sieht das aus, als wuerde eine der beiden luegen.
                 const _f = total > 0 ? (est.usage / total) : 0;
                 const _qual = _f > 2 ? ' – zählt ALLE Seiten des Browsers, nicht nur diese' : '';
-                logInfo('SPEICHER', `   ⇒ tatsächliche Nutzdaten: ${MB(total)}`);
-                logInfo('SPEICHER', `   ⇒ Browser-Schätzung${_qual}: ${MB(est.usage)} von ${MB(est.quota)} Kontingent`);
+                logInfo('SPEICHER', `   ⇒ Inhalt der Speicherbereiche: ${MB(total)}`);
+                logInfo('SPEICHER', `   ⇒ Vom Browser belegt${_qual}: ${MB(est.usage)} von ${MB(est.quota)} Kontingent`);
+                if (_f > 0 && _f < 0.8) logInfo('SPEICHER', `   ℹ Belegung unter dem Inhalt – der Browser legt die Daten komprimiert ab.`);
                 // Firefox liefert hier eine SEITENÜBERGREIFENDE Zahl: ein leeres Spiel und ein voller
                 // 65-Saison-Stand meldeten beide 253,93 MB, Kontingent 465 GB. Chromium (Opera) meldet
                 // dagegen exakt den Seitenwert (7,55 MB, deckungsgleich mit der Bodenprobe). Die
