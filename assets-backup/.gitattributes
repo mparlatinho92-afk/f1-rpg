@@ -1,0 +1,6 @@
+# Backup-Dateien nie anfassen: keine Zeilenende-Umwandlung, kein Diff-Rauschen.
+# Ohne das wuerde Git die SVGs bei Checkout auf CRLF umschreiben -> sha256 im
+# manifest.json passt nicht mehr und das Backup ist nicht mehr byte-identisch.
+* -text
+manifest.json text eol=lf
+README.md text eol=lf
