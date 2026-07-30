@@ -74,8 +74,24 @@ node tools/audit-driver-photos.js --fresh                        # von vorn
 In v0.9.15.56 wurden daraus 27 Korrekturen in `DRIVER_PHOTO_OVERRIDES` eingetragen:
 13 seitenverifiziert, 14 ueber die Initiale erschlossen (Datei-Existenz per HTTP
 geprueft, Zuordnung eindeutig, weil sich die Vornamen der Betroffenen im ersten
-Buchstaben unterscheiden). Die restlichen ~863 Fahrer sind **noch nicht geprueft** —
-dort kann es weitere Fehlzuordnungen geben.
+Buchstaben unterscheiden).
+
+### Wie gross ist das Restrisiko?
+
+Zwei Gegenproben, die **ohne eine einzige Anfrage** auskommen und den offenen Rest
+eingrenzen — bei Foto-Arbeit zuerst diese laufen lassen, nicht die Quelle abfragen:
+
+1. **Gleiche Datei unter verschiedenen Namen?** sha256 ueber alle Fotos: 854 Dateien,
+   854 verschiedene Bilder, **null Duplikate**. Kein Fahrer sieht mehr das Gesicht eines
+   anderen — die eigentliche Fehlerklasse ist damit unabhaengig bestaetigt erledigt.
+2. **Passt der Dateiname zum Fahrernamen?** 797 von 802 ungeprueften Fahrern ja; die
+   5 Ausreisser sind Doppelnamen (`servoz-gavin` → `gavin.png`) oder laengst gepruefte
+   Alteintraege. **Kein neuer Verdachtsfall.**
+
+Ein Vollabgleich waere also Kosmetik. `robots.txt` erlaubt automatisierten Zugriff
+(`User-Agent: *` → `Allow: /`, keine `Crawl-delay`; gesperrt sind gezielt SEO-/KI-Bots) —
+die 302 sind ein technisches Limit, keine Hausordnung. Wer trotzdem weitermacht: sehr
+langsam takten (`--delay=10000`), die Sperre hielt am 2026-07-30 ueber eine Stunde an.
 
 ## Aktualisieren
 

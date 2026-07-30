@@ -59,18 +59,41 @@ function get(url, redirects = 0) {
         q.setTimeout(30000, () => { q.destroy(); res({ code: 0 }); });
     });
 }
-// statsf1 drosselt: bei zu vielen Anfragen kommt statt der Seite ein 302.
-// Ein 302 ist aber auch die normale Antwort fuer "Fahrer gibt es nicht" — beides
-// laesst sich nur ueber die Zeit unterscheiden: erst nach mehreren Versuchen MIT
-// Pause gilt eine Seite als wirklich nicht vorhanden.
-const DELAY = Number((args.find(a => a.startsWith('--delay=')) || '').split('=')[1]) || 400;
-async function getRetry(url) {
-    let r = await get(url);
-    for (let a = 1; a <= 4 && r.code !== 200; a++) {
-        await new Promise(x => setTimeout(x, 1500 * a * a));
-        r = await get(url);
+// statsf1 drosselt: nach etwa 50 Seitenabrufen kommt statt der Seite nur noch ein 302.
+// Ein 302 ist aber AUCH die normale Antwort fuer "diese Fahrerseite gibt es nicht".
+// Unterscheiden laesst sich das nur an einer Referenzseite, von der wir wissen, dass es
+// sie gibt: antwortet die mit 200, ist die Seite wirklich weg; antwortet sie ebenfalls
+// mit 302, sind wir gesperrt und muessen warten statt weiterzuhaemmern.
+const DELAY = Number((args.find(a => a.startsWith('--delay=')) || '').split('=')[1]) || 3000;
+const SENTINEL = 'https://www.statsf1.com/en/alan-jones.aspx';
+const sleep = ms => new Promise(x => setTimeout(x, ms));
+
+let blockWaits = 0;
+async function waitOutBlock() {
+    // Wartet, bis die Referenzseite wieder antwortet. Verdoppelt die Pause bis max. 30 min.
+    let wait = 60000;
+    for (let i = 0; i < 40; i++) {
+        const s = await get(SENTINEL);
+        if (s.code === 200) {
+            if (i) console.log(`  Sperre aufgehoben nach ${Math.round(i * wait / 60000)}+ min, weiter.`);
+            return true;
+        }
+        if (!i) { blockWaits++; console.log(`  [Sperre erkannt] warte...`); }
+        await sleep(wait);
+        wait = Math.min(wait * 1.5, 1800000);
     }
-    return r;
+    return false;
+}
+// Holt eine Seite; unterscheidet "gibt es nicht" von "wir sind gesperrt".
+async function getPage(url) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await get(url);
+        if (r.code === 200) return r;
+        const s = await get(SENTINEL);
+        if (s.code === 200) return r;      // Referenz lebt -> die Seite fehlt wirklich
+        if (!await waitOutBlock()) return { code: -1 };   // gesperrt -> aussitzen, dann nochmal
+    }
+    return { code: -1 };
 }
 
 (async () => {
@@ -93,8 +116,8 @@ async function getRetry(url) {
         while (idx < drivers.length) {
             const d = drivers[idx++];
             if (prev.has(d.id)) { rows.push(prev.get(d.id)); done++; continue; }
-            await new Promise(x => setTimeout(x, DELAY));
-            const r = await getRetry(`https://www.statsf1.com/en/${d.id}.aspx`);
+            await sleep(DELAY);
+            const r = await getPage(`https://www.statsf1.com/en/${d.id}.aspx`);
             let truth = null, pageStatus = r.code;
             if (r.code === 200 && r.body) {
                 const m = r.body.match(/pilotes\/photos\/([a-z0-9._-]+)\.png/i);
@@ -109,7 +132,14 @@ async function getRetry(url) {
             else verdict = 'FALSCHE-DATEI';
 
             rows.push({ id: d.id, name: d.name || d.fullName, game, truth, verdict, pageStatus });
-            if (++done % 50 === 0) process.stdout.write(`  ...${done}/${drivers.length}\n`);
+            if (++done % 25 === 0) {
+                // Zwischenstand sichern: ein Abbruch (oder eine Sperre, die nicht faellt)
+                // darf die bisherige Arbeit nicht kosten — der naechste Lauf setzt darauf auf.
+                fs.writeFileSync(path.join(OUT, 'photo-audit.json'),
+                    JSON.stringify({ generatedAt: new Date().toISOString().slice(0, 10), rows: [...rows].sort((a, b) => a.id.localeCompare(b.id)) }, null, 2));
+                const geklaert = rows.filter(r => r.pageStatus === 200).length;
+                process.stdout.write(`  ...${done}/${drivers.length}  (seitenverifiziert ${geklaert}, Sperren ${blockWaits})\n`);
+            }
         }
     }
     await Promise.all(Array.from({ length: CONC }, worker));
