@@ -51,15 +51,11 @@ const BLOCK = new Set((blockAfter('const DRIVER_PHOTO_BLOCKLIST', '\n        ]);
 
 const BASE = 'https://www.statsf1.com/pilotes/photos/';
 
-// Fotos, die es auf statsf1 gibt, die die Namensregel des Spiels aber verfehlt —
-// gefunden durch Absuchen der fotolosen Fahrer nach dem Muster Nachname+Initiale.
-// Nur fuers Backup: das Spiel zeigt hier weiter den Avatar, solange die drei nicht
-// in DRIVER_PHOTO_OVERRIDES (index.html) stehen.
-const BACKUP_ONLY_ALIASES = {
-    'alexander-rossi': 'rossia',      // "rossi.png" existiert nicht
-    'ma-qinghua': 'ma',               // Slug-Ende "qinghua" ist der Vorname
-    'pedro-de-la-rosa': 'delarosa'    // Slug-Ende "rosa" statt "delarosa"
-};
+// Fotos, die es auf statsf1 gibt, die die Namensregel des Spiels aber verfehlt.
+// Leer, seit die bekannten Faelle in v0.9.15.56 in DRIVER_PHOTO_OVERRIDES (index.html)
+// stehen — dort ist ihr Platz, weil sie dann auch im Spiel ankommen. Hier nur noch fuer
+// Funde, die (noch) nicht eingebaut sind.
+const BACKUP_ONLY_ALIASES = {};
 
 // Spiegelt getDriverPhotoUrl() aus index.html
 function photoUrl(id) {

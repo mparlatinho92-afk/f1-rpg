@@ -13,7 +13,7 @@ Nichts hier wird zur Laufzeit geladen — das Spiel bleibt unveraendert.
 |---|---|---|---|
 | `embedded/` | 58 | 136 KB | **Unersetzbar.** Als data-URI in der HTML eingebettet: selbstgebaute Flaggen (Rhodesien, DDR, historische Staaten), Favicon, 23 selbst umkodierte Team-Logos |
 | `external/` | 257 | 9,2 MB | Gespiegelte Team-Logos (Logopedia/Wikia, Wikimedia, statsf1) — in der HTML nur verlinkt, hier lokal gesichert gegen Link-Rot |
-| `drivers/` | 830 | 10,9 MB | Fahrer-Fotos von statsf1.com. Stehen **nirgends** in der HTML: die URL wird zur Laufzeit aus der Fahrer-ID gebaut |
+| `drivers/` | 854 | 11,2 MB | Fahrer-Fotos von statsf1.com. Stehen **nirgends** in der HTML: die URL wird zur Laufzeit aus der Fahrer-ID gebaut |
 
 `manifest.json` haelt zu jedem Bild fest: Schluessel, Dateiname, MIME, **Zeile in index.html**,
 Groesse und sha256.
@@ -43,20 +43,39 @@ verschieben sich, der Schluessel (`'ZIM_RHO':`) bleibt aber greifbar.
 und liest `DRIVER_PHOTO_OVERRIDES`, `DRIVER_PHOTO_BLOCKLIST` und `FEEDER_PHOTO_OVERRIDES`
 direkt aus `index.html` — die Tabellen koennen also nicht auseinanderlaufen.
 
-Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen):
+Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen), Stand v0.9.15.56:
 
 | | Anzahl | |
 |---|---|---|
-| gesichert | 830 | eigene Datei |
-| geteilt | 18 | Namensvettern auf derselben Datei (`jones.png`, `gonzalez.png` …) |
-| ohne Foto | 53 | statsf1 hat keins — das Spiel zeigt hier ohnehin den Sketch-Avatar |
-| Blocklist | 16 | Avatar ist so gewollt (Namensvettern-Kollisionen) |
+| gesichert | 854 | eigene Datei |
+| geteilt | 2 | beides Mal derselbe Mensch (Feeder- und F1-Eintrag), kein Fehler |
+| ohne Foto | 46 | statsf1 hat keins — das Spiel zeigt hier den Sketch-Avatar |
+| Blocklist | 15 | Avatar ist so gewollt |
 
-**Beobachtung, nicht eingebaut:** drei Fahrer haben auf statsf1 sehr wohl ein Foto, nur unter
-einem Namen, den die Slug-Regel nicht trifft — `alexander-rossi` → `rossia.png`,
-`ma-qinghua` → `ma.png`, `pedro-de-la-rosa` → `delarosa.png`. Sie liegen hier im Backup
-(`BACKUP_ONLY_ALIASES` im Skript); im Spiel bleibt der Avatar, solange sie nicht in
-`DRIVER_PHOTO_OVERRIDES` stehen.
+## Der Foto-Abgleich (`audit-driver-photos.js`) — TEILWEISE GELAUFEN
+
+Das Spiel **raet** den Dateinamen (letzter Teil der Fahrer-ID). statsf1 kuerzt aber auf
+8 Zeichen und haengt bei Namensgleichen mal die Initiale (`nissanyr`), mal eine Ziffer
+(`jones2`) an. Wo zwei Fahrer auf denselben Namen fielen, sah einer das Gesicht des
+anderen. Massgeblich ist die statsf1-Fahrerseite `/en/<id>.aspx`, die den Dateinamen
+direkt nennt — genau das prueft das Skript.
+
+**Stand: 52 von 915 Fahrern seitenverifiziert.** statsf1 drosselt nach etwa 50 Seiten
+und liefert danach nur noch 302-Weiterleitungen (der Bild-Pfad bleibt erreichbar, nur
+die `.aspx`-Seiten sind gesperrt). Das Skript hat deshalb einen Wiederaufnahme-Modus:
+ein erneuter Lauf uebernimmt alle bereits geklaerten Fahrer aus `photo-audit.json` und
+fragt nur den Rest ab.
+
+```bash
+node tools/audit-driver-photos.js --concurrency=1 --delay=3000   # fortsetzen
+node tools/audit-driver-photos.js --fresh                        # von vorn
+```
+
+In v0.9.15.56 wurden daraus 27 Korrekturen in `DRIVER_PHOTO_OVERRIDES` eingetragen:
+13 seitenverifiziert, 14 ueber die Initiale erschlossen (Datei-Existenz per HTTP
+geprueft, Zuordnung eindeutig, weil sich die Vornamen der Betroffenen im ersten
+Buchstaben unterscheiden). Die restlichen ~863 Fahrer sind **noch nicht geprueft** —
+dort kann es weitere Fehlzuordnungen geben.
 
 ## Aktualisieren
 

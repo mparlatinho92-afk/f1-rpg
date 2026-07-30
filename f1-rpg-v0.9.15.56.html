@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.55</title>
+    <title>F1 RPG v0.9.15.56</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.55 (aktuell) - 30.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.56 (aktuell) - 30.07.2026</div>
+                            <div>&#8226; FIX: Fahrer sahen fremde Gesichter - 14 Namensgleichen-Kollisionen behoben (Jones, Andretti, Nakajima, Leclerc u.a.)</div>
+                            <div>&#8226; FIX: 13 Fahrer ohne Foto haben jetzt eins (Rossi, de Portago, Herman, Brown u.a.)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.55 - 30.07.2026</div>
                             <div>&#8226; NEU: Fahrer-Fotos im Backup gesichert (830 von 917 Fahrern, tools/mirror-driver-photos.js)</div>
                             <div class="font-bold text-slate-400">v0.9.15.54 - 30.07.2026</div>
                             <div>&#8226; NEU: Backup aller Spiel-Grafiken in assets-backup/ (58 eingebettete + 257 gespiegelte externe Logos)</div>
@@ -15813,7 +15816,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.55';
+        const VERSION = '0.9.15.56';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -40126,6 +40129,44 @@ Empfohlene Wertebereiche:
             'wolfgang-von-trips': 'vontrips',
             'zak-osullivan': 'osulliva',
             'zsolt-baumgartner': 'baumgart',
+
+            // === v0.9.15.56: Korrekturen aus dem Foto-Abgleich (tools/audit-driver-photos.js) ===
+            // Die Nachname-Heuristik trifft statsf1 oft nicht: dort wird auf 8 Zeichen gekuerzt
+            // und bei Namensgleichen mal die Initiale ("nissanyr"), mal eine Ziffer ("jones2")
+            // angehaengt. Ohne Eintrag hier landen zwei Fahrer auf DERSELBEN Datei — einer sah
+            // dann das Gesicht des anderen (Tom Jones sah Alan Jones).
+
+            // -- Namensgleiche: von der statsf1-Fahrerseite abgelesen, eindeutig --
+            'tom-jones': 'jones2',              // sah vorher Alan Jones
+            'michael-andretti': 'andrett2',     // sah vorher Mario Andretti
+            'john-james': 'jamesj',             // sah vorher Joe James
+            'jolyon-palmer': 'palmerj',         // sah vorher Jonathan Palmer
+            // -- Namensgleiche: Datei geprueft, Zuordnung ueber die Initiale (eindeutig,
+            //    weil sich die Vornamen der Betroffenen im ersten Buchstaben unterscheiden) --
+            'john-campbell-jones': 'campbell',  // sah vorher Alan Jones
+            'arthur-leclerc': 'leclerca',       // sah vorher Charles Leclerc
+            'bill-moss': 'mossb',               // sah vorher Stirling Moss
+            'brendon-hartley': 'hartleyb',      // sah vorher Gene Hartley
+            'roy-nissany': 'nissanyr',          // sah vorher Chanoch Nissany (Vater)
+            'dick-rathmann': 'rathmand',        // sah vorher Jim Rathmann
+            'oscar-gonzalez': 'gonzaleo',       // sah vorher José Froilán González
+            'rodolfo-gonzalez': 'gonzaler',     // sah vorher José Froilán González
+            'jules-bianchi': 'bianchij',        // sah vorher Lucien Bianchi
+            'kazuki-nakajima': 'nakajimk',      // sah vorher Satoru Nakajima (Vater)
+            'ludwig-fischer': 'fischerl',       // sah vorher Rudi Fischer
+            'naoki-yamamoto': 'yamamotn',       // sah vorher Sakon Yamamoto
+            // -- Slug-Regel griff daneben (Doppelnamen, Adelspraedikate, Vorname am Slug-Ende) --
+            'adolfo-schwelm-cruz': 'schwelm',
+            'al-herman': 'hermanal',
+            'alessandro-pesenti-rossi': 'pessenti',
+            'alex-soler-roig': 'solerroi',
+            'alexander-rossi': 'rossia',        // "rossi.png" existiert gar nicht
+            'alfonso-de-portago': 'deportag',
+            'andrea-de-adamich': 'deadamic',
+            'andrea-de-cesaris': 'decesar',
+            'ma-qinghua': 'ma',                 // Slug-Ende "qinghua" ist der Vorname
+            'pedro-de-la-rosa': 'delarosa',
+            'alan-brown': 'browna',             // war blockiert, hat aber ein eigenes Foto
         };
 
         // Foto-Blocklist: Fahrer, deren Nachname-Heuristik ein FALSCHES statsf1-Foto eines
@@ -40142,7 +40183,8 @@ Empfohlene Wertebereiche:
             'pierluigi-martini',    // martini/martin zu generisch
             'robert-shwartzman',    // falscher Name
             // ⚠️ Echte Konflikte – 2 Fahrer, ein Dateiname (beide → Avatar)
-            'alan-brown', 'archie-scott-brown', 'walt-brown', 'warwick-brown',
+            // Alan Brown entfernt (v0.9.15.56): hat mit "browna" ein eigenes, verifiziertes Foto
+            'archie-scott-brown', 'walt-brown', 'warwick-brown',
             'ernesto-brambilla', 'vittorio-brambilla',
             'hans-stuck', 'hans-joachim-stuck',
             'pedro-rodriguez', 'ricardo-rodriguez',
