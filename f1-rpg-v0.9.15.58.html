@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.57</title>
+    <title>F1 RPG v0.9.15.58</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.57 (aktuell) - 30.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.58 (aktuell) - 31.07.2026</div>
+                            <div>&#8226; NEU: 33 Fahrer haben jetzt ein Foto statt Avatar (de Angelis, van-Namen, Pseudonyme wie Gimax und Geki)</div>
+                            <div>&#8226; FIX: Nachnamen ueber 8 Zeichen fanden nie ein Foto - Hauptursache der Luecke</div>
+                            <div class="font-bold text-slate-400">v0.9.15.57 - 30.07.2026</div>
                             <div>&#8226; NEU: Foto-Abgleich erkennt Drosselung der Quelle und wartet sie aus, statt Fahrer faelschlich als fotolos zu melden</div>
                             <div class="font-bold text-slate-400">v0.9.15.56 - 30.07.2026</div>
                             <div>&#8226; FIX: Fahrer sahen fremde Gesichter - 14 Namensgleichen-Kollisionen behoben (Jones, Andretti, Nakajima, Leclerc u.a.)</div>
@@ -15818,7 +15821,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.57';
+        const VERSION = '0.9.15.58';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -40169,6 +40172,52 @@ Empfohlene Wertebereiche:
             'ma-qinghua': 'ma',                 // Slug-Ende "qinghua" ist der Vorname
             'pedro-de-la-rosa': 'delarosa',
             'alan-brown': 'browna',             // war blockiert, hat aber ein eigenes Foto
+
+            // === v0.9.15.58: Fahrer, die nur mangels Dateiname keinen Kopf hatten ===
+            // Gesucht mit tools/find-missing-photos.js ueber den Bild-Pfad (die Fahrerseiten
+            // sind gedrosselt). Haeufigster Grund: der Nachname ist laenger als 8 Zeichen —
+            // statsf1 kuerzt, das Spiel nicht. Betrifft fast alle "van/de/da"-Namen.
+            'basil-van-rooyen': 'vanrooye',
+            'bill-whitehouse': 'whitehob',
+            'charles-de-tornaco': 'detornac',
+            'christian-fittipaldi': 'fittipac',
+            'domenico-schiattarella': 'schiatta',
+            'dries-van-der-lof': 'vanderlo',
+            'elio-de-angelis': 'deangeli',
+            'emilio-de-villota': 'devillot',
+            'emmanuel-de-graffenried': 'degraffe',
+            'gabriel-bortoleto': 'bortoleg',
+            'giedo-van-der-garde': 'vanderga',
+            'gijs-van-lennep': 'vanlenne',
+            'hermano-da-silva-ramos': 'dasilvar',
+            'luis-perez-sala': 'perezsal',
+            'maria-teresa-de-filippis': 'defilipp',
+            'philip-fotheringham-parker': 'fotherin',
+            'robin-montgomerie-charrington': 'montgome',
+            // Namensgleiche — die Initiale trennt sie eindeutig
+            'graham-whitehead': 'whiteheg',
+            'peter-whitehead': 'whitehep',
+            'guy-mairesse': 'mairessg',
+            'willy-mairesse': 'mairessw',
+            'jak-crawford': 'crawforc',         // heisst in F1DB Carlton, daher "c"
+            'jim-crawford': 'crawforj',
+            'ray-crawford': 'crawforr',
+            // Nur der erste Teil des Doppelnamens
+            'john-riseley-prichard': 'riseley',
+            'kurt-ahrens-jr': 'ahrens',
+            'yves-giraud-cabantous': 'giraud',
+            'rob-schroeder': 'schroedr',
+            // statsf1 hat nur EIN Schlesser-Foto. Es ist Jo: schwarzweiss und Bildstil der
+            // 60er, waehrend Fahrer von Jean-Louis' F1-Jahr 1988 dort in Farbe vorliegen.
+            // Jean-Louis bleibt deshalb bewusst beim Avatar statt das Gesicht seines Onkels
+            // zu tragen.
+            'jo-schlesser': 'schlessj',
+            // Rennfahrer-Pseudonyme: statsf1 fuehrt sie unter dem Namen, unter dem sie
+            // gemeldet waren, nicht unter dem buergerlichen aus F1DB.
+            'carlo-franchi': 'gimax',           // fuhr als "Gimax"
+            'giacomo-russo': 'geki',            // fuhr als "Geki"
+            'birabongse-bhanudej': 'bira',      // fuhr als "B. Bira"
+            'carel-godin-de-beaufort': 'debeaufo',
         };
 
         // Foto-Blocklist: Fahrer, deren Nachname-Heuristik ein FALSCHES statsf1-Foto eines
