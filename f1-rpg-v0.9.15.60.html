@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.59</title>
+    <title>F1 RPG v0.9.15.60</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.59 (aktuell) - 31.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.60 (aktuell) - 31.07.2026</div>
+                            <div>&#8226; NEU: Kein Fahrer ohne Foto mehr - die letzten 13 manuell von der Quelle geholt (Regazzoni, Donnelly, Bettenhausen u.a.)</div>
+                            <div>&#8226; NEU: 6 Fahrer von der Foto-Blocklist befreit (Lewis-Evans, Martini, Williamson u.a.)</div>
+                            <div>&#8226; FIX: Fotos im GIF-Format werden jetzt unterstuetzt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.59 - 31.07.2026</div>
                             <div>&#8226; FIX: Doppelter Override-Eintrag mit Tippfehler entfernt (christian-fittipaldi zeigte auf eine nicht existierende Datei)</div>
                             <div class="font-bold text-slate-400">v0.9.15.58 - 31.07.2026</div>
                             <div>&#8226; NEU: 33 Fahrer haben jetzt ein Foto statt Avatar (de Angelis, van-Namen, Pseudonyme wie Gimax und Geki)</div>
@@ -15823,7 +15827,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.59';
+        const VERSION = '0.9.15.60';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -39925,7 +39929,9 @@ Empfohlene Wertebereiche:
             if (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined' && DRIVER_PHOTO_BLOCKLIST.has(driverId)) return null;
             // Override-Tabelle zuerst (verifizierte Sonderfälle)
             const override = DRIVER_PHOTO_OVERRIDES[driverId];
-            if (override) return `https://www.stATSf1.com/pilotes/photos/${override}.png`;
+            // Override mit eigener Endung (z.B. 'england.gif') wird unveraendert genutzt —
+            // statsf1 hat nicht alle Fotos als PNG. Ohne Punkt: wie bisher .png anhaengen.
+            if (override) return `https://www.stATSf1.com/pilotes/photos/${override}${override.includes('.') ? '' : '.png'}`;
             // Standard: Nachname (letzter Slug-Teil)
             const lastName = driverId.split('-').pop();
             return `https://www.stATSf1.com/pilotes/photos/${lastName}.png`;
@@ -40210,10 +40216,8 @@ Empfohlene Wertebereiche:
             'kurt-ahrens-jr': 'ahrens',
             'yves-giraud-cabantous': 'giraud',
             'rob-schroeder': 'schroedr',
-            // statsf1 hat nur EIN Schlesser-Foto. Es ist Jo: schwarzweiss und Bildstil der
-            // 60er, waehrend Fahrer von Jean-Louis' F1-Jahr 1988 dort in Farbe vorliegen.
-            // Jean-Louis bleibt deshalb bewusst beim Avatar statt das Gesicht seines Onkels
-            // zu tragen.
+            // schlessj ist Jo (schwarzweiss, Bildstil der 60er). In .60 bestaetigt: sein Neffe
+            // Jean-Louis hat mit schlesjl eine eigene Datei, steht weiter unten.
             'jo-schlesser': 'schlessj',
             // Rennfahrer-Pseudonyme: statsf1 fuehrt sie unter dem Namen, unter dem sie
             // gemeldet waren, nicht unter dem buergerlichen aus F1DB.
@@ -40221,6 +40225,36 @@ Empfohlene Wertebereiche:
             'giacomo-russo': 'geki',            // fuhr als "Geki"
             'birabongse-bhanudej': 'bira',      // fuhr als "B. Bira"
             'carel-godin-de-beaufort': 'debeaufo',
+
+            // === v0.9.15.60: die letzten 13, manuell von den statsf1-Fahrerseiten geholt ===
+            // Hier war Raten chancenlos: die Quelle hat in diesen Dateinamen TIPPFEHLER
+            // (reggazzo mit zwei g, donnely mit einem l, flockart ohne h, pusez statt Puzey,
+            // tinglest statt Tingelstad, mcwhithe statt McWithey) — und zwei Fotos sind GIF.
+            'clay-regazzoni': 'reggazzo',
+            'bob-anderson': 'andersb',
+            'martin-donnelly': 'donnely',
+            'ron-flockhart': 'flockart',
+            'tony-bettenhausen': 'betten',
+            'eric-van-de-poele': 'vandepo',
+            'mario-de-araujo-cabral': 'decabral',
+            'jim-mcwithey': 'mcwhithe',
+            'bud-tingelstad': 'tinglest',
+            'clive-puzey': 'pusez',
+            'paul-england': 'england.gif',       // kein PNG
+            'christian-goethals': 'goethals.gif', // kein PNG
+            // Bestaetigt die Zuordnung aus .58: Jean-Louis hat mit schlesjl eine EIGENE
+            // Datei, schlessj ist also tatsaechlich sein Onkel Jo.
+            'jean-louis-schlesser': 'schlesjl',
+
+            // === Von der Blocklist geholt: eigene, eindeutige Datei vorhanden ===
+            // Sie standen dort, weil die Nachname-Regel ein fremdes Gesicht lud (evans,
+            // stevens, williams...). Mit dem richtigen Dateinamen ist der Konflikt weg.
+            'stuart-lewis-evans': 'lewiseva',
+            'chuck-stevenson': 'stevenso',
+            'roger-williamson': 'williamr',
+            'pierluigi-martini': 'martinip',
+            'robert-shwartzman': 'shwartzm',
+            'archie-scott-brown': 'scottbro',
         };
 
         // Foto-Blocklist: Fahrer, deren Nachname-Heuristik ein FALSCHES statsf1-Foto eines
@@ -40230,15 +40264,14 @@ Empfohlene Wertebereiche:
         // DRIVER_PHOTO_OVERRIDES eintragen und hier entfernen.
         const DRIVER_PHOTO_BLOCKLIST = new Set([
             // 🚫 Verdächtige – Dateiname gehört einem anderen Fahrer
-            'stuart-lewis-evans',   // evans = anderer Evans
-            'chuck-stevenson',      // stevens = Will Stevens (war falscher Override)
-            'helm-glockler',        // glock = Timo Glock (war falscher Override)
-            'roger-williamson',     // williams = Jonathan Williams (war falscher Override)
-            'pierluigi-martini',    // martini/martin zu generisch
-            'robert-shwartzman',    // falscher Name
+            // In v0.9.15.60 haben sechs von hier ihre eigene Datei bekommen (Lewis-Evans,
+            // Stevenson, Williamson, Martini, Shwartzman, Scott Brown) → stehen jetzt oben.
+            'helm-glockler',        // glock = Timo Glock; eigene Datei nicht auffindbar
             // ⚠️ Echte Konflikte – 2 Fahrer, ein Dateiname (beide → Avatar)
             // Alan Brown entfernt (v0.9.15.56): hat mit "browna" ein eigenes, verifiziertes Foto
-            'archie-scott-brown', 'walt-brown', 'warwick-brown',
+            // Archie Scott Brown raus (.60): hat mit "scottbro" eine eigene Datei
+            'walt-brown', 'warwick-brown',           // teilen sich brownw.png
+            // ↓ diese Paare teilen sich je EINE Datei — wem sie gehoert, ist ungeklaert
             'ernesto-brambilla', 'vittorio-brambilla',
             'hans-stuck', 'hans-joachim-stuck',
             'pedro-rodriguez', 'ricardo-rodriguez',

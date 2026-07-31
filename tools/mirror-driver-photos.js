@@ -66,7 +66,8 @@ function photoUrl(id) {
         return null;
     }
     if (BLOCK.has(id)) return null;
-    if (OVERRIDES[id]) return BASE + OVERRIDES[id] + '.png';
+    // Override darf eine eigene Endung mitbringen ('england.gif') — dann nicht .png anhaengen
+    if (OVERRIDES[id]) return BASE + OVERRIDES[id] + (OVERRIDES[id].includes('.') ? '' : '.png');
     return BASE + id.split('-').pop() + '.png';
 }
 // Spiegelt getDriverPhotoUrlFallback() — greift im Spiel per onerror
