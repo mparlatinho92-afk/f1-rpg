@@ -13,7 +13,7 @@ Nichts hier wird zur Laufzeit geladen — das Spiel bleibt unveraendert.
 |---|---|---|---|
 | `embedded/` | 58 | 136 KB | **Unersetzbar.** Als data-URI in der HTML eingebettet: selbstgebaute Flaggen (Rhodesien, DDR, historische Staaten), Favicon, 23 selbst umkodierte Team-Logos |
 | `external/` | 257 | 9,2 MB | Gespiegelte Team-Logos (Logopedia/Wikia, Wikimedia, statsf1) — in der HTML nur verlinkt, hier lokal gesichert gegen Link-Rot |
-| `drivers/` | 854 | 11,2 MB | Fahrer-Fotos von statsf1.com. Stehen **nirgends** in der HTML: die URL wird zur Laufzeit aus der Fahrer-ID gebaut |
+| `drivers/` | 887 | 11,6 MB | Fahrer-Fotos von statsf1.com. Stehen **nirgends** in der HTML: die URL wird zur Laufzeit aus der Fahrer-ID gebaut |
 
 `manifest.json` haelt zu jedem Bild fest: Schluessel, Dateiname, MIME, **Zeile in index.html**,
 Groesse und sha256.
@@ -43,14 +43,30 @@ verschieben sich, der Schluessel (`'ZIM_RHO':`) bleibt aber greifbar.
 und liest `DRIVER_PHOTO_OVERRIDES`, `DRIVER_PHOTO_BLOCKLIST` und `FEEDER_PHOTO_OVERRIDES`
 direkt aus `index.html` — die Tabellen koennen also nicht auseinanderlaufen.
 
-Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen), Stand v0.9.15.56:
+Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen), Stand v0.9.15.59:
 
 | | Anzahl | |
 |---|---|---|
-| gesichert | 854 | eigene Datei |
+| gesichert | 887 | eigene Datei |
 | geteilt | 2 | beides Mal derselbe Mensch (Feeder- und F1-Eintrag), kein Fehler |
-| ohne Foto | 46 | statsf1 hat keins — das Spiel zeigt hier den Sketch-Avatar |
+| ohne Foto | 13 | Dateiname nicht ableitbar, siehe unten |
 | Blocklist | 15 | Avatar ist so gewollt |
+
+### Die Luecke schliessen (`find-missing-photos.js`)
+
+In .58 kamen 33 Fotos dazu. Hauptursache der Luecke: **statsf1 kuerzt Dateinamen auf
+8 Zeichen, das Spiel nicht** — dadurch fand praktisch kein "van/de/da"-Name je ein Bild.
+Dazu drei Fahrer unter Pseudonym (`gimax`, `geki`, `bira`) und ein Tippfehler in der
+Override-Tabelle selbst (`fittpac` statt `fittipac`), der still ins Leere zeigte.
+
+**13 bleiben offen** (u.a. Clay Regazzoni, Martin Donnelly, Tony Bettenhausen). Bei denen
+existiert auf statsf1 kein ableitbarer Dateiname — vergleiche `pessenti` fuer Pesenti-Rossi,
+wo die Quelle selbst einen Tippfehler hat. Aufloesen kann das nur die Fahrerseite, und die
+war am 2026-07-31 noch gedrosselt. Es waeren dann aber nur **13 Abrufe**:
+
+```
+node tools/audit-driver-photos.js --ids=clay-regazzoni,martin-donnelly,tony-bettenhausen,ron-flockhart,eric-van-de-poele,bob-anderson,bud-tingelstad,christian-goethals,jim-mcwithey,paul-england,clive-puzey,mario-de-araujo-cabral,jean-louis-schlesser
+```
 
 ## Der Foto-Abgleich (`audit-driver-photos.js`) — TEILWEISE GELAUFEN
 

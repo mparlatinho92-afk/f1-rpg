@@ -23,6 +23,7 @@ const OUT = path.join(ROOT, 'assets-backup');
 const args = process.argv.slice(2);
 const CONC = Number((args.find(a => a.startsWith('--concurrency=')) || '').split('=')[1]) || 3;
 const LIMIT = Number((args.find(a => a.startsWith('--limit=')) || '').split('=')[1]) || 0;
+const ONLY = (args.find(a => a.startsWith('--ids=')) || '').split('=')[1];   // gezielt einzelne Fahrer
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 function blockAfter(marker, closer) {
@@ -100,6 +101,7 @@ async function getPage(url) {
     const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'f1db-json-splitted', 'f1db-drivers.json'), 'utf8'));
     const arr = Array.isArray(raw) ? raw : (raw.drivers || Object.values(raw)[0]);
     let drivers = arr.filter(d => d.id);
+    if (ONLY) { const want = new Set(ONLY.split(',')); drivers = drivers.filter(d => want.has(d.id)); }
     if (LIMIT) drivers = drivers.slice(0, LIMIT);
 
     // Wiederaufnahme: bereits geklaerte Fahrer nicht erneut abfragen (schont die Quelle).

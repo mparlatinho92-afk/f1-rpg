@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.58</title>
+    <title>F1 RPG v0.9.15.59</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.58 (aktuell) - 31.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.59 (aktuell) - 31.07.2026</div>
+                            <div>&#8226; FIX: Doppelter Override-Eintrag mit Tippfehler entfernt (christian-fittipaldi zeigte auf eine nicht existierende Datei)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.58 - 31.07.2026</div>
                             <div>&#8226; NEU: 33 Fahrer haben jetzt ein Foto statt Avatar (de Angelis, van-Namen, Pseudonyme wie Gimax und Geki)</div>
                             <div>&#8226; FIX: Nachnamen ueber 8 Zeichen fanden nie ein Foto - Hauptursache der Luecke</div>
                             <div class="font-bold text-slate-400">v0.9.15.57 - 30.07.2026</div>
@@ -3372,7 +3374,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.58';
+        const VERSION = '0.9.15.59';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -27520,7 +27522,8 @@ Empfohlene Wertebereiche:
             // Fittipaldis
             'emerson-fittipaldi': 'fittipa',
             'wilson-fittipaldi': 'fittipaw',
-            'christian-fittipaldi': 'fittpac',
+            // 'christian-fittipaldi' stand hier als 'fittpac' (Tippfehler, Datei gibt es
+            // nicht) — deshalb hatte er nie ein Foto. Korrigiert weiter unten in .58.
             'pietro-fittipaldi': 'fittipap',
             // Magnussens
             'jan-magnussen': 'magnus',
