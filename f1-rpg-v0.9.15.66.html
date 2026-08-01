@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.65</title>
+    <title>F1 RPG v0.9.15.66</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.65 (aktuell) - 01.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.66 (aktuell) - 01.08.2026</div>
+                            <div>&#8226; NEU: 26 fehlende F2/F3-Fahrer der Saison 2022 im Reserve-Pool (Ghiotto, Armstrong, Vips, Trulli u.a.) - Kader jetzt 144</div>
+                            <div>&#8226; FIX: Nation folgt der Rennlizenz - Smolyar startete unter neutraler Flagge und steht jetzt als Russe</div>
+                            <div class="font-bold text-slate-400">v0.9.15.65 - 01.08.2026</div>
                             <div>&#8226; NEU: Team-Flaggen frieren mit dem Ausstieg ein, wie es die Logos schon taten</div>
                             <div>&#8226; NEU: Grand-Prix-, Strecken- und Kalenderflaggen zeigen den Stand des jeweiligen Jahres</div>
                             <div>&#8226; NEU: Nationenuebersicht folgt der Saisonauswahl</div>
@@ -15899,7 +15902,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.65';
+        const VERSION = '0.9.15.66';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20744,6 +20747,42 @@ const ERA_FIRST_NAMES = {
             ["Maciej Gładysz","🇵🇱",2008,"F3",2026],
             ["Mattia Colnaghi","🇦🇷",2008,"F3",2026],
             ["Nikita Johnson","🇺🇸",2008,"F3",2025],
+
+            // === v0.9.15.66: Saison 2022 nachgetragen ===
+            // Abgleich der Wikipedia-Saisonartikel F2/F3 2022-2026 gegen diese Liste
+            // (tools/fetch-feeder-rosters.js). Es fehlte praktisch die komplette Saison 2022.
+            // NICHT aufgenommen: Fahrer, die es real in die F1 geschafft haben (Antonelli,
+            // Drugovich, Lawson, Sargeant, Vips, Merhi) — die fuehrt das Spiel als echte Fahrer.
+            // Nation = RENNLIZENZ, nicht Staatsangehoerigkeit: Famularo (Venezolaner) fuhr mit
+            // italienischer, Ushijima (Japano-Amerikaner) mit britischer, Chovanec (Tscheche)
+            // mit portugiesischer Lizenz. Ausnahme Smolyar: startete 2022 unter neutraler
+            // Flagge — das ist keine Nation, deshalb steht dort Russland.
+            ["Tatiana Calderón","🇨🇴",1993,"F2",2022],
+            ["Jake Hughes","🇬🇧",1994,"F2",2022],
+            ["Luca Ghiotto","🇮🇹",1995,"F2",2022],
+            ["Cem Bölükbaşı","🇹🇷",1998,"F2",2022],
+            ["Lirim Zendeli","🇩🇪",1999,"F3",2022],
+            ["Marino Sato","🇯🇵",1999,"F2",2022],
+            ["Niko Kari","🇫🇮",1999,"F3",2022],
+            ["Calan Williams","🇦🇺",2000,"F2",2022],
+            ["David Beckmann","🇩🇪",2000,"F2",2022],
+            ["Federico Malvestiti","🇮🇹",2000,"F3",2022],
+            ["Jüri Vips","🇪🇪",2000,"F2",2022],
+            ["Marcus Armstrong","🇳🇿",2000,"F2",2022],
+            ["Oliver Rasmussen","🇩🇰",2000,"F3",2022],
+            ["Alexander Smolyar","🇷🇺",2001,"F3",2022],
+            ["Ayrton Simmons","🇬🇧",2001,"F3",2022],
+            ["Nazim Azman","🇲🇾",2001,"F3",2022],
+            ["David Vidales","🇪🇸",2002,"F3",2022],
+            ["Filip Ugran","🇷🇴",2002,"F3",2022],
+            ["Olli Caldwell","🇬🇧",2002,"F2",2022],
+            ["William Alatalo","🇫🇮",2002,"F3",2022],
+            ["Alessandro Famularo","🇮🇹",2003,"F3",2022],
+            ["Reece Ushijima","🇬🇧",2003,"F3",2022],
+            ["Carl Bennett","🇹🇭",2004,"F3",2022],
+            ["Francesco Pizzi","🇮🇹",2004,"F3",2022],
+            ["Zdeněk Chovanec","🇵🇹",2004,"F3",2022],
+            ["Enzo Trulli","🇮🇹",2005,"F3",2022]
         ];
         // Echte Porträts (Slug 'feeder-<name>' → Wert). Wert = volle URL (http…) ODER statsf1-Dateiname.
         // Leer/kein Eintrag = Sketch-Avatar-Fallback. Befüllbar über die Foto-Wunschliste.

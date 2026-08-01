@@ -117,18 +117,24 @@ lines.forEach((line, i) => {
     }
 });
 
-const manifest = {
-    generatedAt: new Date().toISOString().slice(0, 10),
-    source: 'index.html',
-    counts: {
-        embedded: embedded.length,
-        embeddedUniqueFiles: seen.size,
-        embeddedBytes: embedded.reduce((a, e) => a + (e.duplicateOf ? 0 : e.bytes), 0),
-        external: external.length
-    },
-    embedded, external
-};
-fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
+// WICHTIG: bestehendes Manifest einlesen und nur die eigenen Abschnitte ersetzen.
+// Frueher wurde hier komplett ueberschrieben — das hat die Abschnitte der anderen
+// Werkzeuge (driverPhotos, flags) stillschweigend geloescht.
+const manifestPath = path.join(OUT, 'manifest.json');
+const manifest = fs.existsSync(manifestPath)
+    ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    : {};
+manifest.generatedAt = new Date().toISOString().slice(0, 10);
+manifest.source = 'index.html';
+manifest.counts = Object.assign(manifest.counts || {}, {
+    embedded: embedded.length,
+    embeddedUniqueFiles: seen.size,
+    embeddedBytes: embedded.reduce((a, e) => a + (e.duplicateOf ? 0 : e.bytes), 0),
+    external: external.length
+});
+manifest.embedded = embedded;
+manifest.external = external;
+fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
 console.log(`Eingebettet : ${embedded.length} Vorkommen -> ${seen.size} Dateien (${(manifest.counts.embeddedBytes / 1024).toFixed(1)} KB)`);
 console.log(`Extern      : ${external.length} URLs (nur inventarisiert)`);
