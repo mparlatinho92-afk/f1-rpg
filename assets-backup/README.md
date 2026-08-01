@@ -13,7 +13,7 @@ Nichts hier wird zur Laufzeit geladen — das Spiel bleibt unveraendert.
 |---|---|---|---|
 | `embedded/` | 58 | 136 KB | **Unersetzbar.** Als data-URI in der HTML eingebettet: selbstgebaute Flaggen (Rhodesien, DDR, historische Staaten), Favicon, 23 selbst umkodierte Team-Logos |
 | `external/` | 257 | 9,2 MB | Gespiegelte Team-Logos (Logopedia/Wikia, Wikimedia, statsf1) — in der HTML nur verlinkt, hier lokal gesichert gegen Link-Rot |
-| `drivers/` | 887 | 11,6 MB | Fahrer-Fotos von statsf1.com. Stehen **nirgends** in der HTML: die URL wird zur Laufzeit aus der Fahrer-ID gebaut |
+| `drivers/` | 915 | 11,9 MB | Fahrer-Fotos von statsf1.com. Stehen **nirgends** in der HTML: die URL wird zur Laufzeit aus der Fahrer-ID gebaut |
 
 `manifest.json` haelt zu jedem Bild fest: Schluessel, Dateiname, MIME, **Zeile in index.html**,
 Groesse und sha256.
@@ -43,14 +43,34 @@ verschieben sich, der Schluessel (`'ZIM_RHO':`) bleibt aber greifbar.
 und liest `DRIVER_PHOTO_OVERRIDES`, `DRIVER_PHOTO_BLOCKLIST` und `FEEDER_PHOTO_OVERRIDES`
 direkt aus `index.html` — die Tabellen koennen also nicht auseinanderlaufen.
 
-Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen), Stand v0.9.15.59:
+Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen), Stand v0.9.15.61:
 
 | | Anzahl | |
 |---|---|---|
-| gesichert | 887 | eigene Datei |
+| gesichert | 915 | eigene Datei |
 | geteilt | 2 | beides Mal derselbe Mensch (Feeder- und F1-Eintrag), kein Fehler |
-| ohne Foto | 13 | Dateiname nicht ableitbar, siehe unten |
-| Blocklist | 15 | Avatar ist so gewollt |
+| ohne Foto | **0** | |
+| Blocklist | **0** | die Liste ist leer, jeder Fahrer hat ein geprueftes Foto |
+
+915 Dateien, 915 verschiedene Bilder — kein Fahrer traegt das Gesicht eines anderen.
+
+### Warum Raten nicht reichte
+
+Die Quelle folgt keiner Regel, sondern mehreren, und ist stellenweise fehlerhaft:
+- kuerzt auf **8 Zeichen** (`deangeli`, `perezsal`) — die Hauptursache, betraf fast alle
+  "van/de/da"-Namen
+- disambiguiert Namensgleiche per **Initiale** (`nissanyr`, `stuckhj`) oder **Ziffer**
+  (`jones2`, `andrett2`)
+- fuehrt Fahrer unter ihrem **Rennnamen**: `gimax` (Carlo Franchi), `geki` (Giacomo Russo),
+  `bira` (Birabongse Bhanudej), `brambilt` (Ernesto Brambilla fuhr als "Tino")
+- hat **Tippfehler**: `reggazzo` (zwei g), `donnely` (ein l), `flockart` (ohne h), `pusez`
+  (statt Puzey), `tinglest`, `mcwhithe`, `glocker`, `pessenti`
+- liefert nicht nur PNG: `england.gif`, `goethals.gif`
+
+Die letzten 13 kamen deshalb manuell von den Fahrerseiten (der Nutzer hat sie im Browser
+geoeffnet — die `.aspx`-Seiten waren fuer automatisierte Zugriffe gedrosselt, der Bild-Pfad
+nicht). Ihre Original-Dateinamen legten das Muster offen, mit dem danach auch die komplette
+alte Blocklist aufgeloest werden konnte.
 
 ### Die Luecke schliessen (`find-missing-photos.js`)
 

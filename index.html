@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.60</title>
+    <title>F1 RPG v0.9.15.61</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.60 (aktuell) - 31.07.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.61 (aktuell) - 01.08.2026</div>
+                            <div>&#8226; NEU: Alle 917 Fahrer haben jetzt ein geprueftes Foto - kein Sketch-Avatar mehr</div>
+                            <div>&#8226; NEU: Foto-Blocklist von 16 auf 0 - die Eintraege waren keine Konflikte, sondern unbekannte Dateinamen</div>
+                            <div>&#8226; FIX: Fotos im GIF-Format werden unterstuetzt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.60 - 31.07.2026</div>
                             <div>&#8226; NEU: Kein Fahrer ohne Foto mehr - die letzten 13 manuell von der Quelle geholt (Regazzoni, Donnelly, Bettenhausen u.a.)</div>
                             <div>&#8226; NEU: 6 Fahrer von der Foto-Blocklist befreit (Lewis-Evans, Martini, Williamson u.a.)</div>
                             <div>&#8226; FIX: Fotos im GIF-Format werden jetzt unterstuetzt</div>
@@ -3378,7 +3382,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.60';
+        const VERSION = '0.9.15.61';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -27806,6 +27810,18 @@ Empfohlene Wertebereiche:
             'pierluigi-martini': 'martinip',
             'robert-shwartzman': 'shwartzm',
             'archie-scott-brown': 'scottbro',
+            'helm-glockler': 'glocker',   // wieder ein fehlender Buchstabe in der Quelle
+            // Brueder Rodríguez: die Quelle hat doch zwei Dateien. rodrigur zeigt einen sehr
+            // jungen Fahrer im gelben Ferrari-Helm = Ricardo (starb 1962 mit 20).
+            'pedro-rodriguez': 'rodrigue',
+            'ricardo-rodriguez': 'rodrigur',
+            // Die uebrigen Paare, vom Nutzer an den Fahrerseiten abgelesen (.61):
+            'hans-stuck': 'stuckh',              // Vater, Lederkappe
+            'hans-joachim-stuck': 'stuckhj',     // Sohn, 70er
+            'vittorio-brambilla': 'brambill',    // oranger March-Overall
+            'warwick-brown': 'brownw',
+            'walt-brown': 'brownwa',             // Indy-Sturzhelm der 50er
+            'ernesto-brambilla': 'brambilt',     // fuhr als "Tino", daher das t
         };
 
         // Foto-Blocklist: Fahrer, deren Nachname-Heuristik ein FALSCHES statsf1-Foto eines
@@ -27813,19 +27829,13 @@ Empfohlene Wertebereiche:
         // → immer Sketch-Avatar statt falschem Bild (Quelle: Foto-Status-Wunschliste).
         // Wenn ein verifizierter, eindeutiger Dateiname existiert, stattdessen in
         // DRIVER_PHOTO_OVERRIDES eintragen und hier entfernen.
+        // Seit v0.9.15.61 LEER: jeder Fahrer hat ein eigenes, geprueftes Foto. Alle frueheren
+        // Eintraege waren keine echten Konflikte, sondern nur unbekannte Dateinamen — die
+        // Quelle kuerzt auf 8 Zeichen, haengt bei Namensgleichen Initiale oder Ziffer an,
+        // fuehrt Fahrer unter ihrem Rennnamen (Gimax, Geki, Bira, Tino Brambilla) und hat
+        // stellenweise Tippfehler (reggazzo, donnely, flockart, pusez, glocker).
+        // Bleibt bestehen fuer kuenftige Faelle: Eintrag hier = immer Sketch-Avatar.
         const DRIVER_PHOTO_BLOCKLIST = new Set([
-            // 🚫 Verdächtige – Dateiname gehört einem anderen Fahrer
-            // In v0.9.15.60 haben sechs von hier ihre eigene Datei bekommen (Lewis-Evans,
-            // Stevenson, Williamson, Martini, Shwartzman, Scott Brown) → stehen jetzt oben.
-            'helm-glockler',        // glock = Timo Glock; eigene Datei nicht auffindbar
-            // ⚠️ Echte Konflikte – 2 Fahrer, ein Dateiname (beide → Avatar)
-            // Alan Brown entfernt (v0.9.15.56): hat mit "browna" ein eigenes, verifiziertes Foto
-            // Archie Scott Brown raus (.60): hat mit "scottbro" eine eigene Datei
-            'walt-brown', 'warwick-brown',           // teilen sich brownw.png
-            // ↓ diese Paare teilen sich je EINE Datei — wem sie gehoert, ist ungeklaert
-            'ernesto-brambilla', 'vittorio-brambilla',
-            'hans-stuck', 'hans-joachim-stuck',
-            'pedro-rodriguez', 'ricardo-rodriguez',
         ]);
 
         // Fallback: prüfe Override-Tabelle, dann voller Slug
