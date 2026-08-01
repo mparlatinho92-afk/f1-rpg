@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.63</title>
+    <title>F1 RPG v0.9.15.64</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.63 (aktuell) - 01.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.64 (aktuell) - 01.08.2026</div>
+                            <div>&#8226; NEU: Die Flagge eines Fahrers friert mit dem Karriereende ein - ein 1985 zurueckgetretener Sowjetfahrer bleibt Sowjetbuerger</div>
+                            <div>&#8226; FIX: Nationen-Statistik reichte das Jahr im falschen Parameter durch</div>
+                            <div class="font-bold text-slate-400">v0.9.15.63 - 01.08.2026</div>
                             <div>&#8226; NEU: Historisch korrekte Flaggen ab 1950 - Sowjetunion fuer RUS/EST/UKR bis 1991, Jugoslawien fuer SRB bis 1992</div>
                             <div>&#8226; NEU: Sozialistische Staatsflaggen mit Wappen fuer Ungarn, Rumaenien und Bulgarien</div>
                             <div>&#8226; NEU: Malaiische Foederation bis 1963, Griechenland bis 1978</div>
@@ -15647,6 +15650,21 @@ const ERA_FIRST_NAMES = {
             return ioc;
         }
 
+        // v0.9.15.64: Bezugsjahr fuer die Flagge EINES FAHRERS.
+        // Solange er faehrt, gilt das betrachtete Jahr. Mit dem Karriereende friert der
+        // damalige Staat fuer ihn ein: ein 1985 zurueckgetretener Sowjetfahrer wird nicht
+        // nachtraeglich Russe, nur weil das Spiel inzwischen im Jahr 2000 ist.
+        // Wird ein Karriereende spaeter revidiert (status wieder aktiv), greift automatisch
+        // wieder das laufende Jahr — und weil im Fahrer der konkrete Nachfolgestaat steht
+        // (RUS/EST/UKR statt "URS"), ist er dann eindeutig zuzuordnen.
+        // Ein explizit angeklicktes Jahr schlaegt das immer: dort zaehlt der damalige Zustand.
+        function getDriverFlagYear(driver, contextYear) {
+            if (!driver) return contextYear;
+            if (driver.status === 'dead')    return driver.deathYear   || driver.lastRacedYear || contextYear;
+            if (driver.status === 'retired') return driver.retiredYear || driver.lastRacedYear || contextYear;
+            return contextYear;
+        }
+
         // === KONSTRUKTEUR-NATIONEN ===
         var CONSTRUCTOR_NATIONS = {
             'EMW': 'DDR', 'HECK': 'DDR', 'NACKE': 'GER', 'KRAKAU': 'GER', 'GREIFZU': 'DDR', 'REIF': 'DDR',
@@ -15877,7 +15895,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.63';
+        const VERSION = '0.9.15.64';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -18500,7 +18518,7 @@ const ERA_FIRST_NAMES = {
             const f = _nationStatsFilter;
             const rows = Object.entries(exportNationStats(f, false).byNation);
             const tab = (id, label) => `<button onclick="_nationStatsFilter='${id}';_renderNationStats()" class="px-3 py-1 rounded font-bold text-sm" style="background:${f === id ? 'var(--accent-green)' : 'var(--text-tertiary)'};color:#fff;">${label}</button>`;
-            const flag = ioc => { try { return (typeof renderFlag === 'function' && ioc !== 'UNBEKANNT') ? renderFlag(ioc, GAME_STATE.currentYear) : ''; } catch (e) { return ''; } };
+            const flag = ioc => { try { return (typeof renderFlag === 'function' && ioc !== 'UNBEKANNT') ? renderFlag(ioc, null, GAME_STATE.currentYear) : ''; } catch (e) { return ''; } };
             const cell = v => `<td style="padding:3px 8px;text-align:right;">${v}</td>`;
             const body = rows.map(([ioc, s]) => `<tr style="border-bottom:1px solid rgba(128,128,128,.15);">
                 <td style="padding:3px 8px;text-align:left;white-space:nowrap;">${flag(ioc)} ${ioc}</td>
@@ -21211,7 +21229,7 @@ const ERA_FIRST_NAMES = {
                                 const pending = (GAME_STATE.pendingAssignments || []).find(p => p.driverId === driver.id);
                                 return `
                                     <div class="flex items-center gap-3 p-3 bg-secondary rounded-lg flex-wrap">
-                                        <span>${renderFlag(driver.nation, driver.name)}</span>
+                                        <span>${renderFlag(driver.nation, driver.name, getDriverFlagYear(driver, GAME_STATE.currentYear))}</span>
                                         <span class="driver-link font-medium" onclick="openDriverProfile('${driver.id}')">${driver.name}</span>
                                         ${age ? `<span class="text-tertiary text-xs">${age}J</span>` : ''}
                                         <div class="flex items-center gap-1">
@@ -21497,7 +21515,7 @@ const ERA_FIRST_NAMES = {
                 <div class="card p-6 rounded-xl" style="min-width:320px;max-width:460px;width:92%;max-height:90vh;overflow-y:auto">
                     <h3 class="text-lg font-bold mb-1">🔄 Fahrer zuweisen</h3>
                     <div class="flex items-center gap-2 mb-5 p-3 rounded-lg" style="background:var(--bg-secondary)">
-                        <span>${renderFlag(driver.nation, driver.name)}</span>
+                        <span>${renderFlag(driver.nation, driver.name, getDriverFlagYear(driver, GAME_STATE.currentYear))}</span>
                         <span class="font-medium">${driver.name}</span>
                         <span class="text-tertiary text-xs ml-1">Pace ${_eloDisplayPace(driver, GAME_STATE.currentYear)?.[0] ?? driver.pace}</span>
                     </div>
@@ -38722,7 +38740,8 @@ Empfohlene Wertebereiche:
             if (isLegend) titleSuffix = ' (Legende)';
             else if (isFromPastSeason) titleSuffix = ' (Ehemaliger)';
             
-            const profileFlagYear = viewingHistoricalYear || GAME_STATE.currentYear;
+            // Angeklicktes Jahr schlaegt alles; sonst friert das Karriereende den Staat ein
+            const profileFlagYear = viewingHistoricalYear || getDriverFlagYear(driver, GAME_STATE.currentYear);
             document.getElementById('driverProfileTitle').innerHTML = `${renderFlag(driver.nation, driver.name, profileFlagYear)} ${driver.name}${titleSuffix}`;
             
             document.getElementById('driverProfileBody').innerHTML = `
@@ -41419,7 +41438,7 @@ Empfohlene Wertebereiche:
                                 <div class="bg-secondary p-3 rounded-lg cursor-pointer" onclick="closeTeamProfile(); openDriverProfile('${driver.id}')">
                                     <div class="flex items-center justify-between gap-2 mb-2">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-2xl">${renderFlag(driver.nation, driver.name)}</span>
+                                            <span class="text-2xl">${renderFlag(driver.nation, driver.name, getDriverFlagYear(driver, GAME_STATE.currentYear))}</span>
                                             <span class="font-bold">${driver.name}</span>
                                             ${driver.number ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
                                         </div>
