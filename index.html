@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.66</title>
+    <title>F1 RPG v0.9.15.67</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.66 (aktuell) - 01.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.67 (aktuell) - 02.08.2026</div>
+                            <div>&#8226; NEU: Streckenlayouts als SVG - 78 Strecken mit 160 Ausbaustufen, Jahres-Chips im Steckbrief und Austragungsort-Galerie</div>
+                            <div>&#8226; NEU: Reserve-Pool-Tab 'Talente (kommend)' - F2/F3-Fahrer unter 19 sind jetzt sichtbar statt zu fehlen</div>
+                            <div>&#8226; FIX: Talente unter 19 koennen nicht mehr verpflichtet oder abgeworben werden</div>
+                            <div class="font-bold text-slate-400">v0.9.15.66 - 01.08.2026</div>
                             <div>&#8226; NEU: 26 fehlende F2/F3-Fahrer der Saison 2022 im Reserve-Pool (Ghiotto, Armstrong, Vips, Trulli u.a.) - Kader jetzt 144</div>
                             <div>&#8226; FIX: Nation folgt der Rennlizenz - Smolyar startete unter neutraler Flagge und steht jetzt als Russe</div>
                             <div class="font-bold text-slate-400">v0.9.15.65 - 01.08.2026</div>
@@ -3116,6 +3120,7 @@
     <script src="data/seasons.js"></script>
     <script src="data/names.js"></script>
     <script src="data/era-first-names.js"></script>
+    <script src="data/circuit-layouts.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3453,7 +3458,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.66';
+        const VERSION = '0.9.15.67';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5160,6 +5165,15 @@
         // stattdessen einen Rookie. AUSNAHME: hat er reale PACE_RATINGS fürs Jahr, ist sein
         // ECHTES Debütjahr gekommen → nicht gaten (debütiert zu realem Alter). So trifft das
         // Gate nur FEEDER/generierte Talente, die im Pool altern, nicht echte Karrieren.
+        // v0.9.15.67: Untergrenze fuer den Reserve-Pool. Feeder unter diesem Alter stehen
+        // als "Talente (kommend)" im Pool, duerfen aber NICHT verpflichtet werden — weder
+        // ueber Free-Agent-Zugriff noch per Abwerbung. poolAgeGateOk deckt nur die Obergrenze ab.
+        const JUNIOR_MIN_AGE = 19;
+        function poolMinAgeOk(driver, year) {
+            if (!driver || !driver.birthYear) return true;      // Alter unbekannt → durchlassen
+            return (year - driver.birthYear) >= JUNIOR_MIN_AGE;
+        }
+
         const POOL_TALENT_AGE_MARGIN = 5;
         function poolAgeGateOk(driver, year) {
             if (!driver || !driver.birthYear) return true;   // Alter unbekannt → durchlassen
@@ -6812,7 +6826,7 @@
                 const noCockpit = [
                     ...GAME_STATE.drivers.filter(d => !_isGeneratedId(d.id) && !d.team && (!d.status || d.status === 'active') && _compat(d) && _excl(d)
                         && (dismissedFromTeamId ? d._dismissedFromTeam !== dismissedFromTeamId : true)),
-                    ...(GAME_STATE.reservePool || []).filter(p => !_isGeneratedId(p.id) && !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
+                    ...(GAME_STATE.reservePool || []).filter(p => !_isGeneratedId(p.id) && poolMinAgeOk(p, year) && !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) && _excl(p))
                 ];
                 const profile = arr => wantRookie ? arr.filter(_isBeginner) : arr.filter(d => !_isBeginner(d));
                 let freeReal = profile(noCockpit).sort((a, b) => _effPace(b) - _effPace(a));
@@ -6962,7 +6976,9 @@
             const _compat = d => { const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id); return teamIsIndy ? isIndy : !isIndy; };
             const allowed = (typeof getNationalityOnlyNations === 'function') ? getNationalityOnlyNations(team && (team.histId || team.id)) : null;
             const _nationOk = d => !allowed || (typeof driverIOC === 'function' ? allowed.includes(driverIOC(d)) : true);
-            const _ok = d => !_isGeneratedId(d.id) && _compat(d) && _nationOk(d);
+            // v0.9.15.67: poolMinAgeOk sperrt „Talente (kommend)" (unter 19) gegen Verpflichtung
+            const _ok = d => !_isGeneratedId(d.id) && _compat(d) && _nationOk(d)
+                && poolMinAgeOk(d, GAME_STATE.currentYear);
             const _pace = d => d.currentPace || d.pace || 0;
             let pick = GAME_STATE.drivers.filter(d => !d.team && (!d.status || d.status === 'active') && _ok(d))
                 .sort((a, b) => _pace(b) - _pace(a))[0];
@@ -8412,20 +8428,33 @@
                 ...GAME_STATE.drivers.map(d => d.id).filter(Boolean),
                 ...GAME_STATE.reservePool.map(d => d.id).filter(Boolean)
             ]);
-            let added = 0;
+            let added = 0, kommend = 0;
             for (const entry of FEEDER_DRIVERS) {
                 const name = entry[0], birthYear = entry[2];
                 const age = year - birthYear;
-                if (age < 19 || age > 26) continue;                       // Erst-Erscheinungs-Fenster
+                // v0.9.15.67: Unter 19 werden sie NICHT mehr verworfen, sondern als
+                // „Talente (kommend)" sichtbar gemacht (poolGroup 'J'). Verpflichtet werden
+                // dürfen sie erst ab 19 — das sperrt poolMinAgeOk an den Zugriffsstellen.
+                // Oben bleibt es beim Fenster: wer schon über 26 ist, kommt gar nicht mehr.
+                if (age > 26) continue;
                 const key = norm(name);
                 if (knownNames.has(key) || sdNames.has(key)) continue;     // aktiv / im Pool / echte F1-Karte
                 if (knownIds.has(feederSlug(name))) continue;              // schon einmal eingespeist
-                GAME_STATE.reservePool.push(makeFeederDriver(entry, year));
+                const fd = makeFeederDriver(entry, year);
+                if (age < JUNIOR_MIN_AGE) fd.poolGroup = 'J';             // noch zu jung → eigener Tab
+                GAME_STATE.reservePool.push(fd);
                 knownNames.add(key);
                 knownIds.add(feederSlug(name));
                 added++;
+                if (age < JUNIOR_MIN_AGE) kommend++;
             }
-            if (added) logInfo('RESERVE', `Feeder: ${added} echte F2/F3-Aufsteiger eingespeist (${year})`);
+            // Wer inzwischen 19 geworden ist, rückt aus „kommend" in den normalen Nachwuchs.
+            let reif = 0;
+            for (const d of GAME_STATE.reservePool) {
+                if (d.poolGroup === 'J' && d.birthYear && (year - d.birthYear) >= JUNIOR_MIN_AGE) { d.poolGroup = 'F'; reif++; }
+            }
+            if (added) logInfo('RESERVE', `Feeder: ${added} echte F2/F3-Aufsteiger eingespeist (${year}${kommend ? `, davon ${kommend} noch unter ${JUNIOR_MIN_AGE}` : ''})`);
+            if (reif) logInfo('RESERVE', `${reif} Talent(e) sind ${JUNIOR_MIN_AGE} geworden und jetzt verpflichtbar`);
             return added;
         }
 
@@ -8742,7 +8771,7 @@
         function isPoolTalent(d) {
             if (!d) return false;
             if (d.isIndyOnly) return false;                               // eigener Indy-Tab
-            if (d.poolGroup === 'B' || d.poolGroup === 'C') return false; // eigene Tabs (Testfahrer/Kommend)
+            if (d.poolGroup === 'B' || d.poolGroup === 'C' || d.poolGroup === 'J') return false; // eigene Tabs (Testfahrer/Kommend/Talente-kommend)
             return !(d.lastRacedYear || d.dismissedFromSim);             // nie gestartet → Talent
         }
 
@@ -8752,6 +8781,7 @@
             const cntA = pool.filter(d => (d.poolGroup === 'A' || !d.poolGroup) && !isPoolTalent(d)).length;
             const cntB = pool.filter(d => d.poolGroup === 'B').length;
             const cntC = pool.filter(d => d.poolGroup === 'C').length;
+            const cntJ = pool.filter(d => d.poolGroup === 'J').length;   // v0.9.15.67: noch zu jung
             const indyPool = pool.filter(d => d.isIndyOnly || (d.nextCockpit?.teamName && ['Watson','Kuzma','Epperly','Kurtis Kraft','KUR','WAT','EPP','KUZ'].includes(d.nextCockpit.teamName)));
             const cntIndy = indyPool.length;
 
@@ -8760,6 +8790,7 @@
             else if (_poolGroupFilter === 'A') filtered = pool.filter(d => (d.poolGroup === 'A' || !d.poolGroup) && !isPoolTalent(d));
             else if (_poolGroupFilter === 'B') filtered = pool.filter(d => d.poolGroup === 'B');
             else if (_poolGroupFilter === 'C') filtered = pool.filter(d => d.poolGroup === 'C');
+            else if (_poolGroupFilter === 'J') filtered = pool.filter(d => d.poolGroup === 'J');
             else if (_poolGroupFilter === 'indy') filtered = indyPool;
             const sorted = [...filtered].sort((a, b) =>
                 (b.lastRacedYear || 0) - (a.lastRacedYear || 0) || (b.pace || 0) - (a.pace || 0));
@@ -8771,6 +8802,7 @@
                 { key: 'A', label: `🆓 Free Agents (${cntA})` },
                 { key: 'B', label: `Testfahrer (${cntB})` },
                 { key: 'C', label: `Kommend (${cntC})` },
+                ...(cntJ > 0 ? [{ key: 'J', label: `🌱 Talente (kommend) (${cntJ})` }] : []),
                 ...(cntTalent > 0 ? [{ key: 'talent', label: `🌱 Talente (${cntTalent})` }] : []),
                 ...(cntIndy > 0 ? [{ key: 'indy', label: `🇺🇸 Indy (${cntIndy})` }] : []),
             ];
@@ -8782,6 +8814,11 @@
                     ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(124,58,237,0.15);color:#A78BFA">Nachwuchs F2/F3</span>`
                     : `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E">🌱 Talent</span>`;
                 const g = d.poolGroup;
+                // v0.9.15.67: „kommend" zeigt das Jahr, ab dem der Fahrer verpflichtet werden darf
+                if (g === 'J') {
+                    const frei = d.birthYear ? (d.birthYear + JUNIOR_MIN_AGE) : null;
+                    return `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(168,85,247,0.15);color:#C084FC">🌱 kommend${frei ? ` · ab ${frei}` : ''}</span>`;
+                }
                 return (g === 'A' || !g)
                     ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(239,68,68,0.15);color:#EF4444">Free Agent</span>`
                     : g === 'B'
@@ -30191,6 +30228,121 @@ Empfohlene Wertebereiche:
             return html;
         }
 
+        // ---- Streckenlayouts (SVG) ---------------------------------------------------
+        // Daten: data/circuit-layouts.js (Schluessel = f1db-Slug = canonicalCircuitId).
+        // Es gibt nur EINEN Pfad je Layout – Farbe kommt via currentColor aus dem Theme,
+        // damit alle 7 Themes ohne eigenen Datensatz funktionieren.
+        function _layoutSeasonMatch(seasons, year) {
+            if (!year) return false;
+            return String(seasons).split(',').some(part => {
+                const [a, b] = part.split('-').map(n => parseInt(n, 10));
+                return b ? (year >= a && year <= b) : year === a;
+            });
+        }
+
+        // Layout des Bezugsjahres; ohne Treffer das zeitlich naechstliegende.
+        window.getCircuitLayout = function(cid, year) {
+            const c = (typeof CIRCUIT_LAYOUTS !== 'undefined') && CIRCUIT_LAYOUTS[canonicalCircuitId(cid)];
+            if (!c || !c.l.length) return null;
+            const hit = c.l.find(l => _layoutSeasonMatch(l.y, year));
+            if (hit) return hit;
+            return (year && year < parseInt(c.l[0].y, 10)) ? c.l[0] : c.l[c.l.length - 1];
+        };
+
+        function _layoutSvg(layout, h, pathId) {
+            return `<svg viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet" role="img"
+                style="width:100%;height:${h}px;display:block;color:var(--accent-main)">
+                <path ${pathId ? `id="${pathId}" ` : ''}d="${layout.d}" fill="none" stroke="currentColor" stroke-width="22"
+                      stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+        }
+
+        const _layoutYears = y => String(y).replace(/,/g, ', ').replace(/-/g, '–');
+
+        // Chip-Beschriftung nur als Gesamtspanne ('1976-1979,1981-1999' → '1976–99'),
+        // sonst sprengen Strecken mit Unterbrechungen die Chip-Zeile auf dem Handy.
+        // Die vollstaendigen Jahre stehen beim ausgewaehlten Layout darueber.
+        const _layoutChipLabel = y => {
+            const ys = String(y).split(',').flatMap(p => p.split('-')).map(n => parseInt(n, 10)).filter(Boolean);
+            const a = Math.min(...ys), b = Math.max(...ys);
+            return a === b ? String(a) : `${a}–${String(b).slice(-2)}`;
+        };
+
+        const _layoutChipStyle = on => `background:${on ? 'var(--accent-main)' : 'var(--bg-tertiary)'};`
+            + `color:${on ? '#fff' : 'var(--text-secondary)'};border:1px solid ${on ? 'var(--accent-main)' : 'var(--border-color)'};`
+            + `border-radius:999px;padding:5px 10px;font-size:0.68rem;font-weight:600;line-height:1.1;`
+            + `min-height:28px;cursor:pointer;white-space:nowrap`;
+
+        // Tauscht nur den Pfad statt das Modal neu zu rendern – sonst wuerde die
+        // Tabelle darunter neu aufgebaut und die Auf/Zu-Zustaende gingen verloren.
+        window._setCircuitLayout = function(cid, idx) {
+            const c = (typeof CIRCUIT_LAYOUTS !== 'undefined') && CIRCUIT_LAYOUTS[canonicalCircuitId(cid)];
+            const l = c && c.l[idx];
+            if (!l) return;
+            const p = document.getElementById('circuitLayoutPath');
+            if (p) p.setAttribute('d', l.d);
+            const y = document.getElementById('circuitLayoutYears');
+            if (y) y.textContent = _layoutYears(l.y);
+            document.querySelectorAll('[data-layout-chip]').forEach(el =>
+                el.setAttribute('style', _layoutChipStyle(+el.dataset.layoutChip === idx)));
+        };
+
+        // Strecken-Steckbrief: Layout des Bezugsjahres + Jahres-Chips fuer alle weiteren
+        // Ausbaustufen (Monza hat 8). Die Chips brechen um statt seitlich zu scrollen,
+        // damit auf schmalen Displays keine Stufe hinter dem Rand verschwindet.
+        function _layoutCard(cid, year) {
+            const c = (typeof CIRCUIT_LAYOUTS !== 'undefined') && CIRCUIT_LAYOUTS[canonicalCircuitId(cid)];
+            if (!c || !c.l.length) return '';
+            const cur = getCircuitLayout(cid, year);
+            const idx = Math.max(0, c.l.indexOf(cur));
+            const safeCid = String(cid).replace(/'/g, '');
+            const chips = c.l.length < 2 ? '' : `
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
+                    ${c.l.map((l, i) => `<button data-layout-chip="${i}" onclick="_setCircuitLayout('${safeCid}',${i})"
+                        style="${_layoutChipStyle(i === idx)}" title="${_layoutYears(l.y)}">${_layoutChipLabel(l.y)}</button>`).join('')}
+                </div>`;
+            return `<div style="background:var(--bg-secondary);border-radius:8px;padding:10px;margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                    <div style="flex:1 1 120px;max-width:150px;margin:0 auto">${_layoutSvg(cur, 130, 'circuitLayoutPath')}</div>
+                    <div style="flex:2 1 150px;min-width:0">
+                        <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">📐 Streckenführung${c.l.length > 1 ? ` · ${c.l.length} Ausbaustufen` : ''}</div>
+                        <div id="circuitLayoutYears" style="font-size:0.82rem;font-weight:700;color:var(--text-primary)">${_layoutYears(cur.y)}</div>
+                        <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px">Layout-Daten: julesr0y/f1-circuits-svg (CC-BY-4.0)</div>
+                    </div>
+                </div>
+                ${chips}
+            </div>`;
+        }
+
+        // GP-Steckbrief: ein Grand Prix kann ueber die Jahre voellig verschiedene
+        // Strecken benutzt haben – deshalb eine Galerie aller Austragungsorte.
+        function _gpVenueGallery(all) {
+            if (!all.length) return '';
+            const venues = new Map();
+            all.forEach(e => {
+                const cid = canonicalCircuitId(e.cid);
+                if (!cid) return;
+                if (!venues.has(cid)) venues.set(cid, { cid, first: e.year, last: e.year, n: 0 });
+                const v = venues.get(cid);
+                v.first = Math.min(v.first, e.year); v.last = Math.max(v.last, e.year); v.n++;
+            });
+            const list = [...venues.values()].sort((a, b) => a.first - b.first);
+            if (!list.length) return '';
+            const cards = list.map(v => {
+                const l = getCircuitLayout(v.cid, v.last);
+                const art = l ? _layoutSvg(l, 90)
+                    : `<div style="height:90px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.7rem;border:1px dashed var(--border-color);border-radius:6px">kein Layout</div>`;
+                const yrs = v.first === v.last ? v.first : `${v.first}–${v.last}`;
+                return `<div onclick="openGameCircuitProfile('${v.cid.replace(/'/g, '')}')" title="${getCircuitDisplayName(v.cid)}"
+                        style="cursor:pointer;background:var(--bg-secondary);border-radius:8px;padding:8px;min-width:0;overflow:hidden">
+                    ${art}
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px">${getCircuitDisplayName(v.cid)}</div>
+                    <div style="font-size:0.62rem;color:var(--text-muted)">${yrs} · ${v.n} ${v.n === 1 ? 'Rennen' : 'Rennen'}</div>
+                </div>`;
+            }).join('');
+            return `<div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">📐 Austragungsorte (${list.length})</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:5px;margin-bottom:10px">${cards}</div>`;
+        }
+
         function _venueCard(all) {
             if (!all.length) return '';
             const _tn = id => !id ? '—' : id.split('-').map(w=>w.length<=3?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
@@ -30223,6 +30375,7 @@ Empfohlene Wertebereiche:
             document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName, all[all.length-1]?.year || GAME_STATE.currentYear)} ${displayName}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Rennen · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
+                ${_layoutCard(cid, all[all.length-1]?.year || GAME_STATE.currentYear)}
                 ${_venueCard(all)}
                 ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history), _buildPoleRanking(history), _buildFLRanking(history))}
                 <div style="display:flex;gap:5px;justify-content:flex-end;margin-bottom:5px">
@@ -30251,6 +30404,7 @@ Empfohlene Wertebereiche:
             document.getElementById('circuitGPProfileTitle').innerHTML = `${getGPFlagHtml(gpKey, GP_COUNTRY_MAP[gpKey])} ${gpKey}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Austragung${all.length !== 1 ? 'en' : ''} · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
+                ${_gpVenueGallery(all)}
                 ${_venueCard(all)}
                 ${_rankingBlock(_buildWinRanking(history), _buildConstrRanking(history), _gpDetailFilter, _buildStreaks(history), _buildPoleRanking(history), _buildFLRanking(history))}
                 <div style="display:flex;gap:5px;justify-content:flex-end;margin-bottom:5px">
