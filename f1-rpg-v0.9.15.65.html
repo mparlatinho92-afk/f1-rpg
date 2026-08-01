@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.64</title>
+    <title>F1 RPG v0.9.15.65</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -986,7 +986,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.64 (aktuell) - 01.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.65 (aktuell) - 01.08.2026</div>
+                            <div>&#8226; NEU: Team-Flaggen frieren mit dem Ausstieg ein, wie es die Logos schon taten</div>
+                            <div>&#8226; NEU: Grand-Prix-, Strecken- und Kalenderflaggen zeigen den Stand des jeweiligen Jahres</div>
+                            <div>&#8226; NEU: Nationenuebersicht folgt der Saisonauswahl</div>
+                            <div class="font-bold text-slate-400">v0.9.15.64 - 01.08.2026</div>
                             <div>&#8226; NEU: Die Flagge eines Fahrers friert mit dem Karriereende ein - ein 1985 zurueckgetretener Sowjetfahrer bleibt Sowjetbuerger</div>
                             <div>&#8226; FIX: Nationen-Statistik reichte das Jahr im falschen Parameter durch</div>
                             <div class="font-bold text-slate-400">v0.9.15.63 - 01.08.2026</div>
@@ -15895,7 +15899,7 @@ const ERA_FIRST_NAMES = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.64';
+        const VERSION = '0.9.15.65';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -18518,7 +18522,7 @@ const ERA_FIRST_NAMES = {
             const f = _nationStatsFilter;
             const rows = Object.entries(exportNationStats(f, false).byNation);
             const tab = (id, label) => `<button onclick="_nationStatsFilter='${id}';_renderNationStats()" class="px-3 py-1 rounded font-bold text-sm" style="background:${f === id ? 'var(--accent-green)' : 'var(--text-tertiary)'};color:#fff;">${label}</button>`;
-            const flag = ioc => { try { return (typeof renderFlag === 'function' && ioc !== 'UNBEKANNT') ? renderFlag(ioc, null, GAME_STATE.currentYear) : ''; } catch (e) { return ''; } };
+            const flag = ioc => { try { return (typeof renderFlag === 'function' && ioc !== 'UNBEKANNT') ? renderFlag(ioc, null, viewingHistoricalYear || GAME_STATE.currentYear) : ''; } catch (e) { return ''; } };
             const cell = v => `<td style="padding:3px 8px;text-align:right;">${v}</td>`;
             const body = rows.map(([ioc, s]) => `<tr style="border-bottom:1px solid rgba(128,128,128,.15);">
                 <td style="padding:3px 8px;text-align:left;white-space:nowrap;">${flag(ioc)} ${ioc}</td>
@@ -21877,7 +21881,7 @@ const ERA_FIRST_NAMES = {
                         ${_pendingNewDrivers.map(([histId, name, , nation, birthYear, pace], i) => `
                             <label class="flex items-center gap-3 p-2 rounded cursor-pointer transition" style="background:var(--bg-secondary)">
                                 <input type="checkbox" class="nd-check" data-idx="${i}" checked style="width:16px;height:16px">
-                                <span>${renderFlag(nation, name)}</span>
+                                <span>${renderFlag(nation, name, newYear)}</span>
                                 <span class="font-medium">${name}</span>
                                 ${birthYear ? `<span class="text-tertiary text-xs">${newYear - birthYear}J</span>` : ''}
                                 ${pace ? `<span class="text-xs text-tertiary ml-auto">Pace ${pace}</span>` : ''}
@@ -35331,7 +35335,7 @@ const ERA_FIRST_NAMES = {
                                         // Circuit-Fallback: circuitId (raw F1DB-ID) vor circuit (formatierter Name)
                                         const circ = (raceData?.circuitId || raceData?.circuit || '').toLowerCase().replace(/\s+/g, '-');
                                         const ioc = CIRCUIT_COUNTRY[circ];
-                                        raceFlag = ioc ? getEmojiFlag(ioc, flagYear) : renderFlag(null, raceName);
+                                        raceFlag = ioc ? getEmojiFlag(ioc, flagYear) : renderFlag(null, raceName, flagYear);
                                     }
                                     // Click: historisch (F1DB) → openHistoricalRaceModal, simuliert → openRaceDetails mit Year, aktuell → openRaceDetails
                                     const raceIdx = r.ri !== undefined ? r.ri : idx;
@@ -35772,7 +35776,7 @@ const ERA_FIRST_NAMES = {
                 const indyBadge = race.isIndy ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#B45309;color:white">Indy</span>' : '';
                 const wetBadge = WET_RACE_IDS.has(race.raceId) ? ' <span title="Regenrennen (historisch)">🌧️</span>' : '';
                 const hotBadge = HOT_RACE_IDS.has(race.raceId) || HOT_CIRCUITS.has(race.circuitId||'') ? ' <span title="Hitzerennen">🌡️</span>' : '';
-                const flag = typeof renderFlag === 'function' ? renderFlag(null, race.name) : '';
+                const flag = typeof renderFlag === 'function' ? renderFlag(null, race.name, year) : '';
                 return `<tr class="border-t border-custom card-hover cursor-pointer" onclick="openHistoricalRace(${race.raceId})">
                     <td class="p-3 text-center text-tertiary font-mono text-sm">${race.round}</td>
                     <td class="p-3">
@@ -36890,7 +36894,7 @@ const ERA_FIRST_NAMES = {
                      style="${c.isActive ? 'border-left:3px solid var(--accent-main)' : 'border-left:3px solid transparent'}"
                      onclick="openGameCircuitProfile('${c.cid}')">
                     <div>
-                        <span class="font-medium">${renderFlag(CIRCUIT_COUNTRY[c.cid] || null, c.name)} ${c.name}</span>
+                        <span class="font-medium">${renderFlag(CIRCUIT_COUNTRY[c.cid] || null, c.name, c.last)} ${c.name}</span>
                         ${c.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main)" title="Im aktuellen Kalender">📅</span>' : ''}
                         <span class="text-tertiary text-xs ml-2">${c.first}–${c.last}</span>
                         ${c.topWins > 1 ? `<span class="text-tertiary text-xs ml-3">🏆 ${c.topWinner} (${c.topWins}×)</span>` : ''}
@@ -41296,7 +41300,11 @@ Empfohlene Wertebereiche:
             
             // Titel ohne "(Historisch)" wenn Team aktuell aktiv ist
             const isCurrentlyActive = GAME_STATE.teams.some(t => t.id === team.id || t.histId === stATSId);
-            document.getElementById('teamProfileTitle').innerHTML = `${renderFlag(team.nation, team.name)} ${team.name}${isHistorical && !isCurrentlyActive ? ' (Ehemaliges Team)' : ''}`;
+            // v0.9.15.65: Gegenstueck zu getDriverFlagYear fuer Teams. Ein 1970 ausgestiegenes
+            // Team behaelt die Flagge seines Landes von damals. Dieselbe Kette benutzt das
+            // Team-LOGO schon laenger (renderTeamLogoHtml) — nur die Flagge blieb aktuell.
+            const teamFlagYear = viewingHistoricalYear || (!isCurrentlyActive && allTimeTeam.lastYear) || GAME_STATE.currentYear;
+            document.getElementById('teamProfileTitle').innerHTML = `${renderFlag(team.nation, team.name, teamFlagYear)} ${team.name}${isHistorical && !isCurrentlyActive ? ' (Ehemaliges Team)' : ''}`;
             
             // Historische Teams zeigen andere Infos
             if (isHistorical && !isCurrentlyActive) {
@@ -41310,7 +41318,7 @@ Empfohlene Wertebereiche:
                         ${renderTeamLogoHtml(stATSId || team.id, viewingHistoricalYear || allTimeTeam.lastYear || GAME_STATE.currentYear, team.color, team.name)}
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-2xl">${renderFlag(team.nation, team.name)}</span>
+                                <span class="text-2xl">${renderFlag(team.nation, team.name, teamFlagYear)}</span>
                                 <div class="text-3xl font-bold">${team.name}</div>
                             </div>
                             <div class="text-sm text-tertiary">${allTimeTeam.firstYear || '?'} – ${allTimeTeam.lastYear || '?'}</div>
@@ -41359,7 +41367,7 @@ Empfohlene Wertebereiche:
                     <div class="flex-1" style="position:relative">
                         <div class="flex items-start justify-between gap-2 mb-1">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-2xl">${renderFlag(team.nation, team.name)}</span>
+                                <span class="text-2xl">${renderFlag(team.nation, team.name, teamFlagYear)}</span>
                                 <div class="text-3xl font-bold" style="color: ${team.color}">${team.name}</div>
                             </div>
                             ${(() => {
@@ -42622,7 +42630,7 @@ Empfohlene Wertebereiche:
             const displayName = getCircuitDisplayName(cid);
             const rows = _buildModalRows(history, 'circuit');
             const noData = `<tr><td colspan="7" class="p-4 text-center text-tertiary">${_gpDetailFilter === 'played' ? 'Noch keine Rennen gespielt.' : 'Keine Daten'}</td></tr>`;
-            document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName)} ${displayName}`;
+            document.getElementById('circuitGPProfileTitle').innerHTML = `${renderFlag(CIRCUIT_COUNTRY[cid] || null, displayName, all[all.length-1]?.year || GAME_STATE.currentYear)} ${displayName}`;
             document.getElementById('circuitGPProfileBody').innerHTML = `
                 <div class="text-secondary text-sm mb-2">${all.length} Rennen · ${all[0]?.year || 1950}–${all[all.length-1]?.year || ''}</div>
                 ${_venueCard(all)}
@@ -43285,7 +43293,7 @@ Empfohlene Wertebereiche:
             const indyBadge = raceData.isIndy ? ' <span class="text-xs px-2 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>' : '';
             let html = `
                 <div class="text-center mb-4">
-                    <div class="text-4xl mb-2">${typeof renderFlag === 'function' ? renderFlag(null, raceData.name) : ''}</div>
+                    <div class="text-4xl mb-2">${typeof renderFlag === 'function' ? renderFlag(null, raceData.name, raceYear) : ''}</div>
                     <h2 class="text-2xl font-bold">${raceData.name}${indyBadge}</h2>
                     <div class="text-tertiary">${raceData.circuit || ''} | ${raceData.date || ''}</div>
                     <div class="text-sm accent-blue mt-1">Saison ${raceYear}</div>
