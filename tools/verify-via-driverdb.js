@@ -45,6 +45,19 @@ function hole(url) {
     });
 }
 
+// DriverDB fuehrt teils den vollen buergerlichen Namen, unser Kader den Rennnamen.
+// Diese Faelle sind per Namensabgleich nicht auffindbar und deshalb hier hinterlegt.
+const SLUG_AUSNAHMEN = {
+    'Javier Sagrera': 'francisco-javier-sagrera-pont',
+    'Martinius Stenshorne': 'martinius-kleve-stenshorne',
+    'Francesco Pizzi': 'francesco-raffaele-pizzi'
+};
+
+// WICHTIG zur Bewertung: DriverDB ist eine zweite Meinung, keine hoehere Instanz.
+// Beispiel Alessandro Giusti — DriverDB sagt Jahrgang 2005, Wikipedia UND Wikidata
+// sagen 2006-09-10. Bei Abweichungen also immer eine dritte Quelle heranziehen,
+// nicht blind umschreiben. Umgekehrt lag bei Francesco Simonazzi unser Kader falsch.
+
 // Slug-Verzeichnis aus den Sitemaps — die Slugs sind uneinheitlich
 // (mal vorname-nachname, mal nachname-vorname), deshalb nicht ableitbar.
 async function slugIndex() {
@@ -95,7 +108,8 @@ function personDaten(html) {
     const ok = [], abweichung = [], fehlt = [];
     for (const d of kader) {
         const umgedreht = d.name.split(/\s+/).reverse().join('');
-        const slug = slugs.get(norm(d.name)) || slugs.get(normDe(d.name))
+        const slug = SLUG_AUSNAHMEN[d.name]
+            || slugs.get(norm(d.name)) || slugs.get(normDe(d.name))
             || slugs.get(norm(umgedreht)) || slugs.get(normDe(umgedreht));
         if (!slug) { fehlt.push({ ...d, grund: 'nicht in der Sitemap' }); console.log(`  ·  ${d.name.padEnd(26)} nicht gefunden`); continue; }
         await sleep(DELAY);
