@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.70</title>
+    <title>F1 RPG v0.9.15.71</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -987,7 +987,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.70 (aktuell) - 02.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.71 (aktuell) - 02.08.2026</div>
+                            <div>&#8226; NEU: 11 weitere Junioren haben ein Foto - gefunden ueber die Commons-Volltextsuche, die bisher fehlte</div>
+                            <div>&#8226; NEU: driverdb.com als zweite Identitaetspruefung (nur Daten, keine Bilder)</div>
+                            <div>&#8226; FIX: Francesco Simonazzi hatte den falschen Jahrgang im Kader</div>
+                            <div class="font-bold text-slate-400">v0.9.15.70 - 02.08.2026</div>
                             <div>&#8226; FIX: Der Foto-Abruf prueft jetzt vor jedem Download das Geburtsjahr gegen Wikidata - falsche Namensvettern kommen nicht mehr durch</div>
                             <div class="font-bold text-slate-400">v0.9.15.69 - 02.08.2026</div>
                             <div>&#8226; NEU: Das Python-Skript zur Fahrerfoto-Recherche und seine Ergebnisse liegen jetzt im Repo</div>
@@ -3467,7 +3471,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.70';
+        const VERSION = '0.9.15.71';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -8227,7 +8231,7 @@
             ["Victor Martins","🇫🇷",2001,"F2",2025],
             ["Amaury Cordeel","🇧🇪",2002,"F2",2025],
             ["Caio Collet","🇧🇷",2002,"F3",2023],
-            ["Francesco Simonazzi","🇮🇹",2002,"F3",2023],
+            ["Francesco Simonazzi","🇮🇹",2004,"F3",2023],
             ["Frederik Vesti","🇩🇰",2002,"F2",2023],
             ["Josh Mason","🇬🇧",2002,"F2",2023],
             ["Kaylen Frederick","🇺🇸",2002,"F3",2023],
@@ -8448,6 +8452,23 @@
             'feeder-david-beckmann': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/2023-04-22_Motorsport%2C_ABB_FIA_Formula_E_World_Championship%2C_Berlin_E-Prix_2023_1DX_1009_by_Stepro.jpg/250px-2023-04-22_Motorsport%2C_ABB_FIA_Formula_E_World_Championship%2C_Berlin_E-Prix_2023_1DX_1009_by_Stepro.jpg',
             'feeder-michael-shin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Euroformula_Open_2025_-_Red_Bull_Ring_-_Michael_Shin.jpg/250px-Euroformula_Open_2025_-_Red_Bull_Ring_-_Michael_Shin.jpg',
             'feeder-ugo-ugochukwu': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Ugo_Ugochukwu_2026_%28headshot%29.jpg/250px-Ugo_Ugochukwu_2026_%28headshot%29.jpg',
+
+            // === v0.9.15.71: aus der Commons-VOLLTEXTSUCHE ===
+            // Diese Bilder liegen weder als Wikidata-Hauptbild noch in einer Fahrer-Kategorie,
+            // sondern nur als Datei mit dem Namen im Titel — die ersten drei Suchwege sahen
+            // sie nicht. Jede hat drei Huerden genommen (vollstaendiger Name, Rennkontext,
+            // Lizenz) und ist zusaetzlich ueber driverdb.com als Person bestaetigt.
+            'feeder-kush-maini': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Kush_maini_in_zandvoort_2026.jpg/250px-Kush_maini_in_zandvoort_2026.jpg',
+            'feeder-francesco-simonazzi': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Francesco_Simonazzi_Euroformula_Race_2_Red_Bull_Ring_2023.jpg/250px-Francesco_Simonazzi_Euroformula_Race_2_Red_Bull_Ring_2023.jpg',
+            'feeder-tommy-smith': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Tommy_Smith_Australian_Racing_Driver.jpg/250px-Tommy_Smith_Australian_Racing_Driver.jpg',
+            'feeder-joshua-durksen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Joshua_Durksen_in_Baku_-_2024.png/250px-Joshua_Durksen_in_Baku_-_2024.png',
+            'feeder-jose-garfias': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Euroformula_Open_2025_-_Red_Bull_Ring_-_Jos%C3%A9_Garfias_%28headshot%29.jpg/250px-Euroformula_Open_2025_-_Red_Bull_Ring_-_Jos%C3%A9_Garfias_%28headshot%29.jpg',
+            'feeder-oliver-goethe': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Oliver_Goethe_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8361%29_cropped.jpg/250px-Oliver_Goethe_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8361%29_cropped.jpg',
+            'feeder-taylor-barnard': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/2025-07-11_Motorsport%2C_ABB_FIA_Formula_E_World_Championship%2C_Berlin_E-Prix_2025_STP_0048_%28Taylor_Barnard_-_Headshot%29.jpg/250px-2025-07-11_Motorsport%2C_ABB_FIA_Formula_E_World_Championship%2C_Berlin_E-Prix_2025_STP_0048_%28Taylor_Barnard_-_Headshot%29.jpg',
+            'feeder-tuukka-taponen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/FREC_2024_Mogyor%C3%B3d_Podium_Race_1_%282%29_%28cropped%29_%28Tuukka_Taponen%29.jpg/250px-FREC_2024_Mogyor%C3%B3d_Podium_Race_1_%282%29_%28cropped%29_%28Tuukka_Taponen%29.jpg',
+            'feeder-theophile-nael': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Theophile_Nael_Macau_2025.jpg/250px-Theophile_Nael_Macau_2025.jpg',
+            'feeder-alexander-smolyar': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Alexander_Smolyar_%28MP_Motorsport%29.jpg/250px-Alexander_Smolyar_%28MP_Motorsport%29.jpg',
+            'feeder-reece-ushijima': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Reece_Ushijima_-_2022_British_Grand_Prix_%2852382588248%29_%282022%29.jpg/250px-Reece_Ushijima_-_2022_British_Grand_Prix_%2852382588248%29_%282022%29.jpg',
         };
 
         // v0.9.15.68: Bildnachweis fuer die Wikimedia-Fotos. CC BY / CC BY-SA verlangen
@@ -8512,6 +8533,17 @@
             'feeder-david-beckmann': 'Steffen Prößdorf · CC BY-SA 4.0',
             'feeder-michael-shin': 'Road Atlanta Turn 5 · CC BY-SA 4.0',
             'feeder-ugo-ugochukwu': 'Parkasity · CC0',
+            'feeder-kush-maini': 'Madball12345 · CC BY 4.0',
+            'feeder-francesco-simonazzi': '@EuroFormulaOpen via Youtube · CC BY 3.0',
+            'feeder-tommy-smith': 'James456765 · CC0',
+            'feeder-joshua-durksen': 'Formula 2 - Baku City Circuit · CC BY 4.0',
+            'feeder-jose-garfias': 'Road Atlanta Turn 5 · CC BY-SA 4.0',
+            'feeder-oliver-goethe': 'Yu Chu Chin · CC BY-SA 4.0',
+            'feeder-taylor-barnard': 'Steffen Prößdorf · CC BY-SA 4.0',
+            'feeder-tuukka-taponen': 'Lukas Raich · CC BY-SA 4.0',
+            'feeder-theophile-nael': 'Mitchea99 · CC BY-SA 4.0',
+            'feeder-alexander-smolyar': 'Alexander Smolyar · CC BY-SA 4.0',
+            'feeder-reece-ushijima': 'Jen Ross · CC BY 2.0',
         };
 
         // Deterministischer Slug (akzentfrei) – zugleich Fahrer-ID und Foto-Override-Key.
