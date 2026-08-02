@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.73</title>
+    <title>F1 RPG v0.9.15.74</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -879,72 +879,19 @@
         </div>
 
         <p style="color:#64748b;margin:0 0 16px 0;font-size:0.75rem;">
-          Fotos werden live von stATSf1.com geladen. Blocklist + Feeder unten werden dynamisch
+          Fotos werden live geladen — F1-Fahrer von stATSf1.com, Junioren von Wikimedia Commons
+          und driverdb.com. Alle Listen unten werden dynamisch
           aus dem Code erzeugt. Korrekte Dateinamen als Override eintragen (DRIVER_PHOTO_OVERRIDES
           bzw. FEEDER_PHOTO_OVERRIDES) – betroffene Fahrer verschwinden dann automatisch aus der Liste.
         </p>
 
+        <div id="foto-status-f1"></div>
+
         <div id="foto-status-dynamic"></div>
 
-        <div>
-          <div style="color:#64748b;font-weight:bold;margin-bottom:6px;">❌ NOT FOUND — kein Bild auf stATSf1.com gefunden</div>
-          <div style="color:#475569;line-height:1.8;columns:2;column-gap:16px;">
-            adolfo-schwelm-cruz<br>
-            al-herman<br>
-            alex-soler-roig<br>
-            alfonso-de-portago<br>
-            andrea-de-adamich<br>
-            andrea-de-cesaris<br>
-            basil-van-rooyen<br>
-            bill-whitehouse<br>
-            birabongse-bhanudej<br>
-            bob-anderson<br>
-            bud-tingelstad<br>
-            carel-godin-de-beaufort<br>
-            carlo-franchi<br>
-            charles-de-tornaco<br>
-            christian-goethals<br>
-            clay-regazzoni<br>
-            clive-puzey<br>
-            domenico-schiattarella<br>
-            dries-van-der-lof<br>
-            elio-de-angelis<br>
-            emilio-de-villota<br>
-            emmanuel-de-graffenried<br>
-            eric-van-de-poele<br>
-            gabriel-bortoleto<br>
-            giacomo-russo<br>
-            gijs-van-lennep<br>
-            giedo-van-der-garde<br>
-            graham-whitehead<br>
-            guy-mairesse<br>
-            hermano-da-silva-ramos<br>
-            jak-crawford<br>
-            jean-louis-schlesser<br>
-            jim-crawford<br>
-            jim-mcwithey<br>
-            jimmy-jackson<br>
-            jo-schlesser<br>
-            john-riseley-prichard<br>
-            kurt-ahrens-jr<br>
-            luis-perez-sala<br>
-            ma-qinghua<br>
-            maria-teresa-de-filippis<br>
-            mario-de-araujo-cabral<br>
-            martin-donnelly<br>
-            paul-england<br>
-            pedro-de-la-rosa<br>
-            peter-whitehead<br>
-            philip-fotheringham-parker<br>
-            ray-crawford<br>
-            rob-schroeder<br>
-            robin-montgomerie-charrington<br>
-            ron-flockhart<br>
-            tony-bettenhausen<br>
-            willy-mairesse<br>
-            yves-giraud-cabantous
-          </div>
-        </div>
+        <!-- v0.9.15.74: Die frueher hier fest eingetragene NOT-FOUND-Liste ist entfallen.
+             Sie nannte ueber 60 F1-Fahrer als bildlos, obwohl inzwischen ALLE ein Foto haben —
+             eine handgepflegte Liste veraltet unbemerkt. Der Inhalt kommt jetzt aus dem Code. -->
       </div>
     </div>
 
@@ -987,7 +934,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.73 (aktuell) - 02.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.74 (aktuell) - 02.08.2026</div>
+                            <div>&#8226; FIX: Der Foto-Status nannte ueber 60 F1-Fahrer als bildlos, obwohl alle laengst ein Foto haben - die Liste war fest einprogrammiert und kommt jetzt aus dem Code</div>
+                            <div>&#8226; NEU: Foto-Status zeigt fuer die Junioren Anzahl und Herkunft der Bilder (stATSf1, Wikimedia, DriverDB)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.73 - 02.08.2026</div>
                             <div>&#8226; NEU: 9 weitere Junioren mit Studioportraet im statsf1-Stil - Kader jetzt 97 von 144 mit Foto</div>
                             <div>&#8226; NEU: Bildnachweis auch fuer die neuen Quellen (ADAC Motorsport, INDYCAR Photography u.a.)</div>
                             <div class="font-bold text-slate-400">v0.9.15.72 - 02.08.2026</div>
@@ -3476,7 +3426,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.73';
+        const VERSION = '0.9.15.74';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -28307,17 +28257,35 @@ Empfohlene Wertebereiche:
             const el = document.getElementById('foto-status-dynamic');
             if (!el) return;
             const bl = (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined') ? [...DRIVER_PHOTO_BLOCKLIST].sort() : [];
-            let feeder = [];
+            let feeder = [], feederGesamt = 0, quellen = { statsf1: 0, wikimedia: 0, driverdb: 0 };
             if (typeof FEEDER_DRIVERS !== 'undefined' && typeof feederSlug === 'function') {
-                feeder = FEEDER_DRIVERS
-                    .map(e => ({ name: e[0], slug: feederSlug(e[0]) }))
-                    .filter(d => !(typeof FEEDER_PHOTO_OVERRIDES !== 'undefined' && FEEDER_PHOTO_OVERRIDES[d.slug]))
-                    .sort((a, b) => a.name.localeCompare(b.name));
+                const alle = FEEDER_DRIVERS.map(e => ({ name: e[0], slug: feederSlug(e[0]) }));
+                feederGesamt = alle.length;
+                const ov = (typeof FEEDER_PHOTO_OVERRIDES !== 'undefined') ? FEEDER_PHOTO_OVERRIDES : {};
+                // Herkunft steckt im Wert: blosser Dateiname = statsf1, sonst die Domain
+                for (const d of alle) {
+                    const v = ov[d.slug];
+                    if (!v) continue;
+                    if (/wikimedia\.org/.test(v)) quellen.wikimedia++;
+                    else if (/driverdb-media/.test(v)) quellen.driverdb++;
+                    else quellen.statsf1++;
+                }
+                feeder = alle.filter(d => !ov[d.slug]).sort((a, b) => a.name.localeCompare(b.name));
             }
+            // F1-Fahrer: bildlos ist nur, wer bewusst auf der Blocklist steht — jeder andere
+            // loest ueber Override oder Nachname-Regel eine URL auf (alle 917 einmal geprueft).
+            const f1El = document.getElementById('foto-status-f1');
+            if (f1El) f1El.innerHTML = bl.length
+                ? `<div style="color:#64748b;font-weight:bold;margin-bottom:6px;">❌ F1-Fahrer ohne Foto (${bl.length})</div>`
+                : `<div style="color:#4ade80;font-weight:bold;">✅ Alle F1-Fahrer haben ein Foto</div>`;
             el.innerHTML = `
                 <div style="margin-bottom:16px;">
                   <div style="color:#a78bfa;font-weight:bold;margin-bottom:6px;">🚫 Blocklist (${bl.length}) — Namensvetter/Kollision → Avatar statt falschem Foto</div>
                   <div style="color:#94a3b8;line-height:1.7;columns:2;column-gap:16px;">${bl.map(s => s + '<br>').join('')}</div>
+                </div>
+                <div style="margin-bottom:10px;color:#4ade80;font-weight:bold;">
+                  🏎️ Feeder F2/F3: ${feederGesamt - feeder.length} von ${feederGesamt} mit Foto
+                  <span style="color:#64748b;font-weight:normal;">— stATSf1 ${quellen.statsf1}, Wikimedia ${quellen.wikimedia}, DriverDB ${quellen.driverdb}</span>
                 </div>
                 <div style="margin-bottom:16px;">
                   <div style="color:#a78bfa;font-weight:bold;margin-bottom:6px;">🏎️ Feeder F2/F3 ohne Foto (${feeder.length}) — Avatar; Override via FEEDER_PHOTO_OVERRIDES</div>
