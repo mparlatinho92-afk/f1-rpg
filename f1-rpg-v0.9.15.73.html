@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.72</title>
+    <title>F1 RPG v0.9.15.73</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -987,7 +987,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.72 (aktuell) - 02.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.73 (aktuell) - 02.08.2026</div>
+                            <div>&#8226; NEU: 9 weitere Junioren mit Studioportraet im statsf1-Stil - Kader jetzt 97 von 144 mit Foto</div>
+                            <div>&#8226; NEU: Bildnachweis auch fuer die neuen Quellen (ADAC Motorsport, INDYCAR Photography u.a.)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.72 - 02.08.2026</div>
                             <div>&#8226; NEU: Alle 144 Feeder-Fahrer gegen driverdb.com gegengeprueft - Jahrgang und Nationalitaet bestaetigt</div>
                             <div class="font-bold text-slate-400">v0.9.15.71 - 02.08.2026</div>
                             <div>&#8226; NEU: 11 weitere Junioren haben ein Foto - gefunden ueber die Commons-Volltextsuche, die bisher fehlte</div>
@@ -16248,7 +16251,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.72';
+        const VERSION = '0.9.15.73';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -21246,6 +21249,25 @@ const CIRCUIT_LAYOUTS = {
             'feeder-theophile-nael': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Theophile_Nael_Macau_2025.jpg/250px-Theophile_Nael_Macau_2025.jpg',
             'feeder-alexander-smolyar': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Alexander_Smolyar_%28MP_Motorsport%29.jpg/250px-Alexander_Smolyar_%28MP_Motorsport%29.jpg',
             'feeder-reece-ushijima': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Reece_Ushijima_-_2022_British_Grand_Prix_%2852382588248%29_%282022%29.jpg/250px-Reece_Ushijima_-_2022_British_Grand_Prix_%2852382588248%29_%282022%29.jpg',
+
+            // === v0.9.15.73: Profilbilder von driverdb.com ===
+            // Studioportraets im Stil der statsf1-Bilder. Der Jahrgang wurde VOR dem Abruf
+            // gegen FEEDER_DRIVERS geprueft (tools/fetch-driverdb-portraits.js) — ein falscher
+            // Namensvetter kann hier nicht durchrutschen.
+            // ACHTUNG Rechtelage: KEINE freie Lizenz. Es sind Presse- und Verbandsfotos
+            // ("ADAC Motorsport", "INDYCAR Photography", "Penske Entertainment"). Sie werden
+            // deshalb VERLINKT statt eingebettet, und die lokalen Kopien sind per .gitignore
+            // aus dem oeffentlichen Repo ausgenommen. Nutzung fuer das private Projekt ist
+            // eine bewusste Entscheidung des Nutzers (2026-08-02).
+            'feeder-niels-koolen': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6556041_11b800cf25ebe1df0684.jpg',
+            'feeder-josh-mason': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6585415_21486da70177aa2bb6b0.jpg',
+            'feeder-ricardo-escotto': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6573435_6042b1e3a2b072502a28.jpg',
+            'feeder-tim-tramnitz': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6551693_83887799913bd5a7298c.jpg',
+            'feeder-charlie-wurz': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6568155_27f6bb1374e7af785d7a.jpg',
+            'feeder-james-wharton': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6549192_6f9b1cda3d59e9a39228.jpg',
+            'feeder-nikita-johnson': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6556122_b782e697e53f5cd4c972.jpg',
+            'feeder-david-vidales': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6534733_3857075dbcfba8361b9c.jpg',
+            'feeder-enzo-trulli': 'https://storage.googleapis.com/driverdb-media/drivers/profile/6559158_c62af9f7d8efafd6e0c2.jpg',
         };
 
         // v0.9.15.68: Bildnachweis fuer die Wikimedia-Fotos. CC BY / CC BY-SA verlangen
@@ -21321,6 +21343,15 @@ const CIRCUIT_LAYOUTS = {
             'feeder-theophile-nael': 'Mitchea99 · CC BY-SA 4.0',
             'feeder-alexander-smolyar': 'Alexander Smolyar · CC BY-SA 4.0',
             'feeder-reece-ushijima': 'Jen Ross · CC BY 2.0',
+            'feeder-niels-koolen': 'INDYCAR Photography',
+            'feeder-josh-mason': 'INDYCAR Photography',
+            'feeder-ricardo-escotto': 'Penske Entertainment: James Black',
+            'feeder-tim-tramnitz': 'ADAC Motorsport',
+            'feeder-charlie-wurz': 'ADAC Motorsport',
+            'feeder-james-wharton': 'ADAC Motorsport',
+            'feeder-nikita-johnson': 'Penske Entertainment: Chris Owens',
+            'feeder-david-vidales': 'Super Formula Lights',
+            'feeder-enzo-trulli': 'Super Formula Lights',
         };
 
         // Deterministischer Slug (akzentfrei) – zugleich Fahrer-ID und Foto-Override-Key.
@@ -41034,7 +41065,7 @@ Empfohlene Wertebereiche:
             // object-fit:contain klein und mit Balken stehen. Sie werden deshalb formatfuellend
             // beschnitten. statsf1-Portraets bleiben unberuehrt — deren Seitenverhaeltnis
             // entspricht ohnehin dem Rahmen, ein Zuschnitt wuerde dort nur Rand abschneiden.
-            const fillCls = /wikimedia\.org/.test(url) ? ' class="fill"' : '';
+            const fillCls = /wikimedia\.org|driverdb-media/.test(url) ? ' class="fill"' : '';
             const box = `<div class="profile-photo-wrap">
                 <img data-lazy-src="${url}"${fbAttr}${fillCls} referrerpolicy="no-referrer" alt="Fahrerfoto">
                 <div class="profile-photo-fallback">${getDriverAvatarSvg()}</div>
