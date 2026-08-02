@@ -12,6 +12,12 @@
  * 2) Die Bilder stehen unter CC-Lizenzen. Lizenz und Urheber werden je Bild mitgesichert,
  *    sonst duerfen sie nicht angezeigt werden. Bilder OHNE Lizenzangabe werden
  *    uebersprungen.
+ * 3) IDENTITAETSPFLICHT: der Wikidata-Eintrag wird ueber den NAMEN gesucht — das trifft
+ *    regelmaessig einen Namensvetter. So kamen ein Schauspieler ("Santiago Ramos",
+ *    Filmfestival 2011), ein TV-Brasilianer ("Roberto Faria", Jahrgang 1932) und ein
+ *    fremder "Tommy Smith" (1990 statt 2002) ins Spiel. ALLE DREI ueber wikidata_P18 —
+ *    der Fundweg sagt also nichts aus. Einzige Absicherung ist der Jahrgang: P569 muss
+ *    zum Geburtsjahr in FEEDER_DRIVERS passen, sonst wird das Bild NICHT uebernommen.
  *
  * Aufruf: node tools/fetch-feeder-thumbnails.js [--breite=200] [--delay=900] [--force]
  */
@@ -63,6 +69,15 @@ async function reqGeduldig(url) {
 }
 const json = async url => { const r = await reqGeduldig(url); try { return JSON.parse(r.buf.toString()); } catch (e) { return null; } };
 
+// Geburtsjahr laut Wikidata (P569). null = nicht ermittelbar.
+async function wikidataJahrgang(qid) {
+    const d = await json('https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims&ids=' + qid);
+    try {
+        const t = d.entities[qid].claims.P569[0].mainsnak.datavalue.value.time;
+        return parseInt(String(t).replace(/^[+-]/, '').slice(0, 4), 10);
+    } catch (e) { return null; }
+}
+
 (async () => {
     // Beide Quellen zusammenfuehren: Nutzer-Skript + eigene Nachsuche
     const quellen = ['fahrerfotos_ergebnis.json', path.join('assets-backup', 'feeder-photos-found.json')];
@@ -79,6 +94,7 @@ const json = async url => { const r = await reqGeduldig(url); try { return JSON.
     const h = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
     const i = h.indexOf('const FEEDER_DRIVERS'), e = h.indexOf('\n        ];', i);
     const kader = new Set([...h.slice(i, e).matchAll(/\["([^"]+)",/g)].map(m => m[1]));
+    const jahrgang = new Map([...h.slice(i, e).matchAll(/\["([^"]+)","[^"]*",(\d+),/g)].map(m => [m[1], +m[2]]));
 
     const liste = [...byName.values()].filter(r => kader.has(r.name));
     const ohneLizenz = liste.filter(r => !r.license);
@@ -99,6 +115,17 @@ const json = async url => { const r = await reqGeduldig(url); try { return JSON.
             cached++; continue;
         }
         await sleep(DELAY);
+        // Identitaet zuerst: falscher Mensch = Bild gar nicht erst holen
+        const soll = jahrgang.get(r.name);
+        if (r.wikidata_qid && soll) {
+            const ist = await wikidataJahrgang(r.wikidata_qid);
+            if (ist && ist !== soll) {
+                rows.push({ name: r.name, status: 'FALSCHE PERSON', error: `Jahrgang ${ist} statt ${soll}`, wikidata_qid: r.wikidata_qid });
+                fail++; console.log(`  ${r.name.padEnd(24)} FALSCHE PERSON — Jahrgang ${ist} statt ${soll}`);
+                continue;
+            }
+            await sleep(400);
+        }
         const commonsFile = decodeURIComponent(r.image_url.split('/').pop());
         const meta = await json('https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=url|size'
             + '&iiurlwidth=' + BREITE + '&titles=' + encodeURIComponent('File:' + commonsFile));
@@ -110,7 +137,7 @@ const json = async url => { const r = await reqGeduldig(url); try { return JSON.
         const img = await reqGeduldig(thumb);
         if (!img.buf) { rows.push({ name: r.name, status: 'FEHLER', error: img.error || ('HTTP ' + img.code) }); fail++; console.log(`  ${r.name.padEnd(24)} ${img.error || 'HTTP ' + img.code}`); continue; }
         fs.writeFileSync(dest, img.buf);
-        rows.push({ name: r.name, file, bytes: img.buf.length, license: r.license, author: r.author, source: r.image_url, thumb, status: 'ok', sha256: crypto.createHash('sha256').update(img.buf).digest('hex') });
+        rows.push({ name: r.name, file, bytes: img.buf.length, license: r.license, author: r.author, source: r.image_url, thumb, wikidata_qid: r.wikidata_qid, status: 'ok', sha256: crypto.createHash('sha256').update(img.buf).digest('hex') });
         ok++;
         if ((ok + cached + fail) % 25 === 0) console.log(`  ...${ok + cached + fail}/${arbeit.length}`);
     }
