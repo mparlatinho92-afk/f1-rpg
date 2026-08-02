@@ -951,7 +951,7 @@ const HIST_NAMES = {
 "alex-yoong":"Alex Yoong",
 "alex-zanardi":"Alex Zanardi",
 "alexander-albon":"Alexander Albon",
-"alexander-dunne":"Alexander Dunne",
+"alexander-dunne":"Alex Dunne",
 "alexander-rossi":"Alexander Rossi",
 "alexander-wurz":"Alexander Wurz",
 "alexandre-premat":"Alexandre Prémat",

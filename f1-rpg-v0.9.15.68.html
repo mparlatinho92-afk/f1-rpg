@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.67</title>
+    <title>F1 RPG v0.9.15.68</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -363,6 +363,7 @@
             opacity: 0;
             transition: opacity 0.4s ease;
         }
+        .profile-photo-wrap img.fill { object-fit: cover; object-position: center 22%; }
         .profile-photo-wrap img.lazy-loaded {
             opacity: 1;
         }
@@ -986,7 +987,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.67 (aktuell) - 02.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.68 (aktuell) - 02.08.2026</div>
+                            <div>&#8226; NEU: 77 Junioren im Reserve-Pool haben ein Foto statt Avatar, mit Bildnachweis fuer die CC-Lizenzen</div>
+                            <div>&#8226; FIX: Drei Fotos zeigten voellig andere Personen - alle Bilder jetzt ueber den Jahrgang gegen Wikidata geprueft</div>
+                            <div>&#8226; FIX: Alex Dunne war doppelt - Junior und historischer Eintrag sind jetzt eine Person</div>
+                            <div class="font-bold text-slate-400">v0.9.15.67 - 02.08.2026</div>
                             <div>&#8226; NEU: Streckenlayouts als SVG - 78 Strecken mit 160 Ausbaustufen, Jahres-Chips im Steckbrief und Austragungsort-Galerie</div>
                             <div>&#8226; NEU: Reserve-Pool-Tab 'Talente (kommend)' - F2/F3-Fahrer unter 19 sind jetzt sichtbar statt zu fehlen</div>
                             <div>&#8226; FIX: Talente unter 19 koennen nicht mehr verpflichtet oder abgeworben werden</div>
@@ -4946,7 +4951,7 @@ const HIST_NAMES = {
 "alex-yoong":"Alex Yoong",
 "alex-zanardi":"Alex Zanardi",
 "alexander-albon":"Alexander Albon",
-"alexander-dunne":"Alexander Dunne",
+"alexander-dunne":"Alex Dunne",
 "alexander-rossi":"Alexander Rossi",
 "alexander-wurz":"Alexander Wurz",
 "alexandre-premat":"Alexandre Prémat",
@@ -16233,7 +16238,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.67';
+        const VERSION = '0.9.15.68';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -21131,6 +21136,153 @@ const CIRCUIT_LAYOUTS = {
         const FEEDER_PHOTO_OVERRIDES = {
             'feeder-theo-pourchaire': 'pourchai',   // verifiziert via stATSf1
             'feeder-zak-o-sullivan': 'osulliva',    // verifiziert via stATSf1
+
+            // === v0.9.15.68: Fotos fuer die F2/F3-Junioren ===
+            // Wert ohne Punkt/Protokoll = statsf1-Dateiname (wie bei den F1-Fahrern),
+            // volle URL = Wikimedia Commons. Beides kann getDriverPhotoUrl bereits.
+            // Bei Fahrern, die auch bei statsf1 liegen, hat deren PORTRAET Vorrang —
+            // einheitlicher Zuschnitt statt Rennfoto aus der Ferne.
+            // Die Wikimedia-Bilder stehen unter CC-Lizenzen und verlangen Namensnennung;
+            // die Urheber stehen in assets-backup/manifest.json und im Bildnachweis.
+            'feeder-alex-dunne': 'dunne',   // = Alexander Dunne in F1DB, dort mit Portraet
+            'feeder-arthur-leclerc': 'leclerca',   // statsf1-Portraet
+            'feeder-arvid-lindblad': 'lindblad',   // statsf1-Portraet
+            'feeder-ayrton-simmons': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Ayrton_Simmons_-_2017_British_F4_Knockhill_%28Sunday%2C_R4_podium%29.jpg/250px-Ayrton_Simmons_-_2017_British_F4_Knockhill_%28Sunday%2C_R4_podium%29.jpg',
+            'feeder-ayumu-iwasa': 'iwasa',   // statsf1-Portraet
+            'feeder-brando-badoer': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/FREC_2024_Mogyor%C3%B3d_Podium_Race_1_%282%29_%28cropped%29_%28Brando_Badoer%29.jpg/250px-FREC_2024_Mogyor%C3%B3d_Podium_Race_1_%282%29_%28cropped%29_%28Brando_Badoer%29.jpg',
+            'feeder-caio-collet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Caio_Collet%2C_interview.jpg/250px-Caio_Collet%2C_interview.jpg',
+            'feeder-calan-williams': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/WilliamsInterview_%28cropped%29.jpg/250px-WilliamsInterview_%28cropped%29.jpg',
+            'feeder-cem-bolukbas': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Cem_Bolukbasi_Austria_2022.jpg/250px-Cem_Bolukbasi_Austria_2022.jpg',
+            'feeder-christian-mansell': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Christian_Mansell_2022.jpg/250px-Christian_Mansell_2022.jpg',
+            'feeder-cian-shields': 'shields',   // statsf1-Portraet
+            'feeder-clement-novalak': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Cl%C3%A9ment_Novalak_Austria_2022.jpg/250px-Cl%C3%A9ment_Novalak_Austria_2022.jpg',
+            'feeder-colton-herta': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Colton_Herta_%282021%29.jpg/250px-Colton_Herta_%282021%29.jpg',
+            'feeder-dennis-hauger': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Dennis_Hauger_Austria_2022.jpg/250px-Dennis_Hauger_Austria_2022.jpg',
+            'feeder-dino-beganovic': 'beganovi',   // statsf1-Portraet
+            'feeder-emerson-fittipaldi-jr': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Emmo_Fittipaldi_Jr.%2C_MotorLand_Arag%C3%B3n_2021.jpg/250px-Emmo_Fittipaldi_Jr.%2C_MotorLand_Arag%C3%B3n_2021.jpg',
+            'feeder-enzo-deligny': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Enzo_Deligny_Monza_%28cropped%29.jpg/250px-Enzo_Deligny_Monza_%28cropped%29.jpg',
+            'feeder-enzo-fittipaldi': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Enzo_Fittipaldi_%28cropped%29.jpg/250px-Enzo_Fittipaldi_%28cropped%29.jpg',
+            'feeder-ernesto-rivera': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Eurocup-3_2025_-_Monza_-_Ernesto_Rivera_%28headshot%29.jpg/250px-Eurocup-3_2025_-_Monza_-_Ernesto_Rivera_%28headshot%29.jpg',
+            'feeder-federico-malvestiti': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Federico_Malvestiti_Austria_2022.jpg/250px-Federico_Malvestiti_Austria_2022.jpg',
+            'feeder-fernando-barrichello': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Euroformula_Open_2024_Mogyor%C3%B3d_Podium_Race_1_%283%29_%28Fernando_Barrichello%29.jpg/250px-Euroformula_Open_2024_Mogyor%C3%B3d_Podium_Race_1_%283%29_%28Fernando_Barrichello%29.jpg',
+            'feeder-filip-ugran': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Ugran_2021_Spielberg.jpg/250px-Ugran_2021_Spielberg.jpg',
+            'feeder-franco-colapinto': 'colapint',   // statsf1-Portraet
+            'feeder-freddie-slater': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Freddie_Slater_Macau_2025_%28cropped%29.jpg/250px-Freddie_Slater_Macau_2025_%28cropped%29.jpg',
+            'feeder-frederik-vesti': 'vesti',   // statsf1-Portraet
+            'feeder-gabriel-bortoleto': 'bortoleg',   // statsf1-Portraet
+            'feeder-gregoire-saucy': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Gr%C3%A9goire_Saucy_Austria_2022.jpg/250px-Gr%C3%A9goire_Saucy_Austria_2022.jpg',
+            'feeder-hugh-barter': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/HughBarterpreseasonupdatesvideoyoutube2021.jpg/250px-HughBarterpreseasonupdatesvideoyoutube2021.jpg',
+            'feeder-hunter-yeany': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Hunter_Yeany_Austria_2022.jpg/250px-Hunter_Yeany_Austria_2022.jpg',
+            'feeder-isack-hadjar': 'hadjar',   // statsf1-Portraet
+            'feeder-ivan-domingues': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Domingues_Ivan_2022.jpg/250px-Domingues_Ivan_2022.jpg',
+            'feeder-jack-doohan': 'doohan',   // statsf1-Portraet
+            'feeder-jak-crawford': 'crawforc',   // statsf1-Portraet
+            'feeder-jake-hughes': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Jake_Hughes_Austria_2022.jpg/250px-Jake_Hughes_Austria_2022.jpg',
+            'feeder-jehan-daruvala': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Jehan_Daruvala_Austria_2022.jpg/250px-Jehan_Daruvala_Austria_2022.jpg',
+            'feeder-jin-nakamura': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Jin_Nakamura_Spa_2025.png/250px-Jin_Nakamura_Spa_2025.png',
+            'feeder-joshua-dufek': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Youtube_Joshua_Dufek_Mugello_Race_1_Euroformula_Open_2023.jpg/250px-Youtube_Joshua_Dufek_Mugello_Race_1_Euroformula_Open_2023.jpg',
+            'feeder-juan-manuel-correa': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Juan_Manuel_Correa_Austria_2022.jpg/250px-Juan_Manuel_Correa_Austria_2022.jpg',
+            'feeder-juri-vips': 'vips',   // statsf1-Portraet
+            'feeder-kacper-sztuka': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Kacper_Sztuka.jpg/250px-Kacper_Sztuka.jpg',
+            'feeder-laurens-van-hoepen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Laurens_van_Hoepen_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8345%29_cropped.jpg/250px-Laurens_van_Hoepen_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8345%29_cropped.jpg',
+            'feeder-louis-sharp': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Louis_Sharp_Oulton_Park_2022.jpg/250px-Louis_Sharp_Oulton_Park_2022.jpg',
+            'feeder-luca-ghiotto': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Lucaghiottoitaliangp.jpg/250px-Lucaghiottoitaliangp.jpg',
+            'feeder-luke-browning': 'browning',   // statsf1-Portraet
+            'feeder-maciej-g-adysz': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/MaciejGladysz.jpg/250px-MaciejGladysz.jpg',
+            'feeder-marcus-armstrong': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Marcus_Armstrong_Austria_2022.jpg/250px-Marcus_Armstrong_Austria_2022.jpg',
+            'feeder-marino-sato': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Marino_Sato_Austria_2022.jpg/250px-Marino_Sato_Austria_2022.jpg',
+            'feeder-matteo-de-palo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Matteo_De_Palo_Macau_2025.jpg/250px-Matteo_De_Palo_Macau_2025.jpg',
+            'feeder-nico-varrone': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Nico_Varrone_in_2023.jpg/250px-Nico_Varrone_in_2023.jpg',
+            'feeder-nikita-bedrin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Nikita_Bedrin_Spa_2025.png/250px-Nikita_Bedrin_Spa_2025.png',
+            'feeder-nikola-tsolov': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/%D0%9D%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0_%D0%A6%D0%BE%D0%BB%D0%BE%D0%B2_-_%D0%B1%D1%8A%D0%BB%D0%B3%D0%B0%D1%80%D1%81%D0%BA%D0%B0%D1%82%D0%B0_%D0%BD%D0%B0%D0%B4%D0%B5%D0%B6%D0%B4%D0%B0_%28Nikola_Tsolov%29_%28cropped%29_%28cropped%29.jpg/250px-%D0%9D%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0_%D0%A6%D0%BE%D0%BB%D0%BE%D0%B2_-_%D0%B1%D1%8A%D0%BB%D0%B3%D0%B0%D1%80%D1%81%D0%BA%D0%B0%D1%82%D0%B0_%D0%BD%D0%B0%D0%B4%D0%B5%D0%B6%D0%B4%D0%B0_%28Nikola_Tsolov%29_%28cropped%29_%28cropped%29.jpg',
+            'feeder-noel-leon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Noel_Le%C3%B3n_Race_3_Paul_Ricard_EuroFormula_Open.jpg/250px-Noel_Le%C3%B3n_Race_3_Paul_Ricard_EuroFormula_Open.jpg',
+            'feeder-oliver-bearman': 'bearman',   // statsf1-Portraet
+            'feeder-oliver-rasmussen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Oliver_Rasmussen_in_2023.jpg/250px-Oliver_Rasmussen_in_2023.jpg',
+            'feeder-olli-caldwell': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Olli_Caldwell_in_2023.jpg/250px-Olli_Caldwell_in_2023.jpg',
+            'feeder-paul-aron': 'aron',   // statsf1-Portraet
+            'feeder-rafael-camara': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Rafael_C%C3%A2mara_in_2022.jpg/250px-Rafael_C%C3%A2mara_in_2022.jpg',
+            'feeder-richard-verschoor': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Richard_Verschoor_Austria_2022.jpg/250px-Richard_Verschoor_Austria_2022.jpg',
+            'feeder-ritomo-miyata': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ritomo_Miyata_6_Hours_of_Monza_2023.jpg/250px-Ritomo_Miyata_6_Hours_of_Monza_2023.jpg',
+            'feeder-roman-bilinski': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Screenshot_MocMarzen_Roman_Bilinski_video_2025.jpg/250px-Screenshot_MocMarzen_Roman_Bilinski_video_2025.jpg',
+            'feeder-roman-stanek': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/R.Stan%C4%9Bk_%28cropped%29.jpg/250px-R.Stan%C4%9Bk_%28cropped%29.jpg',
+            'feeder-roy-nissany': 'nissanyr',   // statsf1-Portraet
+            'feeder-sami-meguetounif': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Sami_Meguetounif_ADAC_F4_Hockenheim.jpg/250px-Sami_Meguetounif_ADAC_F4_Hockenheim.jpg',
+            'feeder-sebastian-montoya': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Sebasti%C3%A1n_Montoya_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8351%29_cropped.jpg/250px-Sebasti%C3%A1n_Montoya_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8351%29_cropped.jpg',
+            'feeder-sophia-florsch': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/My_TOP_5_FAVORITE_TROPHIES_%28Floersch_on_YouTube%29_04_%28cropped%29.jpg/250px-My_TOP_5_FAVORITE_TROPHIES_%28Floersch_on_YouTube%29_04_%28cropped%29.jpg',
+            'feeder-tasanapol-inthraphuvasak': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Tasanapol_Inthraphuvasak_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8336%29.jpg/250px-Tasanapol_Inthraphuvasak_at_the_Melbourne_Walk_during_the_2026_Australian_Grand_Prix_%28028A8336%29.jpg',
+            'feeder-tatiana-calderon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Tatiana_Calder%C3%B3n_primera_latina_en_pilotear_un_F%C3%B3rmula_Uno_01_%28cropped-1%29.jpg/250px-Tatiana_Calder%C3%B3n_primera_latina_en_pilotear_un_F%C3%B3rmula_Uno_01_%28cropped-1%29.jpg',
+            'feeder-victor-martins': 'martins',   // statsf1-Portraet
+            'feeder-william-alatalo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/William_Alatalo_Austria_2022.jpg/250px-William_Alatalo_Austria_2022.jpg',
+            'feeder-yevan-david': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Yevan_David_2023.png/250px-Yevan_David_2023.png',
+            'feeder-zane-maloney': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Zane_Maloney_Austria_2022.jpg/250px-Zane_Maloney_Austria_2022.jpg',
+            'feeder-zdenek-chovanec': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Zdenek_Chovanec_Austria_2022.jpg/250px-Zdenek_Chovanec_Austria_2022.jpg',
+            'feeder-david-beckmann': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/2023-04-22_Motorsport%2C_ABB_FIA_Formula_E_World_Championship%2C_Berlin_E-Prix_2023_1DX_1009_by_Stepro.jpg/250px-2023-04-22_Motorsport%2C_ABB_FIA_Formula_E_World_Championship%2C_Berlin_E-Prix_2023_1DX_1009_by_Stepro.jpg',
+            'feeder-michael-shin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Euroformula_Open_2025_-_Red_Bull_Ring_-_Michael_Shin.jpg/250px-Euroformula_Open_2025_-_Red_Bull_Ring_-_Michael_Shin.jpg',
+            'feeder-ugo-ugochukwu': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Ugo_Ugochukwu_2026_%28headshot%29.jpg/250px-Ugo_Ugochukwu_2026_%28headshot%29.jpg',
+        };
+
+        // v0.9.15.68: Bildnachweis fuer die Wikimedia-Fotos. CC BY / CC BY-SA verlangen
+        // Nennung des Urhebers — ohne diese Tabelle duerften die Bilder nicht gezeigt werden.
+        // Ausgabe unter dem Foto im Fahrer-Steckbrief (renderDriverPhotoHtml).
+        const FEEDER_PHOTO_CREDITS = {
+
+            'feeder-ayrton-simmons': 'Cs-wolves · CC BY-SA 4.0',
+            'feeder-brando-badoer': 'Lukas Raich · CC BY-SA 4.0',
+            'feeder-caio-collet': 'Lito Cavalcanti on YouTube · CC BY 3.0',
+            'feeder-calan-williams': 'Calan54 · CC BY-SA 4.0',
+            'feeder-cem-bolukbas': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-christian-mansell': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-clement-novalak': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-colton-herta': 'Wolkenjaeger · CC BY-SA 4.0',
+            'feeder-dennis-hauger': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-emerson-fittipaldi-jr': 'LaComarcaTeVe · CC BY 3.0',
+            'feeder-enzo-deligny': 'fotocar13 · CC BY 4.0',
+            'feeder-enzo-fittipaldi': 'Zach Catanzareti Photo · CC BY-SA 2.0',
+            'feeder-ernesto-rivera': 'Road Atlanta Turn 5 · CC BY-SA 4.0',
+            'feeder-federico-malvestiti': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-fernando-barrichello': 'Lukas Raich · CC BY-SA 4.0',
+            'feeder-filip-ugran': 'AS19Portsmouth · CC BY-SA 4.0',
+            'feeder-freddie-slater': 'Mitchea99 · CC BY-SA 4.0',
+            'feeder-gregoire-saucy': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-hugh-barter': 'Hugh Barter Racing · CC BY 3.0',
+            'feeder-hunter-yeany': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-ivan-domingues': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-jake-hughes': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-jehan-daruvala': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-jin-nakamura': 'Maceekim · CC BY-SA 4.0',
+            'feeder-joshua-dufek': '@EuroFormulaOpen via Youtube · CC BY 3.0',
+            'feeder-juan-manuel-correa': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-kacper-sztuka': 'Kkossek · CC BY-SA 4.0',
+            'feeder-laurens-van-hoepen': 'Yu Chu Chin · CC BY-SA 4.0',
+            'feeder-louis-sharp': 'AmazingLemur41 · CC BY-SA 4.0',
+            'feeder-luca-ghiotto': 'Nikkei919 · CC BY-SA 4.0',
+            'feeder-maciej-g-adysz': 'Media4Racing · CC0',
+            'feeder-marcus-armstrong': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-marino-sato': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-matteo-de-palo': 'Mitchea99 · CC BY-SA 4.0',
+            'feeder-nico-varrone': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-nikita-bedrin': 'Maceekim · CC BY-SA 4.0',
+            'feeder-nikola-tsolov': 'ClubS1Video · CC BY 3.0',
+            'feeder-noel-leon': '@EuroFormulaOpen via Youtube · CC BY 3.0',
+            'feeder-oliver-rasmussen': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-olli-caldwell': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-rafael-camara': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-richard-verschoor': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-ritomo-miyata': 'BanHada2434 · CC BY-SA 4.0',
+            'feeder-roman-bilinski': '@MocMarzen Via Youtube · CC BY 4.0',
+            'feeder-roman-stanek': 'P.paroubkova · CC BY-SA 4.0',
+            'feeder-sami-meguetounif': 'AS19Portsmouth · CC BY-SA 4.0',
+            'feeder-sebastian-montoya': 'Yu Chu Chin · CC BY-SA 4.0',
+            'feeder-sophia-florsch': 'Sophia Floersch on YouTube · CC BY 3.0',
+            'feeder-tasanapol-inthraphuvasak': 'Yu Chu Chin · CC BY-SA 4.0',
+            'feeder-tatiana-calderon': 'NotimexTV on YouTube · CC BY 3.0',
+            'feeder-william-alatalo': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-yevan-david': 'Ada Derana English · CC BY 3.0',
+            'feeder-zane-maloney': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-zdenek-chovanec': 'KVYTICAL · CC BY-SA 4.0',
+            'feeder-david-beckmann': 'Steffen Prößdorf · CC BY-SA 4.0',
+            'feeder-michael-shin': 'Road Atlanta Turn 5 · CC BY-SA 4.0',
+            'feeder-ugo-ugochukwu': 'Parkasity · CC0',
         };
 
         // Deterministischer Slug (akzentfrei) – zugleich Fahrer-ID und Foto-Override-Key.
@@ -21138,6 +21290,18 @@ const CIRCUIT_LAYOUTS = {
             return 'feeder-' + name.normalize('NFD').replace(/[̀-ͯ]/g, '')
                 .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         }
+
+        // v0.9.15.68: Feeder, die in der F1-Historie unter einem ANDEREN Namen stehen.
+        // Alex Dunne heisst in F1DB "Alexander Dunne" — ohne diese Bruecke fuehrt das Spiel
+        // ihn zweimal: einmal als Junior im Pool, einmal als historischen Fahrer.
+        // BEWUSST NUR Namensabweichungen. Feeder, deren Name ohnehin passt (Bortoleto,
+        // Hadjar, Bearman ...), bekommen KEINE histId: sie stehen teils in PACE_RATINGS,
+        // und die Alterssperre im Pool hat dafuer eine Ausnahme — das wuerde ihr Verhalten
+        // aendern. Dunne steht nicht in PACE_RATINGS, sein Datensatz ist eine leere
+        // Bilanz (0 Rennen, 2025-2025) und damit sachlich richtig.
+        const FEEDER_HIST_IDS = {
+            'Alex Dunne': 'alexander-dunne',
+        };
 
         // Baut einen Reserve-Pool-Fahrer aus einem FEEDER_DRIVERS-Eintrag.
         // pace/potential werden ZUFÄLLIG gewürfelt → pro Spielstand andere Werte (Identität bleibt real).
@@ -21149,7 +21313,7 @@ const CIRCUIT_LAYOUTS = {
             const con = Math.min(95, Math.max(45, currentPace + (Math.floor(Math.random() * 21) - 12)));
             return {
                 id: feederSlug(name),
-                histId: null, name, team: null,
+                histId: FEEDER_HIST_IDS[name] || null, name, team: null,
                 isIndyOnly: false,
                 nation: nat,
                 number: null,
@@ -21215,6 +21379,10 @@ const CIRCUIT_LAYOUTS = {
                 const key = norm(name);
                 if (knownNames.has(key) || sdNames.has(key)) continue;     // aktiv / im Pool / echte F1-Karte
                 if (knownIds.has(feederSlug(name))) continue;              // schon einmal eingespeist
+                // Auch ueber die historische ID pruefen: faehrt der Mensch inzwischen unter
+                // seinem F1-Namen im Grid, darf der Junior nicht zusaetzlich entstehen.
+                const hid = FEEDER_HIST_IDS[name];
+                if (hid && GAME_STATE.drivers.some(d => d.histId === hid)) continue;
                 const fd = makeFeederDriver(entry, year);
                 if (age < JUNIOR_MIN_AGE) fd.poolGroup = 'J';             // noch zu jung → eigener Tab
                 GAME_STATE.reservePool.push(fd);
@@ -40822,10 +40990,21 @@ Empfohlene Wertebereiche:
             }
             const fallbackUrl = getDriverPhotoUrlFallback(driverId);
             const fbAttr = (fallbackUrl && fallbackUrl !== url) ? ` data-fallback-src="${fallbackUrl}"` : '';
-            return `<div class="profile-photo-wrap">
-                <img data-lazy-src="${url}"${fbAttr} referrerpolicy="no-referrer" alt="Fahrerfoto">
+            // Bildnachweis nur wo noetig (Wikimedia-Fotos der Junioren)
+            const credit = (typeof FEEDER_PHOTO_CREDITS !== 'undefined') && FEEDER_PHOTO_CREDITS[driverId];
+            // Wikimedia-Aufnahmen sind unterschiedlich zugeschnitten und wuerden mit
+            // object-fit:contain klein und mit Balken stehen. Sie werden deshalb formatfuellend
+            // beschnitten. statsf1-Portraets bleiben unberuehrt — deren Seitenverhaeltnis
+            // entspricht ohnehin dem Rahmen, ein Zuschnitt wuerde dort nur Rand abschneiden.
+            const fillCls = /wikimedia\.org/.test(url) ? ' class="fill"' : '';
+            const box = `<div class="profile-photo-wrap">
+                <img data-lazy-src="${url}"${fbAttr}${fillCls} referrerpolicy="no-referrer" alt="Fahrerfoto">
                 <div class="profile-photo-fallback">${getDriverAvatarSvg()}</div>
             </div>`;
+            return credit
+                ? `<div style="display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0">${box}`
+                  + `<div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;line-height:1.25;max-width:110px">${credit}</div></div>`
+                : box;
         }
 
         // Foto-Status-Modal: Blocklist + Feeder-ohne-Foto dynamisch aus dem Code rendern,
