@@ -1,9 +1,20 @@
 # Erweiterte Statistiken — Rekord-Listen mit Dekaden- und Quellen-Filter (Bauplan)
 
-**Status:** 📐 Bauplan, **noch keine Zeile in `index.html` geändert**.
+**Status:** 🔨 **Meilenstein 1 gebaut (v0.9.15.76)** — Schritte 1–5 stehen: Scan, alle fünf Akkumulatoren, 16 Rekord-Karten, Dekaden- und Schwellen-UI, für die **simulierte** Quelle. Offen: Schritt 6 (reale Quelle), 7–10 (Datum, Geburtsdaten, Titel-Entscheidung, Alters-Rekorde).
+
+**Verifiziert am 12-Saison-Lauf** (298 Rennen) gegen unabhängige Nachrechnung aus der Historie:
+
+| Invariante | nachgerechnet | Scan |
+|---|---|---|
+| Rennen mit Sieger = Summe Team-Siege | 298 | 298 ✅ |
+| Ausfälle | 816 | 816 ✅ |
+| Rennen mit Pole = Summe Poles | 298 | 298 ✅ |
+
+Scan-Dauer: 67 ms für 12 Saisons.
+
 **Zweck:** Selbsttragend. Beschreibt, welche Rekord-Listen aus der vorhandenen Datenlage gebaut werden können, welche drei Datenschichten dafür **fehlen**, und in welcher Reihenfolge das entsteht. Wer hier einsteigt, braucht keinen Gesprächsverlauf.
 
-Zeilennummern beziehen sich auf **`index.html`, Stand v0.9.15.74**. Bei Abweichung `grep -n`, danach `./update-functions-index.ps1`.
+Zeilennummern beziehen sich auf **`index.html`, Stand v0.9.15.76**. Bei Abweichung `grep -n`, danach `./update-functions-index.ps1`.
 
 ---
 
@@ -574,11 +585,11 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 
 | Schritt | Inhalt | Risiko |
 |---|---|---|
-| **1** | `_scanRaces` + Event-Normalisierung (nur simulierte Quelle), Fortschritt + Abbruch | mittel — Herzstück |
-| **2** | `CountAcc` (5.4 A) — deckt DNF, ohne Punkte, ohne Top 10, Hattricks, DNQ, Konstrukteure in **einer** Implementierung ab | niedrig |
-| **3** | `StreakAcc` + `FirstTimeAcc` (5.4 B/C) — Serien und Erste Male, inkl. Rangfolge-Regel 5.5 | niedrig |
-| **4** | `TeamPairAcc` + `RatioAcc` (5.4 D/E) — Doppelsieg, Doppelpole, Pole-to-Win mit Schwellen aus 6.2 | niedrig |
-| **5** | UI: Sub-Tab, Chips, Karten-Raster, Cache + Invalidierung | niedrig |
+| ✅ **1** | `_scanAllRaces` + Event-Normalisierung (nur simulierte Quelle), Fortschritt + Abbruch | mittel — Herzstück |
+| ✅ **2** | `CountAcc` (5.4 A) — deckt DNF, ohne Punkte, ohne Top 10, Hattricks, DNQ, Konstrukteure in **einer** Implementierung ab | niedrig |
+| ✅ **3** | `StreakAcc` + `FirstTimeAcc` (5.4 B/C) — Serien und Erste Male, inkl. Rangfolge-Regel 5.5 | niedrig |
+| ✅ **4** | `TeamPairAcc` + `RatioAcc` (5.4 D/E) — Doppelsieg, Doppelpole, Pole-to-Win mit Schwellen aus 6.2 | niedrig |
+| ✅ **5** | UI: Sub-Tab, Chips, Karten-Raster, Cache + Invalidierung | niedrig |
 | **6** | Reale Quelle in `_scanAllRaces` — Feldsemantik ist dekodiert und in `data/f1db.js` dokumentiert (3.3), Übersetzung nach 5.3 | **niedrig** (war mittel) |
 | **7** | Datenschicht Renndatum (4.2): Auflösung über `raceId` im Scan (deckt Alt-Saves ab), `date` künftig mitspeichern, Synthese nur für generierte Jahre | niedrig |
 | **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen (915/915 vorhanden), generierte Fahrer erweitern, Approx-Flag | niedrig — Quelle lückenlos |
@@ -589,7 +600,7 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 
 Schritte 1–6 sind **rein lesend** und können den bestehenden Stats-Tab nicht beschädigen. Erst 7–9 fassen Schreibpfade an (`buildRacesForYear`, Fahrer-Generierung, `applyRaceResults`).
 
-Sinnvoller erster Meilenstein: **Schritte 1–5** — alle Stufe-A/B-Rekorde für simulierte Saisons, ohne jede Datenmigration und ohne Alt-Save-Risiko.
+Meilenstein 1 (**Schritte 1–5**) ist in v0.9.15.76 gebaut und gegen eine unabhängige Nachrechnung geprüft (siehe Kopf). Nächster sinnvoller Schritt: **6** (reale Quelle) – rein lesend, keine Migration.
 
 ---
 
