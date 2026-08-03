@@ -116,9 +116,18 @@ Die Rohdateien werden nur noch für **zwei Build-Schritte** gebraucht (einmalig,
 
 Nicht mehr nötig (durch 3.3 erledigt): `f1db-races-race-results.json`, `-qualifying-results.json`, `-fastest-laps.json`, `-pre-qualifying-results.json`, `-starting-grid-positions.json`.
 
-### 3.3 `F1DB_RESULTS` — Format dekodiert ✅ (2026-08-03)
+### 3.3 `F1DB_RESULTS` — fertiger Decoder vorhanden ✅ (geprüft 2026-08-03)
 
-Die Feldsemantik war nirgends dokumentiert; der Code las bisher nur `e[3]` (Fahrer) und `e[4]` (Konstrukteur) (`18781`, `29409`). **Jetzt vollständig verifiziert** gegen `f1db-json-splitted/f1db-races-race-results.json` über alle 27.137 Einträge — der Befund steht als Kommentar über der Konstante in `data/f1db.js`:
+**`getF1DBYear(year)` in `data/f1db.js:66` dekodiert das Format bereits vollständig** und cacht das Ergebnis. Es liefert pro Rennen `{raceId, round, name, date, circuit, isIndy, scheduledLaps, entries[]}` und pro Eintrag benannte Felder:
+
+```js
+{ raceId, posNum, posText, driverId, constrId, laps, time, gap,
+  gapLaps, dnfReason, points, gridPos, fastestLap, pole }
+```
+
+**Der reale Pfad braucht also keinerlei Index-Arithmetik** — `getF1DBYear` ist die fertige Quelle, inklusive Renndatum. Genutzt wird sie an mehreren Stellen bereits so (`21005` ff.).
+
+Die Wire-Format-Belegung ist zusätzlich als Kommentar über der Konstante dokumentiert (2026-08-03 gegen `f1db-json-splitted/f1db-races-race-results.json` über alle 27.137 Einträge verifiziert — der Decoder ist korrekt):
 
 ```
 {year: [[raceId, runde, [eintraege]], ...]}
@@ -127,11 +136,11 @@ Eintrag = [raceId, positionNumber, positionText, driverId, constructorId,
            fastestLap(1|null), polePosition(1)]
 ```
 
-Drei Eigenheiten, die den Bau betreffen:
+Drei Eigenheiten, die der Decoder **nicht** abnimmt und die den Bau betreffen:
 
-1. **Das Array ist am Ende abgeschnitten** — alles ab dem letzten belegten Wert fehlt. `e[12]`/`e[13]` sind bei den meisten Einträgen schlicht nicht vorhanden. Index 12 steht auf `null` als **Platzhalter**, wenn keine schnellste Runde vorliegt, aber eine Pole an Index 13 folgt.
-2. **DNQ und DNPQ stecken bereits in `positionText`** — 1041 bzw. 338 Einträge. Für reale Jahre braucht der DNQ-Rekord **keine Zusatzquelle** (die im Katalog notierte `pre-qualifying-results.json` entfällt).
-3. **Eine Zahl in `positionText` bedeutet nicht „Zieleinlauf"** — 865 Einträge tragen eine Position **und** einen `reasonRetired` (klassifiziert trotz Ausfall). Wer „Rennen ohne Punkte" oder Serien über „Zieleinläufe" definiert, muss sich hier festlegen.
+1. **DNQ und DNPQ stecken in `posText`** — 1041 bzw. 338 Einträge. Für reale Jahre braucht der DNQ-Rekord **keine Zusatzquelle** (die zunächst eingeplante `pre-qualifying-results.json` entfällt).
+2. **Eine Zahl in `posText` bedeutet nicht „Zieleinlauf"** — 865 Einträge tragen eine Position **und** einen `dnfReason` (klassifiziert trotz Ausfall). Wer „Rennen ohne Punkte" oder Serien über Zieleinläufe definiert, muss sich hier festlegen. Der Decoder reicht beides durch, ohne es zu bewerten.
+3. **`posNum` ist bei allen nicht-numerischen Wertungen `null`** — Sortier- und Vergleichslogik muss das abfangen, sonst wandern DNF-Einträge bei `<`-Vergleichen an die Spitze.
 
 Werteverteilung von `positionText` (27.291 Einträge gesamt):
 
@@ -181,11 +190,23 @@ month: r.date ? parseInt(r.date.slice(5, 7)) : null   // 19242
 
 `F1DB_RACES[raceId][1]` **hat** das volle Datum (`"1950-05-13"`) — es wird nur nicht übernommen. Für Jahre jenseits des F1DB-Horizonts erzeugt `generateRacesForYear` (`19279`) Kalender **ganz ohne Datum**, Nutzer-Strecken (`customCircuitToRace`, `19254`) haben ebenfalls nur `month`.
 
+**Das Problem ist kleiner als es aussieht — für die meisten Saisons ist das Datum rückwirkend ableitbar.** `buildRacesForYear` speichert `raceId: r.raceId` (`19235`), und `F1DB_RACES[raceId][1]` trägt das volle Datum. Für jede Saison, die auf einem F1DB-Kalender beruht, gilt also: **nicht migrieren, sondern beim Scan auflösen.** Keine Save-Änderung, kein Backfill.
+
+Echt datumslos bleiben nur:
+- generierte Kalender jenseits des F1DB-Horizonts (~ab 2026)
+- Nutzer-Strecken aus dem Streckeneditor (`customCircuitToRace`, `19254` — nur `month`)
+
 **Lösung:**
-1. `buildRacesForYear`: `date: r.date` mit übernehmen (einzeilig, rein additiv)
-2. Für generierte Jahre: deterministische Datums-Synthese aus dem Saison-Seed (N Rennen über März–November verteilen, Mindestabstand 14 Tage) → `date` + `_dateSynth: true`
-3. Custom-Strecken: Tag aus dem Monat ableiten (Monatsmitte), ebenfalls markiert
-4. Alt-Saves ohne Datum: Rekorde mit Tagesbezug zeigen für diese Saisons **„—", nicht geschätzt**
+
+| # | Maßnahme | Aufwand |
+|---|---|---|
+| 1 | Beim Scan: `date` aus `F1DB_RACES[race.raceId]` auflösen, wenn das Rennobjekt keines trägt | Kern, deckt alle Alt-Saves ab |
+| 2 | `buildRacesForYear`: `date: r.date` künftig mitspeichern (einzeilig, additiv) — spart die Auflösung für neue Saisons | trivial |
+| 3 | Generierte Jahre: deterministische Datums-Synthese aus dem Saison-Seed (N Rennen über März–November, Mindestabstand 14 Tage) → `date` + `_dateSynth: true` | mittel |
+| 4 | Custom-Strecken: Tag aus dem Monat ableiten (Monatsmitte), ebenfalls markiert | trivial |
+| 5 | Bleibt ein Rennen ohne Datum, zeigen Rekorde mit Tagesbezug für diese Saison **„—", nicht geschätzt** | — |
+
+Für die **reale** Quelle entfällt das Thema ganz: `getF1DBYear` liefert `date` bereits pro Rennen (3.3).
 
 ### 4.3 Titel-Entscheidungstag ⚠️ existiert als Konzept noch nicht
 
@@ -287,14 +308,104 @@ Beide Quellen münden in **dasselbe** Format. Kein Akkumulator darf wissen, wohe
 | **simuliert** `res[].dnpq === 1` | `dnpq` |
 | **simuliert** ID steht im `dnq`-Array des Rennens | `dnq` |
 | **simuliert** sonst | `finished` |
-| **real** `positionText` = Zahl **ohne** `reasonRetired` | `finished` |
-| **real** `positionText` = Zahl **mit** `reasonRetired` | `classified` |
+| **real** `posText` = Zahl **ohne** `dnfReason` | `finished` |
+| **real** `posText` = Zahl **mit** `dnfReason` | `classified` |
 | **real** `DNF` / `DNS` / `DNQ` / `DNPQ` / `DSQ` / `EX` / `NC` | gleichnamig |
 | **real** `DNP` (5 Fälle) | `dns` |
 
+Die reale Seite kommt dabei **nicht** aus dem Rohformat, sondern aus `getF1DBYear(year)` (3.3) — dort sind `pole`, `fastestLap`, `gridPos`, `points` und `date` bereits benannt und gecacht. Zu tun bleibt nur die `posText` → `status`-Übersetzung oben.
+
 ⚠️ **Asymmetrie, die bleibt:** Die simulierte Seite kennt `classified`, `dns`, `dsq`, `ex` und `nc` **gar nicht** — sie speichert nur `dnf`/`dnpq`/`dnq` (`18550`). Ein Rekord wie „meiste Disqualifikationen" wäre real befüllbar und simuliert immer 0. **Solche Rekorde gehören nicht in den Katalog**, solange die Simulation die Zustände nicht kennt. Die Tabelle oben ist trotzdem vollständig, damit reale Jahre nicht stillschweigend falsch einsortiert werden.
 
-Pole für simulierte Jahre kommt aus `qualifyingResults` (P1), für reale aus `e[13]`. Schnellste Runde: simuliert `res[].fl`, real `e[12]`.
+Pole für simulierte Jahre kommt aus `qualifyingResults` (P1), für reale aus `entry.pole`. Schnellste Runde: simuliert `res[].fl`, real `entry.fastestLap`.
+
+⚠️ **`posNum` ist bei jeder nicht-numerischen Wertung `null`** (empirisch bestätigt für DNF/NC/DNS/DSQ/DNQ/DNPQ/DNP/EX). Jeder `<`- oder `sort`-Vergleich über Positionen muss das abfangen, sonst landen Ausfälle vor dem Sieger.
+
+---
+
+### 5.4 Die Akkumulatoren
+
+Fünf Bauarten decken den gesamten Katalog ab. Jeder bekommt jedes Event **einmal** und schreibt in die Töpfe aus 5.0.
+
+**Gemeinsame Schnittstelle:**
+
+```js
+{ id, kind, init(), onRace(evt, buckets), finish(buckets) → [{key, value, detail}] }
+```
+
+`buckets` ist immer `{all, 1950, 1960, …}`. Kein Akkumulator liest die Dekade selbst — er bekommt die Liste der Töpfe, in die sein Ereignis gehört (bei Serien sind das mehrere, siehe 5.0).
+
+#### A — `CountAcc` (Zählung)
+
+Einfachster Fall: pro Fahrer/Team einen Zähler hochsetzen, wenn ein Prädikat zutrifft.
+
+```
+state:   Map<key, zahl> je Topf
+onRace:  für jeden Eintrag: wenn prädikat(entry) → zähler++
+```
+
+Deckt ab: DNF · Rennen ohne Punkte · Rennen ohne Top 10 · Hattricks · Doppelsiege · Doppelpoles · DNQ · Saisons ohne Punkte.
+Konfiguration ist nur das Prädikat — deshalb **eine** Implementierung, nicht acht.
+
+#### B — `StreakAcc` (Serien)
+
+```
+state:   Map<key, {laufend, seitDatum, beste, besteVon, besteBis}> je Topf
+onRace:  trifft prädikat  → laufend++, ggf. beste aktualisieren
+         trifft es nicht  → laufend = 0
+```
+
+Deckt ab: Siegesserien · Punkteplatzierungen in Folge · sieglose Serien (invertiertes Prädikat) · längste Durststrecke.
+
+⚠️ **Zwei Fallen:**
+1. **Die Serie muss über Saisongrenzen laufen** — sie endet nicht im Dezember. Der Zustand wird beim Jahreswechsel **nicht** zurückgesetzt.
+2. **Wer ein Rennen nicht bestreitet, unterbricht nicht.** Ein Fahrer, der aussetzt, verliert seine Siegesserie nicht — sie wird beim nächsten Start fortgeführt. Nur eine **Teilnahme ohne Erfolg** bricht ab. Das muss in der Definitionszeile stehen, weil beide Lesarten vertretbar sind.
+
+#### C — `FirstTimeAcc` (Erste Male)
+
+```
+state:   Map<key, {starts, siege, ersterSiegNachStarts, ersterSiegDatum,
+                   siegeVorTitel, titelDatum}>
+onRace:  starts++ (nur bei status ∈ {finished, classified, dnf, dsq, nc})
+         bei Sieg:  wenn kein ersterSieg → merken
+         bei Titel: siegeVorTitel = aktueller Siegzähler
+```
+
+Deckt ab: Rennen vor erstem Sieg · Siege vor erstem Titel · Alter bei erstem Sieg/Titel (Stufe C).
+Wird **erst in `finish()` gefiltert** — die Qualifikations-Bedingungen aus 6.2 (nur Sieger, nur Weltmeister) lassen sich vorher nicht kennen.
+
+#### D — `TeamPairAcc` (Kombinationen innerhalb eines Rennens)
+
+Der einzige Akkumulator, der **quer über die Einträge eines Rennens** arbeitet statt pro Fahrer.
+
+```
+onRace:  Einträge nach teamKey gruppieren
+         Doppelsieg    = zwei Einträge desselben Teams auf P1 und P2
+         Doppelpole    = P1 und P2 der Qualifikation
+```
+
+⚠️ Die Gruppierung läuft über `tmn` (Teamname zur Rennzeit) bzw. `constrId` — **innerhalb eines Rennens** ist das eindeutig, über Dekaden hinweg nicht (siehe 5.2).
+
+#### E — `RatioAcc` (Quoten)
+
+```
+state:   Map<key, {zaehler, nenner}> je Topf
+finish:  wert = zaehler/nenner, Einträge unter der Schwelle (6.2) aussortieren
+         — aber den besten Aussortierten für die UI-Zeile aufheben (6.3)
+```
+
+Deckt ab: Pole-to-Win-Ratio · Siegquote einer Saison.
+
+### 5.5 Rangfolge bei Gleichstand (global)
+
+Gilt für **jede** Rekordliste, damit die Reihenfolge nicht zufällig aus der Map-Iteration entsteht:
+
+1. **Wert** (absteigend, bei Alters-Rekorden aufsteigend)
+2. **Früheres Auftreten zuerst** — wer den Wert zuerst erreichte, steht oben
+3. **Weniger Versuche zuerst** — 5 Siege aus 20 Starts vor 5 Siegen aus 80
+4. **Alphabetisch**
+
+Das spiegelt die Sortierlogik der bestehenden All-Time-Tabelle (`24114`: primär → `firstYear` → Name) und macht Listen zwischen zwei Läufen stabil.
 
 ---
 
@@ -428,12 +539,12 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 | Schritt | Inhalt | Risiko |
 |---|---|---|
 | **1** | `_scanRaces` + Event-Normalisierung (nur simulierte Quelle), Fortschritt + Abbruch | mittel — Herzstück |
-| **2** | Akkumulatoren Gruppe A: reine Zählungen (DNF, ohne Punkte, ohne Top 10, Konstrukteure) | niedrig |
-| **3** | Akkumulatoren Gruppe B: Serien + Erste Male (Siegesserie, Rennen vor 1. Sieg, Siege vor 1. Titel, Durststrecke) | niedrig |
-| **4** | Akkumulatoren Gruppe C: Renn-Kombinationen (Hattrick, Doppelsieg, Doppelpole, Pole-to-Win) | niedrig |
+| **2** | `CountAcc` (5.4 A) — deckt DNF, ohne Punkte, ohne Top 10, Hattricks, DNQ, Konstrukteure in **einer** Implementierung ab | niedrig |
+| **3** | `StreakAcc` + `FirstTimeAcc` (5.4 B/C) — Serien und Erste Male, inkl. Rangfolge-Regel 5.5 | niedrig |
+| **4** | `TeamPairAcc` + `RatioAcc` (5.4 D/E) — Doppelsieg, Doppelpole, Pole-to-Win mit Schwellen aus 6.2 | niedrig |
 | **5** | UI: Sub-Tab, Chips, Karten-Raster, Cache + Invalidierung | niedrig |
 | **6** | Reale Quelle in `_scanAllRaces` — Feldsemantik ist dekodiert und in `data/f1db.js` dokumentiert (3.3), Übersetzung nach 5.3 | **niedrig** (war mittel) |
-| **7** | Datenschicht Renndatum (4.2): `date` durchreichen + Synthese für generierte Jahre | niedrig, aber breit |
+| **7** | Datenschicht Renndatum (4.2): Auflösung über `raceId` im Scan (deckt Alt-Saves ab), `date` künftig mitspeichern, Synthese nur für generierte Jahre | niedrig |
 | **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen, generierte Fahrer erweitern, Approx-Flag | mittel |
 | **9** | Titel-Entscheidung (4.3): Berechnung + **neue UI-Meldung im Rennverlauf** + `TITLE_CLINCH` für reale Jahre | mittel — eigenständiges Feature |
 | **10** | Alters-Rekorde (Stufe C), sobald 7–9 stehen | niedrig |
