@@ -111,8 +111,8 @@ Die Rohdateien werden nur noch für **zwei Build-Schritte** gebraucht (einmalig,
 
 | Datei | wofür | Build-Schritt |
 |---|---|---|
-| `f1db-drivers.json` | `dateOfBirth` exakt + `dateOfDeath` → Tabelle `DRIVER_DOB` | 8 (Alters-Rekorde) |
-| `f1db-races-driver-standings.json` | Zwischenstand nach jedem Rennen → Tabelle `TITLE_CLINCH` | 9 (Titel-Entscheidungstag) |
+| `f1db-drivers.json` | `dateOfBirth` (915/915) + `dateOfDeath` → Tabelle `DRIVER_DOB` | 8 (Alters-Rekorde) |
+| `f1db-races-driver-standings.json` + `f1db-races.json` | Feld `championshipWon` → Tabelle `TITLE_CLINCH` | 9a (Titel-Entscheidungstag) |
 
 Nicht mehr nötig (durch 3.3 erledigt): `f1db-races-race-results.json`, `-qualifying-results.json`, `-fastest-laps.json`, `-pre-qualifying-results.json`, `-starting-grid-positions.json`.
 
@@ -162,7 +162,13 @@ Werteverteilung von `positionText` (27.291 Einträge gesamt):
 
 ## 4. Die drei fehlenden Datenschichten
 
-Hier weicht die Realität von der Annahme ab. Alle drei sind lösbar, aber keine ist geschenkt.
+Hier weicht die Realität von der Annahme ab. **Nach der Quellenprüfung vom 2026-08-03 sind alle drei deutlich kleiner als zunächst angenommen** — die Rohdaten liefern in jedem Fall mehr, als der Plan erwartet hatte:
+
+| Schicht | erwartet | tatsächlich |
+|---|---|---|
+| Geburtsdaten (4.1) | lückenhaft, Fallback nötig | **915/915 vorhanden**, ein Slug-Defekt |
+| Renndatum (4.2) | Migration aller Alt-Saves | **rückwirkend über `raceId` auflösbar**, keine Migration |
+| Titel-Entscheidung (4.3) | Streichresultate rekonstruieren | **fertiges Feld `championshipWon`**, nur ablesen |
 
 ### 4.1 Geburtsdaten ⚠️ existieren heute nicht
 
@@ -173,11 +179,23 @@ Hier weicht die Realität von der Annahme ab. Alle drei sind lösbar, aber keine
 - Generierte Fahrer bekommen `birthYear` (`6694`, `9577`, `9650`)
 - Profil-Anzeige **erfindet** notfalls `birthYear = firstYear - 25` (`26389`, `26431`) — eine Schätzung, keine Angabe
 
+**Quelle geprüft (2026-08-03) — die Datenlage ist ideal:**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Fahrer in `f1db-drivers.json` | 915 |
+| davon mit `dateOfBirth` | **915 (100 %)** |
+| Datumsformat abweichend | 0 — durchgängig `YYYY-MM-DD` |
+| mit `dateOfDeath` | 504 |
+| Slug-Deckung gegen `HIST_DRIVERS` (915 Keys) | **914 (99,9 %)** |
+
 **Lösung:**
-1. Build-Skript zieht `dateOfBirth`/`dateOfDeath` aus `f1db-json-splitted/f1db-drivers.json` → neue kompakte Tabelle `DRIVER_DOB = { slug: 'YYYY-MM-DD' }` in `data/hist.js` (~900 Einträge, ~25 KB)
+1. Build-Skript zieht `dateOfBirth`/`dateOfDeath` aus `f1db-json-splitted/f1db-drivers.json` → kompakte Tabelle `DRIVER_DOB = { slug: 'YYYY-MM-DD' }` in `data/hist.js` (915 Einträge, ~28 KB). Für reale Fahrer ist die Abdeckung damit **lückenlos** — kein Fallback nötig
 2. Generierte Fahrer bekommen künftig zusätzlich **Tag + Monat**, deterministisch aus dem Fahrer-Seed
-3. Alt-Saves / Fahrer ohne Angabe: **`01.01.` des `birthYear`** — genau wie von dir vorgesehen. Der Fallback muss aber **markiert** sein (`_dobApprox: true`), sonst behauptet ein Altersrekord Taggenauigkeit, die er nicht hat
-4. Erfundene Geburtsjahre (`firstYear - 25`) dürfen in Rekord-Listen **nie** einfließen — sie sind keine Daten
+3. Alt-Saves / Fahrer ohne Angabe: **`01.01.` des `birthYear`**, aber **markiert** (`_dobApprox: true`), sonst behauptet ein Altersrekord Taggenauigkeit, die er nicht hat
+4. Erfundene Geburtsjahre (`firstYear - 25`, `26389`) dürfen in Rekord-Listen **nie** einfließen — sie sind keine Daten
+
+⚠️ **Ein Slug bricht den Join:** `john-Watson` steht mit **großem W** in allen drei Tabellen (`HIST_DRIVERS`, `HIST_NAMES`, `HIST_SEASONS`), F1DB kennt nur `john-watson`. Es ist der einzige Key mit Großbuchstaben in allen dreien. Der Build muss diakritik- und **case-insensitiv** joinen (wie es .15.29 für die Fahrer-Links bereits tut), sonst fehlt Watson als einziger Fahrer das Geburtsdatum.
 
 ### 4.2 Renndaten (Tag) ⚠️ werden heute weggeworfen
 
@@ -221,7 +239,25 @@ entschieden, wenn  Führender.punkte - Zweiter.punkte > maxRest
 
 Zu beachten: schnellste-Runde-Bonuspunkte und Ära-Punktesysteme laufen bereits über `getPointsForPosition` — der Bonus muss in `maxRest` mitgerechnet werden, sonst wird zu früh gemeldet.
 
-**Für reale Jahre gilt diese Formel NICHT.** Vor 1991 zählten je nach Saison nur die besten N Ergebnisse; eine naive Summenrechnung datiert den Titel falsch. Für reale Jahre deshalb **nicht rechnen, sondern nachschlagen**: `f1db-races-driver-standings.json` enthält den Zwischenstand nach jedem Rennen → Entscheidungsrennen ist ablesbar, Datum kommt aus `f1db-races.json`. Ergebnis als kompakte Tabelle `TITLE_CLINCH = { year: raceId }` ins Build.
+**Für reale Jahre gilt diese Formel NICHT.** Vor 1991 zählten je nach Saison nur die besten N Ergebnisse; eine naive Summenrechnung datiert den Titel falsch.
+
+**Muss aber auch gar nicht gerechnet werden — F1DB liefert es fertig (geprüft 2026-08-03).** `f1db-races-driver-standings.json` trägt pro Zeile ein Feld `championshipWon`. Es steht **ab dem Entscheidungsrennen** auf `true` (nicht nur am Saisonende):
+
+```
+TITLE_CLINCH[jahr] = früheste Runde mit championshipWon === true
+```
+
+| Prüfung | Ergebnis |
+|---|---|
+| Jahre abgedeckt | **76 (1950–2025), lückenlos** |
+| Stichprobe 2002 | Schumacher, Lauf 11/17, 2002-07-21 — Frankreich ✓ |
+| Stichprobe 2004 | Schumacher, Lauf 14/18, 2004-08-29 — Spa ✓ |
+| Stichprobe 1992 | Mansell, Lauf 11/16, 1992-08-16 — Ungarn ✓ |
+| Stichprobe 2013 | Vettel, Lauf 16/19, 2013-10-27 — Indien ✓ |
+
+Alle vier decken sich mit den realen Entscheidungsrennen. Die Streichresultate-Problematik entfällt damit **vollständig** — es wird nicht rekonstruiert, sondern abgelesen.
+
+Build-Ergebnis: `TITLE_CLINCH = { year: [raceId, 'YYYY-MM-DD', driverId] }` — 76 Einträge, wenige KB. Datum kommt aus `f1db-races.json` (Feld `date`).
 
 **Die UI-Meldung ist ein eigenständiges Feature**, nicht Teil der Rekord-Listen. Sie gehört in `applyRaceResults` (nach dem Rennen prüfen, einmal pro Saison feuern, Flag im Save gegen Doppelmeldung) und ist unabhängig von diesem Plan baubar. Sie ist **Voraussetzung** für „Alter bei erstem Titel" in simulierten Saisons — ohne sie gibt es keinen gespeicherten Entscheidungstag.
 
@@ -545,8 +581,9 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 | **5** | UI: Sub-Tab, Chips, Karten-Raster, Cache + Invalidierung | niedrig |
 | **6** | Reale Quelle in `_scanAllRaces` — Feldsemantik ist dekodiert und in `data/f1db.js` dokumentiert (3.3), Übersetzung nach 5.3 | **niedrig** (war mittel) |
 | **7** | Datenschicht Renndatum (4.2): Auflösung über `raceId` im Scan (deckt Alt-Saves ab), `date` künftig mitspeichern, Synthese nur für generierte Jahre | niedrig |
-| **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen, generierte Fahrer erweitern, Approx-Flag | mittel |
-| **9** | Titel-Entscheidung (4.3): Berechnung + **neue UI-Meldung im Rennverlauf** + `TITLE_CLINCH` für reale Jahre | mittel — eigenständiges Feature |
+| **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen (915/915 vorhanden), generierte Fahrer erweitern, Approx-Flag | niedrig — Quelle lückenlos |
+| **9a** | `TITLE_CLINCH` für reale Jahre (4.3) — reines Ablesen von `championshipWon`, 76 Jahre | niedrig |
+| **9b** | Titel-Entscheidung simuliert: Berechnung in `applyRaceResults` + **neue UI-Meldung im Rennverlauf** + Flag im Save gegen Doppelmeldung | mittel — eigenständiges Feature |
 | **10** | Alters-Rekorde (Stufe C), sobald 7–9 stehen | niedrig |
 | **11** | `./update-functions-index.ps1`, Changelog, Version | — |
 
