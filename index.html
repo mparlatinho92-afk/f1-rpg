@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.75</title>
+    <title>F1 RPG v0.9.15.76</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.75 (aktuell) - 03.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.76 (aktuell) - 03.08.2026</div>
+                            <div>&#8226; NEU: Sub-Tab Rekorde mit 16 Bestenlisten (Siegesserien, Hattricks, Doppelsiege, Pole-to-Win u.a.)</div>
+                            <div>&#8226; NEU: Dekaden-Filter fuer Rekorde, Allzeit-Vergleich je Karte</div>
+                            <div>&#8226; NEU: Mindestschwellen mit sichtbarem Hinweis und Abschalter</div>
+                            <div class="font-bold text-slate-400">v0.9.15.75 - 03.08.2026</div>
                             <div>&#8226; NEU: Bauplan fuer Rekord-Listen mit Dekaden- und Quellenfilter</div>
                             <div class="font-bold text-slate-400">v0.9.15.74 - 02.08.2026</div>
                             <div>&#8226; FIX: Der Foto-Status nannte ueber 60 F1-Fahrer als bildlos, obwohl alle laengst ein Foto haben - die Liste war fest einprogrammiert und kommt jetzt aus dem Code</div>
@@ -3428,7 +3432,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.75';
+        const VERSION = '0.9.15.76';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -18699,6 +18703,7 @@
                 
                 logInfo('HISTORY', `Saison ${GAME_STATE.currentYear} archiviert (${compressedResults.length} Rennen)`);
             }
+            invalidateRecordsCache();   // Rekord-Scan ist eine Momentaufnahme, neue Saison = ungültig
             
             // Auf neues Jahr wechseln
             GAME_STATE.currentYear = newYear;
@@ -19550,6 +19555,7 @@
             
             // Aus Historie entfernen
             GAME_STATE.history = GAME_STATE.history.filter(h => h.year < fromYear);
+            invalidateRecordsCache();
             // Löschst du ab dem frühesten Jahr, bleibt eine LEERE history zurück. Das ist hier gewollt –
             // die Sicherung in persistHistory() würde es sonst als halb geladenen Zustand abwehren und
             // die Saisons kämen beim nächsten Laden aus dem Store zurück. Wird nach dem Speichern
@@ -20040,6 +20046,7 @@
         // Gemeinsamer Import-Abschluss für beide Pfade (NDJSON & Alt-Format):
         // validiert, übernimmt, sanitisiert, schreibt History-Store + core.
         async function _applyImportedState(gameState) {
+            invalidateRecordsCache();   // fremder Stand -> alter Scan gehört nicht dazu
             // Basis-Validierung (== null deckt undefined und null ab, nicht 0)
             if (gameState.currentYear == null && gameState.year == null) throw new Error('Kein Jahr gefunden');
             if (!gameState.drivers && !gameState.fahrer) throw new Error('Keine Fahrer gefunden');
@@ -23919,6 +23926,9 @@
                     <button onclick="setStATSSubTab('necrology')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'necrology' ? 'btn-primary' : 'bg-secondary'}">
                         💀 Nekrolog
                     </button>
+                    <button onclick="setStATSSubTab('records')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'records' ? 'btn-primary' : 'bg-secondary'}">
+                        🏅 Rekorde
+                    </button>
                 </div>
 
                 ${stATSSubTab === 'drivers' ? renderAllTimeDrivers() : ''}
@@ -23928,6 +23938,7 @@
                 ${stATSSubTab === 'gps' ? renderAllGPs() : ''}
                 ${stATSSubTab === 'transfers' ? renderTransferChronicle() : ''}
                 ${stATSSubTab === 'necrology' ? renderNecrology() : ''}
+                ${stATSSubTab === 'records' ? renderRecords() : ''}
             `;
         }
         
@@ -24093,9 +24104,490 @@
         
         window.setStATSIndyFilter = function(mode) {
             stATSIndyFilter = mode;
+            // Der Indy-Filter wirkt IM Scan (Rennen werden übersprungen) – ein
+            // gecachtes Ergebnis gehört zum alten Filterstand und wäre still falsch.
+            invalidateRecordsCache();
             renderContent();
         };
-        
+
+        // ═══════════════════════════════════════════════════════════════════
+        // REKORD-STATISTIKEN (v0.9.15.76) – Bauplan: STATISTIK_FILTER_PLAN.md
+        // Ein chronologischer Scan über ALLE Saisons füttert alle Akkumulatoren
+        // gleichzeitig und verteilt jedes Ereignis in Dekaden- UND Allzeit-Töpfe.
+        // Danach ist jeder Dekadenwechsel kostenlos (kein Nachladen).
+        // ═══════════════════════════════════════════════════════════════════
+        let stATSDecade = 'all';           // 'all' | 1950 | 1960 | ...
+        let stATSSource = 'sim';           // 'sim' (Stufe 1) | 'real' | 'all' (Schritt 6)
+        let _recordsCache = new Map();     // source -> {results, meta}
+        let _recordsScan  = null;          // {year, from, to, abort} während des Laufs
+        let _recIgnoreThr = {};            // recordId -> Schwelle ignorieren
+
+        function _decadeOf(year) { return Math.floor(year / 10) * 10; }
+
+        // Invalidierung: der Scan ist eine Momentaufnahme. Jede Änderung an der
+        // Historie macht ihn ungültig – lieber pauschal leeren als selektiv irren.
+        function invalidateRecordsCache() { _recordsCache.clear(); }
+
+        // ── Ereignis-Normalisierung ────────────────────────────────────────
+        // Simulierte Saison -> einheitliches Renn-Event (Plan 5.3). Der reale
+        // Pfad (getF1DBYear) mündet später in DASSELBE Format – kein Akkumulator
+        // darf wissen, woher sein Event stammt.
+        function _normalizeSimRace(year, race, quali, calendar, idMap) {
+            const cal = calendar[race.ri ?? race.raceIndex] || {};
+            // Datum: Rennobjekte tragen es (noch) nicht, aber die raceId erlaubt
+            // die rückwirkende Auflösung über F1DB_RACES – kein Backfill nötig.
+            let date = cal.date || null;
+            if (!date && cal.raceId != null && typeof F1DB_RACES !== 'undefined') {
+                date = (F1DB_RACES[String(cal.raceId)] || [])[1] || null;
+            }
+            // Zwei Formen: archivierte Saisons sind komprimiert (res/d/p/pt/fl, 18550),
+            // die LAUFENDE Saison liegt unkomprimiert im GAME_STATE (results/driver/position).
+            // Beide hier auf eine Form bringen – sonst fehlt das aktuelle Jahr still.
+            const rawRes = race.res || race.results || [];
+            const rawQ   = (quali && (quali.res || quali.results)) || [];
+            const qD = (r) => r.d ?? r.driver;
+            const qP = (r) => r.p ?? r.position;
+            const poleId = rawQ.length ? (qD(rawQ.find(r => qP(r) === 1) || rawQ[0])) : null;
+            const gridOf = {};
+            rawQ.forEach(r => { gridOf[qD(r)] = qP(r); });
+
+            const entries = [];
+            for (const r of rawRes) {
+                const id = r.d ?? r.driver;
+                const status = r.dnpq ? 'dnpq' : (r.dnf ? 'dnf' : 'finished');
+                entries.push({
+                    driverKey: idMap(id),
+                    teamKey:   r.tmn || r.teamName || r.team || null,
+                    pos:       status === 'finished' ? ((r.p ?? r.position) ?? null) : null,
+                    status:    status,
+                    points:    (r.pt ?? r.points) || 0,
+                    pole:      poleId != null && id === poleId,
+                    fastestLap: !!(r.fl || r.fastestLap),
+                    grid:      gridOf[id] ?? null
+                });
+            }
+            // DNQ stehen nicht in res, nur als ID-Liste (ab v0.9.15.25)
+            for (const id of (race.dnq || [])) {
+                entries.push({ driverKey: idMap(id), teamKey: null, pos: null,
+                    status: 'dnq', points: 0, pole: false, fastestLap: false, grid: null });
+            }
+            return { year, date, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
+                     qualiOrder: rawQ.map(r => ({ driverKey: idMap(qD(r)), pos: qP(r) })) };
+        }
+
+        // ── Akkumulatoren (Plan 5.4) ───────────────────────────────────────
+        // Gemeinsame Schnittstelle: onRace(evt, buckets) / finish(bucket).
+        // buckets = Liste der Töpfe, in die DIESES Ereignis gehört (5.0).
+        const _STARTED = new Set(['finished', 'classified', 'dnf', 'dsq', 'nc']);
+
+        function _mkCount(id, label, scope, predicate, opts) {
+            return { id, label, kind: 'count', scope, ...(opts || {}),
+                init: () => new Map(),
+                onRace(evt, states) {
+                    for (const e of evt.entries) {
+                        const key = scope === 'team' ? e.teamKey : e.driverKey;
+                        if (!key || !predicate(e, evt)) continue;
+                        for (const st of states) st.set(key, (st.get(key) || 0) + 1);
+                    }
+                },
+                finish: (st) => [...st.entries()].map(([key, value]) => ({ key, value }))
+            };
+        }
+
+        // Serien laufen ÜBER Saisongrenzen und werden von einer Nicht-Teilnahme
+        // NICHT unterbrochen – nur eine Teilnahme ohne Erfolg bricht ab (Plan 5.4 B).
+        function _mkStreak(id, label, scope, hit, opts) {
+            return { id, label, kind: 'streak', scope, ...(opts || {}),
+                init: () => new Map(),
+                onRace(evt, states) {
+                    for (const e of evt.entries) {
+                        const key = scope === 'team' ? e.teamKey : e.driverKey;
+                        if (!key || !_STARTED.has(e.status)) continue;   // Aussetzen bricht nicht
+                        for (const st of states) {
+                            let s = st.get(key);
+                            if (!s) { s = { run: 0, from: null, best: 0, bFrom: null, bTo: null }; st.set(key, s); }
+                            if (hit(e, evt)) {
+                                if (s.run === 0) s.from = evt.year;
+                                s.run++;
+                                if (s.run > s.best) { s.best = s.run; s.bFrom = s.from; s.bTo = evt.year; }
+                            } else { s.run = 0; s.from = null; }
+                        }
+                    }
+                },
+                finish: (st) => [...st.entries()].filter(([, s]) => s.best >= 2)
+                    .map(([key, s]) => ({ key, value: s.best, from: s.bFrom, to: s.bTo,
+                        detail: s.bFrom === s.bTo ? String(s.bFrom) : s.bFrom + '–' + s.bTo }))
+            };
+        }
+
+        // Erste Male: Filterung erst in finish(), weil "nur Sieger"/"nur Weltmeister"
+        // während des Scans noch nicht feststeht (Plan 5.4 C).
+        function _mkFirstTime(id, label, mode, opts) {
+            return { id, label, kind: 'first', scope: 'driver', ...(opts || {}),
+                init: () => new Map(),
+                onRace(evt, states) {
+                    for (const e of evt.entries) {
+                        if (!e.driverKey || !_STARTED.has(e.status)) continue;
+                        const win = e.pos === 1;
+                        for (const st of states) {
+                            let s = st.get(e.driverKey);
+                            if (!s) { s = { starts: 0, wins: 0, firstWinAfter: null, firstWinYear: null,
+                                            winsAtTitle: null, titleYear: null }; st.set(e.driverKey, s); }
+                            s.starts++;
+                            if (win) {
+                                s.wins++;
+                                if (s.firstWinAfter === null) { s.firstWinAfter = s.starts - 1; s.firstWinYear = evt.year; }
+                            }
+                        }
+                    }
+                },
+                // Titel werden separat gemeldet (championHistId der Saison)
+                onTitle(key, year, states) {
+                    for (const st of states) {
+                        const s = st.get(key);
+                        if (s && s.titleYear === null) { s.titleYear = year; s.winsAtTitle = s.wins; }
+                    }
+                },
+                finish(st) {
+                    const out = [];
+                    for (const [key, s] of st.entries()) {
+                        if (mode === 'racesBeforeFirstWin') {
+                            if (s.firstWinAfter === null) continue;          // nur Sieger
+                            out.push({ key, value: s.firstWinAfter, detail: String(s.firstWinYear) });
+                        } else if (mode === 'winsBeforeFirstTitle') {
+                            if (s.titleYear === null) continue;              // nur Weltmeister
+                            out.push({ key, value: s.winsAtTitle || 0, detail: String(s.titleYear) });
+                        } else if (mode === 'neverWon') {
+                            if (s.wins > 0) continue;
+                            out.push({ key, value: s.starts });
+                        }
+                    }
+                    return out;
+                }
+            };
+        }
+
+        // Der einzige Akkumulator, der quer über die Einträge EINES Rennens arbeitet.
+        function _mkTeamPair(id, label, mode, opts) {
+            return { id, label, kind: 'count', scope: 'team', ...(opts || {}),
+                init: () => new Map(),
+                onRace(evt, states) {
+                    const byTeam = {};
+                    if (mode === 'oneTwo') {
+                        for (const e of evt.entries) {
+                            if (!e.teamKey || (e.pos !== 1 && e.pos !== 2)) continue;
+                            (byTeam[e.teamKey] = byTeam[e.teamKey] || []).push(e.pos);
+                        }
+                    } else {   // frontRow: P1+P2 der Qualifikation
+                        const top = evt.qualiOrder.filter(q => q.pos === 1 || q.pos === 2);
+                        if (top.length < 2) return;
+                        const teamOf = {};
+                        for (const e of evt.entries) if (e.driverKey) teamOf[e.driverKey] = e.teamKey;
+                        for (const q of top) {
+                            const tk = teamOf[q.driverKey];
+                            if (tk) (byTeam[tk] = byTeam[tk] || []).push(q.pos);
+                        }
+                    }
+                    for (const tk in byTeam) {
+                        if (byTeam[tk].length < 2) continue;
+                        for (const st of states) st.set(tk, (st.get(tk) || 0) + 1);
+                    }
+                },
+                finish: (st) => [...st.entries()].map(([key, value]) => ({ key, value }))
+            };
+        }
+
+        function _mkRatio(id, label, scope, num, den, minDen, opts) {
+            return { id, label, kind: 'ratio', scope, minDen, thresholdLabel: opts && opts.thresholdLabel, ...(opts || {}),
+                init: () => new Map(),
+                onRace(evt, states) {
+                    for (const e of evt.entries) {
+                        const key = scope === 'team' ? e.teamKey : e.driverKey;
+                        if (!key) continue;
+                        const n = num(e, evt) ? 1 : 0, d = den(e, evt) ? 1 : 0;
+                        if (!n && !d) continue;
+                        for (const st of states) {
+                            let s = st.get(key);
+                            if (!s) { s = { n: 0, d: 0 }; st.set(key, s); }
+                            s.n += n; s.d += d;
+                        }
+                    }
+                },
+                finish: (st) => [...st.entries()].filter(([, s]) => s.d > 0)
+                    .map(([key, s]) => ({ key, value: s.n / s.d, num: s.n, den: s.d,
+                                          detail: s.n + '/' + s.d, _den: s.d }))
+            };
+        }
+
+        // ── Der Katalog ────────────────────────────────────────────────────
+        function _recordDefs() {
+            const isWin   = e => e.pos === 1;
+            const scored  = e => (e.points || 0) > 0;
+            const started = e => _STARTED.has(e.status);
+            return [
+                _mkStreak('winStreak', '🔥 Längste Siegesserie', 'driver', isWin,
+                    { def: 'Aufeinanderfolgende Rennen mit Sieg. Läuft über Saisongrenzen; wer aussetzt, verliert die Serie nicht.' }),
+                _mkStreak('pointStreak', '📈 Punkte in Folge', 'driver', scored,
+                    { def: 'Aufeinanderfolgende Starts mit mindestens einem Punkt.' }),
+                _mkCount('hattrick', '🎩 Hattricks', 'driver',
+                    e => e.pos === 1 && e.pole && e.fastestLap,
+                    { def: 'Sieg + Pole + schnellste Runde im selben Rennen.' }),
+                _mkCount('dnf', '💥 Meiste Ausfälle', 'driver', e => e.status === 'dnf',
+                    { def: 'Gewertete Starts mit Ausfall (DNF).' }),
+                _mkCount('dnq', '🚫 Meiste Nichtqualifikationen', 'driver',
+                    e => e.status === 'dnq' || e.status === 'dnpq',
+                    { def: 'DNQ und DNPQ zusammen.', warn: 'Simulierte Saisons speichern DNQ erst ab v0.9.15.25 – ältere Saisons fehlen hier.' }),
+                _mkCount('noPoints', '0️⃣ Rennen ohne Punkte', 'driver',
+                    e => started(e) && !scored(e),
+                    { def: 'Starts ohne Punktgewinn – abhängig vom Punktesystem der Ära.' }),
+                _mkCount('noTop10', '🔟 Rennen ohne Top 10', 'driver',
+                    e => started(e) && !(e.pos >= 1 && e.pos <= 10),
+                    { def: 'Starts ohne Platzierung unter den ersten zehn. Punktesystem-unabhängig.' }),
+                _mkCount('poles', '🅿️ Meiste Poles', 'driver', e => e.pole,
+                    { def: 'Startplatz 1 in der Qualifikation.' }),
+                _mkFirstTime('racesToWin', '⏳ Rennen bis zum ersten Sieg', 'racesBeforeFirstWin',
+                    { def: 'Starts vor dem ersten Sieg. Nur Fahrer, die je gewonnen haben.',
+                      threshold: 'Nur Fahrer mit mindestens einem Sieg' }),
+                _mkFirstTime('winsToTitle', '👑 Siege vor dem ersten Titel', 'winsBeforeFirstTitle',
+                    { def: 'Siege bis einschließlich der ersten Titelsaison. Nur Weltmeister.',
+                      threshold: 'Nur Weltmeister' }),
+                _mkFirstTime('neverWon', '🥲 Meiste Starts ohne Sieg', 'neverWon',
+                    { def: 'Starts von Fahrern, die (bislang) nie gewonnen haben.',
+                      warn: 'Aktive Fahrer können noch gewinnen – der Wert ist vorläufig.' }),
+                _mkTeamPair('oneTwo', '🏁 Doppelsiege', 'oneTwo',
+                    { def: 'Beide Autos eines Teams auf P1 und P2 im selben Rennen.' }),
+                _mkTeamPair('frontRow', '🅿️🅿️ Doppelpoles', 'frontRow',
+                    { def: 'Beide Autos eines Teams auf den Startplätzen 1 und 2.' }),
+                _mkCount('teamWins', '🏆 Team-Siege', 'team', isWin,
+                    { def: 'Rennsiege des Teams.' }),
+                _mkRatio('poleToWin', '🎯 Pole-to-Win-Quote', 'driver',
+                    e => e.pole && e.pos === 1, e => e.pole, 10,
+                    { def: 'Anteil der Poles, aus denen ein Sieg wurde.',
+                      threshold: 'Mindestens 10 Poles', pct: true }),
+                _mkRatio('teamPoleToWin', '🎯 Pole-to-Win-Quote (Team)', 'team',
+                    e => e.pole && e.pos === 1, e => e.pole, 20,
+                    { def: 'Anteil der Team-Poles, aus denen ein Sieg wurde.',
+                      threshold: 'Mindestens 20 Poles', pct: true })
+            ];
+        }
+
+        // ── Der Scan (Plan 5.1) ────────────────────────────────────────────
+        // Sequenziell, NIE Promise.all über die Jahre: getHistoryDetail hat einen
+        // LRU-Cache (HIST_DETAIL_CACHE_MAX), der nur bei serieller Nutzung greift.
+        async function _scanAllRaces(source, onProgress) {
+            const defs = _recordDefs();
+            const buckets = {};                       // decade|'all' -> {defId -> state}
+            const names = new Map();                  // key -> Anzeigename
+            const teamNames = new Map();
+            const bucketFor = (dec) => {
+                if (!buckets[dec]) {
+                    const b = {};
+                    for (const d of defs) b[d.id] = d.init();
+                    buckets[dec] = b;
+                }
+                return buckets[dec];
+            };
+            const seasons = (GAME_STATE.history || [])
+                .filter(h => h && h.year != null)
+                .map(h => ({ h, year: h.year }))
+                .sort((a, b) => a.year - b.year);
+            // Laufende Saison mitnehmen – sonst fehlen die jüngsten Rennen
+            if (GAME_STATE.currentYear != null && (GAME_STATE.results || []).length) {
+                seasons.push({ h: null, year: GAME_STATE.currentYear, live: true });
+            }
+            const meta = { years: seasons.length, from: seasons.length ? seasons[0].year : null,
+                           to: seasons.length ? seasons[seasons.length - 1].year : null,
+                           decades: new Set(), yearsPerDecade: {} };
+
+            for (let i = 0; i < seasons.length; i++) {
+                if (_recordsScan && _recordsScan.abort) return null;
+                const s = seasons[i];
+                if (onProgress) { onProgress(i, seasons.length, s.year); await new Promise(r => setTimeout(r, 0)); }
+
+                let results, qualis, calendar, driverSnap, championKey = null;
+                if (s.live) {
+                    results = GAME_STATE.results || [];
+                    qualis = GAME_STATE.qualifyingResults || [];
+                    calendar = GAME_STATE.races || [];
+                    driverSnap = GAME_STATE.drivers || [];
+                } else {
+                    // Fallback-Modus ohne IndexedDB: schwere Felder liegen inline
+                    const detail = s.h.results ? s.h : (await getHistoryDetail(s.year)) || {};
+                    results = detail.results || [];
+                    qualis = detail.qualifyingResults || [];
+                    calendar = detail.races || [];
+                    driverSnap = detail.drivers || [];
+                    championKey = s.h.championHistId || s.h.championId || null;
+                }
+                // Schlüssel-Angleichung (Plan 5.2): der schwere Snapshot trägt id UND histId
+                const idToHist = {};
+                for (const d of driverSnap) {
+                    if (!d || !d.id) continue;
+                    idToHist[d.id] = d.histId || d.id;
+                    names.set(d.histId || d.id, d.name || d.id);
+                }
+                const idMap = (id) => idToHist[id] || id;
+
+                const dec = _decadeOf(s.year);
+                meta.decades.add(dec);
+                meta.yearsPerDecade[dec] = (meta.yearsPerDecade[dec] || 0) + 1;
+                const states = (defId) => [bucketFor('all')[defId], bucketFor(dec)[defId]];
+
+                const qByRi = {};
+                for (const q of qualis) qByRi[q.ri ?? q.raceIndex] = q;
+
+                for (const race of results) {
+                    const ri = race.ri ?? race.raceIndex;
+                    const evt = _normalizeSimRace(s.year, race, qByRi[ri], calendar, idMap);
+                    if (stATSIndyFilter === 'none' && evt.isIndy) continue;
+                    if (stATSIndyFilter === 'only' && !evt.isIndy) continue;
+                    for (const e of evt.entries) if (e.teamKey) teamNames.set(e.teamKey, e.teamKey);
+                    for (const d of defs) d.onRace(evt, states(d.id));
+                }
+                // Titel der Saison melden (nur FirstTimeAcc reagiert darauf)
+                if (championKey) {
+                    for (const d of defs) if (d.onTitle) d.onTitle(idMap(championKey), s.year, states(d.id));
+                }
+            }
+
+            // finish() je Topf, Rangfolge nach Plan 5.5
+            const out = {};
+            for (const dec in buckets) {
+                out[dec] = {};
+                for (const d of defs) {
+                    let rows = d.finish(buckets[dec][d.id]) || [];
+                    rows.forEach(r => { r.name = (d.scope === 'team' ? teamNames.get(r.key) : names.get(r.key)) || r.key; });
+                    rows.sort((a, b) => (b.value - a.value)
+                        || ((a.from || 9999) - (b.from || 9999))
+                        || ((a._den || a.value || 0) - (b._den || b.value || 0))
+                        || String(a.name).localeCompare(String(b.name)));
+                    out[dec][d.id] = rows;
+                }
+            }
+            meta.decades = [...meta.decades].sort((a, b) => a - b);
+            return { results: out, meta, defs };
+        }
+
+        window.startRecordScan = async function() {
+            if (_recordsScan) { _recordsScan.abort = true; _recordsScan = null; renderContent(); return; }
+            _recordsScan = { abort: false, done: 0, total: 0, year: null };
+            renderContent();
+            const scanned = await _scanAllRaces(stATSSource, (done, total, year) => {
+                if (_recordsScan) { _recordsScan.done = done; _recordsScan.total = total; _recordsScan.year = year; }
+                const el = document.getElementById('rec-progress');
+                if (el) el.textContent = `Saison ${year} … (${done + 1}/${total})`;
+            });
+            _recordsScan = null;
+            if (scanned) _recordsCache.set(stATSSource, scanned);   // Abbruch verwirft das Teilergebnis
+            renderContent();
+        };
+
+        window.setRecordDecade = function(dec) {
+            stATSDecade = dec === 'all' ? 'all' : Number(dec);
+            renderContent();
+        };
+        window.setRecordSource = function(src) { stATSSource = src; renderContent(); };
+        window.toggleRecordThreshold = function(id) { _recIgnoreThr[id] = !_recIgnoreThr[id]; renderContent(); };
+
+        // ── Darstellung (Plan 6.3 + 8) ─────────────────────────────────────
+        function _renderRecordCard(def, rows, allRows) {
+            const fmt = (r) => def.pct ? (r.value * 100).toFixed(1) + ' %' : Math.round(r.value);
+            const ignored = !!_recIgnoreThr[def.id];
+            let shown = rows, below = null, total = rows.length;
+            if (def.minDen && !ignored) {
+                shown = rows.filter(r => r._den >= def.minDen);
+                const rest = rows.filter(r => r._den < def.minDen);
+                below = rest.length ? rest[0] : null;   // bereits nach 5.5 sortiert
+            }
+            const top = shown.slice(0, 5);
+            const allBest = (allRows && allRows.length)
+                ? (def.minDen && !ignored ? allRows.filter(r => r._den >= def.minDen) : allRows)[0] : null;
+            const decBest = shown[0];
+
+            const listHtml = top.length ? top.map((r, i) => {
+                const link = def.scope === 'team'
+                    ? `onclick="openTeamProfile('${String(r.key).replace(/'/g, "\\'")}')"`
+                    : `onclick="openDriverProfile('${String(r.key).replace(/'/g, "\\'")}')"`;
+                return '<div class="flex justify-between items-baseline gap-2 py-1 border-t border-custom">'
+                    + '<span class="text-tertiary text-xs" style="width:1.2rem">' + (i + 1) + '.</span>'
+                    + '<span class="flex-1 font-bold ' + (def.scope === 'team' ? 'team-link' : 'driver-link') + '" '
+                    + 'style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ' + link + '>' + r.name + '</span>'
+                    + (r.detail ? '<span class="text-xs text-tertiary">' + r.detail + '</span>' : '')
+                    + '<span class="font-bold accent-gold" style="min-width:3.5rem;text-align:right">' + fmt(r) + '</span>'
+                    + '</div>';
+            }).join('') : '<div class="text-tertiary text-sm py-3">Noch keine Daten in diesem Zeitraum.</div>';
+
+            let footer = '';
+            if (allBest && decBest && stATSDecade !== 'all') {
+                footer += '<div class="text-xs text-tertiary mt-2">Dekadenrekord ' + fmt(decBest)
+                        + ' · Allzeit ' + fmt(allBest) + ' (' + allBest.name + ')</div>';
+            }
+            if (def.minDen) {
+                footer += '<div class="text-xs mt-2" style="color:#FBBF24">⚠ ' + def.threshold
+                        + ' · ' + shown.length + ' von ' + total + (def.scope === 'team' ? ' Teams' : ' Fahrern') + '</div>';
+                if (below && !ignored) {
+                    footer += '<div class="text-xs text-tertiary">↳ Bester darunter: ' + below.name
+                            + ' ' + fmt(below) + ' (' + below.detail + ')</div>';
+                }
+                footer += '<button onclick="toggleRecordThreshold(\'' + def.id + '\')" '
+                        + 'class="text-xs mt-1 px-2 py-1 rounded bg-secondary">'
+                        + (ignored ? 'Schwelle anwenden' : 'Schwelle ignorieren') + '</button>';
+            } else if (def.threshold) {
+                footer += '<div class="text-xs text-tertiary mt-2">' + def.threshold + '</div>';
+            }
+            if (def.warn) footer += '<div class="text-xs mt-1" style="color:#FBBF24">⚠ ' + def.warn + '</div>';
+            if (def.def) footer += '<div class="text-xs text-tertiary mt-1" style="opacity:.75">' + def.def + '</div>';
+
+            return '<div class="card p-3 rounded-xl">'
+                 + '<div class="font-bold mb-1">' + def.label + '</div>'
+                 + listHtml + footer + '</div>';
+        }
+
+        function renderRecords() {
+            const cached = _recordsCache.get(stATSSource);
+            const srcBtn = (v, l) => '<button onclick="setRecordSource(\'' + v + '\')" class="px-3 py-1 rounded text-sm font-medium transition" '
+                + 'style="background:' + (stATSSource === v ? '#3B82F6' : '#2D2D2D') + ';color:' + (stATSSource === v ? 'white' : '#aaa') + '">' + l + '</button>';
+            const head = '<div class="flex gap-2 mb-3 flex-wrap">' + srcBtn('sim', '🏎️ Simuliert')
+                + '<span class="text-xs text-tertiary self-center">Reale Jahre folgen in Schritt 6</span></div>';
+
+            if (_recordsScan) {
+                return head + '<div class="card p-6 rounded-xl text-center">'
+                    + '<div class="text-lg font-bold mb-2">Rekorde werden berechnet …</div>'
+                    + '<div id="rec-progress" class="text-sm text-tertiary mb-3">Start …</div>'
+                    + '<button onclick="startRecordScan()" class="px-4 py-2 rounded-lg bg-secondary">Abbrechen</button></div>';
+            }
+            if (!cached) {
+                const n = (GAME_STATE.history || []).length + 1;
+                return head + '<div class="card p-6 rounded-xl text-center">'
+                    + '<div class="text-sm text-tertiary mb-3">Die Rekorde werden aus allen Rennen berechnet – '
+                    + n + ' Saisons. Das geschieht einmal; danach ist der Dekadenwechsel sofort.</div>'
+                    + '<button onclick="startRecordScan()" class="btn-primary px-5 py-2 rounded-lg font-bold">⚡ Rekorde berechnen</button></div>';
+            }
+
+            const { results, meta, defs } = cached;
+            const chip = (v, l, mark) => '<button onclick="setRecordDecade(\'' + v + '\')" class="px-3 py-1 rounded text-sm transition" '
+                + 'style="background:' + (String(stATSDecade) === String(v) ? '#3B82F6' : '#2D2D2D') + ';color:'
+                + (String(stATSDecade) === String(v) ? 'white' : '#aaa') + '">' + l + (mark || '') + '</button>';
+            let chips = chip('all', 'Alles');
+            for (const d of meta.decades) {
+                const yrs = meta.yearsPerDecade[d] || 0;
+                chips += chip(d, d + 'er', yrs < 6 ? ' <span class="text-xs" style="opacity:.7">(' + yrs + 'J)</span>' : '');
+            }
+            const bucket = results[stATSDecade] || {};
+            const allB = results['all'] || {};
+            const cards = defs.map(def => _renderRecordCard(def, bucket[def.id] || [], allB[def.id] || [])).join('');
+            const span = stATSDecade === 'all' ? meta.from + '–' + meta.to : stATSDecade + '–' + (Number(stATSDecade) + 9);
+
+            return head
+                + '<div class="flex gap-2 mb-3 flex-wrap">' + chips + '</div>'
+                + '<div class="text-sm text-tertiary mb-3">Quelle: Simuliert · Zeitraum ' + span
+                + ' · ' + meta.years + ' Saisons erfasst'
+                + '<button onclick="startRecordScan()" class="ml-2 text-xs px-2 py-1 rounded bg-secondary">neu berechnen</button></div>'
+                + '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">' + cards + '</div>'
+                + '<div class="text-xs text-tertiary mt-3">Serien, die eine Dekadengrenze überschreiten, zählen in beiden '
+                + 'Dekaden mit voller Länge – die Summe der Dekadenrekorde ergibt daher nicht den Allzeit-Rekord.</div>';
+        }
+
         function renderAllTimeDrivers() {
             const stATS = GAME_STATE.allTimeStATS;
             
