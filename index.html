@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.78</title>
+    <title>F1 RPG v0.9.15.79</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.78 (aktuell) - 05.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.79 (aktuell) - 05.08.2026</div>
+                            <div>&#8226; NEU: Meldung 'Titel entschieden' im Log, als Popup und im Saisonende-Modal</div>
+                            <div>&#8226; NEU: 5 Alters-Rekorde - juengster/aeltester Sieger, juengster/aeltester Weltmeister, aeltester Polesetter</div>
+                            <div>&#8226; NEU: Taggenaue Geburtsdaten fuer alle 915 realen Fahrer, Titel-Entscheidungstag fuer 76 Saisons</div>
+                            <div class="font-bold text-slate-400">v0.9.15.78 - 05.08.2026</div>
                             <div>&#8226; FIX: Echte F2/F3-Nachwuchsfahrer standen ab 1950 im Reserve-Pool - negatives Alter passierte den Filter</div>
                             <div>&#8226; NEU: Rennen speichern das volle Datum, generierte Kalender und Nutzer-Strecken bekommen einen plausiblen Tag</div>
                             <div class="font-bold text-slate-400">v0.9.15.77 - 05.08.2026</div>
@@ -3439,7 +3443,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.78';
+        const VERSION = '0.9.15.79';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5166,6 +5170,63 @@
             return false;
         }
 
+        // ── Geburtsdaten (v0.9.15.79, Rekord-Bauplan Schritt 8) ────────────────
+        // Alters-Rekorde brauchen einen TAG, nicht nur ein Jahr. Drei Quellen in
+        // fester Rangfolge:
+        //   1. driver.birthDate    – bei erfundenen Fahrern beim Erzeugen gesetzt
+        //   2. DRIVER_DOB[histId]  – 915 reale Fahrer, taggenau (data/hist.js)
+        //   3. birthYear allein    – 01.01. als Platzhalter, MARKIERT als ungenau
+        // Punkt 3 ist der Grund für das approx-Flag: ein 01.01.-Platzhalter darf
+        // keinen Tagesrekord tragen (Plan 4.1). Wer nur zählt, darf ihn nutzen.
+        let _dobLowerIdx = null;
+        function _dobLookup(histId) {
+            if (!histId || typeof DRIVER_DOB === 'undefined') return null;
+            if (DRIVER_DOB[histId]) return DRIVER_DOB[histId];
+            // Case-Falle: 'john-Watson' steht als einziger Key mit grossem W in
+            // HIST_DRIVERS/HIST_NAMES/HIST_SEASONS. Derselbe Vergleichsfehler
+            // kostete in .15.29 schon einmal ganze Profile — deshalb hier gleich
+            // ein Kleinschreib-Index statt einer Einzelfall-Ausnahme.
+            if (_dobLowerIdx === null) {
+                _dobLowerIdx = {};
+                for (const k of Object.keys(DRIVER_DOB)) _dobLowerIdx[k.toLowerCase()] = DRIVER_DOB[k];
+            }
+            return _dobLowerIdx[String(histId).toLowerCase()] || null;
+        }
+
+        // Deterministischer Geburtstag für erfundene Fahrer: derselbe Fahrer bekommt
+        // immer denselben Tag, auch in Alt-Saves ohne gespeichertes Datum.
+        // Tag und Monat werden über ein festes NICHT-Schaltjahr (2001) aufgelöst und
+        // erst danach mit dem echten Geburtsjahr gestempelt. Damit kann der 29. Februar
+        // gar nicht entstehen – ein erfundener Schalttags-Geburtstag wäre in jeder
+        // Alters-Rechnung ein Sonderfall ohne Gegenwert. (Über das Geburtsjahr selbst
+        // gerechnet käme er sehr wohl vor: 365 Tage schließen im Schaltjahr nur den
+        // 31. Dezember aus, nicht den 29. Februar.)
+        function _synthBirthDate(seedStr, birthYear) {
+            if (!birthYear) return null;
+            const rng = _recapRng(_recapHash(String(seedStr) + '|dob'));
+            const d = new Date(Date.UTC(2001, 0, 1 + Math.floor(rng() * 365)));
+            return `${birthYear}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+        }
+
+        // → { date: 'YYYY-MM-DD'|null, approx: bool }
+        function getDriverBirthDate(driver) {
+            if (!driver) return { date: null, approx: false };
+            if (driver.birthDate) return { date: driver.birthDate, approx: false };
+            const real = _dobLookup(driver.histId);
+            if (real) return { date: real, approx: false };
+            if (!driver.birthYear) return { date: null, approx: false };
+            // Erfundene Person ohne gespeichertes Datum (Alt-Save): aus dem Namen
+            // ableiten. In der Fiktion gibt es keine andere Wahrheit — also exakt,
+            // nicht geschätzt. Bewusst NICHT _isGeneratedId: das beantwortet die
+            // Herkunftsfrage (Feeder gelten dort als echt) und wird an anderer
+            // Stelle so gebraucht. Hier zählt allein, ob der Mensch erfunden ist.
+            if (/^(gen|exp|custom)-/.test(String(driver.id || ''))) {
+                return { date: _synthBirthDate(driver.name || driver.id, driver.birthYear), approx: false };
+            }
+            // Echter Mensch, nur das Jahr bekannt (Feeder, Alt-Saves): Platzhalter.
+            return { date: `${driver.birthYear}-01-01`, approx: true };
+        }
+
         // Prüft ob ein Fahrer sein Potenzial erreicht hat
         // PACE_RATINGS Anzeige-Helfer: geben Elo-kalibrierte Werte zurück wenn vorhanden
         function _eloDisplayPace(driver, year) {
@@ -6705,6 +6766,10 @@
                     experience: 60 + Math.floor(Math.random() * 20),
                     starts: 60 + Math.floor(Math.random() * 20),
                     birthYear: genBirthYear,
+                    // v0.9.15.79: Tag + Monat mitgeben (Rekord-Bauplan Schritt 8).
+                    // Seed ist der Name, nicht die id: die id trägt Date.now() und
+                    // wäre bei jedem Erzeugen anders – der Name ist im Save stabil.
+                    birthDate: _synthBirthDate(`${firstName} ${lastName}`, genBirthYear),
                     debutYear: year,
                     contractEnd: year + 1 + Math.floor(Math.random() * 2),
                     isIndyOnly: isIndyTeam  // Markierung für Indy-Fahrer
@@ -6737,6 +6802,7 @@
                     experience: 80 + Math.floor(Math.random() * 15),
                     starts: 75 + Math.floor(Math.random() * 15),
                     birthYear: genBirthYear,
+                    birthDate: _synthBirthDate(`${firstName} ${lastName}`, genBirthYear),   // v0.9.15.79
                     debutYear: year - (2 + Math.floor(Math.random() * 3)), // 2-4 Jahre "Erfahrung"
                     contractEnd: year + 1 + Math.floor(Math.random() * 3),
                     isIndyOnly: isIndyTeam  // Markierung für Indy-Fahrer
@@ -9589,6 +9655,9 @@
             else if (skill === 'pro') { pace = 80 + Math.floor(Math.random() * 11); potential = pace + 2 + Math.floor(Math.random() * 5); }
             else { pace = 72 + Math.floor(Math.random() * 11); potential = pace + 5 + Math.floor(Math.random() * 8); }
 
+            // v0.9.15.79: einmal ziehen statt inline – birthDate muss auf DASSELBE Jahr zeigen.
+            const _customBirthYear = GAME_STATE.currentYear - (22 + Math.floor(Math.random() * 8));
+
             const driver = {
                 id: 'custom-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                 name,
@@ -9602,7 +9671,8 @@
                 consistency: 65 + Math.floor(Math.random() * 21),
                 experience: 60 + Math.floor(Math.random() * 21),
                 starts: 60 + Math.floor(Math.random() * 21),
-                birthYear: GAME_STATE.currentYear - (22 + Math.floor(Math.random() * 8)),
+                birthYear: _customBirthYear,
+                birthDate: _synthBirthDate(name, _customBirthYear),   // v0.9.15.79
                 debutYear: null,
                 contractEnd: null,
                 status: 'active',
@@ -10691,6 +10761,111 @@
             }
         }
 
+        // === TITEL RECHNERISCH ENTSCHIEDEN (v0.9.15.79, Rekord-Bauplan 9b) ===
+        // Sitzt in applyRaceResults und gilt damit für ALLE Modi gleich (Sofort-Rennen,
+        // Live-Ticker, Komplette Saison) — Modus ist Darstellung, nie Konsequenz.
+        // Nur das Popup hängt am interaktiven Pfad, sonst würde eine Saison-Simulation
+        // zwei Dutzend Dialoge aufreißen.
+        //
+        // Rechnung: das Spiel kennt KEINE Streichresultate, Punkte sind eine reine Summe.
+        //   maxRest = verbleibende Rennen × Siegpunkte des Jahres
+        //   entschieden, sobald Vorsprung > maxRest
+        // Ein Bonus für die schnellste Runde geht NICHT ein — das Spiel vergibt keinen:
+        // r.points stammt ausschliesslich aus getPointsForPosition (10588, 13111).
+        // Käme er je dazu, muss er hier mit hinein, sonst meldet die Prüfung zu früh.
+        //
+        // Für REALE Jahre wird nicht gerechnet, sondern in TITLE_CLINCH nachgeschlagen
+        // (data/hist.js, Bauplan 9a) — vor 1991 gab es Streichresultate, an denen eine
+        // Summenrechnung scheitern würde.
+        function checkTitleClinch() {
+            if (GAME_STATE._titleClinch) return null;               // in dieser Saison schon gemeldet
+            const races = GAME_STATE.races || [];
+            const remaining = races.length - (GAME_STATE.currentRace || 0);
+            if (remaining < 0) return null;
+            const year = GAME_STATE.currentYear;
+            const rank = Object.entries(GAME_STATE.driverStandings || {})
+                .map(([id, s]) => ({ id, name: s.name, points: s.points || 0 }))
+                .sort((a, b) => b.points - a.points);
+            if (rank.length < 2) return null;
+            const gap = rank[0].points - rank[1].points;
+            const maxRest = remaining * getPointsForPosition(1, year);
+            // Gleichstand ist NICHT entschieden: bei Punktgleichheit zählt der Vergleich
+            // der besseren Platzierungen, nicht die Summe. Deshalb echtes >, nicht >=.
+            if (gap <= maxRest) return null;
+            const race = races[Math.max(0, (GAME_STATE.currentRace || 1) - 1)] || {};
+            GAME_STATE._titleClinch = {
+                year, driverId: rank[0].id, name: rank[0].name,
+                round: GAME_STATE.currentRace, totalRounds: races.length,
+                raceName: race.name || null,
+                date: race.date || null,          // seit Schritt 7 am Rennen vorhanden
+                points: rank[0].points, gap, remaining
+            };
+            logSuccess('SEASON', `Titel entschieden: ${rank[0].name} ist Weltmeister ${year}`
+                + (remaining > 0 ? ` – ${remaining} Rennen vor Schluss` : ' – im Finale'));
+            return GAME_STATE._titleClinch;
+        }
+
+        // Kurzfassung für Modal-Zeilen (Saisonende + Popup teilen sich den Text).
+        function titleClinchLine(tc) {
+            if (!tc) return '';
+            const wann = tc.remaining > 0
+                ? `${tc.remaining} Rennen vor Schluss`
+                : 'erst im Saisonfinale';
+            const wo = tc.raceName ? ` beim ${tc.raceName}` : '';
+            const datum = tc.date ? ` (${tc.date.split('-').reverse().join('.')})` : '';
+            return `Titel stand nach Lauf ${tc.round}/${tc.totalRounds}${wo}${datum} fest – ${wann}, `
+                 + `mit ${tc.gap} Punkten Vorsprung.`;
+        }
+
+        // Fahrernamen können aus createCustomDriver stammen, also aus einem Eingabefeld.
+        // Der Monolith hat keinen Escape-Helfer; für neuen Markup-Bau wird hier einer
+        // mitgeliefert, statt Nutzertext ungeprüft in innerHTML zu schreiben.
+        function _escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
+        }
+
+        // Popup nach dem Rennen. Wird dynamisch gebaut statt als festes Markup: so bleibt
+        // die HTML-Struktur unberührt und der Dialog erbt trotzdem Theme + Modal-Styling.
+        function showTitleClinchModal(tc) {
+            if (!tc || document.getElementById('titleClinchModal')) return;
+            const el = document.createElement('div');
+            el.id = 'titleClinchModal';
+            el.className = 'modal-overlay';
+            el.style.display = 'flex';
+            el.innerHTML = `
+                <div class="modal-content" style="max-width: 520px; width: 92%;">
+                    <div class="modal-header">
+                        <h3 class="text-xl font-bold">👑 Titel entschieden</h3>
+                    </div>
+                    <div class="modal-body" style="text-align:center; padding: 20px 24px;">
+                        <div style="font-size: 42px; line-height: 1;">🏆</div>
+                        <div style="font-size: 22px; font-weight: 700; margin: 10px 0 4px;">
+                            ${_escHtml(tc.name)}
+                        </div>
+                        <div style="opacity: .85; margin-bottom: 14px;">
+                            Weltmeister ${tc.year}
+                        </div>
+                        <div style="opacity: .8; font-size: 14px;">${_escHtml(titleClinchLine(tc))}</div>
+                    </div>
+                    <div class="modal-footer" style="text-align:right;">
+                        <button class="btn-primary px-4 py-2" onclick="closeTitleClinchModal()">Weiter</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(el);
+        }
+        window.closeTitleClinchModal = function () {
+            document.getElementById('titleClinchModal')?.remove();
+        };
+
+        // Zeigt das Popup nur, wenn der Titel bei GENAU diesem Rennen fiel. Aufrufer sind
+        // die beiden interaktiven Pfade; die Saison-Simulation überspringt es bewusst.
+        function maybeShowTitleClinch() {
+            const tc = GAME_STATE._titleClinch;
+            if (tc && tc.round === GAME_STATE.currentRace) showTitleClinchModal(tc);
+        }
+
         function applyRaceResults(raceResult) {
             raceResult.results.forEach(r => {
                 // Driver standings
@@ -10774,6 +10949,8 @@
                 // v0.8.2.4: Indy/F1 Tracking
                 if (raceIsIndy) at.hasIndy = true; else at.hasF1 = true;
             });
+
+            checkTitleClinch();   // v0.9.15.79: geteilt über alle Modi (Bauplan 9b)
 
             applyPendingNonWMDeaths(GAME_STATE.currentRace);  // HOCH#4: terminierte Non-WM-Tode nach diesem Rennen feuern
 
@@ -13122,9 +13299,13 @@
             
             const winner = liveRaceState.positions[0];
             logSuccess('RACE', `${raceResult.raceName} beendet - Sieger: ${winner.name}`);
-            
+
             if (GAME_STATE.currentRace >= GAME_STATE.races.length) {
                 showSeasonEndModal();
+            } else {
+                // Fiel der Titel im Finale, trägt das Saisonende-Modal die Meldung –
+                // sonst stünden zwei Dialoge übereinander.
+                maybeShowTitleClinch();
             }
         };
         
@@ -13397,10 +13578,12 @@
                 renderAll();
                 
                 logSuccess('RACE', `${raceResult.raceName} beendet - Sieger: ${raceResult.results[0].name}`);
-                
+
                 // Prüfen ob Saison beendet - Modal anzeigen
                 if (GAME_STATE.currentRace >= GAME_STATE.races.length) {
                     showSeasonEndModal();
+                } else {
+                    maybeShowTitleClinch();   // im Finale übernimmt das Saisonende-Modal
                 }
             }
         };
@@ -15448,6 +15631,7 @@
                     <div class="text-sm text-black/70">Fahrer-Weltmeister</div>
                     <div class="text-2xl font-bold text-black${champion?.id ? ' driver-link cursor-pointer' : ''}"${champion?.id ? ` onclick="openDriverProfile('${champion.id}')"` : ''}>${champion?.name || 'N/A'}</div>
                     <div class="text-lg text-black/80">${champion?.points || 0} Punkte | ${champion?.wins || 0} Siege</div>
+                    ${GAME_STATE._titleClinch ? `<div class="text-sm text-black/70 mt-2">👑 ${_escHtml(titleClinchLine(GAME_STATE._titleClinch))}</div>` : ''}
                 </div>
 
                 <div class="card p-4 rounded-lg mb-4 text-center" style="background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);">
@@ -18650,6 +18834,12 @@
                     driverHistIds: _seasonDrivers.map(d => d.histId || d.id),
                     teamHistIds: _seasonTeams.map(t => t.histId || t.id),
                     championPoints: champion ? champion.points : 0,
+                    // v0.9.15.79: Tag der rechnerischen Titelentscheidung (Bauplan 9b).
+                    // LEICHT (ein kleines Objekt) und nötig, weil sich der Zeitpunkt aus den
+                    // archivierten Endständen nicht mehr rekonstruieren lässt – dafür bräuchte
+                    // es den Punkteverlauf nach jedem Lauf. Grundlage für „Alter bei erstem
+                    // Titel" in simulierten Saisons.
+                    titleClinch: GAME_STATE._titleClinch || null,
                     // Paket B: Rookie-Flag LEICHT mitspeichern (h.drivers ist schwer/lazy →
                     // Off-Season-Rückblick kann sonst nicht identisch regeneriert werden)
                     championRookie: champion ? isRookieChampionCheck(champion.id, GAME_STATE.currentYear) : false,
@@ -18738,6 +18928,7 @@
             GAME_STATE.trainingResults = [];
             GAME_STATE.seasonDeaths = [];      // Reset für neue Saison
             GAME_STATE.seasonRetirements = []; // Reset für neue Saison
+            delete GAME_STATE._titleClinch;    // v0.9.15.79: Titel-Meldung gilt pro Saison
             Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]);
             
             // === INDY-500 REGEL: Ab 1961 verschwinden alle Indy-only Teams und Fahrer ===
@@ -24430,8 +24621,69 @@
             };
         }
 
+        // F — AgeAcc (Plan Stufe C, Schritt 10). Der einzige Akkumulator, der zwei
+        // Datenschichten gleichzeitig braucht: Geburtsdatum (Schritt 8) UND Renndatum
+        // (Schritt 7). Fehlt eine davon, wird der Fall ÜBERSPRUNGEN statt geschätzt —
+        // ein 01.01.-Platzhalter oder ein konstruierter Renntag darf keinen Tagesrekord
+        // tragen (Plan 4.1/4.2/6.2).
+        //
+        // Je Fahrer wird nur der EINE extreme Fall gehalten, nicht jeder Sieg.
+        function _ageParts(dobStr, onStr) {
+            const [by, bm, bd] = dobStr.split('-').map(Number);
+            const [yy, ym, yd] = onStr.split('-').map(Number);
+            const at = Date.UTC(yy, ym - 1, yd);
+            let years = yy - by;
+            let anniv = Date.UTC(yy, bm - 1, bd);
+            if (at < anniv) { years--; anniv = Date.UTC(yy - 1, bm - 1, bd); }
+            if (years < 0) return null;                       // Ereignis vor der Geburt
+            return { years, days: Math.round((at - anniv) / 86400000),
+                     total: Math.round((at - Date.UTC(by, bm - 1, bd)) / 86400000) };
+        }
+
+        // dir: 'min' = jüngster, 'max' = ältester · on: 'win' | 'pole' | 'title'
+        function _mkAge(id, label, dir, on, dobOf, opts) {
+            const better = (a, b) => dir === 'min' ? a < b : a > b;
+            const note = (states, key, p, when) => {
+                for (const st of states) {
+                    const cur = st.get(key);
+                    if (!cur || better(p.total, cur.total)) st.set(key, { ...p, when });
+                }
+            };
+            const ageAt = (key, dateStr, dateApprox) => {
+                if (!dateStr || dateApprox) return null;      // konstruierter Renntag zählt nicht
+                const dob = dobOf(key);
+                if (!dob || !dob.date || dob.approx) return null;  // 01.01.-Platzhalter zählt nicht
+                return _ageParts(dob.date, dateStr);
+            };
+            return {
+                id, label, kind: 'age', scope: 'driver', asc: dir === 'min',
+                fmtValue: (r) => `${r.years} J ${r.days} T`, ...(opts || {}),
+                init: () => new Map(),
+                onRace(evt, states) {
+                    if (on === 'title') return;
+                    for (const e of evt.entries) {
+                        if (!e.driverKey) continue;
+                        if (on === 'win' ? e.pos !== 1 : !e.pole) continue;
+                        const p = ageAt(e.driverKey, evt.date, evt.dateApprox);
+                        if (p) note(states, e.driverKey, p, evt.date);
+                    }
+                },
+                // Titel-Rekorde hängen am Entscheidungstag, nicht am Saisonende:
+                // real aus TITLE_CLINCH (9a), simuliert aus dem archivierten titleClinch (9b).
+                onTitle(key, year, states, clinchDate) {
+                    if (on !== 'title' || !key) return;
+                    const p = ageAt(key, clinchDate, false);
+                    if (p) note(states, key, p, clinchDate);
+                },
+                finish: (st) => [...st.entries()].map(([key, s]) => ({
+                    key, value: s.total, years: s.years, days: s.days,
+                    detail: s.when ? s.when.split('-').reverse().join('.') : ''
+                }))
+            };
+        }
+
         // ── Der Katalog ────────────────────────────────────────────────────
-        function _recordDefs() {
+        function _recordDefs(dobOf) {
             const isWin   = e => e.pos === 1;
             const scored  = e => (e.points || 0) > 0;
             const started = e => _STARTED.has(e.status);
@@ -24478,7 +24730,23 @@
                 _mkRatio('teamPoleToWin', '🎯 Pole-to-Win-Quote (Team)', 'team',
                     e => e.pole && e.pos === 1, e => e.pole, 20,
                     { def: 'Anteil der Team-Poles, aus denen ein Sieg wurde.',
-                      threshold: 'Mindestens 20 Poles', pct: true })
+                      threshold: 'Mindestens 20 Poles', pct: true }),
+                // Alters-Rekorde (Schritt 10). Gemeinsame Fussnote: nur exakte Daten.
+                _mkAge('youngWin', '🍼 Jüngster Rennsieger', 'min', 'win', dobOf,
+                    { def: 'Alter am Tag des Sieges.',
+                      threshold: 'Nur exakte Geburts- und Renndaten' }),
+                _mkAge('oldWin', '🎩 Ältester Rennsieger', 'max', 'win', dobOf,
+                    { def: 'Alter am Tag des Sieges.',
+                      threshold: 'Nur exakte Geburts- und Renndaten' }),
+                _mkAge('youngTitle', '🍼👑 Jüngster Weltmeister', 'min', 'title', dobOf,
+                    { def: 'Alter an dem Tag, an dem der Titel rechnerisch feststand – nicht am Saisonende.',
+                      threshold: 'Nur exakte Geburts- und Entscheidungsdaten' }),
+                _mkAge('oldTitle', '👑 Ältester Weltmeister', 'max', 'title', dobOf,
+                    { def: 'Alter am Tag der rechnerischen Titelentscheidung.',
+                      threshold: 'Nur exakte Geburts- und Entscheidungsdaten' }),
+                _mkAge('oldPole', '🅿️ Ältester Polesetter', 'max', 'pole', dobOf,
+                    { def: 'Alter am Tag der Pole Position.',
+                      threshold: 'Nur exakte Geburts- und Renndaten' })
             ];
         }
 
@@ -24486,7 +24754,25 @@
         // Sequenziell, NIE Promise.all über die Jahre: getHistoryDetail hat einen
         // LRU-Cache (HIST_DETAIL_CACHE_MAX), der nur bei serieller Nutzung greift.
         async function _scanAllRaces(source, onProgress) {
-            const defs = _recordDefs();
+            // Geburtsdaten-Auflösung für die Alters-Rekorde (Schritt 10). Zwei Wege:
+            // reale Schlüssel sind Slugs und treffen DRIVER_DOB direkt; simulierte Fahrer
+            // kommen aus dem schweren Saison-Snapshot, der birthDate/birthYear trägt.
+            // Der Snapshot wird während des Scans gefüllt (siehe driverSnap unten) – ein
+            // Fahrer taucht immer erst in einer Saison auf, bevor er ein Rennen fährt.
+            const dobSnap = new Map();                // key -> Fahrer-Objekt aus dem Snapshot
+            const dobCache = new Map();               // key -> { date, approx } | null
+            const dobOf = (key) => {
+                if (dobCache.has(key)) return dobCache.get(key);
+                const snap = dobSnap.get(key);
+                let res = snap ? getDriverBirthDate(snap) : null;
+                if (!res || !res.date) {
+                    const real = _dobLookup(key);
+                    res = real ? { date: real, approx: false } : null;
+                }
+                dobCache.set(key, res);
+                return res;
+            };
+            const defs = _recordDefs(dobOf);
             const buckets = {};                       // decade|'all' -> {defId -> state}
             const names = new Map();                  // key -> Anzeigename
             const teamNames = new Map();
@@ -24563,7 +24849,10 @@
                         for (const d of defs) d.onRace(evt, statesR(d.id));
                     }
                     const champ = (typeof HIST_CHAMPIONS !== 'undefined') ? HIST_CHAMPIONS[s.year] : null;
-                    if (champ) for (const d of defs) if (d.onTitle) d.onTitle(champ, s.year, statesR(d.id));
+                    // Entscheidungstag aus TITLE_CLINCH (Schritt 9a) – abgelesen, nicht gerechnet:
+                    // vor 1991 gab es Streichresultate, an denen eine Summenrechnung scheitert.
+                    const clinchR = (typeof TITLE_CLINCH !== 'undefined' && TITLE_CLINCH[s.year]) || null;
+                    if (champ) for (const d of defs) if (d.onTitle) d.onTitle(champ, s.year, statesR(d.id), clinchR ? clinchR[1] : null);
                     continue;
                 }
 
@@ -24588,6 +24877,10 @@
                     if (!d || !d.id) continue;
                     idToHist[d.id] = d.histId || d.id;
                     names.set(d.histId || d.id, d.name || d.id);
+                    // Geburtsdatum am selben Schlüssel festhalten (Schritt 10). Nur setzen,
+                    // wenn noch nichts da ist: der früheste Snapshot gewinnt, spätere Saisons
+                    // tragen dieselbe Person und würden den Cache nur unnötig kippen.
+                    if (!dobSnap.has(d.histId || d.id)) dobSnap.set(d.histId || d.id, d);
                 }
                 const idMap = (id) => idToHist[id] || id;
 
@@ -24610,9 +24903,13 @@
                     }
                     for (const d of defs) d.onRace(evt, states(d.id));
                 }
-                // Titel der Saison melden (nur FirstTimeAcc reagiert darauf)
+                // Titel der Saison melden (FirstTimeAcc + AgeAcc reagieren darauf).
+                // Entscheidungstag kommt aus dem archivierten titleClinch (Schritt 9b);
+                // Saisons vor v0.9.15.79 haben ihn nicht – dann bleibt der Alters-Rekord
+                // für dieses Jahr leer statt geraten.
                 if (championKey) {
-                    for (const d of defs) if (d.onTitle) d.onTitle(idMap(championKey), s.year, states(d.id));
+                    const clinchS = (s.h && s.h.titleClinch && s.h.titleClinch.date) || null;
+                    for (const d of defs) if (d.onTitle) d.onTitle(idMap(championKey), s.year, states(d.id), clinchS);
                 }
             }
 
@@ -24626,7 +24923,9 @@
                         r.name = (d.scope === 'team' ? teamNames.get(r.key) : names.get(r.key)) || r.key;
                         r.origin = originOf.get(r.key) || null;
                     });
-                    rows.sort((a, b) => (b.value - a.value)
+                    // Rangfolge 5.5. Alters-Rekorde nach „jüngster" drehen die erste Stufe um
+                    // (kleinster Wert gewinnt), alles Weitere bleibt gleich.
+                    rows.sort((a, b) => (d.asc ? (a.value - b.value) : (b.value - a.value))
                         || ((a.from || 9999) - (b.from || 9999))
                         || ((a._den || a.value || 0) - (b._den || b.value || 0))
                         || String(a.name).localeCompare(String(b.name)));
@@ -24660,7 +24959,10 @@
 
         // ── Darstellung (Plan 6.3 + 8) ─────────────────────────────────────
         function _renderRecordCard(def, rows, allRows) {
-            const fmt = (r) => def.pct ? (r.value * 100).toFixed(1) + ' %' : Math.round(r.value);
+            // def.fmtValue erlaubt eigene Darstellung (Alters-Rekorde: „25 J 234 T"),
+            // sonst Prozent oder blanke Zahl wie bisher.
+            const fmt = (r) => def.fmtValue ? def.fmtValue(r)
+                             : (def.pct ? (r.value * 100).toFixed(1) + ' %' : Math.round(r.value));
             const ignored = !!_recIgnoreThr[def.id];
             let shown = rows, below = null, total = rows.length;
             if (def.minDen && !ignored) {
