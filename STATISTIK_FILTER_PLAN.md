@@ -1,6 +1,6 @@
 # Erweiterte Statistiken — Rekord-Listen mit Dekaden- und Quellen-Filter (Bauplan)
 
-**Status:** 🔨 **Meilenstein 1 gebaut (v0.9.15.76)** — Schritte 1–5 stehen: Scan, alle fünf Akkumulatoren, 16 Rekord-Karten, Dekaden- und Schwellen-UI, für die **simulierte** Quelle. Offen: Schritt 6 (reale Quelle), 7–10 (Datum, Geburtsdaten, Titel-Entscheidung, Alters-Rekorde).
+**Status:** 🔨 **Schritte 1–6 gebaut** (.76 simulierte Quelle, .77 reale Quelle). Alle drei Quellen (Alles / Simuliert / Real) laufen, 16 Rekord-Karten, Dekaden-Chips mit Herkunfts-Markern, Schwellen-UI. Offen: 7–10 (Renndatum, Geburtsdaten, Titel-Entscheidungstag, Alters-Rekorde).
 
 **Verifiziert am 12-Saison-Lauf** (298 Rennen) gegen unabhängige Nachrechnung aus der Historie:
 
@@ -11,6 +11,24 @@
 | Rennen mit Pole = Summe Poles | 298 | 298 ✅ |
 
 Scan-Dauer: 67 ms für 12 Saisons.
+
+**Reale Quelle verifiziert (v0.9.15.77)** gegen die echte F1-Historie, 74 Saisons in 448 ms:
+
+| Rekord | Ausgabe | Realität |
+|---|---|---|
+| Siegesserie | Verstappen 10 (2023) · Ascari 9 (1952–1953) · Rosberg 7 (2015–2016) | ✅ inkl. saisonübergreifend |
+| Poles | Hamilton 104 · Schumacher 68 · Senna 65 · Vettel 57 · Prost 33 | ✅ exakt |
+| DNQ | Tarquini 40 | ✅ realer Rekordhalter |
+| Rennen bis 1. Sieg | Pérez 189 · Sainz 149 · Webber 129 | ✅ alle drei |
+| Erste Titel je Dekade | Stewart 1969 (60er) · Andretti 1978 · Scheckter 1979 | ✅ korrekt einsortiert |
+
+Bei Quelle „Alles" verschmelzen reale und simulierte Anteile über `teamSlug` zu **einem** Eintrag
+(`ferrari` = 244 real + 30 simuliert = 274) und werden in der Zeile mit 📜🏎️ markiert.
+
+⚠️ **Gelernt beim Bau (.77):** „Erstes Mal" ist eine **globale** Karriere-Eigenschaft und gehört in die
+Dekade des Ereignisses. Zählt jeder Dekaden-Topf für sich neu, erscheint Jackie Stewart in den 1970ern
+mit „erstem Titel 1971" — obwohl er ihn 1969 gewann. `_mkFirstTime` hält deshalb EINEN globalen Zustand
+und verteilt erst in `finish()`. Nur `neverWon` zählt echte Pro-Dekade-Starts.
 
 **Zweck:** Selbsttragend. Beschreibt, welche Rekord-Listen aus der vorhandenen Datenlage gebaut werden können, welche drei Datenschichten dafür **fehlen**, und in welcher Reihenfolge das entsteht. Wer hier einsteigt, braucht keinen Gesprächsverlauf.
 
@@ -590,7 +608,7 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 | ✅ **3** | `StreakAcc` + `FirstTimeAcc` (5.4 B/C) — Serien und Erste Male, inkl. Rangfolge-Regel 5.5 | niedrig |
 | ✅ **4** | `TeamPairAcc` + `RatioAcc` (5.4 D/E) — Doppelsieg, Doppelpole, Pole-to-Win mit Schwellen aus 6.2 | niedrig |
 | ✅ **5** | UI: Sub-Tab, Chips, Karten-Raster, Cache + Invalidierung | niedrig |
-| **6** | Reale Quelle in `_scanAllRaces` — Feldsemantik ist dekodiert und in `data/f1db.js` dokumentiert (3.3), Übersetzung nach 5.3 | **niedrig** (war mittel) |
+| ✅ **6** | Reale Quelle in `_scanAllRaces` — Feldsemantik ist dekodiert und in `data/f1db.js` dokumentiert (3.3), Übersetzung nach 5.3 | **niedrig** (war mittel) |
 | **7** | Datenschicht Renndatum (4.2): Auflösung über `raceId` im Scan (deckt Alt-Saves ab), `date` künftig mitspeichern, Synthese nur für generierte Jahre | niedrig |
 | **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen (915/915 vorhanden), generierte Fahrer erweitern, Approx-Flag | niedrig — Quelle lückenlos |
 | **9a** | `TITLE_CLINCH` für reale Jahre (4.3) — reines Ablesen von `championshipWon`, 76 Jahre | niedrig |
@@ -600,7 +618,7 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 
 Schritte 1–6 sind **rein lesend** und können den bestehenden Stats-Tab nicht beschädigen. Erst 7–9 fassen Schreibpfade an (`buildRacesForYear`, Fahrer-Generierung, `applyRaceResults`).
 
-Meilenstein 1 (**Schritte 1–5**) ist in v0.9.15.76 gebaut und gegen eine unabhängige Nachrechnung geprüft (siehe Kopf). Nächster sinnvoller Schritt: **6** (reale Quelle) – rein lesend, keine Migration.
+Schritte **1–6** sind gebaut (.76/.77) und gegen die echte F1-Historie geprüft (siehe Kopf). Nächster Schritt: **7** (Renndatum) als Grundlage für 8–10.
 
 ---
 
