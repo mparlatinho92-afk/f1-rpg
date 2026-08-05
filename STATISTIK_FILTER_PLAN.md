@@ -1,6 +1,34 @@
 # Erweiterte Statistiken — Rekord-Listen mit Dekaden- und Quellen-Filter (Bauplan)
 
-**Status:** 🔨 **Schritte 1–6 gebaut** (.76 simulierte Quelle, .77 reale Quelle). Alle drei Quellen (Alles / Simuliert / Real) laufen, 16 Rekord-Karten, Dekaden-Chips mit Herkunfts-Markern, Schwellen-UI. Offen: 7–10 (Renndatum, Geburtsdaten, Titel-Entscheidungstag, Alters-Rekorde).
+**Status:** ✅ **Schritte 1–10 gebaut** (.76 simulierte Quelle, .77 reale Quelle, .78 Renndatum, .79 Geburtsdaten + Titel-Entscheidungstag + Alters-Rekorde). Alle drei Quellen (Alles / Simuliert / Real) laufen, **21 Rekord-Karten**, Dekaden-Chips mit Herkunfts-Markern, Schwellen-UI. Offen ist nur noch Schritt 11 (Changelog/Version) sowie der Spieltest der simulierten Pfade.
+
+**Nachtrag zu 7–10 (v0.9.15.78/.79):**
+
+| Schritt | Ergebnis | Abweichung vom Plan |
+|---|---|---|
+| 7 Renndatum | `_synthRaceDates` füllt Rennen ohne Datum; `buildRacesForYear` speichert `date` mit; Event trägt `dateApprox` | Synthese respektiert den vorhandenen `month` statt neu über März–November zu streuen — generierte Kalender tragen bereits Monate. Kein Seed nötig. Maßnahme 1 war schon in Schritt 1 gebaut |
+| 8 Geburtsdaten | `tools/build-driver-dob.js` → `DRIVER_DOB` (915/915, 26,6 KB); `getDriverBirthDate()` mit 3 Quellen | `approx` steckt im Rückgabewert statt als `_dobApprox`-Feld am Fahrer → kein Save wächst. Case-Schutz als Kleinschreib-Index statt Watson-Einzelfall |
+| 9a Titel-Clinch real | `tools/build-title-clinch.js` → `TITLE_CLINCH` (76 Jahre, lückenlos, 3,8 KB) | zusätzlich Runde + Rundenzahl gespeichert, damit „vorzeitig/im Finale" ohne Zweitquelle darstellbar ist |
+| 9b Titel-Clinch simuliert | `checkTitleClinch()` in `applyRaceResults`; Meldung in **Log + Popup + Saisonende-Modal**; `titleClinch` wird archiviert | Popup erscheint nicht im Finale (dort trägt das Saisonende-Modal die Meldung) und nicht in der Saison-Simulation |
+| 10 Alters-Rekorde | `_mkAge` + 5 Karten (jüngster/ältester Sieger, jüngster/ältester Weltmeister, ältester Polesetter) | — |
+
+**Verifikation 7–10 (numerisch, nicht per Screenshot):**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Tages-Synthese, 288 Fälle (4 Jahre × 12 Monate × 1–6 Rennen) | alle im Monat, aufsteigend, parsebar ✅ |
+| `DRIVER_DOB`-Join gegen `HIST_DRIVERS` | 914 exakt + 1 case-insensitiv (`john-Watson`), 0 Lücken ✅ |
+| Debütalter-Plausibilität | min 17 (Verstappen), Median 28, kein Fall < 14 ✅ |
+| 50.000 synthetische Geburtstage über Schaltjahre | 0 Formatfehler, 0× 29. Februar ✅ |
+| `TITLE_CLINCH` gegen Plan-Stichproben 1992/2002/2004/2013 | alle vier exakt ✅ |
+| Clinch-**Formel** gegen reale Historie 1991–2025 | **33/36 exakt**, beide Abweichungen erklärt (s. u.) ✅ |
+| Verstappen 1. Sieg (Spanien 2016) | 18 J 228 T = realer Rekord ✅ |
+| Jüngste Weltmeister | Vettel 2010 (23 J 134 T) · Hamilton 2008 · Alonso 2005 — reale Reihenfolge ✅ |
+| Ältester Weltmeister | Fangio 1957 (46 J 41 T) ✅ |
+
+⚠️ **Die zwei Formel-Abweichungen sind kein Fehler, sondern Regelunterschiede zur echten F1:**
+- **2004** (F1DB Lauf 14, Formel 15): Vorsprung war **exakt gleich** den Restpunkten (40 = 40). Barrichello hätte nur noch gleichziehen können; real entscheidet dann der Siegvergleich zugunsten des Führenden. **Das Spiel kennt diesen Tiebreak nicht** — `driverStandings` wird fast überall nach reiner Punktsumme sortiert. Das strikte `>` ist deshalb richtig: mit `>=` könnte das Spiel einen Champion ausrufen, der die Saison anschließend per Zufallssortierung verliert.
+- **2023** (F1DB Lauf 17, Formel 16): 2023 hatte **6 Sprintwochenenden** mit Zusatzpunkten, die `maxRest` real erhöhen. Das Spiel simuliert keine Sprints, also stimmt die Formel für das Spiel.
 
 **Verifiziert am 12-Saison-Lauf** (298 Rennen) gegen unabhängige Nachrechnung aus der Historie:
 
@@ -609,16 +637,20 @@ Die Fußzeile ist **Pflicht, nicht Zierde**: Definition, Erfassungszeitraum, Sch
 | ✅ **4** | `TeamPairAcc` + `RatioAcc` (5.4 D/E) — Doppelsieg, Doppelpole, Pole-to-Win mit Schwellen aus 6.2 | niedrig |
 | ✅ **5** | UI: Sub-Tab, Chips, Karten-Raster, Cache + Invalidierung | niedrig |
 | ✅ **6** | Reale Quelle in `_scanAllRaces` — Feldsemantik ist dekodiert und in `data/f1db.js` dokumentiert (3.3), Übersetzung nach 5.3 | **niedrig** (war mittel) |
-| **7** | Datenschicht Renndatum (4.2): Auflösung über `raceId` im Scan (deckt Alt-Saves ab), `date` künftig mitspeichern, Synthese nur für generierte Jahre | niedrig |
-| **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen (915/915 vorhanden), generierte Fahrer erweitern, Approx-Flag | niedrig — Quelle lückenlos |
-| **9a** | `TITLE_CLINCH` für reale Jahre (4.3) — reines Ablesen von `championshipWon`, 76 Jahre | niedrig |
-| **9b** | Titel-Entscheidung simuliert: Berechnung in `applyRaceResults` + **neue UI-Meldung im Rennverlauf** + Flag im Save gegen Doppelmeldung | mittel — eigenständiges Feature |
-| **10** | Alters-Rekorde (Stufe C), sobald 7–9 stehen | niedrig |
+| ✅ **7** | Datenschicht Renndatum (4.2): Auflösung über `raceId` im Scan (deckt Alt-Saves ab), `date` künftig mitspeichern, Synthese nur für generierte Jahre | niedrig |
+| ✅ **8** | Datenschicht Geburtsdaten (4.1): `DRIVER_DOB` bauen (915/915 vorhanden), generierte Fahrer erweitern, Approx-Flag | niedrig — Quelle lückenlos |
+| ✅ **9a** | `TITLE_CLINCH` für reale Jahre (4.3) — reines Ablesen von `championshipWon`, 76 Jahre | niedrig |
+| ✅ **9b** | Titel-Entscheidung simuliert: Berechnung in `applyRaceResults` + **neue UI-Meldung im Rennverlauf** + Flag im Save gegen Doppelmeldung | mittel — eigenständiges Feature |
+| ✅ **10** | Alters-Rekorde (Stufe C), sobald 7–9 stehen | niedrig |
 | **11** | `./update-functions-index.ps1`, Changelog, Version | — |
 
 Schritte 1–6 sind **rein lesend** und können den bestehenden Stats-Tab nicht beschädigen. Erst 7–9 fassen Schreibpfade an (`buildRacesForYear`, Fahrer-Generierung, `applyRaceResults`).
 
-Schritte **1–6** sind gebaut (.76/.77) und gegen die echte F1-Historie geprüft (siehe Kopf). Nächster Schritt: **7** (Renndatum) als Grundlage für 8–10.
+**Alle Bau-Schritte 1–10 sind erledigt.** Was numerisch prüfbar war, ist geprüft (Tabelle im Kopf). **Noch nicht spielgetestet** und deshalb offen:
+
+1. **Darstellung der fünf Alters-Karten** im Sub-Tab (die Rechnung dahinter ist gegen reale Rekorde belegt, die Karten selbst hat noch niemand gesehen).
+2. **Titel-Popup + Log-Eintrag im laufenden Spiel** — beides hängt an `applyRaceResults` und ist nur durch Spielen zu sehen.
+3. **Alters-Rekorde für SIMULIERTE Saisons** greifen erst für Saisons, die ab v0.9.15.79 archiviert werden: ältere Einträge haben kein `titleClinch`. Das ist Absicht (leer statt geraten), heißt aber: in einem Alt-Save zeigen die beiden Weltmeister-Karten bei Quelle „Simuliert" zunächst nichts.
 
 ---
 
