@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.76</title>
+    <title>F1 RPG v0.9.15.77</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.76 (aktuell) - 03.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.77 (aktuell) - 05.08.2026</div>
+                            <div>&#8226; NEU: Rekorde jetzt auch fuer echte F1-Jahre und gemischt (Alles/Simuliert/Real)</div>
+                            <div>&#8226; NEU: Dekaden-Chips zeigen Herkunft, gemischte Eintraege werden markiert</div>
+                            <div>&#8226; FIX: Erstes Mal (Sieg/Titel) landet in der Dekade des Ereignisses statt je Dekade neu</div>
+                            <div class="font-bold text-slate-400">v0.9.15.76 - 03.08.2026</div>
                             <div>&#8226; NEU: Sub-Tab Rekorde mit 16 Bestenlisten (Siegesserien, Hattricks, Doppelsiege, Pole-to-Win u.a.)</div>
                             <div>&#8226; NEU: Dekaden-Filter fuer Rekorde, Allzeit-Vergleich je Karte</div>
                             <div>&#8226; NEU: Mindestschwellen mit sichtbarem Hinweis und Abschalter</div>
@@ -3432,7 +3436,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.76';
+        const VERSION = '0.9.15.77';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -24155,9 +24159,11 @@
             for (const r of rawRes) {
                 const id = r.d ?? r.driver;
                 const status = r.dnpq ? 'dnpq' : (r.dnf ? 'dnf' : 'finished');
+                const tName = r.tmn || r.teamName || r.team || null;
                 entries.push({
                     driverKey: idMap(id),
-                    teamKey:   r.tmn || r.teamName || r.team || null,
+                    teamKey:   tName ? teamSlug(tName) : null,
+                    teamName:  tName,
                     pos:       status === 'finished' ? ((r.p ?? r.position) ?? null) : null,
                     status:    status,
                     points:    (r.pt ?? r.points) || 0,
@@ -24173,6 +24179,39 @@
             }
             return { year, date, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
                      qualiOrder: rawQ.map(r => ({ driverKey: idMap(qD(r)), pos: qP(r) })) };
+        }
+
+        // Reale Saison -> DASSELBE Event-Format (Plan 5.3). Quelle ist getF1DBYear
+        // (data/f1db.js:66), das F1DB_RESULTS bereits mit benannten Feldern liefert –
+        // inklusive pole, fastestLap, gridPos und date. Zu tun bleibt nur die
+        // Übersetzung posText -> status.
+        const _POS_TEXT_STATUS = { DNF: 'dnf', DNS: 'dns', DNP: 'dns', DNQ: 'dnq',
+                                   DNPQ: 'dnpq', DSQ: 'dsq', EX: 'ex', NC: 'nc' };
+        function _normalizeRealRace(year, race) {
+            const entries = (race.entries || []).map(e => {
+                let status = _POS_TEXT_STATUS[String(e.posText || '').toUpperCase()];
+                if (!status) {
+                    // Eine Zahl heisst NICHT zwangslaeufig Zieleinlauf: 865 Eintraege
+                    // tragen eine Position UND einen Ausfallgrund (data/f1db.js-Kommentar).
+                    status = e.dnfReason ? 'classified' : 'finished';
+                }
+                return {
+                    driverKey: e.driverId,
+                    teamKey:   e.constrId ? teamSlug(e.constrId) : null,
+                    pos:       (status === 'finished' || status === 'classified') ? (e.posNum ?? null) : null,
+                    status:    status,
+                    points:    e.points || 0,
+                    pole:      !!e.pole,
+                    fastestLap: !!e.fastestLap,
+                    grid:      e.gridPos ?? null
+                };
+            });
+            // F1DB kennt keine getrennte Quali-Liste im Kompaktformat – die Startplätze
+            // stehen am Ergebnis. Für Doppelpole daraus die Startaufstellung ableiten.
+            const qualiOrder = entries.filter(e => e.grid != null)
+                .map(e => ({ driverKey: e.driverKey, pos: e.grid }));
+            return { year, date: race.date || null, raceIdx: race.round, isIndy: !!race.isIndy,
+                     entries, qualiOrder };
         }
 
         // ── Akkumulatoren (Plan 5.4) ───────────────────────────────────────
@@ -24223,43 +24262,58 @@
         // Erste Male: Filterung erst in finish(), weil "nur Sieger"/"nur Weltmeister"
         // während des Scans noch nicht feststeht (Plan 5.4 C).
         function _mkFirstTime(id, label, mode, opts) {
+            // "Erstes Mal" ist eine GLOBALE Eigenschaft der Karriere und gehört in die
+            // Dekade, in der es passiert ist (Plan 5.0) – nicht in jede Dekade neu.
+            // Sonst erschiene Jackie Stewart in den 1970ern mit "erstem Titel 1971",
+            // obwohl er ihn 1969 gewann. Deshalb hält dieser Akkumulator EINEN globalen
+            // Zustand; nur 'neverWon' zählt echte Pro-Dekade-Starts.
+            const G = new Map();
+            const perBucket = (mode === 'neverWon');
             return { id, label, kind: 'first', scope: 'driver', ...(opts || {}),
                 init: () => new Map(),
                 onRace(evt, states) {
                     for (const e of evt.entries) {
                         if (!e.driverKey || !_STARTED.has(e.status)) continue;
                         const win = e.pos === 1;
+                        let g = G.get(e.driverKey);
+                        if (!g) { g = { starts: 0, wins: 0, firstWinAfter: null, firstWinYear: null,
+                                        winsAtTitle: null, titleYear: null }; G.set(e.driverKey, g); }
+                        g.starts++;
+                        if (win) {
+                            g.wins++;
+                            if (g.firstWinAfter === null) { g.firstWinAfter = g.starts - 1; g.firstWinYear = evt.year; }
+                        }
+                        if (!perBucket) continue;
                         for (const st of states) {
                             let s = st.get(e.driverKey);
-                            if (!s) { s = { starts: 0, wins: 0, firstWinAfter: null, firstWinYear: null,
-                                            winsAtTitle: null, titleYear: null }; st.set(e.driverKey, s); }
+                            if (!s) { s = { starts: 0, wins: 0 }; st.set(e.driverKey, s); }
                             s.starts++;
-                            if (win) {
-                                s.wins++;
-                                if (s.firstWinAfter === null) { s.firstWinAfter = s.starts - 1; s.firstWinYear = evt.year; }
-                            }
+                            if (win) s.wins++;
                         }
                     }
                 },
-                // Titel werden separat gemeldet (championHistId der Saison)
-                onTitle(key, year, states) {
-                    for (const st of states) {
-                        const s = st.get(key);
-                        if (s && s.titleYear === null) { s.titleYear = year; s.winsAtTitle = s.wins; }
-                    }
+                // Titel werden separat gemeldet (championHistId der Saison / HIST_CHAMPIONS)
+                onTitle(key, year) {
+                    const g = G.get(key);
+                    if (g && g.titleYear === null) { g.titleYear = year; g.winsAtTitle = g.wins; }
                 },
-                finish(st) {
+                finish(st, dec) {
                     const out = [];
-                    for (const [key, s] of st.entries()) {
-                        if (mode === 'racesBeforeFirstWin') {
-                            if (s.firstWinAfter === null) continue;          // nur Sieger
-                            out.push({ key, value: s.firstWinAfter, detail: String(s.firstWinYear) });
-                        } else if (mode === 'winsBeforeFirstTitle') {
-                            if (s.titleYear === null) continue;              // nur Weltmeister
-                            out.push({ key, value: s.winsAtTitle || 0, detail: String(s.titleYear) });
-                        } else if (mode === 'neverWon') {
-                            if (s.wins > 0) continue;
+                    if (mode === 'neverWon') {
+                        for (const [key, s] of st.entries()) {
+                            if ((G.get(key) || {}).wins > 0) continue;   // global sieglos, nicht nur hier
                             out.push({ key, value: s.starts });
+                        }
+                        return out;
+                    }
+                    const inDec = (y) => dec === 'all' || _decadeOf(y) === Number(dec);
+                    for (const [key, g] of G.entries()) {
+                        if (mode === 'racesBeforeFirstWin') {
+                            if (g.firstWinAfter === null || !inDec(g.firstWinYear)) continue;
+                            out.push({ key, value: g.firstWinAfter, detail: String(g.firstWinYear) });
+                        } else if (mode === 'winsBeforeFirstTitle') {
+                            if (g.titleYear === null || !inDec(g.titleYear)) continue;
+                            out.push({ key, value: g.winsAtTitle || 0, detail: String(g.titleYear) });
                         }
                     }
                     return out;
@@ -24379,6 +24433,14 @@
             const buckets = {};                       // decade|'all' -> {defId -> state}
             const names = new Map();                  // key -> Anzeigename
             const teamNames = new Map();
+            // Herkunft je Schlüssel: bei Quelle „Alles" landen reale und simulierte
+            // Anteile desselben Fahrers in EINER Zeile (Entscheidung) – dann muss die
+            // Zeile aber ausweisen, dass sie zwei Epochen mischt.
+            const originOf = new Map();
+            const noteOrigin = (key, src) => {
+                const cur = originOf.get(key);
+                originOf.set(key, !cur ? src : (cur === src ? cur : 'both'));
+            };
             const bucketFor = (dec) => {
                 if (!buckets[dec]) {
                     const b = {};
@@ -24387,22 +24449,66 @@
                 }
                 return buckets[dec];
             };
-            const seasons = (GAME_STATE.history || [])
-                .filter(h => h && h.year != null)
-                .map(h => ({ h, year: h.year }))
-                .sort((a, b) => a.year - b.year);
-            // Laufende Saison mitnehmen – sonst fehlen die jüngsten Rennen
-            if (GAME_STATE.currentYear != null && (GAME_STATE.results || []).length) {
-                seasons.push({ h: null, year: GAME_STATE.currentYear, live: true });
+            // Der Real/Sim-Schnitt läuft IMMER gegen templateUsed, nie gegen currentYear
+            // (derselbe Fehler erzeugte in .15.27 die Matrix-Duplikate).
+            const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
+            const seasons = [];
+            if (source === 'real' || source === 'all') {
+                const yrs = (typeof F1DB_RESULTS !== 'undefined') ? Object.keys(F1DB_RESULTS).map(Number) : [];
+                for (const y of yrs.sort((a, b) => a - b)) if (y < startYear) seasons.push({ year: y, real: true });
             }
+            if (source === 'sim' || source === 'all') {
+                for (const h of (GAME_STATE.history || [])) {
+                    if (h && h.year != null) seasons.push({ h, year: h.year });
+                }
+                // Laufende Saison mitnehmen – sonst fehlen die jüngsten Rennen
+                if (GAME_STATE.currentYear != null && (GAME_STATE.results || []).length) {
+                    seasons.push({ h: null, year: GAME_STATE.currentYear, live: true });
+                }
+            }
+            seasons.sort((a, b) => a.year - b.year);
             const meta = { years: seasons.length, from: seasons.length ? seasons[0].year : null,
                            to: seasons.length ? seasons[seasons.length - 1].year : null,
-                           decades: new Set(), yearsPerDecade: {} };
+                           decades: new Set(), yearsPerDecade: {}, kindPerDecade: {} };
 
             for (let i = 0; i < seasons.length; i++) {
                 if (_recordsScan && _recordsScan.abort) return null;
                 const s = seasons[i];
                 if (onProgress) { onProgress(i, seasons.length, s.year); await new Promise(r => setTimeout(r, 0)); }
+
+                const dec0 = _decadeOf(s.year);
+                meta.decades.add(dec0);
+                meta.yearsPerDecade[dec0] = (meta.yearsPerDecade[dec0] || 0) + 1;
+                // Herkunft je Dekade merken -> Chip zeigt real / gemischt / simuliert
+                const kind = meta.kindPerDecade[dec0];
+                const own = s.real ? 'real' : 'sim';
+                meta.kindPerDecade[dec0] = !kind ? own : (kind === own ? kind : 'mixed');
+
+                // ── Reale Saison: getF1DBYear liefert alles fertig benannt ──
+                if (s.real) {
+                    const statesR = (defId) => [bucketFor('all')[defId], bucketFor(dec0)[defId]];
+                    for (const race of (getF1DBYear(s.year) || [])) {
+                        const evt = _normalizeRealRace(s.year, race);
+                        if (stATSIndyFilter === 'none' && evt.isIndy) continue;
+                        if (stATSIndyFilter === 'only' && !evt.isIndy) continue;
+                        for (const e of evt.entries) {
+                            if (e.teamKey) {
+                                if (!teamNames.has(e.teamKey)) teamNames.set(e.teamKey, formatConstructorName(e.teamKey));
+                                noteOrigin(e.teamKey, 'real');
+                            }
+                            if (e.driverKey) {
+                                if (!names.has(e.driverKey)) {
+                                    names.set(e.driverKey, (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[e.driverKey]) || e.driverKey);
+                                }
+                                noteOrigin(e.driverKey, 'real');
+                            }
+                        }
+                        for (const d of defs) d.onRace(evt, statesR(d.id));
+                    }
+                    const champ = (typeof HIST_CHAMPIONS !== 'undefined') ? HIST_CHAMPIONS[s.year] : null;
+                    if (champ) for (const d of defs) if (d.onTitle) d.onTitle(champ, s.year, statesR(d.id));
+                    continue;
+                }
 
                 let results, qualis, calendar, driverSnap, championKey = null;
                 if (s.live) {
@@ -24428,10 +24534,7 @@
                 }
                 const idMap = (id) => idToHist[id] || id;
 
-                const dec = _decadeOf(s.year);
-                meta.decades.add(dec);
-                meta.yearsPerDecade[dec] = (meta.yearsPerDecade[dec] || 0) + 1;
-                const states = (defId) => [bucketFor('all')[defId], bucketFor(dec)[defId]];
+                const states = (defId) => [bucketFor('all')[defId], bucketFor(dec0)[defId]];
 
                 const qByRi = {};
                 for (const q of qualis) qByRi[q.ri ?? q.raceIndex] = q;
@@ -24441,7 +24544,13 @@
                     const evt = _normalizeSimRace(s.year, race, qByRi[ri], calendar, idMap);
                     if (stATSIndyFilter === 'none' && evt.isIndy) continue;
                     if (stATSIndyFilter === 'only' && !evt.isIndy) continue;
-                    for (const e of evt.entries) if (e.teamKey) teamNames.set(e.teamKey, e.teamKey);
+                    // Anzeigename am Slug festhalten: simuliert kommt der Klarname ('Red Bull'),
+                    // real nur die Konstrukteur-ID ('red-bull'). Ohne gemeinsamen Schlüssel
+                    // stünde dasselbe Team bei Quelle „Alles" zweimal in der Liste.
+                    for (const e of evt.entries) {
+                        if (e.teamKey && e.teamName) { teamNames.set(e.teamKey, e.teamName); noteOrigin(e.teamKey, 'sim'); }
+                        if (e.driverKey) noteOrigin(e.driverKey, 'sim');
+                    }
                     for (const d of defs) d.onRace(evt, states(d.id));
                 }
                 // Titel der Saison melden (nur FirstTimeAcc reagiert darauf)
@@ -24455,8 +24564,11 @@
             for (const dec in buckets) {
                 out[dec] = {};
                 for (const d of defs) {
-                    let rows = d.finish(buckets[dec][d.id]) || [];
-                    rows.forEach(r => { r.name = (d.scope === 'team' ? teamNames.get(r.key) : names.get(r.key)) || r.key; });
+                    let rows = d.finish(buckets[dec][d.id], dec) || [];
+                    rows.forEach(r => {
+                        r.name = (d.scope === 'team' ? teamNames.get(r.key) : names.get(r.key)) || r.key;
+                        r.origin = originOf.get(r.key) || null;
+                    });
                     rows.sort((a, b) => (b.value - a.value)
                         || ((a.from || 9999) - (b.from || 9999))
                         || ((a._den || a.value || 0) - (b._den || b.value || 0))
@@ -24508,10 +24620,13 @@
                 const link = def.scope === 'team'
                     ? `onclick="openTeamProfile('${String(r.key).replace(/'/g, "\\'")}')"`
                     : `onclick="openDriverProfile('${String(r.key).replace(/'/g, "\\'")}')"`;
+                // Nur bei Quelle „Alles" relevant: 📜🏎️ = der Wert mischt reale und simulierte Jahre
+                const mix = (stATSSource === 'all' && r.origin === 'both')
+                    ? ' <span title="reale und simulierte Jahre zusammengefasst">📜🏎️</span>' : '';
                 return '<div class="flex justify-between items-baseline gap-2 py-1 border-t border-custom">'
                     + '<span class="text-tertiary text-xs" style="width:1.2rem">' + (i + 1) + '.</span>'
                     + '<span class="flex-1 font-bold ' + (def.scope === 'team' ? 'team-link' : 'driver-link') + '" '
-                    + 'style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ' + link + '>' + r.name + '</span>'
+                    + 'style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ' + link + '>' + r.name + mix + '</span>'
                     + (r.detail ? '<span class="text-xs text-tertiary">' + r.detail + '</span>' : '')
                     + '<span class="font-bold accent-gold" style="min-width:3.5rem;text-align:right">' + fmt(r) + '</span>'
                     + '</div>';
@@ -24547,8 +24662,10 @@
             const cached = _recordsCache.get(stATSSource);
             const srcBtn = (v, l) => '<button onclick="setRecordSource(\'' + v + '\')" class="px-3 py-1 rounded text-sm font-medium transition" '
                 + 'style="background:' + (stATSSource === v ? '#3B82F6' : '#2D2D2D') + ';color:' + (stATSSource === v ? 'white' : '#aaa') + '">' + l + '</button>';
-            const head = '<div class="flex gap-2 mb-3 flex-wrap">' + srcBtn('sim', '🏎️ Simuliert')
-                + '<span class="text-xs text-tertiary self-center">Reale Jahre folgen in Schritt 6</span></div>';
+            const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
+            const head = '<div class="flex gap-2 mb-3 flex-wrap">'
+                + srcBtn('all', '🌍 Alles') + srcBtn('sim', '🏎️ Simuliert') + srcBtn('real', '📜 Real')
+                + '<span class="text-xs text-tertiary self-center">Real = F1DB-Jahre vor ' + startYear + '</span></div>';
 
             if (_recordsScan) {
                 return head + '<div class="card p-6 rounded-xl text-center">'
@@ -24557,7 +24674,10 @@
                     + '<button onclick="startRecordScan()" class="px-4 py-2 rounded-lg bg-secondary">Abbrechen</button></div>';
             }
             if (!cached) {
-                const n = (GAME_STATE.history || []).length + 1;
+                const simN = (GAME_STATE.history || []).length + ((GAME_STATE.results || []).length ? 1 : 0);
+                const realN = (stATSSource === 'sim' || typeof F1DB_RESULTS === 'undefined') ? 0
+                    : Object.keys(F1DB_RESULTS).map(Number).filter(y => y < startYear).length;
+                const n = (stATSSource === 'real' ? 0 : simN) + realN;
                 return head + '<div class="card p-6 rounded-xl text-center">'
                     + '<div class="text-sm text-tertiary mb-3">Die Rekorde werden aus allen Rennen berechnet – '
                     + n + ' Saisons. Das geschieht einmal; danach ist der Dekadenwechsel sofort.</div>'
@@ -24569,9 +24689,12 @@
                 + 'style="background:' + (String(stATSDecade) === String(v) ? '#3B82F6' : '#2D2D2D') + ';color:'
                 + (String(stATSDecade) === String(v) ? 'white' : '#aaa') + '">' + l + (mark || '') + '</button>';
             let chips = chip('all', 'Alles');
+            const kindIcon = { real: ' 📜', sim: ' 🏎️', mixed: ' ⚡' };
             for (const d of meta.decades) {
                 const yrs = meta.yearsPerDecade[d] || 0;
-                chips += chip(d, d + 'er', yrs < 6 ? ' <span class="text-xs" style="opacity:.7">(' + yrs + 'J)</span>' : '');
+                let mark = kindIcon[meta.kindPerDecade[d]] || '';
+                if (yrs < 6) mark += ' <span class="text-xs" style="opacity:.7">(' + yrs + 'J)</span>';
+                chips += chip(d, d + 'er', mark);
             }
             const bucket = results[stATSDecade] || {};
             const allB = results['all'] || {};
@@ -24580,7 +24703,9 @@
 
             return head
                 + '<div class="flex gap-2 mb-3 flex-wrap">' + chips + '</div>'
-                + '<div class="text-sm text-tertiary mb-3">Quelle: Simuliert · Zeitraum ' + span
+                + '<div class="text-sm text-tertiary mb-3">Quelle: '
+                + ({ sim: 'Simuliert', real: 'Real', all: 'Alles (real + simuliert)' }[stATSSource] || stATSSource)
+                + ' · Zeitraum ' + span
                 + ' · ' + meta.years + ' Saisons erfasst'
                 + '<button onclick="startRecordScan()" class="ml-2 text-xs px-2 py-1 rounded bg-secondary">neu berechnen</button></div>'
                 + '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">' + cards + '</div>'
