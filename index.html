@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.77</title>
+    <title>F1 RPG v0.9.15.78</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.77 (aktuell) - 05.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.78 (aktuell) - 05.08.2026</div>
+                            <div>&#8226; FIX: Echte F2/F3-Nachwuchsfahrer standen ab 1950 im Reserve-Pool - negatives Alter passierte den Filter</div>
+                            <div>&#8226; NEU: Rennen speichern das volle Datum, generierte Kalender und Nutzer-Strecken bekommen einen plausiblen Tag</div>
+                            <div class="font-bold text-slate-400">v0.9.15.77 - 05.08.2026</div>
                             <div>&#8226; NEU: Rekorde jetzt auch fuer echte F1-Jahre und gemischt (Alles/Simuliert/Real)</div>
                             <div>&#8226; NEU: Dekaden-Chips zeigen Herkunft, gemischte Eintraege werden markiert</div>
                             <div>&#8226; FIX: Erstes Mal (Sieg/Titel) landet in der Dekade des Ereignisses statt je Dekade neu</div>
@@ -3436,7 +3439,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.77';
+        const VERSION = '0.9.15.78';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -8589,6 +8592,13 @@
         // Speist echte F2/F3-Aufsteiger in den Reserve-Pool (Erst-Erscheinen im Altersfenster 19–26,
         // Dedup gegen aktive/bekannte Fahrer). In initReservePool VOR der proaktiven Generierung
         // aufgerufen → echte Fahrer werden generierten vorgezogen.
+        // Untergrenze des Erst-Erscheinens (v0.9.15.78). Empirisch aus FEEDER_DRIVERS:
+        // das jüngste Alter, in dem in diesem Kader jemand real F2/F3 fuhr, ist 17
+        // (Deligny, Rivera, Slater u.a., Jahrgang 2008). Tiefer zu gehen brächte nichts,
+        // höher würde echte Fahrer verschlucken. Liegt bewusst UNTER JUNIOR_MIN_AGE (19),
+        // damit die Zwei-Stufen-Logik erhalten bleibt: ab 17 sichtbar als „Talente
+        // (kommend)", ab 19 verpflichtbar.
+        const FEEDER_MIN_ENTRY_AGE = 17;
         let _feederSeasonDataNames = null;   // Cache: alle SEASON_DATA-Fahrernamen (normalisiert)
         function injectFeederDrivers(year) {
             if (typeof FEEDER_DRIVERS === 'undefined' || !GAME_STATE.reservePool) return 0;
@@ -8629,7 +8639,15 @@
                 // „Talente (kommend)" sichtbar gemacht (poolGroup 'J'). Verpflichtet werden
                 // dürfen sie erst ab 19 — das sperrt poolMinAgeOk an den Zugriffsstellen.
                 // Oben bleibt es beim Fenster: wer schon über 26 ist, kommt gar nicht mehr.
-                if (age > 26) continue;
+                //
+                // v0.9.15.78 FIX: Das Fenster hatte nur eine Obergrenze. `age` ist vor dem
+                // Geburtsjahr NEGATIV (1950 − 2005 = −55) und damit trivial „≤ 26" — also
+                // standen alle 144 echten F2/F3-Fahrer ab der ersten Saison 1950 im Pool.
+                // Die Untergrenze schließt das: FEEDER_MIN_ENTRY_AGE ist das jüngste Alter,
+                // in dem in diesem Kader real jemand F2/F3 gefahren ist (17, drei Fälle).
+                // Damit erscheint jeder erst in dem Jahr, in dem er tatsächlich alt genug
+                // zum Rennfahren war — kein Anachronismus mehr, und niemand fällt heraus.
+                if (age > 26 || age < FEEDER_MIN_ENTRY_AGE) continue;
                 const key = norm(name);
                 if (knownNames.has(key) || sdNames.has(key)) continue;     // aktiv / im Pool / echte F1-Karte
                 if (knownIds.has(feederSlug(name))) continue;              // schon einmal eingespeist
@@ -11918,6 +11936,9 @@
             if (idx < minIdx) idx = minIdx;
             races.splice(idx, 0, race);
             races.forEach((r, i) => { r.id = i + 1; });
+            // v0.9.15.78: auch der Mid-Season-Zulauf braucht ein Datum (Rekord-Plan Schritt 7).
+            // Füllt nur das neue Rennen – bereits datierte bleiben unangetastet.
+            _synthRaceDates(races, GAME_STATE.currentYear);
         }
 
         window.toggleCalendarEditMode = function() { _calendarEditMode = !_calendarEditMode; _showAddCircuitForm = false; renderContent(); };
@@ -19230,6 +19251,34 @@
             return newYear;
         }
         
+        // v0.9.15.78 (Rekord-Plan Schritt 7): Datums-Synthese für Rennen ohne echtes Datum.
+        // Betrifft generierte Kalender jenseits des F1DB-Horizonts und Nutzer-Strecken aus
+        // dem Streckeneditor – beide tragen nur einen Monat. Rekorde mit Tagesbezug (Alter
+        // bei erstem Sieg u.a.) brauchen aber einen Tag.
+        //
+        // Bewusst OHNE Zufall: der Monat ist echte Kalender-Information und bleibt stehen;
+        // die Rennen eines Monats werden nur gleichmäßig darin verteilt (1 Rennen → Monatsmitte,
+        // 2 → ~10./~20.). Damit ist das Ergebnis ohne Seed reproduzierbar und die Reihenfolge
+        // der Rennen kann der Sortierung nach Monat nicht widersprechen.
+        // Rennen ohne Monat bekommen KEIN Datum – geschätzt wird nichts, was unbekannt ist.
+        function _synthRaceDates(races, year) {
+            const byMonth = {};
+            races.forEach(r => {
+                if (r.date || !r.month) return;
+                (byMonth[r.month] = byMonth[r.month] || []).push(r);
+            });
+            for (const m of Object.keys(byMonth)) {
+                const group = byMonth[m], mon = parseInt(m);
+                const dim = new Date(year, mon, 0).getDate();   // Tag 0 des Folgemonats = letzter Tag
+                group.forEach((r, i) => {
+                    const day = Math.max(1, Math.min(dim, Math.round((i + 1) * dim / (group.length + 1))));
+                    r.date = `${year}-${String(mon).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    r._dateSynth = true;    // markiert: Tag ist konstruiert, nicht überliefert
+                });
+            }
+            return races;
+        }
+
         // Rennen für Jahr bauen: F1DB wenn vorhanden (exakter hist. Kalender), sonst generiert
         function buildRacesForYear(year) {
             const f1db = getF1DBYear(year);
@@ -19250,12 +19299,16 @@
                         country: ioc,   // IOC-Code ('AUS'), kein Emoji
                         laps: laps,
                         isIndy: r.isIndy || false,
+                        // v0.9.15.78: volles Datum mitspeichern statt nur den Monat. Bisher warf
+                        // der Bau den Tag weg, obwohl F1DB ihn liefert – der Rekord-Scan musste
+                        // ihn über die raceId zurückholen. Für Alt-Saves tut er das weiterhin.
+                        date: r.date || null,
                         month: r.date ? parseInt(r.date.slice(5, 7)) : null
                     };
                 });
-                return injectCustomCircuitsIntoCalendar(_f1dbRaces, year);
+                return _synthRaceDates(injectCustomCircuitsIntoCalendar(_f1dbRaces, year), year);
             }
-            return injectCustomCircuitsIntoCalendar(generateRacesForYear(year), year);
+            return _synthRaceDates(injectCustomCircuitsIntoCalendar(generateRacesForYear(year), year), year);
         }
 
         // v0.9.14.65: Nutzer-Strecken (GAME_STATE.customCircuits) in JEDEN neuen Saison-Kalender
@@ -24144,6 +24197,9 @@
             if (!date && cal.raceId != null && typeof F1DB_RACES !== 'undefined') {
                 date = (F1DB_RACES[String(cal.raceId)] || [])[1] || null;
             }
+            // Konstruierte Tage (generierte Kalender, Nutzer-Strecken) sind als solche
+            // markiert. Rekorde mit Tagesbezug dürfen sie nicht als Beleg werten (Plan 4.2/5).
+            const dateApprox = !!cal._dateSynth;
             // Zwei Formen: archivierte Saisons sind komprimiert (res/d/p/pt/fl, 18550),
             // die LAUFENDE Saison liegt unkomprimiert im GAME_STATE (results/driver/position).
             // Beide hier auf eine Form bringen – sonst fehlt das aktuelle Jahr still.
@@ -24177,7 +24233,7 @@
                 entries.push({ driverKey: idMap(id), teamKey: null, pos: null,
                     status: 'dnq', points: 0, pole: false, fastestLap: false, grid: null });
             }
-            return { year, date, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
+            return { year, date, dateApprox, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
                      qualiOrder: rawQ.map(r => ({ driverKey: idMap(qD(r)), pos: qP(r) })) };
         }
 
@@ -24210,8 +24266,9 @@
             // stehen am Ergebnis. Für Doppelpole daraus die Startaufstellung ableiten.
             const qualiOrder = entries.filter(e => e.grid != null)
                 .map(e => ({ driverKey: e.driverKey, pos: e.grid }));
-            return { year, date: race.date || null, raceIdx: race.round, isIndy: !!race.isIndy,
-                     entries, qualiOrder };
+            // dateApprox immer false: F1DB-Daten sind überliefert, nie konstruiert.
+            return { year, date: race.date || null, dateApprox: false,
+                     raceIdx: race.round, isIndy: !!race.isIndy, entries, qualiOrder };
         }
 
         // ── Akkumulatoren (Plan 5.4) ───────────────────────────────────────
