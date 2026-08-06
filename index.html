@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.79</title>
+    <title>F1 RPG v0.9.15.80</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.79 (aktuell) - 05.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.80 (aktuell) - 06.08.2026</div>
+                            <div>&#8226; FIX: Renn-Ergebnistabellen zeigten das Team vom Saisonende statt das Team zum Rennzeitpunkt</div>
+                            <div>&#8226; FIX: Vertragsverlaengerungen wurden in der Saisonstart-Vorschau als 'verlaesst F1' gemeldet</div>
+                            <div>&#8226; FIX: Zurueckgetretene Fahrer landeten wieder im Reserve-Pool und fuhren im Folgejahr weiter</div>
+                            <div>&#8226; NEU: Abwerben mitten in der Saison nur noch bei deutlichem Aufstieg und selten - nicht mehr immer der schnellste Fahrer</div>
+                            <div>&#8226; NEU: Transfer-Chronik zeigt Wechsel mit Renn-Spanne (R1-6 Team A, R7-16 Team B)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.79 - 05.08.2026</div>
                             <div>&#8226; NEU: Meldung 'Titel entschieden' im Log, als Popup und im Saisonende-Modal</div>
                             <div>&#8226; NEU: 5 Alters-Rekorde - juengster/aeltester Sieger, juengster/aeltester Weltmeister, aeltester Polesetter</div>
                             <div>&#8226; NEU: Taggenaue Geburtsdaten fuer alle 915 realen Fahrer, Titel-Entscheidungstag fuer 76 Saisons</div>
@@ -3443,7 +3449,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.79';
+        const VERSION = '0.9.15.80';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6841,6 +6847,18 @@
         //     anderem Team (bevorzugt Top-Leistung, Ziel-Team wird nachbesetzt) · Generieren.
         // Rückgabe: { driver, source, poachedFromTeamId }. driver ist bereits ins Team gesetzt,
         // Standings angelegt, generierte/aus-Pool geholte in GAME_STATE.drivers verschoben.
+        // v0.9.15.80: Wie oft eine Abwerbung mitten in der Saison überhaupt versucht wird.
+        // Gilt NUR für die laufende Saison — zwischen den Saisons ist Abwerben unbeschränkt.
+        //
+        // Gemessen an einem 192-Saisons-Stand: 48 Abwerbungen mitten in der Saison, davon
+        // hatten nur 7 ein Gefälle NACH OBEN. Die übrigen 41 gingen seitwärts oder abwärts —
+        // ein Backmarker holte sich den Fahrer eines Spitzenteams (Villoresi 1953 von
+        // Ferrari P2 zu O.S.C.A. P11). Das Tier-Gefälle unten ist deshalb der eigentliche
+        // Hebel; dieser Wert dämpft nur noch nach. Bei 0,20 blieben rechnerisch 1,4 von 48
+        // Ereignissen übrig — das wäre „nie" statt „selten", deshalb 0,50 (~3–4 in 192
+        // Saisons). Wer es häufiger will, dreht hier, nicht am Gefälle.
+        const POACH_MIDSEASON_CHANCE = 0.50;
+
         function acquireSeatDriver(teamId, year, opts = {}) {
             const { excludeIds = null, dismissedFromTeamId = null, replacedVictim = null, allowPoach = true } = opts;
             const rules = GAME_STATE.simRules || {};
@@ -6885,17 +6903,46 @@
 
                 // Abwerben (Top-Leistung zuerst) — nur echte Fahrer. Für Rookie-Slots erst als
                 // Rückfall, wenn kein echter Free Agent/Pool-Fahrer vorhanden ist (echt > generiert).
+                // v0.9.15.80: Abwerben MITTEN in der laufenden Saison ist jetzt selten und
+                // braucht ein deutliches Gefälle. Vorher galt nur „hat ein Cockpit" — und
+                // weil immer der Schnellste genommen wurde, wanderte derselbe Star durchs
+                // Feld (Villoresi 1953 zweimal weggeholt, Jackie Stewart in fünf Saisons).
+                // ZWISCHEN den Saisons bleibt alles unverändert; dort ist ein Wechsel normal
+                // und läuft ohnehin über processTeamChanges.
                 let poachReal = [];
-                if (allowPoach && (!wantRookie || !freeReal.length)) {
+                const _midSeason = (GAME_STATE.currentRace || 0) > 0;
+                if (allowPoach && (!wantRookie || !freeReal.length)
+                    && (!_midSeason || Math.random() < POACH_MIDSEASON_CHANCE)) {
+                    // Rang im Feld nach Punkten; kleiner Index = besseres Team.
+                    const _rank = {};
+                    Object.entries(GAME_STATE.teamStandings || {})
+                        .map(([id, st]) => ({ id, points: st.points || 0 }))
+                        .sort((a, b) => b.points - a.points)
+                        .forEach((t, i) => { _rank[t.id] = i; });
+                    const _total = Object.keys(_rank).length || (GAME_STATE.teams || []).length;
+                    // „Deutlich besser" = mindestens ein Viertel des Feldes Abstand, nie
+                    // weniger als 2 Plätze. Ein Fahrer verlässt sein Team mitten in der
+                    // Saison nur für einen echten Aufstieg, nicht für den Nachbarplatz.
+                    const _need = Math.max(2, Math.round(_total * 0.25));
+                    const _gradientOk = d => !_midSeason
+                        || (_rank[teamId] != null && _rank[d.team] != null
+                            && (_rank[d.team] - _rank[teamId]) >= _need);
                     poachReal = GAME_STATE.drivers.filter(d => !_isGeneratedId(d.id) && d.team && d.team !== teamId && (!d.status || d.status === 'active')
-                        && _compat(d) && _excl(d) && !_isBeginner(d)).sort((a, b) => _effPace(b) - _effPace(a));
+                        && _compat(d) && _excl(d) && !_isBeginner(d) && _gradientOk(d))
+                        .sort((a, b) => _effPace(b) - _effPace(a));
                 }
 
                 const preferPoach = Math.random() < poachPref;
                 const order = (preferPoach && poachReal.length) ? ['poach', 'free'] : ['free', 'poach'];
                 for (const src of order) {
                     if (src === 'free'  && freeReal.length)  { picked = freeReal[0];  source = 'freeagent'; break; }
-                    if (src === 'poach' && poachReal.length) { picked = poachReal[0]; poachedFromTeamId = picked.team; source = 'poach'; break; }
+                    if (src === 'poach' && poachReal.length) {
+                        // Mid-season nicht stur den Schnellsten greifen – sonst ist es immer
+                        // derselbe Name. Zwischen den Saisons bleibt es beim Bestenzugriff.
+                        const _cand = _midSeason ? poachReal.slice(0, 3) : poachReal;
+                        picked = _midSeason ? _cand[Math.floor(Math.random() * _cand.length)] : _cand[0];
+                        poachedFromTeamId = picked.team; source = 'poach'; break;
+                    }
                 }
             }
 
@@ -6913,6 +6960,22 @@
                 _mark(picked);
                 _ensureStanding(picked, teamId);
                 if (poachedFromTeamId) {
+                    // v0.9.15.80: Der Wechsel bekommt eine EIGENE Zeile in der Transfer-Chronik.
+                    // Bisher war er nur als `replacementOrigin` im Eintrag des Ersetzten zu finden –
+                    // man musste also wissen, wer entlassen wurde, um zu sehen, wer wechselte.
+                    // Nur während einer laufenden Saison (currentRace > 0); beim Saisonstart ist
+                    // ein Wechsel kein Mid-Season-Ereignis.
+                    if ((GAME_STATE.currentRace || 0) > 0) {
+                        GAME_STATE.seasonTransfers = GAME_STATE.seasonTransfers || [];
+                        GAME_STATE.seasonTransfers.push({
+                            driverId: picked.id, driverName: picked.name,
+                            type: 'poach', typeEmoji: '🎣', typeText: 'Abgeworben',
+                            midSeason: true, round: GAME_STATE.currentRace,
+                            fromTeam: GAME_STATE.teams.find(t => t.id === poachedFromTeamId)?.name || '-',
+                            toTeam: team?.name || '-',
+                            replacedName: replacedVictim ? replacedVictim.name : null
+                        });
+                    }
                     // Abgeworbenes Team nachbesetzen – eine Ebene, keine Kette (allowPoach:false)
                     const bf = acquireSeatDriver(poachedFromTeamId, year, { excludeIds, allowPoach: false });
                     logInfo('DRIVER', `${GAME_STATE.teams.find(t => t.id === poachedFromTeamId)?.name || '?'}: ${bf.driver.name} (Backfill nach Abwerbung)`);
@@ -6927,6 +6990,35 @@
             GAME_STATE.drivers.push(gen);
             _ensureStanding(gen, teamId);
             return { driver: gen, source: wantRookie ? 'gen-rookie' : 'gen-exp', poachedFromTeamId: null, poolGroup: null };
+        }
+
+        // v0.9.15.80: Team-Spannen einer Saison — „R1–6 Ligier · R7–16 Williams".
+        // Nur für Fahrer mit MEHR ALS EINEM Team; alle anderen tragen keine Information
+        // (das wäre schlicht die Saison). In einem 192-Saisons-Stand sind das ~40 Einträge
+        // insgesamt, also praktisch kein Speicher.
+        //
+        // Warum gespeichert und nicht beim Rendern berechnet: die Transfer-Chronik liest
+        // ausschliesslich LEICHTE Saisonfelder (_allChronSeasons). Die Renn-Ergebnisse mit
+        // dem Team zur Rennzeit (`tmn`) sind schwer und lazy — sie stehen dort nicht zur
+        // Verfügung. Beim Archivieren dagegen liegen sie ohnehin in der Hand.
+        function _computeTeamSpans(compressed) {
+            const seq = {};
+            for (const race of (compressed || [])) {
+                const round = (race.ri ?? 0) + 1;
+                for (const e of (race.res || [])) {
+                    if (!e.tmn || e.d == null) continue;
+                    const arr = seq[e.d] || (seq[e.d] = []);
+                    const last = arr[arr.length - 1];
+                    // Gleiches Team wie zuletzt → Spanne verlängern, sonst neue Spanne.
+                    // Ein Rückwechsel (A → B → A) erzeugt bewusst DREI Spannen, keine zwei:
+                    // die Reihenfolge ist die Aussage.
+                    if (last && last[0] === e.tmn) last[2] = round;
+                    else arr.push([e.tmn, round, round]);
+                }
+            }
+            const out = {};
+            for (const id in seq) if (seq[id].length > 1) out[id] = seq[id];
+            return out;
         }
 
         // v0.9.15.19: Team-Tier-Label aus aktuellem Standings-Rang (Topteam/Mittelfeld/Backmarker).
@@ -9032,6 +9124,15 @@
         // Entlassene Simulations-Fahrer in den Reserve-Pool aufnehmen (als Free Agent)
         function addDismissedToPool(driver) {
             if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
+            // v0.9.15.80 FIX: Wer seine KARRIERE beendet hat, gehört nicht in den Pool.
+            // Unten wird eine Kopie mit `status: 'active'` abgelegt — bei einem Rücktritt
+            // machte das den eben Zurückgetretenen sofort wieder einsatzbereit. Ergebnis in
+            // einem 192-Saisons-Stand: 48-mal wurde ein Karriereende gemeldet und der Fahrer
+            // trat im Folgejahr wieder an (Mike Hawthorn dreimal hintereinander).
+            // Unterschieden wird am Status, den die Aufrufer bereits korrekt setzen:
+            //   'retired'   = career_end / gaveup  -> Karriere vorbei, kein Pool
+            //   'dismissed' = nur den Sitz verloren -> Free Agent, gehört in den Pool
+            if (driver.status === 'retired') return;
             if (GAME_STATE.reservePool.some(p => p.id === driver.id)) return;
             GAME_STATE.reservePool.push({
                 ...JSON.parse(JSON.stringify(driver)),
@@ -18856,6 +18957,9 @@
                     deaths: _obitEnrich(GAME_STATE.seasonDeaths),
                     retirements: _obitEnrich(GAME_STATE.seasonRetirements),
                     transfers: JSON.parse(JSON.stringify(GAME_STATE.seasonTransfers || [])),
+                    // v0.9.15.80: Team-Spannen der Fahrer mit mehreren Teams (LEICHT, ~0 Bytes
+                    // in normalen Saisons). Die Chronik hat sonst keinen Zugriff auf `tmn`.
+                    teamSpans: _computeTeamSpans(compressedResults),
                     // Standings
                     driverStandings: JSON.parse(JSON.stringify(GAME_STATE.driverStandings)),
                     teamStandings: JSON.parse(JSON.stringify(GAME_STATE.teamStandings)),
@@ -20658,7 +20762,14 @@
             // Fahrerbewegungen zusammenfassen für Bestätigung
             const deaths = GAME_STATE.seasonDeaths || [];
             const retirements = GAME_STATE.seasonRetirements || [];
-            const transfers = (GAME_STATE.seasonTransfers || []).filter(t => t.type !== 'dismissed');
+            // v0.9.15.80 FIX: Verlängerungen sind KEINE Teamwechsel. Sie tragen weder
+            // `toTeam` noch `typeEmoji` – ungefiltert wurde daraus „<undefined> Name:
+            // Kick Sauber → verlässt F1", also das exakte Gegenteil der Wahrheit
+            // (Vertrag verlängert). Saisonende-Modal und Off-Season trennen bereits
+            // nach Typ, nur diese Vorschau tat es nicht.
+            const _allT = (GAME_STATE.seasonTransfers || []).filter(t => t.type !== 'dismissed');
+            const transfers = _allT.filter(t => t.type !== 'renewal');
+            const renewals  = _allT.filter(t => t.type === 'renewal');
             
             let confirmMsg = `🏁 Neue Saison ${GAME_STATE.currentYear + 1} starten?\n\n`;
             
@@ -20695,7 +20806,15 @@
                 if (transfers.length > 0) {
                     confirmMsg += `🔄 Teamwechsel (${transfers.length}):\n`;
                     transfers.forEach(t => {
-                        confirmMsg += `   ${t.typeEmoji} ${t.driverName || 'Fahrer'}: ${t.fromTeam || '?'} → ${t.toTeam || 'verlässt F1'}\n`;
+                        // typeEmoji fehlt bei manchen Typen → sonst steht „undefined" davor
+                        confirmMsg += `   ${t.typeEmoji || '🔄'} ${t.driverName || 'Fahrer'}: ${t.fromTeam || '?'} → ${t.toTeam || 'verlässt F1'}\n`;
+                    });
+                }
+                if (renewals.length > 0) {
+                    confirmMsg += `📋 Verlängerungen (${renewals.length}):\n`;
+                    renewals.forEach(t => {
+                        confirmMsg += `   • ${t.driverName || 'Fahrer'}: ${t.fromTeam || '?'}`
+                                    + (t.newContractEnd ? ` bis ${t.newContractEnd}` : '') + `\n`;
                     });
                 }
                 
@@ -20728,7 +20847,11 @@
             const movements = {
                 deaths: GAME_STATE.seasonDeaths || [],
                 retirements: GAME_STATE.seasonRetirements || [],
-                transfers: GAME_STATE.seasonTransfers || [],
+                // v0.9.15.80 FIX: Verlängerungen raus aus „Teamwechsel" – sie haben kein
+                // toTeam und wurden deshalb als „verlässt F1" gemeldet, obwohl der Fahrer
+                // gerade verlängert hat. Sie bekommen unten einen eigenen Abschnitt.
+                transfers: (GAME_STATE.seasonTransfers || []).filter(t => t.type !== 'renewal'),
+                renewals:  (GAME_STATE.seasonTransfers || []).filter(t => t.type === 'renewal'),
                 rookies: []
             };
             
@@ -20797,6 +20920,22 @@
                         const dId = t.driverId || t.driver;
                         const tLink = dId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${dId}')">${driverName}</span>` : driverName;
                         movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + tLink + ': ' + fromTeam + ' → ' + toTeam + '</div>';
+                    });
+                    movementsHtml += '</div>';
+                }
+
+                // Vertragsverlängerungen (v0.9.15.80) – eigener Abschnitt statt als
+                // „Teamwechsel → verlässt F1" verfälscht zu werden.
+                if ((movements.renewals || []).length > 0) {
+                    movementsHtml += '<div class="mb-3">';
+                    movementsHtml += '<div class="text-sm font-bold accent-green mb-1">📋 Vertragsverlängerungen (' + movements.renewals.length + ')</div>';
+                    movements.renewals.forEach(t => {
+                        const team = GAME_STATE.teams.find(x => x.id === t.fromTeam)?.name || t.fromTeam || '?';
+                        const nm = t.driverName || t.name || 'Unbekannt';
+                        const dId = t.driverId || t.driver;
+                        const nLink = dId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${dId}')">${nm}</span>` : nm;
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + nLink + ': ' + team
+                            + (t.newContractEnd ? ' <span class="accent-green">bis ' + t.newContractEnd + '</span>' : '') + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -24203,13 +24342,20 @@
                 year: h.year,
                 transfers: h.transfers || [],
                 deaths: h.deaths || [],
-                retirements: h.retirements || []
+                retirements: h.retirements || [],
+                teamSpans: h.teamSpans || null      // v0.9.15.80, erst ab dieser Version gefüllt
             }));
             arr.push({
                 year: GAME_STATE.currentYear,
                 transfers: GAME_STATE.seasonTransfers || [],
                 deaths: GAME_STATE.seasonDeaths || [],
-                retirements: GAME_STATE.seasonRetirements || []
+                retirements: GAME_STATE.seasonRetirements || [],
+                // Laufende Saison: aus den unkomprimierten Ergebnissen ableiten, damit die
+                // Spanne schon während der Saison sichtbar ist und nicht erst nach dem Archivieren.
+                teamSpans: _computeTeamSpans((GAME_STATE.results || []).map(r => ({
+                    ri: r.raceIndex ?? r.ri,
+                    res: (r.results || []).map(x => ({ d: x.driver, tmn: x.teamName || x.team }))
+                })))
             });
             return arr;
         }
@@ -24248,6 +24394,18 @@
                     <div class="text-xs" style="white-space:nowrap;">${_originBadge(origin, driverId)}</div>
                 </div>`;
 
+            // v0.9.15.80: „R1–6 Ligier · R7–16 Williams" für Fahrer, die in dieser Saison
+            // mehr als ein Team hatten. Quelle ist teamSpans (aus dem Team ZUR RENNZEIT),
+            // nicht das Saison-Endteam — genau der Unterschied, der die Renntabellen
+            // jahrelang falsch beschriftet hat.
+            const spanLine = (s, driverId) => {
+                const sp = s.teamSpans && driverId ? s.teamSpans[driverId] : null;
+                if (!sp || sp.length < 2) return '';
+                return sp.map(([team, von, bis]) =>
+                    `R${von}${bis > von ? '–' + bis : ''} ${team}`).join(' · ');
+            };
+            const withSpan = (sub, line) => line ? `${sub}<br>${line}` : sub;
+
             let totalRows = 0;
             const blocks = seasons.slice().sort((a, b) => b.year - a.year).map(s => {
                 const rows = [];
@@ -24259,7 +24417,8 @@
                     const round = (typeof d.race === 'number') ? d.race + 1 : null;
                     rows.push({ ord: round || 0, phase: 0, html: rowHtml('🪦',
                         `<b>${rep}</b> ersetzt <b>${d.name || '?'}</b>`,
-                        `${d.team || '?'}${round ? ` · Runde ${round}` : ''} · nach Todesfall`,
+                        withSpan(`${d.team || '?'}${round ? ` · Runde ${round}` : ''} · nach Todesfall`,
+                                 spanLine(s, d.replacementId)),
                         d.replacementOrigin, d.replacementId) });
                 });
 
@@ -24269,8 +24428,22 @@
                     const round = r.dismissRound || null;
                     rows.push({ ord: round || 0, phase: 0, html: rowHtml('💢',
                         `<b>${r.replacementName}</b> ersetzt <b>${r.name || '?'}</b>`,
-                        `${r.fromTeam || '?'}${round ? ` · Runde ${round}` : ''} · nach Entlassung`,
+                        withSpan(`${r.fromTeam || '?'}${round ? ` · Runde ${round}` : ''} · nach Entlassung`,
+                                 spanLine(s, r.replacementId)),
                         r.replacementOrigin, r.replacementId) });
+                });
+
+                // --- MID-SEASON: Abwerbungen aus Sicht des Wechslers (v0.9.15.80) ---
+                // Der Gegenpart zu den beiden Blöcken darüber: dort steht, wer einen Sitz
+                // ÜBERNIMMT, hier, wer sein bisheriges Team VERLÄSST.
+                (s.transfers || []).forEach(e => {
+                    if (!e || e.type !== 'poach' || !e.midSeason) return;
+                    rows.push({ ord: e.round || 0, phase: 0, html: rowHtml('🎣',
+                        `<b>${e.driverName || '?'}</b>: ${e.fromTeam || '?'} → <b>${e.toTeam || '?'}</b>`,
+                        withSpan(`Abgeworben${e.round ? ` · Runde ${e.round}` : ''}`
+                               + (e.replacedName ? ` · ersetzt ${e.replacedName}` : ''),
+                                 spanLine(s, e.driverId)),
+                        null, e.driverId) });
                 });
 
                 // --- SAISONENDE: Bewegungen (ohne reine Verlängerung) ---
@@ -31808,13 +31981,40 @@ Empfohlene Wertebereiche:
                 return d ? d.name : id;
             };
             
+            // v0.9.15.80 FIX: Team ZUM RENNZEITPUNKT, nicht am Saisonende.
+            // Der Saison-Snapshot (`drivers`) führt pro Fahrer nur EIN Team – das letzte.
+            // Wer mitten in der Saison wechselt (Abwerbung nach Entlassung/Tod), stand
+            // deshalb in JEDER Renntabelle beim falschen Rennstall: Schumacher 1989 sechs
+            // Rennen lang unter Williams statt Ligier, Villoresi 1953 durchgehend unter HWM.
+            // Das echte Team steht pro Rennen in den Ergebnissen (`tmn` bzw. `teamName`) –
+            // bisher wurde es nur als Rückfall benutzt. Jetzt hat es Vorrang, und der
+            // Snapshot greift nur noch für Fahrer ohne Renneintrag (Quali/Training ohne Start).
+            // `tmn` ist hier IMMER ein Klarname ('Ligier'), nie ein Konstrukteur-Slug:
+            // openRaceDetails wird nur für simulierte Saisons aufgerufen, reale F1DB-Rennen
+            // laufen über openHistoricalRaceModal (siehe Renn-Raster). Deshalb keine
+            // Slug-Umwandlung — die würde echte Namen nur verfälschen.
+            const _raceTeamByDriver = {};
+            for (const r of (raceResult?.results || raceResult?.res || [])) {
+                const id = r.d ?? r.driver;
+                if (id == null) continue;
+                const raw = r.teamName || r.tmn || null;
+                if (raw) _raceTeamByDriver[id] = raw;
+            }
             const getTeamName = (driverId) => {
+                if (_raceTeamByDriver[driverId]) return _raceTeamByDriver[driverId];
                 const d = drivers.find(d => d.id === driverId);
                 if (!d) return '';
                 const t = teams.find(t => t.id === d.team);
                 return t ? t.name : '';
             };
             const getTeamId = (driverId) => {
+                // Der Link muss auf DASSELBE Team zeigen wie der angezeigte Name – sonst
+                // steht „Ligier" da und der Klick öffnet Williams.
+                const rt = _raceTeamByDriver[driverId];
+                if (rt) {
+                    const t = teams.find(t => t.name === rt);
+                    if (t) return t.id;
+                }
                 const d = drivers.find(d => d.id === driverId);
                 return d?.team || '';
             };
