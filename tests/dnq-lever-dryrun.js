@@ -35,19 +35,36 @@ for (const c of constructors) { nameToCid[norm(c.name)] = c.id; nameToCid[norm(c
 const roundKey = {};                         // `${y}_${r}` → circuitId (null wenn Indy)
 for (const r of races) roundKey[`${r.year}_${r.round}`] = r.grandPrixId === 'indianapolis' ? null : r.circuitId.toLowerCase();
 
-// realEntered[year][circuitId] = distinct Fahrerzahl ; realTeamRounds[year][cid][circuitId]=1
+// realEntered[year][circuitId] = distinct Fahrerzahl — das ist die MESSLATTE und
+// kommt weiterhin aus den Rohdaten. Sie ist nicht der Hebel, sondern das Ziel.
 const realEntered = {};
-const realTeamRounds = {};                    // year → constructorId → Set(circuitId)
 for (const e of sed) {
     if (e.testDriver) continue;
     for (const rd of e.rounds) {
         const cid = roundKey[`${e.year}_${rd}`];
         if (!cid) continue;
         ((realEntered[e.year] = realEntered[e.year] || {})[cid] = realEntered[e.year][cid] || new Set()).add(e.driverId);
-        const T = (realTeamRounds[e.year] = realTeamRounds[e.year] || {});
-        (T[e.constructorId] = T[e.constructorId] || new Set()).add(cid);
     }
 }
+
+// ── L1-Datenquelle: data/presence.js (DNQ_MELDEPLAN.md Stufe 1) ─────────────
+// Frueher baute dieses Skript die Praesenz selbst aus dem JSON-Rohbestand. Jetzt
+// liest es dieselbe Tabelle, die spaeter auch das SPIEL benutzt — genau das ist der
+// Sinn des Trockenlaufs: reproduziert die Datei die frueher gemessene Delta-Tabelle,
+// ist sie korrekt. Tut sie es nicht, stimmt Mapping oder Filter nicht.
+//
+// data/presence.js ist eine Browser-Datei ohne Export → als Skript auswerten und
+// nur die eine Konstante herausreichen (gleiches Muster wie tools/build-driver-dob.js).
+const TEAM_PRESENCE = (() => {
+    const p = path.join(__dirname, '..', 'data', 'presence.js');
+    if (!fs.existsSync(p)) {
+        console.error('FEHLER: data/presence.js fehlt. Erst erzeugen:\n  node tests/build-presence.js --write');
+        process.exit(1);
+    }
+    const g = {};
+    new Function('g', 'with(g){' + fs.readFileSync(p, 'utf8') + '; g.TEAM_PRESENCE = TEAM_PRESENCE;}')(g);
+    return g.TEAM_PRESENCE;
+})();
 
 // ── Spiel-Kontext ────────────────────────────────────────────────────────────
 const ctx = getContext();
@@ -64,15 +81,19 @@ function calCircuits(s) {
     return s.races.filter(r => !r.isIndy && r.circuitId).map(r => r.circuitId.toLowerCase());
 }
 
-// L1: jedes Team auf seine realen Runden beschränken
+// L1: jedes Team auf seine realen Runden beschränken (Quelle: data/presence.js)
 function leverPresence(s, year) {
     const cal = new Set(calCircuits(s));
+    const row = TEAM_PRESENCE[year];
+    if (!row) return;                                      // Jahr nicht abgedeckt → nicht anfassen
     for (const t of s.teams) {
         if (t.isIndyOnly) continue;
         const cid = nameToCid[norm(t.histId)] || nameToCid[norm(t.name)];
-        const real = cid && realTeamRounds[year] && realTeamRounds[year][cid];
-        if (!real || !real.size) continue;                 // kein positiver Datensatz → nicht anfassen
-        const allowed = [...real].filter(c => cal.has(c)); // nur Runden im Spiel-Kalender
+        const p = cid ? row[cid] : undefined;
+        if (p === undefined) continue;                     // unbekannt → Heuristik bleibt zustaendig
+        // 1 = volle Saison. Bewusst nicht `continue`, sondern der ganze Kalender:
+        // das ist exakt das, was die alte Rohdaten-Fassung hier errechnet hat.
+        const allowed = (p === 1 ? [...cal] : p.filter(c => cal.has(c)));
         const allowedSet = new Set(allowed);
         for (const d of s.drivers) {
             if (d.team !== t.id) continue;

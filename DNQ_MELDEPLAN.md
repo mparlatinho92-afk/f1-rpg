@@ -1,6 +1,15 @@
 # Meldeliste, Grid & DNQ — Ist-Zustand und Bauplan
 
-**Status:** 💤 Bau VERSCHOBEN (Entscheidung 2026-07-26). Die Diagnose ist fertig und quantifiziert, es wurde **noch keine Zeile in `index.html` geändert**.
+**Status:** ✅ **Stufe 1 FERTIG und verifiziert** (2026-08-07) — `data/presence.js` existiert, der Trockenlauf liest daraus und reproduziert die Δ-Tabelle. **Noch immer keine Zeile in `index.html` geändert.** Nächster Schritt ist Stufe 2 (Abschnitt 8).
+
+| Dekade | Soll (Abschnitt 6) | Ist aus `data/presence.js` | Abweichung |
+|---|---|---|---|
+| 1950er | −1,8 | **−1,9** | 0,1 ✅ |
+| 1960er | −0,9 | **−0,9** | 0,0 ✅ |
+| 1970er | +0,8 | **+0,7** | 0,1 ✅ |
+| 1980er | +1,3 | **+1,3** | 0,0 ✅ |
+
+Abbruchkriterium war ±0,3 — eingehalten. Baseline (+3,9/+2,6/+3,1/+2,2) und L2 unverändert, `tests/dnq-entrant-diagnosis.js` misst dasselbe wie vorher.
 **Zweck:** Diese Datei ist **selbsttragend** — sie beschreibt die komplette Meldeformel (wie aus SEASON_DATA eine Startaufstellung wird), warum sie in der klassischen Ära zu viele Autos liefert, und in welcher Reihenfolge das repariert wird. Wer hier einsteigt, braucht nur noch die zwei Messskripte in `tests/`, keinen Gesprächsverlauf.
 
 Alle Zeilennummern beziehen sich auf **`index.html`, Stand v0.9.15.31**. Sie verschieben sich — bei Abweichung `grep -n` und danach `./update-functions-index.ps1`.
@@ -231,7 +240,24 @@ Beide bauen die Saison über `expandSeasonData` und messen die Meldeliste **exak
 
 ---
 
-## 7. Stufe 1 — Datenrunde: Präsenz-Tabelle bauen (der eigentliche Aufwand)
+## 7. Stufe 1 — Datenrunde: Präsenz-Tabelle bauen ✅ ERLEDIGT (2026-08-07)
+
+**Gebaut:** `tests/build-presence.js` → `data/presence.js` (`TEAM_PRESENCE`, 30,7 KB).
+76 Saisons 1950–2025, 961 Team-Saisons, davon **257 Teilsaison** (1950er 84 · 1960er 64 · 1970er 62 · 1980er 30 · 1990er 12 · 2000er 3 · 2010er 2).
+
+**Vom Vorschlag unten abgewichen — drei Entscheidungen:**
+
+| Punkt | Vorschlag | Gebaut | Warum |
+|---|---|---|---|
+| Format | Runden-Bitmaske | **`circuitId`-Listen** | `driver.scheduledRaces` ist seit v0.9.15.11 bewusst circuit-basiert („nicht Index, damit Kalender-Edits nichts verschieben"). Rundennummern hätten diese Fragilität zurückgeholt **und** eine Runde→Strecke-Tabelle im Spiel verlangt. Strecken sind in 75 von 77 Saisons eindeutig; die zwei Ausnahmen (2020/21 Doppelrennen) liegen in der Ära mit 0 % Teilsaison-Teams |
+| Inhalt | alle Team-Saisons | **nur Abweichungen** (`1` = volle Saison, Liste = Teilsaison, **fehlt = unbekannt**) | Der häufigste Fall trägt keine Information — die Liste wäre der Kalender. Die Unterscheidung `1` ↔ „fehlt" ist aber tragend: für Unbekannte muss die Heuristik weiterlaufen, für bekannte Vollsaison-Teams gerade nicht |
+| Abdeckung | 1950–1994 | **1950–2025** | Kostet dank `1` fast nichts und erspart eine Ära-Grenze als Sonderfall |
+
+⚠️ **Vollständigkeits-Wächter — nicht wegoptimieren.** Für eine noch nicht gefahrene Saison kennt F1DB nur die ersten Runden. Ohne Prüfung wären im Stand von 2026-08 **alle 11 Teams der Saison 2026 als 3-Rennen-Teilsaison** eingegangen, und das Spiel hätte ihnen genau drei Meldungen zugestanden. Regel: an jeder Kalenderstrecke muss irgendein Team gemeldet haben, sonst ist das ganze Jahr unbrauchbar und fliegt raus. Hält sich von selbst aktuell, wenn F1DB nachzieht.
+
+**Trockenlauf umgebaut:** `tests/dnq-lever-dryrun.js` baut seine L1-Wahrheit nicht mehr selbst aus den Rohdaten, sondern liest `data/presence.js` — dieselbe Tabelle, die Stufe 2 im Spiel benutzt. Die Referenz-Meldezahlen (`realEntered`) kommen weiterhin aus dem JSON, das ist die Messlatte und nicht der Hebel.
+
+<details><summary>Ursprüngliche Planung (zur Nachvollziehbarkeit)</summary>
 
 L1 braucht Wissen, das das Spiel heute nicht hat: **welches Team ist in Saison X an welchen Runden wirklich angetreten.** SEASON_DATA kennt nur „Team existiert in dieser Saison".
 
@@ -253,6 +279,8 @@ Alternative: Array der Rundennummern — lesbarer, ~3× größer. Beides unkriti
 
 **Abbruchkriterium:** weicht die L1-Spalte um mehr als ±0,3 vom Trockenlauf ab, stimmt Mapping oder Filter nicht — nicht weiterbauen, sondern das Delta erklären.
 
+</details>
+
 ---
 
 ## 8. Stufe 2 — Verdrahtung im Spiel (erst nach grünem Trockenlauf)
@@ -266,9 +294,10 @@ Alternative: Array der Rundennummern — lesbarer, ~3× größer. Beides unkriti
 | `applyConstructorCarCap` | `6197` | unverändert; `_carsThisSeason` bleibt der Wagenzahl-Hebel |
 | Filterpaare | `9492/9494`, `10093/10094`, `10231/10232` | unverändert, aber **alle drei gegenprüfen** |
 
-**Neue Datendatei registrieren (sonst läuft nur `index.html`, nicht der Monolith):**
-1. `<script src="data/presence.js">` in `index.html`
-2. `data/presence.js` in `$DataFiles` in **`manage-v.ps1:20`** eintragen — sonst fehlt sie im Standalone-Build
+**Neue Datendatei registrieren — DREI Stellen, nicht zwei (2026-08-07 ergänzt):**
+1. `<script src="data/presence.js">` in `index.html` (bei den anderen sechs, ~Zeile 3099)
+2. `data/presence.js` in `$DataFiles` in **`manage-v.ps1:20`** — sonst fehlt sie im Standalone-Build
+3. ⚠️ **`tests/sim-core.js:113`** hat eine **eigene, kürzere** hartcodierte Liste (nur `f1db.js`, `hist.js`, `seasons.js`, `names.js`). Wird die Datei in `index.html` eingehängt, aber hier nicht nachgetragen, ist `TEAM_PRESENCE` in **allen** sim-core-Tests undefiniert — inklusive der beiden Messskripte, mit denen die Abnahme läuft
 
 **Verhalten ohne Daten:** fehlt `TEAM_PRESENCE` oder das Jahr (Zukunftssaisons, generierte Teams), gilt „Team fährt alle Runden" plus die heutige Kleinstkonstrukteur-Heuristik — also exakt das aktuelle Verhalten. **L1 darf nie Voraussetzung für einen Rennstart sein.**
 
