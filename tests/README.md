@@ -20,11 +20,25 @@ Planungsstand aus `expandSeasonData`, also den Saisonstart.
 
 ```
 node tests/mc-entries-dnq.js 1952 30                 Meldungen/DNQ gegen F1DB
+node tests/mc-entries-dnq.js 1974 30 --liste         GESAMTLISTE Fahrer + Konstrukteur
 node tests/mc-entries-dnq.js 1975 20 --saisons=6     FORTGESETZTER Fall
 node tests/mc-entries-dnq.js 1952 30 --strecken      Tabelle je Strecke
 node tests/mc-entries-dnq.js 1965 20 --fahrer=Bonnier
 node tests/mc-entries-dnq.js 1965 20 --team=Cooper
 ```
+
+**`--liste` ist der Vollabgleich gegen die Realität** — „1974: 15× Ronnie Peterson,
+46× McLaren" — mit drei Sorten Zeile:
+
+| Zeile | Bedeutung |
+|---|---|
+| Spiel + real | Δ zeigt, ob die Meldezahl stimmt |
+| nur im Spiel | erfunden bzw. generiert (in fortgesetzten Saisons normal) |
+| **nur real** | dieser Fahrer/Konstrukteur **meldet im Spiel gar nicht** |
+
+Zugeordnet wird über `driver.histId` (exakt der F1DB-Slug) und für Teams über die
+Namensnormalisierung aus `dnq-lever-dryrun.js`. Ohne `--liste` erscheint nur eine
+Kurzfassung mit den größten Abweichungen.
 
 - **Meldung = Starter + DNQ + DNPQ.** Wer in der Vor-Quali scheiterte, hat gemeldet. Indy ist überall ausgeschlossen (anderes Starterfeld).
 - `--saisons=N` nutzt exakt die Saison-Übergangskette aus `monte-carlo-multi.js`.

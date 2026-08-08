@@ -41,6 +41,7 @@ const SEASONS = Number(opt('saisons') || 1);
 const FAHRER = opt('fahrer');
 const TEAM = opt('team');
 const SHOW_TRACKS = argv.includes('--strecken');
+const LISTE = argv.includes('--liste');
 
 // ── Reale Referenz (F1DB) ───────────────────────────────────────────────────
 const BASE = path.join(__dirname, '..', 'f1db-json-splitted');
@@ -63,6 +64,35 @@ for (const g of J('f1db-races-starting-grid-positions.json')) {
     ((realStart[g.year] = realStart[g.year] || {})[cid] = realStart[g.year][cid] || new Set()).add(g.driverId);
 }
 
+// Reale Meldungen JE FAHRER und JE KONSTRUKTEUR — die Gesamtliste.
+//   Fahrer      = Zahl der Runden, an denen er gemeldet war (Indy raus)
+//   Konstrukteur= Summe der Wagen ueber alle Runden ("1974: 30 x McLaren")
+const realDrv = {}, realTeam = {}, realDrvName = {};
+{
+    const seen = {};   // `${y}|${cid}|${constructor}` -> Set(driver), gegen Doppelzaehlung
+    for (const e of J('f1db-seasons-entrants-drivers.json')) {
+        if (e.testDriver) continue;
+        for (const rd of (e.rounds || [])) {
+            const cid = roundCircuit[`${e.year}_${rd}`]; if (!cid) continue;
+            const dk = `${e.year}|${cid}|${e.driverId}`;
+            if (!seen[dk]) { seen[dk] = 1; (realDrv[e.year] = realDrv[e.year] || {})[e.driverId] = (realDrv[e.year][e.driverId] || 0) + 1; }
+            const tk = `${e.year}|${cid}|${e.constructorId}|${e.driverId}`;
+            if (!seen[tk]) { seen[tk] = 1; (realTeam[e.year] = realTeam[e.year] || {})[e.constructorId] = (realTeam[e.year][e.constructorId] || 0) + 1; }
+        }
+    }
+}
+for (const d of J('f1db-drivers.json')) realDrvName[d.id] = d.name;
+
+// Teamname -> F1DB-constructorId. Dieselbe Normalisierung wie in
+// dnq-lever-dryrun.js (dort ueber 1950-89 zu 100 % gemappt, 0 Miss).
+// Noetig, weil team.histId ein Anzeigename ist ("McLaren"), keine Slug-Id.
+const normId = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const nameToCid = {}, cidName = {};
+for (const c of J('f1db-constructors.json')) {
+    nameToCid[normId(c.name)] = c.id; nameToCid[normId(c.fullName)] = c.id;
+    cidName[c.id] = c.name;
+}
+
 const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
 const sd = a => { if (!a.length) return 0; const m = mean(a); return Math.sqrt(mean(a.map(v => (v - m) ** 2))); };
 const f1 = (v, w = 5) => v.toFixed(1).padStart(w);
@@ -72,8 +102,11 @@ const pc = (a, b) => b ? (a / b * 100).toFixed(0) + '%' : '—';
 // Jahr -> Kennzahlen; zusaetzlich Strecken-, Fahrer- und Teamsicht.
 const perYear = {};
 const perTrack = {};      // `${jahr}|${cid}` -> { ent:[], dnq:[], dnpq:[] }
-const perDriver = {};     // name -> { ent, starts, dnq, dnpq, teams:Set }
-const perTeam = {};       // name -> { raceEntries, cars, dnq, races }
+// Schluessel enthalten das JAHR und eine zuordenbare Id, damit gegen F1DB
+// verglichen werden kann: Fahrer ueber histId (exakt der F1DB-Slug), Teams ueber
+// die Namensnormalisierung. Generierte ohne Entsprechung bekommen `gen:`.
+const perDriver = {};     // `${jahr}|${key}` -> { name, hist, ent, starts, dnq, dnpq, teams:Set }
+const perTeam = {};       // `${jahr}|${key}` -> { name, cid, raceEntries, cars, dnq, dnpq }
 const detailRows = [];    // Zeilen fuer --fahrer / --team
 
 function yearBucket(y) {
@@ -89,11 +122,23 @@ function runSeason(ctx, simIdx) {
     const races = ctx.GAME_STATE.races || [];
     const B = yearBucket(y);
 
-    const dName = {}, dTeam = {};
-    for (const d of (ctx.GAME_STATE.drivers || [])) dName[d.id] = d.name;
-    const tName = {};
-    for (const t of (ctx.GAME_STATE.teams || [])) tName[t.id] = t.name;
-    for (const d of (ctx.GAME_STATE.drivers || [])) dTeam[d.id] = tName[d.team] || '(ohne Team)';
+    // Fahrer- und Teamauflösung wird VOR JEDEM RENNEN neu gebaut, nicht einmal je
+    // Saison: der Kader aendert sich waehrend der Saison (Grid-Fueller, Gastfahrer,
+    // Nachverpflichtungen). Mit einer Momentaufnahme vom Saisonstart landeten diese
+    // Meldungen faelschlich unter „(ohne Team)" — gemessen 32 je Saison in 1974.
+    let dName = {}, dTeam = {}, dHist = {}, tName = {}, tKeyOf = {};
+    const refreshRoster = () => {
+        dName = {}; dTeam = {}; dHist = {}; tName = {}; tKeyOf = {};
+        for (const t of (ctx.GAME_STATE.teams || [])) {
+            tName[t.id] = t.name;
+            // histId ist hier ein Anzeigename ("McLaren"), kein Slug — deshalb ueber
+            // beide Formen gegen f1db-constructors auffloesen, wie im L1-Trockenlauf.
+            tKeyOf[t.id] = nameToCid[normId(t.histId)] || nameToCid[normId(t.name)] || null;
+        }
+        for (const d of (ctx.GAME_STATE.drivers || [])) {
+            dName[d.id] = d.name; dHist[d.id] = d.histId || null; dTeam[d.id] = d.team || null;
+        }
+    };
 
     for (let i = 0; i < races.length; i++) {
         const race = races[i];
@@ -108,6 +153,7 @@ function runSeason(ctx, simIdx) {
             ctx.applyRaceResults(result);
         } catch (e) { continue; }
         if (isIndy) continue;
+        refreshRoster();                 // Stand NACH diesem Rennen, s. o.
 
         const starters = result.results || [];
         const dnq = result.dnq || [];
@@ -122,13 +168,17 @@ function runSeason(ctx, simIdx) {
         T.ent.push(entries); T.dnq.push(dnq.length); T.dnpq.push(dnpq.length);
 
         // Fahrer- und Teamsicht
-        const carsOf = {};
+        const carsOf = {};                       // teamId -> Wagen in diesem Rennen
         const note = (id, kind) => {
-            const nm = dName[id] || id, tm = dTeam[id] || '(ohne Team)';
-            const D = perDriver[nm] = perDriver[nm] || { ent: 0, starts: 0, dnq: 0, dnpq: 0, teams: new Set() };
+            const nm = dName[id] || id;
+            const tid = dTeam[id];
+            const tm = tid ? (tName[tid] || tid) : '(ohne Team)';
+            const dk = `${y}|${dHist[id] || 'gen:' + nm}`;
+            const D = perDriver[dk] = perDriver[dk] || { name: nm, hist: dHist[id] || null, ent: 0, starts: 0, dnq: 0, dnpq: 0, teams: new Set() };
             D.ent++; D[kind]++; D.teams.add(tm);
-            carsOf[tm] = (carsOf[tm] || 0) + 1;
-            const TT = perTeam[tm] = perTeam[tm] || { raceEntries: 0, cars: 0, dnq: 0, dnpq: 0 };
+            if (tid) carsOf[tid] = (carsOf[tid] || 0) + 1;
+            const tk = `${y}|${tid ? (tKeyOf[tid] || 'gen:' + tm) : 'gen:ohne'}`;
+            const TT = perTeam[tk] = perTeam[tk] || { name: tm, cid: tid ? tKeyOf[tid] : null, raceEntries: 0, cars: 0, dnq: 0, dnpq: 0 };
             TT.cars++; if (kind === 'dnq') TT.dnq++; if (kind === 'dnpq') TT.dnpq++;
             if (matches(nm, FAHRER) || matches(tm, TEAM)) {
                 detailRows.push({ sim: simIdx, y, cid, nm, tm,
@@ -143,7 +193,10 @@ function runSeason(ctx, simIdx) {
         B.teamsPerRace.push(sizes.length);
         B.carsPerTeam.push(mean(sizes));
         sizes.forEach(n => { B.cT++; if (n === 1) B.c1++; else if (n === 2) B.c2++; else B.c3++; });
-        Object.keys(carsOf).forEach(tm => { perTeam[tm].raceEntries++; });
+        Object.keys(carsOf).forEach(tid => {
+            const tk = `${y}|${tKeyOf[tid] || 'gen:' + (tName[tid] || tid)}`;
+            if (perTeam[tk]) perTeam[tk].raceEntries++;
+        });
     }
 }
 function matches(name, needle) {
@@ -229,17 +282,80 @@ if (SHOW_TRACKS) {
 
 // ── Fahrer- und Teamsicht ───────────────────────────────────────────────────
 const totalRaces = years.reduce((s, y) => s + perYear[y].races, 0);
-console.log(`\nFAHRER — Top 15 nach Meldungen (Ø je Sim, ${okSims} Sims)`);
+
+// ── GESAMTLISTE: jede Meldung gegen F1DB ────────────────────────────────────
+// „1974: 14x Ronnie Peterson, 30x McLaren" — Spiel gegen real, vollstaendig.
+// Drei Sorten Zeile, und die dritte ist die interessante:
+//   beide   → Δ zeigt, ob die Meldezahl stimmt
+//   nur Spiel → erfunden bzw. generiert (in fortgesetzten Saisons normal)
+//   nur real  → dieser Fahrer/Konstrukteur MELDET IM SPIEL GAR NICHT
+for (const y of years) {
+    const rD = realDrv[y] || {}, rT = realTeam[y] || {};
+    const gD = {}, gT = {};
+    for (const k in perDriver) if (k.startsWith(`${y}|`)) gD[k.slice(String(y).length + 1)] = perDriver[k];
+    for (const k in perTeam) if (k.startsWith(`${y}|`)) gT[k.slice(String(y).length + 1)] = perTeam[k];
+
+    const drvRows = [];
+    for (const key in gD) drvRows.push({ name: gD[key].name, g: gD[key].ent / okSims, r: (gD[key].hist && rD[gD[key].hist] != null) ? rD[gD[key].hist] : null, D: gD[key] });
+    for (const id in rD) if (!(id in gD)) drvRows.push({ name: realDrvName[id] || id, g: null, r: rD[id], D: null });
+
+    const teamRows = [];
+    for (const key in gT) teamRows.push({ name: gT[key].name, g: gT[key].cars / okSims, r: (gT[key].cid && rT[gT[key].cid] != null) ? rT[gT[key].cid] : null, T: gT[key] });
+    for (const id in rT) if (!(id in gT)) teamRows.push({ name: cidName[id] || id, g: null, r: rT[id], T: null });
+
+    if (!LISTE) {
+        // Kurzform: nur die groessten Abweichungen, damit der Bericht lesbar bleibt.
+        const miss = drvRows.filter(x => x.g === null).length;
+        const extra = drvRows.filter(x => x.r === null).length;
+        const both = drvRows.filter(x => x.g !== null && x.r !== null);
+        const off = both.slice().sort((a, b) => Math.abs(b.g - b.r) - Math.abs(a.g - a.r)).slice(0, 6);
+        console.log(`\nABGLEICH ${y} — ${both.length} Fahrer in beiden, ${miss} nur real (melden im Spiel NICHT), ${extra} nur im Spiel`);
+        console.log(`  groesste Abweichungen: ${off.map(x => `${x.name} ${x.g.toFixed(1)}/${x.r}`).join(' · ') || '—'}`);
+        console.log(`  (--liste zeigt die vollstaendige Fahrer- und Teamtabelle)`);
+        continue;
+    }
+
+    const fmtRow = (x, w) => {
+        const g = x.g === null ? '   —' : x.g.toFixed(1).padStart(4);
+        const r = x.r === null ? '   —' : String(x.r).padStart(4);
+        const d = (x.g !== null && x.r !== null) ? ((x.g - x.r >= 0 ? '+' : '') + (x.g - x.r).toFixed(1)).padStart(5) : '    —';
+        const tag = x.g === null ? ' ← meldet im Spiel NICHT' : x.r === null ? ' ← nur im Spiel' : '';
+        return `${x.name.padEnd(w).slice(0, w)} │ ${g} │ ${r} │ ${d}${tag}`;
+    };
+    const bySize = (a, b) => (b.r ?? -1) - (a.r ?? -1) || (b.g ?? -1) - (a.g ?? -1);
+
+    console.log(`\nFAHRER-MELDUNGEN ${y} — Spiel (Ø ${okSims} Sims) gegen real`);
+    console.log('Fahrer                    │ Sp.  │ real │   Δ');
+    console.log('─'.repeat(72));
+    drvRows.sort(bySize).forEach(x => console.log(fmtRow(x, 25)));
+
+    console.log(`\nKONSTRUKTEUR-MELDUNGEN ${y} (Wagen ueber die Saison) — Spiel gegen real`);
+    console.log('Konstrukteur              │ Sp.  │ real │   Δ');
+    console.log('─'.repeat(72));
+    teamRows.sort(bySize).forEach(x => console.log(fmtRow(x, 25)));
+
+    const sum = (rows, k) => rows.reduce((s, x) => s + (x[k] ?? 0), 0);
+    console.log(`\nSumme ${y}: Fahrer-Meldungen Spiel ${sum(drvRows, 'g').toFixed(0)} / real ${sum(drvRows, 'r')}` +
+                ` · Konstrukteur-Wagen Spiel ${sum(teamRows, 'g').toFixed(0)} / real ${sum(teamRows, 'r')}`);
+}
+
+console.log(`\nFAHRER — Top 15 nach Meldungen (Ø je Sim, ${okSims} Sims, alle Saisons)`);
 console.log('Fahrer                    │ Meld │ Start │  DNQ │ DNPQ │ DNQ-Quote │ Teams');
 console.log('─'.repeat(86));
-Object.entries(perDriver).sort((a, b) => b[1].ent - a[1].ent).slice(0, 15).forEach(([nm, D]) => {
+const aggD = {};
+for (const k in perDriver) { const D = perDriver[k]; const A = aggD[D.name] = aggD[D.name] || { ent: 0, starts: 0, dnq: 0, dnpq: 0, teams: new Set() };
+    A.ent += D.ent; A.starts += D.starts; A.dnq += D.dnq; A.dnpq += D.dnpq; D.teams.forEach(t => A.teams.add(t)); }
+Object.entries(aggD).sort((a, b) => b[1].ent - a[1].ent).slice(0, 15).forEach(([nm, D]) => {
     console.log(`${nm.padEnd(25).slice(0, 25)} │ ${f1(D.ent / okSims, 4)} │ ${f1(D.starts / okSims, 5)} │ ${f1(D.dnq / okSims, 4)} │ ${f1(D.dnpq / okSims, 4)} │ ${pc(D.dnq + D.dnpq, D.ent).padStart(9)} │ ${[...D.teams].slice(0, 2).join(', ')}`);
 });
 
-console.log(`\nTEAMS — nach Meldungen (Ø je Sim)`);
+console.log(`\nTEAMS — nach Meldungen (Ø je Sim, alle Saisons)`);
 console.log('Team                      │ Rennen │ Ø Autos │ Meld │  DNQ │ DNQ-Quote');
 console.log('─'.repeat(78));
-Object.entries(perTeam).sort((a, b) => b[1].cars - a[1].cars).slice(0, 20).forEach(([nm, T]) => {
+const aggT = {};
+for (const k in perTeam) { const T = perTeam[k]; const A = aggT[T.name] = aggT[T.name] || { raceEntries: 0, cars: 0, dnq: 0, dnpq: 0 };
+    A.raceEntries += T.raceEntries; A.cars += T.cars; A.dnq += T.dnq; A.dnpq += T.dnpq; }
+Object.entries(aggT).sort((a, b) => b[1].cars - a[1].cars).slice(0, 20).forEach(([nm, T]) => {
     console.log(`${nm.padEnd(25).slice(0, 25)} │ ${f1(T.raceEntries / okSims, 6)} │ ${f1(T.raceEntries ? T.cars / T.raceEntries : 0, 7)} │ ${f1(T.cars / okSims, 4)} │ ${f1(T.dnq / okSims, 4)} │ ${pc(T.dnq + T.dnpq, T.cars).padStart(9)}`);
 });
 
