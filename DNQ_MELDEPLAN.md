@@ -1,15 +1,16 @@
 # Meldeliste, Grid & DNQ — Ist-Zustand und Bauplan
 
-**Status:** ✅ **Stufe 1 FERTIG und verifiziert** (2026-08-07) — `data/presence.js` existiert, der Trockenlauf liest daraus und reproduziert die Δ-Tabelle. **Noch immer keine Zeile in `index.html` geändert.** Nächster Schritt ist Stufe 2 (Abschnitt 8).
+**Status:** ✅ **L1 (Stufe 1+2) und L3 gebaut** — L1 in v0.9.15.81, L3 in v0.9.15.82 (2026-08-08). **L2 wird nicht gebaut** (Abschnitt 9). Offen bleiben zwei Abnahmepunkte, beide erklärt und keinem Hebel dieses Plans zuzuordnen: 1950er Δ −1,7 und 1980er DNQ 5,2.
 
-| Dekade | Soll (Abschnitt 6) | Ist aus `data/presence.js` | Abweichung |
-|---|---|---|---|
-| 1950er | −1,8 | **−1,9** | 0,1 ✅ |
-| 1960er | −0,9 | **−0,9** | 0,0 ✅ |
-| 1970er | +0,8 | **+0,7** | 0,1 ✅ |
-| 1980er | +1,3 | **+1,3** | 0,0 ✅ |
+| Dekade | Baseline | nach L1 | **nach L3** | real |
+|---|---|---|---|---|
+| 1950er | +3,9 | −1,9 | **−1,7** | 0 |
+| 1960er | +2,6 | −0,9 | **−0,9** | 0 |
+| 1970er | +3,1 | +0,8 | **+0,8** | 0 |
+| 1980er | +2,2 | +1,3 | **+1,3** | 0 |
 
-Abbruchkriterium war ±0,3 — eingehalten. Baseline (+3,9/+2,6/+3,1/+2,2) und L2 unverändert, `tests/dnq-entrant-diagnosis.js` misst dasselbe wie vorher.
+DNQ/Rennen dazu: 1950er **1,4** (real 1,4 ✅) · 1960er 1,6 (1,5) · 1970er 3,7 (2,7) · 1980er 5,2 (3,9).
+L3 verschiebt nur, **welche** Rennen ein Privatier fährt — Δ bleibt deshalb praktisch stehen; sein Erfolgsmaß steht in Abschnitt 10.
 **Zweck:** Diese Datei ist **selbsttragend** — sie beschreibt die komplette Meldeformel (wie aus SEASON_DATA eine Startaufstellung wird), warum sie in der klassischen Ära zu viele Autos liefert, und in welcher Reihenfolge das repariert wird. Wer hier einsteigt, braucht nur noch die zwei Messskripte in `tests/`, keinen Gesprächsverlauf.
 
 Alle Zeilennummern beziehen sich auf **`index.html`, Stand v0.9.15.31**. Sie verschieben sich — bei Abweichung `grep -n` und danach `./update-functions-index.ps1`.
@@ -211,12 +212,17 @@ Real schwankte die Meldezahl stark je Strecke (1952: Zandvoort 18 vs. Monza 35),
 | 1970er | +3,1 | 2,7 | 4–6 |
 | 1980er | +2,2 | 3,9 | 4–6 |
 
-### Die zwei Messskripte (liegen fertig in `tests/`, reproduzierbar)
+### Die Messskripte (liegen fertig in `tests/`, reproduzierbar)
 ```
-node tests/dnq-entrant-diagnosis.js              → Detail 1952/1968/1985 + Sweep 1950–1989
+node tests/dnq-entrant-diagnosis.js              → Detail 1952/1968/1985 + Sweep 1950–1989 (Δ, DNQ)
 node tests/dnq-entrant-diagnosis.js 1961 1970    → nur diese Jahre im Detail
-node tests/dnq-lever-dryrun.js                   → Hebel-Vergleich (verändert index.html NICHT)
+node tests/dnq-lever-dryrun.js                   → Hebel-Vergleich L1/L2 (ändert index.html NICHT)
+node tests/dnq-venue-diagnosis.js                → Befund B: Teil A–C, reine Daten, schnell
+node tests/dnq-venue-diagnosis.js --game         → dazu Teil D–G (Spiel gegen real, braucht sim-core)
+node tests/dnq-l3-dryrun.js                      → L3-Gewicht W sweepen (ändert index.html NICHT)
 ```
+Alle Spiel-Messungen gegen die **unkommittete** `index.html`: `SIMCORE_FROM_INDEX=1` davorsetzen, sonst misst `sim-core` den letzten Monolith.
+`dnq-l3-dryrun.js` kennt `WEIGHTS=1,4`, `YEAR_FROM`/`YEAR_TO`, `N_RUNS` und `DETAIL=1` (Abweichung je Strecke).
 Beide bauen die Saison über `expandSeasonData` und messen die Meldeliste **exakt wie `simulateRace`** (Indy raus → `privateerEntersRace` → `applyConstructorCarCap`), gemittelt über 400 bzw. 150 Läufe. Die real-DNQ-Spalte matcht die Referenztabelle (1952 Monza: 35 gemeldet → 24 Starter = 11 DNQ ✓).
 
 ---
@@ -336,27 +342,106 @@ Die Reihenfolge „erst würfeln, dann auf die realen Strecken beschneiden" ist 
 
 ---
 
-## 9. Stufe 3 — L2 ära-gegatet (Feintuning 70er)
+## 9. Stufe 3 — L2 ära-gegatet (Feintuning 70er) ❌ VERWORFEN
+
+**Nicht bauen.** L1 bringt die 70er auf Δ +0,8 — das ist die beste Dekade im ganzen Plan. L2 würde dort gegen einen Rest von unter einem Auto pro Rennen tunen und hat in der Nachbardekade nachweislich überkorrigiert (80er −4,5). Ein zweiter Niveau-Hebel neben L1 macht außerdem unklar, welcher von beiden wirkt. Die Idee bleibt hier nur dokumentiert.
+
+<details><summary>Ursprüngliche Planung</summary>
 
 Erst anfassen, wenn L1 allein gemessen ist. Regeln aus dem Trockenlauf:
 - Gate bis **~1980** (Vorbild: `_smallConstructorShare` `5902`), darüber wirkungslos
 - greift nur für Teams **ohne** Präsenzeintrag — für reale Teams ist L1 die Wahrheit, L2 würde doppelt kürzen
 - eine einzige Kurve aus `carSpeed`, tunebar; Zielkorridor 70er Δ ≈ 0
 
-## 10. Stufe 4 — L3 Per-Venue (optional, adressiert Problem B)
+</details>
 
-Nur falls nach L1 die 50er/60er zu flach bleiben. Idee: Meldezahl je Strecke gewichten (Monza/Nürburgring/Monaco zogen Lokal- und Gelegenheitsmelder an). **Achtung:** gegen dieselbe F1DB-Referenz gemessen ist L3 zirkulär — Erfolgsmaß muss die **Streckenstreuung (SD)** sein, nicht Δ.
+## 10. Stufe 4 — L3 Heimrennen-Sog ✅ GEBAUT (v0.9.15.82, 2026-08-08)
+
+**Die Ausgangsannahme war überholt.** Die Diagnose (`tests/dnq-venue-diagnosis.js`, neu) zeigt: nach L1 ist das Spiel **nicht mehr flach**. Die alte Zahl „Spiel-SD 1,9 gegen real 4,6" stammt aus der Zeit vor L1 **und** aus einer anderen Rechnung — der Trockenlauf mittelte erst über die Läufe und nahm dann die SD, was die Streuung gerade wegmittelt. Pro Lauf gemessen (das ist der faire Vergleich zu einer einzelnen realen Saison) stand es vor L3 bei 3,6 gegen 4,6 (50er), 2,8 gegen 3,5 (60er), 2,5 gegen 2,5 (70er) und 1,4 gegen 1,1 (80er).
+
+**L1 hat dem Spiel das Streckenprofil geschenkt:** wer 1952 real nicht in Zandvoort war, ist es jetzt auch im Spiel nicht. Die Korrelation zwischen dem realen und dem gespielten Streckenprofil lag schon vor L3 bei 0,93 / 0,74 / 0,82 / 0,77. **Offen war nur der AUSSCHLAG in den 50ern/60ern** (systematische SD 2,6 gegen 4,1 bzw. 1,4 gegen 2,2) — die 70er waren getroffen, die 80er lagen darüber.
+
+### 10.1 Was die Diagnose ergab (Teile A–G)
+
+| Teil | Befund |
+|---|---|
+| **A** | Die Streuung sitzt **komplett im Schwanz**: SD Schwanz 4,13 von 4,63 gesamt (50er). Das Stammfeld ist mit SD ~1,5 in jeder Dekade fast konstant — L1 hält es, L3 darf es nicht anfassen |
+| **B** | **36 % der Schwanz-Melder sind Landsleute** des Streckenlandes (50er), im Stammfeld nur 13 %. 60er 34 % · 70er 19 % · 80er 11 % |
+| **B2** | ⚠ **Die Anreise-These ist widerlegt.** Übersee-Rennen haben denselben Schwanz wie europäische (9,0 gegen 10,0). Ein Kontinent-/Distanzfaktor wäre falsch gewesen |
+| **C** | Magnete wiederholen sich über Jahre: Aintree +4,9 · Nürburgring +4,8 · Silverstone +4,4 · Monza +3,2. Auslass: Zandvoort −5,4 · Buenos Aires −5,0 · Spa −4,9. Das sind genau die Länder mit großer bzw. kleiner Privatier-Population |
+| **D/E** | siehe oben — Profil richtig, Ausschlag zu klein |
+| **F** | DNQ-Ballung war schon nah dran (50er: 74 % der Saison-DNQ auf den zwei stärksten Strecken gegen real 78 %) |
+| **G** | Im Spiel waren nur **27 %** des Schwanzes Landsleute bei einer Zufallserwartung von 17 % — der Schwanz wurde also praktisch **ungewichtet** verteilt. Das ist der Rest-Fehler |
+
+### 10.2 Der Hebel
+
+**Keine Streckentabelle** (die wäre gegen dieselbe Referenz zirkulär), sondern **ein Gewicht in der Streckenwahl des Privatiers**: Rennen im eigenen Land zählen W-fach. Der Ausschlag entsteht dann aus der **Fahrerpopulation der Gastgebernation**, nicht aus einer nachgebauten Zielzahl.
+
+| Stelle | Änderung |
+|---|---|
+| `_homePullWeight(year)` (neu) | `< 1970 → 4`, sonst `1` |
+| `_homePullNation(d)` (neu) | Nationalität als IOC-Code inkl. `HOME_RACE_PROXY` — gleiche Regel wie `assignGenericHomeOnly` |
+| `_weightedDraw(list, w, n)` (neu) | Ziehen ohne Zurücklegen mit Gewichten |
+| `_pickPrivateerRaces` | vierter Parameter `homeNat`; **verstreut** (< 1962) → gewichtetes Ziehen · **geballt** (ab 1962) → die **Lage des Fensters** wird gewichtet, das Fenster selbst bleibt |
+| `assignPrivateerSchedules` | gibt `_homePullNation(d)` an den Einzel-Privatier-Zug weiter |
+| Teamplan-Zug (Kleinstkonstrukteure) | **unverändert** — siehe 10.4 |
+
+⚠ **Warum die Ballung nicht aufgelöst wird:** der Trockenlauf ersetzte den ganzen Zug durch ein gewichtetes Ziehen und verlor damit für 1962–69 die über die Spannweite der Startrunden eigenständig kalibrierte Ballung (`_privClusterWindow`). Eingebaut ist deshalb die Fenster-**Lage**-Gewichtung. Sie ist nicht nur sauberer, sondern misst sich auch besser: 60er-Korrelation −0,03 statt −0,10, Landsmann-Anteil 32,7 % statt der prognostizierten 31 %.
+
+### 10.3 Ergebnis (gemessen, `SIMCORE_FROM_INDEX=1`)
+
+| Kennzahl | Dekade | vor L3 | **nach L3** | real |
+|---|---|---|---|---|
+| **Landsmann-Anteil Schwanz** (Zielgröße, strukturell) | 1950er | 27 % | **36,9 %** | 36,4 % ✅ |
+| | 1960er | 24 % | **32,7 %** | 34,0 % ✅ |
+| **systematische Strecken-SD** | 1950er | 2,62 | **3,26** | 4,11 |
+| | 1960er | 1,43 | **1,93** | 2,22 |
+| **Korrelation Streckenprofil** | 1950er | 0,93 | 0,93 | — |
+| | 1960er | 0,74 | 0,71 | — |
+| **Saison-SD** | 1950er | 3,63 | **4,00** | 4,63 |
+| | 1960er | 2,81 | **2,99** | 3,46 |
+| **DNQ-Ballung Top-2** | 1950er | 74 % | **78 %** | 78 % ✅ |
+| **Ø DNQ/Rennen** | 1950er | 1,2 | **1,4** | 1,4 ✅ |
+| **Δ Meldungen** | 1950er | −1,9 | **−1,7** | 0 |
+
+**Ära-Gate verifiziert:** 1970er und 1980er in **allen** Kennzahlen unverändert (SD 2,52/2,53 · Profil-SD 1,70/1,69 · Korr 0,82/0,82). Moderne Ära 1996 / 2005 / 2010 / 2024 **bitgleich** gegen den Monolith .81. 1975 wich in einem Kurzlauf um +0,9 ab — bei 5 × 120 Läufen 26,32 gegen 26,35, also Rauschen (das Jahr schwankt selbst um ±0,4).
+
+### 10.4 Bewusst NICHT gemacht
+
+- **Teamplan-Zug der Kleinstkonstrukteure unverändert gelassen.** Er war kurzzeitig auf `_pickPrivateerRaces` umgestellt — das bringt dort aber **keinen Sog** (Teampläne gibt es nur 1970–1985, wo das Gate aus ist) und hätte nur die Fenster-Ballung eingeschleppt, die niemand gemessen hat. Zurückgebaut.
+- **Kein Sog für Teampläne.** Ein Team hat keine Nationalität; die Streckenwahl eines Rennstalls ist eine Logistik-, keine Herkunftsentscheidung.
+- **70er/80er nicht angefasst.** Gemessen: dort ist nichts zu holen (70er SD 1,7 gegen real 1,7) oder es schadet (80er liegen mit 0,8 gegen 0,5 schon darüber). Ein W von 1,5 in den 70ern drückte die SD auf 1,1, also **weg** von real.
+
+### 10.5 Grenze des Modells (nicht wegtunen)
+
+**Nürburgring und Monaco zogen ihre Riesenfelder über Kapazität und Prestige an, nicht über Landsleute.** Der Sog trifft in den 50ern 8 von 10 Strecken besser und diese zwei schlechter (Monaco +1,6 → +0,5 gegen real +2,8). Zuständig dafür sind die Ausnahmen in `getGridSize`, nicht L3.
+
+Der 60er-Korrelationsabfall hängt an genau zwei Strecken: **east-london** ist schon vor L3 falsch (+2,6 gegen real +0,5 — `assignGenericHomeOnly` überzieht bei RSA) und wird verstärkt, **nurburgring** siehe oben. Ohne diese beiden liegt die Korrelation bei 0,78 → 0,78 bei steigender SD (1,2 → 1,6). Der Hebel verschlechtert also nichts, was er erklären kann — er verstärkt einen bestehenden Fehler an einer Stelle.
+
+▶ **Offen daraus:** die RSA-Überziehung in `assignGenericHomeOnly` ist ein eigener, kleiner Fehler und kein L3-Thema.
 
 ---
 
 ## 11. Abnahme
 
 1. `node tests/dnq-entrant-diagnosis.js` — Sweep 1950–1989, Δ je Dekade
-2. `node tests/dnq-lever-dryrun.js` — Hebel-Vergleich
-3. Ziel: **|Δ| ≤ 1,5 in jeder Dekade**, DNQ/Rennen im Korridor 1,4–3,9 statt heute 4–6
-4. Gegenprobe moderne Ära (1995–2025): Δ **unverändert** — L1 darf dort nichts tun
+2. `node tests/dnq-venue-diagnosis.js --game` — Streckenprofil, Landsmann-Anteil, DNQ-Ballung
+3. Ziel: **|Δ| ≤ 1,5 in jeder Dekade**, DNQ/Rennen im Korridor 1,4–3,9 statt ursprünglich 4–6
+4. Gegenprobe moderne Ära (1995–2025): Δ **unverändert** — weder L1 noch L3 dürfen dort etwas tun
 5. Vor-Quali-Jahre (1988–92) behalten ihre DNPQ-Zahlen (`PRE_QUAL_DATA` `4262` ist gegen F1DB geeicht)
 6. Ein Rennen im Live-Ticker und im Sofort-Modus: **identische Meldeliste**
+
+### Stand nach L1 + L3 (v0.9.15.82)
+
+| Kriterium | Ergebnis |
+|---|---|
+| 1 Δ je Dekade | −1,7 · −0,9 · +0,8 · +1,3 |
+| 2 Streckenprofil | Landsmann-Anteil 36,9 % / 32,7 % (real 36,4 / 34,0) ✅ · SD 3,26 / 1,93 (real 4,11 / 2,22) |
+| 3 **\|Δ\| ≤ 1,5** | ⚠ 1950er −1,7. **Kein Hebel dieses Plans** — es fehlt der Schwanz der Einmal-Melder (real 3,3/Rennen). Der wäre ein neuer Mechanismus (Gelegenheitsfahrer, Abschnitt 4), kein Tuning |
+| 3 **DNQ-Korridor** | 1950er 1,4 ✅ · 1960er 1,6 ✅ · 1970er 3,7 ✅ · ⚠ 1980er 5,2. Vor-Quali-Ära: der Überschuss sitzt nicht in der Präsenz und nicht in der Streckenwahl |
+| 4 moderne Ära | ✅ 1996 / 2005 / 2010 / 2024 bitgleich gegen .81 |
+| 5 DNPQ | ✅ `PRE_QUAL_DATA` nicht angefasst |
+| 6 Modus-Parität | ✅ beide Hebel sitzen in `assignPrivateerSchedules` / `_pickPrivateerRaces`, also **vor** der Saison — die drei Filterpaare (`9492/9494`, `10093/10094`, `10231/10232`) lesen unverändert nur den Plan ab |
 
 ## 12. Nicht-Ziele / Fallen
 
@@ -376,4 +461,5 @@ Nur falls nach L1 die 50er/60er zu flach bleiben. Idee: Meldezahl je Strecke gew
 ## 14. Änderungslog dieses Dokuments
 
 - **2026-07-26** — angelegt aus der abgeschlossenen Diagnose (v0.9.15.26) und dem Hebel-Trockenlauf.
+- **2026-08-08 (2)** — L3 gebaut (v0.9.15.82). Abschnitt 10 komplett neu: die Ausgangsannahme „Spiel ist flach" war nach L1 überholt, der echte Rest-Fehler war die ungewichtete Streckenwahl des Privatiers. L2 in Abschnitt 9 verworfen. Neue Skripte `dnq-venue-diagnosis.js` und `dnq-l3-dryrun.js`.
 - **2026-07-26 (2)** — um die vollständige Meldeformel (Abschnitt 2) und die Kleinstkonstrukteure (Abschnitt 3) erweitert, damit das Dokument ohne Vorwissen lesbar ist; alle Konstanten und Zeilenanker gegen v0.9.15.31 verifiziert.
