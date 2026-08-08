@@ -110,7 +110,11 @@ function findHtmlFile() {
 function buildSourceFromIndex() {
     const dir = path.join(__dirname, '..');
     let html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
-    for (const jsFile of ['data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js']) {
+    // Muss mit $DataFiles in manage-v.ps1 übereinstimmen. Fehlt hier eine Datei, ist ihre
+    // Konstante in ALLEN sim-core-Tests undefiniert — inklusive der Messskripte, mit denen
+    // die Abnahme läuft. (data/presence.js ab v0.9.15.81: TEAM_PRESENCE für den L1-Hebel.)
+    for (const jsFile of ['data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js',
+                          'data/era-first-names.js', 'data/circuit-layouts.js', 'data/presence.js']) {
         const placeholder = `    <script src="${jsFile}"></script>`;
         const js = fs.readFileSync(path.join(dir, jsFile), 'utf8');
         html = html.replace(placeholder, `    <script>\n${js}\n    </script>`);

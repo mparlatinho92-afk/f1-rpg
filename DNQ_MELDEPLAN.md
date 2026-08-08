@@ -283,7 +283,38 @@ Alternative: Array der Rundennummern — lesbarer, ~3× größer. Beides unkriti
 
 ---
 
-## 8. Stufe 2 — Verdrahtung im Spiel (erst nach grünem Trockenlauf)
+## 8. Stufe 2 — Verdrahtung im Spiel ✅ GEBAUT (v0.9.15.81, 2026-08-08)
+
+**Im Spiel gemessen** (`SIMCORE_FROM_INDEX=1 node tests/dnq-entrant-diagnosis.js`) — exakte Parität mit dem Trockenlauf:
+
+| Dekade | Δ vorher | Δ jetzt | Trockenlauf-Prognose | DNQ vorher → jetzt | real |
+|---|---|---|---|---|---|
+| 1950er | +3,9 | **−1,9** | −1,9 ✅ | 4,6 → **1,2** | 1,4 |
+| 1960er | +2,6 | **−0,9** | −0,9 ✅ | 4,0 → **1,6** | 1,5 |
+| 1970er | +3,1 | **+0,8** | +0,7 ✅ | 5,7 → **3,8** | 2,7 |
+| 1980er | +2,2 | **+1,3** | +1,3 ✅ | 6,0 → **5,2** | 3,9 |
+
+**Moderne Ära (A/B gegen den Monolith .80 ohne `presence.js`):** 2000/2010/2015/2020/2024 auf die Nachkommastelle identisch. Zwei Jahre bewegen sich, beide **historisch korrekt**: 1996 22,00 → 21,25 (Forti ging real nach Runde 10 unter) und 2005 20,00 → 19,78 (BAR fehlte real zwei Rennen nach der Imola-Sperre).
+
+**Abnahme-Bilanz (Abschnitt 11) — zwei Kriterien noch nicht erreicht:**
+- ✅ moderne Ära unverändert · ✅ Trockenlauf-Parität · ✅ Fallback ohne Daten
+- ⚠️ **|Δ| ≤ 1,5:** 1950er liegt bei −1,9. **Kein L1-Fehler**, sondern Problem (B) aus Abschnitt 5 — dem Spiel fehlt der lange Schwanz der Einmal-Melder. Adressiert L3, nicht L1
+- ⚠️ **DNQ-Korridor 1,4–3,9:** 1980er bleiben bei 5,2. Die Vor-Quali-Ära lebt von vielen Meldern, der Überschuss sitzt dort nicht in der Präsenz
+
+**So gebaut — bewusst als NACHLAUF, nicht als Ersatz der Heuristik:**
+
+| Stelle | Änderung |
+|---|---|
+| `getTeamPresence(team, year)` (neu) | `1` = volle Saison · Array = Teilsaison · `null` = unbekannt |
+| `assignPrivateerSchedules` | Nachlauf am Ende: Werksfahrer bekommen die realen Strecken, geplante Fahrer werden darauf beschnitten |
+| `markSmallConstructors` | **unverändert** — die Heuristik würfelt weiter |
+| `privateerEntersRace`, `applyConstructorCarCap` | unverändert |
+
+Die Reihenfolge „erst würfeln, dann auf die realen Strecken beschneiden" ist exakt das, was im Trockenlauf gemessen wurde. Die Heuristik stattdessen abzuschalten hätte etwas anderes gemessen als das Verifizierte — deshalb bleibt sie stehen.
+
+⚠️ **Schlüssel: ZWEI Formen nötig.** `TEAM_PRESENCE` ist mit F1DB-Konstrukteur-IDs geschlüsselt, das Spiel führt Anzeigenamen. `„Alfa Romeo" → alfa-romeo` trifft, `„O.S.C.A." → o-s-c-a-` nicht (F1DB: `osca`). Gemessen 1950–2025: mit einer Form 4 echte Lücken (alle O.S.C.A.), mit beiden 943 von 1047 Team-Saisons. Die restlichen ~100 sind reine **Indy**-Konstrukteure — die haben korrekt keinen Eintrag, weil der Generator Indy-Runden filtert, und fallen damit auf die Heuristik zurück.
+
+<details><summary>Ursprüngliche Planung (zur Nachvollziehbarkeit)</summary>
 
 | Stelle | Zeile | Was zu tun ist |
 |---|---|---|
@@ -300,6 +331,8 @@ Alternative: Array der Rundennummern — lesbarer, ~3× größer. Beides unkriti
 3. ⚠️ **`tests/sim-core.js:113`** hat eine **eigene, kürzere** hartcodierte Liste (nur `f1db.js`, `hist.js`, `seasons.js`, `names.js`). Wird die Datei in `index.html` eingehängt, aber hier nicht nachgetragen, ist `TEAM_PRESENCE` in **allen** sim-core-Tests undefiniert — inklusive der beiden Messskripte, mit denen die Abnahme läuft
 
 **Verhalten ohne Daten:** fehlt `TEAM_PRESENCE` oder das Jahr (Zukunftssaisons, generierte Teams), gilt „Team fährt alle Runden" plus die heutige Kleinstkonstrukteur-Heuristik — also exakt das aktuelle Verhalten. **L1 darf nie Voraussetzung für einen Rennstart sein.**
+
+</details>
 
 ---
 
