@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.81</title>
+    <title>F1 RPG v0.9.15.82</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.81 (aktuell) - 08.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.82 (aktuell) - 08.08.2026</div>
+                            <div>&#8226; NEU: Privatiers melden bis 1969 bevorzugt zum Rennen im eigenen Land - Monza, Aintree und Silverstone fuellen sich, Zandvoort und Spa bleiben klein</div>
+                            <div>&#8226; FIX: Meldezahl schwankt wieder realistisch je Strecke (Streuung 2,6 auf 3,3 gegen real 4,1)</div>
+                            <div>&#8226; NEU: DNQ ballen sich wie historisch an wenigen Strecken (79 Prozent auf den Top-2 gegen real 78)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.81 - 08.08.2026</div>
                             <div>&#8226; NEU: Teams melden nur noch zu den Rennen, bei denen sie real angetreten sind - echte F1DB-Praesenz je Saison statt Schaetzung ueber die Lebensdauer</div>
                             <div>&#8226; FIX: Deutlich weniger kuenstliche DNQ in der klassischen Aera - 1950er von 4,6 auf 1,2 pro Rennen (real 1,4), 1960er von 4,0 auf 1,6 (real 1,5)</div>
                             <div>&#8226; NEU: Datendatei data/presence.js mit der Renn-Teilnahme aller Konstrukteure 1950-2025</div>
@@ -16348,7 +16352,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.81';
+        const VERSION = '0.9.15.82';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -19195,11 +19199,64 @@ const CIRCUIT_LAYOUTS = {
                  : year < 1980 ? 1.5
                  :               1.25;
         }
-        function _pickPrivateerRaces(n, races, year) {
+        // === L3: HEIMRENNEN-SOG (v0.9.15.82) ===
+        // Nach L1 stimmte das NIVEAU, aber der Ausschlag der Meldezahl über die
+        // Strecken war in den 50ern/60ern nur rund zwei Drittel des realen
+        // (systematische Strecken-SD 2,6 gegen 4,1 bzw. 1,4 gegen 2,2).
+        // Ursache, gemessen mit tests/dnq-venue-diagnosis.js:
+        //   • Die ganze Streuung sitzt im SCHWANZ (SD Schwanz 4,13 von 4,63 gesamt),
+        //     und den hat das Spiel in der richtigen GRÖSSE (9,1 gegen real 10,0).
+        //   • Real sind 36 % der Schwanz-Melder LANDSLEUTE des Streckenlandes, im
+        //     Stammfeld nur 13 %. Im Spiel waren es 27 % bei einer Zufallserwartung
+        //     von 17 % — der Schwanz wurde also praktisch ungewichtet verteilt.
+        // Der Ausschlag entsteht dadurch aus der Fahrerpopulation der Gastgebernation
+        // und NICHT aus einer nachgebauten Zielzahl (die wäre gegen dieselbe F1DB-
+        // Referenz zirkulär, DNQ_MELDEPLAN.md Abschnitt 10): Italien/GB/D stellen viele
+        // Privatiers → Monza/Aintree/Silverstone steigen; NL/B/CH wenige → Zandvoort,
+        // Spa und Bremgarten bleiben unten. Genau das ist das reale Muster.
+        //
+        // ÄRA-GRENZE 1970 — hart, weil ab dort gemessen NICHTS mehr zu holen ist:
+        //   1950er real 36 % Landsleute · 1960er 34 % · 1970er 19 % · 1980er 11 %
+        // In den 70ern trifft das Spiel den Ausschlag bereits (SD 1,7 gegen real 1,7),
+        // in den 80ern liegt es darüber (0,8 gegen 0,5). Dort würde der Sog nur schaden.
+        //
+        // GRENZE DES MODELLS (bewusst nicht wegtuniert): Nürburgring und Monaco zogen
+        // ihre Riesenfelder über Kapazität und Prestige an, nicht über Landsleute —
+        // dafür sind die Ausnahmen in getGridSize zuständig. Der Sog trifft in den
+        // 50ern 8 von 10 Strecken besser und diese zwei schlechter.
+        function _homePullWeight(year) {
+            return year < 1970 ? 4 : 1;
+        }
+        // Nationalität als IOC-Code, inklusive Heimrennen-Proxy (Rhodesier meldeten
+        // in Südafrika) — dieselbe Regel wie in assignGenericHomeOnly.
+        function _homePullNation(d) {
+            const nat = (d.nation && d.nation.length === 3) ? d.nation : convertEmojiToIOC(d.nation);
+            return nat ? (HOME_RACE_PROXY[nat] || nat) : null;
+        }
+        // Ziehen ohne Zurücklegen mit Gewichten (w[i] gehört zu list[i]).
+        function _weightedDraw(list, w, n) {
+            const pool = list.slice(), ww = w.slice(), out = [];
+            for (let k = 0; k < n && pool.length; k++) {
+                let tot = 0; for (const v of ww) tot += v;
+                let r = Math.random() * tot, i = 0;
+                while (i < pool.length - 1 && (r -= ww[i]) > 0) i++;
+                out.push(pool[i]); pool.splice(i, 1); ww.splice(i, 1);
+            }
+            return out;
+        }
+        function _pickPrivateerRaces(n, races, year, homeNat) {
             const idx = races.map((_, i) => i);
             if (n >= idx.length) return idx;
+            const W = homeNat ? _homePullWeight(year) : 1;
+            const isHome = races.map(r => {
+                if (W <= 1 || !r.country) return false;
+                const c = r.country.length === 3 ? r.country : convertEmojiToIOC(r.country);
+                return !!c && c === homeNat;
+            });
+            const hw = i => isHome[i] ? W : 1;
             const f = _privClusterWindow(year);
             if (!f) {                                        // verstreut
+                if (W > 1) return _weightedDraw(idx, idx.map(hw), n).sort((a, b) => a - b);
                 for (let i = idx.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [idx[i], idx[j]] = [idx[j], idx[i]];
@@ -19208,8 +19265,25 @@ const CIRCUIT_LAYOUTS = {
             }
             // geballt: Fenster knapp über der Startzahl, daraus alle bis auf Lücken
             const win = Math.min(idx.length, Math.max(n, Math.round(n * f)));
-            const start = Math.floor(Math.random() * (idx.length - win + 1));
+            let start;
+            if (W > 1) {
+                // Der Sog verschiebt die LAGE des Fensters, statt das Fenster
+                // aufzulösen: die Ballung ist über die Spannweite der Startrunden
+                // eigenständig kalibriert (_privClusterWindow) und darf nicht
+                // nebenbei verlorengehen. Betrifft nur 1962–69 — davor ist f = 0.
+                const starts = [], sw = [];
+                for (let s = 0; s + win <= idx.length; s++) {
+                    starts.push(s);
+                    let has = false;
+                    for (let i = s; i < s + win; i++) if (isHome[i]) { has = true; break; }
+                    sw.push(has ? W : 1);
+                }
+                start = _weightedDraw(starts, sw, 1)[0] || 0;
+            } else {
+                start = Math.floor(Math.random() * (idx.length - win + 1));
+            }
             const block = idx.slice(start, start + win);
+            if (W > 1) return _weightedDraw(block, block.map(hw), n).sort((a, b) => a - b);
             for (let i = block.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [block[i], block[j]] = [block[j], block[i]];
@@ -19396,6 +19470,11 @@ const CIRCUIT_LAYOUTS = {
                     // Echte Privateers im selben Team behalten ihre eigene Sporadik,
                     // dürfen aber nur an Rennen melden, an denen das Team antritt.
                     if (!d.isPrivateer) { d.scheduledRaces = teamPlan[d.team].slice(); return; }
+                    // BEWUSST ohne Heimrennen-Sog (v0.9.15.82): Teamplan-Fahrer gibt es
+                    // nur 1970–1985 (_smallConstructorShare), und dort ist der Sog per
+                    // Ära-Gate ohnehin aus. Der Zweig hier auf _pickPrivateerRaces
+                    // umzustellen hätte statt Sog nur die Ballung des Fensters
+                    // eingeschleppt — eine Änderung, die niemand gemessen hat.
                     const own = _drawPrivateerCount(year, teamPlan[d.team].length);
                     const pool = teamPlan[d.team];
                     const pick = [];
@@ -19407,7 +19486,7 @@ const CIRCUIT_LAYOUTS = {
                 }
                 if (!d.isPrivateer) { d.scheduledRaces = null; return; }
                 const n = _drawPrivateerCount(year, cal.length);
-                d.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
+                d.scheduledRaces = _pickPrivateerRaces(n, cal, year, _homePullNation(d)).map(i => ids[i]);
             });
 
             // === L1-Nachlauf: reale Per-Saison-Präsenz (v0.9.15.81, Bauplan Stufe 2) ===
