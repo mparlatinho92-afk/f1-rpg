@@ -495,7 +495,22 @@ Real ist **zweigipflig** — viele Ein-Auto-Melder *und* viele Großmeldungen. D
 
 ### 15.3 ⚠️ Der ganze Cluster ist nur für den SAISONSTART belegt
 
-**Jede Messung in diesem Dokument ist der Frisch-Saison-Fall** (`expandSeasonData`). Das Regime einer fortgesetzten Saison nach vielen Spieljahren ist ein anderes und **gar nicht vermessen**: dort greifen `fillGridEntries` und die Kaderlogik, und laut Abschnitt 4.1 schrumpft der Kader auf exakt zwei Fahrer je Team. Der Meldeplan ist also für den Saisonstart abgenommen, nicht für den Spielverlauf.
+**Jede Messung in den Abschnitten 1–14.2 ist der Frisch-Saison-Fall** (`expandSeasonData`). Das Regime einer fortgesetzten Saison ist ein anderes: dort greifen `fillGridEntries` und die Kaderlogik, und laut Abschnitt 4.1 schrumpft der Kader auf exakt zwei Fahrer je Team.
+
+**Erstmals gemessen mit `tests/mc-entries-dnq.js`** (volle Renn-Pipeline statt nur Planungsstand, `--saisons=N`). Start 1952, 3 Sims:
+
+| Saison | Ø Meldungen | Ø Starter | Ø DNQ | real DNQ | SD Strecken |
+|---|---|---|---|---|---|
+| 1952 (Start) | 26,0 | 23,0 | **3,0** | 2,4 | 5,1 |
+| 1953 | 22,8 | 22,8 | **0,0** | 1,3 | 1,9 |
+| 1954 | 19,6 | 19,5 | **0,1** | 0,8 | 1,3 |
+| 1955 | 19,6 | 19,5 | **0,1** | 1,7 | 1,0 |
+
+**Ab Saison 2 ist Meldung = Starter.** Das Feld füllt exakt das Grid, DNQ verschwindet, und die Streckenstreuung — das Ergebnis von L1 und L3 — kollabiert von 5,1 auf 1,0. Nur 3 Sims, aber 0 DNQ über ~27 Rennen bei real 1,3 je Rennen ist kein Rauschen.
+
+**Konsequenz: L1 und L3 wirken faktisch nur in der ersten Saison.** Beide hängen an `TEAM_PRESENCE` bzw. an Privatiers aus dem Template; in fortgesetzten Saisons gibt es weder das eine noch genügend von dem anderen. Das ist der größte offene Punkt dieses Dokuments — größer als die beiden Δ-Reste aus Abschnitt 11.
+
+▶ Verdächtige (ungeprüft): Kader schrumpft auf 2/Team (Abschnitt 4.1) · `fillGridEntries` füllt nur bis zur Grid-Größe, nie darüber · `markPrivateers` findet in einem 2-Mann-Kader keine Privatiers mehr, weil erst der dritte Fahrer privat ist.
 
 ## 15. Änderungslog dieses Dokuments
 

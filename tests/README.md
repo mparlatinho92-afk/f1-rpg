@@ -9,6 +9,30 @@
 | `monte-carlo.js` | Simuliert N Saisons, vergleicht mit historical_truth, gibt Bericht aus |
 | `monte-carlo-multi.js` | Multi-Saison-Variante |
 | `history-mc.js` | Historische Saisons |
+| `mc-entries-dnq.js` | **Meldungen, DNQ und Einzelauswahl** je Fahrer/Team/Strecke, gegen F1DB |
+
+## Meldungen & DNQ — `mc-entries-dnq.js`
+
+Fährt die **volle Renn-Pipeline** (Training → Qualifying → Rennen → `applyRaceResults`)
+und sieht damit auch Vor-Qualifikation, Grid-Füller und Ausfälle. Die Skripte
+`dnq-entrant-diagnosis.js` / `dnq-venue-diagnosis.js` messen dagegen nur den
+Planungsstand aus `expandSeasonData`, also den Saisonstart.
+
+```
+node tests/mc-entries-dnq.js 1952 30                 Meldungen/DNQ gegen F1DB
+node tests/mc-entries-dnq.js 1975 20 --saisons=6     FORTGESETZTER Fall
+node tests/mc-entries-dnq.js 1952 30 --strecken      Tabelle je Strecke
+node tests/mc-entries-dnq.js 1965 20 --fahrer=Bonnier
+node tests/mc-entries-dnq.js 1965 20 --team=Cooper
+```
+
+- **Meldung = Starter + DNQ + DNPQ.** Wer in der Vor-Quali scheiterte, hat gemeldet. Indy ist überall ausgeschlossen (anderes Starterfeld).
+- `--saisons=N` nutzt exakt die Saison-Übergangskette aus `monte-carlo-multi.js`.
+- `--fahrer=` / `--team=` suchen als **Teilstring**, Groß/Klein egal.
+- ⚠ Ab der zweiten Saison ist der Kader generiert — der F1DB-Vergleich trifft dann Niveau und Form, nicht die Identität einzelner Fahrer.
+- ⚠ **Bekannter Befund (2026-08-08):** ab Saison 2 fällt DNQ auf ~0 und die Streckenstreuung kollabiert (Meldung = Starter). Siehe `DNQ_MELDEPLAN.md` Abschnitt 14.3.
+
+Für die unkommittete `index.html` statt des letzten Monolithen: `SIMCORE_FROM_INDEX=1` davorsetzen. Gilt für **alle** sim-core-Skripte.
 
 ## Ausführen
 
