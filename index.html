@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.80</title>
+    <title>F1 RPG v0.9.15.81</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.80 (aktuell) - 06.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.81 (aktuell) - 08.08.2026</div>
+                            <div>&#8226; NEU: Teams melden nur noch zu den Rennen, bei denen sie real angetreten sind - echte F1DB-Praesenz je Saison statt Schaetzung ueber die Lebensdauer</div>
+                            <div>&#8226; FIX: Deutlich weniger kuenstliche DNQ in der klassischen Aera - 1950er von 4,6 auf 1,2 pro Rennen (real 1,4), 1960er von 4,0 auf 1,6 (real 1,5)</div>
+                            <div>&#8226; NEU: Datendatei data/presence.js mit der Renn-Teilnahme aller Konstrukteure 1950-2025</div>
+                            <div class="font-bold text-slate-400">v0.9.15.80 - 06.08.2026</div>
                             <div>&#8226; FIX: Renn-Ergebnistabellen zeigten das Team vom Saisonende statt das Team zum Rennzeitpunkt</div>
                             <div>&#8226; FIX: Vertragsverlaengerungen wurden in der Saisonstart-Vorschau als 'verlaesst F1' gemeldet</div>
                             <div>&#8226; FIX: Zurueckgetretene Fahrer landeten wieder im Reserve-Pool und fuhren im Folgejahr weiter</div>
@@ -3112,6 +3116,7 @@
     <script src="data/names.js"></script>
     <script src="data/era-first-names.js"></script>
     <script src="data/circuit-layouts.js"></script>
+    <script src="data/presence.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3449,7 +3454,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.80';
+        const VERSION = '0.9.15.81';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6382,6 +6387,31 @@
                  :               0;
         }
 
+        // === L1: PER-SAISON-PRÄSENZ (v0.9.15.81, DNQ_MELDEPLAN.md Stufe 2) ===
+        // Liefert für ein Team im Jahr: 1 = volle Saison · Array circuitIds = Teilsaison
+        // · null = UNBEKANNT (dann bleibt die bestehende Heuristik zuständig).
+        //
+        // Die Unterscheidung „1" gegen „null" ist tragend: bei einem bekannten
+        // Vollsaison-Team darf nichts eingeschränkt werden, bei einem unbekannten muss
+        // markSmallConstructors weiter würfeln dürfen.
+        //
+        // ZWEI Schlüsselformen, empirisch nötig: TEAM_PRESENCE ist mit F1DB-Konstrukteur-IDs
+        // geschlüsselt, das Spiel führt Anzeigenamen. „Alfa Romeo" → `alfa-romeo` trifft,
+        // „O.S.C.A." → `o-s-c-a-` aber nicht (F1DB: `osca`). Gemessen über 1950–2025:
+        // mit einer Form 528 Treffer und 4 echte Lücken (alle O.S.C.A.), mit beiden 943
+        // von 1047 Team-Saisons. Die restlichen ~100 sind reine INDY-Konstrukteure —
+        // die haben korrekt keinen Eintrag, weil der Generator Indy-Runden herausfiltert.
+        function getTeamPresence(team, year) {
+            if (typeof TEAM_PRESENCE === 'undefined' || !team) return null;
+            const row = TEAM_PRESENCE[year];
+            if (!row) return null;
+            const raw = String(team.histId || team.id || '');
+            const k1 = raw.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            if (row[k1] !== undefined) return row[k1];
+            const k2 = raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return row[k2] !== undefined ? row[k2] : null;
+        }
+
         // Markiert die schwächsten Teams als Kleinstkonstrukteure. Nur Teams mit
         // wenigen Fahrern — ein Team mit 4+ Fahrern ist per Definition kein Winzling
         // und hat ohnehin schon Privateers, die partiell melden.
@@ -6484,6 +6514,35 @@
                 if (!d.isPrivateer) { d.scheduledRaces = null; return; }
                 const n = _drawPrivateerCount(year, cal.length);
                 d.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
+            });
+
+            // === L1-Nachlauf: reale Per-Saison-Präsenz (v0.9.15.81, Bauplan Stufe 2) ===
+            // Kern des Melde-Überschusses: die Klassenzuordnung oben benutzt LEBENSZEIT-
+            // Starts als Stellvertreter für Per-Saison-Präsenz. Ein Team, das 1985 nur die
+            // halbe Saison fuhr, gilt dadurch als ganzjährig präsent (Spirit, Haas, Zakspeed).
+            //
+            // Bewusst als NACHLAUF und nicht als Ersatz der Heuristik: exakt diese Reihenfolge
+            // — erst würfeln, dann auf die realen Strecken beschneiden — wurde im Trockenlauf
+            // gemessen und trifft die Soll-Tabelle (1950er −1,9 · 1960er −0,9 · 1970er +0,7 ·
+            // 1980er +1,3, Abbruchkriterium ±0,3). Wer die Heuristik stattdessen abschaltet,
+            // misst etwas anderes als das, was verifiziert wurde.
+            //
+            // Ohne Daten passiert NICHTS: fehlt die Tabelle, das Jahr oder das Team, bleibt
+            // alles beim heutigen Verhalten. L1 darf nie Voraussetzung für einen Rennstart sein.
+            const idSet = new Set(ids);
+            (teams || []).forEach(t => {
+                if (t.isIndyOnly) return;                       // Indy ist im Generator gefiltert
+                const p = getTeamPresence(t, year);
+                if (p == null) return;                          // unbekannt → Heuristik gilt weiter
+                const allowed = (p === 1 ? ids.slice() : p.filter(c => idSet.has(c)));
+                const allowedSet = new Set(allowed);
+                drivers.forEach(d => {
+                    if (d.team !== t.id) return;
+                    // Werksfahrer (kein Plan = jedes Rennen) bekommen die realen Strecken,
+                    // alle mit Plan werden darauf beschnitten.
+                    if (Array.isArray(d.scheduledRaces)) d.scheduledRaces = d.scheduledRaces.filter(c => allowedSet.has(c));
+                    else d.scheduledRaces = allowed.slice();
+                });
             });
         }
 
