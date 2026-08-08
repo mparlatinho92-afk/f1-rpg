@@ -1,6 +1,8 @@
 # Meldeliste, Grid & DNQ — Ist-Zustand und Bauplan
 
-**Status:** ✅ **L1 (Stufe 1+2) und L3 gebaut** — L1 in v0.9.15.81, L3 in v0.9.15.82 (2026-08-08). **L2 wird nicht gebaut** (Abschnitt 9). Offen bleiben zwei Abnahmepunkte, beide erklärt und keinem Hebel dieses Plans zuzuordnen: 1950er Δ −1,7 und 1980er DNQ 5,2.
+**Status:** ✅ **L1 (Stufe 1+2) und L3 gebaut** — L1 in v0.9.15.81, L3 in v0.9.15.82 (2026-08-08). **L2 wird nicht gebaut** (Abschnitt 9). Offen bleiben zwei Abnahmepunkte: 1950er Δ −1,7 und 1980er DNQ 5,2 — beide sitzen laut Abschnitt 14 in der **Wagenzahl je Konstrukteur**, nicht in Präsenz oder Streckenwahl.
+
+⚠️ **Der Plan ist nur für den SAISONSTART abgenommen.** Jede Messung hier ist der Frisch-Saison-Fall (`expandSeasonData`). Die fortgesetzte Saison nach vielen Spieljahren — wo `fillGridEntries` und die Kaderlogik greifen — ist **nicht vermessen** (Abschnitt 14.3).
 
 | Dekade | Baseline | nach L1 | **nach L3** | real |
 |---|---|---|---|---|
@@ -238,7 +240,7 @@ Beide bauen die Saison über `expandSeasonData` und messen die Meldeliste **exak
 | 1970er | +3,1 | +0,8 | −1,8 | −1,9 |
 | 1980er | +2,2 | +1,3 | −4,5 | −4,6 |
 
-- **L1 – Per-Saison-Präsenz aus F1DB:** datenexakt, keine Tuning-Knöpfe, bester ausbalancierter Hebel. Die −1,8 in den 50ern sind **kein L1-Fehler**, sondern Problem (B): dem Spiel fehlt der lange Schwanz der Einmal-Melder.
+- **L1 – Per-Saison-Präsenz aus F1DB:** datenexakt, keine Tuning-Knöpfe, bester ausbalancierter Hebel. Die −1,8 in den 50ern sind **kein L1-Fehler**. ⚠️ Die hier ursprünglich vermutete Begründung („dem Spiel fehlt der lange Schwanz der Einmal-Melder") ist **2026-08-08 widerlegt** — siehe Abschnitt 14.
 - **L2 – schwaches Team meldet weniger (Idee des Nutzers):** die naive carSpeed-Kurve **überkorrigiert die 80er** (−4,5; schickt Tyrrell/Ligier in Teilsaisons). In den 80ern fuhr real jedes Team jedes Rennen, DNQ kam aus der Vor-Quali. Nur **ära-gegatet bis ~1980** brauchbar.
 - **L3 – Per-Venue:** adressiert (B), ist gegen dieselbe Referenz aber zirkulär und wurde nicht numerisch getestet.
 
@@ -304,7 +306,7 @@ Alternative: Array der Rundennummern — lesbarer, ~3× größer. Beides unkriti
 
 **Abnahme-Bilanz (Abschnitt 11) — zwei Kriterien noch nicht erreicht:**
 - ✅ moderne Ära unverändert · ✅ Trockenlauf-Parität · ✅ Fallback ohne Daten
-- ⚠️ **|Δ| ≤ 1,5:** 1950er liegt bei −1,9. **Kein L1-Fehler**, sondern Problem (B) aus Abschnitt 5 — dem Spiel fehlt der lange Schwanz der Einmal-Melder. Adressiert L3, nicht L1
+- ⚠️ **|Δ| ≤ 1,5:** 1950er liegt bei −1,9. **Kein L1-Fehler.** Die damals notierte Begründung (fehlender Schwanz der Einmal-Melder) ist widerlegt — Abschnitt 14
 - ⚠️ **DNQ-Korridor 1,4–3,9:** 1980er bleiben bei 5,2. Die Vor-Quali-Ära lebt von vielen Meldern, der Überschuss sitzt dort nicht in der Präsenz
 
 **So gebaut — bewusst als NACHLAUF, nicht als Ersatz der Heuristik:**
@@ -437,7 +439,7 @@ Der 60er-Korrelationsabfall hängt an genau zwei Strecken: **east-london** ist s
 |---|---|
 | 1 Δ je Dekade | −1,7 · −0,9 · +0,8 · +1,3 |
 | 2 Streckenprofil | Landsmann-Anteil 36,9 % / 32,7 % (real 36,4 / 34,0) ✅ · SD 3,26 / 1,93 (real 4,11 / 2,22) |
-| 3 **\|Δ\| ≤ 1,5** | ⚠ 1950er −1,7. **Kein Hebel dieses Plans** — es fehlt der Schwanz der Einmal-Melder (real 3,3/Rennen). Der wäre ein neuer Mechanismus (Gelegenheitsfahrer, Abschnitt 4), kein Tuning |
+| 3 **\|Δ\| ≤ 1,5** | ⚠ 1950er −1,7. Ursache siehe Abschnitt 14 — **nicht** die Einmal-Melder, sondern die Wagenzahl je Konstrukteur |
 | 3 **DNQ-Korridor** | 1950er 1,4 ✅ · 1960er 1,6 ✅ · 1970er 3,7 ✅ · ⚠ 1980er 5,2. Vor-Quali-Ära: der Überschuss sitzt nicht in der Präsenz und nicht in der Streckenwahl |
 | 4 moderne Ära | ✅ 1996 / 2005 / 2010 / 2024 bitgleich gegen .81 |
 | 5 DNPQ | ✅ `PRE_QUAL_DATA` nicht angefasst |
@@ -458,7 +460,44 @@ Der 60er-Korrelationsabfall hängt an genau zwei Strecken: **east-london** ist s
 3. L2 überhaupt bauen, wenn L1 die 70er schon auf +0,8 bringt?
 4. Sollen Kleinstkonstrukteure **mit** Präsenzdaten weiterhin bei der Wagenzahl (`_carsThisSeason`, Ø 1,56 Autos) gewürfelt werden, oder auch die aus F1DB ziehen?
 
-## 14. Änderungslog dieses Dokuments
+## 14. Zusammensetzung der Meldeliste (2026-08-08) — eine These widerlegt
+
+`node tests/dnq-entry-composition.js` fragt, **woraus** die Liste besteht. Eine richtige Summe kann falsch zusammengesetzt sein: 20 Melder aus 10 Teams × 2 sind etwas anderes als 20 Melder aus 6 Teams × 2 plus 8 Lokalstarter — und nur das zweite erzeugt historisch richtige DNQ.
+
+### 15.1 Was stimmt
+
+| | 1950er | 1960er | 1970er | 1980er |
+|---|---|---|---|---|
+| **Einmal-Melder/Rennen** Spiel | 3,5 | 2,0 | 0,8 | 0,1 |
+| real | 3,3 | 2,0 | 0,7 | 0,2 |
+| **homeOnly-Meldungen im eigenen Land** | 100 % | 100 % | 100 % | 100 % |
+
+### 15.2 ⚠️ Widerlegt: „dem Spiel fehlt der Schwanz der Einmal-Melder"
+
+Diese Begründung für das 50er-Δ stand seit dem Hebel-Trockenlauf in den Abschnitten 6, 8 und 11 — **sie wurde nie gemessen, nur vermutet, und ist falsch.** Das Spiel hat die Einmal-Melder, sogar minimal mehr als die Realität. Wer daraufhin einen Gelegenheitsfahrer-Mechanismus (Abschnitt 4) baut, um das 50er-Δ zu schließen, baut am falschen Ende.
+
+**Die Lücke sitzt in der Wagenzahl je Konstrukteur:**
+
+| Team-Rennen mit … | 1 Auto | 2 Autos | 3+ Autos | Ø Autos/Team | Ø Teams |
+|---|---|---|---|---|---|
+| 1950er Spiel | 15 % | 24 % | 62 % | **3,60** | 5,7 |
+| 1950er real | **20 %** | **15 %** | 66 % | **3,87** | 5,9 |
+| 1960er Spiel | 11 % | 40 % | 49 % | 2,96 | 6,8 |
+| 1960er real | **21 %** | 31 % | 48 % | 3,04 | 7,0 |
+| 1970er Spiel | 22 % | 51 % | 27 % | 2,23 | 12,6 |
+| 1970er real | 31 % | 48 % | 21 % | 2,08 | 13,3 |
+| 1980er Spiel | 13 % | 79 % | **7 %** | 1,94 | 15,6 |
+| 1980er real | 18 % | 81 % | **1 %** | 1,83 | 15,8 |
+
+Real ist **zweigipflig** — viele Ein-Auto-Melder *und* viele Großmeldungen. Das Spiel drängt zur Mitte: zu wenige Ein-Auto-Teams in jeder Dekade, dafür zu viele Zweiwagen-Teams.
+
+▶ **Neue Spur für den offenen 80er-DNQ-Überschuss (5,2 gegen 3,9):** dort meldet das Spiel **siebenmal so oft 3+ Autos wie real** (7 % gegen 1 %). `_maxCarsPerConstructor` erlaubt 1980–85 drei Wagen, real war das Drittauto da schon so gut wie ausgestorben (letztes 1985). Das ist konkreter als die bisherige Erklärung „liegt an der Vor-Quali-Ära" — aber ungeprüft.
+
+### 15.3 ⚠️ Der ganze Cluster ist nur für den SAISONSTART belegt
+
+**Jede Messung in diesem Dokument ist der Frisch-Saison-Fall** (`expandSeasonData`). Das Regime einer fortgesetzten Saison nach vielen Spieljahren ist ein anderes und **gar nicht vermessen**: dort greifen `fillGridEntries` und die Kaderlogik, und laut Abschnitt 4.1 schrumpft der Kader auf exakt zwei Fahrer je Team. Der Meldeplan ist also für den Saisonstart abgenommen, nicht für den Spielverlauf.
+
+## 15. Änderungslog dieses Dokuments
 
 - **2026-07-26** — angelegt aus der abgeschlossenen Diagnose (v0.9.15.26) und dem Hebel-Trockenlauf.
 - **2026-08-08 (2)** — L3 gebaut (v0.9.15.82). Abschnitt 10 komplett neu: die Ausgangsannahme „Spiel ist flach" war nach L1 überholt, der echte Rest-Fehler war die ungewichtete Streckenwahl des Privatiers. L2 in Abschnitt 9 verworfen. Neue Skripte `dnq-venue-diagnosis.js` und `dnq-l3-dryrun.js`.
