@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.82</title>
+    <title>F1 RPG v0.9.15.83</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.82 (aktuell) - 08.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.83 (aktuell) - 09.08.2026</div>
+                            <div>&#8226; FIX: Beim Spielstart landen keine real bereits verstorbenen oder zurueckgetretenen Fahrer mehr im Reservepool - Jim Clark meldete in 1974 noch 7,5-mal pro Saison</div>
+                            <div>&#8226; FIX: Zeichenfehler bei Pedro Rodriguez und Francois Mazet (Saison 1971)</div>
+                            <div>&#8226; FIX: John Watsons Kennung war durchgaengig falsch geschrieben - Beiname und Profil-Lookups greifen wieder</div>
+                            <div class="font-bold text-slate-400">v0.9.15.82 - 08.08.2026</div>
                             <div>&#8226; NEU: Privatiers melden bis 1969 bevorzugt zum Rennen im eigenen Land - Monza, Aintree und Silverstone fuellen sich, Zandvoort und Spa bleiben klein</div>
                             <div>&#8226; FIX: Meldezahl schwankt wieder realistisch je Strecke (Streuung 2,6 auf 3,3 gegen real 4,1)</div>
                             <div>&#8226; NEU: DNQ ballen sich wie historisch an wenigen Strecken (79 Prozent auf den Top-2 gegen real 78)</div>
@@ -3458,7 +3462,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.82';
+        const VERSION = '0.9.15.83';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -5197,10 +5201,13 @@
         function _dobLookup(histId) {
             if (!histId || typeof DRIVER_DOB === 'undefined') return null;
             if (DRIVER_DOB[histId]) return DRIVER_DOB[histId];
-            // Case-Falle: 'john-Watson' steht als einziger Key mit grossem W in
-            // HIST_DRIVERS/HIST_NAMES/HIST_SEASONS. Derselbe Vergleichsfehler
-            // kostete in .15.29 schon einmal ganze Profile — deshalb hier gleich
-            // ein Kleinschreib-Index statt einer Einzelfall-Ausnahme.
+            // Kleinschreib-Index als Netz. Historisch stand 'john-Watson' als
+            // EINZIGER Key mit grossem W in HIST_DRIVERS/HIST_NAMES/HIST_SEASONS und
+            // in PACE_RATINGS; der Vergleichsfehler kostete in .15.29 ganze Profile
+            // und liess in .15.83 den Beinamen-Eintrag 'john-watson' ins Leere laufen.
+            // Seit .15.83 sind die Daten auf die F1DB-Schreibweise normalisiert — der
+            // Index bleibt trotzdem stehen, damit ein Rueckfall nicht wieder wehtut
+            // (und fuer Alt-Saves, die den alten Slug gespeichert haben).
             if (_dobLowerIdx === null) {
                 _dobLowerIdx = {};
                 for (const k of Object.keys(DRIVER_DOB)) _dobLowerIdx[k.toLowerCase()] = DRIVER_DOB[k];
@@ -8993,6 +9000,45 @@
                 const age = year - birthYear;
                 return age >= 19 && age <= _eraMaxAge;
             }
+
+            // === DIE STARTSAISON AKZEPTIERT DIE VERGANGENHEIT (v0.9.15.83) ===
+            // Dass real Verstorbene im Spiel weiterleben, ist gewollt — aber nur, wenn
+            // sie im Spiel am Leben geblieben SIND. Wer schon vor dem Startjahr tot war,
+            // gehoert nicht in diese Welt. Gemessen mit tests/mc-entries-dnq.js: bei
+            // Start 1974 lagen 18 Tote im Pool, und weil fillGridEntries nach Pace >= 50
+            // zieht, traf es die Groessten — Jim Clark (+1968) meldete 7,5-mal pro Saison.
+            //
+            // KEIN Todesdatum noetig: wer tot oder zurueckgetreten ist, steht ab dem
+            // Startjahr in keiner SEASON_DATA-Saison mehr. Dieselbe Pruefung erwischt
+            // damit auch Ruecktritte (Jackie Stewart, letztes Jahr 1973) — die kamen
+            // ueber Gruppe B herein, nicht ueber A.
+            //
+            // NUR beim Spielstart. Danach schreibt das Spiel seine eigene Geschichte:
+            // wer einmal drin war, darf bleiben, und in spaeteren Saisons ist ein
+            // Rueckkehrer aus Gruppe A voellig legitim.
+            // ⚠ Verglichen wird ueber den NAMEN, nicht ueber die Kurz-ID. Die Kurz-IDs
+            // sind die ersten sechs Buchstaben des Namens und damit NICHT eindeutig:
+            // 93 von 726 sind mehrdeutig. Ueber d[0] verglichen rutschten genau die
+            // Faelle durch, um die es hier geht — Francois Cevert (+1973) teilt sich
+            // 'FRANCO' mit Francois Migault, der 1974 faehrt; Gerhard Mitter (+1969)
+            // teilt sich 'GERHAR' mit Gerhard Berger; Jackie Stewart teilt 'JACKIE'
+            // mit Jackie Oliver. Der Name ist auch sonst die Identitaet in dieser
+            // Funktion (knownNames, nameToSlug).
+            const _simStart = parseInt(GAME_STATE.templateUsed) || year;
+            let _stillToCome = null;
+            if (year === _simStart) {
+                _stillToCome = new Set();
+                for (const k of Object.keys(SEASON_DATA)) {
+                    const yy = parseInt(k);
+                    if (!yy || yy < _simStart) continue;
+                    const sd = SEASON_DATA[k];
+                    if (sd && sd.d) sd.d.forEach(d => d[1] && _stillToCome.add(d[1].toLowerCase().trim()));
+                }
+            }
+            function careerOk(d) {
+                if (!_stillToCome) return true;
+                return !!d[1] && _stillToCome.has(d[1].toLowerCase().trim());
+            }
             function markKnown(d) {
                 seenHistIds.add(d[0]);
                 if (d[1]) knownNames.add(d[1].toLowerCase().trim());
@@ -9050,7 +9096,7 @@
                 if (!sd || !sd.d) continue;
                 for (const d of sd.d) {
                     if (!d[0] || recentIds.has(d[0])) continue;
-                    if (isKnown(d) || !ageOk(d)) continue;
+                    if (isKnown(d) || !ageOk(d) || !careerOk(d)) continue;
                     markKnown(d);
                     toAdd.push(makeDriver(d, 'A', null, y)); // y = letztes bekanntes Rennjahr
                 }
@@ -9061,7 +9107,7 @@
                 const sdB = SEASON_DATA[String(by)] || SEASON_DATA[by];
                 if (!sdB || !sdB.d) continue;
                 for (const d of sdB.d) {
-                    if (!d[0] || isKnown(d) || !ageOk(d)) continue;
+                    if (!d[0] || isKnown(d) || !ageOk(d) || !careerOk(d)) continue;
                     markKnown(d);
                     toAdd.push(makeDriver(d, 'B', null, by < year ? by : null));
                 }
