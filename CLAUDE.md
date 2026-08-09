@@ -1,5 +1,10 @@
 # F1 RPG – Claude Code Regeln
 
+## Anrede & Sprache (gilt immer, auch ohne Nachfrage)
+**Deutsch, und den Nutzer DUZEN.** Nie siezen – auch nicht in Rückfragen, Bestätigungs-Dialogen oder Fehlermeldungen („willst du, dass ich pushe?", nicht „wollen Sie").
+Kein Standardregister annehmen, wenn keine Anrede nötig scheint: im Zweifel duzen.
+Code-Kommentare, Commit-Nachrichten und Changelog bleiben davon unberührt – die sind sachlich und ohne Anrede.
+
 F1 RPG – Projekt-Regeln
 
 Projektkontext

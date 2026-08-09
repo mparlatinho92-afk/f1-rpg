@@ -27,8 +27,9 @@ node tests/mc-entries-dnq.js 1965 20 --fahrer=Bonnier
 node tests/mc-entries-dnq.js 1965 20 --team=Cooper
 ```
 
-**`--liste` ist der Vollabgleich gegen die Realität** — „1974: 15× Ronnie Peterson,
-46× McLaren" — mit drei Sorten Zeile:
+**Der Abgleich gegen F1DB läuft immer** — je Fahrer und je Konstrukteur, in
+derselben Zeile wie Start/DNQ („1974: 15× Ronnie Peterson, 46× McLaren").
+Drei Sorten Zeile:
 
 | Zeile | Bedeutung |
 |---|---|
@@ -37,8 +38,14 @@ node tests/mc-entries-dnq.js 1965 20 --team=Cooper
 | **nur real** | dieser Fahrer/Konstrukteur **meldet im Spiel gar nicht** |
 
 Zugeordnet wird über `driver.histId` (exakt der F1DB-Slug) und für Teams über die
-Namensnormalisierung aus `dnq-lever-dryrun.js`. Ohne `--liste` erscheint nur eine
-Kurzfassung mit den größten Abweichungen.
+Namensnormalisierung aus `dnq-lever-dryrun.js`. Ohne `--liste` sind die Tabellen auf
+20 Zeilen gekürzt – **„meldet im Spiel NICHT" bleibt aber immer sichtbar**, das ist
+der wichtigste Befund. `--liste` hebt nur die Kürzung auf.
+
+⚠ **Kein „(ohne Team)" erwarten.** Geprüft: von 1380 Meldungen in 1974 hatte **keine
+einzige** kein Team. Taucht die Zeile wieder auf, ist es ein Messfehler im Skript,
+kein Spielbefund – der Kader muss zwischen `simulateRace` und `applyRaceResults`
+eingelesen werden, weil letzteres schon Sitzverluste nachzieht.
 
 - **Meldung = Starter + DNQ + DNPQ.** Wer in der Vor-Quali scheiterte, hat gemeldet. Indy ist überall ausgeschlossen (anderes Starterfeld).
 - `--saisons=N` nutzt exakt die Saison-Übergangskette aus `monte-carlo-multi.js`.
@@ -50,11 +57,48 @@ Für die unkommittete `index.html` statt des letzten Monolithen: `SIMCORE_FROM_I
 
 ## Ausführen
 
+Immer aus dem **Projektordner** starten (`C:\Users\lyric\Documents\F1 RPG HTML`).
+
 ```
 node tests/generate-truth.js
 node tests/monte-carlo.js 1967 50
 node tests/monte-carlo.js 1984 100
 ```
+
+### Welche HTML wird gemessen?
+
+`sim-core.js` lädt standardmäßig den **neuesten Monolithen** `f1-rpg-vX.html` –
+also den zuletzt per `manage-v` gebauten Stand. Um stattdessen die **unkommittete
+`index.html` + `data/*.js`** zu messen, `SIMCORE_FROM_INDEX` setzen.
+
+**PowerShell** (Umgebungsvariablen gehen dort anders als in bash):
+```powershell
+$env:SIMCORE_FROM_INDEX = "1"
+node tests/mc-entries-dnq.js 1974 30 --liste
+
+# wieder abschalten (sonst gilt es für das ganze Fenster):
+$env:SIMCORE_FROM_INDEX = $null
+```
+Einzeiler: `$env:SIMCORE_FROM_INDEX="1"; node tests/monte-carlo.js 1974 50`
+
+**Git Bash / CMD-mit-bash:** `SIMCORE_FROM_INDEX=1 node tests/...`
+
+Die erste Zeile der Ausgabe sagt immer, was geladen wurde:
+`[sim-core] Lade: f1-rpg-v0.9.15.82.html` oder `[sim-core] Lade: index.html + data/*.js`.
+
+### Ergebnisse für Claude ablegen
+
+**Nicht in den Chat kopieren** – als Datei nach `tests/output/` schreiben und Claude
+den Dateinamen nennen; er liest sie direkt. Der Ordner ist in `.gitignore`.
+
+```powershell
+New-Item -ItemType Directory -Force tests/output | Out-Null
+node tests/mc-entries-dnq.js 1974 30 --liste | Tee-Object -FilePath tests/output/mc-1974.txt
+```
+
+`Tee-Object` zeigt die Ausgabe gleichzeitig im Fenster. Wer sie nur in der Datei
+braucht: `| Out-File -Encoding utf8 tests/output/mc-1974.txt`. Bei reinem `>` gehen
+unter Windows die Tabellenlinien kaputt.
 
 ## Kennzahlen im Bericht
 

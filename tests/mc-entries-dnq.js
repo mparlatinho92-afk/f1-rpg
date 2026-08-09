@@ -150,10 +150,15 @@ function runSeason(ctx, simIdx) {
             ctx.simulateQualifying(i, isRain);
             result = ctx.simulateRace(i, isRain);
             if (!result) continue;
+            // Kader ZWISCHEN Rennen und Auswertung einlesen: nach simulateRace steht
+            // die Meldeliste fest, aber applyRaceResults zieht schon die FOLGEN nach
+            // (Vertragsende, Tod, Teamwechsel). Wer danach eingelesen wird, hat sein
+            // Team womoeglich wegen dieses Rennens verloren und landete faelschlich
+            // unter „(ohne Team)" — gemessen 2,6 je Saison 1974 (Jabouille, Redman).
+            refreshRoster();
             ctx.applyRaceResults(result);
         } catch (e) { continue; }
         if (isIndy) continue;
-        refreshRoster();                 // Stand NACH diesem Rennen, s. o.
 
         const starters = result.results || [];
         const dnq = result.dnq || [];
@@ -303,61 +308,53 @@ for (const y of years) {
     for (const key in gT) teamRows.push({ name: gT[key].name, g: gT[key].cars / okSims, r: (gT[key].cid && rT[gT[key].cid] != null) ? rT[gT[key].cid] : null, T: gT[key] });
     for (const id in rT) if (!(id in gT)) teamRows.push({ name: cidName[id] || id, g: null, r: rT[id], T: null });
 
-    if (!LISTE) {
-        // Kurzform: nur die groessten Abweichungen, damit der Bericht lesbar bleibt.
-        const miss = drvRows.filter(x => x.g === null).length;
-        const extra = drvRows.filter(x => x.r === null).length;
-        const both = drvRows.filter(x => x.g !== null && x.r !== null);
-        const off = both.slice().sort((a, b) => Math.abs(b.g - b.r) - Math.abs(a.g - a.r)).slice(0, 6);
-        console.log(`\nABGLEICH ${y} — ${both.length} Fahrer in beiden, ${miss} nur real (melden im Spiel NICHT), ${extra} nur im Spiel`);
-        console.log(`  groesste Abweichungen: ${off.map(x => `${x.name} ${x.g.toFixed(1)}/${x.r}`).join(' · ') || '—'}`);
-        console.log(`  (--liste zeigt die vollstaendige Fahrer- und Teamtabelle)`);
-        continue;
-    }
-
-    const fmtRow = (x, w) => {
-        const g = x.g === null ? '   —' : x.g.toFixed(1).padStart(4);
-        const r = x.r === null ? '   —' : String(x.r).padStart(4);
-        const d = (x.g !== null && x.r !== null) ? ((x.g - x.r >= 0 ? '+' : '') + (x.g - x.r).toFixed(1)).padStart(5) : '    —';
-        const tag = x.g === null ? ' ← meldet im Spiel NICHT' : x.r === null ? ' ← nur im Spiel' : '';
-        return `${x.name.padEnd(w).slice(0, w)} │ ${g} │ ${r} │ ${d}${tag}`;
-    };
+    // EINE Tabelle statt zweier: der Real-Vergleich steht in derselben Zeile wie
+    // Start/DNQ. Frueher lagen die auffaelligen Fahrer-/Teamtabellen ohne real-Spalte
+    // vorn und der Abgleich in einer leicht zu ueberlesenden Zeile — dadurch sah es
+    // aus, als gaebe es gar keinen Vergleich.
     const bySize = (a, b) => (b.r ?? -1) - (a.r ?? -1) || (b.g ?? -1) - (a.g ?? -1);
+    const dText = x => (x.g !== null && x.r !== null)
+        ? ((x.g - x.r >= 0 ? '+' : '') + (x.g - x.r).toFixed(1)).padStart(5) : '    —';
+    const tag = x => x.g === null ? ' ← meldet im Spiel NICHT' : x.r === null ? ' ← nur im Spiel' : '';
+    // Ohne --liste gekuerzt, aber „meldet im Spiel NICHT" bleibt IMMER sichtbar —
+    // das ist der wichtigste Befund und darf nicht der Kuerzung zum Opfer fallen.
+    const cut = rows => {
+        if (LISTE) return rows;
+        const keep = rows.filter(x => x.g === null);
+        const rest = rows.filter(x => x.g !== null).slice(0, 20);
+        return rows.filter(x => keep.includes(x) || rest.includes(x));
+    };
 
-    console.log(`\nFAHRER-MELDUNGEN ${y} — Spiel (Ø ${okSims} Sims) gegen real`);
-    console.log('Fahrer                    │ Sp.  │ real │   Δ');
-    console.log('─'.repeat(72));
-    drvRows.sort(bySize).forEach(x => console.log(fmtRow(x, 25)));
+    console.log(`\nFAHRER-MELDUNGEN ${y} — Spiel (Ø ${okSims} Sims) gegen F1DB`);
+    console.log('Fahrer                    │ Spiel │ real │   Δ   │ Start │  DNQ │ DNPQ');
+    console.log('─'.repeat(92));
+    drvRows.sort(bySize);
+    cut(drvRows).forEach(x => {
+        const D = x.D;
+        console.log(`${x.name.padEnd(25).slice(0, 25)} │ ${x.g === null ? '    —' : f1(x.g)} │ ${x.r === null ? '   —' : String(x.r).padStart(4)} │ ${dText(x)} │ ` +
+            `${D ? f1(D.starts / okSims) : '    —'} │ ${D ? f1(D.dnq / okSims, 4) : '   —'} │ ${D ? f1(D.dnpq / okSims, 4) : '   —'}${tag(x)}`);
+    });
+    if (!LISTE && drvRows.filter(x => x.g !== null).length > 20)
+        console.log(`  … ${drvRows.filter(x => x.g !== null).length - 20} weitere — vollstaendig mit --liste`);
 
-    console.log(`\nKONSTRUKTEUR-MELDUNGEN ${y} (Wagen ueber die Saison) — Spiel gegen real`);
-    console.log('Konstrukteur              │ Sp.  │ real │   Δ');
-    console.log('─'.repeat(72));
-    teamRows.sort(bySize).forEach(x => console.log(fmtRow(x, 25)));
+    console.log(`\nKONSTRUKTEUR-MELDUNGEN ${y} (Wagen ueber die Saison) — Spiel gegen F1DB`);
+    console.log('Konstrukteur              │ Spiel │ real │   Δ   │ Rennen │ Ø Autos │  DNQ');
+    console.log('─'.repeat(92));
+    teamRows.sort(bySize);
+    cut(teamRows).forEach(x => {
+        const T = x.T;
+        console.log(`${x.name.padEnd(25).slice(0, 25)} │ ${x.g === null ? '    —' : f1(x.g)} │ ${x.r === null ? '   —' : String(x.r).padStart(4)} │ ${dText(x)} │ ` +
+            `${T ? f1(T.raceEntries / okSims, 6) : '     —'} │ ${T ? f1(T.raceEntries ? T.cars / T.raceEntries : 0, 7) : '      —'} │ ${T ? f1(T.dnq / okSims, 4) : '   —'}${tag(x)}`);
+    });
+    if (!LISTE && teamRows.filter(x => x.g !== null).length > 20)
+        console.log(`  … ${teamRows.filter(x => x.g !== null).length - 20} weitere — vollstaendig mit --liste`);
 
     const sum = (rows, k) => rows.reduce((s, x) => s + (x[k] ?? 0), 0);
+    const miss = drvRows.filter(x => x.g === null).length, extra = drvRows.filter(x => x.r === null).length;
     console.log(`\nSumme ${y}: Fahrer-Meldungen Spiel ${sum(drvRows, 'g').toFixed(0)} / real ${sum(drvRows, 'r')}` +
                 ` · Konstrukteur-Wagen Spiel ${sum(teamRows, 'g').toFixed(0)} / real ${sum(teamRows, 'r')}`);
+    console.log(`         ${drvRows.length - miss - extra} Fahrer in beiden · ${miss} nur real · ${extra} nur im Spiel`);
 }
-
-console.log(`\nFAHRER — Top 15 nach Meldungen (Ø je Sim, ${okSims} Sims, alle Saisons)`);
-console.log('Fahrer                    │ Meld │ Start │  DNQ │ DNPQ │ DNQ-Quote │ Teams');
-console.log('─'.repeat(86));
-const aggD = {};
-for (const k in perDriver) { const D = perDriver[k]; const A = aggD[D.name] = aggD[D.name] || { ent: 0, starts: 0, dnq: 0, dnpq: 0, teams: new Set() };
-    A.ent += D.ent; A.starts += D.starts; A.dnq += D.dnq; A.dnpq += D.dnpq; D.teams.forEach(t => A.teams.add(t)); }
-Object.entries(aggD).sort((a, b) => b[1].ent - a[1].ent).slice(0, 15).forEach(([nm, D]) => {
-    console.log(`${nm.padEnd(25).slice(0, 25)} │ ${f1(D.ent / okSims, 4)} │ ${f1(D.starts / okSims, 5)} │ ${f1(D.dnq / okSims, 4)} │ ${f1(D.dnpq / okSims, 4)} │ ${pc(D.dnq + D.dnpq, D.ent).padStart(9)} │ ${[...D.teams].slice(0, 2).join(', ')}`);
-});
-
-console.log(`\nTEAMS — nach Meldungen (Ø je Sim, alle Saisons)`);
-console.log('Team                      │ Rennen │ Ø Autos │ Meld │  DNQ │ DNQ-Quote');
-console.log('─'.repeat(78));
-const aggT = {};
-for (const k in perTeam) { const T = perTeam[k]; const A = aggT[T.name] = aggT[T.name] || { raceEntries: 0, cars: 0, dnq: 0, dnpq: 0 };
-    A.raceEntries += T.raceEntries; A.cars += T.cars; A.dnq += T.dnq; A.dnpq += T.dnpq; }
-Object.entries(aggT).sort((a, b) => b[1].cars - a[1].cars).slice(0, 20).forEach(([nm, T]) => {
-    console.log(`${nm.padEnd(25).slice(0, 25)} │ ${f1(T.raceEntries / okSims, 6)} │ ${f1(T.raceEntries ? T.cars / T.raceEntries : 0, 7)} │ ${f1(T.cars / okSims, 4)} │ ${f1(T.dnq / okSims, 4)} │ ${pc(T.dnq + T.dnpq, T.cars).padStart(9)}`);
-});
 
 // ── Einzelauswahl ───────────────────────────────────────────────────────────
 if (FAHRER || TEAM) {
