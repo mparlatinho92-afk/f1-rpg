@@ -136,7 +136,12 @@ function runSeason(ctx, simIdx) {
             tKeyOf[t.id] = nameToCid[normId(t.histId)] || nameToCid[normId(t.name)] || null;
         }
         for (const d of (ctx.GAME_STATE.drivers || [])) {
-            dName[d.id] = d.name; dHist[d.id] = d.histId || null; dTeam[d.id] = d.team || null;
+            dName[d.id] = d.name; dTeam[d.id] = d.team || null;
+            // histId KLEINSCHREIBEN vor dem Abgleich: im Spiel steht „john-Watson"
+            // mit grossem W, f1db kennt nur „john-watson". Ohne das erschien Watson
+            // gleichzeitig als „meldet im Spiel NICHT" (real 15) UND als „nur im
+            // Spiel" (14,1) — derselbe Fahrer auf beiden Seiten der Tabelle.
+            dHist[d.id] = d.histId ? String(d.histId).toLowerCase() : null;
         }
     };
 
