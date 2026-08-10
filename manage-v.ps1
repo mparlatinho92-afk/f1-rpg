@@ -4,6 +4,18 @@
     [Parameter(Mandatory=$false)] [string]$ChangelogPoints = ""
 )
 
+# 0. Zeichenkodierung pruefen (Riegel, v0.9.15.86)
+# In data/seasons.js standen jahrelang "Pedro Rodriguez" und "Francois Mazet" als
+# UTF-8-Bytes, die einmal als Latin-1 gelesen worden waren. Der Fehler ist still - das
+# Spiel laeuft, nur der Name ist falsch - und wanderte ueber die Templates in jeden
+# Spielstand. Ueber den Namen laeuft die histId-Aufloesung, deshalb bricht ein falscher
+# Name mehr als nur die Anzeige. Ein Fund bricht die Auslieferung ab.
+& node tools/check-encoding.js
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Abbruch: Zeichenkodierung reparieren, dann erneut ausfuehren." -ForegroundColor Red
+    exit 1
+}
+
 # 1. Aktuellste f1-rpg-v*.html finden
 $OldFile = Get-ChildItem f1-rpg-v*.html | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 $NewFileName = "f1-rpg-v$NewVersion.html"

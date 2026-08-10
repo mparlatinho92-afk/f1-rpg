@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.85</title>
+    <title>F1 RPG v0.9.15.86</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.85 (aktuell) - 10.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.86 (aktuell) - 10.08.2026</div>
+                            <div>&#8226; FIX: Teams die mitten im Spiel einsteigen bekommen eine normale Kennung (LOT statt ent_LOT_1958) - das Praefix hatte keinen Zweck</div>
+                            <div>&#8226; NEU: Vor jeder Auslieferung wird die Zeichenkodierung aller Datendateien geprueft - falsch kodierte Namen wie Pedro Rodriguez koennen nicht mehr ins Spiel gelangen</div>
+                            <div>&#8226; FIX: Falsch kodierte Namen werden beim Aufbau einer Saison repariert, bevor die Fahrer-Kennung daraus abgeleitet wird</div>
+                            <div class="font-bold text-slate-400">v0.9.15.85 - 10.08.2026</div>
                             <div>&#8226; FIX: In Wertungen, Renn-Raster und Karriere-Historie stand die interne Team-Kennung statt des Namens (ent_ZAK_1985 statt Zakspeed)</div>
                             <div>&#8226; FIX: Saisonverlauf zeigte in betroffenen Jahren ein leeres Raster - die WM-Tabelle wird jetzt aus den Rennergebnissen neu gerechnet</div>
                             <div>&#8226; FIX: Karriere-Historie zeigte 0 Starts und 0 Punkte fuer Saisons, in denen der Fahrer Rennen gewann</div>
@@ -3472,7 +3476,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.85';
+        const VERSION = '0.9.15.86';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3848,7 +3852,7 @@
             }
             const detail = migrateHistoryDetail(y, await idbHistDetailGet(y));
             // Zeichenfehler aus Alt-Ständen auch in der lazy geladenen Historie reparieren
-            // (v0.9.15.85) — sonst bleibt „Pedro RodrÃ­guez" in jeder Rückblick-Ansicht stehen.
+            // (v0.9.15.85) — sonst bleibt der falsch dekodierte Name in jeder Rückblick-Ansicht.
             if (detail) repairNamesInPlace(detail);
             _histDetailCache.set(y, detail);
             while (_histDetailCache.size > HIST_DETAIL_CACHE_MAX) {
@@ -7495,7 +7499,11 @@
                         id: d[0],
                         histId: resolvedHistId,  // Slug für PACE_RATINGS-Lookup
                         isIndyOnly: isIndyOnlyDriver(resolvedHistId),
-                        name: d[1], team: d[2], nation: d[3],
+                        // repairMojibake als Laufzeit-Sperre (v0.9.15.86): ein falsch
+                        // kodierter Template-Name soll gar nicht erst in einen neuen
+                        // Spielstand wandern. tools/check-encoding.js fängt es schon vor
+                        // dem Build ab — das hier ist die zweite Reihe.
+                        name: repairMojibake(d[1]), team: d[2], nation: d[3],
                         number: (idx + 1) * 2,
                         birthYear: d[4] || null,
                         // v0.8.6: Echtes Debütjahr aus HIST_DRIVERS, nicht Sim-Startjahr
@@ -7695,9 +7703,11 @@
         }
 
         // === ZEICHENFEHLER REPARIEREN (v0.9.15.85) ===
-        // „Pedro RodrÃ­guez" statt „Pedro Rodríguez": UTF-8-Bytes, die einmal als Latin-1
-        // gelesen wurden. Die Quelle in data/seasons.js ist behoben, aber bestehende
-        // Spielstände tragen den kaputten Namen weiter (13 Treffer in einem 1994er-Stand).
+        // UTF-8-Bytes, die einmal als Latin-1 gelesen wurden: aus „Pedro Rodríguez" wird
+        // „Pedro Rodr" + C3 AD + „guez". Die Quelle in data/seasons.js ist behoben, aber
+        // bestehende Spielstände tragen den kaputten Namen weiter (13 Treffer in einem
+        // 1994er-Stand). Die kaputte Folge steht hier ABSICHTLICH nicht wörtlich im Text —
+        // tools/check-encoding.js würde sonst auf den eigenen Kommentar anschlagen.
         //
         // Rückweg: Zeichen als Bytes lesen und erneut als UTF-8 dekodieren. Drei Sicherungen,
         // damit kein korrekter Name zerschossen wird:
@@ -9169,7 +9179,11 @@
                 }
             }
             function makeDriver(d, poolGroup, nextCockpit, lastRacedYear) {
-                const [shortId, name, teamId, nation, birthYear, pace, rain, consistency, experience, starts] = d;
+                const [shortId, _rawName, teamId, nation, birthYear, pace, rain, consistency, experience, starts] = d;
+                // VOR dem Slug-Lookup reparieren (v0.9.15.86): ein falsch kodierter Name
+                // findet seinen HIST_NAMES-Eintrag nicht und fiele auf die Kurz-ID zurück —
+                // genau so bekam Pedro Rodriguez die histId 'PEDROR' statt 'pedro-rodriguez'.
+                const name = repairMojibake(_rawName);
                 if (!name) return null; // Einträge ohne Namen überspringen (verhindert ID als Anzeigename)
                 // SEASON_DATA nutzt Kurzform-IDs ('NINOFA'), HIST_SEASONS nutzt Slugs ('nino-farina')
                 // → Name-Lookup für korrekten histId
@@ -18111,7 +18125,23 @@
             let entered = 0;
             sd.t.forEach(([sdId, sdName, sdColor, sdPace, sdRain, sdCons]) => {
                 if (existingNames.has(sdName)) return;
-                const newTeamId = `ent_${sdId}_${newYear}`;
+                // === KEIN `ent_`-PRÄFIX MEHR (v0.9.15.86) ===
+                // Bis .85 hieß ein mid-season eingestiegenes Team `ent_LOT_1958`. In einem
+                // 1950 gestarteten Spielstand kommt praktisch JEDES Team so herein — 15–18
+                // von ~20 Teams je Saison — und die Roh-ID stand dann in Wertungen, Renn-
+                // listen und Karriere-Historie. Einen fachlichen Grund für das Präfix gab es
+                // nicht: die Dublettenprüfung läuft über den NAMEN (existingNames), die ID
+                // muss lediglich eindeutig sein.
+                // Jetzt der SEASON_DATA-Kurzkey wie bei Teams des Startjahres; nur bei echter
+                // Kollision (Wiedereinstieg unter gleichem Kürzel, anderer Name) wird das Jahr
+                // angehängt. Alte Spielstände behalten ihre `ent_`-IDs — dafür bleibt
+                // teamDisplayName als Netz stehen.
+                let newTeamId = sdId;
+                if (GAME_STATE.teams.some(t => t.id === newTeamId)) {
+                    newTeamId = `${sdId}_${newYear}`;
+                    let n = 2;
+                    while (GAME_STATE.teams.some(t => t.id === newTeamId)) newTeamId = `${sdId}_${newYear}_${n++}`;
+                }
                 const newTeam = {
                     id:          newTeamId,
                     name:        sdName,
