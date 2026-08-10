@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.86</title>
+    <title>F1 RPG v0.9.15.87</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.86 (aktuell) - 10.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.87 (aktuell) - 11.08.2026</div>
+                            <div>&#8226; FIX: Ein unsichtbares Steuerzeichen in einer Zeichenklasse verhinderte, dass das Spiel-Skript ueberhaupt startete - die Oberflaeche blieb leer und zeigte eine uralte Versionsnummer. Betraf v0.9.15.85 und .86</div>
+                            <div>&#8226; NEU: Die Auslieferungspruefung erkennt jetzt auch Steuerzeichen im Quelltext, nicht nur falsche Zeichenkodierung</div>
+                            <div class="font-bold text-slate-400">v0.9.15.86 - 10.08.2026</div>
                             <div>&#8226; FIX: Teams die mitten im Spiel einsteigen bekommen eine normale Kennung (LOT statt ent_LOT_1958) - das Praefix hatte keinen Zweck</div>
                             <div>&#8226; NEU: Vor jeder Auslieferung wird die Zeichenkodierung aller Datendateien geprueft - falsch kodierte Namen wie Pedro Rodriguez koennen nicht mehr ins Spiel gelangen</div>
                             <div>&#8226; FIX: Falsch kodierte Namen werden beim Aufbau einer Saison repariert, bevor die Fahrer-Kennung daraus abgeleitet wird</div>
@@ -3476,7 +3479,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.86';
+        const VERSION = '0.9.15.87';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -7716,7 +7719,7 @@
         //   3. `fatal: true` → ungültige Bytefolgen werfen, das Original bleibt stehen
         function repairMojibake(s) {
             if (typeof s !== 'string' || !/[ÂÃ]/.test(s)) return s;
-            if (/[^ -ÿ]/.test(s)) return s;
+            if (/[^\u0000-\u00FF]/.test(s)) return s;
             // Bewusst OHNE TextDecoder: der fehlt in der Test-Umgebung (tests/sim-core.js),
             // die Ausnahme wurde still geschluckt und der Fix wäre ungeprüft geblieben.
             let out = '', i = 0;
