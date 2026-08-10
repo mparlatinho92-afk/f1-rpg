@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.84</title>
+    <title>F1 RPG v0.9.15.85</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.84 (aktuell) - 09.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.85 (aktuell) - 10.08.2026</div>
+                            <div>&#8226; FIX: In Wertungen, Renn-Raster und Karriere-Historie stand die interne Team-Kennung statt des Namens (ent_ZAK_1985 statt Zakspeed)</div>
+                            <div>&#8226; FIX: Saisonverlauf zeigte in betroffenen Jahren ein leeres Raster - die WM-Tabelle wird jetzt aus den Rennergebnissen neu gerechnet</div>
+                            <div>&#8226; FIX: Karriere-Historie zeigte 0 Starts und 0 Punkte fuer Saisons, in denen der Fahrer Rennen gewann</div>
+                            <div>&#8226; FIX: Falsch geschriebene Namen wie Pedro Rodriguez werden beim Laden repariert</div>
+                            <div>&#8226; FIX: Rennergebnis-Fenster zeigt wieder die Flagge der jeweiligen Epoche</div>
+                            <div class="font-bold text-slate-400">v0.9.15.84 - 09.08.2026</div>
                             <div>&#8226; NEU: 17 fehlende Konstrukteure ergaenzt - Trojan, Theodore, Penske, Scarab, Fondmetal und andere koennen erstmals melden</div>
                             <div>&#8226; FIX: 116 Fahrer standen beim falschen Team - jetzt bei dem Rennstall, fuer den sie die meisten Rennen fuhren (Tim Schenken 1974 bei Trojan statt Lotus)</div>
                             <div>&#8226; FIX: Meldeueberschuss 1974 von +2,0 auf +1,1 Autos je Rennen gesunken</div>
@@ -3466,7 +3472,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.84';
+        const VERSION = '0.9.15.85';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -3841,6 +3847,9 @@
                 return v;
             }
             const detail = migrateHistoryDetail(y, await idbHistDetailGet(y));
+            // Zeichenfehler aus Alt-Ständen auch in der lazy geladenen Historie reparieren
+            // (v0.9.15.85) — sonst bleibt „Pedro RodrÃ­guez" in jeder Rückblick-Ansicht stehen.
+            if (detail) repairNamesInPlace(detail);
             _histDetailCache.set(y, detail);
             while (_histDetailCache.size > HIST_DETAIL_CACHE_MAX) {
                 _histDetailCache.delete(_histDetailCache.keys().next().value);  // ältesten verdrängen
@@ -7685,10 +7694,115 @@
             return changed > 0;
         }
 
+        // === ZEICHENFEHLER REPARIEREN (v0.9.15.85) ===
+        // „Pedro RodrÃ­guez" statt „Pedro Rodríguez": UTF-8-Bytes, die einmal als Latin-1
+        // gelesen wurden. Die Quelle in data/seasons.js ist behoben, aber bestehende
+        // Spielstände tragen den kaputten Namen weiter (13 Treffer in einem 1994er-Stand).
+        //
+        // Rückweg: Zeichen als Bytes lesen und erneut als UTF-8 dekodieren. Drei Sicherungen,
+        // damit kein korrekter Name zerschossen wird:
+        //   1. nur bei vorhandenem Ã/Â anfassen
+        //   2. nur wenn ALLE Zeichen ≤ 0xFF sind (sonst wäre die Byte-Sicht falsch)
+        //   3. `fatal: true` → ungültige Bytefolgen werfen, das Original bleibt stehen
+        function repairMojibake(s) {
+            if (typeof s !== 'string' || !/[ÂÃ]/.test(s)) return s;
+            if (/[^ -ÿ]/.test(s)) return s;
+            // Bewusst OHNE TextDecoder: der fehlt in der Test-Umgebung (tests/sim-core.js),
+            // die Ausnahme wurde still geschluckt und der Fix wäre ungeprüft geblieben.
+            let out = '', i = 0;
+            while (i < s.length) {
+                const b = s.charCodeAt(i);
+                if (b < 0x80) { out += s[i++]; continue; }
+                let n, cp;
+                if (b >= 0xC2 && b <= 0xDF)      { n = 1; cp = b & 0x1F; }
+                else if (b >= 0xE0 && b <= 0xEF) { n = 2; cp = b & 0x0F; }
+                else if (b >= 0xF0 && b <= 0xF4) { n = 3; cp = b & 0x07; }
+                else return s;                                   // ungültiges Startbyte
+                if (i + n >= s.length) return s;                 // abgeschnittene Folge
+                for (let k = 1; k <= n; k++) {
+                    const c = s.charCodeAt(i + k);
+                    if ((c & 0xC0) !== 0x80) return s;            // kein Folgebyte
+                    cp = (cp << 6) | (c & 0x3F);
+                }
+                out += String.fromCodePoint(cp);
+                i += n + 1;
+            }
+            return out;
+        }
+        // === WM-TABELLE AUS DEN RENNERGEBNISSEN NEU RECHNEN (v0.9.15.85) ===
+        // Fahrer-IDs tragen ihren Erzeugungszeitpunkt. Werden Fahrerobjekte neu erzeugt,
+        // kann die archivierte Tabelle einer Saison zu einer ANDEREN Fahrer-Population
+        // gehören als deren Rennergebnisse. Gemessen an einem 1994er-Spielstand: 1967–1974
+        // hatten NULL Übereinstimmung, alle übrigen 36 Saisons 95–100 %.
+        //
+        // Eine Namens-Brücke reicht dort nicht — die betroffenen Fahrer stehen in der Tabelle
+        // schlicht nicht drin (Ronnie Peterson gewann 1970 zwei Rennen und fehlte ganz).
+        // Die Ergebnisse sind aber vollständig, also wird die Tabelle daraus neu gerechnet.
+        // Gegenprobe an 1970: alle 13 Sieger gehen auf, Rodríguez 3 Siege, Peterson 2 aus 8.
+        //
+        // Greift NUR bei null Überschneidung — eine intakte Saison bleibt unberührt.
+        function rebuiltStandingsIfBroken(results, drivers, standings) {
+            if (!Array.isArray(results) || !results.length) return standings;
+            const keys = new Set(Object.keys(standings || {}));
+            if (!keys.size) return standings;
+            let total = 0, hit = 0;
+            for (const r of results) for (const x of (r.res || r.results || [])) {
+                total++; if (keys.has(x.d ?? x.driver)) hit++;
+            }
+            if (!total || hit > 0) return standings;          // passt zusammen → nichts tun
+            const nameOf = {};
+            (drivers || []).forEach(d => { if (d && d.id) nameOf[d.id] = d.name; });
+            const acc = {};
+            for (const r of results) for (const x of (r.res || r.results || [])) {
+                const id = x.d ?? x.driver; if (!id) continue;
+                const a = acc[id] = acc[id] || { name: nameOf[id] || id, team: null, points: 0,
+                    wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, races: 0,
+                    bestFinish: null, totalPositions: 0, finishes: 0 };
+                const p = x.p ?? x.position;
+                const dnf = x.dnf === 1 || x.dnf === true;
+                a.races++;
+                a.points += (x.pt ?? x.points) || 0;
+                if (x.fl) a.fastestLaps++;
+                if (dnf) a.dnfs++;
+                else if (p) {
+                    a.finishes++; a.totalPositions += p;
+                    if (a.bestFinish == null || p < a.bestFinish) a.bestFinish = p;
+                    if (p === 1) a.wins++;
+                    if (p <= 3) a.podiums++;
+                }
+                // Teamname statt Team-ID — teamDisplayName lässt Klartext unverändert durch.
+                if (x.tmn || x.teamName) a.team = x.tmn || x.teamName;
+            }
+            return acc;
+        }
+
+        // Repariert die Namensfelder eines Saison- oder Spielstands-Ausschnitts in-place.
+        function repairNamesInPlace(obj) {
+            if (!obj || typeof obj !== 'object') return 0;
+            let n = 0;
+            const fixList = arr => (arr || []).forEach(d => {
+                if (d && typeof d.name === 'string') { const f = repairMojibake(d.name); if (f !== d.name) { d.name = f; n++; } }
+            });
+            fixList(obj.drivers); fixList(obj.reservePool); fixList(obj.teams);
+            for (const s of Object.values(obj.driverStandings || {})) {
+                if (s && typeof s.name === 'string') { const f = repairMojibake(s.name); if (f !== s.name) { s.name = f; n++; } }
+            }
+            for (const k of ['champion', 'teamChampion']) {
+                if (typeof obj[k] === 'string') { const f = repairMojibake(obj[k]); if (f !== obj[k]) { obj[k] = f; n++; } }
+            }
+            return n;
+        }
+
         function sanitizeGameState(state) {
             if (!state) return state;
-            
+
             const sanitized = { ...state };
+            // Zeichenfehler aus Alt-Ständen reparieren (live + bereits geladene Historie)
+            {
+                let _mj = repairNamesInPlace(sanitized);
+                for (const h of (sanitized.history || [])) _mj += repairNamesInPlace(h);
+                if (_mj) logInfo('SANITIZE', `${_mj} Namen mit kaputter Zeichenkodierung repariert`);
+            }
             const oldVersion = sanitized.version || '0.0.0';
             let migrationCount = 0;
             
@@ -23105,6 +23219,36 @@
             return null;
         }
 
+        // === ANZEIGENAME FÜR EINEN TEAM-WERT, DER EINE ID SEIN KANN (v0.9.15.85) ===
+        // Mehrere Stellen speichern den Teamnamen mit Rückfall auf die Team-ID
+        // (`x.teamName || x.team`). Für mid-season eingestiegene Teams ist diese ID
+        // aber `ent_<SD-Key>_<Jahr>` — und die stand dann roh in der Ergebnisliste:
+        // „ent_ZAK_1985" statt „Zakspeed", „ent_DAL_1988" statt „Dallara".
+        //
+        // Reihenfolge bewusst: erst das LEBENDE Team (dessen `name` ist die Wahrheit,
+        // applyTeamEntryExit setzt ihn korrekt), dann SEASON_DATA für längst
+        // aufgelöste Teams, zuletzt der Rohwert — lieber eine ID als eine leere Zelle.
+        // Klartext-Namen laufen unverändert durch, der Test greift nur bei `ent_`.
+        function teamDisplayName(v) {
+            const s = String(v || '');
+            if (!s) return '';
+            // Zwei ID-Formen, beide stehen in driverStandings[].team und teamStandings:
+            //   `ent_<Key>_<Jahr>` — mid-season eingestiegenes Team
+            //   `FER` / `KUR`      — SEASON_DATA-Kurzkey (2–4 Grossbuchstaben)
+            // In einem 1950 gestarteten Spielstand sind 15–18 von ~20 Teams je Saison
+            // `ent_`-Teams, weil praktisch jedes Team spaeter dazukam — deshalb stand die
+            // Roh-ID in JEDEM Jahr in Fahrerwertung, Matrix und Karriere-Historie.
+            const isEnt = /^ent_.+_\d{4}$/i.test(s);
+            const isKey = /^[A-Z0-9]{2,4}$/.test(s);
+            if (!isEnt && !isKey) return s;                     // Klartextname → unveraendert
+            const live = (GAME_STATE.teams || []).find(t => t.id === s);
+            if (live && live.name) return live.name;
+            // Beim Kurzkey NUR aufloesen, wenn er wirklich als SEASON_DATA-Key existiert.
+            // Sonst wuerden echte Kurznamen (BRM, ATS, AGS, ERA) zerschossen — die geben
+            // ueber diesen Weg ohnehin sich selbst zurueck, ein Treffer schadet also nicht.
+            return seasonDataTeamName(isEnt ? unpackEnteredTeamId(s) : s) || s;
+        }
+
         // Einheitlicher Team-Slug: Leerzeichen → '-', Satzzeichen weg ("O.S.C.A." → "osca")
         function teamSlug(s) {
             return String(s || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -23210,6 +23354,11 @@
         // Sehr helle Primärfarbe (wäre unsichtbar auf hellem BG) → Akzentfarbe (letzter Array-Eintrag) als Fallback
         // text-shadow Rand: schwarz bei hellen Farben, weiß bei dunklen – Opacity moderat damit kein Box-Effekt
         function renderTeamNameColored(name, teamId, year, baseColor, onclickAttr) {
+            // EINE zentrale Auflösung statt drei Pflaster: mehrere Aufrufer übergeben als
+            // `name` eine Team-ID, weil die Wertungen nur die ID führen —
+            // Fahrerwertung, Saisonverlauf-Matrix und Karriere-Historie (v0.9.15.85).
+            // Klartextnamen laufen unverändert durch.
+            name = teamDisplayName(name);
             const _lum = c => { if (!c||c.length<7) return 0.5; const r=parseInt(c.slice(1,3),16)/255,g=parseInt(c.slice(3,5),16)/255,b=parseInt(c.slice(5,7),16)/255; return 0.299*r+0.587*g+0.114*b; };
             const colors = getTeamColors(teamId || '', year, baseColor) || [baseColor];
             const primary = colors[0] || '#888';
@@ -23626,13 +23775,33 @@
             // Für aktive Saisons: F1DB-Renndaten für korrekte Flaggen/Namen in der Matrix
             const matrixYear = isHistorical ? viewingHistoricalYear : GAME_STATE.currentYear;
             const f1dbMatrixRaces = null; // Index-Mismatch 1961+: Spiel-Reihenfolge ≠ F1DB → game races nutzen
-            const driverStandingsData = isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings;
             const driversList = isHistorical ? (historicalViewData.drivers || []) : GAME_STATE.drivers;
+            // Tabelle notfalls aus den Ergebnissen neu rechnen (s. rebuiltStandingsIfBroken).
+            // Ohne das blieb das Raster in den betroffenen Saisons komplett leer.
+            const driverStandingsData = rebuiltStandingsIfBroken(
+                results, driversList,
+                isHistorical ? historicalViewData.driverStandings : GAME_STATE.driverStandings);
             
             if (results.length === 0) {
                 return '<p class="text-tertiary text-center p-8">Noch keine Rennen absolviert</p>';
             }
             
+            // === IDENTITÄTS-BRÜCKE ÜBER DEN NAMEN (v0.9.15.85) ===
+            // Fahrer-IDs tragen ihren Erzeugungszeitpunkt (`reserve-PEDROR-1786033747442-411`).
+            // Werden Fahrerobjekte neu erzeugt, laufen die IDs in den ARCHIVIERTEN Rennergebnissen
+            // und in der Tabelle DERSELBEN Saison auseinander. Gemessen an einem 1994er-Spielstand:
+            // 1967–1974 hatten 0 % Übereinstimmung, alle übrigen 36 Saisons 95–100 %. Folge waren
+            // ein komplett leeres Renn-Raster und eine Fahrerliste, die nur noch Punktesammler zeigte
+            // (ohne Treffer bleibt `points > 0` als einziges Filterkriterium).
+            //
+            // Beide Seiten führen aber den NAMEN — der ist die stabile Klammer. Die Roh-ID bleibt
+            // als erster Vergleich stehen, damit intakte Saisons unverändert laufen.
+            const _mxCanonOf = {};                     // Ergebnis-ID → Namensschlüssel
+            (driversList || []).forEach(dr => {
+                if (dr && dr.id) _mxCanonOf[dr.id] = String(dr.name || dr.id).toLowerCase().trim();
+            });
+            const _mxCanon = id => _mxCanonOf[id] || String(id || '').toLowerCase().trim();
+
             // Fahrer die in mind. 1 Rennen erscheinen (Filter: Testfahrer/Ersatzfahrer ohne Ergebnis)
             const activeInResults = new Set();
             // Starts + Positionssumme pro Fahrer für Tiebreaker
@@ -23641,11 +23810,12 @@
             results.forEach(r => {
                 (r.res || r.results || []).forEach(res => {
                     const did = res.d || res.driver;
-                    activeInResults.add(did);
+                    const key = _mxCanon(did);
+                    activeInResults.add(did); activeInResults.add(key);
                     const pos = res.p || res.position;
                     if (pos && pos < 90 && !res.dnf) { // echte Platzierung (kein DNF, keine Platzhalter)
-                        driverStarts[did] = (driverStarts[did] || 0) + 1;
-                        driverPosSum[did] = (driverPosSum[did] || 0) + pos;
+                        driverStarts[key] = (driverStarts[key] || 0) + 1;
+                        driverPosSum[key] = (driverPosSum[key] || 0) + pos;
                     }
                 });
             });
@@ -23659,17 +23829,21 @@
                     const tName = res.teamName || (res.tmn ? formatConstructorName(res.tmn) : null);
                     if (!did || !tName) return;
                     const tId = res.team || res.tmn || null;
-                    if (!_mxTeams[did]) _mxTeams[did] = new Map();
-                    _mxTeams[did].set(tId || tName, { id: tId, name: tName });
+                    const key = _mxCanon(did);          // s. Identitäts-Brücke oben
+                    if (!_mxTeams[key]) _mxTeams[key] = new Map();
+                    _mxTeams[key].set(tId || tName, { id: tId, name: tName });
                 });
             });
 
             const driverStandings = Object.entries(driverStandingsData || {})
                 .map(([id, s]) => {
                     const resolvedName = (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) || s.name || id;
-                    const starts = driverStarts[id] || 0;
-                    const avgPos = starts > 0 ? driverPosSum[id] / starts : 999;
-                    return { id, ...s, name: resolvedName, _starts: starts, _avgPos: avgPos };
+                    // Über den Namen suchen, falls die Tabellen-ID nicht zur Ergebnis-ID passt
+                    const _ck = String(s.name || resolvedName || id).toLowerCase().trim();
+                    const starts = driverStarts[id] || driverStarts[_ck] || 0;
+                    const posSum = driverPosSum[id] || driverPosSum[_ck] || 0;
+                    const avgPos = starts > 0 ? posSum / starts : 999;
+                    return { id, ...s, name: resolvedName, _canon: _ck, _starts: starts, _avgPos: avgPos };
                 })
                 .filter(d => {
                     // Privateer ohne firstRaceEntry: noch nie gemeldet → keine Matrix-Zeile
@@ -23677,7 +23851,7 @@
                         const gd = GAME_STATE.drivers.find(dr => dr.id === d.id);
                         if (gd?.isPrivateer && gd.firstRaceEntry === undefined) return false;
                     }
-                    return d.points > 0 || activeInResults.has(d.id)
+                    return d.points > 0 || activeInResults.has(d.id) || activeInResults.has(d._canon)
                         || (!isHistorical && GAME_STATE.drivers.some(gd => gd.id === d.id));
                 })
                 .sort(getDriverSortFn());
@@ -23761,7 +23935,8 @@
                             ${driverStandings.map((d, dIdx) => {
                                 const driver = driversList.find(dr => dr.id === d.id);
                                 // Fahrerspalte: Platz + Flagge + Name + Team (mobil zweizeilig, s. .matrix-drv-*)
-                                const _mxTeamList = _mxTeams[d.id] ? [..._mxTeams[d.id].values()] : [];
+                                const _mxTeamSrc = _mxTeams[d.id] || _mxTeams[d._canon];
+                                const _mxTeamList = _mxTeamSrc ? [..._mxTeamSrc.values()] : [];
                                 const _mxTeamCell = _mxTeamList.length
                                     ? _mxTeamList.map(t => renderTeamNameColored(t.name, t.id, matrixYear, null)).join('<span class="text-tertiary"> / </span>')
                                     : (d.team || d.teamId
@@ -23782,7 +23957,11 @@
                                         ${results.map(race => {
                                             // Komprimierte oder normale Ergebnisse
                                             const raceResults = race.res || race.results || [];
-                                            const result = raceResults.find(r => (r.d || r.driver) === d.id);
+                                            // Erst die Roh-ID (intakte Saisons), dann der Namensschlüssel
+                                            let result = raceResults.find(r => (r.d || r.driver) === d.id);
+                                            if (!result && d._canon) {
+                                                result = raceResults.find(r => _mxCanon(r.d || r.driver) === d._canon);
+                                            }
                                             if (!result) {
                                                 // v0.9.15.25: auch historisch (dnq-Liste wird jetzt gespeichert)
                                                 const isDNPQ = (race.dnpq || []).includes(d.id);
@@ -24542,7 +24721,9 @@
                 // Spanne schon während der Saison sichtbar ist und nicht erst nach dem Archivieren.
                 teamSpans: _computeTeamSpans((GAME_STATE.results || []).map(r => ({
                     ri: r.raceIndex ?? r.ri,
-                    res: (r.results || []).map(x => ({ d: x.driver, tmn: x.teamName || x.team }))
+                    // teamDisplayName: der Rückfall auf x.team lieferte bei mid-season
+                    // eingestiegenen Teams die Roh-ID `ent_<Key>_<Jahr>` (v0.9.15.85).
+                    res: (r.results || []).map(x => ({ d: x.driver, tmn: x.teamName || teamDisplayName(x.team) }))
                 })))
             });
             return arr;
@@ -24767,7 +24948,10 @@
             for (const r of rawRes) {
                 const id = r.d ?? r.driver;
                 const status = r.dnpq ? 'dnpq' : (r.dnf ? 'dnf' : 'finished');
-                const tName = r.tmn || r.teamName || r.team || null;
+                // teamDisplayName (v0.9.15.85): sonst wandert die Roh-ID eines
+                // eingestiegenen Teams auch in teamKey/teamSlug und spaltet dessen
+                // Statistik in zwei Eintraege ("Zakspeed" und "ent_ZAK_1985").
+                const tName = teamDisplayName(r.tmn || r.teamName || r.team || '') || null;
                 entries.push({
                     driverKey: idMap(id),
                     teamKey:   tName ? teamSlug(tName) : null,
@@ -28392,19 +28576,36 @@ Empfohlene Wertebereiche:
                         
                         let driverStanding = null;
                         let histDriver = null;
-                        
+                        // Tabelle notfalls aus den Ergebnissen neu rechnen — sonst zeigte die
+                        // Karriere-Historie 0 Starts/0 Punkte für ganze Saisons (s. Kommentar
+                        // bei rebuiltStandingsIfBroken). Bei intakten Saisons unverändert.
+                        const _seasonStandings = rebuiltStandingsIfBroken(
+                            season.results, season.drivers, season.driverStandings);
+
                         for (const checkId of searchIds) {
-                            if (season.driverStandings?.[checkId]) {
-                                driverStanding = season.driverStandings[checkId];
+                            if (_seasonStandings?.[checkId]) {
+                                driverStanding = _seasonStandings[checkId];
                             }
                             const found = (season.drivers || []).find(d => d.id === checkId || d.histId === checkId);
                             if (found) {
                                 histDriver = found;
-                                if (!driverStanding) driverStanding = season.driverStandings?.[found.id];
+                                if (!driverStanding) driverStanding = _seasonStandings?.[found.id];
                                 break;
                             }
                         }
-                        
+
+                        // Identitäts-Brücke über den NAMEN (v0.9.15.85): Fahrer-IDs tragen einen
+                        // Zeitstempel und laufen bei neu erzeugten Fahrerobjekten zwischen den
+                        // archivierten Ergebnissen und der Tabelle derselben Saison auseinander.
+                        // Ronnie Peterson gewann 1970 zwei Rennen, stand aber in der 1970er-Tabelle
+                        // unter keiner passenden ID → seine Karriere-Historie zeigte 0 Starts,
+                        // 0 Punkte für fünf Saisons am Stück.
+                        if (!driverStanding) {
+                            const _want = String(histDriver?.name || driver.name || '').toLowerCase().trim();
+                            if (_want) driverStanding = Object.values(_seasonStandings || {})
+                                .find(s => String(s?.name || '').toLowerCase().trim() === _want) || null;
+                        }
+
                         if (driverStanding || histDriver) {
                             // Teams aus Rennergebnissen ableiten – unterstützt komprimiertes (res/d/tmn) und unkomprimiertes Format
                             const _teamsFromRaces = new Map();
@@ -28412,10 +28613,18 @@ Empfohlene Wertebereiche:
                             // Kandidaten pruefen, sonst bleibt die Team-Spalte komplett leer.
                             const _idCandidates = [histDriver?.id, ...searchIds].filter(Boolean);
                             const _sTeams = season.teams || [];
+                            // Rückfall-Zähler aus den Rennergebnissen: greift, wenn die Tabelle
+                            // den Fahrer nicht kennt (s. Identitäts-Brücke oben).
+                            let _rcRaces = 0, _rcWins = 0, _rcPod = 0, _rcPts = 0;
                             for (const race of season.results || []) {
                                 const raceResults = race.res || race.results || [];
                                 const _r = raceResults.find(e => _idCandidates.includes(e.d || e.driver));
                                 if (!_r) continue;
+                                _rcRaces++;
+                                const _rp = _r.p ?? _r.position;
+                                if (!_r.dnf && _rp === 1) _rcWins++;
+                                if (!_r.dnf && _rp >= 1 && _rp <= 3) _rcPod++;
+                                _rcPts += (_r.pt ?? _r.points) || 0;
                                 let tId = _r.team || null;
                                 let tName = _r.teamName || _r.tmn || null;
                                 if (!tId && tName) {
@@ -28448,7 +28657,7 @@ Empfohlene Wertebereiche:
                                 _teamList.push({ name: _teamDisplay, id: team?.id || histDriver?.team, color: team?.color });
                             }
 
-                            const position = Object.entries(season.driverStandings || {})
+                            const position = Object.entries(_seasonStandings || {})
                                 .map(([id, s]) => ({ id, points: s.points || 0 }))
                                 .sort((a, b) => b.points - a.points)
                                 .findIndex(d => searchIds.includes(d.id) || d.id === histDriver?.id) + 1;
@@ -28459,10 +28668,10 @@ Empfohlene Wertebereiche:
                                 teams: _teamList,
                                 teamId: team?.id || histDriver?.team || null,
                                 teamColor: getTeamColors(team?.id || '', season.year, team?.color)[0] || ensureReadable(team?.color || '#888'),
-                                races: driverStanding?.races || 0,
-                                wins: driverStanding?.wins || 0,
-                                podiums: driverStanding?.podiums || 0,
-                                points: driverStanding?.points || 0,
+                                races: driverStanding?.races || _rcRaces || 0,
+                                wins: driverStanding?.wins || _rcWins || 0,
+                                podiums: driverStanding?.podiums || _rcPod || 0,
+                                points: driverStanding?.points || _rcPts || 0,
                                 position: position || '-',
                                 isHistorical: false
                             });
@@ -32189,11 +32398,14 @@ Empfohlene Wertebereiche:
                 if (raw) _raceTeamByDriver[id] = raw;
             }
             const getTeamName = (driverId) => {
-                if (_raceTeamByDriver[driverId]) return _raceTeamByDriver[driverId];
+                // teamDisplayName (v0.9.15.85): in Alt-Spielstaenden steht in `tmn`
+                // teils die Roh-ID eines mid-season eingestiegenen Teams. Die Auflösung
+                // hier repariert auch bereits gespeicherte Rennen, nicht nur neue.
+                if (_raceTeamByDriver[driverId]) return teamDisplayName(_raceTeamByDriver[driverId]);
                 const d = drivers.find(d => d.id === driverId);
                 if (!d) return '';
                 const t = teams.find(t => t.id === d.team);
-                return t ? t.name : '';
+                return t ? t.name : teamDisplayName(d.team);
             };
             const getTeamId = (driverId) => {
                 // Der Link muss auf DASSELBE Team zeigen wie der angezeigte Name – sonst
@@ -32212,7 +32424,9 @@ Empfohlene Wertebereiche:
             const _rdCircuitName = getCircuitDisplayName(_rdCid);
             let html = `
                 <div class="text-center mb-4">
-                    <div class="text-4xl mb-2">${getGPFlagHtml(race.name, race.country)}</div>
+                    <!-- Jahr MUSS mit: ohne den dritten Parameter zeigt renderFlag die
+                         heutige Flagge — Südafrika 1967 erschien mit der Fahne von 1994. -->
+                    <div class="text-4xl mb-2">${getGPFlagHtml(race.name, race.country, historicalYear || GAME_STATE.currentYear)}</div>
                     <h2 class="text-2xl font-bold">${race.name}</h2>
                     <div class="text-tertiary">${race.circuit} | ${race.laps} Runden</div>
                     ${historicalYear ? `<div class="text-sm accent-blue mt-1">Saison ${historicalYear}</div>` : ''}
