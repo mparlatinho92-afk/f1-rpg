@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.87</title>
+    <title>F1 RPG v0.9.15.88</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.87 (aktuell) - 11.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.88 (aktuell) - 11.08.2026</div>
+                            <div>&#8226; FIX: Die Titelzeile des Rennfensters zeigte weiterhin die heutige Flagge statt der damaligen - Suedafrika 1967 erschien mit der Fahne von 1994. Betrifft auch die Kaestchen Letztes Rennen und Letztes Qualifying sowie den Kalender-Editor</div>
+                            <div class="font-bold text-slate-400">v0.9.15.87 - 11.08.2026</div>
                             <div>&#8226; FIX: Ein unsichtbares Steuerzeichen in einer Zeichenklasse verhinderte, dass das Spiel-Skript ueberhaupt startete - die Oberflaeche blieb leer und zeigte eine uralte Versionsnummer. Betraf v0.9.15.85 und .86</div>
                             <div>&#8226; NEU: Die Auslieferungspruefung erkennt jetzt auch Steuerzeichen im Quelltext, nicht nur falsche Zeichenkodierung</div>
                             <div class="font-bold text-slate-400">v0.9.15.86 - 10.08.2026</div>
@@ -16373,7 +16375,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.87';
+        const VERSION = '0.9.15.88';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -25588,7 +25590,7 @@ const CIRCUIT_LAYOUTS = {
             const races = GAME_STATE.races || [], cr = GAME_STATE.currentRace || 0;
             const rows = races.map((race, idx) => {
                 const locked = idx < cr;
-                const flag = typeof getGPFlagHtml === 'function' ? getGPFlagHtml(race.name, race.country, null) : '';
+                const flag = typeof getGPFlagHtml === 'function' ? getGPFlagHtml(race.name, race.country, GAME_STATE.currentYear) : '';
                 const mon = race.month ? _MONTH_ABBR[race.month] : '';
                 const dnd = locked ? '' : `draggable="true" ondragstart="calEditDragStart(${idx})" ondragover="event.preventDefault()" ondrop="calEditDrop(${idx})" ontouchstart="calEditTouchStart(event,${idx})" ontouchmove="calEditTouchMove(event)" ontouchend="calEditTouchEnd(event)"`;
                 return `<tr class="border-t border-custom" data-cal-idx="${idx}" ${dnd} style="${locked ? 'opacity:0.45' : 'cursor:grab'}">
@@ -36420,7 +36422,7 @@ const CIRCUIT_LAYOUTS = {
             
             const top3 = lastRace.results.slice(0, 3);
             return `
-                <div class="mb-2 font-bold cursor-pointer" onclick="openRaceDetails(${lastRace.raceIndex})">${getGPFlagHtml(lastRace.raceName, lastRace.raceCountry)} <span class="race-link">${lastRace.raceName}</span> ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</div>
+                <div class="mb-2 font-bold cursor-pointer" onclick="openRaceDetails(${lastRace.raceIndex})">${getGPFlagHtml(lastRace.raceName, lastRace.raceCountry, GAME_STATE.currentYear)} <span class="race-link">${lastRace.raceName}</span> ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</div>
                 <table class="w-full text-sm">
                     <thead><tr class="text-left text-tertiary"><th>Pos</th><th>Fahrer</th><th>Team</th><th>Punkte</th></tr></thead>
                     <tbody>
@@ -37369,7 +37371,7 @@ const CIRCUIT_LAYOUTS = {
             return `
                 <!-- Letztes Rennen -->
                 <div class="card rounded-xl p-4 mb-6">
-                    <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastRace.raceName, lastRace.raceCountry)} ${lastRace.raceName} ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</h3>
+                    <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastRace.raceName, lastRace.raceCountry, GAME_STATE.currentYear)} ${lastRace.raceName} ${lastRace.isRain ? '🌧️' : lastRace.isHot ? '🌡️' : '☀️'}</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <table class="w-full text-sm">
@@ -37480,7 +37482,7 @@ const CIRCUIT_LAYOUTS = {
             return `
                 <!-- Letztes Qualifying -->
                 <div class="card rounded-xl p-4 mb-6">
-                    <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastQuali.raceName, lastQuali.raceCountry)} ${lastQuali.raceName} - Qualifying ${lastQuali.isRain ? '🌧️' : ''}</h3>
+                    <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastQuali.raceName, lastQuali.raceCountry, GAME_STATE.currentYear)} ${lastQuali.raceName} - Qualifying ${lastQuali.isRain ? '🌧️' : ''}</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <table class="w-full text-sm">
@@ -45618,7 +45620,10 @@ Empfohlene Wertebereiche:
 
             if (qualiResult) html += '</div>'; // close rdContent-race
             
-            document.getElementById('raceDetailTitle').innerHTML = `🏁 ${getGPFlagHtml(race.name, race.country)} ${race.name}`;
+            // Jahr MUSS mit — sonst zeigt die TITELZEILE die heutige Flagge, während der
+            // Kopf im Fenster darunter (s. o.) die historische hat. Genau diese Hälfte war
+            // in .85 übersehen worden: Südafrika 1967 mit der Fahne von 1994 (v0.9.15.88).
+            document.getElementById('raceDetailTitle').innerHTML = `🏁 ${getGPFlagHtml(race.name, race.country, historicalYear || GAME_STATE.currentYear)} ${race.name}`;
             document.getElementById('raceDetailBody').innerHTML = html;
             bringModalToFront(document.getElementById('raceDetailModal')); document.getElementById('raceDetailModal').style.display = 'flex';
         };
