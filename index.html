@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.89</title>
+    <title>F1 RPG v0.9.15.90</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.89 (aktuell) - 12.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.90 (aktuell) - 12.08.2026</div>
+                            <div>&#8226; FIX: Ein Gastfahrer wurde vom Wagenlimit sofort wieder aus der Meldeliste geworfen - George Russell stand 2020 in Bahrain neben Hamilton und Bottas und verschwand. Jetzt setzt der langsamste Stammfahrer aus</div>
+                            <div>&#8226; NEU: Der Fahrertausch Albon/Gasly 2019 findet im Spiel statt - beide mit je neun Rennen beim anderen Rennstall</div>
+                            <div class="font-bold text-slate-400">v0.9.15.89 - 12.08.2026</div>
                             <div>&#8226; NEU: Fuhr ein Fahrer in einer Saison fuer zwei Rennstaelle, wechselt er jetzt auch im Spiel - Carlos Pace 1974 sieben Rennen Surtees, danach Brabham</div>
                             <div>&#8226; NEU: 20 Konstrukteure ohne eigenen Stammfahrer melden erstmals - Lancia 1954, Jack Brabhams erstes eigenes Auto 1962, Ferguson 1961, Tyrrell 1970, alle mit der exakt richtigen Rennzahl</div>
                             <div>&#8226; FIX: Bei Gleichstand zaehlt jetzt das Team der spaeteren Rennen als Stammteam - vorher gingen 21 Prozent der Doppel-Engagements verloren</div>
@@ -3486,7 +3489,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.89';
+        const VERSION = '0.9.15.90';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6588,6 +6591,37 @@
                     if (d._guestYear === jahr) { d.team = d._guestFrom; bewegt++; }
                     d._guestFrom = null; d._guestYear = null;
                 }
+            }
+
+            // === VERTRETUNG: WER MUSS DAFÜR RAUS ===
+            // Ein Gastauftritt ist meist eine Vertretung. Ohne Gegenbuchung sitzt der Gast
+            // zwar im Team, fällt aber `applyConstructorCarCap` zum Opfer — der kappt auf
+            // die Ära-Grenze und wirft den Langsamsten raus, und das ist fast immer der
+            // Gast. Gemessen: George Russell fuhr 2020 in Bahrain für den erkrankten
+            // Hamilton, im Spiel blieben Hamilton und Bottas stehen und Russell verschwand.
+            //
+            // Deshalb: übersteigt ein Gastteam an DIESER Strecke seinen Deckel, setzt der
+            // langsamste STAMMfahrer aus (der Gast nie). Nur so viele, wie nötig.
+            // Wer real ausfiel, steht nicht in den Daten — die Wagenzahl stimmt, die
+            // Identität des Aussetzers ist eine Näherung.
+            const deckel = _maxCarsPerConstructor(jahr);
+            const gastTeams = new Set(Object.values(sollTeam));
+            for (const tid of gastTeams) {
+                const imTeam = (GAME_STATE.drivers || []).filter(d =>
+                    d.team === tid && (!d.status || d.status === 'active') && privateerEntersRace(d, race));
+                let zuviel = imTeam.length - deckel;
+                if (zuviel <= 0) continue;
+                const gaeste = new Set(Object.keys(sollTeam).filter(h => sollTeam[h] === tid));
+                imTeam.filter(d => !gaeste.has(String(d.histId || '').toLowerCase()))
+                    .sort((a, b) => (a.pace || 0) - (b.pace || 0))     // Langsamster zuerst
+                    .forEach(d => {
+                        if (zuviel <= 0) return;
+                        const voll = (GAME_STATE.races || []).filter(r => !r.isIndy && r.circuitId)
+                            .map(r => String(r.circuitId).toLowerCase());
+                        d.scheduledRaces = (Array.isArray(d.scheduledRaces) ? d.scheduledRaces : voll)
+                            .filter(c => c !== cid);
+                        zuviel--; bewegt++;
+                    });
             }
             return bewegt;
         }
