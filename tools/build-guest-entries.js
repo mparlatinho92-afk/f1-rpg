@@ -140,6 +140,7 @@ const block = `        // GUEST_ENTRIES — Auftritte eines Fahrers bei einem AN
         const GUEST_ENTRIES = {
             ${body}
         };
+
 `;
 
 console.log(`Dateigroesse: ${(block.length / 1024).toFixed(1)} KB`);
