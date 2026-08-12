@@ -51,7 +51,11 @@ for (const e of J('f1db-seasons-entrants-drivers.json')) {
     let n = 0; for (const rd of (e.rounds || [])) if (isF1[`${e.year}_${rd}`]) n++;
     if (!n) continue;
     ((drvTeams[e.year] = drvTeams[e.year] || {})[e.driverId] = drvTeams[e.year][e.driverId] || {});
-    drvTeams[e.year][e.driverId][e.constructorId] = (drvTeams[e.year][e.driverId][e.constructorId] || 0) + n;
+    // {n, letzte}: die letzte Runde entscheidet den Gleichstand (s. mehrheit unten)
+    const E = (drvTeams[e.year][e.driverId][e.constructorId] =
+        drvTeams[e.year][e.driverId][e.constructorId] || { n: 0, letzte: 0 });
+    E.n += n;
+    for (const rd of (e.rounds || [])) if (isF1[`${e.year}_${rd}`] && rd > E.letzte) E.letzte = rd;
     (ctorCars[e.year] = ctorCars[e.year] || {});
     ctorCars[e.year][e.constructorId] = (ctorCars[e.year][e.constructorId] || 0) + n;
 }
@@ -59,7 +63,10 @@ const standing = {};
 for (const s of J('f1db-seasons-constructor-standings.json'))
     (standing[s.year] = standing[s.year] || {})[s.constructorId] = s;
 
-const mehrheit = t => Object.keys(t).sort((a, b) => t[b] - t[a])[0];
+// MEHRHEIT = meiste Rennen; bei GLEICHSTAND das Team der SPAETEREN Rennen (Saison-Endteam).
+// ⚠ DIESELBE Regel steht in tools/build-guest-entries.js — weichen sie voneinander ab,
+// klebt der Fahrer beim Gastteam und seine andere Haelfte faellt weg (Carlos Pace 1974).
+const mehrheit = t => Object.keys(t).sort((a, b) => t[b].n - t[a].n || t[b].letzte - t[a].letzte || a.localeCompare(b))[0];
 const RENAME = { rb: 'racing-bulls' };
 
 // ── Planung je Jahr ─────────────────────────────────────────────────────────
@@ -116,7 +123,7 @@ for (let y = 1950; y <= 2025; y++) {
         const soll = cidToTid[maj];
         if (!soll || soll === d[2]) continue;
         moves.push({ shortId: d[0], name: d[1], von: d[2], nach: soll,
-            rennen: drvTeams[y][dId][maj], team: cidName[maj] || maj });
+            rennen: drvTeams[y][dId][maj].n, team: cidName[maj] || maj });
     }
 
     if (neueTeams.length || moves.length) plan.push({ y, neueTeams, moves });

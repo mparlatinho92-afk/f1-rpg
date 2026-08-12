@@ -50,7 +50,9 @@ for (const e of J('f1db-seasons-entrants-drivers.json')) {
         if (!cid) continue;
         const Y = (auftritte[e.year] = auftritte[e.year] || {});
         const D = (Y[e.driverId] = Y[e.driverId] || {});
-        (D[e.constructorId] = D[e.constructorId] || new Set()).add(cid);
+        const E = (D[e.constructorId] = D[e.constructorId] || { strecken: new Set(), letzte: 0 });
+        E.strecken.add(cid);
+        if (rd > E.letzte) E.letzte = rd;
     }
 }
 
@@ -75,7 +77,7 @@ for (const y of jahre) {
     const gesehen = new Set();
     for (const d of Object.keys(auftritte[y]))
         for (const c of Object.keys(auftritte[y][d]))
-            for (const s of auftritte[y][d][c]) gesehen.add(s);
+            for (const s of auftritte[y][d][c].strecken) gesehen.add(s);
     if (gesehen.size < cal.size) continue;
 
     const row = {};
@@ -84,12 +86,19 @@ for (const y of jahre) {
         const keys = Object.keys(teams);
         if (keys.length < 2) continue;                    // nur ein Team → nichts zu tun
         fahrerSaisons++;
-        // Mehrheit = meiste Rennen; bei Gleichstand das frueher gefahrene Team,
-        // damit die Auswahl deterministisch ist (sonst wackelt die Datei je Lauf).
-        const sortiert = keys.slice().sort((a, b) => teams[b].size - teams[a].size || a.localeCompare(b));
+        // MEHRHEIT = meiste Rennen. Bei GLEICHSTAND (55 von 262 Faellen, 21 %) gewinnt das
+        // Team der SPAETEREN Rennen — der Rennstall also, bei dem der Fahrer die Saison
+        // beendet. Zwei Gruende: dorthin kehrt er nach dem Gastauftritt ohnehin zurueck,
+        // und die Saison-Tabelle zeigt genau dieses letzte Team.
+        // ⚠ DIESELBE Regel steht in tools/apply-season-coverage.js. Weichen die beiden
+        // voneinander ab, klebt der Fahrer beim Gastteam und seine andere Haelfte faellt
+        // ersatzlos weg — genau so verlor Carlos Pace 1974 seine Brabham-Rennen.
+        const sortiert = keys.slice().sort((a, b) =>
+            teams[b].strecken.size - teams[a].strecken.size || teams[b].letzte - teams[a].letzte
+            || a.localeCompare(b));
         const mehrheit = sortiert[0];
         for (const c of sortiert.slice(1)) {
-            const strecken = [...cal].filter(s => teams[c].has(s));   // Kalenderreihenfolge
+            const strecken = [...cal].filter(s => teams[c].strecken.has(s));   // Kalenderreihenfolge
             if (!strecken.length) continue;
             (row[c] = row[c] || {})[dId] = strecken;
             eintraege++; rennen += strecken.length;
