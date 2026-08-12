@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.88</title>
+    <title>F1 RPG v0.9.15.89</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.88 (aktuell) - 11.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.89 (aktuell) - 12.08.2026</div>
+                            <div>&#8226; NEU: Fuhr ein Fahrer in einer Saison fuer zwei Rennstaelle, wechselt er jetzt auch im Spiel - Carlos Pace 1974 sieben Rennen Surtees, danach Brabham</div>
+                            <div>&#8226; NEU: 20 Konstrukteure ohne eigenen Stammfahrer melden erstmals - Lancia 1954, Jack Brabhams erstes eigenes Auto 1962, Ferguson 1961, Tyrrell 1970, alle mit der exakt richtigen Rennzahl</div>
+                            <div>&#8226; FIX: Bei Gleichstand zaehlt jetzt das Team der spaeteren Rennen als Stammteam - vorher gingen 21 Prozent der Doppel-Engagements verloren</div>
+                            <div class="font-bold text-slate-400">v0.9.15.88 - 11.08.2026</div>
                             <div>&#8226; FIX: Die Titelzeile des Rennfensters zeigte weiterhin die heutige Flagge statt der damaligen - Suedafrika 1967 erschien mit der Fahne von 1994. Betrifft auch die Kaestchen Letztes Rennen und Letztes Qualifying sowie den Kalender-Editor</div>
                             <div class="font-bold text-slate-400">v0.9.15.87 - 11.08.2026</div>
                             <div>&#8226; FIX: Ein unsichtbares Steuerzeichen in einer Zeichenklasse verhinderte, dass das Spiel-Skript ueberhaupt startete - die Oberflaeche blieb leer und zeigte eine uralte Versionsnummer. Betraf v0.9.15.85 und .86</div>
@@ -3482,7 +3486,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.88';
+        const VERSION = '0.9.15.89';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6514,6 +6518,78 @@
             if (row[k1] !== undefined) return row[k1];
             const k2 = raw.toLowerCase().replace(/[^a-z0-9]/g, '');
             return row[k2] !== undefined ? row[k2] : null;
+        }
+
+        // === GASTAUFTRITTE: FAHRER ZIEHT KURZ ZU EINEM ANDEREN TEAM (v0.9.15.89) ===
+        // SEASON_DATA kennt genau EIN Team je Fahrer und Saison. Seit dem Deckungs-Patch
+        // ist das der Rennstall mit den MEISTEN Rennen — richtig, aber damit gingen alle
+        // Auftritte beim jeweils anderen Team verloren. Folge: 20 Konstrukteure standen im
+        // Template ohne einen einzigen Fahrer (Lancia 1954, Brabhams erstes eigenes Auto
+        // 1962, Ferguson 1961, Tyrrell 1970) und konnten nie melden.
+        //
+        // GEWÄHLTER WEG: der Fahrer WECHSELT wirklich — vor dem Gastrennen zum anderen
+        // Team, danach zurück. Damit stimmt die Meldeliste von selbst, weil die Pipeline
+        // ohnehin `driver.team` liest; `applyConstructorCarCap` und die drei synchronen
+        // Filterstellen bleiben unangetastet. Die Alternative (Team-Override pro Rennen)
+        // hätte eine Signatur durch genau diese drei Stellen fädeln müssen.
+        //
+        // Liegt der Gastauftritt mitten in der Saison, kehrt der Fahrer zurück; liegt er am
+        // Rand, bleibt es ein einmaliger Wechsel. Das ergibt sich aus den realen Strecken.
+        //
+        // ⚠ Es wird NUR zurückgesetzt, was diese Funktion selbst gesetzt hat (`_guestFrom`).
+        // Sonst würde ein regulärer Mid-Season-Transfer der KI wieder rückgängig gemacht.
+        function _guestTeamIdFor(constructorId) {
+            const ziel = String(constructorId || '').toLowerCase();
+            return (GAME_STATE.teams || []).find(t => {
+                const raw = String(t.histId || t.name || t.id || '').toLowerCase();
+                return raw.replace(/[^a-z0-9]/g, '-') === ziel || raw.replace(/[^a-z0-9]/g, '') === ziel;
+            }) || null;
+        }
+        function applyGuestMoves(raceIndex) {
+            if (typeof GUEST_ENTRIES === 'undefined') return 0;
+            const jahr = GAME_STATE.currentYear;
+            const zeile = GUEST_ENTRIES[jahr];
+            const race = (GAME_STATE.races || [])[raceIndex];
+            if (!race || !race.circuitId) return 0;
+            const cid = String(race.circuitId).toLowerCase();
+
+            // histId -> Ziel-Team-Id für DIESE Strecke (nur was hier ansteht)
+            const sollTeam = {};
+            for (const ctor in (zeile || {})) {
+                const team = _guestTeamIdFor(ctor);
+                if (!team) continue;                       // Team gibt es in dieser Saison nicht
+                for (const drv in zeile[ctor]) {
+                    if ((zeile[ctor][drv] || []).includes(cid)) sollTeam[drv.toLowerCase()] = team.id;
+                }
+            }
+
+            let bewegt = 0;
+            for (const d of (GAME_STATE.drivers || [])) {
+                const h = String(d.histId || '').toLowerCase();
+                const ziel = h ? sollTeam[h] : null;
+                if (ziel) {
+                    if (d.team !== ziel) {
+                        if (!d._guestFrom) { d._guestFrom = d.team; d._guestYear = jahr; }
+                        d.team = ziel;
+                        bewegt++;
+                    }
+                    // Das Team allein genügt nicht: `privateerEntersRace` liest den
+                    // STARTPLAN. Ein Privatier mit sporadischem Plan säße sonst beim
+                    // Gastteam, ohne zu melden — gemessen an 1974 fuhren Pace und
+                    // Schenken dadurch fast kein Rennen. Der Gastauftritt IST belegt,
+                    // also wird die Strecke in den Plan aufgenommen.
+                    // Werksfahrer (`scheduledRaces === null`) melden ohnehin überall.
+                    if (Array.isArray(d.scheduledRaces) && !d.scheduledRaces.includes(cid)) {
+                        d.scheduledRaces = d.scheduledRaces.concat([cid]);
+                    }
+                } else if (d._guestFrom) {
+                    // Nur zurückholen, wenn es dieselbe Saison ist — ein Rest aus dem
+                    // Vorjahr würde den Fahrer sonst in ein längst verlassenes Team werfen.
+                    if (d._guestYear === jahr) { d.team = d._guestFrom; bewegt++; }
+                    d._guestFrom = null; d._guestYear = null;
+                }
+            }
+            return bewegt;
         }
 
         // Markiert die schwächsten Teams als Kleinstkonstrukteure. Nur Teams mit
@@ -13736,10 +13812,14 @@
             const race = GAME_STATE.races[raceIndex];
             if (!race) return;
             
+            // [SYNC Rennwochenende] Gastauftritte VOR der Meldeliste (v0.9.15.89) —
+            // muss in allen drei Modi identisch stehen, sonst meldet der Live-Ticker
+            // ein anderes Feld als der Sofort-Modus.
+            applyGuestMoves(raceIndex);
             // Training → Qualifying → Rennen
             simulateTraining(raceIndex);
             const qualiResult = simulateQualifying(raceIndex, isRain);
-            
+
             // Live-Zustand initialisieren
             _liveRaceDeathFired = false;
             _liveResetBags();   // frischer Kommentar-Beutel pro Ticker-Session
@@ -13977,6 +14057,7 @@
                 startLiveRace(raceIndex, isRain);
             } else {
                 // === KLASSISCHER MODUS === Training → Qualifying → Rennen
+                applyGuestMoves(raceIndex);   // [SYNC Rennwochenende] s. startLiveRace
                 simulateTraining(raceIndex);
                 const qualiResult = simulateQualifying(raceIndex, isRain);
                 
@@ -20893,6 +20974,7 @@
                 const _fsWetChance = getRaceWetChance(_fsRace?.raceId, _fsRace?.circuitId || _fsRace?.circuit, _fsRace?.month, _fsRace?.country);
                 const isRain = Math.random() < _fsWetChance;
                 // Training → Qualifying → Rennen
+                applyGuestMoves(GAME_STATE.currentRace);   // [SYNC Rennwochenende] s. startLiveRace
                 simulateTraining(GAME_STATE.currentRace);
                 simulateQualifying(GAME_STATE.currentRace, isRain);
                 // Rennen simulieren
