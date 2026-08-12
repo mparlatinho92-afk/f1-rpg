@@ -114,7 +114,8 @@ function buildSourceFromIndex() {
     // Konstante in ALLEN sim-core-Tests undefiniert — inklusive der Messskripte, mit denen
     // die Abnahme läuft. (data/presence.js ab v0.9.15.81: TEAM_PRESENCE für den L1-Hebel.)
     for (const jsFile of ['data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js',
-                          'data/era-first-names.js', 'data/circuit-layouts.js', 'data/presence.js']) {
+                          'data/era-first-names.js', 'data/circuit-layouts.js', 'data/presence.js',
+                          'data/guest-entries.js']) {
         const placeholder = `    <script src="${jsFile}"></script>`;
         const js = fs.readFileSync(path.join(dir, jsFile), 'utf8');
         html = html.replace(placeholder, `    <script>\n${js}\n    </script>`);
