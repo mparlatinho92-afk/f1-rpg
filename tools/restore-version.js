@@ -32,6 +32,7 @@ const args = process.argv.slice(2);
 
 if (!args.length || args.includes('--hilfe')) {
     console.log('node tools/restore-version.js <version>   z.B. 0.9.15.60');
+    console.log('node tools/restore-version.js <version> --url   GitHub-Adressen statt Download');
     console.log('node tools/restore-version.js --liste     alle in Git verfuegbaren Versionen');
     process.exit(0);
 }
@@ -65,6 +66,23 @@ if (!commit) {
     console.error(`${datei} ist NICHT in der Git-Historie.`);
     console.error(`Verfuegbare Versionen:  node tools/restore-version.js --liste`);
     process.exit(1);
+}
+
+// --url: nur die GitHub-Adressen zeigen, nichts herunterladen. Die alten Monolithen
+// stehen NICHT im aktuellen Repo-Stand (manage-v schiebt sie nach archive/, das ist
+// ignoriert) — sie liegen in der HISTORIE. Auf GitHub also ueber den Commit, nicht
+// ueber die Dateiliste der Startseite.
+if (args.includes('--url')) {
+    let repo = '';
+    try { repo = sh('git remote get-url origin').trim().replace(/\.git$/, ''); } catch (e) {}
+    const voll = sh(`git log --all --format=%H -- "${datei}"`).split('\n').map(s => s.trim())
+        .find(c => { try { sh(`git cat-file -e ${c}:"${datei}"`); return true; } catch (e) { return false; } });
+    console.log(`${datei}  (Commit ${voll.slice(0, 7)})`);
+    console.log(`  Datei:  ${repo}/blob/${voll}/${datei}`);
+    console.log(`  Ordner: ${repo}/tree/${voll}`);
+    console.log(`\nHinweis: GitHub zeigt HTML-Dateien dieser Groesse nicht im Browser an`);
+    console.log(`("too large") — es bietet stattdessen Raw und Download an.`);
+    process.exit(0);
 }
 
 const zielOrdner = args.includes('--hier') ? ROOT : path.join(ROOT, 'wiederhergestellt');
