@@ -120,6 +120,36 @@ if ($OldFile.Name -ne $NewFileName) {
     Write-Host "Gleiche Version – kein Archiv-Schritt" -ForegroundColor Yellow
 }
 
+# 6a. Archiv beschneiden (Regel seit 2026-08-14, siehe CLAUDE.md "Archiv-Regel")
+# archive/ war auf 496 Monolithen und 2,7 GB gewachsen, bei 1,4 GB freiem Platz.
+# Gefahrlos, weil Schritt 7 jede Version COMMITTET, bevor Schritt 6 sie ins Archiv
+# schiebt - alle alten Staende liegen in der GitHub-Historie.
+# Zurueckholen:  node tools/restore-version.js <version>
+$KeepInArchive = 10
+$archivDateien = @(Get-ChildItem "archive/f1-rpg-v*.html" -ErrorAction SilentlyContinue)
+if ($archivDateien.Count -gt $KeepInArchive) {
+    # Die eingecheckten Ausnahmen (nie im Repo gelandete Staende) NIE anfassen.
+    $verfolgt = @(git ls-files "archive/" | ForEach-Object { Split-Path $_ -Leaf })
+    $sortiert = $archivDateien |
+        Where-Object { $verfolgt -notcontains $_.Name } |
+        Sort-Object @{ Expression = {
+            $v = $_.Name -replace '^f1-rpg-v', '' -replace '\.html$', ''
+            try { [version]$v } catch { [version]'0.0.0' }   # _pre u. a. ans Ende sortieren
+        } }
+    $wegzuwerfen = @($sortiert | Select-Object -SkipLast $KeepInArchive)
+    foreach ($alt in $wegzuwerfen) {
+        # Sicherung: nur loeschen, was nachweislich in der HISTORIE von origin/master
+        # liegt. NICHT `cat-file -e origin/master:<datei>` benutzen - das prueft den
+        # AKTUELLEN Stand, und dort ist die Datei ja laengst ins Archiv verschoben.
+        $inHistorie = git log origin/master --format=%h -1 -- $alt.Name
+        if ($inHistorie) { Remove-Item $alt.FullName -Force }
+        else { Write-Warning "Archiv: $($alt.Name) ist NICHT auf origin/master - bleibt liegen." }
+    }
+    if ($wegzuwerfen.Count -gt 0) {
+        Write-Host "Archiv beschnitten: $($wegzuwerfen.Count) alte Version(en) entfernt (letzte $KeepInArchive bleiben)" -ForegroundColor Cyan
+    }
+}
+
 # 6b. Funktions-Index automatisch aktualisieren
 if (Test-Path "update-functions-index.ps1") {
     ./update-functions-index.ps1

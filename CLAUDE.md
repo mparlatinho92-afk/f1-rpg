@@ -119,13 +119,25 @@ Claude simuliert NIEMALS selbst (Token-Verschwendung).
 /data/f1db.js            ← F1DB-Renndaten (3.6MB – Grep only, nicht lesen)
 /data/hist.js            ← Fahrer-/Saison-Historien (~286KB)
 /data/seasons.js         ← SEASON_DATA Templates (~238KB)
-/archive/                ← alle alten Versionen als Backup
+/archive/                ← NUR die letzten ~10 Versionen (siehe Archiv-Regel unten)
 /tests/                  ← isolierte Logik-Tests (Monte Carlo, Balancing)
 /schemas/                ← Datenstruktur-Dokumentation (NUR Referenz, kein Laufzeit-Code)
 /CLAUDE.md               ← diese Datei
 ```
 **Daten editieren:** SEASON_DATA → `data/seasons.js`, HIST_SEASONS → `data/hist.js`, F1DB → `data/f1db.js`
 **manage-v** inliniert alle drei automatisch → `f1-rpg-vX.html` ist danach ohne Hilfsdateien lauffähig.
+
+## Archiv-Regel (seit 2026-08-14, PFLICHT)
+**`archive/` hält nur die letzten ~10 Versionen.** Es war auf 496 Monolithen und 2,7 GB gewachsen, bei 1,4 GB freiem Plattenplatz — jetzt 14 Dateien, 90 MB.
+
+Das ist gefahrlos, weil `manage-v` jede Version **committet, bevor** sie ins Archiv wandert: alle alten Stände liegen in der GitHub-Historie unter ihrem damaligen Wurzelpfad.
+
+- **Zurückholen:** `node tools/restore-version.js <version>` → `wiederhergestellt/`, oder `--url` für die GitHub-Adresse, `--liste` für alle verfügbaren.
+- ⚠ **Nicht selbst mit `git log` suchen:** das liefert den Commit, in dem die Datei ins Archiv verschoben, also **gelöscht** wurde — dort existiert sie nicht („path does not exist"). Gesucht ist der *neueste Commit, in dem sie noch vorhanden ist*. Genau das macht das Skript.
+- **Vier Stände sind Ausnahmen** und in `archive/` eingecheckt, weil sie nie im Repo landeten: `f1-rpg-v0.9.7.3_pre/b_pre/c_pre` (Vorabstände, weichen um ~100 Zeilen von der Release ab) und `f1-rpg-v0.9.9.37`. Die `.gitignore` nutzt dafür `archive/*` plus `!`-Ausnahmen — Git kann eine Datei nicht einschließen, wenn ihr Verzeichnis ausgeschlossen ist.
+- **Nie den ganzen Ordner einchecken.** Das erzeugte ~2,6 GB neue Objekte ohne Sicherheitsgewinn: die Arbeitskopien haben CRLF, die Git-Objekte LF — Git entdoppelt sie also nicht.
+
+**Wenn das Archiv wieder über ~15 Dateien wächst:** die ältesten löschen, die letzten 10 behalten. Vorher prüfen, dass die Löschkandidaten auf `origin/master` liegen.
 
 ## Nach PC-Neustart (Nutzer-Info)
 1. CMD im Projektordner öffnen
