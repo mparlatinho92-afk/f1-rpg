@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.90</title>
+    <title>F1 RPG v0.9.15.91</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.90 (aktuell) - 12.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.91 (aktuell) - 14.08.2026</div>
+                            <div>&#8226; FIX: Wie viele Rennen ein Fahrer bestreitet, haengt nicht mehr davon ab, ob er im Team der zweitschnellste ist - Arturo Merzario fuhr 1974 real alle 15 Rennen und meldete im Spiel nur 3,3</div>
+                            <div>&#8226; NEU: Teilzeit- und Gastfahrer gibt es wieder in allen Epochen - in der Moderne kannte das Spiel sie ueberhaupt nicht mehr (Mansell 1995: 17 Rennen statt 2)</div>
+                            <div>&#8226; FIX: Der Melde-Ueberschuss ist in allen Dekaden unter einem Auto je Rennen, die DNQ-Zahl der 80er faellt von 5,2 auf 3,5 (real 3,9)</div>
+                            <div class="font-bold text-slate-400">v0.9.15.90 - 12.08.2026</div>
                             <div>&#8226; FIX: Ein Gastfahrer wurde vom Wagenlimit sofort wieder aus der Meldeliste geworfen - George Russell stand 2020 in Bahrain neben Hamilton und Bottas und verschwand. Jetzt setzt der langsamste Stammfahrer aus</div>
                             <div>&#8226; NEU: Der Fahrertausch Albon/Gasly 2019 findet im Spiel statt - beide mit je neun Rennen beim anderen Rennstall</div>
                             <div class="font-bold text-slate-400">v0.9.15.89 - 12.08.2026</div>
@@ -3152,6 +3156,7 @@
     <script src="data/circuit-layouts.js"></script>
     <script src="data/presence.js"></script>
     <script src="data/guest-entries.js"></script>
+    <script src="data/driver-starts.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3489,7 +3494,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.90';
+        const VERSION = '0.9.15.91';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6734,6 +6739,39 @@
                 const n = _drawPrivateerCount(year, cal.length);
                 d.scheduledRaces = _pickPrivateerRaces(n, cal, year, _homePullNation(d)).map(i => ids[i]);
             });
+
+            // === REALE STARTZAHL SCHLÄGT DEN PACE-RANG (v0.9.15.91) ===
+            // `markPrivateers` macht die zwei Schnellsten je Team zu Werksfahrern und alle
+            // anderen zu Privatiers — und leitet daraus auch die ANZAHL der Rennen ab. Damit
+            // hängt die Regelmäßigkeit am PACE-RANG, was real nichts miteinander zu tun hat:
+            // Arturo Merzario war 1974 bei Iso-Marlboro der Dritte und fuhr trotzdem alle 15
+            // Rennen (Spiel vorher: 3,3). Umgekehrt bekam Peter Gethin als Top-2 eines
+            // kleinen Teams eine volle Saison statt seines einen Rennens.
+            //
+            // Gemessen mit tests/driver-participation.js: in der Moderne kannte das Spiel
+            // ÜBERHAUPT KEINE Teilzeitfahrer mehr (1995: 2 statt 12, Mansell 17,0 statt 2),
+            // in der klassischen Ära zu viele mittellange Einsätze und zu wenige Einmal-Starter.
+            //
+            // Aus den Daten kommt NUR DIE ANZAHL. Welche Rennen es werden, bleibt emergent —
+            // `_pickPrivateerRaces` mit Heimrennen-Sog und Ballung entscheidet das weiter.
+            // Damit bleibt `isPrivateer` reine ROLLE (Markt, Anzeige) und die Regelmäßigkeit
+            // ist eine eigene Größe.
+            if (typeof DRIVER_STARTS !== 'undefined' && DRIVER_STARTS[year]) {
+                const startZeile = DRIVER_STARTS[year];
+                drivers.forEach(d => {
+                    if (d.status && d.status !== 'active') return;
+                    // Kuratierte Heimrennen-Melder bleiben unangetastet: dort ist nicht nur
+                    // die Anzahl, sondern die STRECKE die geprüfte Wahrheit.
+                    if (d._homeOnlyCurated) return;
+                    const h = String(d.histId || '').toLowerCase();
+                    if (!h) return;                       // generierter Fahrer → Modell gilt
+                    const n = startZeile[h];
+                    if (n === undefined) return;          // real nicht gemeldet → Spiel entscheidet
+                    if (n === 0) { d.scheduledRaces = null; return; }   // volle Saison
+                    d.scheduledRaces = _pickPrivateerRaces(Math.min(n, cal.length), cal, year,
+                        _homePullNation(d)).map(i => ids[i]);
+                });
+            }
 
             // === L1-Nachlauf: reale Per-Saison-Präsenz (v0.9.15.81, Bauplan Stufe 2) ===
             // Kern des Melde-Überschusses: die Klassenzuordnung oben benutzt LEBENSZEIT-
