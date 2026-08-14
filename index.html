@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.91</title>
+    <title>F1 RPG v0.9.15.92</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.91 (aktuell) - 14.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.92 (aktuell) - 15.08.2026</div>
+                            <div>&#8226; NEU: Fahrer wechseln auch in erfundenen Saisons kurzzeitig das Team - Anzahl aus der Aera-Kurve, Ziel emergent</div>
+                            <div>&#8226; NEU: Regelkreis zaehlt die Bewegung mit und steuert nach, statt ein festes Budget zu verplanen</div>
+                            <div>&#8226; FIX: Wechsel nur zu Teams auf eigenem Niveau - kein Hinterbaenkler im Spitzenteam</div>
+                            <div class="font-bold text-slate-400">v0.9.15.91 - 14.08.2026</div>
                             <div>&#8226; FIX: Wie viele Rennen ein Fahrer bestreitet, haengt nicht mehr davon ab, ob er im Team der zweitschnellste ist - Arturo Merzario fuhr 1974 real alle 15 Rennen und meldete im Spiel nur 3,3</div>
                             <div>&#8226; NEU: Teilzeit- und Gastfahrer gibt es wieder in allen Epochen - in der Moderne kannte das Spiel sie ueberhaupt nicht mehr (Mansell 1995: 17 Rennen statt 2)</div>
                             <div>&#8226; FIX: Der Melde-Ueberschuss ist in allen Dekaden unter einem Auto je Rennen, die DNQ-Zahl der 80er faellt von 5,2 auf 3,5 (real 3,9)</div>
@@ -3494,7 +3498,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.91';
+        const VERSION = '0.9.15.92';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6553,10 +6557,199 @@
                 return raw.replace(/[^a-z0-9]/g, '-') === ziel || raw.replace(/[^a-z0-9]/g, '') === ziel;
             }) || null;
         }
+        // === STUFE 3: BEWEGUNG AUCH OHNE DATEN (v0.9.15.92) ===
+        // GUEST_ENTRIES deckt nur Saisons ab, die es real gab — und dort nur Fahrer, die
+        // noch bei ihrem historischen Team sitzen. Sobald das Spiel von der Geschichte
+        // abweicht, verschwindet die Mid-Season-Bewegung. Gemessen mit
+        // tests/midseason-moves.js: exakt NULL in 2021–2027, und ab Saison 2 eines
+        // historischen Starts nur noch ~40 % des realen Niveaus (1974: 25,3 Minderheits-
+        // Rennen ✓, 1975–77 nur 9,0 / 7,3 / 5,3 gegen real 18 / 24 / 16).
+        //
+        // ANSATZ wie bei DRIVER_STARTS: die ANZAHL kommt aus der Ära-Kurve, das ZIEL
+        // bleibt emergent. Was die Daten liefern, wird abgezogen — das Modell füllt nur
+        // den Rest. Konsum über denselben applyGuestMoves-Pfad, damit Rückkehr,
+        // Startplan-Ergänzung und Wagendeckel-Vertretung unverändert gelten.
+        function _moveTargetFor(year) {
+            // Reale Minderheits-Rennen je Saison (F1DB ohne Indy, Mittel je Dekade,
+            // gemessen mit `node tests/midseason-moves.js --real`).
+            return year < 1970 ? 8.8 : year < 1980 ? 13.9 : year < 1990 ? 8.4
+                 : year < 2000 ? 4.0 : year < 2010 ? 2.7 : year < 2020 ? 3.0 : 0.7;
+        }
+        function _poissonDraw(lambda) {
+            // Ganzzahlige Ziehung um einen Erwartungswert. Die realen Jahreswerte
+            // streuen stark (1958: 14, 1988: 0) — ein fester Wert wäre zu ordentlich.
+            if (lambda <= 0) return 0;
+            const L = Math.exp(-lambda);
+            let k = 0, p = 1;
+            do { k++; p *= Math.random(); } while (p > L && k < 60);
+            return k - 1;
+        }
+        function _rangAnteil(werte) {
+            const sortiert = werte.slice().sort((a, b) => a - b);
+            const n = Math.max(1, sortiert.length - 1);
+            return werte.map(v => sortiert.filter(x => x < v).length / n);
+        }
+        // Wie viele Bewegungs-Rennen liefern die DATEN in den verbleibenden Rennen?
+        // Nur Fahrer zählen, die es im Kader auch gibt — sonst zöge das Modell einen
+        // Abzug für Gastauftritte, die längst niemand mehr fahren kann.
+        function _dataMoveSupply(jahr, restCids) {
+            if (typeof GUEST_ENTRIES === 'undefined' || !GUEST_ENTRIES[jahr]) return 0;
+            const aktiv = new Set((GAME_STATE.drivers || [])
+                .filter(d => !d.status || d.status === 'active')
+                .map(d => String(d.histId || '').toLowerCase()).filter(Boolean));
+            const teamVon = {};
+            (GAME_STATE.drivers || []).forEach(d => {
+                const h = String(d.histId || '').toLowerCase(); if (h) teamVon[h] = d.team;
+            });
+            let n = 0;
+            for (const ctor in GUEST_ENTRIES[jahr]) {
+                const team = _guestTeamIdFor(ctor);
+                if (!team) continue;
+                for (const drv in GUEST_ENTRIES[jahr][ctor]) {
+                    const h = drv.toLowerCase();
+                    if (!aktiv.has(h)) continue;
+                    // Sitzt er inzwischen selbst bei diesem Konstrukteur, ist der
+                    // Gastauftritt gar keine Bewegung mehr — sonst zieht das Modell
+                    // einen Abzug fuer etwas ab, das nie stattfindet.
+                    if (teamVon[h] === team.id) continue;
+                    n += (GUEST_ENTRIES[jahr][ctor][drv] || []).filter(c => restCids.has(c)).length;
+                }
+            }
+            return n;
+        }
+        function _restCircuits(abRennen) {
+            const out = [];
+            for (let i = abRennen; i < (GAME_STATE.races || []).length; i++) {
+                const r = GAME_STATE.races[i];
+                if (!r || r.isIndy || !r.circuitId) continue;
+                out.push(String(r.circuitId).toLowerCase());
+            }
+            return out;
+        }
+        // Fuegt dem Plan Gastspiele hinzu, bis `budget` Bewegungs-Rennen vergeben sind.
+        function _addModelStints(plan, jahr, rest, budget) {
+            const fahrer = (GAME_STATE.drivers || []).filter(d =>
+                d.team && (!d.status || d.status === 'active') && !d._homeOnlyCurated);
+            const teams = (GAME_STATE.teams || []);
+            if (rest.length < 2 || fahrer.length < 4 || teams.length < 3) return plan;
+
+            // Perzentile sind die BREMSE gegen „Ian Ashley bei McLaren": ein Fahrer darf
+            // nur zu einem Team, das nicht deutlich stärker ist als er selbst.
+            const pP = _rangAnteil(fahrer.map(d => d.pace || 70));
+            const tP = _rangAnteil(teams.map(t => t.carSpeed || 70));
+            const pIdx = new Map(fahrer.map((d, i) => [d.id, i]));
+            const tIdx = new Map(teams.map((t, i) => [t.id, i]));
+            const deckel = _maxCarsPerConstructor(jahr);
+            const belegt = {};
+            fahrer.forEach(d => { belegt[d.team] = (belegt[d.team] || 0) + 1; });
+
+            let versuche = 0;
+            while (budget >= 1 && versuche++ < 60) {
+                // Wer umzieht: die hinteren Reihen deutlich häufiger als die Stars.
+                const frei = fahrer.filter(d => !plan[d.id]);
+                if (!frei.length) break;
+                const d = _weightedDraw(frei, frei.map(x => 1 - 0.7 * pP[pIdx.get(x.id)]), 1)[0];
+                if (!d) break;
+                const p = pP[pIdx.get(d.id)];
+                const eigen = tIdx.has(d.team) ? tP[tIdx.get(d.team)] : 0.5;
+
+                const kand = teams.filter((t, i) => t.id !== d.team && tP[i] <= Math.max(p, eigen) + 0.15);
+                if (!kand.length) continue;
+                const kw = kand.map(t => {
+                    const naehe = 1 + 2 * (1 - Math.abs(tP[tIdx.get(t.id)] - eigen));
+                    return naehe * ((belegt[t.id] || 0) < deckel ? 2 : 1);   // freier Platz braucht eher eine Aushilfe
+                });
+                const ziel = _weightedDraw(kand, kw, 1)[0];
+                if (!ziel) continue;
+
+                // Länge: meist ein einzelnes Rennen, selten ein halber Sommer.
+                const r = Math.random();
+                const laenge = Math.max(1, Math.min(budget, rest.length - 1,
+                    r < 0.55 ? 1 : r < 0.78 ? 2 : r < 0.90 ? 3 : 2 + Math.floor(Math.random() * 4)));
+                const start = Math.floor(Math.random() * (rest.length - laenge + 1));
+                plan[d.id] = { teamId: ziel.id, circuits: rest.slice(start, start + laenge) };
+                budget -= laenge;
+            }
+            return plan;
+        }
+        // Minderheits-Rennen, laufend mitgezählt: je Fahrer die Rennen beim Stammteam
+        // gegen die bei anderen, und davon die KLEINERE Seite. Das ist exakt die
+        // Definition der Zielkurve — und es zählt AUCH die Bewegung, die gar nicht vom
+        // Gast-Mechanismus kommt (reguläre KI-Transfers). Nur mit dieser Zählung merkt
+        // das Modell, dass die Saison ohne sein Zutun schon genug Bewegung hat: in den
+        // 1980ern liefen ~5 Bewegungs-Rennen je Saison am Gast-Zähler vorbei.
+        function _istBewegung(st) {
+            let n = 0;
+            for (const id in (st.zaehler || {})) {
+                const z = st.zaehler[id];
+                n += Math.min(z.h || 0, z.w || 0);
+            }
+            return n;
+        }
+        // === REGELKREIS statt festem Budget ===
+        // Ein einmal gezogenes Budget ging daneben: gemessen 1985 plante das Modell NULL
+        // und die Saison hatte trotzdem 14,3 Bewegungs-Rennen (Ziel 8,4) — die Daten
+        // allein lieferten mehr als die Ära-Kurve vorsieht. Umgekehrt blieb 1987/88 ein
+        // Modell-Budget stehen, obwohl schon genug lief.
+        //
+        // Deshalb wird JEDES RENNEN nachgesteuert: gezählt wird, was TATSÄCHLICH schon
+        // passiert ist (`ist`, hochgezählt in applyGuestMoves), dazu die Schätzung für
+        // die Daten-Gastspiele voraus. Bleibt eine Lücke, kommen Gastspiele dazu; ist
+        // das Soll überschritten, werden noch nicht gefahrene Gastspiele gestrichen.
+        // Der Plan selbst bleibt sonst stehen — sonst spränge der Fahrer wöchentlich.
+        function _modelMovesFor(jahr, raceIndex, cid) {
+            const S = GAME_STATE._modelMoves;
+            if (!S || S.year !== jahr) {
+                const rest = _restCircuits(raceIndex);
+                const gesamt = _restCircuits(0).length || 1;
+                // Beim Laden mitten in der Saison zählt nur der verbleibende Anteil.
+                GAME_STATE._modelMoves = {
+                    year: jahr, plan: {}, zaehler: {},
+                    ziel: _poissonDraw(_moveTargetFor(jahr) * (rest.length / gesamt))
+                };
+            }
+            const st = GAME_STATE._modelMoves;
+            const rest = _restCircuits(raceIndex);
+            const restSet = new Set(rest);
+            const plan = st.plan || (st.plan = {});
+
+            let vorausGeplant = 0;
+            for (const id in plan) vorausGeplant += (plan[id].circuits || []).filter(c => restSet.has(c)).length;
+            // NICHT das ganze Jahresbudget im ersten Rennen verplanen. Sonst legt das
+            // Modell los, bevor es sehen kann, wie viel Bewegung die Saison von selbst
+            // hervorbringt — gemessen in den 1980ern rund 10 Rennen je Saison, also mehr
+            // als die Ära-Kurve überhaupt vorsieht. Der Anteil wächst mit der Saison
+            // (mit etwas Vorlauf, damit auch Gastspiele am Saisonanfang möglich bleiben).
+            const gesamtR = _restCircuits(0).length || 1;
+            const anteil = Math.min(1, (gesamtR - rest.length + 1) / gesamtR + 0.25);
+            const luecke = st.ziel * anteil - _istBewegung(st) - _dataMoveSupply(jahr, restSet) - vorausGeplant;
+            if (luecke >= 1) {
+                _addModelStints(plan, jahr, rest, luecke);
+            } else if (luecke <= -1) {
+                // Zu viel unterwegs: künftige Gastspiele kürzen, laufende nicht abbrechen.
+                let weg = -luecke;
+                for (const id in plan) {
+                    if (weg <= 0) break;
+                    const c = plan[id].circuits || [];
+                    const kuenftig = c.filter(x => restSet.has(x) && x !== cid);
+                    if (!kuenftig.length) continue;
+                    const behalten = new Set(kuenftig.slice(0, Math.max(0, kuenftig.length - weg)));
+                    weg -= kuenftig.length - behalten.size;
+                    plan[id].circuits = c.filter(x => !restSet.has(x) || x === cid || behalten.has(x));
+                }
+            }
+            const out = {};
+            for (const id in plan) {
+                if (!(plan[id].circuits || []).includes(cid)) continue;
+                // Team kann inzwischen ausgestiegen sein — dann fällt der Zug aus.
+                if ((GAME_STATE.teams || []).some(t => t.id === plan[id].teamId)) out[id] = plan[id].teamId;
+            }
+            return out;
+        }
+
         function applyGuestMoves(raceIndex) {
-            if (typeof GUEST_ENTRIES === 'undefined') return 0;
             const jahr = GAME_STATE.currentYear;
-            const zeile = GUEST_ENTRIES[jahr];
+            const zeile = (typeof GUEST_ENTRIES !== 'undefined') ? GUEST_ENTRIES[jahr] : null;
             const race = (GAME_STATE.races || [])[raceIndex];
             if (!race || !race.circuitId) return 0;
             const cid = String(race.circuitId).toLowerCase();
@@ -6570,11 +6763,19 @@
                     if ((zeile[ctor][drv] || []).includes(cid)) sollTeam[drv.toLowerCase()] = team.id;
                 }
             }
+            // Modell-Züge dazu. Ab hier läuft ALLES über die Fahrer-Id, damit Daten- und
+            // Modell-Gäste denselben Weg nehmen (Rückkehr, Startplan, Vertretung).
+            const modell = _modelMovesFor(jahr, raceIndex, cid);
+            const zielVon = {};
+            for (const d of (GAME_STATE.drivers || [])) {
+                const h = String(d.histId || '').toLowerCase();
+                const z = (h && sollTeam[h]) || modell[d.id] || null;
+                if (z) zielVon[d.id] = z;   // auch wenn er schon dort sitzt: zählt als Gast (Deckel-Vertretung)
+            }
 
             let bewegt = 0;
             for (const d of (GAME_STATE.drivers || [])) {
-                const h = String(d.histId || '').toLowerCase();
-                const ziel = h ? sollTeam[h] : null;
+                const ziel = zielVon[d.id] || null;
                 if (ziel) {
                     if (d.team !== ziel) {
                         if (!d._guestFrom) { d._guestFrom = d.team; d._guestYear = jahr; }
@@ -6598,6 +6799,21 @@
                 }
             }
 
+            // Ist-Zählung für den Regelkreis: Stammteam gegen Fremdteam, Rennen für
+            // Rennen. Das Stammteam ist das, bei dem der Fahrer zuerst gesehen wurde —
+            // bei einem laufenden Gastspiel also `_guestFrom`, nicht das Gastteam.
+            const _mm = GAME_STATE._modelMoves;
+            if (_mm && _mm.year === jahr && _mm.lastRace !== raceIndex) {
+                _mm.lastRace = raceIndex;
+                const Z = _mm.zaehler || (_mm.zaehler = {});
+                for (const d of (GAME_STATE.drivers || [])) {
+                    if (!d.team || (d.status && d.status !== 'active')) continue;
+                    if (!privateerEntersRace(d, race)) continue;
+                    const z = Z[d.id] || (Z[d.id] = { stamm: d._guestFrom || d.team, h: 0, w: 0 });
+                    if (d.team === z.stamm) z.h++; else z.w++;
+                }
+            }
+
             // === VERTRETUNG: WER MUSS DAFÜR RAUS ===
             // Ein Gastauftritt ist meist eine Vertretung. Ohne Gegenbuchung sitzt der Gast
             // zwar im Team, fällt aber `applyConstructorCarCap` zum Opfer — der kappt auf
@@ -6610,14 +6826,13 @@
             // Wer real ausfiel, steht nicht in den Daten — die Wagenzahl stimmt, die
             // Identität des Aussetzers ist eine Näherung.
             const deckel = _maxCarsPerConstructor(jahr);
-            const gastTeams = new Set(Object.values(sollTeam));
+            const gastTeams = new Set(Object.values(zielVon));
             for (const tid of gastTeams) {
                 const imTeam = (GAME_STATE.drivers || []).filter(d =>
                     d.team === tid && (!d.status || d.status === 'active') && privateerEntersRace(d, race));
                 let zuviel = imTeam.length - deckel;
                 if (zuviel <= 0) continue;
-                const gaeste = new Set(Object.keys(sollTeam).filter(h => sollTeam[h] === tid));
-                imTeam.filter(d => !gaeste.has(String(d.histId || '').toLowerCase()))
+                imTeam.filter(d => zielVon[d.id] !== tid)
                     .sort((a, b) => (a.pace || 0) - (b.pace || 0))     // Langsamster zuerst
                     .forEach(d => {
                         if (zuviel <= 0) return;
