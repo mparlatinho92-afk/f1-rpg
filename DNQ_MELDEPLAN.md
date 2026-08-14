@@ -1,18 +1,20 @@
 # Meldeliste, Grid & DNQ — Ist-Zustand und Bauplan
 
-**Status:** ✅ **L1 (Stufe 1+2) und L3 gebaut** — L1 in v0.9.15.81, L3 in v0.9.15.82 (2026-08-08). **L2 wird nicht gebaut** (Abschnitt 9). Offen bleiben zwei Abnahmepunkte: 1950er Δ −1,7 und 1980er DNQ 5,2 — beide sitzen laut Abschnitt 14 in der **Wagenzahl je Konstrukteur**, nicht in Präsenz oder Streckenwahl.
+**Status:** ✅ **ABGENOMMEN seit v0.9.15.91.** L1 (.81), L3 (.82), Deckung (.84–.90), reale Startzahl (.91). **L2 wurde nicht gebaut** (Abschnitt 9).
+
+Die beiden zuletzt offenen Abnahmepunkte sind erledigt — und die Ursache war **nicht** die Wagenzahl je Konstrukteur, wie hier lange stand, sondern die aus dem **Pace-Rang abgeleitete Startzahl**: `markPrivateers` machte die zwei Schnellsten je Team zu Werksfahrern und leitete daraus auch ab, wie viele Rennen jeder fährt. Merzario war 1974 der Dritte bei Iso-Marlboro und fuhr real alle 15 Rennen — das Spiel gab ihm 3,3. Behoben durch `data/driver-starts.js` (nur die ANZAHL aus F1DB, die Streckenwahl bleibt emergent).
 
 ⚠️ **Der Plan ist nur für den SAISONSTART abgenommen.** Jede Messung hier ist der Frisch-Saison-Fall (`expandSeasonData`). Die fortgesetzte Saison nach vielen Spieljahren — wo `fillGridEntries` und die Kaderlogik greifen — ist **nicht vermessen** (Abschnitt 14.3).
 
-| Dekade | Baseline | nach L1 | **nach L3** | real |
-|---|---|---|---|---|
-| 1950er | +3,9 | −1,9 | **−1,7** | 0 |
-| 1960er | +2,6 | −0,9 | **−0,9** | 0 |
-| 1970er | +3,1 | +0,8 | **+0,8** | 0 |
-| 1980er | +2,2 | +1,3 | **+1,3** | 0 |
+| Dekade | Baseline | nach L1 | nach L3 | **nach .91** | real |
+|---|---|---|---|---|---|
+| 1950er | +3,9 | −1,9 | −1,7 | **−1,5** | 0 |
+| 1960er | +2,6 | −0,9 | −0,9 | **−0,5** | 0 |
+| 1970er | +3,1 | +0,8 | +0,8 | **−0,8** | 0 |
+| 1980er | +2,2 | +1,3 | +1,3 | **−0,6** | 0 |
 
-DNQ/Rennen dazu: 1950er **1,4** (real 1,4 ✅) · 1960er 1,6 (1,5) · 1970er 3,7 (2,7) · 1980er 5,2 (3,9).
-L3 verschiebt nur, **welche** Rennen ein Privatier fährt — Δ bleibt deshalb praktisch stehen; sein Erfolgsmaß steht in Abschnitt 10.
+DNQ/Rennen: 1,2 · 1,6 · 2,3 · **3,5** gegen real 1,4 · 1,5 · 2,7 · 3,9 — der 1980er-Überschuss lag zuletzt bei 5,2.
+L3 verschiebt nur, **welche** Rennen ein Privatier fährt (Erfolgsmaß in Abschnitt 10); .91 korrigiert, **wie viele**.
 **Zweck:** Diese Datei ist **selbsttragend** — sie beschreibt die komplette Meldeformel (wie aus SEASON_DATA eine Startaufstellung wird), warum sie in der klassischen Ära zu viele Autos liefert, und in welcher Reihenfolge das repariert wird. Wer hier einsteigt, braucht nur noch die zwei Messskripte in `tests/`, keinen Gesprächsverlauf.
 
 Alle Zeilennummern beziehen sich auf **`index.html`, Stand v0.9.15.31**. Sie verschieben sich — bei Abweichung `grep -n` und danach `./update-functions-index.ps1`.
@@ -440,7 +442,7 @@ Der 60er-Korrelationsabfall hängt an genau zwei Strecken: **east-london** ist s
 | 1 Δ je Dekade | −1,7 · −0,9 · +0,8 · +1,3 |
 | 2 Streckenprofil | Landsmann-Anteil 36,9 % / 32,7 % (real 36,4 / 34,0) ✅ · SD 3,26 / 1,93 (real 4,11 / 2,22) |
 | 3 **\|Δ\| ≤ 1,5** | ⚠ 1950er −1,7. Ursache siehe Abschnitt 14 — **nicht** die Einmal-Melder, sondern die Wagenzahl je Konstrukteur |
-| 3 **DNQ-Korridor** | 1950er 1,4 ✅ · 1960er 1,6 ✅ · 1970er 3,7 ✅ · ⚠ 1980er 5,2. Vor-Quali-Ära: der Überschuss sitzt nicht in der Präsenz und nicht in der Streckenwahl |
+| 3 **DNQ-Korridor** | ✅ **erfüllt seit v0.9.15.91** — 1,2 · 1,6 · 2,3 · 3,5 gegen real 1,4 · 1,5 · 2,7 · 3,9. Der 1980er-Überschuss (5,2) sass NICHT in der Vor-Quali-Ära, sondern in der Startzahl |
 | 4 moderne Ära | ✅ 1996 / 2005 / 2010 / 2024 bitgleich gegen .81 |
 | 5 DNPQ | ✅ `PRE_QUAL_DATA` nicht angefasst |
 | 6 Modus-Parität | ✅ beide Hebel sitzen in `assignPrivateerSchedules` / `_pickPrivateerRaces`, also **vor** der Saison — die drei Filterpaare (`9492/9494`, `10093/10094`, `10231/10232`) lesen unverändert nur den Plan ab |
