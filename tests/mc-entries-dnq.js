@@ -150,6 +150,10 @@ function runSeason(ctx, simIdx) {
         const isIndy = race.isIndy || (race.name && race.name.includes('Indianapolis'));
         let result = null;
         try {
+            // [SYNC Rennwochenende] Gastauftritte VOR der Meldeliste — im Spiel steht
+            // der Aufruf an allen drei Stellen vor simulateTraining. Fehlte er hier,
+            // meldete das Skript die Gastfahrer beim falschen Team (bzw. gar nicht).
+            if (typeof ctx.applyGuestMoves === 'function') ctx.applyGuestMoves(i);
             ctx.simulateTraining(i);
             const isRain = Math.random() < (ctx.SIM_CONFIG?.rainProbability ?? 0.15);
             ctx.simulateQualifying(i, isRain);
