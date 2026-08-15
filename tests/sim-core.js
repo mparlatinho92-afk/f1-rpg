@@ -116,7 +116,7 @@ function buildSourceFromIndex() {
     for (const jsFile of ['data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js',
                           'data/era-first-names.js', 'data/circuit-layouts.js', 'data/presence.js',
                           'data/guest-entries.js', 'data/driver-starts.js',
-                          'data/venue-pull.js']) {
+                          'data/venue-pull.js', 'data/race-grid.js']) {
         const placeholder = `    <script src="${jsFile}"></script>`;
         const js = fs.readFileSync(path.join(dir, jsFile), 'utf8');
         html = html.replace(placeholder, `    <script>\n${js}\n    </script>`);

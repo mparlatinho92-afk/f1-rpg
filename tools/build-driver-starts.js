@@ -31,7 +31,13 @@ const BASE = path.join(ROOT, 'f1db-json-splitted');
 const OUT = path.join(ROOT, 'data', 'driver-starts.js');
 const J = f => JSON.parse(fs.readFileSync(path.join(BASE, f), 'utf8'));
 const WRITE = process.argv.includes('--write');
-const VOLLSAISON = 0.8;          // ab hier gilt ein Fahrer als Stammfahrer
+// VOLLSAISON heisst AUSNAHMSLOS JEDES Rennen. Die fruehere Schwelle 0,8 war zu
+// grosszuegig: wer 7 von 8 Rennen fuhr, meldete im Spiel alle acht. Das verschenkte
+// 3 bis 10 Meldungen je Saison (1958: 8 Fahrer bei 80-99 % -> 9 Meldungen zu viel),
+// und sie landeten gleichverteilt ueber den Kalender — auch an den Rennen mit kleinem
+// Starterfeld, wo sie prompt zu DNQ wurden. Gemessen 1961: Monaco +4,3 Melder gegen
+// real, Zandvoort +6,1, waehrend Reims und Aintree je 3 zu wenig hatten.
+const VOLLSAISON = 1;
 
 // ── Kalender, Indy raus (gleiche Filterregel wie build-presence.js) ─────────
 const roundCircuit = {}, calOf = {};

@@ -39,7 +39,11 @@ const MIN_JAHRE = 4;        // darunter ist der Faktor Rauschen -> 1.0 (kein Ein
 // echten Nuerburgring-Sog von 1,44 auf 1,22 verwaessert hat.
 const MIN_TEILZEIT_ANTEIL = 0.15;
 const UNTEN = 0.55, OBEN = 1.5;
-const VOLLSAISON = 0.8;     // gleiche Schwelle wie build-driver-starts.js
+// AUSNAHMSLOS jedes Rennen — dieselbe Schwelle wie build-driver-starts.js. Sie muss
+// dort und hier identisch sein: der Faktor wird auf genau die Fahrer angewandt, an
+// denen er gemessen wurde. Mit 0,8 hier und 1 dort haette er die Fast-Stammfahrer
+// (80-99 % der Saison) beschrieben, ohne sie je gesehen zu haben.
+const VOLLSAISON = 1;
 
 const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
 const sd = a => { const m = mean(a); return Math.sqrt(mean(a.map(v => (v - m) ** 2))); };

@@ -33,7 +33,7 @@ const TARGETS = [
     'index.html',
     'data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js',
     'data/era-first-names.js', 'data/circuit-layouts.js', 'data/presence.js',
-    'data/guest-entries.js', 'data/driver-starts.js', 'data/venue-pull.js'
+    'data/guest-entries.js', 'data/driver-starts.js', 'data/venue-pull.js', 'data/race-grid.js'
 ];
 
 const MOJIBAKE = /[\u00C3\u00C2][\u0080-\u00BF]/g;
