@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.96</title>
+    <title>F1 RPG v0.9.15.97</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.96 (aktuell) - 15.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.97 (aktuell) - 15.08.2026</div>
+                            <div>&#8226; NEU: Nekrolog trennt WM-Wochenende, Rennen ausserhalb der WM und Fahrer ohne Cockpit</div>
+                            <div>&#8226; FIX: Nur wer schon in der F1 gefahren ist kann ohne Cockpit toedlich verunglueckten - kommende Fahrer und Nachwuchs bleiben verschont</div>
+                            <div>&#8226; FIX: Todesfaelle ausserhalb der WM zeigten NaN als Rundennummer und verlinkten auf ein Rennen das es nicht gibt</div>
+                            <div class="font-bold text-slate-400">v0.9.15.96 - 15.08.2026</div>
                             <div>&#8226; FIX: Sieben Pruefungen suchten den Status 'dead', den das Spiel nie schreibt - Verstorbene konnten ueber den Reserve-Pool zurueck aufs Grid</div>
                             <div>&#8226; NEU: Auch Fahrer ohne Cockpit koennen toedlich verunglueckten - sie fuhren real Sportwagen und Formel 2 weiter</div>
                             <div>&#8226; NEU: Steckbrief zeigt Lebensdaten statt Alter, und ab dem zehnten Jahr ohne Cockpit das Geburtsjahr - kein 120-jaehriger Rentner mehr</div>
@@ -16745,7 +16749,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.96';
+        const VERSION = '0.9.15.97';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -27900,8 +27904,14 @@ const CIRCUIT_LAYOUTS = {
             const nRaces = (GAME_STATE.races || []).length;
             if (nRaces === 0) return;
             const _pick = arr => arr[Math.floor(Math.random() * arr.length)];
+            // „Aktiv" heißt VORGESEHEN, nicht „schon gefahren". Wer erst ab Rennen 3
+            // gemeldet ist und vorher stirbt, gehört trotzdem zur Nennung — genau der
+            // Fall Gary Hocking, der 1962 gemeldet war und vor seinem Einsatz starb.
+            // Ausgeschlossen ist nur, wer gar keinen Renntermin hat: ein leerer Startplan
+            // heißt, dieser Fahrer meldet diese Saison nirgends.
             GAME_STATE.drivers
-                .filter(d => (!d.status || d.status === 'active') && d.team)
+                .filter(d => (!d.status || d.status === 'active') && d.team
+                    && (!Array.isArray(d.scheduledRaces) || d.scheduledRaces.length > 0))
                 .forEach(d => {
                     const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id);
                     const rate = isIndy ? indyRate : f1Rate;
@@ -27918,18 +27928,41 @@ const CIRCUIT_LAYOUTS = {
             // die Fahrer OHNE F1-Sitz: die fuhren Sportwagen, Formel 2 und Bergrennen,
             // um im Gespräch zu bleiben, und verunglückten dort. Ein Pool, in dem nie
             // jemand stirbt, altert nur — er verliert nie jemanden.
-            // Halbe Rate: ein Pool-Fahrer bestreitet weniger Rennen als ein Stammfahrer.
-            const poolRate = f1Rate * 0.5;
-            if (poolRate > 0) {
-                (GAME_STATE.reservePool || []).forEach(d => {
-                    if (_istTot(d) || (d.status && d.status !== 'active')) return;
-                    if (Math.random() >= poolRate) return;
-                    GAME_STATE.pendingNonWMDeaths.push({
-                        driverId: d.id, name: d.name,
-                        venue: _pick(NONWM_F1_VENUES),
-                        nonwmType: 'f1', fromPool: true,
-                        afterRace: Math.floor(Math.random() * (nRaces + 1))
-                    });
+            // ⚠ ANZAHL ZIEHEN, NICHT JEDEN EINZELN WÜRFELN. Die erste Fassung (.96) gab
+            // JEDEM Pool-Fahrer eine eigene Chance — und der Pool ist groß. Damit wuchs
+            // die Totenzahl mit der Poolgröße statt mit der Gefährlichkeit der Ära: im
+            // Spielstand des Nutzers stellte der Pool 34 von 88 Todesfällen über 26
+            // Saisons, also so viele wie das gesamte Starterfeld außerhalb der WM (31).
+            // Jetzt hängt der Erwartungswert am FELD, nicht am Pool: halb so viele wie
+            // bei den Cockpit-Fahrern, denn ein Fahrer ohne Sitz bestreitet weniger
+            // Rennen. Wer es trifft, wird danach aus dem Pool gezogen.
+            const cockpitZahl = GAME_STATE.drivers.filter(d =>
+                (!d.status || d.status === 'active') && d.team).length;
+            // ⚠ NUR WER SCHON IN DER F1 WAR. Der Reserve-Pool ist keine einheitliche
+            // Gruppe, und der Unterschied entscheidet hier alles:
+            //   A „Reserve"    – ehemalige Fahrer ohne Cockpit  → dürfen sterben
+            //   B „Testfahrer" – nur wenn sie schon gefahren sind
+            //   C „kommend"    – ihr F1-Debüt liegt noch VOR ihnen. Sie vorher sterben
+            //                    zu lassen löscht eine Karriere, die es wirklich gab.
+            //   F „Feeder"     – reale F2/F3-Fahrer, die nie einen F1-Wagen bewegten
+            //                    (der Fall Höttinger): sie gehören nicht in die
+            //                    F1-Todesbilanz, weil sie nie zur F1 gehörten.
+            // Umgekehrt zählt der Fall Hocking NICHT hier hinein: er war gemeldet, hatte
+            // also ein Cockpit — sein Tod läuft über den Zweig darüber, auch wenn er vor
+            // seinem ersten Start eintritt.
+            const _hatGefahren = d => !!d.lastRacedYear
+                || ((GAME_STATE.allTimeStATS?.drivers?.[d.histId || d.id]?.races || 0) > 0);
+            const poolKand = (GAME_STATE.reservePool || []).filter(d =>
+                !_istTot(d) && (!d.status || d.status === 'active') &&
+                d.poolGroup !== 'C' && d.poolGroup !== 'F' && d.poolGroup !== 'J' &&
+                _hatGefahren(d));
+            const poolOpfer = Math.min(poolKand.length, _poissonDraw(f1Rate * cockpitZahl * 0.5));
+            for (const d of _weightedDraw(poolKand, poolKand.map(() => 1), poolOpfer)) {
+                GAME_STATE.pendingNonWMDeaths.push({
+                    driverId: d.id, name: d.name,
+                    venue: _pick(NONWM_F1_VENUES),
+                    nonwmType: 'f1', fromPool: true,
+                    afterRace: Math.floor(Math.random() * (nRaces + 1))
                 });
             }
             applyPendingNonWMDeaths(0);   // Vor-Saison-Tode sofort (Fahrer fährt dieses Jahr gar nicht)
@@ -36515,15 +36548,25 @@ const CIRCUIT_LAYOUTS = {
                             ${GAME_STATE.seasonDeaths.length > 0 ? `
                                 <div>
                                     <span class="text-red-400 font-bold">💀 Verstorben: ${GAME_STATE.seasonDeaths.length}</span>
-                                    <div class="mt-1 flex flex-col gap-0.5">
+                                    <div class="mt-1" style="display:flex;flex-direction:column;gap:2px">
                                         ${GAME_STATE.seasonDeaths.map(d => {
-                                            const _rn = d.race + 1;
                                             const _total = GAME_STATE.races.length;
                                             const _flag = d.raceCountry ? renderFlag(d.raceCountry, d.raceName, GAME_STATE.currentYear) : '';
+                                            // Tode AUSSERHALB der WM haben keine Rundennummer und keine
+                                            // Session — sie zeigten „NaN von 24 … Rennen" und verlinkten
+                                            // auf ein Rennen, das es nicht gibt (v0.9.15.97).
+                                            const _ausserhalb = d.fatalSession === 'nonwm' || typeof d.race !== 'number';
+                                            if (_ausserhalb) {
+                                                const _wo = d.fromPool ? 'ohne Cockpit' : (d.team || '');
+                                                return `<div style="line-height:1.5">
+                                                    <span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:#ef4444">${d.name}</span>
+                                                    <span class="text-tertiary"> (${[d.raceName, d.timing, _wo].filter(Boolean).join(', ')})</span>
+                                                </div>`;
+                                            }
                                             const _sess = d.fatalSession === 'training' ? 'Training' : d.fatalSession === 'qualifying' ? 'Qualifying' : 'Rennen';
                                             return `<div style="line-height:1.5">
                                                 <span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:#ef4444">${d.name}</span>
-                                                <span class="text-tertiary cursor-pointer hover:opacity-80" onclick="showRaceDetail(${d.race})" title="Zum Rennen springen"> (${_rn} von ${_total}, ${_flag} ${d.raceName}, ${_sess})</span>
+                                                <span class="text-tertiary cursor-pointer hover:opacity-80" onclick="showRaceDetail(${d.race})" title="Zum Rennen springen"> (${d.race + 1} von ${_total}, ${_flag} ${d.raceName}, ${_sess})</span>
                                             </div>`;
                                         }).join('')}
                                     </div>
@@ -38795,12 +38838,31 @@ const CIRCUIT_LAYOUTS = {
         }
 
         // v0.9.15.19: NEKROLOG — alle tödlichen Unfälle chronologisch (neueste Saison oben).
+        // === NEKROLOG-FILTER (v0.9.15.97) ===
+        // Drei Todesarten stehen ungetrennt untereinander, und sie erzaehlen ganz
+        // Verschiedenes: der Unfall am WM-Wochenende gehoert zur Saison, der Tod bei
+        // einem Nicht-WM-Rennen oder Sportwagenlauf traf Fahrer MIT Cockpit zwischen den
+        // Rennen, und der dritte Fall betrifft Fahrer OHNE Sitz — die im Reserve-Pool
+        // warteten und anderswo weiterfuhren. In einem Spielstand ueber 26 Saisons waren
+        // das 23 / 31 / 34 von 88 Faellen; ohne Filter sind sie nicht auseinanderzuhalten.
+        let necroFilter = 'all';    // 'all' | 'wm' | 'nonwm' | 'pool'
+        window.setNecroFilter = function(mode) { necroFilter = mode; renderContent(); };
+        function _necroArt(d) {
+            // Alte Spielstaende kennen `fromPool` noch nicht — dort verraet es das Team.
+            if (d.fromPool || d.team === 'ohne Cockpit') return 'pool';
+            return d.fatalSession === 'nonwm' ? 'nonwm' : 'wm';
+        }
+
         function renderNecrology() {
             const seasons = _allChronSeasons();
             const SESS = { training: '🔧 Training', qualifying: '⏱️ Qualifying', quali: '⏱️ Qualifying', race: '🏁 Rennen' };
+            const zaehler = { all: 0, wm: 0, nonwm: 0, pool: 0 };
+            seasons.forEach(s => (s.deaths || []).forEach(d => { zaehler.all++; zaehler[_necroArt(d)]++; }));
             let total = 0;
             const blocks = seasons.slice().sort((a, b) => b.year - a.year).map(s => {
-                const deaths = (s.deaths || []).slice().sort((a, b) => (a.race || 0) - (b.race || 0));
+                const deaths = (s.deaths || []).slice()
+                    .filter(d => necroFilter === 'all' || _necroArt(d) === necroFilter)
+                    .sort((a, b) => (a.race || 0) - (b.race || 0));
                 if (deaths.length === 0) return '';
                 total += deaths.length;
                 const rows = deaths.map(d => {
@@ -38824,9 +38886,21 @@ const CIRCUIT_LAYOUTS = {
                     </div>`;
             }).filter(Boolean).join('');
 
+            const knopf = (mode, text) => `<button onclick="setNecroFilter('${mode}')"
+                class="px-3 py-1.5 rounded-lg text-sm transition ${necroFilter === mode ? 'btn-primary' : 'bg-secondary'}">
+                ${text} <span class="text-xs opacity-70">${zaehler[mode]}</span></button>`;
+            const leer = necroFilter === 'all'
+                ? 'Keine tödlichen Unfälle – die Sicherheit hält.'
+                : 'Keine Fälle in dieser Kategorie.';
             return `
-                <div class="mb-3 text-sm text-tertiary">💀 <b>${total}</b> tödliche Unfälle · neueste Saison oben</div>
-                ${blocks || '<div class="text-tertiary text-sm p-4">Keine tödlichen Unfälle – die Sicherheit hält.</div>'}
+                <div class="flex gap-2 mb-3 flex-wrap">
+                    ${knopf('all', 'Alle')}
+                    ${knopf('wm', '🏁 WM-Wochenende')}
+                    ${knopf('nonwm', '🌍 Außerhalb der WM')}
+                    ${knopf('pool', '🚫 Ohne Cockpit')}
+                </div>
+                <div class="mb-3 text-sm text-tertiary">💀 <b>${total}</b> tödliche Unfälle${necroFilter !== 'all' ? ` in dieser Kategorie (von ${zaehler.all})` : ''} · neueste Saison oben</div>
+                ${blocks || `<div class="text-tertiary text-sm p-4">${leer}</div>`}
             `;
         }
         
