@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.94</title>
+    <title>F1 RPG v0.9.15.95</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.94 (aktuell) - 15.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.95 (aktuell) - 15.08.2026</div>
+                            <div>&#8226; NEU: Fehlt ein realer Gaststarter in dieser Spielwelt, meldet ein anderer Hinterbaenkler an seiner Stelle - gewuerfelt, aber nie ein Spitzenfahrer</div>
+                            <div>&#8226; NEU: Ersatzmelder kommen nur bei kleinen Rennstaellen unter und fahren hoechstens ein Kalenderdrittel</div>
+                            <div>&#8226; FIX: Spaetere Saisons verlieren nicht mehr ihre Gaststarter und damit ihre DNQ</div>
+                            <div class="font-bold text-slate-400">v0.9.15.94 - 15.08.2026</div>
                             <div>&#8226; NEU: Die Groesse des Startfelds kommt jetzt vom einzelnen Rennen statt vom Jahresmittel - 1961 zwischen 15 und 32 Startern</div>
                             <div>&#8226; NEU: Die Vor-Qualifikation findet an den Wochenenden statt an denen es sie wirklich gab - 1978 ab dem vierten Rennen, 1989 an allen sechzehn</div>
                             <div>&#8226; FIX: Wer real ein Rennen auslies, meldet nicht mehr die ganze Saison durch</div>
@@ -16737,7 +16741,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.94';
+        const VERSION = '0.9.15.95';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20429,12 +20433,152 @@ const CIRCUIT_LAYOUTS = {
             }
         }
 
+        // === FELD-SCHWANZ: ERSATZ FÜR FEHLENDE MELDER (v0.9.15.95) ===
+        // DRIVER_STARTS sagt „Otto Stuppacher meldete 1977 drei Rennen". Ist Stuppacher in
+        // DIESER Spielwelt längst zurückgetreten oder tot, verfällt der Eintrag ersatzlos —
+        // und mit ihm der SCHWANZ des Feldes: genau die Einmal- und Teilzeitmelder, aus
+        // denen Streckenstreuung und DNQ überhaupt erst entstehen. Gemessen an einem
+        // 1974er Start driften die Meldungen dadurch bis −2,8 je Rennen ab, die Streuung
+        // fällt auf rund 60 % der Realität. `fillGridEntries` fängt das NICHT auf: es füllt
+        // nur bis zur Grid-Größe, und der Schwanz liegt per Definition darüber.
+        //
+        // Ersetzt wird nicht die PERSON, sondern die ROLLE — irgendein anderer
+        // Hinterbänkler meldet stattdessen. Die Auswahl ist gewichtet, nicht gesetzt:
+        // mit hoher Wahrscheinlichkeit trifft es einen Langsamen, praktisch nie einen
+        // Spitzenfahrer. Und nicht jede Lücke wird gefüllt — mit 1 − TAIL_FILL_P bleibt
+        // sie offen, sonst wäre die Meldeliste wieder deterministisch.
+        const TAIL_FILL_P = 0.75;
+        function fillMissingTailEntries(drivers, teams, races, year) {
+            if (typeof DRIVER_STARTS === 'undefined' || !DRIVER_STARTS[year]) return 0;
+            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            if (!cal.length) return 0;
+            const ids = cal.map(r => String(r.circuitId).toLowerCase());
+            const idSet = new Set(ids);
+
+            const aktiv = (drivers || []).filter(d => !d.status || d.status === 'active');
+            const daSind = new Set(aktiv.map(d => String(d.histId || '').toLowerCase()).filter(Boolean));
+            const zeile = DRIVER_STARTS[year];
+            // Nur Teilzeit-Rollen (Wert ≠ 0). Ein fehlender Vollsaison-Fahrer ist ein
+            // leeres Cockpit — dafür ist der Sitzfüller zuständig, nicht der Schwanz.
+            // NUR KLEINE ROLLEN. Wer real 14 von 15 Rennen fuhr, hatte ein festes
+            // Cockpit — dafuer ist der Sitzfueller zustaendig. Wird so eine Rolle vom
+            // Schwanz uebernommen, sitzt ein Hinterbaenkler eine ganze Saison lang im
+            // Wolf (gemessen: Patrese, Pace 82, 14 Rennen). Grenze: hoechstens ein
+            // Drittel des Kalenders, mindestens aber 5 Rennen.
+            const rolleMax = Math.max(5, Math.round(cal.length / 3));
+            const fehlend = Object.keys(zeile).filter(h => {
+                const v = zeile[h];
+                if (v === 0 || daSind.has(h)) return false;
+                return typeof v === 'string' || v <= rolleMax;
+            });
+            if (!fehlend.length) return 0;
+
+            // BUDGET GEGEN DEN IST-STAND, nicht offen auffüllen. Die erste Fassung
+            // ersetzte jede fehlende Rolle mit fester Wahrscheinlichkeit und schoss
+            // dadurch über: 1975 +4,9 Melder je Rennen statt +0,4. Der Grund ist, dass
+            // viele reale Teilzeitfahrer eines Jahres in der Spielwelt nie ankamen —
+            // die Liste der Fehlenden ist dann viel länger als die tatsächliche Lücke.
+            // Gezählt wird deshalb in MELDUNGEN: was die Saison real hatte, gegen das,
+            // was der Kader gerade hergibt.
+            const meldungenVon = v => (v === 0 ? cal.length : (typeof v === 'string' ? 1 : v));
+            let soll = 0;
+            for (const k in zeile) soll += Math.min(cal.length, meldungenVon(zeile[k]));
+            let ist = 0;
+            aktiv.forEach(d => {
+                ist += Array.isArray(d.scheduledRaces)
+                    ? d.scheduledRaces.filter(c => idSet.has(c)).length
+                    : cal.length;
+            });
+            let luecke = soll - ist;
+            if (luecke < 1) return 0;
+
+            // Kandidaten: nur wer LANGSAMER ist als das halbe Feld. Die Pace-Gewichtung
+            // allein reichte nicht — ein Fahrer mit Pace 82 ist zwar 8-mal
+            // unwahrscheinlicher als einer mit 57, kam aber trotzdem dran. Ein
+            // Ersatzmelder ist ein Kuriosum, kein Werksfahrer auf Abwegen.
+            const feldPace = aktiv.map(d => d.pace || 0).sort((a, b) => a - b);
+            const median = feldPace.length ? feldPace[Math.floor(feldPace.length / 2)] : 70;
+            const pool = (GAME_STATE.reservePool || []).filter(d =>
+                (!d.status || d.status === 'active') && !d.team &&
+                (d.pace || 0) >= 40 && (d.pace || 0) <= median);
+            if (!pool.length) return 0;
+
+            // Teams, die noch einen Wagen mehr melden dürfen. Kleine Rennställe zuerst —
+            // ein Gastauftritt fand bei Kleinstkonstrukteuren statt, nicht bei Ferrari.
+            const deckel = _maxCarsPerConstructor(year);
+            const belegt = {};
+            aktiv.forEach(d => { if (d.team) belegt[d.team] = (belegt[d.team] || 0) + 1; });
+            // SPITZENTEAMS SIND TABU. Die Gewichtung nach Wagenstärke allein reichte
+            // nicht: Howden Ganley (Pace 58, drittletzter im Feld) landete bei McLaren.
+            // Ein Gastmelder kam bei einem Kleinstrennstall unter, nicht beim
+            // Titelanwärter — dieselbe Regel wie bei den Mid-Season-Wechseln.
+            const teamPace = (teams || []).map(t => t.carSpeed || 70).sort((a, b) => a - b);
+            const tMedian = teamPace.length ? teamPace[Math.floor(teamPace.length / 2)] : 70;
+            const teamKand = (teams || []).filter(t =>
+                !t.isIndyOnly && !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId) &&
+                (t.carSpeed || 70) <= tMedian &&
+                (belegt[t.id] || 0) < deckel);
+            if (!teamKand.length) return 0;
+            const tGew = teamKand.map(t => Math.max(1, 95 - (t.carSpeed || 70)) ** 1.5);
+
+            // Fehlende Rollen in zufälliger Reihenfolge — sonst bekämen immer dieselben
+            // (alphabetisch ersten) Fahrer einen Ersatz.
+            const reihe = _weightedDraw(fehlend, fehlend.map(() => 1), fehlend.length);
+            let gefuellt = 0;
+            for (const h of reihe) {
+                if (luecke < 1) break;
+                if (Math.random() >= TAIL_FILL_P) continue;          // Lücke bleibt
+                if (!pool.length) break;
+                // Wer einspringt: quadratisch gegen die Pace gewichtet. Ein Fahrer mit
+                // Pace 55 ist rund 16-mal wahrscheinlicher als einer mit 85 — es soll ein
+                // Kuriosum sein, kein Lauda, der zufällig ein Rennen auslässt.
+                const gew = pool.map(d => Math.max(1, 95 - (d.pace || 70)) ** 2);
+                const ersatz = _weightedDraw(pool, gew, 1)[0];
+                if (!ersatz) break;
+                const team = _weightedDraw(teamKand, tGew, 1)[0];
+                if (!team) break;
+
+                const n = zeile[h];
+                let plan;
+                if (typeof n === 'string') {
+                    // Einmal-Melder: dieselbe Strecke, anderer Fahrer. So bleibt das
+                    // F2-Sonderfeld am Nürburgring auch in Saison 5 bevölkert.
+                    plan = idSet.has(n) ? [n]
+                        : _pickPrivateerRaces(1, cal, year, _homePullNation(ersatz)).map(i => ids[i]);
+                } else {
+                    plan = _pickPrivateerRaces(Math.min(n, cal.length), cal, year,
+                        _homePullNation(ersatz)).map(i => ids[i]);
+                }
+                if (!plan.length) continue;
+
+                ersatz.team = team.id;
+                ersatz.isPrivateer = true;
+                ersatz.isReserve = false;
+                ersatz._gridFiller = true;      // Saisonende: zurück in den Pool
+                ersatz._tailFiller = true;      // Herkunft nachvollziehbar
+                ersatz.scheduledRaces = plan;
+                belegt[team.id] = (belegt[team.id] || 0) + 1;
+                luecke -= plan.length;
+                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== ersatz.id);
+                pool.splice(pool.indexOf(ersatz), 1);
+                if (!drivers.find(x => x.id === ersatz.id)) drivers.push(ersatz);
+                // Ohne Wertungs-Eintrag fährt er, taucht aber nirgends auf (v0.9.15.6).
+                if (GAME_STATE.driverStandings && !GAME_STATE.driverStandings[ersatz.id]) {
+                    GAME_STATE.driverStandings[ersatz.id] = { name: ersatz.name, team: ersatz.team,
+                        points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0, bestFinish: null };
+                }
+                gefuellt++;
+            }
+            return gefuellt;
+        }
+
         // Grid-Füller nach der Saison in den Pool zurückgeben — sie sind Gäste, keine
         // festen Cockpits, und dürfen den Sitz im Folgejahr nicht blockieren.
         function releaseGridFillers() {
             const back = GAME_STATE.drivers.filter(d => d._gridFiller);
             back.forEach(d => {
                 d.team = null; d.isPrivateer = false; d._gridFiller = false;
+                d._tailFiller = false;   // sonst schleppt die Markierung sich ueber Jahre mit
                 d.scheduledRaces = null; d.isReserve = true;
                 if (!(GAME_STATE.reservePool || []).find(x => x.id === d.id)) {
                     (GAME_STATE.reservePool = GAME_STATE.reservePool || []).push(d);
@@ -33558,6 +33702,12 @@ const CIRCUIT_LAYOUTS = {
             markSmallConstructors(GAME_STATE.teams, GAME_STATE.drivers, newYear);
             // Startplan für die neue Saison neu ziehen (nach Home-Only, s. dort).
             assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear, GAME_STATE.teams);
+            // Feld-Schwanz: für real gemeldete Teilzeitfahrer, die es in dieser Spielwelt
+            // nicht mehr gibt, springt ein anderer Hinterbänkler ein. MUSS vor
+            // fillGridEntries laufen — der füllt nur bis zur Grid-Größe und würde die
+            // Lücke sonst mit einem regulären Melder schließen, statt den Schwanz zu
+            // erzeugen, aus dem DNQ und Streckenstreuung entstehen.
+            fillMissingTailEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
             // Feld auf reale Grid-Größe auffüllen (nur wenn der Kader zu dünn ist).
             fillGridEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
             // JEDER GEPLANTE FAHRER MELDET ≥1 RENNEN (v0.9.15.11).
