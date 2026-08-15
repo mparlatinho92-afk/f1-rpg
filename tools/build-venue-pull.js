@@ -129,6 +129,26 @@ for (const z of zeilen) {
     console.log(`${z.c.padEnd(22)} ${String(z.n).padStart(6)}  ${z.f.toFixed(2).padStart(6)}  ${z.h.toFixed(1).padStart(11)}  ${z.dek}`);
 }
 
+// ── Aussereuropaeische Strecken (fuer die Reise-Zurueckhaltung) ────────────
+// Europaeische Stammfahrer liessen Ueberseerennen oft aus — die Reise kostete Geld und
+// Wochen. Gemessen ueber F1DB (Anteil der europaeischen Stammfahrer, die ein
+// Ueberseerennen NICHT meldeten): 1950er 54 % · 1960er 21 % · 1970er 17 % · 1980er 9 %
+// · 1990er 11 % · 2000er 2 % · 2010er 3 % · 2020er 0 %.
+// Einzelne Jahre: 1953 46 % · 1962 27 % · 1974 16 % · 1985 16 %.
+const region = {};
+for (const c of J('f1db-circuits.json')) {
+    const la = +c.latitude, lo = +c.longitude;
+    if (!isFinite(la) || !isFinite(lo)) continue;
+    let r = null;
+    if (lo < -25 && la > 12) r = 'NA';
+    else if (lo < -25)       r = 'SA';
+    else if (lo > 60 && la > 0) r = 'AS';
+    else if (la < -15)       r = 'AF';
+    if (r) region[String(c.id).toLowerCase()] = r;
+}
+const regionBody = Object.keys(region).sort()
+    .map(c => JSON.stringify(c) + ':' + JSON.stringify(region[c])).join(',');
+
 const body = Object.keys(out).sort().map(c => {
     const e = out[c];
     const inner = Object.keys(e).sort().map(k => JSON.stringify(k) + ':' + e[k]).join(',');
@@ -154,6 +174,11 @@ const block = `        // VENUE_PULL — wie stark eine Strecke AUSWAERTIGE Teil
         const VENUE_PULL = {
             ${body}
         };
+
+        // VENUE_REGION — nur die AUSSEREUROPAEISCHEN Strecken, grob nach Koordinaten.
+        // Europa fehlt bewusst: „kein Eintrag" heisst „Europa, keine Reise".
+        // Gebraucht fuer die Reise-Zurueckhaltung europaeischer Fahrer.
+        const VENUE_REGION = { ${regionBody} };
 `;
 console.log(`\nDateigroesse: ${(block.length / 1024).toFixed(1)} KB`);
 

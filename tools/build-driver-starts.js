@@ -39,6 +39,29 @@ const WRITE = process.argv.includes('--write');
 // real, Zandvoort +6,1, waehrend Reims und Aintree je 3 zu wenig hatten.
 const VOLLSAISON = 1;
 
+// ── Regionen: aussereuropaeische Strecken grob ueber die Koordinaten ────────
+// WOZU: Es gab Fahrer, die AUSSCHLIESSLICH in ihrer Weltgegend meldeten — Ende der
+// 1960er das Paar Watkins Glen + Mexico City (Hap Sharp, Pedro Rodriguez, Moises
+// Solana, Bob Bondurant …). Sie in einer alternativen Geschichte nach Monza zu
+// schicken, waere falsch: sie kamen zur Formel 1, wenn die Formel 1 zu ihnen kam.
+// Einmal-Melder sind ueber ihre Strecke schon gebunden; hier geht es um die mit
+// ZWEI ODER MEHR Rennen. Gemessen: 34 Faelle (27 Nordamerika, 7 Suedamerika),
+// 23 davon fuhren ALLE Rennen ihrer Region.
+// Europa ist bewusst KEINE Region — dort lag der halbe Kalender, die Bindung waere
+// nichtssagend (353 der 387 "kontinentfesten" Faelle sind schlicht Europaeer).
+const cInfo = {};
+for (const c of J('f1db-circuits.json')) {
+    cInfo[String(c.id).toLowerCase()] = { lat: +c.latitude, lon: +c.longitude };
+}
+function region(cid) {
+    const i = cInfo[cid]; if (!i || !isFinite(i.lat) || !isFinite(i.lon)) return null;
+    if (i.lon < -25 && i.lat > 12) return 'NA';
+    if (i.lon < -25)               return 'SA';
+    if (i.lon > 60 && i.lat > 0)   return 'AS';
+    if (i.lat < -15)               return 'AF';
+    return null;                    // Europa = keine Bindung
+}
+
 // ── Kalender, Indy raus (gleiche Filterregel wie build-presence.js) ─────────
 const roundCircuit = {}, calOf = {};
 for (const r of J('f1db-races.json')) {
@@ -90,7 +113,15 @@ for (const y of Object.keys(teilnahme).map(Number).sort((a, b) => a - b)) {
         // dem Saisonmittel: 1952 +7,7 · 1953 +9,8 · 1966 +9,8 · 1969 +8,7.
         // Fuer viele dieser Fahrer IST dieses eine Rennen die ganze Karriere — die
         // Strecke ist dann genauso Teil der Wahrheit wie die Anzahl.
-        row[dId] = voll ? 0 : (n === 1 ? [...teilnahme[y][dId]][0] : n);   // 0 = volle Saison
+        const strecken = [...teilnahme[y][dId]];
+        // Regionsfest: alle Rennen in DERSELBEN aussereuropaeischen Region.
+        // Dann steht die Streckenliste in der Tabelle — die Anzahl ergibt sich daraus.
+        const regionen = new Set(strecken.map(region));
+        const regionsfest = !voll && n >= 2 && regionen.size === 1 && !regionen.has(null);
+        row[dId] = voll ? 0
+            : n === 1 ? strecken[0]
+            : regionsfest ? strecken.sort()
+            : n;   // 0 = volle Saison
         if (!voll) {
             eintraege++;
             const dek = Math.floor(y / 10) * 10;
@@ -126,6 +157,11 @@ const block = `        // DRIVER_STARTS — wie viele Rennen ein Fahrer in diese
         //   0        = volle Saison (>= ${VOLLSAISON * 100} % des Kalenders)
         //   n > 0    = genau so viele Rennen (WELCHE, entscheidet das Spiel)
         //   "strecke" = genau EIN Rennen, und zwar dieses (circuitId)
+        //   [a,b,…]   = genau diese Rennen. Nur fuer Fahrer, die AUSSCHLIESSLICH in
+        //               einer aussereuropaeischen Region meldeten (Watkins Glen +
+        //               Mexico City Ende der 1960er). Sie kamen zur Formel 1, wenn
+        //               die Formel 1 zu ihnen kam — ein Ersatzeinsatz in Europa
+        //               waere in keiner alternativen Geschichte plausibel.
         //   fehlt    = hat in dieser Saison real GAR NICHT gemeldet -> das Spiel
         //              entscheidet selbst (generierte Fahrer, Pool-Auffueller)
         // ${eintraege} Teilzeit-Faelle ueber ${jahre.length} Saisons.
