@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.97</title>
+    <title>F1 RPG v0.9.15.98</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.97 (aktuell) - 15.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.98 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; NEU: Europaeische Stammfahrer lassen Ueberseerennen aus wie in der Realitaet - 1953 fast jeder zweite, ab 1980 niemand mehr</div>
+                            <div>&#8226; NEU: Fahrer die nur in ihrer Weltgegend meldeten bleiben dort - Watkins Glen und Mexico City Ende der 1960er</div>
+                            <div>&#8226; FIX: Ersatzmelder springen wieder in den 1950er-Folgesaisons ein - das Indy-Feld hatte das Starterfeld voll erscheinen lassen</div>
+                            <div class="font-bold text-slate-400">v0.9.15.97 - 15.08.2026</div>
                             <div>&#8226; NEU: Nekrolog trennt WM-Wochenende, Rennen ausserhalb der WM und Fahrer ohne Cockpit</div>
                             <div>&#8226; FIX: Nur wer schon in der F1 gefahren ist kann ohne Cockpit toedlich verunglueckten - kommende Fahrer und Nachwuchs bleiben verschont</div>
                             <div>&#8226; FIX: Todesfaelle ausserhalb der WM zeigten NaN als Rundennummer und verlinkten auf ein Rennen das es nicht gibt</div>
@@ -3521,7 +3525,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.97';
+        const VERSION = '0.9.15.98';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6434,6 +6438,14 @@
         // ihre Riesenfelder über Kapazität und Prestige an, nicht über Landsleute —
         // dafür sind die Ausnahmen in getGridSize zuständig. Der Sog trifft in den
         // 50ern 8 von 10 Strecken besser und diese zwei schlechter.
+        // Europäische Nationen als IOC-Codes — gebraucht für die Reise-Zurückhaltung
+        // gegenüber Überseerennen. Bewusst großzügig: wer hier fehlt, reist einfach
+        // wie bisher, es geht nicht verloren.
+        const EU_NATIONS = new Set(['GBR','ITA','FRA','GER','FRG','GDR','BEL','NED','SUI','AUT',
+            'ESP','SWE','IRL','MON','POR','FIN','DEN','CZE','TCH','POL','HUN','RUS','URS','LIE',
+            'LUX','NOR','GRE','ROU','BUL','YUG','SCG','SRB','CRO','SLO','SVK','EST','LAT','LTU',
+            'ISL','MLT','CYP','SMR','AND','TUR','UKR','BLR']);
+
         function _homePullWeight(year) {
             return year < 1970 ? 4 : 1;
         }
@@ -6483,7 +6495,21 @@
             // Beides zu multiplizieren drückte Aintree 1955 auf 21,4 gegen real 26:
             // der Streckenfaktor 0,71 gilt für Auswärtige, nicht für die 8,8 Briten,
             // die dort jedes Jahr zusätzlich meldeten.
-            const hw = i => isHome[i] ? W : vp(i);
+            // === REISE-ZURÜCKHALTUNG (v0.9.15.98) ===
+            // Europäische Stammfahrer ließen Überseerennen oft aus — die Reise kostete
+            // Geld und Wochen. Gemessen über F1DB (Anteil europäischer Stammfahrer, die
+            // ein Überseerennen NICHT meldeten): 1953 46 % · 1962 27 % · 1974 16 % ·
+            // 1985 16 %. Das Spiel kam auf 20 / 10 / 14 / 20 % — die frühen Jahre also
+            // viel zu reisefreudig, ab 1970 stimmt es.
+            // Wirkt NUR auf Europäer: ein Mexikaner meidet Mexiko nicht.
+            const _reise = year < 1960 ? 0.30 : year < 1970 ? 0.50 : year < 1980 ? 0.85 : 1;
+            const _fahrerEU = !!homeNat && EU_NATIONS.has(homeNat);
+            const rw = i => {
+                if (_reise >= 1 || !_fahrerEU || typeof VENUE_REGION === 'undefined') return 1;
+                const c = races[i] && races[i].circuitId;
+                return (c && VENUE_REGION[String(c).toLowerCase()]) ? _reise : 1;
+            };
+            const hw = i => (isHome[i] ? W : vp(i)) * rw(i);
             const f = _privClusterWindow(year);
             // Gewichtet ziehen, sobald IRGENDEIN Gewicht von 1 abweicht — frueher hing
             // das allein an W > 1, der Streckensog waere im Nachkriegs- und Modernefall
@@ -7078,6 +7104,19 @@
                             : _pickPrivateerRaces(1, cal, year, _homePullNation(d)).map(i => ids[i]);
                         return;
                     }
+                    // REGIONSFESTE FAHRER: die Tabelle nennt die Strecken, weil dieser
+                    // Fahrer ausschließlich in seiner Weltgegend meldete — Ende der
+                    // 1960er das Paar Watkins Glen + Mexico City. Er kam zur Formel 1,
+                    // wenn die Formel 1 zu ihm kam; ein Ersatzeinsatz in Europa wäre in
+                    // keiner alternativen Geschichte plausibel. 34 Fälle, 27 davon
+                    // Nordamerika.
+                    if (Array.isArray(n)) {
+                        const vorhanden = n.filter(c => ids.includes(c));
+                        d.scheduledRaces = vorhanden.length ? vorhanden
+                            : _pickPrivateerRaces(Math.min(n.length, cal.length), cal, year,
+                                _homePullNation(d)).map(i => ids[i]);
+                        return;
+                    }
                     d.scheduledRaces = _pickPrivateerRaces(Math.min(n, cal.length), cal, year,
                         _homePullNation(d)).map(i => ids[i]);
                 });
@@ -7249,6 +7288,7 @@
             const fehlend = Object.keys(zeile).filter(h => {
                 const v = zeile[h];
                 if (v === 0 || daSind.has(h)) return false;
+                if (Array.isArray(v)) return v.length <= rolleMax;
                 return typeof v === 'string' || v <= rolleMax;
             });
             if (!fehlend.length) return 0;
@@ -7260,14 +7300,34 @@
             // die Liste der Fehlenden ist dann viel länger als die tatsächliche Lücke.
             // Gezählt wird deshalb in MELDUNGEN: was die Saison real hatte, gegen das,
             // was der Kader gerade hergibt.
-            const meldungenVon = v => (v === 0 ? cal.length : (typeof v === 'string' ? 1 : v));
+            const meldungenVon = v => v === 0 ? cal.length
+                : typeof v === 'string' ? 1
+                : Array.isArray(v) ? v.length      // regionsfeste Streckenliste
+                : v;
             let soll = 0;
             for (const k in zeile) soll += Math.min(cal.length, meldungenVon(zeile[k]));
+            // ⚠ DEN STARTPLAN ZU ZÄHLEN GENÜGT NICHT. Ein Plan ist keine Meldung: die
+            // Team-Präsenz (L1), der Wagendeckel und `privateerEntersRace` streichen
+            // danach noch. Gemessen an einem 1955er Start feuerte der Ersatz deshalb in
+            // FÜNF Folgesaisons kein einziges Mal, obwohl 107 bis 176 passende Fahrer im
+            // Pool warteten und das Feld je Rennen 3 Melder zu dünn war — der geplante
+            // Ist-Stand lag über dem Soll, der tatsächliche darunter.
+            // Gezählt wird deshalb mit demselben Prädikat wie in `fillGridEntries`.
+            // ⚠ INDY-FAHRER RAUS — sie melden kein Europarennen (eigenes Feld, eigener
+            // Filter in simulateRace). Ohne das zählte der Ist-Stand 1955 245 Meldungen
+            // auf 6 Rennen, also 41 je Rennen statt der tatsächlichen 21: das halbe
+            // Indy-500-Feld wurde jedem Grand Prix zugeschlagen. Die Lücke war dadurch
+            // immer tief negativ und der Ersatz feuerte in keiner einzigen Saison.
+            // Dieselbe Prüfung steht in fillGridEntries — [SYNC] halten.
+            const _istIndyFahrer = d => {
+                if (d.isIndyOnly) return true;
+                const t = (teams || []).find(x => x.id === d.team);
+                return !!t && (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId));
+            };
             let ist = 0;
             aktiv.forEach(d => {
-                ist += Array.isArray(d.scheduledRaces)
-                    ? d.scheduledRaces.filter(c => idSet.has(c)).length
-                    : cal.length;
+                if (!d.team || _istIndyFahrer(d)) return;
+                cal.forEach(r => { if (privateerEntersRace(d, r)) ist++; });
             });
             let luecke = soll - ist;
             if (luecke < 1) return 0;
@@ -7320,7 +7380,11 @@
 
                 const n = zeile[h];
                 let plan;
-                if (typeof n === 'string') {
+                if (Array.isArray(n)) {
+                    // Regionsfeste Rolle: der Ersatz uebernimmt DIESELBEN Strecken.
+                    // Alles andere waere ein Europaeer, der ploetzlich in Mexiko meldet.
+                    plan = n.filter(c => idSet.has(c));
+                } else if (typeof n === 'string') {
                     // Einmal-Melder: dieselbe Strecke, anderer Fahrer. So bleibt das
                     // F2-Sonderfeld am Nürburgring auch in Saison 5 bevölkert.
                     plan = idSet.has(n) ? [n]

@@ -62,3 +62,8 @@
             "zandvoort":{"*":1.04,"1950":0.91,"1960":0.95,"1970":1.11,"1980":1.15},
             "zolder":{"*":1.1,"1970":1.09,"1980":1.13}
         };
+
+        // VENUE_REGION — nur die AUSSEREUROPAEISCHEN Strecken, grob nach Koordinaten.
+        // Europa fehlt bewusst: „kein Eintrag" heisst „Europa, keine Reise".
+        // Gebraucht fuer die Reise-Zurueckhaltung europaeischer Fahrer.
+        const VENUE_REGION = { "adelaide":"AF","aida":"AS","austin":"NA","buddh":"AS","buenos-aires":"SA","caesars-palace":"NA","dallas":"NA","detroit":"NA","east-london":"AF","fuji":"AS","indianapolis":"NA","interlagos":"SA","jacarepagua":"SA","kyalami":"AF","las-vegas":"NA","long-beach":"NA","marina-bay":"AS","melbourne":"AF","mexico-city":"NA","miami":"NA","mont-tremblant":"NA","montreal":"NA","mosport":"NA","phoenix":"NA","riverside":"NA","sebring":"NA","sepang":"AS","shanghai":"AS","suzuka":"AS","watkins-glen":"NA","yeongam":"AS" };
