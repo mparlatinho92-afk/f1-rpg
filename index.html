@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.93</title>
+    <title>F1 RPG v0.9.15.94</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.93 (aktuell) - 15.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.94 (aktuell) - 15.08.2026</div>
+                            <div>&#8226; NEU: Die Groesse des Startfelds kommt jetzt vom einzelnen Rennen statt vom Jahresmittel - 1961 zwischen 15 und 32 Startern</div>
+                            <div>&#8226; NEU: Die Vor-Qualifikation findet an den Wochenenden statt an denen es sie wirklich gab - 1978 ab dem vierten Rennen, 1989 an allen sechzehn</div>
+                            <div>&#8226; FIX: Wer real ein Rennen auslies, meldet nicht mehr die ganze Saison durch</div>
+                            <div class="font-bold text-slate-400">v0.9.15.93 - 15.08.2026</div>
                             <div>&#8226; NEU: Strecken ziehen unterschiedlich viele Gastmelder an - nach Dekaden gestaffelt, Nuerburgring und Monza voll, Rouen und Silverstone duenn</div>
                             <div>&#8226; NEU: Wer real nur ein einziges Rennen meldete, meldet es jetzt am richtigen Ort - 1952 sechzehn Fahrer am Nuerburgring, die sonst nie in der WM fuhren</div>
                             <div>&#8226; FIX: Gemischtes F1/F2-Feld am Nuerburgring darf wieder voll starten statt am Deckel zu scheitern</div>
@@ -3166,6 +3170,7 @@
     <script src="data/guest-entries.js"></script>
     <script src="data/driver-starts.js"></script>
     <script src="data/venue-pull.js"></script>
+    <script src="data/race-grid.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3504,7 +3509,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.93';
+        const VERSION = '0.9.15.94';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4740,10 +4745,29 @@
             1962: 26, 1966: 27, 1967: 25, 1969: 22
         };
 
+        // Eintrag aus RACE_GRID für dieses Rennen — Zahl = nur Starter,
+        // [S, P, T] = Starter, Vor-Quali-Pool, Durchkommende.
+        function _raceGridEntry(year, race) {
+            if (typeof RACE_GRID === 'undefined' || !race || !race.circuitId) return null;
+            const z = RACE_GRID[year];
+            return (z && z[String(race.circuitId).toLowerCase()]) || null;
+        }
+
         // Grid-Größe für ein spezifisches Rennen (berücksichtigt Strecken-Ausnahmen)
         function getGridSize(year, race) {
             const base = GRID_SIZES[year] ?? 20;
             if (!race) return base;
+            // REALE STARTERZAHL DIESES RENNENS, wenn bekannt (v0.9.15.94).
+            // GRID_SIZES ist ein JAHRESMITTEL — real schwankte die Starterzahl stark
+            // (1961: 15 bis 32) und lag in rund der Hälfte der Rennen darüber. Seit
+            // v0.9.15.93 melden die Fahrer korrekt geballt an den großen Rennen und
+            // scheiterten dort an einem Deckel, den es real nicht gab: DNQ 1961 3,7
+            // statt 2,1, 1958 3,3 statt 1,8, 1969 1,7 statt 0,5.
+            // Die Handausnahmen darunter (Monaco, Nordschleife) bleiben als RÜCKFALL
+            // für alles, was die Tabelle nicht kennt — erfundene Kalender, Jahre nach
+            // dem Datenhorizont, Strecken ohne Eintrag.
+            const rg = _raceGridEntry(year, race);
+            if (rg) return Array.isArray(rg) ? rg[0] : rg;
             const name    = (race.name    || '').toLowerCase();
             const circuit = (race.circuit || '').toLowerCase();
             // Monaco: engere Strecke → kleineres Grid. ÄRA-GENAU (v0.9.14.91) — die
@@ -12050,14 +12074,25 @@
             // Kalender: 1989 waren es 39 Melder auf 26 Plätze, also jedes Rennen;
             // 1978 nur an den vollen Wochenenden. Damit ergibt sich das von selbst.
             const _pqGrid = getGridSize(year, race);
-            const _pqHappens = _preQual && (_preQual.prob == null || Math.random() < _preQual.prob);
-            if (_pqHappens && !isIndyRace && activeDrivers.length > _pqGrid) {
+            // RENNSCHARFE VOR-QUALI (v0.9.15.94): steht sie für dieses Rennen in
+            // RACE_GRID, gilt sie dort und nur dort — kein `prob`-Wurf mehr. Die
+            // Wahrscheinlichkeit war ein Ersatz für fehlende Daten: 1978 lief die
+            // Vor-Quali erst ab Runde 4, 1989 an allen 16 Wochenenden, und `prob`
+            // konnte nur die Häufigkeit treffen, nie die richtigen Wochenenden.
+            const _rgPq = _raceGridEntry(year, race);
+            const _pqReal = Array.isArray(_rgPq) ? { pool: _rgPq[1], through: _rgPq[2] } : null;
+            const _pqSpec = _pqReal || _preQual;
+            const _pqHappens = _pqReal ? true
+                : (_preQual && (_preQual.prob == null || Math.random() < _preQual.prob));
+            // Kennt die Tabelle das Rennen und nennt KEINE Vor-Quali, gab es dort keine.
+            const _pqVerboten = !!_rgPq && !_pqReal;
+            if (_pqHappens && !_pqVerboten && !isIndyRace && activeDrivers.length > _pqGrid) {
                 const _bySpeed = [...activeDrivers].sort((a, b) => {
                     const ta = GAME_STATE.teams.find(t => t.id === a.team);
                     const tb = GAME_STATE.teams.find(t => t.id === b.team);
                     return (ta?.carSpeed || 70) - (tb?.carSpeed || 70);
                 });
-                const poolCount = Math.min(_preQual.pool, _bySpeed.length);
+                const poolCount = Math.min(_pqSpec.pool, _bySpeed.length);
                 const _pool = _bySpeed.slice(0, poolCount);
 
                 // Vorqual: Performance-Roll mit mehr Varianz als Hauptquali
@@ -12074,7 +12109,7 @@
                 // throughVar (v0.9.15.3): mit dieser Wahrscheinlichkeit kommt EINER MEHR
                 // durch. Nötig für halbzahlige Ziele — 1992 hatte real 12 DNPQ auf 8
                 // Wochenenden, also 1,5 pro Rennen; mit ganzzahligem through nicht treffbar.
-                const _thr = _preQual.through + ((_preQual.throughVar && Math.random() < _preQual.throughVar) ? 1 : 0);
+                const _thr = _pqSpec.through + ((_pqSpec.throughVar && Math.random() < _pqSpec.throughVar) ? 1 : 0);
                 const throughCount = Math.min(_thr, _pool.length);
                 const _passedIds = new Set(_preScores.slice(0, throughCount).map(x => x.d.id));
 
