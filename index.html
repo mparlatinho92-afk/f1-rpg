@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.92</title>
+    <title>F1 RPG v0.9.15.93</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.92 (aktuell) - 15.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.93 (aktuell) - 15.08.2026</div>
+                            <div>&#8226; NEU: Strecken ziehen unterschiedlich viele Gastmelder an - nach Dekaden gestaffelt, Nuerburgring und Monza voll, Rouen und Silverstone duenn</div>
+                            <div>&#8226; NEU: Wer real nur ein einziges Rennen meldete, meldet es jetzt am richtigen Ort - 1952 sechzehn Fahrer am Nuerburgring, die sonst nie in der WM fuhren</div>
+                            <div>&#8226; FIX: Gemischtes F1/F2-Feld am Nuerburgring darf wieder voll starten statt am Deckel zu scheitern</div>
+                            <div class="font-bold text-slate-400">v0.9.15.92 - 15.08.2026</div>
                             <div>&#8226; NEU: Fahrer wechseln auch in erfundenen Saisons kurzzeitig das Team - Anzahl aus der Aera-Kurve, Ziel emergent</div>
                             <div>&#8226; NEU: Regelkreis zaehlt die Bewegung mit und steuert nach, statt ein festes Budget zu verplanen</div>
                             <div>&#8226; FIX: Wechsel nur zu Teams auf eigenem Niveau - kein Hinterbaenkler im Spitzenteam</div>
@@ -3161,6 +3165,7 @@
     <script src="data/presence.js"></script>
     <script src="data/guest-entries.js"></script>
     <script src="data/driver-starts.js"></script>
+    <script src="data/venue-pull.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3173,7 +3178,8 @@
             'ZIM_RHO': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYiIGZpbGw9IiMwMDlBNDQiLz48cmVjdCB5PSI2IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjEyIiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iIzAwOUE0NCIvPjxyZWN0IHk9IjE4IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjI0IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iIzAwOUE0NCIvPjwvc3ZnPg==',
             'ESP_OLD': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjYzYwYjFlIi8+PHJlY3QgeT0iNy41IiB3aWR0aD0iNjAiIGhlaWdodD0iMTUiIGZpbGw9IiNmZmM0MDAiLz48ZWxsaXBzZSBjeD0iMzAiIGN5PSIxNSIgcng9IjIiIHJ5PSIzIiBmaWxsPSIjMzMzIi8+PHBhdGggZD0iTTIzLDEyIFEyNiw5IDI5LDEyIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTMxLDEyIFEzNCw5IDM3LDEyIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iMzAiIGN5PSIxMC41IiByPSIxLjUiIGZpbGw9IiMzMzMiLz48cmVjdCB4PSIyOC41IiB5PSIxNyIgd2lkdGg9IjMiIGhlaWdodD0iMiIgZmlsbD0iI2M2MGIxZSIvPjwvc3ZnPg==',
             'HKG_OLD': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjMwIiBmaWxsPSIjMDAyNDdEIi8+PGcgY2xpcC1wYXRoPSJ1cmwoI2NhbnRvbikiPjxjbGlwUGF0aCBpZD0iY2FudG9uIj48cmVjdCB3aWR0aD0iMzAiIGhlaWdodD0iMTUiLz48L2NsaXBQYXRoPjxyZWN0IHdpZHRoPSIzMCIgaGVpZ2h0PSIxNSIgZmlsbD0iIzAwMjQ3RCIvPjxsaW5lIHgxPSIwIiB5MT0iMCIgeDI9IjMwIiB5Mj0iMTUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iNSIvPjxsaW5lIHgxPSIzMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMTUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iNSIvPjxsaW5lIHgxPSIwIiB5MT0iMCIgeDI9IjMwIiB5Mj0iMTUiIHN0cm9rZT0iI0NGMTQyQiIgc3Ryb2tlLXdpZHRoPSIzIi8+PGxpbmUgeDE9IjMwIiB5MT0iMCIgeDI9IjAiIHkyPSIxNSIgc3Ryb2tlPSIjQ0YxNDJCIiBzdHJva2Utd2lkdGg9IjMiLz48cmVjdCB4PSIxMiIgeT0iMCIgd2lkdGg9IjYiIGhlaWdodD0iMTUiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iMCIgeT0iNC41IiB3aWR0aD0iMzAiIGhlaWdodD0iNiIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxMy41IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSIxNSIgZmlsbD0iI0NGMTQyQiIvPjxyZWN0IHg9IjAiIHk9IjYiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzIiBmaWxsPSIjQ0YxNDJCIi8+PC9nPjxjaXJjbGUgY3g9IjQ1IiBjeT0iMTUiIHI9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMSIvPjxyZWN0IHg9IjQzIiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgZmlsbD0id2hpdGUiIHJ4PSIwLjUiLz48cGF0aCBkPSJNNDMsMTUgTDQxLDE5IEw0NywxOSBMNDksMTUgWiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=',
-            'ZIM_ZR':  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDA5QTQ0Ii8+PHJlY3QgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiMwMDlBNDQiLz48L3N2Zz4=',
+            'ZIM_ZR':  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MCAzMCI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDA5QTQ0Ii8+PHJlY3QgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIvPjxyZWN0IHk9IjIwIiB3aWR0aD0iNjAiIGhlaWdodD0iMTAiIGZpbGw9IiMwMDlBNDQiLz48L3N2Zz4='
+,
 
             // === v0.9.15.63: Aera-Flaggen 1950+ ===
             // Echte historische Flaggen (Wikimedia Commons, Nationalflaggen gemeinfrei).
@@ -3498,7 +3504,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.92';
+        const VERSION = '0.9.15.93';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -4726,6 +4732,14 @@
             1992: { pool:  5, through:  3, throughVar: 0.50, prob: 0.50 },  //  12 DNPQ, 8 von 16 — Ø 1,5 DNPQ/Rennen
         };
 
+        // Reale Starterzahl auf der Nordschleife, nur wo sie den Ära-Deckel deutlich
+        // übersteigt (Differenz >= 3). Das sind genau die Jahre mit F2-Wagen im selben
+        // Rennen; 1963/64/65/68 und ab 1971 fehlen hier, weil dort base+2 passt.
+        const NORDSCHLEIFE_GRID = {
+            1952: 30, 1953: 34, 1957: 24, 1958: 25,
+            1962: 26, 1966: 27, 1967: 25, 1969: 22
+        };
+
         // Grid-Größe für ein spezifisches Rennen (berücksichtigt Strecken-Ausnahmen)
         function getGridSize(year, race) {
             const base = GRID_SIZES[year] ?? 20;
@@ -4757,6 +4771,14 @@
             // beide — die Jahresschwankung schlägt jeden Ära-Offset.
             // Deckel entfällt: base+2 erreicht auch 1974–76 nur 28.
             if ((circuit.includes('nürburgring') || circuit.includes('nurburgring')) && year <= 1976) {
+                // F2-JAHRE: der Große Preis von Deutschland fuhr ein GEMISCHTES Feld,
+                // F1 und F2 im selben Rennen. Der Offset +2 unten ist über alle 22
+                // Nordschleifen-Jahre kalibriert und trifft die 1970er, aber nicht
+                // diese Sonderfelder — 1953 starteten 34 Wagen gegen einen Deckel von
+                // 27, 1966 waren es 27 gegen 21. Die Einmal-Melder aus DRIVER_STARTS
+                // landen dort korrekt, wurden aber am Deckel zu DNQ statt zu Startern.
+                // Werte = reale Starterzahl (F1DB), wie GRID_SIZES selbst.
+                if (NORDSCHLEIFE_GRID[year]) return NORDSCHLEIFE_GRID[year];
                 return base + 2;
             }
             return base;
@@ -6405,10 +6427,34 @@
                 const c = r.country.length === 3 ? r.country : convertEmojiToIOC(r.country);
                 return !!c && c === homeNat;
             });
-            const hw = i => isHome[i] ? W : 1;
+            // STRECKEN-SOG (v0.9.15.93): manche Rennen zogen weit mehr Gastmelder an
+            // als andere — Nürburgring 1,37 und Monza 1,18 gegen Rouen 0,59. Ohne diesen
+            // Faktor verteilte das Spiel dieselbe Saisonzahl fast gleichmäßig über den
+            // Kalender: Streuung 2,4 statt real 3,8 (1955), und damit fehlten die DNQ,
+            // die nur dort entstehen, wo besonders viele melden.
+            // Getrennt vom Heimrennen-Sog gemessen, sonst zählte man Landsleute doppelt.
+            // Nach Dekaden gestaffelt, mit "*" als Rückfall. Ab 1980 gilt überall 1.0:
+            // dort sind Teilzeit-Melder so selten, dass jeder Faktor Rauschen wäre.
+            const vp = i => {
+                if (typeof VENUE_PULL === 'undefined' || year >= 1980) return 1;
+                const c = races[i] && races[i].circuitId;
+                const e = c && VENUE_PULL[String(c).toLowerCase()];
+                if (!e) return 1;
+                return e[String(Math.floor(year / 10) * 10)] || e['*'] || 1;
+            };
+            // Beim HEIMRENNEN gilt nur der Heimsog, nicht zusätzlich der Streckensog —
+            // genau so ist der Faktor gemessen worden (Landsleute herausgerechnet).
+            // Beides zu multiplizieren drückte Aintree 1955 auf 21,4 gegen real 26:
+            // der Streckenfaktor 0,71 gilt für Auswärtige, nicht für die 8,8 Briten,
+            // die dort jedes Jahr zusätzlich meldeten.
+            const hw = i => isHome[i] ? W : vp(i);
             const f = _privClusterWindow(year);
+            // Gewichtet ziehen, sobald IRGENDEIN Gewicht von 1 abweicht — frueher hing
+            // das allein an W > 1, der Streckensog waere im Nachkriegs- und Modernefall
+            // (kein Heimsog) einfach uebergangen worden.
+            const gewichtet = idx.some(i => hw(i) !== 1);
             if (!f) {                                        // verstreut
-                if (W > 1) return _weightedDraw(idx, idx.map(hw), n).sort((a, b) => a - b);
+                if (gewichtet) return _weightedDraw(idx, idx.map(hw), n).sort((a, b) => a - b);
                 for (let i = idx.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [idx[i], idx[j]] = [idx[j], idx[i]];
@@ -6435,7 +6481,7 @@
                 start = Math.floor(Math.random() * (idx.length - win + 1));
             }
             const block = idx.slice(start, start + win);
-            if (W > 1) return _weightedDraw(block, block.map(hw), n).sort((a, b) => a - b);
+            if (gewichtet) return _weightedDraw(block, block.map(hw), n).sort((a, b) => a - b);
             for (let i = block.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [block[i], block[j]] = [block[j], block[i]];
@@ -6983,6 +7029,19 @@
                     const n = startZeile[h];
                     if (n === undefined) return;          // real nicht gemeldet → Spiel entscheidet
                     if (n === 0) { d.scheduledRaces = null; return; }   // volle Saison
+                    // EIN Rennen: die Tabelle nennt auch die STRECKE. Ohne das verteilt
+                    // das Spiel die Einmal-Melder über den Kalender und die großen
+                    // Sonderfelder verschwinden — am Nürburgring meldeten 1952/53 je
+                    // fünfzehn bis sechzehn Fahrer, die sonst kein WM-Rennen fuhren
+                    // (F2-Wagen im selben Rennen), Ende der 1960er nochmals zehn je
+                    // Saison. Überhang zum Saisonmittel: 1952 +7,7 · 1966 +9,8 · 1969 +8,7.
+                    // Für viele ist dieses eine Rennen die ganze Karriere.
+                    if (typeof n === 'string') {
+                        const k = ids.indexOf(n);
+                        d.scheduledRaces = k >= 0 ? [n]
+                            : _pickPrivateerRaces(1, cal, year, _homePullNation(d)).map(i => ids[i]);
+                        return;
+                    }
                     d.scheduledRaces = _pickPrivateerRaces(Math.min(n, cal.length), cal, year,
                         _homePullNation(d)).map(i => ids[i]);
                 });
