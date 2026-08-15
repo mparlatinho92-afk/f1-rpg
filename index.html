@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.95</title>
+    <title>F1 RPG v0.9.15.96</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.95 (aktuell) - 15.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.15.96 (aktuell) - 15.08.2026</div>
+                            <div>&#8226; FIX: Sieben Pruefungen suchten den Status 'dead', den das Spiel nie schreibt - Verstorbene konnten ueber den Reserve-Pool zurueck aufs Grid</div>
+                            <div>&#8226; NEU: Auch Fahrer ohne Cockpit koennen toedlich verunglueckten - sie fuhren real Sportwagen und Formel 2 weiter</div>
+                            <div>&#8226; NEU: Steckbrief zeigt Lebensdaten statt Alter, und ab dem zehnten Jahr ohne Cockpit das Geburtsjahr - kein 120-jaehriger Rentner mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.15.95 - 15.08.2026</div>
                             <div>&#8226; NEU: Fehlt ein realer Gaststarter in dieser Spielwelt, meldet ein anderer Hinterbaenkler an seiner Stelle - gewuerfelt, aber nie ein Spitzenfahrer</div>
                             <div>&#8226; NEU: Ersatzmelder kommen nur bei kleinen Rennstaellen unter und fahren hoechstens ein Kalenderdrittel</div>
                             <div>&#8226; FIX: Spaetere Saisons verlieren nicht mehr ihre Gaststarter und damit ihre DNQ</div>
@@ -3278,7 +3282,7 @@
         // Ein explizit angeklicktes Jahr schlaegt das immer: dort zaehlt der damalige Zustand.
         function getDriverFlagYear(driver, contextYear) {
             if (!driver) return contextYear;
-            if (driver.status === 'dead')    return driver.deathYear   || driver.lastRacedYear || contextYear;
+            if (_istTot(driver))    return driver.deathYear   || driver.lastRacedYear || contextYear;
             if (driver.status === 'retired') return driver.retiredYear || driver.lastRacedYear || contextYear;
             return contextYear;
         }
@@ -3513,7 +3517,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.95';
+        const VERSION = '0.9.15.96';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -7347,7 +7351,10 @@
         // Grid-Füller nach der Saison in den Pool zurückgeben — sie sind Gäste, keine
         // festen Cockpits, und dürfen den Sitz im Folgejahr nicht blockieren.
         function releaseGridFillers() {
-            const back = GAME_STATE.drivers.filter(d => d._gridFiller);
+            // Verstorbene NICHT zurueckgeben (v0.9.15.96): wer als Gast waehrend der
+            // Saison toedlich verunglueckt, landete sonst wieder im Reserve-Pool und
+            // stand im Folgejahr als Sitzfueller bereit.
+            const back = GAME_STATE.drivers.filter(d => d._gridFiller && !_istTot(d));
             back.forEach(d => {
                 d.team = null; d.isPrivateer = false; d._gridFiller = false;
                 d._tailFiller = false;   // sonst schleppt die Markierung sich ueber Jahre mit
@@ -9703,6 +9710,16 @@
         // Befüllt GAME_STATE.reservePool mit hist. Fahrern ohne Cockpit
         function initReservePool(year) {
             if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
+            // TOTE RAUS, jede Saison neu (v0.9.15.96). Der Pool ist die Quelle für
+            // Sitzfüller, Grid-Füller und Ersatzmelder — ein Verstorbener darin kommt
+            // über jeden dieser Wege zurück aufs Grid. Bisher verhinderte das nur der
+            // Zufall: die Auswahlfilter prüften auf `status !== 'dead'`, einen Wert, den
+            // das Spiel nie schreibt (es schreibt 'deceased').
+            const _totRaus = (GAME_STATE.reservePool || []).filter(d => _istTot(d));
+            if (_totRaus.length) {
+                GAME_STATE.reservePool = GAME_STATE.reservePool.filter(d => !_istTot(d));
+                logWarning('POOL', `${_totRaus.length} verstorbene Fahrer aus dem Reserve-Pool entfernt`);
+            }
 
             const knownNames = new Set([
                 ...GAME_STATE.drivers.map(d => d.name?.toLowerCase().trim()).filter(Boolean),
@@ -10356,7 +10373,11 @@
                     mode === 'retire' ? { age: e.age, retireType: e.type } : {});
                 return t ? `<div class="text-xs italic mb-1.5" style="opacity:0.85;padding-left:2rem">${t}</div>` : '';
             };
-            const deathHtml = deaths.map(d => row('💀', d.name || d, d.team || '') + obitFor(d, 'death')).join('');
+            // Pool-Tode tragen kein Team (v0.9.15.96) — statt einer leeren Spalte der
+            // Ort, sonst stünde da nur ein Name ohne jeden Zusammenhang.
+            const deathHtml = deaths.map(d => row('💀', d.name || d,
+                d.fromPool ? `ohne Cockpit${d.raceName ? ' · ' + d.raceName : ''}` : (d.team || ''))
+                + obitFor(d, 'death')).join('');
             const retHtml   = retirements.map(r => row('🏁', r.name || r, r.team || '') + obitFor(r, 'retire')).join('');
             const teamHtml  = [
                 ...exits.map(n => row('🚫', n, 'ausgestiegen')),
@@ -11300,7 +11321,7 @@
                         _indyCross.forEach(entry => {
                             if (Math.random() > entry.chance) return;
                             const _pool = entry.retirementOk
-                                ? GAME_STATE.drivers.filter(d => d.status !== 'dead')
+                                ? GAME_STATE.drivers.filter(d => !_istTot(d))
                                 : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
                             let guest = _pool.find(d => (d.histId || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.driver));
                             // Fallback: Guest-Objekt konstruieren wenn Fahrer nicht in GAME_STATE (z.B. schon retired)
@@ -11394,7 +11415,7 @@
                     const activeIds = new Set(activeDrivers.map(d => d.id));
                     const pool = (GAME_STATE.reservePool || []).filter(d =>
                         !activeIds.has(d.id) &&
-                        d.status !== 'retired' && d.status !== 'dead' &&
+                        d.status !== 'retired' && !_istTot(d) &&
                         GAME_STATE.teams.some(t => t.id === d.team)
                     );
                     if (pool.length > 0) {
@@ -11982,6 +12003,18 @@
         //   ERA_DEATH_RATES = P(Tod) pro Rennwochenende (kalibriert: Ziel-Tode/Saison ÷ Rennen/Saison)
         //   totalRate = baseRate × deathRealism/100  — keine Grid/DNF-Kopplung
         // Würfel 2: Welcher Session wird der Tod zugeordnet? (raceFrac / trainFrac / qualiFrac)
+        // === EIN TOTER IST EIN TOTER (v0.9.15.96) ===
+        // Das Spiel SCHREIBT `status = 'deceased'`, sieben Stellen PRUEFTEN aber auf
+        // `'dead'` — einen Wert, den nie jemand setzt. Die Pruefungen waren damit
+        // wirkungslos: Reserve-Pool und Indy-Gastfeld haetten einen Verstorbenen
+        // klaglos wieder aufs Grid gestellt. Gemessen schlug es nicht durch, weil der
+        // Hauptfilter `!d.status || d.status === 'active'` korrekt greift — es war eine
+        // Falle, die auf ihren ersten Treffer wartete.
+        // Beide Schreibweisen werden akzeptiert: alte Spielstaende koennen 'dead' tragen.
+        function _istTot(d) {
+            return !!d && (d.status === 'deceased' || d.status === 'dead');
+        }
+
         function _rollWeekendDeath(raceIndex) {
             if (_weekendDeath[raceIndex] !== undefined) return; // bereits gewürfelt
             // Historischer Modus (deaths AUS): keine Mid-Season-Tode – der deterministische
@@ -12039,7 +12072,7 @@
                     if (_indyCrossT) {
                         _indyCrossT.forEach(entry => {
                             if (Math.random() > entry.chance) return;
-                            const _poolT = entry.retirementOk ? GAME_STATE.drivers.filter(d => d.status !== 'dead') : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
+                            const _poolT = entry.retirementOk ? GAME_STATE.drivers.filter(d => !_istTot(d)) : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
                             let guestT = _poolT.find(d => (d.histId || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.driver));
                             if (!guestT && entry.retirementOk && entry.guestName) {
                                 const gTeam = GAME_STATE.teams.find(t => (t.histId || t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.guestTeamSlug));
@@ -12173,7 +12206,7 @@
                     if (_indyCrossQ) {
                         _indyCrossQ.forEach(entry => {
                             if (Math.random() > entry.chance) return;
-                            const _poolQ = entry.retirementOk ? GAME_STATE.drivers.filter(d => d.status !== 'dead') : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
+                            const _poolQ = entry.retirementOk ? GAME_STATE.drivers.filter(d => !_istTot(d)) : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
                             let guestQ = _poolQ.find(d => (d.histId || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.driver));
                             if (!guestQ && entry.retirementOk && entry.guestName) {
                                 const gTeamQ = GAME_STATE.teams.find(t => (t.histId || t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.guestTeamSlug));
@@ -14384,7 +14417,7 @@
                     if (_indyCrossL) {
                         _indyCrossL.forEach(entry => {
                             if (Math.random() > entry.chance) return;
-                            const _poolL = entry.retirementOk ? GAME_STATE.drivers.filter(d => d.status !== 'dead') : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
+                            const _poolL = entry.retirementOk ? GAME_STATE.drivers.filter(d => !_istTot(d)) : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
                             let guestL = _poolL.find(d => (d.histId || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.driver));
                             if (!guestL && entry.retirementOk && entry.guestName) {
                                 const gTeamL = GAME_STATE.teams.find(t => (t.histId || t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.guestTeamSlug));
@@ -14435,7 +14468,7 @@
                 } else if (activeDrivers.length < gridSize) {
                     const activeIds = new Set(activeDrivers.map(d => d.id));
                     const pool = (GAME_STATE.reservePool || []).filter(d =>
-                        !activeIds.has(d.id) && d.status !== 'retired' && d.status !== 'dead' &&
+                        !activeIds.has(d.id) && d.status !== 'retired' && !_istTot(d) &&
                         GAME_STATE.teams.some(t => t.id === d.team)
                     );
                     if (pool.length > 0) {
@@ -14652,6 +14685,25 @@
                         afterRace: Math.floor(Math.random() * (nRaces + 1))  // 0..nRaces
                     });
                 });
+            // === AUCH DER RESERVE-POOL STIRBT (v0.9.15.96) ===
+            // Bisher konnte nur sterben, wer ein Cockpit hatte. Real traf es aber gerade
+            // die Fahrer OHNE F1-Sitz: die fuhren Sportwagen, Formel 2 und Bergrennen,
+            // um im Gespräch zu bleiben, und verunglückten dort. Ein Pool, in dem nie
+            // jemand stirbt, altert nur — er verliert nie jemanden.
+            // Halbe Rate: ein Pool-Fahrer bestreitet weniger Rennen als ein Stammfahrer.
+            const poolRate = f1Rate * 0.5;
+            if (poolRate > 0) {
+                (GAME_STATE.reservePool || []).forEach(d => {
+                    if (_istTot(d) || (d.status && d.status !== 'active')) return;
+                    if (Math.random() >= poolRate) return;
+                    GAME_STATE.pendingNonWMDeaths.push({
+                        driverId: d.id, name: d.name,
+                        venue: _pick(NONWM_F1_VENUES),
+                        nonwmType: 'f1', fromPool: true,
+                        afterRace: Math.floor(Math.random() * (nRaces + 1))
+                    });
+                });
+            }
             applyPendingNonWMDeaths(0);   // Vor-Saison-Tode sofort (Fahrer fährt dieses Jahr gar nicht)
         }
 
@@ -14665,9 +14717,13 @@
             const nRaces = (GAME_STATE.races || []).length;
             if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
             fire.forEach(p => {
-                const d = GAME_STATE.drivers.find(x => x.id === p.driverId);
+                // Pool-Fahrer stehen NICHT in GAME_STATE.drivers — dort zuerst suchen,
+                // sonst fiele ihr Tod stillschweigend aus (v0.9.15.96).
+                const d = GAME_STATE.drivers.find(x => x.id === p.driverId)
+                       || (p.fromPool ? (GAME_STATE.reservePool || []).find(x => x.id === p.driverId) : null);
                 if (!d || (d.status && d.status !== 'active')) return;   // schon weg (Transfer/Tod)
-                const teamName = GAME_STATE.teams.find(t => t.id === d.team)?.name || '-';
+                const teamName = p.fromPool ? 'ohne Cockpit'
+                    : (GAME_STATE.teams.find(t => t.id === d.team)?.name || '-');
                 const timing = completedCount === 0 ? `vor der Saison ${year}`
                     : completedCount >= nRaces ? `nach der Saison ${year}`
                     : `vor dem ${GAME_STATE.races[completedCount]?.name || 'nächsten Rennen'}`;
@@ -14679,8 +14735,13 @@
                 // Off-Season-Tod (completedCount>=nRaces) braucht keinen – der Markt füllt nächstes Jahr.
                 // v0.9.15.19: geteilte acquireSeatDriver statt Direkt-generateDriver – gibt Herkunft
                 // und respektiert realPreference/poachPreference/externalTransfers wie alle Ersatz-Pfade.
+                // Pool-Fahrer aus dem Pool nehmen — sonst bleibt die Leiche als
+                // Sitzfueller-Kandidat liegen.
+                if (p.fromPool) {
+                    GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== d.id);
+                }
                 let replacement = null, _repOrigin = null;
-                if (completedCount < nRaces && d.team) {
+                if (completedCount < nRaces && d.team && !p.fromPool) {
                     const _rep = acquireSeatDriver(d.team, year, { replacedVictim: { id: d.id, name: d.name } });
                     replacement = _rep.driver;
                     _repOrigin = _seatOriginInfo(_rep);
@@ -14688,7 +14749,7 @@
                 GAME_STATE.seasonDeaths.push({
                     driver: d.id, name: d.name, team: teamName,
                     race: null, raceName: p.venue, raceCountry: null,
-                    fatalSession: 'nonwm', nonwmType: p.nonwmType, timing,
+                    fatalSession: 'nonwm', nonwmType: p.nonwmType, timing, fromPool: !!p.fromPool,
                     replacement: replacement?.name, replacementId: replacement?.id, replacementTeam: replacement?.team,
                     replacementOrigin: _repOrigin
                 });
@@ -28745,6 +28806,11 @@ Empfohlene Wertebereiche:
                         📜 Ehemaliger Fahrer (zuletzt aktiv: ${pastSeasonYear})
                     </div>
                 ` : ''}
+                ${_istTot(driver) ? `
+                    <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #2B1B1B; border: 1px solid #7F1D1D;">
+                        🕯️ Tödlich verunglückt${driver.deathYear ? ` ${driver.deathYear}` : ''}${driver.deathRace ? ` – ${driver.deathRace}` : ''}${driver.birthYear && driver.deathYear ? ` · ${driver.deathYear - driver.birthYear} Jahre alt` : ''}
+                    </div>
+                ` : ''}
                 ${driver.feederFictionalSkills ? `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #2A2438; border: 1px solid #7C3AED;">
                         🏎️ Echter ${driver.feederInfo?.series || 'F2/F3'}-Aufsteiger${driver.feederInfo?.lastSeason ? ` (zuletzt ${driver.feederInfo.lastSeason})` : ''} – Name, Nation &amp; Alter sind real, die <b>Fahrwerte (Pace/Potenzial) sind fiktiv</b> und pro Spielstand zufällig.
@@ -28792,6 +28858,38 @@ Empfohlene Wertebereiche:
                     <h4 class="font-bold mb-3">👤 ${isLegend ? 'Karriere-Daten' : 'Alter & Karriere'}</h4>
                     <div class="grid grid-cols-3 gap-2 text-center" style="align-items:center">
                         ${!isLegend ? (() => {
+                            // === ALTER NUR SOLANGE ES ZAEHLT (v0.9.15.96) ===
+                            // Ein Fahrer, der seit zehn Jahren kein Cockpit hat, wird im
+                            // Spiel nicht mehr aelter — er wuerde nur weiterzaehlen, bis
+                            // irgendwann ein 120-Jaehriger im Steckbrief steht. Was nach
+                            // der Karriere geschah, weiss das Spiel nicht und erfindet es
+                            // auch nicht: der natuerliche Tod bleibt unsichtbar. Statt des
+                            // Alters steht dann das GEBURTSJAHR, eine Angabe die nie
+                            // veraltet. Kehrt der Fahrer zurueck (Jan Lammers fuhr 1992
+                            // nach zehn Jahren Pause wieder), steht beim naechsten
+                            // Aufblaettern wieder das Alter da — die Anzeige wird bei
+                            // jedem Oeffnen neu bestimmt, nichts wird gespeichert.
+                            const _letztesJahr = driver.deathYear || driver.lastRacedYear
+                                || pastSeasonYear || allTime.lastYear || null;
+                            // „Nicht aktiv" heisst hier: faehrt nicht. `isCurrentlyActive`
+                            // ist nur „steht noch in GAME_STATE.drivers" — ein
+                            // Zurueckgetretener steht dort weiter und waere sonst nie
+                            // betroffen, also altert er ewig weiter.
+                            const _faehrtNicht = !isCurrentlyActive || driver.status === 'retired';
+                            const _jahreOhne = (_faehrtNicht && _letztesJahr)
+                                ? GAME_STATE.currentYear - _letztesJahr : 0;
+                            if (_istTot(driver) && driver.birthYear) {
+                                return `<div class="p-2 rounded-lg" style="background:#2B1B1B;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem">
+                                    <div class="text-lg md:text-xl font-bold" style="color:#fca5a5">${driver.birthYear}–${driver.deathYear || '?'}</div>
+                                    <div class="text-xs md:text-sm" style="color:#fca5a5;opacity:0.75">Lebensdaten</div>
+                                </div>`;
+                            }
+                            if (_jahreOhne >= 10 && driver.birthYear) {
+                                return `<div class="p-2 bg-secondary rounded-lg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem">
+                                    <div class="text-xl md:text-2xl font-bold">${driver.birthYear}</div>
+                                    <div class="text-xs md:text-sm text-tertiary">Geburtsjahr</div>
+                                </div>`;
+                            }
                             const _eraAvg = getEraValue(ERA_RETIREMENT_AGE, GAME_STATE.currentYear);
                             const _numAge = typeof age === 'number' ? age : null;
                             let _ageBg = 'var(--bg-secondary)';
