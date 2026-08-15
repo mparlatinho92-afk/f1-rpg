@@ -76,7 +76,15 @@ for (const y of Object.keys(teilnahme).map(Number).sort((a, b) => a - b)) {
     for (const dId of Object.keys(teilnahme[y])) {
         const n = teilnahme[y][dId].size;
         const voll = n / cal.size >= VOLLSAISON;
-        row[dId] = voll ? 0 : n;                       // 0 = volle Saison
+        // EIN-RENNEN-MELDER bekommen die STRECKE dazu, nicht nur die Zahl. Sonst
+        // verstreut das Spiel sie ueber den Kalender und die grossen Sonderfelder
+        // verschwinden: am Nuerburgring meldeten 1952/53 sechzehn bzw. fuenfzehn
+        // Fahrer, die sonst kein einziges WM-Rennen fuhren (F2-Feld im selben Rennen),
+        // Ende der 1960er nochmals zehn je Saison. Gemessener Ueberhang gegenueber
+        // dem Saisonmittel: 1952 +7,7 · 1953 +9,8 · 1966 +9,8 · 1969 +8,7.
+        // Fuer viele dieser Fahrer IST dieses eine Rennen die ganze Karriere — die
+        // Strecke ist dann genauso Teil der Wahrheit wie die Anzahl.
+        row[dId] = voll ? 0 : (n === 1 ? [...teilnahme[y][dId]][0] : n);   // 0 = volle Saison
         if (!voll) {
             eintraege++;
             const dek = Math.floor(y / 10) * 10;
@@ -94,20 +102,24 @@ if (uebersprungen) console.log(`Unvollstaendige Saisons uebersprungen: ${uebersp
 
 const body = jahre.map(y => {
     const inner = Object.keys(out[y]).sort()
-        .map(d => JSON.stringify(d) + ':' + out[y][d]).join(',');
+        .map(d => JSON.stringify(d) + ':' + JSON.stringify(out[y][d])).join(',');
     return y + ':{' + inner + '}';
 }).join(',\n            ');
 
 const block = `        // DRIVER_STARTS — wie viele Rennen ein Fahrer in dieser Saison real MELDETE.
         // GENERIERT von tools/build-driver-starts.js — NICHT von Hand editieren.
         //
-        // NUR DIE ANZAHL, NICHT DIE STRECKEN. Welche Rennen es werden, bleibt
-        // emergent (_pickPrivateerRaces mit Heimrennen-Sog und Ballung) — aus den
-        // Daten kommt allein das WIE VIELE.
+        // Bei zwei oder mehr Rennen steht hier NUR DIE ANZAHL — welche es werden,
+        // bleibt emergent (_pickPrivateerRaces mit Heimrennen-Sog, Streckensog und
+        // Ballung). Nur der EIN-RENNEN-Fall traegt die Strecke mit, weil dort sonst
+        // die grossen Sonderfelder verschwinden (Nuerburgring 1952/53 und Ende der
+        // 1960er: F2-Wagen im selben Rennen, +8 bis +10 Melder ueber dem Saisonmittel)
+        // — und weil dieses eine Rennen fuer viele die gesamte Karriere ist.
         //
         // Aufbau: Jahr -> driverId (HIST_SEASONS-Slug) -> Anzahl Rennen. Indy raus.
         //   0        = volle Saison (>= ${VOLLSAISON * 100} % des Kalenders)
-        //   n > 0    = genau so viele Rennen
+        //   n > 0    = genau so viele Rennen (WELCHE, entscheidet das Spiel)
+        //   "strecke" = genau EIN Rennen, und zwar dieses (circuitId)
         //   fehlt    = hat in dieser Saison real GAR NICHT gemeldet -> das Spiel
         //              entscheidet selbst (generierte Fahrer, Pool-Auffueller)
         // ${eintraege} Teilzeit-Faelle ueber ${jahre.length} Saisons.
@@ -124,7 +136,10 @@ if (!WRITE) {
         const proben = ['arturo-merzario', 'peter-gethin', 'jochen-mass', 'carlos-pace', 'tim-schenken'];
         console.log('\nStichprobe 1974 (Kalender: ' + calOf[1974].size + ' Rennen):');
         for (const p of proben) {
-            console.log(`  ${p.padEnd(20)} ${b[p] === 0 ? 'volle Saison' : b[p] !== undefined ? b[p] + ' Rennen' : 'real NICHT gemeldet'}`);
+            const v = b[p];
+            console.log(`  ${p.padEnd(20)} ${v === 0 ? 'volle Saison'
+                : typeof v === 'string' ? 'ein Rennen: ' + v
+                : v !== undefined ? v + ' Rennen' : 'real NICHT gemeldet'}`);
         }
     }
     console.log('\nTrockenlauf — nichts geschrieben. Mit --write erzeugen.');
