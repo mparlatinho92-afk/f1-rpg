@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.0</title>
+    <title>F1 RPG v0.9.16.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.0 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.1 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; FIX: Ehemalige Fahrer zeigten ihr Debuetjahr als letztes aktives Jahr - Jan Lammers stand mit 61 Starts auf einer einzigen Saison</div>
+                            <div>&#8226; FIX: Wer toedlich verunglueckt, dessen Karriere endet in diesem Jahr - Karriereende und Todesjahr liefen vorher auseinander</div>
+                            <div class="font-bold text-slate-400">v0.9.16.0 - 16.08.2026</div>
                             <div>&#8226; FIX: Kleinstkonstrukteure wie LDS nehmen wieder nur Landsleute - sieben Wege ins Cockpit hatten die Regel umgangen</div>
                             <div>&#8226; FIX: Der Todes-Status stand im Steckbrief oft gar nicht - er wird jetzt aus den Todesakten geholt, nicht nur aus dem Fahrer</div>
                             <div>&#8226; NEU: Reserve-Pool zeigt seine eigenen Todesfaelle, Nekrolog verlinkt Verstorbene und Ersatzfahrer</div>
@@ -3531,7 +3534,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.0';
+        const VERSION = '0.9.16.1';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -11838,6 +11841,9 @@
                         if (driver) {
                             driver.status = 'deceased';
                             driver.deathYear = GAME_STATE.currentYear;
+                            // Karriereende IST das Todesjahr (v0.9.16.1) — sonst zeigt der
+                            // Steckbrief ein frueheres „zuletzt aktiv" als den Todesfall.
+                            driver.lastRacedYear = GAME_STATE.currentYear;
                             driver.deathRace = race.name;
 
                             logError('DEATH', `💀 ${driver.name} ist im Rennen bei ${race.name} tödlich verunglückt`);
@@ -12309,6 +12315,7 @@
                 if (victim) {
                     victim.status = 'deceased';
                     victim.deathYear = year;
+                    victim.lastRacedYear = year;   // Karriereende = Todesjahr (v0.9.16.1)
                     victim.deathRace = race.name;
                     logError('DEATH', `💀 ${victim.name} ist im Training bei ${race.name} tödlich verunglückt`);
 
@@ -12537,6 +12544,7 @@
                 if (victim) {
                     victim.status = 'deceased';
                     victim.deathYear = year;
+                    victim.lastRacedYear = year;   // Karriereende = Todesjahr (v0.9.16.1)
                     victim.deathRace = race.name;
                     logError('DEATH', `💀 ${victim.name} ist im Qualifying bei ${race.name} tödlich verunglückt`);
 
@@ -14926,6 +14934,7 @@
                     : `vor dem ${GAME_STATE.races[completedCount]?.name || 'nächsten Rennen'}`;
                 d.status = 'deceased';
                 d.deathYear = year;
+                d.lastRacedYear = year;   // Karriereende = Todesjahr (v0.9.16.1)
                 d.deathRace = p.venue;
                 logError('DEATH', `💀 ${d.name} tödlich verunglückt (${p.venue}, ${timing})`);
                 // Ersatz wenn der Sitz noch DIESE Saison fährt (vor Saison + mitten drin);
@@ -23321,6 +23330,12 @@
                 }
                 return { tot, jahr, ort };
             })();
+            // Karriereende und Todesjahr muessen zusammenpassen: ein Verstorbener kann
+            // nicht nach seinem Tod „zuletzt aktiv" gewesen sein (v0.9.16.1). Alte
+            // Spielstaende tragen den Abgleich nicht, deshalb hier zusaetzlich in der
+            // Anzeige aufloesen — an bestehenden Staenden wird nichts umgeschrieben.
+            const _letzteSaison = (_todesAkte.tot && _todesAkte.jahr && pastSeasonYear)
+                ? Math.min(pastSeasonYear, _todesAkte.jahr) : pastSeasonYear;
 
             document.getElementById('driverProfileBody').innerHTML = `
                 <div class="flex gap-4 mb-6">
@@ -28873,16 +28888,20 @@ Empfohlene Wertebereiche:
             let pastSeasonYear = null;
             let isLegend = false;
             
-            // Falls nicht gefunden, in vergangenen Spielsaisons suchen
+            // Falls nicht gefunden, in vergangenen Spielsaisons suchen.
+            // ⚠ DIE LETZTE Saison zählt, nicht die erste (v0.9.16.1). Die Schleife brach
+            // beim ERSTEN Treffer ab — bei aufsteigender Historie also beim DEBÜTjahr.
+            // Jan Lammers stand deshalb mit „zuletzt aktiv: 1981" da, bei Debüt 1981
+            // und 61 Starts; er fuhr bis 1989. Kein Rundungsfehler, sondern die falsche
+            // Saison: auch der Fahrer-Schnappschuss kam aus dem Debütjahr.
             if (!driver) {
                 for (const season of GAME_STATE.history || []) {
                     const histDriver = (season.drivers || []).find(d => d.id === driverId || d.histId === driverId);
-                    if (histDriver) {
-                        driver = histDriver;
-                        isFromPastSeason = true;
-                        pastSeasonYear = season.year;
-                        break;
-                    }
+                    if (!histDriver) continue;
+                    if (pastSeasonYear !== null && season.year <= pastSeasonYear) continue;
+                    driver = histDriver;
+                    isFromPastSeason = true;
+                    pastSeasonYear = season.year;
                 }
             }
             
@@ -29107,7 +29126,7 @@ Empfohlene Wertebereiche:
                 ` : ''}
                 ${isFromPastSeason ? `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #4A3728; border: 1px solid #B8860B;">
-                        📜 Ehemaliger Fahrer (zuletzt aktiv: ${pastSeasonYear})
+                        📜 Ehemaliger Fahrer (zuletzt aktiv: ${_letzteSaison})
                     </div>
                 ` : ''}
                 ${_todesAkte.tot ? `
