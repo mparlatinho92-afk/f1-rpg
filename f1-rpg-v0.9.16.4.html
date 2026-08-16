@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.3</title>
+    <title>F1 RPG v0.9.16.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.3 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.4 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; FIX: Wer die Vor-Quali nicht ueberstand, startete trotzdem und zaehlte doppelt (1989/90)</div>
+                            <div>&#8226; FIX: Startfeld wird nur noch aus regulaeren Quali-Teilnehmern gefuellt</div>
+                            <div>&#8226; FIX: Grid-Fueller holt keinen Vor-Quali-Verlierer aus dem Reserve-Pool zurueck</div>
+                            <div>&#8226; NEU: Werkzeug carcap-diagnosis - Wagen je Konstrukteur je Jahrfuenft gegen F1DB</div>
+                            <div class="font-bold text-slate-400">v0.9.16.3 - 16.08.2026</div>
                             <div>&#8226; FIX: Ab 1992 bringt jedes Team bei jedem Rennen zwei Autos - vorher fehlte immer wieder eins, McLaren stand zweimal allein da</div>
                             <div>&#8226; FIX: Ursache waren zwei Fahrer, die sich real ein Cockpit teilten und im Spiel unabhaengig eingeteilt wurden</div>
                             <div>&#8226; FIX: Der Grid-Fueller beachtet jetzt den Wagendeckel je Konstrukteur</div>
@@ -16780,7 +16785,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.3';
+        const VERSION = '0.9.16.4';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -24843,10 +24848,22 @@ const CIRCUIT_LAYOUTS = {
 
             // Home-only + Privateer-Filter (simulateRace)
             // [SYNC simulateRace] Logik zentral in privateerEntersRace — nicht hier inline.
+            // [SYNC simulateRace] VOR-QUALI IST BINDEND (v0.9.16.4)
+            // Wer die Vor-Qualifikation nicht überstanden hat, ist raus — an EINER
+            // Stelle, vor der gesamten Grid-Logik. Vorher fiel er nur im Zweig
+            // „mehr Melder als Startplätze" heraus (über qualifiedSet); war das Feld
+            // nicht überzeichnet, startete er trotzdem und stand gleichzeitig in
+            // result.dnpq. Gemessen 1989/90: derselbe Fahrer zweimal in der
+            // Meldeliste, sein Konstrukteur dadurch scheinbar mit drei Wagen.
+            // Bewusst VOR dem Indy-Zweig deklariert: der Grid-Füller weiter unten
+            // braucht dieselbe Menge, sonst holt er den Gescheiterten aus dem
+            // Reserve-Pool zurück ins Feld.
+            const _dnpqOut = new Set(GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex)?.dnpqIds || []);
             if (!isIndyRace) {
                 activeDrivers = activeDrivers.filter(d => privateerEntersRace(d, race));
                 // [SYNC simulateRace] Ära-Wagenlimit je Konstrukteur (v0.9.14.96)
                 activeDrivers = applyConstructorCarCap(activeDrivers, GAME_STATE.teams, GAME_STATE.currentYear);
+                if (_dnpqOut.size) activeDrivers = activeDrivers.filter(d => !_dnpqOut.has(d.id));
             }
 
             // === GRID-CAP + GRID-FÜLLER (v0.9.9.7) ===
@@ -24864,7 +24881,13 @@ const CIRCUIT_LAYOUTS = {
                         const _dnpqSet = new Set(existingQuali.dnpqIds || []);
                         // qualiEntrants: nur reguläre Qualifying-Teilnehmer (keine DNPQ)
                         const qualiEntrants = new Set(existingQuali.results.filter(q => !q.dnpq).map(q => q.driver));
-                        const qualifiedSet = new Set(existingQuali.results.slice(0, gridSize).map(q => q.driver));
+                        // [SYNC simulateRace] Das Startfeld wird NUR aus regulären Quali-
+                        // Teilnehmern gefüllt (v0.9.16.4). Die DNPQ-Einträge hängen hinten
+                        // an results — kamen weniger reguläre Melder durch als Startplätze
+                        // da sind, griff `slice(0, gridSize)` in den DNPQ-Block hinein und
+                        // setzte Gescheiterte ins Rennen. Genau so entstanden 1989/90 die
+                        // Doppeleinträge.
+                        const qualifiedSet = new Set(existingQuali.results.filter(q => !q.dnpq).slice(0, gridSize).map(q => q.driver));
                         _dnqIds = activeDrivers.filter(d => qualiEntrants.has(d.id) && !qualifiedSet.has(d.id) && !_dnpqSet.has(d.id)).map(d => d.id);
                         activeDrivers = activeDrivers.filter(d => qualifiedSet.has(d.id));
                     } else {
@@ -24882,6 +24905,10 @@ const CIRCUIT_LAYOUTS = {
                     const activeIds = new Set(activeDrivers.map(d => d.id));
                     const pool = (GAME_STATE.reservePool || []).filter(d =>
                         !activeIds.has(d.id) &&
+                        // [SYNC simulateRace] Kein Vor-Quali-Verlierer über die Hintertür
+                        // (v0.9.16.4): er ist eben aus activeDrivers geflogen und stünde
+                        // damit wieder als „freier" Pool-Fahrer bereit.
+                        !_dnpqOut.has(d.id) &&
                         d.status !== 'retired' && !_istTot(d) &&
                         GAME_STATE.teams.some(t => t.id === d.team)
                     );
@@ -27935,13 +27962,19 @@ const CIRCUIT_LAYOUTS = {
             // [SYNC simulateRace] Grid-Logik: Änderungen hier ↔ simulateRace() synchron halten
             let _liveQnqIds = [];
             if (!isIndyRace) {
+                // [SYNC simulateRace] VOR-QUALI IST BINDEND (v0.9.16.4) — identisch zum
+                // klassischen Pfad, vor der gesamten Grid-Logik.
+                const _dnpqOutLive = new Set(qualiResult?.dnpqIds || []);
+                if (_dnpqOutLive.size) activeDrivers = activeDrivers.filter(d => !_dnpqOutLive.has(d.id));
                 const gridSize = getGridSize(GAME_STATE.currentYear, race);
                 if (activeDrivers.length > gridSize) {
                     if (qualiResult) {
                         // Qualifying-Ergebnis nutzen – kein zweites unabhängiges Zufalls-Roll
-                        // qualiEntrants: nur wer tATSächlich am Qualifying teilnahm
-                        const qualiEntrantsLive = new Set(qualiResult.results.map(q => q.driver));
-                        const qualifiedSet = new Set(qualiResult.results.slice(0, gridSize).map(q => q.driver));
+                        // qualiEntrants: nur wer tATSächlich am Qualifying teilnahm — DNPQ
+                        // gehört NICHT dazu, sonst würde ein Gescheiterter zusätzlich als
+                        // DNQ gezählt (zwei Kategorien für denselben Fahrer). [SYNC v0.9.16.4]
+                        const qualiEntrantsLive = new Set(qualiResult.results.filter(q => !q.dnpq).map(q => q.driver));
+                        const qualifiedSet = new Set(qualiResult.results.filter(q => !q.dnpq).slice(0, gridSize).map(q => q.driver));
                         _liveQnqIds = activeDrivers.filter(d => qualiEntrantsLive.has(d.id) && !qualifiedSet.has(d.id)).map(d => d.id);
                         activeDrivers = activeDrivers.filter(d => qualifiedSet.has(d.id));
                     } else {
@@ -27956,7 +27989,8 @@ const CIRCUIT_LAYOUTS = {
                 } else if (activeDrivers.length < gridSize) {
                     const activeIds = new Set(activeDrivers.map(d => d.id));
                     const pool = (GAME_STATE.reservePool || []).filter(d =>
-                        !activeIds.has(d.id) && d.status !== 'retired' && !_istTot(d) &&
+                        !activeIds.has(d.id) && !_dnpqOutLive.has(d.id) &&   // [SYNC simulateRace] v0.9.16.4
+                        d.status !== 'retired' && !_istTot(d) &&
                         GAME_STATE.teams.some(t => t.id === d.team)
                     );
                     if (pool.length > 0) {
