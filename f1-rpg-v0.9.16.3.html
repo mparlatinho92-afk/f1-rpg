@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.2</title>
+    <title>F1 RPG v0.9.16.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.2 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.3 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; FIX: Ab 1992 bringt jedes Team bei jedem Rennen zwei Autos - vorher fehlte immer wieder eins, McLaren stand zweimal allein da</div>
+                            <div>&#8226; FIX: Ursache waren zwei Fahrer, die sich real ein Cockpit teilten und im Spiel unabhaengig eingeteilt wurden</div>
+                            <div>&#8226; FIX: Der Grid-Fueller beachtet jetzt den Wagendeckel je Konstrukteur</div>
+                            <div class="font-bold text-slate-400">v0.9.16.2 - 16.08.2026</div>
                             <div>&#8226; FIX: Der Steckbrief ehemaliger Fahrer liess sich nicht mehr oeffnen - eine Deklaration war in die falsche Funktion gerutscht</div>
                             <div>&#8226; FIX: Fahrerwerte ehemaliger Fahrer stammen aus ihrer letzten Saison statt aus dem Debuetjahr</div>
                             <div>&#8226; FIX: Karriere-Zahlen = echte Historie bis zum Spielstart plus Spieldaten - Jim Clark stand mit 131 Starts da, im Spiel waren es 13</div>
@@ -16776,7 +16780,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.2';
+        const VERSION = '0.9.16.3';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20437,6 +20441,39 @@ const CIRCUIT_LAYOUTS = {
         // Kein absichtliches Überfüllen → keine künstlichen DNQ (1950er hatten real
         // Meldeliste ≈ Grid). Echte DNQ entstehen nur, wo Privateers das Grid von
         // selbst übersteigen, plus die Vor-Quali-Ära (eigene Mechanik).
+        // Füllt Lücken im Startplan, damit ein Team, das an einem Rennen ÜBERHAUPT
+        // meldet, dort auch sein volles Aufgebot bringt. Ein Team, das gar nicht
+        // antritt (Ausstieg, Team-Präsenz), bleibt unangetastet — deshalb die Bedingung
+        // „mindestens ein Fahrer meldet schon". Sonst würde diese Funktion ausgestiegene
+        // Rennställe wiederbeleben.
+        function enforceMinCarsPerConstructor(drivers, teams, races, year) {
+            const min = _minCarsPerConstructor(year);
+            if (!min) return 0;
+            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            if (!cal.length) return 0;
+            let ergaenzt = 0;
+            for (const t of (teams || [])) {
+                if (t.isIndyOnly || isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId)) continue;
+                const kader = (drivers || []).filter(d => d.team === t.id && (!d.status || d.status === 'active'));
+                if (kader.length < min) continue;   // zu dünner Kader → Sitz-/Grid-Füller
+                for (const r of cal) {
+                    const cid = String(r.circuitId).toLowerCase();
+                    let da = kader.filter(d => privateerEntersRace(d, r)).length;
+                    if (da === 0 || da >= min) continue;   // gar nicht dabei ODER schon voll
+                    // Wer am wenigsten fährt, füllt zuerst auf.
+                    const frei = kader.filter(d => !privateerEntersRace(d, r) && Array.isArray(d.scheduledRaces))
+                        .sort((a, b) => a.scheduledRaces.length - b.scheduledRaces.length);
+                    for (const d of frei) {
+                        if (da >= min) break;
+                        if (d._homeOnlyCurated) continue;   // geprüfte Heimrennen-Melder nie verbiegen
+                        d.scheduledRaces = d.scheduledRaces.concat([cid]);
+                        da++; ergaenzt++;
+                    }
+                }
+            }
+            return ergaenzt;
+        }
+
         function fillGridEntries(drivers, teams, races, year) {
             const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
             if (!cal.length) return;
@@ -20751,6 +20788,21 @@ const CIRCUIT_LAYOUTS = {
                  : year < 1980 ?  7
                  : year < 1986 ?  3
                  :                2;     // seit 1986 Regelwerk: zwei Autos
+        }
+
+        // === UNTERGRENZE: WER MELDET, MELDET VOLL (v0.9.16.3) ===
+        // Der Melde-Mechanismus stammt aus der Privatier-Ära, wo ein Team mal ein, mal
+        // drei Autos brachte. In der Moderne gibt es das nicht mehr: gemessen an F1DB
+        // fuhr ab 1992 praktisch jedes Team bei JEDEM Rennen zwei Autos.
+        //   real  1988 1,72 (28 % Ein-Auto) · 1990 1,84 (16 %) · 1991 1,89 (11 %)
+        //         1992 1,99 (1 %) · 1993–1999 durchgehend 2,00 (0 %)
+        // Im Spielstand des Nutzers dagegen: 1990 1,60 (40 %!), 1996 1,87 (13 %) —
+        // McLaren zweimal mit nur einem Auto, dazu Tyrrell und Minardi 1996.
+        // Ursache: zwei Fahrer teilen sich real ein Cockpit (der eine loest den anderen
+        // ab), das Spiel verteilt beide Startplaene aber unabhaengig — und dann klaffen
+        // Luecken. Vor 1992 bleibt es bei der Heuristik, dort ist die Schwankung echt.
+        function _minCarsPerConstructor(year) {
+            return year >= 1992 ? 2 : 0;   // 0 = keine Untergrenze
         }
 
         // Kappt je Team auf die Ära-Obergrenze; Kleinstkonstrukteure zusätzlich auf
@@ -21552,6 +21604,8 @@ const CIRCUIT_LAYOUTS = {
                 // Startplan für alle übrigen Privateers. MUSS nach der Home-Only-Vergabe
                 // laufen — homeOnly-Fahrer sind ausgenommen, sonst doppelt terminiert.
                 assignPrivateerSchedules(drivers, _races, year, teams);
+                // Untergrenze: wer meldet, meldet voll (Moderne, s. _minCarsPerConstructor).
+                enforceMinCarsPerConstructor(drivers, teams, _races, year);
                 // 0-Meldungs-Pass (v0.9.15.11): Fahrer ohne Heimrennen im Kalender aus
                 // dem Template werfen — sie kommen später via initReservePool zurück.
                 const _zero = _findZeroEntryDrivers(drivers, teams, _races);
@@ -24833,11 +24887,27 @@ const CIRCUIT_LAYOUTS = {
                     );
                     if (pool.length > 0) {
                         const slots = gridSize - activeDrivers.length;
+                        // ⚠ DER WAGENDECKEL GILT AUCH HIER (v0.9.16.3). Der Fueller
+                        // setzte den Pool-Fahrer in SEIN Team, ohne zu pruefen, ob dort
+                        // schon zwei Autos stehen — 2005 starteten dadurch BAR, Red Bull,
+                        // Minardi und Williams mit je DREI Wagen (Davidson, Liuzzi,
+                        // Doornbos, Pizzonia: die realen dritten Fahrer, die im Pool
+                        // sitzen). applyConstructorCarCap lief davor und war danach wertlos.
+                        const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
+                        const _belegt = {};
+                        activeDrivers.forEach(d => { if (d.team) _belegt[d.team] = (_belegt[d.team] || 0) + 1; });
                         const weighted = pool.map(d => ({
                             d,
                             weight: (d.pace || 60) + Math.random() * 20
                         })).sort((a, b) => b.weight - a.weight);
-                        const fillers = weighted.slice(0, slots).map(x => ({...x.d, isGuest: true}));
+                        const fillers = [];
+                        for (const x of weighted) {
+                            if (fillers.length >= slots) break;
+                            const tid = x.d.team;
+                            if (tid && (_belegt[tid] || 0) >= _deckel) continue;
+                            if (tid) _belegt[tid] = (_belegt[tid] || 0) + 1;
+                            fillers.push({ ...x.d, isGuest: true });
+                        }
                         activeDrivers = [...activeDrivers, ...fillers];
                     }
                 }
@@ -27891,9 +27961,20 @@ const CIRCUIT_LAYOUTS = {
                     );
                     if (pool.length > 0) {
                         const slots = gridSize - activeDrivers.length;
+                        // [SYNC simulateRace] Wagendeckel gilt auch fuer Fueller (v0.9.16.3)
+                        const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
+                        const _belegt = {};
+                        activeDrivers.forEach(d => { if (d.team) _belegt[d.team] = (_belegt[d.team] || 0) + 1; });
                         const weighted = pool.map(d => ({ d, weight: (d.pace || 60) + Math.random() * 20 }))
                             .sort((a, b) => b.weight - a.weight);
-                        const fillers = weighted.slice(0, slots).map(x => ({...x.d, isGuest: true}));
+                        const fillers = [];
+                        for (const x of weighted) {
+                            if (fillers.length >= slots) break;
+                            const tid = x.d.team;
+                            if (tid && (_belegt[tid] || 0) >= _deckel) continue;
+                            if (tid) _belegt[tid] = (_belegt[tid] || 0) + 1;
+                            fillers.push({ ...x.d, isGuest: true });
+                        }
                         activeDrivers = [...activeDrivers, ...fillers];
                     }
                 }
@@ -34005,6 +34086,8 @@ const CIRCUIT_LAYOUTS = {
             // Lücke sonst mit einem regulären Melder schließen, statt den Schwanz zu
             // erzeugen, aus dem DNQ und Streckenstreuung entstehen.
             fillMissingTailEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
+            // Untergrenze: wer meldet, meldet voll (Moderne, s. _minCarsPerConstructor).
+            enforceMinCarsPerConstructor(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
             // Feld auf reale Grid-Größe auffüllen (nur wenn der Kader zu dünn ist).
             fillGridEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
             // JEDER GEPLANTE FAHRER MELDET ≥1 RENNEN (v0.9.15.11).
