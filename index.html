@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.1</title>
+    <title>F1 RPG v0.9.16.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.1 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.2 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; FIX: Der Steckbrief ehemaliger Fahrer liess sich nicht mehr oeffnen - eine Deklaration war in die falsche Funktion gerutscht</div>
+                            <div>&#8226; FIX: Fahrerwerte ehemaliger Fahrer stammen aus ihrer letzten Saison statt aus dem Debuetjahr</div>
+                            <div>&#8226; FIX: Karriere-Zahlen = echte Historie bis zum Spielstart plus Spieldaten - Jim Clark stand mit 131 Starts da, im Spiel waren es 13</div>
+                            <div class="font-bold text-slate-400">v0.9.16.1 - 16.08.2026</div>
                             <div>&#8226; FIX: Ehemalige Fahrer zeigten ihr Debuetjahr als letztes aktives Jahr - Jan Lammers stand mit 61 Starts auf einer einzigen Saison</div>
                             <div>&#8226; FIX: Wer toedlich verunglueckt, dessen Karriere endet in diesem Jahr - Karriereende und Todesjahr liefen vorher auseinander</div>
                             <div class="font-bold text-slate-400">v0.9.16.0 - 16.08.2026</div>
@@ -3534,7 +3538,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.1';
+        const VERSION = '0.9.16.2';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -23309,33 +23313,6 @@
             if (preRows.length) career += `<div class="text-xs text-tertiary mt-1" style="font-style:italic;">Kursive Jahre: vor Spielbeginn, aus Stärke und Alter rekonstruiert – nicht simuliert.</div>`;
 
             document.getElementById('driverProfileTitle').innerHTML = `${flag} ${name}${crown}`;
-            // === TODES-AKTE EINMAL ERMITTELN (v0.9.16.0) ===
-            // Nur `driver.status` zu pruefen reichte nicht: wird der Steckbrief aus einer
-            // vergangenen Saison oder aus dem Pool geladen, traegt das Fahrer-Objekt den
-            // Status oft gar nicht — der Fahrer war tot, sah aber lebendig aus. Die
-            // Wahrheit steht in den Todesakten; von dort kommen auch Jahr und Ort.
-            const _todesAkte = (() => {
-                let jahr = driver.deathYear || null, ort = driver.deathRace || null;
-                let tot = _istTot(driver);
-                if (!tot || !jahr) {
-                    const nm = String(driver.name || '').toLowerCase().trim();
-                    const suche = akte => (akte || []).find(x =>
-                        (x.driver && (x.driver === driverId || x.driver === driver.id)) ||
-                        (x.name && x.name.toLowerCase().trim() === nm));
-                    let treffer = suche(GAME_STATE.seasonDeaths), tJahr = treffer ? GAME_STATE.currentYear : null;
-                    if (!treffer) for (const h of (GAME_STATE.history || [])) {
-                        const t = suche(h.deaths); if (t) { treffer = t; tJahr = h.year; break; }
-                    }
-                    if (treffer) { tot = true; jahr = jahr || tJahr; ort = ort || treffer.raceName || null; }
-                }
-                return { tot, jahr, ort };
-            })();
-            // Karriereende und Todesjahr muessen zusammenpassen: ein Verstorbener kann
-            // nicht nach seinem Tod „zuletzt aktiv" gewesen sein (v0.9.16.1). Alte
-            // Spielstaende tragen den Abgleich nicht, deshalb hier zusaetzlich in der
-            // Anzeige aufloesen — an bestehenden Staenden wird nichts umgeschrieben.
-            const _letzteSaison = (_todesAkte.tot && _todesAkte.jahr && pastSeasonYear)
-                ? Math.min(pastSeasonYear, _todesAkte.jahr) : pastSeasonYear;
 
             document.getElementById('driverProfileBody').innerHTML = `
                 <div class="flex gap-4 mb-6">
@@ -28975,13 +28952,85 @@ Empfohlene Wertebereiche:
             const standing = GAME_STATE.driverStandings[driver.id] || {};
             // Nutze histId für allTimeStATS wenn vorhanden
             const stATSId = driver.histId || driver.id;
-            const allTime = GAME_STATE.allTimeStATS?.drivers?.[stATSId] || {};
-            
+            const _allTimeRoh = GAME_STATE.allTimeStATS?.drivers?.[stATSId] || {};
+
+            // === VORGESCHICHTE BIS SIMSTART + SPIELDATEN (v0.9.16.2) ===
+            // Die Regel ist einfach und gilt seit jeher: was VOR dem Spielstart real
+            // passierte, zählt mit; ab dem Spielstart zählt nur noch das Spiel.
+            // `allTimeStATS` hielt sich in einem Spielstand des Nutzers nicht daran —
+            // Jim Clark stand mit 131 Starts, 24 Siegen und 28 Poles da, obwohl seine
+            // reale Karriere erst 1960 begann (Spielstart 1950, also KEINE Vorgeschichte)
+            // und er im Spiel genau 13 Rennen fuhr. Deshalb wird beides hier frisch
+            // gerechnet statt dem gespeicherten Wert zu glauben.
+            //
+            // ⚠ Die Fahrer-Id ist NICHT stabil (Zeitstempel) — deshalb je Saison den
+            // dortigen Fahrer-Eintrag über `histId`/Namen suchen und DESSEN Id in den
+            // Ergebnissen zählen. `_hydrateProfileYears` hat genau die Jahre dieses
+            // Fahrers geladen, der Durchlauf kostet also nichts zusätzlich.
+            const _spielKarriere = (() => {
+                const nm = String(driver.name || '').toLowerCase().trim();
+                let races = 0, wins = 0, podiums = 0, poles = 0, points = 0;
+                for (const s of (GAME_STATE.history || [])) {
+                    if (!Array.isArray(s.results) || !Array.isArray(s.drivers)) continue;
+                    const sd = s.drivers.find(d => d.histId === stATSId
+                        || d.id === driver.id || String(d.name || '').toLowerCase().trim() === nm);
+                    if (!sd) continue;
+                    for (const race of s.results) {
+                        const rr = race.res || race.results || [];
+                        const eig = rr.find(r => (r.d || r.driver) === sd.id);
+                        if (!eig) continue;
+                        races++;
+                        const pos = eig.p || eig.position;
+                        if (pos === 1) wins++;
+                        if (pos && pos <= 3) podiums++;
+                        points += (eig.pt || eig.points || 0);
+                    }
+                    for (const q of (s.qualifyingResults || [])) {
+                        const qr = q.res || q.results || [];
+                        const beste = qr.find(r => (r.d || r.driver) === sd.id);
+                        if (beste && (beste.p || beste.position) === 1) poles++;
+                    }
+                }
+                return races ? { races, wins, podiums, poles, points } : null;
+            })();
             // Hole Saison-für-Saison Historie aus HIST_SEASONS (mit histId)
             // WICHTIG: Nur Jahre VOR Spielbeginn (nicht vor aktuellem Jahr!)
             const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
             const histSeasons = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[stATSId] || []) : [];
             const relevantHistSeasons = histSeasons.filter(s => s[0] < startYear);
+
+            // Vorgeschichte bis zum Simstart — dieselbe Rechnung wie getHistoricalStATS
+            // in data/hist.js: Siege/Podien/Punkte/Titel aus den Saisonzeilen
+            // ([Jahr, Position, Siege, Podien, Punkte]), Starts und Poles anteilig aus
+            // der Lebensbilanz HIST_DRIVERS, weil sie dort nur als Gesamtsumme steht.
+            const _vorKarriere = (() => {
+                if (!relevantHistSeasons.length) return null;
+                const hd = (typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[stATSId]) || null;
+                const anteil = histSeasons.length ? relevantHistSeasons.length / histSeasons.length : 0;
+                return {
+                    // HIST_DRIVERS = [Siege, Podien, Poles, Punkte, Starts, Titel, erstes, letztes]
+                    // — Stelle 1 sind PODIEN, Poles stehen an Stelle 2. Verwechselt man das,
+                    // weichen 104 von 474 Fahrern bei den Poles ab (Ascari 17 statt 14).
+                    races:  Math.round((hd ? hd[4] : 0) * anteil),
+                    poles:  Math.round((hd ? hd[2] : 0) * anteil),
+                    wins:    relevantHistSeasons.reduce((s, x) => s + (x[2] || 0), 0),
+                    podiums: relevantHistSeasons.reduce((s, x) => s + (x[3] || 0), 0),
+                    points:  Math.round(relevantHistSeasons.reduce((s, x) => s + (x[4] || 0), 0) * 10) / 10,
+                    championships: relevantHistSeasons.filter(x => x[1] === '1').length
+                };
+            })();
+            // Beides zusammen. Ohne Spiel-Renneintrag (reine Legenden) bleibt der
+            // gespeicherte Wert stehen — dort gibt es nichts nachzurechnen.
+            const allTime = _spielKarriere ? (() => {
+                const v = _vorKarriere || {};
+                const summe = { ..._allTimeRoh };
+                for (const k of ['races', 'wins', 'podiums', 'poles', 'points', 'championships']) {
+                    summe[k] = (v[k] || 0) + (_spielKarriere[k] || 0);
+                }
+                // Titel zaehlt das Spiel selbst mit — dort nur die Vorgeschichte ergaenzen.
+                summe.championships = (v.championships || 0) + (_allTimeRoh.championships || 0);
+                return summe;
+            })() : _allTimeRoh;
             
             // Skill-Farbe
             const getSkillColor = (value) => {
@@ -29117,6 +29166,12 @@ Empfohlene Wertebereiche:
                 }
                 return { tot, jahr, ort };
             })();
+            // Karriereende und Todesjahr müssen zusammenpassen: ein Verstorbener kann
+            // nicht nach seinem Tod „zuletzt aktiv" gewesen sein (v0.9.16.2). Alte
+            // Spielstände tragen den Abgleich nicht, deshalb hier zusätzlich in der
+            // Anzeige auflösen — an bestehenden Ständen wird nichts umgeschrieben.
+            const _letzteSaison = (_todesAkte.tot && _todesAkte.jahr && pastSeasonYear)
+                ? Math.min(pastSeasonYear, _todesAkte.jahr) : pastSeasonYear;
 
             document.getElementById('driverProfileBody').innerHTML = `
                 ${isLegend ? `
