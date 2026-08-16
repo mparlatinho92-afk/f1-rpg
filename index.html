@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.4</title>
+    <title>F1 RPG v0.9.16.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.4 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.5 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; NEU: Zukunfts-Kalender rotiert - 1-2 Streckenwechsel pro Jahr, an F1DB gemessen</div>
+                            <div>&#8226; NEU: Pool aus 40 Strecken mit eigenen Monatsfenstern, Monza/Monaco/Silverstone/Hungaroring rotieren nie</div>
+                            <div>&#8226; NEU: max 2 Rennen pro Land, genau ein Land darf 3 haben</div>
+                            <div>&#8226; FIX: Zukunfts-Saisons hatten bisher jedes Jahr denselben festen Streckenplan</div>
+                            <div class="font-bold text-slate-400">v0.9.16.4 - 16.08.2026</div>
                             <div>&#8226; FIX: Wer die Vor-Quali nicht ueberstand, startete trotzdem und zaehlte doppelt (1989/90)</div>
                             <div>&#8226; FIX: Startfeld wird nur noch aus regulaeren Quali-Teilnehmern gefuellt</div>
                             <div>&#8226; FIX: Grid-Fueller holt keinen Vor-Quali-Verlierer aus dem Reserve-Pool zurueck</div>
@@ -3547,7 +3552,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.4';
+        const VERSION = '0.9.16.5';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -20990,7 +20995,282 @@
             return merged;
         }
 
+        // ===================================================================
+        // ROTIERENDER ZUKUNFTS-KALENDER (ab 2027 – F1DB endet 2025, 2026 ist fix)
+        // ===================================================================
+        // Bis v0.9.16.4 lieferte generateRacesForYear für JEDES Jahr nach dem
+        // F1DB-Horizont denselben festen Streckenplan – Zukunfts-Saisons waren
+        // beim Kalender also völlig statisch, inklusive längst toter Strecken.
+        //
+        // Die Regeln unten sind an F1DB gemessen (tests/calendar-rotation-analysis.js).
+        // Die Pandemiejahre 2020-2022 sind aus der Messbasis ausgeschlossen, weil sie
+        // die Fluktuation verfälschen (2020 allein: 12 Strecken weg):
+        //   - real wechseln 1-2 Strecken pro Jahr, Jahre ganz ohne Wechsel kommen vor
+        //     (2019 und 2025 hatten exakt null) -> Ø 1,1 Abgänge
+        //   - Kalendergröße 22-26, Schwerpunkt auf dem real belegten Korridor 22-24
+        //   - Monatsfenster je Strecke aus Basis 2012+. Ältere Basis mischt Ära-Wechsel:
+        //     Interlagos lief bis 2003 im März, seit 2004 im November – gemittelt käme
+        //     ein Fenster raus, das beides erlaubt und im Spiel Unsinn erzeugt.
+        //   - Silverstone, Monza und der Hungaroring liefen seit 1990 lückenlos,
+        //     Monaco zu 97 % -> diese vier rotieren nie
+        //   - 1-2 Länder mit zwei Rennen sind die Norm, nicht die Ausnahme; genau ein
+        //     Land darf drei haben (real seit 2023 die USA)
+        //   - derselbe Grand-Prix-Name kam noch nie zweimal in einem Jahr vor
+        const FUTURE_CAL_BASE_YEAR = 2026;   // letzter fixer Kalender (real, aus F1DB)
+        const FUTURE_CAL_FIXED = ['monza', 'monaco', 'silverstone', 'hungaroring'];
+
+        // Der reale 2026er Kalender = Startpunkt der Rotation. Die Monate stehen fest,
+        // statt gewürfelt zu werden – sonst wäre schon das Basisjahr erfunden.
+        const FUTURE_CAL_BASE_MONTHS = {
+            'melbourne': 3, 'shanghai': 3, 'suzuka': 3, 'miami': 5, 'montreal': 5,
+            'monaco': 6, 'catalunya': 6, 'spielberg': 6, 'silverstone': 7,
+            'spa-francorchamps': 7, 'hungaroring': 7, 'zandvoort': 8, 'monza': 9,
+            'madring': 9, 'baku': 9, 'marina-bay': 10, 'austin': 10, 'mexico-city': 11,
+            'interlagos': 11, 'las-vegas': 11, 'lusail': 11, 'yas-marina': 12
+        };
+        const FUTURE_CAL_BASE = Object.keys(FUTURE_CAL_BASE_MONTHS);
+
+        // months = erlaubte Monate, Hauptmonat zuerst (gemessen, Basis 2012+).
+        // w = Gewicht 1-10 aus der Beständigkeit seit 1990: hoch = kommt eher rein und
+        //     fliegt seltener raus. Strecken ohne F1DB-Historie stehen auf 2.
+        const FUTURE_CIRCUIT_POOL = [
+            // --- Bestand 2026 -------------------------------------------------
+            { id: 'melbourne',         gp: 'Australian GP',    laps: 58, months: [3, 4],      w: 8 },
+            { id: 'shanghai',          gp: 'Chinese GP',       laps: 56, months: [4, 3],      w: 6 },
+            // Suzuka März und Monaco Juni sind keine Ausreißer, sondern die 2026er
+            // Ansetzung – die Fenster aus 2012-2025 kannten beides noch nicht.
+            { id: 'suzuka',            gp: 'Japanese GP',      laps: 53, months: [10, 4, 3, 9], w: 9 },
+            { id: 'miami',             gp: 'Miami GP',         laps: 57, months: [5],         w: 7 },
+            { id: 'montreal',          gp: 'Canadian GP',      laps: 70, months: [6, 5],      w: 9 },
+            { id: 'monaco',            gp: 'Monaco GP',        laps: 78, months: [5, 6],      w: 10 },
+            { id: 'catalunya',         gp: 'Catalunya GP',     laps: 66, months: [5, 6],      w: 8 },
+            { id: 'spielberg',         gp: 'Austrian GP',      laps: 71, months: [7, 6],      w: 6 },
+            { id: 'silverstone',       gp: 'British GP',       laps: 52, months: [7, 8],      w: 10 },
+            { id: 'spa-francorchamps', gp: 'Belgian GP',       laps: 44, months: [8, 7, 9],   w: 9 },
+            { id: 'hungaroring',       gp: 'Hungarian GP',     laps: 70, months: [7, 8],      w: 10 },
+            { id: 'zandvoort',         gp: 'Dutch GP',         laps: 72, months: [8, 9],      w: 7 },
+            { id: 'monza',             gp: 'Italian GP',       laps: 53, months: [9],         w: 10 },
+            { id: 'madring',           gp: 'Spanish GP',       laps: 57, months: [9],         w: 6 },
+            { id: 'baku',              gp: 'Azerbaijan GP',    laps: 51, months: [6, 4, 9],   w: 5 },
+            { id: 'marina-bay',        gp: 'Singapore GP',     laps: 62, months: [9, 10],     w: 6 },
+            { id: 'austin',            gp: 'United States GP', laps: 56, months: [10, 11],    w: 6 },
+            { id: 'mexico-city',       gp: 'Mexico City GP',   laps: 71, months: [10, 11],    w: 6 },
+            { id: 'interlagos',        gp: 'São Paulo GP',     laps: 71, months: [11],        w: 9 },
+            { id: 'las-vegas',         gp: 'Las Vegas GP',     laps: 50, months: [11],        w: 7 },
+            { id: 'lusail',            gp: 'Qatar GP',         laps: 57, months: [11, 12, 10], w: 7 },
+            { id: 'yas-marina',        gp: 'Abu Dhabi GP',     laps: 58, months: [11, 12],    w: 7 },
+            // --- Reservepool mit Historie -------------------------------------
+            { id: 'bahrain',           gp: 'Bahrain GP',       laps: 57, months: [4, 3],      w: 6 },
+            { id: 'jeddah',            gp: 'Saudi Arabian GP', laps: 50, months: [3, 4, 12],  w: 7 },
+            { id: 'imola',             gp: 'Emilia-Romagna GP', laps: 63, months: [4, 5],     w: 5 },
+            { id: 'hockenheimring',    gp: 'German GP',        laps: 67, months: [7, 8],      w: 3 },
+            // Nürburgring lief real als European/Luxembourg GP, wenn Hockenheim den
+            // deutschen GP hatte – hält beide gleichzeitig im Kalender möglich.
+            { id: 'nurburgring',       gp: 'European GP',      laps: 60, months: [7, 8],      w: 3 },
+            { id: 'istanbul',          gp: 'Turkish GP',       laps: 58, months: [5, 6, 8],   w: 3 },
+            { id: 'portimao',          gp: 'Portuguese GP',    laps: 66, months: [5, 10],     w: 2 },
+            { id: 'mugello',           gp: 'Tuscan GP',        laps: 59, months: [9],         w: 2 },
+            { id: 'sochi',             gp: 'Russian GP',       laps: 53, months: [9, 10],     w: 2 },
+            { id: 'kyalami',           gp: 'South African GP', laps: 72, months: [3, 1],      w: 3 },
+            { id: 'magny-cours',       gp: 'French GP',        laps: 70, months: [7, 6],      w: 3 },
+            { id: 'sepang',            gp: 'Malaysian GP',     laps: 56, months: [3, 10],     w: 3 },
+            // --- Neubauten ohne F1DB-Historie: Fenster gesetzt, nicht gemessen --
+            { id: 'incheon',      gp: 'Korean GP',    laps: 55, months: [10, 9],  w: 2, country: 'KOR', length: 5.5 },
+            { id: 'bangkok',      gp: 'Thai GP',      laps: 57, months: [11, 12], w: 2, country: 'THA', length: 5.0 },
+            { id: 'qiddiya',      gp: 'Qiddiya GP',   laps: 55, months: [3, 12],  w: 2, country: 'SAU', length: 5.4 },
+            { id: 'kigali',       gp: 'Rwandan GP',   laps: 60, months: [7, 8],   w: 2, country: 'RWA', length: 5.0 },
+            { id: 'rio-racepark', gp: 'Rio de Janeiro GP', laps: 65, months: [3, 4], w: 2, country: 'BRA', length: 4.8 },
+            { id: 'denmark',      gp: 'Danish GP',    laps: 60, months: [7, 8],   w: 2, country: 'DEN', length: 4.5 }
+        ];
+
+        // Neubauten in die Stammdaten nachtragen – sonst liefert getCircuitBaseTime
+        // den 4,5-km-Fallback und renderFlag findet kein Land.
+        (function _registerFutureCircuits() {
+            FUTURE_CIRCUIT_POOL.forEach(p => {
+                if (p.country && typeof CIRCUIT_COUNTRY !== 'undefined' && !CIRCUIT_COUNTRY[p.id]) {
+                    CIRCUIT_COUNTRY[p.id] = p.country;
+                }
+                if (p.length && typeof CIRCUIT_LENGTHS !== 'undefined' && !CIRCUIT_LENGTHS[p.id]) {
+                    CIRCUIT_LENGTHS[p.id] = p.length;
+                }
+            });
+        })();
+
+        const _futureCalPool = new Map(FUTURE_CIRCUIT_POOL.map(p => [p.id, p]));
+        const _futureCalCache = {};
+
+        // Kalender-Seed: eigener Strang, damit ein Spielstand denselben Kalender behält.
+        // Fällt auf den worldSeed der Junior-Welt zurück, wenn es den schon gibt.
+        function _futureCalSeed(override) {
+            if (override) return override;
+            if (typeof GAME_STATE === 'undefined' || !GAME_STATE) return 1;
+            if (!GAME_STATE.calendarSeed) {
+                GAME_STATE.calendarSeed = (GAME_STATE.juniorWorld && GAME_STATE.juniorWorld.worldSeed)
+                    || Math.floor(Math.random() * 0x7fffffff) || 1;
+            }
+            return GAME_STATE.calendarSeed;
+        }
+
+        // Lesezugriff auf Pool und Regelwerk – für Tests und spätere Kalender-Vorschau.
+        function futureCalendarInfo() {
+            const countries = {};
+            FUTURE_CIRCUIT_POOL.forEach(p => { countries[p.id] = _futureCalCountry(p.id); });
+            return {
+                pool: FUTURE_CIRCUIT_POOL, fixed: FUTURE_CAL_FIXED, countries: countries,
+                baseYear: FUTURE_CAL_BASE_YEAR, base: FUTURE_CAL_BASE
+            };
+        }
+
+        function _futureCalCountry(id) {
+            const p = _futureCalPool.get(id);
+            if (p && p.country) return p.country;
+            return (typeof CIRCUIT_COUNTRY !== 'undefined' && CIRCUIT_COUNTRY[id]) || '?';
+        }
+
+        // Gewichtete Ziehung ohne Zurücklegen – gibt den gezogenen Eintrag zurück.
+        function _futureCalPick(rng, kandidaten, gewicht) {
+            const summe = kandidaten.reduce((s, k) => s + Math.max(0.01, gewicht(k)), 0);
+            let ziel = rng() * summe;
+            for (const k of kandidaten) {
+                ziel -= Math.max(0.01, gewicht(k));
+                if (ziel <= 0) return k;
+            }
+            return kandidaten[kandidaten.length - 1];
+        }
+
+        // Länderregel: höchstens 2 Rennen pro Land, und genau EIN Land darf 3 haben.
+        function _futureCalCountryOk(ids, kandidat) {
+            const zaehl = {};
+            ids.forEach(id => { const c = _futureCalCountry(id); zaehl[c] = (zaehl[c] || 0) + 1; });
+            const land = _futureCalCountry(kandidat);
+            const neu = (zaehl[land] || 0) + 1;
+            if (neu > 3) return false;
+            if (neu === 3) return !Object.keys(zaehl).some(c => c !== land && zaehl[c] >= 3);
+            return true;
+        }
+
+        // Derselbe GP-Name nie zweimal im selben Jahr (real noch nie vorgekommen).
+        function _futureCalGpOk(ids, kandidat) {
+            const gp = (_futureCalPool.get(kandidat) || {}).gp;
+            return !ids.some(id => (_futureCalPool.get(id) || {}).gp === gp);
+        }
+
+        // Ein Rotationsschritt: Vorjahresfeld -> Feld des Folgejahres.
+        function _futureCalRotate(vorjahr, year, seed) {
+            const rng = _recapRng((_recapHash(seed + '|kalender|' + year) >>> 0) || 1);
+            let ids = vorjahr.slice();
+
+            // Zielgröße: Schwerpunkt 22-24, 25/26 bleiben Ausreißer. Zusätzlich an die
+            // Vorjahresgröße gekoppelt (±1) – real wächst der Kalender langsam, nicht
+            // in Sprüngen. Ohne die Kopplung entstünden bis zu 4 Zugänge in einem Jahr.
+            const r = rng();
+            let ziel = r < 0.42 ? 22 : r < 0.72 ? 23 : r < 0.92 ? 24 : r < 0.98 ? 25 : 26;
+            ziel = Math.max(ids.length - 1, Math.min(ids.length + 1, ziel));
+
+            // Abgänge: Ø 1,1 pro Jahr, Null-Jahre ausdrücklich möglich.
+            const rA = rng();
+            let raus = rA < 0.25 ? 0 : rA < 0.65 ? 1 : 2;
+            raus = Math.max(raus, ids.length - ziel);   // Schrumpfen erzwingt Abgänge
+
+            for (let i = 0; i < raus; i++) {
+                const kand = ids.filter(id => FUTURE_CAL_FIXED.indexOf(id) < 0);
+                if (!kand.length) break;
+                // invers zum Gewicht: was selten im Kalender stand, fliegt eher wieder
+                const weg = _futureCalPick(rng, kand, id => 11 - ((_futureCalPool.get(id) || {}).w || 5));
+                ids = ids.filter(id => id !== weg);
+            }
+
+            let rein = ziel - ids.length;
+            for (let i = 0; i < rein; i++) {
+                const kand = FUTURE_CIRCUIT_POOL
+                    .filter(p => ids.indexOf(p.id) < 0)
+                    .filter(p => _futureCalCountryOk(ids, p.id) && _futureCalGpOk(ids, p.id));
+                if (!kand.length) break;
+                // Länder, die schon im Kalender stehen, zählen nur halb – sonst häufen
+                // sich Doppelländer auf ~2,2 pro Saison statt der real gemessenen ~1,5.
+                const vertreten = {};
+                ids.forEach(id => { vertreten[_futureCalCountry(id)] = true; });
+                const neu = _futureCalPick(rng, kand, p => vertreten[_futureCalCountry(p.id)] ? p.w * 0.5 : p.w);
+                ids.push(neu.id);
+            }
+            return ids;
+        }
+
+        // Streckenliste für ein Jahr – iterativ ab dem Basisjahr, damit jede Saison
+        // auf der vorigen aufbaut (1-2 Wechsel), statt frei neu gewürfelt zu werden.
+        function _futureCalendarIds(year, seed) {
+            const key = seed + '|' + year;
+            if (_futureCalCache[key]) return _futureCalCache[key];
+            let ids = FUTURE_CAL_BASE.slice();
+            _futureCalCache[seed + '|' + FUTURE_CAL_BASE_YEAR] = ids;
+            for (let y = FUTURE_CAL_BASE_YEAR + 1; y <= year; y++) {
+                const k = seed + '|' + y;
+                ids = _futureCalCache[k] || _futureCalRotate(ids, y, seed);
+                _futureCalCache[k] = ids;
+            }
+            return ids;
+        }
+
+        // Monat je Strecke aus ihrem Fenster: Hauptmonat bevorzugt, sonst der bislang
+        // am schwächsten belegte Monat des Fensters – hält die Saison gleichmäßig gefüllt.
+        function _futureCalMonths(ids, year, seed) {
+            if (year === FUTURE_CAL_BASE_YEAR) return { ...FUTURE_CAL_BASE_MONTHS };
+            const rng = _recapRng((_recapHash(seed + '|monate|' + year) >>> 0) || 1);
+            const belegt = {};
+            const out = {};
+            // Enge Fenster zuerst bedienen: wer nur einen Monat kann (Monza, Miami,
+            // Interlagos), belegt ihn, bevor die flexiblen Strecken verteilt werden.
+            const reihenfolge = ids.slice().sort((a, b) => {
+                const fa = ((_futureCalPool.get(a) || {}).months || []).length;
+                const fb = ((_futureCalPool.get(b) || {}).months || []).length;
+                return fa - fb;
+            });
+            reihenfolge.forEach(id => {
+                const p = _futureCalPool.get(id);
+                const fenster = (p && p.months && p.months.length) ? p.months : [6];
+                let m;
+                if (fenster.length === 1) {
+                    m = fenster[0];
+                } else {
+                    const schwach = fenster.reduce((a, b) => (belegt[b] || 0) < (belegt[a] || 0) ? b : a);
+                    // Hauptmonat bevorzugt – aber nicht, wenn er schon spürbar voller ist
+                    // als eine Alternative. Sonst stapeln sich 6 Rennen im November.
+                    const gedraengt = (belegt[fenster[0]] || 0) - (belegt[schwach] || 0) >= 2;
+                    m = (!gedraengt && rng() < 0.7) ? fenster[0] : schwach;
+                }
+                belegt[m] = (belegt[m] || 0) + 1;
+                out[id] = m;
+            });
+            return out;
+        }
+
+        // Fertiger Kalender im Format von generateRacesForYear.
+        function buildFutureCalendar(year, seedOverride) {
+            const seed = _futureCalSeed(seedOverride);
+            const ids = _futureCalendarIds(year, seed);
+            const monate = _futureCalMonths(ids, year, seed);
+            const poolIdx = id => FUTURE_CIRCUIT_POOL.findIndex(p => p.id === id);
+            return ids
+                .map(id => {
+                    const p = _futureCalPool.get(id) || {};
+                    return {
+                        name: p.gp || formatCircuitName(id),
+                        country: _futureCalCountry(id),
+                        circuit: formatCircuitName(id),
+                        circuitId: id,
+                        laps: p.laps || 57,
+                        month: monate[id]
+                    };
+                })
+                .sort((a, b) => (a.month - b.month) || (poolIdx(a.circuitId) - poolIdx(b.circuitId)))
+                .map((r, i) => ({ ...r, id: i + 1 }));
+        }
+
         function generateRacesForYear(year) {
+            // Nach dem F1DB-Horizont rotiert der Kalender, statt für jedes Jahr
+            // denselben festen Streckenplan zu liefern.
+            if (year >= FUTURE_CAL_BASE_YEAR) return buildFutureCalendar(year);
+
             // === HISTORISCHE KALENDER 1950-1960 (exakt wie in echt, mit Indy 500) ===
             const historicCalendars = {
                 1950: [
