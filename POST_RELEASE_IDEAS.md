@@ -80,6 +80,18 @@ Jeder Fahrer hat einen versteckten Moralwert, der Pace und Verhalten beeinflusst
 - Emergentes Storytelling ohne geskripteten Inhalt
 - Sichtbar im Fahrerprofil als "Stimmung"-Indikator
 
+⚠ **Potenzieller Konflikt mit dem Bewertungssystem — vor dem Bau klären.**
+Hauptreferenz: `memory/project_satisfaction_and_chassis_flight.md` (Zufriedenheit, Ansehen,
+Chassis-Flucht). Dort ist ein sichtbarer Zufriedenheits-Balken geplant, der auf denselben Auslöser
+reagiert (Teamkollegen-Duelle → Wechselneigung). Es gäbe dann **vier** Werte für dieselbe
+Fahrer-Gemütslage: `reputation` (Ansehen, gebaut), `evaluateDriverPerformance().score`
+(Zufriedenheit, gebaut), der geplante Team-Zufriedenheits-Balken und dieser versteckte Moralwert.
+Auch die Datenquelle überschneidet sich: „Teamkollege 5 Mal hintereinander vorne" ist exakt das
+bereits vorhandene `h2hSeason`.
+**Der eigenständige Kern dieser Idee ist die Pace-Wirkung** — Morale greift in die Simulation ein,
+das Bewertungssystem nur ins Marktverhalten. Wenn Morale gebaut wird, dann als *Pace-Overlay auf
+die vorhandenen Werte*, nicht als fünfter eigener Zähler.
+
 ### Anpassungsfähigkeit (A63, erweitert)
 Fahrer-Attribut das bestimmt, wie gut ein Pilot sich an neue Situationen anpasst.
 - F1-Wagen-Anpassung (Hamilton zu Ferrari), Formelwagen-Umstieg (Andretti), Open-Wheeler (Surtees)
