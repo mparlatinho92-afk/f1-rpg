@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.15.98</title>
+    <title>F1 RPG v0.9.16.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.15.98 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.0 (aktuell) - 16.08.2026</div>
+                            <div>&#8226; FIX: Kleinstkonstrukteure wie LDS nehmen wieder nur Landsleute - sieben Wege ins Cockpit hatten die Regel umgangen</div>
+                            <div>&#8226; FIX: Der Todes-Status stand im Steckbrief oft gar nicht - er wird jetzt aus den Todesakten geholt, nicht nur aus dem Fahrer</div>
+                            <div>&#8226; NEU: Reserve-Pool zeigt seine eigenen Todesfaelle, Nekrolog verlinkt Verstorbene und Ersatzfahrer</div>
+                            <div>&#8226; NEU: Besitzer-Fahrer haben einen Vertrag fuer immer statt eines ablaufenden Jahres</div>
+                            <div>&#8226; FIX: Rhodesier melden wieder beim Grossen Preis von Suedafrika</div>
+                            <div class="font-bold text-slate-400">v0.9.15.98 - 16.08.2026</div>
                             <div>&#8226; NEU: Europaeische Stammfahrer lassen Ueberseerennen aus wie in der Realitaet - 1953 fast jeder zweite, ab 1980 niemand mehr</div>
                             <div>&#8226; NEU: Fahrer die nur in ihrer Weltgegend meldeten bleiben dort - Watkins Glen und Mexico City Ende der 1960er</div>
                             <div>&#8226; FIX: Ersatzmelder springen wieder in den 1950er-Folgesaisons ein - das Indy-Feld hatte das Starterfeld voll erscheinen lassen</div>
@@ -3525,7 +3531,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.15.98';
+        const VERSION = '0.9.16.0';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6294,7 +6300,11 @@
         // ergibt sich automatisch: 1963 findet die Funktion east-london, 1972 kyalami.
         // Rhodesier (Love, Tingle, Puzey) hatten kein eigenes Heimrennen und meldeten
         // ausschließlich in Südafrika – dafür der Proxy.
-        const HOME_RACE_PROXY = { ZIM: 'RSA' };
+        // RHO ist der zeitgenössische Code (Rhodesien bis 1980), ZIM der heutige — beide
+        // müssen hier stehen, sonst hat John Love unter dem einen Code ein Heimrennen und
+        // unter dem anderen keines (v0.9.16.0). Rhodesien wird bei den Meldungen
+        // technisch wie Südafrika behandelt.
+        const HOME_RACE_PROXY = { ZIM: 'RSA', RHO: 'RSA' };
 
         // Grundwahrscheinlichkeit, dass ein Privateer reiner Heimrennen-Melder ist.
         // Spiegelt die Privateer-Ära: Höhepunkt 1960er, erloschen mit den
@@ -7212,8 +7222,13 @@
                 && !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId));
             const fallbackTeams = (teams || []).filter(t =>
                 !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId));
-            const pickTeam = () => {
-                const pool = custTeams.length ? custTeams : fallbackTeams;
+            // Team NUR aus denen ziehen, die diesen Fahrer ueberhaupt nehmen wuerden —
+            // sonst setzt der Fueller einen Schweizer in einen suedafrikanischen
+            // Kleinstkonstrukteur (v0.9.16.0).
+            const pickTeam = (fahrer) => {
+                let pool = (custTeams.length ? custTeams : fallbackTeams)
+                    .filter(t => _teamNationOk(t, fahrer));
+                if (!pool.length && custTeams.length) pool = fallbackTeams.filter(t => _teamNationOk(t, fahrer));
                 return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
             };
 
@@ -7223,8 +7238,8 @@
             // Greedy: solange irgendwo ein Defizit klafft, einen Füller ziehen und
             // ihn auf die aktuell knappsten Rennen setzen.
             while (deficit.some(d => d > 0) && ri < reserve.length && guard++ < 200) {
-                const team = pickTeam(); if (!team) break;
                 const filler = reserve[ri++];
+                const team = pickTeam(filler); if (!team) continue;
                 // Wie viele Rennen fährt dieser Füller? Ära-Sporadik wie ein Privateer.
                 const want = _drawPrivateerCount(year, cal.length);
                 // Rennen mit größtem Restdefizit zuerst.
@@ -7375,8 +7390,10 @@
                 const gew = pool.map(d => Math.max(1, 95 - (d.pace || 70)) ** 2);
                 const ersatz = _weightedDraw(pool, gew, 1)[0];
                 if (!ersatz) break;
-                const team = _weightedDraw(teamKand, tGew, 1)[0];
-                if (!team) break;
+                const passend = teamKand.filter(t => _teamNationOk(t, ersatz));
+                if (!passend.length) continue;
+                const team = _weightedDraw(passend, passend.map(t => tGew[teamKand.indexOf(t)]), 1)[0];
+                if (!team) continue;
 
                 const n = zeile[h];
                 let plan;
@@ -7546,7 +7563,13 @@
             // Nation zuerst (Indy immer USA) – Namen kommen aus dem nationskohärenten Pool.
             // nationSource='motorsport' → F1-naher Motorsport-Trichter (Reserve-Pool nach
             // Template-Horizont, mehr Vielfalt); Default 'decade' = F1-realer DECADE_NATION_POOLS.
+            // Landsmann-Konstrukteure geben die Nation VOR (v0.9.16.0): wer für LDS
+            // erfunden wird, ist Südafrikaner oder Rhodesier, nicht Schweizer. Sonst
+            // hätte der Generator die Regel unterlaufen, die alle Auswahlpfade beachten.
+            const _nurNation = (typeof getNationalityOnlyNations === 'function')
+                ? getNationalityOnlyNations(team && (team.histId || team.id)) : null;
             const nation = isIndyTeam ? 'USA'
+                : (_nurNation && _nurNation.length) ? _nurNation[Math.floor(Math.random() * _nurNation.length)]
                 : (nationSource === 'motorsport' ? pickNationMotorsport(year) : pickNationByDecade(year));
 
             // Nachnamen ohne Duplikate mit aktiven Fahrern
@@ -7702,7 +7725,13 @@
             const wantRookie = Math.random() < _seatRookieChance(teamId);
             const useReal    = Math.random() < realPref;
 
-            const _compat = d => { const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id); return teamIsIndy ? isIndy : !isIndy; };
+            // Landsmann-Regel mit in die Vertraeglichkeit: LDS nimmt keinen Schweizer,
+            // egal ueber welchen Zweig dieser Funktion er hereinkaeme (v0.9.16.0).
+            const _compat = d => {
+                const isIndy = d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id);
+                if (teamIsIndy ? !isIndy : isIndy) return false;
+                return _teamNationOk(GAME_STATE.teams.find(t => t.id === teamId), d);
+            };
             const _excl   = d => !excludeIds || !excludeIds.has(d.id);
             const _isBeginner = d => d.debutYear && (year - d.debutYear) < 1;
             const _effPace = d => { const cur = d.currentPace || d.pace || 0; return cur * 0.7 + (d.potentialPace || cur) * 0.3; };
@@ -7939,6 +7968,53 @@
             return { driver: gen, source: 'generated' };
         }
 
+        // === LANDSMANN-REGEL AN EINER STELLE (v0.9.16.0) ===
+        // `NATIONALITY_ONLY_CONSTRUCTORS` (data/hist.js) hält 35 historische Kleinst-
+        // konstrukteure, die nur Landsleute engagierten — LDS nahm Südafrikaner und
+        // Rhodesier, AFM und EMW Deutsche, Bugatti Franzosen. Geprüft wurde das aber nur
+        // im Transfermarkt und in `_findRealSeatCandidate`. FÜNF weitere Wege ins Cockpit
+        // gingen daran vorbei: Grid-Füller, Ersatzmelder, Sitzfüller, `acquireSeatDriver`
+        // und der Fahrer-Generator. So landete Jo Siffert bei LDS.
+        // Bewusst NICHT alle Kleinstkonstrukteure — nur die, die in der Liste stehen.
+        function _teamNationOk(team, driver) {
+            if (!team || !driver) return true;
+            const allowed = (typeof getNationalityOnlyNations === 'function')
+                ? getNationalityOnlyNations(team.histId || team.id) : null;
+            if (!allowed || !allowed.length) return true;
+            const ioc = (typeof driverIOC === 'function') ? driverIOC(driver) : null;
+            return !!ioc && allowed.includes(ioc);
+        }
+
+        // Letzte Verteidigungslinie: nach ALLEN Platzierungen die Landsmann-Regel
+        // durchsetzen. Sieben Wege ins Cockpit einzeln zu prüfen hat nicht gereicht —
+        // Jo Siffert stand danach immer noch bei einem südafrikanischen Team. Statt
+        // weiter zu raten, welcher Pfad noch fehlt, wird hier am Ende geräumt: wer
+        // nicht hingehört, wird Free Agent, und der Sitz bekommt einen Landsmann
+        // (echt bevorzugt, sonst erfunden — `generateDriver` kennt die Regel).
+        function enforceNationalityOnlySeats(year) {
+            if (typeof getNationalityOnlyNations !== 'function') return 0;
+            let geraeumt = 0;
+            (GAME_STATE.teams || []).forEach(t => {
+                const allowed = getNationalityOnlyNations(t.histId || t.id);
+                if (!allowed || !allowed.length) return;
+                (GAME_STATE.drivers || []).forEach(d => {
+                    if (d.team !== t.id || (d.status && d.status !== 'active')) return;
+                    if (_teamNationOk(t, d)) return;
+                    d.team = null; d.contractEnd = null; d.isReserve = true;
+                    geraeumt++;
+                    logInfo('TRANSFER', `↩️ ${d.name} passt nicht zu ${t.name} (nur ${allowed.join('/')}) – wieder frei`);
+                    const ersatz = _lastResortRealDriver(t.id, year);
+                    if (!ersatz) {
+                        const gd = generateDriver(t.id, year, Math.random() < 0.7);
+                        gd.contractEnd = year + 1;
+                        GAME_STATE.drivers.push(gd);
+                        GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
+                    }
+                });
+            });
+            return geraeumt;
+        }
+
         // v0.9.15.24: reiner Finder — bester verfügbarer ECHTER/Feeder-Fahrer für ein Team
         // (Free Agent → Reserve-Pool, ohne Tier/Pace-Gate, nur Indy-/Nation-Kompatibilität).
         // KEINE Seiteneffekte. Rückgabe { driver, source, fromPool } oder null.
@@ -8054,6 +8130,11 @@
             
             // v0.6.8: Hilfsfunktion um ausgeschlossene Fahrer zu prüfen
             const isExcluded = (driverId) => excludeDriverIds && excludeDriverIds.has(driverId);
+            // Landsmann-Regel (v0.9.16.0): dieser Pfad war der letzte, der sie umging —
+            // ueber ihn kamen Charles de Tornaco und Chris Amon zum suedafrikanischen
+            // Alfa Special und Vic Elford zum kanadischen Stebro.
+            const _zielTeam = GAME_STATE.teams.find(t => t.id === targetTeamId);
+            const _natOk = d => _teamNationOk(_zielTeam, d);
             
             // 1. PRIORITÄT: Arbeitslose erfahrene Fahrer (min. 1 Jahr Erfahrung)
             const unemployedExpDrivers = GAME_STATE.drivers.filter(d => 
@@ -8061,6 +8142,7 @@
                 !d.team &&
                 d.debutYear && (year - d.debutYear) >= minExperience &&
                 d.currentPace >= 70 &&
+                _natOk(d) &&
                 !isExcluded(d.id)  // v0.6.8: Ausschließen
             );
             
@@ -8076,7 +8158,7 @@
             
             // 2. PRIORITÄT: Fahrer von niedrigerem Team "klauen"
             // Suche Fahrer von Teams mit niedrigerem Ranking (besserer Aufstieg)
-            const candidateDrivers = [];
+            let candidateDrivers = [];
             
             for (let i = targetTeamRank; i < teamRanking.length; i++) {
                 const lowerTeamId = teamRanking[i].id;
@@ -8105,6 +8187,8 @@
                 })));
             }
             
+            const _gefiltert = candidateDrivers.filter(c => _natOk(c.driver));
+            candidateDrivers = _gefiltert;
             if (candidateDrivers.length > 0) {
                 // Beste Kombination aus Pace und Aufstiegs-Potenzial
                 candidateDrivers.sort((a, b) => {
@@ -10225,6 +10309,22 @@
                             </button>
                         `).join('')}
                     </div>
+                    ${(() => {
+                        // === POOL-TICKER (v0.9.16.0) ===
+                        // Wer aus dem Pool toedlich verunglueckt, verschwindet daraus
+                        // still — in der Saison-Uebersicht steht er zwar, aber wer den
+                        // Pool durchsieht, merkt nur dass jemand fehlt. Deshalb hier
+                        // dieselbe Meldung noch einmal, direkt an der Liste.
+                        const tote = (GAME_STATE.seasonDeaths || []).filter(d => d.fromPool);
+                        if (!tote.length) return '';
+                        return `<div class="mb-3 p-3 rounded-lg" style="background:#2B1B1B;border:1px solid #7F1D1D">
+                            <div class="text-sm font-bold" style="color:#fca5a5">🕯️ Aus dem Pool verstorben (${tote.length})</div>
+                            <div class="mt-1 text-xs" style="display:flex;flex-direction:column;gap:2px">
+                                ${tote.map(d => `<div><span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:#ef4444">${d.name}</span>
+                                    <span class="text-tertiary">${[d.raceName, d.timing].filter(Boolean).join(' · ')}</span></div>`).join('')}
+                            </div>
+                        </div>`;
+                    })()}
                     ${sorted.length === 0 ? `
                         <p class="text-secondary text-sm text-center py-4">Keine Fahrer in dieser Gruppe.
                             ${_poolGroupFilter !== 'all' ? `<br><button onclick="setPoolGroupFilter('all')" class="text-xs mt-2 px-3 py-1 rounded" style="background:var(--bg-tertiary)">← Alle anzeigen</button>` : '<br><span class="text-tertiary text-xs">Neue Saison starten oder "+ Fahrer erstellen" nutzen.</span>'}
@@ -17514,7 +17614,7 @@
                     // 1. Free Agent (aktiver Fahrer ohne Team) – echte Ex-Fahrer zuerst.
                     // Top-Team: keine Karriere-Anfänger, und der stärkste Verfügbare zuerst.
                     const _faBase = d => !d.team && (!d.status || d.status === 'active') &&
-                        d._dismissedFromTeam !== t.id && _compat(d);
+                        d._dismissedFromTeam !== t.id && _compat(d) && _teamNationOk(t, d);
                     const fa = isTopTeam
                         ? GAME_STATE.drivers.filter(d => _faBase(d) && !_isBeginner(d))
                             .sort((a, b) => (b.currentPace || b.pace || 0) - (a.currentPace || a.pace || 0))[0]
@@ -17535,6 +17635,7 @@
                     //    Außenwelt nur wenn externalTransfers an (v0.9.15.18): sonst direkt zu Schritt 3 (generieren als letzter Ausweg).
                     const cand = simRule('externalTransfers') ? (GAME_STATE.reservePool || []).find(p =>
                         !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) &&
+                        _teamNationOk(t, p) &&
                         (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year)) : null;
                     if (cand) {
                         GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== cand);
@@ -18970,7 +19071,19 @@
         // also hinter dessen `if (!sd || !sd.t) return;`. Jenseits des SEASON_DATA-
         // Horizonts lief er dadurch nie — Stroll verlor Aston Martin ab 2027, obwohl
         // das Team existierte und er 29 war. Wird jetzt unbedingt aufgerufen.
+        // === VERTRAG BIS KARRIEREENDE (v0.9.16.0) ===
+        // Besitzer-Fahrer koennen weder wechseln noch entlassen werden (isLoyalOwnerDriver
+        // sperrt beides). Ihr `contractEnd` lief trotzdem ab und stand dann auf „-":
+        // Lance Stroll zeigte 2026 „Vertrag bis 2025" und danach gar nichts mehr, obwohl
+        // er faktisch bis zum Karriereende bei Aston Martin faehrt. Statt jedes Jahr eine
+        // neue Jahreszahl zu erfinden, wird der Vertrag als LEBENSLANG markiert und in der
+        // Anzeige als solcher benannt.
         function placeLoyalOwnerDrivers() {
+            // Bestehende Besitzer-Fahrer ebenfalls markieren — nicht nur die, die diese
+            // Funktion gerade erst umsetzt.
+            (GAME_STATE.drivers || []).forEach(d => {
+                if (_isLockedOwner(d)) { d._lifetimeContract = true; d.contractEnd = null; }
+            });
             if (typeof LOYAL_OWNER_DRIVERS !== 'undefined') {
                 Object.entries(LOYAL_OWNER_DRIVERS).forEach(([cKey, ownerHistId]) => {
                     const team = GAME_STATE.teams.find(t => {
@@ -18988,6 +19101,7 @@
                     owner.team = team.id;
                     owner.isReserve = false;
                     owner._movedThisSeason = true;
+                    owner._lifetimeContract = true;   // s. unten: laeuft bis Karriereende
                     GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== owner.id);
                     if (!GAME_STATE.drivers.find(x => x.id === owner.id)) GAME_STATE.drivers.push(owner);
                     logInfo('OVERRIDE', `🔧 ${owner.name} → ${team.name} (Besitzer-Fahrer)`);
@@ -20621,6 +20735,8 @@
             // Zuordnung wieder. Und außerhalb von applyTeamEntryExit, weil das
             // jenseits des SEASON_DATA-Horizonts früh aussteigt.
             placeLoyalOwnerDrivers();   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
+            // Landsmann-Regel durchsetzen — NACH allen Sitzvergaben, s. dort.
+            enforceNationalityOnlySeats(newYear);
             // Heimrennen-Melder gegen den NEUEN Kalender neu bestimmen – nach fillEmptyTeamSeats,
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
@@ -23184,6 +23300,28 @@
             if (preRows.length) career += `<div class="text-xs text-tertiary mt-1" style="font-style:italic;">Kursive Jahre: vor Spielbeginn, aus Stärke und Alter rekonstruiert – nicht simuliert.</div>`;
 
             document.getElementById('driverProfileTitle').innerHTML = `${flag} ${name}${crown}`;
+            // === TODES-AKTE EINMAL ERMITTELN (v0.9.16.0) ===
+            // Nur `driver.status` zu pruefen reichte nicht: wird der Steckbrief aus einer
+            // vergangenen Saison oder aus dem Pool geladen, traegt das Fahrer-Objekt den
+            // Status oft gar nicht — der Fahrer war tot, sah aber lebendig aus. Die
+            // Wahrheit steht in den Todesakten; von dort kommen auch Jahr und Ort.
+            const _todesAkte = (() => {
+                let jahr = driver.deathYear || null, ort = driver.deathRace || null;
+                let tot = _istTot(driver);
+                if (!tot || !jahr) {
+                    const nm = String(driver.name || '').toLowerCase().trim();
+                    const suche = akte => (akte || []).find(x =>
+                        (x.driver && (x.driver === driverId || x.driver === driver.id)) ||
+                        (x.name && x.name.toLowerCase().trim() === nm));
+                    let treffer = suche(GAME_STATE.seasonDeaths), tJahr = treffer ? GAME_STATE.currentYear : null;
+                    if (!treffer) for (const h of (GAME_STATE.history || [])) {
+                        const t = suche(h.deaths); if (t) { treffer = t; tJahr = h.year; break; }
+                    }
+                    if (treffer) { tot = true; jahr = jahr || tJahr; ort = ort || treffer.raceName || null; }
+                }
+                return { tot, jahr, ort };
+            })();
+
             document.getElementById('driverProfileBody').innerHTML = `
                 <div class="flex gap-4 mb-6">
                     <div class="flex-1">
@@ -25709,9 +25847,13 @@
                     return `
                         <div class="flex items-start justify-between gap-3 py-2 px-3 rounded-lg" style="background:var(--bg-secondary);margin-bottom:4px;">
                             <div style="min-width:0;">
-                                <div class="text-sm">💀 <b>${d.name || '?'}</b> <span class="text-tertiary">(${d.team || '?'})</span></div>
+                                <div class="text-sm">💀 ${d.driver
+                                    ? `<b class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name || '?'}</b>`
+                                    : `<b>${d.name || '?'}</b>`} <span class="text-tertiary">(${d.team || '?'})</span></div>
                                 <div class="text-xs text-tertiary mt-0.5">${[where, sess].filter(Boolean).join(' · ')}${round}</div>
-                                ${rep ? `<div class="text-xs mt-0.5">↳ Sitz übernahm <b>${rep}</b> <span>${_originBadge(d.replacementOrigin, d.replacementId)}</span></div>` : ''}
+                                ${rep ? `<div class="text-xs mt-0.5">↳ Sitz übernahm ${d.replacementId
+                                    ? `<b class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${rep}</b>`
+                                    : `<b>${rep}</b>`} <span>${_originBadge(d.replacementOrigin, d.replacementId)}</span></div>` : ''}
                             </div>
                         </div>`;
                 }).join('');
@@ -28932,7 +29074,31 @@ Empfohlene Wertebereiche:
             // Angeklicktes Jahr schlaegt alles; sonst friert das Karriereende den Staat ein
             const profileFlagYear = viewingHistoricalYear || getDriverFlagYear(driver, GAME_STATE.currentYear);
             document.getElementById('driverProfileTitle').innerHTML = `${renderFlag(driver.nation, driver.name, profileFlagYear)} ${driver.name}${titleSuffix}`;
-            
+
+            // === TODES-AKTE EINMAL ERMITTELN (v0.9.16.0) ===
+            // Nur `driver.status` zu prüfen reichte nicht: wird der Steckbrief aus einer
+            // vergangenen Saison oder aus dem Pool geladen, trägt das Fahrer-Objekt den
+            // Status oft gar nicht — der Fahrer war tot, sah aber lebendig aus. Die
+            // Wahrheit steht in den Todesakten; von dort kommen auch Jahr und Ort.
+            // Einmal berechnet, weil Banner UND Alterskarte sie brauchen.
+            const _todesAkte = (() => {
+                let jahr = driver.deathYear || null, ort = driver.deathRace || null;
+                let tot = _istTot(driver);
+                if (!tot || !jahr) {
+                    const nm = String(driver.name || '').toLowerCase().trim();
+                    const suche = akte => (akte || []).find(x =>
+                        (x.driver && (x.driver === driverId || x.driver === driver.id)) ||
+                        (x.name && x.name.toLowerCase().trim() === nm));
+                    let treffer = suche(GAME_STATE.seasonDeaths);
+                    let tJahr = treffer ? GAME_STATE.currentYear : null;
+                    if (!treffer) for (const h of (GAME_STATE.history || [])) {
+                        const t = suche(h.deaths); if (t) { treffer = t; tJahr = h.year; break; }
+                    }
+                    if (treffer) { tot = true; jahr = jahr || tJahr; ort = ort || treffer.raceName || null; }
+                }
+                return { tot, jahr, ort };
+            })();
+
             document.getElementById('driverProfileBody').innerHTML = `
                 ${isLegend ? `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #1E3A5F; border: 1px solid #3B82F6;">
@@ -28944,9 +29110,9 @@ Empfohlene Wertebereiche:
                         📜 Ehemaliger Fahrer (zuletzt aktiv: ${pastSeasonYear})
                     </div>
                 ` : ''}
-                ${_istTot(driver) ? `
+                ${_todesAkte.tot ? `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #2B1B1B; border: 1px solid #7F1D1D;">
-                        🕯️ Tödlich verunglückt${driver.deathYear ? ` ${driver.deathYear}` : ''}${driver.deathRace ? ` – ${driver.deathRace}` : ''}${driver.birthYear && driver.deathYear ? ` · ${driver.deathYear - driver.birthYear} Jahre alt` : ''}
+                        🕯️ Tödlich verunglückt${_todesAkte.jahr ? ` ${_todesAkte.jahr}` : ''}${_todesAkte.ort ? ` – ${_todesAkte.ort}` : ''}${driver.birthYear && _todesAkte.jahr ? ` · ${_todesAkte.jahr - driver.birthYear} Jahre alt` : ''}
                     </div>
                 ` : ''}
                 ${driver.feederFictionalSkills ? `
@@ -29016,9 +29182,9 @@ Empfohlene Wertebereiche:
                             const _faehrtNicht = !isCurrentlyActive || driver.status === 'retired';
                             const _jahreOhne = (_faehrtNicht && _letztesJahr)
                                 ? GAME_STATE.currentYear - _letztesJahr : 0;
-                            if (_istTot(driver) && driver.birthYear) {
+                            if (_todesAkte.tot && driver.birthYear) {
                                 return `<div class="p-2 rounded-lg" style="background:#2B1B1B;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem">
-                                    <div class="text-lg md:text-xl font-bold" style="color:#fca5a5">${driver.birthYear}–${driver.deathYear || '?'}</div>
+                                    <div class="text-lg md:text-xl font-bold" style="color:#fca5a5">${driver.birthYear}–${_todesAkte.jahr || '?'}</div>
                                     <div class="text-xs md:text-sm" style="color:#fca5a5;opacity:0.75">Lebensdaten</div>
                                 </div>`;
                             }
@@ -29056,9 +29222,10 @@ Empfohlene Wertebereiche:
                             <div class="text-xl md:text-2xl font-bold">${allTime.lastYear || '-'}</div>
                             <div class="text-xs md:text-sm text-tertiary">Aktiv bis</div>
                         </div>` : ''}
-                        ${isCurrentlyActive && driver.contractEnd ? `
+                        ${(() => { if (isCurrentlyActive && !driver._lifetimeContract && _isLockedOwner(driver)) driver._lifetimeContract = true; return ''; })()}
+                        ${isCurrentlyActive && (driver.contractEnd || driver._lifetimeContract) ? `
                         <div class="p-2 bg-secondary rounded-lg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem">
-                            <div class="text-xl md:text-2xl font-bold">${driver.contractEnd}</div>
+                            <div class="${driver._lifetimeContract ? 'text-base md:text-lg' : 'text-xl md:text-2xl'} font-bold">${driver._lifetimeContract ? 'für immer' : driver.contractEnd}</div>
                             <div class="text-xs md:text-sm text-tertiary">Vertrag bis</div>
                         </div>
                         ` : ''}
