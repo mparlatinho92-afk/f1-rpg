@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.5</title>
+    <title>F1 RPG v0.9.16.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -934,7 +934,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.5 (aktuell) - 16.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.6 (aktuell) - 19.08.2026</div>
+                            <div>&#8226; FIX: Heimrennen-Melder fuhren als Werksfahrer volle Saisons - von 238 Kader-Auftritten trugen nur 13 das Flag (Serrurier fuhr 1962 sieben Europarennen)</div>
+                            <div>&#8226; FIX: Gastauftritte umgingen die Landsmann-Regel (Bianchi bei LDS, Spence bei ENB, McGuire bei LEC)</div>
+                            <div>&#8226; FIX: Karriere-Historie zeigte keine Teams, wenn Tabelle und Ergebnisse verschiedene Fahrer-IDs tragen</div>
+                            <div>&#8226; NEU: data/home-only.js - 133 Heimrennen-Fahrer, 21 Heimat-Konstrukteure, 43 Ein-Fahrer-Konstrukteure aus F1DB gemessen</div>
+                            <div class="font-bold text-slate-400">v0.9.16.5 - 16.08.2026</div>
                             <div>&#8226; NEU: Zukunfts-Kalender rotiert - 1-2 Streckenwechsel pro Jahr, an F1DB gemessen</div>
                             <div>&#8226; NEU: Pool aus 40 Strecken mit eigenen Monatsfenstern, Monza/Monaco/Silverstone/Hungaroring rotieren nie</div>
                             <div>&#8226; NEU: max 2 Rennen pro Land, genau ein Land darf 3 haben</div>
@@ -3214,6 +3219,7 @@
     <script src="data/driver-starts.js"></script>
     <script src="data/venue-pull.js"></script>
     <script src="data/race-grid.js"></script>
+    <script src="data/home-only.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3552,7 +3558,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.5';
+        const VERSION = '0.9.16.6';
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -6393,6 +6399,68 @@
             });
         }
 
+        // === KURATIERTE HOME-ONLY-VERGABE — JEDE SAISON (v0.9.16.6) ===
+        // Die Zuweisung aus `HOME_ONLY_ENTRIES` lief bis dahin AUSSCHLIESSLICH in
+        // `expandSeasonData`, also einmal beim Aufbau einer Template-Saison. Wer danach
+        // ins Feld kam — aus dem Reserve-Pool, per Sitzfüller, mit einem einsteigenden
+        // Team oder über den Transfermarkt — bekam das Flag NIE.
+        //
+        // Gemessen an einem 96-Saison-Stand: von 238 Kader-Auftritten kuratierter
+        // Heimrennen-Melder trugen ganze 13 das Flag. Die übrigen 225 standen als
+        // WERKSFAHRER da (`isPrivateer: false`, `scheduledRaces: null`) und meldeten
+        // damit jedes Rennen des Kalenders — Doug Serrurier fuhr für LDS die volle
+        // Saison 1962 inklusive Zandvoort, Monaco, Spa, Aintree, Nürburgring, Monza
+        // und Watkins Glen (Nutzer-Report).
+        //
+        // Warum ausgerechnet Werksfahrer: bei einem Zwei-Mann-Rennstall wie LDS ist
+        // jeder Fahrer unter den zwei Schnellsten, `markPrivateers` macht ihn also zum
+        // Werksfahrer — und `assignGenericHomeOnly` fasst Werksfahrer nicht an. Die
+        // kuratierte Wahrheit muss deshalb VOR der generischen Vergabe stehen und
+        // unabhängig vom Privatier-Status gelten.
+        //
+        // Strecken kommen aus dem LAUFENDEN Kalender: die kuratierte Liste zuerst, und
+        // wenn keine ihrer Strecken dieses Jahr stattfindet, die gemessene Heimatnation
+        // aus `HOME_ONLY_DRIVERS` (data/home-only.js) — so greift die Regel auch in
+        // einer alternativen Geschichte (1963 East London, 1972 Kyalami).
+        function applyCuratedHomeOnly(drivers, races, year, nameMap) {
+            if (typeof HOME_ONLY_ENTRIES === 'undefined') return 0;
+            const byCountry = {};
+            (races || []).forEach(r => {
+                if (r.isIndy || !r.country || !r.circuitId) return;
+                const c = r.country.length === 3 ? r.country : convertEmojiToIOC(r.country);
+                if (!c) return;
+                (byCountry[c] = byCountry[c] || []).push(String(r.circuitId).toLowerCase());
+            });
+            const imKalender = new Set([].concat(...Object.values(byCountry)));
+            let gesetzt = 0;
+            (drivers || []).forEach(d => {
+                if (d.status && d.status !== 'active') return;
+                const slug = d.histId || (nameMap && nameMap[d.name]) || null;
+                const kur = (slug && HOME_ONLY_ENTRIES[slug]) || HOME_ONLY_ENTRIES[d.id]
+                    || (nameMap && HOME_ONLY_ENTRIES[nameMap[d.name]]) || null;
+                let circuits = kur
+                    ? kur.map(c => String(c).toLowerCase()).filter(c => imKalender.has(c))
+                    : null;
+                if ((!circuits || !circuits.length) && typeof HOME_ONLY_DRIVERS !== 'undefined') {
+                    const eintrag = slug ? HOME_ONLY_DRIVERS[slug] : null;
+                    if (eintrag) {
+                        const nats = [].concat(eintrag);
+                        circuits = [].concat(...nats.map(n => byCountry[
+                            (typeof HOME_NATION_ALIAS !== 'undefined' && HOME_NATION_ALIAS[n]) || n] || []));
+                    }
+                }
+                // Kein Heimrennen in diesem Kalender → kein totes Flag setzen. Der
+                // 0-Meldungs-Pass (pruneZeroEntryDrivers) räumt den Rest.
+                if (!circuits || !circuits.length) return;
+                d.homeOnly = true;
+                d.homeCircuits = [...new Set(circuits)];
+                d.isPrivateer = true;
+                d._homeOnlyCurated = true;   // vor assignGenericHomeOnly geschützt
+                gesetzt++;
+            });
+            return gesetzt;
+        }
+
         // === PRIVATEER-STARTPLAN (v0.9.14.90) ===
         // Ersetzt den Per-Race-Würfel (activityRate). Gemessen an F1DB (Indy raus,
         // Teilzeit-Fahrer = <80 % des Kalenders) sah die Realität so aus:
@@ -6909,7 +6977,17 @@
             for (const d of (GAME_STATE.drivers || [])) {
                 const h = String(d.histId || '').toLowerCase();
                 const z = (h && sollTeam[h]) || modell[d.id] || null;
-                if (z) zielVon[d.id] = z;   // auch wenn er schon dort sitzt: zählt als Gast (Deckel-Vertretung)
+                // LANDSMANN-REGEL AUCH FÜR GASTZÜGE (v0.9.16.6). Das war der achte Weg
+                // ins Cockpit, den .16.0 nicht erwischt hat: die sieben geprüften Pfade
+                // (Transfermarkt, Grid-/Schwanz-/Sitzfüller, acquireSeatDriver,
+                // _findRealSeatCandidate, Generator) sind sauber, hier fehlte der Test.
+                // Gemessen an einem 96-Saison-Stand: Lucien Bianchi (BEL) saß 1962 als
+                // Gast von Emeryson bei LDS, Mike Spence bei ENB, Brian McGuire bei LEC.
+                // Die kuratierten GUEST_ENTRIES sind reale Historie und können die Regel
+                // gar nicht verletzen — der Filter trifft praktisch nur Modell-Züge.
+                if (!z) continue;
+                if (!_teamNationOk((GAME_STATE.teams || []).find(t => t.id === z), d)) continue;
+                zielVon[d.id] = z;   // auch wenn er schon dort sitzt: zählt als Gast (Deckel-Vertretung)
             }
 
             let bewegt = 0;
@@ -8356,17 +8434,9 @@
                 // Fahrer aus HOME_ONLY_ENTRIES starten ausschließlich bei ihren Heimrennen –
                 // kein zufälliges activityRate-Würfeln, deterministisch gefiltert.
                 // SEASON_DATA nutzt Kurzform-IDs (z.B. 'WALTHA'), HOME_ONLY_ENTRIES F1DB-Slugs.
-                // _expHnRev bereits oben gebaut – hier wiederverwenden.
-                drivers.forEach(d => {
-                    const homeCircuits = HOME_ONLY_ENTRIES[d.id]
-                        || HOME_ONLY_ENTRIES[_expHnRev[d.name]];
-                    if (homeCircuits) {
-                        d.homeOnly = true;
-                        d.homeCircuits = homeCircuits;
-                        d.isPrivateer = true;
-                        d._homeOnlyCurated = true;   // vor assignGenericHomeOnly geschützt
-                    }
-                });
+                // _expHnRev bereits oben gebaut – als Namensbrücke weiterreichen.
+                // Dieselbe Funktion läuft ab v0.9.16.6 auch in startNewSeason, s. dort.
+                applyCuratedHomeOnly(drivers, _races, year, _expHnRev);
 
                 // Restliche Privateers (inkl. generierter Fahrer) generisch nachziehen –
                 // kuratierte Einträge bleiben unangetastet.
@@ -20868,8 +20938,6 @@
             // Zuordnung wieder. Und außerhalb von applyTeamEntryExit, weil das
             // jenseits des SEASON_DATA-Horizonts früh aussteigt.
             placeLoyalOwnerDrivers();   // garantiert 2 Fahrer/Team (auch wenn Pool/FA erschöpft)
-            // Landsmann-Regel durchsetzen — NACH allen Sitzvergaben, s. dort.
-            enforceNationalityOnlySeats(newYear);
             // Heimrennen-Melder gegen den NEUEN Kalender neu bestimmen – nach fillEmptyTeamSeats,
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
@@ -20878,6 +20946,12 @@
             releaseGridFillers();
             // Privateer-Status JEDE Saison neu bestimmen — Kader ändern sich (s. markPrivateers)
             markPrivateers(GAME_STATE.drivers);
+            // Kuratierte Heimrennen-Melder JEDE Saison neu setzen (v0.9.16.6) — muss NACH
+            // markPrivateers stehen, sonst überschreibt der den isPrivateer-Status wieder,
+            // und VOR assignPrivateerSchedules, damit kein zweiter Startplan entsteht.
+            // Bis dahin lief das nur in expandSeasonData: wer später aus dem Pool kam,
+            // fuhr als Werksfahrer die volle Saison (Serrurier 1962, s. Funktionskommentar).
+            applyCuratedHomeOnly(GAME_STATE.drivers, GAME_STATE.races, newYear);
             markSmallConstructors(GAME_STATE.teams, GAME_STATE.drivers, newYear);
             // Startplan für die neue Saison neu ziehen (nach Home-Only, s. dort).
             assignPrivateerSchedules(GAME_STATE.drivers, GAME_STATE.races, newYear, GAME_STATE.teams);
@@ -20891,6 +20965,12 @@
             enforceMinCarsPerConstructor(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
             // Feld auf reale Grid-Größe auffüllen (nur wenn der Kader zu dünn ist).
             fillGridEntries(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races, newYear);
+            // LANDSMANN-REGEL ZULETZT (verschoben v0.9.16.6). Der Aufruf stand bis dahin
+            // direkt hinter fillEmptyTeamSeats und trug den Kommentar „NACH allen
+            // Sitzvergaben" — das stimmte nicht: Schwanz-Füller, Mindestwagen-Regel und
+            // Grid-Füller vergeben danach noch Cockpits. Die „letzte Verteidigungslinie"
+            // muss wirklich die letzte sein, sonst räumt sie auf, bevor der Müll da ist.
+            enforceNationalityOnlySeats(newYear);
             // JEDER GEPLANTE FAHRER MELDET ≥1 RENNEN (v0.9.15.11).
             // Wer nach der Zuteilung 0 Meldungen hat (homeOnly ohne Heimrennen im
             // Kalender, leerer Plan), gehört nicht in die Meldeliste — raus aus der F1,
@@ -30135,6 +30215,30 @@ Empfohlene Wertebereiche:
                             // Fahrer-ID kann je Saison als id ODER histId gespeichert sein — alle
                             // Kandidaten pruefen, sonst bleibt die Team-Spalte komplett leer.
                             const _idCandidates = [histDriver?.id, ...searchIds].filter(Boolean);
+                            // NAMENSBRÜCKE AUCH FÜR DIE RENNERGEBNISSE (v0.9.16.6). Drei Zeilen
+                            // weiter oben rettet die Brücke schon die WERTUNGSZEILE, hier lief die
+                            // Suche aber weiter rein über IDs — also blieben Team-Spalte und
+                            // Rennzähler leer, obwohl die Zeile da war. Genau das ist der
+                            // Nutzer-Report „die Team-Historie dieser Fahrer fehlt".
+                            // Der Zeitstempel IN der ID verrät, welche Sitzung welchen Teil schrieb:
+                            // im 96-Saison-Stand tragen Ergebnisse und Kader von 1971/72 die Marke
+                            // vom 6. August, die WM-Tabelle die vom 17. — 0 % Überschneidung.
+                            // 1955-57 dasselbe Muster mit SEASON_DATA-Kurzkeys ('ALBERT') in der
+                            // Tabelle gegen 'reserve-…' in den Ergebnissen.
+                            // Der KADER passt in genau diesen Saisons zu den Ergebnissen (92-98 %),
+                            // also führt der Weg Name → Kader-ID → Ergebniszeile.
+                            // ⚠ Behebt die ANZEIGE, nicht die Ursache (Tabellen werden beim Laden
+                            //   mit frisch erzeugten Fahrerobjekten überschrieben) — Spielstände
+                            //   werden nach Nutzer-Regel nicht rückwirkend umgeschrieben.
+                            const _wantName = String(histDriver?.name || driver.name || '').toLowerCase().trim();
+                            if (_wantName) {
+                                for (const d of (season.drivers || [])) {
+                                    if (d.id && !_idCandidates.includes(d.id)
+                                        && String(d.name || '').toLowerCase().trim() === _wantName) {
+                                        _idCandidates.push(d.id);
+                                    }
+                                }
+                            }
                             const _sTeams = season.teams || [];
                             // Rückfall-Zähler aus den Rennergebnissen: greift, wenn die Tabelle
                             // den Fahrer nicht kennt (s. Identitäts-Brücke oben).
@@ -30180,10 +30284,16 @@ Empfohlene Wertebereiche:
                                 _teamList.push({ name: _teamDisplay, id: team?.id || histDriver?.team, color: team?.color });
                             }
 
+                            // Der Schlüssel, unter dem die Wertungszeile TATSÄCHLICH steht — bei
+                            // gebrochenen IDs fand die Brücke oben die Zeile über den Namen, die
+                            // Platzierung suchte danach aber wieder nach der ID und blieb auf 0.
+                            const _standKey = Object.keys(_seasonStandings || {})
+                                .find(k => _seasonStandings[k] === driverStanding);
                             const position = Object.entries(_seasonStandings || {})
                                 .map(([id, s]) => ({ id, points: s.points || 0 }))
                                 .sort((a, b) => b.points - a.points)
-                                .findIndex(d => searchIds.includes(d.id) || d.id === histDriver?.id) + 1;
+                                .findIndex(d => searchIds.includes(d.id) || d.id === histDriver?.id
+                                    || (_standKey && d.id === _standKey)) + 1;
 
                             fullCareer.push({
                                 year: season.year,

@@ -635,15 +635,15 @@
             'sam-tingle':          ['east-london', 'kyalami'], // Rhodesier
             'paddy-driver':        ['east-london', 'kyalami'], // Rhodesier
             'jackie-pretorius':    ['east-london', 'kyalami'],
-            'john-love':           ['east-london', 'kyalami'], // Rhodesier
+            'john-love':           ['east-london', 'kyalami', 'monza'], // Rhodesier; Monza 1962 belegt
             // ─── JAPAN ────────────────────────────────────────────────────────
             'masami-kuwashima':    ['fuji'],
             'noritake-takahara':   ['fuji', 'suzuka'],
             'masahiro-hasemi':     ['fuji', 'suzuka'],
             'kazuyoshi-hoshino':   ['fuji', 'suzuka'],
             'kunimitsu-takahashi': ['fuji', 'suzuka'],
-            'naoki-hattori':       ['suzuka', 'fuji'],
-            'toshio-suzuki':       ['suzuka', 'fuji'],
+            'naoki-hattori':       ['suzuka', 'adelaide'],
+            'toshio-suzuki':       ['suzuka', 'adelaide'],
             // ─── USA (außer Indy) ─────────────────────────────────────────────
             'peter-ryan':          ['watkins-glen'],
             'walt-hansgen':        ['watkins-glen'],
@@ -697,7 +697,7 @@
             'dick-gibson':         ['nurburgring'],
             'xavier-perrot':       ['nurburgring'],
             'marcel-balsa':        ['nurburgring'],
-            'roger-laurent':       ['nurburgring'],
+            'roger-laurent':       ['nurburgring', 'spa-francorchamps'],
             // ─── ARGENTINIEN + SÜDAMERIKA – Buenos Aires ─────────────────────
             'oscar-alfredo-galvez':    ['buenos-aires'],
             'john-barber':             ['buenos-aires'],
@@ -711,8 +711,8 @@
             'antonio-creus':           ['buenos-aires'],
             'alberto-rodriguez-larreta':['buenos-aires'],
             'roger-loyer':             ['buenos-aires'],
-            'jorge-daponte':           ['buenos-aires'],
-            'nasif-estefano':          ['buenos-aires'],
+            'jorge-daponte':           ['buenos-aires', 'monza'],
+            'nasif-estefano':          ['buenos-aires', 'monza'],
             'alejandro-de-tomaso':     ['buenos-aires', 'sebring'],
             // ─── BRASILIEN – nur Interlagos ───────────────────────────────────
             'luiz-bueno':              ['interlagos'],
@@ -745,9 +745,9 @@
             'albert-scherrer':     ['bremgarten'],
             'max-de-terra':        ['bremgarten'],
             // Post-ban: nur an Nachbarland-Strecken
-            'ottorino-volonterio': ['nurburgring', 'monza'],
-            'toni-branca':         ['spa-francorchamps', 'nurburgring'],
-            'franco-forini':       ['monza'],
+            'ottorino-volonterio': ['nurburgring', 'monza', 'pedralbes'],
+            'toni-branca':         ['spa-francorchamps', 'nurburgring', 'bremgarten'],
+            'franco-forini':       ['monza', 'estoril', 'jerez'],
             // ─── BELGIEN – Spa + Nachbarländer ────────────────────────────────
             'arthur-legat':        ['spa-francorchamps'],
             'georges-berger':      ['spa-francorchamps', 'reims'],
@@ -755,7 +755,7 @@
             'teddy-pilette':       ['nivelles', 'zandvoort', 'hockenheimring', 'monza'],
             'philippe-adams':      ['spa-francorchamps', 'estoril'],
             // ─── NEUSEELAND / AUSTRALIEN – nur British GP (kein Heimrennen) ───
-            'tony-shelly':         ['aintree', 'silverstone', 'brands-hatch'],
+            'tony-shelly':         ['aintree', 'nurburgring', 'monza'],
             'graham-mcrae':        ['silverstone'],
             'john-nicholson':      ['silverstone', 'brands-hatch'],
             'brian-mcguire':       ['silverstone'],   // AUS; verunglückt im Training 1977
