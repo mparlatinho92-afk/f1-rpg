@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.8</title>
+    <title>F1 RPG v0.9.16.9</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -944,7 +944,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.8 (aktuell) - 20.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.9 (aktuell) - 20.08.2026</div>
+                            <div>&#8226; FIX: Konstrukteure meldeten 1981-1985 drei Wagen, real gab es dort praktisch keine mehr - Aera-Deckel von 1986 auf 1981 vorgezogen</div>
+                            <div>&#8226; FIX: Arrows 1983 mit 44,5 statt 30 Wagen und RAM mit 28,9 statt 15 - beide jetzt bei -2,9 und -1,1</div>
+                            <div>&#8226; FIX: DNQ 1984 von 5,2 auf 2,3 (real 2,7) und 1985 von 3,3 auf 0,9 (real 0,8)</div>
+                            <div class="font-bold text-slate-400">v0.9.16.8 - 20.08.2026</div>
                             <div>&#8226; FIX: Indy 500 startete mit 20 statt 33 Wagen - RACE_GRID kennt Indy nicht, das Jahresmittel der GP-Felder griff</div>
                             <div>&#8226; FIX: LEC fuhr mit fuenf Fahrern statt nur Purley - als Kunden-Marke gelistet und vom Sitzfueller auf zwei Sitze gebracht</div>
                             <div>&#8226; NEU: Ein-Fahrer-Konstrukteure (43 aus F1DB) bekommen nur einen Sitz und einen Wagen</div>
@@ -17076,7 +17080,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.8';
+        const VERSION = '0.9.16.9';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -21197,12 +21201,24 @@ const CIRCUIT_LAYOUTS = {
         // Der Cap greift pro RENNEN (nicht pro Saison), damit Fahrerwechsel mitten
         // in der Saison weiter funktionieren: zwei Fahrer, die sich einen Sitz
         // teilen, haben getrennte Startpläne und stoßen hier nicht aneinander.
+        // GRENZE 1986 -> 1981 VORGEZOGEN (v0.9.16.9). Der Deckel 3 galt bis einschliesslich
+        // 1985 und wurde vom Spiel auch ausgeschoepft: gemessen im Monte Carlo meldeten
+        // 1983 elf Prozent der Team-Rennen drei oder mehr Wagen, 1984 zehn, 1985 vier.
+        // Real ist das ab 1981 praktisch verschwunden (F1DB, Wagen je Konstrukteur und
+        // Rennen ueber Rennergebnis + Quali + Vor-Quali):
+        //   1980  6 % mit 3+ (max 4)  ·  1981  0 %  ·  1982  2 %  ·  1983-85  0 %
+        // Der Ueberschuss sass komplett in zwei Teams — Arrows 44,5 Wagen gegen real 30
+        // (Ø 3,0 je Rennen) und RAM 28,9 gegen 15 —, waehrend alle uebrigen zwischen
+        // -2,3 und +1,1 lagen. 1986 war mit dem Deckel 2 bereits sauber (Meldungen -0,7,
+        // DNQ 0,5 gegen real 0,4), was die Richtung bestaetigt.
+        // 1980 behaelt die 3: dort gab es echte Drittwagen, und die 1970er erst recht
+        // (1977 sogar max 7 — daher der Wert darueber).
         function _maxCarsPerConstructor(year) {
             return year < 1960 ? 99      // 1950er: bis zu 16 Autos belegt, kein Deckel
                  : year < 1970 ? 99
                  : year < 1980 ?  7
-                 : year < 1986 ?  3
-                 :                2;     // seit 1986 Regelwerk: zwei Autos
+                 : year < 1981 ?  3      // 1980: real 6 % Drittwagen
+                 :                2;     // ab 1981 real 0-2 %, ab 1986 auch im Regelwerk
         }
 
         // === UNTERGRENZE: WER MELDET, MELDET VOLL (v0.9.16.3) ===
