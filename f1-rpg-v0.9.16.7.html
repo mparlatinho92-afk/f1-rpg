@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.6</title>
+    <title>F1 RPG v0.9.16.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -438,6 +438,17 @@
             box-shadow: var(--shadow);
         }
         
+        /* Team- und Fahrer-Steckbrief duerfen am Desktop breiter werden (v0.9.16.7).
+           Die 600px oben sind fuer Dialoge gedacht; die Steckbriefe tragen aber breite
+           Tabellen (Team-Historie mit bis zu vier Fahrernamen je Zeile) und kuerzten
+           deshalb mitten im Namen ab — "J. Villeneuve, S… +1", obwohl rechts die halbe
+           Seite leer blieb (Nutzer-Report). min() statt fester Breite: auf schmalen
+           Fenstern bleibt es bei 92vw, die Mobile-Regel weiter unten gewinnt ohnehin. */
+        #teamProfileModal .modal-content,
+        #driverProfileModal .modal-content {
+            max-width: min(1100px, 92vw);
+        }
+
         .modal-header {
             padding: 1.5rem;
             border-bottom: 1px solid var(--border-color);
@@ -840,12 +851,11 @@
             gap: 0.5rem;
         }
     </style>
-<script type="text/javascript" nonce="e7f526daa24f4861b608b8b635c" src="//local.adguard.org?ts=1770919177865&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USTxIMcmVxdWVzdF9kYXRhGj8KMGIyOGUwMTRiYTNjMjhlY2YwMDA2NGFhMTYwZTk0NjQxMDRhNDU0ZjQ2MTFhYzk3YhILEgcQlaDD6eoLGAE%26filename%3Df1-rpg-v0_5_4%288%29.html%26opi%3D103135050&amp;app=opera.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=0"></script><script type="text/javascript" nonce="e7f526daa24f4861b608b8b635c" src="//local.adguard.org?ts=1770919177865&amp;name=AdGuard%20Extra&amp;type=user-script"></script></head>
+</head>
 <body>
 
 <div style="font-size: 0.8em; color: gray; padding: 10px; border-bottom: 1px solid #ccc;">
-    Version: <span id="version-display">0.8.7.2</span> | 
-    Letztes Update: <span id="last-update">01.03.2026, 21:53</span>
+    Version: <span id="version-display">–</span>
 </div>
 
     <!-- Globales Suchfeld -->
@@ -934,7 +944,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.6 (aktuell) - 19.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.7 (aktuell) - 20.08.2026</div>
+                            <div>&#8226; FIX: Qualifikationsergebnisse wurden beim Speichern auf 20 Zeilen gekappt - der Melder-Schwanz mit DNQ ging verloren</div>
+                            <div>&#8226; FIX: Teams in der Fahrerwertung ohne Link und ohne Teamfarbe</div>
+                            <div>&#8226; FIX: Flaggen fehlten bei Thai GP, Rwandan GP und Rio de Janeiro GP</div>
+                            <div>&#8226; FIX: Team-Historie kuerzte Fahrernamen trotz freiem Platz - Steckbriefe jetzt bis 1100px breit</div>
+                            <div>&#8226; FIX: Debug-Kopfzeile zeigte hartkodiert 0.8.7.2, dazu zwei externe AdGuard-Skripte entfernt</div>
+                            <div class="font-bold text-slate-400">v0.9.16.6 - 19.08.2026</div>
                             <div>&#8226; FIX: Heimrennen-Melder fuhren als Werksfahrer volle Saisons - von 238 Kader-Auftritten trugen nur 13 das Flag (Serrurier fuhr 1962 sieben Europarennen)</div>
                             <div>&#8226; FIX: Gastauftritte umgingen die Landsmann-Regel (Bianchi bei LDS, Spence bei ENB, McGuire bei LEC)</div>
                             <div>&#8226; FIX: Karriere-Historie zeigte keine Teams, wenn Tabelle und Ergebnisse verschiedene Fahrer-IDs tragen</div>
@@ -17055,7 +17071,15 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.6';
+        const VERSION = '0.9.16.7';
+        // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
+        // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
+        // Version, den nie jemand befuellt hat: `version-display` und `last-update`
+        // kamen im ganzen Skript kein zweites Mal vor. Waehrend der Header korrekt
+        // v0.9.16.x zeigte, behauptete die Zeile darueber eine 15 Versionen alte
+        // Nummer (Nutzer-Screenshot). Das Update-Datum ist ersatzlos raus — ein
+        // falsches Datum ist schlechter als keins, und eine Quelle dafuer gibt es nicht.
+        (() => { const el = document.getElementById('version-display'); if (el) el.textContent = VERSION; })();
         
         /*
         ╔═══════════════════════════════════════════════════════════════╗
@@ -33804,7 +33828,17 @@ const CIRCUIT_LAYOUTS = {
                 // Qualifying komprimieren
                 const compressedQualifying = GAME_STATE.qualifyingResults.map(quali => ({
                     ri: quali.raceIndex,
-                    res: quali.results.slice(0, 20).map(r => ({  // Nur Top 20
+                    // KEINE KAPPUNG MEHR (v0.9.16.7). Hier stand `slice(0, 20)` mit dem
+                    // Vermerk „Nur Top 20" — eine Speicher-Sparmassnahme, die Daten
+                    // vernichtet: die Qualifikationsliste IST die Meldeliste. Der
+                    // Deutschland-GP 1961 hatte 19 Klassifizierte plus 7 Ausfälle, also
+                    // 26 Melder — die Quali zeigte davon 20 (Nutzer-Report „Nordschleife
+                    // mehr Rennen als Quali"). Genau der Schwanz, der abgeschnitten wurde,
+                    // ist der interessante: dort stehen DNQ und die Einmal-Melder.
+                    // Kosten: drei kleine Felder je zusätzlicher Zeile, in den 1950/60ern
+                    // rund 6-12 Zeilen je Rennen. Gegen den Nutzen einer vollständigen
+                    // Meldeliste ist das nichts.
+                    res: quali.results.map(r => ({
                         d: r.driver,
                         p: r.position,
                         t: r.time ?? r.lapTime     // Lap Time (r.lapTime war falsch, Feldname ist r.time)
@@ -34669,6 +34703,17 @@ const CIRCUIT_LAYOUTS = {
                 }
                 if (p.length && typeof CIRCUIT_LENGTHS !== 'undefined' && !CIRCUIT_LENGTHS[p.id]) {
                     CIRCUIT_LENGTHS[p.id] = p.length;
+                }
+                // AUCH DEN GP-NAMEN NACHTRAGEN (v0.9.16.7). Die Strecken-Ebene allein
+                // genügt nicht: die GP-Übersicht schlägt die Flagge über den GP-NAMEN in
+                // GP_COUNTRY_MAP nach, nicht über die circuitId — bewusst so, damit der
+                // Schweizer GP die Schweizer Flagge behält, obwohl er 1982 in Dijon lief.
+                // Ohne diesen Eintrag standen „Thai GP", „Rwandan GP" und „Rio de Janeiro
+                // GP" mit der Zielflagge statt der Landesflagge da (Nutzer-Report). Weil
+                // es hier und nicht in einer Tabelle passiert, bekommt jeder künftige
+                // Neubau seine Flagge automatisch.
+                if (p.country && p.gp && typeof GP_COUNTRY_MAP !== 'undefined' && !GP_COUNTRY_MAP[p.gp]) {
+                    GP_COUNTRY_MAP[p.gp] = p.country;
                 }
             });
         })();
@@ -38585,10 +38630,19 @@ const CIRCUIT_LAYOUTS = {
                                         const click = tObj ? ` onclick="openTeamProfile('${tObj.id}')"` : undefined;
                                         return renderTeamNameColored(tObj?.name || t.name, tObj?.id || t.id || null, flagYear, tObj?.color, click);
                                     };
+                                    // RÜCKFALL ÜBER DENSELBEN BADGE (v0.9.16.7): hier stand
+                                    // `renderTeamNameColored(d.team, d.teamId || null, …, null)`.
+                                    // Führt die Wertungszeile nur einen Team-NAMEN und keine ID —
+                                    // in archivierten Saisons der Normalfall —, blieb die Zelle
+                                    // weißer Text: keine Teamfarbe (kein Schlüssel zum Nachschlagen)
+                                    // und kein Klick (kein onclick übergeben). `_renderTeamBadge`
+                                    // sucht das Team dagegen AUCH über den Namen und liefert dann
+                                    // Farbe und Link. Nutzer-Report „Teams nicht verlinkt und keine
+                                    // Farbe" — die Konstrukteurswertung daneben konnte es längst.
                                     const _teamCell = _allTeams && _allTeams.length > 0
                                         ? _allTeams.map(_renderTeamBadge).join('<span class="text-tertiary text-xs"> / </span>')
                                         : (d.team || d.teamId
-                                            ? renderTeamNameColored(d.team || d.teamId, d.teamId || null, flagYear, null)
+                                            ? _renderTeamBadge({ id: d.teamId || null, name: d.team || d.teamId })
                                             : '–');
                                     return `
                                         <tr class="border-t border-custom card-hover">
@@ -45591,16 +45645,27 @@ Empfohlene Wertebereiche:
             ],
         };
 
-        function getTeamLogoUrl(teamId, year) {
+        function getTeamLogoUrl(teamId, year, teamName) {
             // Suche mit mehreren ID-Varianten: original, lowercase, Bindestrich↔Leerzeichen
             // und zuletzt satzzeichenfrei via teamSlug — sonst findet "O.S.C.A." nie den
             // Key 'osca' (keine der Varianten oben entfernt die Punkte).
+            //
+            // NAME ALS LETZTE INSTANZ (v0.9.16.7): Aufrufer reichen `team?.histId || t.id`
+            // herein. Ist das Team-Objekt der Saison nicht auflösbar — in alten Ständen
+            // regelmäßig, weil Tabelle und Kader verschiedene Schlüssel führen —, kommt
+            // hier der WM-Tabellen-Kurzschlüssel an ('GOR', 'LAN', 'MER', 'HWM'), und
+            // keine der ID-Varianten trifft je 'gordini'. Der ANZEIGENAME steht an jeder
+            // Aufrufstelle daneben und ist stabil: 'Gordini' → teamSlug → Treffer.
+            // Wirkt gegen den Nutzer-Report „Teamlogo-Schwund" (1955: Gordini, Lancia,
+            // Mercedes, HWM ohne Logo, obwohl alle vier in TEAM_LOGOS stehen).
             const id = teamId || '';
             const logos = TEAM_LOGOS[id]
                 || TEAM_LOGOS[id.toLowerCase()]
                 || TEAM_LOGOS[id.toLowerCase().replace(/\s+/g, '-')]
                 || TEAM_LOGOS[id.toLowerCase().replace(/-/g, ' ')]
-                || TEAM_LOGOS[teamSlug(id)];
+                || TEAM_LOGOS[teamSlug(id)]
+                || (teamName ? TEAM_LOGOS[teamSlug(teamName)] : null)
+                || (teamName ? TEAM_LOGOS[String(teamName).toLowerCase()] : null);
             if (!logos || logos.length === 0) return null;
             // Bei Überlappungen: neuerer Eintrag (größeres from) gewinnt
             const matches = logos.filter(l => year >= (l.from || 0) && year <= (l.to || 9999));
@@ -45646,7 +45711,7 @@ Empfohlene Wertebereiche:
 
         // HTML-Snippet für Team-Logo im Steckbrief
         function renderTeamLogoHtml(teamId, year, teamColor, teamName) {
-            const url = getTeamLogoUrl(teamId, year);
+            const url = getTeamLogoUrl(teamId, year, teamName);
             const fallback = getTeamLogoSvg(teamColor, teamName);
             const bgStyle = teamColor ? `style="background:${teamColor}"` : '';
             if (url) {
@@ -45687,9 +45752,15 @@ Empfohlene Wertebereiche:
             const col = teamColor || '#888';
             const initials = (teamName || '?').replace(/^(Scuderia|Team|Racing|Equipe|Motor)\s/i,'').split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
             const svg = `<svg width="20" height="20" viewBox="0 0 20 20" style="display:block"><rect width="20" height="20" rx="3" fill="${col}"/><text x="10" y="14" text-anchor="middle" font-size="8" font-weight="bold" fill="#fff" font-family="system-ui,sans-serif">${initials}</text></svg>`;
-            const url = getTeamLogoUrl(teamId, year);
+            const url = getTeamLogoUrl(teamId, year, teamName);
             if (!url) return svg;
-            return `<div class="entry-logo" style="background:${col}"><img data-lazy-src="${url}" alt="${teamName}"><div class="profile-logo-fallback">${svg}</div></div>`;
+            // `referrerpolicy="no-referrer"` (v0.9.16.7): stand nur in renderTeamLogoHtml,
+            // hier fehlte es. Die Logo-Quelle liefert per curl sauber HTTP 200, blockt aber
+            // Hotlinks je nach Referrer — dann bleibt der graue Buchstaben-Kasten stehen
+            // (Nutzer-Report 1955: Gordini, Lancia, Mercedes, HWM ohne Logo, waehrend
+            // Ferrari und Maserati eines zeigten; die beiden lagen aus dem Team-Profil,
+            // das den Header schon mitschickt, bereits im Browser-Cache).
+            return `<div class="entry-logo" style="background:${col}"><img data-lazy-src="${url}" referrerpolicy="no-referrer" alt="${teamName}"><div class="profile-logo-fallback">${svg}</div></div>`;
         }
 
         // =======================================
@@ -46492,7 +46563,18 @@ Empfohlene Wertebereiche:
                     // deshalb jedes Mal die Tabelle.
                     // Nur noch eine Heuristik dafuer, WANN das "+N" erscheint — die Spalten
                     // sind per CSS ohnehin gegen Overflow gesichert.
-                    const _tblW = Math.min(window.innerWidth - 32, 660);
+                    // MESSEN STATT RATEN (v0.9.16.7). Hier stand ein fester Deckel von
+                    // 660px mit der Begruendung, .modal-content sei per CSS auf ~600px
+                    // begrenzt. Diese Annahme haelt nicht: die Steckbriefe duerfen am
+                    // Desktop jetzt bis 1100px breit werden, und schon vorher war der
+                    // geratene Wert kleiner als der tatsaechlich vorhandene Platz — die
+                    // Zeile brach mitten im Namen ab, waehrend rechts nichts stand.
+                    // Ist das Modal bereits im DOM, wird seine echte Breite genommen;
+                    // sonst bleibt die Formel als Rueckfall.
+                    const _mc = document.querySelector('#teamProfileModal .modal-content');
+                    const _tblW = (_mc && _mc.clientWidth > 200)
+                        ? _mc.clientWidth - 32
+                        : Math.min(window.innerWidth - 32, 1100);
                     const _avail = Math.max(90, _tblW - 232);      // ~232px fuer Jahr/S/P/Pkt/WM
                     const LINE_LIMIT = Math.floor(_avail / 9.3);   // ~9.3px je Zeichen bei 0.75rem
                     const makeLink = ({ d, display }) => d.id
