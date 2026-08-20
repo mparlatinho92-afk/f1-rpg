@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.7</title>
+    <title>F1 RPG v0.9.16.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -944,7 +944,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.7 (aktuell) - 20.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.8 (aktuell) - 20.08.2026</div>
+                            <div>&#8226; FIX: Indy 500 startete mit 20 statt 33 Wagen - RACE_GRID kennt Indy nicht, das Jahresmittel der GP-Felder griff</div>
+                            <div>&#8226; FIX: LEC fuhr mit fuenf Fahrern statt nur Purley - als Kunden-Marke gelistet und vom Sitzfueller auf zwei Sitze gebracht</div>
+                            <div>&#8226; NEU: Ein-Fahrer-Konstrukteure (43 aus F1DB) bekommen nur einen Sitz und einen Wagen</div>
+                            <div>&#8226; FIX: Ehemalige Teams zeigten Historisches Team (? - ?) - Zeitraum kommt jetzt aus den gefahrenen Saisons</div>
+                            <div class="font-bold text-slate-400">v0.9.16.7 - 20.08.2026</div>
                             <div>&#8226; FIX: Qualifikationsergebnisse wurden beim Speichern auf 20 Zeilen gekappt - der Melder-Schwanz mit DNQ ging verloren</div>
                             <div>&#8226; FIX: Teams in der Fahrerwertung ohne Link und ohne Teamfarbe</div>
                             <div>&#8226; FIX: Flaggen fehlten bei Thai GP, Rwandan GP und Rio de Janeiro GP</div>
@@ -3574,7 +3579,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.7';
+        const VERSION = '0.9.16.8';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -4839,10 +4844,19 @@
             // Die Handausnahmen darunter (Monaco, Nordschleife) bleiben als RÜCKFALL
             // für alles, was die Tabelle nicht kennt — erfundene Kalender, Jahre nach
             // dem Datenhorizont, Strecken ohne Eintrag.
-            const rg = _raceGridEntry(year, race);
-            if (rg) return Array.isArray(rg) ? rg[0] : rg;
             const name    = (race.name    || '').toLowerCase();
             const circuit = (race.circuit || '').toLowerCase();
+            // INDIANAPOLIS: IMMER 33 WAGEN (v0.9.16.8). Das Indy 500 startete per
+            // Reglement mit einem festen Feld von 33 — gemessen an F1DB fuer alle elf
+            // WM-Jahre 1950-60 AUSNAHMSLOS 33 Wagen. Die hoeheren Eintragszahlen dort
+            // (1954: 55) sind geteilte Wagen, also Fahrerwechsel im selben Auto.
+            // RACE_GRID kennt Indy nicht (die Quell-CSV filtert es heraus), also fiel
+            // die Funktion auf GRID_SIZES zurueck — und das ist das JAHRESMITTEL der
+            // Grand-Prix-Felder, rund 20. Ergebnis im Spiel: ein Indy 500 mit 20
+            // Startern statt 33 (Nutzer-Report „Indy 500 nur 20").
+            if (race.isIndy || circuit.includes('indianapolis') || name.includes('indianapolis')) return 33;
+            const rg = _raceGridEntry(year, race);
+            if (rg) return Array.isArray(rg) ? rg[0] : rg;
             // Monaco: engere Strecke → kleineres Grid. ÄRA-GENAU (v0.9.14.91) — die
             // alte Regel „16 vor 1976, sonst 20" dehnte ein 14-Jahre-Fenster auf 26 Jahre
             // und deckelte die Moderne zu hart. Gemessen (F1DB, echte Starter):
@@ -7219,6 +7233,25 @@
                     // Kuratierte Heimrennen-Melder bleiben unangetastet: dort ist nicht nur
                     // die Anzahl, sondern die STRECKE die geprüfte Wahrheit.
                     if (d._homeOnlyCurated) return;
+                    // ⚠ HIER STAND EIN ZURUECKGENOMMENER FIX (v0.9.16.8) — nicht neu bauen,
+                    // ohne den Befund zu kennen. Versucht wurde: „wer auf einem Werkssitz
+                    // eines vollwertigen Teams sitzt, faehrt die Saison" (also
+                    // `scheduledRaces = null`), gegen den Nutzer-Report Ferrari 1983 mit
+                    // einem Zweitfahrer bei EINEM Einsatz und Williams 1985 mit de Cesaris
+                    // allein. Fuer 1983 sah das gut aus (Ferrari 29,9 gegen real 30, alle
+                    // Stammfahrer 15/15), fuer 1955 war es ein Rueckschritt: Meldungen je
+                    // Rennen +3,6 statt +0,1, DNQ 5,3 statt 2,5 gegen real 1,7, Ferrari
+                    // +6,3. Gemessen an F1DB ueber die Top-2-Melder je Team und Saison:
+                    //   Dekade   volle Saison   Ø Anteil des Kalenders
+                    //   1950er        52 %              90 %
+                    //   1980er        66 %              92 %
+                    //   2010er        87 %              97 %
+                    // „Werkssitz = ganze Saison" stimmt also in KEINER Dekade; was stimmt,
+                    // ist ein hoher Anteil (88-98 %). Der eigentliche Fehler sitzt tiefer:
+                    // `markPrivateers` waehlt die Werksfahrer nach PACE, nicht nach realer
+                    // Rennzahl — Peter Collins (1955 real 2 Rennen) wird dadurch zum
+                    // Ferrari-Werksfahrer und faehrt anschliessend sechs. Dort gehoert die
+                    // Reparatur hin, nicht in diese Zeile.
                     const h = String(d.histId || '').toLowerCase();
                     if (!h) return;                       // generierter Fahrer → Modell gilt
                     const n = startZeile[h];
@@ -7291,13 +7324,24 @@
         // Fahrer je Ära): Maserati/Cooper/Lotus/BRM/March/Brabham dominieren, dazu
         // ära-spezifisch Connaught/Gordini/Lola/Ensign/Surtees/Shadow/Porsche/HWM.
         // Ferrari NICHT — die vielen Fahrer dort sind 3–4 WERKSwagen, keine Kunden.
+        // LEC ENTFERNT (v0.9.16.8): LEC baute einen eigenen Wagen fuer David Purley und
+        // verkaufte nie ein Kundenauto. Als Kunden-Marke gefuehrt, haengte der Grid-
+        // Fueller dort beliebige Pool-Fahrer an — im Spielstand des Nutzers fuhren 1977
+        // fuenf verschiedene Fahrer fuer LEC (Keegan, McGuire, Magee, Evans, Robarts),
+        // real war es Purley allein. Die uebrigen Marken der Liste haben tatsaechlich
+        // Kundenautos verkauft.
         const CUSTOMER_MARQUES = new Set([
             'maserati', 'cooper', 'lotus', 'brm', 'march', 'brabham', 'connaught',
             'gordini', 'lola', 'ensign', 'surtees', 'shadow', 'porsche', 'hwm',
-            'veritas', 'talbot-lago', 'de-tomaso', 'iso-marlboro', 'lec', 'williams'
+            'veritas', 'talbot-lago', 'de-tomaso', 'iso-marlboro', 'williams'
         ]);
         function _isCustomerMarque(team) {
             if (!team) return false;
+            // Ein-Fahrer-Konstrukteure sind NIE Kunden-Marken — bei ihnen hat real nie
+            // ein zweiter Fahrer im Auto gesessen (s. isSingleSeatConstructor). Faengt
+            // auch die Praefix-Suche unten ab, die sonst z. B. „Derrington-Francis"
+            // ueber einen kuerzeren Eintrag greifen lassen koennte.
+            if (isSingleSeatConstructor(team)) return false;
             const k = (team.histId || team.name || team.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
             return [...CUSTOMER_MARQUES].some(m => k === m || k.startsWith(m));
         }
@@ -7681,6 +7725,22 @@
 
         // Kappt je Team auf die Ära-Obergrenze; Kleinstkonstrukteure zusätzlich auf
         // ihre Saison-Wagenzahl (t._carsThisSeason, meist 1 — gemessen 1,56).
+        // === EIN-FAHRER-KONSTRUKTEURE (v0.9.16.8) ===
+        // `SINGLE_DRIVER_CONSTRUCTORS` (data/home-only.js, aus F1DB gemessen) haelt die
+        // 43 Konstrukteure, fuer die in ihrer GANZEN Geschichte nur ein einziger Fahrer
+        // meldete — LEC nur David Purley, Derrington-Francis nur Cabral, JBW nur Naylor.
+        // Im Spiel fuhren fuer LEC 1977 fuenf verschiedene Fahrer (Keegan, McGuire,
+        // Magee, Evans, Robarts — Nutzer-Report). Zwei Wege fuehrten dahin: der
+        // Wagendeckel liess mehrere Autos zu, und der Sitzfueller fuellt jedes Team
+        // stur auf zwei Fahrer auf. Beide fragen jetzt hier.
+        function isSingleSeatConstructor(teamOrId) {
+            if (typeof SINGLE_DRIVER_CONSTRUCTORS === 'undefined' || !teamOrId) return false;
+            const raw = typeof teamOrId === 'string'
+                ? teamOrId : (teamOrId.histId || teamOrId.id || teamOrId.name || '');
+            const key = String(raw).toLowerCase().replace(/[^a-z0-9]/g, '-');
+            return !!SINGLE_DRIVER_CONSTRUCTORS[key];
+        }
+
         // Wer wegfällt, wird nach Pace entschieden: der schnellste sitzt im Auto.
         function applyConstructorCarCap(drivers, teams, year) {
             const capEra = _maxCarsPerConstructor(year);
@@ -7689,7 +7749,9 @@
             const out = new Set(drivers.filter(d => !d.team));
             for (const [tid, ds] of Object.entries(byTeam)) {
                 const t = (teams || []).find(x => x.id === tid);
-                const cap = Math.min(capEra, (t && t._carsThisSeason) || capEra);
+                const cap = isSingleSeatConstructor(t || tid)
+                    ? 1
+                    : Math.min(capEra, (t && t._carsThisSeason) || capEra);
                 if (ds.length <= cap) { ds.forEach(d => out.add(d)); continue; }
                 ds.slice().sort((a, b) => (b.pace || 0) - (a.pace || 0))
                   .slice(0, cap).forEach(d => out.add(d));
@@ -17836,8 +17898,11 @@
                 // ausgetretener 0-Fahrer-Teams.
                 if (seatCount() < 1) return;
 
+                // Ein-Fahrer-Konstrukteure NICHT auf zwei auffuellen (v0.9.16.8) — bei
+                // ihnen hat es ein zweites Cockpit nie gegeben, s. isSingleSeatConstructor.
+                const _sollSitze = isSingleSeatConstructor(t) ? 1 : 2;
                 let guard = 0;
-                while (seatCount() < 2 && guard++ < 4) {
+                while (seatCount() < _sollSitze && guard++ < 4) {
                     // 1. Free Agent (aktiver Fahrer ohne Team) – echte Ex-Fahrer zuerst.
                     // Top-Team: keine Karriere-Anfänger, und der stärkste Verfügbare zuerst.
                     const _faBase = d => !d.team && (!d.status || d.status === 'active') &&
@@ -32395,28 +32460,42 @@ Empfohlene Wertebereiche:
             
             // Titel ohne "(Historisch)" wenn Team aktuell aktiv ist
             const isCurrentlyActive = GAME_STATE.teams.some(t => t.id === team.id || t.histId === stATSId);
+            // === ZEITRAUM NOTFALLS AUS DER HISTORIE (v0.9.16.8) ===
+            // `allTimeStATS.teams[…]` fuehrt firstYear/lastYear nur fuer die 43 Teams, die
+            // TEAM_HIST kennt — von 178. Alle uebrigen standen im Steckbrief als
+            // „Historisches Team (? - ?)" da, obwohl die Statistik daneben stimmte
+            // (Toleman: 1 Sieg, 8 Podien, 65 Rennen — aber kein Zeitraum, Nutzer-Report).
+            // `teamHistIds` je Saison ist der LEICHTE Teilnehmer-Index und traegt die
+            // Team-NAMEN; er ist ohne Nachladen der schweren Saisonfelder verfuegbar.
+            // Damit ergibt sich der Zeitraum aus dem, was das Team wirklich gefahren ist.
+            const _teamYears = (GAME_STATE.history || [])
+                .filter(h => Array.isArray(h.teamHistIds)
+                    && h.teamHistIds.some(x => x === stATSId || x === team.id || x === team.name))
+                .map(h => Number(h.year)).filter(Number.isFinite);
+            const _firstYear = allTimeTeam.firstYear || (_teamYears.length ? Math.min(..._teamYears) : null);
+            const _lastYear  = allTimeTeam.lastYear  || (_teamYears.length ? Math.max(..._teamYears) : null);
             // v0.9.15.65: Gegenstueck zu getDriverFlagYear fuer Teams. Ein 1970 ausgestiegenes
             // Team behaelt die Flagge seines Landes von damals. Dieselbe Kette benutzt das
             // Team-LOGO schon laenger (renderTeamLogoHtml) — nur die Flagge blieb aktuell.
-            const teamFlagYear = viewingHistoricalYear || (!isCurrentlyActive && allTimeTeam.lastYear) || GAME_STATE.currentYear;
+            const teamFlagYear = viewingHistoricalYear || (!isCurrentlyActive && _lastYear) || GAME_STATE.currentYear;
             document.getElementById('teamProfileTitle').innerHTML = `${renderFlag(team.nation, team.name, teamFlagYear)} ${team.name}${isHistorical && !isCurrentlyActive ? ' (Ehemaliges Team)' : ''}`;
             
             // Historische Teams zeigen andere Infos
             if (isHistorical && !isCurrentlyActive) {
                 document.getElementById('teamProfileBody').innerHTML = `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #1E3A5F; border: 1px solid #3B82F6;">
-                        📜 Historisches Team (${allTimeTeam.firstYear || '?'} - ${allTimeTeam.lastYear || '?'})
+                        📜 Historisches Team (${_firstYear || '?'} - ${_lastYear || '?'})
                     </div>
                     
                     <!-- Header -->
                     <div class="flex gap-4 items-center mb-6">
-                        ${renderTeamLogoHtml(stATSId || team.id, viewingHistoricalYear || allTimeTeam.lastYear || GAME_STATE.currentYear, team.color, team.name)}
+                        ${renderTeamLogoHtml(stATSId || team.id, viewingHistoricalYear || _lastYear || GAME_STATE.currentYear, team.color, team.name)}
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-2xl">${renderFlag(team.nation, team.name, teamFlagYear)}</span>
                                 <div class="text-3xl font-bold">${team.name}</div>
                             </div>
-                            <div class="text-sm text-tertiary">${allTimeTeam.firstYear || '?'} – ${allTimeTeam.lastYear || '?'}</div>
+                            <div class="text-sm text-tertiary">${_firstYear || '?'} – ${_lastYear || '?'}</div>
                         </div>
                     </div>
                     
