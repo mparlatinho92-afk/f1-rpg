@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.9</title>
+    <title>F1 RPG v0.9.16.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -944,7 +944,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.9 (aktuell) - 20.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.10 (aktuell) - 21.08.2026</div>
+                            <div>&#8226; FIX: ob ein Team Kleinstkonstrukteur ist, wurde jede Saison neu ausgelost - derselbe Rennstall war 1985 klein und 1986 gross</div>
+                            <div>&#8226; NEU: tests/roster-drift.js misst, ob Kader und Meldeplaene ueber die Simsaisons driften</div>
+                            <div class="font-bold text-slate-400">v0.9.16.9 - 20.08.2026</div>
                             <div>&#8226; FIX: Konstrukteure meldeten 1981-1985 drei Wagen, real gab es dort praktisch keine mehr - Aera-Deckel von 1986 auf 1981 vorgezogen</div>
                             <div>&#8226; FIX: Arrows 1983 mit 44,5 statt 30 Wagen und RAM mit 28,9 statt 15 - beide jetzt bei -2,9 und -1,1</div>
                             <div>&#8226; FIX: DNQ 1984 von 5,2 auf 2,3 (real 2,7) und 1985 von 3,3 auf 0,9 (real 0,8)</div>
@@ -3583,7 +3586,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.9';
+        const VERSION = '0.9.16.10';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7128,9 +7131,28 @@
             });
         }
 
+        // === DER WURF FAELLT EINMAL, NICHT JEDE SAISON (v0.9.16.10) ===
+        // Nutzer-Grundsatz: der Meldemechanismus darf keinen Unterschied machen, ob ein
+        // Jahr das Startjahr oder die fuenfte Simsaison ist. Hier wurde er verletzt —
+        // `Math.random()` entschied JEDE Saison neu, ob ein Team Kleinstkonstrukteur ist.
+        // Dasselbe Team war 1985 klein und 1986 gross, ohne dass sich etwas geaendert
+        // haette, und mit ihm sprang der Meldeplan seiner Fahrer zwischen 40-90 % und
+        // 100 % hin und her. Gemessen (tests/roster-drift.js, 8 Sims x 5 Saisons ab 1983):
+        // der Anteil Werksfahrer mit vollem Kalender schwankte zwischen 35 % und 81 %,
+        // waehrend der reale Wert der 1980er bei 66 % liegt — das Mittel stimmte, die
+        // Streuung von Saison zu Saison war Rauschen.
+        // Der Wurf wird jetzt EINMAL je Team gezogen und im Team-Objekt behalten. Der
+        // Erwartungswert bleibt exakt derselbe, nur das Zittern verschwindet.
         function markSmallConstructors(teams, drivers, year) {
             (teams || []).forEach(t => { t._smallCtor = false; });
-            if (!_smallConstructorShare(year) || !teams || !teams.length) return;
+            if (!teams || !teams.length) return;
+            // Wuerfe auch dann sichern, wenn die Aera-Regel gerade nicht greift — sonst
+            // wuerde ein Team, das 1969 einsteigt, 1970 doch wieder neu ausgelost.
+            teams.forEach(t => {
+                if (typeof t._smallCtorRoll !== 'number') t._smallCtorRoll = Math.random();
+                if (typeof t._carsRoll !== 'number') t._carsRoll = Math.random();
+            });
+            if (!_smallConstructorShare(year)) return;
             teams.forEach(t => {
                 const key = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
                 // WAHRSCHEINLICHKEIT, nicht Gewissheit: Lebenszeit-Starts messen
@@ -7140,13 +7162,13 @@
                 // Ein Winzling fährt also meistens, aber nicht immer, eine Teilsaison.
                 // Alles ab 60 Lebenszeit-Starts ist nie Kleinstkonstrukteur — das hält
                 // Surtees (118), Ensign (99), Osella (130) und Minardi (339) draußen.
-                if (CONSTRUCTOR_TINY.has(key)) t._smallCtor = Math.random() < 0.70;
-                else if (CONSTRUCTOR_SMALL.has(key)) t._smallCtor = Math.random() < 0.30;
+                if (CONSTRUCTOR_TINY.has(key)) t._smallCtor = t._smallCtorRoll < 0.70;
+                else if (CONSTRUCTOR_SMALL.has(key)) t._smallCtor = t._smallCtorRoll < 0.30;
                 // Wagenzahl PRO SAISON (Nutzer-Entscheidung: nicht pro Rennen).
                 // Winzlinge fuhren im Schnitt 1,56 Autos, 69 % von ihnen unter zwei —
                 // also meistens eines, manchmal zwei. Alle anderen unbegrenzt (der
                 // Ära-Deckel in _maxCarsPerConstructor greift ohnehin).
-                t._carsThisSeason = t._smallCtor ? (Math.random() < 0.65 ? 1 : 2) : null;
+                t._carsThisSeason = t._smallCtor ? (t._carsRoll < 0.65 ? 1 : 2) : null;
             });
         }
 
