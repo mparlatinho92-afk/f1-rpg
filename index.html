@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.15</title>
+    <title>F1 RPG v0.9.16.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -985,7 +985,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.15 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.16 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; NEU: wer sich in der Spielwelt bewaehrt hat (Saisonscore ab 55), ist nicht mehr an seine reale Rennzahl gebunden - die Tabelle ist ein Startwert, kein Urteil</div>
+                            <div>&#8226; NEU: Palmer meldet im Startjahr 1983 ein Rennen wie real und faehrt ab 1984 nach Leistung</div>
+                            <div>&#8226; GEPRUEFT: Meldeniveau bleibt stabil - 1955 bis 1959 zwischen -0,1 und -1,4 je Rennen</div>
+                            <div class="font-bold text-slate-400">v0.9.16.15 - 22.08.2026</div>
                             <div>&#8226; FIX: wer Werksfahrer wird, entschied allein die Pace - Jonathan Palmer sass 1983 mit einem einzigen Einsatz auf einem Ferrari-Werkssitz</div>
                             <div>&#8226; FIX: Peter Collins meldete 1955 sechs Rennen statt real zwei - Ferrari lag dadurch 6,3 Wagen ueber real, jetzt 0,4</div>
                             <div>&#8226; FIX: de Cesaris fuhr 1985 allein bei Williams - jetzt 2,0 Wagen wie real</div>
@@ -3649,7 +3653,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.15';
+        const VERSION = '0.9.16.16';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7223,6 +7227,29 @@
         // ⚠ Wer KEINEN Eintrag hat (generiert, Pool-Auffueller), gilt als Vollzeit —
         //   sonst wuerde ein erfundener Fahrer schlechter behandelt als ein realer
         //   Einmal-Starter und die Kader kippten in fortgesetzten Saisons.
+        // === EMERGENZ-KLAUSEL (v0.9.16.16) ===
+        // Nutzer-Einwand zu .16.15: „palmer und collins sind nur beispiele eines
+        // symptoms. im spielstand soll palmer ein vollfahrer sein, falls er genug
+        // ueberzeugt hat."
+        // Die reale Rennzahl aus DRIVER_STARTS ist ein STARTWERT, kein Urteil. Solange
+        // die Spielwelt nichts Eigenes weiss, ist sie die beste Schaetzung — sobald ein
+        // Fahrer dort eine Saison bestritten und dabei ueberzeugt hat, zaehlt seine Form.
+        // Sonst waere Jonathan Palmer auf ewig ein Ein-Rennen-Fahrer, egal wie gut er in
+        // DIESER Geschichte ist. Das widerspraeche „emergent vor gescriptet".
+        //
+        // `careerScores` fuehrt je GESPIELTER Saison einen Eintrag {year, score, …} und
+        // wird von updateDriverCareerScores fortgeschrieben — im Startjahr ist es leer,
+        // dort aendert diese Klausel also nichts.
+        // Schwelle 55: dieselbe, die das Spiel an sieben weiteren Stellen fuer „gut
+        // genug" benutzt. Ein Mittelfeldfahrer liegt bei 41-59.
+        function hasEarnedFullSeat(d) {
+            const cs = d && d.careerScores;
+            if (!Array.isArray(cs) || !cs.length) return false;
+            const letzte = cs[cs.length - 1];
+            const score = letzte && typeof letzte.score === 'number' ? letzte.score : null;
+            return score != null && score >= 55;
+        }
+
         function markPrivateers(drivers, year, races) {
             const _y = year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : null);
             const _r = races || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.races : null) || [];
@@ -7247,7 +7274,9 @@
             });
             Object.values(byTeam).forEach(td => {
                 td.sort((a, b) => {
-                    const sa = realStarts(a), sb = realStarts(b);
+                    // Bewaehrte Fahrer zaehlen wie Vollzeit — s. hasEarnedFullSeat.
+                    const sa = hasEarnedFullSeat(a) ? null : realStarts(a);
+                    const sb = hasEarnedFullSeat(b) ? null : realStarts(b);
                     const ra = sa == null ? kalLen : sa;
                     const rb = sb == null ? kalLen : sb;
                     return (rb - ra) || ((b.pace || 0) - (a.pace || 0));
@@ -7447,6 +7476,12 @@
                     // Kuratierte Heimrennen-Melder bleiben unangetastet: dort ist nicht nur
                     // die Anzahl, sondern die STRECKE die geprüfte Wahrheit.
                     if (d._homeOnlyCurated) return;
+                    // Bewaehrte Fahrer sind nicht mehr an ihre reale Rennzahl gebunden
+                    // (v0.9.16.16, s. hasEarnedFullSeat). Ohne diese Zeile griffe die
+                    // Emergenz nur bei der ROLLE — die Rennzahl wuerde hier gleich
+                    // wieder auf den realen Wert zurueckgesetzt, und ein aufgestiegener
+                    // Fahrer saesse als Werksfahrer mit einem Rennen da.
+                    if (hasEarnedFullSeat(d)) return;
                     // ⚠ HIER STAND EIN ZURUECKGENOMMENER FIX (v0.9.16.8) — nicht neu bauen,
                     // ohne den Befund zu kennen. Versucht wurde: „wer auf einem Werkssitz
                     // eines vollwertigen Teams sitzt, faehrt die Saison" (also
