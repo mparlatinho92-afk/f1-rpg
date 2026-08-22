@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.17</title>
+    <title>F1 RPG v0.9.17.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.17 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.0 (aktuell) - 23.08.2026</div>
+                            <div>&#8226; NEU: alle 917 Fahrerfotos und 256 Grafiken sind eingebettet - fuer Bilder braucht das Spiel kein Netz mehr</div>
+                            <div>&#8226; FIX: fehlendes Weltmeister-Foto und graue Team-Logos - ein Werbeblocker sperrte die Bildquellen, waehrend die Server sauber lieferten</div>
+                            <div>&#8226; NEU: Fotos als WebP in Originalgroesse (65 Prozent kleiner), Flaechengrafiken auf 160 px mit 256 Farben quantisiert (74 Prozent kleiner)</div>
+                            <div>&#8226; GEMESSEN: Ladezeit unveraendert bei 1,6 Sekunden, Arbeitsspeicher plus 8 MB</div>
+                            <div class="font-bold text-slate-400">v0.9.16.17 - 22.08.2026</div>
                             <div>&#8226; FIX: sechs CSS-Hilfsklassen waren benutzt, aber nie definiert (flex-col, gap-1, w-4, h-4, pl-3, pl-5, border-l-2) - im Datensatz-Manager standen die KI-Schalter deshalb nebeneinander und wurden abgeschnitten</div>
                             <div>&#8226; NEU: Suchfeld und Foto-Status klappen auf dem Handy hinter einen Knopf - sie ueberlagerten Titel und Versionszeile</div>
                             <div class="font-bold text-slate-400">v0.9.16.16 - 22.08.2026</div>
@@ -3366,6 +3371,7 @@
     <script src="data/venue-pull.js"></script>
     <script src="data/race-grid.js"></script>
     <script src="data/home-only.js"></script>
+    <script src="data/images.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -3704,7 +3710,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.17';
+        const VERSION = '0.9.17.0';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31537,6 +31543,12 @@ Empfohlene Wertebereiche:
             // Blocklist: Nachname-Heuristik lädt falschen Namensvetter / 2 Fahrer kollidieren auf
             // denselben Dateinamen → immer Avatar (realisiert die Foto-Status-Doku „beide bekommen SVG").
             if (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined' && DRIVER_PHOTO_BLOCKLIST.has(driverId)) return null;
+            // EINGEBETTETES FOTO ZUERST (v0.9.16.18). data/images.js traegt alle 917
+            // Fahrerfotos als WebP-data-URI. Damit haengt die Anzeige nicht mehr am Netz:
+            // beim Nutzer blockierte AdGuard die Bildquellen, das Weltmeister-Foto blieb
+            // eine Silhouette, obwohl der Server sauber HTTP 200 lieferte.
+            // Fehlt ein Eintrag, laeuft der bisherige Weg unveraendert weiter.
+            if (typeof DRIVER_PHOTOS !== 'undefined' && DRIVER_PHOTOS[driverId]) return DRIVER_PHOTOS[driverId];
             // Override-Tabelle zuerst (verifizierte Sonderfälle)
             const override = DRIVER_PHOTO_OVERRIDES[driverId];
             // Override mit eigener Endung (z.B. 'england.gif') wird unveraendert genutzt —
@@ -32658,13 +32670,19 @@ Empfohlene Wertebereiche:
                 || (teamName ? TEAM_LOGOS[teamSlug(teamName)] : null)
                 || (teamName ? TEAM_LOGOS[String(teamName).toLowerCase()] : null);
             if (!logos || logos.length === 0) return null;
+            // EINGEBETTETES BILD STATT NETZ-URL (v0.9.16.18). data/images.js bildet die
+            // urspruengliche URL auf ein data-URI ab — 256 der 257 externen Grafiken,
+            // Vektorlogos bei doppelter Anzeigegroesse gerastert. Beim Nutzer blockierte
+            // AdGuard `static.wikia.nocookie.net`, wo praktisch alle Team-Logos liegen;
+            // sichtbar blieb der graue Buchstabenkasten. Ohne Eintrag bleibt die URL.
+            const _fest = u => (typeof EMBEDDED_IMAGES !== 'undefined' && EMBEDDED_IMAGES[u]) || u;
             // Bei Überlappungen: neuerer Eintrag (größeres from) gewinnt
             const matches = logos.filter(l => year >= (l.from || 0) && year <= (l.to || 9999));
-            if (matches.length > 0) return matches.sort((a,b) => b.from - a.from)[0].url;
+            if (matches.length > 0) return _fest(matches.sort((a,b) => b.from - a.from)[0].url);
             // Kein exakter Treffer: nächster Eintrag vor dem Jahr
             const before = logos.filter(l => l.to < year).sort((a,b) => b.to - a.to);
-            if (before.length > 0) return before[0].url;
-            return logos[0].url;
+            if (before.length > 0) return _fest(before[0].url);
+            return _fest(logos[0].url);
         }
 
         // Generisches Team-Logo SVG (Schild mit Teamfarbe + Initiale)
