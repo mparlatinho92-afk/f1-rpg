@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.10</title>
+    <title>F1 RPG v0.9.16.11</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -944,7 +944,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.10 (aktuell) - 21.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.11 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; FIX: der Kleinstkonstrukteur-Wurf ignorierte TEAM_PRESENCE - Frank Williams Racing Cars fuhr 1975 real alle 14 Rennen, meldete im Spiel aber nur 16 von 27 Wagen</div>
+                            <div>&#8226; FIX: Teilsaison-Anteil an die gemessene Praesenz geeicht - Kleinstkonstrukteure 37 Prozent statt 75, kleine Teams 81 statt 90</div>
+                            <div>&#8226; FIX: DNQ 1975 trifft jetzt exakt (1,4 gegen real 1,4), Meldungen je Rennen -1,1 statt -2,4</div>
+                            <div class="font-bold text-slate-400">v0.9.16.10 - 21.08.2026</div>
                             <div>&#8226; FIX: ob ein Team Kleinstkonstrukteur ist, wurde jede Saison neu ausgelost - derselbe Rennstall war 1985 klein und 1986 gross</div>
                             <div>&#8226; NEU: tests/roster-drift.js misst, ob Kader und Meldeplaene ueber die Simsaisons driften</div>
                             <div class="font-bold text-slate-400">v0.9.16.9 - 20.08.2026</div>
@@ -3586,7 +3590,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.10';
+        const VERSION = '0.9.16.11';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7151,10 +7155,39 @@
             teams.forEach(t => {
                 if (typeof t._smallCtorRoll !== 'number') t._smallCtorRoll = Math.random();
                 if (typeof t._carsRoll !== 'number') t._carsRoll = Math.random();
+                if (typeof t._shareRoll !== 'number') t._shareRoll = Math.random();
             });
             if (!_smallConstructorShare(year)) return;
             teams.forEach(t => {
                 const key = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+                // === DATEN SCHLAGEN DEN WURF (v0.9.16.11) ===
+                // TEAM_PRESENCE weiss fuer die allermeisten Team-Saisons, ob real eine
+                // volle Saison oder eine Teilsaison gefahren wurde. Diese Funktion hat
+                // sie bisher nicht gefragt und auch dann gewuerfelt, wenn die Antwort
+                // in den Daten stand. Der L1-Nachlauf konnte das nicht heilen, weil er
+                // nur BESCHNEIDET und nie erweitert.
+                // Der teuerste Fall: Frank Williams Racing Cars fuhr 1975 alle 14 Rennen
+                // mit zwei Wagen, galt hier aber als Kleinstkonstrukteur und meldete
+                // 16,3 statt 27 Wagen (Δ −10,7). Grund ist die Zaehlweise der Liste:
+                // F1DB fuehrt Starts je KONSTRUKTEURSNAME, und Frank Williams' Rennstall
+                // ist in fuenf Namen zersplittert — Politoys (1972), Iso-Marlboro
+                // (1973/74), Frank Williams Racing Cars (1975), Wolf-Williams (1976),
+                // Wolf (1977-79), alle mit demselben parentConstructorId in
+                // f1db-constructors-chronology.json. Jeder Name hat dadurch wenige
+                // Starts und landet in CONSTRUCTOR_TINY, obwohl der Rennstall
+                // durchgehend jedes Rennen bestritt.
+                // Gewuerfelt wird deshalb nur noch, wo NICHTS bekannt ist.
+                const praesenz = (typeof getTeamPresence === 'function') ? getTeamPresence(t, year) : null;
+                if (praesenz != null) {
+                    // Bekannte Vollsaison ODER bekannte Streckenliste: kein Kleinst-
+                    // konstrukteur. Bei einer Teilsaison beschneidet der L1-Nachlauf in
+                    // assignPrivateerSchedules auf genau die realen Strecken — das ist
+                    // praeziser als jeder Team-Plan, den wir hier wuerfeln koennten.
+                    t._smallCtor = false;
+                    t._carsThisSeason = null;
+                    t._presenceShare = null;
+                    return;
+                }
                 // WAHRSCHEINLICHKEIT, nicht Gewissheit: Lebenszeit-Starts messen
                 // „kurzlebig", nicht „Teilsaison". Gegenbeispiele aus 1975 — Frank
                 // Williams Racing Cars (12 Starts) fuhr ALLE 14 Rennen, Hesketh (52)
@@ -7162,8 +7195,37 @@
                 // Ein Winzling fährt also meistens, aber nicht immer, eine Teilsaison.
                 // Alles ab 60 Lebenszeit-Starts ist nie Kleinstkonstrukteur — das hält
                 // Surtees (118), Ensign (99), Osella (130) und Minardi (339) draußen.
-                if (CONSTRUCTOR_TINY.has(key)) t._smallCtor = t._smallCtorRoll < 0.70;
-                else if (CONSTRUCTOR_SMALL.has(key)) t._smallCtor = t._smallCtorRoll < 0.30;
+                // === AN DIE GEMESSENE PRAESENZ GEEICHT (v0.9.16.11) ===
+                // Die Werte 0,70/0,30 und der gemeinsame Teilsaison-Anteil von Ø 65 %
+                // ergaben als Erwartungswert der Saison-Praesenz:
+                //   TINY  0,70 x 65 % + 0,30 x 100 % = 75,5 %   gegen real 37 %
+                //   SMALL 0,30 x 65 % + 0,70 x 100 % = 89,5 %   gegen real 81 %
+                // Gemessen an F1DB ueber 260 Konstrukteur-Saisons 1970-85 (Anteil des
+                // Kalenders, den ein Konstrukteur bestritt):
+                //   TINY   34 Faelle · Ø 37 % · 12 % volle Saison · 71 % unter 50 %
+                //   SMALL  30 Faelle · Ø 81 % · 40 % volle Saison · 17 % unter 50 %
+                //   REST  196 Faelle · Ø 95 % · 80 % volle Saison
+                // Aus „volle Saison" folgt direkt, wie oft ein Team ueberhaupt eine
+                // Teilsaison faehrt (p = 1 − Anteil Vollsaison), und daraus der noetige
+                // Anteil s:  p x s + (1−p) = Ø Praesenz.
+                //   TINY   p = 0,88  →  s = 28 %
+                //   SMALL  p = 0,60  →  s = 68 %
+                // Deshalb steht der Anteil jetzt AM TEAM (_presenceShare) statt in einer
+                // gemeinsamen Formel — TINY und SMALL sind zwei verschiedene Populationen.
+                // ⚠ SMALL braucht MEHR Teilzeit, nicht weniger: die Gruppe (Toleman,
+                //   Zakspeed, RAM, Hesketh) war im Spiel bisher zu praesent.
+                if (CONSTRUCTOR_TINY.has(key)) {
+                    t._smallCtor = t._smallCtorRoll < 0.88;
+                    // Schiefe Verteilung: real haeufen sich die Ein- und Zwei-Rennen-
+                    // Faelle (Maki 1/16, Lyncar 1/15, McGuire 1/17). Quadriert man den
+                    // Wurf, landet die Masse unten — Ø ≈ 0,05 + 0,70/3 ≈ 0,28.
+                    t._presenceShare = 0.05 + (t._shareRoll * t._shareRoll) * 0.70;
+                } else if (CONSTRUCTOR_SMALL.has(key)) {
+                    t._smallCtor = t._smallCtorRoll < 0.60;
+                    t._presenceShare = 0.40 + t._shareRoll * 0.55;   // Ø 68 %
+                } else {
+                    t._presenceShare = null;
+                }
                 // Wagenzahl PRO SAISON (Nutzer-Entscheidung: nicht pro Rennen).
                 // Winzlinge fuhren im Schnitt 1,56 Autos, 69 % von ihnen unter zwei —
                 // also meistens eines, manchmal zwei. Alle anderen unbegrenzt (der
@@ -7194,7 +7256,12 @@
             // Theodore/Martini 7/16, Hesketh 6/16, Surtees 11/14, Fondmetal 13/16.
             const teamPlan = {};
             (teams || []).filter(t => t._smallCtor).forEach(t => {
-                const share = 0.40 + Math.random() * 0.50;
+                // Anteil kommt seit v0.9.16.11 VOM TEAM (markSmallConstructors) — TINY
+                // und SMALL sind zwei Populationen mit sehr verschiedener Praesenz
+                // (Ø 37 % gegen Ø 81 %), eine gemeinsame Spanne traf beide daneben.
+                // Der Rueckfall gilt nur fuer Alt-Staende ohne _presenceShare.
+                const share = (typeof t._presenceShare === 'number')
+                    ? t._presenceShare : 0.40 + Math.random() * 0.50;
                 const n = Math.max(1, Math.min(cal.length, Math.round(cal.length * share)));
                 teamPlan[t.id] = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
             });
