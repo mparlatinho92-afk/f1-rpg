@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.16</title>
+    <title>F1 RPG v0.9.16.17</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -228,6 +228,20 @@
         .flex { display: flex; }
         .flex-1 { flex: 1; }
         .flex-wrap { flex-wrap: wrap; }
+        /* FEHLENDE HILFSKLASSEN NACHGETRAGEN (v0.9.16.17).
+           Diese sechs wurden im Markup benutzt, aber nie definiert — `.flex` allein
+           liess die Elemente in ZEILENrichtung stehen. Sichtbar wurde es im Datensatz-
+           Manager: die sechs KI-Simulations-Schalter standen auf dem Handy nebeneinander
+           statt untereinander und wurden rechts abgeschnitten (Nutzer-Report).
+           Benutzt: flex-col 5x · gap-1 14x · w-4/h-4 je 13x · pl-3 8x · pl-5 5x ·
+           border-l-2 3x. Werte wie im ueblichen Utility-Raster (0,25rem-Schritte). */
+        .flex-col { flex-direction: column; }
+        .gap-1 { gap: 0.25rem; }
+        .pl-3 { padding-left: 0.75rem; }
+        .pl-5 { padding-left: 1.25rem; }
+        .w-4 { width: 1rem; }
+        .h-4 { height: 1rem; }
+        .border-l-2 { border-left-width: 2px; border-left-style: solid; }
         .grid { display: grid; }
         .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
@@ -438,6 +452,34 @@
             box-shadow: var(--shadow);
         }
         
+        /* === WERKZEUGE MOBIL EINKLAPPEN (v0.9.16.17) ===
+           Suchfeld („Fahrer / Team / Strecke") und Foto-Status liegen `position:fixed`
+           oben links. Auf 390 px ueberlagern sie den Seitenkopf und verdecken Titel und
+           Versionszeile (Nutzer-Report). Beide klappen jetzt hinter einen Knopf.
+           ⚠ `!important` ist noetig, weil beide ihre Position als INLINE-Style tragen —
+             eine normale Regel verliert dagegen. */
+        #mobile-tools-toggle { display: none; }
+        @media (max-width: 640px) {
+            #mobile-tools-toggle {
+                display: block;
+                position: fixed;
+                top: 8px;
+                left: 10px;
+                z-index: 9999;
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                color: var(--text-secondary);
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-size: 0.9rem;
+                line-height: 1.2;
+                cursor: pointer;
+            }
+            #global-search-wrap, #foto-status-btn { display: none !important; }
+            body.tools-open #global-search-wrap { display: block !important; top: 44px !important; }
+            body.tools-open #foto-status-btn    { display: block !important; top: 80px !important; }
+        }
+
         /* === SCHIEBEREGLER-SPERRE AUF DEM HANDY (v0.9.16.12) ===
            Nutzer-Report: beim Wischen durch eine Seite verstellt man versehentlich die
            Regler. Dasselbe Muster wie im Fahrer-Steckbrief (dort seit v0.9.15.25):
@@ -913,8 +955,14 @@
              box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
     </div>
 
+    <!-- Werkzeug-Schalter fuer schmale Schirme (v0.9.16.17): Suchfeld und Foto-Status
+         liegen fest oben links und ueberlagerten auf dem Handy den Seitenkopf. Sie
+         klappen jetzt hinter diesem Knopf ein. Am Desktop ist er ausgeblendet. -->
+    <button id="mobile-tools-toggle" onclick="document.body.classList.toggle('tools-open')"
+            title="Suche und Foto-Status ein-/ausklappen" aria-label="Werkzeuge ein-/ausklappen">🔍</button>
+
     <!-- Foto-Status Button -->
-    <button onclick="document.getElementById('foto-modal').style.display='flex'; if(typeof renderFotoStatus==='function')renderFotoStatus();"
+    <button id="foto-status-btn" onclick="document.getElementById('foto-modal').style.display='flex'; if(typeof renderFotoStatus==='function')renderFotoStatus();"
             style="position:fixed;top:45px;left:10px;z-index:9997;background:#ffc0cb;border:1px solid #334155;
                    color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;
                    font-family:monospace;font-weight:bold;">📷 Foto-Status</button>
@@ -985,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.16 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.17 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; FIX: sechs CSS-Hilfsklassen waren benutzt, aber nie definiert (flex-col, gap-1, w-4, h-4, pl-3, pl-5, border-l-2) - im Datensatz-Manager standen die KI-Schalter deshalb nebeneinander und wurden abgeschnitten</div>
+                            <div>&#8226; NEU: Suchfeld und Foto-Status klappen auf dem Handy hinter einen Knopf - sie ueberlagerten Titel und Versionszeile</div>
+                            <div class="font-bold text-slate-400">v0.9.16.16 - 22.08.2026</div>
                             <div>&#8226; NEU: wer sich in der Spielwelt bewaehrt hat (Saisonscore ab 55), ist nicht mehr an seine reale Rennzahl gebunden - die Tabelle ist ein Startwert, kein Urteil</div>
                             <div>&#8226; NEU: Palmer meldet im Startjahr 1983 ein Rennen wie real und faehrt ab 1984 nach Leistung</div>
                             <div>&#8226; GEPRUEFT: Meldeniveau bleibt stabil - 1955 bis 1959 zwischen -0,1 und -1,4 je Rennen</div>
@@ -3653,7 +3704,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.16';
+        const VERSION = '0.9.16.17';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
