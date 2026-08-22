@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.14</title>
+    <title>F1 RPG v0.9.16.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -985,7 +985,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.14 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.15 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; FIX: wer Werksfahrer wird, entschied allein die Pace - Jonathan Palmer sass 1983 mit einem einzigen Einsatz auf einem Ferrari-Werkssitz</div>
+                            <div>&#8226; FIX: Peter Collins meldete 1955 sechs Rennen statt real zwei - Ferrari lag dadurch 6,3 Wagen ueber real, jetzt 0,4</div>
+                            <div>&#8226; FIX: de Cesaris fuhr 1985 allein bei Williams - jetzt 2,0 Wagen wie real</div>
+                            <div>&#8226; NEU: 1955 liegen alle zehn Konstrukteure zwischen -1,8 und +0,4</div>
+                            <div class="font-bold text-slate-400">v0.9.16.14 - 22.08.2026</div>
                             <div>&#8226; NEU: 21 Konstrukteure melden nur im eigenen Land (aus F1DB gemessen) - LDS 1965 von 14,3 auf 1,9 Wagen bei real 3, Alfa Special von 9,2 auf 2,6 bei real 1</div>
                             <div>&#8226; NEU: 1952 treffen Nacke, Balsa, Reif, Krakau, Heck und Cisitalia jetzt exakt einen Wagen wie real</div>
                             <div>&#8226; FIX: die Testumgebung las eine handgepflegte Dateiliste - data/home-only.js fehlte darin, alle Heimat-Daten waren in Messungen unsichtbar</div>
@@ -3644,7 +3649,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.14';
+        const VERSION = '0.9.16.15';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7202,7 +7207,38 @@
         // Flag, neu ankommende hatten gar keins (= Werksfahrer). Nach ein paar Saisons
         // war jeder Werksfahrer und meldete jedes Rennen: die Felder wurden „zu
         // ordentlich", Melder = Cockpits, DNQ verschwand komplett.
-        function markPrivateers(drivers) {
+        // === WER WERKSFAHRER IST, ENTSCHEIDET DIE REALE RENNZAHL (v0.9.16.15) ===
+        // Bis hierher sortierte diese Funktion allein nach PACE und machte die zwei
+        // Schnellsten zu Werksfahrern. Rolle und Regelmaessigkeit haengen damit am
+        // Tempo — real haben die beiden nichts miteinander zu tun:
+        //   • Jonathan Palmer fuhr 1983 EIN Rennen (Williams, Brands Hatch). Im Spiel
+        //     war er schnell genug fuer Platz 2 bei FERRARI und sass dort als
+        //     Werksfahrer mit einem einzigen Einsatz (Nutzer-Report).
+        //   • Peter Collins fuhr 1955 ZWEI Rennen. Im Spiel wurde er Ferrari-Werksfahrer
+        //     und meldete sechs — Ferrari lag dadurch +6,3 Wagen ueber real.
+        //   • Andrea de Cesaris sass 1985 als einziger Fahrer bei Williams.
+        // `DRIVER_STARTS` weiss fuer jeden realen Melder, WIE VIELE Rennen er in dieser
+        // Saison bestritt. Danach wird jetzt sortiert; die Pace entscheidet nur noch bei
+        // Gleichstand und bei Fahrern ohne Eintrag.
+        // ⚠ Wer KEINEN Eintrag hat (generiert, Pool-Auffueller), gilt als Vollzeit —
+        //   sonst wuerde ein erfundener Fahrer schlechter behandelt als ein realer
+        //   Einmal-Starter und die Kader kippten in fortgesetzten Saisons.
+        function markPrivateers(drivers, year, races) {
+            const _y = year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : null);
+            const _r = races || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.races : null) || [];
+            const kalLen = _r.filter(r => r && !r.isIndy && r.circuitId).length || 99;
+            const zeile = (typeof DRIVER_STARTS !== 'undefined' && _y) ? DRIVER_STARTS[_y] : null;
+            // Reale Rennzahl dieser Saison, oder null wenn unbekannt.
+            const realStarts = d => {
+                if (!zeile) return null;
+                const h = String(d.histId || '').toLowerCase();
+                if (!h || !(h in zeile)) return null;
+                const v = zeile[h];
+                if (v === 0) return kalLen;                 // volle Saison
+                if (typeof v === 'string') return 1;        // genau ein Rennen
+                if (Array.isArray(v)) return v.length;      // regionsfeste Streckenliste
+                return v;
+            };
             const byTeam = {};
             (drivers || []).forEach(d => {
                 if (!d.team) { d.isPrivateer = false; return; }
@@ -7210,7 +7246,12 @@
                 (byTeam[d.team] = byTeam[d.team] || []).push(d);
             });
             Object.values(byTeam).forEach(td => {
-                td.sort((a, b) => (b.pace || 0) - (a.pace || 0));
+                td.sort((a, b) => {
+                    const sa = realStarts(a), sb = realStarts(b);
+                    const ra = sa == null ? kalLen : sa;
+                    const rb = sb == null ? kalLen : sb;
+                    return (rb - ra) || ((b.pace || 0) - (a.pace || 0));
+                });
                 td.forEach((d, i) => { d.isPrivateer = i >= 2; });
             });
         }
@@ -8759,7 +8800,7 @@
                 // Die Startzahl wird SAISONWEISE gezogen (assignPrivateerSchedules,
                 // unten nach der Home-Only-Vergabe), nicht mehr pro Rennen gewürfelt.
                 const _races = buildRacesForYear(year);
-                markPrivateers(drivers);
+                markPrivateers(drivers, year, _races);
 
                 // === HOME-ONLY MARKIERUNG ===
                 // Fahrer aus HOME_ONLY_ENTRIES starten ausschließlich bei ihren Heimrennen –
@@ -21289,7 +21330,7 @@
             // Grid-Füller des Vorjahres zuerst in den Pool zurück (v0.9.15.5).
             releaseGridFillers();
             // Privateer-Status JEDE Saison neu bestimmen — Kader ändern sich (s. markPrivateers)
-            markPrivateers(GAME_STATE.drivers);
+            markPrivateers(GAME_STATE.drivers, newYear, GAME_STATE.races);
             // Kuratierte Heimrennen-Melder JEDE Saison neu setzen (v0.9.16.6) — muss NACH
             // markPrivateers stehen, sonst überschreibt der den isPrivateer-Status wieder,
             // und VOR assignPrivateerSchedules, damit kein zweiter Startplan entsteht.
