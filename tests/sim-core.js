@@ -110,16 +110,23 @@ function findHtmlFile() {
 function buildSourceFromIndex() {
     const dir = path.join(__dirname, '..');
     let html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
-    // Muss mit $DataFiles in manage-v.ps1 übereinstimmen. Fehlt hier eine Datei, ist ihre
-    // Konstante in ALLEN sim-core-Tests undefiniert — inklusive der Messskripte, mit denen
-    // die Abnahme läuft. (data/presence.js ab v0.9.15.81: TEAM_PRESENCE für den L1-Hebel.)
-    for (const jsFile of ['data/f1db.js', 'data/hist.js', 'data/seasons.js', 'data/names.js',
-                          'data/era-first-names.js', 'data/circuit-layouts.js', 'data/presence.js',
-                          'data/guest-entries.js', 'data/driver-starts.js',
-                          'data/venue-pull.js', 'data/race-grid.js']) {
-        const placeholder = `    <script src="${jsFile}"></script>`;
-        const js = fs.readFileSync(path.join(dir, jsFile), 'utf8');
-        html = html.replace(placeholder, `    <script>\n${js}\n    </script>`);
+    // === LISTE AUS index.html LESEN, NICHT PFLEGEN (v0.9.16.14) ===
+    // Hier stand eine HANDGEPFLEGTE Liste mit dem Hinweis „muss mit $DataFiles in
+    // manage-v.ps1 uebereinstimmen". Genau das ging schief: `data/home-only.js` kam in
+    // v0.9.16.6 dazu, wurde in index.html und manage-v.ps1 eingetragen — und hier
+    // vergessen. Folge: HOME_ONLY_CONSTRUCTORS und HOME_ONLY_DRIVERS waren in ALLEN
+    // sim-core-Tests undefiniert, also auch in den Messungen, mit denen die Abnahme
+    // lief. Ein Fix konnte dadurch im Spiel wirken und im Test unsichtbar bleiben.
+    //
+    // Jetzt sind die `<script src="data/…">`-Tags von index.html die Quelle der
+    // Wahrheit — dieselbe, aus der auch der Browser laedt. Eine neue Datendatei muss
+    // damit nur noch an ZWEI Stellen eingetragen werden (index.html + manage-v.ps1),
+    // und dieser Pfad zieht automatisch nach.
+    const tags = [...html.matchAll(/^[ \t]*<script src="(data\/[^"]+\.js)"><\/script>[ \t]*$/gm)];
+    if (!tags.length) throw new Error('sim-core: keine <script src="data/..."> in index.html gefunden');
+    for (const m of tags) {
+        const js = fs.readFileSync(path.join(dir, m[1]), 'utf8');
+        html = html.replace(m[0], `    <script>\n${js}\n    </script>`);
     }
     return html;
 }
