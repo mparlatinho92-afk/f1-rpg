@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.13</title>
+    <title>F1 RPG v0.9.16.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -985,7 +985,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.13 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.14 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; NEU: 21 Konstrukteure melden nur im eigenen Land (aus F1DB gemessen) - LDS 1965 von 14,3 auf 1,9 Wagen bei real 3, Alfa Special von 9,2 auf 2,6 bei real 1</div>
+                            <div>&#8226; NEU: 1952 treffen Nacke, Balsa, Reif, Krakau, Heck und Cisitalia jetzt exakt einen Wagen wie real</div>
+                            <div>&#8226; FIX: die Testumgebung las eine handgepflegte Dateiliste - data/home-only.js fehlte darin, alle Heimat-Daten waren in Messungen unsichtbar</div>
+                            <div class="font-bold text-slate-400">v0.9.16.13 - 22.08.2026</div>
                             <div>&#8226; FIX: DDR-Fahrer fanden nie ein Heimrennen - im Code stand GDR, das Spiel fuehrt DDR</div>
                             <div>&#8226; FIX: DDR-Fahrer galten nicht als Europaeer und wurden ausgerechnet bei EMW abgelehnt</div>
                             <div>&#8226; FIX: Schweizer Heimrennen - der Proxy ist jetzt Rueckfall statt Ersatz, bis 1954 Bremgarten, danach Nuerburgring</div>
@@ -17140,7 +17144,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.13';
+        const VERSION = '0.9.16.14';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -20974,8 +20978,33 @@ const CIRCUIT_LAYOUTS = {
             (teams || []).forEach(t => {
                 if (t.isIndyOnly) return;                       // Indy ist im Generator gefiltert
                 const p = getTeamPresence(t, year);
-                if (p == null) return;                          // unbekannt → Heuristik gilt weiter
-                const allowed = (p === 1 ? ids.slice() : p.filter(c => idSet.has(c)));
+                let allowed;
+                if (p != null) {
+                    allowed = (p === 1 ? ids.slice() : p.filter(c => idSet.has(c)));
+                } else {
+                    // === HEIMAT-KONSTRUKTEURE (v0.9.16.14) ===
+                    // Ohne Praesenzdaten galt bisher nur die Heuristik — und die kennt
+                    // keine Landesbindung. In fortgesetzten Saisons, wo TEAM_PRESENCE das
+                    // Jahr nicht mehr kennt, meldeten LDS und Alfa Special deshalb quer
+                    // durch Europa. Gemessen 1965: LDS 15,6 Wagen gegen real 3 (+12,6),
+                    // Alfa Special 10,9 gegen 1 (+9,9).
+                    // `HOME_ONLY_CONSTRUCTORS` haelt die 21 Rennstaelle, die in ihrer
+                    // ganzen Geschichte nur im eigenen Land meldeten. Reale Daten haben
+                    // Vorrang (p != null), die Liste ist der Rueckfall.
+                    const heim = homeOnlyConstructorNations(t);
+                    if (!heim) return;                          // unbekannt → Heuristik gilt weiter
+                    const _land = r => {
+                        const c = r.country;
+                        if (!c) return null;
+                        const ioc = c.length === 3 ? c : convertEmojiToIOC(c);
+                        return ioc ? ((typeof HOME_NATION_ALIAS !== 'undefined' && HOME_NATION_ALIAS[ioc]) || ioc) : null;
+                    };
+                    // Leere Liste ist ABSICHT: faellt das Heimrennen aus dem Kalender,
+                    // meldet der Rennstall gar nicht — genau wie ein Heimrennen-Fahrer.
+                    // Der 0-Meldungs-Pass raeumt die Fahrer danach aus dem Feld.
+                    allowed = cal.filter(r => { const l = _land(r); return l && heim.includes(l); })
+                                 .map(r => r.circuitId.toLowerCase());
+                }
                 const allowedSet = new Set(allowed);
                 drivers.forEach(d => {
                     if (d.team !== t.id) return;
@@ -21414,6 +21443,19 @@ const CIRCUIT_LAYOUTS = {
         // Magee, Evans, Robarts — Nutzer-Report). Zwei Wege fuehrten dahin: der
         // Wagendeckel liess mehrere Autos zu, und der Sitzfueller fuellt jedes Team
         // stur auf zwei Fahrer auf. Beide fragen jetzt hier.
+        // Erlaubte Heimatnationen eines Konstrukteurs (IOC), sonst null.
+        // `HOME_ONLY_CONSTRUCTORS` (data/home-only.js) haelt die 21 Rennstaelle, die in
+        // ihrer ganzen Geschichte NUR im eigenen Land meldeten — LDS und Alfa Special in
+        // Suedafrika, Kojima in Fuji, BMW am Nuerburgring, Heck/Greifzu/Krakau/Reif ebenso.
+        function homeOnlyConstructorNations(teamOrId) {
+            if (typeof HOME_ONLY_CONSTRUCTORS === 'undefined' || !teamOrId) return null;
+            const raw = typeof teamOrId === 'string'
+                ? teamOrId : (teamOrId.histId || teamOrId.id || teamOrId.name || '');
+            const key = String(raw).toLowerCase().replace(/[^a-z0-9]/g, '-');
+            const v = HOME_ONLY_CONSTRUCTORS[key];
+            return v ? [].concat(v) : null;
+        }
+
         function isSingleSeatConstructor(teamOrId) {
             if (typeof SINGLE_DRIVER_CONSTRUCTORS === 'undefined' || !teamOrId) return false;
             const raw = typeof teamOrId === 'string'
@@ -21451,6 +21493,28 @@ const CIRCUIT_LAYOUTS = {
         // 0 Meldungen erzeugen und machten den Plan un-deterministisch.
         function privateerEntersRace(d, race) {
             const cid = race.circuitId?.toLowerCase();
+            // === HEIMAT-KONSTRUKTEURE (v0.9.16.14) ===
+            // 21 Rennstaelle meldeten in ihrer ganzen Geschichte NUR im eigenen Land
+            // (HOME_ONLY_CONSTRUCTORS, aus F1DB gemessen): LDS und Alfa Special in
+            // Suedafrika, Kojima in Fuji, BMW am Nuerburgring, Heck/Greifzu/Krakau/Reif
+            // ebenso. Die Beschneidung bei der PLANVERGABE genuegte nicht — danach
+            // haengen Schwanz-Fueller und Grid-Fueller weitere Fahrer an genau diese
+            // kleinen Rennstaelle, mit eigenen Plaenen. Gemessen 1965: LDS 13,2 Wagen
+            // gegen real 3, Alfa Special 10,4 gegen 1.
+            // Hier ist der EINZIGE Melde-Entscheider — was hier faellt, faellt ueberall,
+            // auch im Live-Ticker ([SYNC simulateRace]).
+            if (d.team && typeof HOME_ONLY_CONSTRUCTORS !== 'undefined') {
+                const _t = (GAME_STATE.teams || []).find(x => x.id === d.team);
+                const _heim = _t && homeOnlyConstructorNations(_t);
+                if (_heim) {
+                    const _c = race.country;
+                    const _ioc = _c ? (_c.length === 3 ? _c : convertEmojiToIOC(_c)) : null;
+                    const _land = _ioc
+                        ? ((typeof HOME_NATION_ALIAS !== 'undefined' && HOME_NATION_ALIAS[_ioc]) || _ioc)
+                        : null;
+                    if (!_land || !_heim.includes(_land)) return false;
+                }
+            }
             // Startplan (auch homeOnly + Kleinstkonstrukteur-Werksfahrer) gewinnt.
             if (Array.isArray(d.scheduledRaces)) return cid ? d.scheduledRaces.includes(cid) : false;
             // Kein Plan = Werksfahrer → jedes Rennen. (Privateers ohne Plan sind ein
