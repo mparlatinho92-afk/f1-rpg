@@ -20,7 +20,7 @@
 // HEIMAT-SONDERREGELN (Vorgabe des Nutzers):
 //   • DDR      -> Deutschland-GP     (F1DB kennt keine DDR, alle unter `germany`;
 //                                     die Regel steht trotzdem im Export, weil das
-//                                     SPIEL den Code GDR fuehrt)
+//                                     SPIEL den Code DDR fuehrt (GDR nur an zwei Alt-Stellen))
 //   • Schweiz  -> zusaetzlich Deutschland (Motorsport-Bann ab 1955: kein Schweizer
 //                                     GP mehr, der Nuerburgring wurde das Heimrennen)
 //   • Rhodesien-> Suedafrika          (kein eigenes Rennen, immer in RSA gemeldet)
@@ -298,7 +298,7 @@ ${mapBlock(fahrerHeim, natVal)}
         };
 
         // Nation des Spiels -> Nation, deren Heimrennen sie fahren.
-        const HOME_NATION_ALIAS = { GDR: 'GER', ZIM: 'RSA', RHO: 'RSA' };
+        const HOME_NATION_ALIAS = { DDR: 'GER', GDR: 'GER', ZIM: 'RSA', RHO: 'RSA' };
 
         // Wer nicht nur daheim, aber nur in seiner WELTGEGEND meldete. Sie kamen zur
         // Formel 1, wenn die Formel 1 zu ihnen kam — ein Ersatzeinsatz in Europa waere
