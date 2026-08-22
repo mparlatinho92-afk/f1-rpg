@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.11</title>
+    <title>F1 RPG v0.9.16.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -438,6 +438,47 @@
             box-shadow: var(--shadow);
         }
         
+        /* === SCHIEBEREGLER-SPERRE AUF DEM HANDY (v0.9.16.12) ===
+           Nutzer-Report: beim Wischen durch eine Seite verstellt man versehentlich die
+           Regler. Dasselbe Muster wie im Fahrer-Steckbrief (dort seit v0.9.15.25):
+           gesperrt, bis man das Vorhaengeschloss antippt. Nur auf schmalen Schirmen —
+           am Desktop zieht niemand aus Versehen an einem Regler. */
+        .slider-lock-wrap { position: relative; display: block; }
+        .slider-lock-btn { display: none; }
+        @media (max-width: 640px) {
+            .slider-lock-wrap:not(.unlocked) > input[type="range"] {
+                pointer-events: none;
+                opacity: 0.5;
+            }
+            .slider-lock-btn {
+                display: flex;
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                align-items: center;
+                justify-content: center;
+                gap: 0.35rem;
+                background: transparent;
+                border: 0;
+                padding: 0;
+                cursor: pointer;
+                font-size: 0.8rem;
+                color: var(--text-tertiary);
+                /* grosszuegige Trefferflaeche, ohne das Layout zu veraendern */
+                min-height: 28px;
+            }
+            /* Der Hinweis liegt auf dem Regler — ohne eigenen Grund verschwimmt er
+               mit Track und Griff (im Test kaum lesbar). Deshalb als Pille. */
+            .slider-lock-btn > span {
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 999px;
+                padding: 1px 8px;
+                white-space: nowrap;
+            }
+            .slider-lock-wrap.unlocked > .slider-lock-btn { display: none; }
+        }
+
         /* Team- und Fahrer-Steckbrief duerfen am Desktop breiter werden (v0.9.16.7).
            Die 600px oben sind fuer Dialoge gedacht; die Steckbriefe tragen aber breite
            Tabellen (Team-Historie mit bis zu vier Fahrernamen je Zeile) und kuerzten
@@ -944,7 +985,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.11 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.12 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; NEU: Schieberegler sind auf dem Handy gesperrt - erst auf das Vorhaengeschloss tippen, dann laesst sich ziehen</div>
+                            <div>&#8226; NEU: gilt fuer alle Regler in Einstellungen, Sim-Regeln und Saisonstart - die Skill-Regler im Fahrer-Steckbrief behalten ihren eigenen Bearbeiten-Knopf</div>
+                            <div class="font-bold text-slate-400">v0.9.16.11 - 22.08.2026</div>
                             <div>&#8226; FIX: der Kleinstkonstrukteur-Wurf ignorierte TEAM_PRESENCE - Frank Williams Racing Cars fuhr 1975 real alle 14 Rennen, meldete im Spiel aber nur 16 von 27 Wagen</div>
                             <div>&#8226; FIX: Teilsaison-Anteil an die gemessene Praesenz geeicht - Kleinstkonstrukteure 37 Prozent statt 75, kleine Teams 81 statt 90</div>
                             <div>&#8226; FIX: DNQ 1975 trifft jetzt exakt (1,4 gegen real 1,4), Meldungen je Rennen -1,1 statt -2,4</div>
@@ -17087,7 +17131,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.11';
+        const VERSION = '0.9.16.12';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -36469,6 +36513,9 @@ const CIRCUIT_LAYOUTS = {
                 </div>
             `;
             
+            // Auch hier die Regler sperren (v0.9.16.12) — dieses Modal wird nicht über
+            // renderContent gebaut, sondern schreibt direkt in seinen Body.
+            lockSlidersMobile(document.getElementById('seasonStartBody'));
             document.getElementById('seasonStartModal').style.display = 'flex';
         }
         
@@ -37064,6 +37111,7 @@ const CIRCUIT_LAYOUTS = {
                 default: content.innerHTML = renderOverview();
             }
             initLazyImages(content);
+            lockSlidersMobile(content);
             _initCircuitMapNow();
         }
 
@@ -44648,6 +44696,7 @@ Empfohlene Wertebereiche:
 
             bringModalToFront(document.getElementById('driverProfileModal')); document.getElementById('driverProfileModal').style.display = 'flex';
             initLazyImages(document.getElementById('driverProfileBody'));
+            lockSlidersMobile(document.getElementById('driverProfileBody'));
         };
         
         window.closeDriverProfile = function() {
@@ -44693,6 +44742,47 @@ Empfohlene Wertebereiche:
         function initLazyImages(container) {
             (container || document).querySelectorAll('img[data-lazy-src]').forEach(img => {
                 _lazyImgObserver.observe(img);
+            });
+        }
+
+        // === SCHIEBEREGLER GEGEN VERSEHENTLICHES WISCHEN SICHERN (v0.9.16.12) ===
+        // Nutzer-Wunsch: „mobil-Ansicht. sämtliche schieberegler vor versehentlichem
+        // wischen schützen. erst auf bearbeiten klicken." — mit dem gewohnten
+        // Vorhängeschloss, also demselben Muster wie die Skill-Regler im Fahrer-
+        // Steckbrief (v0.9.15.25, `_driverSkillEdit`).
+        //
+        // ZENTRAL statt an jeder Fundstelle: die Regler stecken in zehn verschiedenen
+        // Render-Funktionen (Einstellungen, Sim-Regeln, Schriftgröße, DNF-Rate, Todes-
+        // Realismus, Fahrer-Skills). Sie einzeln umzubauen hiesse, zehnmal dasselbe zu
+        // schreiben und beim elften Regler wieder daran zu denken. Stattdessen wird
+        // nach dem Rendern jeder Regler in einen Wrapper gehängt, über dem ein
+        // Schloss-Knopf liegt; ein Tipp darauf gibt GENAU DIESEN Regler frei.
+        //
+        // Die Sperre steckt im CSS und greift nur unter 640 px — am Desktop bleibt
+        // alles wie bisher, der Knopf ist dort ausgeblendet.
+        // Wer schon einen eigenen Schutz mitbringt (Skill-Regler mit
+        // `pointer-events:none`), wird uebersprungen und nicht doppelt gesperrt.
+        function lockSlidersMobile(container) {
+            const scope = container || document;
+            scope.querySelectorAll('input[type="range"]').forEach(inp => {
+                if (inp.closest('.slider-lock-wrap')) return;          // schon verpackt
+                if (inp.style.pointerEvents === 'none') return;        // eigener Schutz
+                const wrap = document.createElement('span');
+                wrap.className = 'slider-lock-wrap';
+                inp.parentNode.insertBefore(wrap, inp);
+                wrap.appendChild(inp);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'slider-lock-btn';
+                btn.title = 'Regler entsperren';
+                btn.setAttribute('aria-label', 'Regler entsperren');
+                btn.innerHTML = '<span>🔒 zum Ändern tippen</span>';
+                btn.addEventListener('click', e => {
+                    e.preventDefault(); e.stopPropagation();
+                    wrap.classList.add('unlocked');
+                    btn.remove();
+                });
+                wrap.appendChild(btn);
             });
         }
 
@@ -46133,6 +46223,7 @@ Empfohlene Wertebereiche:
                 `;
                 bringModalToFront(document.getElementById('teamProfileModal')); document.getElementById('teamProfileModal').style.display = 'flex';
                 initLazyImages(document.getElementById('teamProfileBody'));
+            lockSlidersMobile(document.getElementById('teamProfileBody'));
                 return;
             }
             
@@ -46304,6 +46395,7 @@ Empfohlene Wertebereiche:
 
             bringModalToFront(document.getElementById('teamProfileModal')); document.getElementById('teamProfileModal').style.display = 'flex';
             initLazyImages(document.getElementById('teamProfileBody'));
+            lockSlidersMobile(document.getElementById('teamProfileBody'));
         };
         
         // Helper-Funktion für Team-Historie
