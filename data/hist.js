@@ -3037,7 +3037,10 @@ const NATIONALITY_ONLY_CONSTRUCTORS = {
     'aston-butterworth': ['GBR'],
     'krakau':            ['GER'],
     'nacke':             ['GER'],
-    'emw':               ['GER', 'GDR'],
+    // 'DDR' ergänzt (v0.9.16.13): EMW ist das Eisenacher Motorenwerk, ein DDR-
+    // Konstrukteur. Das Spiel führt die Nation als 'DDR', hier stand nur 'GDR' —
+    // ein DDR-Fahrer wurde also ausgerechnet bei EMW abgelehnt.
+    'emw':               ['GER', 'GDR', 'DDR'],
     'klenk':             ['GER'],
     'bugatti':           ['FRA'],
     'jbw':               ['GBR'],

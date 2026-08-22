@@ -156,7 +156,7 @@
         };
 
         // Nation des Spiels -> Nation, deren Heimrennen sie fahren.
-        const HOME_NATION_ALIAS = { GDR: 'GER', ZIM: 'RSA', RHO: 'RSA' };
+        const HOME_NATION_ALIAS = { DDR: 'GER', GDR: 'GER', ZIM: 'RSA', RHO: 'RSA' };
 
         // Wer nicht nur daheim, aber nur in seiner WELTGEGEND meldete. Sie kamen zur
         // Formel 1, wenn die Formel 1 zu ihnen kam — ein Ersatzeinsatz in Europa waere

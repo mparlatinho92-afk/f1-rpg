@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.16.12</title>
+    <title>F1 RPG v0.9.16.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -985,7 +985,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.16.12 (aktuell) - 22.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.16.13 (aktuell) - 22.08.2026</div>
+                            <div>&#8226; FIX: DDR-Fahrer fanden nie ein Heimrennen - im Code stand GDR, das Spiel fuehrt DDR</div>
+                            <div>&#8226; FIX: DDR-Fahrer galten nicht als Europaeer und wurden ausgerechnet bei EMW abgelehnt</div>
+                            <div>&#8226; FIX: Schweizer Heimrennen - der Proxy ist jetzt Rueckfall statt Ersatz, bis 1954 Bremgarten, danach Nuerburgring</div>
+                            <div>&#8226; FIX: die drei Regler im Datensatz-Manager hatten auf dem Handy keinen Schloss-Schutz</div>
+                            <div>&#8226; GEPRUEFT: Iren, Australier und Neuseelaender brauchen keinen Proxy - sie meldeten exakt nach Kalenderanteil</div>
+                            <div class="font-bold text-slate-400">v0.9.16.12 - 22.08.2026</div>
                             <div>&#8226; NEU: Schieberegler sind auf dem Handy gesperrt - erst auf das Vorhaengeschloss tippen, dann laesst sich ziehen</div>
                             <div>&#8226; NEU: gilt fuer alle Regler in Einstellungen, Sim-Regeln und Saisonstart - die Skill-Regler im Fahrer-Steckbrief behalten ihren eigenen Bearbeiten-Knopf</div>
                             <div class="font-bold text-slate-400">v0.9.16.11 - 22.08.2026</div>
@@ -7213,7 +7219,10 @@ const NATIONALITY_ONLY_CONSTRUCTORS = {
     'aston-butterworth': ['GBR'],
     'krakau':            ['GER'],
     'nacke':             ['GER'],
-    'emw':               ['GER', 'GDR'],
+    // 'DDR' ergänzt (v0.9.16.13): EMW ist das Eisenacher Motorenwerk, ein DDR-
+    // Konstrukteur. Das Spiel führt die Nation als 'DDR', hier stand nur 'GDR' —
+    // ein DDR-Fahrer wurde also ausgerechnet bei EMW abgelehnt.
+    'emw':               ['GER', 'GDR', 'DDR'],
     'klenk':             ['GER'],
     'bugatti':           ['FRA'],
     'jbw':               ['GBR'],
@@ -16692,7 +16701,7 @@ const CIRCUIT_LAYOUTS = {
         };
 
         // Nation des Spiels -> Nation, deren Heimrennen sie fahren.
-        const HOME_NATION_ALIAS = { GDR: 'GER', ZIM: 'RSA', RHO: 'RSA' };
+        const HOME_NATION_ALIAS = { DDR: 'GER', GDR: 'GER', ZIM: 'RSA', RHO: 'RSA' };
 
         // Wer nicht nur daheim, aber nur in seiner WELTGEGEND meldete. Sie kamen zur
         // Formel 1, wenn die Formel 1 zu ihnen kam — ein Ersatzeinsatz in Europa waere
@@ -17131,7 +17140,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.16.12';
+        const VERSION = '0.9.16.13';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19921,7 +19930,22 @@ const CIRCUIT_LAYOUTS = {
         // müssen hier stehen, sonst hat John Love unter dem einen Code ein Heimrennen und
         // unter dem anderen keines (v0.9.16.0). Rhodesien wird bei den Meldungen
         // technisch wie Südafrika behandelt.
-        const HOME_RACE_PROXY = { ZIM: 'RSA', RHO: 'RSA' };
+        // DDR ERGAENZT (v0.9.16.13). Nutzer-Vorgabe von Anfang an: „DDR zaehlt zu
+        // Deutschland-GP". Im Proxy stand sie nie — `byCountry['DDR']` gibt es nicht,
+        // deutsche Rennen liegen unter GER. Fuer einen DDR-Fahrer fand die Heimrennen-
+        // Suche deshalb NIE ein Rennen, und die generische Home-Only-Vergabe lief bei
+        // ihm leer (Nutzer-Report Harry Merkel: real ein einziges Rennen am
+        // Nuerburgring 1952, im Spiel 1954 acht Rennen fuer Klenk und 1955 sechs fuer
+        // FERRARI).
+        // ⚠ BEIDE SCHREIBWEISEN: das Spiel fuehrt durchgaengig `DDR` (7 Fahrer im
+        //   gemessenen Stand), `GDR` steht nur an zwei Code-Stellen. Wer nur eine
+        //   Variante pflegt, trifft die andere Haelfte nicht.
+        // SUI ist ein RUECKFALL (s. assignGenericHomeOnly): bis 1954 findet ein Schweizer
+        // Bremgarten und faehrt dort, ab 1955 gibt es kein Schweizer Rennen mehr und der
+        // Nuerburgring uebernimmt. Die sechs REALEN Schweizer stehen ohnehin kuratiert in
+        // HOME_ONLY_ENTRIES (Walter/Schiller/Schoeller/Perrot am Nuerburgring, de Terra
+        // und Scherrer in Bremgarten) — dieser Eintrag deckt die GENERIERTEN ab.
+        const HOME_RACE_PROXY = { ZIM: 'RSA', RHO: 'RSA', DDR: 'GER', GDR: 'GER', SUI: 'GER' };
 
         // Grundwahrscheinlichkeit, dass ein Privateer reiner Heimrennen-Melder ist.
         // Spiegelt die Privateer-Ära: Höhepunkt 1960er, erloschen mit den
@@ -19966,7 +19990,15 @@ const CIRCUIT_LAYOUTS = {
                 if (d.status && d.status !== 'active') return;
 
                 const nat = (d.nation && d.nation.length === 3) ? d.nation : convertEmojiToIOC(d.nation);
-                const home = byCountry[HOME_RACE_PROXY[nat] || nat];
+                // PROXY ALS RUECKFALL, NICHT ALS ERSATZ (v0.9.16.13). Vorher stand hier
+                // `byCountry[HOME_RACE_PROXY[nat] || nat]` — der Proxy schlug das eigene
+                // Land also immer, auch wenn es ein Heimrennen GAB. Fuer ZIM/RHO ist das
+                // egal (in Rhodesien fand nie ein WM-Lauf statt), fuer die Schweiz nicht:
+                // bis 1954 gab es Bremgarten, erst nach dem Motorsport-Bann wurde der
+                // Nuerburgring zum Heimrennen. Erst das eigene Land, dann der Ersatz —
+                // damit gilt die Nutzer-Regel „Schweiz ab dem Bann Deutschland-GP" von
+                // selbst, ohne Jahreszahl im Code.
+                const home = byCountry[nat] || byCountry[HOME_RACE_PROXY[nat] || nat];
                 // Kein Heimrennen im Kalender → generisches Flag zurücknehmen.
                 if (!home || !home.length || rate <= 0) {
                     if (d.homeOnly && !d._homeOnlyCurated) { d.homeOnly = false; d.homeCircuits = null; }
@@ -20130,7 +20162,10 @@ const CIRCUIT_LAYOUTS = {
         // Europäische Nationen als IOC-Codes — gebraucht für die Reise-Zurückhaltung
         // gegenüber Überseerennen. Bewusst großzügig: wer hier fehlt, reist einfach
         // wie bisher, es geht nicht verloren.
-        const EU_NATIONS = new Set(['GBR','ITA','FRA','GER','FRG','GDR','BEL','NED','SUI','AUT',
+        // 'DDR' ergaenzt (v0.9.16.13) — das Spiel fuehrt diese Schreibweise, nicht 'GDR'.
+        // Ohne sie galten DDR-Fahrer nicht als Europaeer, und die Reise-Zurueckhaltung
+        // gegenueber Uebersee-Rennen (1950er 54 %) griff bei ihnen nicht.
+        const EU_NATIONS = new Set(['GBR','ITA','FRA','GER','FRG','GDR','DDR','BEL','NED','SUI','AUT',
             'ESP','SWE','IRL','MON','POR','FIN','DEN','CZE','TCH','POL','HUN','RUS','URS','LIE',
             'LUX','NOR','GRE','ROU','BUL','YUG','SCG','SRB','CRO','SLO','SVK','EST','LAT','LTU',
             'ISL','MLT','CYP','SMR','AND','TUR','UKR','BLR']);
@@ -35739,6 +35774,11 @@ const CIRCUIT_LAYOUTS = {
             
             // Preview updaten
             updateYearPreview();
+            // Regler auch hier sperren (v0.9.16.13) — der Datenbank-Manager schreibt
+            // direkt in seinen Body und laeuft nicht ueber renderContent. Er traegt drei
+            // Regler (Echt-Fahrer-Praeferenz, Abwerbe-Praeferenz, Todes-Realismus),
+            // die auf dem Handy ungeschuetzt waren (Nutzer-Report).
+            lockSlidersMobile(body);
             document.getElementById('yearSelector').addEventListener('change', updateYearPreview);
         };
         
