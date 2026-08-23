@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.1</title>
+    <title>F1 RPG v0.9.17.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.1 (aktuell) - 23.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.2 (aktuell) - 23.08.2026</div>
+                            <div>&#8226; FIX: Weltmeister-Karte zeigt wieder das Fahrerfoto - sie bekam die Spiel-ID statt des Foto-Schluessels</div>
+                            <div>&#8226; FIX: keine geratenen Bildadressen mehr aus Spiel-IDs (Lando Norris zeigte ein fremdes Foto)</div>
+                            <div class="font-bold text-slate-400">v0.9.17.1 - 23.08.2026</div>
                             <div>&#8226; FIX: WM-Tabellen alter Spielstaende wurden nicht neu gerechnet, wenn sie zufaellig ein paar passende IDs enthielten - Castellotti stand 1955 als Fuehrender mit 25 Punkten und zwei Siegen ohne ein einziges Rennergebnis</div>
                             <div>&#8226; FIX: erfolgreiche Fahrer treten nicht mehr zurueck, nur weil ihr reales Vorbild in dem Jahr aufhoerte</div>
                             <div>&#8226; GEPRUEFT: die Simulation erzeugt solche Phantom-Tabellen nicht mehr - 15 archivierte Saisons ohne einen einzigen Geister-Eintrag</div>
@@ -3714,7 +3717,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.1';
+        const VERSION = '0.9.17.2';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -23537,6 +23540,12 @@
                     currentRace: simulated.raceCount || simulated.results?.length || 0,
                     champion: simulated.champion,
                     championId: simulated.championId || null,
+                    // championHistId MUSS mitkommen (v0.9.17.2): der history-Record traegt ihn
+                    // (z. B. 'nino-farina'), aber getYearData reichte ihn nicht durch. Die
+                    // Weltmeister-Karte fiel dadurch immer auf championId zurueck — und das ist
+                    // je nach Herkunft ein SEASON_DATA-Kurzschluessel ('NINOFA', 'LANDON') oder
+                    // eine Reserve-ID ('reserve-MIKEHA-1786032164878-659'). Beides ist kein Slug.
+                    championHistId: simulated.championHistId || null,
                     championPoints: simulated.championPoints || 0,
                     teamChampion: simulated.teamChampion,
                     teamChampionId: simulated.teamChampionId || null,
@@ -24786,7 +24795,14 @@
                     const champStyle = _bg(_champTeam?.id, _champTeam?.color, 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)');
                     const tcStyle    = _bg(_tcTeam?.id || teamChampId, _tcTeam?.color, 'linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%)');
 
-                    const _photoId = h.championHistId || champId;
+                    // Foto-Schluessel genau wie im Steckbrief ueber die histId aufloesen
+                    // (dort `driver.histId || driver.id`). Zweite Bruecke ueber den Kader der
+                    // Saison, weil alte Records das leichte Feld nicht tragen; Namensvergleich,
+                    // weil Fahrer-IDs einen Zeitstempel tragen und nicht stabil sind.
+                    const _champNm = String(champName || '').toLowerCase().trim();
+                    const _champKader = (drivers || []).find(d => champId && d.id === champId)
+                        || (drivers || []).find(d => String(d.name || '').toLowerCase().trim() === _champNm);
+                    const _photoId = h.championHistId || _champKader?.histId || champId;
                     const _tcLogoId = _tcTeam?.histId || _tcTeam?.id || teamChampId || teamChampName;
                     return `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -31593,9 +31609,21 @@ Empfohlene Wertebereiche:
             // Override mit eigener Endung (z.B. 'england.gif') wird unveraendert genutzt —
             // statsf1 hat nicht alle Fotos als PNG. Ohne Punkt: wie bisher .png anhaengen.
             if (override) return `https://www.stATSf1.com/pilotes/photos/${override}${override.includes('.') ? '' : '.png'}`;
+            // Nur aus einem echten Namens-Slug darf eine URL geraten werden (v0.9.17.2).
+            // Sonst wandern Spiel-IDs in die Adresse: 'LANDON' (SEASON_DATA-Kurzschluessel)
+            // holte ein fremdes Foto, 'reserve-MIKEHA-1786032164878-659' endete auf 659.png.
+            // Kein Slug -> Avatar, wie bei jedem anderen Fahrer ohne bekanntes Bild.
+            if (!_isPhotoSlugId(driverId)) return null;
             // Standard: Nachname (letzter Slug-Teil)
             const lastName = driverId.split('-').pop();
             return `https://www.stATSf1.com/pilotes/photos/${lastName}.png`;
+        }
+
+        // Namens-Slug wie 'nino-farina' / 'jean-pierre-jarier': nur Kleinbuchstaben und
+        // Bindestriche, letzter Teil kein reiner Zahlenblock (das waere ein Zeitstempel).
+        function _isPhotoSlugId(id) {
+            return typeof id === 'string' && /^[a-z][a-z0-9]*(-[a-z0-9]+)+$/.test(id)
+                && !/^\d+$/.test(id.split('-').pop());
         }
 
         // Bestätigte URL-Overrides für Namensgleiche und Sonderfälle
@@ -31953,6 +31981,7 @@ Empfohlene Wertebereiche:
             if (typeof DRIVER_PHOTO_BLOCKLIST !== 'undefined' && DRIVER_PHOTO_BLOCKLIST.has(driverId)) return null;
             // Override-Tabelle hat Vorrang
             if (DRIVER_PHOTO_OVERRIDES[driverId]) return null; // bereits in getDriverPhotoUrl behandelt
+            if (!_isPhotoSlugId(driverId)) return null;         // keine Spiel-ID raten (v0.9.17.2)
             // Letzter Fallback: voller Slug (selten nötig)
             const parts = driverId.split('-');
             if (parts.length >= 2) {
