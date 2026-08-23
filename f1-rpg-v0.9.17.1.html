@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.0</title>
+    <title>F1 RPG v0.9.17.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.0 (aktuell) - 23.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.1 (aktuell) - 23.08.2026</div>
+                            <div>&#8226; FIX: WM-Tabellen alter Spielstaende wurden nicht neu gerechnet, wenn sie zufaellig ein paar passende IDs enthielten - Castellotti stand 1955 als Fuehrender mit 25 Punkten und zwei Siegen ohne ein einziges Rennergebnis</div>
+                            <div>&#8226; FIX: erfolgreiche Fahrer treten nicht mehr zurueck, nur weil ihr reales Vorbild in dem Jahr aufhoerte</div>
+                            <div>&#8226; GEPRUEFT: die Simulation erzeugt solche Phantom-Tabellen nicht mehr - 15 archivierte Saisons ohne einen einzigen Geister-Eintrag</div>
+                            <div class="font-bold text-slate-400">v0.9.17.0 - 23.08.2026</div>
                             <div>&#8226; NEU: alle 917 Fahrerfotos und 256 Grafiken sind eingebettet - fuer Bilder braucht das Spiel kein Netz mehr</div>
                             <div>&#8226; FIX: fehlendes Weltmeister-Foto und graue Team-Logos - ein Werbeblocker sperrte die Bildquellen, waehrend die Server sauber lieferten</div>
                             <div>&#8226; NEU: Fotos als WebP in Originalgroesse (65 Prozent kleiner), Flaechengrafiken auf 160 px mit 256 Farben quantisiert (74 Prozent kleiner)</div>
@@ -17232,7 +17236,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.0';
+        const VERSION = '0.9.17.1';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22641,7 +22645,21 @@ const CIRCUIT_LAYOUTS = {
             for (const r of results) for (const x of (r.res || r.results || [])) {
                 total++; if (keys.has(x.d ?? x.driver)) hit++;
             }
-            if (!total || hit > 0) return standings;          // passt zusammen → nichts tun
+            // === ANTEIL STATT ALLES-ODER-NICHTS (v0.9.17.1) ===
+            // Hier stand `hit > 0` — ein EINZIGER Treffer genuegte, um die Reparatur zu
+            // unterdruecken. Genau daran scheiterte der Nutzer-Screenshot: im Stand vom
+            // 18.08. hat die 1955er Tabelle 101 Eintraege, die Ergebnisse 45 IDs, und
+            // rund 5 % ueberschneiden sich. Die Tabelle war also praktisch fremd — sie
+            // fuehrte SEASON_DATA-Kurzschluessel (ALBERT, JERRYH) gegen `reserve-…`-IDs
+            // in Kader und Ergebnissen —, aber die zwei Zufallstreffer blockierten das
+            // Neurechnen. Sichtbar: Eugenio Castellotti als Fuehrender mit 25 Punkten und
+            // zwei Siegen, im Saisonverlauf daneben keine einzige Zelle.
+            // Ein intakter Satz liegt nahe 100 %: wer faehrt, steht in der Wertung.
+            // Unter der Haelfte ist die Tabelle nicht mehr zu retten, dann wird sie aus
+            // den Ergebnissen neu gerechnet.
+            // ⚠ Aendert nur die ANZEIGE — der gespeicherte Stand bleibt unangetastet
+            //   (Nutzer-Regel: nichts rueckwirkend umschreiben).
+            if (!total || hit / total >= 0.5) return standings;   // passt zusammen → nichts tun
             const nameOf = {};
             (drivers || []).forEach(d => { if (d && d.id) nameOf[d.id] = d.name; });
             const acc = {};
@@ -31496,7 +31514,28 @@ const CIRCUIT_LAYOUTS = {
                         else if (_yearsDelta === -1) _histRetireChance = 0.10;
                         else if (_yearsDelta === -2) _histRetireChance = 0.03;
 
-                        if (Math.random() < _histRetireChance) {
+                        // === ERFOLG HAELT IM COCKPIT (v0.9.17.1) ===
+                        // Bis hierher zog das REALE Karriereende den Fahrer aus dem Feld,
+                        // egal was er in DIESER Geschichte geleistet hatte. Genau davon
+                        // sprach der Nutzer beim Castellotti-Fall: „eine Banalitaet der
+                        // Karriere. erst weltmeister dann danach nur noch sporadisch im
+                        // einsatz." Castellotti starb real 1957 — wird er im Spiel 1955
+                        // Weltmeister, holt ihn die Kurve trotzdem kurz darauf heraus.
+                        // Gemessen (tests/champion-followup.js, 10 Sims x 6 Saisons):
+                        //   Weltmeister in der Folgesaison NICHT mehr im Feld
+                        //   Spiel 34 %  gegen real 9 % (7 von 76 Titeltraegern 1950-2024:
+                        //   Fangio, Hawthorn, Rindt, Stewart, Mansell, Prost, Rosberg).
+                        // Dieselbe Logik wie bei `hasEarnedFullSeat`: die reale Biografie
+                        // ist der Startwert, die Spielwelt darf sie ueberschreiben. Wer
+                        // gerade ueberzeugt, hoert nicht auf, nur weil sein Vorbild es tat.
+                        // ⚠ Der Alters-Ruecktritt darunter bleibt unangetastet — irgendwann
+                        //   ist auch ein Champion zu alt, das soll die Kurve entscheiden.
+                        const _sc = (Array.isArray(driver.careerScores) && driver.careerScores.length)
+                            ? driver.careerScores[driver.careerScores.length - 1]?.score : null;
+                        const _erfolgsDaempfung = (typeof _sc === 'number' && _sc >= 75) ? 0.2
+                                                : (typeof _sc === 'number' && _sc >= 55) ? 0.55
+                                                : 1;
+                        if (Math.random() < _histRetireChance * _erfolgsDaempfung) {
                             driver.status = 'retired';
                             driver.retirementYear = GAME_STATE.currentYear;
                             driver.retirementReason = 'career_end';
