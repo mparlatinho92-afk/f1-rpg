@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.2</title>
+    <title>F1 RPG v0.9.17.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.2 (aktuell) - 23.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.3 (aktuell) - 23.08.2026</div>
+                            <div>&#8226; FIX: Fahrerwertung alter Saisons zeigte Fahrer ohne ein einziges Rennergebnis - jetzt dieselbe Pruefung wie im Saisonverlauf</div>
+                            <div>&#8226; FIX: Teams in der Fahrerwertung sind wieder verlinkt</div>
+                            <div>&#8226; FIX: WM-Titel zaehlen nur noch, wenn der Fahrer in der betreffenden Saison auch gefahren ist - wirkt in Steckbrief und Statistik</div>
+                            <div class="font-bold text-slate-400">v0.9.17.2 - 23.08.2026</div>
                             <div>&#8226; FIX: Weltmeister-Karte zeigt wieder das Fahrerfoto - sie bekam die Spiel-ID statt des Foto-Schluessels</div>
                             <div>&#8226; FIX: keine geratenen Bildadressen mehr aus Spiel-IDs (Lando Norris zeigte ein fremdes Foto)</div>
                             <div class="font-bold text-slate-400">v0.9.17.1 - 23.08.2026</div>
@@ -17239,7 +17243,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.2';
+        const VERSION = '0.9.17.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -17919,11 +17923,21 @@ const CIRCUIT_LAYOUTS = {
                 if (!h) continue;
                 const needChamp = h.championId != null && h.championHistId === undefined;
                 const needLists = h.driverHistIds === undefined || h.teamHistIds === undefined;
-                if (!needChamp && !needLists) continue;
-                const detail = await idbHistDetailGet(h.year);   // 1 Read deckt alle drei Felder ab
+                // Champion-Gegentest (v0.9.17.3): einmal pro Record aufloesen und LEICHT
+                // ablegen. Danach kommt jede Titelzaehlung ohne Detail-Zugriff aus.
+                const needRaced = h.championId != null && h.championRaced === undefined;
+                if (!needChamp && !needLists && !needRaced) continue;
+                const detail = await idbHistDetailGet(h.year);   // 1 Read deckt alle Felder ab
                 if (needChamp) {
                     const champDriver = detail && (detail.drivers || []).find(d => d.id === h.championId);
                     h.championHistId = champDriver?.histId || h.championId;   // Fallback: id selbst
+                }
+                if (needRaced) {
+                    // Nur ein EINDEUTIGES Ergebnis wird gespeichert. Liefert der Detail-Satz
+                    // keine Rennen (null = nicht pruefbar), bleibt das Feld offen — lieber
+                    // beim naechsten Laden erneut nachsehen als eine Wahrheit erfinden.
+                    const _raced = championRacedIn(detail, h.championHistId || h.championId, h.champion);
+                    if (_raced !== null) h.championRaced = _raced;
                 }
                 if (needLists) {
                     h.driverHistIds = (detail?.drivers || []).map(d => d.histId || d.id);
@@ -22685,8 +22699,46 @@ const CIRCUIT_LAYOUTS = {
                 }
                 // Teamname statt Team-ID — teamDisplayName lässt Klartext unverändert durch.
                 if (x.tmn || x.teamName) a.team = x.tmn || x.teamName;
+                // Team-ID mitführen, WENN das Format eine trägt (v0.9.17.3). Das ARCHIVIERTE
+                // Format hat nur `tmn` (Klartext) — dort verlinkt die Wertungszeile ueber den
+                // Namen, was fuer „Ferrari"/„Mercedes" zuverlaessig trifft. Laufende Saisons
+                // koennen `team` mitschicken; dann ist der Link unabhaengig von der Schreibweise.
+                if (x.team && !a.teamId) a.teamId = x.team;
+            }
+            // === WAS DIE ERGEBNISSE NICHT HERGEBEN (v0.9.17.3) ===
+            // Poles stehen in KEINEM archivierten Rennergebnis (`res`-Format: d/p/pt/dnf/fl/
+            // fat/dnpq/tmn — kein Startplatz). Ohne diesen Schritt wuerde die Neurechnung die
+            // Pole-Spalte auf 0 setzen und damit Information ZERSTOEREN, die in der alten
+            // Tabelle noch stand. Sie wird deshalb ueber den NAMEN zurueckgeholt — Fahrer-IDs
+            // sind nicht stabil, der Name ist die einzige Bruecke zwischen beiden Tabellen.
+            const _polesVonName = {};
+            for (const s of Object.values(standings || {})) {
+                const n = String(s?.name || '').toLowerCase().trim();
+                if (n && s.poles) _polesVonName[n] = s.poles;
+            }
+            for (const a of Object.values(acc)) {
+                const n = String(a.name || '').toLowerCase().trim();
+                if (_polesVonName[n]) a.poles = _polesVonName[n];
             }
             return acc;
+        }
+
+        // === IST DER BEHAUPTETE CHAMPION IN SEINER SAISON AUCH GEFAHREN? (v0.9.17.3) ===
+        // EINE Quelle fuer alle Leser (Backfill, Titel-Neuberechnung, Steckbrief) — die
+        // Lehre aus dem Fall: eine Pruefung an nur einer Leseseite ist keine Pruefung.
+        //   true  = mindestens ein Rennergebnis → belegt
+        //   false = kein einziges Rennergebnis → widerlegt (der Castellotti-Fall)
+        //   null  = nicht pruefbar, weil der Record seine Ergebnisse nicht traegt
+        // ⚠ Der Kader wird ueber histId, id UND Namen gesucht: Fahrer-IDs tragen einen
+        //   Zeitstempel und stimmen zwischen Tabelle, Kader und Ergebnissen oft nicht ueberein.
+        function championRacedIn(record, driverKey, driverName) {
+            if (!record || !Array.isArray(record.results) || !Array.isArray(record.drivers)) return null;
+            const nm = String(driverName || '').toLowerCase().trim();
+            const sd = record.drivers.find(d => (driverKey && (d.histId === driverKey || d.id === driverKey))
+                || (nm && String(d.name || '').toLowerCase().trim() === nm));
+            if (!sd) return false;
+            return record.results.some(r => (r.res || r.results || [])
+                .some(x => (x.d || x.driver) === sd.id));
         }
 
         // Repariert die Namensfelder eines Saison- oder Spielstands-Ausschnitts in-place.
@@ -23161,8 +23213,20 @@ const CIRCUIT_LAYOUTS = {
                 // Phase 3: histId-Schlüssel kommt jetzt aus dem LEICHTEN Feld championHistId
                 // (in loadGame für Alt-Saves einmalig backfilled) statt aus schwerem h.drivers.
                 (sanitized.history || []).forEach(h => {
-                    if (h.championId === driverId) correctChamps++;
-                    else if (h.championHistId === driverId) correctChamps++;
+                    if (h.championId !== driverId && h.championHistId !== driverId) return;
+                    // === GEGENTEST (v0.9.17.3) ===
+                    // Hier wurde jeder Champion-Eintrag blind gezaehlt. Im Stand des Nutzers
+                    // fuehren 5 von 96 Saisons (1955/56/57, 1971/72) eine Tabelle, die zu einer
+                    // anderen Fahrergeneration gehoert — Eugenio Castellotti stand dadurch mit
+                    // einem WM-Titel 1955 im Steckbrief und in der Statistik, ohne in dieser
+                    // Saison ein einziges Rennen gefahren zu sein.
+                    // `championRaced` kommt aus _backfillLightHistFields; ist es nicht gesetzt
+                    // (nicht pruefbar), wird wie bisher gezaehlt — lieber ein Titel zu viel als
+                    // ein echter geschluckt.
+                    if (h.championRaced === false) return;
+                    if (h.championRaced === undefined
+                        && championRacedIn(h, driverId, h.champion) === false) return;
+                    correctChamps++;
                 });
                 if (dStATS.championships !== correctChamps) {
                     logInfo('MIGRATE', `Championships fix: ${driverId}: ${dStATS.championships} → ${correctChamps}`);
@@ -39123,7 +39187,18 @@ const CIRCUIT_LAYOUTS = {
             const _dismissedIds  = !isHistorical ? new Set((GAME_STATE.seasonRetirements || []).filter(r => r.type === 'dismissed').map(r => r.driver)) : new Set();
             const _midRetiredIds = !isHistorical ? new Set((GAME_STATE.seasonRetirements || []).filter(r => r.type !== 'dismissed' && r.midSeason).map(r => r.driver)) : new Set();
 
-            const drivers = Object.entries(driverStandings || {})
+            // === DIESELBE REPARATUR WIE IM SAISONVERLAUF (v0.9.17.3) ===
+            // Die Matrix schickt ihre Tabelle seit .17.1 durch rebuiltStandingsIfBroken,
+            // die Fahrerwertung las sie roh. Ergebnis im Nutzer-Stand: die Matrix war
+            // sauber, die Wertung daneben zeigte weiter die Phantom-Tabelle — Castellotti
+            // 1955 als Fuehrender mit 25 Punkten, Mike Hawthorn zweimal, und bei jedem
+            // dieser Eintraege KEIN Team-Link, weil sein Teamname im Kader der Saison
+            // gar nicht vorkommt. Genau daran hatte der Nutzer es erkannt („das Team ist
+            // nicht unterstrichen"). Die echten 46 Eintraege waren immer korrekt verlinkt.
+            // ⚠ Nur Anzeige — der gespeicherte Stand bleibt unangetastet.
+            const _standings = rebuiltStandingsIfBroken(_dsResults, driversList, driverStandings);
+
+            const drivers = Object.entries(_standings || {})
                 .map(([id, s]) => {
                     const starts = _dsStarts[id] || 0;
                     return { id, ...s, _starts: starts, _weekends: _dsWeekends[id] || 0, _avgPos: starts > 0 ? _dsPosSum[id] / starts : undefined };
@@ -43527,10 +43602,32 @@ Empfohlene Wertebereiche:
             // dortigen Fahrer-Eintrag über `histId`/Namen suchen und DESSEN Id in den
             // Ergebnissen zählen. `_hydrateProfileYears` hat genau die Jahre dieses
             // Fahrers geladen, der Durchlauf kostet also nichts zusätzlich.
+            // === TITEL GEGENGEPRUEFT (v0.9.17.3) ===
+            // Nutzer-Meldung: „sein steckbrief zeigt ihn als weltmeister" — Eugenio
+            // Castellotti stand mit 1955er Titel, 8 Rennen, 2 Siegen im Profil, hatte in
+            // dieser Saison aber NULL Rennergebnisse. Sein Stand fuehrt 5 solcher Saisons
+            // (1955/56/57, 1971/72): die Saison-Tabelle gehoert zu einer anderen
+            // Fahrergeneration und hat ueber allTimeStATS die Karriere mitgefuellt.
+            // Ein Titel gilt hier nur, wenn der Fahrer in DERSELBEN Saison mindestens ein
+            // Rennergebnis hat. ⚠ Traegt der Record seine Ergebnisse nicht (Light-Load),
+            // wird NICHT geprueft und der Titel bleibt stehen — lieber einen falschen
+            // Titel zeigen als einen echten zu schlucken.
+            let _titelGeprueft = 0, _titelUngeprueft = 0;
             const _spielKarriere = (() => {
                 const nm = String(driver.name || '').toLowerCase().trim();
                 let races = 0, wins = 0, podiums = 0, poles = 0, points = 0;
                 for (const s of (GAME_STATE.history || [])) {
+                    const _istChamp = (s.championId && s.championId === driver.id)
+                        || (s.championHistId && s.championHistId === stATSId)
+                        || (s.champion && String(s.champion).toLowerCase().trim() === nm);
+                    if (_istChamp) {
+                        // Leichtes Feld aus dem Backfill zuerst — der Record muss seine
+                        // Ergebnisse dafuer nicht tragen. Sonst direkt am Record pruefen.
+                        const _belegt = s.championRaced !== undefined
+                            ? s.championRaced : championRacedIn(s, stATSId, s.champion);
+                        if (_belegt === true) _titelGeprueft++;
+                        else if (_belegt === null) _titelUngeprueft++;   // nicht pruefbar
+                    }
                     if (!Array.isArray(s.results) || !Array.isArray(s.drivers)) continue;
                     const sd = s.drivers.find(d => d.histId === stATSId
                         || d.id === driver.id || String(d.name || '').toLowerCase().trim() === nm);
@@ -43587,10 +43684,19 @@ Empfohlene Wertebereiche:
                 for (const k of ['races', 'wins', 'podiums', 'poles', 'points', 'championships']) {
                     summe[k] = (v[k] || 0) + (_spielKarriere[k] || 0);
                 }
-                // Titel zaehlt das Spiel selbst mit — dort nur die Vorgeschichte ergaenzen.
-                summe.championships = (v.championships || 0) + (_allTimeRoh.championships || 0);
+                // Titel: Vorgeschichte + die in der Spielhistorie BELEGTEN Titel (v0.9.17.3).
+                // Vorher stand hier `_allTimeRoh.championships` — der gespeicherte Wert, der
+                // aus der kaputten Saison-Tabelle stammte und Castellotti einen Titel gab.
+                summe.championships = (v.championships || 0) + _titelGeprueft + _titelUngeprueft;
                 return summe;
-            })() : _allTimeRoh;
+            })() : (() => {
+                // Keine Renndaten im Spiel: bisher blieb der gespeicherte Wert unangetastet
+                // stehen. Genau das zeigte den Phantom-Titel. Die Titelzahl wird auch hier
+                // auf das Belegbare zurueckgeholt, alle uebrigen Felder bleiben wie gehabt.
+                const _t = (_vorKarriere?.championships || 0) + _titelGeprueft + _titelUngeprueft;
+                return _t !== (_allTimeRoh.championships || 0)
+                    ? { ..._allTimeRoh, championships: _t } : _allTimeRoh;
+            })();
             
             // Skill-Farbe
             const getSkillColor = (value) => {
