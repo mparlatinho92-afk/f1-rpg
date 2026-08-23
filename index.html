@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.3</title>
+    <title>F1 RPG v0.9.17.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.3 (aktuell) - 23.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.4 (aktuell) - 23.08.2026</div>
+                            <div>&#8226; FIX: Karriere-Historie zeigte Siege und Titel fuer Saisons ohne ein einziges Rennergebnis - solche Zeilen entfallen jetzt</div>
+                            <div>&#8226; FIX: Testfahrer-Jahre bleiben erhalten, nur Saisons ohne jede Zugehoerigkeit verschwinden</div>
+                            <div class="font-bold text-slate-400">v0.9.17.3 - 23.08.2026</div>
                             <div>&#8226; FIX: Fahrerwertung alter Saisons zeigte Fahrer ohne ein einziges Rennergebnis - jetzt dieselbe Pruefung wie im Saisonverlauf</div>
                             <div>&#8226; FIX: Teams in der Fahrerwertung sind wieder verlinkt</div>
                             <div>&#8226; FIX: WM-Titel zaehlen nur noch, wenn der Fahrer in der betreffenden Saison auch gefahren ist - wirkt in Steckbrief und Statistik</div>
@@ -3721,7 +3724,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.3';
+        const VERSION = '0.9.17.4';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -30874,6 +30877,21 @@ Empfohlene Wertebereiche:
                             const _want = String(histDriver?.name || driver.name || '').toLowerCase().trim();
                             if (_want) driverStanding = Object.values(_seasonStandings || {})
                                 .find(s => String(s?.name || '').toLowerCase().trim() === _want) || null;
+                        }
+
+                        // === KEINE ZAHLEN OHNE RENNEN (v0.9.17.4) ===
+                        // Nutzer-Screenshot: Castellottis Karriere-Historie zeigte fuer 1955
+                        // „2 Siege · 3 Podien · 25 Pkt · WM 1. 🏆" — direkt ueber der Liste
+                        // seiner Rennergebnisse, in der 1955 gar nicht vorkommt. Die Zeile kam
+                        // aus der Phantom-Tabelle; `rebuiltStandingsIfBroken` greift hier nicht,
+                        // sobald ein Record seine Ergebnisse nicht mitfuehrt (Lazy-Load).
+                        // Wer in einer Saison KEIN Rennen gefahren ist, kann dort weder Siege
+                        // noch Punkte noch einen Titel haben. Die Zeile selbst bleibt — ein
+                        // Testfahrer-Jahr wie 1964 gehoert in die Historie, nur eben mit Nullen.
+                        // ⚠ Nur bei einem eindeutigen `false`; nicht pruefbar (null) laesst alles
+                        //   unveraendert, sonst leert ein Lazy-Load echte Karrieren.
+                        if (driverStanding && championRacedIn(season, stATSId, driver.name) === false) {
+                            driverStanding = null;
                         }
 
                         if (driverStanding || histDriver) {
