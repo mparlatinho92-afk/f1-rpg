@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.5</title>
+    <title>F1 RPG v0.9.17.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.5 (aktuell) - 24.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.6 (aktuell) - 24.08.2026</div>
+                            <div>&#8226; NEU: Rennergebnisse im Steckbrief aufklappbar - jedes Team eines Jahres in eigener Zeile wie bei Wikipedia, mit Teamfarbe der Aera</div>
+                            <div>&#8226; FIX: Nicht qualifizierte Fahrer fehlten in JEDER vergangenen Saison - die Anzeige unterschied nicht zwischen echter Historie und eigenem Spielstand</div>
+                            <div>&#8226; NEU: Qualifying zeigt immer Zeit UND Rueckstand zur Pole, auch historisch</div>
+                            <div>&#8226; FIX: DNQ und DNPQ ersetzen nicht mehr die Qualifying-Position, sondern stehen als Kennzeichen hinter dem Namen</div>
+                            <div>&#8226; FIX: Versionsanzeige behauptete v0.6.8, wenn das Laden abbrach</div>
+                            <div class="font-bold text-slate-400">v0.9.17.5 - 24.08.2026</div>
                             <div>&#8226; FIX: kaputte WM-Tabellen wurden nicht erkannt - die Pruefung zaehlte die falsche Richtung und schlug bei keiner der betroffenen Saisons an</div>
                             <div>&#8226; FIX: Punkte ohne Rennergebnis gelten jetzt als Fehler - an allen 96 Saisons eines Spielstands geprueft</div>
                             <div>&#8226; NEU: Log-Warnung beim Saisonabschluss, wenn Tabelle und Rennergebnisse auseinanderlaufen</div>
@@ -2964,7 +2970,14 @@
     <!-- Header -->
         <div class="text-center mb-6">
             <h1 class="text-5xl font-bold mb-2" style="color: var(--accent-main)">
-                🏎️ F1 RPG <span class="text-lg text-secondary" id="versionDisplay" onclick="openChangelog()" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" title="Changelog öffnen">v0.6.8</span>
+                <!-- Startwert ist bewusst KEINE Versionsnummer (v0.9.17.6). Hier stand fest
+                     „v0.6.8"; das Skript ueberschreibt es beim Start aus der VERSION-Konstante.
+                     Bricht das Laden ab — bei 16,5 MB Monolith trennt der Server den Stream
+                     gelegentlich mittendrin —, laeuft das Skript nie, und die Seite behauptete
+                     dann eine uralte Version, statt den Abbruch zu zeigen. Genau daran hat der
+                     Nutzer es erkannt: leere Oberflaeche plus „v0.6.8".
+                     Jetzt bleibt sichtbar stehen, was wirklich los ist: nichts wurde geladen. -->
+                🏎️ F1 RPG <span class="text-lg text-secondary" id="versionDisplay" onclick="openChangelog()" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" title="Changelog öffnen"><span style="color:#ef4444" title="Das Skript wurde nicht ausgefuehrt – Seite neu laden">⚠ nicht geladen</span></span>
             </h1>
             
             <!-- Saison-Navigation -->
@@ -3728,7 +3741,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.5';
+        const VERSION = '0.9.17.6';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -26667,34 +26680,105 @@
                 }
                 return !rawT ? '–' : idx === 0 ? fmtMs(rawT * 1000) : fmtGapMs((rawT - _lqPoleTime) * 1000);
             };
-            const _lqRow = (r, idx, offset) => `
-                <tr class="border-b border-custom${r.fatal ? '" style="background:rgba(239,68,68,0.08)' : ''}">
-                    <td class="p-2 font-bold ${idx + offset === 0 && !r.fatal ? 'accent-gold' : 'text-tertiary'}">${idx + offset + 1}</td>
+            // === WER IST QUALIFIZIERT, WER NICHT? (v0.9.17.6) ===
+            // Nutzer: „qualifying-fenster zeigt genau wer qualifiziert ist und wer nicht.
+            // auch da will ich transparent nach fehlern schauen." Vorher endete die Liste
+            // nach 20 Zeilen — ausgerechnet der interessante Teil (die Nichtqualifizierten)
+            // war unsichtbar. Wahrheit ist das RENNERGEBNIS derselben Runde: wer dort startet,
+            // hat sich qualifiziert; wer in der Quali steht und im Rennen fehlt, ist DNQ.
+            const _lqRace = (GAME_STATE.results || []).find(r =>
+                (r.raceIndex ?? r.ri) === (lastQuali.raceIndex ?? lastQuali.ri));
+            const _lqStarter = new Set((_lqRace?.results || _lqRace?.res || [])
+                .map(x => x.driver || x.d).filter(Boolean));
+            const _lqDnqListe = new Set(_lqRace?.dnq || []);
+            // Ohne Rennergebnis (Quali gefahren, Rennen noch nicht) kann nichts beurteilt werden.
+            const _lqBeurteilbar = _lqStarter.size > 0;
+            const _lqStatus = r => {
+                if (!_lqBeurteilbar) return null;                       // Rennen noch nicht gefahren
+                if (_lqStarter.has(r.driver)) return 'ok';
+                return _lqDnqListe.has(r.driver) ? 'dnq' : 'raus';      // 'raus' = fehlt ohne DNQ-Vermerk
+            };
+            // Startfeld-Grenze = letzte Position, die es ins Rennen geschafft hat.
+            const _lqGrenzeIdx = _lqBeurteilbar
+                ? _lqRegular.reduce((m, r, i) => _lqStatus(r) === 'ok' ? i : m, -1) : -1;
+            const _lqGrenzZeit = _lqGrenzeIdx >= 0 ? parseFloat(_lqRegular[_lqGrenzeIdx]?.time || 0) : 0;
+
+            // Team des Fahrers: die Quali-Zeile fuehrt nur ID und Name, das Team steht am
+            // Fahrerobjekt. Ohne Team-Spalte faellt nicht auf, wenn ein Werksteam ploetzlich
+            // drei Autos meldet — genau so ein Fehler war der Anlass fuer diese Ansicht.
+            const _lqTeam = r => {
+                const d = (GAME_STATE.drivers || []).find(x => x.id === r.driver);
+                const t = d && (GAME_STATE.teams || []).find(x => x.id === d.team);
+                if (!t) return '<span class="text-tertiary text-xs">–</span>';
+                return renderTeamNameColored(t.name, t.id, GAME_STATE.currentYear, t.color);
+            };
+
+            const _lqRow = (r, idx) => {
+                const st = _lqStatus(r);
+                const bg = r.fatal ? 'rgba(239,68,68,0.08)'
+                    : st === 'dnq' ? 'rgba(168,85,247,0.10)'
+                    : st === 'raus' ? 'rgba(234,179,8,0.10)' : '';
+                // Abstand zur Startfeld-Grenze: zeigt, ob die Grenze knapp oder klar verlief.
+                const t = parseFloat(r.time || 0);
+                const rueck = (st === 'dnq' && t && _lqGrenzZeit)
+                    ? `<span class="text-tertiary" style="font-size:0.7rem;margin-left:4px">`
+                      + `${fmtGapMs((t - _lqGrenzZeit) * 1000)} auf P${_lqGrenzeIdx + 1}</span>` : '';
+                const marke = st === 'dnq'
+                    ? '<span title="nicht qualifiziert" style="color:#a855f7;font-size:0.7rem;margin-left:4px">DNQ</span>'
+                    : st === 'raus'
+                    ? '<span title="steht im Qualifying, fehlt aber im Rennergebnis – ohne DNQ-Vermerk" style="color:#eab308;font-size:0.7rem;margin-left:4px">⚠ fehlt im Rennen</span>'
+                    : '';
+                return `
+                <tr class="border-b border-custom"${bg ? ` style="background:${bg}"` : ''}>
+                    <td class="p-2 font-bold ${idx === 0 && !r.fatal ? 'accent-gold' : 'text-tertiary'}" style="width:2.5rem">${idx + 1}</td>
                     <td class="p-2">
-                        <span class="driver-link" onclick="openDriverProfile('${r.driver}')" style="${r.fatal ? 'text-decoration:line-through;color:#ef4444' : ''}">${r.name}</span>
+                        <span class="driver-link" onclick="openDriverProfile('${r.driver}')" style="${r.fatal ? 'text-decoration:line-through;color:#ef4444' : (st === 'dnq' ? 'opacity:0.75' : '')}">${r.name}</span>${marke}${rueck}
                     </td>
-                    <td class="p-2 text-right">${_lqFmt(r, idx + offset)}</td>
+                    <td class="p-2 text-xs" style="width:1%;white-space:nowrap">${_lqTeam(r)}</td>
+                    <td class="p-2 text-right" style="width:1%;white-space:nowrap">${_lqFmt(r, idx)}</td>
                 </tr>`;
+            };
+
+            // Trennbalken quer ueber die Tabelle.
+            const _lqBalken = (text, farbe) => `
+                <tr><td colspan="4" class="text-center text-xs" style="padding:6px 0;color:${farbe};`
+                + `border-top:1px dashed ${farbe};border-bottom:1px dashed ${farbe};`
+                + `background:rgba(255,255,255,0.02);letter-spacing:0.04em">${text}</td></tr>`;
 
             return `
                 <!-- Letztes Qualifying -->
                 <div class="card rounded-xl p-4 mb-6">
                     <h3 class="text-xl font-bold mb-4">${getGPFlagHtml(lastQuali.raceName, lastQuali.raceCountry, GAME_STATE.currentYear)} ${lastQuali.raceName} - Qualifying ${lastQuali.isRain ? '🌧️' : ''}</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <table class="w-full text-sm">
-                                <tbody>
-                                    ${_lqRegular.slice(0, 10).map((r, idx) => _lqRow(r, idx, 0)).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div>
-                            <table class="w-full text-sm">
-                                <tbody>
-                                    ${_lqRegular.slice(10, 20).map((r, idx) => _lqRow(r, idx, 10)).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+                    ${(() => {
+                        // Zaehlzeile: Melder / qualifiziert / nicht qualifiziert auf einen Blick.
+                        const q = _lqRegular.filter(r => _lqStatus(r) === 'ok').length;
+                        const d = _lqRegular.filter(r => _lqStatus(r) === 'dnq').length;
+                        const f = _lqRegular.filter(r => _lqStatus(r) === 'raus').length;
+                        if (!_lqBeurteilbar) return `<div class="text-xs text-tertiary mb-3">`
+                            + `${_lqRegular.length} Melder · Rennen noch nicht gefahren</div>`;
+                        return `<div class="text-xs text-tertiary mb-3">`
+                            + `${_lqRegular.length + _lqDnpq.length} Melder · `
+                            + `<span style="color:#22c55e">${q} qualifiziert</span>`
+                            + (d ? ` · <span style="color:#a855f7">${d} DNQ</span>` : '')
+                            + (_lqDnpq.length ? ` · <span style="color:#a855f7">${_lqDnpq.length} in der Vor-Quali gescheitert</span>` : '')
+                            + (f ? ` · <span style="color:#eab308">⚠ ${f} ohne Erklaerung nicht im Rennen</span>` : '')
+                            + `</div>`;
+                    })()}
+                    <div class="table-responsive">
+                        <table class="w-full text-sm"><tbody>
+                        ${(() => {
+                            // DURCHGEHENDE LISTE MIT GRENZBALKEN (v0.9.17.6, vom Nutzer gewaehlt).
+                            // Vorher endete die Ansicht nach 20 Zeilen in zwei Spalten — die
+                            // Nichtqualifizierten, also genau der pruefenswerte Teil, fehlten.
+                            // Eine durchlaufende Liste zeigt zusaetzlich, WIE KNAPP jemand
+                            // gescheitert ist, weil die Zeitabstaende nicht abreissen.
+                            return _lqRegular.map((r, idx) => {
+                                const balken = (idx === _lqGrenzeIdx + 1 && _lqGrenzeIdx >= 0)
+                                    ? _lqBalken(`Startfeld: ${_lqGrenzeIdx + 1} Autos`, '#22c55e') : '';
+                                return balken + _lqRow(r, idx);
+                            }).join('');
+                        })()}
+                        </tbody></table>
                     </div>
                     ${_lqDnpq.length > 0 ? (() => {
                         const _pqBest = parseFloat(_lqDnpq[0]?.time || 0);
@@ -26710,8 +26794,8 @@
                             <tbody>
                                 ${_lqDnpq.map((r, i) => `
                                     <tr class="border-b border-custom">
-                                        <td class="p-2 font-bold text-xs" style="color:#F5D0FE;background:#701A75;border-radius:2px;padding:2px 6px;">DNPQ</td>
-                                        <td class="p-2">${r.name}</td>
+                                        <td class="font-bold text-xs" style="width:1%;white-space:nowrap"><span style="color:#F5D0FE;background:#701A75;border-radius:2px;padding:2px 6px;">DNPQ</span></td>
+                                        <td class="p-2"><span class="driver-link" onclick="openDriverProfile('${r.driver}')">${r.name}</span></td>
                                         <td class="p-2 text-tertiary text-right text-xs">${r.teamName || ''}</td>
                                         <td class="p-2 text-right font-mono text-xs" style="color:#F5D0FE">${_pqFmt(r, i)}</td>
                                     </tr>`).join('')}
@@ -30960,6 +31044,7 @@ Empfohlene Wertebereiche:
                         if (driverStanding || histDriver) {
                             // Teams aus Rennergebnissen ableiten – unterstützt komprimiertes (res/d/tmn) und unkomprimiertes Format
                             const _teamsFromRaces = new Map();
+                            const _rennenProTeam = new Map();   // Team-Key → Rennen (v0.9.17.6)
                             // Fahrer-ID kann je Saison als id ODER histId gespeichert sein — alle
                             // Kandidaten pruefen, sonst bleibt die Team-Spalte komplett leer.
                             const _idCandidates = [histDriver?.id, ...searchIds].filter(Boolean);
@@ -31016,7 +31101,21 @@ Empfohlene Wertebereiche:
                                 // Vorher `if (tId && tName)`: fehlte EINES von beiden, verschwand das
                                 // Team spurlos aus der Karriere-Historie (Nutzer-Report: fehlende Teams).
                                 // Komprimierte Saisons speichern je nach Alter mal nur `tmn`, mal nur `team`.
-                                if (tId || tName) _teamsFromRaces.set(tId || tName, tName || tId);
+                                if (tId || tName) {
+                                    _teamsFromRaces.set(tId || tName, tName || tId);
+                                    // RENNEN JE TEAM (v0.9.17.6): fuer die aufklappbare Saison im
+                                    // Steckbrief. Nutzer: „jedes team eine eigene zeile … so sieht
+                                    // man fehler." Erst wenn sichtbar ist, WELCHE Rennen zu welchem
+                                    // Team gehoeren, faellt ein falsch zugeordneter Wechsel auf.
+                                    const _k = tId || tName;
+                                    if (!_rennenProTeam.has(_k)) _rennenProTeam.set(_k, []);
+                                    _rennenProTeam.get(_k).push({
+                                        ri: race.ri ?? race.raceIndex,
+                                        rn: race.rn || race.name || null,
+                                        p: _rp, dnf: _r.dnf ? 1 : 0, dnpq: _r.dnpq ? 1 : 0,
+                                        pt: (_r.pt ?? _r.points) || 0,
+                                    });
+                                }
                             }
                             const _primaryTeamId = _teamsFromRaces.size > 0 ? [..._teamsFromRaces.keys()].pop() : histDriver?.team;
                             const team = (season.teams || []).find(t => t.id === _primaryTeamId);
@@ -31026,7 +31125,12 @@ Empfohlene Wertebereiche:
                             // Pro Team ein Eintrag → eigener Link + eigene Ära-Farbe
                             const _teamList = [..._teamsFromRaces.entries()].map(([tid, tname]) => {
                                 const _t = _sTeams.find(t => t.id === tid || t.histId === tid || t.name === tname);
-                                return { name: tname, id: _t?.id || tid, color: _t?.color };
+                                const _rn = _rennenProTeam.get(tid) || [];
+                                return { name: tname, id: _t?.id || tid, color: _t?.color,
+                                         rennen: _rn,
+                                         starts: _rn.filter(r => !r.dnpq).length,
+                                         punkte: _rn.reduce((s, r) => s + (r.pt || 0), 0),
+                                         siege: _rn.filter(r => !r.dnf && r.p === 1).length };
                             });
                             if (_teamList.length === 0 && (team || histDriver?.team)) {
                                 _teamList.push({ name: _teamDisplay, id: team?.id || histDriver?.team, color: team?.color });
@@ -31115,7 +31219,8 @@ Empfohlene Wertebereiche:
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${fullCareer.map(h => `
+                                        ${fullCareer.map(h => {
+                                            return `
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
                                                 <td class="p-1 font-bold"><span class="cursor-pointer ${h.isCurrent ? '' : 'hover:underline'}" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main)'};${h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : ''}" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
                                                 <td class="p-1">
@@ -31132,7 +31237,7 @@ Empfohlene Wertebereiche:
                                                     ${h.position === '1' || h.position === 1 ? '1. 🏆' : (h.position && h.position !== 'None' ? h.position : '-')}
                                                 </td>
                                             </tr>
-                                        `).join('')}
+                                        `; }).join('')}
                                     </tbody>
                                 </table>
                             </div>
@@ -31178,7 +31283,9 @@ Empfohlene Wertebereiche:
                                 return { circuit: race.raceName, raceId: race.raceIndex,
                                     pos: result.dnf ? null : result.position,
                                     posText: result.dnf ? 'Ret' : null,
-                                    points: result.points || 0, fastestLap: result.fastestLap || false, pole: false };
+                                    points: result.points || 0, fastestLap: result.fastestLap || false, pole: false,
+                                    teamKey: result.team || result.teamName || null,
+                                    teamLabel: result.teamName || null };
                             });
                             // Teamname aus Rennergebnissen – korrekt auch wenn Fahrer mid-season entlassen wurde
                             const _curTeamsMap = new Map();
@@ -31219,7 +31326,11 @@ Empfohlene Wertebereiche:
                                     posText: isDNF ? 'Ret' : null,
                                     points: result.pt || result.points || 0,
                                     fastestLap: result.fl === 1 || result.fastestLap === true,
-                                    pole: false
+                                    pole: false,
+                                    // Team DIESES Rennens (v0.9.17.6) — Grundlage der aufklappbaren
+                                    // Zeile je Team nach Wikipedia-Vorbild.
+                                    teamKey: result.team || result.teamName || result.tmn || null,
+                                    teamLabel: result.teamName || result.tmn || null
                                 };
                             });
                             const sortedSt = Object.entries(histSeason.driverStandings || {})
@@ -31256,7 +31367,12 @@ Empfohlene Wertebereiche:
                                 raceId: race.raceId,
                                 pos: entry.posNum, posText: entry.posText,
                                 points: entry.points, fastestLap: entry.fastestLap,
-                                pole: entry.pole, isIndy: race.isIndy
+                                pole: entry.pole, isIndy: race.isIndy,
+                                // Konstrukteur je Rennen aus F1DB (v0.9.17.6). Der Nutzer wies
+                                // darauf hin, dass die Zuordnung fuer ALLE Jahre vorliegt —
+                                // e[4]/constrId steht in jedem Ergebnis-Eintrag.
+                                teamKey: entry.constrId || null,
+                                teamLabel: null      // Klartext wird beim Rendern aufgeloest
                             };
                         });
 
@@ -31302,6 +31418,7 @@ Empfohlene Wertebereiche:
                     }).filter(Boolean);
 
                     if (rows.length === 0) return '';
+                    let displayRows = rows;   // wird unten um die Team-Unterzeilen erweitert
 
                     const cellBg = (pos, posText, points) => {
                         const pt = (posText || '').toUpperCase();
@@ -31366,27 +31483,82 @@ Empfohlene Wertebereiche:
                     const ROW_H = 35;
                     return `
                         <div class="card p-4 rounded-lg mb-4">
-                            <h4 class="font-bold mb-3">🏁 Rennergebnisse</h4>
+                            <h4 class="font-bold mb-3">🏁 Rennergebnisse <span class="text-tertiary" style="font-size:0.62rem;font-weight:normal">· Jahr mit mehreren Teams anklickbar</span></h4>
+                            ${(() => {
+                                // === WIKIPEDIA-PRINZIP: EINE ZEILE JE TEAM (v0.9.17.6) ===
+                                // Nutzer: „das prinzip in wiki für die rennergebnisse-matrix unten
+                                // (ui behalten). ein- und ausklappen." In Wikipedia bekommt jedes
+                                // Team eines Jahres eine eigene Zeile, in der NUR seine Rennen
+                                // gefuellt sind — so sieht man sofort, welcher Wechsel wann lag.
+                                // Ein erster Versuch sass in der Karriere-Tabelle darueber; der
+                                // Nutzer hat ihn dort verworfen („sieht komisch aus").
+                                // ⚠ Die Zeilen aller DREI Panels (Jahr/Team, Zellen, WM) muessen
+                                //   deckungsgleich bleiben. Deshalb wird die Liste EINMAL vorab
+                                //   expandiert; alle Panels mappen danach ueber dieselbe Liste.
+                                const _slugTitel = s => String(s || '').split('-')
+                                    .map(w => w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                const _teamsDerZeile = row => {
+                                    const m = new Map();
+                                    for (const c of row.cells || []) {
+                                        if (c.absent || !c.teamKey) continue;
+                                        if (!m.has(c.teamKey)) m.set(c.teamKey, { key: c.teamKey, label: c.teamLabel || null });
+                                        else if (!m.get(c.teamKey).label && c.teamLabel) m.get(c.teamKey).label = c.teamLabel;
+                                    }
+                                    return [...m.values()].map(t => ({ ...t, label: t.label || _slugTitel(t.key) }));
+                                };
+                                displayRows = [];
+                                rows.forEach((row, i) => {
+                                    const teams = _teamsDerZeile(row);
+                                    const mehrere = teams.length > 1;
+                                    displayRows.push({ ...row, _gruppe: i, _kopf: true, _aufklappbar: mehrere });
+                                    if (!mehrere) return;
+                                    teams.forEach((t, ti) => {
+                                        // Teamfarbe der Aera je Unterzeile (Nutzer: „die ausgeklappten
+                                        // teams haben keine damalige teamfarbe. nur weiß").
+                                        let _c = null;
+                                        try {
+                                            _c = (getTeamColors(t.key || '', row.year, null) || [])[0] || null;
+                                            if ((!_c || _c === '#888888' || _c === '#888') && typeof getConstructorColor === 'function')
+                                                _c = getConstructorColor(t.key, row.year);
+                                        } catch (e) { _c = null; }
+                                        const _cc = (!_c || _c === '#888888') ? null : ensureReadable(_c);
+                                        displayRows.push({
+                                            ...row, _gruppe: i, _kopf: false, _erste: ti === 0,
+                                            teamName: t.label, teamId: t.key,
+                                            teamColorStyle: _cc ? `color:${_cc};font-weight:bold` : 'color:var(--text-muted)',
+                                            // Fremde Rennen werden LEER dargestellt, nicht entfernt —
+                                            // sonst verrutschen die Spalten gegen die Kopfzeile.
+                                            cells: row.cells.map(c => (!c.absent && c.teamKey === t.key)
+                                                ? c : { ...c, absent: true }),
+                                        });
+                                    });
+                                });
+                                return '';
+                            })()}
                             <div style="display:flex; align-items:flex-start;">
                                 <!-- Panel links: Jahr + Team (fix) -->
                                 <div style="flex-shrink:0; width:114px; border-right:1px solid var(--border-color); padding-right:6px; margin-right:4px;">
-                                    ${rows.map(row => `
-                                        <div style="height:${ROW_H}px; display:flex; align-items:center; gap:4px; margin-bottom:3px;">
-                                            <span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent ? '#f59e0b' : 'var(--accent-main)'}; cursor:pointer; text-decoration:underline; flex-shrink:0;" title="${row.isCurrent ? 'Laufende Saison' : ''}" onclick="event.stopPropagation();closeDriverProfile();openYearStandings(${row.year},'drivers')">${row.year}${row.isCurrent ? '*' : ''}</span>
+                                    ${displayRows.map(row => `
+                                        <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; display:flex; align-items:center; gap:4px; margin-bottom:3px;${row._kopf ? '' : 'display:none;'}">
+                                            ${(row._kopf || row._erste)
+                                                ? `<span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent ? '#f59e0b' : 'var(--accent-main)'}; cursor:pointer; text-decoration:underline; flex-shrink:0;" title="${row.isCurrent ? 'Laufende Saison' : ''}" onclick="event.stopPropagation();closeDriverProfile();openYearStandings(${row.year},'drivers')">${row.year}${row.isCurrent ? '*' : ''}</span>`
+                                                : `<span style="width:34px;flex-shrink:0"></span>`}
+                                            ${(row._aufklappbar || row._erste)
+                                                ? `<span class="mxArrow${row._gruppe}" style="font-size:0.78rem;line-height:1;cursor:pointer;flex-shrink:0;color:var(--accent-main)" title="Teams dieser Saison einzeln zeigen" onclick="event.stopPropagation();toggleMatrixYear(${row._gruppe},this)">${row._kopf ? '▸' : '▾'}</span>` : ''}
                                             <span style="flex:1; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
                                         </div>
                                     `).join('')}
                                 </div>
                                 <!-- Panel mitte: Rennen (scrollbar) -->
                                 <div style="flex:1; min-width:0; overflow-x:auto;">
-                                    ${rows.map(row => {
+                                    ${displayRows.map(row => {
                                         const isTestDriver = row.cells.every(c => c.absent);
                                         if (isTestDriver) return `
-                                            <div style="height:${ROW_H}px; margin-bottom:3px; display:flex; align-items:center; padding:0 8px;">
+                                            <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; margin-bottom:3px; display:${row._kopf ? 'flex' : 'none'}; align-items:center; padding:0 8px;">
                                                 <span style="font-size:0.65rem; color:var(--text-muted); font-style:italic;">Testfahrer</span>
                                             </div>`;
                                         return `
-                                        <div style="display:flex; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
+                                        <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="display:${row._kopf ? 'flex' : 'none'}; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
                                                 : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();${row.simulated ? `openRaceDetails(${cell.raceId},${row.year})` : `openHistoricalRaceModal(${cell.raceId})`}">
@@ -31399,10 +31571,12 @@ Empfohlene Wertebereiche:
                                 </div>
                                 <!-- Panel rechts: WM + Punkte (fix) -->
                                 <div style="flex-shrink:0; width:76px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
-                                    ${rows.map(row => `
-                                        <div style="height:${ROW_H}px; display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-bottom:3px;">
+                                    ${displayRows.map(row => `
+                                        <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; display:${row._kopf ? 'flex' : 'none'}; align-items:center; justify-content:flex-end; gap:4px; margin-bottom:3px;">
+                                            ${row._kopf ? `
                                             <span style="width:26px; text-align:right; font-size:0.65rem; font-weight:bold; color:var(--text-primary);">${row.wmPos !== '-' ? row.wmPos+'.' : '-'}</span>
-                                            <span style="width:40px; text-align:right; font-size:0.6rem; color:var(--text-muted);">${row.wmPts}P</span>
+                                            <span style="width:40px; text-align:right; font-size:0.6rem; color:var(--text-muted);">${row.wmPts}P</span>`
+                                            : `<span style="width:26px"></span><span style="width:40px; text-align:right; font-size:0.55rem; color:var(--text-muted);">${row.cells.filter(c => !c.absent).length} St.</span>`}
                                         </div>
                                     `).join('')}
                                 </div>
@@ -32213,6 +32387,24 @@ Empfohlene Wertebereiche:
                          stroke-dasharray="2,1.5" opacity="0.4"/>
             </svg>`;
         }
+
+        // === EIN JAHR DER RENNERGEBNIS-MATRIX AUF-/ZUKLAPPEN (v0.9.17.6) ===
+        // Wikipedia-Vorbild: jedes Team eines Jahres bekommt eine eigene Zeile, in der nur
+        // seine Rennen gefuellt sind. Die drei Panels der Matrix (Jahr/Team, Zellen, WM)
+        // fuehren dieselben Zeilen-Klassen, deshalb genuegt ein Umschalten ueber die Klasse —
+        // alle drei bleiben deckungsgleich, ohne dass hier etwas ausgerichtet werden muss.
+        // ⚠ Die Sammelzeile wird beim Aufklappen ERSETZT, nicht ergaenzt (Nutzer: „wenn man
+        // ausklappt sollte die originalzeile komplett durch die anderen zeilen ersetzt
+        // werden") — genau wie in Wikipedia, wo das Jahr eine Zelle ueber alle Teamzeilen
+        // ist. Jahr und Pfeil wandern deshalb in die ERSTE Teamzeile.
+        window.toggleMatrixYear = function(gruppe, pfeil) {
+            const subs = document.querySelectorAll(`.mxG${gruppe}.mxSub`);
+            const koepfe = document.querySelectorAll(`.mxG${gruppe}:not(.mxSub)`);
+            if (!subs.length) return;
+            const auf = subs[0].style.display === 'none';
+            for (const z of subs) z.style.display = auf ? 'flex' : 'none';
+            for (const k of koepfe) k.style.display = auf ? 'none' : 'flex';
+        };
 
         // HTML-Snippet für Fahrer-Foto im Steckbrief
         // data-lazy-src = primäre URL (Nachname), data-fallback-src = voller Slug (für Namensgleiche)
@@ -34941,13 +35133,23 @@ Empfohlene Wertebereiche:
             if (qualiResult) {
                 const qRes = historicalYear ? qualiResult.res : qualiResult.results;
                 const simPoleTime = parseFloat(qRes[0]?.time || qRes[0]?.t || 0);
-                const simTimeView = localStorage.getItem('f1rpg_timeview') || 'compact';
-                const simDetailed = simTimeView === 'detailed';
-                const simQualiHeader = simDetailed
-                    ? '<th class="p-2 text-right">Zeit</th><th class="p-2 text-right">Δ Pole</th>'
-                    : '<th class="p-2 text-right">Zeit / Δ Pole</th>';
-                const _dnqSet  = new Set(!historicalYear ? (raceResult?.dnq  || []) : []);
-                const _dnpqSet = new Set(!historicalYear ? (raceResult?.dnpq || []) : []);
+                // IMMER ZWEI ZEITSPALTEN (v0.9.17.6). Nutzer: „training hat beide zeitangaben.
+                // quali nur eines." Der Trainings-Tab zeigt Zeit UND Δ Best unabhaengig von der
+                // Einstellung; die Quali hing dagegen an `f1rpg_timeview`. Zum Fehlersuchen
+                // braucht man beides nebeneinander — die Rundenzeit sagt, ob sie plausibel ist,
+                // der Rueckstand, ob das Feld sinnvoll gestaffelt ist.
+                const simDetailed = true;
+                const simQualiHeader = '<th class="p-2 text-right">Zeit</th><th class="p-2 text-right">Δ Pole</th>';
+                // === AUCH IN ARCHIVIERTEN SIM-SAISONS (v0.9.17.6) ===
+                // Hier stand `!historicalYear ? … : []`. Damit war die DNQ-Auswertung fuer JEDE
+                // vergangene Saison abgeschaltet — auch fuer selbst gespielte. Nutzer: „selbst
+                // wenn ich 1989 rio simuliere, seh ich keine trennlinie."
+                // `historicalYear` heisst nur „nicht die laufende Saison"; ob echte F1DB-Historie
+                // oder eigener Spielstand, steht damit gar nicht fest. Die archivierten Records
+                // fuehren ihr `dnq`/`dnpq` mit — echte F1DB-Rennen haben die Felder schlicht
+                // nicht, dort bleiben die Mengen von selbst leer.
+                const _dnqSet  = new Set(raceResult?.dnq  || []);
+                const _dnpqSet = new Set(raceResult?.dnpq || []);
                 const _pqBestTimeModal = parseFloat(qRes.find(r => r.dnpq)?.time || 0);
                 const _gridSize = !historicalYear ? getGridSize(GAME_STATE.currentYear, GAME_STATE.races[raceResult?.raceIndex]) : 999;
                 // Reihenfolge: Qualifizierte → DNQ → DNPQ
@@ -34968,7 +35170,9 @@ Empfohlene Wertebereiche:
                     const isDNQ  = _dnqSet.has(driverId);
                     const isDNPQ = _dnpqSet.has(driverId) || (!historicalYear && !!r.dnpq);
                     const isFatal = !historicalYear && !!r.fatal;
-                    if (!isDNQ && !isDNPQ) _simQualiPos++;
+                    // Laufende Nummer fuer JEDEN Melder — auch fuer DNQ/DNPQ, deren Platz in
+                    // der Zeitenliste sonst verlorenginge (v0.9.17.6, s. Kommentar unten).
+                    _simQualiPos++;
                     const rawT = parseFloat(r.time || r.t || 0);
                     const isPole = _simQualiPos === 1 && !isDNQ && !isDNPQ && !isFatal;
                     const zeit = rawT ? fmtMs(rawT * 1000) : null;
@@ -34976,11 +35180,11 @@ Empfohlene Wertebereiche:
                     let sepRow = '';
                     if (isDNQ && !_dnqSepInserted) {
                         _dnqSepInserted = true;
-                        sepRow = `<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td></tr>`;
+                        sepRow = `<tr><td colspan="5" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td></tr>`;
                     }
                     if (isDNPQ && !_dnpqSepInserted) {
                         _dnpqSepInserted = true;
-                        sepRow += `<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#F5D0FE;background:#701A75;border-top:2px solid #701A75;letter-spacing:0.05em">NICHT VORQUALIFIZIERT</td></tr>`;
+                        sepRow += `<tr><td colspan="5" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#F5D0FE;background:#701A75;border-top:2px solid #701A75;letter-spacing:0.05em">NICHT VORQUALIFIZIERT</td></tr>`;
                     }
                     let zeitCell;
                     if (isDNPQ) {
@@ -35008,13 +35212,21 @@ Empfohlene Wertebereiche:
                     const guestBadge = r.isGuest ? ' <span style="font-size:0.65em;padding:1px 4px;border-radius:3px;background:rgba(168,85,247,0.2);color:#a855f7;vertical-align:middle">G</span>' : '';
                     const rowStyle = isFatal ? ' style="background:rgba(239,68,68,0.08)"' : isDNQ ? ' style="opacity:0.6"' : isDNPQ ? ' style="opacity:0.85"' : '';
                     const nameStyle = isFatal ? 'text-decoration:line-through;color:#ef4444' : '';
-                    const posDisp = isDNPQ
-                        ? `<span style="font-size:0.65em;font-weight:700;padding:1px 5px;border-radius:3px;background:#701A75;color:#F5D0FE;letter-spacing:0.04em">DNPQ</span>`
-                        : isDNQ ? 'DNQ' : _simQualiPos;
-                    const posColor = isDNQ ? 'color:#C49494' : isPole ? '' : 'color:var(--text-tertiary)';
+                    // POSITION BLEIBT POSITION (v0.9.17.6). Nutzer: „bei quali sollte die
+                    // startaufstellungsplatzierung nicht durch dnq oder dnpq ersetzt werden.
+                    // dnq/dnpq stehen hinten." Vorher stand in der Pos-Spalte „DNQ" bzw. ein
+                    // DNPQ-Badge STATT der Zahl — damit war nicht mehr ablesbar, als Wievielter
+                    // jemand die Zeit gefahren hat. Die Kennzeichnung sitzt jetzt hinter dem
+                    // Namen, die Sortierung (Qualifizierte → DNQ → Vor-Quali) bleibt unberuehrt.
+                    const statusBadge = isDNPQ
+                        ? ` <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#701A75;color:#F5D0FE;letter-spacing:0.04em;vertical-align:middle">DNPQ</span>`
+                        : isDNQ
+                        ? ` <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#5C1517;color:#C49494;letter-spacing:0.04em;vertical-align:middle">DNQ</span>`
+                        : '';
+                    const posColor = isDNQ || isDNPQ ? 'color:#8A8A8A' : isPole ? '' : 'color:var(--text-tertiary)';
                     return sepRow + `<tr class="border-t border-custom"${rowStyle}>
-                        <td class="p-2 font-bold ${isPole ? 'accent-gold' : ''}" style="${posColor}">${posDisp}</td>
-                        <td class="p-2 ${isPole ? 'font-bold' : ''} driver-link" onclick="closeRaceDetail(); openDriverProfile('${driverId}')" style="${nameStyle}">${isPole ? '🏁 ' : ''}${getDriverName(driverId)}${guestBadge}</td>
+                        <td class="p-2 font-bold ${isPole ? 'accent-gold' : ''}" style="${posColor}">${_simQualiPos}</td>
+                        <td class="p-2 ${isPole ? 'font-bold' : ''}" style="${nameStyle}"><span class="driver-link" onclick="closeRaceDetail(); openDriverProfile('${driverId}')">${isPole ? '🏁 ' : ''}${getDriverName(driverId)}</span>${guestBadge}${statusBadge}</td>
                         <td class="p-2 text-tertiary">${getTeamName(driverId)}</td>
                         ${zeitCell}
                     </tr>`;
@@ -35247,13 +35459,19 @@ Empfohlene Wertebereiche:
             const hasQuali = hasQualiData || hasGridPos;
 
             // Qualifying-Zeile bauen
-            function buildQualiRow(pos, driverId, constrId, timeMs, gapMs) {
-                const isPole = pos === 1;
+            function buildQualiRow(pos, driverId, constrId, timeMs, gapMs, istDnq) {
+                const isPole = pos === 1 && !istDnq;
                 const zeit = timeMs != null ? fmtMs(timeMs) : null;
                 const abstand = isPole ? '–' : (gapMs != null ? fmtGapMs(gapMs) : '');
                 const poleIcon = isPole ? '🏁 ' : '';
                 let zeitCell;
-                if (detailed) {
+                // IMMER ZWEI SPALTEN, AUCH HISTORISCH (v0.9.17.6). Nutzer: „das quali hat bei
+                // historischen saisons nur das delta und nicht die gesamtzeit. also ui von
+                // gespielter saison rueckwirkend auf historische saisons uebertragen."
+                // Die gespielte Saison zeigt seit dieser Version immer Zeit UND Rueckstand —
+                // historische Rennen hingen noch an der Einstellung `f1rpg_timeview`.
+                // Das RENNEN bleibt bewusst bei `detailed`; nur die Quali wird angeglichen.
+                if (true) {
                     zeitCell = '<td class="p-2 text-right font-mono text-xs ' + (isPole ? 'accent-gold font-bold' : 'text-secondary') + '">' + (zeit || '') + '</td>' +
                                '<td class="p-2 text-right font-mono text-xs text-tertiary">' + abstand + '</td>';
                 } else {
@@ -35261,9 +35479,13 @@ Empfohlene Wertebereiche:
                     const display = isPole ? (zeit || '–') : (abstand || (zeit || ''));
                     zeitCell = '<td class="p-2 text-right font-mono text-xs ' + (isPole ? 'accent-gold font-bold' : 'text-tertiary') + '">' + display + '</td>';
                 }
-                return '<tr class="border-t border-custom">' +
+                // DNQ als Kennzeichen HINTER dem Namen — die Position bleibt die Position.
+                const dnqBadge = istDnq
+                    ? ' <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#5C1517;color:#C49494;letter-spacing:0.04em;vertical-align:middle">DNQ</span>'
+                    : '';
+                return '<tr class="border-t border-custom"' + (istDnq ? ' style="opacity:0.7"' : '') + '>' +
                     '<td class="p-2 font-bold ' + (isPole ? 'accent-gold' : 'text-tertiary') + '">' + pos + '</td>' +
-                    '<td class="p-2">' + poleIcon + '<span class="driver-link" onclick="openDriverProfile(\'' + driverId + '\')">' + dn(driverId) + '</span></td>' +
+                    '<td class="p-2">' + poleIcon + '<span class="driver-link" onclick="openDriverProfile(\'' + driverId + '\')">' + dn(driverId) + '</span>' + dnqBadge + '</td>' +
                     '<td class="p-2 text-secondary hidden md:table-cell team-link cursor-pointer" onclick="openTeamProfile(\'' + constrId + '\')">' + tn(constrId) + '</td>' +
                     zeitCell +
                 '</tr>';
@@ -35271,6 +35493,23 @@ Empfohlene Wertebereiche:
 
             let qualiRows = '';
             if (hasQualiData) {
+                // === NICHT QUALIFIZIERTE, SOWEIT DIE DATEN SIE HERGEBEN (v0.9.17.6) ===
+                // Nutzer: „dnq/dnpq ist sogar weg. es sollte auch dabei stehen."
+                // ⚠ MESSUNG: F1DB kennt historisch KEINE Nichtqualifizierten — 0 von 26.778
+                //   Qualifying-Eintraegen tragen ein DNQ/DNPQ-Kennzeichen, und ueber alle
+                //   geprueften Jahre gibt es kein Rennen mit mehr Quali-Teilnehmern als
+                //   Startern. Die gespeicherten Quali-Listen enthalten nur, wer auch startete.
+                //   Dieser Block greift deshalb bei historischen Rennen praktisch nie; er
+                //   bleibt, weil er automatisch wirkt, sobald die Daten es hergeben, und weil
+                //   er bei fehlendem Rennergebnis bewusst gar nicht urteilt.
+                //   In SIMULIERTEN Saisons stehen DNQ und DNPQ dagegen zur Verfuegung — dort
+                //   trennen die Balken „NICHT QUALIFIZIERT" / „NICHT VORQUALIFIZIERT".
+                const _starterIds = new Set((entries || []).map(e => e.driverId).filter(Boolean));
+                const _linie = (text, farbe) => _starterIds.size
+                    ? `<tr><td colspan="5" class="text-center text-xs" style="padding:5px 0;color:${farbe};`
+                      + `border-top:1px dashed ${farbe};border-bottom:1px dashed ${farbe};`
+                      + `background:rgba(255,255,255,0.02);letter-spacing:0.04em">${text}</td></tr>` : '';
+                let _dnqLinieGesetzt = false;
                 qualiRows = qualiData.map(e => {
                     const pos = e[0], driverId = e[1];
                     const timeMs = getQualiTimeMs(e);
@@ -35278,16 +35517,22 @@ Empfohlene Wertebereiche:
                     // constrId aus Race-Entries nachschlagen
                     const rEntry = entries.find(re => re.driverId === driverId);
                     const constrId = rEntry?.constrId || '';
-                    return buildQualiRow(pos, driverId, constrId, timeMs, gapMs);
+                    // Ohne Rennergebnis-Daten (leeres `entries`) wird NICHT geurteilt.
+                    const _dnq = _starterIds.size > 0 && !_starterIds.has(driverId);
+                    let vorsatz = '';
+                    if (_dnq && !_dnqLinieGesetzt) {
+                        _dnqLinieGesetzt = true;
+                        vorsatz = _linie(`nicht qualifiziert · Startfeld: ${_starterIds.size} Autos`, '#C49494');
+                    }
+                    return vorsatz + buildQualiRow(pos, driverId, constrId, timeMs, gapMs, _dnq);
                 }).join('');
             } else if (hasGridPos) {
                 const gridEntries = entries.filter(e => e.gridPos != null && e.gridPos > 0).sort((a,b) => a.gridPos - b.gridPos);
                 qualiRows = gridEntries.map(e => buildQualiRow(e.gridPos, e.driverId, e.constrId, null, null)).join('');
             }
 
-            const qualiTimeHeader = detailed
-                ? '<th class="p-2 text-right">Zeit</th><th class="p-2 text-right">Δ Pole</th>'
-                : '<th class="p-2 text-right">Zeit / Δ Pole</th>';
+            // Kopfzeile passend zu buildQualiRow: immer zwei Spalten (v0.9.17.6).
+            const qualiTimeHeader = '<th class="p-2 text-right">Zeit</th><th class="p-2 text-right">Δ Pole</th>';
 
             // === RENNEN ===
             function buildRaceRow(e) {
