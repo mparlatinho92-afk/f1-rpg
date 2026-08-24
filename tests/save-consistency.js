@@ -33,8 +33,9 @@ const pct = (a, b) => b ? (100 * a / b).toFixed(1) + ' %' : '–';
 //   - kein als DNQ gefuehrter Fahrer taucht im Rennergebnis auf
 //   - die Quali-Liste ist mindestens so lang wie das Starterfeld
 let rennen = 0, ohneQuali = 0, starterOhneQualiZeile = 0, dnqGestartet = 0,
-    qualiKuerzerAlsFeld = 0, dnqGesamt = 0, dnpqGesamt = 0, starterGesamt = 0;
-const beispiele = [];
+    qualiKuerzerAlsFeld = 0, dnqGesamt = 0, dnpqGesamt = 0, starterGesamt = 0,
+    stillVerschwunden = 0;
+const beispiele = [], stillBsp = [];
 for (const s of saisons) {
     const qualiJeRennen = {};
     for (const q of (s.qualifyingResults || [])) qualiJeRennen[q.ri ?? q.raceIndex] = q;
@@ -58,6 +59,17 @@ for (const s of saisons) {
             if (beispiele.length < 5) beispiele.push(`${s.year} Lauf ${idx + 1}: als DNQ gefuehrt, aber gestartet`);
         }
         if (qIds.size < starter.size) qualiKuerzerAlsFeld++;
+        // UMGEKEHRTER FALL (Nutzer): qualifiziert, aber nicht gestartet — OHNE als DNQ
+        // oder DNPQ vermerkt zu sein. Das ist die stille Luecke: der Fahrer verschwindet
+        // zwischen Qualifying und Rennen, ohne dass irgendwo steht, warum.
+        for (const id of qIds) {
+            if (starter.has(id) || dnq.has(id) || dnpq.has(id)) continue;
+            stillVerschwunden++;
+            if (stillBsp.length < 6) {
+                const nm = (s.drivers || []).find(d => d.id === id)?.name || id;
+                stillBsp.push(`${s.year} Lauf ${idx + 1}: ${nm}`);
+            }
+        }
     }
 }
 console.log('1) QUALIFYING ↔ STARTAUFSTELLUNG');
@@ -66,6 +78,8 @@ console.log(`   ${ohneQuali ? '⚠' : '✅'} Rennen ohne Qualifying-Datensatz:  
 console.log(`   ${starterOhneQualiZeile ? '❌' : '✅'} Starter ohne Qualifying-Zeile:         ${starterOhneQualiZeile}`);
 console.log(`   ${dnqGestartet ? '❌' : '✅'} Als DNQ gefuehrt, aber gestartet:      ${dnqGestartet}`);
 console.log(`   ${qualiKuerzerAlsFeld ? '⚠' : '✅'} Quali kuerzer als das Starterfeld:     ${qualiKuerzerAlsFeld}`);
+console.log(`   ${stillVerschwunden ? '⚠' : '✅'} Qualifiziert, aber ohne Vermerk weg:   ${stillVerschwunden}`);
+if (stillBsp.length) stillBsp.forEach(b => console.log('      · ' + b));
 if (beispiele.length) beispiele.forEach(b => console.log('      · ' + b));
 
 // ══ 2. MEHRERE TEAMS JE FAHRER UND SAISON ══════════════════════════════════════
@@ -160,6 +174,83 @@ if (verzahntBsp.length) { console.log('\n   Beispiele Hin und Her:'); verzahntBs
     console.log(`   Starter ohne Quali-Zeile      ${pct(starterOhneQualiZeile, starterGesamt).padStart(9)}   ${pct(rOhneQ, rStarter).padStart(9)}`);
     console.log(`   Teamwechsel „Hin und Her"     ${pct(verzahnt, mehrTeam).padStart(9)}   ${pct(rVerz, rMehr).padStart(9)}`);
     console.log(`   Multi-Team-Faelle gesamt      ${String(mehrTeam).padStart(9)}   ${String(rMehr).padStart(9)}`);
+})();
+
+// ══ 4. STARTFELDGROESSE JE RENNEN: SPIEL GEGEN F1DB ════════════════════════════
+// Nutzer: „auch bei anderen rennen f1db vs. spielstand testen. natuerlich kann ein
+// einzelner spielstand nichts aussagen wenn die gridzahl aus dynamischen gruenden
+// abweicht, aber es gibt einige weitere fixe gridzahlen die vorgegeben sind."
+// Verglichen wird deshalb je STRECKE UND JAHR — nur dort, wo beide Seiten dasselbe
+// Rennen kennen. Ausgewiesen werden die groessten Abweichungen, nicht ein Mittelwert:
+// ein Feld, das mal zu gross und mal zu klein ist, hebt sich im Schnitt sonst auf.
+(function startfelder() {
+    let races, erg;
+    try {
+        races = require('../f1db-json-splitted/f1db-races.json');
+        erg = require('../f1db-json-splitted/f1db-races-race-results.json');
+    } catch (e) { console.log('\n(F1DB-Rohdaten nicht verfuegbar)'); return; }
+    // ⚠ MESSFALLE (selbst hineingetappt): 2020 fuhr die Formel 1 ZWEIMAL in Spielberg,
+    // Silverstone und Bahrain. Ein Schluessel „jahr|circuitId" summiert beide Rennen und
+    // meldet dann „Spiel 20 · real 40" — zwanzig fehlende Autos, die es nie gab.
+    // Deshalb wird je Strecke und Jahr der DURCHSCHNITT eines Rennens gebildet.
+    const realRoh = {};                        // "jahr|circuitId" → [Starter je Rennen]
+    const raceMeta = {};
+    for (const r of races) raceMeta[r.id] = r;
+    const proRennen = {};
+    for (const e of erg) {
+        const r = raceMeta[e.raceId]; if (!r) continue;
+        proRennen[e.raceId] = (proRennen[e.raceId] || 0) + 1;
+    }
+    for (const [rid, n] of Object.entries(proRennen)) {
+        const r = raceMeta[rid]; if (!r) continue;
+        (realRoh[r.year + '|' + r.circuitId] = realRoh[r.year + '|' + r.circuitId] || []).push(n);
+    }
+    const realZahl = {};
+    for (const [k, arr] of Object.entries(realRoh)) {
+        realZahl[k] = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+    }
+    const abw = [];
+    let verglichen = 0, summeAbw = 0;
+    for (const s of saisons) {
+        const kal = s.races || [];
+        (s.results || []).forEach((r, i) => {
+            const idx = r.ri ?? r.raceIndex ?? i;
+            const cid = kal[idx]?.circuitId; if (!cid) return;
+            const k = s.year + '|' + cid;
+            if (realZahl[k] == null) return;
+            const spiel = (r.res || r.results || []).length;
+            const real = realZahl[k];
+            verglichen++; summeAbw += Math.abs(spiel - real);
+            abw.push({ jahr: s.year, cid, spiel, real, d: spiel - real });
+        });
+    }
+    if (!verglichen) { console.log('\n(keine gemeinsamen Rennen fuer den Vergleich)'); return; }
+    abw.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    const zuKlein = abw.filter(x => x.d <= -6).length;
+    const zuGross = abw.filter(x => x.d >= 6).length;
+    console.log('\n4) STARTFELDGROESSE JE RENNEN (Spiel gegen F1DB, gleiche Strecke + Jahr)');
+    console.log(`   verglichene Rennen: ${verglichen} · mittlere Abweichung ${(summeAbw / verglichen).toFixed(1)} Autos`);
+    console.log(`   mehr als 5 zu wenig: ${zuKlein} (${pct(zuKlein, verglichen)}) · mehr als 5 zu viel: ${zuGross} (${pct(zuGross, verglichen)})`);
+    console.log('   groesste Abweichungen:');
+    abw.slice(0, 10).forEach(x => console.log(
+        `      ${x.jahr} ${String(x.cid).padEnd(20)} Spiel ${String(x.spiel).padStart(2)} · real ${String(x.real).padStart(2)} · ${x.d > 0 ? '+' : ''}${x.d}`));
+    // Strecken mit systematischer Schieflage (mind. 5 gemeinsame Rennen)
+    const jeStrecke = {};
+    for (const x of abw) {
+        (jeStrecke[x.cid] = jeStrecke[x.cid] || []).push(x.d);
+    }
+    const systematisch = Object.entries(jeStrecke)
+        .filter(([, ds]) => ds.length >= 5)
+        .map(([cid, ds]) => ({ cid, n: ds.length, mittel: ds.reduce((a, b) => a + b, 0) / ds.length }))
+        .filter(x => Math.abs(x.mittel) >= 3)
+        .sort((a, b) => Math.abs(b.mittel) - Math.abs(a.mittel));
+    if (systematisch.length) {
+        console.log('   systematisch daneben (>= 5 Rennen, Mittel >= 3 Autos):');
+        systematisch.slice(0, 8).forEach(x => console.log(
+            `      ${String(x.cid).padEnd(20)} ${x.n} Rennen · im Mittel ${x.mittel > 0 ? '+' : ''}${x.mittel.toFixed(1)}`));
+    } else {
+        console.log('   ✅ keine Strecke systematisch daneben.');
+    }
 })();
 
 console.log('');
