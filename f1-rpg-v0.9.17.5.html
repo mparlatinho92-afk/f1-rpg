@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.4</title>
+    <title>F1 RPG v0.9.17.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.4 (aktuell) - 23.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.5 (aktuell) - 24.08.2026</div>
+                            <div>&#8226; FIX: kaputte WM-Tabellen wurden nicht erkannt - die Pruefung zaehlte die falsche Richtung und schlug bei keiner der betroffenen Saisons an</div>
+                            <div>&#8226; FIX: Punkte ohne Rennergebnis gelten jetzt als Fehler - an allen 96 Saisons eines Spielstands geprueft</div>
+                            <div>&#8226; NEU: Log-Warnung beim Saisonabschluss, wenn Tabelle und Rennergebnisse auseinanderlaufen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.4 - 23.08.2026</div>
                             <div>&#8226; FIX: Karriere-Historie zeigte Siege und Titel fuer Saisons ohne ein einziges Rennergebnis - solche Zeilen entfallen jetzt</div>
                             <div>&#8226; FIX: Testfahrer-Jahre bleiben erhalten, nur Saisons ohne jede Zugehoerigkeit verschwinden</div>
                             <div class="font-bold text-slate-400">v0.9.17.3 - 23.08.2026</div>
@@ -17246,7 +17250,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.4';
+        const VERSION = '0.9.17.5';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22661,25 +22665,47 @@ const CIRCUIT_LAYOUTS = {
             if (!Array.isArray(results) || !results.length) return standings;
             const keys = new Set(Object.keys(standings || {}));
             if (!keys.size) return standings;
-            let total = 0, hit = 0;
+            // === PRUEFRICHTUNG KORRIGIERT (v0.9.17.5) ===
+            // Hier wurde gezaehlt, wie viele ERGEBNIS-Eintraege in der Tabelle stehen. Das ist
+            // die falsche Richtung: eine Tabelle kann alle echten Fahrer enthalten UND obendrauf
+            // beliebig viele fremde. Genau so sah der Nutzer-Stand aus — in allen fuenf kaputten
+            // Saisons ergab die alte Rechnung 100 %, die Reparatur loeste also NIE aus.
+            // Richtig ist die Gegenrichtung: ein Tabellen-Eintrag MIT PUNKTEN muss ein
+            // Rennergebnis haben — Punkte ohne Rennen sind logisch unmoeglich.
+            // Gemessen am Stand des Nutzers: 91 von 96 Saisons haben 0 % solcher Geister,
+            // die fuenf kaputten 39-55 %. Die Schwelle 20 % trennt das sauber.
+            // ⚠ NAMENSBRUECKE ist Pflicht: Fahrer-IDs tragen einen Zeitstempel und laufen
+            //   zwischen Tabelle und Ergebnissen auseinander, ohne dass etwas kaputt waere.
+            //   Ohne die Bruecke haetten auch intakte Saisons ausgeschlagen.
+            const _nameVonId = {};
+            (drivers || []).forEach(d => { if (d && d.id) _nameVonId[d.id] = String(d.name || '').toLowerCase().trim(); });
+            const _gefahrenIds = new Set(), _gefahrenNamen = new Set();
             for (const r of results) for (const x of (r.res || r.results || [])) {
-                total++; if (keys.has(x.d ?? x.driver)) hit++;
+                const id = x.d ?? x.driver; if (!id) continue;
+                _gefahrenIds.add(id);
+                if (_nameVonId[id]) _gefahrenNamen.add(_nameVonId[id]);
             }
-            // === ANTEIL STATT ALLES-ODER-NICHTS (v0.9.17.1) ===
-            // Hier stand `hit > 0` — ein EINZIGER Treffer genuegte, um die Reparatur zu
-            // unterdruecken. Genau daran scheiterte der Nutzer-Screenshot: im Stand vom
-            // 18.08. hat die 1955er Tabelle 101 Eintraege, die Ergebnisse 45 IDs, und
-            // rund 5 % ueberschneiden sich. Die Tabelle war also praktisch fremd — sie
-            // fuehrte SEASON_DATA-Kurzschluessel (ALBERT, JERRYH) gegen `reserve-…`-IDs
-            // in Kader und Ergebnissen —, aber die zwei Zufallstreffer blockierten das
-            // Neurechnen. Sichtbar: Eugenio Castellotti als Fuehrender mit 25 Punkten und
-            // zwei Siegen, im Saisonverlauf daneben keine einzige Zelle.
-            // Ein intakter Satz liegt nahe 100 %: wer faehrt, steht in der Wertung.
-            // Unter der Haelfte ist die Tabelle nicht mehr zu retten, dann wird sie aus
-            // den Ergebnissen neu gerechnet.
-            // ⚠ Aendert nur die ANZEIGE — der gespeicherte Stand bleibt unangetastet
-            //   (Nutzer-Regel: nichts rueckwirkend umschreiben).
-            if (!total || hit / total >= 0.5) return standings;   // passt zusammen → nichts tun
+            // ⚠ KEIN URTEIL BEI LUECKENHAFTER BRUECKE. Loest der uebergebene Kader nicht
+            // nahezu alle Ergebnis-IDs in Namen auf, ist jeder „Geist" nur eine Luecke in der
+            // Aufloesung. Genau das schlug in der Gegenprobe zu: eine INTAKTE Saison wurde neu
+            // gerechnet (88 -> 94 Eintraege), weil Fahrer aus dem Reserve-Pool im Kader fehlten.
+            // Lieber gar nicht reparieren als eine gesunde Tabelle anfassen.
+            if (_gefahrenIds.size && _gefahrenNamen.size / _gefahrenIds.size < 0.9) return standings;
+            let total = 0, hit = 0;   // total = Eintraege mit Punkten, hit = davon belegt
+            for (const [id, s] of Object.entries(standings || {})) {
+                if (!((s && s.points || 0) > 0)) continue;
+                total++;
+                const nm = String((s && s.name) || '').toLowerCase().trim();
+                if (_gefahrenIds.has(id) || (nm && _gefahrenNamen.has(nm))) hit++;
+            }
+            if (total && (total - hit) / total < 0.2) return standings;   // < 20 % Geister → intakt
+            // Historie der Schwelle: bis .17.0 stand hier `hit > 0` — ein EINZIGER Treffer
+            // unterdrueckte die Reparatur. .17.1 machte daraus einen Anteil, mass aber weiter
+            // die falsche Richtung (s. o.) und loeste deshalb in keiner der fuenf kaputten
+            // Saisons aus. Erst .17.5 zaehlt Punkte ohne Rennergebnis — und trifft damit.
+            // ⚠ In der ANZEIGE aendert das nichts am gespeicherten Stand (Nutzer-Regel:
+            //   nichts rueckwirkend umschreiben); beim Archivieren verhindert es den Fehler.
+            if (!total) return standings;   // niemand mit Punkten → nichts zu pruefen
             const nameOf = {};
             (drivers || []).forEach(d => { if (d && d.id) nameOf[d.id] = d.name; });
             const acc = {};
@@ -34365,10 +34391,47 @@ const CIRCUIT_LAYOUTS = {
             
             // Aktuelle Saison in Historie speichern (inkl. Tode und Rücktritte)
             if (GAME_STATE.results.length > 0) {
+                // === RIEGEL GEGEN PHANTOM-TABELLEN (v0.9.17.5) ===
+                // Muss VOR der Champion-Ermittlung stehen: sonst entsteht der Weltmeister aus
+                // derselben kaputten Tabelle, die gleich archiviert wird. Im Stand des Nutzers
+                // trugen 5 von 96 Saisons eine Tabelle, die nicht zu ihrer Saison gehoert —
+                // 1955 hatte 141 Eintraege bei 46 Fahrern und 45 Ergebnis-IDs, mit Duplikaten
+                // (Moss und Hawthorn doppelt), fremden Indy-Fahrern (Rodger Ward, Pat O'Connor)
+                // und Eugenio Castellotti als Weltmeister mit 25 Punkten und null Rennen.
+                // .17.1–.17.4 haben die ANZEIGE geheilt; diese Stelle verhindert, dass so eine
+                // Tabelle ueberhaupt archiviert wird. Geprueft wird das Ergebnis, nicht die
+                // Ursache — der Fehler kann damit in neuen Staenden nicht mehr entstehen.
+                // ⚠ Greift erst unter 50 % Uebereinstimmung; intakte Saisons laufen unveraendert
+                //   durch (rebuiltStandingsIfBroken gibt dann dasselbe Objekt zurueck).
+                // NUR WARNEN, NICHT EINGREIFEN (v0.9.17.5).
+                // Ein erster Entwurf rechnete die Tabelle hier neu. Die Gegenprobe in
+                // tests/phantom-guard.js hat das gestoppt: eine INTAKTE Saison wurde dabei
+                // veraendert (84 -> 97 Eintraege). Grund ist der Zeitpunkt — direkt nach dem
+                // letzten Rennen sind 0 % der Punkte-Eintraege ohne Ergebnis, aber bis hierher
+                // haben checkCareerEnds/initReservePool/processTeamChanges den Kader schon
+                // weitergedreht, waehrend die Rennergebnisse die alten IDs tragen. Die Pruefung
+                // sieht dann Geister, wo keine sind.
+                // Die Reparatur bleibt deshalb dort, wo der Kader zu den Ergebnissen passt:
+                // beim LESEN archivierter Saisons (rebuiltStandingsIfBroken in Wertung,
+                // Matrix und Karriere-Historie). Hier steht nur ein Melder, damit ein neuer
+                // Fall im Log auftaucht, statt still in den Spielstand zu wandern.
+                {
+                    const _probe = rebuiltStandingsIfBroken(
+                        GAME_STATE.results,
+                        [...(GAME_STATE.drivers || []), ...(GAME_STATE.reservePool || [])],
+                        GAME_STATE.driverStandings);
+                    if (_probe !== GAME_STATE.driverStandings) {
+                        logWarning('SEASON', `WM-Tabelle ${GAME_STATE.currentYear}: `
+                            + `${Object.keys(GAME_STATE.driverStandings || {}).length} Eintraege, aus den `
+                            + `Rennergebnissen ergaeben sich ${Object.keys(_probe).length}. Wird unveraendert `
+                            + `archiviert — die Anzeige rechnet bei Bedarf neu.`);
+                    }
+                }
+
                 const champion = Object.entries(GAME_STATE.driverStandings)
                     .map(([id, s]) => ({ id, ...s }))
                     .sort((a, b) => b.points - a.points)[0];
-                
+
                 // v0.8.3.4: histId für korrekten allTimeStATS-Eintrag nachschlagen
                 if (champion) {
                     const driverObj = GAME_STATE.drivers.find(d => d.id === champion.id);
