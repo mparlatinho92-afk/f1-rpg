@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.6</title>
+    <title>F1 RPG v0.9.17.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.6 (aktuell) - 24.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.7 (aktuell) - 25.08.2026</div>
+                            <div>&#8226; NEU: Qualifying historischer Rennen trennt Qualifizierte, DNQ und Vorqualifikation mit eigenen Linien und Farben - die Daten lagen die ganze Zeit vor</div>
+                            <div>&#8226; NEU: Live-Ticker zeigt Qualifying jetzt wie alle anderen Ansichten - mit Rundenzeit, Rueckstand und erhaltener Position</div>
+                            <div>&#8226; FIX: nicht qualifizierte Fahrer standen im Rennergebnis unter den Klassierten - 1989 Imola zeigte 39 Zeilen bei 26 Startern</div>
+                            <div class="font-bold text-slate-400">v0.9.17.6 - 24.08.2026</div>
                             <div>&#8226; NEU: Rennergebnisse im Steckbrief aufklappbar - jedes Team eines Jahres in eigener Zeile wie bei Wikipedia, mit Teamfarbe der Aera</div>
                             <div>&#8226; FIX: Nicht qualifizierte Fahrer fehlten in JEDER vergangenen Saison - die Anzeige unterschied nicht zwischen echter Historie und eigenem Spielstand</div>
                             <div>&#8226; NEU: Qualifying zeigt immer Zeit UND Rueckstand zur Pole, auch historisch</div>
@@ -17263,7 +17267,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.6';
+        const VERSION = '0.9.17.7';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28530,33 +28534,44 @@ const CIRCUIT_LAYOUTS = {
             let dnpqSepInserted = false;
             let _qualiPos = 0;
             const rows = sortedResults.map(r => {
+                // GLEICHE DARSTELLUNG WIE IN ALLEN ANDEREN QUALI-ANSICHTEN (v0.9.17.7).
+                // Nutzer: „im index fehlt mir die neue dnq-ui bei allen anderen modi …
+                // einfach die ui überall wo qualifyings angezeigt werden übernehmen."
+                // Drei Angleichungen: laufende Nummer fuer JEDEN Melder (die Position wurde
+                // vorher durch „DNQ" ersetzt), Kennzeichen als Badge hinter dem Namen, und
+                // Zeit UND Rueckstand in zwei Spalten statt nur des Abstands.
                 const isDNQ  = dnqIds.has(r.driver);
                 const isDNPQ = dnpqIds.has(r.driver) || !!r.dnpq;
-                if (!isDNQ && !isDNPQ) _qualiPos++;
+                _qualiPos++;
                 let sep = '';
                 if (isDNQ && !sepInserted) {
                     sepInserted = true;
-                    sep = `<tr><td colspan="3" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td></tr>`;
+                    sep = `<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td></tr>`;
                 }
                 if (isDNPQ && !dnpqSepInserted) {
                     dnpqSepInserted = true;
-                    sep += `<tr><td colspan="3" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#F5D0FE;background:#701A75;border-top:2px solid #701A75;letter-spacing:0.05em">NICHT VORQUALIFIZIERT</td></tr>`;
+                    sep += `<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#F5D0FE;background:#701A75;border-top:2px solid #701A75;letter-spacing:0.05em">NICHT VORQUALIFIZIERT</td></tr>`;
                 }
                 const rawT = parseFloat(r.time || 0);
-                const gap = _qualiPos === 1 ? '–' : (rawT && poleTime ? '+' + fmtGapMs((rawT - poleTime) * 1000) : '–');
-                const posDisp = isDNPQ
-                    ? `<span style="font-size:0.65em;font-weight:700;padding:1px 5px;border-radius:3px;background:#701A75;color:#F5D0FE;letter-spacing:0.04em">DNPQ</span>`
-                    : isDNQ ? 'DNQ' : _qualiPos;
+                const istPole = _qualiPos === 1 && !isDNQ && !isDNPQ;
+                const zeit = rawT ? fmtMs(rawT * 1000) : '–';
+                const gap = istPole ? '–' : (rawT && poleTime ? fmtGapMs((rawT - poleTime) * 1000) : '–');
+                const badge = isDNPQ
+                    ? ' <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#701A75;color:#F5D0FE;letter-spacing:0.04em;vertical-align:middle">DNPQ</span>'
+                    : isDNQ
+                    ? ' <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#5C1517;color:#C49494;letter-spacing:0.04em;vertical-align:middle">DNQ</span>'
+                    : '';
                 const rowStyle = isDNPQ ? 'style="opacity:0.85"' : isDNQ ? 'style="opacity:0.6"' : '';
-                const posColor = isDNPQ ? '' : isDNQ ? 'color:#C49494' : 'color:var(--text-tertiary)';
+                const posColor = (isDNQ || isDNPQ) ? 'color:#8A8A8A' : 'color:var(--text-tertiary)';
                 return sep + `<tr class="border-t border-custom" ${rowStyle}>
-                    <td class="p-2 font-bold" style="${posColor}">${posDisp}</td>
-                    <td class="p-2 driver-link" onclick="document.getElementById('liveTickerModal').style.display='none'; openDriverProfile('${r.driver}')">${r.name || r.driver}</td>
-                    <td class="p-2 text-right font-mono text-xs" style="${isDNQ ? 'color:#C49494' : 'color:var(--text-tertiary)'}">${isDNPQ ? '–' : gap}</td>
+                    <td class="p-2 font-bold ${istPole ? 'accent-gold' : ''}" style="${istPole ? '' : posColor}">${_qualiPos}</td>
+                    <td class="p-2"><span class="driver-link" onclick="document.getElementById('liveTickerModal').style.display='none'; openDriverProfile('${r.driver}')">${istPole ? '🏁 ' : ''}${r.name || r.driver}</span>${badge}</td>
+                    <td class="p-2 text-right font-mono text-xs ${istPole ? 'accent-gold font-bold' : 'text-secondary'}">${zeit}</td>
+                    <td class="p-2 text-right font-mono text-xs text-tertiary">${gap}</td>
                 </tr>`;
             }).join('');
             el.innerHTML = `<table class="w-full text-sm"><thead class="bg-secondary"><tr>
-                <th class="p-2 text-left">Pos</th><th class="p-2 text-left">Fahrer</th><th class="p-2 text-right">Δ Pole</th>
+                <th class="p-2 text-left">Pos</th><th class="p-2 text-left">Fahrer</th><th class="p-2 text-right">Zeit</th><th class="p-2 text-right">Δ Pole</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
         }
         
@@ -48981,7 +48996,10 @@ Empfohlene Wertebereiche:
             const hasQuali = hasQualiData || hasGridPos;
 
             // Qualifying-Zeile bauen
-            function buildQualiRow(pos, driverId, constrId, timeMs, gapMs, istDnq) {
+            // `status` ist '' , 'DNQ' oder 'DNPQ' — zwei verschiedene Ausscheidungsstufen,
+            // die nie in einen Topf gehoeren: DNPQ scheiterte schon vor dem Qualifying.
+            function buildQualiRow(pos, driverId, constrId, timeMs, gapMs, status) {
+                const istDnq = !!status;
                 const isPole = pos === 1 && !istDnq;
                 const zeit = timeMs != null ? fmtMs(timeMs) : null;
                 const abstand = isPole ? '–' : (gapMs != null ? fmtGapMs(gapMs) : '');
@@ -49001,8 +49019,11 @@ Empfohlene Wertebereiche:
                     const display = isPole ? (zeit || '–') : (abstand || (zeit || ''));
                     zeitCell = '<td class="p-2 text-right font-mono text-xs ' + (isPole ? 'accent-gold font-bold' : 'text-tertiary') + '">' + display + '</td>';
                 }
-                // DNQ als Kennzeichen HINTER dem Namen — die Position bleibt die Position.
-                const dnqBadge = istDnq
+                // Kennzeichen HINTER dem Namen — die Position bleibt die Position.
+                // Eigene Farben je Stufe, damit DNQ und DNPQ auf einen Blick trennbar sind.
+                const dnqBadge = status === 'DNPQ'
+                    ? ' <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#701A75;color:#F5D0FE;letter-spacing:0.04em;vertical-align:middle">DNPQ</span>'
+                    : status === 'DNQ'
                     ? ' <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#5C1517;color:#C49494;letter-spacing:0.04em;vertical-align:middle">DNQ</span>'
                     : '';
                 return '<tr class="border-t border-custom"' + (istDnq ? ' style="opacity:0.7"' : '') + '>' +
@@ -49026,27 +49047,45 @@ Empfohlene Wertebereiche:
                 //   er bei fehlendem Rennergebnis bewusst gar nicht urteilt.
                 //   In SIMULIERTEN Saisons stehen DNQ und DNPQ dagegen zur Verfuegung — dort
                 //   trennen die Balken „NICHT QUALIFIZIERT" / „NICHT VORQUALIFIZIERT".
-                const _starterIds = new Set((entries || []).map(e => e.driverId).filter(Boolean));
-                const _linie = (text, farbe) => _starterIds.size
-                    ? `<tr><td colspan="5" class="text-center text-xs" style="padding:5px 0;color:${farbe};`
-                      + `border-top:1px dashed ${farbe};border-bottom:1px dashed ${farbe};`
-                      + `background:rgba(255,255,255,0.02);letter-spacing:0.04em">${text}</td></tr>` : '';
-                let _dnqLinieGesetzt = false;
-                qualiRows = qualiData.map(e => {
+                // Status kommt aus dem ECHTEN Feld, nicht aus einem Rueckschluss:
+                // F1DB_RESULTS fuehrt `posText` mit DNQ (1041x) und DNPQ (338x) ueber alle
+                // Jahre. Ein frueherer Entwurf leitete „nicht qualifiziert" daraus ab, wer im
+                // Rennergebnis fehlt — das ist unnoetig ungenau und haette DNQ und DNPQ in
+                // einen Topf geworfen. Nutzer: „in der ui dnpq und dnq sauber trennen."
+                const _statusVon = {};
+                for (const e of (entries || [])) {
+                    const pt = String(e.posText || '').toUpperCase();
+                    if (pt === 'DNQ' || pt === 'DNPQ') _statusVon[e.driverId] = pt;
+                }
+                const _rang = { '': 0, DNQ: 1, DNPQ: 2 };
+                const _linie = (text, farbe) =>
+                    `<tr><td colspan="5" class="text-center text-xs" style="padding:5px 0;color:${farbe};`
+                    + `border-top:1px dashed ${farbe};border-bottom:1px dashed ${farbe};`
+                    + `background:rgba(255,255,255,0.02);letter-spacing:0.04em">${text}</td></tr>`;
+                const _starterZahl = (entries || []).filter(e =>
+                    !['DNQ', 'DNPQ', 'DNS', 'WD', 'EX'].includes(String(e.posText || '').toUpperCase())).length;
+                // Reihenfolge: Qualifizierte → DNQ → DNPQ, jede Gruppe in ihrer Zeitenfolge.
+                const _sortiert = qualiData.slice().sort((a, b) => {
+                    const ra = _rang[_statusVon[a[1]] || ''] ?? 0, rb = _rang[_statusVon[b[1]] || ''] ?? 0;
+                    return ra !== rb ? ra - rb : (a[0] || 999) - (b[0] || 999);
+                });
+                let _gesetzt = {};
+                qualiRows = _sortiert.map(e => {
                     const pos = e[0], driverId = e[1];
                     const timeMs = getQualiTimeMs(e);
                     const gapMs = getQualiGapMs(e);
-                    // constrId aus Race-Entries nachschlagen
                     const rEntry = entries.find(re => re.driverId === driverId);
                     const constrId = rEntry?.constrId || '';
-                    // Ohne Rennergebnis-Daten (leeres `entries`) wird NICHT geurteilt.
-                    const _dnq = _starterIds.size > 0 && !_starterIds.has(driverId);
+                    const st = _statusVon[driverId] || '';
                     let vorsatz = '';
-                    if (_dnq && !_dnqLinieGesetzt) {
-                        _dnqLinieGesetzt = true;
-                        vorsatz = _linie(`nicht qualifiziert · Startfeld: ${_starterIds.size} Autos`, '#C49494');
+                    if (st === 'DNQ' && !_gesetzt.DNQ) {
+                        _gesetzt.DNQ = true;
+                        vorsatz = _linie(`nicht qualifiziert · Startfeld: ${_starterZahl} Autos`, '#C49494');
+                    } else if (st === 'DNPQ' && !_gesetzt.DNPQ) {
+                        _gesetzt.DNPQ = true;
+                        vorsatz = _linie('nicht vorqualifiziert', '#F5D0FE');
                     }
-                    return vorsatz + buildQualiRow(pos, driverId, constrId, timeMs, gapMs, _dnq);
+                    return vorsatz + buildQualiRow(pos, driverId, constrId, timeMs, gapMs, st);
                 }).join('');
             } else if (hasGridPos) {
                 const gridEntries = entries.filter(e => e.gridPos != null && e.gridPos > 0).sort((a,b) => a.gridPos - b.gridPos);
@@ -49133,7 +49172,13 @@ Empfohlene Wertebereiche:
                             ${raceTimeHeader}
                             <th class="p-2 text-center">Pkt</th>
                         </tr></thead>
-                        <tbody>${entries.map(e => buildRaceRow(e)).join('')}</tbody>
+                        <!-- Wer nicht startete, gehoert nicht in die Rennergebnis-Liste
+                             (v0.9.17.7). F1DB fuehrt DNQ und DNPQ in denselben Ergebnisdaten;
+                             ungefiltert standen sie hier mitten unter den Klassierten und
+                             blaehten das Feld auf — 1989 Imola zeigte 39 Zeilen bei 26 Startern.
+                             Ihr Platz ist der Qualifying-Tab, dort jetzt sauber getrennt. -->
+                        <tbody>${entries.filter(e => !['DNQ', 'DNPQ'].includes(String(e.posText || '').toUpperCase()))
+                            .map(e => buildRaceRow(e)).join('')}</tbody>
                     </table>
                 </div>
                 <div class="text-xs text-tertiary mt-2">🟣 = Schnellste Runde · 🅿️ = Pole Position</div>
