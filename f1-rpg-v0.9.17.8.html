@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.7</title>
+    <title>F1 RPG v0.9.17.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.7 (aktuell) - 25.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.8 (aktuell) - 25.08.2026</div>
+                            <div>&#8226; FIX: Wer die Vor-Qualifikation nicht ueberstand, verschwand beim Speichern der Saison spurlos - 1989 allein 143 Fahrer, insgesamt 321 in 76 Saisons</div>
+                            <div>&#8226; FIX: Qualifying-Eintraege behalten jetzt ihren Status (Vor-Quali, toedlich verunglueckt) auch im Archiv</div>
+                            <div>&#8226; NEU: Ansichten vergangener Saisons koennen dadurch zeigen, WARUM ein Fahrer im Rennen fehlt</div>
+                            <div class="font-bold text-slate-400">v0.9.17.7 - 25.08.2026</div>
                             <div>&#8226; NEU: Qualifying historischer Rennen trennt Qualifizierte, DNQ und Vorqualifikation mit eigenen Linien und Farben - die Daten lagen die ganze Zeit vor</div>
                             <div>&#8226; NEU: Live-Ticker zeigt Qualifying jetzt wie alle anderen Ansichten - mit Rundenzeit, Rueckstand und erhaltener Position</div>
                             <div>&#8226; FIX: nicht qualifizierte Fahrer standen im Rennergebnis unter den Klassierten - 1989 Imola zeigte 39 Zeilen bei 26 Startern</div>
@@ -17267,7 +17271,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.7';
+        const VERSION = '0.9.17.8';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -34479,6 +34483,13 @@ const CIRCUIT_LAYOUTS = {
                     // v0.9.15.25: DNQ-Fahrer stehen NICHT in res (nur als ID-Liste) → mitspeichern,
                     // sonst gehen sie in der Historie/Matrix verloren. DNPQ steckt als Flag im res-Eintrag.
                     dnq: (Array.isArray(race.dnq) && race.dnq.length) ? race.dnq.slice() : undefined,
+                    // Vor-Quali-Gescheiterte MITSPEICHERN (v0.9.17.8). `simulateRace` liefert
+                    // `dnpq` gleichberechtigt neben `dnq` zurueck — archiviert wurde bisher nur
+                    // `dnq`. In den Jahren mit Vor-Qualifikation ist das der groessere Teil:
+                    // 1989 traten 33 Melder an, 25 starteten, und keiner der acht Uebrigen
+                    // hinterliess eine Spur. Ohne diese Zeile kann keine Ansicht der Welt
+                    // zeigen, warum jemand fehlt.
+                    dnpq: (Array.isArray(race.dnpq) && race.dnpq.length) ? race.dnpq.slice() : undefined,
                     res: race.results.map(r => ({
                         d: r.driver,              // Driver ID
                         p: r.position,            // Position
@@ -34506,10 +34517,27 @@ const CIRCUIT_LAYOUTS = {
                     // Kosten: drei kleine Felder je zusätzlicher Zeile, in den 1950/60ern
                     // rund 6-12 Zeilen je Rennen. Gegen den Nutzen einer vollständigen
                     // Meldeliste ist das nichts.
+                    // === STATUS MITSPEICHERN (v0.9.17.8) ===
+                    // Hier standen nur d/p/t. Damit ging beim Archivieren JEDE Information
+                    // darueber verloren, wer sich nicht qualifiziert hat: Gemessen am Stand
+                    // eines Nutzers verschwanden allein 1989 143 Fahrer spurlos zwischen
+                    // Qualifying und Rennen — 33 Melder in der Quali, 25 Starter im Rennen,
+                    // und weder `dnq` noch `dnpq` gesetzt. Ueber alle 76 Saisons waren es 321
+                    // Faelle; real kommt das 2-mal in 26 715 Qualifikationen vor.
+                    // Der Schwerpunkt 1989-1992 ist kein Zufall: das sind die Jahre mit
+                    // Vor-Qualifikation, wo besonders viele Melder aussortiert wurden.
+                    // Deshalb wandern jetzt auch die Statusfelder ins Archiv — es sind zwei
+                    // Zahlen je Zeile, und nur mit ihnen kann die Anzeige spaeter zeigen,
+                    // WARUM jemand fehlt (CLAUDE.md: „die Qualifikationsliste IST die
+                    // Meldeliste", derselbe Grund wie beim Wegfall der Top-20-Kappung).
+                    dnpqIds: (Array.isArray(quali.dnpqIds) && quali.dnpqIds.length)
+                        ? quali.dnpqIds.slice() : undefined,
                     res: quali.results.map(r => ({
                         d: r.driver,
                         p: r.position,
-                        t: r.time ?? r.lapTime     // Lap Time (r.lapTime war falsch, Feldname ist r.time)
+                        t: r.time ?? r.lapTime,    // Lap Time (r.lapTime war falsch, Feldname ist r.time)
+                        dnpq: r.dnpq ? 1 : undefined,
+                        fatal: r.fatal ? 1 : undefined
                     }))
                 }));
                 
