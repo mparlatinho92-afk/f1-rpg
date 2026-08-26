@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.9</title>
+    <title>F1 RPG v0.9.17.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.9 (aktuell) - 26.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.10 (aktuell) - 26.08.2026</div>
+                            <div>&#8226; FIX: Das Indy 500 hatte je nach Spielstand 13 bis 48 Starter - der Grid-Block war fuer Indy komplett uebersprungen, obwohl die feste Zahl 33 laengst hinterlegt war</div>
+                            <div>&#8226; NEU: zu viele Melder qualifizieren sich auf 33 herunter, zu wenige werden aus dem Indy-Fahrerkreis aufgefuellt - kein Grand-Prix-Pilot rutscht nach Indianapolis</div>
+                            <div>&#8226; FIX: gilt nur fuer das 500-Meilen-Rennen, nicht fuer den US-Grand-Prix ab 2000 am selben Ort</div>
+                            <div class="font-bold text-slate-400">v0.9.17.9 - 26.08.2026</div>
                             <div>&#8226; FIX: Eine begonnene Vertretung wird nicht mehr mitten in der Saison abgebrochen - der Regelkreis kuerzte sie auf das laufende Rennen</div>
                             <div>&#8226; NEU: Laenge einer Aushilfe folgt der Aera - frueher ein Rennen, ab 1980 im Schnitt drei, an F1DB gemessen</div>
                             <div>&#8226; FIX: dadurch wechseln in der Moderne nicht mehr drei- bis fuenfmal so viele Fahrer das Team wie real</div>
@@ -17276,7 +17280,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.9';
+        const VERSION = '0.9.17.10';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -25868,6 +25872,44 @@ const CIRCUIT_LAYOUTS = {
             // Weniger Melder als Startplätze → Reserve-Pool füllt sporadisch auf (isGuest=true).
             // Vorbereitung für echtes Qualifying-System; jetzt: Pace + Car + kleines Rauschen.
             let _dnqIds = []; // Fahrer die am Rennen nicht teilnehmen (DNQ)
+            // === INDY 500: FESTES FELD VON 33 (v0.9.17.10) ===
+            // Der gesamte Grid-Block war fuer Indy uebersprungen — `getGridSize` liefert seit
+            // .16.8 zwar 33, wurde fuer Indy aber nie aufgerufen. Das Feld war schlicht die
+            // Zahl der Indy-Fahrer im Kader und schwankte entsprechend: gemessen an einem
+            // Spielstand 1951: 48 Starter, 1957: 13, 1960: 21.
+            // ⚠ REAL IST DIE ZAHL FEST: an F1DB fuer alle elf WM-Jahre 1950-60 AUSNAHMSLOS
+            //   33 Wagen. Die hoeheren Eintragszahlen dort (1954: 55) sind GETEILTE AUTOS —
+            //   Fahrerwechsel mitten im Rennen, nicht mehr Starter. Wer das mitzaehlt, misst
+            //   ein Feld, das es nie gab.
+            // ⚠ NUR DAS INDY 500, NICHT DER US-GRAND-PRIX. Ab 2000 faehrt die Formel 1 in
+            //   Indianapolis ein normales Rennen mit normalem Feld; `race.isIndy` trennt das.
+            if (isIndyRace) {
+                const INDY_FELD = 33;
+                if (activeDrivers.length > INDY_FELD) {
+                    // Zu viele Melder: die schnellsten 33 qualifizieren sich. Real war Indy
+                    // notorisch ueberzeichnet — deutlich mehr Wagen als Startplaetze.
+                    const sortiert = activeDrivers.slice()
+                        .sort((a, b) => (b.pace || 0) - (a.pace || 0));
+                    _dnqIds = sortiert.slice(INDY_FELD).map(d => d.id);
+                    activeDrivers = sortiert.slice(0, INDY_FELD);
+                } else if (activeDrivers.length < INDY_FELD) {
+                    // Zu wenige: aus dem Reserve-Pool nachlegen, aber NUR Indy-Fahrer — ein
+                    // europaeischer Grand-Prix-Pilot hatte in Indianapolis nichts verloren.
+                    const drin = new Set(activeDrivers.map(d => d.id));
+                    const _istIndy = d => d.isIndyOnly
+                        || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id));
+                    const teamsImFeld = [...new Set(activeDrivers.map(d => d.team).filter(Boolean))];
+                    const kand = (GAME_STATE.reservePool || []).filter(d =>
+                        d && d.id && !drin.has(d.id) && (!d.status || d.status === 'active') && _istIndy(d));
+                    for (const d of kand) {
+                        if (activeDrivers.length >= INDY_FELD || !teamsImFeld.length) break;
+                        if (!d.team) d.team = teamsImFeld[Math.floor(Math.random() * teamsImFeld.length)];
+                        d.isGuest = true;
+                        activeDrivers.push(d);
+                        drin.add(d.id);
+                    }
+                }
+            }
             if (!isIndyRace) {
                 const gridSize = getGridSize(GAME_STATE.currentYear, race);
                 if (activeDrivers.length > gridSize) {
