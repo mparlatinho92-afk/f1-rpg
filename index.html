@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.10</title>
+    <title>F1 RPG v0.9.17.11</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.10 (aktuell) - 26.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.11 (aktuell) - 26.08.2026</div>
+                            <div>&#8226; FIX: Aushilfen fehlten in der Jahresuebersicht des Team-Steckbriefs - sie liest den Kaderstand am Saisonende, wo der Fahrer laengst zurueck bei seinem Stammteam ist</div>
+                            <div>&#8226; FIX: bei Restbudget von einem Rennen wird kein Drei-Rennen-Einsatz mehr begonnen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.10 - 26.08.2026</div>
                             <div>&#8226; FIX: Das Indy 500 hatte je nach Spielstand 13 bis 48 Starter - der Grid-Block war fuer Indy komplett uebersprungen, obwohl die feste Zahl 33 laengst hinterlegt war</div>
                             <div>&#8226; NEU: zu viele Melder qualifizieren sich auf 33 herunter, zu wenige werden aus dem Indy-Fahrerkreis aufgefuellt - kein Grand-Prix-Pilot rutscht nach Indianapolis</div>
                             <div>&#8226; FIX: gilt nur fuer das 500-Meilen-Rennen, nicht fuer den US-Grand-Prix ab 2000 am selben Ort</div>
@@ -3758,7 +3761,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.10';
+        const VERSION = '0.9.17.11';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7103,8 +7106,15 @@
             const belegt = {};
             fahrer.forEach(d => { belegt[d.team] = (belegt[d.team] || 0) + 1; });
 
+            // ⚠ ABBRUCH VOR DER LETZTEN LUECKE (v0.9.17.11). Seit die Stint-Laenge nicht
+            // mehr auf `budget` gedeckelt ist (.17.9, noetig fuer realistische Vertretungen),
+            // kostet JEDER Stint im Schnitt drei Rennen. Mit `budget >= 1` entstand daraus
+            // bei Restbudget 1 noch ein voller Drei-Rennen-Stint — gemessen 1995: 8,0
+            // Minderheits-Rennen bei Ziel 4,0. Es wird deshalb nur begonnen, was noch
+            // ungefaehr hineinpasst; der Rest verfaellt.
+            const _erwartet = jahr >= 1980 ? 3.0 : 1.5;
             let versuche = 0;
-            while (budget >= 1 && versuche++ < 60) {
+            while (budget >= _erwartet * 0.5 && versuche++ < 60) {
                 // Wer umzieht: die hinteren Reihen deutlich häufiger als die Stars.
                 const frei = fahrer.filter(d => !plan[d.id]);
                 if (!frei.length) break;
@@ -7145,7 +7155,7 @@
                 // restlichen Rennen ohnehin nach. Die Renn-Summe bleibt damit im Ziel, die
                 // Zahl der betroffenen FAHRER sinkt — genau das war der Fehler.
                 const r = Math.random();
-                const _lang = jahr >= 1980;
+                const _lang = _erwartet >= 3;
                 const laenge = Math.max(1, Math.min(rest.length - 1, _lang
                     // Ø ≈ 3,0 Rennen: 0,25·1 + 0,25·2 + 0,20·3 + 0,30·5,5
                     ? (r < 0.25 ? 1 : r < 0.50 ? 2 : r < 0.70 ? 3 : 4 + Math.floor(Math.random() * 4))
@@ -34038,8 +34048,25 @@ Empfohlene Wertebereiche:
                 
                 if (teamStanding || actualTeamId) {
                     const _idSet = collectTeamIdAliases(season, [...idsToCheck, actualTeamId]);
+                    // === AUSHILFEN AUCH IN DER JAHRESUEBERSICHT (v0.9.17.11) ===
+                    // `d.team` ist der Kaderstand am SAISONENDE. Wer fuer ein paar Rennen
+                    // einsprang und danach zu seinem Stammteam zurueckkehrte, fehlt hier
+                    // komplett — obwohl seine Rennen in den Ergebnissen dieses Teams stehen.
+                    // Nutzer: „diese kurzzeit-wechsel werden oft nicht im team-steckbrief
+                    // erfasst." Das Rennraster darunter zeigt sie seit .17.9; diese Tabelle
+                    // hat ihre EIGENE Quelle und liess sie weiterhin weg.
+                    // ⚠ Wahrheit pro Rennen ist `res[].team`/`tmn`, nie `driver.team`.
+                    const _gastIds = new Set();
+                    for (const race of (season.results || [])) {
+                        for (const r of (race.res || race.results || [])) {
+                            const id = r.d || r.driver; if (!id) continue;
+                            const tid = String(r.team || '').toLowerCase();
+                            const tnm = String(r.tmn || r.teamName || '').toLowerCase();
+                            if (_idSet.has(tid) || _idSet.has(tnm)) _gastIds.add(id);
+                        }
+                    }
                     const seasonDriverObjs = (season.drivers || [])
-                        .filter(d => _idSet.has(String(d.team || '').toLowerCase()))
+                        .filter(d => _idSet.has(String(d.team || '').toLowerCase()) || _gastIds.has(d.id))
                         .map(d => {
                             const w = d.name.trim().split(/\s+/);
                             const displayName = w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : d.name;
