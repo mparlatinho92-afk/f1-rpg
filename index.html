@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.13</title>
+    <title>F1 RPG v0.9.17.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.13 (aktuell) - 28.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.14 (aktuell) - 28.08.2026</div>
+                            <div>&#8226; FIX: Indy-Nachruecker wurden dauerhaft in den Kader geschoben, holten WM-Punkte und verschwanden beim Saisonwechsel wieder - zurueck blieben Tabellenfuehrer ohne Fahrer wie Aldo Gordini 1956</div>
+                            <div>&#8226; FIX: wer in einer Saison gefahren ist, steht jetzt garantiert im archivierten Kader - Tabelleneintraege ohne Fahrer koennen nicht mehr entstehen</div>
+                            <div>&#8226; FIX: Indy-Nachruecker bekommen nur noch Indy-Rennstaelle, keine Grand-Prix-Teams wie Gordini oder Vanwall</div>
+                            <div>&#8226; NEU: DNS erscheint im Saisonverlauf, im Rennergebnis-Fenster, in beiden Steckbriefen und in allen drei Legenden</div>
+                            <div class="font-bold text-slate-400">v0.9.17.13 - 28.08.2026</div>
                             <div>&#8226; NEU: Nicht angetreten (DNS) - wer sich qualifiziert hat, kann trotzdem ausfallen, weil der Wagen nicht rechtzeitig fertig wird. Rate an F1DB gemessen: 1960er 4 Prozent, heute 0,7</div>
                             <div>&#8226; NEU: DNS erscheint in der Ergebnis-Matrix wie DNQ und DNPQ</div>
                             <div>&#8226; FIX: Das Feld entsteht jetzt im Qualifying statt erst im Rennen - Starter ohne Qualifying-Zeit von 21 allein 1957 auf 6 in elf Jahren</div>
@@ -3770,7 +3775,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.13';
+        const VERSION = '0.9.17.14';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -8259,10 +8264,9 @@
                 if (tid && (_belegt[tid] || 0) >= _deckel) continue;
                 if (tid) _belegt[tid] = (_belegt[tid] || 0) + 1;
                 x.d.isGuest = true;
-                // In den Kader uebernehmen statt kopieren — sonst sieht das Rennen einen
-                // anderen Fahrer als die Quali (oder gar keinen).
-                if (!(GAME_STATE.drivers || []).some(y => y.id === x.d.id)) GAME_STATE.drivers.push(x.d);
-                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(y => y.id !== x.d.id);
+                // ⚠ KEIN Kader-Eingriff (s. fillIndyEntryList): ein Pool-Fahrer, der Punkte
+                //   holt und danach aus dem Kader faellt, hinterlaesst einen Tabellen-Eintrag
+                //   ohne Fahrer. Das Rennen findet ihn ueber die Qualifying-Liste.
                 fillers.push(x.d);
             }
             return fillers.length ? [...activeDrivers, ...fillers] : activeDrivers;
@@ -8285,7 +8289,20 @@
             const drin = new Set(activeDrivers.map(d => d.id));
             const _istIndy = d => d.isIndyOnly
                 || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id));
-            const teamsImFeld = [...new Set(activeDrivers.map(d => d.team).filter(Boolean))];
+            // ⚠ NUR INDY-RENNSTAELLE (Nutzer-Report: „indy-quali immernoch der fehler").
+            // Vorher wurde blind ein Team aus dem Feld genommen — im Qualifying zum Indy 500
+            // 1956 standen dadurch Fahrer bei Gordini, Connaught, Cooper und Vanwall, also
+            // bei europaeischen Grand-Prix-Rennstaellen, die in Indianapolis nie am Start
+            // waren. Erlaubt sind nur Konstrukteure aus INDY_500_ONLY_CONSTRUCTORS
+            // (Kurtis Kraft, Watson, Stevens, Kuzma …); gibt es keinen, wird nicht gefuellt.
+            const _istIndyTeam = tid => {
+                const t = (GAME_STATE.teams || []).find(x => x.id === tid);
+                if (!t) return false;
+                return typeof isIndyOnlyConstructor === 'function'
+                    && (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId));
+            };
+            const teamsImFeld = [...new Set(activeDrivers.map(d => d.team).filter(Boolean))]
+                .filter(_istIndyTeam);
             if (!teamsImFeld.length) return activeDrivers;
             // ⚠ Der Pool ist NICHT leer — gemessen 1957: Kader 16, Reserve-Pool 50 aktive
             //   Indy-Fahrer. Es hakte am TEAM: ein Pool-Fahrer bringt oft einen Rennstall mit,
@@ -8308,9 +8325,14 @@
                 if (activeDrivers.length >= INDY_FELD) break;
                 if (!_teamDa(d.team)) d.team = teamsImFeld[Math.floor(Math.random() * teamsImFeld.length)];
                 d.isGuest = true;
-                if (d.status && d.status !== 'active') d.status = 'active';
-                if (!(GAME_STATE.drivers || []).some(x => x.id === d.id)) GAME_STATE.drivers.push(d);
-                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== d.id);
+                // ⚠ NICHT in GAME_STATE.drivers schieben (Regression aus .17.12/.13, sofort
+                //   zurueckgenommen): die Nachruecker landeten dauerhaft im Kader, fuhren
+                //   Indy, sammelten WM-Punkte — und flogen beim naechsten Saisonwechsel
+                //   wieder heraus. Zurueck blieben Tabellen-Eintraege ohne Fahrer: im Stand
+                //   des Nutzers fuehrte „Aldo Gordini" 1956 die WM mit 16 Punkten an, ohne
+                //   im Kader oder in einem Rennergebnis zu stehen. 1956-1960 betroffen.
+                //   Sie bleiben jetzt Pool-Fahrer; das Rennen findet sie ueber die
+                //   Qualifying-Liste (s. simulateRace, Indy-Zweig).
                 activeDrivers.push(d);
                 drin.add(d.id);
             }
@@ -12465,6 +12487,25 @@
             // braucht dieselbe Menge, sonst holt er den Gescheiterten aus dem
             // Reserve-Pool zurück ins Feld.
             const _dnpqOut = new Set(GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex)?.dnpqIds || []);
+            // === DAS RENNEN FOLGT DER QUALIFIKATION (v0.9.17.14) ===
+            // Nutzer: „rennen völlig abhängig von quali, dann ist es sauberer."
+            // Wer im Qualifying stand, gehoert ins Rennen — auch wenn er als Nachruecker aus
+            // dem Reserve-Pool kam und deshalb nicht im Kader steht. Vorher wurde er dafuer
+            // in den Kader geschoben; das erzeugte Phantome (s. fillIndyEntryList).
+            // Die Fahrerobjekte werden hier NUR fuer dieses Rennen aufgeloest.
+            const _qVor = GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex);
+            if (_qVor) {
+                const _da = new Set(activeDrivers.map(d => d.id));
+                for (const qr of (_qVor.results || [])) {
+                    if (!qr.driver || _da.has(qr.driver) || _dnpqOut.has(qr.driver)) continue;
+                    const _obj = (GAME_STATE.reservePool || []).find(x => x.id === qr.driver)
+                              || (GAME_STATE.drivers || []).find(x => x.id === qr.driver);
+                    if (!_obj || !_obj.team) continue;
+                    if (!(GAME_STATE.teams || []).some(t => t.id === _obj.team)) continue;
+                    activeDrivers.push(_obj);
+                    _da.add(qr.driver);
+                }
+            }
             if (!isIndyRace) {
                 activeDrivers = activeDrivers.filter(d => privateerEntersRace(d, race));
                 // [SYNC simulateRace] Ära-Wagenlimit je Konstrukteur (v0.9.14.96)
@@ -21233,6 +21274,32 @@
                     }
                     return driverCopy;
                 });
+                // === WER GEFAHREN IST, GEHOERT IN DEN KADER DER SAISON (v0.9.17.14) ===
+                // Gastfahrer aus dem Reserve-Pool (Grid-Fueller, Indy-Nachruecker) stehen nicht
+                // in GAME_STATE.drivers — sie fahren nur einzelne Rennen. Fehlen sie im
+                // archivierten Kader, bleibt ihr Tabellen-Eintrag ohne zugehoerigen Fahrer
+                // zurueck: genau das erzeugte im Stand des Nutzers 1956 einen „Aldo Gordini"
+                // an der WM-Spitze, den es nirgends gab. Hier werden sie aus den Ergebnissen
+                // nachgetragen — leichter Eintrag, nur Identitaet und Stammdaten.
+                {
+                    const _drin = new Set(_seasonDrivers.map(d => d.id));
+                    const _ausErgebnis = new Set();
+                    for (const race of (GAME_STATE.results || [])) {
+                        for (const r of (race.results || [])) {
+                            if (r.driver && !_drin.has(r.driver)) _ausErgebnis.add(r.driver);
+                        }
+                    }
+                    for (const id of _ausErgebnis) {
+                        const q = (GAME_STATE.reservePool || []).find(x => x.id === id)
+                               || (GAME_STATE.drivers || []).find(x => x.id === id);
+                        if (!q) continue;
+                        _seasonDrivers.push({
+                            id: q.id, histId: q.histId, name: q.name, nation: q.nation,
+                            team: q.team, number: q.number, birthYear: q.birthYear,
+                            pace: q.pace, isGuest: true,
+                        });
+                    }
+                }
                 const _seasonTeams = GAME_STATE._seasonEndSnapshot?.teams || JSON.parse(JSON.stringify(GAME_STATE.teams));
 
                 // Paket C: Fahrer-Kontext für Nachruf-Regeneration im Off-Season-Popup
@@ -26352,8 +26419,11 @@
                                                 // v0.9.15.25: auch historisch (dnq-Liste wird jetzt gespeichert)
                                                 const isDNPQ = (race.dnpq || []).includes(d.id);
                                                 const isDNQ  = (race.dnq  || []).includes(d.id);
+                                                // v0.9.17.14: nicht angetreten (qualifiziert, aber nicht am Start)
+                                                const isDNS  = (race.dns  || []).includes(d.id);
                                                 if (isDNPQ) return '<td class="p-2 text-center font-bold" style="background-color: #701A75; color: #F5D0FE;">DNPQ</td>';
                                                 if (isDNQ)  return '<td class="p-2 text-center font-bold" style="background-color: #5C1517; color: #C49494;">DNQ</td>';
+                                                if (isDNS)  return '<td class="p-2 text-center font-bold" style="background-color: #1C1C1C; color: #9CA3AF;">DNS</td>';
                                                 // v0.9.15.25: nicht gemeldet (vor Verpflichtung / nach Ausscheiden) → leere Zelle statt „-"
                                                 return '<td class="p-2 text-center"></td>';
                                             }
@@ -26391,6 +26461,7 @@
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #78350F; color: #FCD34D;">DSQ</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #5C1517; color: #C49494;">DNQ</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #701A75; color: #F5D0FE;">DNPQ</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #1C1C1C; color: #9CA3AF;">DNS</span>
                 </div>
             `;
         }
@@ -31843,6 +31914,7 @@ Empfohlene Wertebereiche:
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#78350F;border-radius:2px;vertical-align:middle;"></span> DSQ</span>
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#5C1517;border-radius:2px;vertical-align:middle;"></span> DNQ</span>
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#701A75;border-radius:2px;vertical-align:middle;"></span> DNPQ</span>
+                                <span><span style="display:inline-block;width:10px;height:10px;background:#1C1C1C;border:1px solid #444;border-radius:2px;vertical-align:middle;"></span> DNS = nicht angetreten</span>
                                 <span style="border:1px solid #a855f7; padding:0 3px; border-radius:2px;">FL</span> Schnellste Runde
                             </div>
                         </div>
@@ -34692,6 +34764,7 @@ Empfohlene Wertebereiche:
                         <span><span style="display:inline-block;width:10px;height:10px;background:#78350F;border-radius:2px;vertical-align:middle;"></span> DSQ</span>
                         <span><span style="display:inline-block;width:10px;height:10px;background:#5C1517;border-radius:2px;vertical-align:middle;"></span> DNQ</span>
                         <span><span style="display:inline-block;width:10px;height:10px;background:#701A75;border-radius:2px;vertical-align:middle;"></span> DNPQ</span>
+                        <span><span style="display:inline-block;width:10px;height:10px;background:#1C1C1C;border:1px solid #444;border-radius:2px;vertical-align:middle;"></span> DNS</span>
                         <span style="border:1px solid #a855f7;padding:0 3px;border-radius:2px;">FL</span> Schnellste Runde
                     </div>
                 </div>`;
@@ -35670,6 +35743,22 @@ Empfohlene Wertebereiche:
                                 '<td class="p-2 driver-link" onclick="closeRaceDetail(); openDriverProfile(\'' + id + '\')">' + getDriverName(id) + '</td>' +
                                 '<td class="p-2 text-tertiary">' + getTeamName(id) + '</td>' +
                                 '<td class="p-2 text-right" style="color:#C49494;font-size:0.7em;font-weight:bold">DNQ</td>' +
+                                '</tr>';
+                        });
+                    }
+                    // === NICHT ANGETRETEN (v0.9.17.14) ===
+                    // Eigener Block unter den DNQ: diese Fahrer hatten sich qualifiziert und
+                    // kamen trotzdem nicht an den Start (Wagen nicht fertig). Deshalb eine
+                    // andere Farbe als DNQ — es sind zwei verschiedene Vorgaenge.
+                    const rdDnsIds = raceResult?.dns || [];
+                    if (rdDnsIds.length > 0) {
+                        rdDnqRows += '<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#9CA3AF;background:#1C1C1C;border-top:2px solid #1C1C1C;letter-spacing:0.05em">NICHT ANGETRETEN</td></tr>';
+                        rdDnsIds.forEach(id => {
+                            rdDnqRows += '<tr class="border-t border-custom" style="opacity:0.6">' +
+                                '<td class="p-2 text-center text-tertiary">–</td>' +
+                                '<td class="p-2 driver-link" onclick="closeRaceDetail(); openDriverProfile(\'' + id + '\')">' + getDriverName(id) + '</td>' +
+                                '<td class="p-2 text-tertiary">' + getTeamName(id) + '</td>' +
+                                '<td class="p-2 text-right" style="color:#9CA3AF;font-size:0.7em;font-weight:bold">DNS</td>' +
                                 '</tr>';
                         });
                     }
