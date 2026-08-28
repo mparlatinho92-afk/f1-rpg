@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.11</title>
+    <title>F1 RPG v0.9.17.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.11 (aktuell) - 26.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.12 (aktuell) - 28.08.2026</div>
+                            <div>&#8226; FIX: Nachruecker fuers Indy 500 fielen durch, wenn sie einen Rennstall mitbrachten den es im Rennen nicht gab - jetzt bekommen sie ein Team das am Start steht</div>
+                            <div>&#8226; NEU: reichen die aktiven Indy-Fahrer nicht, kommen ehemalige und danach kommende Fahrer zum Zug - Indianapolis war real das Rennen der Aufsteiger</div>
+                            <div>&#8226; FIX: alle Indy-Startfelder ueber drei Simulationen und elf Jahre exakt 33 Wagen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.11 - 26.08.2026</div>
                             <div>&#8226; FIX: Aushilfen fehlten in der Jahresuebersicht des Team-Steckbriefs - sie liest den Kaderstand am Saisonende, wo der Fahrer laengst zurueck bei seinem Stammteam ist</div>
                             <div>&#8226; FIX: bei Restbudget von einem Rennen wird kein Drei-Rennen-Einsatz mehr begonnen</div>
                             <div class="font-bold text-slate-400">v0.9.17.10 - 26.08.2026</div>
@@ -3761,7 +3765,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.11';
+        const VERSION = '0.9.17.12';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -12387,11 +12391,32 @@
                     const _istIndy = d => d.isIndyOnly
                         || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id));
                     const teamsImFeld = [...new Set(activeDrivers.map(d => d.team).filter(Boolean))];
-                    const kand = (GAME_STATE.reservePool || []).filter(d =>
-                        d && d.id && !drin.has(d.id) && (!d.status || d.status === 'active') && _istIndy(d));
+                    // ⚠ Der Pool ist NICHT leer — gemessen 1957: Kader 16, Reserve-Pool 50
+                    //   aktive Indy-Fahrer. Es mangelt also nie an Leuten, sondern es hakte
+                    //   an ihrem TEAM: ein Pool-Fahrer bringt oft einen Rennstall mit, den es
+                    //   in diesem Rennen gar nicht gibt. `team.name` lief dann ins Leere und
+                    //   der Wagen fehlte im Feld. Jetzt bekommt jeder Nachruecker ein Team,
+                    //   das nachweislich am Start steht.
+                    const _teamDa = tid => tid && teamsImFeld.includes(tid);
+                    // Zuerst die aktiven, dann — wie vom Nutzer gewuenscht — notfalls die
+                    // bereits zurueckgetretenen. Verstorbene NIE (Status heisst `deceased`).
+                    const _frei = (GAME_STATE.reservePool || []).filter(d =>
+                        d && d.id && !drin.has(d.id) && d.status !== 'deceased');
+                    const _wahl = _frei.filter(_istIndy);
+                    // Dritte Stufe: KOMMENDE FAHRER (Nutzer: „kann auch kommende fahrer sein,
+                    // gleiche logik wie rest-f1"). Real war Indianapolis das Rennen der
+                    // Aufsteiger — jedes Jahr standen Rookies im Feld. Sie kommen erst dran,
+                    // wenn weder aktive noch ehemalige Indy-Fahrer mehr uebrig sind, und nur
+                    // der Nachwuchs, nie ein etablierter Grand-Prix-Pilot.
+                    const _kommend = d => !!d.feederInfo || !!d.feederFictionalSkills
+                        || String(d.id || '').startsWith('feeder-');
+                    const kand = _wahl.filter(d => !d.status || d.status === 'active')
+                        .concat(_wahl.filter(d => d.status === 'retired'))
+                        .concat(_frei.filter(d => !_istIndy(d) && _kommend(d)
+                            && (!d.status || d.status === 'active')));
                     for (const d of kand) {
                         if (activeDrivers.length >= INDY_FELD || !teamsImFeld.length) break;
-                        if (!d.team) d.team = teamsImFeld[Math.floor(Math.random() * teamsImFeld.length)];
+                        if (!_teamDa(d.team)) d.team = teamsImFeld[Math.floor(Math.random() * teamsImFeld.length)];
                         d.isGuest = true;
                         activeDrivers.push(d);
                         drin.add(d.id);
