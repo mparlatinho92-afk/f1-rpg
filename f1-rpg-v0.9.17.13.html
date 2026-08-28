@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.12</title>
+    <title>F1 RPG v0.9.17.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.12 (aktuell) - 28.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.13 (aktuell) - 28.08.2026</div>
+                            <div>&#8226; NEU: Nicht angetreten (DNS) - wer sich qualifiziert hat, kann trotzdem ausfallen, weil der Wagen nicht rechtzeitig fertig wird. Rate an F1DB gemessen: 1960er 4 Prozent, heute 0,7</div>
+                            <div>&#8226; NEU: DNS erscheint in der Ergebnis-Matrix wie DNQ und DNPQ</div>
+                            <div>&#8226; FIX: Das Feld entsteht jetzt im Qualifying statt erst im Rennen - Starter ohne Qualifying-Zeit von 21 allein 1957 auf 6 in elf Jahren</div>
+                            <div>&#8226; FIX: Indy 500 - Qualifying zeigte zwoelf Melder bei 33 Startern, jetzt treten mindestens 33 an</div>
+                            <div class="font-bold text-slate-400">v0.9.17.12 - 28.08.2026</div>
                             <div>&#8226; FIX: Nachruecker fuers Indy 500 fielen durch, wenn sie einen Rennstall mitbrachten den es im Rennen nicht gab - jetzt bekommen sie ein Team das am Start steht</div>
                             <div>&#8226; NEU: reichen die aktiven Indy-Fahrer nicht, kommen ehemalige und danach kommende Fahrer zum Zug - Indianapolis war real das Rennen der Aufsteiger</div>
                             <div>&#8226; FIX: alle Indy-Startfelder ueber drei Simulationen und elf Jahre exakt 33 Wagen</div>
@@ -17287,7 +17292,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.12';
+        const VERSION = '0.9.17.13';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -21725,6 +21730,115 @@ const CIRCUIT_LAYOUTS = {
         }
 
         // Wer wegfällt, wird nach Pace entschieden: der schnellste sitzt im Auto.
+        // === NICHT ANGETRETEN (DNS) — Ära-Kurve aus F1DB (v0.9.17.13) ===
+        // Nutzer: „falls einige fahrer doch nicht starteten, z.b. wagen nicht bereit? …
+        // das doch nicht starten, könnte man anhand einer wahrscheinlichkeit mit der f1db
+        // abgleichen." Genau das ist hier gemessen — Anteil der QUALIFIZIERTEN Fahrer, die
+        // im Rennergebnis als DNS stehen (DNQ/DNPQ herausgerechnet, die waren nie drin):
+        //   1950er 2,98 % · 1960er 4,04 % · 1970er 2,22 % · 1980er 1,16 %
+        //   1990er 0,87 % · 2000er 0,80 % · 2010er 0,68 % · 2020er 0,69 %
+        // Gesamt 374 von 25 912. Der Verlauf hat einen klaren Grund: frueher war der Wagen
+        // oft schlicht nicht rechtzeitig fertig, heute passiert das kaum noch.
+        // ⚠ Das ist NICHT dasselbe wie ein Starter ohne Qualifying-Zeit. Wer startet, muss
+        //   sich qualifiziert haben; wer sich qualifiziert hat, kann trotzdem ausfallen.
+        function _dnsRateFor(year) {
+            return year < 1960 ? 0.030 : year < 1970 ? 0.040 : year < 1980 ? 0.022
+                 : year < 1990 ? 0.012 : year < 2000 ? 0.009 : year < 2010 ? 0.008 : 0.007;
+        }
+
+        // === GRID-FUELLER FUER F1 (v0.9.17.13) ===
+        // [SYNC simulateRace] Von simulateQualifying UND simulateRace benutzt.
+        // Nutzer: „diese 18 fälle sind zwar weniger als die realität, aber der grund gefällt
+        // mir nicht, dann sollten genügend in der quali antreten."
+        // Vorher lief der Fueller NUR im Rennen und legte dort Kopien an (`{...d}`) — die
+        // Quali hatte diese Fahrer nie gesehen. Ergebnis: Starter ohne Qualifying-Zeit.
+        // Jetzt wird im Qualifying gefuellt, und die Nachruecker wandern in den Kader; das
+        // Rennen findet sie dadurch von selbst und braucht keine zweite Ziehung.
+        // ⚠ DER WAGENDECKEL GILT AUCH HIER (Erbe aus v0.9.16.3): ohne ihn starteten 2005
+        //   BAR, Red Bull, Minardi und Williams mit je DREI Wagen, weil der Fueller den
+        //   Pool-Fahrer blind in SEIN Team setzte.
+        function fillGridFromPool(activeDrivers, gridSize, dnpqOut) {
+            const slots = gridSize - activeDrivers.length;
+            if (slots <= 0) return activeDrivers;
+            const activeIds = new Set(activeDrivers.map(d => d.id));
+            const pool = (GAME_STATE.reservePool || []).filter(d =>
+                !activeIds.has(d.id) &&
+                // Kein Vor-Quali-Verlierer ueber die Hintertuer (v0.9.16.4).
+                !(dnpqOut && dnpqOut.has(d.id)) &&
+                d.status !== 'retired' && !_istTot(d) &&
+                GAME_STATE.teams.some(t => t.id === d.team)
+            );
+            if (!pool.length) return activeDrivers;
+            const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
+            const _belegt = {};
+            activeDrivers.forEach(d => { if (d.team) _belegt[d.team] = (_belegt[d.team] || 0) + 1; });
+            const weighted = pool.map(d => ({ d, weight: (d.pace || 60) + Math.random() * 20 }))
+                .sort((a, b) => b.weight - a.weight);
+            const fillers = [];
+            for (const x of weighted) {
+                if (fillers.length >= slots) break;
+                const tid = x.d.team;
+                if (tid && (_belegt[tid] || 0) >= _deckel) continue;
+                if (tid) _belegt[tid] = (_belegt[tid] || 0) + 1;
+                x.d.isGuest = true;
+                // In den Kader uebernehmen statt kopieren — sonst sieht das Rennen einen
+                // anderen Fahrer als die Quali (oder gar keinen).
+                if (!(GAME_STATE.drivers || []).some(y => y.id === x.d.id)) GAME_STATE.drivers.push(x.d);
+                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(y => y.id !== x.d.id);
+                fillers.push(x.d);
+            }
+            return fillers.length ? [...activeDrivers, ...fillers] : activeDrivers;
+        }
+
+        // === INDY-MELDELISTE AUF MINDESTENS 33 (v0.9.17.13) ===
+        // [SYNC simulateRace] Von simulateQualifying UND simulateRace benutzt — beide muessen
+        // dieselbe Meldeliste sehen. Vorher fuellte NUR das Rennen auf: gemessen im Spielstand
+        // 1957 zwoelf Melder im Qualifying, aber 33 Starter im Rennen. Einundzwanzig Fahrer
+        // standen also am Start, ohne je eine Zeit gefahren zu haben.
+        // Nutzer: „man könnte die logik so umbauen, dass rennen völlig abhängig von quali ist,
+        // dann ist es sauberer." Genau so: das Feld entsteht hier, das Rennen liest es ab.
+        // ⚠ Es wird nur AUFGEFUELLT, nie gekappt — wer sich nicht qualifiziert, faellt im
+        //   Rennen als DNQ heraus. Real war Indianapolis notorisch ueberzeichnet.
+        // ⚠ Die Nachruecker wandern in GAME_STATE.drivers, sonst findet sie das Rennen nicht:
+        //   `activeDrivers` entsteht dort aus dem Kader, nicht aus dem Reserve-Pool.
+        function fillIndyEntryList(activeDrivers, race) {
+            const INDY_FELD = 33;
+            if (!race || activeDrivers.length >= INDY_FELD) return activeDrivers;
+            const drin = new Set(activeDrivers.map(d => d.id));
+            const _istIndy = d => d.isIndyOnly
+                || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id));
+            const teamsImFeld = [...new Set(activeDrivers.map(d => d.team).filter(Boolean))];
+            if (!teamsImFeld.length) return activeDrivers;
+            // ⚠ Der Pool ist NICHT leer — gemessen 1957: Kader 16, Reserve-Pool 50 aktive
+            //   Indy-Fahrer. Es hakte am TEAM: ein Pool-Fahrer bringt oft einen Rennstall mit,
+            //   den es in diesem Rennen nicht gibt; `team.name` lief ins Leere und der Wagen
+            //   fehlte. Jeder Nachruecker bekommt deshalb ein Team, das am Start steht.
+            const _teamDa = tid => tid && teamsImFeld.includes(tid);
+            const _frei = (GAME_STATE.reservePool || []).filter(d =>
+                d && d.id && !drin.has(d.id) && d.status !== 'deceased');
+            const _wahl = _frei.filter(_istIndy);
+            // Reihenfolge: aktive Indy-Fahrer → ehemalige → kommende (Nutzer-Vorgabe).
+            // Indianapolis war real das Rennen der Aufsteiger; ein etablierter Grand-Prix-
+            // Pilot rutscht nie nach. Verstorbene nie (Status heisst `deceased`).
+            const _kommend = d => !!d.feederInfo || !!d.feederFictionalSkills
+                || String(d.id || '').startsWith('feeder-');
+            const kand = _wahl.filter(d => !d.status || d.status === 'active')
+                .concat(_wahl.filter(d => d.status === 'retired'))
+                .concat(_frei.filter(d => !_istIndy(d) && _kommend(d)
+                    && (!d.status || d.status === 'active')));
+            for (const d of kand) {
+                if (activeDrivers.length >= INDY_FELD) break;
+                if (!_teamDa(d.team)) d.team = teamsImFeld[Math.floor(Math.random() * teamsImFeld.length)];
+                d.isGuest = true;
+                if (d.status && d.status !== 'active') d.status = 'active';
+                if (!(GAME_STATE.drivers || []).some(x => x.id === d.id)) GAME_STATE.drivers.push(d);
+                GAME_STATE.reservePool = (GAME_STATE.reservePool || []).filter(x => x.id !== d.id);
+                activeDrivers.push(d);
+                drin.add(d.id);
+            }
+            return activeDrivers;
+        }
+
         function applyConstructorCarCap(drivers, teams, year) {
             const capEra = _maxCarsPerConstructor(year);
             const byTeam = {};
@@ -25899,50 +26013,25 @@ const CIRCUIT_LAYOUTS = {
             //   Indianapolis ein normales Rennen mit normalem Feld; `race.isIndy` trennt das.
             if (isIndyRace) {
                 const INDY_FELD = 33;
+                // Meldeliste auffuellen — dieselbe Funktion wie im Qualifying, damit beide
+                // dasselbe Feld sehen. Hat die Quali schon aufgefuellt, sind die Nachruecker
+                // laengst im Kader und dieser Aufruf tut nichts.
+                activeDrivers = fillIndyEntryList(activeDrivers, race);
                 if (activeDrivers.length > INDY_FELD) {
-                    // Zu viele Melder: die schnellsten 33 qualifizieren sich. Real war Indy
-                    // notorisch ueberzeichnet — deutlich mehr Wagen als Startplaetze.
-                    const sortiert = activeDrivers.slice()
-                        .sort((a, b) => (b.pace || 0) - (a.pace || 0));
+                    // Zu viele Melder: es qualifizieren sich 33. Wenn eine Qualifikation
+                    // gefahren wurde, entscheidet SIE — nicht ein zweiter Wuerfel hier.
+                    // Nutzer: „rennen völlig abhängig von quali, dann ist es sauberer."
+                    const _q = GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex);
+                    const _rang = new Map();
+                    if (_q) (_q.results || []).forEach((r, i) => _rang.set(r.driver, r.position ?? (i + 1)));
+                    const sortiert = activeDrivers.slice().sort((a, b) => {
+                        const ra = _rang.has(a.id) ? _rang.get(a.id) : Infinity;
+                        const rb = _rang.has(b.id) ? _rang.get(b.id) : Infinity;
+                        if (ra !== rb) return ra - rb;
+                        return (b.pace || 0) - (a.pace || 0);      // Rueckfall ohne Quali
+                    });
                     _dnqIds = sortiert.slice(INDY_FELD).map(d => d.id);
                     activeDrivers = sortiert.slice(0, INDY_FELD);
-                } else if (activeDrivers.length < INDY_FELD) {
-                    // Zu wenige: aus dem Reserve-Pool nachlegen, aber NUR Indy-Fahrer — ein
-                    // europaeischer Grand-Prix-Pilot hatte in Indianapolis nichts verloren.
-                    const drin = new Set(activeDrivers.map(d => d.id));
-                    const _istIndy = d => d.isIndyOnly
-                        || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id));
-                    const teamsImFeld = [...new Set(activeDrivers.map(d => d.team).filter(Boolean))];
-                    // ⚠ Der Pool ist NICHT leer — gemessen 1957: Kader 16, Reserve-Pool 50
-                    //   aktive Indy-Fahrer. Es mangelt also nie an Leuten, sondern es hakte
-                    //   an ihrem TEAM: ein Pool-Fahrer bringt oft einen Rennstall mit, den es
-                    //   in diesem Rennen gar nicht gibt. `team.name` lief dann ins Leere und
-                    //   der Wagen fehlte im Feld. Jetzt bekommt jeder Nachruecker ein Team,
-                    //   das nachweislich am Start steht.
-                    const _teamDa = tid => tid && teamsImFeld.includes(tid);
-                    // Zuerst die aktiven, dann — wie vom Nutzer gewuenscht — notfalls die
-                    // bereits zurueckgetretenen. Verstorbene NIE (Status heisst `deceased`).
-                    const _frei = (GAME_STATE.reservePool || []).filter(d =>
-                        d && d.id && !drin.has(d.id) && d.status !== 'deceased');
-                    const _wahl = _frei.filter(_istIndy);
-                    // Dritte Stufe: KOMMENDE FAHRER (Nutzer: „kann auch kommende fahrer sein,
-                    // gleiche logik wie rest-f1"). Real war Indianapolis das Rennen der
-                    // Aufsteiger — jedes Jahr standen Rookies im Feld. Sie kommen erst dran,
-                    // wenn weder aktive noch ehemalige Indy-Fahrer mehr uebrig sind, und nur
-                    // der Nachwuchs, nie ein etablierter Grand-Prix-Pilot.
-                    const _kommend = d => !!d.feederInfo || !!d.feederFictionalSkills
-                        || String(d.id || '').startsWith('feeder-');
-                    const kand = _wahl.filter(d => !d.status || d.status === 'active')
-                        .concat(_wahl.filter(d => d.status === 'retired'))
-                        .concat(_frei.filter(d => !_istIndy(d) && _kommend(d)
-                            && (!d.status || d.status === 'active')));
-                    for (const d of kand) {
-                        if (activeDrivers.length >= INDY_FELD || !teamsImFeld.length) break;
-                        if (!_teamDa(d.team)) d.team = teamsImFeld[Math.floor(Math.random() * teamsImFeld.length)];
-                        d.isGuest = true;
-                        activeDrivers.push(d);
-                        drin.add(d.id);
-                    }
                 }
             }
             if (!isIndyRace) {
@@ -25974,42 +26063,28 @@ const CIRCUIT_LAYOUTS = {
                         activeDrivers = scored.slice(0, gridSize).map(x => x.d);
                     }
                 } else if (activeDrivers.length < gridSize) {
-                    // Grid-Füller: Reserve-Pool-Fahrer füllen sporadisch freie Startplätze
-                    const activeIds = new Set(activeDrivers.map(d => d.id));
-                    const pool = (GAME_STATE.reservePool || []).filter(d =>
-                        !activeIds.has(d.id) &&
-                        // [SYNC simulateRace] Kein Vor-Quali-Verlierer über die Hintertür
-                        // (v0.9.16.4): er ist eben aus activeDrivers geflogen und stünde
-                        // damit wieder als „freier" Pool-Fahrer bereit.
-                        !_dnpqOut.has(d.id) &&
-                        d.status !== 'retired' && !_istTot(d) &&
-                        GAME_STATE.teams.some(t => t.id === d.team)
-                    );
-                    if (pool.length > 0) {
-                        const slots = gridSize - activeDrivers.length;
-                        // ⚠ DER WAGENDECKEL GILT AUCH HIER (v0.9.16.3). Der Fueller
-                        // setzte den Pool-Fahrer in SEIN Team, ohne zu pruefen, ob dort
-                        // schon zwei Autos stehen — 2005 starteten dadurch BAR, Red Bull,
-                        // Minardi und Williams mit je DREI Wagen (Davidson, Liuzzi,
-                        // Doornbos, Pizzonia: die realen dritten Fahrer, die im Pool
-                        // sitzen). applyConstructorCarCap lief davor und war danach wertlos.
-                        const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
-                        const _belegt = {};
-                        activeDrivers.forEach(d => { if (d.team) _belegt[d.team] = (_belegt[d.team] || 0) + 1; });
-                        const weighted = pool.map(d => ({
-                            d,
-                            weight: (d.pace || 60) + Math.random() * 20
-                        })).sort((a, b) => b.weight - a.weight);
-                        const fillers = [];
-                        for (const x of weighted) {
-                            if (fillers.length >= slots) break;
-                            const tid = x.d.team;
-                            if (tid && (_belegt[tid] || 0) >= _deckel) continue;
-                            if (tid) _belegt[tid] = (_belegt[tid] || 0) + 1;
-                            fillers.push({ ...x.d, isGuest: true });
-                        }
-                        activeDrivers = [...activeDrivers, ...fillers];
-                    }
+                    // Grid-Fueller: zentral in fillGridFromPool (v0.9.17.13) — dieselbe
+                    // Funktion laeuft im Qualifying. Hat sie dort schon gefuellt, sind die
+                    // Nachruecker im Kader und dieser Aufruf findet nichts mehr zu tun.
+                    activeDrivers = fillGridFromPool(activeDrivers, gridSize, _dnpqOut);
+                }
+            }
+
+            // === NICHT ANGETRETEN (v0.9.17.13) ===
+            // Nach der Qualifikation, vor dem Start: einzelne Wagen kommen nicht an die
+            // Linie. Rate je Aera aus F1DB (s. _dnsRateFor) — 1960er 4 %, heute 0,7 %.
+            // ⚠ Bewusst HIER, nach Grid-Cap und Fueller: es kann nur ausfallen, wer sich
+            //   qualifiziert hat. Die Matrix kennt „DNS" bereits als Zelle (cellLabel/cellBg),
+            //   ihr fehlten nur die Daten — deshalb eine eigene Liste wie bei dnq/dnpq.
+            const _dnsIds = [];
+            {
+                const _rate = _dnsRateFor(GAME_STATE.currentYear);
+                if (_rate > 0 && activeDrivers.length > 2) {
+                    activeDrivers = activeDrivers.filter(d => {
+                        if (Math.random() >= _rate) return true;
+                        _dnsIds.push(d.id);
+                        return false;
+                    });
                 }
             }
 
@@ -26294,6 +26369,7 @@ const CIRCUIT_LAYOUTS = {
                 isHot,
                 results,
                 dnq: _dnqIds,
+                dns: _dnsIds,      // qualifiziert, aber nicht an den Start gegangen (v0.9.17.13)
                 dnpq: (GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex)?.dnpqIds || []),
                 timestamp: new Date().toISOString()
             };
@@ -26824,6 +26900,16 @@ const CIRCUIT_LAYOUTS = {
                 // [SYNC simulateRace] Logik zentral in privateerEntersRace.
                 activeDrivers = activeDrivers.filter(d => privateerEntersRace(d, race));
                 activeDrivers = applyConstructorCarCap(activeDrivers, GAME_STATE.teams, GAME_STATE.currentYear);
+                // [SYNC simulateRace] Zu duennes Feld schon HIER auffuellen, nicht erst im
+                // Rennen — sonst stehen am Start Fahrer, die nie eine Zeit gefahren sind.
+                const _gs = getGridSize(GAME_STATE.currentYear, race);
+                if (activeDrivers.length < _gs) activeDrivers = fillGridFromPool(activeDrivers, _gs, null);
+            } else {
+                // [SYNC simulateRace] Indy-Meldeliste HIER aufbauen, nicht erst im Rennen.
+                // Vorher fuellte nur simulateRace auf: 1957 standen zwoelf Fahrer im
+                // Qualifying und 33 am Start. Wer hier aufgenommen wird, wandert in den
+                // Kader — das Rennen findet ihn dadurch von selbst.
+                activeDrivers = fillIndyEntryList(activeDrivers, race);
             }
 
             // === VORQUALIFIKATION (DNPQ) ===
@@ -34605,6 +34691,9 @@ const CIRCUIT_LAYOUTS = {
                     // hinterliess eine Spur. Ohne diese Zeile kann keine Ansicht der Welt
                     // zeigen, warum jemand fehlt.
                     dnpq: (Array.isArray(race.dnpq) && race.dnpq.length) ? race.dnpq.slice() : undefined,
+                    // Nicht angetreten (v0.9.17.13) — dieselbe Begruendung wie bei dnq/dnpq:
+                    // ohne diese Liste kann keine Ansicht zeigen, warum jemand fehlt.
+                    dns: (Array.isArray(race.dns) && race.dns.length) ? race.dns.slice() : undefined,
                     res: race.results.map(r => ({
                         d: r.driver,              // Driver ID
                         p: r.position,            // Position
@@ -44956,8 +45045,12 @@ Empfohlene Wertebereiche:
                             const cells = (GAME_STATE.results || []).map(race => {
                                 const isDNPQ2 = (race.dnpq || []).includes(driver.id);
                                 const isDNQ2  = (race.dnq  || []).includes(driver.id);
-                                if (isDNPQ2 || isDNQ2) return { circuit: race.raceName, raceId: race.raceIndex, absent: false,
-                                    pos: null, posText: isDNPQ2 ? 'DNPQ' : 'DNQ', points: 0, fastestLap: false, pole: false };
+                                // DNS mit anzeigen (v0.9.17.13): qualifiziert, aber nicht an den
+                                // Start gegangen. cellLabel/cellBg kannten 'DNS' laengst, es gab
+                                // nur nie Daten dafuer.
+                                const isDNS2  = (race.dns  || []).includes(driver.id);
+                                if (isDNPQ2 || isDNQ2 || isDNS2) return { circuit: race.raceName, raceId: race.raceIndex, absent: false,
+                                    pos: null, posText: isDNPQ2 ? 'DNPQ' : isDNQ2 ? 'DNQ' : 'DNS', points: 0, fastestLap: false, pole: false };
                                 const result = (race.results||[]).find(r => r.driver === driver.id);
                                 if (!result) return { circuit: race.raceName, raceId: race.raceIndex, absent: true };
                                 return { circuit: race.raceName, raceId: race.raceIndex,
@@ -44996,7 +45089,8 @@ Empfohlene Wertebereiche:
                                 if (!result) {
                                     const isDNPQ2 = (race.dnpq || []).includes(simDriver.id);
                                     const isDNQ2  = (race.dnq  || []).includes(simDriver.id);
-                                    const pt2 = isDNPQ2 ? 'DNPQ' : isDNQ2 ? 'DNQ' : null;
+                                    const isDNS2  = (race.dns  || []).includes(simDriver.id);
+                                    const pt2 = isDNPQ2 ? 'DNPQ' : isDNQ2 ? 'DNQ' : isDNS2 ? 'DNS' : null;
                                     return { circuit: raceName, raceId: raceIdx, absent: !pt2, pos: null, posText: pt2, points: 0, fastestLap: false, pole: false };
                                 }
                                 const isDNF = result.dnf === 1 || result.dnf === true;
@@ -47945,8 +48039,9 @@ Empfohlene Wertebereiche:
                         const cells=(GAME_STATE.results||[]).map(race=>{
                             const isDNPQ=(race.dnpq||[]).includes(d.id);
                             const isDNQ=(race.dnq||[]).includes(d.id);
-                            if (isDNPQ||isDNQ) return {circuit:race.raceName,raceId:race.raceIndex,
-                                absent:false,pos:null,posText:isDNPQ?'DNPQ':'DNQ',points:0,fastestLap:false};
+                            const isDNS=(race.dns||[]).includes(d.id);
+                            if (isDNPQ||isDNQ||isDNS) return {circuit:race.raceName,raceId:race.raceIndex,
+                                absent:false,pos:null,posText:isDNPQ?'DNPQ':isDNQ?'DNQ':'DNS',points:0,fastestLap:false};
                             const r=(race.results||[]).find(r=>r.driver===d.id);
                             if (!r) return {circuit:race.raceName,raceId:race.raceIndex,absent:true};
                             return {circuit:race.raceName,raceId:race.raceIndex,
@@ -47996,10 +48091,11 @@ Empfohlene Wertebereiche:
                             const res=race.res||race.results||[];
                             const isDNPQ=(race.dnpq||[]).includes(d.id);
                             const isDNQ=(race.dnq||[]).includes(d.id);
+                            const isDNS=(race.dns||[]).includes(d.id);
                             const rn=race.rn||race.raceName||'?';
                             const ri=race.ri??0;
-                            if (isDNPQ||isDNQ) return {circuit:rn,raceId:ri,absent:false,
-                                pos:null,posText:isDNPQ?'DNPQ':'DNQ',points:0,fastestLap:false};
+                            if (isDNPQ||isDNQ||isDNS) return {circuit:rn,raceId:ri,absent:false,
+                                pos:null,posText:isDNPQ?'DNPQ':isDNQ?'DNQ':'DNS',points:0,fastestLap:false};
                             const r=res.find(r=>(r.d||r.driver)===d.id);
                             if (!r) return {circuit:rn,raceId:ri,absent:true};
                             const isDNF=r.dnf===1||r.dnf===true;
