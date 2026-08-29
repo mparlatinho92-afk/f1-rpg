@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.21</title>
+    <title>F1 RPG v0.9.17.22</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.21 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.22 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; FIX: Der Transfermarkt setzte Indy-Fahrer in Grand-Prix-Cockpits - am naechsten Indy 500 standen dann Cooper, Connaught und O.S.C.A. am Start, gemessen 43 von 255 Wagen</div>
+                            <div>&#8226; FIX: eine Nachkontrolle am Saisonwechsel raeumt falsch besetzte Sitze in beide Richtungen, wie schon bei der Landsmann-Regel - danach 2 von 252, und die sind historisch belegt</div>
+                            <div>&#8226; FIX: Indy-Rennstaelle in Grand Prix waren seit .21 schon verschwunden - Kurtis Kraft in Argentinien, Schroeder in Frankreich, Phillips in Buenos Aires kamen ueber den Grid-Fueller</div>
+                            <div class="font-bold text-slate-400">v0.9.17.21 - 29.08.2026</div>
                             <div>&#8226; FIX: Indy-Fahrer rutschten als Nachruecker in Grand Prix - Larry Crockett fuhr in Spa, Jimmy Daywalt in Silverstone, ohne je eine Qualifikationszeit gefahren zu sein</div>
                             <div>&#8226; FIX: gemessen ueber acht Saisons ab 1950 von 40 Faellen auf null, und kein Starter mehr ohne Qualifikationszeit</div>
                             <div>&#8226; FIX: der Crossover beim US-Grand-Prix bleibt davon unberuehrt</div>
@@ -17328,7 +17332,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.21';
+        const VERSION = '0.9.17.22';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22511,6 +22515,51 @@ const CIRCUIT_LAYOUTS = {
         // weiter zu raten, welcher Pfad noch fehlt, wird hier am Ende geräumt: wer
         // nicht hingehört, wird Free Agent, und der Sitz bekommt einen Landsmann
         // (echt bevorzugt, sonst erfunden — `generateDriver` kennt die Regel).
+        // === INDY UND GRAND PRIX BLEIBEN GETRENNT (v0.9.17.22) ===
+        // Letzte Verteidigungslinie, wie enforceNationalityOnlySeats direkt darunter — und
+        // aus demselben Grund: die Verträglichkeitsprüfung `_compat` gibt es zwar in
+        // acquireSeatDriver und _findRealSeatCandidate, aber der Transfermarkt vergibt
+        // Cockpits an mindestens sechs weiteren Stellen (processTeamChanges, executeTransfer,
+        // applyTeamEntryExit …). Eine davon zu uebersehen genuegt, und genau das ist passiert.
+        // Gemessen ueber acht Saisons ab 1950: beim Spielstart 0-2 falsche Paarungen, nach
+        // JEDEM Saisonwechsel 6-23 — und am naechsten Indy 500 standen dann Cooper, Connaught
+        // und O.S.C.A. am Start, 48 Wagen in acht Jahren.
+        // ⚠ Die Regel gilt in BEIDE Richtungen: kein Indy-Fahrer in einem Grand-Prix-Team,
+        //   kein Grand-Prix-Fahrer in einem Indy-Rennstall.
+        // ⚠ Der Crossover (Farina im Ferrari beim Indy 500 1956) laeuft NICHT ueber Cockpits,
+        //   sondern setzt seinen Gast direkt ins Rennen — er bleibt unberuehrt.
+        // ⚠ Ueber eine KOPIE laufen: der Ersatzpfad haengt neue Fahrer an GAME_STATE.drivers,
+        //   ein forEach ueber das Original wuerde sie mitbesuchen.
+        function enforceIndyOnlySeats(year) {
+            if (typeof isIndyOnlyConstructor !== 'function') return 0;
+            const _teamIndy = t => !!t && (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId));
+            const _fahrerIndy = d => !!d && (d.isIndyOnly || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id)));
+            let geraeumt = 0;
+            for (const d of [...(GAME_STATE.drivers || [])]) {
+                if (!d.team || (d.status && d.status !== 'active')) continue;
+                const t = (GAME_STATE.teams || []).find(x => x.id === d.team);
+                if (!t) continue;
+                const tIndy = _teamIndy(t);
+                if (tIndy === _fahrerIndy(d)) continue;   // passt zusammen
+                d.team = null; d.contractEnd = null; d.isReserve = true;
+                geraeumt++;
+                logInfo('TRANSFER', `↩️ ${d.name} passt nicht zu ${t.name} (Indy und Grand Prix getrennt) – wieder frei`);
+                // Nur Grand-Prix-Sitze nachbesetzen. Ein Indy-Cockpit fuellt sich beim
+                // Rennwochenende ueber fillIndyEntryList aus dem Indy-Kreis.
+                if (tIndy) continue;
+                const ersatz = _lastResortRealDriver(t.id, year);
+                if (!ersatz) {
+                    const gd = generateDriver(t.id, year, Math.random() < 0.7);
+                    if (gd) {
+                        gd.contractEnd = year + 1;
+                        GAME_STATE.drivers.push(gd);
+                        GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
+                    }
+                }
+            }
+            return geraeumt;
+        }
+
         function enforceNationalityOnlySeats(year) {
             if (typeof getNationalityOnlyNations !== 'function') return 0;
             let geraeumt = 0;
@@ -35779,6 +35828,7 @@ const CIRCUIT_LAYOUTS = {
             // Grid-Füller vergeben danach noch Cockpits. Die „letzte Verteidigungslinie"
             // muss wirklich die letzte sein, sonst räumt sie auf, bevor der Müll da ist.
             enforceNationalityOnlySeats(newYear);
+            enforceIndyOnlySeats(newYear);   // gleiche Stelle, gleicher Grund (v0.9.17.22)
             // JEDER GEPLANTE FAHRER MELDET ≥1 RENNEN (v0.9.15.11).
             // Wer nach der Zuteilung 0 Meldungen hat (homeOnly ohne Heimrennen im
             // Kalender, leerer Plan), gehört nicht in die Meldeliste — raus aus der F1,
