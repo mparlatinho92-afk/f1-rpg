@@ -43,8 +43,23 @@ function messePool(jahr) {
     add(jahr, 'kader', kader.length);
     add(jahr, 'poolAktiv', pool.filter(d => lebt(d) && (!d.status || d.status === 'active')).length);
     add(jahr, 'poolRent',  pool.filter(d => lebt(d) && d.status === 'retired').length);
-    add(jahr, 'poolTot',   pool.filter(d => !lebt(d)).length);
+    // ⚠ NICHT den Pool nach Toten durchsuchen: initReservePool raeumt sie zu Beginn
+    //   JEDER Saison heraus (v0.9.15.96), die Spalte waere strukturell immer 0.
+    //   Gezaehlt wird stattdessen, wer in dieser Saison gestorben ist — inklusive der
+    //   Nicht-WM-Tode auf AAA-, Midget- und Sprint-Car-Rennen (NONWM_INDY_VENUES).
     acc[jahr].n++;
+}
+
+function zaehleTote(jahr) {
+    const tote = (ctx.GAME_STATE.seasonDeaths || []);
+    let indy = 0, rest = 0;
+    for (const t of tote) {
+        const hid = t.histId || t.driver || '';
+        if (typeof ctx.isIndyOnlyDriver === 'function' && ctx.isIndyOnlyDriver(hid)) indy++;
+        else rest++;
+    }
+    add(jahr, 'toteIndy', indy);
+    add(jahr, 'toteRest', rest);
 }
 
 function fahreSaison() {
@@ -66,6 +81,7 @@ function fahreSaison() {
         }
         ctx.applyRaceResults(r);
     }
+    zaehleTote(jahr);
 }
 
 console.log(`\n${'═'.repeat(74)}`);
@@ -103,12 +119,12 @@ const R = (j, f) => acc[j] && acc[j].indyRennen ? (acc[j][f] || 0) / acc[j].indy
 const p = (v, w) => String(v).padStart(w);
 
 console.log(`\nINDY-FAHRER IM BESTAND  (Mittel aus ${ok} Sims, gemessen am Saisonanfang)`);
-console.log('Jahr │ Kader │ Pool aktiv │ Pool Rent │ Pool tot │ verfuegbar');
-console.log('─'.repeat(66));
+console.log('Jahr │ Kader │ Pool aktiv │ Pool Rent │ verfuegbar │ Tote Indy │ Tote uebrige');
+console.log('─'.repeat(84));
 const jahre = Object.keys(acc).map(Number).sort((a, b) => a - b);
 for (const j of jahre) {
     const verf = M(j, 'kader') + M(j, 'poolAktiv') + M(j, 'poolRent');
-    console.log(`${j} │ ${p(M(j,'kader').toFixed(1),5)} │ ${p(M(j,'poolAktiv').toFixed(1),10)} │ ${p(M(j,'poolRent').toFixed(1),9)} │ ${p(M(j,'poolTot').toFixed(1),8)} │ ${p(verf.toFixed(1),10)}`);
+    console.log(`${j} │ ${p(M(j,'kader').toFixed(1),5)} │ ${p(M(j,'poolAktiv').toFixed(1),10)} │ ${p(M(j,'poolRent').toFixed(1),9)} │ ${p(verf.toFixed(1),10)} │ ${p(M(j,'toteIndy').toFixed(1),9)} │ ${p(M(j,'toteRest').toFixed(1),12)}`);
 }
 
 console.log(`\nINDY 500  (Mittel je gefahrenem Indy-Rennen)`);
