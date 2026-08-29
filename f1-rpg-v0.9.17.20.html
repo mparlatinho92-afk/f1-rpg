@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.19</title>
+    <title>F1 RPG v0.9.17.20</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.19 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.20 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Fahrer ohne Tabellenzeile wurden bei der Punktevergabe stillschweigend uebersprungen - Rueckkehrer nach Karriereende verloren dadurch ihre komplette Saison, in einem Spielstand Ayrton Senna 1994 mit zehn Siegen und 100 Punkten</div>
+                            <div>&#8226; FIX: Wer nur an der Qualifikation scheitert, bekommt jetzt auch eine Zeile - am Indy 500 sind das zehn bis fuenfzehn Fahrer je Jahr</div>
+                            <div>&#8226; FIX: DNS zaehlt in der Ergebnis-Matrix als Rennwochenende wie DNQ - vorher verschwand ein Fahrer mit ausschliesslich DNS ganz aus der Tabelle</div>
+                            <div>&#8226; FIX: Teilnehmer bleiben im Archiv auffindbar, auch wenn sie vor Saisonende aus Kader und Pool verschwinden</div>
+                            <div class="font-bold text-slate-400">v0.9.17.19 - 29.08.2026</div>
                             <div>&#8226; FIX: Wer sich nicht qualifiziert hat, fehlte im Kader der archivierten Saison - im Qualifying vergangener Rennen stand statt des Namens die rohe ID, im Spielstand des Nutzers bei jedem fuenften DNQ-Eintrag</div>
                             <div>&#8226; FIX: Gastfahrer werden jetzt aus allen Listen nachgetragen - Ergebnis, Qualifying, DNQ, DNS und Vor-Quali</div>
                             <div>&#8226; FIX: Nino Farina beim Indy 500 1956 wird wieder mit Namen aufgeloest - sein Sieg und seine Punkte bleiben, er stand nur in keinem Kader</div>
@@ -17319,7 +17324,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.19';
+        const VERSION = '0.9.17.20';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -26792,9 +26797,42 @@ const CIRCUIT_LAYOUTS = {
             if (tc && tc.round === GAME_STATE.currentRace) showTitleClinchModal(tc);
         }
 
+        // Legt bei Bedarf eine WM-Tabellenzeile an. Siehe Kommentar in applyRaceResults.
+        function _standingsZeile(id, teamHint, nameHint) {
+            if (!id || !GAME_STATE.driverStandings || GAME_STATE.driverStandings[id]) return;
+            const d = (GAME_STATE.drivers || []).find(x => x.id === id)
+                   || (GAME_STATE.reservePool || []).find(x => x.id === id);
+            GAME_STATE.driverStandings[id] = {
+                name: d?.name || nameHint || id,
+                team: teamHint || d?.team || null,
+                points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0,
+                dnfs: 0, bestFinish: null
+            };
+        }
+
         function applyRaceResults(raceResult) {
+            // ⚠ AUCH WER NICHT GESTARTET IST braucht seine Zeile (v0.9.17.20). Die
+            //   Ergebnis-Matrix baut ihre Zeilen aus driverStandings und wertet laut Entwurf
+            //   jeden, der „an mind. 1 Rennwochenende teilnahm (Start, DNF ODER DNQ)".
+            //   Ein Fahrer, der die ganze Saison nur an der Qualifikation scheitert — am
+            //   Indy 500 sind das zehn bis fuenfzehn je Jahr —, hatte keine Zeile und war
+            //   damit samt seiner DNQ- und DNS-Zellen unsichtbar.
+            for (const id of (raceResult.dnq  || [])) _standingsZeile(id);
+            for (const id of (raceResult.dns  || [])) _standingsZeile(id);
+            for (const id of (raceResult.dnpq || [])) _standingsZeile(id);
             raceResult.results.forEach(r => {
-                // Driver standings
+                // === WER FAEHRT, GEHOERT IN DIE TABELLE (v0.9.17.20) ===
+                // Hier stand nur `if (GAME_STATE.driverStandings[r.driver])` — ein Fahrer ohne
+                // Zeile wurde STILLSCHWEIGEND uebersprungen, samt seiner Punkte. Die Zeilen legt
+                // initStandings zu Saisonbeginn ueber GAME_STATE.drivers an; wer erst danach
+                // dazukommt, hat keine: Indy-Nachruecker aus dem Reserve-Pool, Grid-Fueller, und
+                // vor allem Rueckkehrer nach einem Karriereende.
+                // Gemessen an einem Spielstand des Nutzers: 13 Faelle in 37 Saisons, darunter
+                // Ayrton Senna 1994 mit 16 Rennen, 10 Siegen und 100 Punkten — er fehlte in der
+                // WM-Tabelle komplett, Weltmeister wurde Frentzen mit 38.
+                // Folgefehler in der Ergebnis-Matrix: sie baut ihre Zeilen aus driverStandings,
+                // also war so ein Fahrer dort samt DNQ/DNS-Zellen unsichtbar.
+                _standingsZeile(r.driver, r.team, r.driverName);
                 if (GAME_STATE.driverStandings[r.driver]) {
                     const ds = GAME_STATE.driverStandings[r.driver];
                     ds.points += r.points;
@@ -35057,10 +35095,20 @@ const CIRCUIT_LAYOUTS = {
                         return { id, histId: slug, name: e.guestName || slug, nation: null,
                                  team: null, number: null, birthYear: null, pace: e.guestPace || 75 };
                     };
+                    // Letzter Rueckfall: die WM-Tabelle. Seit v0.9.17.20 bekommt JEDER, der an
+                    // einem Rennwochenende teilnahm, dort eine Zeile — auch wer nur scheiterte.
+                    // Damit ist ein Teilnehmer selbst dann noch mit Namen auffindbar, wenn er
+                    // vor dem Archivieren aus Kader UND Pool verschwunden ist (Tod, Ruecktritt).
+                    const _ausTabelle = (id) => {
+                        const st = (GAME_STATE.driverStandings || {})[id];
+                        return st ? { id, histId: null, name: st.name || id, nation: null,
+                                      team: st.team || null, number: null, birthYear: null, pace: null } : null;
+                    };
                     for (const id of _ausErgebnis) {
                         const q = (GAME_STATE.reservePool || []).find(x => x.id === id)
                                || (GAME_STATE.drivers || []).find(x => x.id === id)
-                               || (String(id).startsWith('_cx_') ? _cxGast(id) : null);
+                               || (String(id).startsWith('_cx_') ? _cxGast(id) : null)
+                               || _ausTabelle(id);
                         if (!q) continue;
                         _seasonDrivers.push({
                             id: q.id, histId: q.histId, name: q.name, nation: q.nation,
@@ -39832,9 +39880,14 @@ const CIRCUIT_LAYOUTS = {
                         _driverTeamsMap[did].set(key, { id: tid || null, name: tnm });
                     }
                 });
-                // DNQ/DNPQ-Fahrer nahmen am Wochenende teil, ohne zu starten → mitzählen.
+                // DNQ/DNPQ/DNS-Fahrer nahmen am Wochenende teil, ohne zu starten → mitzählen.
+                // ⚠ DNS fehlte hier bis v0.9.17.20: wer sich qualifiziert hatte und nicht an den
+                //   Start ging, kam auf null Wochenenden und fiel damit aus der Matrix — seine
+                //   DNS-Zelle war nirgends zu sehen. Traf vor allem Indy-Fahrer, die AUSSER dem
+                //   Indy 500 kein Rennen bestreiten und deshalb sonst nichts vorzuweisen haben.
                 (r.dnq || []).forEach(_bumpWeekend);
                 (r.dnpq || []).forEach(_bumpWeekend);
+                (r.dns || []).forEach(_bumpWeekend);
                 (r.res || r.results || []).forEach(res => { if (res.dnpq) _bumpWeekend(res.d || res.driver); });
             });
 
