@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.20</title>
+    <title>F1 RPG v0.9.17.21</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.20 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.21 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Indy-Fahrer rutschten als Nachruecker in Grand Prix - Larry Crockett fuhr in Spa, Jimmy Daywalt in Silverstone, ohne je eine Qualifikationszeit gefahren zu sein</div>
+                            <div>&#8226; FIX: gemessen ueber acht Saisons ab 1950 von 40 Faellen auf null, und kein Starter mehr ohne Qualifikationszeit</div>
+                            <div>&#8226; FIX: der Crossover beim US-Grand-Prix bleibt davon unberuehrt</div>
+                            <div class="font-bold text-slate-400">v0.9.17.20 - 29.08.2026</div>
                             <div>&#8226; FIX: Fahrer ohne Tabellenzeile wurden bei der Punktevergabe stillschweigend uebersprungen - Rueckkehrer nach Karriereende verloren dadurch ihre komplette Saison, in einem Spielstand Ayrton Senna 1994 mit zehn Siegen und 100 Punkten</div>
                             <div>&#8226; FIX: Wer nur an der Qualifikation scheitert, bekommt jetzt auch eine Zeile - am Indy 500 sind das zehn bis fuenfzehn Fahrer je Jahr</div>
                             <div>&#8226; FIX: DNS zaehlt in der Ergebnis-Matrix als Rennwochenende wie DNQ - vorher verschwand ein Fahrer mit ausschliesslich DNS ganz aus der Tabelle</div>
@@ -3802,7 +3806,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.20';
+        const VERSION = '0.9.17.21';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -8358,6 +8362,17 @@
                 !activeIds.has(d.id) &&
                 // Kein Vor-Quali-Verlierer ueber die Hintertuer (v0.9.16.4).
                 !(dnpqOut && dnpqOut.has(d.id)) &&
+                // ⚠ KEIN INDY-FAHRER IN EINEN GRAND PRIX (v0.9.17.21). Beide Aufrufer
+                //   stehen im Nicht-Indy-Zweig, der Ausschluss gilt hier also immer.
+                //   Die Indy-Rennstaelle (Kurtis Kraft, Watson, Epperly …) stehen in den
+                //   Fuenfzigern im Team-Verzeichnis, damit erfuellte ihr Fahrer die
+                //   Team-Pruefung unten und war ein gueltiger Nachruecker fuer Spa oder
+                //   Reims. Im Spielstand des Nutzers standen so Larry Crockett, Jimmy
+                //   Daywalt und Fred Agabashian in Grand Prix von 1953-55, ohne je eine
+                //   Qualifikationszeit gefahren zu sein.
+                //   Der Crossover (Indy-Fahrer beim US-Grand-Prix) laeuft NICHT hierueber,
+                //   sondern wird vorher direkt ins Feld gesetzt — er bleibt unberuehrt.
+                !(d.isIndyOnly || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id))) &&
                 d.status !== 'retired' && !_istTot(d) &&
                 GAME_STATE.teams.some(t => t.id === d.team)
             );
