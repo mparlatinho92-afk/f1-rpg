@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.17</title>
+    <title>F1 RPG v0.9.17.18</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.17 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.18 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Das Startjahr aenderte die Indy-Meldezahl - wer 1960 begann hatte 33 Melder und null DNQ, wer ab 1950 hinspielte 45 Melder und 12 DNQ</div>
+                            <div>&#8226; FIX: Ursache war die Karriere-Pruefung beim Spielstart - fuer sie sah es aus als waeren alle Indy-Fahrer 1960 zurueckgetreten, weil das Indy 500 die WM verlaesst</div>
+                            <div>&#8226; NEU: Werkzeug misst den Indy-Bestand und die Todesfaelle ueber eine ganze Partie</div>
+                            <div class="font-bold text-slate-400">v0.9.17.17 - 29.08.2026</div>
                             <div>&#8226; FIX: Live gefahrene Rennen hatten garantiert null DNS - der Ticker kannte den Wurf gar nicht, waehrend dasselbe Rennen sofort simuliert welche produzierte</div>
                             <div>&#8226; NEU: Zum Indy 500 melden jetzt 43 bis 48 Wagen auf 33 Startplaetze - der Rest scheitert in der Qualifikation, wie es in Indianapolis ueblich war</div>
                             <div>&#8226; FIX: Melderzahl ist je Jahrgang fest, damit Qualifying und Rennen dasselbe Feld sehen</div>
@@ -3788,7 +3792,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.17';
+        const VERSION = '0.9.17.18';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -10983,6 +10987,20 @@
             // Funktion (knownNames, nameToSlug).
             const _simStart = parseInt(GAME_STATE.templateUsed) || year;
             let _stillToCome = null;
+            // === INDY-AUSNAHME (v0.9.17.18) ===
+            // Nutzer-Regel: das Simstartjahr darf am Mantel der Meldezahl nichts aendern.
+            // careerOk verletzte sie fuer Indianapolis: das Indy 500 verlaesst die WM nach
+            // 1960 und faellt damit aus SEASON_DATA — fuer den Filter sieht es aus, als waeren
+            // ALLE Indy-Fahrer 1960 zurueckgetreten. Je spaeter der Start, desto weniger kamen
+            // durch (Start 1950: 103 von 108 · 1955: 68 · 1958: 51 · 1960: 32 · 1961: 2), und
+            // bei Start 1960 blieb der Pool leer: 33 Melder statt 45, null DNQ, waehrend
+            // dieselbe Saison ab 1950 durchgespielt 44,9 Melder und 12 DNQ hatte.
+            // Deshalb fuer Indy-only-Fahrer ein FENSTER statt der harten Grenze: wer noch
+            // kurz vor dem Startjahr gemeldet hat, faehrt in Indianapolis weiter — dass er in
+            // SEASON_DATA fehlt, sagt nach 1960 nichts ueber sein Karriereende.
+            // ⚠ Nur waehrend Indy WM-Lauf war. Ab 1961 gibt es kein Indy 500 im Kalender,
+            //   ein aufgenommener Indy-Fahrer laege nur nutzlos im Pool.
+            const INDY_CAREER_WINDOW = 3;
             if (year === _simStart) {
                 _stillToCome = new Set();
                 for (const k of Object.keys(SEASON_DATA)) {
@@ -10992,9 +11010,43 @@
                     if (sd && sd.d) sd.d.forEach(d => d[1] && _stillToCome.add(d[1].toLowerCase().trim()));
                 }
             }
+            // Letztes SEASON_DATA-Jahr je Indy-only-Fahrer, Name → Jahr.
+            // ⚠ LAZY, nicht hier oben: die Zuordnung Name → Slug steht erst weiter unten
+            //   (nameToSlug aus HIST_NAMES). Und der Slug ist Pflicht — isIndyOnlyDriver
+            //   erwartet 'bill-vukovich', SEASON_DATA fuehrt die Kurz-ID 'BILLVU'. Mit d[0]
+            //   geprueft trifft die Liste NIE, und das Fenster bliebe wirkungslos.
+            //   Genauso wenig reicht der Name allein: 'A.J. Foyt' normalisiert zu
+            //   'a-j--foyt', in der Liste steht 'aj-foyt'.
+            let _indyLastSeen = null;
+            function _indyLetzteSaison() {
+                const m = new Map();
+                if (_simStart > 1960) return m;   // ab 1961 kein Indy 500 im Kalender
+                for (const k of Object.keys(SEASON_DATA)) {
+                    const yy = parseInt(k);
+                    if (!yy) continue;
+                    const sd = SEASON_DATA[k];
+                    if (!sd || !sd.d) continue;
+                    for (const d of sd.d) {
+                        const roh = typeof repairMojibake === 'function' ? repairMojibake(d[1]) : d[1];
+                        const nm = roh && roh.toLowerCase().trim();
+                        if (!nm) continue;
+                        const slug = nameToSlug[nm] || d[0];
+                        if (typeof isIndyOnlyDriver !== 'function' || !isIndyOnlyDriver(slug)) continue;
+                        if (yy > (m.get(nm) || 0)) m.set(nm, yy);
+                    }
+                }
+                return m;
+            }
             function careerOk(d) {
                 if (!_stillToCome) return true;
-                return !!d[1] && _stillToCome.has(d[1].toLowerCase().trim());
+                const nm = d[1] && d[1].toLowerCase().trim();
+                if (!nm) return false;
+                if (_stillToCome.has(nm)) return true;
+                // Nur Indy-only-Fahrer stehen in der Karte — fuer alle anderen bleibt die
+                // Regel unveraendert hart.
+                if (_indyLastSeen === null) _indyLastSeen = _indyLetzteSaison();
+                const letzter = _indyLastSeen.get(nm);
+                return letzter != null && letzter >= _simStart - INDY_CAREER_WINDOW;
             }
             function markKnown(d) {
                 seenHistIds.add(d[0]);
