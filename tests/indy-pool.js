@@ -31,6 +31,8 @@ const istIndy = (d) => !!d && (d.isIndyOnly ||
     (typeof ctx.isIndyOnlyDriver === 'function' && ctx.isIndyOnlyDriver(d.histId || d.id)));
 const lebt = (d) => d && d.status !== 'deceased' && d.status !== 'dead';
 
+let indyNamen = new Set();   // Namen aller Indy-Fahrer zu Saisonbeginn (s. zaehleTote)
+
 const acc = {};   // Jahr -> Sammelwerte
 function add(jahr, feld, wert) {
     acc[jahr] = acc[jahr] || { n: 0 };
@@ -40,6 +42,7 @@ function add(jahr, feld, wert) {
 function messePool(jahr) {
     const kader = (ctx.GAME_STATE.drivers || []).filter(istIndy);
     const pool  = (ctx.GAME_STATE.reservePool || []).filter(istIndy);
+    indyNamen = new Set([...kader, ...pool].map(d => (d.name || '').toLowerCase().trim()).filter(Boolean));
     add(jahr, 'kader', kader.length);
     add(jahr, 'poolAktiv', pool.filter(d => lebt(d) && (!d.status || d.status === 'active')).length);
     add(jahr, 'poolRent',  pool.filter(d => lebt(d) && d.status === 'retired').length);
@@ -54,8 +57,16 @@ function zaehleTote(jahr) {
     const tote = (ctx.GAME_STATE.seasonDeaths || []);
     let indy = 0, rest = 0;
     for (const t of tote) {
-        const hid = t.histId || t.driver || '';
-        if (typeof ctx.isIndyOnlyDriver === 'function' && ctx.isIndyOnlyDriver(hid)) indy++;
+        // ⚠ NICHT ueber t.histId/t.driver gehen. Die LIVE-Eintraege aus
+        //   applyPendingNonWMDeaths fuehren gar kein histId — das wird erst beim
+        //   Archivieren eingefroren (v0.9.14.42). Der Rueckfall auf t.driver liefert
+        //   die Spiel-ID ('BOBSWE'), und isIndyOnlyDriver will den Slug
+        //   ('bob-sweikert'): JEDER Indy-Tote wurde so als "uebriger" gezaehlt.
+        //   Deshalb ueber den NAMEN gegen den Bestand zu Saisonbeginn.
+        // ⚠ Pool-Tote lassen sich hinterher gar nicht mehr aufloesen: der Fahrer wird
+        //   bei p.fromPool sofort aus dem reservePool entfernt.
+        const nm = (t.name || '').toLowerCase().trim();
+        if (nm && indyNamen.has(nm)) indy++;
         else rest++;
     }
     add(jahr, 'toteIndy', indy);
