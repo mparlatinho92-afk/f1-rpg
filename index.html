@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.18</title>
+    <title>F1 RPG v0.9.17.19</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.18 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.19 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Wer sich nicht qualifiziert hat, fehlte im Kader der archivierten Saison - im Qualifying vergangener Rennen stand statt des Namens die rohe ID, im Spielstand des Nutzers bei jedem fuenften DNQ-Eintrag</div>
+                            <div>&#8226; FIX: Gastfahrer werden jetzt aus allen Listen nachgetragen - Ergebnis, Qualifying, DNQ, DNS und Vor-Quali</div>
+                            <div>&#8226; FIX: Nino Farina beim Indy 500 1956 wird wieder mit Namen aufgeloest - sein Sieg und seine Punkte bleiben, er stand nur in keinem Kader</div>
+                            <div>&#8226; NEU: Pruefwerkzeug meldet jeden Eintrag einer archivierten Saison ohne zugehoerigen Fahrer</div>
+                            <div class="font-bold text-slate-400">v0.9.17.18 - 29.08.2026</div>
                             <div>&#8226; FIX: Das Startjahr aenderte die Indy-Meldezahl - wer 1960 begann hatte 33 Melder und null DNQ, wer ab 1950 hinspielte 45 Melder und 12 DNQ</div>
                             <div>&#8226; FIX: Ursache war die Karriere-Pruefung beim Spielstart - fuer sie sah es aus als waeren alle Indy-Fahrer 1960 zurueckgetreten, weil das Indy 500 die WM verlaesst</div>
                             <div>&#8226; NEU: Werkzeug misst den Indy-Bestand und die Todesfaelle ueber eine ganze Partie</div>
@@ -3792,7 +3797,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.18';
+        const VERSION = '0.9.17.19';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -21488,14 +21493,52 @@
                 {
                     const _drin = new Set(_seasonDrivers.map(d => d.id));
                     const _ausErgebnis = new Set();
+                    const _merke = id => { if (id && !_drin.has(id)) _ausErgebnis.add(id); };
+                    // === AUCH WER NICHT GEFAHREN IST (v0.9.17.19) ===
+                    // Hier standen nur die Rennergebnisse. Wer sich nicht qualifiziert hat,
+                    // taucht dort NIE auf — er fehlte damit im archivierten Kader, und die
+                    // Qualifying-Ansicht konnte seinen Namen nicht mehr aufloesen: im Indy
+                    // 500 1959 des Nutzers standen vier DNQ-Zeilen als rohe ID da
+                    // („reserve-ELMERG-1788030777105-707") und ohne Teamspalte.
+                    // Sichtbar wurde es erst mit .17.17, seit 10-15 Fahrer je Indy 500
+                    // scheitern statt keiner.
+                    // ⚠ Die Regel ist allgemein: wer in IRGENDEINER archivierten Liste steht
+                    //   — Ergebnis, Qualifying, DNQ, DNS, DNPQ — muss im Kader aufloesbar sein.
                     for (const race of (GAME_STATE.results || [])) {
-                        for (const r of (race.results || [])) {
-                            if (r.driver && !_drin.has(r.driver)) _ausErgebnis.add(r.driver);
-                        }
+                        for (const r of (race.results || [])) _merke(r.driver);
+                        for (const id of (race.dnq || [])) _merke(id);
+                        for (const id of (race.dns || [])) _merke(id);
+                        for (const id of (race.dnpq || [])) _merke(id);
                     }
+                    for (const q of (GAME_STATE.qualifyingResults || [])) {
+                        for (const r of (q.results || [])) _merke(r.driver);
+                    }
+                    // Crossover-Gaeste (`_cx_nino-farina`) existieren NUR waehrend des Rennens:
+                    // sie werden in simulateRace/simulateQualifying inline gebaut und nirgends
+                    // abgelegt, also findet die Suche oben sie nicht.
+                    // ⚠ SIE GEHOEREN INHALTLICH DORTHIN — NICHT ENTFERNEN. INDY_F1_CROSSOVER ist
+                    //   von Hand nach der Wirklichkeit gepflegt: Nino Farina meldete 1956 einen
+                    //   Ferrari in Indianapolis, deshalb steht er dort. Im Stand des Nutzers
+                    //   gewann er das Rennen und holte 8 Punkte — richtig so.
+                    //   Falsch war nur, dass er NICHT AUFLOESBAR war: kein Kadereintrag, also eine
+                    //   WM-Tabellenzeile ohne Fahrer und eine rohe ID in der Anzeige. Das sieht aus
+                    //   wie das Aldo-Gordini-Phantom, hat aber eine ganz andere Ursache.
+                    // Die Kennung traegt den Slug, der Name steht in INDY_F1_CROSSOVER: daraus
+                    // laesst sich der Eintrag rekonstruieren, ohne die vier Erzeugungsstellen
+                    // anzufassen.
+                    const _cxGast = (id) => {
+                        const slug = String(id).slice(4);
+                        const liste = (typeof INDY_F1_CROSSOVER !== 'undefined' && INDY_F1_CROSSOVER.indy)
+                            ? (INDY_F1_CROSSOVER.indy[GAME_STATE.currentYear] || []) : [];
+                        const e = liste.find(x => x.driver === slug);
+                        if (!e) return null;
+                        return { id, histId: slug, name: e.guestName || slug, nation: null,
+                                 team: null, number: null, birthYear: null, pace: e.guestPace || 75 };
+                    };
                     for (const id of _ausErgebnis) {
                         const q = (GAME_STATE.reservePool || []).find(x => x.id === id)
-                               || (GAME_STATE.drivers || []).find(x => x.id === id);
+                               || (GAME_STATE.drivers || []).find(x => x.id === id)
+                               || (String(id).startsWith('_cx_') ? _cxGast(id) : null);
                         if (!q) continue;
                         _seasonDrivers.push({
                             id: q.id, histId: q.histId, name: q.name, nation: q.nation,
