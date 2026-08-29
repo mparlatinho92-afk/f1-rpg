@@ -24,8 +24,16 @@ const ctx = getContext();
 
 function pruefe(h) {
     const known = new Set((h.drivers || []).map(d => d.id));
-    const out = { kader: (h.drivers || []).length, quali: [0, 0], dnq: [0, 0], dns: [0, 0], dnpq: [0, 0], res: [0, 0] };
-    const zaehl = (feld, id) => { out[feld][1]++; if (!known.has(id)) out[feld][0]++; };
+    // Zweite Invariante: wer gefahren ist ODER am Wochenende teilnahm, braucht eine
+    // WM-Tabellenzeile. Fehlt sie, verschwindet er aus der Ergebnis-Matrix - die baut
+    // ihre Zeilen aus driverStandings. So fehlte Senna 1994 mit 100 Punkten komplett.
+    const inTab = new Set(Object.keys(h.driverStandings || {}));
+    const out = { kader: (h.drivers || []).length, quali: [0, 0], dnq: [0, 0], dns: [0, 0], dnpq: [0, 0], res: [0, 0], ohneTabelle: new Set() };
+    const zaehl = (feld, id) => {
+        out[feld][1]++;
+        if (!known.has(id)) out[feld][0]++;
+        if (id && feld !== 'quali' && !inTab.has(id)) out.ohneTabelle.add(id);
+    };
     for (const q of (h.qualifyingResults || [])) {
         for (const r of (q.results || q.res || [])) zaehl('quali', r.driver || r.d);
     }
@@ -64,10 +72,11 @@ for (let k = 0; k < SEASONS; k++) {
     const r = pruefe(h);
     const zeile = ['res', 'quali', 'dnq', 'dns', 'dnpq']
         .map(f => `${f} ${r[f][0]}/${r[f][1]}`).join(' · ');
-    const summe = ['res', 'quali', 'dnq', 'dns', 'dnpq'].reduce((a, f) => a + r[f][0], 0);
+    const summe = ['res', 'quali', 'dnq', 'dns', 'dnpq'].reduce((a, f) => a + r[f][0], 0) + r.ohneTabelle.size;
     fehlerGesamt += summe;
-    console.log(`${jahr} │ Kader ${String(r.kader).padStart(3)} │ ${zeile}${summe ? '   <== ' + summe + ' NICHT AUFLOESBAR' : ''}`);
+    const fehltTab = r.ohneTabelle.size ? `  ohne Tabellenzeile ${r.ohneTabelle.size}` : '';
+    console.log(`${jahr} │ Kader ${String(r.kader).padStart(3)} │ ${zeile}${fehltTab}${summe ? '   <== ' + summe + ' FEHLER' : ''}`);
 }
-console.log(`\n${fehlerGesamt === 0 ? 'OK: alles aufloesbar.' : 'FEHLER: ' + fehlerGesamt + ' Eintraege ohne Kader-Fahrer.'}`);
+console.log(`\n${fehlerGesamt === 0 ? 'OK: alles aufloesbar und in der Tabelle.' : 'FEHLER: ' + fehlerGesamt + ' Eintraege ohne Kader-Fahrer oder ohne Tabellenzeile.'}`);
 console.log('Format: nicht-aufloesbar / gesamt\n');
 process.exit(fehlerGesamt === 0 ? 0 : 1);
