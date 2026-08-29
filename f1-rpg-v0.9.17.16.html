@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.15</title>
+    <title>F1 RPG v0.9.17.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.15 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.16 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Jedes Spiel bekommt eine eigene Kennung - Saisons aus einem anderen Spielstand koennen nicht mehr in die Historie geraten, sie werden beim Lesen verworfen und im Log gemeldet</div>
+                            <div>&#8226; FIX: Der Auto-Save gehoert jetzt zu genau einem Spielstand statt im Hintergrund zu bleiben, waehrend vorne ein anderes Spiel laeuft</div>
+                            <div>&#8226; FIX: DNQ und DNS fehlten im Rennergebnis JEDER vergangenen Saison - 263 von 484 archivierten Rennen fuehren eine DNQ-Liste, keine davon war sichtbar</div>
+                            <div>&#8226; FIX: auch die Junior-Welt wird beim Neustart und beim Import geleert</div>
+                            <div class="font-bold text-slate-400">v0.9.17.15 - 29.08.2026</div>
                             <div>&#8226; FIX: Ein neues Spiel loeschte die gespeicherten Saisons des Vorgaengerspiels nicht - alte Rennergebnisse und Kader standen unter frisch gerechneten WM-Tabellen</div>
                             <div>&#8226; FIX: dadurch tauchten Phantom-Fahrer auch in frisch erstellten Spielstaenden wieder auf, obwohl die Ursache behoben war</div>
                             <div>&#8226; FIX: die Junior-Welt wird jetzt mitgeleert - beim Neustart wie beim Import</div>
@@ -17301,7 +17306,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.15';
+        const VERSION = '0.9.17.16';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -17577,11 +17582,43 @@ const CIRCUIT_LAYOUTS = {
         // Löschbefehl – siehe Sicherung in persistHistory().
         let _historyClearIntent = false;
 
+        // ═══ SPIEL-KENNUNG GEGEN FREMDE RECORDS (v0.9.17.16) ═══
+        // Die History-Stores sind allein nach JAHRESZAHL indiziert. Kein Record trug bisher
+        // eine Spur, zu welchem Spiel er gehoert — jeder Kontext, der 1953 schreibt, ueberschreibt
+        // damit die 1953 jedes anderen Spiels. Im Spielstand des Nutzers standen dadurch drei
+        // Partien in einer Datei: 1950-1952 aus einem Spiel von 08:28, 1953-1962 aus einem vom
+        // 09.08., der Rest aus dem laufenden. Sichtbar wurde es als Ascari mit Todesjahr 1951 und
+        // Karrierezeilen bis 1956, als Indy-Felder mit 20 Meldern und als "Bugs, die zurueckkommen":
+        // Daten aus der Zeit VOR einem Fix, neu eingespielt.
+        // ⚠ Der Riegel greift nur fuer Spiele, die selbst eine Kennung tragen — also ab hier neu
+        //   angelegte oder importierte. Ein laufender Alt-Stand hat keine, dort wird NICHTS gefiltert;
+        //   ihm nachtraeglich eine zu geben wuerde seine eigene, ungestempelte Historie verwerfen.
+        let _activeGameId = null;
+        function _newGameId() {
+            return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+        // Stempel kommt auf den GESPEICHERTEN Wert (beim Detail-Store auf den gzip-Mantel),
+        // nie auf das Objekt des Aufrufers — sonst wandert _gid in den Spielstand.
+        function _gidStamp(stored) {
+            if (!_activeGameId || !stored || typeof stored !== 'object') return stored;
+            return { ...stored, _gid: _activeGameId };
+        }
+        function _gidOk(stored) {
+            if (!_activeGameId) return true;   // Alt-Spiel ohne Kennung: nicht filtern
+            return !!stored && stored._gid === _activeGameId;
+        }
+        let _gidDropped = 0;
+        function _gidDrop(store, key, stored) {
+            _gidDropped++;
+            const fremd = (stored && stored._gid) || 'ohne Kennung';
+            logWarning('STORAGE', `Fremder Record verworfen: ${store}/${key} (${fremd}, aktiv ${_activeGameId})`);
+        }
+
         function idbHistPut(year, obj) {
             return new Promise((resolve, reject) => {
                 idbOpen().then(db => {
                     const tx = db.transaction(IDB_HIST, 'readwrite');
-                    tx.objectStore(IDB_HIST).put(obj, year);
+                    tx.objectStore(IDB_HIST).put(_gidStamp(obj), year);
                     tx.oncomplete = () => resolve(true);
                     tx.onerror = () => reject(tx.error);
                     tx.onabort = () => reject(tx.error || new Error('history put abgebrochen'));
@@ -17618,7 +17655,7 @@ const CIRCUIT_LAYOUTS = {
             return JSON.parse(await new Response(stream).text());
         }
         async function idbHistDetailPut(year, obj) {
-            const stored = await _gzipEncode(obj);   // Phase 4: schwer → komprimierter Wrapper
+            const stored = _gidStamp(await _gzipEncode(obj));   // Phase 4: komprimierter Wrapper + Kennung
             return new Promise((resolve, reject) => {
                 idbOpen().then(db => {
                     const tx = db.transaction(IDB_DETAIL, 'readwrite');
@@ -17648,7 +17685,11 @@ const CIRCUIT_LAYOUTS = {
                     const map = new Map();
                     rq.onsuccess = () => {
                         const cur = rq.result;
-                        if (cur) { map.set(Number(cur.key), cur.value); cur.continue(); }
+                        if (cur) {
+                            if (_gidOk(cur.value)) map.set(Number(cur.key), cur.value);
+                            else _gidDrop('history_detail', cur.key, cur.value);
+                            cur.continue();
+                        }
                         else resolve(map);
                     };
                     rq.onerror = () => reject(rq.error);
@@ -17669,6 +17710,10 @@ const CIRCUIT_LAYOUTS = {
                     rq.onerror = () => resolve(null);
                 }).catch(() => resolve(null));
             });
+            if (!_gidOk(raw)) {
+                if (raw) _gidDrop('history_detail', year, raw);
+                return null;   // fremder Detail-Satz: lieber keine Rennen als die eines anderen Spiels
+            }
             return _gzipDecode(raw);   // Phase 4: entpackt {__gz}, alte unkomprimierte Records unverändert
         }
         // LRU: Render-Pfade greifen oft mehrfach hintereinander auf dasselbe Jahr zu.
@@ -17777,7 +17822,11 @@ const CIRCUIT_LAYOUTS = {
                     const out = [];
                     rq.onsuccess = () => {
                         const cur = rq.result;
-                        if (cur) { out.push({ _key: cur.key, val: cur.value }); cur.continue(); }
+                        if (cur) {
+                            if (_gidOk(cur.value)) out.push({ _key: cur.key, val: cur.value });
+                            else _gidDrop('history', cur.key, cur.value);
+                            cur.continue();
+                        }
                         else {
                             out.sort((a, b) => Number(a._key) - Number(b._key));
                             resolve(out.map(o => o.val));
@@ -17821,6 +17870,14 @@ const CIRCUIT_LAYOUTS = {
             if (_idbAvailable) await idbHistClear();
             _persistedHistoryYears = new Set();   // auch im Fallback-Modus, s. persistHistory-Guard
             _histDetailCacheClear();
+            _activeGameId = _newGameId();   // ab hier tragen alle Records diese Kennung
+            // ⚠ Auto-Save des Vorgaengerspiels MUSS weg (Nutzer-Vorgabe): er liegt sonst im
+            //   Hintergrund, waehrend vorne ein anderes Spiel laeuft — ein Klick auf
+            //   „Auto-Save laden" haengt dann einen fremden Core an die Historie dieses Spiels.
+            try {
+                if (_idbAvailable) await idbDel('f1rpg_autosave');
+                localStorage.removeItem('f1rpg_autosave');
+            } catch (e) {}
         }
 
         // ═══ Junior-Welt-Persistenz (Schritt 1) ═══
@@ -17838,7 +17895,7 @@ const CIRCUIT_LAYOUTS = {
             return new Promise((resolve, reject) => {
                 idbOpen().then(db => {
                     const tx = db.transaction(IDB_JHIST, 'readwrite');
-                    tx.objectStore(IDB_JHIST).put(obj, year);
+                    tx.objectStore(IDB_JHIST).put(_gidStamp(obj), year);
                     tx.oncomplete = () => resolve(true);
                     tx.onerror = () => reject(tx.error);
                 }).catch(reject);
@@ -17851,7 +17908,11 @@ const CIRCUIT_LAYOUTS = {
                     const out = [];
                     rq.onsuccess = () => {
                         const cur = rq.result;
-                        if (cur) { out.push({ _key: cur.key, val: cur.value }); cur.continue(); }
+                        if (cur) {
+                            if (_gidOk(cur.value)) out.push({ _key: cur.key, val: cur.value });
+                            else _gidDrop('junior_history', cur.key, cur.value);
+                            cur.continue();
+                        }
                         else { out.sort((a, b) => Number(a._key) - Number(b._key)); resolve(out.map(o => o.val)); }
                     };
                     rq.onerror = () => reject(rq.error);
@@ -17859,7 +17920,7 @@ const CIRCUIT_LAYOUTS = {
             });
         }
         async function idbJDetailPut(year, obj) {
-            const stored = await _gzipEncode(obj);   // gzip wie F1-Detail
+            const stored = _gidStamp(await _gzipEncode(obj));   // gzip wie F1-Detail, plus Kennung
             return new Promise((resolve, reject) => {
                 idbOpen().then(db => {
                     const tx = db.transaction(IDB_JDETAIL, 'readwrite');
@@ -17877,6 +17938,10 @@ const CIRCUIT_LAYOUTS = {
                     rq.onerror = () => resolve(null);
                 }).catch(() => resolve(null));
             });
+            if (!_gidOk(raw)) {
+                if (raw) _gidDrop('junior_detail', year, raw);
+                return null;
+            }
             return _gzipDecode(raw);
         }
         // Voll-Reset beider Junior-Stores (Import/clearAllData/Modus-Reset)
@@ -23721,6 +23786,8 @@ const CIRCUIT_LAYOUTS = {
         async function _saveGameNow() {
             try {
                 if (_idbAvailable) {
+                    // Kennung mitschreiben, damit sie einen Neuladen ueberlebt (s. _newGameId).
+                    if (_activeGameId && !GAME_STATE.gameId) GAME_STATE.gameId = _activeGameId;
                     const json = _stringifyCore();
                     _lastSaveBytes = json.length * 2;   // nur core (Crash-Wächter misst das Relevante)
                     await idbSet('f1rpg_core', json);   // raw: wirft bei Fehler → catch (Fallback)
@@ -23752,6 +23819,9 @@ const CIRCUIT_LAYOUTS = {
                 if (_idbAvailable) core = await idbGet('f1rpg_core');
                 if (core) {
                     const loaded = JSON.parse(core);
+                    // ⚠ REIHENFOLGE: erst die Kennung, dann die Historie lesen. Andersherum
+                    //   laeuft idbHistGetAll ohne aktive Kennung und laesst alles durch.
+                    _activeGameId = loaded.gameId || null;
                     loaded.history = await idbHistGetAll();          // Phase 3: nur LEICHTE Records in den RAM
                     await _backfillLightHistFields(loaded.history);  // Alt-Saves: leichte Index-Felder einmalig setzen
                     await _hydrateJuniorCore(loaded);                // P2: Junior-Historie + All-Time aus ihren Stores
@@ -23780,7 +23850,8 @@ const CIRCUIT_LAYOUTS = {
                 const snapJson = _stringifyCore({
                     savedAt: new Date().toISOString(),
                     year: GAME_STATE.currentYear,
-                    race: GAME_STATE.currentRace
+                    race: GAME_STATE.currentRace,
+                    gid: _activeGameId   // damit restoreAutoSave einen Fremd-Snapshot erkennt
                 });
                 if (_idbAvailable) { await idbSet('f1rpg_autosave', snapJson); }
                 else if (!safeSetItem('f1rpg_autosave', snapJson)) return;
@@ -23807,7 +23878,16 @@ const CIRCUIT_LAYOUTS = {
                 // persistHistory() löschte daraufhin JEDE persistierte Saison aus beiden Stores –
                 // unwiederbringlich, F1 wie Junior-Welt. Der Snapshot enthält nie eine history
                 // (_stringifyCore strippt sie), das Nachladen ist also der Normalfall, nicht die Ausnahme.
+                // Fremder Snapshot: sein Core gehoert zu einem anderen Spiel, die Historie im
+                // Store aber zum laufenden — zusammengesetzt ergaebe das den Zwitter, den der
+                // Riegel gerade verhindert. Nach .17.16 kann das nur noch ein Alt-Snapshot sein.
+                if (_activeGameId && snapshot.gid && snapshot.gid !== _activeGameId) {
+                    alert('Dieser Auto-Save gehört zu einem anderen Spielstand und wird nicht geladen.');
+                    logWarning('AUTOSAVE', `Fremder Auto-Save abgewiesen (${snapshot.gid} statt ${_activeGameId})`);
+                    return;
+                }
                 const restored = snapshot.state;
+                if (snapshot.gid) _activeGameId = snapshot.gid;
                 if ((!restored.history || restored.history.length === 0) && _idbAvailable) {
                     restored.history = await idbHistGetAll();   // Phase 3: nur LEICHTE Records
                     await _backfillLightHistFields(restored.history);
@@ -36689,6 +36769,13 @@ const CIRCUIT_LAYOUTS = {
             // History-Store leeren → Diff schreibt alle importierten Saisons frisch, alte verschwinden
             if (_idbAvailable) { await idbHistClear(); }
             _persistedHistoryYears = new Set();
+            // Kennung der importierten Partie uebernehmen; fehlt sie (Export vor .17.16), eine neue
+            // vergeben. Damit gehoert der ganze Store danach genau einem Spiel — dem importierten.
+            _activeGameId = GAME_STATE.gameId || (GAME_STATE.gameId = _newGameId());
+            try {
+                if (_idbAvailable) await idbDel('f1rpg_autosave');
+                localStorage.removeItem('f1rpg_autosave');
+            } catch (e) {}
             await saveGame();
             renderAll();
 
@@ -49289,9 +49376,22 @@ Empfohlene Wertebereiche:
                         '</tr>';
                 }).join('');
 
-                // DNQ-Fahrer am Ende der Rennergebnisse anhängen
+                // DNQ- und DNS-Fahrer am Ende der Rennergebnisse anhängen.
+                // === AUCH IN ARCHIVIERTEN SIM-SAISONS (v0.9.17.16) ===
+                // Hier stand `if (!historicalYear)`. Damit fehlten in JEDER vergangenen Saison
+                // beide Bloecke im Rennen-Tab — gemessen an einem Spielstand des Nutzers:
+                // 263 von 484 archivierten Rennen fuehren eine dnq-Liste, 166 eine dns-Liste,
+                // keine davon war sichtbar. Nutzer: „im rennen steht nur DNF und platzierung
+                // kein DNS" — waehrend die Ergebnis-Matrix daneben DNS korrekt zeigte, weil
+                // renderResultsMatrix `race.dns` ohne diese Sperre liest.
+                // ⚠ Exakt derselbe Fehler wurde in .17.6 im Qualifying-Tab behoben (Kommentar
+                //   dort, ~30 Zeilen darueber) — im Rennen-Tab blieb er stehen. `historicalYear`
+                //   heisst nur „nicht die laufende Saison"; ob echte F1DB-Historie oder eigener
+                //   Spielstand, steht damit gar nicht fest. Archivierte Records fuehren ihr
+                //   dnq/dns mit, echte F1DB-Rennen haben die Felder nicht — dort bleiben die
+                //   Listen von selbst leer.
                 let rdDnqRows = '';
-                if (!historicalYear) {
+                {
                     const rdDnqIds = raceResult?.dnq || [];
                     if (rdDnqIds.length > 0) {
                         rdDnqRows = '<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td></tr>';
