@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.14</title>
+    <title>F1 RPG v0.9.17.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.14 (aktuell) - 28.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.15 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Ein neues Spiel loeschte die gespeicherten Saisons des Vorgaengerspiels nicht - alte Rennergebnisse und Kader standen unter frisch gerechneten WM-Tabellen</div>
+                            <div>&#8226; FIX: dadurch tauchten Phantom-Fahrer auch in frisch erstellten Spielstaenden wieder auf, obwohl die Ursache behoben war</div>
+                            <div>&#8226; FIX: die Junior-Welt wird jetzt mitgeleert - beim Neustart wie beim Import</div>
+                            <div class="font-bold text-slate-400">v0.9.17.14 - 28.08.2026</div>
                             <div>&#8226; FIX: Indy-Nachruecker wurden dauerhaft in den Kader geschoben, holten WM-Punkte und verschwanden beim Saisonwechsel wieder - zurueck blieben Tabellenfuehrer ohne Fahrer wie Aldo Gordini 1956</div>
                             <div>&#8226; FIX: wer in einer Saison gefahren ist, steht jetzt garantiert im archivierten Kader - Tabelleneintraege ohne Fahrer koennen nicht mehr entstehen</div>
                             <div>&#8226; FIX: Indy-Nachruecker bekommen nur noch Indy-Rennstaelle, keine Grand-Prix-Teams wie Gordini oder Vanwall</div>
@@ -3775,7 +3779,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.14';
+        const VERSION = '0.9.17.15';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -4261,17 +4265,40 @@
                 }).catch(reject);
             });
         }
-        // Voll-Reset BEIDER History-Stores (leicht + Detail) – für Import/clearAllData/stripDummyJuniors
+        // Voll-Reset ALLER vier History-Stores (F1 leicht+Detail, Junior leicht+Detail) –
+        // fuer Import/clearAllData/stripDummyJuniors und jeden Start eines neuen Spiels.
+        // ⚠ Die Junior-Stores fehlten hier bis v0.9.17.15: nach einem Import oder einem neuen
+        //   Spiel ueberlebten die Junior-Saisons des Vorgaengerspiels und wurden beim Laden
+        //   wieder mitgemischt – dieselbe Falle wie bei IDB_DETAIL, nur eine Ebene tiefer.
         function idbHistClear() {
             return new Promise((resolve) => {
                 idbOpen().then(db => {
-                    const tx = db.transaction([IDB_HIST, IDB_DETAIL], 'readwrite');
+                    const tx = db.transaction([IDB_HIST, IDB_DETAIL, IDB_JHIST, IDB_JDETAIL], 'readwrite');
                     tx.objectStore(IDB_HIST).clear();
                     tx.objectStore(IDB_DETAIL).clear();
+                    tx.objectStore(IDB_JHIST).clear();
+                    tx.objectStore(IDB_JDETAIL).clear();
                     tx.oncomplete = () => { _persistedHistoryYears.clear(); _histDetailCacheClear(); resolve(true); };
                     tx.onerror = () => resolve(false);
                 }).catch(() => resolve(false));
             });
+        }
+
+        // === NEUES SPIEL: HISTORY-STORES LEEREN (v0.9.17.15) ===
+        // initFromYear/initFromTemplate setzen nur GAME_STATE.history = [] – die IndexedDB
+        // blieb unberuehrt, und _persistedHistoryYears behielt die Jahre des Vorgaengerspiels.
+        // In persistHistory greift dann "if (!_persistedHistoryYears.has(y))": fuer genau diese
+        // Jahre wurde NICHTS geschrieben, die alten Ergebnisse/Kader blieben liegen, waehrend
+        // die leichten Records spaeter ueber _backfillLightHistFields doch ueberschrieben wurden.
+        // Ergebnis im Stand des Nutzers (1997, 29.08.2026): 1953-1962 trugen die Rennergebnisse
+        // eines Spiels vom 09.08. unter frisch gerechneten WM-Tabellen, Schnittmenge der
+        // Fahrer-IDs 3 von 90. Das erzeugte auch die "Phantome trotz Fix" im neuen Spielstand.
+        // ⚠ VOR initFromYear/initFromTemplate aufrufen UND abwarten: laeuft der Clear erst
+        //   danach durch, loescht er die frisch archivierte erste Saison gleich wieder mit.
+        async function resetHistoryStoresForNewGame() {
+            if (_idbAvailable) await idbHistClear();
+            _persistedHistoryYears = new Set();   // auch im Fallback-Modus, s. persistHistory-Guard
+            _histDetailCacheClear();
         }
 
         // ═══ Junior-Welt-Persistenz (Schritt 1) ═══
@@ -22575,11 +22602,14 @@
             document.getElementById('deleteSeasonBtn').disabled = !selected;
         };
         
-        window.resetToBeginning = function() {
+        window.resetToBeginning = async function() {
             if (!confirm('⚠️ ALLES zurücksetzen?\n\nDies löscht den kompletten Fortschritt und startet neu bei Saison 1.')) {
                 return;
             }
             
+            // v0.9.17.15: History-Stores VOR dem Neuaufbau leeren, sonst ueberleben die
+            // Saisons des Vorgaengerspiels in der IndexedDB (s. resetHistoryStoresForNewGame).
+            await resetHistoryStoresForNewGame();
             const template = GAME_STATE.templateUsed || '2024';
             // initFromTemplate akzeptiert Jahreszahlen (SEASON_DATA) ODER Legacy-Template-Namen.
             // Schlägt es fehl (z.B. alter Name 'modern-2024' – TEMPLATES ist leer), Jahr aus dem
@@ -22994,12 +23024,15 @@
             `;
         }
         
-        window.startSelectedYear = function() {
+        window.startSelectedYear = async function() {
             const year = parseInt(document.getElementById('yearSelector').value);
             if (!confirm(`⚠️ Saison ${year} starten?\n\nDein aktueller Fortschritt geht verloren!`)) {
                 return;
             }
             
+            // v0.9.17.15: History-Stores VOR dem Neuaufbau leeren, sonst ueberleben die
+            // Saisons des Vorgaengerspiels in der IndexedDB (s. resetHistoryStoresForNewGame).
+            await resetHistoryStoresForNewGame();
             initFromYear(year);
             // v0.9.15.16: KI-Sim-Optionen aus dem Neuspiel-Screen übernehmen (vor Saison 1).
             // Muss NACH initFromYear laufen, das simRules auf die Defaults zurücksetzt.
@@ -23018,8 +23051,11 @@
             document.getElementById('datasetManagerModal').style.display = 'none';
         };
         
-        window.switchToTemplate = function(templateId) {
+        window.switchToTemplate = async function(templateId) {
             // Legacy-Funktion für Kompatibilität
+            // v0.9.17.15: History-Stores VOR dem Neuaufbau leeren, sonst ueberleben die
+            // Saisons des Vorgaengerspiels in der IndexedDB (s. resetHistoryStoresForNewGame).
+            await resetHistoryStoresForNewGame();
             const year = parseInt(templateId);
             if (!isNaN(year)) {
                 initFromYear(year);
@@ -36089,6 +36125,7 @@ Empfohlene Wertebereiche:
             // Spielstand laden oder neu erstellen
             if (!(await loadGame())) {
                 logInfo('INIT', 'Kein Spielstand gefunden, erstelle neuen...');
+                await resetHistoryStoresForNewGame();   // v0.9.17.15: Reste eines geloeschten Stands
                 initFromYear(2024);
             } else {
                 // Pool beim Laden auffüllen falls leer (z.B. alter Spielstand vor v0.9.1)
