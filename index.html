@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.16</title>
+    <title>F1 RPG v0.9.17.17</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.16 (aktuell) - 29.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.17 (aktuell) - 29.08.2026</div>
+                            <div>&#8226; FIX: Live gefahrene Rennen hatten garantiert null DNS - der Ticker kannte den Wurf gar nicht, waehrend dasselbe Rennen sofort simuliert welche produzierte</div>
+                            <div>&#8226; NEU: Zum Indy 500 melden jetzt 43 bis 48 Wagen auf 33 Startplaetze - der Rest scheitert in der Qualifikation, wie es in Indianapolis ueblich war</div>
+                            <div>&#8226; FIX: Melderzahl ist je Jahrgang fest, damit Qualifying und Rennen dasselbe Feld sehen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.16 - 29.08.2026</div>
                             <div>&#8226; FIX: Jedes Spiel bekommt eine eigene Kennung - Saisons aus einem anderen Spielstand koennen nicht mehr in die Historie geraten, sie werden beim Lesen verworfen und im Log gemeldet</div>
                             <div>&#8226; FIX: Der Auto-Save gehoert jetzt zu genau einem Spielstand statt im Hintergrund zu bleiben, waehrend vorne ein anderes Spiel laeuft</div>
                             <div>&#8226; FIX: DNQ und DNS fehlten im Rennergebnis JEDER vergangenen Saison - 263 von 484 archivierten Rennen fuehren eine DNQ-Liste, keine davon war sichtbar</div>
@@ -3784,7 +3788,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.16';
+        const VERSION = '0.9.17.17';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -8364,7 +8368,7 @@
             return fillers.length ? [...activeDrivers, ...fillers] : activeDrivers;
         }
 
-        // === INDY-MELDELISTE AUF MINDESTENS 33 (v0.9.17.13) ===
+        // === INDY-MELDELISTE: MEHR MELDER ALS STARTPLAETZE (v0.9.17.13, Zahl .17.17) ===
         // [SYNC simulateRace] Von simulateQualifying UND simulateRace benutzt — beide muessen
         // dieselbe Meldeliste sehen. Vorher fuellte NUR das Rennen auf: gemessen im Spielstand
         // 1957 zwoelf Melder im Qualifying, aber 33 Starter im Rennen. Einundzwanzig Fahrer
@@ -8375,8 +8379,29 @@
         //   Rennen als DNQ heraus. Real war Indianapolis notorisch ueberzeichnet.
         // ⚠ Die Nachruecker wandern in GAME_STATE.drivers, sonst findet sie das Rennen nicht:
         //   `activeDrivers` entsteht dort aus dem Kader, nicht aus dem Reserve-Pool.
+        // Wie viele MELDEN sich, nicht wie viele starten. Startplaetze bleiben 33.
+        // ⚠ Real war Indianapolis die mit Abstand ueberzeichnetste Veranstaltung im Kalender:
+        //   Wikipedia listet 1953 vierzig Gescheiterte bei „as many as 66 cars in the paddock",
+        //   1960 dreiunddreissig, 1957 achtundzwanzig, 1955 zwanzig. F1DB kennt davon NICHTS —
+        //   dort steht fuer jedes Jahr 33/33/33, weil die WM-Statistik bei Indy nur die
+        //   Qualifizierten fuehrt. Bei einem Grand Prix taucht ein DNQ in der Statistik auf,
+        //   in Indianapolis fiel er unter den Radar.
+        // ⚠ Die realen 55-75 Melder sind trotzdem NICHT das Ziel: dafuer muessten Fahrer
+        //   erfunden werden, die niemand kennt und die das Indy 500 gewinnen koennten. Der
+        //   Pool gibt sie nicht her. Nutzer-Vorgabe deshalb 10-15 zusaetzliche Meldeplaetze
+        //   aus demselben Pool — mit der bewussten Nebenwirkung, dass ein Fahrer haeufiger
+        //   meldet als historisch.
+        // ⚠ DETERMINISTISCH je Jahr, nicht gewuerfelt: fillIndyEntryList laeuft in
+        //   simulateQualifying UND simulateRace. Zoege das Rennen eine hoehere Zahl als die
+        //   Quali, schoebe es Fahrer nach, die nie eine Zeit gefahren sind — genau der Fehler,
+        //   den .17.13 beseitigt hat.
+        const INDY_STARTPLAETZE = 33;
+        function _indyEntryTarget(year) {
+            return INDY_STARTPLAETZE + 10 + (((year % 6) + 6) % 6);   // 43-48 je nach Jahrgang
+        }
+
         function fillIndyEntryList(activeDrivers, race) {
-            const INDY_FELD = 33;
+            const INDY_FELD = _indyEntryTarget(GAME_STATE.currentYear);
             if (!race || activeDrivers.length >= INDY_FELD) return activeDrivers;
             const drin = new Set(activeDrivers.map(d => d.id));
             const _istIndy = d => d.isIndyOnly
@@ -15616,6 +15641,7 @@
                 isRain: liveRaceState.isRain,
                 results: results,
                 dnq: liveRaceState.dnq || [],
+                dns: liveRaceState.dns || [],   // [SYNC simulateRace] v0.9.17.17
                 dnpq: (GAME_STATE.qualifyingResults.find(q => q.raceIndex === liveRaceState.raceIndex)?.dnpqIds || [])
             };
             
@@ -15810,6 +15836,25 @@
                 }
             }
             liveRaceState.dnq = _liveQnqIds;
+
+            // === NICHT ANGETRETEN (v0.9.17.17) ===
+            // [SYNC simulateRace] Identisch zum klassischen Pfad: nach Grid-Cap und Fueller,
+            // vor dem Start. Der Ticker hatte den Wurf ueberhaupt nicht — jedes live gefahrene
+            // Rennen hatte damit garantiert null DNS, waehrend dasselbe Rennen sofort simuliert
+            // welche produzierte. Genau die Divergenz, die CLAUDE.md fuer den Ticker verbietet:
+            // der Modus ist die Darstellung, nie die Konsequenz.
+            const _dnsIdsLive = [];
+            {
+                const _rateLive = _dnsRateFor(GAME_STATE.currentYear);
+                if (_rateLive > 0 && activeDrivers.length > 2) {
+                    activeDrivers = activeDrivers.filter(d => {
+                        if (Math.random() >= _rateLive) return true;
+                        _dnsIdsLive.push(d.id);
+                        return false;
+                    });
+                }
+            }
+            liveRaceState.dns = _dnsIdsLive;
 
             // [SYNC simulateRace] Grid-Gap: Startposition gibt Zeitvorsprung (P1=0s, ~0.3s pro Position)
             const _liveBaseInit = getCircuitBaseTime(race?.circuitId, GAME_STATE.currentYear, 'race') || 90;
