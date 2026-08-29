@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.22</title>
+    <title>F1 RPG v0.9.17.23</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.22 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.23 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; FIX: Nicht qualifizierte Fahrer zeigen ihren Rennstall - DNQ, DNS und DNPQ speichern das Team jetzt mit</div>
+                            <div>&#8226; FIX: Karriere-Historie zeigte einen Strich statt des Teams in Saisons ganz ohne Rennstart</div>
+                            <div>&#8226; FIX: Wer sein Cockpit verliert, meldet nicht mehr ohne Wagen weiter</div>
+                            <div class="font-bold text-slate-400">v0.9.17.22 - 30.08.2026</div>
                             <div>&#8226; FIX: Der Transfermarkt setzte Indy-Fahrer in Grand-Prix-Cockpits - am naechsten Indy 500 standen dann Cooper, Connaught und O.S.C.A. am Start, gemessen 43 von 255 Wagen</div>
                             <div>&#8226; FIX: eine Nachkontrolle am Saisonwechsel raeumt falsch besetzte Sitze in beide Richtungen, wie schon bei der Landsmann-Regel - danach 2 von 252, und die sind historisch belegt</div>
                             <div>&#8226; FIX: Indy-Rennstaelle in Grand Prix waren seit .21 schon verschwunden - Kurtis Kraft in Argentinien, Schroeder in Frankreich, Phillips in Buenos Aires kamen ueber den Grid-Fueller</div>
@@ -3810,7 +3814,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.22';
+        const VERSION = '0.9.17.23';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -8515,8 +8519,45 @@
         // abgelesen. Kein Würfel — Grundphilosophie „perfekter Plan vor der Saison".
         // Frühere Zufallszweige (homeOnly 80 %, activityRate) sind raus; sie konnten
         // 0 Meldungen erzeugen und machten den Plan un-deterministisch.
+        // === DER RENNSTALL GEHOERT ZUR MELDUNG (v0.9.17.23) ===
+        // Das Rennergebnis traegt sein Team in `tmn` mit — DNQ, DNS und DNPQ sind blosse
+        // ID-Listen. Beim Archivieren geht der Rennstall damit verloren, und die Anzeige
+        // muss auf den Kader-Schnappschuss vom SAISONENDE zurueckfallen. Wer seinen Sitz
+        // spaeter verliert (Team zurueckgezogen, Landsmann-Regel, Entlassung), steht dort
+        // ohne Team: leere Spalte in der Meldeliste, „-" in der Karriere-Historie.
+        // Gemessen ueber 8 Saisons ab 1950: 28 % der archivierten Nichtqualifikations-
+        // Eintraege waren nachtraeglich keinem Rennstall mehr zuzuordnen, obwohl live
+        // gemessen praktisch jeder Melder zum Rennzeitpunkt einen Wagen hatte (1/1798).
+        // Hier wird er im Moment des Rennens festgehalten — das ist der einzige Zeitpunkt,
+        // zu dem er sicher bekannt ist.
+        function _meldeTeamNamen(ids) {
+            const out = {};
+            for (const id of (ids || [])) {
+                if (!id || out[id]) continue;
+                const d = (GAME_STATE.drivers || []).find(x => x.id === id)
+                    || (GAME_STATE.reservePool || []).find(x => x.id === id);
+                if (!d || !d.team) continue;
+                const t = (GAME_STATE.teams || []).find(x => x.id === d.team);
+                // Klarname, kein Slug — die Ansichten erwarten in `tmn` dasselbe Format.
+                out[id] = t ? t.name : teamDisplayName(d.team);
+            }
+            return out;
+        }
+
         function privateerEntersRace(d, race) {
             const cid = race.circuitId?.toLowerCase();
+            // === OHNE WAGEN KEINE MELDUNG (v0.9.17.23) ===
+            // Ein Fahrer verliert sein Cockpit (Team zurueckgezogen, Gruender gestorben,
+            // Landsmann- oder Indy-Regel raeumt den Sitz), behaelt aber seinen Meldeplan —
+            // KEINE der Stellen, die `team = null` setzt, loescht `scheduledRaces`. Danach
+            // meldete er weiter, nur eben ohne Rennstall: Patrick Tambay meldete 1988 zu
+            // 13 Rennen ohne Auto. In der Meldeliste stand er mit leerer Team-Spalte, in
+            // der Karriere-Historie mit „-", weil es schlicht kein Team zu nennen gab.
+            // Gemessen im Spielstand des Nutzers (49 Saisons): 148 von 2227 DNQ/DNS/DNPQ-
+            // Eintraegen kamen von Fahrern ohne Wagen (6,6 %).
+            // Hier statt an den zehn Ausstiegsstellen, weil dies der EINZIGE Melde-
+            // Entscheider ist — was hier faellt, faellt in jedem Pfad und im Live-Ticker.
+            if (!d.team) return false;
             // === HEIMAT-KONSTRUKTEURE (v0.9.16.14) ===
             // 21 Rennstaelle meldeten in ihrer ganzen Geschichte NUR im eigenen Land
             // (HOME_ONLY_CONSTRUCTORS, aus F1DB gemessen): LDS und Alfa Special in
@@ -13148,6 +13189,9 @@
                 dnq: _dnqIds,
                 dns: _dnsIds,      // qualifiziert, aber nicht an den Start gegangen (v0.9.17.13)
                 dnpq: (GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex)?.dnpqIds || []),
+                // Rennstall je Nichtqualifikations-Melder (v0.9.17.23, s. _meldeTeamNamen).
+                tms: _meldeTeamNamen([..._dnqIds, ..._dnsIds,
+                    ...(GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex)?.dnpqIds || [])]),
                 timestamp: new Date().toISOString()
             };
         }
@@ -15801,7 +15845,11 @@
                 results: results,
                 dnq: liveRaceState.dnq || [],
                 dns: liveRaceState.dns || [],   // [SYNC simulateRace] v0.9.17.17
-                dnpq: (GAME_STATE.qualifyingResults.find(q => q.raceIndex === liveRaceState.raceIndex)?.dnpqIds || [])
+                dnpq: (GAME_STATE.qualifyingResults.find(q => q.raceIndex === liveRaceState.raceIndex)?.dnpqIds || []),
+                // [SYNC simulateRace] Rennstall je Melder (v0.9.17.23) — der Live-Ticker ist
+                // nur die Darstellung, aber er schreibt dasselbe Ergebnis-Objekt fort.
+                tms: _meldeTeamNamen([...(liveRaceState.dnq || []), ...(liveRaceState.dns || []),
+                    ...(GAME_STATE.qualifyingResults.find(q => q.raceIndex === liveRaceState.raceIndex)?.dnpqIds || [])])
             };
             
             // === TODES-CHECK UND ERSATZFAHRER (wie in simulateRace) ===
@@ -21524,6 +21572,12 @@
                     // Nicht angetreten (v0.9.17.13) — dieselbe Begruendung wie bei dnq/dnpq:
                     // ohne diese Liste kann keine Ansicht zeigen, warum jemand fehlt.
                     dns: (Array.isArray(race.dns) && race.dns.length) ? race.dns.slice() : undefined,
+                    // RENNSTALL JE MELDER (v0.9.17.23). dnq/dns/dnpq sind blosse ID-Listen —
+                    // ohne diese Karte muss die Anzeige den Kader vom SAISONENDE befragen, und
+                    // wer seinen Sitz spaeter verlor, erscheint dort ohne Team. `res` hat sein
+                    // `tmn` seit jeher; das hier ist dieselbe Angabe fuer alle, die nicht ins
+                    // Rennen kamen. Leere Karte nicht speichern (Alt-Format bleibt kompakt).
+                    tms: (race.tms && Object.keys(race.tms).length) ? { ...race.tms } : undefined,
                     res: race.results.map(r => ({
                         d: r.driver,              // Driver ID
                         p: r.position,            // Position
@@ -31778,7 +31832,22 @@ Empfohlene Wertebereiche:
                             for (const race of season.results || []) {
                                 const raceResults = race.res || race.results || [];
                                 const _r = raceResults.find(e => _idCandidates.includes(e.d || e.driver));
-                                if (!_r) continue;
+                                if (!_r) {
+                                    // REINE DNQ-SAISON HAT AUCH EIN TEAM (v0.9.17.23). Ohne
+                                    // Renneintrag blieb `_teamsFromRaces` leer und die Zeile
+                                    // zeigte „-", obwohl der Fahrer sehr wohl fuer einen
+                                    // Rennstall gemeldet hatte (Nutzer-Screenshot: Ian Burgess
+                                    // und Karl Kling, 1953, je drei bzw. fuenf DNQ).
+                                    // Zaehler bleiben unberuehrt — eine Nichtqualifikation ist
+                                    // kein Start.
+                                    const _tn = _idCandidates.map(id => (race.tms || {})[id]).find(Boolean);
+                                    if (_tn) {
+                                        const _tt = _sTeams.find(t => String(t.name || '').toLowerCase() === String(_tn).toLowerCase()
+                                            || String(t.histId || '').toLowerCase() === String(_tn).toLowerCase());
+                                        if (!_teamsFromRaces.has(_tt?.id || _tn)) _teamsFromRaces.set(_tt?.id || _tn, _tn);
+                                    }
+                                    continue;
+                                }
                                 _rcRaces++;
                                 const _rp = _r.p ?? _r.position;
                                 if (!_r.dnf && _rp === 1) _rcWins++;
@@ -35825,6 +35894,14 @@ Empfohlene Wertebereiche:
             // laufen über openHistoricalRaceModal (siehe Renn-Raster). Deshalb keine
             // Slug-Umwandlung — die würde echte Namen nur verfälschen.
             const _raceTeamByDriver = {};
+            // NICHTQUALIFIZIERTE ZUERST (v0.9.17.23): `tms` haelt den Rennstall der DNQ-,
+            // DNS- und DNPQ-Melder fest, die in `res` gar nicht auftauchen. Ohne sie fiel
+            // die Aufloesung unten auf den Saisonende-Kader zurueck und zeigte eine leere
+            // Team-Spalte, sobald der Fahrer seinen Sitz spaeter im Jahr verlor.
+            // Vor der res-Schleife, damit ein echtes Rennergebnis Vorrang behaelt.
+            for (const [id, tn] of Object.entries(raceResult?.tms || {})) {
+                if (id && tn) _raceTeamByDriver[id] = tn;
+            }
             for (const r of (raceResult?.results || raceResult?.res || [])) {
                 const id = r.d ?? r.driver;
                 if (id == null) continue;
