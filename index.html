@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.26</title>
+    <title>F1 RPG v0.9.17.27</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.26 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.27 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; NEU: Jedes Team bekommt einen Stammfahrer - je groesser der Rennstall, desto seltener faehrt er eine Saison nur mit Gaststartern. An F1DB geeicht</div>
+                            <div>&#8226; NEU: Ein starkes Jahr traegt jetzt drei Saisons - junge Spitzenfahrer verschwanden bisher nach einer schwachen Saison dauerhaft in Gaststarts</div>
+                            <div>&#8226; FIX: Der Absturz-Schutz aus 0.9.17.25 konnte einem Team mehr Rennen geben als es historisch bestritt</div>
+                            <div class="font-bold text-slate-400">v0.9.17.26 - 30.08.2026</div>
                             <div>&#8226; NEU: Live-Ticker abwechslungsreicher - 650 statt 390 Kommentarzeilen</div>
                             <div>&#8226; NEU: Boxenstopp/Ueberholen/Ausfall je 25 Varianten pro Aera - keine Wiederholung im selben Rennen</div>
                             <div class="font-bold text-slate-400">v0.9.17.25 - 30.08.2026</div>
@@ -3826,7 +3830,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.26';
+        const VERSION = '0.9.17.27';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7548,12 +7552,22 @@
         // dort aendert diese Klausel also nichts.
         // Schwelle 55: dieselbe, die das Spiel an sieben weiteren Stellen fuer „gut
         // genug" benutzt. Ein Mittelfeldfahrer liegt bei 41-59.
+        // === EIN STARKES JAHR TRAEGT DREI (v0.9.17.27) ===
+        // Hier stand nur der LETZTE Karriere-Score. Eine schwache Saison kostete den
+        // Status sofort — und ohne Vollzeit-Sitz entsteht kaum je wieder ein starker
+        // Score, also kam der Fahrer nie zurueck. Das ist die Mechanik hinter der
+        // Nutzer-Beobachtung: „junge top-fahrer sind 1,2 jahre spaeter ploetzlich fuer
+        // immer sporadische fahrer."
+        // Gewaehlt wurde bewusst FRISCHE FORM, nicht Ansehen — Nutzer: „ansehen waere
+        // schwierig, da ansehen sich ueber jahre sammeln muss." Genau die hat ein Fahrer
+        // nicht, der ein Jahr oben war.
+        // ⚠ KEINE Erfolgsgarantie: der Status vergibt eine zweite Chance auf einen Sitz,
+        // nicht Leistung. Wer sie in drei Saisons nicht nutzt, rutscht ab.
+        const BEWAEHRT_JAHRE = 3;
         function hasEarnedFullSeat(d) {
             const cs = d && d.careerScores;
             if (!Array.isArray(cs) || !cs.length) return false;
-            const letzte = cs[cs.length - 1];
-            const score = letzte && typeof letzte.score === 'number' ? letzte.score : null;
-            return score != null && score >= 55;
+            return cs.slice(-BEWAEHRT_JAHRE).some(e => e && typeof e.score === 'number' && e.score >= 55);
         }
 
         function markPrivateers(drivers, year, races) {
@@ -7688,6 +7702,99 @@
                 // Ära-Deckel in _maxCarsPerConstructor greift ohnehin).
                 t._carsThisSeason = t._smallCtor ? (t._carsRoll < 0.65 ? 1 : 2) : null;
             });
+        }
+
+        // === JEDES TEAM BRAUCHT EINEN STAMMFAHRER - MEISTENS (v0.9.17.27) ===
+        // Nutzer: „wenn ein team ohne werksfahrer dasteht, sollte es als fallback jeden
+        // privateer in werksfahrer umwandeln. aber nicht immer, eher eine kaskade, je
+        // wichtiger/staerker das team, desto seltener ist es dass ein team nur mit
+        // teilzeitfahrern faehrt."
+        //
+        // STAMMFAHRER = bestreitet >= 80 % der Rennen SEINES TEAMS. Bewusst relativ zum
+        // Team und nicht zum Kalender: ein Kleinstkonstrukteur faehrt fuenf von sechzehn
+        // Rennen, und wer alle fuenf faehrt, ist sein Stammfahrer.
+        //
+        // WURZEL DES FEHLERS: der DRIVER_STARTS-Block oben setzt die reale Rennzahl fuer
+        // JEDEN Fahrer mit histId — auch fuer Werksfahrer. Waren beide Werksfahrer eines
+        // Teams real Gaststarter, hat das Team am Ende keinen Stammfahrer, und bis hierher
+        // gab es keine Pruefung auf Team-Ebene.
+        //
+        // ZIELKURVE, gemessen an F1DB (f1db-seasons-entrants-drivers.json, Anteil der
+        // Team-Saisons ohne Stammfahrer, tests/works-driver-reality.js):
+        //   gross (200+ Lebenszeit-Starts)   0,9 %   ·  Spiel vorher 18,4 %
+        //   mittel (60-199)                 10,8 %   ·  Spiel vorher 23,3 %
+        //   klein (20-59)                   11,5 %   ·  Spiel vorher 40,0 %
+        //   winzig (<20)                     9,5 %   ·  Spiel vorher 18,5 %
+        // Zwei Befunde daraus: das Spiel kannte die Kaskade GAR NICHT (gross 18,4 % gegen
+        // winzig 18,5 %), und die reale Kurve ist ZWEISTUFIG - nur „gross" bricht ein,
+        // alles uebrige liegt bei rund 10 %. Deshalb eine harte Schwelle statt vier Stufen.
+        // Ab 1990 ist die reale Rate null; dort wird immer gedeckt.
+        function enforceRegularDriverPerTeam(teams, drivers, cal, ids, programmProTeam, year) {
+            if (!cal || !cal.length) return 0;
+            let gedeckt = 0;
+            for (const t of (teams || [])) {
+                if (t.isIndyOnly) continue;
+                if (typeof isIndyOnlyConstructor === 'function'
+                    && (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId))) continue;
+                const kader = (drivers || []).filter(d =>
+                    d.team === t.id && (!d.status || d.status !== 'retired' && d.status !== 'deceased'));
+                if (!kader.length) continue;
+                // Ohne L1-Daten ist das Programm der ganze Kalender.
+                const programm = programmProTeam[t.id] || ids;
+                if (!programm.length) continue;
+                // AUSLOESER STRENGER ALS DAS ZIEL (v0.9.17.27). Gemessen wird am Ende die
+                // GEFAHRENE Saison, eingegriffen wird hier in den PLAN. Dazwischen liegen
+                // Todesfaelle, Entlassungen und Wechsel — ein Fahrer mit 85 % geplanter
+                // Deckung landet real leicht unter 80 %. Der Ausloeser bekommt deshalb
+                // Luft: wer nicht fast das ganze Programm im Plan hat, gilt hier nicht als
+                // Stammfahrer, und die Deckung wird vergeben.
+                const soll = 0.95 * programm.length;
+                const deckung = d => {
+                    if (!Array.isArray(d.scheduledRaces)) return programm.length;   // offener Plan
+                    const set = new Set(d.scheduledRaces);
+                    return programm.filter(c => set.has(c)).length;
+                };
+                if (kader.some(d => deckung(d) >= soll)) continue;   // hat schon einen
+
+                // EIN WURF JE TEAM UND SAISON, nicht je Aufruf - sonst zittert die
+                // Entscheidung wie der Kleinstkonstrukteur-Wurf vor v0.9.16.10.
+                if (t._deckungRoll == null || t._deckungYear !== year) {
+                    t._deckungRoll = Math.random();
+                    t._deckungYear = year;
+                }
+                if (t._deckungRoll < _stammfahrerSchwelle(t, year)) continue;   // darf ohne fahren
+
+                // === DIE KASKADE: WER WIRD BEFOERDERT ===
+                // 1. bewaehrt (hasEarnedFullSeat)  2. frische Form  3. Pace.
+                // Ansehen ist hier bewusst NICHT die Groesse - Nutzer: „ansehen waere
+                // schwierig, da ansehen sich ueber jahre sammeln muss." Genau die hat ein
+                // Fahrer nicht, der ein Jahr oben war und danach abrutschte.
+                const form = d => {
+                    const cs = d && d.careerScores;
+                    if (!Array.isArray(cs) || !cs.length) return 0;
+                    const l = cs[cs.length - 1];
+                    return (l && typeof l.score === 'number') ? l.score : 0;
+                };
+                const kandidaten = kader.filter(d => !d._homeOnlyCurated && !d.homeOnly);
+                if (!kandidaten.length) continue;   // gepruefte Heimrennen-Melder nie verbiegen
+                kandidaten.sort((a, b) =>
+                    (hasEarnedFullSeat(b) ? 1 : 0) - (hasEarnedFullSeat(a) ? 1 : 0)
+                    || form(b) - form(a)
+                    || (b.pace || 0) - (a.pace || 0));
+                kandidaten[0].scheduledRaces = programm.slice();
+                gedeckt++;
+            }
+            return gedeckt;
+        }
+
+        // Schwelle, unterhalb derer ein Team ohne Stammfahrer fahren DARF. Startwerte aus
+        // dem Verhaeltnis Ziel/Ist, danach an tests/works-driver-reality.js nachgezogen.
+        function _stammfahrerSchwelle(t, year) {
+            if (year >= 1990) return 0;   // real seit den 1990ern durchgehend null
+            const key = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+            const klein = (typeof CONSTRUCTOR_TINY !== 'undefined' && CONSTRUCTOR_TINY.has(key))
+                || (typeof CONSTRUCTOR_SMALL !== 'undefined' && CONSTRUCTOR_SMALL.has(key));
+            return klein ? 0.50 : 0.15;
         }
 
         // Setzt d.scheduledRaces (Liste von circuitIds, lowercase) für alle Privateers
@@ -7857,6 +7964,11 @@
             // Ohne Daten passiert NICHTS: fehlt die Tabelle, das Jahr oder das Team, bleibt
             // alles beim heutigen Verhalten. L1 darf nie Voraussetzung für einen Rennstart sein.
             const idSet = new Set(ids);
+            // Das PROGRAMM je Team mitschreiben (v0.9.17.27): welche Strecken darf dieser
+            // Rennstall in dieser Saison ueberhaupt bestreiten? Genau darauf muss die
+            // Werksfahrer-Deckung unten aufsetzen — sonst vergibt sie Rennen, die L1
+            // gerade aus realen Praesenzdaten ausgeschlossen hat.
+            const _programm = {};
             (teams || []).forEach(t => {
                 if (t.isIndyOnly) return;                       // Indy ist im Generator gefiltert
                 const p = getTeamPresence(t, year);
@@ -7888,6 +8000,7 @@
                                  .map(r => r.circuitId.toLowerCase());
                 }
                 const allowedSet = new Set(allowed);
+                _programm[t.id] = allowed;
                 drivers.forEach(d => {
                     if (d.team !== t.id) return;
                     // Werksfahrer (kein Plan = jedes Rennen) bekommen die realen Strecken,
@@ -7896,6 +8009,11 @@
                     else d.scheduledRaces = allowed.slice();
                 });
             });
+
+            // MUSS NACH L1 STEHEN (v0.9.17.27): L1 verwandelt scheduledRaces=null in die
+            // Streckenliste des Teams — davor gaebe es keinen offenen Plan zu decken, und
+            // danach wuerde L1 die eben vergebene Deckung wieder beschneiden.
+            enforceRegularDriverPerTeam(teams, drivers, cal, ids, _programm, year);
         }
 
         // === KUNDEN-MARKEN (v0.9.15.5) ===
@@ -8300,7 +8418,15 @@
                 const chef = kader.slice().sort((a, b) => (b.pace || 0) - (a.pace || 0))[0];
                 if (chef._homeOnlyCurated || chef.homeOnly) continue;   // geprueft, nie verbiegen
                 if (absturz) {
-                    chef.scheduledRaces = null;
+                    // Das PROGRAMM des Teams, nicht der ganze Kalender (v0.9.17.27).
+                    // `null` heisst in privateerEntersRace „jedes Rennen" und wuerde die
+                    // realen Praesenzdaten aus TEAM_PRESENCE ueberschreiben, die der
+                    // L1-Nachlauf gerade angewandt hat.
+                    const _p = (typeof getTeamPresence === 'function') ? getTeamPresence(t, year) : null;
+                    const _alle = cal.map(r => r.circuitId.toLowerCase());
+                    chef.scheduledRaces = (_p != null && _p !== 1)
+                        ? _p.filter(c => _alle.includes(c))
+                        : _alle.slice();
                 } else {
                     const n = Math.max(1, Math.round(cal.length * 0.25));
                     const ids = cal.map(r => r.circuitId.toLowerCase());
