@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.23</title>
+    <title>F1 RPG v0.9.17.24</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.23 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.24 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; FIX: Konstrukteurs-Wertung zeigte keine Fahrer, wenn alle im Lauf der Saison weiterzogen - Hesketh 1974 stand leer da, obwohl Jochen Mass sieben Rennen fuer sie fuhr</div>
+                            <div>&#8226; FIX: Im Team-Steckbrief fehlten ganze Saisons im Renn-Raster, sobald am Saisonende kein Fahrer mehr im Kader stand</div>
+                            <div>&#8226; FIX: Teams ohne einen einzigen Start zeigen ihre gemeldeten Fahrer aus der Wertungstabelle</div>
+                            <div class="font-bold text-slate-400">v0.9.17.23 - 30.08.2026</div>
                             <div>&#8226; FIX: Nicht qualifizierte Fahrer zeigen ihren Rennstall - DNQ, DNS und DNPQ speichern das Team jetzt mit</div>
                             <div>&#8226; FIX: Karriere-Historie zeigte einen Strich statt des Teams in Saisons ganz ohne Rennstart</div>
                             <div>&#8226; FIX: Wer sein Cockpit verliert, meldet nicht mehr ohne Wagen weiter</div>
@@ -3814,7 +3818,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.23';
+        const VERSION = '0.9.17.24';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -26599,6 +26603,42 @@
             const _teamDrvMap  = isHistorical ? (historicalViewData.teamDriversMap  || {}) : null;
             const _multiTeam   = isHistorical ? (historicalViewData.multiTeamDrivers || {}) : {};
 
+            // === FAHRER ZUM RENNZEITPUNKT, NICHT AM SAISONENDE (v0.9.17.24) ===
+            // Die Fahrerspalte las `driversList.filter(d => d.team === t.id)` — das ist der
+            // Kaderstand am SAISONENDE. Ein Team, dessen Fahrer im Lauf des Jahres alle
+            // weiterzogen, stand deshalb voellig OHNE Fahrer da: Hesketh 1974 zeigte eine
+            // leere Spalte, obwohl Jochen Mass sieben Rennen fuer sie fuhr, bevor er zu
+            // McLaren ging (Nutzer-Screenshot). Wahrheit pro Rennen ist `res[].tmn` — und
+            // seit v0.9.17.23 nennen auch die Nichtqualifizierten ihren Rennstall in `tms`.
+            // Reihenfolge nach Anzahl der Wochenenden: der Stammfahrer zuerst, der
+            // Aushilfe fuer drei Rennen hinten.
+            const _stdResults = isHistorical ? (historicalViewData.results || []) : (GAME_STATE.results || []);
+            const _stdStandings = isHistorical ? (historicalViewData.driverStandings || {}) : (GAME_STATE.driverStandings || {});
+            const _fahrerAusRennen = {};   // Team-ID → [Fahrer-ID] nach Wochenenden sortiert
+            {
+                const _tid = {};   // Klarname/histId/ID in Kleinschrift → Team-ID
+                for (const t of (teamsList || [])) {
+                    for (const k of [t.id, t.histId, t.name]) if (k) _tid[String(k).toLowerCase()] = t.id;
+                }
+                const _zaehler = {};
+                const _bump = (tn, did) => {
+                    const id = _tid[String(tn || '').toLowerCase()];
+                    if (!id || !did) return;
+                    ((_zaehler[id] = _zaehler[id] || {}))[did] = (_zaehler[id][did] || 0) + 1;
+                };
+                for (const race of _stdResults) {
+                    for (const r of (race.res || race.results || [])) _bump(r.tmn || r.teamName || r.team, r.d || r.driver);
+                    for (const [did, tn] of Object.entries(race.tms || {})) _bump(tn, did);
+                }
+                for (const [id, m] of Object.entries(_zaehler)) {
+                    _fahrerAusRennen[id] = Object.entries(m).sort((a, b) => b[1] - a[1]).map(([did]) => did);
+                }
+            }
+            const _namensZeile = id => {
+                const d = (driversList || []).find(x => x.id === id);
+                return d ? d.name : null;
+            };
+
             return `
                 <div class="card rounded-xl overflow-hidden">
                     <div class="table-responsive">
@@ -26626,7 +26666,23 @@
                                             return `<span class="driver-link" onclick="openDriverProfile('${did}')">${name}${tag}</span>`;
                                         }).join(' / ');
                                     } else {
-                                        driverCells = driversList.filter(d => d.team === t.id)
+                                        // Rennergebnisse zuerst (s. oben), Kader nur als Rueckfall —
+                                        // etwa fuer die laufende Saison vor dem ersten Rennen.
+                                        const _ausRennen = (_fahrerAusRennen[t.id] || [])
+                                            .map(id => ({ id, name: _namensZeile(id) }))
+                                            .filter(x => x.name);
+                                        // Rueckfall 1: die WERTUNGSTABELLE. Sie fuehrt ihr Team je
+                                        // Fahrer und ueberlebt auch in Alt-Staenden, in denen es
+                                        // `tms` noch nicht gab. Rettet Saisons ganz ohne Rennstart —
+                                        // Renault 1979 (Moreno, Villeneuve), Connew 1972, Phillips 1954.
+                                        const _ausTabelle = Object.entries(_stdStandings || {})
+                                            .filter(([, v]) => v && v.team === t.id)
+                                            .map(([id, v]) => ({ id, name: v.name || _namensZeile(id) }))
+                                            .filter(x => x.name);
+                                        const _quelle = _ausRennen.length ? _ausRennen
+                                            : _ausTabelle.length ? _ausTabelle
+                                            : driversList.filter(d => d.team === t.id).map(d => ({ id: d.id, name: d.name }));
+                                        driverCells = _quelle
                                             .map(d => `<span class="driver-link" onclick="openDriverProfile('${d.id}')">${d.name}</span>`)
                                             .join(' & ');
                                     }
@@ -34937,7 +34993,20 @@ Empfohlene Wertebereiche:
                 // Gegen ALLE ID-Formen prüfen: sonst fehlt eine Saison komplett, sobald
                 // drivers[].team die Einsteiger-ID trägt und teamId der Slug ist.
                 const _set = collectTeamIdAliases(h, [teamId, stATSId]);
-                if ((h.drivers||[]).some(d=>_set.has(String(d.team||'').toLowerCase()))) {
+                // === EINE SAISON ZAEHLT AUCH OHNE KADEREINTRAG (v0.9.17.24) ===
+                // Das Tor hier fragte NUR `d.team` ab — den Kaderstand am SAISONENDE. Zogen
+                // alle Fahrer eines Teams im Lauf des Jahres weiter, fiel die ganze Saison
+                // aus `simYearMap`, und die Aushilfen-Erkennung weiter unten (v0.9.17.9) kam
+                // nie zum Zug: Hesketh 1974 fehlte im Renn-Raster komplett, obwohl die
+                // Team-Historie darueber J. Mass korrekt fuehrte (Nutzer-Screenshot).
+                // Wahrheit pro Rennen ist `res[].tmn`, seit v0.9.17.23 auch `tms` fuer die
+                // Nichtqualifizierten.
+                const _imKader = (h.drivers||[]).some(d=>_set.has(String(d.team||'').toLowerCase()));
+                const _inRennen = !_imKader && (h.results||[]).some(race =>
+                    (race.res||race.results||[]).some(r =>
+                        _set.has(String(r.team||'').toLowerCase()) || _set.has(String(r.tmn||r.teamName||'').toLowerCase()))
+                    || Object.values(race.tms||{}).some(tn => _set.has(String(tn||'').toLowerCase())));
+                if (_imKader || _inRennen) {
                     simYearMap[h.year] = h;
                     simIdSets[h.year] = _set;
                 }
@@ -35077,6 +35146,16 @@ Empfohlene Wertebereiche:
                                 const tid=String(r.team||'').toLowerCase();
                                 const tnm=String(r.tmn||r.teamName||'').toLowerCase();
                                 if (!_set.has(tid) && !_set.has(tnm)) continue;
+                                _gast.add(id);
+                            }
+                            // Wer fuer dieses Team gemeldet hat, sich aber nicht qualifizierte,
+                            // steht in keinem `res`-Eintrag (v0.9.17.24). Seit v0.9.17.23 nennt
+                            // `tms` seinen Rennstall — sonst fehlte er im Raster, waehrend ein
+                            // Fahrer mit demselben Schicksal, der zufaellig im Kader stand,
+                            // seine DNQ-Zellen bekam.
+                            for (const [id,tn] of Object.entries(race.tms||{})) {
+                                if (!id||_schon.has(id)||_gast.has(id)) continue;
+                                if (!_set.has(String(tn||'').toLowerCase())) continue;
                                 _gast.add(id);
                             }
                         }
