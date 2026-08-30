@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.25</title>
+    <title>F1 RPG v0.9.17.26</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.25 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.26 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; NEU: Live-Ticker abwechslungsreicher - 650 statt 390 Kommentarzeilen</div>
+                            <div>&#8226; NEU: Boxenstopp/Ueberholen/Ausfall je 25 Varianten pro Aera - keine Wiederholung im selben Rennen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.25 - 30.08.2026</div>
                             <div>&#8226; FIX: Die WM-Tabellen enthielten Fahrer und Teams ohne ein einziges Rennen - im Spielstand 513 von 2969 Fahrerzeilen, was die WM-Raenge verzerrte</div>
                             <div>&#8226; NEU: Konstrukteure sacken nicht mehr grundlos vom Vollprogramm auf ein paar Rennen ab - der Nachruecker erbt jetzt das Programm des Sitzes statt seinen eigenen Meldeplan mitzubringen</div>
                             <div>&#8226; FIX: Konstrukteure starteten ohne einen einzigen Wagen in die Saison, weil die Aushilfen des Vorjahres erst NACH dem Sitzfueller zurueckgegeben wurden</div>
@@ -17345,7 +17348,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.25';
+        const VERSION = '0.9.17.26';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28607,7 +28610,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Es ist soweit: {fieldSize} tapfere Piloten nehmen die {totalLaps} Runden in Angriff.',
                     '🏁 Mit ohrenbetäubendem Donner rollt das Feld an – der große Preis über {totalLaps} Runden hat begonnen!',
                     '🏁 Startschuss! Staub, Lärm und {fieldSize} Wagen im Kampf um die erste Kurve.',
-                    '🏁 Das Rennen ist gestartet – {totalLaps} Runden Prüfung für Mensch und Maschine.'
+                    '🏁 Das Rennen ist gestartet – {totalLaps} Runden Prüfung für Mensch und Maschine.',
+                    '🏁 Der Starter senkt die Flagge – {fieldSize} Wagen stürmen davon!',
+                    '🏁 Ein Donnergrollen aus {fieldSize} Motoren – der Grand Prix über {totalLaps} Runden läuft!',
+                    '🏁 Die große Prüfung beginnt – {totalLaps} Runden zwischen Ruhm und Kummer.',
+                    '🏁 Das Feld springt der ersten Kurve entgegen – möge der Beste siegen!'
                 ],
                 e62: [
                     '🏁 Start! {fieldSize} Fahrer gehen auf die {totalLaps} Runden.',
@@ -28617,7 +28624,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Der Grand Prix läuft! {totalLaps} Runden stehen auf dem Programm.',
                     '🏁 Los geht es – {fieldSize} Fahrer, {totalLaps} Runden, alles offen.',
                     '🏁 Start zum Grand Prix – die erste Kurve verlangt gleich volle Konzentration.',
-                    '🏁 Die Startflagge ist gefallen – {fieldSize} Fahrer im Kampf um die ersten Meter.'
+                    '🏁 Die Startflagge ist gefallen – {fieldSize} Fahrer im Kampf um die ersten Meter.',
+                    '🏁 Flagge unten – {fieldSize} Wagen sortieren sich in die erste Kurve.',
+                    '🏁 Der Start ist geglückt – {totalLaps} Runden Arbeit liegen vor dem Feld.',
+                    '🏁 Alle {fieldSize} Wagen sind auf dem Weg – das Rennen läuft.',
+                    '🏁 Runde 1 von {totalLaps} – jetzt zeigt sich, wer seine Hausaufgaben gemacht hat.'
                 ],
                 e76: [
                     '🏁 Start! {fieldSize} Autos jagen in die erste Kurve!',
@@ -28627,7 +28638,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Und sie sind unterwegs! Die erste Runde von {totalLaps} läuft.',
                     '🏁 Turbulente erste Meter – {fieldSize} Autos kämpfen um jede Lücke!',
                     '🏁 Es ist angerichtet: {totalLaps} Runden Renn-Action ab jetzt!',
-                    '🏁 Los geht’s! Das Feld von {fieldSize} Autos stürmt davon.'
+                    '🏁 Los geht’s! Das Feld von {fieldSize} Autos stürmt davon.',
+                    '🏁 Startgetümmel! {fieldSize} Autos, eine Kurve – das kann eng werden!',
+                    '🏁 Sie stürmen auf die erste Kurve zu – Ellbogen raus, das Rennen läuft!',
+                    '🏁 {totalLaps} Runden Vollgas – ab genau jetzt!',
+                    '🏁 Die Meute ist los – {fieldSize} Autos im Höllentempo Richtung Kurve eins!'
                 ],
                 e94: [
                     '🏁 Die Lichter erlöschen – Start zum Grand Prix! {fieldSize} Autos auf {totalLaps} Runden.',
@@ -28637,7 +28652,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Der Grand Prix rollt – {fieldSize} Autos im Kampf um Position.',
                     '🏁 Start in den Renntag: {totalLaps} Runden, alles ist möglich.',
                     '🏁 Die Startaufstellung löst sich auf – ab jetzt zählt nur noch Pace.',
-                    '🏁 Rennstart! {fieldSize} Autos – und {totalLaps} Runden, in denen alles passieren kann.'
+                    '🏁 Rennstart! {fieldSize} Autos – und {totalLaps} Runden, in denen alles passieren kann.',
+                    '🏁 Die Ampel schaltet auf Grün – das Rennen über {totalLaps} Runden läuft.',
+                    '🏁 Start! {fieldSize} Autos durch Kurve eins – jetzt beginnt das Schachspiel über {totalLaps} Runden.',
+                    '🏁 Das Feld ist unterwegs – die erste von {totalLaps} Runden läuft.',
+                    '🏁 Los geht es – {fieldSize} Autos und ein Ziel.'
                 ],
                 e10: [
                     '🏁 Lights out! {fieldSize} Autos gehen auf die {totalLaps} Runden.',
@@ -28647,7 +28666,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Go, go, go! {fieldSize} Autos im Sprint zur ersten Kurve.',
                     '🏁 Die Lichter sind aus – das Rennen über {totalLaps} Runden läuft!',
                     '🏁 Rennstart! Jetzt zählt es – {totalLaps} Runden bis zur Zielflagge.',
-                    '🏁 Los geht’s: {fieldSize} Autos jagen in Runde 1 von {totalLaps}.'
+                    '🏁 Los geht’s: {fieldSize} Autos jagen in Runde 1 von {totalLaps}.',
+                    '🏁 Fünf rote Lichter... und aus! {fieldSize} Autos stürmen los.',
+                    '🏁 Sauber durch Kurve eins – {totalLaps} Runden, es kann alles passieren.',
+                    '🏁 Start! Positionskämpfe überall – das wird ein Ritt über {totalLaps} Runden.',
+                    '🏁 Und ab! {fieldSize} Autos im Verdrängungswettbewerb Richtung erste Kurve.'
                 ]
             },
             pit: {
@@ -28665,7 +28688,18 @@ const CIRCUIT_LAYOUTS = {
                     '🔧 Runde {lap}: Frischer Gummi für {driver} – dann wieder hinaus ins Getümmel.',
                     '🔧 Runde {lap}: Boxenhalt bei {team} – {driver} verliert Zeit, gewinnt aber Reifen.',
                     '🔧 Runde {lap}: {driver} macht Station an der Box – aktuell Platz {pos}.',
-                    '🔧 Runde {lap}: Halt bei {team}! {driver} lässt nacharbeiten und kehrt zurück auf die Bahn.'
+                    '🔧 Runde {lap}: Halt bei {team}! {driver} lässt nacharbeiten und kehrt zurück auf die Bahn.',
+                    '🔧 Runde {lap}: {driver} rollt an die Boxenmauer – Kanister, Reifen, Muskelkraft.',
+                    '🔧 Runde {lap}: Halt bei {team} – die Mechaniker in Öl und Eile.',
+                    '🔧 Runde {lap}: {driver} lässt den Wagen durchsehen – dann zurück auf die Bahn.',
+                    '🔧 Runde {lap}: Boxenhalt für {driver} – Handarbeit gegen die Uhr.',
+                    '🔧 Runde {lap}: {driver} steht an der Box – das Publikum reckt die Hälse.',
+                    '🔧 Runde {lap}: Die {team}-Mannschaft empfängt {driver} – frischer Gummi, neuer Mut.',
+                    '🔧 Runde {lap}: {driver} unterbricht die Hatz – Station an der Werksbox.',
+                    '🔧 Runde {lap}: Reifen und ein Schluck Benzin – {driver} macht Halt.',
+                    '🔧 Runde {lap} von {totalLaps}: Boxenhalt für {driver}.',
+                    '🔧 Runde {lap}: Platz {pos} zum Zeitpunkt des Halts – {driver} vertraut auf seine Mannschaft.',
+                    '🔧 Runde {lap}: {driver} winkt der Box zu und biegt ein – Dienst am Wagen.'
                 ],
                 e62: [
                     '🔧 Runde {lap}: {driver} kommt an die Box – die {team}-Crew wartet schon.',
@@ -28681,7 +28715,18 @@ const CIRCUIT_LAYOUTS = {
                     '🔧 Runde {lap}: {driver} an der Box – jede Sekunde kostet Meter auf der Strecke.',
                     '🔧 Runde {lap}: Reifenwechsel bei {driver} – {team} schickt ihn wieder hinaus.',
                     '🔧 Runde {lap}: {driver} rollt zur Box – im Rennen über {totalLaps} Runden will so ein Halt gut gewählt sein.',
-                    '🔧 Runde {lap}: Halt an der Box – {driver} vertraut auf seine Crew.'
+                    '🔧 Runde {lap}: Halt an der Box – {driver} vertraut auf seine Crew.',
+                    '🔧 Runde {lap}: {driver} meldet sich an der Box – die Crew ist vorbereitet.',
+                    '🔧 Runde {lap}: Planmäßiger Halt für {driver} – {team} arbeitet konzentriert.',
+                    '🔧 Runde {lap}: {driver} rollt in die Gasse – Reifen wechseln, weiterfahren.',
+                    '🔧 Runde {lap}: Boxenstopp: {driver} steht, die Handgriffe sitzen.',
+                    '🔧 Runde {lap}: {driver} holt sich frischen Gummi – Platz {pos} zum Zeitpunkt des Stopps.',
+                    '🔧 Runde {lap}: Kein Drama, nur Arbeit: {driver} an der {team}-Box.',
+                    '🔧 Runde {lap}: {driver} macht Halt – die Mechaniker verlieren keine Zeit.',
+                    '🔧 Runde {lap}: Service für {driver} – dann wieder hinaus auf den Kurs.',
+                    '🔧 Runde {lap}: {driver} biegt ab zur Box – Fahrer und Crew im Zusammenspiel.',
+                    '🔧 Runde {lap} von {totalLaps}: {driver} nutzt den Moment für seinen Stopp.',
+                    '🔧 Runde {lap}: Die {team}-Box winkt {driver} herein – alles nach Plan.'
                 ],
                 e76: [
                     '🔧 Runde {lap}: {driver} kommt rein! Die {team}-Crew springt über die Mauer.',
@@ -28697,7 +28742,18 @@ const CIRCUIT_LAYOUTS = {
                     '🔧 Runde {lap}: {driver} steht in der Box – die Sekunden fühlen sich an wie Minuten.',
                     '🔧 Runde {lap}: Frische Walzen für {driver}!',
                     '🔧 Runde {lap}: {driver} zum Service – die {team}-Jungs machen Tempo.',
-                    '🔧 Runde {lap}: Stopp für {driver} – und wieder raus in den Verkehr!'
+                    '🔧 Runde {lap}: Stopp für {driver} – und wieder raus in den Verkehr!',
+                    '🔧 Runde {lap}: Boxenstopp {driver}! Reifen ab, Reifen drauf, weg ist er!',
+                    '🔧 Runde {lap}: {driver} kommt rein – hektisches Treiben an der {team}-Box!',
+                    '🔧 Runde {lap}: Die Crew wartet schon mit den Walzen – {driver} steht keine Sekunde länger als nötig.',
+                    '🔧 Runde {lap}: {driver} in der Gasse – jetzt bloß keinen Fehler!',
+                    '🔧 Runde {lap}: Stopp! Vier neue Reifen für {driver} – und raus!',
+                    '🔧 Runde {lap}: {team} ruft, {driver} kommt – Boxenstopp unter Hochspannung.',
+                    '🔧 Runde {lap}: {driver} verliert Sekunden, hofft auf Runden – frischer Gummi ist montiert.',
+                    '🔧 Runde {lap}: Kommando Boxenstopp – {driver} liefert den Wagen ab, aktuell Platz {pos}.',
+                    '🔧 Runde {lap}: Punktlandung vor der Crew – {driver} steht!',
+                    '🔧 Runde {lap}: {driver} zum Reifenwechsel – die Meute draußen fährt weiter.',
+                    '🔧 Runde {lap} von {totalLaps}: {driver} setzt auf einen frischen Satz – mutiges Timing?'
                 ],
                 e94: [
                     '🔧 Runde {lap}: {driver} kommt an die Box – die {team}-Crew steht bereit.',
@@ -28713,7 +28769,18 @@ const CIRCUIT_LAYOUTS = {
                     '🔧 Runde {lap}: Service für {driver} – die {team}-Crew arbeitet im Akkord.',
                     '🔧 Runde {lap}: Box frei für {driver} – rein, Reifen, raus.',
                     '🔧 Runde {lap}: {driver} holt neuen Gummi – das Rennen wird auch am Kommandostand entschieden.',
-                    '🔧 Runde {lap}: Stopp {driver} – jetzt zählt jeder Handgriff.'
+                    '🔧 Runde {lap}: Stopp {driver} – jetzt zählt jeder Handgriff.',
+                    '🔧 Runde {lap}: {driver} folgt dem Kommando aus der Box – Stopp und Reifenwechsel.',
+                    '🔧 Runde {lap}: Undercut oder Pflichtstopp? {driver} ist jedenfalls drin.',
+                    '🔧 Runde {lap}: {team} zieht den Stopp durch – {driver} steht nur wenige Sekunden.',
+                    '🔧 Runde {lap}: {driver} in der Gasse – die Rechenspiele am Kommandostand laufen.',
+                    '🔧 Runde {lap}: Frische Reifen für {driver} – P{pos} beim Reinkommen.',
+                    '🔧 Runde {lap}: {driver} vertraut dem Plan – Boxenstopp nach Drehbuch.',
+                    '🔧 Runde {lap}: Alle Handgriffe sitzen – {driver} ist schon wieder unterwegs.',
+                    '🔧 Runde {lap} von {totalLaps}: {driver} stoppt – jetzt muss die Rechnung aufgehen.',
+                    '🔧 Runde {lap}: Boxenfunk, Einlenken, Stillstand – Stopp für {driver}.',
+                    '🔧 Runde {lap}: {team} wechselt bei {driver} auf frischen Gummi – sauber abgewickelt.',
+                    '🔧 Runde {lap}: {driver} opfert Zeit für frische Reifen – die Rechnung folgt später.'
                 ],
                 e10: [
                     '🔧 Runde {lap}: Box, Box! {driver} kommt rein.',
@@ -28729,7 +28796,18 @@ const CIRCUIT_LAYOUTS = {
                     '🔧 Runde {lap}: Reifenwechsel {driver} – jede Zehntel in der Gasse zählt.',
                     '🔧 Runde {lap}: {driver} rollt durch die Boxengasse – gleich geht die Jagd weiter.',
                     '🔧 Runde {lap}: Boxenstopp für {driver} – die Crew von {team} ist dran.',
-                    '🔧 Runde {lap}: {driver} holt sich neue Reifen – Attacke im nächsten Stint?'
+                    '🔧 Runde {lap}: {driver} holt sich neue Reifen – Attacke im nächsten Stint?',
+                    '🔧 Runde {lap}: „Box, box!" – {driver} bestätigt und kommt rein.',
+                    '🔧 Runde {lap}: {driver} rollt an die Marke – die Crew liefert ab.',
+                    '🔧 Runde {lap}: {driver} in der Box – Reifen drauf, Ampel grün, go!',
+                    '🔧 Runde {lap}: Stopp bei {team} – {driver} verliert kaum Zeit.',
+                    '🔧 Runde {lap}: {driver} zieht in die Gasse – das Strategie-Rennen läuft parallel.',
+                    '🔧 Runde {lap}: Frischer Satz für {driver} – jetzt bitte freie Strecke.',
+                    '🔧 Runde {lap} von {totalLaps}: {driver} stoppt – interessantes Fenster.',
+                    '🔧 Runde {lap}: {driver} kommt von P{pos} an die Box – der Rest ist Mathematik.',
+                    '🔧 Runde {lap}: Boxenstopp {driver} – die Crew von {team} im Sekundentakt.',
+                    '🔧 Runde {lap}: Kurz stehen, lange profitieren? {driver} holt neue Reifen.',
+                    '🔧 Runde {lap}: {driver} taucht in die Boxengasse ein – gleich geht es weiter.'
                 ]
             },
             overtake: {
@@ -28747,7 +28825,18 @@ const CIRCUIT_LAYOUTS = {
                     '⚡ Runde {lap}: {driver} nutzt seine Chance und überholt {victim} – beherzt gefahren!',
                     '⚡ Runde {lap}: Vorbei! {driver} übernimmt die Position von {victim} – Platz {pos}.',
                     '⚡ Runde {lap}: {driver} ringt {victim} nieder – Zweikampf nach alter Schule.',
-                    '⚡ Runde {lap}: Mutprobe bestanden: {driver} ist an {victim} vorbei.'
+                    '⚡ Runde {lap}: Mutprobe bestanden: {driver} ist an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} wirft seinen Wagen neben den von {victim} – und ist vorbei!',
+                    '⚡ Runde {lap}: Welch ein Schauspiel! {driver} bezwingt {victim} in offener Fahrt.',
+                    '⚡ Runde {lap}: {driver} presst sich an {victim} vorbei – ein Manöver für die Geschichtsbücher.',
+                    '⚡ Runde {lap}: Der Kampfgeist siegt: {driver} lässt {victim} keine Wahl.',
+                    '⚡ Runde {lap}: {driver} stellt sich {victim} – und geht als Sieger aus dem Duell hervor.',
+                    '⚡ Runde {lap}: Bravourstück von {driver}! {victim} ist überholt, Platz {pos} erobert.',
+                    '⚡ Runde {lap}: {victim} verteidigt mit allem, was er hat – doch {driver} ist nicht aufzuhalten.',
+                    '⚡ Runde {lap}: Herz und Verstand in einer Kurve: {driver} überwindet {victim}.',
+                    '⚡ Runde {lap}: Die Tribünen beben – {driver} hat {victim} niedergerungen!',
+                    '⚡ Runde {lap}: {driver} zwingt seinen Wagen an {victim} vorbei – Platz {pos} ist der Lohn.',
+                    '⚡ Runde {lap}: Ein Wimpernschlag entscheidet – {driver} vor {victim}!'
                 ],
                 e62: [
                     '⚡ Runde {lap}: {driver} überholt {victim} – sauber gemacht.',
@@ -28763,7 +28852,18 @@ const CIRCUIT_LAYOUTS = {
                     '⚡ Runde {lap}: Gutes Tempo von {driver} – {victim} ist geschlagen.',
                     '⚡ Runde {lap}: {driver} macht den entscheidenden Schritt – vorbei an {victim}.',
                     '⚡ Runde {lap}: Da war die Lücke! {driver} überholt {victim} und liegt auf Platz {pos}.',
-                    '⚡ Runde {lap}: {driver} erhöht das Tempo und lässt {victim} hinter sich.'
+                    '⚡ Runde {lap}: {driver} erhöht das Tempo und lässt {victim} hinter sich.',
+                    '⚡ Runde {lap}: {driver} macht es besser als {victim} – Positionswechsel.',
+                    '⚡ Runde {lap}: Ruhig und bestimmt: {driver} überholt {victim}.',
+                    '⚡ Runde {lap}: {driver} stellt {victim} und zieht vorbei – Platz {pos}.',
+                    '⚡ Runde {lap}: {victim} lässt eine Lücke – {driver} bedankt sich.',
+                    '⚡ Runde {lap}: Feine Klinge statt Brechstange: {driver} geht an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} hat den besseren Rhythmus und passiert {victim}.',
+                    '⚡ Runde {lap}: Das Duell geht an {driver} – {victim} muss sich einreihen.',
+                    '⚡ Runde {lap}: {driver} bleibt hartnäckig – und ist schließlich an {victim} vorbei.',
+                    '⚡ Runde {lap}: Sauberer Positionswechsel – {driver} übernimmt Platz {pos} von {victim}.',
+                    '⚡ Runde {lap}: {victim} kann das Tempo nicht halten – {driver} zieht vorbei.',
+                    '⚡ Runde {lap}: Geduld zahlt sich aus: {driver} findet den Weg an {victim} vorbei.'
                 ],
                 e76: [
                     '⚡ Runde {lap}: {driver} attackiert und kassiert {victim}!',
@@ -28779,7 +28879,18 @@ const CIRCUIT_LAYOUTS = {
                     '⚡ Runde {lap}: {victim} unter Druck – und {driver} nutzt die Gelegenheit eiskalt!',
                     '⚡ Runde {lap}: Überholmanöver {driver}! {victim} muss sich hinten anstellen.',
                     '⚡ Runde {lap}: {driver} ist der Schnellere – vorbei an {victim}, weiter geht die Jagd!',
-                    '⚡ Runde {lap}: Position getauscht: {driver} vor {victim} – das Publikum tobt!'
+                    '⚡ Runde {lap}: Position getauscht: {driver} vor {victim} – das Publikum tobt!',
+                    '⚡ Runde {lap}: Spät gebremst, viel gewonnen – {driver} taucht innen auf und {victim} ist geschlagen!',
+                    '⚡ Runde {lap}: {driver} riecht die Chance – und schnappt zu! {victim} überholt.',
+                    '⚡ Runde {lap}: Rad an Rad durch die Kurve – dann ist {driver} vorbei an {victim}!',
+                    '⚡ Runde {lap}: {victim} macht die Tür zu – {driver} findet trotzdem einen Weg!',
+                    '⚡ Runde {lap}: Herrliches Duell! Am Ende heißt es: {driver} vor {victim}.',
+                    '⚡ Runde {lap}: Nicht mit der Brechstange, sondern mit Köpfchen – {driver} kassiert {victim}, Platz {pos}!',
+                    '⚡ Runde {lap}: Jetzt gibt es kein Halten mehr – {driver} stürmt an {victim} vorbei!',
+                    '⚡ Runde {lap}: {victim} rutscht einen Meter zu weit – {driver} sagt danke!',
+                    '⚡ Runde {lap}: Showtime! {driver} zeigt {victim} die Auspuffrohre.',
+                    '⚡ Runde {lap}: Das war Racing! {driver} bezwingt {victim} – Platz {pos}!',
+                    '⚡ Runde {lap}: {driver} bleibt einfach dran – und zack, {victim} ist durchgereicht!'
                 ],
                 e94: [
                     '⚡ Runde {lap}: {driver} geht an {victim} vorbei – sauber platziert.',
@@ -28795,7 +28906,18 @@ const CIRCUIT_LAYOUTS = {
                     '⚡ Runde {lap}: {driver} bringt das Manöver gegen {victim} sicher zu Ende.',
                     '⚡ Runde {lap}: {victim} in der Defensive – und {driver} schlägt zu.',
                     '⚡ Runde {lap}: Klasse Timing: {driver} kassiert {victim}.',
-                    '⚡ Runde {lap}: {driver} arbeitet sich vor – {victim} abgehakt, jetzt P{pos}.'
+                    '⚡ Runde {lap}: {driver} arbeitet sich vor – {victim} abgehakt, jetzt P{pos}.',
+                    '⚡ Runde {lap}: {driver} bereitet das Manöver über mehrere Kurven vor – und vollendet gegen {victim}.',
+                    '⚡ Runde {lap}: Später Bremspunkt, sauberer Ausgang: {driver} überholt {victim}.',
+                    '⚡ Runde {lap}: {victim} kommt schlecht aus der Kurve – {driver} zieht vorbei.',
+                    '⚡ Runde {lap}: {driver} macht den Unterschied über die Bremse – {victim} überholt, P{pos}.',
+                    '⚡ Runde {lap}: Kühl analysiert, präzise ausgeführt – {driver} kassiert {victim}.',
+                    '⚡ Runde {lap}: {driver} setzt den Wagen millimetergenau – {victim} hat keine Chance.',
+                    '⚡ Runde {lap}: Der Druck war zu groß – {victim} muss {driver} passieren lassen.',
+                    '⚡ Runde {lap}: {driver} gewinnt das Positionsspiel gegen {victim} – P{pos}.',
+                    '⚡ Runde {lap}: Kein Risiko, volle Wirkung: {driver} geht kontrolliert an {victim} vorbei.',
+                    '⚡ Runde {lap}: {driver} ist in dieser Phase klar schneller – {victim} kann nur zusehen.',
+                    '⚡ Runde {lap}: Lehrbuch-Manöver: {driver} vorbei an {victim}.'
                 ],
                 e10: [
                     '⚡ Runde {lap}: {driver} schnappt sich {victim} – jetzt P{pos}!',
@@ -28811,7 +28933,18 @@ const CIRCUIT_LAYOUTS = {
                     '⚡ Runde {lap}: Da ist die Lücke – {driver} taucht durch, {victim} geschlagen!',
                     '⚡ Runde {lap}: {driver} lässt {victim} hinter sich – auf zur nächsten Aufgabe.',
                     '⚡ Runde {lap}: Klasse Racing! {driver} setzt sich gegen {victim} durch.',
-                    '⚡ Runde {lap}: {driver} zieht vorbei – {victim} hat keine Antwort.'
+                    '⚡ Runde {lap}: {driver} zieht vorbei – {victim} hat keine Antwort.',
+                    '⚡ Runde {lap}: {driver} schickt es rein – {victim} kann nur zuschauen!',
+                    '⚡ Runde {lap}: Move des Tages? {driver} gegen {victim} – stark!',
+                    '⚡ Runde {lap}: {victim} verteidigt innen – {driver} kontert außen und ist durch!',
+                    '⚡ Runde {lap}: Eiskalt: {driver} bremst später und holt sich {victim}.',
+                    '⚡ Runde {lap}: {driver} mit dem Überschuss – easy vorbei an {victim}.',
+                    '⚡ Runde {lap}: Side by side – und {driver} behält die Nase vorn! {victim} geschlagen.',
+                    '⚡ Runde {lap}: {driver} packt den Move gegen {victim} aus – P{pos}!',
+                    '⚡ Runde {lap}: Keine Diskussion: {driver} ist vorbei an {victim}.',
+                    '⚡ Runde {lap}: {victim} rutscht weit – {driver} nimmt das Geschenk an.',
+                    '⚡ Runde {lap}: {driver} zieht das Ding durch – {victim} überholt!',
+                    '⚡ Runde {lap}: Läuft bei {driver} – {victim} eingesammelt, weiter geht’s.'
                 ]
             },
             dnf_mechanical: {
@@ -28829,7 +28962,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Bittere Aufgabe: {driver} stellt den {team}-Wagen ab.',
                     '❌ Runde {lap}: Der Wagen von {driver} gibt den Geist auf – das Rennen ist gelaufen.',
                     '❌ Runde {lap}: Technisches K.o. für {driver} – auf Platz {pos} liegend ist Schluss.',
-                    '❌ Runde {lap}: {driver} scheidet aus – Mensch stark, Maschine schwach.'
+                    '❌ Runde {lap}: {driver} scheidet aus – Mensch stark, Maschine schwach.',
+                    '❌ Runde {lap}: {reason} – der Wagen von {driver} verstummt.',
+                    '❌ Runde {lap}: {reason} am {team}-Wagen – {driver} bleibt am Streckenrand zurück.',
+                    '❌ Runde {lap}: Die Maschine von {driver} gibt auf – {reason}.',
+                    '❌ Runde {lap}: {driver} klettert aus dem Wagen – die Technik hat entschieden.',
+                    '❌ Runde {lap}: Von Platz {pos} ins Aus – das Material lässt {driver} im Stich.',
+                    '❌ Runde {lap}: Stiller Abgang: {driver} rollt aus, der Kampf ist vorüber.',
+                    '❌ Runde {lap}: Bitternis bei {team} – der Wagen von {driver} steht still.',
+                    '❌ Runde {lap}: {reason} bei {driver} – der Mensch machtlos gegen die Maschine.',
+                    '❌ Runde {lap}: Das Feld verliert einen Kämpfer – {driver} scheidet mit Defekt aus.',
+                    '❌ Runde {lap}: {driver} bringt den Wagen an den Rand – weiter geht es nicht.',
+                    '❌ Runde {lap}: {reason} nach hartem Einsatz – {driver} muss den Grand Prix aufgeben.'
                 ],
                 e62: [
                     '❌ Runde {lap}: {reason} bei {driver} – Aufgabe.',
@@ -28845,7 +28989,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Aus für {driver} – die Technik spielt nicht mehr mit.',
                     '❌ Runde {lap}: {driver} stellt den Wagen ab – bitter für die {team}-Mannschaft.',
                     '❌ Runde {lap}: Defekt bei {driver} – aus Platz {pos} heraus ist Schluss.',
-                    '❌ Runde {lap}: {driver} ist raus – wieder fordert die Technik ihren Tribut.'
+                    '❌ Runde {lap}: {driver} ist raus – wieder fordert die Technik ihren Tribut.',
+                    '❌ Runde {lap}: {reason} – {driver} rollt leise aus.',
+                    '❌ Runde {lap}: {driver} meldet Probleme – kurz darauf steht der Wagen: {reason}.',
+                    '❌ Runde {lap}: Die {team}-Box streicht einen Namen – {driver} ist mit Defekt draußen.',
+                    '❌ Runde {lap}: {driver} stellt ab – die Technik gibt keine Antworten mehr.',
+                    '❌ Runde {lap}: {reason} am Wagen von {driver} – nüchternes Rennende.',
+                    '❌ Runde {lap}: Von Platz {pos} an den Streckenrand – {driver} scheidet aus.',
+                    '❌ Runde {lap}: Kein Lärm, kein Vortrieb – {driver} ist stehen geblieben.',
+                    '❌ Runde {lap}: {driver} beendet das Rennen unfreiwillig – {reason}.',
+                    '❌ Runde {lap}: Das Material entscheidet gegen {driver} – Aufgabe.',
+                    '❌ Runde {lap}: {reason} – für {driver} und {team} ist der Tag gelaufen.',
+                    '❌ Runde {lap}: {driver} zieht den Wagen von der Ideallinie und steigt aus.'
                 ],
                 e76: [
                     '❌ Runde {lap}: {reason} bei {driver}! Das Rennen ist für ihn gelaufen.',
@@ -28861,7 +29016,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Der {team}-Renner von {driver} steht – Rennende!',
                     '❌ Runde {lap}: {driver} raus! Von Platz {pos} direkt ins Aus – Technik-K.o.',
                     '❌ Runde {lap}: Nichts geht mehr bei {driver} – Aufgabe.',
-                    '❌ Runde {lap}: {driver} parkt den Wagen an der Seite – bitterer Tag für {team}.'
+                    '❌ Runde {lap}: {driver} parkt den Wagen an der Seite – bitterer Tag für {team}.',
+                    '❌ Runde {lap}: {reason}! Der {team}-Renner von {driver} verabschiedet sich.',
+                    '❌ Runde {lap}: {driver} wird langsamer... und langsamer... und steht! {reason}.',
+                    '❌ Runde {lap}: Technik-Drama bei {team} – {driver} ist raus!',
+                    '❌ Runde {lap}: Aus heiterem Himmel – {driver} rollt aus, Rennende!',
+                    '❌ Runde {lap}: {reason} – und alle Mühe von {driver} ist dahin.',
+                    '❌ Runde {lap}: {driver} kämpft mit dem Wagen – vergebens. Aufgabe!',
+                    '❌ Runde {lap}: Platz {pos} verpufft im Nichts – Defekt bei {driver}!',
+                    '❌ Runde {lap}: {reason} bei {driver} – ein Raunen geht durch die Reihen.',
+                    '❌ Runde {lap}: Wieder erwischt es einen – {driver} stellt den Wagen ab.',
+                    '❌ Runde {lap}: Keine Chance auf Rettung – {driver} parkt den {team}-Renner.',
+                    '❌ Runde {lap}: {reason} – {driver} verliert nicht den Mut, aber das Rennen.'
                 ],
                 e94: [
                     '❌ Runde {lap}: {reason} bei {driver} – Aufgabe.',
@@ -28877,7 +29043,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Defekt bei {driver} – von P{pos} aus dem Rennen.',
                     '❌ Runde {lap}: {driver} wird langsamer und stellt ab – das war es für heute.',
                     '❌ Runde {lap}: Wieder Technik-Pech: {driver} ist draußen.',
-                    '❌ Runde {lap}: Für {driver} ist Schluss – das Material hat versagt.'
+                    '❌ Runde {lap}: Für {driver} ist Schluss – das Material hat versagt.',
+                    '❌ Runde {lap}: {reason} – {driver} rollt aus, das Rennen läuft ohne ihn weiter.',
+                    '❌ Runde {lap}: {driver} meldet per Funk: nichts geht mehr – {reason}.',
+                    '❌ Runde {lap}: Rückschlag für {team} – {driver} ist mit Defekt raus.',
+                    '❌ Runde {lap}: {reason} bei {driver} auf P{pos} – die Strategie ist Makulatur.',
+                    '❌ Runde {lap}: {driver} bringt den Wagen noch von der Linie – dann ist Schluss.',
+                    '❌ Runde {lap}: Stillstand statt Zielflagge – {driver} scheidet aus.',
+                    '❌ Runde {lap}: {reason} – {driver} und {team} bleibt nur die Fehleranalyse.',
+                    '❌ Runde {lap}: Das Rennen endet in der Garage – {driver} ist draußen.',
+                    '❌ Runde {lap}: {driver} wird vom eigenen Auto im Stich gelassen – Aufgabe.',
+                    '❌ Runde {lap}: {reason} bei {driver} – kein Weiterkommen, keine Punkte.',
+                    '❌ Runde {lap}: Kalte Dusche für {team}: {driver} parkt den Wagen – Defekt.'
                 ],
                 e10: [
                     '❌ Runde {lap}: {reason} bei {driver} – das Auto steht, das Rennen ist vorbei.',
@@ -28893,7 +29070,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Defekt! {driver} verliert alles – P{pos} ist Geschichte.',
                     '❌ Runde {lap}: Rennende für {driver} – das Auto macht nicht mehr mit.',
                     '❌ Runde {lap}: {driver} rollt aus – null Weiterfahrt, null Punkte.',
-                    '❌ Runde {lap}: Technisches K.o. für {driver} – mitten im Rennen ist Schluss.'
+                    '❌ Runde {lap}: Technisches K.o. für {driver} – mitten im Rennen ist Schluss.',
+                    '❌ Runde {lap}: {reason} – {driver} rollt aus, Race over.',
+                    '❌ Runde {lap}: {driver} meldet sich ab – {reason}. Gar nicht gut für {team}.',
+                    '❌ Runde {lap}: Alarm bei {team} – und dann der Stillstand: {driver} ist raus.',
+                    '❌ Runde {lap}: {reason} bei {driver} – das Auto sagt einfach Nein.',
+                    '❌ Runde {lap}: {driver} stellt ab – Kopfschütteln in der {team}-Garage.',
+                    '❌ Runde {lap}: Von P{pos} in die Garage – {driver} ist draußen.',
+                    '❌ Runde {lap}: {reason} – {driver} parkt das Auto am Streckenrand.',
+                    '❌ Runde {lap}: Nichts geht mehr: DNF {driver}.',
+                    '❌ Runde {lap}: {driver} rollt aus – die Antwort gibt es erst in der Garage.',
+                    '❌ Runde {lap}: {reason} – bitterer Nuller für {driver}.',
+                    '❌ Runde {lap}: Auto kaputt, Rennen vorbei – {driver} steigt aus.'
                 ]
             },
             dnf_accident: {
@@ -28911,7 +29099,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Der Wagen von {driver} steht abseits der Bahn – Aufgabe.',
                     '❌ Runde {lap}: Ein Zwischenfall beendet die Fahrt von {driver}.',
                     '❌ Runde {lap}: Aus auf Platz {pos}: {driver} ist von der Bahn.',
-                    '❌ Runde {lap}: Jähes Ende für {driver} – das Rennen ist vorzeitig vorbei.'
+                    '❌ Runde {lap}: Jähes Ende für {driver} – das Rennen ist vorzeitig vorbei.',
+                    '❌ Runde {lap}: {reason} – der Wagen von {driver} rührt sich nicht mehr.',
+                    '❌ Runde {lap}: {driver} verliert die Herrschaft über den Wagen – das Rennen ist zu Ende.',
+                    '❌ Runde {lap}: Ein Raunen an der Strecke – {driver} ist ausgeschieden.',
+                    '❌ Runde {lap}: {reason} bei {driver} – der Wagen trägt zu viele Blessuren davon.',
+                    '❌ Runde {lap}: Die Tücke der Bahn – {driver} rutscht ins Aus.',
+                    '❌ Runde {lap}: {driver} kehrt nicht mehr auf die Bahn zurück – Aufgabe nach Zwischenfall.',
+                    '❌ Runde {lap}: Von Platz {pos} ins Abseits – {driver} scheidet aus.',
+                    '❌ Runde {lap}: {reason} – {driver} bleibt zurück, das Feld zieht weiter.',
+                    '❌ Runde {lap}: Ein Ausrutscher mit Folgen – {driver} muss den Grand Prix beenden.',
+                    '❌ Runde {lap}: Der Wagen von {driver} landet neben der Bahn – es geht nicht weiter.',
+                    '❌ Runde {lap}: {reason} – das Rennen von {driver} ist dahin.'
                 ],
                 e62: [
                     '❌ Runde {lap}: {reason} bei {driver} – das Rennen ist für ihn beendet.',
@@ -28927,7 +29126,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: {driver} bleibt neben der Strecke stehen – Aufgabe nach Zwischenfall.',
                     '❌ Runde {lap}: Aus für {driver} – der Wagen ist zu stark beschädigt.',
                     '❌ Runde {lap}: {driver} ist von der Bahn – aus Platz {pos} heraus endet sein Rennen.',
-                    '❌ Runde {lap}: Schrecksekunde – für {driver} geht es nicht weiter.'
+                    '❌ Runde {lap}: Schrecksekunde – für {driver} geht es nicht weiter.',
+                    '❌ Runde {lap}: {reason} – {driver} stellt den lädierten Wagen ab.',
+                    '❌ Runde {lap}: {driver} gerät von der Strecke – zurück geht es nicht mehr.',
+                    '❌ Runde {lap}: Der Wagen von {driver} steht im Aus – Rennende.',
+                    '❌ Runde {lap}: {reason} bei {driver} – die Fahrt endet abrupt.',
+                    '❌ Runde {lap}: {driver} verliert den Wagen – zu viel Schaden für eine Weiterfahrt.',
+                    '❌ Runde {lap}: Ein Moment genügt – {driver} ist draußen.',
+                    '❌ Runde {lap}: Von Platz {pos} von der Strecke – bitter für {driver} und {team}.',
+                    '❌ Runde {lap}: {reason} – {driver} bleibt abseits der Strecke stehen.',
+                    '❌ Runde {lap}: {driver} kommt nicht mehr zurück auf den Kurs – Aufgabe.',
+                    '❌ Runde {lap}: Der Zwischenfall kostet {driver} alle Chancen – Rennende.',
+                    '❌ Runde {lap}: {reason} – die {team}-Mannschaft kann nur noch aufräumen.'
                 ],
                 e76: [
                     '❌ Runde {lap}: {reason}! {driver} ist raus!',
@@ -28943,7 +29153,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: Das Rennen spuckt {driver} aus – Unfall, Aufgabe.',
                     '❌ Runde {lap}: Der Wagen von {driver} ist hinüber – Unfall!',
                     '❌ Runde {lap}: Aus auf Platz {pos}! {driver} scheidet nach Unfall aus.',
-                    '❌ Runde {lap}: Schock für {team}: {driver} ist abgeflogen – Rennende.'
+                    '❌ Runde {lap}: Schock für {team}: {driver} ist abgeflogen – Rennende.',
+                    '❌ Runde {lap}: {driver} fliegt raus – da geht nichts mehr!',
+                    '❌ Runde {lap}: {reason}! Der {team}-Renner ist hinüber, {driver} ist raus.',
+                    '❌ Runde {lap}: Querfeldein statt Ideallinie – {driver} scheidet aus!',
+                    '❌ Runde {lap}: {reason} bei {driver} – der Renner ist nicht mehr zu gebrauchen.',
+                    '❌ Runde {lap}: Wilde Fahrt ins Nichts – {driver} ist raus aus dem Rennen!',
+                    '❌ Runde {lap}: Da hilft kein Schrauben mehr – Unfall, {driver} ist draußen.',
+                    '❌ Runde {lap}: Platz {pos} dahin – {driver} parkt unfreiwillig im Aus.',
+                    '❌ Runde {lap}: {reason} – die Zuschauer halten den Atem an, {driver} ist raus.',
+                    '❌ Runde {lap}: Aus der Traum – {driver} steht im Aus, Rennende!',
+                    '❌ Runde {lap}: Schreck in der {team}-Box – {driver} kommt nicht mehr zurück.',
+                    '❌ Runde {lap}: {reason} – wilde Szenen, am Ende steht {driver} ohne Rennen da.'
                 ],
                 e94: [
                     '❌ Runde {lap}: {reason} bei {driver} – das Rennen ist vorbei.',
@@ -28959,7 +29180,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: {driver} verliert P{pos} auf die harte Tour – Unfall, Rennende.',
                     '❌ Runde {lap}: Das Auto von {driver} steht – Unfall, Aufgabe.',
                     '❌ Runde {lap}: Rennen beendet: {driver} kommt nach einem Zwischenfall nicht mehr weiter.',
-                    '❌ Runde {lap}: {driver} rutscht ins Aus – bittere Szene für {team}.'
+                    '❌ Runde {lap}: {driver} rutscht ins Aus – bittere Szene für {team}.',
+                    '❌ Runde {lap}: {reason} – das Rennen von {driver} endet auf der Stelle.',
+                    '❌ Runde {lap}: {driver} verliert den Wagen – hier endet sein Arbeitstag.',
+                    '❌ Runde {lap}: Racing-Zwischenfall – {driver} ist draußen.',
+                    '❌ Runde {lap}: {reason} bei {driver} – der Wagen ist zu stark beschädigt.',
+                    '❌ Runde {lap}: {driver} kommt von der Linie ab – Aufgabe.',
+                    '❌ Runde {lap}: Aus auf P{pos} – {driver} kann den Wagen nicht mehr zurückbringen.',
+                    '❌ Runde {lap}: {reason} – hartes Ende für {driver} und {team}.',
+                    '❌ Runde {lap}: {driver} rollt beschädigt aus – dieses Rennen ist Geschichte.',
+                    '❌ Runde {lap}: Der Unfall beendet alle Planspiele – {driver} scheidet aus.',
+                    '❌ Runde {lap}: {reason} auf P{pos} – für {driver} ist hier Endstation.',
+                    '❌ Runde {lap}: Bittere Bilder für {team}: der Wagen von {driver} steht im Aus.'
                 ],
                 e10: [
                     '❌ Runde {lap}: {reason} bei {driver} – Rennen vorbei!',
@@ -28975,7 +29207,18 @@ const CIRCUIT_LAYOUTS = {
                     '❌ Runde {lap}: {driver} verliert P{pos} in einer Sekunde – Unfall, Rennende.',
                     '❌ Runde {lap}: Bitteres Bild für {team}: das Auto von {driver} steht.',
                     '❌ Runde {lap}: {driver} ist draußen – Zwischenfall, Aufgabe.',
-                    '❌ Runde {lap}: Rennende für {driver} – so schnell kann es gehen.'
+                    '❌ Runde {lap}: Rennende für {driver} – so schnell kann es gehen.',
+                    '❌ Runde {lap}: Kein Weiterkommen für {driver} – Rennen gelaufen!',
+                    '❌ Runde {lap}: {reason}! {driver} kommt da nicht mehr raus – DNF.',
+                    '❌ Runde {lap}: Replays laufen – Fakt ist: {driver} ist draußen.',
+                    '❌ Runde {lap}: {reason} bei {driver} – das Auto ist durch.',
+                    '❌ Runde {lap}: {driver} verliert es – und P{pos} gleich mit. Rennende.',
+                    '❌ Runde {lap}: Einmal zu weit – {driver} ist raus, das Auto steht.',
+                    '❌ Runde {lap}: {reason} – {team} bleibt nur der Frust, {driver} ist raus.',
+                    '❌ Runde {lap}: So war das nicht geplant – {driver} scheidet nach Unfall aus.',
+                    '❌ Runde {lap}: {driver} parkt im Aus – bittere Szene für {team}.',
+                    '❌ Runde {lap}: Der Wagen von {driver} ist hin – hier geht heute nichts mehr.',
+                    '❌ Runde {lap}: {reason} – und für {driver} ist dieser Renntag beendet.'
                 ]
             },
             death: {
@@ -29029,7 +29272,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Die karierte Flagge fällt für {driver} – ein Sieg für die Chronik von {team}.',
                     '🏁 {driver} siegt! Hut ab vor dieser Leistung.',
                     '🏁 Der Lorbeer des Tages gehört {driver} – {team} jubelt.',
-                    '🏁 Ziel! {driver} gewinnt – Motorsport, wie er im Buche steht.'
+                    '🏁 Ziel! {driver} gewinnt – Motorsport, wie er im Buche steht.',
+                    '🏁 Die karierte Flagge! {driver} führt den {team}-Wagen als Ersten über die Linie.',
+                    '🏁 Sieg für {driver}! Blumen und Lorbeer warten auf den Helden des Tages.',
+                    '🏁 {driver} hat es vollbracht – der Grand Prix gehört ihm!',
+                    '🏁 Am Ende steht ein Name über allen: {driver}!'
                 ],
                 e62: [
                     '🏁 Zielflagge: {driver} gewinnt für {team}!',
@@ -29039,7 +29286,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 {driver} gewinnt den Grand Prix – Glückwunsch an Fahrer und {team}.',
                     '🏁 Karierte Flagge – und {driver} ist der Mann des Tages.',
                     '🏁 Sieg! {driver} bringt den {team}-Wagen als Ersten nach Hause.',
-                    '🏁 {driver} macht den Sieg perfekt – ein Erfolg für {team}.'
+                    '🏁 {driver} macht den Sieg perfekt – ein Erfolg für {team}.',
+                    '🏁 {driver} sieht die Zielflagge als Erster – eine reife Vorstellung.',
+                    '🏁 Der Sieg geht an {driver} – saubere Arbeit von Fahrer und {team}.',
+                    '🏁 Zielflagge für {driver} – die Mannschaft von {team} applaudiert an der Mauer.',
+                    '🏁 {driver} beendet das Rennen an der Spitze – Glückwunsch!'
                 ],
                 e76: [
                     '🏁 Zielflagge! {driver} gewinnt – Riesenjubel bei {team}!',
@@ -29049,7 +29300,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Ganz oben: {driver}! Ein Triumph, der sich gewaschen hat.',
                     '🏁 {driver} fährt als Erster über die Linie – Sieg für {team}!',
                     '🏁 Gänsehaut an der Strecke: {driver} gewinnt!',
-                    '🏁 Der Sieg geht an {driver} – Champagner für {team}!'
+                    '🏁 Der Sieg geht an {driver} – Champagner für {team}!',
+                    '🏁 Da ist das Ziel – und da ist der Sieger: {driver}!',
+                    '🏁 Arme hoch bei {team} – {driver} gewinnt diesen Grand Prix!',
+                    '🏁 {driver} kommt, sieht die Flagge – Sieg! Die Box flippt aus!',
+                    '🏁 Feierabend – und ganz vorne steht {driver}! {team} jubelt.'
                 ],
                 e94: [
                     '🏁 Zielflagge: Sieg für {driver} und {team}!',
@@ -29059,7 +29314,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Die karierte Flagge fällt: {driver} heißt der Sieger.',
                     '🏁 {driver} kreuzt die Linie als Erster – ein perfekter Renntag für {team}.',
                     '🏁 Das Ziel! {driver} gewinnt – Glückwunsch!',
-                    '🏁 Sieg für {driver} – dieser Grand Prix gehört ihm.'
+                    '🏁 Sieg für {driver} – dieser Grand Prix gehört ihm.',
+                    '🏁 Zielflagge – {driver} macht den Sieg für {team} perfekt.',
+                    '🏁 P1 {driver}! Am Kommandostand von {team} fallen sich alle in die Arme.',
+                    '🏁 Das Rennen ist beendet – der Sieg gehört {driver}.',
+                    '🏁 Karierte Flagge: {driver} holt den Sieg – starke Teamleistung von {team}.'
                 ],
                 e10: [
                     '🏁 Zielflagge! {driver} gewinnt das Rennen – großer Jubel bei {team}!',
@@ -29069,7 +29328,11 @@ const CIRCUIT_LAYOUTS = {
                     '🏁 Was für ein Tag für {team}: {driver} gewinnt den Grand Prix!',
                     '🏁 {driver} bringt es nach Hause – Sieg!',
                     '🏁 Ziel! {driver} steht ganz oben – Glückwunsch an {team}.',
-                    '🏁 Sieg für {driver}! {team} darf feiern.'
+                    '🏁 Sieg für {driver}! {team} darf feiern.',
+                    '🏁 {driver} gewinnt! Jubelschreie im {team}-Funk!',
+                    '🏁 Zielflagge – dieser Sieg geht an {driver}!',
+                    '🏁 P1! {driver} liefert – und {team} feiert.',
+                    '🏁 Das war’s – {driver} bringt den Sieg über die Linie!'
                 ]
             }
         };
