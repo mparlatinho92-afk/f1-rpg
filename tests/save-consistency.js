@@ -33,7 +33,7 @@ const pct = (a, b) => b ? (100 * a / b).toFixed(1) + ' %' : '–';
 //   - kein als DNQ gefuehrter Fahrer taucht im Rennergebnis auf
 //   - die Quali-Liste ist mindestens so lang wie das Starterfeld
 let rennen = 0, ohneQuali = 0, starterOhneQualiZeile = 0, dnqGestartet = 0,
-    qualiKuerzerAlsFeld = 0, dnqGesamt = 0, dnpqGesamt = 0, starterGesamt = 0,
+    qualiKuerzerAlsFeld = 0, dnqGesamt = 0, dnpqGesamt = 0, dnsGesamt = 0, starterGesamt = 0,
     stillVerschwunden = 0;
 const beispiele = [], stillBsp = [];
 for (const s of saisons) {
@@ -47,6 +47,10 @@ for (const s of saisons) {
         starterGesamt += starter.size;
         const dnq = new Set(r.dnq || []); dnqGesamt += dnq.size;
         const dnpq = new Set(r.dnpq || []); dnpqGesamt += dnpq.size;
+        // NICHT ANGETRETEN ist ein eigener Vermerk (v0.9.17.13) — dieses Skript kannte
+        // ihn nicht und meldete jeden DNS als „still verschwunden": 305 Fehlalarme im
+        // Spielstand des Nutzers, exakt die Zahl der DNS-Eintraege darin.
+        const dns = new Set(r.dns || []); dnsGesamt += dns.size;
         const q = qualiJeRennen[idx];
         if (!q) { ohneQuali++; continue; }
         const qIds = new Set((q.res || q.results || []).map(x => x.d || x.driver).filter(Boolean));
@@ -63,7 +67,7 @@ for (const s of saisons) {
         // oder DNPQ vermerkt zu sein. Das ist die stille Luecke: der Fahrer verschwindet
         // zwischen Qualifying und Rennen, ohne dass irgendwo steht, warum.
         for (const id of qIds) {
-            if (starter.has(id) || dnq.has(id) || dnpq.has(id)) continue;
+            if (starter.has(id) || dnq.has(id) || dnpq.has(id) || dns.has(id)) continue;
             stillVerschwunden++;
             if (stillBsp.length < 6) {
                 const nm = (s.drivers || []).find(d => d.id === id)?.name || id;
@@ -73,7 +77,7 @@ for (const s of saisons) {
     }
 }
 console.log('1) QUALIFYING ↔ STARTAUFSTELLUNG');
-console.log(`   Rennen gesamt: ${rennen} · Starter ${starterGesamt} · DNQ ${dnqGesamt} · DNPQ ${dnpqGesamt}`);
+console.log(`   Rennen gesamt: ${rennen} · Starter ${starterGesamt} · DNQ ${dnqGesamt} · DNS ${dnsGesamt} · DNPQ ${dnpqGesamt}`);
 console.log(`   ${ohneQuali ? '⚠' : '✅'} Rennen ohne Qualifying-Datensatz:      ${ohneQuali} (${pct(ohneQuali, rennen)})`);
 console.log(`   ${starterOhneQualiZeile ? '❌' : '✅'} Starter ohne Qualifying-Zeile:         ${starterOhneQualiZeile}`);
 console.log(`   ${dnqGestartet ? '❌' : '✅'} Als DNQ gefuehrt, aber gestartet:      ${dnqGestartet}`);
@@ -196,9 +200,15 @@ if (verzahntBsp.length) { console.log('\n   Beispiele Hin und Her:'); verzahntBs
     const realRoh = {};                        // "jahr|circuitId" → [Starter je Rennen]
     const raceMeta = {};
     for (const r of races) raceMeta[r.id] = r;
+    // ⚠ ZWEITE MESSFALLE: `f1db-races-race-results.json` fuehrt auch NICHT-STARTER.
+    // 1989 Imola hat 39 Eintraege — 12 klassiert, 12 DNF, 1 NC, 1 DSQ, aber auch
+    // 4 DNQ und 9 DNPQ. Wer alles zaehlt, vergleicht Spiel-STARTER gegen F1DB-MELDER
+    // und meldet 15 fehlende Autos, die nie am Start standen.
+    const KEIN_START = new Set(['DNQ', 'DNPQ', 'DNS', 'WD', 'EX', 'NC*']);
     const proRennen = {};
     for (const e of erg) {
         const r = raceMeta[e.raceId]; if (!r) continue;
+        if (KEIN_START.has(String(e.positionText || '').toUpperCase())) continue;
         proRennen[e.raceId] = (proRennen[e.raceId] || 0) + 1;
     }
     for (const [rid, n] of Object.entries(proRennen)) {
