@@ -43,35 +43,50 @@ const RIVALRY_BANK = {
             'das teaminterne Duell zwischen {driver} und {rival} hält die Mannschaft in Atem: {h2hText}.',
             '{driver} gegen {rival} – ein Kräftemessen auf des Messers Schneide: {h2hText}.',
             'im eigenen Lager tobt der engste Kampf: {driver} und {rival} trennt fast nichts – {h2hText}.',
-            'wenn zwei Piloten desselben Stalls sich nichts schenken, schaut das ganze Fahrerlager hin: {h2hText} zwischen {driver} und {rival}.'
+            'wenn zwei Piloten desselben Stalls sich nichts schenken, schaut das ganze Fahrerlager hin: {h2hText} zwischen {driver} und {rival}.',
+            'im selben Stall und doch Gegner: {driver} und {rival} liegen so dicht beieinander, wie es der Sport nur zulässt – {h2hText}.',
+            'die Mannschaft hat zwei erste Fahrer, ob sie will oder nicht: {driver} und {rival} – {h2hText}.',
+            'kein Handbreit Platz zwischen den beiden: {driver} gegen {rival}, {h2hText}.'
         ],
         e62: [
             'das Duell zwischen {driver} und {rival} ist so eng, wie es teamintern nur sein kann: {h2hText}.',
             '{driver} und {rival} nehmen sich kaum etwas – {h2hText}.',
             'stallintern geht es eng zu: zwischen {driver} und {rival} steht es {h2hText}.',
             'kaum ein Wochenende, an dem zwischen {driver} und {rival} nicht neu gemischt wird – {h2hText}.',
-            'die vielleicht engste Messlatte liegt im eigenen Team: {driver} gegen {rival}, {h2hText}.'
+            'die vielleicht engste Messlatte liegt im eigenen Team: {driver} gegen {rival}, {h2hText}.',
+            'wer im Team die Nase vorn hat, wechselt fast wöchentlich: {driver} gegen {rival}, {h2hText}.',
+            'zwei Wagen, eine Farbe, kein Unterschied auf der Uhr: {driver} und {rival}, {h2hText}.',
+            'die interne Hierarchie ist Verhandlungssache – {driver} und {rival} verhandeln jedes Wochenende neu: {h2hText}.'
         ],
         e76: [
             'Stallduell auf Augenhöhe: {driver} gegen {rival} – {h2hText}, enger geht es kaum.',
             'im Team wird nichts verschenkt: {driver} und {rival} trennt so gut wie nichts – {h2hText}.',
             '{driver} oder {rival}? Die Frage stellt sich jedes Wochenende neu – {h2hText}.',
             'die Box hat ihr eigenes Duell: {driver} gegen {rival}, aktuell {h2hText}.',
-            'wer die beiden vergleichen will, braucht die Lupe: {h2hText} zwischen {driver} und {rival}.'
+            'wer die beiden vergleichen will, braucht die Lupe: {h2hText} zwischen {driver} und {rival}.',
+            'zwei Fahrer, ein Team, null Komfortzone: {driver} gegen {rival} – {h2hText}.',
+            'die spannendste Zeitentabelle hängt in der eigenen Box: {driver} und {rival}, {h2hText}.',
+            'hier gibt es keine Stallorder, nur Stallkrieg im besten Sinne: {driver} gegen {rival}, {h2hText}.'
         ],
         e94: [
             'das teaminterne Duell ist statistisch ein Patt: {driver} gegen {rival}, {h2hText}.',
             '{driver} und {rival} liefern sich ein Duell auf Messers Schneide – {h2hText}.',
             'die Datenlage zwischen {driver} und {rival} ist so ausgeglichen wie selten: {h2hText}.',
             'im Team entscheidet aktuell die Tagesform: zwischen {driver} und {rival} steht es {h2hText}.',
-            'kein klarer Erster im eigenen Haus: {driver} und {rival} trennt fast nichts – {h2hText}.'
+            'kein klarer Erster im eigenen Haus: {driver} und {rival} trennt fast nichts – {h2hText}.',
+            'die Ingenieure sehen es in jeder Auswertung: zwischen {driver} und {rival} liegt praktisch nichts – {h2hText}.',
+            'gleiches Auto, gleiche Chancen, gleiche Bilanz: {driver} und {rival}, {h2hText}.',
+            'das Duell wird in Zehnteln geführt und in Nuancen entschieden: {driver} gegen {rival}, {h2hText}.'
         ],
         e10: [
             'teamintern herrscht Patt-Stimmung: {driver} vs. {rival} – {h2hText}.',
             'das engste Duell fährt im selben Auto: {driver} gegen {rival}, {h2hText}.',
             '{driver} und {rival} schenken sich nichts – {h2hText}, Ausgang offen.',
             'Stallduell mit offenem Visier: zwischen {driver} und {rival} steht es {h2hText}.',
-            'wer hier die Team-Hierarchie sucht, sucht vergebens: {driver} gegen {rival}, {h2hText}.'
+            'wer hier die Team-Hierarchie sucht, sucht vergebens: {driver} gegen {rival}, {h2hText}.',
+            'Head-to-Head auf Messers Schneide: {driver} und {rival}, {h2hText}.',
+            'gleiche Daten, gleiche Hardware, offener Ausgang: {driver} vs. {rival} – {h2hText}.',
+            'die Garage ist geteilt, die Bilanz auch: {driver} gegen {rival}, {h2hText}.'
         ]
     },
 
@@ -82,35 +97,50 @@ const RIVALRY_BANK = {
             'das Stallduell hat einen klaren Herrn: {driver} hält {rival} mit {h2hText} auf Distanz.',
             'zwischen {driver} und {rival} ist die Rangordnung derzeit eindeutig – {h2hText}.',
             '{rival} beißt sich am eigenen Teamkollegen die Zähne aus: {driver} führt das Duell mit {h2hText} an.',
-            'wer wissen will, wer im Team den Maßstab setzt, schaue auf die Bilanz: {driver} vor {rival}, {h2hText}.'
+            'wer wissen will, wer im Team den Maßstab setzt, schaue auf die Bilanz: {driver} vor {rival}, {h2hText}.',
+            'der Stall hat eine klare Speerspitze: {driver} lässt {rival} mit {h2hText} hinter sich.',
+            'so deutlich fällt ein internes Urteil selten aus: {driver} über {rival}, {h2hText}.',
+            'an der Rangordnung im Team gibt es wenig zu rütteln: {driver} vor {rival} – {h2hText}.'
         ],
         e62: [
             'das teaminterne Duell verläuft einseitig: {driver} führt gegen {rival} mit {h2hText}.',
             '{driver} hat die Verhältnisse im Team geklärt – {h2hText} gegen {rival}.',
             'gegen den eigenen Teamkollegen findet {rival} derzeit kein Mittel: {driver} liegt mit {h2hText} vorn.',
             'die Bilanz lässt wenig Raum für Diskussionen: {driver} gegen {rival}, {h2hText}.',
-            'im direkten Vergleich hat {driver} klar die Oberhand – {h2hText}.'
+            'im direkten Vergleich hat {driver} klar die Oberhand – {h2hText}.',
+            'die Frage nach der Nummer eins stellt sich hier nicht: {driver} führt gegen {rival}, {h2hText}.',
+            'was auch immer {rival} versucht – die Bilanz gegen {driver} bleibt einseitig: {h2hText}.',
+            'derzeit fährt {driver} in einer anderen Gewichtsklasse als sein Teamkollege: {h2hText} gegen {rival}.'
         ],
         e76: [
             'klare Ansage im eigenen Team: {driver} distanziert {rival} mit {h2hText}.',
             'das Stallduell? Momentan keines: {driver} dominiert gegen {rival} – {h2hText}.',
             '{rival} kommt an seinem Teamkollegen einfach nicht vorbei: {h2hText} für {driver}.',
             'im Team gibt es derzeit nur eine Richtung – {driver} vor {rival}, {h2hText}.',
-            'die nackten Zahlen sind deutlich: {driver} führt das interne Duell mit {h2hText} an.'
+            'die nackten Zahlen sind deutlich: {driver} führt das interne Duell mit {h2hText} an.',
+            'in dieser Box herrschen klare Verhältnisse: {driver} gibt den Ton an, {rival} sucht Anschluss – {h2hText}.',
+            'das interne Kräftemessen kennt derzeit nur einen Ausgang: {driver} vor {rival}, {h2hText}.',
+            '{rival} kämpft, {driver} enteilt – die Zwischenbilanz: {h2hText}.'
         ],
         e94: [
             'die Statistik im Teamduell ist eindeutig: {driver} führt gegen {rival} mit {h2hText}.',
             '{driver} hat das interne Duell klar im Griff – {h2hText} gegen {rival}.',
             'für {rival} ist der eigene Teamkollege derzeit die höchste Hürde: {h2hText} für {driver}.',
             'wer die Team-Hierarchie sucht, findet sie in der Bilanz: {driver} vor {rival}, {h2hText}.',
-            'im direkten Vergleich setzt {driver} derzeit den Maßstab: {h2hText}.'
+            'im direkten Vergleich setzt {driver} derzeit den Maßstab: {h2hText}.',
+            'die Auswertungen sprechen eine klare Sprache: {driver} kontrolliert das Teamduell – {h2hText} gegen {rival}.',
+            'im gleichen Material trennt die beiden derzeit eine Klasse: {driver} vor {rival}, {h2hText}.',
+            'das Benchmark-Duell hat einen Stammsieger: {driver} – {h2hText} gegen {rival}.'
         ],
         e10: [
             'das Teamduell hat eine klare Nummer eins: {driver} führt gegen {rival} mit {h2hText}.',
             '{driver} dominiert den internen Vergleich – {h2hText} gegen {rival}.',
             'Benchmark im eigenen Haus: an {driver} ist für {rival} derzeit kein Vorbeikommen – {h2hText}.',
             'die Zahlen im Stallduell sprechen für sich: {driver} vor {rival}, {h2hText}.',
-            '{rival} sucht noch nach Antworten auf den Mann in der anderen Garagenhälfte: {h2hText} für {driver}.'
+            '{rival} sucht noch nach Antworten auf den Mann in der anderen Garagenhälfte: {h2hText} für {driver}.',
+            'aktuell ist das kein Duell, sondern eine Ansage: {driver} führt gegen {rival} mit {h2hText}.',
+            'die andere Garagenseite ist derzeit die schnellere: {driver} distanziert {rival} – {h2hText}.',
+            'gleiches Auto, ungleiche Bilanz: {driver} vor {rival}, {h2hText}.'
         ]
     },
 
@@ -123,35 +153,50 @@ const RIVALRY_BANK = {
             'wenn {driver} und {rival} aufeinandertreffen, hält der Grand-Prix-Sport den Atem an – {h2hText}.',
             'ein Duell, wie es das Publikum liebt: {driver} gegen {rival}, Größe gegen Größe – {h2hText}.',
             'die Ehre der Ersten wird derzeit zwischen {driver} und {rival} verhandelt – {h2hText}.',
-            '{driver} oder {rival}? An dieser Frage scheiden sich derzeit die Geister an den Strecken – {h2hText}.'
+            '{driver} oder {rival}? An dieser Frage scheiden sich derzeit die Geister an den Strecken – {h2hText}.',
+            'es sind Wochen der großen Namen: {driver} und {rival} tragen ihren Wettstreit vor aller Augen aus – {h2hText}.',
+            'zwei Meister ihres Fachs, kaum ein Blatt dazwischen: {driver} gegen {rival}, {h2hText}.',
+            'an den Stammtischen wie an den Strecken kennt der Streit nur ein Thema: {driver} oder {rival} – {h2hText}.'
         ],
         e62: [
             'das Duell der Besten: {driver} gegen {rival} – {h2hText}.',
             '{driver} und {rival} fahren derzeit in einer eigenen Sphäre – und gegeneinander: {h2hText}.',
             'zwei Spitzenfahrer, ein Ziel: zwischen {driver} und {rival} entscheidet sich derzeit vieles – {h2hText}.',
             'wo {driver} ist, ist {rival} selten weit – {h2hText}.',
-            'die Saison hat ihr großes Duell gefunden: {driver} gegen {rival}, {h2hText}.'
+            'die Saison hat ihr großes Duell gefunden: {driver} gegen {rival}, {h2hText}.',
+            'die Spitze hat derzeit zwei Adressen: {driver} und {rival} – {h2hText}.',
+            'keiner gibt nach, keiner reißt ab: {driver} gegen {rival}, {h2hText}.',
+            'es ist das Kräftemessen dieser Monate: {driver} und {rival}, {h2hText}.'
         ],
         e76: [
             'das große Duell dieser Tage: {driver} gegen {rival} – {h2hText}.',
             '{driver} und {rival} liefern sich einen Schlagabtausch der Extraklasse: {h2hText}.',
             'zwei Alphatiere, eine Spitze: {driver} gegen {rival} elektrisiert das Publikum – {h2hText}.',
             'wenn diese beiden auf derselben Strecke stehen, gibt es keine Nebenschauplätze: {driver} gegen {rival}, {h2hText}.',
-            'die Frage des Jahres lautet {driver} oder {rival} – {h2hText}.'
+            'die Frage des Jahres lautet {driver} oder {rival} – {h2hText}.',
+            'Funken, wohin man schaut: {driver} und {rival} schenken sich keinen Meter – {h2hText}.',
+            'das Publikum bekommt derzeit das Duell, das es verdient: {driver} gegen {rival} – {h2hText}.',
+            'zwei Namen beherrschen die Schlagzeilen – und die Stoppuhren: {driver} und {rival}, {h2hText}.'
         ],
         e94: [
             'das Topduell der Saison: {driver} gegen {rival} – {h2hText}.',
             '{driver} und {rival} trennen Nuancen, keine Klassen: {h2hText}.',
             'zwei Fahrer definieren derzeit die Spitze – {driver} und {rival}, {h2hText}.',
             'im Kampf um die Spitze schenken sich {driver} und {rival} nichts – {h2hText}.',
-            'die Bestenliste hat aktuell zwei Namen: {driver} und {rival} – {h2hText}.'
+            'die Bestenliste hat aktuell zwei Namen: {driver} und {rival} – {h2hText}.',
+            'in den Analysen laufen beide auf Augenhöhe: {driver} und {rival}, {h2hText}.',
+            'das Titelbarometer pendelt zwischen zwei Namen: {driver} und {rival} – {h2hText}.',
+            'wo der eine eine Bestzeit setzt, antwortet der andere: {driver} gegen {rival}, {h2hText}.'
         ],
         e10: [
             'das Duell, auf das alle schauen: {driver} gegen {rival} – {h2hText}.',
             '{driver} vs. {rival} ist DAS Duell dieser Saison – {h2hText}.',
             'zwei Ausnahmekönner, kaum Luft dazwischen: {driver} und {rival}, {h2hText}.',
             'Spitzenkampf pur: {driver} gegen {rival} – {h2hText}.',
-            'wenn {driver} und {rival} aufeinandertreffen, wird jedes Duell zum Hauptereignis – {h2hText}.'
+            'wenn {driver} und {rival} aufeinandertreffen, wird jedes Duell zum Hauptereignis – {h2hText}.',
+            'zwei Alphas, eine Spitze, null Nachgeben: {driver} und {rival}, {h2hText}.',
+            'jedes Aufeinandertreffen ein Statement: {driver} vs. {rival} – {h2hText}.',
+            'die Form-Kurven der beiden laufen parallel – ganz oben: {driver} und {rival}, {h2hText}.'
         ]
     },
 
@@ -164,35 +209,50 @@ const RIVALRY_BANK = {
             'dieses Duell hat Geschichte: {driver} und {rival} kennen einander {seasonsText} – die Bilanz: {h2hText}.',
             'alte Bekannte: {seasonsText} teilen sich {driver} und {rival} nun schon dieselbe Box – {h2hText}.',
             'manche Duelle überdauern die Jahre: {driver} gegen {rival}, ausgetragen {seasonsText} – {h2hText}.',
-            'im Fahrerlager kennt man dieses Kräftemessen längst: {driver} und {rival}, Seite an Seite und doch gegeneinander, {seasonsText} – {h2hText}.'
+            'im Fahrerlager kennt man dieses Kräftemessen längst: {driver} und {rival}, Seite an Seite und doch gegeneinander, {seasonsText} – {h2hText}.',
+            'ihre Wege sind längst verwoben: {driver} und {rival}, im Wettstreit {seasonsText} – {h2hText}.',
+            'man erzählt sich ihre Duelle wie Anekdoten: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+            'was lange währt, wird härter: {driver} und {rival} messen sich {seasonsText} – {h2hText}.'
         ],
         e62: [
             'das Duell {driver} gegen {rival} läuft nun schon {seasonsText} – {h2hText}.',
             'zwei, die sich kennen wie sonst niemand im Feld: {driver} und {rival}, Teamkollegen {seasonsText} – {h2hText}.',
             'aus Rennen wurde Routine, aus Routine Rivalität: {driver} und {rival} messen sich {seasonsText} – {h2hText}.',
             'die Akte {driver} gegen {rival} füllt sich {seasonsText}: {h2hText}.',
-            'kaum ein internes Duell hat mehr Kapitel: {driver} und {rival}, {seasonsText} – {h2hText}.'
+            'kaum ein internes Duell hat mehr Kapitel: {driver} und {rival}, {seasonsText} – {h2hText}.',
+            'diese Rechnung ist über Jahre gewachsen: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+            'wer den einen verstehen will, muss den anderen kennen: {driver} und {rival}, {seasonsText} Seite an Seite – {h2hText}.',
+            'ein Duell wie ein Fortsetzungsroman: {driver} gegen {rival}, neues Kapitel, alter Stand – {seasonsText}, {h2hText}.'
         ],
         e76: [
             'diese Rivalität hat Patina: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
             '{seasonsText} teilen sich {driver} und {rival} nun schon die Garage – der Zwischenstand: {h2hText}.',
             'was als Stallduell begann, ist längst ein Dauerbrenner: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
             'im Team kennt jeder diese Konstellation: {driver} und {rival}, aneinander gemessen {seasonsText} – {h2hText}.',
-            'zwei Teamkollegen, eine lange Geschichte: {seasonsText} läuft dieses Duell nun – {h2hText}.'
+            'zwei Teamkollegen, eine lange Geschichte: {seasonsText} läuft dieses Duell nun – {h2hText}.',
+            'die beiden können nicht ohne einander – und nicht miteinander: {driver} und {rival}, {seasonsText} – {h2hText}.',
+            'jede Saison dieselbe Frage, nie dieselbe Antwort: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+            'dieses Duell hat mehr Staffeln als mancher Vertrag Jahre: {driver} und {rival}, {seasonsText} – {h2hText}.'
         ],
         e94: [
             'dieses Duell hat eine eigene Statistik-Seite verdient: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
             'die Langzeit-Bilanz spricht Bände: {driver} und {rival} messen sich {seasonsText} – {h2hText}.',
             'kaum zwei Fahrer kennen die Daten des anderen besser: {driver} und {rival}, Teamkollegen {seasonsText} – {h2hText}.',
             'ein Duell mit Historie: {seasonsText} vergleichen sich {driver} und {rival} nun im selben Material – {h2hText}.',
-            'im Archiv dieses Teams füllt das Duell zwischen {driver} und {rival} ganze Ordner: {seasonsText}, {h2hText}.'
+            'im Archiv dieses Teams füllt das Duell zwischen {driver} und {rival} ganze Ordner: {seasonsText}, {h2hText}.',
+            'die Datenbank kennt kein älteres offenes Duell: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+            'zwei Karrieren, ein roter Faden: {driver} und {rival} vergleichen sich {seasonsText} – {h2hText}.',
+            'wer Langzeitstudien mag, findet hier die beste: {driver} gegen {rival}, {seasonsText} – {h2hText}.'
         ],
         e10: [
             'dieses Stallduell ist ein Dauerbrenner: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
             '{driver} und {rival} kennen jede Stärke und jede Schwäche des anderen – {seasonsText} im selben Team, {h2hText}.',
             'die Langzeit-Rivalität im eigenen Haus: {seasonsText} messen sich {driver} und {rival} nun schon – {h2hText}.',
             'kaum ein Duell hat mehr Datenpunkte: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
-            'manche Paarungen halten länger als andere: {driver} und {rival}, {seasonsText} – {h2hText}.'
+            'manche Paarungen halten länger als andere: {driver} und {rival}, {seasonsText} – {h2hText}.',
+            'ein Klassiker im eigenen Team: {driver} vs. {rival}, {seasonsText} – {h2hText}.',
+            'die Story schreibt sich weiter: {driver} und {rival}, {seasonsText} im Duell – {h2hText}.',
+            'zwischen diesen beiden gibt es keine Geheimnisse mehr, nur Zwischenstände: {seasonsText}, {h2hText}.'
         ]
     }
 };

@@ -67,7 +67,9 @@ const PREVIEW_BANK = {
         'der Maßstab heißt auch {year} zunächst {champion} – bis das Feld das Gegenteil beweist.',
         'mit dem Titel im Rücken startet {champion} ins neue Jahr – wohl wissend, dass nun alle an ihm Maß nehmen.',
         'vor dem ersten Kräftemessen stellt sich vor allem eine Frage: Kann {champion} seinen Titel verteidigen?',
-        'Titelverteidiger {champion} eröffnet das Jahr mit dem größten Ziel: den Coup zu wiederholen.'
+        'Titelverteidiger {champion} eröffnet das Jahr mit dem größten Ziel: den Coup zu wiederholen.',
+        'den Maßstab hat {champion} gesetzt – jetzt muss er ihn verteidigen.',
+        'gejagt wird in diesem Jahr vor allem einer: Titelverteidiger {champion}.'
     ],
 
     // Satz 2 — Favorit(en), drei Fälle
@@ -80,7 +82,10 @@ const PREVIEW_BANK = {
             'die Rolle des Gejagten könnte schnell wechseln: {favorit} gilt vielen als der Mann der Stunde.',
             '{presseNom} handelt vor allem einen Namen als Titelkandidaten: {favorit}.',
             'stark eingeschätzt wird {favorit} – bei {favoritTeam} deutet vieles auf ein konkurrenzfähiges Jahr.',
-            'auf dem Papier bringt {favorit} das stärkste Gesamtpaket mit – doch Papier hat noch kein Rennen gewonnen.'
+            'auf dem Papier bringt {favorit} das stärkste Gesamtpaket mit – doch Papier hat noch kein Rennen gewonnen.',
+            'als härtester Widersacher wird {favorit} gehandelt – {favoritTeam} gilt als Gewinner des Winters.',
+            'der Name, der im Fahrerlager am häufigsten fällt, ist {favorit} – die Erwartungen an {favoritTeam} sind hoch.',
+            'die Buchmacher und das Fahrerlager sind sich einig: {favorit} führt die Anwärterliste an.'
         ],
         // Favorit == Titelverteidiger (kein „X verteidigt, Favorit ist X"-Doppel)
         verteidigerFavorit: [
@@ -88,7 +93,12 @@ const PREVIEW_BANK = {
             'wer ihn entthronen will, braucht ein großes Jahr: {favorit} geht auch diesmal als Favorit ins Rennen um die Krone.',
             'die Konkurrenz sucht noch nach Antworten – die Favoritenrolle liegt erneut bei {favorit}.',
             'auch die neue Saison beginnt mit einer alten Gewissheit: An {favorit} führt der Weg nur vorbei, wenn alles zusammenpasst.',
-            '{presseNom} sieht ihn erneut vorn: {favorit} vereint Fahrer und Material weiterhin am überzeugendsten.'
+            '{presseNom} sieht ihn erneut vorn: {favorit} vereint Fahrer und Material weiterhin am überzeugendsten.',
+            'und wenig deutet auf einen Machtwechsel: {favorit} startet erneut als Gejagter und Favorit zugleich.',
+            'die Winterarbeit hat die Hierarchie offenbar nicht verschoben – {favorit} bleibt die Messlatte.',
+            'wer den Titel will, muss zuerst an {favorit} vorbei – daran hat sich nichts geändert.',
+            'auch in diesem Jahr beginnt jede Titelrechnung mit demselben Namen: {favorit}.',
+            'die Ausgangslage wirkt vertraut: {favorit} vorn, der Rest auf der Suche nach der Lücke.'
         ],
         // zwei Favoriten
         duo: [
@@ -96,7 +106,12 @@ const PREVIEW_BANK = {
             'die Favoritenfrage hat {year} zwei Antworten: {favorit} oder {favorit2}.',
             '{favorit} und {favorit2} gehen mit den besten Vorzeichen ins Jahr – und das Feld dazwischen wittert seine Chance.',
             'zwei Lager, zwei Hoffnungen: {favorit} und {favorit2} gelten als die Männer, die den Ton angeben dürften.',
-            'wenn die Einschätzungen stimmen, läuft es {year} auf ein Duell hinaus: {favorit} gegen {favorit2}.'
+            'wenn die Einschätzungen stimmen, läuft es {year} auf ein Duell hinaus: {favorit} gegen {favorit2}.',
+            'die Saison verspricht ein Kräftemessen: {favorit} und {favorit2} starten mit den größten Ambitionen.',
+            'zwei Favoriten, keine klare Reihenfolge: {favorit} gegen {favorit2} – so lautet die erwartete Hauptpaarung.',
+            'ob {favorit} oder {favorit2} – das Fahrerlager ist gespalten, die Strecke wird schlichten.',
+            'das Titelrennen dürfte über {favorit} und {favorit2} laufen; wer von beiden zuerst wackelt, verliert.',
+            'am Kopf des Feldes zeichnet sich ein Zweikampf ab: {favorit} und {favorit2} gelten als das Maß.'
         ]
     },
 
@@ -108,14 +123,24 @@ const PREVIEW_BANK = {
             'mit {rookieList} steht ein {neulingSg} am Start – was in ihm steckt, wird sich zeigen müssen.',
             '{rookieList} startet in seine erste Saison – jedes Debüt beginnt bei null.',
             'ein neues Gesicht im Feld: {rookieList} bestreitet sein erstes Jahr {klasseIn}.',
-            'auch {year} wagt sich ein {neulingSg} ins Haifischbecken: {rookieList}.'
+            'auch {year} wagt sich ein {neulingSg} ins Haifischbecken: {rookieList}.',
+            'ein {neulingSg} mischt die Startliste auf: {rookieList} gibt in diesem Jahr sein Debüt.',
+            'die Zukunft schickt einen Vorboten: {rookieList} steht vor seiner ersten Saison.',
+            'für {rookieList} beginnt das Kapitel, von dem jeder Nachwuchsfahrer träumt – das erste eigene.',
+            'Debüt mit offenen Fragen: was {rookieList} kann, weiß bald das ganze Feld.',
+            'unbeschriebenes Blatt, große Bühne: {rookieList} wagt den Schritt {klasseIn}.'
         ],
         many: [
             'gleich mehrere {neulingPl} wagen den Sprung: {rookieList} bestreiten ihr erstes Jahr {klasseIn}.',
             'das Feld bekommt frisches Blut: {rookieList} stehen vor ihrer Debüt-Saison.',
             'neue Namen, unbeschriebene Blätter: {rookieList} beginnen das Abenteuer {klasseIn}.',
             '{rookieList} – die {neulingPl} des Jahrgangs {year} müssen sich erst beweisen.',
-            'die nächste Generation klopft an: {rookieList} debütieren in diesem Jahr.'
+            'die nächste Generation klopft an: {rookieList} debütieren in diesem Jahr.',
+            'der Jahrgang bringt gleich mehrere Debütanten: {rookieList} starten erstmals.',
+            'frisches Personal im Feld: {rookieList} gehen in ihre Premierensaison.',
+            'für {rookieList} beginnt das Abenteuer – die Etablierten sind gewarnt.',
+            'die Startliste liest sich stellenweise neu: {rookieList} debütieren.',
+            'mehrere {neulingPl} auf einen Streich: {rookieList} – wer von ihnen bleibt, zeigt die Saison.'
         ]
     },
 
@@ -126,7 +151,11 @@ const PREVIEW_BANK = {
         'der prominenteste Umzug des Winters: {wechselName} startet fortan für {wechselTeam}.',
         'neues Kapitel für {wechselName}: Bei {wechselTeam} will er sich neu beweisen.',
         'ob die neue Umgebung zündet? {wechselName} versucht sein Glück ab sofort bei {wechselTeam}.',
-        'die Boxengasse hat ein neues Gesprächsthema: {wechselName} in Diensten von {wechselTeam}.'
+        'die Boxengasse hat ein neues Gesprächsthema: {wechselName} in Diensten von {wechselTeam}.',
+        'einer der Umzüge des Winters hat es in sich: {wechselName} trägt jetzt die Farben von {wechselTeam}.',
+        '{wechselName} bei {wechselTeam} – diese Kombination beschäftigt das Fahrerlager schon vor dem ersten Start.',
+        'Tapetenwechsel für {wechselName}: Der Neustart bei {wechselTeam} ist die spannendste Personalie des Jahres.',
+        'was der Wechsel von {wechselName} zu {wechselTeam} wert ist, beantworten erst die Rennen.'
     ],
 
     // Schluss — offene Frage/Ausblick ({auftakt} lebt NUR hier)
@@ -137,7 +166,10 @@ const PREVIEW_BANK = {
         'noch ist alles Theorie – {auftakt} wird aus Papierform Wirklichkeit.',
         '{publikum} darf sich auf Antworten freuen – die Fragen liefert das neue Jahr von ganz allein.',
         'eine lange Saison liegt voraus, und sie hat noch jede Vorhersage auf die Probe gestellt.',
-        'sicher ist nur eines: Auch dieses Jahr wird seine Geschichten schreiben.'
+        'sicher ist nur eines: Auch dieses Jahr wird seine Geschichten schreiben.',
+        'die Theorie ist geschrieben – {auftakt} übernimmt die Praxis.',
+        'alle Planspiele enden dort, wo das Rennen beginnt: auf der Strecke.',
+        'was von den Erwartungen übrig bleibt, entscheidet sich Rennen für Rennen.'
     ]
 };
 

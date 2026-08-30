@@ -20,8 +20,8 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 | 1 | Live-Ticker-Kommentar | `paket1-live-kommentar/SPEC.md` | ✅ **v0.9.14.69** (`live-commentary-bank.js` → `liveLine`; BANDEIRADA-Sieger-Zeile bewusst behalten, Nutzer-Entscheidung 2026-07-12). **Bank verdoppelt v0.9.17.26** (390 → 650 Zeilen: pit/overtake/dnf je 25, start/finish je 12 pro Ära; death bewusst bei 6) |
 | 2 | Fahrer-Kurzbiografien | `paket2-fahrer-bios/SPEC.md` | ✅ **v0.9.14.69** (`driver-bio-bank.js` → 📝-Kurzporträt-Card, nur generierte Fahrer). **Bank verdoppelt v0.9.17.27** (217 → 434 Zeilen: kern 10, farbe 12 → 120 Kombinationen je Archetyp×Ära) |
 | 3 | Karriere-Bogen beim Rücktritt | `paket3-karriere-bogen/SPEC.md` | ✅ **v0.9.14.69** (Werdegang-Satz in `obituaryText`, nur mode 'retire') |
-| 4 | Saison-Vorschau | `paket4-saison-vorschau/SPEC.md` | ✅ **v0.9.14.69** (`preview-bank.js` → 🔮-Card in `showOffSeasonModal`) |
-| 5 | Rivalitäts-/Duell-Texte | `paket5-rivalitaeten/SPEC.md` | ✅ **v0.9.14.69** (`rivalry-bank.js` → ⚔️-Duell-Card im Profil, nur aktive Fahrer) |
+| 4 | Saison-Vorschau | `paket4-saison-vorschau/SPEC.md` | ✅ **v0.9.14.69** (`preview-bank.js` → 🔮-Card in `showOffSeasonModal`). **Bank erweitert v0.9.17.30** (48 → 80 Zeilen, alle Pools auf 10) |
+| 5 | Rivalitäts-/Duell-Texte | `paket5-rivalitaeten/SPEC.md` | ✅ **v0.9.14.69** (`rivalry-bank.js` → ⚔️-Duell-Card im Profil, nur aktive Fahrer). **Bank erweitert v0.9.17.30** (100 → 160 Zeilen, alle Pools auf 8) |
 | 6 | Fiktive Team- & Sponsornamen | `paket6-team-sponsor-namen/SPEC.md` | ✅ **v0.9.14.68** (`team-name-pools.js` → Team-Generator + Grid-Fill-Button) |
 | 7 | Qualitatives Tuning (Audit) | `paket7-tuning/SPEC.md` | ✅ **v0.9.14.63/.64** (H1–H4, M1–M7, N1–N4, N6 eingespielt; N5 in keinem Fix-Commit — ob bewusste Auslassung, ist nicht dokumentiert) |
 | 8 | Fiktive Strecken- & Rennnamen | `paket8-strecken/SPEC.md` | ✅ **v0.9.14.65** (`circuit-name-pools.js` → Streckeneditor + Zufalls-Button) |
@@ -48,3 +48,4 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 `paketA-*` Namens-Pools, `paketB-*` Saison-Rückblick, `paketC-*` Nachrufe, `paketD-validierung`,
 `paketE-validierung`, `paketF-nation-smoothing`, `paketG-driver-market`, `name-data/`, `nation-data/`
 — siehe MEMORY.md / die jeweiligen Projekt-Memos.
+Bank-Erweiterungen v0.9.17.30: `paketB` RECAP_BANK 95 → 156 Zeilen (opener/duell/special/team auf 10, tragik 8, closer 10).
