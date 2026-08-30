@@ -20,6 +20,22 @@
  * ⚠ Gegen UNCOMMITTETE index.html-Aenderungen:  SIMCORE_FROM_INDEX=1 node tests/...
  */
 const { getContext } = require('./sim-core');
+const vm = require('vm'), fs = require('fs'), path = require('path');
+// TEAM_PRESENCE direkt aus der Quelle - `const` haengt nicht am VM-Objekt.
+const _pctx = {}; vm.createContext(_pctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'data', 'presence.js'), 'utf8')
+    + '; globalThis._P = TEAM_PRESENCE;', _pctx);
+const PRESENCE = _pctx._P;
+// ⚠ Ein Einbruch, den die WIRKLICHKEIT vorschreibt, ist kein Fehler. Fuehrt
+// TEAM_PRESENCE fuer dieses Team und Jahr eine kurze Streckenliste, dann hat der
+// Rennstall real eine Teilsaison bestritten - das Spiel bildet ihn korrekt ab.
+// Ohne diese Ausnahme misst der Pruefer gegen genau die Daten, denen das Spiel folgt.
+const _realeTeilsaison = (jahr, name) => {
+    const j = PRESENCE[jahr]; if (!j) return false;
+    const key = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const v = j[key];
+    return Array.isArray(v);
+};
 
 const START = parseInt(process.argv[2]) || 1950;
 const SEASONS = parseInt(process.argv[3]) || 20;
@@ -82,6 +98,7 @@ for (let i = 1; i < jahre.length; i++) {
     for (const [t, a] of Object.entries(v)) {
         if (a < 0.8) continue;
         if (!imFeld[j] || !imFeld[j].has(t)) continue;   // ausgestiegen zaehlt nicht
+        if (_realeTeilsaison(j, t)) continue;            // real eine Teilsaison - kein Fehler
         ges++;
         const b = n[t];
         if (b === undefined) { aus++; bsp.push(`${j} ${t}: ${Math.round(a * 100)} % -> KEINE Meldung`); }
