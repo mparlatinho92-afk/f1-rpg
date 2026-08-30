@@ -291,7 +291,10 @@ const OBIT_BANK = {
                 'Der Tod von {name} reißt eine Lücke, die keine Wertung der Welt schließen kann.',
                 '{nameE} ist tot – und mit ihm geht ein Stück {klasseGen}.',
                 'Es gibt Nachrichten, die das Fahrerlager verstummen lassen. Der Tod von {name} ist eine davon.',
-                'Ein Weltmeister ist gefallen: {nameE} wird {klasseIn} für immer fehlen.'
+                'Ein Weltmeister ist gefallen: {nameE} wird {klasseIn} für immer fehlen.',
+                'Die Rennwelt hält den Atem an: {nameE} ist tot – ein Meister, wie ihn jede Epoche nur wenige hat.',
+                'Um {name} trauern alle, die diesen Sport lieben – Champions wie er prägen mehr als Tabellen.',
+                '{nameE} hat Maßstäbe gesetzt, an denen sich {klasseNom} noch lange messen wird – nun ist er fort.'
             ],
             talent: [
                 '{nameE} starb, bevor seine Geschichte richtig beginnen konnte.',
@@ -300,7 +303,10 @@ const OBIT_BANK = {
                 'Das Schicksal gab {name} nicht die Zeit, die sein Können verdient hätte.',
                 'Er kam, um Geschichte zu schreiben – die Zeit dafür wurde {name} nicht gegeben.',
                 '{nameE} war die Zukunft – nun ist er Vergangenheit, viel zu früh.',
-                'Manche Karrieren enden, bevor sie richtig beginnen: {nameE} wurde mitten aus dem Aufstieg gerissen.'
+                'Manche Karrieren enden, bevor sie richtig beginnen: {nameE} wurde mitten aus dem Aufstieg gerissen.',
+                'Was hätte werden können, bleibt nun für immer Spekulation: {nameE} ist tot.',
+                'Der Sport verliert {name}, bevor er zeigen durfte, was in ihm steckte.',
+                'Zu jung, zu früh, zu endgültig: {nameE} kehrt nicht mehr an die Strecke zurück.'
             ],
             star: [
                 '{nameE} ist nicht mehr – ein Fahrer, der an seinen besten Tagen jeden schlagen konnte.',
@@ -309,7 +315,10 @@ const OBIT_BANK = {
                 'Der Tod von {name} trifft {klasseNom} mitten ins Herz.',
                 '{nameE} fuhr um Siege – nun fährt das Feld ohne ihn, und es ist ein ärmeres Feld.',
                 'Wieder hat der Sport einen seiner Schnellsten genommen: {name} ist tot.',
-                'Die Nachricht traf das Fahrerlager wie ein Schlag: {nameE} ist nicht mehr.'
+                'Die Nachricht traf das Fahrerlager wie ein Schlag: {nameE} ist nicht mehr.',
+                '{nameE} zählte zu denen, gegen die man sich jeden Erfolg verdienen musste – sein Tod hinterlässt Leere.',
+                'Eine der schnellsten Hände des Feldes ruht für immer: {nameE} ist tot.',
+                'Der Kreis derer, die den Unterschied ausmachen, ist kleiner geworden: {name} fehlt.'
             ],
             backmarker: [
                 '{nameE} gewann nie ein Rennen – und hatte doch den Respekt aller, die je gegen ihn fuhren.',
@@ -317,7 +326,11 @@ const OBIT_BANK = {
                 'Mit {name} verliert das Feld einen seiner Unermüdlichen – einen, der nie aufgab, auch wenn vorne andere fuhren.',
                 'Nicht jeder Held steht auf dem Podium: {nameE} war einer von denen, die trotzdem jeden Sonntag alles gaben.',
                 '{nameE} fuhr meist abseits des Rampenlichts – vermisst wird er von allen.',
-                'Die großen Schlagzeilen gehörten anderen – der Respekt des Feldes gehörte {name}.'
+                'Die großen Schlagzeilen gehörten anderen – der Respekt des Feldes gehörte {name}.',
+                'Sein Name stand selten oben, aber immer dabei: {nameE} ist tot.',
+                'Auch die stillen Arbeiter dieses Sports hinterlassen Lücken – die von {name} ist eben aufgerissen.',
+                '{nameE} fuhr nie um den Sieg – gefehlt hat er trotzdem nie. Bis jetzt.',
+                'Das Ergebnisblatt kannte ihn hinten, das Fahrerlager überall: {nameE} ist gestorben.'
             ],
             generic: [
                 'Der Tod von {name} legt sich wie ein Schatten über das Fahrerlager.',
@@ -325,7 +338,11 @@ const OBIT_BANK = {
                 'Mit {name} verliert der Sport einen der Seinen – zu früh, wie immer.',
                 'Wieder trauert der Rennsport: {nameE} ist tot.',
                 'Das Fahrerlager verliert {name} – und mit ihm eines seiner vertrauten Gesichter.',
-                'Eine Nachricht, die niemand lesen wollte: {nameE} ist tot.'
+                'Eine Nachricht, die niemand lesen wollte: {nameE} ist tot.',
+                'Der Rennsport zahlt seinen Preis wieder einmal in seiner härtesten Währung: {nameE} ist tot.',
+                'Zwischen zwei Rennwochenenden steht plötzlich das Endgültige: {name} ist nicht mehr.',
+                '{nameE} war einer von ihnen – heute senkt das Feld den Blick.',
+                'Kein Ergebnis dieses Jahres wiegt diese Nachricht auf: {nameE} ist tot.'
             ]
         },
         stats: [
@@ -336,7 +353,11 @@ const OBIT_BANK = {
             'Was bleibt, sind {bilanz} – und Lücken, die keine Zahl beschreibt.',
             'Die Chronik notiert {bilanz}. Der Rest ist Erinnerung.',
             'In den Listen stehen ab heute nur noch Zahlen: {bilanz}.',
-            'Hinter dem Namen stehen von nun an feste Zahlen: {bilanz}. Davor stand ein Leben.'
+            'Hinter dem Namen stehen von nun an feste Zahlen: {bilanz}. Davor stand ein Leben.',
+            'Sein Eintrag im Archiv lautet: {bilanz}.',
+            'Auf dem Papier stehen {bilanz} – auf den Tribünen bleibt mehr.',
+            'Für die Ewigkeit notiert: {bilanz}.',
+            'Gezählt wird, was zählbar ist: {bilanz}. Der Rest entzieht sich den Listen.'
         ],
         close: [
             '{klasseNom} verneigt sich.',
@@ -352,7 +373,11 @@ const OBIT_BANK = {
             'Der Kalender fährt weiter – die Gedanken bleiben bei ihm.',
             'Manche Runden enden nicht an der Ziellinie.',
             'Wer ihn fahren sah, wird ihn nicht vergessen.',
-            'Auf den Tribünen wird sein Name noch lange fallen.'
+            'Auf den Tribünen wird sein Name noch lange fallen.',
+            'Die nächste Startaufstellung trägt eine Lücke, die man nicht sieht und jeder kennt.',
+            'Sein letztes Rennen ist gefahren – vergessen ist keines davon.',
+            'Die Zeit fährt weiter – die Erinnerung hält an.',
+            '{klasseNom} hält inne.'
         ]
     },
     abschied: {
@@ -363,14 +388,23 @@ const OBIT_BANK = {
                 '{nameE} tritt ab – ein Champion verlässt die Bühne aufrecht.',
                 '{nameE} verlässt die Bühne, die er mitgeprägt hat – erhobenen Hauptes.',
                 'Der Abschied eines Champions hat sein eigenes Gewicht: {nameE} beendet seine Karriere.',
-                'Was für eine Laufbahn da zu Ende geht: {nameE} steigt zum letzten Mal aus.'
+                'Was für eine Laufbahn da zu Ende geht: {nameE} steigt zum letzten Mal aus.',
+                'Der Maßstab tritt ab: {nameE} beendet eine Laufbahn, die ihresgleichen sucht.',
+                '{nameE} geht als das, was nur wenige je werden: als Champion.',
+                'Ein letzter Boxenfunk, ein letztes Mal Helm ab: {nameE} beschließt seine große Karriere.',
+                'Die Konkurrenz atmet auf, das Publikum trauert: {nameE} hört auf.'
             ],
             talent: [
                 '{nameE} hört auf, lange bevor jemand damit gerechnet hätte.',
                 'Der Rücktritt von {name} kommt früh – manchmal ist der Mut zum Aufhören der größte.',
                 '{nameE} geht, während andere noch auf seine besten Jahre warteten.',
                 'Kaum angekommen, schon wieder fort: {nameE} beendet seine Laufbahn überraschend früh.',
-                'Nicht jedes Versprechen wird eingelöst: {nameE} hört auf, bevor seine Karriere ihren Zenit fand.'
+                'Nicht jedes Versprechen wird eingelöst: {nameE} hört auf, bevor seine Karriere ihren Zenit fand.',
+                'Manche Wege enden, bevor sie ihre Richtung zeigen konnten: {nameE} hört auf.',
+                '{nameE} verlässt den Sport in einem Alter, in dem andere ankommen.',
+                'Das Kapitel bleibt kurz, die Frage bleibt lang: Was wäre aus {name} geworden?',
+                'Der Rücktritt von {name} lässt Raum für Spekulationen – und Bedauern.',
+                '{nameE} steigt aus, ehe die große Geschichte geschrieben war.'
             ],
             star: [
                 '{nameE} nimmt den Helm ab – nach Jahren, in denen er zu den Besten gehörte.',
@@ -378,14 +412,23 @@ const OBIT_BANK = {
                 '{nameE} sagt leise Lebewohl – die Zeiten, in denen er vorne mitfuhr, vergisst hier niemand.',
                 'Das Feld verliert Tempo: {nameE} beendet seine Karriere.',
                 'Nach Jahren in der Spitzengruppe zieht sich {name} zurück – der Sport verliert einen Maßstab.',
-                '{nameE} tritt ab, solange ihn alle so in Erinnerung haben, wie er war: verdammt schnell.'
+                '{nameE} tritt ab, solange ihn alle so in Erinnerung haben, wie er war: verdammt schnell.',
+                'Einer der Schnellen zieht den Schlussstrich: {nameE} hört auf.',
+                '{nameE} verlässt die große Bühne – seine Duelle bleiben im Gedächtnis.',
+                'Die Spitzengruppe verliert einen Stammgast: {nameE} tritt zurück.',
+                'Wenn einer wie {name} geht, verschiebt sich das Gefüge des ganzen Feldes.'
             ],
             backmarker: [
                 '{nameE} beendet seine Laufbahn – ohne Siege, aber mit dem Respekt des gesamten Fahrerlagers.',
                 'Nach all den Jahren im Feld verabschiedet sich {name} – so, wie er gefahren ist: ohne großes Aufheben.',
                 'Keine Schlagzeilen, keine Denkmäler – nur Jahre voller ehrlicher Arbeit: {nameE} tritt zurück.',
                 '{nameE} verlässt das Fahrerlager durch den Seiteneingang – so bescheiden, wie er gekommen ist.',
-                'Das Feld verliert keinen Sieger, aber ein Stück Rückgrat: {nameE} hört auf.'
+                'Das Feld verliert keinen Sieger, aber ein Stück Rückgrat: {nameE} hört auf.',
+                'Ohne Fanfaren, mit erhobenem Haupt: {nameE} beendet seine Laufbahn.',
+                '{nameE} räumt seinen Platz im Feld – verdient hat er sich dort jeden einzelnen Tag.',
+                'Es gehen auch die, ohne die kein Rennen stattfände: {nameE} tritt zurück.',
+                'Die Ergebnislisten werden ihn kaum vermissen – das Fahrerlager sehr wohl: {nameE} hört auf.',
+                'Jahr um Jahr hielt er durch – nun entscheidet {name} selbst, dass es genug ist.'
             ],
             gaveup: [
                 '{nameE} hat genug – manchmal ist Aufhören die ehrlichste Entscheidung.',
@@ -393,7 +436,11 @@ const OBIT_BANK = {
                 '{nameE} zieht einen Schlussstrich – der Antrieb war aufgebraucht, der Stolz ist geblieben.',
                 'Irgendwann geht die Rechnung nicht mehr auf: {nameE} zieht die Konsequenz und hört auf.',
                 'Kein Feuerwerk, keine Ehrenrunde: {nameE} geht leise – und vermutlich erleichtert.',
-                'Der Traum trug nicht mehr: {nameE} beendet seine Karriere.'
+                'Der Traum trug nicht mehr: {nameE} beendet seine Karriere.',
+                'Die Luft war raus, und {name} war ehrlich genug, es zuzugeben.',
+                '{nameE} verabschiedet sich müde, aber im Reinen mit sich.',
+                'Es gibt keinen Applausabgang – nur die stille Einsicht, dass es Zeit war: {nameE} hört auf.',
+                'Was einmal Feuer war, wurde Pflicht – {nameE} zieht die richtige Konsequenz.'
             ],
             generic: [
                 '{nameE} hängt den Helm an den Nagel.',
@@ -403,7 +450,11 @@ const OBIT_BANK = {
                 'Für {name} endet, was ihn ein Fahrerleben lang getragen hat.',
                 'Wieder verabschiedet sich ein vertrautes Gesicht: {nameE} beendet seine Laufbahn.',
                 'Die Startaufstellung wird sich neu sortieren – ohne {name}.',
-                '{nameE} zieht den Schlussstrich unter ein Fahrerleben.'
+                '{nameE} zieht den Schlussstrich unter ein Fahrerleben.',
+                'Ein Fahrerleben findet sein Ende in Würde: {nameE} tritt ab.',
+                'Zum letzten Mal rollt sein Wagen in die Garage: {nameE} beendet seine Karriere.',
+                'Abschiede gehören zum Sport – leicht werden sie nie: {nameE} hört auf.',
+                'Nach vielen Jahren im Kreis der Fahrer wählt {name} den Ausstieg.'
             ]
         },
         stats: [
@@ -415,7 +466,10 @@ const OBIT_BANK = {
             'In der Chronik stehen nun endgültige Zahlen: {bilanz}.',
             '{bilanz} – so liest sich diese Karriere in Zahlen.',
             'Unterm Strich stehen Zahlen, die bleiben: {bilanz}.',
-            'Mitnehmen darf er {bilanz} – und alles, was sich nicht zählen lässt.'
+            'Mitnehmen darf er {bilanz} – und alles, was sich nicht zählen lässt.',
+            'Der Karrierebogen in Zahlen: {bilanz}.',
+            'Festgehalten für immer: {bilanz}.',
+            'Die Anzeigetafel seiner Laufbahn zeigt am Ende: {bilanz}.'
         ],
         close: [
             'Man wird ihn {klasseIn} vermissen.',
@@ -435,7 +489,11 @@ const OBIT_BANK = {
             'Der Rennsport vergisst schnell, heißt es. Bei ihm wird es dauern.',
             'Irgendwo wird er zuschauen – und die Hände werden nach einem Lenkrad greifen wollen.',
             'Zum letzten Mal Helm ab – und Applaus.',
-            'Die Stoppuhr läuft weiter, nur nicht mehr für ihn.'
+            'Die Stoppuhr läuft weiter, nur nicht mehr für ihn.',
+            'Von jetzt an hat der Sonntag wieder Platz für anderes.',
+            'Die Lichter der Boxengasse gehen für ihn aus – die der Erinnerung nicht.',
+            'Kein Countdown mehr, kein Startsignal – nur noch Geschichten.',
+            'Was er mitnimmt, kann ihm keiner nehmen: die Jahre mittendrin.'
         ]
     }
 };
