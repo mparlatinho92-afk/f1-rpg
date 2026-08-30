@@ -18,7 +18,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 | # | Paket | Spec | Eingebaut |
 |---|-------|------|-----------|
 | 1 | Live-Ticker-Kommentar | `paket1-live-kommentar/SPEC.md` | ✅ **v0.9.14.69** (`live-commentary-bank.js` → `liveLine`; BANDEIRADA-Sieger-Zeile bewusst behalten, Nutzer-Entscheidung 2026-07-12). **Bank verdoppelt v0.9.17.26** (390 → 650 Zeilen: pit/overtake/dnf je 25, start/finish je 12 pro Ära; death bewusst bei 6) |
-| 2 | Fahrer-Kurzbiografien | `paket2-fahrer-bios/SPEC.md` | ✅ **v0.9.14.69** (`driver-bio-bank.js` → 📝-Kurzporträt-Card, nur generierte Fahrer) |
+| 2 | Fahrer-Kurzbiografien | `paket2-fahrer-bios/SPEC.md` | ✅ **v0.9.14.69** (`driver-bio-bank.js` → 📝-Kurzporträt-Card, nur generierte Fahrer). **Bank verdoppelt v0.9.17.27** (217 → 434 Zeilen: kern 10, farbe 12 → 120 Kombinationen je Archetyp×Ära) |
 | 3 | Karriere-Bogen beim Rücktritt | `paket3-karriere-bogen/SPEC.md` | ✅ **v0.9.14.69** (Werdegang-Satz in `obituaryText`, nur mode 'retire') |
 | 4 | Saison-Vorschau | `paket4-saison-vorschau/SPEC.md` | ✅ **v0.9.14.69** (`preview-bank.js` → 🔮-Card in `showOffSeasonModal`) |
 | 5 | Rivalitäts-/Duell-Texte | `paket5-rivalitaeten/SPEC.md` | ✅ **v0.9.14.69** (`rivalry-bank.js` → ⚔️-Duell-Card im Profil, nur aktive Fahrer) |
