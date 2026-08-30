@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.30</title>
+    <title>F1 RPG v0.9.17.31</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,13 +1033,14 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.30 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.31 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; NEU: Der Nekrolog zeigt zu jedem Todesfall den Nachruf-Text - wortgleich mit Saisonende und Off-Season</div>
+                            <div>&#8226; FIX: doppelter Changelog-Eintrag v0.9.17.30 zusammengefuehrt</div>
+                            <div class="font-bold text-slate-400">v0.9.17.30 - 30.08.2026</div>
                             <div>&#8226; FIX: Rennstaelle meldeten zu Rennen, die sie historisch nie bestritten - Protos trat 1967 zu sieben statt einem Rennen an</div>
                             <div>&#8226; FIX: Der Abgleich mit den historischen Streckenlisten lief nur einmal und wurde von Sitzvergaben danach umgangen</div>
                             <div>&#8226; FIX: Ein Gastfahrer kann nicht mehr fuer ein Team antreten, das an dieser Strecke gar nicht gemeldet war</div>
-                            <div class="font-bold text-slate-400">v0.9.17.30 - 30.08.2026</div>
-                            <div>&#8226; NEU: Saison-Rueckblick, Saison-Vorschau und Duell-Texte abwechslungsreicher - 396 statt 243 Bausteine</div>
-                            <div>&#8226; NEU: alle Textbaenke der Erzaehl-Pakete damit aufgestockt</div>
+                            <div>&#8226; NEU: Saison-Rueckblick, Saison-Vorschau und Duell-Texte abwechslungsreicher - 396 statt 243 Bausteine (alle Textbaenke der Erzaehl-Pakete damit aufgestockt)</div>
                             <div class="font-bold text-slate-400">v0.9.17.29 - 30.08.2026</div>
                             <div>&#8226; NEU: Nachrufe und Karriere-Abschiede abwechslungsreicher - 256 statt 174 Textbausteine</div>
                             <div>&#8226; NEU: Eroeffnungen je Kategorie auf 10-12 Varianten, Werdegang-Saetze vertieft</div>
@@ -17368,7 +17369,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.30';
+        const VERSION = '0.9.17.31';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -20973,6 +20974,22 @@ const CIRCUIT_LAYOUTS = {
                 // gar nicht verletzen — der Filter trifft praktisch nur Modell-Züge.
                 if (!z) continue;
                 if (!_teamNationOk((GAME_STATE.teams || []).find(t => t.id === z), d)) continue;
+                // === DAS GASTTEAM MUSS HIER UEBERHAUPT ANGETRETEN SEIN (v0.9.17.31) ===
+                // Der NEUNTE Weg ins Cockpit, nach demselben Muster wie die Landsmann-
+                // Regel in v0.9.16.6: geprueft wurden bis hierher Meldeplaene, Fueller und
+                // Nachkontrollen — der Gastzug nicht. Ein Modell-Zug konnte einen Fahrer zu
+                // einem Rennstall setzen, der an dieser Strecke real gar nicht meldete, und
+                // schrieb die Strecke danach sogar in dessen Meldeplan.
+                // ⚠ NUR fuer Modell-Zuege. Die kuratierten GUEST_ENTRIES sind reale
+                //   Historie und koennen die Praesenz nicht verletzen — sie SIND sie.
+                //   Dieselbe Begruendung wie beim Nationalitaets-Filter zwei Zeilen ueber
+                //   dieser Stelle.
+                if (!(h && sollTeam[h])) {
+                    const _gt = (GAME_STATE.teams || []).find(t => t.id === z);
+                    const _gp = (_gt && typeof getTeamPresence === 'function')
+                        ? getTeamPresence(_gt, jahr) : null;
+                    if (_gp != null && _gp !== 1 && !_gp.includes(cid)) continue;
+                }
                 zielVon[d.id] = z;   // auch wenn er schon dort sitzt: zählt als Gast (Deckel-Vertretung)
             }
 
@@ -42595,6 +42612,22 @@ const CIRCUIT_LAYOUTS = {
             return d.fatalSession === 'nonwm' ? 'nonwm' : 'wm';
         }
 
+        // Nachruf-Zeile im Nekrolog (Paket C): gleiche Regeneration wie im Off-Season-
+        // Modal — eingefrorene Felder (histId/birthYear/obitStats, ab v0.9.14.42) zuerst,
+        // sonst Live-Lookup für Alt-Saisons/laufende Saison. Seed mode|name|year →
+        // wortgleich mit Saisonende- und Off-Season-Ansicht. 0 Bytes gespeichert.
+        function _necroObit(d, year) {
+            if (!d || !d.name || typeof obituaryText !== 'function') return '';
+            let drv = null, stats = d.obitStats || null;
+            if (d.histId !== undefined || d.birthYear !== undefined) {
+                drv = { histId: d.histId || null, birthYear: d.birthYear || null, id: d.driver };
+            } else if (d.driver) {
+                drv = GAME_STATE.drivers.find(x => x.id === d.driver) || null;
+                if (!stats && drv) stats = GAME_STATE.allTimeStATS?.drivers?.[drv.histId || drv.id] || null;
+            }
+            return obituaryText(d.name, drv, stats, year, 'death');
+        }
+
         function renderNecrology() {
             const seasons = _allChronSeasons();
             const SESS = { training: '🔧 Training', qualifying: '⏱️ Qualifying', quali: '⏱️ Qualifying', race: '🏁 Rennen' };
@@ -42612,6 +42645,7 @@ const CIRCUIT_LAYOUTS = {
                     const sess = SESS[d.fatalSession] || '';
                     const where = d.raceName ? d.raceName.replace(/^\d{4}\s+/, '') : '';
                     const rep = d.replacement || d.replacementName;
+                    const obit = _necroObit(d, s.year);
                     return `
                         <div class="flex items-start justify-between gap-3 py-2 px-3 rounded-lg" style="background:var(--bg-secondary);margin-bottom:4px;">
                             <div style="min-width:0;">
@@ -42622,6 +42656,7 @@ const CIRCUIT_LAYOUTS = {
                                 ${rep ? `<div class="text-xs mt-0.5">↳ Sitz übernahm ${d.replacementId
                                     ? `<b class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${rep}</b>`
                                     : `<b>${rep}</b>`} <span>${_originBadge(d.replacementOrigin, d.replacementId)}</span></div>` : ''}
+                                ${obit ? `<div class="text-xs italic mt-1" style="opacity:0.8;">${obit}</div>` : ''}
                             </div>
                         </div>`;
                 }).join('');
