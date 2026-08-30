@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.29</title>
+    <title>F1 RPG v0.9.17.30</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.29 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.30 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; NEU: Saison-Rueckblick, Saison-Vorschau und Duell-Texte abwechslungsreicher - 396 statt 243 Bausteine</div>
+                            <div>&#8226; NEU: alle Textbaenke der Erzaehl-Pakete damit aufgestockt</div>
+                            <div class="font-bold text-slate-400">v0.9.17.29 - 30.08.2026</div>
                             <div>&#8226; NEU: Nachrufe und Karriere-Abschiede abwechslungsreicher - 256 statt 174 Textbausteine</div>
                             <div>&#8226; NEU: Eroeffnungen je Kategorie auf 10-12 Varianten, Werdegang-Saetze vertieft</div>
                             <div>&#8226; FIX: Kleine Rennstaelle fuhren eine Saison mit doppelt so vielen verschiedenen Fahrern wie historisch - Porsche 1957 hatte 17 statt einer Handvoll</div>
@@ -3839,7 +3842,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.29';
+        const VERSION = '0.9.17.30';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7806,6 +7809,83 @@
             return klein ? 0.50 : 0.15;
         }
 
+        // === L1 ALS EIGENE FUNKTION (v0.9.17.30) ===
+        // Der Nachlauf stand fest in assignPrivateerSchedules. Alles, was SPAETER laeuft,
+        // umging ihn deshalb: der Schwanz-Fueller (fillGridEntries) und die Landsmann- bzw.
+        // Indy-Nachkontrolle, die einen frisch erzeugten Fahrer OHNE Meldeplan ins Team
+        // setzt. Kein Plan heisst in privateerEntersRace: jedes Rennen. Ein Rennstall mit
+        // einer einzigen realen Meldung stand damit im ganzen Kalender.
+        // Jetzt laeuft derselbe Trimm ein zweites Mal, nachdem alle Sitze vergeben sind.
+        // Rueckgabe: Programm je Team-ID, das enforceRegularDriverPerTeam braucht.
+        // nurOhnePlan=true: NUR Fahrer ohne Meldeplan bekommen das Programm des Teams.
+        // Der zweite Lauf muss so eingeschraenkt sein - ein voller Trimm dort schnitt
+        // auch weg, was Mindestwagen-Regel und Grid-Fueller legitim ergaenzt hatten:
+        // gemessen fielen die Meldungen je Rennen um 3,5 bis 5,6 unter den realen Wert
+        // und die DNQ auf nahezu null (1956: 15,3 statt real 20,9).
+        function applyTeamPresenceToPlans(teams, drivers, cal, ids, year, nurOhnePlan) {
+            const _programm = {};
+        // === L1-Nachlauf: reale Per-Saison-Präsenz (v0.9.15.81, Bauplan Stufe 2) ===
+        // Kern des Melde-Überschusses: die Klassenzuordnung oben benutzt LEBENSZEIT-
+        // Starts als Stellvertreter für Per-Saison-Präsenz. Ein Team, das 1985 nur die
+        // halbe Saison fuhr, gilt dadurch als ganzjährig präsent (Spirit, Haas, Zakspeed).
+        //
+        // Bewusst als NACHLAUF und nicht als Ersatz der Heuristik: exakt diese Reihenfolge
+        // — erst würfeln, dann auf die realen Strecken beschneiden — wurde im Trockenlauf
+        // gemessen und trifft die Soll-Tabelle (1950er −1,9 · 1960er −0,9 · 1970er +0,7 ·
+        // 1980er +1,3, Abbruchkriterium ±0,3). Wer die Heuristik stattdessen abschaltet,
+        // misst etwas anderes als das, was verifiziert wurde.
+        //
+        // Ohne Daten passiert NICHTS: fehlt die Tabelle, das Jahr oder das Team, bleibt
+        // alles beim heutigen Verhalten. L1 darf nie Voraussetzung für einen Rennstart sein.
+        const idSet = new Set(ids);
+        // Das PROGRAMM je Team mitschreiben (v0.9.17.27): welche Strecken darf dieser
+        // Rennstall in dieser Saison ueberhaupt bestreiten? Genau darauf muss die
+        // Werksfahrer-Deckung unten aufsetzen — sonst vergibt sie Rennen, die L1
+        // gerade aus realen Praesenzdaten ausgeschlossen hat.
+        (teams || []).forEach(t => {
+            if (t.isIndyOnly) return;                       // Indy ist im Generator gefiltert
+            const p = getTeamPresence(t, year);
+            let allowed;
+            if (p != null) {
+                allowed = (p === 1 ? ids.slice() : p.filter(c => idSet.has(c)));
+            } else {
+                // === HEIMAT-KONSTRUKTEURE (v0.9.16.14) ===
+                // Ohne Praesenzdaten galt bisher nur die Heuristik — und die kennt
+                // keine Landesbindung. In fortgesetzten Saisons, wo TEAM_PRESENCE das
+                // Jahr nicht mehr kennt, meldeten LDS und Alfa Special deshalb quer
+                // durch Europa. Gemessen 1965: LDS 15,6 Wagen gegen real 3 (+12,6),
+                // Alfa Special 10,9 gegen 1 (+9,9).
+                // `HOME_ONLY_CONSTRUCTORS` haelt die 21 Rennstaelle, die in ihrer
+                // ganzen Geschichte nur im eigenen Land meldeten. Reale Daten haben
+                // Vorrang (p != null), die Liste ist der Rueckfall.
+                const heim = homeOnlyConstructorNations(t);
+                if (!heim) return;                          // unbekannt → Heuristik gilt weiter
+                const _land = r => {
+                    const c = r.country;
+                    if (!c) return null;
+                    const ioc = c.length === 3 ? c : convertEmojiToIOC(c);
+                    return ioc ? ((typeof HOME_NATION_ALIAS !== 'undefined' && HOME_NATION_ALIAS[ioc]) || ioc) : null;
+                };
+                // Leere Liste ist ABSICHT: faellt das Heimrennen aus dem Kalender,
+                // meldet der Rennstall gar nicht — genau wie ein Heimrennen-Fahrer.
+                // Der 0-Meldungs-Pass raeumt die Fahrer danach aus dem Feld.
+                allowed = cal.filter(r => { const l = _land(r); return l && heim.includes(l); })
+                             .map(r => r.circuitId.toLowerCase());
+            }
+            const allowedSet = new Set(allowed);
+            _programm[t.id] = allowed;
+            drivers.forEach(d => {
+                if (d.team !== t.id) return;
+                // Werksfahrer (kein Plan = jedes Rennen) bekommen die realen Strecken,
+                // alle mit Plan werden darauf beschnitten.
+                if (Array.isArray(d.scheduledRaces)) {
+                    if (!nurOhnePlan) d.scheduledRaces = d.scheduledRaces.filter(c => allowedSet.has(c));
+                } else d.scheduledRaces = allowed.slice();
+            });
+        });
+            return _programm;
+        }
+
         // Setzt d.scheduledRaces (Liste von circuitIds, lowercase) für alle Privateers
         // OHNE homeOnly — die sind schon über ihr Heimrennen terminiert und würden hier
         // doppelt gezählt. Speicherung als circuitId statt Index: identisch zu
@@ -7959,66 +8039,7 @@
                 });
             }
 
-            // === L1-Nachlauf: reale Per-Saison-Präsenz (v0.9.15.81, Bauplan Stufe 2) ===
-            // Kern des Melde-Überschusses: die Klassenzuordnung oben benutzt LEBENSZEIT-
-            // Starts als Stellvertreter für Per-Saison-Präsenz. Ein Team, das 1985 nur die
-            // halbe Saison fuhr, gilt dadurch als ganzjährig präsent (Spirit, Haas, Zakspeed).
-            //
-            // Bewusst als NACHLAUF und nicht als Ersatz der Heuristik: exakt diese Reihenfolge
-            // — erst würfeln, dann auf die realen Strecken beschneiden — wurde im Trockenlauf
-            // gemessen und trifft die Soll-Tabelle (1950er −1,9 · 1960er −0,9 · 1970er +0,7 ·
-            // 1980er +1,3, Abbruchkriterium ±0,3). Wer die Heuristik stattdessen abschaltet,
-            // misst etwas anderes als das, was verifiziert wurde.
-            //
-            // Ohne Daten passiert NICHTS: fehlt die Tabelle, das Jahr oder das Team, bleibt
-            // alles beim heutigen Verhalten. L1 darf nie Voraussetzung für einen Rennstart sein.
-            const idSet = new Set(ids);
-            // Das PROGRAMM je Team mitschreiben (v0.9.17.27): welche Strecken darf dieser
-            // Rennstall in dieser Saison ueberhaupt bestreiten? Genau darauf muss die
-            // Werksfahrer-Deckung unten aufsetzen — sonst vergibt sie Rennen, die L1
-            // gerade aus realen Praesenzdaten ausgeschlossen hat.
-            const _programm = {};
-            (teams || []).forEach(t => {
-                if (t.isIndyOnly) return;                       // Indy ist im Generator gefiltert
-                const p = getTeamPresence(t, year);
-                let allowed;
-                if (p != null) {
-                    allowed = (p === 1 ? ids.slice() : p.filter(c => idSet.has(c)));
-                } else {
-                    // === HEIMAT-KONSTRUKTEURE (v0.9.16.14) ===
-                    // Ohne Praesenzdaten galt bisher nur die Heuristik — und die kennt
-                    // keine Landesbindung. In fortgesetzten Saisons, wo TEAM_PRESENCE das
-                    // Jahr nicht mehr kennt, meldeten LDS und Alfa Special deshalb quer
-                    // durch Europa. Gemessen 1965: LDS 15,6 Wagen gegen real 3 (+12,6),
-                    // Alfa Special 10,9 gegen 1 (+9,9).
-                    // `HOME_ONLY_CONSTRUCTORS` haelt die 21 Rennstaelle, die in ihrer
-                    // ganzen Geschichte nur im eigenen Land meldeten. Reale Daten haben
-                    // Vorrang (p != null), die Liste ist der Rueckfall.
-                    const heim = homeOnlyConstructorNations(t);
-                    if (!heim) return;                          // unbekannt → Heuristik gilt weiter
-                    const _land = r => {
-                        const c = r.country;
-                        if (!c) return null;
-                        const ioc = c.length === 3 ? c : convertEmojiToIOC(c);
-                        return ioc ? ((typeof HOME_NATION_ALIAS !== 'undefined' && HOME_NATION_ALIAS[ioc]) || ioc) : null;
-                    };
-                    // Leere Liste ist ABSICHT: faellt das Heimrennen aus dem Kalender,
-                    // meldet der Rennstall gar nicht — genau wie ein Heimrennen-Fahrer.
-                    // Der 0-Meldungs-Pass raeumt die Fahrer danach aus dem Feld.
-                    allowed = cal.filter(r => { const l = _land(r); return l && heim.includes(l); })
-                                 .map(r => r.circuitId.toLowerCase());
-                }
-                const allowedSet = new Set(allowed);
-                _programm[t.id] = allowed;
-                drivers.forEach(d => {
-                    if (d.team !== t.id) return;
-                    // Werksfahrer (kein Plan = jedes Rennen) bekommen die realen Strecken,
-                    // alle mit Plan werden darauf beschnitten.
-                    if (Array.isArray(d.scheduledRaces)) d.scheduledRaces = d.scheduledRaces.filter(c => allowedSet.has(c));
-                    else d.scheduledRaces = allowed.slice();
-                });
-            });
-
+            const _programm = applyTeamPresenceToPlans(teams, drivers, cal, ids, year);
             // MUSS NACH L1 STEHEN (v0.9.17.27): L1 verwandelt scheduledRaces=null in die
             // Streckenliste des Teams — davor gaebe es keinen offenen Plan zu decken, und
             // danach wuerde L1 die eben vergebene Deckung wieder beschneiden.
@@ -8342,6 +8363,26 @@
                     plan = _pickPrivateerRaces(Math.min(n, cal.length), cal, year,
                         _homePullNation(ersatz)).map(i => ids[i]);
                 }
+                // === DAS REALE PROGRAMM DES TEAMS GILT AUCH HIER (v0.9.17.30) ===
+                // Der L1-Nachlauf in assignPrivateerSchedules beschneidet die Meldeplaene
+                // auf die Strecken, die ein Konstrukteur real bestritten hat — aber
+                // fillGridEntries laeuft DANACH. Die Fueller bekamen ihre Plaene also an
+                // TEAM_PRESENCE vorbei. Protos meldete dadurch 1967 zu sieben Rennen mit
+                // elf Fahrern, real war es EIN Rennen (Nuerburgring) mit zwei Wagen —
+                // TEAM_PRESENCE fuehrt genau das: protos 1967 = ["nurburgring"].
+                // Nutzer: „protos meldet zu viel, das ist ahistorisch."
+                // Ohne Praesenzdaten (fortgesetzte Saisons jenseits des Horizonts) bleibt
+                // der Plan unveraendert — L1 verhaelt sich dort genauso.
+                const _tp = (typeof getTeamPresence === 'function') ? getTeamPresence(team, year) : null;
+                if (_tp != null && _tp !== 1) {
+                    const _erlaubt = new Set(_tp);
+                    plan = plan.filter(c => _erlaubt.has(c));
+                    // Der Rennstall faehrt, aber nicht dort: dann eben auf seinen Strecken.
+                    if (!plan.length) {
+                        const _da = _tp.filter(c => idSet.has(c));
+                        if (_da.length) plan = [_da[Math.floor(Math.random() * _da.length)]];
+                    }
+                }
                 if (!plan.length) continue;
 
                 ersatz.team = team.id;
@@ -8595,10 +8636,24 @@
         // ⚠ DER WAGENDECKEL GILT AUCH HIER (Erbe aus v0.9.16.3): ohne ihn starteten 2005
         //   BAR, Red Bull, Minardi und Williams mit je DREI Wagen, weil der Fueller den
         //   Pool-Fahrer blind in SEIN Team setzte.
-        function fillGridFromPool(activeDrivers, gridSize, dnpqOut) {
+        function fillGridFromPool(activeDrivers, gridSize, dnpqOut, race) {
             const slots = gridSize - activeDrivers.length;
             if (slots <= 0) return activeDrivers;
             const activeIds = new Set(activeDrivers.map(d => d.id));
+            // === KEIN GASTSTART FUER EIN TEAM, DAS HIER NICHT ANTRAT (v0.9.17.30) ===
+            // Diese Auswahl laeuft mitten im Rennwochenende, lange nach dem L1-Nachlauf,
+            // und haengte Pool-Fahrer an beliebige Rennstaelle. Damit tauchte ein
+            // Konstrukteur an Strecken auf, die er real nie besuchte — der zweite Weg,
+            // ueber den Protos 1967 auf sieben statt einem Rennen kam.
+            const _cid = race && race.circuitId ? String(race.circuitId).toLowerCase() : null;
+            const _teamDarfHier = tid => {
+                if (!_cid || typeof getTeamPresence !== 'function') return true;
+                const t = (GAME_STATE.teams || []).find(x => x.id === tid);
+                if (!t) return true;
+                const p = getTeamPresence(t, GAME_STATE.currentYear);
+                if (p == null || p === 1) return true;   // volle Saison oder unbekannt
+                return p.includes(_cid);
+            };
             const pool = (GAME_STATE.reservePool || []).filter(d =>
                 !activeIds.has(d.id) &&
                 // Kein Vor-Quali-Verlierer ueber die Hintertuer (v0.9.16.4).
@@ -8615,7 +8670,8 @@
                 //   sondern wird vorher direkt ins Feld gesetzt — er bleibt unberuehrt.
                 !(d.isIndyOnly || (typeof isIndyOnlyDriver === 'function' && isIndyOnlyDriver(d.histId || d.id))) &&
                 d.status !== 'retired' && !_istTot(d) &&
-                GAME_STATE.teams.some(t => t.id === d.team)
+                GAME_STATE.teams.some(t => t.id === d.team) &&
+                _teamDarfHier(d.team)
             );
             if (!pool.length) return activeDrivers;
             const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
@@ -13207,7 +13263,7 @@
                     // Grid-Fueller: zentral in fillGridFromPool (v0.9.17.13) — dieselbe
                     // Funktion laeuft im Qualifying. Hat sie dort schon gefuellt, sind die
                     // Nachruecker im Kader und dieser Aufruf findet nichts mehr zu tun.
-                    activeDrivers = fillGridFromPool(activeDrivers, gridSize, _dnpqOut);
+                    activeDrivers = fillGridFromPool(activeDrivers, gridSize, _dnpqOut, race);
                 }
             }
 
@@ -14080,7 +14136,7 @@
                 // [SYNC simulateRace] Zu duennes Feld schon HIER auffuellen, nicht erst im
                 // Rennen — sonst stehen am Start Fahrer, die nie eine Zeit gefahren sind.
                 const _gs = getGridSize(GAME_STATE.currentYear, race);
-                if (activeDrivers.length < _gs) activeDrivers = fillGridFromPool(activeDrivers, _gs, null);
+                if (activeDrivers.length < _gs) activeDrivers = fillGridFromPool(activeDrivers, _gs, null, race);
             } else {
                 // [SYNC simulateRace] Indy-Meldeliste HIER aufbauen, nicht erst im Rennen.
                 // Vorher fuellte nur simulateRace auf: 1957 standen zwoelf Fahrer im
@@ -17127,7 +17183,9 @@
                     'Was {champion} {year} zeigte, war Dominanz in Reinform: {siegeNom}, {points} Punkte, keine offenen Fragen.',
                     'Man wird die Saison {year} als Ein-Mann-Vorstellung in Erinnerung behalten: {champion} thronte mit {points} Punkten und {siegeDat} über dem Feld.',
                     'Die Frage der Saison {year} lautete früh nicht mehr ob, sondern nur noch wann: {champion} machte den Titel mit {siegeDat} zur Formsache.',
-                    '{champion} gegen den Rest – auf diese Formel ließ sich das Jahr {year} bringen, und die {points} Punkte des Champions sprechen für sich.'
+                    '{champion} gegen den Rest – auf diese Formel ließ sich das Jahr {year} bringen, und die {points} Punkte des Champions sprechen für sich.',
+                    'Rückblickend war die Saison {year} ein Monolog: {champion} diktierte das Geschehen mit {siegeDat} und {points} Punkten.',
+                    'Wer {year} nach Spannung an der Spitze suchte, suchte vergebens – {champion} enteilte dem Feld mit {siegeDat}.'
                 ],
                 knapp: [
                     'Einen engeren Ausgang hätte sich {klasseNom} kaum ausdenken können: Am Ende der Saison {year} betrug der Abstand zwischen {champion} und {vize} gerade einmal {gapAkk}.',
@@ -17137,7 +17195,9 @@
                     'Am Ende entschieden Nuancen: {champion} rettete {year} einen Vorsprung von {gapDat} auf {vize} ins Ziel und ist Weltmeister.',
                     'Enger Titelkampf bis zur letzten Wertung: {champion} schlug {vize} {year} um {gapAkk}.',
                     'Die Saison {year} hielt die Spannung bis zur allerletzten Wertung: {champion} setzte sich mit {gapDat} Vorsprung gegen {vize} durch.',
-                    'Wer {year} wegsah, hat Geschichte verpasst: {champion} entschied eines der engsten Titelrennen {klasseGen} um {gapAkk} gegen {vize} für sich.'
+                    'Wer {year} wegsah, hat Geschichte verpasst: {champion} entschied eines der engsten Titelrennen {klasseGen} um {gapAkk} gegen {vize} für sich.',
+                    'Die Entscheidung {year} fiel erst, als niemand mehr rechnen mochte: {champion} hielt {vize} um {gapAkk} nieder.',
+                    'Zwei Namen, ein Wimpernschlag: Am Ende der Saison {year} betrug der Abstand zwischen {champion} und {vize} nur {gapAkk}.'
                 ],
                 normal: [
                     '{champion} sicherte sich {year} mit {points} Punkten und {siegeDat} den Fahrertitel.',
@@ -17147,7 +17207,9 @@
                     'Mit {siegeDat} und {points} Punkten kürte sich {champion} {year} zum Weltmeister {klasseGen}.',
                     'Die Saison {year} fand in {champion} ihren verdienten Weltmeister – {points} Punkte, {siegeNom}.',
                     'Am Ende des Jahres {year} stand {champion} dort, wo alle hinwollten: ganz oben, mit {points} Punkten und {siegeDat}.',
-                    'Solide, schnell, verdient: {champion} sicherte sich {year} mit {siegeDat} und {points} Punkten die Krone {klasseGen}.'
+                    'Solide, schnell, verdient: {champion} sicherte sich {year} mit {siegeDat} und {points} Punkten die Krone {klasseGen}.',
+                    'Es war keine Saison der Superlative, aber eine mit einem verdienten Champion: {champion} holte {year} den Titel mit {points} Punkten.',
+                    'Die Bilanz des Jahres {year}: ein Weltmeister namens {champion}, {siegeNom}, {points} Punkte – und wenig Grund zur Debatte.'
                 ]
             },
 
@@ -17159,7 +17221,11 @@
                     'Die Vize-Weltmeisterschaft ging an {vize}, der dem Dominator über weite Strecken nur hinterherfahren konnte.',
                     'Bester der Geschlagenen: {vize}, der mit {vizePoints} Punkten immerhin den Rest des Feldes hinter sich hielt.',
                     'Dass {vize} mit {vizePoints} Punkten Vize-Weltmeister wurde, verdient Respekt – am Ausgang des Jahres änderte es nichts.',
-                    'Hinter dem Überflieger sammelte {vize} ein, was übrig blieb: Rang zwei, mit {gapDat} Rückstand.'
+                    'Hinter dem Überflieger sammelte {vize} ein, was übrig blieb: Rang zwei, mit {gapDat} Rückstand.',
+                    'Die Rolle des ersten Verfolgers blieb {vize} – mit {gapDat} Rückstand mehr Statist als Rivale.',
+                    '{vize} tat, was möglich war – gegen diese Übermacht war Rang zwei das höchste der Gefühle.',
+                    'Zweiter wurde {vize} – in jedem anderen Jahr vielleicht mehr, in diesem chancenlos.',
+                    'Am Abstand gibt es nichts zu deuteln: {vize} lag mit {gapDat} zurück – Welten, in Punkten gemessen.'
                 ],
                 knapp: [
                     'Für {vize} bleibt die bittere Rolle des geschlagenen Helden – kaum je war ein Vize-Weltmeister so nah dran.',
@@ -17167,7 +17233,11 @@
                     'So kurz vor dem Ziel gescheitert: {vize} wird den Winter mit der Frage verbringen, wo die entscheidenden Punkte liegen blieben.',
                     'Auf der anderen Seite stand {vize}, der mit {vizePoints} Punkten alles gegeben hatte – und dem am Ende fast nichts fehlte.',
                     'Und {vize}? Er geht als tragischer Zweiter in die Bücher ein – näher dran war selten jemand.',
-                    'Für {vize} war es die Saison der Beinahe-Krönung – bitterer kann sich Rang zwei kaum anfühlen.'
+                    'Für {vize} war es die Saison der Beinahe-Krönung – bitterer kann sich Rang zwei kaum anfühlen.',
+                    '{vize} hat diese Saison mitgeschrieben wie kaum ein Zweiter – nur das letzte Kapitel gehörte einem anderen.',
+                    'Der Unterlegene verdient eine eigene Zeile: {vize} machte diesen Titelkampf zu dem, was er war.',
+                    'Zwischen Ruhm und Rang zwei lag fast nichts – {vize} wird diese Saison dennoch als verlorene erinnern.',
+                    'Selten stand ein Zweiter einem Champion so wenig nach: {vize} beendete das Jahr mit {vizePoints} Punkten.'
                 ],
                 normal: [
                     'Rang zwei ging an {vize}, der mit {vizePoints} Punkten der beständigste Herausforderer war.',
@@ -17175,7 +17245,11 @@
                     '{vize} komplettierte als Zweiter das Spitzenduo, {gapAkk} hinter dem Champion.',
                     'Dahinter reihte sich {vize} als Vize-Weltmeister ein – respektabel, aber ohne echten Zugriff auf die Krone.',
                     'Platz zwei der Wertung ging mit {vizePoints} Punkten an {vize}.',
-                    'Die Rolle des ersten Verfolgers übernahm {vize} – beständig genug für Rang zwei, zu wenig für mehr.'
+                    'Die Rolle des ersten Verfolgers übernahm {vize} – beständig genug für Rang zwei, zu wenig für mehr.',
+                    'Hinter dem Champion sicherte sich {vize} mit {vizePoints} Punkten den zweiten Rang.',
+                    'Der stärkste Verfolger hieß {vize} – konstant genug für Platz zwei.',
+                    '{vize} hielt die Verfolgung am Leben, ohne je ganz heranzukommen – Rang zwei mit {vizePoints} Punkten.',
+                    'In der Rolle des ersten Jägers etablierte sich {vize} – am Ende blieb der Ehrenplatz.'
                 ]
             },
 
@@ -17186,28 +17260,48 @@
                     'Es war der Durchbruch eines Neulings: In seiner ersten Saison ließ {champion} sämtlichen Routiniers das Nachsehen.',
                     'Ein Neuling als Weltmeister – {champion} verwandelte sein Debütjahr in einen Triumphzug.',
                     'Und das im ersten Anlauf: {champion} brauchte keine Lehrjahre, er machte sein Debütjahr gleich zum Meisterjahr.',
-                    'Die etablierten {fahrerPl} mussten sich von einem Neuling zeigen lassen, wo es langgeht – ein Debüt für die Geschichtsbücher.'
+                    'Die etablierten {fahrerPl} mussten sich von einem Neuling zeigen lassen, wo es langgeht – ein Debüt für die Geschichtsbücher.',
+                    'Kein Respekt vor Namen, kein Respekt vor Hierarchien: {champion} wurde im ersten Jahr gleich Weltmeister.',
+                    'Das Drehbuch sah anders aus – dann kam ein Debütant: {champion} krönte sein erstes Jahr mit dem Titel.',
+                    'Die alte Garde staunte, {presseNom} überschlug sich: Ein Neuling namens {champion} griff nach der Krone – und bekam sie.',
+                    'Erstes Jahr, erster Titel: Was {champion} gelang, gelingt sonst kaum jemandem.',
+                    'Wer den Namen {champion} vor der Saison nicht kannte, kennt ihn jetzt – Weltmeister im Debütjahr.'
                 ],
                 underdog: [
                     'Die eigentliche Sensation lieferte das Material: {champTeam} beendete die Konstrukteurswertung nur auf Rang {champTeamRank} – den Fahrertitel holte {champion} trotzdem.',
                     'Dass der Titel ausgerechnet in ein Team der zweiten Reihe wanderte – {champTeam}, nur Rang {champTeamRank} bei den Konstrukteuren –, gab der Saison ihre eigene Note.',
                     '{champion} schlug mit unterlegenem Gerät zu: Sein Team {champTeam} kam in der Konstrukteurswertung nicht über Rang {champTeamRank} hinaus.',
                     'Das Auto war es jedenfalls nicht: {champTeam} landete bei den Konstrukteuren nur auf Rang {champTeamRank} – dieser Titel war das Werk des Fahrers.',
-                    'Wer wissen will, was ein Fahrer ausmachen kann, schaue auf Rang {champTeamRank} von {champTeam} in der Teamwertung – und dann auf den Weltmeister {champion}.'
+                    'Wer wissen will, was ein Fahrer ausmachen kann, schaue auf Rang {champTeamRank} von {champTeam} in der Teamwertung – und dann auf den Weltmeister {champion}.',
+                    'Der Titel entstand gegen die Logik der Teamwertung: {champTeam} wurde dort nur Rang {champTeamRank} – vorn stand trotzdem {champion}.',
+                    'Es war kein Titel des Materials: {champion} holte die Krone, während {champTeam} in der Konstrukteurswertung auf Rang {champTeamRank} hängen blieb.',
+                    'Selten klafften Fahrer- und Teamleistung so auseinander: {champion} Weltmeister, {champTeam} nur Rang {champTeamRank}.',
+                    'Die Zahlen erzählen von einem Kraftakt: Rang {champTeamRank} für {champTeam} – und ganz oben trotzdem {champion}.',
+                    'Titel gegen die Verhältnisse: {champion} bog die Möglichkeiten von {champTeam} (Rang {champTeamRank}) zur Weltmeisterschaft zurecht.'
                 ],
                 mostWinsLost: [
                     'Kurios: Die meisten Saisonsiege feierte mit {maxWinner} ein anderer ({maxWinnerSiegeNom}) – am Ende zählte die Konstanz von {champion}.',
                     'Der siegreichste Mann des Jahres hieß {maxWinner} ({maxWinnerSiegeNom}), doch die Krone trug am Ende der beständigere {champion}.',
                     '{maxWinner} gewann mehr Rennen als jeder andere – Weltmeister aber wurde {champion}: ein Sieg der Regelmäßigkeit über den Glanz.',
                     'Sieger des Jahres: {maxWinner} ({maxWinnerSiegeNom}). Weltmeister des Jahres: {champion}. Manchmal sind das zwei verschiedene Geschichten.',
-                    'Dass {maxWinner} häufiger gewann und der Titel trotzdem an {champion} ging, wird {klasseIn} noch lange Gesprächsstoff liefern.'
+                    'Dass {maxWinner} häufiger gewann und der Titel trotzdem an {champion} ging, wird {klasseIn} noch lange Gesprächsstoff liefern.',
+                    'Die Siegerliste des Jahres führte {maxWinner} an ({maxWinnerSiegeNom}) – in die Weltmeisterliste trug sich {champion} ein.',
+                    'Am häufigsten jubelte {maxWinner} ({maxWinnerSiegeNom}) – am längsten jubelt {champion}.',
+                    'Wer nur sonntags zusah, hielt {maxWinner} für den Besten – die Gesamtwertung sah {champion} vorn.',
+                    'Das Paradox des Jahres: {maxWinner} sammelte die Siege ({maxWinnerSiegeNom}), {champion} sammelte den Titel.',
+                    'Rennen gewinnt man mit Tempo, Titel mit Beständigkeit – {maxWinner} bewies das eine, {champion} das andere.'
                 ],
                 poleKing: [
                     'Auch über eine Runde war {champion} das Maß aller Dinge: {poles} Pole-Positions unterstreichen die Vormachtstellung.',
                     'Dazu kam rohe Geschwindigkeit: {poles} Pole-Positions machten {champion} auch zum König des Qualifyings.',
                     'Im Qualifying regierte {champion} mit {poles} Pole-Positions fast nach Belieben.',
                     'Eine Randnotiz mit Gewicht: {poles} Pole-Positions gingen an {champion} – schneller war samstags keiner.',
-                    'Die erste Startposition gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.'
+                    'Die erste Startposition gehörte fast immer ihm: {poles} Pole-Positions stehen {year} hinter dem Namen {champion}.',
+                    'Samstags war die Sache meist früh entschieden: {poles} Pole-Positions für {champion}.',
+                    'Der Startplatz ganz vorn wurde beinahe sein Stammplatz: {champion} holte {poles} Poles.',
+                    'Auch die reine Rundenzeit gehörte {champion}: {poles} Pole-Positions in einem Jahr.',
+                    'Wo die Uhr allein entscheidet, war er am besten: {poles} Poles für {champion}.',
+                    'Die erste Reihe war fest vergeben: {poles} Pole-Positions gingen an {champion}.'
                 ]
             },
 
@@ -17218,14 +17312,24 @@
                     'Auch bei den Konstrukteuren führte kein Weg an {teamChampionName} vorbei – das Team des Champions machte den Doppelerfolg perfekt.',
                     'Der Arbeitgeber des Weltmeisters feierte gleich mit: {teamChampionName} gewann auch die Teamwertung – die Doppelkrone {klasseGen}.',
                     'Und weil ein Titel offenbar nicht genug war, holte {teamChampionName} auch noch die Konstrukteurswertung – ein Jahr wie aus einem Guss.',
-                    'Fahrertitel und Teamtitel unter demselben Dach: {teamChampionName} räumte {year} beides ab.'
+                    'Fahrertitel und Teamtitel unter demselben Dach: {teamChampionName} räumte {year} beides ab.',
+                    'Die Teamwertung machte das Bild komplett: {teamChampionName} holte auch den Konstrukteurstitel – alles in einer Hand.',
+                    'Doppelter Lohn für eine dominante Mannschaft: {teamChampionName} gewann beide Wertungen des Jahres.',
+                    'Auch die Konstrukteurskrone blieb im Haus des Champions: {teamChampionName} vollendete das perfekte Jahr.',
+                    'Fahrer vorn, Team vorn: {teamChampionName} ließ {year} nichts anbrennen.',
+                    'Wenn alles zusammenläuft, sieht es so aus: {teamChampionName} feierte Fahrer- und Teamtitel im selben Jahr.'
                 ],
                 separate: [
                     'Bei den Konstrukteuren hatte derweil {teamChampionName} mit {teamChampionPoints} Punkten die Nase vorn.',
                     'Die Teamwertung ging getrennte Wege: Dort setzte sich {teamChampionName} durch.',
                     'Der Konstrukteurstitel landete bei {teamChampionName} – dieser Triumph blieb dem Team des Champions verwehrt.',
                     'Ein Trostpflaster für die Konkurrenz gab es in der Teamwertung: Dort triumphierte {teamChampionName}.',
-                    'Die Konstrukteurskrone nahm derweil einen anderen Weg – sie ging mit {teamChampionPoints} Punkten an {teamChampionName}.'
+                    'Die Konstrukteurskrone nahm derweil einen anderen Weg – sie ging mit {teamChampionPoints} Punkten an {teamChampionName}.',
+                    'In der Teamwertung hieß der Sieger dagegen {teamChampionName} – die Titel verteilten sich auf zwei Lager.',
+                    'Die Konstrukteure krönten einen anderen: {teamChampionName} holte sich die Teamwertung mit {teamChampionPoints} Punkten.',
+                    'Getrennte Feiern: Der Fahrertitel ging an den Champion, die Teamwertung an {teamChampionName}.',
+                    'Bei den Konstrukteuren behielt {teamChampionName} das letzte Wort.',
+                    'Die Mannschaftswertung erzählte ihre eigene Geschichte – mit {teamChampionName} als Sieger.'
                 ]
             },
 
@@ -17236,14 +17340,20 @@
                     'Doch die Saison hatte auch ihre dunkle Seite: Beim {deadRace} verlor {deadName} sein Leben – eine Lücke, die kein Ergebnis schließt.',
                     'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der beim {deadRace} tödlich verunglückte.',
                     'Und doch fällt ein Schatten über alle Zahlen dieses Jahres: {deadName} ({deadTeam}) verlor beim {deadRace} sein Leben.',
-                    'Die Saison forderte ihren Preis: Beim {deadRace} starb {deadName} – das Fahrerlager verlor eines seiner Gesichter.'
+                    'Die Saison forderte ihren Preis: Beim {deadRace} starb {deadName} – das Fahrerlager verlor eines seiner Gesichter.',
+                    'Und dann war da der Tag, der alles relativierte: {deadName} ({deadTeam}) kam beim {deadRace} ums Leben.',
+                    'Neben allen Wertungen steht ein Name, der bleibt: {deadName}, tödlich verunglückt beim {deadRace}.',
+                    'Der Sport nahm sich in diesem Jahr einen der Seinen: {deadName} überlebte den {deadRace} nicht.'
                 ],
                 many: [
                     'Es war zugleich ein schwarzes Jahr: {deadList} bezahlten ihren Sport mit dem Leben – {deadCount} Todesfälle, die schwer auf dieser Saison lasten.',
                     'Doch der Preis war hoch: Mit {deadList} verlor {klasseNom} in diesem Jahr {deadCount} {fahrerPl}.',
                     'Über allem liegt Trauer: {deadList} kehrten von ihren Einsätzen nicht zurück.',
                     'Die dunkle Bilanz dieses Jahres wiegt schwerer als jede Wertung: {deadList} verloren ihr Leben.',
-                    'Kein Rückblick ohne Trauer: {deadCount} {fahrerPl} – {deadList} – kehrten in diesem Jahr nicht zurück.'
+                    'Kein Rückblick ohne Trauer: {deadCount} {fahrerPl} – {deadList} – kehrten in diesem Jahr nicht zurück.',
+                    'Die Jahresbilanz trägt Trauerränder: {deadList} kamen in dieser Saison ums Leben.',
+                    'Was dieses Jahr kostete, steht in keiner Punktetabelle: {deadCount} {fahrerPl} – {deadList} – kehrten nicht heim.',
+                    'Hinter den Feierlichkeiten steht eine bittere Liste: {deadList}.'
                 ]
             },
 
@@ -17256,7 +17366,10 @@
                     'Der Vorhang fiel – und ließ ein Jahr zurück, das seinen Platz in den Annalen sicher hat.',
                     'Bleibt die Frage, wer diese Messlatte im kommenden Jahr höher legen will.',
                     'Die Motoren schweigen – die Debatten {klasseGen} beginnen jetzt erst richtig.',
-                    'Abgerechnet ist: Jetzt beginnt das Warten auf den ersten Start des neuen Jahres.'
+                    'Abgerechnet ist: Jetzt beginnt das Warten auf den ersten Start des neuen Jahres.',
+                    'Ein Jahrgang geht zu den Akten – vergessen wird er deshalb nicht.',
+                    'Was dieses Jahr versprochen hat, muss das nächste erst einmal halten.',
+                    'Die Zielflagge des Jahres ist gefallen – die Startflagge des nächsten wartet schon.'
                 ],
                 tragic: [
                     'Zwischen Triumph und Trauer bleibt {year} ein Jahr, das niemand {klasseIn} so schnell vergisst.',
@@ -17264,7 +17377,11 @@
                     'Gefeiert wurde am Ende leise – zu präsent war, was diese Saison gekostet hatte.',
                     'Die Pokale sind verteilt, die Wunden nicht verheilt – dieses Jahr hinterlässt beides.',
                     'Was bleibt, ist ein Jahrgang mit zwei Gesichtern: einem strahlenden und einem stillen.',
-                    'Man wird die Sieger dieses Jahres feiern – und die Fehlenden nicht vergessen.'
+                    'Man wird die Sieger dieses Jahres feiern – und die Fehlenden nicht vergessen.',
+                    'Am Ende bleibt ein Jahr, das Größe zeigte – und ihren Preis.',
+                    'Dieser Jahrgang wird gefeiert und betrauert werden – beides zu Recht.',
+                    'Die Chronik dieses Jahres kennt helle und dunkle Seiten – überblättern lässt sich keine.',
+                    'Zwischen Podien und Nachrufen lag {year} manchmal nur eine Woche – auch das gehört zur Wahrheit dieses Sports.'
                 ]
             }
         };
@@ -17349,7 +17466,9 @@
                 'der Maßstab heißt auch {year} zunächst {champion} – bis das Feld das Gegenteil beweist.',
                 'mit dem Titel im Rücken startet {champion} ins neue Jahr – wohl wissend, dass nun alle an ihm Maß nehmen.',
                 'vor dem ersten Kräftemessen stellt sich vor allem eine Frage: Kann {champion} seinen Titel verteidigen?',
-                'Titelverteidiger {champion} eröffnet das Jahr mit dem größten Ziel: den Coup zu wiederholen.'
+                'Titelverteidiger {champion} eröffnet das Jahr mit dem größten Ziel: den Coup zu wiederholen.',
+                'den Maßstab hat {champion} gesetzt – jetzt muss er ihn verteidigen.',
+                'gejagt wird in diesem Jahr vor allem einer: Titelverteidiger {champion}.'
             ],
             favorit: {
                 herausforderer: [
@@ -17359,21 +17478,34 @@
                     'die Rolle des Gejagten könnte schnell wechseln: {favorit} gilt vielen als der Mann der Stunde.',
                     '{presseNom} handelt vor allem einen Namen als Titelkandidaten: {favorit}.',
                     'stark eingeschätzt wird {favorit} – bei {favoritTeam} deutet vieles auf ein konkurrenzfähiges Jahr.',
-                    'auf dem Papier bringt {favorit} das stärkste Gesamtpaket mit – doch Papier hat noch kein Rennen gewonnen.'
+                    'auf dem Papier bringt {favorit} das stärkste Gesamtpaket mit – doch Papier hat noch kein Rennen gewonnen.',
+                    'als härtester Widersacher wird {favorit} gehandelt – {favoritTeam} gilt als Gewinner des Winters.',
+                    'der Name, der im Fahrerlager am häufigsten fällt, ist {favorit} – die Erwartungen an {favoritTeam} sind hoch.',
+                    'die Buchmacher und das Fahrerlager sind sich einig: {favorit} führt die Anwärterliste an.'
                 ],
                 verteidigerFavorit: [
                     'und die Vorzeichen sprechen erneut für ihn: {favorit} gilt auch {year} als der Mann, den es zu schlagen gilt.',
                     'wer ihn entthronen will, braucht ein großes Jahr: {favorit} geht auch diesmal als Favorit ins Rennen um die Krone.',
                     'die Konkurrenz sucht noch nach Antworten – die Favoritenrolle liegt erneut bei {favorit}.',
                     'auch die neue Saison beginnt mit einer alten Gewissheit: An {favorit} führt der Weg nur vorbei, wenn alles zusammenpasst.',
-                    '{presseNom} sieht ihn erneut vorn: {favorit} vereint Fahrer und Material weiterhin am überzeugendsten.'
+                    '{presseNom} sieht ihn erneut vorn: {favorit} vereint Fahrer und Material weiterhin am überzeugendsten.',
+                    'und wenig deutet auf einen Machtwechsel: {favorit} startet erneut als Gejagter und Favorit zugleich.',
+                    'die Winterarbeit hat die Hierarchie offenbar nicht verschoben – {favorit} bleibt die Messlatte.',
+                    'wer den Titel will, muss zuerst an {favorit} vorbei – daran hat sich nichts geändert.',
+                    'auch in diesem Jahr beginnt jede Titelrechnung mit demselben Namen: {favorit}.',
+                    'die Ausgangslage wirkt vertraut: {favorit} vorn, der Rest auf der Suche nach der Lücke.'
                 ],
                 duo: [
                     'als erste Anwärter gelten {favorit} und {favorit2} – zwei Namen, ein Ziel.',
                     'die Favoritenfrage hat {year} zwei Antworten: {favorit} oder {favorit2}.',
                     '{favorit} und {favorit2} gehen mit den besten Vorzeichen ins Jahr – und das Feld dazwischen wittert seine Chance.',
                     'zwei Lager, zwei Hoffnungen: {favorit} und {favorit2} gelten als die Männer, die den Ton angeben dürften.',
-                    'wenn die Einschätzungen stimmen, läuft es {year} auf ein Duell hinaus: {favorit} gegen {favorit2}.'
+                    'wenn die Einschätzungen stimmen, läuft es {year} auf ein Duell hinaus: {favorit} gegen {favorit2}.',
+                    'die Saison verspricht ein Kräftemessen: {favorit} und {favorit2} starten mit den größten Ambitionen.',
+                    'zwei Favoriten, keine klare Reihenfolge: {favorit} gegen {favorit2} – so lautet die erwartete Hauptpaarung.',
+                    'ob {favorit} oder {favorit2} – das Fahrerlager ist gespalten, die Strecke wird schlichten.',
+                    'das Titelrennen dürfte über {favorit} und {favorit2} laufen; wer von beiden zuerst wackelt, verliert.',
+                    'am Kopf des Feldes zeichnet sich ein Zweikampf ab: {favorit} und {favorit2} gelten als das Maß.'
                 ]
             },
             rookie: {
@@ -17382,14 +17514,24 @@
                     'mit {rookieList} steht ein {neulingSg} am Start – was in ihm steckt, wird sich zeigen müssen.',
                     '{rookieList} startet in seine erste Saison – jedes Debüt beginnt bei null.',
                     'ein neues Gesicht im Feld: {rookieList} bestreitet sein erstes Jahr {klasseIn}.',
-                    'auch {year} wagt sich ein {neulingSg} ins Haifischbecken: {rookieList}.'
+                    'auch {year} wagt sich ein {neulingSg} ins Haifischbecken: {rookieList}.',
+                    'ein {neulingSg} mischt die Startliste auf: {rookieList} gibt in diesem Jahr sein Debüt.',
+                    'die Zukunft schickt einen Vorboten: {rookieList} steht vor seiner ersten Saison.',
+                    'für {rookieList} beginnt das Kapitel, von dem jeder Nachwuchsfahrer träumt – das erste eigene.',
+                    'Debüt mit offenen Fragen: was {rookieList} kann, weiß bald das ganze Feld.',
+                    'unbeschriebenes Blatt, große Bühne: {rookieList} wagt den Schritt {klasseIn}.'
                 ],
                 many: [
                     'gleich mehrere {neulingPl} wagen den Sprung: {rookieList} bestreiten ihr erstes Jahr {klasseIn}.',
                     'das Feld bekommt frisches Blut: {rookieList} stehen vor ihrer Debüt-Saison.',
                     'neue Namen, unbeschriebene Blätter: {rookieList} beginnen das Abenteuer {klasseIn}.',
                     '{rookieList} – die {neulingPl} des Jahrgangs {year} müssen sich erst beweisen.',
-                    'die nächste Generation klopft an: {rookieList} debütieren in diesem Jahr.'
+                    'die nächste Generation klopft an: {rookieList} debütieren in diesem Jahr.',
+                    'der Jahrgang bringt gleich mehrere Debütanten: {rookieList} starten erstmals.',
+                    'frisches Personal im Feld: {rookieList} gehen in ihre Premierensaison.',
+                    'für {rookieList} beginnt das Abenteuer – die Etablierten sind gewarnt.',
+                    'die Startliste liest sich stellenweise neu: {rookieList} debütieren.',
+                    'mehrere {neulingPl} auf einen Streich: {rookieList} – wer von ihnen bleibt, zeigt die Saison.'
                 ]
             },
             wechsel: [
@@ -17398,7 +17540,11 @@
                 'der prominenteste Umzug des Winters: {wechselName} startet fortan für {wechselTeam}.',
                 'neues Kapitel für {wechselName}: Bei {wechselTeam} will er sich neu beweisen.',
                 'ob die neue Umgebung zündet? {wechselName} versucht sein Glück ab sofort bei {wechselTeam}.',
-                'die Boxengasse hat ein neues Gesprächsthema: {wechselName} in Diensten von {wechselTeam}.'
+                'die Boxengasse hat ein neues Gesprächsthema: {wechselName} in Diensten von {wechselTeam}.',
+                'einer der Umzüge des Winters hat es in sich: {wechselName} trägt jetzt die Farben von {wechselTeam}.',
+                '{wechselName} bei {wechselTeam} – diese Kombination beschäftigt das Fahrerlager schon vor dem ersten Start.',
+                'Tapetenwechsel für {wechselName}: Der Neustart bei {wechselTeam} ist die spannendste Personalie des Jahres.',
+                'was der Wechsel von {wechselName} zu {wechselTeam} wert ist, beantworten erst die Rennen.'
             ],
             closer: [
                 'die Antworten gibt wie immer nur die Strecke – {auftakt} beginnt die Suche.',
@@ -17407,7 +17553,10 @@
                 'noch ist alles Theorie – {auftakt} wird aus Papierform Wirklichkeit.',
                 '{publikum} darf sich auf Antworten freuen – die Fragen liefert das neue Jahr von ganz allein.',
                 'eine lange Saison liegt voraus, und sie hat noch jede Vorhersage auf die Probe gestellt.',
-                'sicher ist nur eines: Auch dieses Jahr wird seine Geschichten schreiben.'
+                'sicher ist nur eines: Auch dieses Jahr wird seine Geschichten schreiben.',
+                'die Theorie ist geschrieben – {auftakt} übernimmt die Praxis.',
+                'alle Planspiele enden dort, wo das Rennen beginnt: auf der Strecke.',
+                'was von den Erwartungen übrig bleibt, entscheidet sich Rennen für Rennen.'
             ]
         };
         function seasonPreviewText(ctx) {
@@ -18750,35 +18899,50 @@
                     'das teaminterne Duell zwischen {driver} und {rival} hält die Mannschaft in Atem: {h2hText}.',
                     '{driver} gegen {rival} – ein Kräftemessen auf des Messers Schneide: {h2hText}.',
                     'im eigenen Lager tobt der engste Kampf: {driver} und {rival} trennt fast nichts – {h2hText}.',
-                    'wenn zwei Piloten desselben Stalls sich nichts schenken, schaut das ganze Fahrerlager hin: {h2hText} zwischen {driver} und {rival}.'
+                    'wenn zwei Piloten desselben Stalls sich nichts schenken, schaut das ganze Fahrerlager hin: {h2hText} zwischen {driver} und {rival}.',
+                    'im selben Stall und doch Gegner: {driver} und {rival} liegen so dicht beieinander, wie es der Sport nur zulässt – {h2hText}.',
+                    'die Mannschaft hat zwei erste Fahrer, ob sie will oder nicht: {driver} und {rival} – {h2hText}.',
+                    'kein Handbreit Platz zwischen den beiden: {driver} gegen {rival}, {h2hText}.'
                 ],
                 e62: [
                     'das Duell zwischen {driver} und {rival} ist so eng, wie es teamintern nur sein kann: {h2hText}.',
                     '{driver} und {rival} nehmen sich kaum etwas – {h2hText}.',
                     'stallintern geht es eng zu: zwischen {driver} und {rival} steht es {h2hText}.',
                     'kaum ein Wochenende, an dem zwischen {driver} und {rival} nicht neu gemischt wird – {h2hText}.',
-                    'die vielleicht engste Messlatte liegt im eigenen Team: {driver} gegen {rival}, {h2hText}.'
+                    'die vielleicht engste Messlatte liegt im eigenen Team: {driver} gegen {rival}, {h2hText}.',
+                    'wer im Team die Nase vorn hat, wechselt fast wöchentlich: {driver} gegen {rival}, {h2hText}.',
+                    'zwei Wagen, eine Farbe, kein Unterschied auf der Uhr: {driver} und {rival}, {h2hText}.',
+                    'die interne Hierarchie ist Verhandlungssache – {driver} und {rival} verhandeln jedes Wochenende neu: {h2hText}.'
                 ],
                 e76: [
                     'Stallduell auf Augenhöhe: {driver} gegen {rival} – {h2hText}, enger geht es kaum.',
                     'im Team wird nichts verschenkt: {driver} und {rival} trennt so gut wie nichts – {h2hText}.',
                     '{driver} oder {rival}? Die Frage stellt sich jedes Wochenende neu – {h2hText}.',
                     'die Box hat ihr eigenes Duell: {driver} gegen {rival}, aktuell {h2hText}.',
-                    'wer die beiden vergleichen will, braucht die Lupe: {h2hText} zwischen {driver} und {rival}.'
+                    'wer die beiden vergleichen will, braucht die Lupe: {h2hText} zwischen {driver} und {rival}.',
+                    'zwei Fahrer, ein Team, null Komfortzone: {driver} gegen {rival} – {h2hText}.',
+                    'die spannendste Zeitentabelle hängt in der eigenen Box: {driver} und {rival}, {h2hText}.',
+                    'hier gibt es keine Stallorder, nur Stallkrieg im besten Sinne: {driver} gegen {rival}, {h2hText}.'
                 ],
                 e94: [
                     'das teaminterne Duell ist statistisch ein Patt: {driver} gegen {rival}, {h2hText}.',
                     '{driver} und {rival} liefern sich ein Duell auf Messers Schneide – {h2hText}.',
                     'die Datenlage zwischen {driver} und {rival} ist so ausgeglichen wie selten: {h2hText}.',
                     'im Team entscheidet aktuell die Tagesform: zwischen {driver} und {rival} steht es {h2hText}.',
-                    'kein klarer Erster im eigenen Haus: {driver} und {rival} trennt fast nichts – {h2hText}.'
+                    'kein klarer Erster im eigenen Haus: {driver} und {rival} trennt fast nichts – {h2hText}.',
+                    'die Ingenieure sehen es in jeder Auswertung: zwischen {driver} und {rival} liegt praktisch nichts – {h2hText}.',
+                    'gleiches Auto, gleiche Chancen, gleiche Bilanz: {driver} und {rival}, {h2hText}.',
+                    'das Duell wird in Zehnteln geführt und in Nuancen entschieden: {driver} gegen {rival}, {h2hText}.'
                 ],
                 e10: [
                     'teamintern herrscht Patt-Stimmung: {driver} vs. {rival} – {h2hText}.',
                     'das engste Duell fährt im selben Auto: {driver} gegen {rival}, {h2hText}.',
                     '{driver} und {rival} schenken sich nichts – {h2hText}, Ausgang offen.',
                     'Stallduell mit offenem Visier: zwischen {driver} und {rival} steht es {h2hText}.',
-                    'wer hier die Team-Hierarchie sucht, sucht vergebens: {driver} gegen {rival}, {h2hText}.'
+                    'wer hier die Team-Hierarchie sucht, sucht vergebens: {driver} gegen {rival}, {h2hText}.',
+                    'Head-to-Head auf Messers Schneide: {driver} und {rival}, {h2hText}.',
+                    'gleiche Daten, gleiche Hardware, offener Ausgang: {driver} vs. {rival} – {h2hText}.',
+                    'die Garage ist geteilt, die Bilanz auch: {driver} gegen {rival}, {h2hText}.'
                 ]
             },
             dominanz: {
@@ -18787,35 +18951,50 @@
                     'das Stallduell hat einen klaren Herrn: {driver} hält {rival} mit {h2hText} auf Distanz.',
                     'zwischen {driver} und {rival} ist die Rangordnung derzeit eindeutig – {h2hText}.',
                     '{rival} beißt sich am eigenen Teamkollegen die Zähne aus: {driver} führt das Duell mit {h2hText} an.',
-                    'wer wissen will, wer im Team den Maßstab setzt, schaue auf die Bilanz: {driver} vor {rival}, {h2hText}.'
+                    'wer wissen will, wer im Team den Maßstab setzt, schaue auf die Bilanz: {driver} vor {rival}, {h2hText}.',
+                    'der Stall hat eine klare Speerspitze: {driver} lässt {rival} mit {h2hText} hinter sich.',
+                    'so deutlich fällt ein internes Urteil selten aus: {driver} über {rival}, {h2hText}.',
+                    'an der Rangordnung im Team gibt es wenig zu rütteln: {driver} vor {rival} – {h2hText}.'
                 ],
                 e62: [
                     'das teaminterne Duell verläuft einseitig: {driver} führt gegen {rival} mit {h2hText}.',
                     '{driver} hat die Verhältnisse im Team geklärt – {h2hText} gegen {rival}.',
                     'gegen den eigenen Teamkollegen findet {rival} derzeit kein Mittel: {driver} liegt mit {h2hText} vorn.',
                     'die Bilanz lässt wenig Raum für Diskussionen: {driver} gegen {rival}, {h2hText}.',
-                    'im direkten Vergleich hat {driver} klar die Oberhand – {h2hText}.'
+                    'im direkten Vergleich hat {driver} klar die Oberhand – {h2hText}.',
+                    'die Frage nach der Nummer eins stellt sich hier nicht: {driver} führt gegen {rival}, {h2hText}.',
+                    'was auch immer {rival} versucht – die Bilanz gegen {driver} bleibt einseitig: {h2hText}.',
+                    'derzeit fährt {driver} in einer anderen Gewichtsklasse als sein Teamkollege: {h2hText} gegen {rival}.'
                 ],
                 e76: [
                     'klare Ansage im eigenen Team: {driver} distanziert {rival} mit {h2hText}.',
                     'das Stallduell? Momentan keines: {driver} dominiert gegen {rival} – {h2hText}.',
                     '{rival} kommt an seinem Teamkollegen einfach nicht vorbei: {h2hText} für {driver}.',
                     'im Team gibt es derzeit nur eine Richtung – {driver} vor {rival}, {h2hText}.',
-                    'die nackten Zahlen sind deutlich: {driver} führt das interne Duell mit {h2hText} an.'
+                    'die nackten Zahlen sind deutlich: {driver} führt das interne Duell mit {h2hText} an.',
+                    'in dieser Box herrschen klare Verhältnisse: {driver} gibt den Ton an, {rival} sucht Anschluss – {h2hText}.',
+                    'das interne Kräftemessen kennt derzeit nur einen Ausgang: {driver} vor {rival}, {h2hText}.',
+                    '{rival} kämpft, {driver} enteilt – die Zwischenbilanz: {h2hText}.'
                 ],
                 e94: [
                     'die Statistik im Teamduell ist eindeutig: {driver} führt gegen {rival} mit {h2hText}.',
                     '{driver} hat das interne Duell klar im Griff – {h2hText} gegen {rival}.',
                     'für {rival} ist der eigene Teamkollege derzeit die höchste Hürde: {h2hText} für {driver}.',
                     'wer die Team-Hierarchie sucht, findet sie in der Bilanz: {driver} vor {rival}, {h2hText}.',
-                    'im direkten Vergleich setzt {driver} derzeit den Maßstab: {h2hText}.'
+                    'im direkten Vergleich setzt {driver} derzeit den Maßstab: {h2hText}.',
+                    'die Auswertungen sprechen eine klare Sprache: {driver} kontrolliert das Teamduell – {h2hText} gegen {rival}.',
+                    'im gleichen Material trennt die beiden derzeit eine Klasse: {driver} vor {rival}, {h2hText}.',
+                    'das Benchmark-Duell hat einen Stammsieger: {driver} – {h2hText} gegen {rival}.'
                 ],
                 e10: [
                     'das Teamduell hat eine klare Nummer eins: {driver} führt gegen {rival} mit {h2hText}.',
                     '{driver} dominiert den internen Vergleich – {h2hText} gegen {rival}.',
                     'Benchmark im eigenen Haus: an {driver} ist für {rival} derzeit kein Vorbeikommen – {h2hText}.',
                     'die Zahlen im Stallduell sprechen für sich: {driver} vor {rival}, {h2hText}.',
-                    '{rival} sucht noch nach Antworten auf den Mann in der anderen Garagenhälfte: {h2hText} für {driver}.'
+                    '{rival} sucht noch nach Antworten auf den Mann in der anderen Garagenhälfte: {h2hText} für {driver}.',
+                    'aktuell ist das kein Duell, sondern eine Ansage: {driver} führt gegen {rival} mit {h2hText}.',
+                    'die andere Garagenseite ist derzeit die schnellere: {driver} distanziert {rival} – {h2hText}.',
+                    'gleiches Auto, ungleiche Bilanz: {driver} vor {rival}, {h2hText}.'
                 ]
             },
             augenhoehe: {
@@ -18824,35 +19003,50 @@
                     'wenn {driver} und {rival} aufeinandertreffen, hält der Grand-Prix-Sport den Atem an – {h2hText}.',
                     'ein Duell, wie es das Publikum liebt: {driver} gegen {rival}, Größe gegen Größe – {h2hText}.',
                     'die Ehre der Ersten wird derzeit zwischen {driver} und {rival} verhandelt – {h2hText}.',
-                    '{driver} oder {rival}? An dieser Frage scheiden sich derzeit die Geister an den Strecken – {h2hText}.'
+                    '{driver} oder {rival}? An dieser Frage scheiden sich derzeit die Geister an den Strecken – {h2hText}.',
+                    'es sind Wochen der großen Namen: {driver} und {rival} tragen ihren Wettstreit vor aller Augen aus – {h2hText}.',
+                    'zwei Meister ihres Fachs, kaum ein Blatt dazwischen: {driver} gegen {rival}, {h2hText}.',
+                    'an den Stammtischen wie an den Strecken kennt der Streit nur ein Thema: {driver} oder {rival} – {h2hText}.'
                 ],
                 e62: [
                     'das Duell der Besten: {driver} gegen {rival} – {h2hText}.',
                     '{driver} und {rival} fahren derzeit in einer eigenen Sphäre – und gegeneinander: {h2hText}.',
                     'zwei Spitzenfahrer, ein Ziel: zwischen {driver} und {rival} entscheidet sich derzeit vieles – {h2hText}.',
                     'wo {driver} ist, ist {rival} selten weit – {h2hText}.',
-                    'die Saison hat ihr großes Duell gefunden: {driver} gegen {rival}, {h2hText}.'
+                    'die Saison hat ihr großes Duell gefunden: {driver} gegen {rival}, {h2hText}.',
+                    'die Spitze hat derzeit zwei Adressen: {driver} und {rival} – {h2hText}.',
+                    'keiner gibt nach, keiner reißt ab: {driver} gegen {rival}, {h2hText}.',
+                    'es ist das Kräftemessen dieser Monate: {driver} und {rival}, {h2hText}.'
                 ],
                 e76: [
                     'das große Duell dieser Tage: {driver} gegen {rival} – {h2hText}.',
                     '{driver} und {rival} liefern sich einen Schlagabtausch der Extraklasse: {h2hText}.',
                     'zwei Alphatiere, eine Spitze: {driver} gegen {rival} elektrisiert das Publikum – {h2hText}.',
                     'wenn diese beiden auf derselben Strecke stehen, gibt es keine Nebenschauplätze: {driver} gegen {rival}, {h2hText}.',
-                    'die Frage des Jahres lautet {driver} oder {rival} – {h2hText}.'
+                    'die Frage des Jahres lautet {driver} oder {rival} – {h2hText}.',
+                    'Funken, wohin man schaut: {driver} und {rival} schenken sich keinen Meter – {h2hText}.',
+                    'das Publikum bekommt derzeit das Duell, das es verdient: {driver} gegen {rival} – {h2hText}.',
+                    'zwei Namen beherrschen die Schlagzeilen – und die Stoppuhren: {driver} und {rival}, {h2hText}.'
                 ],
                 e94: [
                     'das Topduell der Saison: {driver} gegen {rival} – {h2hText}.',
                     '{driver} und {rival} trennen Nuancen, keine Klassen: {h2hText}.',
                     'zwei Fahrer definieren derzeit die Spitze – {driver} und {rival}, {h2hText}.',
                     'im Kampf um die Spitze schenken sich {driver} und {rival} nichts – {h2hText}.',
-                    'die Bestenliste hat aktuell zwei Namen: {driver} und {rival} – {h2hText}.'
+                    'die Bestenliste hat aktuell zwei Namen: {driver} und {rival} – {h2hText}.',
+                    'in den Analysen laufen beide auf Augenhöhe: {driver} und {rival}, {h2hText}.',
+                    'das Titelbarometer pendelt zwischen zwei Namen: {driver} und {rival} – {h2hText}.',
+                    'wo der eine eine Bestzeit setzt, antwortet der andere: {driver} gegen {rival}, {h2hText}.'
                 ],
                 e10: [
                     'das Duell, auf das alle schauen: {driver} gegen {rival} – {h2hText}.',
                     '{driver} vs. {rival} ist DAS Duell dieser Saison – {h2hText}.',
                     'zwei Ausnahmekönner, kaum Luft dazwischen: {driver} und {rival}, {h2hText}.',
                     'Spitzenkampf pur: {driver} gegen {rival} – {h2hText}.',
-                    'wenn {driver} und {rival} aufeinandertreffen, wird jedes Duell zum Hauptereignis – {h2hText}.'
+                    'wenn {driver} und {rival} aufeinandertreffen, wird jedes Duell zum Hauptereignis – {h2hText}.',
+                    'zwei Alphas, eine Spitze, null Nachgeben: {driver} und {rival}, {h2hText}.',
+                    'jedes Aufeinandertreffen ein Statement: {driver} vs. {rival} – {h2hText}.',
+                    'die Form-Kurven der beiden laufen parallel – ganz oben: {driver} und {rival}, {h2hText}.'
                 ]
             },
             fehde: {
@@ -18861,35 +19055,50 @@
                     'dieses Duell hat Geschichte: {driver} und {rival} kennen einander {seasonsText} – die Bilanz: {h2hText}.',
                     'alte Bekannte: {seasonsText} teilen sich {driver} und {rival} nun schon dieselbe Box – {h2hText}.',
                     'manche Duelle überdauern die Jahre: {driver} gegen {rival}, ausgetragen {seasonsText} – {h2hText}.',
-                    'im Fahrerlager kennt man dieses Kräftemessen längst: {driver} und {rival}, Seite an Seite und doch gegeneinander, {seasonsText} – {h2hText}.'
+                    'im Fahrerlager kennt man dieses Kräftemessen längst: {driver} und {rival}, Seite an Seite und doch gegeneinander, {seasonsText} – {h2hText}.',
+                    'ihre Wege sind längst verwoben: {driver} und {rival}, im Wettstreit {seasonsText} – {h2hText}.',
+                    'man erzählt sich ihre Duelle wie Anekdoten: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'was lange währt, wird härter: {driver} und {rival} messen sich {seasonsText} – {h2hText}.'
                 ],
                 e62: [
                     'das Duell {driver} gegen {rival} läuft nun schon {seasonsText} – {h2hText}.',
                     'zwei, die sich kennen wie sonst niemand im Feld: {driver} und {rival}, Teamkollegen {seasonsText} – {h2hText}.',
                     'aus Rennen wurde Routine, aus Routine Rivalität: {driver} und {rival} messen sich {seasonsText} – {h2hText}.',
                     'die Akte {driver} gegen {rival} füllt sich {seasonsText}: {h2hText}.',
-                    'kaum ein internes Duell hat mehr Kapitel: {driver} und {rival}, {seasonsText} – {h2hText}.'
+                    'kaum ein internes Duell hat mehr Kapitel: {driver} und {rival}, {seasonsText} – {h2hText}.',
+                    'diese Rechnung ist über Jahre gewachsen: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'wer den einen verstehen will, muss den anderen kennen: {driver} und {rival}, {seasonsText} Seite an Seite – {h2hText}.',
+                    'ein Duell wie ein Fortsetzungsroman: {driver} gegen {rival}, neues Kapitel, alter Stand – {seasonsText}, {h2hText}.'
                 ],
                 e76: [
                     'diese Rivalität hat Patina: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
                     '{seasonsText} teilen sich {driver} und {rival} nun schon die Garage – der Zwischenstand: {h2hText}.',
                     'was als Stallduell begann, ist längst ein Dauerbrenner: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
                     'im Team kennt jeder diese Konstellation: {driver} und {rival}, aneinander gemessen {seasonsText} – {h2hText}.',
-                    'zwei Teamkollegen, eine lange Geschichte: {seasonsText} läuft dieses Duell nun – {h2hText}.'
+                    'zwei Teamkollegen, eine lange Geschichte: {seasonsText} läuft dieses Duell nun – {h2hText}.',
+                    'die beiden können nicht ohne einander – und nicht miteinander: {driver} und {rival}, {seasonsText} – {h2hText}.',
+                    'jede Saison dieselbe Frage, nie dieselbe Antwort: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'dieses Duell hat mehr Staffeln als mancher Vertrag Jahre: {driver} und {rival}, {seasonsText} – {h2hText}.'
                 ],
                 e94: [
                     'dieses Duell hat eine eigene Statistik-Seite verdient: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
                     'die Langzeit-Bilanz spricht Bände: {driver} und {rival} messen sich {seasonsText} – {h2hText}.',
                     'kaum zwei Fahrer kennen die Daten des anderen besser: {driver} und {rival}, Teamkollegen {seasonsText} – {h2hText}.',
                     'ein Duell mit Historie: {seasonsText} vergleichen sich {driver} und {rival} nun im selben Material – {h2hText}.',
-                    'im Archiv dieses Teams füllt das Duell zwischen {driver} und {rival} ganze Ordner: {seasonsText}, {h2hText}.'
+                    'im Archiv dieses Teams füllt das Duell zwischen {driver} und {rival} ganze Ordner: {seasonsText}, {h2hText}.',
+                    'die Datenbank kennt kein älteres offenes Duell: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
+                    'zwei Karrieren, ein roter Faden: {driver} und {rival} vergleichen sich {seasonsText} – {h2hText}.',
+                    'wer Langzeitstudien mag, findet hier die beste: {driver} gegen {rival}, {seasonsText} – {h2hText}.'
                 ],
                 e10: [
                     'dieses Stallduell ist ein Dauerbrenner: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
                     '{driver} und {rival} kennen jede Stärke und jede Schwäche des anderen – {seasonsText} im selben Team, {h2hText}.',
                     'die Langzeit-Rivalität im eigenen Haus: {seasonsText} messen sich {driver} und {rival} nun schon – {h2hText}.',
                     'kaum ein Duell hat mehr Datenpunkte: {driver} gegen {rival}, {seasonsText} – {h2hText}.',
-                    'manche Paarungen halten länger als andere: {driver} und {rival}, {seasonsText} – {h2hText}.'
+                    'manche Paarungen halten länger als andere: {driver} und {rival}, {seasonsText} – {h2hText}.',
+                    'ein Klassiker im eigenen Team: {driver} vs. {rival}, {seasonsText} – {h2hText}.',
+                    'die Story schreibt sich weiter: {driver} und {rival}, {seasonsText} im Duell – {h2hText}.',
+                    'zwischen diesen beiden gibt es keine Geheimnisse mehr, nur Zwischenstände: {seasonsText}, {h2hText}.'
                 ]
             }
         };
@@ -23296,6 +23505,17 @@
             // VOR dem 0-Meldungs-Pass (v0.9.17.25): erst das Team-Programm stuetzen, dann
             // die Fahrer aussortieren, die trotzdem nichts melden. Andersherum haette der
             // Pass dem Team den letzten Fahrer genommen, bevor der Stuetzpunkt greift.
+            // L1 EIN ZWEITES MAL (v0.9.17.30): zwischen dem ersten Lauf in
+            // assignPrivateerSchedules und dieser Stelle haben Schwanz-Fueller,
+            // Mindestwagen-Regel, Grid-Fueller und die beiden Nachkontrollen weitere
+            // Sitze vergeben — teils an Fahrer ganz ohne Meldeplan, was „jedes Rennen"
+            // bedeutet. Ohne diesen zweiten Trimm meldete ein Rennstall mit einer
+            // einzigen realen Saison-Teilnahme im ganzen Kalender.
+            {
+                const _cal = (GAME_STATE.races || []).filter(r => !r.isIndy && r.circuitId);
+                if (_cal.length) applyTeamPresenceToPlans(GAME_STATE.teams, GAME_STATE.drivers,
+                    _cal, _cal.map(r => r.circuitId.toLowerCase()), newYear, true);
+            }
             stabilizeConstructorPresence(newYear);
             pruneZeroEntryDrivers(newYear);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
