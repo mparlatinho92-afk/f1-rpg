@@ -1,6 +1,7 @@
 # Werksfahrer-Kaskade — Bauplan
 
-Stand 30.08.2026, nach v0.9.17.25. Nutzer-Auftrag:
+**Stufen 1–4 umgesetzt in v0.9.17.27.** Bauplan vom 30.08.2026, mit den Ergebnissen der
+Umsetzung aktualisiert. Nutzer-Auftrag:
 
 > „wenn ein team ohne werksfahrer dasteht, sollte es als fallback jeden privateer in
 > werksfahrer umwandeln. aber nicht immer, eher eine kaskade, je wichtiger/stärker das team,
@@ -27,24 +28,38 @@ Konstrukteur und Saison), Testfahrer ausgeschlossen.
 
 ### Anteil der Team-Saisons **ohne Stammfahrer**
 
-| Größe (Lebenszeit-Starts) | real, alle Ären | real 1950–64 | Spiel 1950–64 |
+| Größe (Lebenszeit-Starts) | real 1950–79 | Spiel vorher | Spiel nach v0.9.17.27 |
 |---|---|---|---|
-| groß (200+) | **0,9 %** | 2,6 % | **18,4 %** |
-| mittel (60–199) | 10,8 % | 26,7 % | 23,3 % |
-| klein (20–59) | 11,5 % | 15,0 % | 40,0 % |
-| winzig (<20) | 9,5 % | 9,2 % | 18,5 % |
+| groß (200+) | 2,8 % | 9,9 % | **7,0 %** |
+| mittel (60–199) | 20,0 % | 22,4 % | **20,0 %** ✅ |
+| klein (20–59) | 13,9 % | 27,8 % | 30,6 % |
+| winzig (<20) | 9,8 % | 15,4 % | 16,0 % |
+
+⚠ **KORREKTUR.** Die erste Fassung dieses Plans nannte „groß 18,4 % gegen real 0,9 %". Das war
+falsch — ein Definitionsfehler: Die F1DB-Referenz zählt **Meldungen** (`rounds`, einschließlich
+der Nichtqualifizierten), die erste Spielmessung zählte nur **Starter** aus `res[]`. Damit stand
+Starter gegen Meldung, und der Abstand war ein Artefakt. Seit der Korrektur liest die
+Spielmessung `res` **und** `tms`. Genau davor warnt Abschnitt 5 dieses Plans — ich bin trotzdem
+hineingelaufen, weil die Definition in der Referenz implizit war.
 
 Nach Dekade (alle Größen): 1950er 11,2 % · 1960er 7,6 % · 1970er 9,8 % · 1980er 6,1 % ·
 ab 1990 praktisch null.
 
-### Zwei Befunde, die den Bauplan bestimmen
+### Befunde
 
-1. **Im Spiel existiert die Kaskade überhaupt nicht.** Ein großer Konstrukteur steht mit
-   18,4 % ohne Stammfahrer da, ein Kleinstkonstrukteur mit 18,5 % — identisch. In der
-   Wirklichkeit trennen die beiden Welten um den Faktor 10.
-2. **Die reale Kurve ist zweistufig, nicht vierstufig.** Winzig, klein und mittel liegen alle
-   um 10 %; nur „groß" bricht auf ein Zehntel ein. Eine Regel mit **einer** harten Schwelle
-   trifft die Daten besser als eine feine Abstufung.
+1. **Die reale Kurve ist zweistufig, nicht vierstufig.** Winzig, klein und mittel liegen um
+   10–20 %; nur „groß" bricht auf ein Zehntel ein. Eine Regel mit **einer** harten Schwelle
+   trifft die Daten besser als eine feine Abstufung. So ist sie gebaut.
+2. **Der Plan-Hebel ist begrenzt.** Eingegriffen wird am Saisonstart in den MELDEPLAN,
+   gemessen wird die GEFAHRENE Saison. Dazwischen liegen Todesfälle, Entlassungen und
+   Wechsel. Der Auslöser wurde deshalb von 80 auf 95 % verschärft (wer nicht fast das ganze
+   Programm im Plan hat, gilt nicht als gedeckt) — das brachte einen halben Punkt, dann war
+   der Hebel erschöpft.
+3. **Was bei „groß" übrig bleibt (7,0 gegen 2,8 %), sind Teams, die ihren Stammfahrer mitten
+   in der Saison verlieren.** Das ist eine andere Mechanik — die Entlassungs- und Todesrate
+   bei Spitzenteams — und gehört nicht in dieses Paket.
+4. **„klein" trägt keine Aussage:** 36 Team-Saisons, einzelne Läufe schwankten zwischen 15 %
+   und 45 %. Vor jeder Aussage über dieses Band die Stichprobe vergrößern.
 
 ---
 

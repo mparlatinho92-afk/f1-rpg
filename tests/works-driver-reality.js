@@ -132,18 +132,25 @@ if (process.argv.includes('--spiel')) {
         ctx.startNewSeason();
         const h = (ctx.GAME_STATE.history || []).find(x => x.year === jahr);
         if (!h) continue;
-        // Runden je Team und Fahrer aus den archivierten Ergebnissen - GP und Indy,
-        // genau wie die F1DB-Referenz (die Indy-Jahre 1950-60 stehen dort mit drin).
+        // ⚠ MELDUNGEN, NICHT STARTER. Die F1DB-Referenz zaehlt `rounds` je Fahrer und
+        // Konstrukteur - das sind die Runden, fuer die GEMELDET wurde, einschliesslich
+        // der nicht qualifizierten. Wer hier nur `res` liest, misst Starter gegen
+        // Meldungen und bekommt eine Scheindifferenz. Genau das passierte beim ersten
+        // Versuch: die Kaskade sah aus, als mache sie alles schlimmer, weil ein
+        // befoerderter Fahrer zwar meldet, aber in den 1950ern oft nicht qualifiziert.
+        // `tms` (seit v0.9.17.23) nennt den Rennstall der Nichtqualifizierten.
         const teams = {};
         for (const race of (h.results || [])) {
             const ri = race.ri ?? 0;
-            for (const e of (race.res || [])) {
-                if (!e.tmn || !e.d) continue;
-                const key = String(e.tmn).toLowerCase();
+            const merke = (tn, did) => {
+                if (!tn || !did) return;
+                const key = String(tn).toLowerCase();
                 const t = teams[key] || (teams[key] = { runden: new Set(), fahrer: {} });
                 t.runden.add(ri);
-                (t.fahrer[e.d] = t.fahrer[e.d] || new Set()).add(ri);
-            }
+                (t.fahrer[did] = t.fahrer[did] || new Set()).add(ri);
+            };
+            for (const e of (race.res || [])) merke(e.tmn, e.d);
+            for (const [did, tn] of Object.entries(race.tms || {})) merke(tn, did);
         }
         for (const [nm, t] of Object.entries(teams)) {
             const tr = t.runden.size; if (!tr) continue;
