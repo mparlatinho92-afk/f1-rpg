@@ -41,7 +41,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
    (Rezept: `name-data/analysis/pyramid-300kart-nation-demand.md`, Blob-Umbau als Schritt 0).
 2. **Paket I:** Kaggle-Ablösung offen; bekannte Grenzen: ITA vor 1999 kuratiert, GBR ohne Schottland.
 3. **Paket J:** Cape-Coloured-Anteil RSA r0 18,9 % (zu hoch).
-4. **Paket C (Alt-Paket):** Obituary-Text fehlt noch im Nekrolog-Tab. (Bank selbst erweitert v0.9.17.29: OBIT_BANK 174 → 256 Zeilen, alle open-Pools auf 10–12, Werdegang-Pools +2 je Kategorie.)
+4. ~~**Paket C (Alt-Paket):** Obituary-Text fehlt noch im Nekrolog-Tab~~ — **eingebaut v0.9.17.31** (`_necroObit`, gleiche Regeneration wie Off-Season-Modal). Bank zuvor erweitert v0.9.17.29 (174 → 256 Zeilen).
 5. **Paket 7:** Fix N5 nicht auffindbar — bei Gelegenheit gegen `paket7-tuning/REPORT.md` prüfen.
 
 ## Frühere Pakete (bereits eingebaut)
