@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.24</title>
+    <title>F1 RPG v0.9.17.25</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.24 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.25 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; FIX: Die WM-Tabellen enthielten Fahrer und Teams ohne ein einziges Rennen - im Spielstand 513 von 2969 Fahrerzeilen, was die WM-Raenge verzerrte</div>
+                            <div>&#8226; NEU: Konstrukteure sacken nicht mehr grundlos vom Vollprogramm auf ein paar Rennen ab - der Nachruecker erbt jetzt das Programm des Sitzes statt seinen eigenen Meldeplan mitzubringen</div>
+                            <div>&#8226; FIX: Konstrukteure starteten ohne einen einzigen Wagen in die Saison, weil die Aushilfen des Vorjahres erst NACH dem Sitzfueller zurueckgegeben wurden</div>
+                            <div>&#8226; FIX: Meldeliste der Saisonuebersicht zeigte keine Fahrer, wenn alle im Lauf des Jahres weiterzogen, und Fahrer erschienen dort mit ihrer internen Kennung statt mit Namen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.24 - 30.08.2026</div>
                             <div>&#8226; FIX: Konstrukteurs-Wertung zeigte keine Fahrer, wenn alle im Lauf der Saison weiterzogen - Hesketh 1974 stand leer da, obwohl Jochen Mass sieben Rennen fuer sie fuhr</div>
                             <div>&#8226; FIX: Im Team-Steckbrief fehlten ganze Saisons im Renn-Raster, sobald am Saisonende kein Fahrer mehr im Kader stand</div>
                             <div>&#8226; FIX: Teams ohne einen einzigen Start zeigen ihre gemeldeten Fahrer aus der Wertungstabelle</div>
@@ -17340,7 +17345,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.24';
+        const VERSION = '0.9.17.25';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -21765,6 +21770,67 @@ const CIRCUIT_LAYOUTS = {
             });
         }
 
+        // === EIN KONSTRUKTEUR STUERZT NICHT UEBER NACHT AB (v0.9.17.25) ===
+        // Zwei Regeln, beide auf Wunsch des Nutzers: „teams eigentlich davor schuetzen,
+        // dass sie entweder als vollkonstrukteur zum kleinstkonstrukteur oder vom
+        // kleinstkonstrukteur zum voelligen aussetzen der saison fuehren."
+        //
+        // (1) AUSSETZEN IST NIE ERLAUBT. Wer im Feld steht, meldet mindestens ein Rennen.
+        //     Das Gegenstueck zum 0-Meldungs-Pass, der dasselbe fuer FAHRER sichert.
+        //     Ohne diese Regel stand ein Konstrukteur in der Tabelle, ohne je anzutreten.
+        //
+        // (2) DER ABSTURZ VOM VOLLPROGRAMM WIRD SELTENER, NICHT UNMOEGLICH. Gemessen an
+        //     F1DB (TEAM_PRESENCE, 685 Uebergaenge): 1,5 % der Teams, die >= 80 % des
+        //     Kalenders bestritten und im Folgejahr noch dabei waren, fielen auf <= 50 %
+        //     - Cooper 1954, Vanwall 1959, March 1978, ein Rennstall im Niedergang. Im
+        //     Spielstand des Nutzers waren es 13 von 270, also 4,8 % - dreimal zu viel.
+        //     Ein hartes Verbot waere deshalb falsch; zwei von drei Abstuerzen werden
+        //     zurueckgenommen, der Rest bleibt als echte Erosion stehen.
+        //     WICHTIG: Der Wurf haengt am TEAM und wird EINMAL JE SAISON gezogen - nicht
+        //     je Aufruf, sonst zittert die Entscheidung wie der Kleinstkonstrukteur-Wurf
+        //     vor v0.9.16.10.
+        function stabilizeConstructorPresence(year) {
+            const cal = (GAME_STATE.races || []).filter(r => !r.isIndy && r.circuitId);
+            if (!cal.length) return 0;
+            let geholfen = 0;
+            for (const t of (GAME_STATE.teams || [])) {
+                if (isIndyOnlyConstructor(t.id) || isIndyOnlyConstructor(t.histId)) continue;
+                const kader = (GAME_STATE.drivers || []).filter(d =>
+                    d.team === t.id && (!d.status || d.status === 'active'));
+                if (!kader.length) continue;   // ohne Fahrer hilft kein Meldeplan
+                const meldet = cal.filter(r => kader.some(d => privateerEntersRace(d, r))).length;
+                const anteil = meldet / cal.length;
+                const vorher = typeof t._vollsaisonAnteil === 'number' ? t._vollsaisonAnteil : null;
+
+                const aussetzer = meldet === 0;
+                const absturz = !aussetzer && vorher !== null && vorher >= 0.8 && anteil <= 0.5;
+                if (!aussetzer && !absturz) continue;
+                if (absturz) {
+                    // Ein Drittel der Abstuerze darf stehen bleiben (s. oben).
+                    if (t._erosionRoll == null || t._erosionYear !== year) {
+                        t._erosionRoll = Math.random();
+                        t._erosionYear = year;
+                    }
+                    if (t._erosionRoll < 0.33) continue;
+                }
+                // Der staerkste Fahrer bekommt das Programm zurueck: beim Aussetzer
+                // wenigstens ein Rennen, beim Absturz den vollen Kalender (scheduledRaces
+                // = null heisst in privateerEntersRace "Werksfahrer, jedes Rennen").
+                const chef = kader.slice().sort((a, b) => (b.pace || 0) - (a.pace || 0))[0];
+                if (chef._homeOnlyCurated || chef.homeOnly) continue;   // geprueft, nie verbiegen
+                if (absturz) {
+                    chef.scheduledRaces = null;
+                } else {
+                    const n = Math.max(1, Math.round(cal.length * 0.25));
+                    const ids = cal.map(r => r.circuitId.toLowerCase());
+                    chef.scheduledRaces = _pickPrivateerRaces(n, cal, year).map(i => ids[i]);
+                }
+                geholfen++;
+                logInfo('TEAM', `${t.name}: Meldeplan gestuetzt (${aussetzer ? 'kein Rennen' : Math.round(anteil * 100) + ' % nach ' + Math.round(vorher * 100) + ' %'})`);
+            }
+            return geholfen;
+        }
+
         // GAME_STATE-Variante (startNewSeason): entfernte Fahrer → Reserve-Pool.
         function pruneZeroEntryDrivers(year) {
             const removed = _findZeroEntryDrivers(GAME_STATE.drivers, GAME_STATE.teams, GAME_STATE.races);
@@ -22045,6 +22111,58 @@ const CIRCUIT_LAYOUTS = {
         // abgelesen. Kein Würfel — Grundphilosophie „perfekter Plan vor der Saison".
         // Frühere Zufallszweige (homeOnly 80 %, activityRate) sind raus; sie konnten
         // 0 Meldungen erzeugen und machten den Plan un-deterministisch.
+        // === KEINE TABELLENZEILE OHNE TEILNAHME (v0.9.17.25) ===
+        // Gegenstueck zu `_standingsZeile`: das garantiert JEDEM Teilnehmer eine Zeile.
+        // Die Gegenrichtung fehlte — Zeilen entstehen schon bei der SITZVERGABE, lange
+        // bevor gefahren wird. Wer danach wieder aus dem Feld faellt (0-Meldungs-Pass,
+        // Landsmann- oder Indy-Nachkontrolle, Team zurueckgezogen), liess seine Zeile
+        // zurueck: ein Fahrer, den kein Rennen und kein Kader kennt, aber die WM-Tabelle.
+        // Renault 1979 bekam so Moreno und Villeneuve, Phillips 1954 Joie Chitwood —
+        // alle mit null Starts und null Nichtqualifikationen (Nutzer-Report: „die fahrer
+        // selbst lehnen renault ab"). Im Spielstand: 8 solcher Zeilen in 36 Saisons.
+        // Zweitens: fuenf Stellen legen Zeilen OHNE `name` an — der fehlende Name schlug
+        // als rohe ID durch (Patrese 1979). Hier wird er aus dem Kader ergaenzt.
+        function _bereinigteWertung(standings, compressedResults, seasonDrivers) {
+            const teilgenommen = new Set();
+            for (const r of (compressedResults || [])) {
+                for (const e of (r.res || [])) if (e.d) teilgenommen.add(e.d);
+                for (const id of [...(r.dnq || []), ...(r.dns || []), ...(r.dnpq || [])]) teilgenommen.add(id);
+            }
+            const name = id => (seasonDrivers || []).find(d => d.id === id)?.name || null;
+            const out = {};
+            for (const [id, v] of Object.entries(standings || {})) {
+                // Punkte oder Rennen aus einer anderen Quelle zaehlen ebenfalls als Teilnahme —
+                // lieber eine Zeile zu viel behalten als eine echte Karriere zerschneiden.
+                const zaehlt = teilgenommen.has(id) || (v && ((v.points || 0) > 0 || (v.races || 0) > 0));
+                if (!zaehlt) continue;
+                out[id] = (v && v.name) ? v : { ...v, name: (v && v.name) || name(id) || id };
+            }
+            return out;
+        }
+
+        // Dasselbe fuer Konstrukteure (v0.9.17.25). Ein Team, das kein einziges Mal
+        // gemeldet hat, gehoert nicht in die Konstrukteurs-Wertung - es belegte dort
+        // sonst einen WM-Rang vor Teams, die tatsaechlich gefahren sind.
+        // Der Abgleich laeuft ueber den KLARNAMEN, weil `res[].tmn` und `tms` den Namen
+        // fuehren, die Wertung aber nach Team-ID schluesselt.
+        function _bereinigteTeamWertung(standings, compressedResults, seasonTeams) {
+            const dabei = new Set();
+            for (const r of (compressedResults || [])) {
+                for (const e of (r.res || [])) if (e.tmn) dabei.add(String(e.tmn).toLowerCase());
+                for (const tn of Object.values(r.tms || {})) if (tn) dabei.add(String(tn).toLowerCase());
+            }
+            const out = {};
+            for (const [id, v] of Object.entries(standings || {})) {
+                const t = (seasonTeams || []).find(x => x.id === id);
+                const namen = [v && v.name, t && t.name, t && t.histId, id]
+                    .filter(Boolean).map(x => String(x).toLowerCase());
+                // Punkte zaehlen als Teilnahme - lieber eine Zeile zu viel behalten.
+                if (!namen.some(n => dabei.has(n)) && !(v && (v.points || 0) > 0)) continue;
+                out[id] = v;
+            }
+            return out;
+        }
+
         // === DER RENNSTALL GEHOERT ZUR MELDUNG (v0.9.17.23) ===
         // Das Rennergebnis traegt sein Team in `tmn` mit — DNQ, DNS und DNPQ sind blosse
         // ID-Listen. Beim Archivieren geht der Rennstall damit verloren, und die Anzeige
@@ -22388,6 +22506,24 @@ const CIRCUIT_LAYOUTS = {
                 picked.isReserve = false;
                 picked.team = teamId;
                 picked.contractEnd = picked.contractEnd || (year + 1);
+                // === DER NACHRUECKER ERBT DAS PROGRAMM DES SITZES (v0.9.17.25) ===
+                // Bisher wurde nur `team` gesetzt — der Ersatzmann brachte seinen EIGENEN
+                // Meldeplan mit. Ein Werksfahrer faellt aus, der Nachrueckende ist ein
+                // Privatier mit drei geplanten Rennen, und der Rennstall sackt fuer den
+                // Rest der Saison auf ein Drittel ab, obwohl er nie etwas geaendert hat.
+                // Das war der Rest-Weg beim Absturz vom Vollprogramm, den der Plan-Schutz
+                // in stabilizeConstructorPresence nicht sehen kann: er entsteht MITTEN in
+                // der Saison, lange nach der Planvergabe.
+                // Ein leerer Sitz ohne bekannten Vorgaenger bleibt unangetastet.
+                {
+                    const _weg = opts.replacedVictim && opts.replacedVictim.id
+                        ? (GAME_STATE.drivers || []).find(x => x.id === opts.replacedVictim.id)
+                        : null;
+                    if (_weg && !picked._homeOnlyCurated && !picked.homeOnly) {
+                        picked.scheduledRaces = Array.isArray(_weg.scheduledRaces)
+                            ? _weg.scheduledRaces.slice() : null;
+                    }
+                }
                 _mark(picked);
                 _ensureStanding(picked, teamId);
                 if (poachedFromTeamId) {
@@ -32566,9 +32702,19 @@ const CIRCUIT_LAYOUTS = {
                 const seatCount = () => GAME_STATE.drivers.filter(d =>
                     d.team === t.id && (!d.status || d.status === 'active')).length;
 
-                // Nur tatsächlich fahrende Teams (≥1 Fahrer) auffüllen – kein Wiederbeleben
-                // ausgetretener 0-Fahrer-Teams.
-                if (seatCount() < 1) return;
+                // === EIN KONSTRUKTEUR IM FELD HAT MINDESTENS EINEN WAGEN (v0.9.17.25) ===
+                // Hier stand `if (seatCount() < 1) return;` gegen das „Wiederbeleben
+                // ausgetretener 0-Fahrer-Teams". Ausgetretene Teams sind zu diesem
+                // Zeitpunkt aber laengst aus GAME_STATE.teams entfernt (applyTeamExits
+                // filtert sie raus) — die Regel traf deshalb nur noch Teams, die sehr wohl
+                // antreten sollten und ihre Fahrer nur gerade verloren hatten. Sie starteten
+                // dann ohne einen einzigen Wagen in die Saison: im Spielstand des Nutzers
+                // Renault 1979, gemessen ausserdem March 1978 und Shannon 1966.
+                // Nutzer: „renault sollte gerade in so einem starken jahr nicht einfach gar
+                // nicht antreten."
+                // AUSNAHME Indy: dort ist ein leerer Kader der Normalfall — die Cockpits
+                // fuellt fillIndyEntryList am Rennwochenende aus dem Indy-Kreis.
+                if (seatCount() < 1 && teamIsIndy) return;
 
                 // Ein-Fahrer-Konstrukteure NICHT auf zwei auffuellen (v0.9.16.8) — bei
                 // ihnen hat es ein zweites Cockpit nie gegeben, s. isSingleSeatConstructor.
@@ -35241,6 +35387,28 @@ const CIRCUIT_LAYOUTS = {
                 }
                 const _seasonTeams = GAME_STATE._seasonEndSnapshot?.teams || JSON.parse(JSON.stringify(GAME_STATE.teams));
 
+                // === WIEVIEL VOM KALENDER HAT DAS TEAM BESTRITTEN? (v0.9.17.25) ===
+                // Wird auf das LEBENDE Team-Objekt geschrieben (nicht in den Snapshot) und
+                // ueberlebt damit in die naechste Saison. `stabilizeConstructorPresence`
+                // braucht diese Zahl, um zu erkennen, ob ein Konstrukteur gerade von einem
+                // Vollprogramm auf eine Handvoll Rennen abstuerzt. Indy zaehlt nicht mit —
+                // dort meldet ohnehin fillIndyEntryList.
+                {
+                    const _gpRennen = compressedResults.filter(r => !/Indianapolis/i.test(r.rn || ''));
+                    const _dabei = {};
+                    for (const r of _gpRennen) {
+                        const gesehen = new Set();
+                        for (const e of (r.res || [])) if (e.tmn) gesehen.add(String(e.tmn).toLowerCase());
+                        for (const tn of Object.values(r.tms || {})) if (tn) gesehen.add(String(tn).toLowerCase());
+                        for (const tn of gesehen) _dabei[tn] = (_dabei[tn] || 0) + 1;
+                    }
+                    const _n = _gpRennen.length || 1;
+                    for (const t of (GAME_STATE.teams || [])) {
+                        const k = String(t.name || '').toLowerCase();
+                        t._vollsaisonAnteil = (_dabei[k] || 0) / _n;
+                    }
+                }
+
                 // Paket C: Fahrer-Kontext für Nachruf-Regeneration im Off-Season-Popup
                 // LEICHT einfrieren (~40 Bytes/Eintrag) — GAME_STATE.drivers/allTimeStATS
                 // sind Jahrzehnte später nicht garantiert (Pruning/Drift), die History schon.
@@ -35295,8 +35463,14 @@ const CIRCUIT_LAYOUTS = {
                     // in normalen Saisons). Die Chronik hat sonst keinen Zugriff auf `tmn`.
                     teamSpans: _computeTeamSpans(compressedResults),
                     // Standings
-                    driverStandings: JSON.parse(JSON.stringify(GAME_STATE.driverStandings)),
-                    teamStandings: JSON.parse(JSON.stringify(GAME_STATE.teamStandings)),
+                    // Phantom-Zeilen raus, fehlende Namen rein (v0.9.17.25, s. _bereinigteWertung)
+                    driverStandings: _bereinigteWertung(
+                        JSON.parse(JSON.stringify(GAME_STATE.driverStandings)), compressedResults, _seasonDrivers),
+                    // Auch Teams: keine Wertung ohne Teilnahme (v0.9.17.25, Nutzer-Regel
+                    // „rennergebnisse sind voraussetzung fuer wertungen"). Ein Konstrukteur,
+                    // der kein einziges Mal gemeldet hat, belegte sonst einen WM-Rang.
+                    teamStandings: _bereinigteTeamWertung(
+                        JSON.parse(JSON.stringify(GAME_STATE.teamStandings)), compressedResults, _seasonTeams),
                     // Fahrer/Teams für Steckbriefe - SNAPSHOT VOR TEAMWECHSELN (mit Zufriedenheit)
                     drivers: _seasonDrivers,
                     teams: _seasonTeams
@@ -35846,6 +36020,16 @@ const CIRCUIT_LAYOUTS = {
             initReservePool(newYear);
             sanitizeReservePool(newYear);
             sanitizeDriverDuplicates(newYear);
+            // === AUSHILFEN RAUS, BEVOR DIE SITZE GEZAEHLT WERDEN (v0.9.17.25) ===
+            // Der Aufruf stand bis hierher HINTER fillEmptyTeamSeats — trotz des eigenen
+            // Kommentars „zuerst in den Pool zurueck". Damit garantierte der Sitzfueller
+            // zwei Fahrer je Team, und gleich danach nahm releaseGridFillers ihm die
+            // Grid-Fueller des Vorjahres wieder weg. Bestand ein Kader nur aus solchen,
+            // startete das Team OHNE EINEN WAGEN in die Saison, und nichts fuellte nach:
+            // im Spielstand des Nutzers Renault 1979, gemessen ausserdem BRM 1977 und
+            // Williams 1979. Die zurueckgegebenen Fahrer landen im Pool und stehen dem
+            // Sitzfueller jetzt zur Verfuegung, statt ihm die Arbeit zu zerstoeren.
+            releaseGridFillers();
             fillEmptyTeamSeats(newYear, true);   // v0.9.15.19: Notnagel-Fills in die Transfer-Chronik aufnehmen
             // ZULETZT und UNBEDINGT: Besitzer-Fahrer gehören in ihr Team, egal was
             // Transfermarkt und Sitzfüller vorher entschieden haben. Muss NACH
@@ -35857,8 +36041,6 @@ const CIRCUIT_LAYOUTS = {
             // damit auch die eben nachgerückten Fahrer erfasst sind. Muss jedes Jahr laufen:
             // der Kalender ändert sich (East London → Kyalami), homeCircuits müssen mitziehen.
             assignGenericHomeOnly(GAME_STATE.drivers, GAME_STATE.races, newYear);
-            // Grid-Füller des Vorjahres zuerst in den Pool zurück (v0.9.15.5).
-            releaseGridFillers();
             // Privateer-Status JEDE Saison neu bestimmen — Kader ändern sich (s. markPrivateers)
             markPrivateers(GAME_STATE.drivers, newYear, GAME_STATE.races);
             // Kuratierte Heimrennen-Melder JEDE Saison neu setzen (v0.9.16.6) — muss NACH
@@ -35891,6 +36073,10 @@ const CIRCUIT_LAYOUTS = {
             // Wer nach der Zuteilung 0 Meldungen hat (homeOnly ohne Heimrennen im
             // Kalender, leerer Plan), gehört nicht in die Meldeliste — raus aus der F1,
             // zurück in den Reserve-Pool. Kein Fahrer mehr, der nur mit Strichen dasteht.
+            // VOR dem 0-Meldungs-Pass (v0.9.17.25): erst das Team-Programm stuetzen, dann
+            // die Fahrer aussortieren, die trotzdem nichts melden. Andersherum haette der
+            // Pass dem Team den letzten Fahrer genommen, bevor der Stuetzpunkt greift.
+            stabilizeConstructorPresence(newYear);
             pruneZeroEntryDrivers(newYear);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
@@ -39136,8 +39322,15 @@ const CIRCUIT_LAYOUTS = {
                 drivers = h.drivers;
             } else if (h.driverStandings) {
                 // Als Object (simulated)
+                // NAME AUS DEM KADER, ROHE ID NUR ALS LETZTES MITTEL (v0.9.17.25).
+                // Fuenf Stellen legen Wertungszeilen OHNE `name` an (die Landsmann- und
+                // Indy-Nachkontrolle, die Sitzvergabe bei Neuzugaengen). Hier stand
+                // `s.name || id` — Riccardo Patrese erschien 1979 deshalb als
+                // „reserve-RICCAR-…" und nur in dieser einen Ansicht (Nutzer-Report).
+                // Im Spielstand des Nutzers betrifft es 8 von 2969 Zeilen.
+                const _kaderName = id => (h.drivers || []).find(d => d.id === id)?.name || null;
                 drivers = Object.entries(h.driverStandings)
-                    .map(([id, s]) => ({ id, name: s.name || id, ...s }))
+                    .map(([id, s]) => ({ id, name: s.name || _kaderName(id) || id, ...s }))
                     .sort((a, b) => (b.points || 0) - (a.points || 0));
             }
             
@@ -39378,9 +39571,32 @@ const CIRCUIT_LAYOUTS = {
                 const _prevHistory = [...(GAME_STATE.history || [])].sort((a, b) => b.year - a.year)[0];
                 const _prevStandings = _prevHistory?.teamStandings || null;
 
+                // === WER FUER DAS TEAM FUHR, STEHT IN DEN RENNEN (v0.9.17.25) ===
+                // `d.team` ist der Kaderstand am SAISONENDE. Ein Team, dessen Fahrer im Lauf
+                // des Jahres alle weiterzogen, stand hier ohne einen einzigen Fahrer:
+                // Hesketh 1974 war leer, obwohl Jochen Mass sieben Rennen fuer sie fuhr,
+                // bevor er zu McLaren ging. Dieselbe Wurzel wie in der Konstrukteurs-Wertung
+                // (v0.9.17.24) — die Meldeliste hier ist nur ein zweiter Renderer, der sie
+                // ebenfalls hatte. Wahrheit pro Rennen ist `res[].tmn`, fuer die Nicht-
+                // qualifizierten seit v0.9.17.23 `tms`.
+                const _rennFahrer = {};   // Team-ID → Set von Fahrer-IDs
+                {
+                    const _tid = {};
+                    for (const t of teamsData) for (const k of [t.id, t.histId, t.name]) if (k) _tid[String(k).toLowerCase()] = t.id;
+                    const _add = (tn, did) => {
+                        const id = _tid[String(tn || '').toLowerCase()];
+                        if (id && did) (_rennFahrer[id] = _rennFahrer[id] || new Set()).add(did);
+                    };
+                    for (const race of (yearData.results || [])) {
+                        for (const r of (race.res || race.results || [])) _add(r.tmn || r.teamName || r.team, r.d || r.driver);
+                        for (const [did, tn] of Object.entries(race.tms || {})) _add(tn, did);
+                    }
+                }
+
                 teamsData.forEach(team => {
+                    const _gefahren = _rennFahrer[team.id] || new Set();
                     const teamDrivers = driversData
-                        .filter(d => d.team === team.id)
+                        .filter(d => d.team === team.id || _gefahren.has(d.id))
                         .map(d => {
                             const standing = yearData.driverStandings?.[d.id] || {};
                             const sHistSeasons = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[d.histId || d.id] || []) : [];
@@ -40135,7 +40351,6 @@ const CIRCUIT_LAYOUTS = {
             // Reihenfolge nach Anzahl der Wochenenden: der Stammfahrer zuerst, der
             // Aushilfe fuer drei Rennen hinten.
             const _stdResults = isHistorical ? (historicalViewData.results || []) : (GAME_STATE.results || []);
-            const _stdStandings = isHistorical ? (historicalViewData.driverStandings || {}) : (GAME_STATE.driverStandings || {});
             const _fahrerAusRennen = {};   // Team-ID → [Fahrer-ID] nach Wochenenden sortiert
             {
                 const _tid = {};   // Klarname/histId/ID in Kleinschrift → Team-ID
@@ -40193,16 +40408,17 @@ const CIRCUIT_LAYOUTS = {
                                         const _ausRennen = (_fahrerAusRennen[t.id] || [])
                                             .map(id => ({ id, name: _namensZeile(id) }))
                                             .filter(x => x.name);
-                                        // Rueckfall 1: die WERTUNGSTABELLE. Sie fuehrt ihr Team je
-                                        // Fahrer und ueberlebt auch in Alt-Staenden, in denen es
-                                        // `tms` noch nicht gab. Rettet Saisons ganz ohne Rennstart —
-                                        // Renault 1979 (Moreno, Villeneuve), Connew 1972, Phillips 1954.
-                                        const _ausTabelle = Object.entries(_stdStandings || {})
-                                            .filter(([, v]) => v && v.team === t.id)
-                                            .map(([id, v]) => ({ id, name: v.name || _namensZeile(id) }))
-                                            .filter(x => x.name);
+                                        // ⚠ KEIN RUECKFALL AUF DIE WERTUNGSTABELLE (zurueckgenommen
+                                        // v0.9.17.25). In .24 stand hier `driverStandings[].team` als
+                                        // mittlere Stufe, um Teams ganz ohne Rennstart zu retten. Das
+                                        // war falsch: Renault 1979 (Moreno, Villeneuve), Phillips 1954
+                                        // (Chitwood), Connew 1972 und Kojima 1976 haben NULL Starts UND
+                                        // null Nichtqualifikationen — es sind Tabellenreste, keine
+                                        // Fahrer. Der Rueckfall belebte sie wieder, waehrend Kader,
+                                        // Steckbrief und Fahrerwertung sie zu Recht nicht kannten:
+                                        // eine Ansicht widersprach allen anderen (Nutzer-Report).
+                                        // Die Wurzel sitzt beim Archivieren, s. _bereinigteWertung().
                                         const _quelle = _ausRennen.length ? _ausRennen
-                                            : _ausTabelle.length ? _ausTabelle
                                             : driversList.filter(d => d.team === t.id).map(d => ({ id: d.id, name: d.name }));
                                         driverCells = _quelle
                                             .map(d => `<span class="driver-link" onclick="openDriverProfile('${d.id}')">${d.name}</span>`)
