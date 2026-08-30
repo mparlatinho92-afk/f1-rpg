@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.28</title>
+    <title>F1 RPG v0.9.17.29</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.28 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.29 (aktuell) - 30.08.2026</div>
+                            <div>&#8226; NEU: Nachrufe und Karriere-Abschiede abwechslungsreicher - 256 statt 174 Textbausteine</div>
+                            <div>&#8226; NEU: Eroeffnungen je Kategorie auf 10-12 Varianten, Werdegang-Saetze vertieft</div>
+                            <div class="font-bold text-slate-400">v0.9.17.28 - 30.08.2026</div>
                             <div>&#8226; NEU: Kurzportraets generierter Fahrer deutlich abwechslungsreicher - 434 statt 217 Textbausteine</div>
                             <div>&#8226; NEU: 120 statt 30 Bio-Kombinationen je Archetyp und Aera</div>
                             <div class="font-bold text-slate-400">v0.9.17.27 - 30.08.2026</div>
@@ -17355,7 +17358,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.28';
+        const VERSION = '0.9.17.29';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -21792,6 +21795,26 @@ const CIRCUIT_LAYOUTS = {
             // Titelanwärter — dieselbe Regel wie bei den Mid-Season-Wechseln.
             const teamPace = (teams || []).map(t => t.carSpeed || 70).sort((a, b) => a - b);
             const tMedian = teamPace.length ? teamPace[Math.floor(teamPace.length / 2)] : 70;
+            // === FAHRER-BUDGET KLEINER RENNSTAELLE (v0.9.17.28) ===
+            // Der Schwanz-Fueller zieht je Luecke einen NEUEN Fahrer und ein NEUES Team.
+            // Ueber eine Saison sammelt ein Kleinstkonstrukteur so ein Dutzend Einmal-
+            // Fahrer — Porsche 1957 hatte im Spielstand 17 verschiedene auf 7 Renn-Runden,
+            // elf davon Fueller mit je einem Einsatz. Gemessen an F1DB (verschiedene
+            // Fahrer je Konstrukteur-Saison, 1950-79):
+            //   gross  real 5,63  Spiel 4,74      mittel real 6,47  Spiel 6,06   → passen
+            //   klein  real 3,47  Spiel 6,81      winzig real 3,01  Spiel 4,47   → doppelt
+            // Die Folge war nicht nur eine falsche Zahl: die Renn-Runden des Teams
+            // verteilten sich auf so viele Koepfe, dass kein Stammfahrer mehr uebrig
+            // blieb (33 von 42 Faellen ohne Stammfahrer hatten Fueller im Kader).
+            // Volle Teams werden NICHT beschnitten — dort stimmt die Zahl bereits.
+            // Budget aus den realen Mittelwerten mit Luft nach oben. Ohne die zweite
+            // Stufe weichen die Fueller einfach auf mittelgrosse Teams aus — die stiegen
+            // im ersten Versuch von 6,06 auf 7,85 gegen real 6,47.
+            const _fahrerBudget = t => {
+                const k = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+                return (CONSTRUCTOR_TINY.has(k) || CONSTRUCTOR_SMALL.has(k)) ? 4 : 8;
+            };
+            const _kaderZahl = t => (drivers || []).filter(d => d.team === t.id).length;
             const teamKand = (teams || []).filter(t =>
                 !t.isIndyOnly && !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId) &&
                 (t.carSpeed || 70) <= tMedian &&
@@ -21813,7 +21836,12 @@ const CIRCUIT_LAYOUTS = {
                 const gew = pool.map(d => Math.max(1, 95 - (d.pace || 70)) ** 2);
                 const ersatz = _weightedDraw(pool, gew, 1)[0];
                 if (!ersatz) break;
-                const passend = teamKand.filter(t => _teamNationOk(t, ersatz));
+                // ⚠ Budget HIER pruefen, nicht beim Bau von teamKand: die Liste entsteht
+                // einmal vor der Schleife, waehrend die Fueller erst darin zugeteilt
+                // werden. Beim ersten Versuch stand die Pruefung oben und griff nie —
+                // die Fahrerzahl kleiner Rennstaelle bewegte sich um 0,4 statt um 3.
+                const passend = teamKand.filter(t => _teamNationOk(t, ersatz)
+                    && _kaderZahl(t) < _fahrerBudget(t));
                 if (!passend.length) continue;
                 const team = _weightedDraw(passend, passend.map(t => tGew[teamKand.indexOf(t)]), 1)[0];
                 if (!team) continue;
@@ -22112,7 +22140,27 @@ const CIRCUIT_LAYOUTS = {
             const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
             const _belegt = {};
             activeDrivers.forEach(d => { if (d.team) _belegt[d.team] = (_belegt[d.team] || 0) + 1; });
-            const weighted = pool.map(d => ({ d, weight: (d.pace || 60) + Math.random() * 20 }))
+            // === KONTINUITAETS-BONUS (v0.9.17.28) ===
+            // Diese Auswahl laeuft JE RENNEN und gewichtet mit Pace + Zufall — bei jedem
+            // Rennen gewinnt also ein anderer. Ueber die Saison bekommt ein kleiner
+            // Rennstall dadurch lauter Einmal-Fahrer statt eines wiederkehrenden.
+            // Wer fuer dieses Team in dieser Saison schon gefahren ist, bekommt einen
+            // Bonus GROESSER als die Zufallsspanne — er kommt also verlaesslich wieder.
+            // Die Zahl der MELDUNGEN aendert sich dadurch nicht, nur die Zahl der Koepfe.
+            // Nur fuer kleine Rennstaelle: bei grossen und mittleren stimmt die reale
+            // Fahrerzahl bereits (s. _fahrerBudget in fillGridEntries).
+            const _schonGefahren = new Set();
+            for (const r of (GAME_STATE.results || [])) {
+                for (const e of (r.results || [])) if (e.driver) _schonGefahren.add(e.driver);
+            }
+            const _kleinerStall = tid => {
+                const t = (GAME_STATE.teams || []).find(x => x.id === tid);
+                if (!t) return false;
+                const k = (t.histId || t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+                return CONSTRUCTOR_TINY.has(k) || CONSTRUCTOR_SMALL.has(k);
+            };
+            const weighted = pool.map(d => ({ d, weight: (d.pace || 60) + Math.random() * 20
+                    + ((_schonGefahren.has(d.id) && _kleinerStall(d.team)) ? 30 : 0) }))
                 .sort((a, b) => b.weight - a.weight);
             const fillers = [];
             for (const x of weighted) {
@@ -31385,7 +31433,10 @@ const CIRCUIT_LAYOUTS = {
                         'Der Tod von {name} reißt eine Lücke, die keine Wertung der Welt schließen kann.',
                         '{nameE} ist tot – und mit ihm geht ein Stück {klasseGen}.',
                         'Es gibt Nachrichten, die das Fahrerlager verstummen lassen. Der Tod von {name} ist eine davon.',
-                        'Ein Weltmeister ist gefallen: {nameE} wird {klasseIn} für immer fehlen.'
+                        'Ein Weltmeister ist gefallen: {nameE} wird {klasseIn} für immer fehlen.',
+                        'Die Rennwelt hält den Atem an: {nameE} ist tot – ein Meister, wie ihn jede Epoche nur wenige hat.',
+                        'Um {name} trauern alle, die diesen Sport lieben – Champions wie er prägen mehr als Tabellen.',
+                        '{nameE} hat Maßstäbe gesetzt, an denen sich {klasseNom} noch lange messen wird – nun ist er fort.'
                     ],
                     talent: [
                         '{nameE} starb, bevor seine Geschichte richtig beginnen konnte.',
@@ -31394,7 +31445,10 @@ const CIRCUIT_LAYOUTS = {
                         'Das Schicksal gab {name} nicht die Zeit, die sein Können verdient hätte.',
                         'Er kam, um Geschichte zu schreiben – die Zeit dafür wurde {name} nicht gegeben.',
                         '{nameE} war die Zukunft – nun ist er Vergangenheit, viel zu früh.',
-                        'Manche Karrieren enden, bevor sie richtig beginnen: {nameE} wurde mitten aus dem Aufstieg gerissen.'
+                        'Manche Karrieren enden, bevor sie richtig beginnen: {nameE} wurde mitten aus dem Aufstieg gerissen.',
+                        'Was hätte werden können, bleibt nun für immer Spekulation: {nameE} ist tot.',
+                        'Der Sport verliert {name}, bevor er zeigen durfte, was in ihm steckte.',
+                        'Zu jung, zu früh, zu endgültig: {nameE} kehrt nicht mehr an die Strecke zurück.'
                     ],
                     star: [
                         '{nameE} ist nicht mehr – ein Fahrer, der an seinen besten Tagen jeden schlagen konnte.',
@@ -31403,7 +31457,10 @@ const CIRCUIT_LAYOUTS = {
                         'Der Tod von {name} trifft {klasseNom} mitten ins Herz.',
                         '{nameE} fuhr um Siege – nun fährt das Feld ohne ihn, und es ist ein ärmeres Feld.',
                         'Wieder hat der Sport einen seiner Schnellsten genommen: {name} ist tot.',
-                        'Die Nachricht traf das Fahrerlager wie ein Schlag: {nameE} ist nicht mehr.'
+                        'Die Nachricht traf das Fahrerlager wie ein Schlag: {nameE} ist nicht mehr.',
+                        '{nameE} zählte zu denen, gegen die man sich jeden Erfolg verdienen musste – sein Tod hinterlässt Leere.',
+                        'Eine der schnellsten Hände des Feldes ruht für immer: {nameE} ist tot.',
+                        'Der Kreis derer, die den Unterschied ausmachen, ist kleiner geworden: {name} fehlt.'
                     ],
                     backmarker: [
                         '{nameE} gewann nie ein Rennen – und hatte doch den Respekt aller, die je gegen ihn fuhren.',
@@ -31411,7 +31468,11 @@ const CIRCUIT_LAYOUTS = {
                         'Mit {name} verliert das Feld einen seiner Unermüdlichen – einen, der nie aufgab, auch wenn vorne andere fuhren.',
                         'Nicht jeder Held steht auf dem Podium: {nameE} war einer von denen, die trotzdem jeden Sonntag alles gaben.',
                         '{nameE} fuhr meist abseits des Rampenlichts – vermisst wird er von allen.',
-                        'Die großen Schlagzeilen gehörten anderen – der Respekt des Feldes gehörte {name}.'
+                        'Die großen Schlagzeilen gehörten anderen – der Respekt des Feldes gehörte {name}.',
+                        'Sein Name stand selten oben, aber immer dabei: {nameE} ist tot.',
+                        'Auch die stillen Arbeiter dieses Sports hinterlassen Lücken – die von {name} ist eben aufgerissen.',
+                        '{nameE} fuhr nie um den Sieg – gefehlt hat er trotzdem nie. Bis jetzt.',
+                        'Das Ergebnisblatt kannte ihn hinten, das Fahrerlager überall: {nameE} ist gestorben.'
                     ],
                     generic: [
                         'Der Tod von {name} legt sich wie ein Schatten über das Fahrerlager.',
@@ -31419,7 +31480,11 @@ const CIRCUIT_LAYOUTS = {
                         'Mit {name} verliert der Sport einen der Seinen – zu früh, wie immer.',
                         'Wieder trauert der Rennsport: {nameE} ist tot.',
                         'Das Fahrerlager verliert {name} – und mit ihm eines seiner vertrauten Gesichter.',
-                        'Eine Nachricht, die niemand lesen wollte: {nameE} ist tot.'
+                        'Eine Nachricht, die niemand lesen wollte: {nameE} ist tot.',
+                        'Der Rennsport zahlt seinen Preis wieder einmal in seiner härtesten Währung: {nameE} ist tot.',
+                        'Zwischen zwei Rennwochenenden steht plötzlich das Endgültige: {name} ist nicht mehr.',
+                        '{nameE} war einer von ihnen – heute senkt das Feld den Blick.',
+                        'Kein Ergebnis dieses Jahres wiegt diese Nachricht auf: {nameE} ist tot.'
                     ]
                 },
                 stats: [
@@ -31430,7 +31495,11 @@ const CIRCUIT_LAYOUTS = {
                     'Was bleibt, sind {bilanz} – und Lücken, die keine Zahl beschreibt.',
                     'Die Chronik notiert {bilanz}. Der Rest ist Erinnerung.',
                     'In den Listen stehen ab heute nur noch Zahlen: {bilanz}.',
-                    'Hinter dem Namen stehen von nun an feste Zahlen: {bilanz}. Davor stand ein Leben.'
+                    'Hinter dem Namen stehen von nun an feste Zahlen: {bilanz}. Davor stand ein Leben.',
+                    'Sein Eintrag im Archiv lautet: {bilanz}.',
+                    'Auf dem Papier stehen {bilanz} – auf den Tribünen bleibt mehr.',
+                    'Für die Ewigkeit notiert: {bilanz}.',
+                    'Gezählt wird, was zählbar ist: {bilanz}. Der Rest entzieht sich den Listen.'
                 ],
                 close: [
                     '{klasseNom} verneigt sich.',
@@ -31446,7 +31515,11 @@ const CIRCUIT_LAYOUTS = {
                     'Der Kalender fährt weiter – die Gedanken bleiben bei ihm.',
                     'Manche Runden enden nicht an der Ziellinie.',
                     'Wer ihn fahren sah, wird ihn nicht vergessen.',
-                    'Auf den Tribünen wird sein Name noch lange fallen.'
+                    'Auf den Tribünen wird sein Name noch lange fallen.',
+                    'Die nächste Startaufstellung trägt eine Lücke, die man nicht sieht und jeder kennt.',
+                    'Sein letztes Rennen ist gefahren – vergessen ist keines davon.',
+                    'Die Zeit fährt weiter – die Erinnerung hält an.',
+                    '{klasseNom} hält inne.'
                 ]
             },
             abschied: {
@@ -31457,14 +31530,23 @@ const CIRCUIT_LAYOUTS = {
                         '{nameE} tritt ab – ein Champion verlässt die Bühne aufrecht.',
                         '{nameE} verlässt die Bühne, die er mitgeprägt hat – erhobenen Hauptes.',
                         'Der Abschied eines Champions hat sein eigenes Gewicht: {nameE} beendet seine Karriere.',
-                        'Was für eine Laufbahn da zu Ende geht: {nameE} steigt zum letzten Mal aus.'
+                        'Was für eine Laufbahn da zu Ende geht: {nameE} steigt zum letzten Mal aus.',
+                        'Der Maßstab tritt ab: {nameE} beendet eine Laufbahn, die ihresgleichen sucht.',
+                        '{nameE} geht als das, was nur wenige je werden: als Champion.',
+                        'Ein letzter Boxenfunk, ein letztes Mal Helm ab: {nameE} beschließt seine große Karriere.',
+                        'Die Konkurrenz atmet auf, das Publikum trauert: {nameE} hört auf.'
                     ],
                     talent: [
                         '{nameE} hört auf, lange bevor jemand damit gerechnet hätte.',
                         'Der Rücktritt von {name} kommt früh – manchmal ist der Mut zum Aufhören der größte.',
                         '{nameE} geht, während andere noch auf seine besten Jahre warteten.',
                         'Kaum angekommen, schon wieder fort: {nameE} beendet seine Laufbahn überraschend früh.',
-                        'Nicht jedes Versprechen wird eingelöst: {nameE} hört auf, bevor seine Karriere ihren Zenit fand.'
+                        'Nicht jedes Versprechen wird eingelöst: {nameE} hört auf, bevor seine Karriere ihren Zenit fand.',
+                        'Manche Wege enden, bevor sie ihre Richtung zeigen konnten: {nameE} hört auf.',
+                        '{nameE} verlässt den Sport in einem Alter, in dem andere ankommen.',
+                        'Das Kapitel bleibt kurz, die Frage bleibt lang: Was wäre aus {name} geworden?',
+                        'Der Rücktritt von {name} lässt Raum für Spekulationen – und Bedauern.',
+                        '{nameE} steigt aus, ehe die große Geschichte geschrieben war.'
                     ],
                     star: [
                         '{nameE} nimmt den Helm ab – nach Jahren, in denen er zu den Besten gehörte.',
@@ -31472,14 +31554,23 @@ const CIRCUIT_LAYOUTS = {
                         '{nameE} sagt leise Lebewohl – die Zeiten, in denen er vorne mitfuhr, vergisst hier niemand.',
                         'Das Feld verliert Tempo: {nameE} beendet seine Karriere.',
                         'Nach Jahren in der Spitzengruppe zieht sich {name} zurück – der Sport verliert einen Maßstab.',
-                        '{nameE} tritt ab, solange ihn alle so in Erinnerung haben, wie er war: verdammt schnell.'
+                        '{nameE} tritt ab, solange ihn alle so in Erinnerung haben, wie er war: verdammt schnell.',
+                        'Einer der Schnellen zieht den Schlussstrich: {nameE} hört auf.',
+                        '{nameE} verlässt die große Bühne – seine Duelle bleiben im Gedächtnis.',
+                        'Die Spitzengruppe verliert einen Stammgast: {nameE} tritt zurück.',
+                        'Wenn einer wie {name} geht, verschiebt sich das Gefüge des ganzen Feldes.'
                     ],
                     backmarker: [
                         '{nameE} beendet seine Laufbahn – ohne Siege, aber mit dem Respekt des gesamten Fahrerlagers.',
                         'Nach all den Jahren im Feld verabschiedet sich {name} – so, wie er gefahren ist: ohne großes Aufheben.',
                         'Keine Schlagzeilen, keine Denkmäler – nur Jahre voller ehrlicher Arbeit: {nameE} tritt zurück.',
                         '{nameE} verlässt das Fahrerlager durch den Seiteneingang – so bescheiden, wie er gekommen ist.',
-                        'Das Feld verliert keinen Sieger, aber ein Stück Rückgrat: {nameE} hört auf.'
+                        'Das Feld verliert keinen Sieger, aber ein Stück Rückgrat: {nameE} hört auf.',
+                        'Ohne Fanfaren, mit erhobenem Haupt: {nameE} beendet seine Laufbahn.',
+                        '{nameE} räumt seinen Platz im Feld – verdient hat er sich dort jeden einzelnen Tag.',
+                        'Es gehen auch die, ohne die kein Rennen stattfände: {nameE} tritt zurück.',
+                        'Die Ergebnislisten werden ihn kaum vermissen – das Fahrerlager sehr wohl: {nameE} hört auf.',
+                        'Jahr um Jahr hielt er durch – nun entscheidet {name} selbst, dass es genug ist.'
                     ],
                     gaveup: [
                         '{nameE} hat genug – manchmal ist Aufhören die ehrlichste Entscheidung.',
@@ -31487,7 +31578,11 @@ const CIRCUIT_LAYOUTS = {
                         '{nameE} zieht einen Schlussstrich – der Antrieb war aufgebraucht, der Stolz ist geblieben.',
                         'Irgendwann geht die Rechnung nicht mehr auf: {nameE} zieht die Konsequenz und hört auf.',
                         'Kein Feuerwerk, keine Ehrenrunde: {nameE} geht leise – und vermutlich erleichtert.',
-                        'Der Traum trug nicht mehr: {nameE} beendet seine Karriere.'
+                        'Der Traum trug nicht mehr: {nameE} beendet seine Karriere.',
+                        'Die Luft war raus, und {name} war ehrlich genug, es zuzugeben.',
+                        '{nameE} verabschiedet sich müde, aber im Reinen mit sich.',
+                        'Es gibt keinen Applausabgang – nur die stille Einsicht, dass es Zeit war: {nameE} hört auf.',
+                        'Was einmal Feuer war, wurde Pflicht – {nameE} zieht die richtige Konsequenz.'
                     ],
                     generic: [
                         '{nameE} hängt den Helm an den Nagel.',
@@ -31497,7 +31592,11 @@ const CIRCUIT_LAYOUTS = {
                         'Für {name} endet, was ihn ein Fahrerleben lang getragen hat.',
                         'Wieder verabschiedet sich ein vertrautes Gesicht: {nameE} beendet seine Laufbahn.',
                         'Die Startaufstellung wird sich neu sortieren – ohne {name}.',
-                        '{nameE} zieht den Schlussstrich unter ein Fahrerleben.'
+                        '{nameE} zieht den Schlussstrich unter ein Fahrerleben.',
+                        'Ein Fahrerleben findet sein Ende in Würde: {nameE} tritt ab.',
+                        'Zum letzten Mal rollt sein Wagen in die Garage: {nameE} beendet seine Karriere.',
+                        'Abschiede gehören zum Sport – leicht werden sie nie: {nameE} hört auf.',
+                        'Nach vielen Jahren im Kreis der Fahrer wählt {name} den Ausstieg.'
                     ]
                 },
                 stats: [
@@ -31509,7 +31608,10 @@ const CIRCUIT_LAYOUTS = {
                     'In der Chronik stehen nun endgültige Zahlen: {bilanz}.',
                     '{bilanz} – so liest sich diese Karriere in Zahlen.',
                     'Unterm Strich stehen Zahlen, die bleiben: {bilanz}.',
-                    'Mitnehmen darf er {bilanz} – und alles, was sich nicht zählen lässt.'
+                    'Mitnehmen darf er {bilanz} – und alles, was sich nicht zählen lässt.',
+                    'Der Karrierebogen in Zahlen: {bilanz}.',
+                    'Festgehalten für immer: {bilanz}.',
+                    'Die Anzeigetafel seiner Laufbahn zeigt am Ende: {bilanz}.'
                 ],
                 close: [
                     'Man wird ihn {klasseIn} vermissen.',
@@ -31529,7 +31631,11 @@ const CIRCUIT_LAYOUTS = {
                     'Der Rennsport vergisst schnell, heißt es. Bei ihm wird es dauern.',
                     'Irgendwo wird er zuschauen – und die Hände werden nach einem Lenkrad greifen wollen.',
                     'Zum letzten Mal Helm ab – und Applaus.',
-                    'Die Stoppuhr läuft weiter, nur nicht mehr für ihn.'
+                    'Die Stoppuhr läuft weiter, nur nicht mehr für ihn.',
+                    'Von jetzt an hat der Sonntag wieder Platz für anderes.',
+                    'Die Lichter der Boxengasse gehen für ihn aus – die der Erinnerung nicht.',
+                    'Kein Countdown mehr, kein Startsignal – nur noch Geschichten.',
+                    'Was er mitnimmt, kann ihm keiner nehmen: die Jahre mittendrin.'
                 ]
             }
         };
@@ -32413,14 +32519,18 @@ const CIRCUIT_LAYOUTS = {
                     'Der Weg vom Debüt bis zum Titel war weit: über weite Strecken war er {peakText}.',
                     'Ehe die Krone kam, war er {peakText} – {seasonsText} endet diese Laufbahn.',
                     'Zwischen erstem und letztem Start lag ein weiter Weg: streckenweise war er {peakText}, am Ende ein Champion.',
-                    'Man vergisst über dem Titel leicht die Jahre davor, in denen er {peakText} war – nun, {seasonsText}, ist beides Geschichte.'
+                    'Man vergisst über dem Titel leicht die Jahre davor, in denen er {peakText} war – nun, {seasonsText}, ist beides Geschichte.',
+                    'Der Titel war das Ziel, der Weg dorthin die Geschichte: über Jahre war er {peakText}.',
+                    'Ein Champion fällt nicht vom Himmel: lange war er {peakText}, ehe die Krone kam.'
                 ],
                 ohneZenit: [
                     '{seasonsText} verlässt ein Champion das Feld, das er lange prägte.',
                     'Vom ersten Start bis zum Titel: {seasonsText} schließt sich ein großer Kreis.',
                     'Was als Neulingssaison begann, endet {seasonsText} mit dem Nimbus eines Meisters.',
                     'den Weg vom Herausforderer zum Champion hat er vollendet – {seasonsText}.',
-                    '{seasonsText} legt ein Weltmeister den Helm ab – der Weg dorthin war das eigentliche Denkmal.'
+                    '{seasonsText} legt ein Weltmeister den Helm ab – der Weg dorthin war das eigentliche Denkmal.',
+                    'Am Anfang stand ein Name unter vielen – am Ende steht ein Meister: {seasonsText} schließt sich der Bogen.',
+                    '{seasonsText} geht die Ära eines Champions still zu Ende.'
                 ]
             },
             star: {
@@ -32428,13 +32538,17 @@ const CIRCUIT_LAYOUTS = {
                     '{seasonsText} geht einer der Schnellen – in seinen besten Jahren war er {peakText}.',
                     'Sein Weg kannte klare Höhepunkte: zeitweise war er {peakText}.',
                     'Ehe die Jahre ihren Tribut forderten, war er {peakText} – nun, {seasonsText}, ist Schluss.',
-                    'Der Bogen dieser Laufbahn spannte sich weit – an seinem höchsten Punkt war er {peakText}.'
+                    'Der Bogen dieser Laufbahn spannte sich weit – an seinem höchsten Punkt war er {peakText}.',
+                    '{seasonsText} endet ein Weg, auf dessen Höhe er {peakText} war.',
+                    'Die Erinnerung sortiert gnädig – hängen bleibt die Zeit, in der er {peakText} war.'
                 ],
                 ohneZenit: [
                     '{seasonsText} nimmt ein vertrautes Gesicht der Spitzengruppe den Helm ab.',
                     'Vom hoffnungsvollen Debüt bis heute reicht sein Weg – {seasonsText} endet er.',
                     '{seasonsText} verliert die vordere Region des Feldes einen ihrer Stammgäste.',
-                    'Er gehörte so lange zum Bild an der Spitze, dass man es für selbstverständlich hielt – {seasonsText} ist damit Schluss.'
+                    'Er gehörte so lange zum Bild an der Spitze, dass man es für selbstverständlich hielt – {seasonsText} ist damit Schluss.',
+                    'Er kam als Herausforderer und geht als feste Größe – {seasonsText}.',
+                    '{seasonsText} verabschiedet sich einer, dessen Name lange vorn mitspielte.'
                 ]
             },
             backmarker: {
@@ -32442,13 +32556,17 @@ const CIRCUIT_LAYOUTS = {
                     '{seasonsText} tritt einer ab, der selten vorn, aber immer dabei war – in seinen besten Momenten war er {peakText}.',
                     'Große Schlagzeilen blieben aus, doch in seinen stärksten Rennen war er {peakText}.',
                     '{seasonsText} endet eine Laufbahn der leisen Art – ihr bestes Kapitel: {peakText}.',
-                    'Wer genau hinsah, fand die Glanzpunkte dieser Jahre: zwischenzeitlich war er {peakText}.'
+                    'Wer genau hinsah, fand die Glanzpunkte dieser Jahre: zwischenzeitlich war er {peakText}.',
+                    'Auch eine leise Laufbahn hat ihre helle Stelle: eine Zeit lang war er {peakText}.',
+                    '{seasonsText} endet ein Weg ohne Podestglanz – doch es gab die Tage, an denen er {peakText} war.'
                 ],
                 ohneZenit: [
                     '{seasonsText} verabschiedet sich einer der Unermüdlichen des Mittelfelds.',
                     'Vom ersten bis zum letzten Start blieb er sich treu – {seasonsText} ist die Fahrt vorbei.',
                     'Ausdauer statt Schlagzeilen – {seasonsText} endet ein ehrliches Fahrerleben.',
-                    'Er war da, Jahr für Jahr, Startaufstellung für Startaufstellung – {seasonsText} endet diese Beständigkeit.'
+                    'Er war da, Jahr für Jahr, Startaufstellung für Startaufstellung – {seasonsText} endet diese Beständigkeit.',
+                    'Kein Pokal erzählt von diesen Jahren – erzählen werden trotzdem viele davon: {seasonsText} ist Schluss.',
+                    'Er hat dem Feld nie gefehlt, weil er immer da war – {seasonsText} ändert sich das.'
                 ]
             },
             talent: {
@@ -32456,13 +32574,17 @@ const CIRCUIT_LAYOUTS = {
                     '{seasonsText} ist überraschend früh Schluss – dabei war er {peakText}.',
                     'Kaum entfaltet, schon vorbei: in seiner besten Phase war er {peakText}.',
                     'In guten Momenten war er {peakText} – {seasonsText} endet die Laufbahn zu früh.',
-                    'Die Anlage war unübersehbar – schon früh war er {peakText}.'
+                    'Die Anlage war unübersehbar – schon früh war er {peakText}.',
+                    'Der Bogen blieb kurz, doch er hatte seinen Scheitel: zeitweise war er {peakText}.',
+                    'So schnell die Laufbahn endete – zwischendurch war er bereits {peakText}.'
                 ],
                 ohneZenit: [
                     '{seasonsText} geht ein Talent, dessen Geschichte kaum begonnen hatte.',
                     'Der Weg war kurz, aber vielversprechend – {seasonsText} endet er schon wieder.',
                     '{seasonsText} verliert das Feld ein Versprechen, das unerfüllt bleibt.',
-                    'Was dieser Laufbahn fehlte, war nicht Können, sondern Zeit – {seasonsText} ist sie vorbei.'
+                    'Was dieser Laufbahn fehlte, war nicht Können, sondern Zeit – {seasonsText} ist sie vorbei.',
+                    'Zwischen Ankunft und Abschied lag kaum ein Wimpernschlag – {seasonsText} ist es vorbei.',
+                    '{seasonsText} bleibt vor allem eines zurück: die Ahnung, was möglich gewesen wäre.'
                 ]
             },
             generic: {
@@ -32470,13 +32592,17 @@ const CIRCUIT_LAYOUTS = {
                     '{seasonsText} endet eine Laufbahn, die ihre Kapitel hatte – das beste: {peakText}.',
                     'Ganz ohne Glanz war der Weg nicht: eine Zeit lang war er {peakText}.',
                     '{seasonsText} geht einer, der an guten Tagen {peakText} war.',
-                    'Zwischen Debüt und Abschied lag ein ganzes Fahrerleben – auf dessen Höhe war er {peakText}.'
+                    'Zwischen Debüt und Abschied lag ein ganzes Fahrerleben – auf dessen Höhe war er {peakText}.',
+                    'Jede Laufbahn hat ihre beste Zeit – in seiner war er {peakText}.',
+                    '{seasonsText} endet ein Weg mit Höhen und Tälern – ganz oben war er {peakText}.'
                 ],
                 ohneZenit: [
                     '{seasonsText} schließt sich ein weiteres Kapitel des Fahrerlagers.',
                     'Vom Debüt bis heute war er Teil des Feldes – {seasonsText} ist damit Schluss.',
                     '{seasonsText} verabschiedet sich ein Name, der viele Rennsonntage begleitet hat.',
-                    'Sein erster Start liegt lange zurück – nun, {seasonsText}, ist sein letzter gefahren.'
+                    'Sein erster Start liegt lange zurück – nun, {seasonsText}, ist sein letzter gefahren.',
+                    'Viele Starts, viele Sonntage, ein Ende: {seasonsText} ist es soweit.',
+                    'Die Jahre im Feld haben Spuren hinterlassen – gute wie harte; {seasonsText} endet der Weg.'
                 ]
             },
             gaveup: {
@@ -32484,13 +32610,17 @@ const CIRCUIT_LAYOUTS = {
                     '{seasonsText} zieht er den Schlussstrich – dabei war er einst {peakText}.',
                     'Es gab bessere Zeiten, in denen er {peakText} war – doch der Antrieb schwand.',
                     'Einst war er {peakText} – geblieben ist die Müdigkeit, und {seasonsText} ist Schluss.',
-                    'Wer nur das Ende sieht, unterschätzt den Anfang: es gab Jahre, da war er {peakText}.'
+                    'Wer nur das Ende sieht, unterschätzt den Anfang: es gab Jahre, da war er {peakText}.',
+                    'Dass er einmal {peakText} war, macht den leisen Abgang nicht leichter.',
+                    'Die besten Tage lagen zurück – damals, als er {peakText} war; {seasonsText} lässt er los.'
                 ],
                 ohneZenit: [
                     '{seasonsText} räumt er das Cockpit – ohne Groll, aber ohne Kraft für ein weiteres Jahr.',
                     '{seasonsText} war die Kraft aufgebraucht – er geht.',
                     'Ohne großen Abgang, nur leise, geht er – {seasonsText} ist der Traum auserzählt.',
-                    'Irgendwann wog jedes Rennwochenende schwerer als das davor – {seasonsText} legt er die Last ab.'
+                    'Irgendwann wog jedes Rennwochenende schwerer als das davor – {seasonsText} legt er die Last ab.',
+                    'Irgendwann fährt die Lust nicht mehr mit – {seasonsText} steigt er aus.',
+                    'Der Tank war leer, im übertragenen Sinn – {seasonsText} ist die Fahrt zu Ende.'
                 ]
             }
         };
