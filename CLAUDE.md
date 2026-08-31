@@ -39,6 +39,25 @@ Betrifft mindestens: **`./manage-v`**, **`git push`**, und manuelle Commits, wen
 **Nicht** eigenmächtig pushen oder `manage-v` starten, nur weil ein Task fertig ist – erst die Rückmeldung des Nutzers abwarten.
 **Ausnahme:** Der Nutzer formuliert eindeutig (z.B. „push ausführen”, „ja, manage-v laufen lassen”) – das zählt als Bestätigung.
 
+## Eingriffe außerhalb des Projektordners
+
+Alles, was den Projektordner verlässt, wird **vorher in einem Satz angesagt** — auch
+wenn die Berechtigung es zulässt und keine Rückfrage kommt. Betrifft unter anderem:
+- eine Datei im Standardprogramm öffnen (`Start-Process`, `open`, `xdg-open`)
+- außerhalb des Projekts schreiben (Desktop, Home, Downloads, Systempfade)
+- ein Programm starten, das ein Fenster aufmacht
+- etwas an einen externen Dienst schicken
+
+Grund: Ein Fenster, das von selbst aufgeht, ist ein Schreck, kein Komfort. Nicht der
+Vorgang stört, sondern dass er unangekündigt kommt.
+
+**Ergebnisse liefern statt erwähnen.** Bilder, die Claude selbst betrachtet, sieht der
+Nutzer nicht, und Dateien im Scratchpad findet er nicht. Ein Ergebnis ist erst
+geliefert, wenn es an einem Ort liegt, den der Nutzer kennt, und der Pfad genannt ist.
+
+**Bei Fragen zu Zugriffsrechten:** die tatsächliche Konfiguration lesen und Fakten
+nennen (welche Datei, welcher Eintrag, was folgt daraus) — nicht allgemein beruhigen.
+
 ## Schema-Inventur nach jedem Coding-Task (PFLICHT)
 Nach jedem Task der neue Funktionen hinzufügt:
 1. `./update-functions-index.ps1` ausführen – aktualisiert Zeilennummern + trägt fehlende Funktionen ein
