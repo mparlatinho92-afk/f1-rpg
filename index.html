@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.31</title>
+    <title>F1 RPG v0.9.17.32</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.31 (aktuell) - 30.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.32 (aktuell) - 31.08.2026</div>
+                            <div>&#8226; NEU: Rennnummern wiederholen sich alle zehn Zeilen in der Saison-Matrix - auch nach langem Scrollen bleibt ablesbar das wievielte Rennen eine Spalte ist</div>
+                            <div>&#8226; FIX: Die Renn-Kuerzel zeigten die ersten drei Buchstaben des Veranstaltungsnamens - GRA fuer jeden Grand Prix, 198 fuer jedes Rennen mit Jahreszahl. Jetzt der Laendercode</div>
+                            <div>&#8226; FIX: In simulierten Saisons stand der Teamname weiss statt in der Teamfarbe</div>
+                            <div class="font-bold text-slate-400">v0.9.17.31 - 30.08.2026</div>
                             <div>&#8226; NEU: Der Nekrolog zeigt zu jedem Todesfall den Nachruf-Text - wortgleich mit Saisonende und Off-Season</div>
                             <div>&#8226; FIX: doppelter Changelog-Eintrag v0.9.17.30 zusammengefuehrt</div>
                             <div>&#8226; FIX: Ein erfundener Gastauftritt konnte einen Fahrer zu einem Rennstall setzen, der an dieser Strecke gar nicht gemeldet hatte - Protos trifft 1967 jetzt exakt die Historie</div>
@@ -3820,6 +3824,13 @@
             'European GP':       _WK + 'Flag_of_Europe.svg',
         };
         const GP_COUNTRY_MAP = {
+            // Stadt-benannte Rennen, die der Kalender-Generator erzeugt (v0.9.17.32).
+            // Nutzer: „1989 rio grand prix? brasilien war es doch, oder? also vorrang."
+            // Ohne Eintrag faellt das Matrix-Kuerzel auf den Namen zurueck und zeigt RIO —
+            // eine Stadt, die aussieht wie ein Laendercode.
+            'Rio de Janeiro Grand Prix':'BRA','Rio de Janeiro GP':'BRA',
+            'Sao Paulo Grand Prix':'BRA','Sao Paulo GP':'BRA',
+            'Mexico City Grand Prix':'MEX','Mexico City GP':'MEX',
             'Indianapolis 500':'USA','San Marino GP':'SMR','Emilia Romagna GP':'ITA',
             'Abu Dhabi GP':'UAE','Las Vegas GP':'USA','Saudi Arabian GP':'SAU',
             'South African GP':'RSA','US GP West':'USA','US GP East':'USA',
@@ -3849,7 +3860,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.31';
+        const VERSION = '0.9.17.32';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7155,6 +7166,91 @@
         // mit einer Form 528 Treffer und 4 echte Lücken (alle O.S.C.A.), mit beiden 943
         // von 1047 Team-Saisons. Die restlichen ~100 sind reine INDY-Konstrukteure —
         // die haben korrekt keinen Eintrag, weil der Generator Indy-Runden herausfiltert.
+        // === RENN-KUERZEL IN DER SAISON-MATRIX (v0.9.17.32) ===
+        // Vorher stand hier `circuit.substring(0,3)` auf dem RENN-NAMEN. Das ergab „GRA"
+        // fuer jeden Grand Prix und „198" fuer jedes Rennen, dessen Name mit der
+        // Jahreszahl beginnt - in einer Matrix mit zwanzig Spalten also fast nur
+        // Rauschen. Nutzer: „die kuerzel der rennen sind die ersten drei buchstaben der
+        // rennveranstaltung, das irritiert. besser IOC-kuerzel oder als fallback davon
+        // grand-prix."
+        // Reihenfolge: Nation (IOC) → bekannte Strecke → Name ohne Jahreszahl und ohne
+        // das Gattungswort „Grand Prix" in seinen Sprachvarianten.
+        const RENN_KUERZEL_STRECKE = {
+            'silverstone': 'GBR', 'monaco': 'MON', 'monza': 'ITA', 'spa': 'BEL',
+            'nürburgring': 'GER', 'nurburgring': 'GER', 'reims': 'FRA',
+            'indianapolis': 'IND', 'bremgarten': 'SUI', 'pedralbes': 'ESP',
+            'aintree': 'GBR', 'buenos aires': 'ARG', 'buenos-aires': 'ARG', 'sebring': 'USA',
+            'zandvoort': 'NED', 'pescara': 'ITA', 'casablanca': 'MAR',
+            'avus': 'GER', 'ain diab': 'MAR', 'ain-diab': 'MAR', 'riverside': 'USA',
+            'watkins glen': 'USA', 'watkins-glen': 'USA', 'porto': 'POR', 'monsanto': 'POR',
+            'boavista': 'POR', 'brands hatch': 'GBR', 'brands-hatch': 'GBR', 'mexico': 'MEX',
+            'kyalami': 'RSA', 'mosport': 'CAN', 'mont-tremblant': 'CAN',
+            'jarama': 'ESP', 'montjuic': 'ESP', 'paul ricard': 'FRA', 'paul-ricard': 'FRA',
+            'dijon': 'FRA', 'estoril': 'POR', 'jerez': 'ESP', 'rouen': 'FRA',
+            'adelaide': 'AUS', 'suzuka': 'JPN', 'phoenix': 'USA', 'zolder': 'BEL',
+            'magny-cours': 'FRA', 'budapest': 'HUN', 'interlagos': 'BRA', 'hungaroring': 'HUN',
+            'imola': 'ITA', 'hockenheim': 'GER', 'a1 ring': 'AUT', 'a1-ring': 'AUT',
+            'sepang': 'MAS', 'bahrain': 'BHR', 'shanghai': 'CHN', 'osterreichring': 'AUT',
+            'istanbul': 'TUR', 'valencia': 'EUR', 'abu dhabi': 'ABU', 'yas-marina': 'ABU',
+            'singapore': 'SGP', 'marina bay': 'SGP', 'sochi': 'RUS', 'jacarepagua': 'BRA',
+            'baku': 'AZE', 'portimao': 'POR', 'mugello': 'ITA', 'long-beach': 'USA',
+            'jeddah': 'SAU', 'losail': 'QAT', 'miami': 'USA', 'detroit': 'USA',
+            'las vegas': 'USA', 'las-vegas': 'USA', 'lusail': 'QAT', 'dallas': 'USA',
+            // Moderne Kurse: ohne sie faellt das Kuerzel auf den Streckennamen zurueck
+            // und zeigt MEL statt AUS, CAT statt ESP, SPI statt AUT.
+            'melbourne': 'AUS', 'albert park': 'AUS', 'albert-park': 'AUS',
+            'catalunya': 'ESP', 'barcelona': 'ESP', 'montmelo': 'ESP',
+            'spielberg': 'AUT', 'red bull ring': 'AUT', 'red-bull-ring': 'AUT',
+            'montreal': 'CAN', 'villeneuve': 'CAN', 'hermanos': 'MEX',
+            'austin': 'USA', 'americas': 'USA', 'indianapolis motor': 'USA',
+            'yas marina': 'ABU', 'nevers': 'FRA', 'silverstone circuit': 'GBR',
+            'sakhir': 'BHR', 'shanghai international': 'CHN', 'yeongam': 'KOR',
+            'buddh': 'IND', 'fuji': 'JPN', 'aida': 'JPN', 'okayama': 'JPN',
+            'donington': 'GBR', 'silverstone arena': 'GBR', 'nivelles': 'BEL',
+            'anderstorp': 'SWE', 'zeltweg': 'AUT', 'clermont': 'FRA',
+            'east london': 'RSA', 'east-london': 'RSA', 'prince george': 'RSA'
+        };
+        function raceAbbrLabel(land, circuit, name) {
+            // 1. Die Nation, wenn das Rennen sie kennt. Emoji oder IOC-Code.
+            if (land) {
+                const roh = String(land);
+                const ioc = /^[A-Za-z]{3}$/.test(roh) ? roh.toUpperCase()
+                    : (typeof convertEmojiToIOC === 'function' ? convertEmojiToIOC(roh) : null);
+                if (ioc && /^[A-Z]{3}$/.test(ioc)) return ioc;
+            }
+            const _ok = x => (x && /^[A-Za-z]{3}$/.test(String(x))) ? String(x).toUpperCase() : null;
+            // 2. Die kuratierten Tabellen des Spiels - sie sind die bessere Quelle als jede
+            //    Handliste. CIRCUIT_COUNTRY kennt die Strecke, GP_COUNTRY_MAP den Namen des
+            //    Grand Prix. Nutzer: „1989 rio grand prix? brasilien war es doch, oder? also
+            //    vorrang" - Rio ist eine Stadt, Brasilien die Nation, und die gewinnt.
+            if (circuit && typeof CIRCUIT_COUNTRY !== 'undefined') {
+                const cid = (typeof canonicalCircuitId === 'function') ? canonicalCircuitId(circuit) : circuit;
+                const t = _ok(CIRCUIT_COUNTRY[cid]) || _ok(CIRCUIT_COUNTRY[circuit]);
+                if (t) return t;
+            }
+            if (typeof GP_COUNTRY_MAP !== 'undefined') {
+                const kan = (typeof extractGPCanonical === 'function')
+                    ? extractGPCanonical(String(name || circuit || '')) : null;
+                const t = kan ? _ok(GP_COUNTRY_MAP[kan]) : null;
+                if (t) return t;
+            }
+            // 3. Eigene Strecken-Karte als Rueckfall.
+            if (circuit) {
+                const lc = String(circuit).toLowerCase();
+                for (const [k, v] of Object.entries(RENN_KUERZEL_STRECKE)) if (lc.includes(k)) return v;
+            }
+            // 4. Der Veranstaltungsname, aber ohne Jahreszahl und Gattungswort - sonst
+            //    heisst jede Spalte „GRA".
+            const roh = String(name || circuit || '');
+            const rein = roh
+                .replace(/\b(18|19|20)\d{2}\b/g, ' ')
+                .replace(/grand\s*prix|gran\s*premio|grosser\s*preis|grote\s*prijs|formula\s*1|rac\b|de\b|du\b|d[ei]\b|van\b|der\b/gi, ' ')
+                .replace(/[^A-Za-zÀ-ſ ]/g, ' ')
+                .trim();
+            const w = rein.split(/\s+/).filter(x => x.length > 1);
+            return (w[0] || roh || '???').substring(0, 3).toUpperCase();
+        }
+
         function getTeamPresence(team, year) {
             if (typeof TEAM_PRESENCE === 'undefined' || !team) return null;
             const row = TEAM_PRESENCE[year];
@@ -16338,6 +16434,11 @@
                         p.hasPitted = true;
                         p.tyreLaps = 0;
                         lapTime += 22; // Pit-Stopp Zeit
+                        // {pos} = Position BEIM REINKOMMEN (Stand der letzten abgeschlossenen
+                        // Runde): `idx` stammt aus der Sortierung der Vorrunde, die 22 s des
+                        // Stopps fliessen erst unten in p.totalTime und damit in die Neusortierung
+                        // am Rundenende. Die pit-Texte formulieren deshalb "aktuell P{pos}" /
+                        // "von P{pos} an die Box" — nie den Stand nach dem Stopp. (Paket-7-Report N5)
                         addLiveEvent(liveLine('pit', { driver: p.name, team: team.name, lap, totalLaps, pos: idx + 1, year: GAME_STATE.currentYear }), 'warning');
                     }
                 } else {
@@ -33323,11 +33424,11 @@ Empfohlene Wertebereiche:
                                 // Start gegangen. cellLabel/cellBg kannten 'DNS' laengst, es gab
                                 // nur nie Daten dafuer.
                                 const isDNS2  = (race.dns  || []).includes(driver.id);
-                                if (isDNPQ2 || isDNQ2 || isDNS2) return { circuit: race.raceName, raceId: race.raceIndex, absent: false,
+                                if (isDNPQ2 || isDNQ2 || isDNS2) return { circuit: race.raceName, land: race.raceCountry || null, raceId: race.raceIndex, absent: false,
                                     pos: null, posText: isDNPQ2 ? 'DNPQ' : isDNQ2 ? 'DNQ' : 'DNS', points: 0, fastestLap: false, pole: false };
                                 const result = (race.results||[]).find(r => r.driver === driver.id);
-                                if (!result) return { circuit: race.raceName, raceId: race.raceIndex, absent: true };
-                                return { circuit: race.raceName, raceId: race.raceIndex,
+                                if (!result) return { circuit: race.raceName, land: race.raceCountry || null, raceId: race.raceIndex, absent: true };
+                                return { circuit: race.raceName, land: race.raceCountry || null, raceId: race.raceIndex,
                                     pos: result.dnf ? null : result.position,
                                     posText: result.dnf ? 'Ret' : null,
                                     points: result.points || 0, fastestLap: result.fastestLap || false, pole: false,
@@ -33347,8 +33448,17 @@ Empfohlene Wertebereiche:
                                 .map(([id,s]) => ({id,...s})).sort(getDriverSortFn());
                             const wmPos = (sortedSt.findIndex(d => d.id === driver.id) + 1) || '-';
                             const standing = GAME_STATE.driverStandings?.[driver.id];
+                            const _curFarbe = (() => {
+                                let c = null;
+                                try {
+                                    c = (getTeamColors(_curTeam?.id || '', _currentY, _curTeam?.color) || [])[0] || null;
+                                } catch (e) { c = null; }
+                                return (!c || c === '#888888' || c === '#888') ? null : ensureReadable(c);
+                            })();
                             return { year: _currentY, cells, teamName: _curTeamDisplay,
-                                teamId: _curTeam?.id||null, teamColor: ensureReadable(_curTeam?.color||'#888'),
+                                teamId: _curTeam?.id||null, teamColor: _curFarbe || ensureReadable(_curTeam?.color||'#888'),
+                                teamColorStyle: _curFarbe ? `color:${_curFarbe};font-weight:bold`
+                                                          : 'color:var(--text-muted);font-weight:bold',
                                 wmPos, wmPts: standing?.points||0, simulated: true, isCurrent: true };
                         }
                         // ── Simulierte Saison ────────────────────────────────
@@ -33365,11 +33475,11 @@ Empfohlene Wertebereiche:
                                     const isDNQ2  = (race.dnq  || []).includes(simDriver.id);
                                     const isDNS2  = (race.dns  || []).includes(simDriver.id);
                                     const pt2 = isDNPQ2 ? 'DNPQ' : isDNQ2 ? 'DNQ' : isDNS2 ? 'DNS' : null;
-                                    return { circuit: raceName, raceId: raceIdx, absent: !pt2, pos: null, posText: pt2, points: 0, fastestLap: false, pole: false };
+                                    return { circuit: raceName, land: race.rc || race.raceCountry || null, raceId: raceIdx, absent: !pt2, pos: null, posText: pt2, points: 0, fastestLap: false, pole: false };
                                 }
                                 const isDNF = result.dnf === 1 || result.dnf === true;
                                 return {
-                                    circuit: raceName, raceId: raceIdx,
+                                    circuit: raceName, land: race.rc || race.raceCountry || null, raceId: raceIdx,
                                     pos: isDNF ? null : (result.p || result.position),
                                     posText: isDNF ? 'Ret' : null,
                                     points: result.pt || result.points || 0,
@@ -33398,8 +33508,23 @@ Empfohlene Wertebereiche:
                             const _simPrimaryId = _simTeamsMap.size > 0 ? [..._simTeamsMap.keys()].pop() : simDriver.team;
                             const team = (histSeason.teams||[]).find(t => t.id === _simPrimaryId);
                             const _simTeamDisplay = _simTeamsMap.size > 1 ? [..._simTeamsMap.values()].join(' / ') : (team?.name||'-');
+                            // TEAMFARBE AUCH FUER SIMULIERTE SAISONS (v0.9.17.32). Hier wurde
+                            // `teamColor` gesetzt, aber kein `teamColorStyle` - und genau das
+                            // liest die Zeile. Alle simulierten Jahre standen deshalb in Weiss,
+                            // waehrend die F1DB-Jahre farbig waren (Nutzer-Report).
+                            const _simFarbe = (() => {
+                                let c = null;
+                                try {
+                                    c = (getTeamColors(team?.id || '', year, team?.color) || [])[0] || null;
+                                    if ((!c || c === '#888888' || c === '#888') && typeof getConstructorColor === 'function')
+                                        c = getConstructorColor(team?.histId || team?.id, year);
+                                } catch (e) { c = null; }
+                                return (!c || c === '#888888' || c === '#888') ? null : ensureReadable(c);
+                            })();
                             return { year, cells, teamName: _simTeamDisplay, teamId: team?.id||null,
-                                     teamColor: ensureReadable(team?.color||'#888'),
+                                     teamColor: _simFarbe || ensureReadable(team?.color||'#888'),
+                                     teamColorStyle: _simFarbe ? `color:${_simFarbe};font-weight:bold`
+                                                              : 'color:var(--text-muted);font-weight:bold',
                                      wmPos, wmPts: standing.points||0, simulated: true };
                         }
 
@@ -33468,6 +33593,26 @@ Empfohlene Wertebereiche:
                     if (rows.length === 0) return '';
                     let displayRows = rows;   // wird unten um die Team-Unterzeilen erweitert
 
+                    // === RENNNUMMERN ALLE ZEHN ZEILEN (v0.9.17.32) ===
+                    // Nutzer: „wenn man lang genug nach unten scrollt gibt es keine uebersicht
+                    // mehr, das wievielte rennen es sind."
+                    // Erst versucht mit position:sticky - das war ein Fehlgriff: sticky klebt am
+                    // naechsten Scroll-Container. Im Zellen-Container (overflow-x:auto) scrollt
+                    // nichts senkrecht, also wanderte die Zeile mit weg; ausserhalb davon klebte
+                    // sie am Fenster und schwebte ueber dem Titel, auch wenn die Matrix laengst
+                    // weggescrollt war. Eine wiederholte Zeile braucht weder Scroll-Container
+                    // noch z-index und liest sich wie eine lange Tabelle.
+                    const MX_KOPF_H = 13;   // Hoehe der Rennnummern-Zeile, in allen drei Spalten gleich
+                    const MX_TAKT = 10;     // alle wieviel Zeilen die Nummern wiederholt werden
+                    let _mxNr = 0;          // Zahl der Spalten - erst beim Rendern bekannt
+                    const mxNrZeile = () => `<div style="display:flex; gap:2px; min-width:max-content; height:${MX_KOPF_H}px; align-items:center;">`
+                        + Array.from({length: _mxNr}, (_, i) => `<div style="width:26px; flex-shrink:0; text-align:center; font-size:0.5rem; line-height:1; color:${(i + 1) % 5 === 0 ? 'var(--text-secondary)' : 'var(--text-muted)'}; font-weight:${(i + 1) % 5 === 0 ? '700' : '400'};">${i + 1}</div>`).join('')
+                        + `</div>`;
+                    const mxLuecke = () => `<div style="height:${MX_KOPF_H}px;"></div>`;
+                    // Nach welcher Zeile kommt eine Nummernzeile? Nur sichtbare Zeilen zaehlen,
+                    // sonst reisst eine eingeklappte Team-Unterzeile die Ausrichtung auseinander.
+                    const mxTakt = (row, i, alle) => (i < alle.length - 1) && row._kopf
+                        && (alle.slice(0, i + 1).filter(r => r._kopf).length % MX_TAKT === 0);
                     const cellBg = (pos, posText, points) => {
                         const pt = (posText || '').toUpperCase();
                         if (pt === 'DNPQ') return '#701A75';
@@ -33583,10 +33728,12 @@ Empfohlene Wertebereiche:
                                 });
                                 return '';
                             })()}
+                            ${(() => { _mxNr = Math.max(0, ...displayRows.map(r => (r.cells || []).length)); return ''; })()}
                             <div style="display:flex; align-items:flex-start;">
                                 <!-- Panel links: Jahr + Team (fix) -->
                                 <div style="flex-shrink:0; width:114px; border-right:1px solid var(--border-color); padding-right:6px; margin-right:4px;">
-                                    ${displayRows.map(row => `
+                                    ${mxLuecke()}
+                                    ${displayRows.map((row, _i, _a) => `
                                         <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; display:flex; align-items:center; gap:4px; margin-bottom:3px;${row._kopf ? '' : 'display:none;'}">
                                             ${(row._kopf || row._erste)
                                                 ? `<span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent ? '#f59e0b' : 'var(--accent-main)'}; cursor:pointer; text-decoration:underline; flex-shrink:0;" title="${row.isCurrent ? 'Laufende Saison' : ''}" onclick="event.stopPropagation();closeDriverProfile();openYearStandings(${row.year},'drivers')">${row.year}${row.isCurrent ? '*' : ''}</span>`
@@ -33595,38 +33742,41 @@ Empfohlene Wertebereiche:
                                                 ? `<span class="mxArrow${row._gruppe}" style="font-size:0.78rem;line-height:1;cursor:pointer;flex-shrink:0;color:var(--accent-main)" title="Teams dieser Saison einzeln zeigen" onclick="event.stopPropagation();toggleMatrixYear(${row._gruppe},this)">${row._kopf ? '▸' : '▾'}</span>` : ''}
                                             <span style="flex:1; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
                                         </div>
-                                    `).join('')}
+                                    ` + (mxTakt(row, _i, _a) ? mxLuecke() : '')).join('')}
                                 </div>
                                 <!-- Panel mitte: Rennen (scrollbar) -->
                                 <div style="flex:1; min-width:0; overflow-x:auto;">
-                                    ${displayRows.map(row => {
+                                    ${mxNrZeile()}
+                                    ${displayRows.map((row, _i, _a) => {
+                                        const _nach = mxTakt(row, _i, _a) ? mxNrZeile() : '';
                                         const isTestDriver = row.cells.every(c => c.absent);
                                         if (isTestDriver) return `
                                             <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; margin-bottom:3px; display:${row._kopf ? 'flex' : 'none'}; align-items:center; padding:0 8px;">
                                                 <span style="font-size:0.65rem; color:var(--text-muted); font-style:italic;">Testfahrer</span>
-                                            </div>`;
+                                            </div>` + _nach;
                                         return `
                                         <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="display:${row._kopf ? 'flex' : 'none'}; align-items:center; gap:2px; height:${ROW_H}px; margin-bottom:3px; min-width:max-content;">
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
                                                 : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();${row.simulated ? `openRaceDetails(${cell.raceId},${row.year})` : `openHistoricalRaceModal(${cell.raceId})`}">
-                                                    <span style="font-size:0.42rem; color:${cellFg(cell.posText, cell.pos)}; opacity:0.7; line-height:1;">${circAbbr(cell.circuit)}</span>
+                                                    <span style="font-size:0.42rem; color:${cellFg(cell.posText, cell.pos)}; opacity:0.7; line-height:1;">${raceAbbrLabel(cell.land, cell.circuit, cell.circuit)}</span>
                                                     <span style="font-size:0.6rem; color:${cellFg(cell.posText, cell.pos)}; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
                                                 </div>`
                                             ).join('')}
-                                        </div>`;
+                                        </div>` + _nach;
                                     }).join('')}
                                 </div>
                                 <!-- Panel rechts: WM + Punkte (fix) -->
                                 <div style="flex-shrink:0; width:76px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
-                                    ${displayRows.map(row => `
+                                    ${mxLuecke()}
+                                    ${displayRows.map((row, _i, _a) => `
                                         <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; display:${row._kopf ? 'flex' : 'none'}; align-items:center; justify-content:flex-end; gap:4px; margin-bottom:3px;">
                                             ${row._kopf ? `
                                             <span style="width:26px; text-align:right; font-size:0.65rem; font-weight:bold; color:var(--text-primary);">${row.wmPos !== '-' ? row.wmPos+'.' : '-'}</span>
                                             <span style="width:40px; text-align:right; font-size:0.6rem; color:var(--text-muted);">${row.wmPts}P</span>`
                                             : `<span style="width:26px"></span><span style="width:40px; text-align:right; font-size:0.55rem; color:var(--text-muted);">${row.cells.filter(c => !c.absent).length} St.</span>`}
                                         </div>
-                                    `).join('')}
+                                    ` + (mxTakt(row, _i, _a) ? mxLuecke() : '')).join('')}
                                 </div>
                             </div>
                             <div style="font-size:0.55rem; color:var(--text-muted); margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
@@ -36267,6 +36417,25 @@ Empfohlene Wertebereiche:
             if (allYears.length===0) return '';
 
             // ── Hilfsfunktionen ───────────────────────────────────
+            // Rennnummern alle zehn Zeilen - dieselbe Loesung wie im Fahrer-Steckbrief
+            // (v0.9.17.32). position:sticky war dort ein Fehlgriff, s. Kommentar bei MX_TAKT.
+            const TM_KOPF_H = 13;
+            const TM_TAKT = 10;
+            let _tmNr = 0;
+            const tmNrZeile = () => `<div style="display:flex;gap:2px;min-width:max-content;height:${TM_KOPF_H}px;align-items:center;">`
+                + Array.from({length:_tmNr},(_,i)=>`<div style="width:26px;flex-shrink:0;text-align:center;font-size:0.5rem;line-height:1;color:${(i+1)%5===0?'var(--text-secondary)':'var(--text-muted)'};font-weight:${(i+1)%5===0?'700':'400'};">${i+1}</div>`).join('')
+                + `</div>`;
+            const tmLuecke = () => `<div style="height:${TM_KOPF_H}px;"></div>`;
+            // Nur an einer JAHRESGRENZE einschieben: die Zeilen sind hier Fahrer, nicht
+            // Saisons - ohne diese Bedingung zerschneidet die Nummernzeile eine Saison
+            // zwischen zwei Teamkollegen. Ab dem Takt wird auf die naechste Grenze gewartet.
+            // Die Marken werden EINMAL berechnet, nicht je Spalte neu geraten - sonst
+            // koennten die drei Spalten unterschiedlich einschieben und die Zeilen
+            // verrutschen gegeneinander. Gesucht ist die erste Jahresgrenze NACH dem Takt:
+            // die Zeilen sind hier Fahrer, und eine Nummernzeile mitten in einer Saison
+            // zwischen zwei Teamkollegen liest sich falsch.
+            let _tmMarken = new Set();
+            const tmTakt = (_i) => _tmMarken.has(_i);
             const cellBg = (pos,posText,pts) => {
                 const pt=(posText||'').toUpperCase();
                 if (pt==='DNPQ') return '#701A75'; if (pt==='DNQ') return '#5C1517';
@@ -36328,11 +36497,11 @@ Empfohlene Wertebereiche:
                             const isDNPQ=(race.dnpq||[]).includes(d.id);
                             const isDNQ=(race.dnq||[]).includes(d.id);
                             const isDNS=(race.dns||[]).includes(d.id);
-                            if (isDNPQ||isDNQ||isDNS) return {circuit:race.raceName,raceId:race.raceIndex,
+                            if (isDNPQ||isDNQ||isDNS) return {circuit:race.raceName,land:race.raceCountry||null,raceId:race.raceIndex,
                                 absent:false,pos:null,posText:isDNPQ?'DNPQ':isDNQ?'DNQ':'DNS',points:0,fastestLap:false};
                             const r=(race.results||[]).find(r=>r.driver===d.id);
-                            if (!r) return {circuit:race.raceName,raceId:race.raceIndex,absent:true};
-                            return {circuit:race.raceName,raceId:race.raceIndex,
+                            if (!r) return {circuit:race.raceName,land:race.raceCountry||null,raceId:race.raceIndex,absent:true};
+                            return {circuit:race.raceName,land:race.raceCountry||null,raceId:race.raceIndex,
                                 pos:r.dnf?null:r.position,posText:r.dnf?'Ret':null,
                                 points:r.points||0,fastestLap:r.fastestLap||false};
                         });
@@ -36392,12 +36561,12 @@ Empfohlene Wertebereiche:
                             const isDNS=(race.dns||[]).includes(d.id);
                             const rn=race.rn||race.raceName||'?';
                             const ri=race.ri??0;
-                            if (isDNPQ||isDNQ||isDNS) return {circuit:rn,raceId:ri,absent:false,
+                            if (isDNPQ||isDNQ||isDNS) return {circuit:rn,land:race.rc||null,raceId:ri,absent:false,
                                 pos:null,posText:isDNPQ?'DNPQ':isDNQ?'DNQ':'DNS',points:0,fastestLap:false};
                             const r=res.find(r=>(r.d||r.driver)===d.id);
-                            if (!r) return {circuit:rn,raceId:ri,absent:true};
+                            if (!r) return {circuit:rn,land:race.rc||null,raceId:ri,absent:true};
                             const isDNF=r.dnf===1||r.dnf===true;
-                            return {circuit:rn,raceId:ri,pos:isDNF?null:(r.p||r.position),
+                            return {circuit:rn,land:race.rc||null,raceId:ri,pos:isDNF?null:(r.p||r.position),
                                 posText:isDNF?'Ret':null,points:r.pt||r.points||0,
                                 fastestLap:r.fl===1||r.fastestLap===true};
                         });
@@ -36459,8 +36628,21 @@ Empfohlene Wertebereiche:
                 <div class="card p-4 rounded-lg mb-4">
                     <h4 class="font-bold mb-3">🏁 Rennergebnisse</h4>
                     <div style="display:flex; align-items:flex-start;">
+                        ${(() => {
+                            _tmNr = Math.max(0, ...allRows.map(r => (r.cells || []).length));
+                            _tmMarken = new Set();
+                            let _seit = 0;
+                            allRows.forEach((r, i) => {
+                                _seit++;
+                                const n = allRows[i + 1];
+                                if (!n) return;
+                                if (_seit >= TM_TAKT && (n.type === 'toggle' || n.showYear)) { _tmMarken.add(i); _seit = 0; }
+                            });
+                            return '';
+                        })()}
                         <div style="flex-shrink:0; width:114px; border-right:1px solid var(--border-color); padding-right:6px; margin-right:4px;">
-                            ${allRows.map(row=>row.type==='toggle'
+                            ${tmLuecke()}
+                            ${allRows.map((row,_i,_a)=>(row.type==='toggle'
                                 ?`<div style="height:${TGL_H}px; display:flex; align-items:center; margin-bottom:3px;">
                                     <span data-tgg-btn="${row.groupId}" data-n="${row.hiddenCount}"
                                         style="font-size:0.6rem;color:var(--accent-main);cursor:pointer;text-decoration:underline;padding-left:38px;"
@@ -36476,30 +36658,32 @@ Empfohlene Wertebereiche:
                                         ${row.name}
                                     </span>
                                 </div>`
-                            ).join('')}
+                            ) + (tmTakt(_i) ? tmLuecke() : '')).join('')}
                         </div>
                         <div style="flex:1; min-width:0; overflow-x:auto;">
-                            ${allRows.map(row=>row.type==='toggle'
+                            ${tmNrZeile()}
+                            ${allRows.map((row,_i,_a)=>(row.type==='toggle'
                                 ?`<div style="height:${TGL_H}px;margin-bottom:3px;"></div>`
                                 :`<div ${row.hidden?`data-tgg="${row.groupId}" style="display:none;align-items:center;gap:2px;height:${ROW_H}px;margin-bottom:3px;min-width:max-content;"`:`style="display:flex;align-items:center;gap:2px;height:${ROW_H}px;margin-bottom:3px;min-width:max-content;"` }>
                                     ${(row.cells||[]).map(cell=>cell.absent
                                         ?`<div style="width:26px;height:32px;flex-shrink:0;"></div>`
                                         :`<div style="width:26px;height:32px;background:${cellBg(cell.pos,cell.posText,cell.points)};border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;${cell.fastestLap?'outline:1px solid #a855f7;':''}" title="${cell.circuit||''}: ${cell.posText||cell.pos||''}" onclick="event.stopPropagation();${row.simulated?`openRaceDetails(${cell.raceId},${row.year})`:`openHistoricalRaceModal(${cell.raceId})`}">
-                                            <span style="font-size:0.42rem;color:${cellFg(cell.posText,cell.pos)};opacity:0.7;line-height:1;">${circAbbr(cell.circuit)}</span>
+                                            <span style="font-size:0.42rem;color:${cellFg(cell.posText,cell.pos)};opacity:0.7;line-height:1;">${raceAbbrLabel(cell.land, cell.circuit, cell.circuit)}</span>
                                             <span style="font-size:0.6rem;color:${cellFg(cell.posText,cell.pos)};font-weight:bold;line-height:1.2;">${cellLabel(cell.pos,cell.posText)}</span>
                                         </div>`
                                     ).join('')}
                                 </div>`
-                            ).join('')}
+                            ) + (tmTakt(_i) ? tmNrZeile() : '')).join('')}
                         </div>
                         <div style="flex-shrink:0; width:60px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
-                            ${allRows.map(row=>row.type==='toggle'
+                            ${tmLuecke()}
+                            ${allRows.map((row,_i,_a)=>(row.type==='toggle'
                                 ?`<div style="height:${TGL_H}px;margin-bottom:3px;"></div>`
                                 :`<div ${row.hidden?`data-tgg="${row.groupId}" style="height:${ROW_H}px;display:none;align-items:center;justify-content:flex-end;gap:2px;margin-bottom:3px;"`:`style="height:${ROW_H}px;display:flex;align-items:center;justify-content:flex-end;gap:2px;margin-bottom:3px;"`}>
                                     <span style="font-size:0.65rem;font-weight:bold;color:var(--text-primary);">${row.wmPos!=='-'?row.wmPos+'.':'-'}</span>
                                     <span style="font-size:0.55rem;color:var(--text-muted);">${row.wmPts}P</span>
                                 </div>`
-                            ).join('')}
+                            ) + (tmTakt(_i) ? tmLuecke() : '')).join('')}
                         </div>
                     </div>
                     <div style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
