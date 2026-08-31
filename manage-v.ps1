@@ -54,9 +54,18 @@ if ($ChangelogPoints -ne "") {
     $BulletLines = $ChangelogPoints -split ";" | ForEach-Object {
         "                            <div>&#8226; $_</div>"
     }
-    $BulletsJoined = $BulletLines -join "`r`n"
+    # ZEILENENDE WIE DIE DATEI, NICHT HART CRLF (v0.9.17.34)
+    # Hier stand `r`n. Die Zielorte (index.html, Monolith) liegen im Arbeitsbaum als
+    # LF vor, sobald ein Werkzeug sie geschrieben hat - der eingefuegte Changelog-Block
+    # war damit der einzige CRLF-Teil einer sonst reinen LF-Datei. Mit jedem
+    # Versionsschritt kamen ein paar Zeilen dazu (an einem Tag von 4 auf 9), und jedes
+    # zeichengenaue Suchen-und-Ersetzen in index.html scheiterte an der Frage, welches
+    # Zeilenende gerade gilt. Im Repo faellt das nicht auf: autocrlf=true streift die CR
+    # beim Commit ohnehin ab. Das Problem lebt allein im Arbeitsbaum - also dort, wo
+    # gearbeitet wird.
+    $BulletsJoined = $BulletLines -join "`n"
 
-    $NewEntry = "<!-- CHANGELOG -->`r`n                            <div class=`"font-bold text-green-400`">v$NewVersion (aktuell) - $Date</div>`r`n$BulletsJoined"
+    $NewEntry = "<!-- CHANGELOG -->`n                            <div class=`"font-bold text-green-400`">v$NewVersion (aktuell) - $Date</div>`n$BulletsJoined"
 
     # Alle bisherigen gruenen (aktuell)-Zeilen auf grau ohne (aktuell)
     $OldPattern = '<div class="font-bold text-green-400">(v[\d.]+\s+\(aktuell\)[^<]*)</div>'

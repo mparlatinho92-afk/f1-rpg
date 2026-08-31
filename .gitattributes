@@ -1,0 +1,25 @@
+# === ZEILENENDEN DETERMINISTISCH (v0.9.17.34) ===
+# Ohne diese Datei entschied core.autocrlf=true: ein `git checkout` schrieb CRLF in den
+# Arbeitsbaum, jedes Werkzeug schrieb LF. Welches Zeilenende in index.html gerade galt,
+# hing also davon ab, wer die Datei zuletzt angefasst hatte — und zeichengenaues
+# Suchen-und-Ersetzen scheiterte mal an dem einen, mal an dem anderen.
+# Im Repo lag ohnehin fast alles als LF (630 LF gegen 12 CRLF), autocrlf hatte die CR
+# beim Commit stets abgestreift. Jetzt gilt LF auch im Arbeitsbaum.
+* text=auto eol=lf
+
+# Windows-Verknuepfungen wollen CRLF, sonst oeffnet der Explorer sie nicht.
+*.url text eol=crlf
+
+# Binaerdateien nie anfassen. Die Erkennung macht Git selbst, aber die haeufigen
+# Formate hier ausdruecklich — ein falsch als Text erkanntes Bild waere still kaputt.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.zip binary
+*.pdf binary
