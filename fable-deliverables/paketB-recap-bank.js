@@ -235,14 +235,14 @@ const RECAP_BANK = {
     // Satz 5 (optional) — Todesfälle (nur State-Fakten, keine Ursachen erfinden)
     tragik: {
         one: [
-            'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der beim {deadRace} ums Leben kam – das Fahrerlager verneigte sich vor einem der Seinen.',
-            'Doch die Saison hatte auch ihre dunkle Seite: Beim {deadRace} verlor {deadName} sein Leben – eine Lücke, die kein Ergebnis schließt.',
-            'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der beim {deadRace} tödlich verunglückte.',
-            'Und doch fällt ein Schatten über alle Zahlen dieses Jahres: {deadName} ({deadTeam}) verlor beim {deadRace} sein Leben.',
-            'Die Saison forderte ihren Preis: Beim {deadRace} starb {deadName} – das Fahrerlager verlor eines seiner Gesichter.',
-            'Und dann war da der Tag, der alles relativierte: {deadName} ({deadTeam}) kam beim {deadRace} ums Leben.',
-            'Neben allen Wertungen steht ein Name, der bleibt: {deadName}, tödlich verunglückt beim {deadRace}.',
-            'Der Sport nahm sich in diesem Jahr einen der Seinen: {deadName} überlebte den {deadRace} nicht.'
+            'Überschattet wurde das Jahr vom Tod von {deadName} ({deadTeam}), der {deadRaceBei} ums Leben kam – das Fahrerlager verneigte sich vor einem der Seinen.',
+            'Doch die Saison hatte auch ihre dunkle Seite: {deadName} verlor {deadRaceBei} sein Leben – eine Lücke, die kein Ergebnis schließt.',
+            'Aller sportliche Glanz verblasst neben dem Verlust von {deadName}, der {deadRaceBei} tödlich verunglückte.',
+            'Und doch fällt ein Schatten über alle Zahlen dieses Jahres: {deadName} ({deadTeam}) verlor {deadRaceBei} sein Leben.',
+            'Die Saison forderte ihren Preis: {deadName} starb {deadRaceBei} – das Fahrerlager verlor eines seiner Gesichter.',
+            'Und dann war da der Tag, der alles relativierte: {deadName} ({deadTeam}) kam {deadRaceBei} ums Leben.',
+            'Neben allen Wertungen steht ein Name, der bleibt: {deadName}, tödlich verunglückt {deadRaceBei}.',
+            'Der Sport nahm sich in diesem Jahr einen der Seinen: {deadName} kehrte {deadRaceBei} nicht zurück.'
         ],
         many: [
             'Es war zugleich ein schwarzes Jahr: {deadList} bezahlten ihren Sport mit dem Leben – {deadCount} Todesfälle, die schwer auf dieser Saison lasten.',
@@ -327,6 +327,23 @@ function _recapGap(g, kasus) {
              : kasus === 'akk' ? 'einen einzigen Punkt' : 'ein einziger Punkt';
     }
     return kasus === 'dat' ? `${_recapNum(g)} Punkten` : `${_recapNum(g)} Punkte`;
+}
+
+// {deadRaceBei} — fertige Praepositionalphrase statt "beim {deadRace}" (Paket-7-Report N7).
+// Die Namensquellen liefern durchweg den NOMINATIV, und nur die deutschen brechen:
+//   F1DB-Kalender  "British Grand Prix"        -> "beim …"            traegt (Eigenname)
+//   NONWM_F1_VENUES "Testfahrt"                -> "beim Testfahrt"    falsch (Femininum)
+//   Streckeneditor "Grosser Preis von X"       -> flektiert im Dativ  "Grossen Preis"
+//                  "Internationales X-Rennen"  -> "Internationalen X-Rennen"
+// Fremdsprachiges bleibt bewusst unflektiert ("beim Gran Premio di X" ist korrekt).
+// Das Token steht NIE am Satzanfang — seasonRecapText kapitalisiert nicht (s.join).
+function _recapRaceBei(name) {
+    const n = String(name || '').trim();
+    if (!n) return 'beim Rennwochenende';
+    if (/^(Testfahrt|Trainingsfahrt|Probefahrt)\b/.test(n)) return 'bei der ' + n;
+    return 'beim ' + n
+        .replace(/^Großer\s+Preis\b/, 'Großen Preis')
+        .replace(/^Internationales\b/, 'Internationalen');
 }
 
 function _recapFill(tpl, tokens) {
@@ -426,6 +443,9 @@ function seasonRecapText(champion, teamChampion, driverStandings, teamStandings,
         deadTeam: deaths[0] ? (deaths[0].team || '?') : '',
         // führendes Jahr im Rennnamen strippen ("1951 Indianapolis 500" → "beim Indianapolis 500")
         deadRace: deaths[0] ? (deaths[0].raceName || 'Rennwochenende').replace(/^\d{4}\s+/, '') : '',
+        // N7: Kasus-sichere Praepositionalphrase — die tragik.one-Zeilen nutzen NUR diese,
+        // nie "beim {deadRace}" (deutsche Veranstaltungsnamen stehen im Nominativ).
+        deadRaceBei: deaths[0] ? _recapRaceBei((deaths[0].raceName || 'Rennwochenende').replace(/^\d{4}\s+/, '')) : '',
         deadList: _recapNameList(deaths.map(d => d.name)),
         deadCount: String(deaths.length),
         klasseNom: era.klasseNom, klasseGen: era.klasseGen, klasseIn: era.klasseIn,
@@ -463,5 +483,5 @@ function seasonRecapText(champion, teamChampion, driverStandings, teamStandings,
 // Node-Testbarkeit (im Browser-Monolith wirkungslos)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { seasonRecapText, RECAP_BANK, RECAP_ERA_WORDS,
-        _recapHash, _recapRng, _recapPick, _recapNum, _recapFill };
+        _recapHash, _recapRng, _recapPick, _recapNum, _recapFill, _recapRaceBei };
 }

@@ -191,6 +191,12 @@ Die pit-Zeilen sagen bewusst „aktuell Platz {pos}" — Opus muss beim Einbau f
 `pos` die Position **vor** oder **nach** dem Stopp ist, und ggf. die Übergabe anpassen.
 Kein Textfehler; Definitionslücke im Interface.
 
+> **✅ ERLEDIGT v0.9.17.34.** `{pos}` ist die Position **beim Reinkommen** (Stand der letzten
+> abgeschlossenen Runde): `idx` stammt aus der Sortierung der Vorrunde, die 22 s des Stopps
+> fließen erst danach in `p.totalTime` und damit in die Neusortierung am Rundenende. Alle
+> pit-Zeilen formulieren genau das („aktuell P{pos}", „von P{pos} an die Box") — keine
+> Übergabe-Änderung nötig, Definition als Kommentar an der Aufrufstelle festgeschrieben.
+
 ### N6 — DRIVER_LORE — „das große Versprechen" doppelt
 `roger-williamson` und `jules-bianchi` tragen wortgleich „das große Versprechen aus …"
 (dazu nah: Brise „das strahlende Talent"). Verschiedene Ären → Kollision unwahrscheinlich;
@@ -203,6 +209,26 @@ optional:
 Alle one-Zeilen bauen „beim {deadRace}". Mit englischen F1DB-Namen („Indianapolis 500",
 „British Grand Prix") trägt das; sollte je ein deutsches „Großer Preis von …" durchrutschen,
 bricht der Kasus („beim Großer Preis" ✗). Einmalig das raceName-Format verifizieren.
+
+> **✅ BESTÄTIGT + BEHOBEN v0.9.17.34.** Der Bruch war **real erreichbar**, an drei Stellen —
+> alle drei deutsch, Fremdsprachiges trägt als unflektierter Eigenname:
+> 1. `NONWM_F1_VENUES` enthält **„Testfahrt"** (Femininum) → „beim Testfahrt" ✗. Der
+>    wahrscheinlichste Pfad, denn Tode außerhalb der WM brauchen keinen Streckeneditor.
+> 2. Streckeneditor/Zufallsgenerator (Paket 8), `racePattern.de/at/ch`: „Großer Preis von X"
+>    → „beim Großer Preis" ✗. Das Editor-Eingabefeld schlägt diesen Namen sogar wörtlich vor.
+> 3. Ebenso `racePattern.de`: „Internationales X-Rennen" → „beim Internationales …" ✗.
+>
+> Kette: `race.name` → `seasonDeaths.raceName` → `{deadRace}`. Häufigkeit: `tragik.one` greift
+> nur bei **genau einem** Todesfall der Saison (sonst `many` mit reiner Namensliste); im
+> 20-Saison-Testsave trat das 1× auf und traf zufällig einen tragenden Namen.
+>
+> **Fix nach Spec §5b.2** (Kasus-Tokens kommen fertig vom Assembler, wie `{gapDat}`):
+> neue Hilfsfunktion `_recapRaceBei(name)` + Token `{deadRaceBei}`; alle 8 `tragik.one`-Zeilen
+> nutzen jetzt ausschließlich dieses Token. Zwei satzinitiale „Beim {deadRace}"-Zeilen wurden
+> umgebaut, weil `seasonRecapText` **nicht** kapitalisiert (`s.join(' ')`) — das Token steht
+> nie am Satzanfang. Die Akkusativ-Zeile („überlebte den {deadRace} nicht") wurde auf
+> „kehrte {deadRaceBei} nicht zurück" umgestellt. Verifiziert: 18 reale Namensquellen ×
+> alle 8 Varianten, kein Kasusbruch; Deliverable und Inline-Kopie liefern identischen Text.
 
 ### N8 — RECAP_BANK · opener.dominant — theoretischer 0-Siege-Fall (Prüfauftrag an Opus)
 Die dominant-Kategorie ist auch über die Gap-Route (≥ 3 Siegwerte) erreichbar. Mit 0
