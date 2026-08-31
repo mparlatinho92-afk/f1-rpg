@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.35</title>
+    <title>F1 RPG v0.9.17.36</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.35 (aktuell) - 31.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.36 (aktuell) - 31.08.2026</div>
+                            <div>&#8226; FIX: 'Letztes Rennen loeschen' brach mitten im Vorgang ab - das Rennen war nur scheinbar geloescht und nach dem Neuladen zurueck, die Fahrerwertung blieb halb neu berechnet stehen</div>
+                            <div>&#8226; FIX: Beim Loeschen eines Rennens blieb dessen Training im Spielstand liegen</div>
+                            <div>&#8226; FIX: Die neu berechnete Fahrerwertung fuellte Felder, die niemand liest - Durchschnittsplatzierung und Bestergebnis stimmen jetzt nach dem Loeschen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.35 - 31.08.2026</div>
                             <div>&#8226; FIX: Ein Weltmeister ohne Saisonsieg wurde im Rueckblick als Dominator beschrieben - 'mit keinem einzigen Sieg beherrschte er die Saison nach Belieben'</div>
                             <div class="font-bold text-slate-400">v0.9.17.34 - 31.08.2026</div>
                             <div>&#8226; FIX: Der Tragik-Satz im Saison-Rueckblick beugte deutsche Rennnamen nicht - 'beim Grosser Preis von X' heisst jetzt 'beim Grossen Preis von X'</div>
@@ -3870,7 +3874,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.35';
+        const VERSION = '0.9.17.36';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24471,6 +24475,19 @@
                 }
             }
             
+            // === DAS TRAINING GEHOERT ZUM RENNEN (v0.9.17.36) ===
+            // Ergebnis und Qualifying wurden entfernt, das Training des geloeschten
+            // Rennens blieb liegen. Gemessen nach dem Loeschen von Rennen 5:
+            //   Rennen [0,1,2,3,4] · Quali [0,1,2,3,4] · Training [0,1,2,3,4,5]
+            // Faehrt man das Rennen neu, gibt es zwei Trainings fuer denselben Index.
+            // Ueber den Index filtern statt zu poppen: die Trainingsliste kann Luecken
+            // haben (nicht jedes Rennen hat eines), ein blindes pop() traefe dann das
+            // falsche.
+            if (Array.isArray(GAME_STATE.trainingResults)) {
+                GAME_STATE.trainingResults = GAME_STATE.trainingResults
+                    .filter(t => !t || t.raceIndex !== deletedRace.raceIndex);
+            }
+
             // Rennnummer zurücksetzen
             GAME_STATE.currentRace--;
             
@@ -24520,9 +24537,9 @@
                     if (!GAME_STATE.driverStandings[driverId]) {
                         const driver = GAME_STATE.drivers.find(d => d.id === driverId);
                         GAME_STATE.driverStandings[driverId] = {
-                            name: driver?.name || driverId,
+                            name: driver?.name || driverId, team: driver?.team || null,
                             points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0, dnfs: 0,
-                            positions: [], averageFinish: 0
+                            bestFinish: null, totalPositions: 0, finishes: 0
                         };
                     }
                     
@@ -24532,7 +24549,23 @@
                     if (position <= 3 && !dnf) standing.podiums++;
                     if (dnf) standing.dnfs++;
                     if (fastestLap) standing.fastestLaps++;
-                    if (!dnf) standing.positions.push(position);
+                    // === EIN SCHEMA, NICHT ZWEI (v0.9.17.36) ===
+                    // Hier stand `standing.positions.push(position)`. Zwei Fehler auf einmal:
+                    // (a) `initStandings` legt die Wertungszeile OHNE `positions` an, der
+                    //     Neuanlege-Zweig oben wird also nie betreten - `.push` auf undefined
+                    //     warf, und zwar beim ersten klassierten Fahrer. Die Funktion brach ab,
+                    //     bevor `saveGame()` und `renderAll()` liefen: das geloeschte Rennen war
+                    //     nur im Arbeitsspeicher weg und nach dem Neuladen wieder da, die Wertung
+                    //     blieb halb neu berechnet stehen.
+                    // (b) `positions`/`averageFinish` liest im ganzen Spiel NIEMAND. Gerechnet
+                    //     wird ueberall mit `totalPositions`/`finishes` (Live-Pfad und Anzeige).
+                    //     Ein Rueckbau haette also selbst im Erfolgsfall ein totes Schema
+                    //     hinterlassen und die Durchschnittsplatzierung zerschossen.
+                    if (!dnf) {
+                        standing.finishes = (standing.finishes || 0) + 1;
+                        standing.totalPositions = (standing.totalPositions || 0) + position;
+                        if (standing.bestFinish == null || position < standing.bestFinish) standing.bestFinish = position;
+                    }
                     
                     // Team-Standings
                     const driver = GAME_STATE.drivers.find(d => d.id === driverId);
@@ -24551,12 +24584,9 @@
                 });
             });
             
-            // Durchschnittsplatzierungen berechnen
-            Object.values(GAME_STATE.driverStandings).forEach(s => {
-                if (s.positions && s.positions.length > 0) {
-                    s.averageFinish = (s.positions.reduce((a, b) => a + b, 0) / s.positions.length).toFixed(1);
-                }
-            });
+            // Die Durchschnittsplatzierung wird NICHT mehr hier gespeichert: die Anzeige
+            // rechnet sie aus totalPositions/finishes, sobald sie gebraucht wird. Ein zweites
+            // vorberechnetes Feld waere nur eine weitere Stelle, die veralten kann.
         }
         
         window.deleteCurrentSeason = function() {
