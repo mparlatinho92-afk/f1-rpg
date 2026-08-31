@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.34</title>
+    <title>F1 RPG v0.9.17.35</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.34 (aktuell) - 31.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.35 (aktuell) - 31.08.2026</div>
+                            <div>&#8226; FIX: Ein Weltmeister ohne Saisonsieg wurde im Rueckblick als Dominator beschrieben - 'mit keinem einzigen Sieg beherrschte er die Saison nach Belieben'</div>
+                            <div class="font-bold text-slate-400">v0.9.17.34 - 31.08.2026</div>
                             <div>&#8226; FIX: Der Tragik-Satz im Saison-Rueckblick beugte deutsche Rennnamen nicht - 'beim Grosser Preis von X' heisst jetzt 'beim Grossen Preis von X'</div>
                             <div>&#8226; FIX: Tode bei Testfahrten lasen sich als 'beim Testfahrt'</div>
                             <div class="font-bold text-slate-400">v0.9.17.33 - 31.08.2026</div>
@@ -17390,7 +17392,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.34';
+        const VERSION = '0.9.17.35';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31349,6 +31351,12 @@ const CIRCUIT_LAYOUTS = {
             let cat = 'normal';
             if (vize && gap <= winPts) cat = 'knapp';
             else if ((raceCount > 0 && (champion.wins || 0) >= Math.ceil(raceCount * 0.5)) || gap >= 3 * winPts) cat = 'dominant';
+            // N8 (Paket-7-Report): Die Punkte-Route (gap >= 3*winPts) ist auch OHNE einen
+            // einzigen Sieg erreichbar — 8 der 10 dominant-Zeilen setzen aber {siegeDat}/
+            // {siegeNom} ein und behaupteten dann "mit keinem einzigen Sieg beherrschte er
+            // die Saison nach Belieben". Ein siegloser Champion ist nie dominant, egal wie
+            // gross sein Vorsprung ist; der normal-Pool traegt den Fall sprachlich sauber.
+            if (cat === 'dominant' && !((champion.wins || 0) > 0)) cat = 'normal';
 
             // Team-Rang des Champions in der Konstrukteurswertung
             const teamsSorted = Object.entries(teamStandings || {})
