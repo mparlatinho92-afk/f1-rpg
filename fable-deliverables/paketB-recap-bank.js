@@ -396,6 +396,12 @@ function seasonRecapText(champion, teamChampion, driverStandings, teamStandings,
     let cat = 'normal';
     if (vize && gap <= winPts) cat = 'knapp';
     else if ((raceCount > 0 && (champion.wins || 0) >= Math.ceil(raceCount * 0.5)) || gap >= 3 * winPts) cat = 'dominant';
+    // N8 (Paket-7-Report): Die Punkte-Route (gap >= 3*winPts) ist auch OHNE einen
+    // einzigen Sieg erreichbar — 8 der 10 dominant-Zeilen setzen aber {siegeDat}/
+    // {siegeNom} ein und behaupteten dann "mit keinem einzigen Sieg beherrschte er
+    // die Saison nach Belieben". Ein siegloser Champion ist nie dominant, egal wie
+    // gross sein Vorsprung ist; der normal-Pool traegt den Fall sprachlich sauber.
+    if (cat === 'dominant' && !((champion.wins || 0) > 0)) cat = 'normal';
 
     // Team-Rang des Champions in der Konstrukteurswertung
     const teamsSorted = Object.entries(teamStandings || {})

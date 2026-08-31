@@ -42,7 +42,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 2. **Paket I:** Kaggle-Ablösung offen; bekannte Grenzen: ITA vor 1999 kuratiert, GBR ohne Schottland.
 3. **Paket J:** Cape-Coloured-Anteil RSA r0 18,9 % (zu hoch).
 4. ~~**Paket C (Alt-Paket):** Obituary-Text fehlt noch im Nekrolog-Tab~~ — **eingebaut v0.9.17.31** (`_necroObit`, gleiche Regeneration wie Off-Season-Modal). Bank zuvor erweitert v0.9.17.29 (174 → 256 Zeilen).
-5. **Paket 7:** N5/N7/N8 sind **Prüfaufträge an Opus**, keine Text-Edits — deshalb standen sie nie in den Fix-Commits. **N5 + N7 erledigt v0.9.17.34** (pit-`{pos}` = Position beim Reinkommen, festgeschrieben; `{deadRaceBei}` löst den Kasusbruch bei deutschen Rennnamen). **Offen: N8** — ein Champion mit 0 Siegen kann über die Punkte-Route in den `dominant`-Pool geraten („mit keinem einzigen Sieg beherrschte er die Saison"); ein Guard `wins === 0 → normal` kostet eine Zeile.
+5. ~~**Paket 7:** N5/N7/N8~~ — **komplett abgeschlossen.** Die drei waren **Prüfaufträge an Opus**, keine Text-Edits (deshalb standen sie nie in den Fix-Commits): **N5 + N7 v0.9.17.34** (pit-`{pos}` = Position beim Reinkommen, festgeschrieben; `{deadRaceBei}` löst den Kasusbruch bei deutschen Rennnamen), **N8 v0.9.17.35** (siegloser Champion fällt aus dem `dominant`-Pool).
 
 ## Frühere Pakete (bereits eingebaut)
 `paketA-*` Namens-Pools, `paketB-*` Saison-Rückblick, `paketC-*` Nachrufe, `paketD-validierung`,

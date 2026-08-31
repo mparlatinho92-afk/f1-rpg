@@ -236,6 +236,15 @@ Siegen ergäbe {siegeDat} „mit **keinem einzigen Sieg** … beherrschte er die
 Belieben" — grammatisch korrekt, inhaltlich komisch. Praktisch kaum erreichbar; ein
 Guard (`wins === 0` → normal-Pool) kostet eine Zeile.
 
+> **✅ ERLEDIGT v0.9.17.35.** Guard wie vorgeschlagen, direkt nach der Kategorie-Wahl:
+> `if (cat === 'dominant' && !((champion.wins || 0) > 0)) cat = 'normal';`
+> Betroffen wären **8 der 10** dominant-Zeilen gewesen (die zwei ohne `{siegeNom}`/`{siegeDat}`
+> hätten getragen). Verifiziert: siegloser Champion mit 85 Punkten Vorsprung zieht jetzt
+> „sicherte sich mit keinem einzigen Sieg und 90 Punkten die Krone" — korrekt und ohne
+> Dominanz-Behauptung; ein echter Dominator (14 Siege) bleibt unverändert im dominant-Pool.
+> Nebeneffekt: In dieser Konstellation greift meist der `mostWinsLost`-Satz („Rennen gewinnt
+> man mit Tempo, Titel mit Beständigkeit") — er beschreibt den Fall von selbst treffend.
+
 ---
 
 ## Geprüft und NICHT beanstandet (Auszug)
