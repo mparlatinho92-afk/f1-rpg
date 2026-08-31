@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.32</title>
+    <title>F1 RPG v0.9.17.33</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.32 (aktuell) - 31.08.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.33 (aktuell) - 31.08.2026</div>
+                            <div>&#8226; NEU: Weltmeister-Saisons tragen einen goldenen Stern in der Matrix, zweite und dritte Plaetze sind farblich hervorgehoben</div>
+                            <div>&#8226; NEU: Beim Ausklappen der Teams einer Saison bleibt die WM-Platzierung sichtbar, in kleiner Schrift bei jeder Team-Zeile</div>
+                            <div>&#8226; FIX: McLaren stand in der Matrix als Mclaren - der Name wurde aus dem Kuerzel gebaut statt nachgeschlagen</div>
+                            <div>&#8226; FIX: Punkte stehen als 205 Pts. statt 205P</div>
+                            <div class="font-bold text-slate-400">v0.9.17.32 - 31.08.2026</div>
                             <div>&#8226; NEU: Rennnummern wiederholen sich alle zehn Zeilen in der Saison-Matrix - auch nach langem Scrollen bleibt ablesbar das wievielte Rennen eine Spalte ist</div>
                             <div>&#8226; FIX: Die Renn-Kuerzel zeigten die ersten drei Buchstaben des Veranstaltungsnamens - GRA fuer jeden Grand Prix, 198 fuer jedes Rennen mit Jahreszahl. Jetzt der Laendercode</div>
                             <div>&#8226; FIX: In simulierten Saisons stand der Teamname weiss statt in der Teamfarbe</div>
@@ -3860,7 +3865,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.32';
+        const VERSION = '0.9.17.33';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -27398,6 +27403,36 @@
         // applyTeamEntryExit setzt ihn korrekt), dann SEASON_DATA für längst
         // aufgelöste Teams, zuletzt der Rohwert — lieber eine ID als eine leere Zelle.
         // Klartext-Namen laufen unverändert durch, der Test greift nur bei `ent_`.
+        // === KONSTRUKTEURS-NAME AUS EINEM SLUG (v0.9.17.33) ===
+        // Aus 'mclaren' wurde durch stumpfes Grossschreiben des ersten Buchstabens
+        // "Mclaren" - im Renn-Raster hartnaeckig sichtbar, weil die F1DB-Zeilen dort
+        // keinen Klartextnamen mitliefern (teamLabel: null) und auf den Slug zurueckfallen.
+        // Dieselbe Ausnahmeliste stand schon einmal ad hoc in der Meldelisten-Ansicht;
+        // hier ist sie gemeinsam.
+        const CTOR_TITEL_WORT = {
+            'mclaren': 'McLaren', 'osca': 'O.S.C.A.', 'alphatauri': 'AlphaTauri',
+            'de': 'de', 'del': 'Del', 'van': 'van', 'der': 'der',
+            'fry': 'Fry', 'red': 'Red', 'roy': 'Roy', 'iso': 'Iso', 'rae': 'Rae',
+            'bmw': 'BMW', 'brp': 'BRP', 'rb': 'RB', 'bar': 'BAR', 'ags': 'AGS',
+            'lds': 'LDS', 'jbw': 'JBW', 'era': 'ERA', 'hwm': 'HWM', 'afm': 'AFM',
+            'ats': 'ATS', 'brm': 'BRM', 'lec': 'LEC', 'enb': 'ENB', 'ram': 'RAM'
+        };
+        const CTOR_TITEL_GANZ = {
+            'iso-marlboro': 'Iso-Marlboro', 'de-tomaso': 'De Tomaso',
+            'mercedes-benz': 'Mercedes-Benz', 'alfa-romeo': 'Alfa Romeo'
+        };
+        function constructorTitleFromSlug(slug) {
+            const s = String(slug || '').trim();
+            if (!s) return '';
+            const lc = s.toLowerCase();
+            if (CTOR_TITEL_GANZ[lc]) return CTOR_TITEL_GANZ[lc];
+            // Enthaelt der Wert schon Grossbuchstaben oder Leerzeichen, ist er ein
+            // Klartextname und wird nicht angefasst.
+            if (/[A-Z]/.test(s) || /\s/.test(s)) return s;
+            return lc.split('-').map(w => CTOR_TITEL_WORT[w]
+                || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+        }
+
         function teamDisplayName(v) {
             const s = String(v || '');
             if (!s) return '';
@@ -33602,6 +33637,21 @@ Empfohlene Wertebereiche:
                     // sie am Fenster und schwebte ueber dem Titel, auch wenn die Matrix laengst
                     // weggescrollt war. Eine wiederholte Zeile braucht weder Scroll-Container
                     // noch z-index und liest sich wie eine lange Tabelle.
+                    // === PODEST IN DER WM-SPALTE (v0.9.17.33) ===
+                    // Nutzer: „1., 2. und 3. koennte man hervorheben. 1. als titelstern."
+                    // Der Stern ersetzt die Zahl nicht, er steht davor - sonst waere nicht
+                    // mehr ablesbar, dass es Platz 1 der Fahrerwertung ist.
+                    const mxPlatz = pos => {
+                        const n = Number(pos);
+                        if (n === 1) return `<span style="width:34px; text-align:right; font-size:0.65rem; font-weight:700; color:#b8942a;" title="Weltmeister">&#9733; 1.</span>`;
+                        if (n === 2) return `<span style="width:34px; text-align:right; font-size:0.65rem; font-weight:700; color:#c8d2da;">2.</span>`;
+                        if (n === 3) return `<span style="width:34px; text-align:right; font-size:0.65rem; font-weight:700; color:#c08a52;">3.</span>`;
+                        return `<span style="width:34px; text-align:right; font-size:0.65rem; font-weight:bold; color:var(--text-primary);">${pos !== '-' ? pos + '.' : '-'}</span>`;
+                    };
+                    // Aufgeklappte Team-Zeilen: dieselbe Platzierung, nur leise. Nutzer: „beim
+                    // ausklappen aller teams entfaellt die platzierung. eine gemeinsame
+                    // platzierungszahl, ohne groesser zu sein."
+                    const mxPlatzLeise = pos => `<span style="width:34px; text-align:right; font-size:0.55rem; color:var(--text-muted);">${pos !== '-' ? pos + '.' : ''}</span>`;
                     const MX_KOPF_H = 13;   // Hoehe der Rennnummern-Zeile, in allen drei Spalten gleich
                     const MX_TAKT = 10;     // alle wieviel Zeilen die Nummern wiederholt werden
                     let _mxNr = 0;          // Zahl der Spalten - erst beim Rendern bekannt
@@ -33688,8 +33738,7 @@ Empfohlene Wertebereiche:
                                 // ⚠ Die Zeilen aller DREI Panels (Jahr/Team, Zellen, WM) muessen
                                 //   deckungsgleich bleiben. Deshalb wird die Liste EINMAL vorab
                                 //   expandiert; alle Panels mappen danach ueber dieselbe Liste.
-                                const _slugTitel = s => String(s || '').split('-')
-                                    .map(w => w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                const _slugTitel = s => constructorTitleFromSlug(s);
                                 const _teamsDerZeile = row => {
                                     const m = new Map();
                                     for (const c of row.cells || []) {
@@ -33767,14 +33816,14 @@ Empfohlene Wertebereiche:
                                     }).join('')}
                                 </div>
                                 <!-- Panel rechts: WM + Punkte (fix) -->
-                                <div style="flex-shrink:0; width:76px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
+                                <div style="flex-shrink:0; width:92px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
                                     ${mxLuecke()}
                                     ${displayRows.map((row, _i, _a) => `
                                         <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; display:${row._kopf ? 'flex' : 'none'}; align-items:center; justify-content:flex-end; gap:4px; margin-bottom:3px;">
                                             ${row._kopf ? `
-                                            <span style="width:26px; text-align:right; font-size:0.65rem; font-weight:bold; color:var(--text-primary);">${row.wmPos !== '-' ? row.wmPos+'.' : '-'}</span>
-                                            <span style="width:40px; text-align:right; font-size:0.6rem; color:var(--text-muted);">${row.wmPts}P</span>`
-                                            : `<span style="width:26px"></span><span style="width:40px; text-align:right; font-size:0.55rem; color:var(--text-muted);">${row.cells.filter(c => !c.absent).length} St.</span>`}
+                                            ${mxPlatz(row.wmPos)}
+                                            <span style="width:52px; text-align:right; font-size:0.6rem; color:var(--text-muted);">${row.wmPts} Pts.</span>`
+                                            : `${mxPlatzLeise(row.wmPos)}<span style="width:52px; text-align:right; font-size:0.55rem; color:var(--text-muted);">${row.cells.filter(c => !c.absent).length} St.</span>`}
                                         </div>
                                     ` + (mxTakt(row, _i, _a) ? mxLuecke() : '')).join('')}
                                 </div>
@@ -36419,6 +36468,14 @@ Empfohlene Wertebereiche:
             // ── Hilfsfunktionen ───────────────────────────────────
             // Rennnummern alle zehn Zeilen - dieselbe Loesung wie im Fahrer-Steckbrief
             // (v0.9.17.32). position:sticky war dort ein Fehlgriff, s. Kommentar bei MX_TAKT.
+            // Podest in der WM-Spalte, wie im Fahrer-Steckbrief (v0.9.17.33).
+            const tmPlatz = pos => {
+                const n = Number(pos);
+                if (n === 1) return `<span style="font-size:0.65rem;font-weight:700;color:#b8942a;" title="Weltmeister">&#9733; 1.</span>`;
+                if (n === 2) return `<span style="font-size:0.65rem;font-weight:700;color:#c8d2da;">2.</span>`;
+                if (n === 3) return `<span style="font-size:0.65rem;font-weight:700;color:#c08a52;">3.</span>`;
+                return `<span style="font-size:0.65rem;font-weight:bold;color:var(--text-primary);">${pos!=='-'?pos+'.':'-'}</span>`;
+            };
             const TM_KOPF_H = 13;
             const TM_TAKT = 10;
             let _tmNr = 0;
@@ -36675,13 +36732,13 @@ Empfohlene Wertebereiche:
                                 </div>`
                             ) + (tmTakt(_i) ? tmNrZeile() : '')).join('')}
                         </div>
-                        <div style="flex-shrink:0; width:60px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
+                        <div style="flex-shrink:0; width:84px; border-left:1px solid var(--border-color); padding-left:6px; margin-left:4px;">
                             ${tmLuecke()}
                             ${allRows.map((row,_i,_a)=>(row.type==='toggle'
                                 ?`<div style="height:${TGL_H}px;margin-bottom:3px;"></div>`
                                 :`<div ${row.hidden?`data-tgg="${row.groupId}" style="height:${ROW_H}px;display:none;align-items:center;justify-content:flex-end;gap:2px;margin-bottom:3px;"`:`style="height:${ROW_H}px;display:flex;align-items:center;justify-content:flex-end;gap:2px;margin-bottom:3px;"`}>
-                                    <span style="font-size:0.65rem;font-weight:bold;color:var(--text-primary);">${row.wmPos!=='-'?row.wmPos+'.':'-'}</span>
-                                    <span style="font-size:0.55rem;color:var(--text-muted);">${row.wmPts}P</span>
+                                    ${tmPlatz(row.wmPos)}
+                                    <span style="font-size:0.55rem;color:var(--text-muted);">${row.wmPts} Pts.</span>
                                 </div>`
                             ) + (tmTakt(_i) ? tmLuecke() : '')).join('')}
                         </div>
