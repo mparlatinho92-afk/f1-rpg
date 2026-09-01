@@ -11,7 +11,7 @@ Zwei Dinge, unabhängig voneinander.
 ## 1. Prüfen, ob mehrere Spielstände sich vermischen können
 
 Dieses Projekt speichert dauerhaft — IndexedDB, localStorage, Dateien, egal was. Prüfe
-folgende fünf Fragen und antworte mit Fakten aus dem Code, nicht mit Einschätzungen.
+folgende sechs Fragen und antworte mit Fakten aus dem Code, nicht mit Einschätzungen.
 
 **a) Trägt jeder gespeicherte Datensatz die Identität des Spielstands, der ihn geschrieben
 hat?** Der typische Fehler: der Schlüssel ist eine reine Fachgröße — Saison, Spieltag,
@@ -37,10 +37,25 @@ Arbeitsspeicher ergänzt — dann entsteht ein Zwitter: aktuelle Tabelle über f
 Ergebnissen.
 
 **e) Der Auto-Save.** Prüfe, ob er schreiben kann, während im Vordergrund ein **anderer**
-Spielstand geladen ist. Richtig ist: der Auto-Save gehört zu genau einem Spielstand und
-schreibt erst wieder, wenn dieser Spielstand auch geladen ist. Ein Auto-Save, der im
-Hintergrund weiterläuft, während der Nutzer etwas anderes geöffnet hat, überschreibt
-fremde Daten.
+Spielstand geladen ist. Ein Auto-Save, der im Hintergrund weiterläuft, während der Nutzer
+etwas anderes geöffnet hat, überschreibt fremde Daten.
+
+Zwei Anforderungen gelten dabei **gleichzeitig**, und die zweite wird gern vergessen:
+der Auto-Save darf nie den Stand eines anderen Spiels zerstören — **und** er muss für den
+Stand, der gerade gespielt wird, immer laufen. Ein Riegel, der das Schreiben unterbindet,
+solange ein fremder Stand aktiv ist, klingt sicher, nimmt dem laufenden Spiel aber genau
+den Schutz, für den es den Auto-Save gibt. Der Kernzweck darf nicht der Sauberkeit geopfert
+werden. Der brauchbare Weg ist: jeden Wechsel des aktiven Spiels den alten Auto-Save löschen
+lassen, und jeden Snapshot mit der Kennung seines Spiels stempeln.
+
+**f) Was gar nicht gespeichert wird, kann auch nicht veralten.** Die eleganteste Antwort auf
+diese ganze Fragenklasse ist, den Zwischenstand nicht zu persistieren, sondern ihn aus dem
+Spielzustand plus einem festen Seed **abzuleiten**. Prüfe, ob es in diesem Projekt Daten
+gibt, die mitgeschrieben werden, obwohl sie reproduzierbar wären. Bei uns hängt eine ganze
+Parallelwelt am Rundenzähler der Hauptserie und wird bei jedem Zugriff neu berechnet: Wird
+eine Runde zurückgerollt, rollt sie automatisch mit — es gibt schlicht nichts zu löschen und
+nichts, was auseinanderlaufen könnte. Das ist kein Trick, sondern erspart eine ganze Klasse
+von Fehlern.
 
 Zeig mir zu jedem Punkt die Fundstelle. Erst danach reden wir über Änderungen.
 
@@ -94,3 +109,22 @@ Die dauerhafte Lösung war zweiteilig, und beide Teile werden gebraucht:
    Lesen wird danach gefiltert. Damit kann selbst ein übersehener Rest nicht mehr in einen
    fremden Spielstand durchschlagen. Der Gürtel allein genügt nicht, es braucht auch die
    Hosenträger.
+
+## Ein Nachtrag zum Prüfen selbst
+
+Beim Nachmessen dieser Punkte im eigenen Projekt sind uns an einem Tag drei Fehlmessungen
+unterlaufen, alle derselben Sorte — sie meldeten **Entwarnung**, wo keine war, oder einen
+Fehler, wo keiner war:
+
+- **Eine Funktion nachbauen statt aufrufen.** Wir haben eine Löschung von Hand nachgestellt
+  statt die echte Funktion zu rufen — und dabei genau den Schritt übersprungen, um den es
+  ging. Ergebnis war ein Fehlalarm über einen Store, der in Wahrheit sauber geräumt wurde.
+  **Immer die echte Funktion aufrufen, auch wenn der Aufbau umständlicher ist.**
+- **Eine Funktion isoliert lesen.** Wir sahen, dass eine Löschfunktion nur einen von zwei
+  Speichern räumt, und meldeten einen Fehler. Den Rest erledigte der **Aufrufer**. Wenn
+  Aufräumarbeit auf mehrere Ebenen verteilt ist, genügt es nicht, die unterste zu lesen.
+- **Eine Prüfung, die gegen das Falsche lief.** Ein Testlauf sollte gegen einen alten Stand
+  prüfen, landete durch eine Pfad-Umwandlung aber auf dem aktuellen — und meldete alles grün.
+  **Ein Testlauf, der gegen den falschen Stand grün ist, ist schlimmer als gar keiner.**
+  Jede Prüfung muss einmal gegen einen Stand laufen, von dem man weiß, dass sie durchfallen
+  MUSS. Tut sie es nicht, prüft sie nichts.
