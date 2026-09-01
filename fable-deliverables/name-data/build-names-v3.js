@@ -215,6 +215,9 @@ const CFG = {
 // kuratierten Vornamen). Belege + Wirkung: paketJ-ethno-regionen/REPORT.md §1.
 for (const [nat, routes] of Object.entries(J.ROUTE_FIRST)) CFG[nat].routeFirst = routes;
 for (const [nat, bans] of Object.entries(J.BAN_FIRST)) CFG[nat].banFirst = bans;
+// PREPEND vor ADD: die feineren Routen (GBR Sikh/Hindu/muslimisch) müssen vor
+// dem groben [SOUTH_ASIAN, 1] stehen, das sonst alles nach r1 zieht.
+for (const [nat, add] of Object.entries(J.ROUTE_LAST_PREPEND || {})) CFG[nat].route = [...add, ...(CFG[nat].route || [])];
 for (const [nat, add] of Object.entries(J.ROUTE_LAST_ADD)) CFG[nat].route = [...(CFG[nat].route || []), ...add];
 for (const [nat, add] of Object.entries(J.BAN_LAST_ADD)) CFG[nat].banLast = [...(CFG[nat].banLast || []), ...add];
 // Welle 3 (2026-07-18): GLOBALE Vornamen-Ethnien-Klassen. Ein Klassen-Name wird
@@ -395,7 +398,10 @@ for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // GER r1 türkisch-deutsch (w 0.04, minYear 1985) ersetzt das bisherige Unterdrücken
 // per banFirst durch echtes Trennen. Anhängen hier statt in curated-base-v2.js →
 // die eingefrorene v2-Kuration bleibt unangetastet, der Build bleibt idempotent.
-for (const [nat, region] of Object.entries(JDEFS.NEW_REGIONS)) POOLS[nat].regions.push(deepCopy(region));
+// Ein Eintrag darf ein ARRAY mehrerer Regionen sein (GBR-Split: r2 Sikh + r3 Hindu
+// in einem Zug) — Reihenfolge im Array = Reihenfolge der neuen Regionsindizes.
+for (const [nat, region] of Object.entries(JDEFS.NEW_REGIONS))
+    for (const r of (Array.isArray(region) ? region : [region])) POOLS[nat].regions.push(deepCopy(r));
 // AUSBAU: Patches auf BESTEHENDE Regionen (CAN r2 → rein südasiatisch, minYear 1990).
 // Reihenfolge: NACH NEW_REGIONS-push, VOR WEIGHT_PROPOSALS (dessen Längen-Check 4 CAN-Regionen erwartet).
 for (const [nat, patches] of Object.entries(JDEFS.REGION_PATCHES || {}))
@@ -515,10 +521,15 @@ function processNation(nat, cfg) {
         //    (Paket J). Ziel darf ein Array sein = "geteilter Name": in Flandern UND
         //    Wallonien belegte Formen (Kevin/David) kommen in beide Regionen.
         const routes = kind === 'first' ? cfg.routeFirst : cfg.route;
+        //    Dritter Eintrag (optional) = Gewichtsfaktor je Zielregion, z.B.
+        //    [ANGLO, [0,1], {1:0.2}]: derselbe Name steht in beiden Regionen, wiegt
+        //    in r1 aber nur ein Fünftel. Ohne das trägt ein geteilter Name sein
+        //    volles Datengewicht in die Minderheitsregion und dominiert sie
+        //    (USA r1: "Michael" wog dort so schwer wie in r0 → 73 % Anglo-Vornamen).
         for (const e of list) {
-            e.r = 0;
-            if (routes) for (const [re, ri] of routes) { if (re.test(e.name)) { e.r = ri; break; } }
-            if (moves[e.name] !== undefined) e.r = moves[e.name];   // OPS.move gewinnt über die Route
+            e.r = 0; e.rw = null;
+            if (routes) for (const [re, ri, wf] of routes) { if (re.test(e.name)) { e.r = ri; e.rw = wf || null; break; } }
+            if (moves[e.name] !== undefined) { e.r = moves[e.name]; e.rw = null; }   // OPS.move gewinnt über die Route
             if (Array.isArray(e.r)) {
                 e.r = e.r.filter(i => pool.regions[i]);
                 if (!e.r.length) e.r = 0;
@@ -566,25 +577,27 @@ function processNation(nat, cfg) {
             let usedAnywhere = false;
             for (const ri of (Array.isArray(e.r) ? e.r : [e.r])) {
                 const region = pool.regions[ri];
+                // Gewichtsfaktor der Route (3. Routen-Eintrag) — nur für DIESE Zielregion.
+                const ew = (e.rw && e.rw[ri] != null) ? Math.max(1, Math.round(e.w * e.rw[ri])) : e.w;
                 if (kind === 'last') {
                     const have = new Set(region.last.map(x => key(x[0])));
                     if (have.has(key(e.name))) continue;
-                    if (inTorso) region.last.push([e.name, e.w]);
+                    if (inTorso) region.last.push([e.name, ew]);
                     else { tailSlot(ri).last.push(e.name); natReport.tailsSur++; }
                 } else if (Array.isArray(region.first)) {
                     const have = new Set(region.first.map(x => key(x[0])));
                     if (have.has(key(e.name))) continue;
-                    if (inTorso) region.first.push([e.name, e.w]);
+                    if (inTorso) region.first.push([e.name, ew]);
                     else { tailSlot(ri).first.push(e.name); natReport.tailsFore++; }
                 } else {
                     const haveMid = new Set(region.first.mid.map(x => key(x[0])));
                     if (haveMid.has(key(e.name))) continue;
                     if (inTorso) {
-                        region.first.mid.push([e.name, e.w]);
+                        region.first.mid.push([e.name, ew]);
                         // Top-Masse zusätzlich (gedeckelt) ins modern-Fenster – Vielfalt ohne Ära-Bruch
                         if (torso < cls.modDup) {
                             const haveMod = new Set(region.first.modern.map(x => key(x[0])));
-                            if (!haveMod.has(key(e.name))) region.first.modern.push([e.name, Math.min(e.w, MODERN_CAP)]);
+                            if (!haveMod.has(key(e.name))) region.first.modern.push([e.name, Math.min(ew, MODERN_CAP)]);
                         }
                     } else { tailSlot(ri).first.push(e.name); natReport.tailsFore++; }
                 }

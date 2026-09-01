@@ -286,6 +286,55 @@ const SWE_EXYU_FIRST = /^(Dino|Armin|Edin|Emir|Adnan|Amar|Amer|Amel|Almir|Adis|H
 // (albanische Liste + escu/eanu/oglu/oski bleiben gebannt, Ban lief vor Route).
 const SWE_EXYU_LAST = /(ović|ovic|ević|evic|ić|ic)$/i;
 
+// ══ WELLE 5 (2026-09-01): GBR-Dreiteilung + USA-Entmischung ══════════════════
+// Befund, gemessen an data/names.js über je 6.000 Ziehungen aus der Region
+// (pickPooledName zieht Vor- UND Nachname aus DERSELBEN Region — nur regionsinterne
+// Mischung kann falsche Paarungen erzeugen):
+//   GBR r1: 43,5 % der Paarungen ethnisch unmöglich — „Mohammed Patel", „Imran
+//           Singh", „Abdul Sharma", „Raj Ali". Ursache: Sikh, Hindu und
+//           pakistanisch-muslimische Namen lagen in EINER Region.
+//   USA r1: 75,4 % anglo-Vorname auf hispanischem Nachnamen — „Tony Rodriguez",
+//           „Brandon Cantu", „Nick Valenzuela". Ursache ist NICHT die geteilte
+//           Liste als solche (die 2./3. Generation heißt real so, s. Kommentar in
+//           NEW_REGIONS.USA), sondern zwei fehlende Begrenzungen: der geteilte
+//           Name trug sein VOLLES Datengewicht nach r1 (Michael wog dort wie in
+//           r0), und r1 hatte kein Ära-Fenster — „Brandon Cantu" war 1950 ziehbar.
+
+// ── GBR r1: muslimisch (pakistanisch/bangladeschisch) ────────────────────────
+// Quelle GB-Top-600 (Mohammed #96, Ali #93, Abdul #138) + gängige Formen der
+// Tail-Masse. Enthält KEINE Sikh- und Hindu-Formen mehr (die haben jetzt r2/r3).
+const GBR_MUSLIM_FIRST = /^(Mohammed|Mohamed|Muhammad|Mohammad|Muhammed|Ali|Ahmed|Ahmad|Abdul\w*|Abdullah|Imran|Hassan|Hasan|Hussain|Omar|Umar|Usman|Amir|Aamir|Khalid|Hamza|Bilal|Asif|Tariq|Shahid|Sajid|Rizwan|Kamran|Adil|Zain|Zayn|Waqar|Wasim|Waseem|Naveed|Nadeem|Salman|Yasir|Zahid|Farhan|Irfan|Aziz|Azhar|Haroon|Junaid|Kashif|Nasir|Qasim|Saqib|Shakeel|Sohail|Tahir|Wajid|Zafar|Zeeshan|Zeshan|Ibrahim|Ismail|Yusuf|Yousuf|Musa|Idris|Idriss|Faisal|Syed|Jamal|Zakariya|Ayan|Raja|Mustafa|Rehan|Shoaib|Shahzad|Arshad|Ashraf|Bashir|Iqbal|Javed|Khalil|Mansoor|Mazhar|Rashid|Riaz|Sarfraz|Shafiq|Tanveer|Yaqub|Zulfiqar|Adeel|Afzal|Akhtar|Anwar|Asim|Ayub|Ejaz|Fahad|Ghulam|Hafiz|Hamid|Hanif|Ilyas|Jamil|Kabir|Latif|Mahmood|Majid|Manzoor|Masood|Mubashir|Munir|Nabeel|Nazir|Noman|Owais|Parvez|Rafiq|Sadiq|Saleem|Shabbir|Sharif|Talha|Tayyab|Wahid|Yasin|Zaheer|Zubair|Enaam|Suleman|Sulaiman|Rayyan|Ayaan|Ismaeel|Yahya|Hamzah|Bilaal|Aariz|Zayd|Ubaid)$/i;
+// Nachnamen: pakistanisch/bangladeschisch inkl. der punjabisch-MUSLIMISCHEN
+// Clan-Namen (Bhatti, Cheema, Warraich, Bajwa, Arain, Jutt, Butt, Baig) — die
+// SIKH-Clans (Gill, Sandhu, Dhillon …) stehen in GBR_SIKH_LAST.
+const GBR_MUSLIM_LAST = /^(Khan|Ahmed|Ahmad|Ali|Hussain|Hussein|Mahmood|Mahmud|Iqbal|Malik|Aslam|Akhtar|Bashir|Rashid|Rehman|Younis|Yousaf|Yousuf|Butt|Chaudhry|Chaudhary|Choudhury|Chowdhury|Choudhry|Sheikh|Shaikh|Siddiqui|Hafeez|Nawaz|Sarwar|Zaman|Anwar|Hameed|Ashraf|Javed|Farooq|Abbas|Aziz|Ghani|Gulzar|Hanif|Ilyas|Ismail|Kamal|Latif|Manzoor|Mir|Mirza|Munir|Mustafa|Nazir|Qureshi|Ansari|Raza|Riaz|Saeed|Salim|Shafiq|Usman|Wahid|Yaqub|Zafar|Islam|Miah|Uddin|Alam|Rahman|Haque|Hoque|Kabir|Karim|Sultan|Noor|Sadiq|Salam|Akram|Arif|Ayub|Baig|Bhatti|Dar|Ghafoor|Hashmi|Jan|Kazi|Majeed|Maqsood|Masood|Mehmood|Nadeem|Nisar|Pervaiz|Rafiq|Ramzan|Saleem|Sattar|Shabbir|Shafi|Sharif|Tanveer|Waheed|Yasin|Zahid|Zaidi|Cheema|Warraich|Bajwa|Gondal|Sahi|Sial|Arain|Jutt|Gujjar|Begum|Bibi|Haq|Syed|Mohammed|Mohamed|Mohammad|Muhammad|Mahmoud|Tariq)$/i;
+
+// ── GBR r2: Sikh (Punjabi) ──────────────────────────────────────────────────
+// Erkennungsmerkmal ist verlässlicher als bei jeder anderen Gruppe: die
+// -preet/-deep/-inder/-jit/-winder-Endungen sind praktisch exklusiv Sikh.
+const GBR_SIKH_FIRST = /^(Gurpreet|Harpreet|Jaspreet|Manpreet|Amandeep|Navdeep|Sukhdev|Baljit|Kuldip|Kuldeep|Rajinder|Surinder|Harjinder|Jasvir|Kulwinder|Parminder|Ranjit|Satnam|Sukhwinder|Talvinder|Harvinder|Baldev|Pritam|Jagdish|Gurdeep|Jasbir|Jaswinder|Balwinder|Gurmeet|Sarbjit|Sarbjeet|Amrit|Inderjit|Gurdev|Gurmit|Jarnail|Mohinder|Narinder|Paramjit|Sukhbir|Tarsem|Bhupinder|Charanjit|Davinder|Gurbaksh|Hardeep|Jagtar|Joginder|Kewal|Lakhbir|Malkit|Nirmal|Piara|Rupinder|Sohan|Swaran|Tarlochan|Avtar|Gurjit|Gursharan|Harbans|Harjit|Iqbal Singh|Jagjit|Jasdeep|Karamjit|Kirpal|Manjit|Mandeep|Ninder|Prabhjot|Rajvir|Sandeep Singh|Simran|Sukhjit|Tejinder|Arjan|Jagdeep|Jasminder|Amarjit|Balbir|Dalbir|Dilbagh|Gurbir|Hardev|Jaspal|Kanwal|Nirbhai|Ravinder|Sarvjit|Sukhraj|Tarandeep|Gurnam|Jashan|Ekam|Jasmit)$/i;
+const GBR_SIKH_LAST = /^(Singh|Kaur|Gill|Grewal|Sandhu|Dhillon|Bains|Sidhu|Randhawa|Sahota|Chahal|Virk|Sanghera|Atwal|Dosanjh|Mann|Sekhon|Bhullar|Toor|Sohal|Saini|Nagra|Purewal|Heer|Panesar|Dhaliwal|Bhandal|Kalsi|Chana|Chatha|Sunner|Bassi|Sohi|Padda|Nandra|Gakhal|Johal|Kang|Khela|Lall|Marwaha|Rehal|Samra|Sian|Sumal|Takhar|Uppal|Bhogal|Chohan|Dhanda|Ghuman|Hayer|Jandu|Kandola|Lotay|Matharu|Nijjar|Sagoo|Shergill|Thandi|Brar|Bhamra|Bhatia Singh|Chumber|Dhesi|Gandham|Ghatora|Hothi|Jagpal|Jassal|Kahlon|Kalirai|Kooner|Landa|Lidder|Mahal|Malhi|Mangat|Nahal|Nandhra|Pannu|Rai|Rayat|Riat|Sanghar|Sarai|Sekhri|Sohanpal|Sunner|Thind|Toora|Ubhi|Virdee|Wander)$/i;
+
+// ── GBR r3: Hindu (indisch, Gujarati/Punjabi-Hindu, südindisch) ─────────────
+const GBR_HINDU_FIRST = /^(Amit|Ravi|Arjun|Sanjay|Anil|Deepak|Rakesh|Vijay|Kiran|Ashok|Dinesh|Ramesh|Suresh|Mahesh|Rajesh|Aryan|Dev|Aman|Jay|Rohan|Krish|Arun|Vinod|Vivek|Nikhil|Rahul|Raj|Sunil|Manoj|Prakash|Naresh|Mukesh|Ajay|Vikram|Rohit|Kunal|Nitin|Pankaj|Sachin|Siddharth|Tarun|Varun|Yash|Akash|Anand|Ankit|Bhavesh|Chetan|Girish|Harish|Jatin|Kishore|Lalit|Nilesh|Paresh|Rajiv|Sagar|Shyam|Tushar|Umesh|Vishal|Gopal|Hemant|Jitendra|Kamlesh|Mohan|Pravin|Rajan|Shankar|Vasant|Krishna|Ganesh|Karthik|Kartik|Nihal|Neel|Aditya|Ishaan|Rishi|Veer|Arnav|Advait|Bharat|Dilip|Gaurav|Hitesh|Jignesh|Kalpesh|Mehul|Mihir|Nirav|Parth|Piyush|Pratik|Ritesh|Sanjeev|Shailesh|Sudhir|Tejas|Vipul|Yogesh|Ashwin|Bhupen|Chirag|Darshan|Devansh|Dhruv|Kishan|Kush|Naveen|Nayan|Nishant|Om|Prashant|Rakshit|Rushil|Sahil|Shiv|Shreyas|Vihaan|Vikas|Vishnu|Anish|Arav|Ayush|Kavin|Nikhil|Rehan Kumar|Ronak|Sameer|Shaan|Suraj|Uday)$/i;
+const GBR_HINDU_LAST = /^(Patel|Sharma|Kumar|Gupta|Mehta|Desai|Joshi|Chauhan|Rana|Thakur|Verma|Yadav|Mishra|Pandey|Trivedi|Bhatt|Dave|Parmar|Solanki|Vora|Modi|Naik|Rao|Reddy|Nair|Menon|Pillai|Iyer|Krishnan|Subramanian|Balakrishnan|Raman|Bose|Banerjee|Chatterjee|Mukherjee|Ghosh|Dutta|Das|Sen|Roy|Chakraborty|Agarwal|Aggarwal|Bansal|Goyal|Jain|Singhal|Mittal|Arora|Kapoor|Khanna|Malhotra|Chopra|Sethi|Bhatia|Anand|Tandon|Sood|Puri|Vij|Dhawan|Nanda|Lal|Prasad|Srivastava|Tiwari|Dubey|Shukla|Saxena|Sinha|Jha|Bhattacharya|Vyas|Purohit|Acharya|Raval|Panchal|Rathod|Makwana|Gohil|Zala|Jadeja|Vaghela|Chudasama|Ganatra|Hirani|Kotecha|Lakhani|Mistry|Pandya|Prajapati|Rajput|Tailor|Thakkar|Upadhyay|Varma|Devi|Kumari|Ladwa|Halai|Odedra|Rabadia|Sachania|Tanna|Unadkat|Vekaria|Bhudia|Chandarana|Depala|Gohel|Hindocha|Jethwa|Kerai|Lakhani|Manek|Nathwani|Popat|Raithatha|Sanghani|Sonpal|Varsani)$/i;
+
+// GBR: Vornamen, die in mehreren südasiatischen Gruppen echt belegt sind, plus
+// die fünf Anglo-Doppelgänger der Welle 3 (Jay/Kian/Rohan/Aman/Dev — sie müssen
+// in r0 bleiben, sonst wären „Jay Watson"/„Dev Hughes" unziehbar).
+const GBR_SA_ANGLO_SHARED = /^(Jay|Kian|Rohan|Aman|Dev)$/i;
+const GBR_SA_CROSS_FIRST  = /^(Sameer|Samir|Kabir|Karim|Amin|Nadia|Rehan|Shan|Zayn|Kiran|Anand)$/i;
+
+// ── USA: geteilte Vornamen, jetzt zweigeteilt ──────────────────────────────
+// (1) ECHTE Doppelnamen — im Spanischen wie im Englischen native Formen. Sie
+//     gehen ungedämpft in beide Regionen: „Mario Andretti" und „Mario Reyes"
+//     sind beide legitim.
+const USA_CROSS_FIRST = /^(Mario|Antonio|Marco|Oscar|Omar|Israel|Edgar|Christian|Gabriel|Sebastian|Julian|Martin|Ivan|Victor|Vincent|Adrian|Alexander|Alex|Daniel|David|Leo|Rudy|Emanuel|Xavier|Rene|Simon|Andre|Hugo|Alberto|Eduardo|Nestor|Rafael|Aaron|Elias|Noel|Ramon|Ariel|Dario)$/i;
+// (2) ANGLO-Rufnamen der 2./3. Generation. Sie bleiben in r1 — „Brandon Cantu"
+//     ist real —, aber gedämpft (Faktor s. ROUTE_FIRST.USA) und über das
+//     Ära-Fenster von r1 erst ab dem mid-Fenster (REGION_PATCHES.USA[1]).
+const USA_ANGLO_ASSIM_FIRST = /^(Michael|Chris|Christopher|Anthony|Eric|Erik|Andrew|Andy|Danny|Johnny|Jimmy|Bobby|Ricky|Richard|Robert|Marcus|Frank|Frankie|Tony|Joe|Joey|George|Steven|Steve|Brandon|Kevin|Brian|Ryan|Jesse|Jason|Adam|Nick|Nicholas|Sam|Sammy|Freddy|Eddie|Ray|Raymond|Kyle|Tyler|Austin|Cody|Dylan|Justin|Jordan|Josh|Joshua|Matt|Matthew|Mike|Edwin|Bobby Joe|Jerry|Larry|Gary|Billy|Tommy|Jimmy Ray)$/i;
+
 // ============================================================================
 // EXPORT — Struktur wie cfg.route: [[regex, ziel], …]; ziel int ODER int[]
 // (int[] = Kopie in jede genannte Region, s. Kopfkommentar Punkt 2).
@@ -296,7 +345,12 @@ const ROUTE_FIRST = {
     // WELLE 3: Jay/Kian/Rohan/Aman/Dev sind AUCH anglo Top-Namen — die Welle-1-
     // Route beanspruchte sie r1-exklusiv, was sie aus der GBR-Kurve verbannt
     // hätte („Jay Watson" unziehbar). Geteilt [0,1] VOR der Südasien-Route.
-    GBR: [[/^(Jay|Kian|Rohan|Aman|Dev)$/i, [0, 1]], [GBR_SOUTH_ASIAN_FIRST, 1]],
+    // WELLE 5: Dreiteilung. Reihenfolge = erster Treffer gewinnt, also zuerst die
+    // Anglo-Doppelgänger (sonst wären „Jay Watson"/„Dev Hughes" unziehbar), dann
+    // Sikh (die -preet/-inder/-jit-Endungen sind das schärfste Merkmal), dann
+    // muslimisch, dann Hindu, zuletzt die gruppenübergreifenden Formen.
+    GBR: [[GBR_SA_ANGLO_SHARED, [0, 3]], [GBR_SIKH_FIRST, 2], [GBR_MUSLIM_FIRST, 1],
+          [GBR_HINDU_FIRST, 3], [GBR_SA_CROSS_FIRST, [1, 3]]],
     FRA: [[FRA_ARAB_WAF_FIRST, 1]],
     BEL: [[BEL_FL_FIRST, 1], [BEL_FR_FIRST, 0], [BEL_SHARED_FIRST, [0, 1]], [/^/, [0, 1]]],
     //   ^ BEL-Default = geteilt: unklassifizierte Restmasse ist international
@@ -317,7 +371,11 @@ const ROUTE_FIRST = {
     MAS: [[MAS_CN_FIRST, 1], [MAS_MALAY_FIRST, 0]],
     EST: [[EST_RU_FIRST, 1]],
     // WELLE 3:
-    USA: [[USA_HISP_R1_FIRST, 1], [USA_SHARED_FIRST, [0, 1]]],
+    // WELLE 5: USA_SHARED_FIRST aufgeteilt. Echte Doppelnamen ungedämpft, die
+    // reinen Anglo-Rufnamen mit Faktor 0.07 in r1 — sie bleiben ziehbar (die
+    // 2./3. Generation heißt so), aber sie dominieren die Region nicht mehr.
+    USA: [[USA_HISP_R1_FIRST, 1], [USA_CROSS_FIRST, [0, 1]],
+          [USA_ANGLO_ASSIM_FIRST, [0, 1], { 1: 0.07 }]],
     SWE: [[SWE_EXYU_FIRST, 1]]
 };
 
@@ -467,8 +525,24 @@ const ROUTE_LAST_ADD = {
 // Dokumentiert als Datenobjekt für den Regressionscheck:
 const ROUTE_LAST_REPLACE_NOTE = { CAN: 'CFG.route Eintrag 2 splitten: [SOUTH_ASIAN,2],[EAST_ASIAN,3]' };
 
+// ── WELLE 5: Nachnamen-Routen, die VOR cfg.route laufen müssen ───────────────
+// ROUTE_LAST_ADD hängt hinten an — das reicht für GBR nicht: CFG.GBR.route hat
+// als ersten Eintrag [SOUTH_ASIAN, 1] und fängt Singh/Patel/Sharma ab, ehe eine
+// angehängte Sikh-/Hindu-Route sie sehen könnte. PREPEND stellt die feineren
+// Routen davor; SOUTH_ASIAN bleibt dahinter als Rest-Auffang auf r1 stehen.
+const ROUTE_LAST_PREPEND = {
+    GBR: [[GBR_SIKH_LAST, 2], [GBR_HINDU_LAST, 3], [GBR_MUSLIM_LAST, 1],
+          // Shah (Gujarati-Hindu UND persisch-muslimisch), Amin, Raja, Bhatia:
+          // in beiden Gruppen belegt, keine Mehrheitslesart → geteilt.
+          [/^(Shah|Amin|Raja|Bhatia|Rathore|Chowdhary)$/i, [1, 3]]]
+};
+
 module.exports = {
-    ROUTE_FIRST, BAN_FIRST, ROUTE_LAST_ADD, BAN_LAST_ADD, ROUTE_LAST_REPLACE_NOTE,
+    ROUTE_FIRST, BAN_FIRST, ROUTE_LAST_ADD, BAN_LAST_ADD, ROUTE_LAST_REPLACE_NOTE, ROUTE_LAST_PREPEND,
+    // WELLE 5 (GBR-Dreiteilung + USA-Entmischung):
+    GBR_MUSLIM_FIRST, GBR_MUSLIM_LAST, GBR_SIKH_FIRST, GBR_SIKH_LAST,
+    GBR_HINDU_FIRST, GBR_HINDU_LAST, GBR_SA_ANGLO_SHARED, GBR_SA_CROSS_FIRST,
+    USA_CROSS_FIRST, USA_ANGLO_ASSIM_FIRST,
     BEL_FL_LAST_ADD, CAN_ASIAN_LAST_ADD, RSA_ZU_LAST_ADD, RSA_AF_LAST_ADD, RSA_CO_LAST, RSA_ZU_LAST_VOWEL, SUI_PT_LAST_ADD,
     // AUSBAU (CAN-Split + GRE):
     CAN_SA_LAST_ADD, CAN_EA_LAST_ADD, CAN_SA_FIRST, CAN_EA_PINYIN_FIRST, CAN_EA_WESTERN_FIRST,

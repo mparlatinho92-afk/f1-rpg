@@ -184,7 +184,44 @@ const NEW_REGIONS = {
             ['Acar', 1], ['Ünal', 1], ['Yalcin', 1], ['Turan', 1], ['Aktas', 1], ['Ates', 1],
             ['Tekin', 1], ['Güler', 1], ['Erdem', 1], ['Avci', 1], ['Uzun', 1], ['Bayram', 1]
         ]
-    }
+    },
+    // ── WELLE 5 (2026-09-01): GBR r2 Sikh + r3 Hindu ───────────────────────
+    // Array = mehrere neue Regionen in einem Zug (Build-Schleife nimmt beides).
+    // Die bestehende r1 wird per REGION_PATCHES.GBR[1] auf „muslimisch" verengt.
+    // Gate 1995 wie r1: Haupteinwanderung 1960er/70er → 2. Generation debütiert
+    // ab ~1985–95; für alle drei Gruppen dieselbe Schwelle.
+    GBR: [
+        {
+            w: 0.012, minYear: 1995, // Sikh (Punjabi)
+            first: [
+                ['Gurpreet', 3], ['Harpreet', 3], ['Manpreet', 3], ['Jaspreet', 2], ['Amandeep', 2],
+                ['Sukhwinder', 2], ['Ranjit', 2], ['Rajinder', 2], ['Baljit', 2], ['Parminder', 2],
+                ['Hardeep', 2], ['Mandeep', 2], ['Simran', 2], ['Tejinder', 1], ['Kuldeep', 1],
+                ['Bhupinder', 1], ['Gurdeep', 1], ['Jasvir', 1], ['Navdeep', 1], ['Rupinder', 1]
+            ],
+            last: [
+                ['Singh', 5], ['Gill', 4], ['Sandhu', 3], ['Dhillon', 3], ['Grewal', 3], ['Bains', 3],
+                ['Sidhu', 3], ['Chahal', 2], ['Sahota', 2], ['Randhawa', 2], ['Virk', 2], ['Dhaliwal', 2],
+                ['Panesar', 2], ['Mann', 2], ['Sekhon', 1], ['Bhullar', 1], ['Atwal', 1], ['Johal', 1],
+                ['Kang', 1], ['Matharu', 1], ['Shergill', 1], ['Toor', 1]
+            ]
+        },
+        {
+            w: 0.022, minYear: 1995, // Hindu (Gujarati/Punjabi-Hindu, südindisch)
+            first: [
+                ['Raj', 3], ['Amit', 3], ['Ravi', 3], ['Arjun', 3], ['Rohan', 3], ['Dev', 3],
+                ['Aryan', 3], ['Jay', 3], ['Aman', 3], ['Rahul', 2], ['Vijay', 2], ['Deepak', 2],
+                ['Sanjay', 2], ['Nikhil', 2], ['Kiran', 2], ['Anand', 2], ['Aditya', 2], ['Karthik', 2],
+                ['Vishal', 2], ['Sachin', 1], ['Varun', 1], ['Yash', 1], ['Rishi', 1], ['Neel', 1]
+            ],
+            last: [
+                ['Patel', 5], ['Sharma', 4], ['Kumar', 4], ['Shah', 4], ['Gupta', 3], ['Mehta', 3],
+                ['Desai', 3], ['Joshi', 3], ['Chauhan', 2], ['Parmar', 2], ['Modi', 2], ['Solanki', 2],
+                ['Nair', 2], ['Rao', 2], ['Reddy', 2], ['Iyer', 2], ['Bhatt', 2], ['Trivedi', 1],
+                ['Vora', 1], ['Dave', 1], ['Naik', 1], ['Thakkar', 1], ['Prajapati', 1], ['Lakhani', 1]
+            ]
+        }
+    ],
 };
 
 // ── AUSBAU: Patches auf BESTEHENDE Regionen (Wiring-Schleife s. Kopf, Edit c) ──
@@ -196,6 +233,27 @@ const NEW_REGIONS = {
 // datenreal); last verliert die ostasiatischen Köpfe an r3 (Wong/Chan/Lee/
 // Nguyen/Kim), Rest unverändert.
 const REGION_PATCHES = {
+    // ── WELLE 5 (2026-09-01) ────────────────────────────────────────────────
+    // GBR r1 war „britisch-asiatisch" als Sammeltopf: Imran/Zain/Amir neben
+    // Jay/Aman/Dev/Aryan/Kian, Khan/Ahmed neben Singh/Patel/Sharma. Gemessen
+    // waren 43,5 % der Paarungen ethnisch unmöglich („Imran Singh", „Abdul
+    // Sharma"). r1 wird auf muslimisch verengt, Sikh/Hindu haben jetzt r2/r3.
+    GBR: {
+        1: {
+            first: [
+                ['Mohammed', 5], ['Imran', 3], ['Hamza', 3], ['Bilal', 3], ['Zain', 3], ['Usman', 3],
+                ['Omar', 3], ['Hassan', 2], ['Ibrahim', 2], ['Yusuf', 2], ['Amir', 2], ['Adil', 2],
+                ['Faisal', 2], ['Enaam', 2], ['Salman', 2], ['Farhan', 1], ['Junaid', 1],
+                ['Kashif', 1], ['Zeeshan', 1], ['Rehan', 1]
+            ],
+            last: [
+                ['Khan', 5], ['Ahmed', 4], ['Ali', 4], ['Hussain', 4], ['Malik', 3], ['Mahmood', 3],
+                ['Iqbal', 3], ['Aslam', 2], ['Butt', 2], ['Chaudhry', 2], ['Rehman', 2], ['Akhtar', 2],
+                ['Sheikh', 2], ['Qureshi', 2], ['Miah', 2], ['Uddin', 2], ['Islam', 2], ['Rashid', 1],
+                ['Nawaz', 1], ['Bhatti', 1], ['Baig', 1], ['Mirza', 1]
+            ]
+        }
+    },
     CAN: {
         2: {
             minYear: 1990,
@@ -213,6 +271,37 @@ const REGION_PATCHES = {
     // + asiatischer Nachname ist der reale 2.-Generations-Normalfall, und
     // asiatische VORNAMEN existieren in den US-Daten praktisch nicht.
     USA: {
+        // WELLE 5 (2026-09-01): r1 bekommt ein ÄRA-FENSTER statt der flachen Liste.
+        // Der Anglo-Kopf in r1 ist demografisch richtig (2./3. Generation heißt
+        // Michael, nicht José) — aber er war zeitlos: „Brandon Cantu" war 1950
+        // ziehbar. early bleibt rein spanisch, die Anglo-Rufnamen wachsen über
+        // mid nach modern hinein. Die Datenmasse landet ohnehin nur in mid/modern
+        // (Build Schritt 5, Fenster-Zweig) — early bleibt kuratiert und sauber.
+        1: {
+            first: {
+                early: [
+                    ['José', 4], ['Juan', 4], ['Carlos', 4], ['Manuel', 3], ['Luis', 3], ['Miguel', 3],
+                    ['Pedro', 3], ['Jorge', 3], ['Ramon', 3], ['Rafael', 2], ['Ricardo', 2], ['Roberto', 2],
+                    ['Alberto', 2], ['Armando', 2], ['Salvador', 2], ['Arturo', 2], ['Alfredo', 2],
+                    ['Mario', 2], ['Antonio', 2], ['Ernesto', 1], ['Emilio', 1], ['Felipe', 1], ['Enrique', 1]
+                ],
+                mid: [
+                    ['Jose', 4], ['Juan', 4], ['Carlos', 4], ['Luis', 3], ['Miguel', 3], ['Jorge', 3],
+                    ['Ricardo', 3], ['Roberto', 3], ['Javier', 3], ['Sergio', 3], ['Mario', 3], ['Antonio', 3],
+                    ['Oscar', 3], ['Rafael', 2], ['Pedro', 2], ['Alejandro', 2], ['Fernando', 2], ['Hector', 2],
+                    ['Cesar', 2], ['Ruben', 2], ['Raul', 2], ['Marco', 2], ['Michael', 1],
+                    ['Tony', 1], ['Danny', 1], ['Frank', 1], ['Eddie', 1]
+                ],
+                modern: [
+                    ['Diego', 3], ['Santiago', 3], ['Jose', 3], ['Juan', 3], ['Carlos', 3], ['Luis', 3],
+                    ['Adrian', 3], ['Christian', 3], ['Gabriel', 3], ['Sebastian', 3], ['Michael', 2],
+                    ['Chris', 2], ['Anthony', 3], ['Kevin', 2], ['Ryan', 2], ['Miguel', 3], ['Cristian', 3],
+                    ['Julian', 3], ['Mario', 3], ['Marco', 3], ['Oscar', 3], ['Eric', 2], ['Kyle', 2],
+                    ['Danny', 2], ['Justin', 2], ['Tyler', 2], ['Austin', 2], ['Dylan', 2], ['Brandon', 2],
+                    ['Jesse', 2]
+                ]
+            }
+        },
         0: {
             first: {
                 early:  [['Bill',5],['Jim',5],['Bob',5],['Jack',4],['Dan',4],['Sam',3],['Tony',3],['Eddie',3],['Johnny',3],['Don',3],['Chuck',2],['Gene',2],['Lee',2],['Richie',2],['Walt',1],['Rodger',1]],
@@ -250,10 +339,23 @@ const WEIGHT_PROPOSALS = {
     FIN: { action: 'keep', w: [0.90, 0.10],
         beleg: 'Finnlandschweden 10 % = 2× Bevölkerungsanteil (5,2 %) — exakt der F1-Befund: ' +
                'Rosberg (Keke+Nico Wurzeln) von ~9 FIN-F1-Fahrern; bereits korrekt motorsport-gewichtet.' },
-    GBR: { action: 'keep', w: [0.92, 0.08],
+    // WELLE 5 (2026-09-01): 'keep' [0.92,0.08] → 'change'. Die 8 % bleiben in
+    // Summe unangetastet, sie werden nur DREIGETEILT (r0 unberührt).
+    // Aufteilung nach Census 2021 England & Wales: pakistanisch 2,7 % +
+    // bangladeschisch 1,1 % = 3,8 % (nahezu vollständig muslimisch), indisch
+    // 3,1 % (davon rund 45 % Hindu, 22 % Sikh, 14 % Muslim). Auf die
+    // südasiatische Gesamtmasse gerechnet: muslimisch ~61 %, Hindu ~20 %,
+    // Sikh ~10 %, Rest (Christen, Jains, Tamilen) ~9 % → dem Hindu-Pool
+    // zugeschlagen, dessen Namensstock diese Gruppen mitträgt.
+    // ⚠ Sikh-Anteil von 10 auf 15 % angehoben: die Punjabi-Diaspora der West
+    //   Midlands/Southall ist im Kfz- und Transportgewerbe stark verankert, was
+    //   den Zugang zum Kartsport begünstigt — Setzung ohne Fahrer-Anker.
+    GBR: { action: 'change', w: [0.92, 0.046, 0.012, 0.022], wAlt: [0.92, 0.08],
         beleg: 'Britisch-asiatisch 8 % ≈ Bevölkerung England 2021 (~9 %); Motorsport-Anker existiert ' +
                '(Enaam Ahmed, brit.-pakistanisch, F3-Champion 2017), Kart-Beteiligung wachsend. minYear 1995 plausibel ' +
-               '(Haupteinwanderung 1960er–70er → 2. Generation debütiert ~1985–95).' },
+               '(Haupteinwanderung 1960er–70er → 2. Generation debütiert ~1985–95). ' +
+               'WELLE 5: dreigeteilt r1 muslimisch 0.046 / r2 Sikh 0.012 / r3 Hindu 0.022 — ein Sammeltopf ' +
+               'erzeugte „Imran Singh" und „Abdul Sharma" (43,5 % unmögliche Paarungen gemessen).' },
     FRA: { action: 'keep', w: [0.90, 0.10],
         beleg: 'Maghreb/Westafrika 10 %: Anker Isack Hadjar (algerischstämmig, F1 2025) + Kart-Basis Banlieue; ' +
                'minYear 1995 passt (Hauptzuzug 1960er–70er, 2. Generation debütiert ab ~1990ern).' },
