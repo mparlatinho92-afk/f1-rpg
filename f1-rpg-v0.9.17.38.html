@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.37</title>
+    <title>F1 RPG v0.9.17.38</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.37 (aktuell) - 01.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.38 (aktuell) - 02.09.2026</div>
+                            <div>&#8226; NEU: Doppelnamen mit Bindestrich - beide Teile immer aus demselben Kulturraum</div>
+                            <div>&#8226; NEU: Haeufigkeit sinkt ueber die Jahrzehnte, in den 50ern am hoechsten</div>
+                            <div>&#8226; FIX: Lange Namen verkleinern sich automatisch statt umzubrechen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.37 - 01.09.2026</div>
                             <div>&#8226; NEU: Abschiedstexte beim Ruecktritt deutlich variantenreicher</div>
                             <div>&#8226; FIX: Britisch-asiatische Namen jetzt nach Sikh, Hindu und muslimisch getrennt</div>
                             <div>&#8226; FIX: US-hispanische Fahrer tragen anglo-Vornamen nur noch in der Moderne</div>
@@ -17452,7 +17456,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.37';
+        const VERSION = '0.9.17.38';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -20159,7 +20163,62 @@ const CIRCUIT_LAYOUTS = {
                 const filtered = lastArr.filter(n => !usedLastNames.has(n[0]));
                 if (filtered.length) lastArr = filtered;
             }
-            return { firstName, lastName: weightedPick(lastArr) };
+            let lastName = weightedPick(lastArr);
+            // Bindestrich-Doppelname: zweiter Zug aus DERSELBEN Regionsliste, damit
+            // beide Teile aus einem Kulturraum stammen („Müller-Schmidt", nie
+            // „Müller-Dogan"). Nur Region 0 — die Diaspora-Regionen kennen die Form
+            // nicht („Khan-Iqbal" gibt es nicht).
+            if (region === pool.regions[0]) {
+                const rate = hyphenNameRate(nation, year);
+                if (rate > 0 && Math.random() < rate) {
+                    // Zweiter Teil nur aus dem gewichteten Kern (w > 1), nie aus dem
+                    // Gewicht-1-Tail: dort liegen Raritäten und Einwanderer-Namen, die
+                    // einzeln vertretbar sind, in der Kombination aber auffallen
+                    // („Vinci-Popa" im italienischen Pool).
+                    const core = lastArr.filter(e => e[1] > 1);
+                    const second = weightedPick(core.length ? core : lastArr);
+                    // Längengrenze großzügig: die Anzeige regelt sich selbst
+                    // (fitLongNames verkleinert die Schrift). Gekappt wird nur, was
+                    // auch verkleinert keine Spalte mehr hergibt.
+                    if (second !== lastName && !second.includes('-') && !lastName.includes('-')
+                        && lastName.length + second.length <= 28) {
+                        lastName = lastName + '-' + second;
+                    }
+                }
+            }
+            return { firstName, lastName };
+        }
+
+        // Wahrscheinlichkeit eines Bindestrich-Doppelnamens (Kulturraum × Ära).
+        // ⚠ GESETZT, nicht gemessen: keine Projektquelle trägt die Zahl. F1DB hat
+        // 849 Fahrer mit 11 Fällen (zu dünn für Raten je Nation), sur_agg.csv kennt
+        // die Kategorie gar nicht (Aggregation trennt Bindestrich-Namen), der
+        // Wikidata-Satz liegt nur als Land×Dekade×Anzahl vor. Belegbar ist nur die
+        // FORM der Kurve: alle 11 realen F1-Doppelnamen debütieren 1950–1988, keiner
+        // danach — der double-barrelled Name ist ein Oberschicht-Marker, und der frühe
+        // Motorsport war Oberschicht. Deshalb Ära-Abfall statt fester Rate.
+        // Iberisch fehlt bewusst: „Pérez-Sala" ist kein Doppelname, sondern das
+        // reguläre Zwei-Nachnamen-System (Vater+Mutter) und bräuchte eigene Mechanik.
+        // Anglophone Ex-Kolonien (RSA/AUS/NZL/ZIM) wären die nächsten Kandidaten.
+        const HYPHEN_NAME_CURVE = {
+            GBR: [[1955, 0.025], [1985, 0.010], [2020, 0.003]],
+            FRA: [[1955, 0.015], [1985, 0.006], [2020, 0.002]],
+            GER: [[1955, 0.003], [2020, 0.003]],
+            ITA: [[1955, 0.004], [2020, 0.004]]
+        };
+        function hyphenNameRate(nation, year) {
+            const pts = HYPHEN_NAME_CURVE[nation];
+            if (!pts) return 0;
+            if (year <= pts[0][0]) return pts[0][1];
+            const last = pts[pts.length - 1];
+            if (year >= last[0]) return last[1];
+            for (let i = 1; i < pts.length; i++) {
+                if (year <= pts[i][0]) {
+                    const [y0, r0] = pts[i - 1], [y1, r1] = pts[i];
+                    return r0 + (r1 - r0) * (year - y0) / (y1 - y0);
+                }
+            }
+            return last[1];
         }
 
         // Dev-Auswertung (Paket A): sampelt N Fahrer über die echte Pipeline
@@ -51069,6 +51128,36 @@ Empfohlene Wertebereiche:
             updateSeasonSelector();
             renderNav();
             renderContent();
+            fitLongNames();
+        }
+
+        // Lange Namen automatisch verkleinern, statt sie umbrechen oder überlaufen
+        // zu lassen. Anlass: Bindestrich-Doppelnamen (v0.9.17.38) und lange
+        // Einzelnamen („Philip Fotheringham-Parker", „Bezuidenhout") sprengen enge
+        // Spalten. Statt an ~70 Render-Stellen einzugreifen, läuft EIN Pass nach dem
+        // Rendern und schrumpft nur dort, wo es wirklich klemmt.
+        // Zwei Symptome, beide nötig: Überlauf (scrollWidth) UND Umbruch
+        // (scrollHeight) — ohne white-space:nowrap bricht ein zu langer Name um,
+        // statt überzulaufen, dann bliebe scrollWidth === clientWidth.
+        // Der Längen-Vorfilter ist der Performance-Trick: nur Elemente ab 14 Zeichen
+        // werden überhaupt gemessen, alles andere kostet keinen Reflow. In der
+        // Saison-Matrix mit ihren tausenden Zellen bleibt so eine Handvoll übrig.
+        function fitLongNames(root) {
+            const els = (root || document).querySelectorAll('td, .driver-link, .truncate');
+            for (const el of els) {
+                if (el.childElementCount > 1) continue;
+                if (el.dataset.nmFit) { el.style.fontSize = ''; delete el.dataset.nmFit; }
+                if ((el.textContent || '').trim().length < 14) continue;
+                // Inline-Elemente haben clientWidth 0 — dort wäre die Enge-Bedingung
+                // immer wahr und jeder lange Name würde grundlos geschrumpft.
+                if (!el.clientWidth) continue;
+                const lh = parseFloat(getComputedStyle(el).lineHeight) || 16;
+                const zuEng = () => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > lh * 1.6;
+                if (!zuEng()) continue;
+                let s = 1;
+                while (zuEng() && s > 0.72) { s -= 0.06; el.style.fontSize = s.toFixed(2) + 'em'; }
+                el.dataset.nmFit = '1';
+            }
         }
         
         // === RENNEN-DETAIL MODAL ===
