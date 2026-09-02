@@ -184,31 +184,33 @@ am 02.09.2026 zurückgestellt.
 Ex-Kolonien RSA/AUS/NZL/ZIM erben den britischen Namensstock samt double-barrelled
 Tradition — stehen aktuell auf 0 %.
 
-## Anzeige: automatische Schriftverkleinerung statt Längengrenze
+## Anzeige: Schrift-Notnagel für zu lange Namen
 
-Nutzer-Einwand zur 21-Zeichen-Grenze: „Trick für Fotheringham-Parker —
-automatische Verkleinerung der Schrift." Richtig, die Grenze warf echten
-Realismus weg. Grenze auf 28 angehoben, die Anzeige regelt sich jetzt selbst.
+Nutzer-Einwand zur 21-Zeichen-Grenze: „Trick für Fotheringham-Parker — automatische
+Verkleinerung der Schrift." Grenze auf 28 angehoben.
 
-**Befund bei der Suche nach der Bruchstelle:** die Klasse `truncate` kommt im
-Markup 4× vor, hat aber **keine CSS-Regel** — sie ist wirkungslos. Lange Namen
-wurden bis dahin überhaupt nicht behandelt.
+**Befund bei der Suche nach der Bruchstelle:** die Klasse `truncate` kommt im Markup
+4× vor, hat aber **keine CSS-Regel** — sie ist wirkungslos.
 
-`fitLongNames()` läuft am Ende von `renderAll()`. Statt an ~70 Render-Stellen
-einzugreifen (es gibt keine zentrale Fahrernamen-Funktion), misst ein Pass am
-Element und schrumpft nur dort, wo es klemmt — in 0,06-Schritten bis minimal
-0,72em.
+`fitLongNames()` läuft am Ende von `renderAll()` und greift **nur bei echtem
+horizontalem Überlauf** (`scrollWidth > clientWidth`), in 0,05-Schritten bis minimal
+0,8em. Kandidaten sind ausschließlich `.driver-link` und `.truncate` — 25 Elemente,
+0,1 ms je Durchlauf, im Normalfall wird nichts angefasst.
 
-Drei Punkte, die den Unterschied machen:
+⚠ **Die erste Fassung war überkorrekt und wurde zurückgebaut** (Nutzer-Korrektur nach
+Blick in index.html). Sie prüfte zusätzlich die Höhe (`scrollHeight > lineHeight*1.6`)
+und lief über **alle** `<td>`. Beides falsch:
 
-1. **Zwei Symptome prüfen, nicht eins.** Ohne `white-space: nowrap` bricht ein zu
-   langer Name **um**, statt überzulaufen — dann bleibt `scrollWidth ===
-   clientWidth` und eine reine Breitenprüfung sieht nichts. Deshalb zusätzlich
-   `scrollHeight > lineHeight * 1.6`.
-2. **Längen-Vorfilter vor jeder Messung.** Nur Elemente ab 14 Zeichen werden
-   gemessen; alles andere kostet keinen Reflow. Gemessen: **0,4 ms** pro
-   Durchlauf über das gesamte Dokument.
-3. **Inline-Elemente überspringen** (`clientWidth === 0`). Sonst ist die
-   Enge-Bedingung dort immer wahr und jeder lange Name würde grundlos auf 0,72em
-   geschrumpft. Im Test verifiziert: enge Spalte → 0,7em, freistehender
-   Inline-Span → unberührt.
+- **Umbruch ist kein Platzmangel.** Eine zweizeilige Zelle ist normal — die
+  Höhenprüfung hätte reihenweise völlig intakte Elemente verkleinert.
+- **Ein `<td>` ist kein Namensfeld.** Der Selektor fasste tausende Zellen an, um eine
+  Handvoll Namen zu erwischen.
+
+Was bleibt: verkleinern nur, wenn der Text wirklich nicht passt. Der Preis ist, dass
+ohne `white-space: nowrap` selten echter Überlauf entsteht — der Notnagel greift
+dadurch fast nie. Genau so ist er gemeint.
+
+Weiterhin ungeprüft: die Wirkung in der Saison-Matrix. Der Mechanismus ist an einer
+künstlich verengten Spalte verifiziert, die konkrete Stelle im Spiel nicht — der
+Rennablauf braucht mehr Klicks, als ein Driver-Durchgang hergibt, und Simulation plus
+Auswertung müssen in dieselbe Sitzung.
