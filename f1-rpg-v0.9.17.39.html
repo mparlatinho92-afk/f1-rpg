@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.38</title>
+    <title>F1 RPG v0.9.17.39</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.38 (aktuell) - 02.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.39 (aktuell) - 02.09.2026</div>
+                            <div>&#8226; FIX: Namen werden nur noch verkleinert wenn sie wirklich nicht passen, nicht schon beim Zeilenumbruch</div>
+                            <div class="font-bold text-slate-400">v0.9.17.38 - 02.09.2026</div>
                             <div>&#8226; NEU: Doppelnamen mit Bindestrich - beide Teile immer aus demselben Kulturraum</div>
                             <div>&#8226; NEU: Haeufigkeit sinkt ueber die Jahrzehnte, in den 50ern am hoechsten</div>
                             <div>&#8226; FIX: Lange Namen verkleinern sich automatisch statt umzubrechen</div>
@@ -17456,7 +17458,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.38';
+        const VERSION = '0.9.17.39';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -20177,9 +20179,8 @@ const CIRCUIT_LAYOUTS = {
                     // („Vinci-Popa" im italienischen Pool).
                     const core = lastArr.filter(e => e[1] > 1);
                     const second = weightedPick(core.length ? core : lastArr);
-                    // Längengrenze großzügig: die Anzeige regelt sich selbst
-                    // (fitLongNames verkleinert die Schrift). Gekappt wird nur, was
-                    // auch verkleinert keine Spalte mehr hergibt.
+                    // Längengrenze: „Fotheringham-Parker" (18) soll durchkommen,
+                    // Extremfälle wie „Bezuidenhout-Oosthuizen" nicht.
                     if (second !== lastName && !second.includes('-') && !lastName.includes('-')
                         && lastName.length + second.length <= 28) {
                         lastName = lastName + '-' + second;
@@ -51131,31 +51132,22 @@ Empfohlene Wertebereiche:
             fitLongNames();
         }
 
-        // Lange Namen automatisch verkleinern, statt sie umbrechen oder überlaufen
-        // zu lassen. Anlass: Bindestrich-Doppelnamen (v0.9.17.38) und lange
-        // Einzelnamen („Philip Fotheringham-Parker", „Bezuidenhout") sprengen enge
-        // Spalten. Statt an ~70 Render-Stellen einzugreifen, läuft EIN Pass nach dem
-        // Rendern und schrumpft nur dort, wo es wirklich klemmt.
-        // Zwei Symptome, beide nötig: Überlauf (scrollWidth) UND Umbruch
-        // (scrollHeight) — ohne white-space:nowrap bricht ein zu langer Name um,
-        // statt überzulaufen, dann bliebe scrollWidth === clientWidth.
-        // Der Längen-Vorfilter ist der Performance-Trick: nur Elemente ab 14 Zeichen
-        // werden überhaupt gemessen, alles andere kostet keinen Reflow. In der
-        // Saison-Matrix mit ihren tausenden Zellen bleibt so eine Handvoll übrig.
+        // Notnagel für zu lange Namen — greift NUR bei echtem Platzmangel, also
+        // wenn der Text horizontal aus seinem Element läuft. Umbruch ist KEIN
+        // Platzmangel: eine zweizeilige Zelle ist normal, und eine Höhenprüfung
+        // hätte hier reihenweise Elemente verkleinert, die völlig in Ordnung sind.
+        // Ebenso wenig ein Grund: irgendeine <td> — nur ausgewiesene Namensfelder.
         function fitLongNames(root) {
-            const els = (root || document).querySelectorAll('td, .driver-link, .truncate');
+            const els = (root || document).querySelectorAll('.driver-link, .truncate');
             for (const el of els) {
                 if (el.childElementCount > 1) continue;
                 if (el.dataset.nmFit) { el.style.fontSize = ''; delete el.dataset.nmFit; }
-                if ((el.textContent || '').trim().length < 14) continue;
-                // Inline-Elemente haben clientWidth 0 — dort wäre die Enge-Bedingung
-                // immer wahr und jeder lange Name würde grundlos geschrumpft.
-                if (!el.clientWidth) continue;
-                const lh = parseFloat(getComputedStyle(el).lineHeight) || 16;
-                const zuEng = () => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > lh * 1.6;
-                if (!zuEng()) continue;
+                if (!el.clientWidth) continue;   // inline: clientWidth 0, nicht messbar
+                if (el.scrollWidth <= el.clientWidth + 1) continue;
                 let s = 1;
-                while (zuEng() && s > 0.72) { s -= 0.06; el.style.fontSize = s.toFixed(2) + 'em'; }
+                while (el.scrollWidth > el.clientWidth + 1 && s > 0.8) {
+                    s -= 0.05; el.style.fontSize = s.toFixed(2) + 'em';
+                }
                 el.dataset.nmFit = '1';
             }
         }
