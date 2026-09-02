@@ -1,6 +1,14 @@
 # Livery-Werkzeug – Datenformat & Bauplan
 
-Ersetzt den Google-Calc-Reiter „teamfarben". Stand: Konzept, kein Code.
+Ersetzt den Google-Calc-Reiter „teamfarben". **Gebaut und geprüft am 02.09.2026.**
+
+| Datei | Zweck |
+|---|---|
+| `tools/livery-report.html` | die Werkstatt. Live-Modus über den Dev-Server: `localhost:3000/tools/livery-report.html` |
+| `tools/livery-core.js` | gemeinsamer Kern für Browser **und** Node – Extraktion, Zellen, Farbworte, Faltung |
+| `tools/build-livery-snapshot.js` | `node tools/build-livery-snapshot.js [--inline]` → Snapshot, optional Standalone |
+| `tools/livery-snapshot.json` | Spielstand der Farben, für den Werkstatt-Modus |
+| `tools/livery-report.standalone.html` | eine Datei mit allem drin – für unterwegs |
 
 ## 0. Grundsatz
 
@@ -92,7 +100,7 @@ darauf zeigt. Alles andere ist Kladde und wird als offener Posten gezählt:
 | `unentschieden` | ≥2 Kandidaten, `pick` fehlt | Eurobrun: „weiß" **und** „historische Dynamik-Farben" |
 | `widerspruch` | ≥2 Kandidaten mit `stage: bestaetigt` | Saison-Chat gegen Team-Chat auf derselben Zelle |
 | `nur-idee` | Kandidaten vorhanden, keiner über `idee` hinaus | BAR „einfach weiß" |
-| `einheitsfarbe` | Team ≥3 Saisons, alle Zellen identisch, Herkunft `spiel` | **March 14× `#ff6600`**, Renault 24×, BRM 23×, Cooper 19× — 20 Teams, 192 Team-Jahre |
+| `einheitsfarbe` | Team ≥3 Saisons, alle Zellen identisch, Herkunft `spiel` | **March 14× `#ff6600`**, BRM 23×, Cooper 19× — 17 Teams, 179 Team-Jahre |
 | `abweichend` | Lieferstatus (s. o.) | Beschlossenes ≠ Eingebautes |
 
 `einheitsfarbe` ist der Befund, den das Sheet nicht liefern konnte: kein Fehler,
@@ -197,5 +205,5 @@ Von den verbleibenden 960:
 | `SEASON_DATA`-Einzelfarbe | 365 |
 | gar nichts → grau | 286 (104 Teams) |
 
-Echtes Banner (2–3 Farben): 309 von 960 = **32 %**.
-Davon abzuziehen: 192 Team-Jahre in 20 Teams mit `einheitsfarbe`-Befund.
+Echtes Banner (2–3 Farben): 279 von 960 = **29 %**.
+Dazu 179 Team-Jahre in 17 Teams mit `einheitsfarbe`-Befund: eingefärbt, aber ohne Ära-Struktur.

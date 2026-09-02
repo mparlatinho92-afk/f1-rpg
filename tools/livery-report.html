@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1 RPG – Teamfarben-Werkstatt</title>
+<style>
+  :root{
+    --bg:#14161a; --panel:#1c1f25; --panel2:#23272f; --line:#2e333c;
+    --text:#e6e8ec; --muted:#9aa2ae; --dim:#6b7280;
+    --ok:#3fb950; --warn:#d29922; --bad:#f85149; --info:#58a6ff;
+    --idee:#6b7280; --vorschlag:#d29922; --bestaetigt:#3fb950;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+  button,select,input,textarea{font:inherit;color:inherit}
+  button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+         padding:5px 10px;cursor:pointer}
+  button:hover{border-color:var(--dim)}
+  button.on{background:var(--info);border-color:var(--info);color:#0b1220;font-weight:600}
+  input,select,textarea{background:var(--panel2);border:1px solid var(--line);
+         border-radius:6px;padding:5px 8px}
+  a{color:var(--info)}
+  .mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+
+  /* ---- Kopf ---- */
+  header{position:sticky;top:0;z-index:20;background:var(--panel);
+         border-bottom:1px solid var(--line)}
+  .mode{padding:7px 14px;font-weight:600;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .mode.live{background:#0f2a17;color:#7ee787}
+  .mode.snap{background:#2b2410;color:#e3b341}
+  .mode.err {background:#2d1418;color:#ff9492}
+  .mode small{font-weight:400;opacity:.8}
+  .bar{display:flex;gap:8px;align-items:center;padding:8px 14px;flex-wrap:wrap}
+  .grow{flex:1}
+  .stats{display:flex;gap:14px;padding:0 14px 9px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+  .stats b{color:var(--text);font-size:14px}
+
+  /* ---- Layout ---- */
+  main{display:flex;align-items:flex-start;gap:0}
+  #view{flex:1;min-width:0;padding:12px 14px 60px;overflow-x:auto}
+  #side{width:340px;flex:none;border-left:1px solid var(--line);background:var(--panel);
+        padding:12px 14px 40px;position:sticky;top:96px;max-height:calc(100vh - 96px);overflow:auto}
+  @media(max-width:900px){
+    main{flex-direction:column}
+    #side{width:100%;position:static;max-height:none;border-left:0;border-top:1px solid var(--line)}
+  }
+
+  /* ---- Team-Zeitstrahl ---- */
+  .trow{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  .tname{width:150px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+         font-weight:600;font-size:13px;cursor:pointer}
+  .tname:hover{text-decoration:underline}
+  .tspan{display:flex;gap:1px}
+  .cell{width:10px;height:22px;flex:none;cursor:pointer;position:relative;border-radius:1px}
+  .cell:hover{outline:2px solid var(--info);outline-offset:0;z-index:2}
+  .cell.sel{outline:2px solid #fff;z-index:3}
+  .cell.gap{background:repeating-linear-gradient(45deg,#2a2f38 0 3px,#1c2027 3px 6px)}
+  .cell.void{background:transparent}
+  .dot{position:absolute;right:1px;top:1px;width:5px;height:5px;border-radius:50%}
+  .axis{display:flex;gap:1px;margin:0 0 6px 158px;color:var(--dim);font-size:10px}
+  .axis span{width:10px;flex:none;text-align:center}
+  .axis span.dec{color:var(--muted);font-weight:600}
+
+  /* ---- Jahr-Kacheln ---- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;
+        cursor:pointer}
+  .card:hover{border-color:var(--info)}
+  .card.sel{border-color:#fff}
+  .strip{height:30px}
+  .cname{padding:7px 9px 0;font-weight:700;font-size:15px;letter-spacing:.2px;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cmeta{padding:6px 9px;display:flex;justify-content:space-between;align-items:center;
+         font-size:11px;color:var(--muted)}
+  .swatches{display:flex;gap:3px}
+  .sw{width:13px;height:13px;border-radius:3px;border:1px solid #0006}
+
+  /* ---- Badges ---- */
+  .b{display:inline-block;padding:1px 6px;border-radius:10px;font-size:11px;
+     border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .b.extra{color:#d2a8ff;border-color:#553d7a}
+  .b.range{color:#7ee787;border-color:#2d5a35}
+  .b.sd{color:#79c0ff;border-color:#1f4d78}
+  .b.none{color:var(--dim)}
+  .b.idee{color:var(--idee)}
+  .b.vorschlag{color:var(--vorschlag);border-color:#5c4813}
+  .b.bestaetigt{color:var(--bestaetigt);border-color:#2d5a35}
+  .b.abweichend{color:var(--bad);border-color:#5c2626}
+  .b.im-spiel{color:var(--ok);border-color:#2d5a35}
+  .b.werkstatt{color:var(--muted)}
+
+  /* ---- Seitenpanel ---- */
+  #side h3{margin:0 0 2px;font-size:16px}
+  #side .sub{color:var(--muted);font-size:12px;margin-bottom:12px}
+  .sect{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+  .sect h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;
+           color:var(--muted);font-weight:600}
+  .cand{border:1px solid var(--line);border-radius:7px;padding:8px;margin-bottom:8px;
+        background:var(--panel2)}
+  .cand.picked{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}
+  .cand .head{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+  .cand .acts{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+  .cand .acts button{padding:3px 8px;font-size:12px}
+  .preview{display:flex;gap:6px;margin:6px 0}
+  .pv{flex:1;border-radius:5px;padding:5px 7px;font-weight:700;font-size:13px;
+      text-align:center;border:1px solid var(--line)}
+  .pv.l{background:#f0f2f5}
+  .pv.d{background:#111}
+  .field{display:block;margin-bottom:7px}
+  .field span{display:block;font-size:11px;color:var(--muted);margin-bottom:2px}
+  .field input,.field textarea,.field select{width:100%}
+  .hint{color:var(--muted);font-size:12px}
+
+  /* ---- Offene Posten ---- */
+  .find{border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin-bottom:7px;
+        background:var(--panel);cursor:pointer}
+  .find:hover{border-color:var(--info)}
+  .find .t{font-weight:600}
+  .find .d{color:var(--muted);font-size:12px}
+
+  /* ---- Dialog ---- */
+  dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);
+         border-radius:10px;padding:0;max-width:min(720px,94vw);width:100%}
+  dialog::backdrop{background:#000a}
+  .dlg-h{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600;
+         display:flex;justify-content:space-between;align-items:center}
+  .dlg-b{padding:14px 16px;max-height:70vh;overflow:auto}
+  .dlg-f{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;
+         justify-content:flex-end;flex-wrap:wrap}
+  textarea{width:100%;min-height:180px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .warn{color:var(--warn)} .bad{color:var(--bad)} .ok{color:var(--ok)}
+  table.k{width:100%;border-collapse:collapse;font-size:12px}
+  table.k td{padding:3px 6px;border-bottom:1px solid var(--line)}
+  table.k td:first-child{color:var(--muted);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mode" id="mode">lädt …</div>
+  <div class="bar">
+    <button id="vTeam" class="on">nach Team</button>
+    <button id="vYear">nach Jahr</button>
+    <span id="yearWrap" style="display:none">
+      <select id="year"></select>
+    </span>
+    <input id="q" placeholder="Team suchen …" style="width:170px">
+    <label class="hint"><input type="checkbox" id="fIndy" checked> Indy ausblenden</label>
+    <select id="filter">
+      <option value="">alle Teams</option>
+      <option value="luecke">nur Lücken</option>
+      <option value="einheitsfarbe">nur Einheitsfarbe</option>
+      <option value="offen">nur offene Posten</option>
+      <option value="werkstatt">nur mit Werkstatt-Daten</option>
+    </select>
+    <span class="grow"></span>
+    <button id="btnFind">Offene Posten</button>
+    <button id="btnImport">Import</button>
+    <button id="btnExport">Export</button>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<main>
+  <div id="view"></div>
+  <aside id="side"><div class="hint">Klick auf ein Team-Jahr, um es zu bearbeiten.</div></aside>
+</main>
+
+<dialog id="dlg">
+  <div class="dlg-h"><span id="dlgTitle"></span><button onclick="dlg.close()">schließen</button></div>
+  <div class="dlg-b" id="dlgBody"></div>
+  <div class="dlg-f" id="dlgFoot"></div>
+</dialog>
+
+<!-- SNAPSHOT-INLINE -->
+<script src="livery-core.js"></script>
+<script>
+'use strict';
+
+/* ======================================================================
+   Zustand
+   ====================================================================== */
+const S = {
+  mode: 'lädt',          // live | snapshot | fehler
+  meta: null,
+  teams: {}, cells: {},  // Spielseite (Snapshot ODER live gelesen)
+  findings: { luecke: [], einheitsfarbe: [] },
+  work: { cells: {}, imports: [], images: {} },   // deine Werkstatt
+  ui: { view: 'team', year: 2025, sel: null, q: '', indy: true, filter: '' }
+};
+const WORK_KEY = 'f1rpg-livery-work-v1';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ======================================================================
+   Laden: erst live versuchen, sonst Snapshot
+   ====================================================================== */
+async function boot() {
+  loadWork();
+  try {
+    await bootLive();
+  } catch (liveErr) {
+    try {
+      await bootSnapshot(liveErr);
+    } catch (snapErr) {
+      S.mode = 'fehler';
+      renderMode('Weder Live-Daten noch Snapshot lesbar: ' + snapErr.message);
+      return;
+    }
+  }
+  buildYearList();
+  wire();
+  render();
+}
+
+async function bootLive() {
+  const grab = async f => {
+    const r = await fetch('../' + f, { cache: 'no-store' });
+    if (!r.ok) throw new Error(f + ' → HTTP ' + r.status);
+    return r.text();
+  };
+  const [html, seasons, hist] = await Promise.all([
+    grab('index.html'), grab('data/seasons.js'), grab('data/hist.js')
+  ]);
+
+  const SEASON_DATA = runFor(seasons, 'SEASON_DATA');
+  const indy = runFor(hist, 'INDY_500_ONLY_CONSTRUCTORS') || [];
+  const game = LiveryCore.extractGameColors(html)(SEASON_DATA);
+  const built = LiveryCore.buildCells({ SEASON_DATA, game, indyConstructors: indy });
+
+  S.teams = built.teams;
+  S.cells = built.cells;
+  S.findings = LiveryCore.gameFindings(built);
+  S.meta = {
+    gameVersion: game.version, colorHash: game.hash,
+    yearFrom: built.years[0], yearTo: built.years[built.years.length - 1],
+    rangesCount: game.TEAM_COLORS_RANGES.length
+  };
+  S.mode = 'live';
+
+  // Snapshot danebenhalten – nur um zu sagen, ob er veraltet ist.
+  let stale = null;
+  try {
+    const snap = await (await fetch('livery-snapshot.json', { cache: 'no-store' })).json();
+    if (snap && snap.meta && snap.meta.colorHash !== game.hash) stale = snap.meta.generated;
+  } catch (e) { /* kein Snapshot da – im Live-Modus verschmerzbar */ }
+
+  renderMode('direkter Draht zum Monolith · Spiel v' + game.version +
+    (stale ? ' · <span class="warn">Snapshot vom ' + stale + ' ist veraltet, build-livery-snapshot.js neu laufen lassen</span>' : ''));
+}
+
+async function bootSnapshot(whyLive) {
+  let snap = window.LIVERY_SNAPSHOT;
+  if (!snap) snap = await (await fetch('livery-snapshot.json', { cache: 'no-store' })).json();
+
+  S.teams = {}; S.cells = {};
+  for (const id in snap.teams) {
+    const t = snap.teams[id];
+    S.teams[id] = { id, name: t.name, years: t.years, indy: !!t.indy };
+  }
+  for (const key in snap.cells) {
+    const c = snap.cells[key];
+    const [team, year] = key.split(':');
+    S.cells[key] = { team, year: +year, name: snap.teams[team] ? snap.teams[team].name : team,
+                     colors: c.c || [], source: c.s, indy: !!c.i };
+  }
+  S.findings = snap.findings || { luecke: [], einheitsfarbe: [] };
+  S.meta = snap.meta;
+  S.mode = 'snapshot';
+
+  renderMode('Werkstatt-Modus · Snapshot vom ' + snap.meta.generated +
+    ' (Spiel v' + snap.meta.gameVersion + ') · <small>Lieferstatus nicht prüfbar – ' +
+    esc(whyLive ? whyLive.message : 'kein Zugriff auf den Projektordner') + '</small>');
+}
+
+/** data/*.js im Browser auswerten – const landet nicht auf window, daher Rückgabe. */
+function runFor(src, name) {
+  return new Function('window', src + '\n;return typeof ' + name + ' !== "undefined" ? ' + name + ' : null;')({});
+}
+
+function renderMode(html) {
+  const el = $('#mode');
+  el.className = 'mode ' + (S.mode === 'live' ? 'live' : S.mode === 'snapshot' ? 'snap' : 'err');
+  el.innerHTML = (S.mode === 'live' ? '● LIVE' : S.mode === 'snapshot' ? '◐ WERKSTATT' : '✕ FEHLER') +
+    ' <span style="font-weight:400">' + html + '</span>';
+}
+
+/* ======================================================================
+   Werkstatt-Daten (localStorage)
+   ====================================================================== */
+function loadWork() {
+  try {
+    const raw = localStorage.getItem(WORK_KEY);
+    if (raw) S.work = Object.assign({ cells: {}, imports: [], images: {} }, JSON.parse(raw));
+  } catch (e) { /* leerer Start ist ein gültiger Zustand */ }
+}
+function saveWork() {
+  try { localStorage.setItem(WORK_KEY, JSON.stringify(S.work)); }
+  catch (e) { alert('Arbeitsstand konnte nicht gespeichert werden: ' + e.message + '\nExportiere ihn lieber als Datei.'); }
+}
+function cellWork(key) { return S.work.cells[key] || null; }
+function ensureWork(key) {
+  if (!S.work.cells[key]) S.work.cells[key] = { pick: null, candidates: [] };
+  return S.work.cells[key];
+}
+let candSeq = Date.now() % 100000;
+const newCandId = () => 'c' + (++candSeq).toString(36);
+
+/* ======================================================================
+   Zustände einer Zelle: Fortschritt (gesetzt) + Lieferstatus (berechnet)
+   ====================================================================== */
+function picked(key) {
+  const w = cellWork(key);
+  if (!w || !w.pick) return null;
+  return w.candidates.find(c => c.id === w.pick) || null;
+}
+
+/** Lieferstatus wird NIE gespeichert – immer aus dem Vergleich abgeleitet. */
+function delivery(key) {
+  const p = picked(key);
+  const game = S.cells[key];
+  if (!p || !p.colors || !p.colors.length) return null;
+  if (S.mode !== 'live' && S.mode !== 'snapshot') return 'unbekannt';
+  const inGame = (game && game.colors || []).join(',').toUpperCase();
+  const mine = p.colors.join(',').toUpperCase();
+  if (!inGame) return 'werkstatt';
+  if (inGame === mine) return S.mode === 'live' ? 'im-spiel' : 'im-spiel*';
+  return 'abweichend';
+}
+
+/** Chaos oder Ordnung – die Prüfregeln aus LIVERY_TOOL_PLAN.md §4. */
+function verdict(key) {
+  const w = cellWork(key);
+  const game = S.cells[key];
+  const cands = w ? w.candidates : [];
+
+  if (cands.length) {
+    const conf = cands.filter(c => c.stage === 'bestaetigt');
+    if (conf.length > 1) return 'widerspruch';
+    if (!w.pick) return cands.length > 1 ? 'unentschieden' : (cands[0].stage === 'idee' ? 'nur-idee' : 'offen');
+    const d = delivery(key);
+    if (d === 'abweichend') return 'abweichend';
+    const p = picked(key);
+    if (p && p.stage !== 'bestaetigt') return 'offen';
+    return 'geklaert';
+  }
+  if (game && game.source === 'none') return 'luecke';
+  return null;
+}
+
+const VERDICT_LABEL = {
+  luecke: 'Lücke', unentschieden: 'unentschieden', widerspruch: 'Widerspruch',
+  'nur-idee': 'nur Idee', offen: 'offen', abweichend: 'weicht vom Spiel ab', geklaert: 'geklärt'
+};
+const VERDICT_COLOR = {
+  luecke: '#6b7280', unentschieden: '#d29922', widerspruch: '#f85149',
+  'nur-idee': '#8b949e', offen: '#d29922', abweichend: '#f85149', geklaert: '#3fb950'
+};
+
+const einheitsSet = () => new Set(S.findings.einheitsfarbe.map(f => f.team));
+
+/* ======================================================================
+   Darstellung der Farben – spiegelt getTeamHeaderGradient()
+   ====================================================================== */
+function gradient(colors) {
+  if (!colors || !colors.length) return 'transparent';
+  if (colors.length === 1) return colors[0];
+  if (colors.length === 2) return `linear-gradient(135deg,${colors[0]} 50%,${colors[1]} 50%)`;
+  return `linear-gradient(135deg,${colors[0]} 33.3%,${colors[1]} 33.3% 66.7%,${colors[2]} 66.7%)`;
+}
+function effective(key) {
+  const p = picked(key);
+  if (p && p.colors && p.colors.length) return { colors: p.colors, from: 'work' };
+  const g = S.cells[key];
+  return { colors: (g && g.colors) || [], from: 'game' };
+}
+
+/* ======================================================================
+   Ansichten
+   ====================================================================== */
+function visibleTeams() {
+  const q = S.ui.q.trim().toLowerCase();
+  const eins = einheitsSet();
+  const gaps = new Set(S.findings.luecke.map(f => f.team));
+  return Object.values(S.teams).filter(t => {
+    if (S.ui.indy && t.indy) return false;
+    if (q && t.name.toLowerCase().indexOf(q) < 0 && t.id.toLowerCase().indexOf(q) < 0) return false;
+    switch (S.ui.filter) {
+      case 'luecke': return gaps.has(t.id);
+      case 'einheitsfarbe': return eins.has(t.id);
+      case 'werkstatt': return t.years.some(y => cellWork(t.id + ':' + y));
+      case 'offen': return t.years.some(y => {
+        const v = verdict(t.id + ':' + y);
+        return v && v !== 'geklaert';
+      });
+    }
+    return true;
+  }).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+function renderTeamView() {
+  const y0 = S.meta.yearFrom, y1 = S.meta.yearTo;
+  const teams = visibleTeams();
+  const eins = einheitsSet();
+
+  let axis = '<div class="axis">';
+  for (let y = y0; y <= y1; y++) axis += `<span class="${y % 10 === 0 ? 'dec' : ''}">${y % 10 === 0 ? String(y).slice(2) : ''}</span>`;
+  axis += '</div>';
+
+  const rows = teams.map(t => {
+    const has = new Set(t.years);
+    let seg = '';
+    for (let y = y0; y <= y1; y++) {
+      const key = t.id + ':' + y;
+      if (!has.has(y)) { seg += '<div class="cell void"></div>'; continue; }
+      const eff = effective(key);
+      const v = verdict(key);
+      const cls = eff.colors.length ? '' : ' gap';
+      const sel = S.ui.sel === key ? ' sel' : '';
+      const style = eff.colors.length ? `background:${gradient(eff.colors)}` : '';
+      const dot = (v && v !== 'geklaert' && v !== 'luecke')
+        ? `<i class="dot" style="background:${VERDICT_COLOR[v]}"></i>` : '';
+      seg += `<div class="cell${cls}${sel}" style="${style}" data-key="${key}" title="${esc(t.name)} ${y}${v ? ' – ' + VERDICT_LABEL[v] : ''}">${dot}</div>`;
+    }
+    const flag = eins.has(t.id) ? ' <span class="b" style="color:#d29922;border-color:#5c4813">Einheitsfarbe</span>' : '';
+    return `<div class="trow"><div class="tname" data-team="${t.id}" title="${esc(t.id)}">${esc(t.name)}${flag}</div><div class="tspan">${seg}</div></div>`;
+  }).join('');
+
+  $('#view').innerHTML = axis + (rows || '<div class="hint">Kein Team passt zum Filter.</div>');
+}
+
+function renderYearView() {
+  const y = S.ui.year;
+  const q = S.ui.q.trim().toLowerCase();
+  const list = Object.values(S.teams).filter(t => {
+    if (t.years.indexOf(y) < 0) return false;
+    if (S.ui.indy && t.indy) return false;
+    if (q && t.name.toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  const cards = list.map(t => {
+    const key = t.id + ':' + y;
+    const eff = effective(key);
+    const v = verdict(key);
+    // Banner und Name werden getrennt gezeigt – der Name über einem zweifarbigen
+    // Gradient steht sonst zur Hälfte auf der falschen Farbe (Surtees weiß/rot),
+    // und ein Rand darüber verschmiert die Schrift. Im Spiel ist es genauso
+    // getrennt: Gradient ist der Header-Balken, die Schrift trägt colors[0].
+    const main = eff.colors[0] || '#888888';
+    const lum = LiveryCore.luminance(main);
+    const shadow = (lum < 0.13 || lum > 0.65)
+      ? `text-shadow:0 0 4px ${lum > 0.5 ? '#000' : '#fff'}` : '';
+    const sw = eff.colors.map(c => `<i class="sw" style="background:${c}"></i>`).join('') ||
+               '<span class="b none">keine Farbe</span>';
+    const nameStyle = eff.colors.length
+      ? `color:${main};${shadow}` : 'color:var(--dim)';
+    return `<div class="card ${S.ui.sel === key ? 'sel' : ''}" data-key="${key}">
+      <div class="strip" style="background:${gradient(eff.colors)}"></div>
+      <div class="cname" style="${nameStyle}">${esc(t.name)}</div>
+      <div class="cmeta"><span class="swatches">${sw}</span>
+        <span>${v ? `<span class="b" style="color:${VERDICT_COLOR[v]}">${VERDICT_LABEL[v]}</span>` : `<span class="b ${(S.cells[key]||{}).source}">${(S.cells[key]||{}).source}</span>`}</span></div>
+    </div>`;
+  }).join('');
+
+  $('#view').innerHTML = `<div class="grid">${cards || '<div class="hint">Keine Teams in diesem Jahr.</div>'}</div>`;
+}
+
+function renderStats() {
+  const cells = Object.values(S.cells).filter(c => !(S.ui.indy && c.indy));
+  const n = cells.length;
+  const by = s => cells.filter(c => c.source === s).length;
+  const banner = cells.filter(c => c.colors.length > 1).length;
+  let open = 0, work = 0;
+  for (const key in S.cells) {
+    if (S.ui.indy && S.cells[key].indy) continue;
+    const v = verdict(key);
+    if (v && v !== 'geklaert') open++;
+    if (cellWork(key)) work++;
+  }
+  $('#stats').innerHTML = `
+    <span><b>${n}</b> Team-Jahre</span>
+    <span>Banner <b>${banner}</b> (${(banner / n * 100).toFixed(0)} %)</span>
+    <span>RANGES <b>${by('range')}</b></span>
+    <span>SEASON_DATA <b>${by('sd')}</b></span>
+    <span>ohne Farbe <b>${by('none')}</b></span>
+    <span>Einheitsfarbe <b>${S.findings.einheitsfarbe.length}</b> Teams</span>
+    <span>offene Posten <b class="${open ? 'warn' : 'ok'}">${open}</b></span>
+    <span>Werkstatt <b>${work}</b></span>`;
+}
+
+function render() {
+  renderStats();
+  if (S.ui.view === 'team') renderTeamView(); else renderYearView();
+  renderSide();
+}
+
+/* ======================================================================
+   Seitenpanel: der Editor
+   ====================================================================== */
+function renderSide() {
+  const key = S.ui.sel;
+  if (!key) { $('#side').innerHTML = '<div class="hint">Klick auf ein Team-Jahr, um es zu bearbeiten.</div>'; return; }
+
+  const [team, year] = key.split(':');
+  const t = S.teams[team] || { name: team };
+  const game = S.cells[key];
+  const w = cellWork(key);
+  const v = verdict(key);
+  const d = delivery(key);
+
+  const gameLine = game && game.colors.length
+    ? `<span class="swatches">${game.colors.map(c => `<i class="sw" style="background:${c}"></i>`).join('')}</span>
+       <span class="b ${game.source}">${game.source}</span> <span class="mono" style="font-size:11px">${game.colors.join(' ')}</span>`
+    : '<span class="b none">grau / keine Farbe</span>';
+
+  const cands = (w ? w.candidates : []).map(c => renderCand(key, c, w.pick === c.id)).join('') ||
+    '<div class="hint">Noch kein Vorschlag. Unten anlegen.</div>';
+
+  $('#side').innerHTML = `
+    <h3>${esc(t.name)} ${year}</h3>
+    <div class="sub mono">${esc(team)}:${year}
+      ${v ? ` · <span class="b" style="color:${VERDICT_COLOR[v]}">${VERDICT_LABEL[v]}</span>` : ''}
+      ${d ? ` · <span class="b ${d.replace('*','')}">${d}</span>` : ''}</div>
+
+    <div class="sect"><h4>Im Spiel</h4><div>${gameLine}</div>
+      ${S.mode !== 'live' ? '<div class="hint" style="margin-top:5px">Werkstatt-Modus: Stand vom Snapshot, kann veraltet sein.</div>' : ''}
+    </div>
+
+    <div class="sect"><h4>Kandidaten</h4>${cands}</div>
+
+    <div class="sect"><h4>Neuer Kandidat</h4>
+      <label class="field"><span>Farbe – Hex oder Wort, „blau-blau-weiß" = ⅔ + ⅓</span>
+        <input id="nc" placeholder="z. B. #FF6600-#FF6600-weiß"></label>
+      <label class="field"><span>Notiz / Quelle</span><input id="nn" placeholder="optional"></label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button data-add="idee">als Idee</button>
+        <button data-add="vorschlag">als Vorschlag</button>
+        <button data-add="note">als Auftrag (ohne Farbe)</button>
+      </div>
+      <div style="margin-top:8px"><button data-span="1">… für eine Zeitspanne übernehmen</button></div>
+    </div>
+
+    <div class="sect"><h4>Referenzbild</h4>
+      <label class="field"><input id="img" placeholder="Bild-URL für ${esc(t.name)}"
+        value="${esc(S.work.images[team] || '')}"></label>
+      ${S.work.images[team] ? `<a href="${esc(S.work.images[team])}" target="_blank" rel="noopener">öffnen</a>
+        <div style="margin-top:6px"><img src="${esc(S.work.images[team])}" style="max-width:100%;border-radius:6px"
+        onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'bad',textContent:'Bild nicht erreichbar – URL vermutlich abgelaufen'}))"></div>` : ''}
+    </div>`;
+
+  $('#side').querySelectorAll('[data-add]').forEach(b =>
+    b.onclick = () => addCandidate(key, b.dataset.add));
+  const span = $('#side').querySelector('[data-span]');
+  if (span) span.onclick = () => addSpan(key);
+  const img = $('#img');
+  if (img) img.onchange = () => { S.work.images[team] = img.value.trim(); saveWork(); renderSide(); };
+}
+
+function renderCand(key, c, isPick) {
+  const lum = c.colors && c.colors.length ? LiveryCore.luminance(c.colors[0]) : 0.5;
+  const shadow = (lum < 0.13 || lum > 0.65) ? `text-shadow:0 0 3px ${lum > 0.5 ? '#000' : '#fff'}` : '';
+  const preview = c.colors && c.colors.length ? `
+    <div class="preview">
+      <div class="pv l" style="color:${c.colors[0]};${shadow}">Name hell</div>
+      <div class="pv d" style="color:${c.colors[0]};${shadow}">Name dunkel</div>
+    </div>
+    <div style="height:18px;border-radius:4px;background:${gradient(c.colors)}"></div>
+    <div class="mono hint" style="margin-top:4px">${c.colors.join(' ')} · Luminanz ${lum.toFixed(2)}${(lum < 0.13 || lum > 0.65) ? ' → Shadow im Spiel' : ''}</div>`
+    : `<div class="hint">${c.kind === 'note' ? 'Auftrag ohne Farbwert' : 'unaufgelöst'}: <i>${esc(c.raw || c.note)}</i></div>`;
+
+  return `<div class="cand ${isPick ? 'picked' : ''}">
+    <div class="head">
+      <span class="b ${c.stage}">${c.stage}</span>
+      ${c.kind === 'note' ? '<span class="b">Auftrag</span>' : ''}
+      ${isPick ? '<span class="b bestaetigt">gewählt</span>' : ''}
+      <span class="grow"></span>
+      <span class="hint" style="font-size:11px">${esc((c.origin && c.origin.kind) || 'hand')}</span>
+    </div>
+    ${preview}
+    ${c.note ? `<div class="hint" style="margin-top:5px">${esc(c.note)}</div>` : ''}
+    <div class="acts">
+      ${!isPick && c.colors ? `<button data-pick="${c.id}">wählen</button>` : ''}
+      ${c.stage !== 'bestaetigt' && c.colors ? `<button data-stage="${c.id}">bestätigen</button>` : ''}
+      ${c.stage === 'bestaetigt' ? `<button data-unstage="${c.id}">zurückstufen</button>` : ''}
+      <button data-del="${c.id}">löschen</button>
+    </div></div>`;
+}
+
+function addCandidate(key, mode) {
+  const raw = $('#nc').value.trim();
+  const note = $('#nn').value.trim();
+  if (mode === 'note') {
+    if (!raw && !note) return alert('Auftrag braucht wenigstens einen Text.');
+    pushCand(key, { kind: 'note', colors: null, raw: raw || note, stage: 'idee', note });
+    return finish(key);
+  }
+  const parsed = LiveryCore.parseColorInput(raw);
+  if (!parsed.colors) {
+    return alert('Farbe nicht verstanden: ' + (parsed.unresolved.join(', ') || raw) +
+      '\n\nErlaubt sind Hex (#FF6600) und bekannte Farbworte. Unbekanntes wird bewusst nicht geraten.');
+  }
+  pushCand(key, { kind: 'colors', colors: parsed.colors, raw: parsed.raw, stage: mode, note });
+  finish(key);
+}
+
+function pushCand(key, data) {
+  const w = ensureWork(key);
+  const c = Object.assign({ id: newCandId(), origin: { kind: 'hand', date: new Date().toISOString().slice(0, 10) } }, data);
+  w.candidates.push(c);
+  // Erster brauchbarer Kandidat wird gewählt – bei mehreren entscheidest du.
+  if (!w.pick && c.colors) w.pick = c.id;
+  return c;
+}
+
+function addSpan(key) {
+  const [team] = key.split(':');
+  const t = S.teams[team];
+  const raw = $('#nc').value.trim();
+  const parsed = LiveryCore.parseColorInput(raw);
+  if (!parsed.colors) return alert('Erst eine gültige Farbe eintragen.');
+  const from = +prompt('Von Jahr:', t.years[0]);
+  const to = +prompt('Bis Jahr:', t.years[t.years.length - 1]);
+  if (!from || !to || to < from) return;
+  const note = $('#nn').value.trim();
+  const spanId = 's' + newCandId();
+  let n = 0;
+  for (const y of t.years) {
+    if (y < from || y > to) continue;
+    pushCand(team + ':' + y, { kind: 'colors', colors: parsed.colors, raw: parsed.raw, stage: 'vorschlag', note, spanId });
+    n++;
+  }
+  alert(n + ' Saisons gesetzt (' + from + '–' + to + ').');
+  finish(key);
+}
+
+function finish(key) { saveWork(); render(); }
+
+/* ======================================================================
+   Offene Posten
+   ====================================================================== */
+function showFindings() {
+  const groups = {};
+  for (const key in S.cells) {
+    if (S.ui.indy && S.cells[key].indy) continue;
+    const v = verdict(key);
+    if (!v || v === 'geklaert') continue;
+    (groups[v] = groups[v] || []).push(key);
+  }
+  const order = ['widerspruch', 'abweichend', 'unentschieden', 'offen', 'nur-idee', 'luecke'];
+  let html = '';
+
+  for (const v of order) {
+    const keys = groups[v]; if (!keys) continue;
+    const byTeam = {};
+    keys.forEach(k => { const [t] = k.split(':'); (byTeam[t] = byTeam[t] || []).push(+k.split(':')[1]); });
+    html += `<h4 style="margin:14px 0 7px;color:${VERDICT_COLOR[v]}">${VERDICT_LABEL[v]} · ${keys.length} Team-Jahre</h4>`;
+    html += Object.keys(byTeam).sort((a, b) => byTeam[b].length - byTeam[a].length).slice(0, 40).map(t => {
+      const ys = byTeam[t].sort((a, b) => a - b);
+      return `<div class="find" data-jump="${t}:${ys[0]}"><div class="t">${esc((S.teams[t] || {}).name || t)}</div>
+        <div class="d">${ys.length} Saisons · ${compressYears(ys)}</div></div>`;
+    }).join('');
+  }
+
+  if (S.findings.einheitsfarbe.length) {
+    html += `<h4 style="margin:18px 0 7px;color:#d29922">Einheitsfarbe · ${S.findings.einheitsfarbe.length} Teams</h4>
+      <div class="hint" style="margin-bottom:8px">Diese Teams tragen über ihre ganze Historie genau einen Wert
+      aus SEASON_DATA. Keine Lücke, sondern fehlende Ära-Struktur.</div>`;
+    html += S.findings.einheitsfarbe.map(f =>
+      `<div class="find" data-jump="${f.team}:${f.from}"><div class="t">${esc(f.name)}
+        <i class="sw" style="background:${f.value[0]};display:inline-block;vertical-align:-2px"></i></div>
+        <div class="d">${f.seasons} Saisons durchgehend ${esc(f.value.join(' '))} · ${f.from}–${f.to}</div></div>`).join('');
+  }
+
+  openDialog('Offene Posten', html || '<div class="ok">Nichts offen.</div>', []);
+  $('#dlgBody').querySelectorAll('[data-jump]').forEach(el => el.onclick = () => {
+    const key = el.dataset.jump;
+    S.ui.sel = key; S.ui.year = +key.split(':')[1];
+    dlg.close(); render();
+    const node = $(`[data-key="${key}"]`); if (node) node.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
+}
+
+function compressYears(ys) {
+  const out = []; let a = ys[0], b = ys[0];
+  for (let i = 1; i <= ys.length; i++) {
+    if (ys[i] === b + 1) { b = ys[i]; continue; }
+    out.push(a === b ? String(a) : a + '–' + b); a = b = ys[i];
+  }
+  return out.join(', ');
+}
+
+/* ======================================================================
+   Import / Export
+   ====================================================================== */
+function showImport() {
+  openDialog('Import – schema f1rpg-livery/1', `
+    <div class="hint" style="margin-bottom:8px">JSON aus dem Livery-Chat einfügen oder Datei wählen.
+    Das Werkzeug löst Teamnamen und Farbworte selbst auf.</div>
+    <input type="file" id="impFile" accept=".json,application/json" style="margin-bottom:8px">
+    <textarea id="impText" placeholder='{"schema":"f1rpg-livery/1","source":{...},"entries":[...]}'></textarea>
+    <label class="hint" style="display:block;margin-top:8px">
+      <input type="checkbox" id="impTrust"> <b>Diesen Stapel als mitgeprüft übernehmen</b>
+      – alle Einträge kommen direkt als „bestätigt" herein. Nur ankreuzen, wenn du beim
+      Entstehen mitgelesen hast.</label>`,
+    [{ label: 'Einlesen', primary: true, fn: doImport }]);
+
+  $('#impFile').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { $('#impText').value = r.result; };
+    r.readAsText(f);
+  };
+}
+
+function doImport() {
+  let doc;
+  try { doc = JSON.parse($('#impText').value); }
+  catch (e) { return alert('Kein gültiges JSON: ' + e.message); }
+
+  const trusted = $('#impTrust').checked;
+  const built = { teams: S.teams, cells: S.cells };
+  const res = LiveryCore.normalizeImport(doc, built, trusted);
+  if (!res.entries.length) {
+    return alert('Nichts übernommen.\n' + res.skipped.map(s => '· ' + s.why).join('\n'));
+  }
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  let n = 0, conflicts = 0;
+  for (const e of res.entries) {
+    const w = ensureWork(e.key);
+    const same = w.candidates.find(c => (c.colors || []).join(',') === (e.colors || []).join(',') && c.kind === e.kind);
+    if (same) continue;
+    const c = pushCand(e.key, {
+      kind: e.kind, colors: e.colors, raw: e.raw, stage: e.stage, note: e.note,
+      spanId: e.spanFrom + '-' + e.spanTo,
+      origin: { kind: (res.source.kind || 'chat'), ref: res.source.ref || '', image: res.source.image || '', date: stamp }
+    });
+    if (w.candidates.filter(x => x.stage === 'bestaetigt').length > 1) conflicts++;
+    n++;
+  }
+  S.work.imports.push({ date: stamp, ref: res.source.ref || '', note: res.source.note || '', count: n, trusted });
+  saveWork(); dlg.close(); render();
+
+  alert(`${n} Kandidaten übernommen${trusted ? ' (als bestätigt)' : ''}.` +
+    (conflicts ? `\n${conflicts} Zellen haben jetzt mehrere bestätigte Werte – stehen als Widerspruch in den offenen Posten.` : '') +
+    (res.skipped.length ? `\n\nÜbersprungen:\n` + res.skipped.slice(0, 12).map(s => '· ' + s.why).join('\n') : ''));
+}
+
+function showExport() {
+  const picks = {};
+  let confirmed = 0;
+  for (const key in S.work.cells) {
+    const p = picked(key);
+    if (!p || p.kind !== 'colors' || p.stage !== 'bestaetigt') continue;
+    picks[key] = { colors: p.colors, comment: p.note || p.raw || '' };
+    confirmed++;
+  }
+  const ranges = LiveryCore.foldToRanges(picks, { cells: S.cells });
+  const todo = ranges.map(r => ({ team: r.team, from: r.from, to: r.to, colors: r.colors, comment: r.comment, done: false }));
+
+  openDialog('Export', `
+    <div class="hint">Aus <b>${confirmed}</b> bestätigten Zellen wurden <b>${todo.length}</b> Ranges gefaltet.
+    Zellen, die exakt so schon im Spiel stehen, sind weggelassen.</div>
+    <h4 style="margin:14px 0 6px">liveries-todo.json</h4>
+    <textarea id="expTodo">${esc(JSON.stringify(todo, null, 2))}</textarea>
+    <div class="hint" style="margin-top:6px">In den Projektordner legen, dann
+      <span class="mono">./add-livery -BatchFile liveries-todo.json</span></div>
+    <h4 style="margin:16px 0 6px">Arbeitsstand (alles, für Umzug auf ein anderes Gerät)</h4>
+    <div class="hint">${Object.keys(S.work.cells).length} Zellen, ${S.work.imports.length} Importe</div>`,
+    [
+      { label: 'liveries-todo.json laden', primary: true, fn: () => download('liveries-todo.json', JSON.stringify(todo, null, 2)) },
+      { label: 'Arbeitsstand laden', fn: () => download('livery-work.json', JSON.stringify(S.work, null, 2)) },
+      { label: 'Arbeitsstand einlesen', fn: importWork }
+    ]);
+}
+
+function importWork() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = () => {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const w = JSON.parse(r.result);
+        if (!w.cells) throw new Error('Keine cells im Arbeitsstand');
+        if (!confirm('Ersetzt den lokalen Arbeitsstand (' + Object.keys(S.work.cells).length +
+                     ' Zellen) durch ' + Object.keys(w.cells).length + ' Zellen. Weiter?')) return;
+        S.work = Object.assign({ cells: {}, imports: [], images: {} }, w);
+        saveWork(); dlg.close(); render();
+      } catch (e) { alert('Fehler: ' + e.message); }
+    };
+    r.readAsText(inp.files[0]);
+  };
+  inp.click();
+}
+
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ======================================================================
+   Dialog + Verdrahtung
+   ====================================================================== */
+function openDialog(title, body, actions) {
+  $('#dlgTitle').textContent = title;
+  $('#dlgBody').innerHTML = body;
+  $('#dlgFoot').innerHTML = '';
+  (actions || []).forEach(a => {
+    const b = document.createElement('button');
+    b.textContent = a.label;
+    if (a.primary) b.className = 'on';
+    b.onclick = a.fn;
+    $('#dlgFoot').appendChild(b);
+  });
+  dlg.showModal();
+}
+
+function buildYearList() {
+  const sel = $('#year');
+  sel.innerHTML = '';
+  for (let y = S.meta.yearTo; y >= S.meta.yearFrom; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  }
+  S.ui.year = S.meta.yearTo;
+  sel.value = S.ui.year;
+}
+
+function wire() {
+  $('#vTeam').onclick = () => { S.ui.view = 'team'; $('#vTeam').classList.add('on'); $('#vYear').classList.remove('on'); $('#yearWrap').style.display = 'none'; render(); };
+  $('#vYear').onclick = () => { S.ui.view = 'year'; $('#vYear').classList.add('on'); $('#vTeam').classList.remove('on'); $('#yearWrap').style.display = ''; render(); };
+  $('#year').onchange = e => { S.ui.year = +e.target.value; render(); };
+  $('#q').oninput = e => { S.ui.q = e.target.value; render(); };
+  $('#fIndy').onchange = e => { S.ui.indy = e.target.checked; render(); };
+  $('#filter').onchange = e => { S.ui.filter = e.target.value; render(); };
+  $('#btnFind').onclick = showFindings;
+  $('#btnImport').onclick = showImport;
+  $('#btnExport').onclick = showExport;
+
+  $('#view').addEventListener('click', e => {
+    const cell = e.target.closest('[data-key]');
+    if (cell) { S.ui.sel = cell.dataset.key; render(); return; }
+    const name = e.target.closest('[data-team]');
+    if (name) {
+      const t = S.teams[name.dataset.team];
+      S.ui.sel = t.id + ':' + t.years[0];
+      render();
+    }
+  });
+
+  $('#side').addEventListener('click', e => {
+    const key = S.ui.sel; if (!key) return;
+    const w = cellWork(key); if (!w) return;
+    const pick = e.target.dataset.pick, stage = e.target.dataset.stage,
+          un = e.target.dataset.unstage, del = e.target.dataset.del;
+    if (pick) { w.pick = pick; }
+    else if (stage) { const c = w.candidates.find(x => x.id === stage); c.stage = 'bestaetigt'; w.pick = c.id; }
+    else if (un) { w.candidates.find(x => x.id === un).stage = 'vorschlag'; }
+    else if (del) {
+      w.candidates = w.candidates.filter(x => x.id !== del);
+      if (w.pick === del) w.pick = w.candidates.length ? w.candidates[0].id : null;
+      if (!w.candidates.length) delete S.work.cells[key];
+    } else return;
+    saveWork(); render();
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
