@@ -39,11 +39,17 @@
 
   /* ---- Layout ---- */
   main{display:flex;align-items:flex-start;gap:0}
-  #view{flex:1;min-width:0;padding:12px 14px 60px;overflow-x:auto}
+  /* --hh = gemessene Kopfhöhe (JS). #view braucht eine BEGRENZTE Höhe, sonst
+     klebt die Jahresachse nicht: overflow-x macht #view zum Scrollcontainer,
+     und sticky richtet sich am Container aus, nicht am Fenster. */
+  #view{flex:1;min-width:0;padding:0 14px 60px;overflow:auto;
+        height:calc(100vh - var(--hh,102px))}
   #side{width:340px;flex:none;border-left:1px solid var(--line);background:var(--panel);
-        padding:12px 14px 40px;position:sticky;top:96px;max-height:calc(100vh - 96px);overflow:auto}
+        padding:12px 14px 40px;position:sticky;top:var(--hh,102px);
+        max-height:calc(100vh - var(--hh,102px));overflow:auto}
   @media(max-width:900px){
     main{flex-direction:column}
+    #view{height:auto;overflow-x:auto}
     #side{width:100%;position:static;max-height:none;border-left:0;border-top:1px solid var(--line)}
   }
 
@@ -59,8 +65,10 @@
   .cell.gap{background:repeating-linear-gradient(45deg,#2a2f38 0 3px,#1c2027 3px 6px)}
   .cell.void{background:transparent}
   .dot{position:absolute;right:1px;top:1px;width:5px;height:5px;border-radius:50%}
-  .axis{display:flex;gap:1px;margin:0 0 6px 158px;color:var(--dim);font-size:10px}
+  .axis{display:flex;gap:1px;margin:0 0 6px;color:var(--dim);font-size:10px;
+        position:sticky;top:0;z-index:6;background:var(--bg);padding:10px 0 3px}
   .axis span{width:10px;flex:none;text-align:center}
+  .axis span.pad{width:157px}
   .axis span.dec{color:var(--muted);font-weight:600}
 
   /* ---- Jahr-Kacheln ---- */
@@ -213,6 +221,7 @@ async function boot() {
   buildYearList();
   wire();
   render();
+  addEventListener('resize', measureHeader);
 }
 
 async function bootLive() {
@@ -405,7 +414,9 @@ function renderTeamView() {
   const teams = visibleTeams();
   const eins = einheitsSet();
 
-  let axis = '<div class="axis">';
+  // Platzhalter statt margin-left: die Achse klebt oben und muss dabei auch die
+  // Namensspalte abdecken, sonst scrollen die Teamnamen darunter durch.
+  let axis = '<div class="axis"><span class="pad"></span>';
   for (let y = y0; y <= y1; y++) axis += `<span class="${y % 10 === 0 ? 'dec' : ''}">${y % 10 === 0 ? String(y).slice(2) : ''}</span>`;
   axis += '</div>';
 
@@ -491,8 +502,15 @@ function renderStats() {
     <span>Werkstatt <b>${work}</b></span>`;
 }
 
+/** Kopfhöhe messen – sie ändert sich, sobald die Werkzeugleiste umbricht. */
+function measureHeader() {
+  const h = document.querySelector('header').offsetHeight;
+  document.documentElement.style.setProperty('--hh', h + 'px');
+}
+
 function render() {
   renderStats();
+  measureHeader();
   if (S.ui.view === 'team') renderTeamView(); else renderYearView();
   renderSide();
 }
