@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.39</title>
+    <title>F1 RPG v0.9.17.40</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.39 (aktuell) - 02.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.40 (aktuell) - 03.09.2026</div>
+                            <div>&#8226; NEU: Teamnamen aus gewichteten Bausteinen statt fester Muster</div>
+                            <div>&#8226; NEU: Aera-Grenzen aus realen Meldelisten - Ecurie endet 1971, F1 Team beginnt 1997</div>
+                            <div>&#8226; NEU: Kuerzel-Teams wie MV Motorsport aus den Initialen des Gruenders</div>
+                            <div>&#8226; FIX: Fruehe Privatiers heissen wieder schlicht nach ihrem Besitzer</div>
+                            <div class="font-bold text-slate-400">v0.9.17.39 - 02.09.2026</div>
                             <div>&#8226; FIX: Namen werden nur noch verkleinert wenn sie wirklich nicht passen, nicht schon beim Zeilenumbruch</div>
                             <div class="font-bold text-slate-400">v0.9.17.38 - 02.09.2026</div>
                             <div>&#8226; NEU: Doppelnamen mit Bindestrich - beide Teile immer aus demselben Kulturraum</div>
@@ -3884,7 +3889,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.39';
+        const VERSION = '0.9.17.40';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -14933,70 +14938,212 @@
         // nationsgleichen Paket-A-Pool (pickPooledName), Ära-Mix, Sponsor-Präfix ab e76.
         // Fiktivität kollisionsgeprüft gegen reale Rennställe (Deliverable-Header).
         // ══════════════════════════════════════════════════════════════════════
+        // ── Team-Namen: gewichtete Bausteine (Präfix + Kern + Suffix) ──────────
+        // Baukasten aus der Nutzer-Tabelle (Google-Sheet, Blatt Präfix/Hauptwort/Suffix).
+        // Die MODERNEN Gewichte sind an 68 realen Feeder- und Endurance-Teams
+        // (Stand 2026, dieselbe Tabelle) gemessen:
+        //   Suffix : Motorsport(s) 33,9 % · Racing 27,9 % · ohne Suffix 20,6 % ·
+        //            der ganze Rest (Sport, Engineering, Performance, Developments,
+        //            Competition, Motors, Corse, Team, GP) zusammen ~15 %.
+        //   Kern   : Initial-Kürzel 30,9 % · ein Wort 48,5 % · mehrere Wörter 20,6 %.
+        // Deshalb GEWICHTE statt gleichverteilter Musterlisten: vorher kam
+        // „Engineering" so oft wie „Racing", real ist Racing rund 14× häufiger.
+        // Frühere Ären sind kuratiert, nicht gemessen — mit einem harten Befund als
+        // Anker: „Écurie" kommt in der modernen Liste KEIN EINZIGES MAL vor
+        // (ART Grand Prix, R-ace GP, DAMS, Akkodis ASP Team), „Motorsport" gab es in
+        // den 50ern nicht. Präfixe und Suffixe tragen daher ein Ära-Fenster.
+        // Format überall: [wort, gewicht] oder [wort, gewicht, vonÄra, bisÄra].
+        const TEAM_ERAS = ['e50', 'e62', 'e76', 'e94', 'e10'];
         const TEAM_NAME_POOLS = {
-            // Konstrukteurs-Templates je Nation ({name} = Gründer-Nachname).
-            constructorPattern: {
-                it: ['Scuderia {name}','Automobili {name}','{name} Corse','Squadra Corse {name}','Officine {name}','{name} Competizione','{name} Motori','Fratelli {name}'],
-                gb: ['{name} Racing','{name} Engineering','{name} Motorsport','{name} Grand Prix','{name} Racing Organisation','{name} Cars','Team {name}','{name} Autosport'],
-                fr: ['Écurie {name}','Automobiles {name}','Équipe {name}','{name} Compétition','{name} Sport Automobile','{name} Course'],
-                de: ['{name} Motorsport','{name} Rennsport','Rennstall {name}','Team {name}','{name} Racing','{name} Automobiltechnik'],
-                us: ['{name} Racing','{name} Racing Enterprises','{name} Motorsports','Team {name}','{name} Special','{name} Speed Equipment'],
-                jp: ['Team {name}','{name} Racing','{name} Motorsports','{name} Racing Project','{name} Technica'],
-                br: ['Equipe {name}','{name} Racing','Escuderia {name}','Team {name}','{name} Competições'],
-                es: ['Escudería {name}','Automóviles {name}','{name} Competición','Equipo {name}','{name} Racing'],
-                generic: ['{name} Racing','Team {name}','{name} Grand Prix','{name} Motorsport','{name} Autosport','{name} International']
+            // Suffix je Ära. '' = kein Suffix (der gemessene Fünftel).
+            suffixEra: {
+                e50: [['', 60], ['Engineering', 8], ['Racing Team', 6], ['Cars', 6], ['Motors', 6], ['Racing', 5], ['Racing Organisation', 4], ['Special', 5]],
+                e62: [['', 50], ['Racing Team', 12], ['Racing', 12], ['Racing Organisation', 8], ['Engineering', 6], ['Cars', 6], ['Motors', 3], ['Sport', 3]],
+                e76: [['', 45], ['Racing', 24], ['Team', 10], ['Racing Team', 8], ['Engineering', 5], ['Grand Prix', 4], ['Motorsport', 2], ['Sport', 2]],
+                e94: [['', 38], ['F1 Team', 22], ['Racing', 16], ['Team', 8], ['Grand Prix', 6], ['Motorsport', 5], ['Sport', 3], ['Engineering', 2]],
+                e10: [['', 26], ['F1 Team', 32], ['Racing', 18], ['Motorsport', 10], ['Team', 6], ['Motorsports', 3], ['GP', 2], ['Performance', 2], ['Developments', 1]]
             },
-            // Fiktive Titelsponsoren je Ära (Präfix); e50 bewusst leer (vor der Sponsor-Ära).
+            // Nationstypisches Suffix — ersetzt das Basis-Suffix mit natSuffixProb.
+            suffixNat: {
+                it: [['Corse', 6], ['Automobili', 3], ['Competizione', 2], ['Motori', 2]],
+                fr: [['Compétition', 4], ['Course', 2], ['Sport Automobile', 2]],
+                de: [['Rennsport', 3], ['Automobiltechnik', 2], ['Motorsport', 4]],
+                es: [['Competición', 4], ['Automóviles', 2]],
+                br: [['Competições', 3]],
+                us: [['Racing Enterprises', 3], ['Speed Equipment', 2, 'e50', 'e76'], ['Motorsports', 4, 'e94', 'e10']],
+                jp: [['Racing Project', 3], ['Technica', 2]],
+                nl: [['Autosport', 3]],
+                generic: []
+            },
+            // Präfix je Nation, mit Ära-Fenster. Écurie endet bewusst nach e76.
+            prefix: {
+                it: [['Scuderia', 12], ['Squadra Corse', 3, 'e50', 'e76'], ['Officine', 2, 'e50', 'e76'], ['Team', 3, 'e62', 'e94']],
+                // Écurie endet nach e62: letzter realer Melder 1971. Équipe hält
+                // sich in der AKZENTFORM bis in die 80er (Équipe Ligier, Équipe
+                // Renault Elf) — die akzentlose Form endet schon 1964.
+                fr: [['Écurie', 10, 'e50', 'e62'], ['Équipe', 6, 'e50', 'e76'], ['Automobiles', 3, 'e50', 'e62'], ['Team', 3, 'e76', 'e10']],
+                gb: [['Team', 6]],
+                de: [['Rennstall', 4, 'e50', 'e76'], ['Team', 6]],
+                es: [['Escudería', 10], ['Equipo', 3], ['Team', 2, 'e94', 'e10']],
+                br: [['Equipe', 6], ['Escuderia', 4], ['Team', 2, 'e94', 'e10']],
+                us: [['Team', 8]],
+                jp: [['Team', 10]],
+                nl: [['Team', 5]],
+                generic: [['Team', 6]]
+            },
+            // Präfix-Anteil, gemessen an den F1-Meldern: Scuderia steigt von 5 %
+            // (50er) auf 16 % (2010er) — Toro Rosso, AlphaTauri, Ferrari. Écurie
+            // und das vorangestellte „Team" fallen dafür weg, in Summe bleibt der
+            // Anteil fast konstant. Die frühere Annahme „Präfixe sterben aus" war falsch.
+            prefixProb: { e50: 0.16, e62: 0.20, e76: 0.20, e94: 0.18, e10: 0.17 },
+            // Nationssuffixe sind selten — Corse/Automobili liegen bei den realen
+            // Meldern je unter 2 %. Ein hoher Wert würde außerdem den suffixlosen
+            // Anteil auffressen, weil er vor suffixEra greift.
+            natSuffixProb: { e50: 0.14, e62: 0.14, e76: 0.12, e94: 0.09, e10: 0.07 },
+            // Kern-Typ je Ära. Rest auf 1 = Nachname des Gründers.
+            // Kürzel steigen zur Moderne auf den gemessenen Wert (30,9 %).
+            kernTyp: {
+                e50: { kuerzel: 0.00, kunstwort: 0.12 },
+                e62: { kuerzel: 0.05, kunstwort: 0.14 },
+                e76: { kuerzel: 0.12, kunstwort: 0.16 },
+                e94: { kuerzel: 0.22, kunstwort: 0.18 },
+                e10: { kuerzel: 0.31, kunstwort: 0.20 }
+            },
+            // Kunstwort-Kerne (Trident-/Invicta-/Hillspeed-Typ). Tragen sich auch
+            // ohne Suffix allein — das ist der gemessene suffixlose Fünftel.
+            kunstwort: {
+                e50: ['Aquila', 'Meridian', 'Vanguard', 'Atlas', 'Leone', 'Astra', 'Corona', 'Sagitta', 'Vulcano', 'Alcyone', 'Ariete', 'Nordstern'],
+                e62: ['Kestrel', 'Condor', 'Delta', 'Griffon', 'Tempesta', 'Lancer', 'Merlin', 'Falcone', 'Comet', 'Sirocco', 'Aurora', 'Sabre'],
+                e76: ['Talon', 'Polaris', 'Boreas', 'Vulkan', 'Sirius', 'Grandezza', 'Chevron', 'Marauder', 'Trident', 'Osprey', 'Rapier', 'Tornado'],
+                e94: ['Apex', 'Sapphire', 'Centurion', 'Meteor', 'Zenith', 'Nordwind', 'Invicta', 'Hillspeed', 'Crosslink', 'Fortec', 'Vertex', 'Arden'],
+                e10: ['Hyperion', 'Vortex', 'Aeon', 'Pulsar', 'Kinetiq', 'Astera', 'Technorace', 'Velocitor', 'Nexus', 'Quantex', 'Ignis', 'Volta']
+            },
+            // Fiktive Titelsponsoren je Ära (Präfix); e50 vor der Sponsor-Ära leer.
             sponsorTitle: {
                 e50: [],
-                e62: ['Aurora Oil','Blue Crest','Vandermeer','Regatta'],
-                e76: ['Corsaro','Silverline','Blue Panther','Royal Falcon','Petrolux','Antares','Gran Oro','Meridiana'],
-                e94: ['Digitron','Teleon','Helion','Omnitex','Solaron','Maxvolt','Vertex Systems','Cobalt Telecom'],
-                e10: ['Nexora','Veltra','Quantix','Volteon','Skyre','Cortexa','Lumeon','Zephyra']
-            },
-            // Komplette Fantasienamen je Ära (ohne Gründer, nations-neutral).
-            standaloneNames: {
-                e50: ['Scuderia Aquila','Écurie Azur','Atlas Grand Prix','Meridian Motors','Vanguard Racing','Leone Corse'],
-                e62: ['Kestrel Racing','Condor Grand Prix','Aurora Racing Team','Delta Sport','Écurie Griffon','Tempesta Corse'],
-                e76: ['Talon Racing','Polaris Grand Prix','Boreas Racing','Vulkan Grand Prix','Sirius Racing Team','Grandezza Corse'],
-                e94: ['Apex Grand Prix','Sapphire Racing','Centurion Grand Prix','Meteor Grand Prix','Zenith Grand Prix','Nordwind Racing'],
-                e10: ['Hyperion Racing','Vortex Grand Prix','Aeon Grand Prix','Pulsar F1 Team','Kinetiq Racing','Astera F1 Team']
+                e62: ['Aurora Oil', 'Blue Crest', 'Vandermeer', 'Regatta'],
+                e76: ['Corsaro', 'Silverline', 'Blue Panther', 'Royal Falcon', 'Petrolux', 'Antares', 'Gran Oro', 'Meridiana'],
+                e94: ['Digitron', 'Teleon', 'Helion', 'Omnitex', 'Solaron', 'Maxvolt', 'Vertex Systems', 'Cobalt Telecom'],
+                e10: ['Nexora', 'Veltra', 'Quantix', 'Volteon', 'Skyre', 'Cortexa', 'Lumeon', 'Zephyra']
             }
         };
-        // IOC-3 → constructorPattern-Key; alles andere → 'generic' (Team-Pool hat generic-Fallback).
-        const TEAM_NATION_KEY = { ITA:'it',GBR:'gb',FRA:'fr',GER:'de',USA:'us',JPN:'jp',BRA:'br',ESP:'es' };
+        // IOC-3 → Bausteine-Key; alles andere → 'generic'.
+        const TEAM_NATION_KEY = { ITA: 'it', GBR: 'gb', FRA: 'fr', GER: 'de', USA: 'us', JPN: 'jp', BRA: 'br', ESP: 'es', NED: 'nl' };
         // Ära-Register aus Jahr (konsistent zu Paket B/Strecken: e50/e62/e76/e94/e10).
         function _teamEraKey(year) {
             return year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
         }
         // Neutrale Not-Nachnamen, falls Paket-A-Pool fehlt (pickPooledName === null).
-        const _TEAM_FALLBACK_SURNAMES = ['Marlow','Rennick','Vance','Delmar','Cortez','Halden','Brenner','Sartor'];
-        // Komponiert EINEN Teamnamen nationskohärent. usedNames = Set bereits vergebener Namen
-        // (kleingeschrieben) für Dedup. Standalone-/Sponsor-Anteile je Ära lt. Deliverable-Empfehlung.
+        const _TEAM_FALLBACK_SURNAMES = ['Marlow', 'Rennick', 'Vance', 'Delmar', 'Cortez', 'Halden', 'Brenner', 'Sartor'];
+
+        // Gewichtete Auswahl mit Ära-Fenster. Einträge: [wort, gewicht] oder
+        // [wort, gewicht, vonÄra, bisÄra] — außerhalb des Fensters fällt der
+        // Baustein raus, statt nur seltener zu werden („Écurie" 2020 = nie).
+        function _teamPickWeighted(list, era) {
+            const ei = TEAM_ERAS.indexOf(era);
+            const ok = (list || []).filter(e => {
+                if (e.length < 4) return true;
+                return ei >= TEAM_ERAS.indexOf(e[2]) && ei <= TEAM_ERAS.indexOf(e[3]);
+            });
+            if (!ok.length) return null;
+            let tot = 0;
+            for (const e of ok) tot += e[1];
+            let x = Math.random() * tot;
+            for (const e of ok) { x -= e[1]; if (x <= 0) return e[0]; }
+            return ok[ok.length - 1][0];
+        }
+
+        // Initial-Kürzel aus dem Gründernamen: „Marius Vermeer" → „MV", manchmal
+        // dreistellig („MVR"). Gemessen der zweithäufigste Kern-Typ der Moderne.
+        function _teamInitials(firstName, lastName) {
+            const a = (firstName || 'X')[0].toUpperCase();
+            const b = (lastName || 'Y')[0].toUpperCase();
+            if (Math.random() < 0.45) {
+                const rest = (lastName || 'YZ').slice(1).replace(/[^a-zA-ZäöüÄÖÜ]/g, '');
+                const c = (rest[Math.floor(Math.random() * rest.length)] || 'R').toUpperCase();
+                return a + b + c;
+            }
+            return a + b;
+        }
+
+        // Komponiert EINEN Teamnamen nationskohärent aus Präfix + Kern + Suffix.
+        // usedNames = Set bereits vergebener Namen (kleingeschrieben) für Dedup.
         function composeTeamName(ioc, year, usedNames) {
             const key = TEAM_NATION_KEY[ioc] || 'generic';
             const era = _teamEraKey(year);
-            const standaloneProb = { e50:0.15, e62:0.15, e76:0.20, e94:0.25, e10:0.30 }[era];
-            const sponsorProb    = { e50:0.00, e62:0.10, e76:0.45, e94:0.55, e10:0.60 }[era];
+            const P = TEAM_NAME_POOLS;
             const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-            for (let t = 0; t < 12; t++) {
-                let name;
-                if (Math.random() < standaloneProb) {
-                    name = pick(TEAM_NAME_POOLS.standaloneNames[era]);
+            const sponsorProb = { e50: 0.00, e62: 0.10, e76: 0.45, e94: 0.55, e10: 0.60 }[era];
+
+            for (let t = 0; t < 14; t++) {
+                // 1) Kern
+                const typ = P.kernTyp[era];
+                const r = Math.random();
+                const pooled = (typeof pickPooledName === 'function') ? pickPooledName(ioc, year, null) : null;
+                const surname = (pooled && pooled.lastName) || pick(_TEAM_FALLBACK_SURNAMES);
+                let kern, kernIstName = false;
+                if (r < typ.kuerzel) {
+                    kern = _teamInitials(pooled && pooled.firstName, surname);
+                } else if (r < typ.kuerzel + typ.kunstwort) {
+                    kern = pick(P.kunstwort[era]);
                 } else {
-                    const pooled = (typeof pickPooledName === 'function') ? pickPooledName(ioc, year, null) : null;
-                    const surname = (pooled && pooled.lastName) || pick(_TEAM_FALLBACK_SURNAMES);
-                    name = pick(TEAM_NAME_POOLS.constructorPattern[key]).replace('{name}', surname);
-                    const sponsors = TEAM_NAME_POOLS.sponsorTitle[era];
-                    if (sponsors.length && Math.random() < sponsorProb) {
-                        const sp = pick(sponsors);
-                        // Lange Kombis → Kurzform '{sponsor} {name} Racing'
-                        name = (sp + ' ' + name).length > 28 ? `${sp} ${surname} Racing` : `${sp} ${name}`;
-                    }
+                    kern = surname; kernIstName = true;
                 }
+
+                // 2) Präfix
+                let prefix = Math.random() < P.prefixProb[era]
+                    ? _teamPickWeighted(P.prefix[key] || P.prefix.generic, era) : null;
+
+                // 3) Suffix — nationstypisch oder Basis
+                let suffix = null;
+                if (Math.random() < P.natSuffixProb[era]) suffix = _teamPickWeighted(P.suffixNat[key], era);
+                if (suffix === null) suffix = _teamPickWeighted(P.suffixEra[era], era);
+                // Fuzzy-Regel des Baukastens: Präfix und Suffix nie dasselbe Wort
+                // („Team Vermeer Team"). Bei Kollision fällt das Präfix weg.
+                // Fuzzy, nicht exakt: „Team X F1 Team" und „Racing X Racing Team"
+                // rutschen durch einen Gleichheitsvergleich hindurch. Es reicht,
+                // dass ein Wort im anderen steckt.
+                if (prefix && suffix) {
+                    const p = prefix.toLowerCase(), s = suffix.toLowerCase();
+                    if (p === s || s.includes(p) || p.includes(s)) prefix = null;
+                }
+                // Anti-Stapelung: ein Präfix ERSETZT meist das Suffix — „Scuderia
+                // Ferrari", nicht „Scuderia Ferrari Cars". Sonst entsteht
+                // „Squadra Corse Leonardi Cars" oder „Automobiles Leduc Grand Prix".
+                if (prefix && suffix && Math.random() > 0.35) suffix = null;
+                // Ein nackter Nachname ist kein Teamname: ohne Präfix braucht der
+                // Gründername ein Suffix. Kunstwort und Kürzel tragen sich allein
+                // („Trident", „ADM") — das ist der gemessene suffixlose Fünftel.
+                // Erzwungenes Suffix wird GEZOGEN, nicht auf „Racing" gesetzt: ein
+                // harter Default verzerrt die Verteilung (Racing sprang auf 41 %,
+                // real liegt Motorsport mit 33,9 % vor Racing mit 27,9 %).
+                const suffixPflicht = () => _teamPickWeighted(P.suffixEra[era].filter(e => e[0]), era) || 'Racing';
+                // Der nackte Personenname IST der Frühzeit-Normalfall: 93 % der
+                // 50er-Melder heißen schlicht „Bob Gerard" oder „A.E. Dean". Erst
+                // ab e76 braucht ein Gründername ohne Präfix ein Suffix.
+                const spaetereAera = era === 'e76' || era === 'e94' || era === 'e10';
+                if (!suffix && !prefix && kernIstName && spaetereAera) suffix = suffixPflicht();
+                // Ein zweistelliges Kürzel trägt sich auch nicht allein: „AT" ist
+                // kein Team, „ADM" und „DAMS" schon. Ab drei Zeichen darf es nackt stehen.
+                if (!suffix && !prefix && kern.length < 3) suffix = suffixPflicht();
+
+                let name = [prefix, kern, suffix].filter(Boolean).join(' ');
+
+                // 4) Titelsponsor davor. Er besetzt denselben Platz wie das Präfix,
+                // deshalb nur ohne Präfix — „Veltra Team JM Racing" ist ein Stapel,
+                // kein Name. Vor einem Kunstwort braucht es zwingend ein Suffix,
+                // sonst stehen zwei Fantasiewörter nebeneinander („Veltra Kinetiq")
+                // und man liest zwei Sponsoren statt Sponsor + Team.
+                const sponsors = P.sponsorTitle[era];
+                if (sponsors.length && !prefix && Math.random() < sponsorProb) {
+                    const sp = pick(sponsors);
+                    if (!suffix && !kernIstName) name += ' Racing';
+                    name = (sp + ' ' + name).length > 28 ? `${sp} ${kern} Racing` : `${sp} ${name}`;
+                }
+
                 if (!usedNames || !usedNames.has(name.toLowerCase())) return name;
             }
-            return pick(TEAM_NAME_POOLS.standaloneNames[era]);   // Not-Fallback nach 12 Kollisionen
+            return pick(P.kunstwort[era]) + ' Racing';   // Not-Fallback nach 14 Kollisionen
         }
         // Erzeugt ein vollständiges, fiktives Privatier-Team-Objekt (eher Hinterfeld).
         // nation optional (IOC-3); ohne Angabe über den Motorsport-Frequenz-Trichter.
