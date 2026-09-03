@@ -43,10 +43,10 @@
      klebt die Jahresachse nicht: overflow-x macht #view zum Scrollcontainer,
      und sticky richtet sich am Container aus, nicht am Fenster. */
   #view{flex:1;min-width:0;padding:0 14px 60px;overflow:auto;
-        height:calc(100vh - var(--hh,102px))}
+        height:calc(100vh - var(--hh,102px) - var(--tray,0px))}
   #side{width:340px;flex:none;border-left:1px solid var(--line);background:var(--panel);
         padding:12px 14px 40px;position:sticky;top:var(--hh,102px);
-        max-height:calc(100vh - var(--hh,102px));overflow:auto}
+        max-height:calc(100vh - var(--hh,102px) - var(--tray,0px));overflow:auto}
   @media(max-width:900px){
     main{flex-direction:column}
     #view{height:auto;overflow-x:auto}
@@ -160,6 +160,22 @@
   .libacts{display:flex;gap:5px;align-items:center}
   .libacts button{padding:2px 7px;font-size:12px}
 
+  /* ---- Bildleiste ---- */
+  #tray{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);
+        border-top:1px solid var(--line);padding:7px 12px 10px}
+  .trayhead{display:flex;gap:10px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
+  .trayhead button{padding:3px 9px;font-size:12px}
+  .traystrip{display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;min-height:64px}
+  .traythumb{position:relative;flex:none;cursor:pointer}
+  .traythumb img{width:92px;height:60px;object-fit:cover;border:2px solid var(--line);
+                 border-radius:6px;background:#000;display:block}
+  .traythumb:hover img{border-color:var(--info)}
+  .traythumb.dropok img{border-color:var(--ok);box-shadow:0 0 0 3px #3fb95044}
+  .traythumb span{position:absolute;left:0;right:0;bottom:0;font-size:10px;
+                  background:#000b;color:#fff;padding:1px 3px;border-radius:0 0 4px 4px;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cell[draggable],.card[draggable]{-webkit-user-drag:element}
+
   /* ---- Dialog ---- */
   dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);
          border-radius:10px;padding:0;max-width:96vw;width:min(760px,96vw);
@@ -222,6 +238,17 @@
   <div class="stats" id="stats"></div>
 </header>
 
+<div id="tray" hidden>
+  <div class="trayhead">
+    <b>Bildersammlung</b>
+    <span class="hint" id="trayHint">Team-Jahr auf ein Bild ziehen</span>
+    <span class="grow"></span>
+    <button id="trayManage">verwalten</button>
+    <button id="trayClose">einklappen</button>
+  </div>
+  <div id="trayStrip" class="traystrip"></div>
+</div>
+
 <main>
   <div id="view"></div>
   <aside id="side"><div class="hint">Klick auf ein Team-Jahr, um es zu bearbeiten.</div></aside>
@@ -273,7 +300,7 @@ async function boot() {
   buildYearList();
   wire();
   render();
-  addEventListener('resize', measureHeader);
+  addEventListener('resize', () => { measureHeader(); sizeTray(); });
 
   // Bild irgendwo auf die Seite ziehen oder einfuegen oeffnet den Farbeditor.
   addEventListener('dragover', e => { if (!dlg.open) e.preventDefault(); });
@@ -530,7 +557,7 @@ function renderTeamView() {
       const style = eff.colors.length ? `background:${gradient(eff.colors)}` : '';
       const dot = (v && v !== 'geklaert' && v !== 'luecke')
         ? `<i class="dot" style="background:${VERDICT_COLOR[v]}"></i>` : '';
-      seg += `<div class="cell${cls}${sel}" style="${style}" data-key="${key}" title="${esc(t.name)} ${y}${v ? ' – ' + VERDICT_LABEL[v] : ''}">${dot}</div>`;
+      seg += `<div class="cell${cls}${sel}" style="${style}" data-key="${key}" draggable="true" title="${esc(t.name)} ${y}${v ? ' – ' + VERDICT_LABEL[v] : ''}">${dot}</div>`;
     }
     const flag = eins.has(t.id) ? ' <span class="b" style="color:#d29922;border-color:#5c4813">Einheitsfarbe</span>' : '';
     return `<div class="trow"><div class="tname" data-team="${t.id}" title="${esc(t.id)}">${esc(t.name)}${flag}</div><div class="tspan">${seg}</div></div>`;
@@ -565,7 +592,7 @@ function renderYearView() {
                '<span class="b none">keine Farbe</span>';
     const nameStyle = eff.colors.length
       ? `color:${main};${shadow}` : 'color:var(--dim)';
-    return `<div class="card ${S.ui.sel === key ? 'sel' : ''}" data-key="${key}">
+    return `<div class="card ${S.ui.sel === key ? 'sel' : ''}" data-key="${key}" draggable="true">
       <div class="strip" style="background:${gradient(eff.colors)}"></div>
       <div class="cname" style="${nameStyle}">${esc(t.name)}</div>
       <div class="cmeta"><span class="swatches">${sw}</span>
@@ -1030,6 +1057,7 @@ async function libAdd(files) {
     await libTx('readwrite', st => st.put(rec));
   }
   await libLoad();
+  if (!$('#tray').hidden) renderTray();
   return list.length;
 }
 
@@ -1037,6 +1065,7 @@ async function libDelete(id) {
   await libTx('readwrite', st => st.delete(id));
   if (LIB.urls[id]) { URL.revokeObjectURL(LIB.urls[id]); delete LIB.urls[id]; }
   await libLoad();
+  if (!$('#tray').hidden) renderTray();
 }
 
 async function libRename(id, name, note) {
@@ -1053,6 +1082,57 @@ function libUrl(rec) {
 }
 
 const fmtKB = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB';
+
+/* ---- Bildleiste: der umgekehrte Weg – Team-Jahr auf ein Bild ziehen ---- */
+
+async function toggleTray(force) {
+  const tray = $('#tray');
+  const show = force !== undefined ? force : tray.hidden;
+  tray.hidden = !show;
+  if (show) { await libLoad(); renderTray(); }
+  sizeTray();
+}
+
+function sizeTray() {
+  const tray = $('#tray');
+  document.documentElement.style.setProperty('--tray',
+    tray.hidden ? '0px' : tray.offsetHeight + 'px');
+}
+
+function renderTray() {
+  const strip = $('#trayStrip');
+  if (!LIB.items.length) {
+    strip.innerHTML = '<span class="hint">Noch keine Bilder. Zieh welche in die Werkstatt oder ' +
+      'sammle sie über „verwalten".</span>';
+    return;
+  }
+  strip.innerHTML = LIB.items.map(r =>
+    `<div class="traythumb" data-tray="${r.id}" title="${esc(r.name)}${r.note ? ' – ' + esc(r.note) : ''}">
+       <img src="${libUrl(r)}" alt=""><span>${esc(r.note || r.name)}</span>
+     </div>`).join('');
+
+  strip.querySelectorAll('[data-tray]').forEach(el => {
+    const rec = () => LIB.items.find(x => x.id === el.dataset.tray);
+    // Klick: Bild mit der gerade gewählten Zelle öffnen
+    el.onclick = () => {
+      if (!S.ui.sel) return alert('Erst ein Team-Jahr anklicken – oder eines auf das Bild ziehen.');
+      const r = rec(); if (r) openPicker(S.ui.sel, null, [r]);
+    };
+    // Ziehen: das Team-Jahr kommt zum Bild statt umgekehrt
+    el.addEventListener('dragover', e => {
+      if (!e.dataTransfer.types.includes('text/f1cell')) return;
+      e.preventDefault(); el.classList.add('dropok');
+    });
+    el.addEventListener('dragleave', () => el.classList.remove('dropok'));
+    el.addEventListener('drop', e => {
+      el.classList.remove('dropok');
+      const key = e.dataTransfer.getData('text/f1cell');
+      if (!key) return;
+      e.preventDefault();
+      const r = rec(); if (r) openPicker(key, null, [r]);
+    });
+  });
+}
 
 async function showLibrary() {
   await libLoad();
@@ -1139,7 +1219,10 @@ function openPicker(key, files, fromLib) {
       <h4>Aus der Sammlung <span class="hint" style="text-transform:none;font-weight:400">– bleibt gespeichert, gilt für alle Team-Jahre</span></h4>
       <div id="pkLib" class="thumbs"></div>
     </div>
-    <div id="pkThumbs" class="thumbs"></div>
+    <div id="pkLoaded" class="sect" style="margin-top:10px;padding-top:10px" hidden>
+      <h4>Gerade geladen</h4>
+      <div id="pkThumbs" class="thumbs"></div>
+    </div>
     <div id="pkStage" class="pkstage" hidden>
       <canvas id="pkCanvas"></canvas>
       <div class="pkside">
@@ -1217,6 +1300,8 @@ function addImageUrl(url) {
 }
 
 function renderThumbs() {
+  const box = $('#pkLoaded');
+  if (box) box.hidden = !PICK.images.length;
   $('#pkThumbs').innerHTML = PICK.images.map((it, i) =>
     `<canvas class="thumb ${i === PICK.active ? 'on' : ''}" data-img="${i}" width="64" height="44"></canvas>`).join('');
   PICK.images.forEach((it, i) => {
@@ -1389,9 +1474,21 @@ function wire() {
   $('#fIndy').onchange = e => { S.ui.indy = e.target.checked; render(); };
   $('#filter').onchange = e => { S.ui.filter = e.target.value; render(); };
   $('#btnFind').onclick = showFindings;
-  $('#btnLib').onclick = showLibrary;
+  $('#btnLib').onclick = () => toggleTray();
+  $('#trayClose').onclick = () => toggleTray(false);
+  $('#trayManage').onclick = showLibrary;
   $('#btnImport').onclick = showImport;
   $('#btnExport').onclick = showExport;
+
+  $('#view').addEventListener('dragstart', e => {
+    const cell = e.target.closest('[data-key]');
+    if (!cell) return;
+    e.dataTransfer.setData('text/f1cell', cell.dataset.key);
+    e.dataTransfer.effectAllowed = 'copy';
+    if ($('#tray').hidden) toggleTray(true);
+    const [t, y] = cell.dataset.key.split(':');
+    $('#trayHint').textContent = `${(S.teams[t] || {}).name || t} ${y} – auf ein Bild fallen lassen`;
+  });
 
   $('#view').addEventListener('click', e => {
     const cell = e.target.closest('[data-key]');

@@ -173,6 +173,24 @@ gewählten Zelle.
   und rät zum Herunterladen. Die Referenzbilder aus dem Sheet sind also zum
   *Ansehen* da, zum Pipettieren muss das Bild lokal vorliegen.
 
+## 6b. Bildersammlung
+
+Hereingezogene Bilder landen in **IndexedDB** und bleiben erhalten – `localStorage`
+kann keine Blobs und wäre nach drei Fotos voll. Aus jedem Team-Jahr erreichbar,
+damit ein Bild mit mehreren Jahren oder mehreren Wagen nur einmal gesucht werden
+muss.
+
+Zwei Richtungen:
+
+- **vom Team-Jahr aus**: Zelle wählen → „Farbe aus Bild" → Miniatur aus der
+  Sammlung anklicken
+- **vom Bild aus**: Knopf „Bilder" klappt die Leiste unten auf, dann ein
+  Team-Jahr aus dem Zeitstrahl oder Jahr-Raster **auf ein Bild ziehen**. Der
+  Farbeditor öffnet mit genau diesem Bild und dieser Zelle. Praktisch, wenn ein
+  Bild für viele Zellen taugt.
+
+Die Leiste verkürzt `#view` über `--tray`, damit nichts verdeckt wird.
+
 ## 7. Farbworte
 
 Wörterbuch Wort → Hex („weiß", „British Racing Green", „anthrazit", „weinrot").
