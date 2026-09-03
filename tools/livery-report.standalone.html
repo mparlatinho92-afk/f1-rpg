@@ -149,16 +149,30 @@
   .pk b{background:#000c;color:#fff;padding:1px 5px;border-radius:4px;font-size:11px}
   .pk button{padding:1px 5px;font-size:11px;background:#000a;border-color:#0000}
   .pkpreview{margin-top:6px}
+  .libthumb{width:78px;height:52px;object-fit:cover;border:2px solid var(--line);
+            border-radius:5px;cursor:pointer;background:#000}
+  .libthumb:hover{border-color:var(--info)}
+  .libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+  .libcard{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2)}
+  .libcard img{width:100%;height:150px;object-fit:cover;display:block;background:#000}
+  .libmeta{padding:7px 8px;display:flex;flex-direction:column;gap:5px}
+  .libmeta input{width:100%;font-size:12px}
+  .libacts{display:flex;gap:5px;align-items:center}
+  .libacts button{padding:2px 7px;font-size:12px}
 
   /* ---- Dialog ---- */
   dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);
-         border-radius:10px;padding:0;max-width:min(720px,94vw);width:100%}
+         border-radius:10px;padding:0;max-width:96vw;width:min(760px,96vw);
+         max-height:94vh;resize:both;overflow:hidden;display:none}
+  dialog[open]{display:flex;flex-direction:column}
+  dialog.wide{width:min(1180px,96vw);height:min(880px,92vh)}
   dialog::backdrop{background:#000a}
   .dlg-h{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600;
          display:flex;justify-content:space-between;align-items:center}
-  .dlg-b{padding:14px 16px;max-height:70vh;overflow:auto}
-  .dlg-f{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;
-         justify-content:flex-end;flex-wrap:wrap}
+  .dlg-b{padding:14px 16px;overflow:auto;flex:1;min-height:0}
+  .dlg-f{padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:10px;
+         align-items:center;flex-wrap:wrap;flex:none;background:var(--panel)}
+  .dlg-h{flex:none}
   textarea{width:100%;min-height:180px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
   .warn{color:var(--warn)} .bad{color:var(--bad)} .ok{color:var(--ok)}
   table.k{width:100%;border-collapse:collapse;font-size:12px}
@@ -180,12 +194,27 @@
     <label class="hint"><input type="checkbox" id="fIndy" checked> Indy ausblenden</label>
     <select id="filter">
       <option value="">alle Teams</option>
-      <option value="luecke">nur Lücken</option>
-      <option value="einheitsfarbe">nur Einheitsfarbe</option>
-      <option value="offen">nur offene Posten</option>
-      <option value="werkstatt">nur mit Werkstatt-Daten</option>
+      <optgroup label="Befund">
+        <option value="luecke">nur Lücken</option>
+        <option value="einheitsfarbe">nur Einheitsfarbe</option>
+        <option value="offen">alle offenen Posten</option>
+        <option value="unentschieden">unentschieden</option>
+        <option value="widerspruch">Widerspruch</option>
+      </optgroup>
+      <optgroup label="Fortschritt">
+        <option value="stage:idee">nur Idee</option>
+        <option value="stage:vorschlag">Vorschlag</option>
+        <option value="stage:bestaetigt">bestätigt</option>
+        <option value="werkstatt">alles mit Werkstatt-Daten</option>
+      </optgroup>
+      <optgroup label="Lieferstatus">
+        <option value="del:im-spiel">im Spiel</option>
+        <option value="del:abweichend">weicht vom Spiel ab</option>
+        <option value="geplant">geplant, noch nicht im Spiel</option>
+      </optgroup>
     </select>
     <span class="grow"></span>
+    <button id="btnLib">Bilder</button>
     <button id="btnFind">Offene Posten</button>
     <button id="btnImport">Import</button>
     <button id="btnExport">Export</button>
@@ -787,6 +816,32 @@ function effective(key) {
 /* ======================================================================
    Ansichten
    ====================================================================== */
+/**
+ * Trifft der Filter auf diese Zelle zu? Eine Stelle fuer beide Ansichten –
+ * vorher wirkte der Filter nur im Team-Zeitstrahl, nicht im Jahr-Raster.
+ */
+function cellMatchesFilter(key) {
+  const f = S.ui.filter;
+  if (!f) return true;
+  const w = cellWork(key);
+  const v = verdict(key);
+
+  if (f.startsWith('stage:')) {
+    const want = f.slice(6);
+    return !!w && w.candidates.some(c => c.stage === want);
+  }
+  if (f.startsWith('del:')) return delivery(key) === f.slice(4);
+  if (f === 'geplant') {
+    const p = picked(key);
+    const d = delivery(key);
+    return !!p && p.stage === 'bestaetigt' && d !== 'im-spiel' && d !== 'im-spiel*';
+  }
+  if (f === 'werkstatt') return !!w;
+  if (f === 'offen') return !!v && v !== 'geklaert';
+  if (f === 'einheitsfarbe') return einheitsSet().has(key.split(':')[0]);
+  return v === f;
+}
+
 function visibleTeams() {
   const q = S.ui.q.trim().toLowerCase();
   const eins = einheitsSet();
@@ -794,16 +849,9 @@ function visibleTeams() {
   return Object.values(S.teams).filter(t => {
     if (S.ui.indy && t.indy) return false;
     if (q && t.name.toLowerCase().indexOf(q) < 0 && t.id.toLowerCase().indexOf(q) < 0) return false;
-    switch (S.ui.filter) {
-      case 'luecke': return gaps.has(t.id);
-      case 'einheitsfarbe': return eins.has(t.id);
-      case 'werkstatt': return t.years.some(y => cellWork(t.id + ':' + y));
-      case 'offen': return t.years.some(y => {
-        const v = verdict(t.id + ':' + y);
-        return v && v !== 'geklaert';
-      });
-    }
-    return true;
+    if (!S.ui.filter) return true;
+    if (S.ui.filter === 'einheitsfarbe') return eins.has(t.id);
+    return t.years.some(y => cellMatchesFilter(t.id + ':' + y));
   }).sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }
 
@@ -847,7 +895,7 @@ function renderYearView() {
     if (t.years.indexOf(y) < 0) return false;
     if (S.ui.indy && t.indy) return false;
     if (q && t.name.toLowerCase().indexOf(q) < 0) return false;
-    return true;
+    return cellMatchesFilter(t.id + ':' + y);
   }).sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
   const cards = list.map(t => {
@@ -905,7 +953,9 @@ function renderStats() {
     <span>ohne Farbe <b>${by('none')}</b></span>
     <span>Einheitsfarbe <b>${S.findings.einheitsfarbe.length}</b> Teams</span>
     <span>offene Posten <b class="${open ? 'warn' : 'ok'}">${open}</b></span>
-    <span>Werkstatt <b>${work}</b></span>`;
+    <span>Werkstatt <b>${work}</b></span>` +
+    (work ? '' : ` <span class="warn">— noch nichts eingelesen, das Google-Calc-Material
+      steckt hinter „Import"</span>`);
 }
 
 /** Kopfhöhe messen – sie ändert sich, sobald die Werkzeugleiste umbricht. */
@@ -1134,7 +1184,10 @@ function showImport() {
   openDialog('Import – schema f1rpg-livery/1', `
     <div class="hint" style="margin-bottom:8px">JSON aus dem Livery-Chat einfügen oder Datei wählen.
     Das Werkzeug löst Teamnamen und Farbworte selbst auf.</div>
-    <input type="file" id="impFile" accept=".json,application/json" style="margin-bottom:8px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <input type="file" id="impFile" accept=".json,application/json">
+      <button id="impSheet" type="button">Google-Calc-Übertragung laden</button>
+    </div>
     <textarea id="impText" placeholder='{"schema":"f1rpg-livery/1","source":{...},"entries":[...]}'></textarea>
     <label class="hint" style="display:block;margin-top:8px">
       <input type="checkbox" id="impTrust"> <b>Diesen Stapel als mitgeprüft übernehmen</b>
@@ -1142,6 +1195,19 @@ function showImport() {
       Entstehen mitgelesen hast.</label>`,
     [{ label: 'Einlesen', primary: true, fn: doImport }]);
 
+  $('#impSheet').onclick = async () => {
+    try {
+      const r = await fetch('quellen/livery-sheet-import.json', { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      $('#impText').value = await r.text();
+      $('#impTrust').checked = false;
+    } catch (err) {
+      alert(`Die Übertragung liegt nicht neben dieser Datei (${err.message}).
+
+Am PC: node tools/build-livery-sheet-import.js
+Unterwegs: tools/quellen/livery-sheet-import.json von Hand hineinkopieren.`);
+    }
+  };
   $('#impFile').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
@@ -1261,11 +1327,152 @@ function download(name, text) {
 }
 
 /* ======================================================================
+   Bildersammlung – bleibt erhalten, aus jedem Team-Jahr erreichbar
+
+   Blobs gehören in IndexedDB: localStorage kann nur Strings und wäre nach
+   drei Fotos voll. Ein Bild, das mehrere Jahre oder mehrere Wagen zeigt,
+   sammelt man einmal ein und pipettiert daraus für viele Zellen.
+   ====================================================================== */
+const LIB = { items: [], urls: {} };
+
+function idb() {
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open('f1rpg-livery-images', 1);
+    rq.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('images')) db.createObjectStore('images', { keyPath: 'id' });
+    };
+    rq.onsuccess = e => res(e.target.result);
+    rq.onerror = () => rej(rq.error || new Error('IndexedDB nicht verfügbar'));
+  });
+}
+
+async function libTx(mode, fn) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('images', mode);
+    const out = fn(tx.objectStore('images'));
+    tx.oncomplete = () => res(out && out.result !== undefined ? out.result : out);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+async function libLoad() {
+  try {
+    LIB.items = await libTx('readonly', st => st.getAll());
+    LIB.items.sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+  } catch (e) {
+    LIB.items = [];
+    console.warn('Bildersammlung nicht lesbar:', e.message);
+  }
+}
+
+async function libAdd(files) {
+  const list = [...(files || [])].filter(f => /^image\//.test(f.type));
+  if (!list.length) return 0;
+  for (const f of list) {
+    const rec = {
+      id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: f.name || 'Bild', type: f.type, size: f.size,
+      blob: f, note: '', addedAt: new Date().toISOString()
+    };
+    await libTx('readwrite', st => st.put(rec));
+  }
+  await libLoad();
+  return list.length;
+}
+
+async function libDelete(id) {
+  await libTx('readwrite', st => st.delete(id));
+  if (LIB.urls[id]) { URL.revokeObjectURL(LIB.urls[id]); delete LIB.urls[id]; }
+  await libLoad();
+}
+
+async function libRename(id, name, note) {
+  const rec = LIB.items.find(x => x.id === id);
+  if (!rec) return;
+  rec.name = name; rec.note = note;
+  await libTx('readwrite', st => st.put(rec));
+  await libLoad();
+}
+
+function libUrl(rec) {
+  if (!LIB.urls[rec.id]) LIB.urls[rec.id] = URL.createObjectURL(rec.blob);
+  return LIB.urls[rec.id];
+}
+
+const fmtKB = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB';
+
+async function showLibrary() {
+  await libLoad();
+  const total = LIB.items.reduce((n, r) => n + (r.size || 0), 0);
+
+  openDialog('Bildersammlung', `
+    <div id="libDrop" class="drop">Bilder hierher ziehen, einfügen (Strg+V) oder
+      <label class="linkish">auswählen<input type="file" id="libFile" accept="image/*" multiple hidden></label>
+    </div>
+    <div class="hint" style="margin:8px 0">${LIB.items.length} Bilder · ${fmtKB(total)} ·
+      bleiben in diesem Browser gespeichert, auch nach dem Schließen.
+      Ein Bild mit mehreren Jahren oder Wagen sammelst du einmal ein und nutzt es für viele Zellen.</div>
+    <div id="libGrid" class="libgrid"></div>`,
+    [], true);
+
+  const drop = $('#libDrop');
+  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('over')));
+  drop.addEventListener('drop', async e => {
+    e.preventDefault();
+    const n = await libAdd(e.dataTransfer.files);
+    if (n) showLibrary();
+  });
+  $('#libFile').onchange = async e => { if (await libAdd(e.target.files)) showLibrary(); };
+
+  renderLibGrid();
+}
+
+function renderLibGrid() {
+  const grid = $('#libGrid');
+  if (!grid) return;
+  grid.innerHTML = LIB.items.map(r => `
+    <div class="libcard" data-id="${r.id}">
+      <img src="${libUrl(r)}" alt="${esc(r.name)}" loading="lazy">
+      <div class="libmeta">
+        <input class="libname" value="${esc(r.name)}" data-name="${r.id}">
+        <input class="libnote" value="${esc(r.note || '')}" placeholder="Notiz, z. B. „1974–77, alle Wagen"" data-note="${r.id}">
+        <div class="libacts">
+          <span class="hint">${fmtKB(r.size || 0)}</span>
+          <span class="grow"></span>
+          <button data-use="${r.id}">Pipette</button>
+          <button data-del="${r.id}">löschen</button>
+        </div>
+      </div>
+    </div>`).join('') || '<div class="hint">Noch keine Bilder gesammelt.</div>';
+
+  grid.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    const rec = LIB.items.find(x => x.id === b.dataset.del);
+    if (!confirm('„' + (rec ? rec.name : '') + '" endgültig aus der Sammlung löschen?')) return;
+    await libDelete(b.dataset.del);
+    showLibrary();
+  });
+  grid.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
+    const rec = LIB.items.find(x => x.id === b.dataset.use);
+    if (!rec) return;
+    if (!S.ui.sel) return alert('Erst ein Team-Jahr anklicken – die Farbe muss ja irgendwo hin.');
+    dlg.close();
+    openPicker(S.ui.sel, null, [rec]);
+  });
+  const save = el => libRename(el.dataset.name || el.dataset.note,
+    $(`[data-name="${el.dataset.name || el.dataset.note}"]`).value,
+    $(`[data-note="${el.dataset.name || el.dataset.note}"]`).value);
+  grid.querySelectorAll('.libname,.libnote').forEach(el => el.onchange = () => save(el));
+}
+
+/* ======================================================================
    Farbeditor: Bilder reinziehen, Farbe mit der Pipette abnehmen
    ====================================================================== */
 const PICK = { images: [], active: 0, picked: [], key: null };
 
-function openPicker(key, files) {
+function openPicker(key, files, fromLib) {
   if (!key) return alert('Erst ein Team-Jahr anklicken – die Farbe muss ja irgendwo hin.');
   PICK.key = key;
   PICK.picked = [];
@@ -1277,6 +1484,10 @@ function openPicker(key, files) {
       <label class="linkish">auswählen<input type="file" id="pkFile" accept="image/*" multiple hidden></label>
       ${S.work.images[team] ? `<button id="pkRef" type="button">Referenzbild des Teams laden</button>` : ''}
     </div>
+    <div class="sect" style="margin-top:10px;padding-top:10px">
+      <h4>Aus der Sammlung <span class="hint" style="text-transform:none;font-weight:400">– bleibt gespeichert, gilt für alle Team-Jahre</span></h4>
+      <div id="pkLib" class="thumbs"></div>
+    </div>
     <div id="pkThumbs" class="thumbs"></div>
     <div id="pkStage" class="pkstage" hidden>
       <canvas id="pkCanvas"></canvas>
@@ -1285,12 +1496,10 @@ function openPicker(key, files) {
         <div id="pkHover" class="mono hint">Zeiger über das Bild</div>
       </div>
     </div>
-    <div class="sect" style="margin-top:12px">
-      <h4>Abgenommen (max. 3 – Reihenfolge ist die Banner-Reihenfolge)</h4>
-      <div id="pkPicked" class="picked-row"></div>
-      <div id="pkPreview" class="pkpreview"></div>
-    </div>`,
-    [{ label: 'Übernehmen', primary: true, fn: applyPicked }]);
+    <div class="hint" style="margin-top:10px">Klick ins Bild nimmt eine Farbe ab –
+      bis zu drei, sie sammeln sich unten im Fuß. Fenster an der rechten unteren
+      Ecke größer ziehen.</div>`,
+    [{ label: 'Übernehmen', primary: true, fn: applyPicked }], true);
 
   const drop = $('#pkDrop');
   ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => {
@@ -1303,12 +1512,39 @@ function openPicker(key, files) {
   if (refBtn) refBtn.onclick = () => addImageUrl(S.work.images[team]);
 
   renderPicked();
+  libLoad().then(renderPickerLib);
   if (files && files.length) addImages(files);
+  if (fromLib && fromLib.length) fromLib.forEach(rec => addFromLib(rec));
+}
+
+/** Miniaturen der gespeicherten Sammlung im Farbeditor. */
+function renderPickerLib() {
+  const box = $('#pkLib');
+  if (!box) return;
+  if (!LIB.items.length) {
+    box.innerHTML = '<span class="hint">Noch nichts gesammelt – Bilder hier hineinziehen landen automatisch in der Sammlung.</span>';
+    return;
+  }
+  box.innerHTML = LIB.items.map(r =>
+    `<img class="libthumb" src="${libUrl(r)}" title="${esc(r.name)}${r.note ? ' – ' + esc(r.note) : ''}" data-lib="${r.id}">`).join('');
+  box.querySelectorAll('[data-lib]').forEach(el => el.onclick = () => {
+    const rec = LIB.items.find(x => x.id === el.dataset.lib);
+    if (rec) addFromLib(rec);
+  });
+}
+
+function addFromLib(rec) {
+  const img = new Image();
+  img.onload = () => { PICK.images.push({ img, name: rec.name }); showImage(PICK.images.length - 1); };
+  img.src = libUrl(rec);
 }
 
 function addImages(fileList) {
   const files = [...(fileList || [])].filter(f => /^image\//.test(f.type));
   if (!files.length) return;
+  // Was einmal hereingezogen wurde, bleibt gesammelt – sonst muesste man
+  // dasselbe Bild fuer jedes Team-Jahr neu suchen.
+  libAdd(files).then(() => renderPickerLib()).catch(() => {});
   let pending = files.length;
   files.forEach(f => {
     const img = new Image();
@@ -1372,6 +1608,7 @@ function showImage(i) {
     if (PICK.picked.length >= 3) return alert('Drei Farben sind das Maximum – erst eine entfernen.');
     PICK.picked.push(hex);
     renderPicked();
+    updatePickTitle();
   };
 }
 
@@ -1416,7 +1653,22 @@ function drawLoupe(srcCtx, x, y) {
   g.strokeRect(lp.width / 2 - z / 2 - 1, lp.height / 2 - z / 2 - 1, z + 2, z + 2);
 }
 
+function updatePickTitle() {
+  const el = $('#dlgTitle');
+  if (el && PICK.key) {
+    const [team, year] = PICK.key.split(':');
+    const t = S.teams[team] || { name: team };
+    el.textContent = `Farbe aus Bild – ${t.name} ${year}  (${PICK.picked.length}/3 abgenommen)`;
+  }
+}
+
 function renderPicked() {
+  const foot = $('#dlgFootLeft');
+  if (foot && !$('#pkPicked')) {
+    foot.innerHTML = '<div id="pkPicked" class="picked-row"></div>' +
+                     '<div id="pkPreview" class="pkpreview"></div>';
+  }
+  if (!$('#pkPicked')) return;
   $('#pkPicked').innerHTML = PICK.picked.map((c, i) =>
     `<span class="pk" style="background:${c}">
        <b class="mono">${c}</b>
@@ -1425,8 +1677,8 @@ function renderPicked() {
      </span>`).join('') || '<span class="hint">Noch nichts abgenommen. Ins Bild klicken.</span>';
 
   $('#pkPreview').innerHTML = PICK.picked.length
-    ? `<div style="height:34px;border-radius:6px;background:${gradient(PICK.picked)}"></div>
-       <div class="mono hint" style="margin-top:4px">${PICK.picked.join(' ')} · Schriftfarbe wäre
+    ? `<div style="height:22px;border-radius:5px;background:${gradient(PICK.picked)}"></div>
+       <div class="mono hint" style="margin-top:3px">${PICK.picked.join(' ')} · Schrift wäre
          <span style="color:${PICK.picked[0]}">${PICK.picked[0]}</span></div>` : '';
 
   $('#pkPicked').querySelectorAll('[data-rm]').forEach(b =>
@@ -1451,10 +1703,10 @@ function applyPicked() {
 /* ======================================================================
    Dialog + Verdrahtung
    ====================================================================== */
-function openDialog(title, body, actions) {
+function openDialog(title, body, actions, wide) {
   $('#dlgTitle').textContent = title;
   $('#dlgBody').innerHTML = body;
-  $('#dlgFoot').innerHTML = '';
+  $('#dlgFoot').innerHTML = '<div id="dlgFootLeft" class="grow"></div>';
   (actions || []).forEach(a => {
     const b = document.createElement('button');
     b.textContent = a.label;
@@ -1462,6 +1714,7 @@ function openDialog(title, body, actions) {
     b.onclick = a.fn;
     $('#dlgFoot').appendChild(b);
   });
+  dlg.classList.toggle('wide', !!wide);
   dlg.showModal();
 }
 
@@ -1485,6 +1738,7 @@ function wire() {
   $('#fIndy').onchange = e => { S.ui.indy = e.target.checked; render(); };
   $('#filter').onchange = e => { S.ui.filter = e.target.value; render(); };
   $('#btnFind').onclick = showFindings;
+  $('#btnLib').onclick = showLibrary;
   $('#btnImport').onclick = showImport;
   $('#btnExport').onclick = showExport;
 
