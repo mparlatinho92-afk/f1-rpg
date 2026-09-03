@@ -22,7 +22,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 | 3 | Karriere-Bogen beim Rücktritt | `paket3-karriere-bogen/SPEC.md` | ✅ **v0.9.14.69** (Werdegang-Satz in `obituaryText`, nur mode 'retire'). **Bank erweitert v0.9.17.37** (74 → 120 Zeilen: alle 12 Pools mit/ohne Zenit auf 10) |
 | 4 | Saison-Vorschau | `paket4-saison-vorschau/SPEC.md` | ✅ **v0.9.14.69** (`preview-bank.js` → 🔮-Card in `showOffSeasonModal`). **Bank erweitert v0.9.17.30** (48 → 80 Zeilen, alle Pools auf 10) |
 | 5 | Rivalitäts-/Duell-Texte | `paket5-rivalitaeten/SPEC.md` | ✅ **v0.9.14.69** (`rivalry-bank.js` → ⚔️-Duell-Card im Profil, nur aktive Fahrer). **Bank erweitert v0.9.17.30** (100 → 160 Zeilen, alle Pools auf 8) |
-| 6 | Fiktive Team- & Sponsornamen | `paket6-team-sponsor-namen/SPEC.md` | ✅ **v0.9.14.68** (`team-name-pools.js` → Team-Generator + Grid-Fill-Button) |
+| 6 | Fiktive Team- & Sponsornamen | `paket6-team-sponsor-namen/SPEC.md` | ✅ **v0.9.14.68** (`team-name-pools.js` → Team-Generator + Grid-Fill-Button). **Baukasten-Umbau v0.9.17.40**: gewichtete Bausteine statt gleichverteilter Muster, Ära-Fenster, Initial-Kürzel — Gewichte an 68 realen Feeder-/Endurance-Teams gemessen (`REPORT-BAUSTEINE.md`) |
 | 7 | Qualitatives Tuning (Audit) | `paket7-tuning/SPEC.md` | ✅ **v0.9.14.63/.64** (alle Text-Fixes: H1–H4, M1–M7, N1–N4, N6). Die drei Prüfaufträge N5/N7/N8 waren nie Text-Edits: **N5 + N7 v0.9.17.34**, N8 offen (s. Restliste) |
 | 8 | Fiktive Strecken- & Rennnamen | `paket8-strecken/SPEC.md` | ✅ **v0.9.14.65** (`circuit-name-pools.js` → Streckeneditor + Zufalls-Button) |
 
@@ -41,7 +41,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
    (Rezept: `name-data/analysis/pyramid-300kart-nation-demand.md`, Blob-Umbau als Schritt 0).
 2. **Paket I:** Kaggle-Ablösung offen; bekannte Grenzen: ITA vor 1999 kuratiert, GBR ohne Schottland.
 3. ~~**Paket J:** Cape-Coloured-Anteil RSA r0 18,9 %~~ — **nicht reproduzierbar** (Messung 2026-09-01: Nachnamen 0,0 %, Vornamen 2,5 %, und die drei Treffer Craig/Wayne/Shaun sind echte Doppelnamen). Der Wert stammt vermutlich aus der Zeit vor Welle 4, die RSA r3 erst eingeführt hat. Details: `paketJ-ethno-regionen/REPORT-WELLE5.md` §6.
-4. **Paket 3/6/8 — Bank-Tiefe:** Paket 3 auf 120 Zeilen gehoben (v0.9.17.37). OFFEN: `TEAM_NAME_POOLS` (~41 Namenszeilen, seit v0.9.14.68 unangetastet) und `CIRCUIT_NAME_POOLS` (~168, seit .65) — beide wiederholen sich über mehrere Simsaisons.
+4. **Paket 3/6/8 — Bank-Tiefe:** Paket 3 auf 120 Zeilen gehoben (v0.9.17.37), Paket 6 als gewichteter Baukasten neu gebaut (v0.9.17.40). OFFEN nur noch `CIRCUIT_NAME_POOLS` (~168 Zeilen, seit v0.9.14.65 unangetastet).
 4. ~~**Paket C (Alt-Paket):** Obituary-Text fehlt noch im Nekrolog-Tab~~ — **eingebaut v0.9.17.31** (`_necroObit`, gleiche Regeneration wie Off-Season-Modal). Bank zuvor erweitert v0.9.17.29 (174 → 256 Zeilen).
 5. ~~**Paket 7:** N5/N7/N8~~ — **komplett abgeschlossen.** Die drei waren **Prüfaufträge an Opus**, keine Text-Edits (deshalb standen sie nie in den Fix-Commits): **N5 + N7 v0.9.17.34** (pit-`{pos}` = Position beim Reinkommen, festgeschrieben; `{deadRaceBei}` löst den Kasusbruch bei deutschen Rennnamen), **N8 v0.9.17.35** (siegloser Champion fällt aus dem `dominant`-Pool).
 
