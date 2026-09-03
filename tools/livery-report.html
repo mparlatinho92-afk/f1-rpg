@@ -286,6 +286,22 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;
    ====================================================================== */
 async function boot() {
   loadWork();
+  // Ist dieser Browser leer, aber im Projekt liegt ein gesicherter Arbeitsstand?
+  // Dann ist DER die Wahrheit – so überlebt die Arbeit Browserwechsel, gelöschte
+  // Website-Daten, einen anderen Port und jedes andere Gerät.
+  if (!Object.keys(S.work.cells || {}).length) {
+    try {
+      const r = await fetch('quellen/livery-work.json', { cache: 'no-store' });
+      if (r.ok) {
+        const w = await r.json();
+        if (w && w.cells && Object.keys(w.cells).length) {
+          S.work = Object.assign({ cells: {}, imports: [], images: {}, teamNotes: {},
+                                   yearImages: {}, yearRefs: {} }, w);
+          S.work.loadedFromRepo = true;
+        }
+      }
+    } catch (e) { /* keiner da – normaler erster Start */ }
+  }
   try {
     await bootLive();
   } catch (liveErr) {
@@ -343,15 +359,28 @@ async function bootLive() {
   };
   S.mode = 'live';
 
-  // Snapshot danebenhalten – nur um zu sagen, ob er veraltet ist.
-  let stale = null;
+  // Snapshot danebenhalten – nur um zu sagen, ob er veraltet ist. Zwei Dinge
+  // können hinterherhinken: die Farben des Spiels und die Werkstatt selbst
+  // (dann ist die Unterwegs-Fassung eine alte Programmfassung).
+  let staleColors = null, staleReport = false;
   try {
     const snap = await (await fetch('livery-snapshot.json', { cache: 'no-store' })).json();
-    if (snap && snap.meta && snap.meta.colorHash !== game.hash) stale = snap.meta.generated;
+    if (snap && snap.meta) {
+      if (snap.meta.colorHash !== game.hash) staleColors = snap.meta.generated;
+      if (snap.meta.reportHash) {
+        const self = await (await fetch('livery-report.html', { cache: 'no-store' })).text();
+        if (LiveryCore.fnv1a(self) !== snap.meta.reportHash) staleReport = true;
+      }
+    }
   } catch (e) { /* kein Snapshot da – im Live-Modus verschmerzbar */ }
 
+  const warn = [];
+  if (staleColors) warn.push('Snapshot vom ' + staleColors + ' hat andere Spielfarben');
+  if (staleReport) warn.push('Unterwegs-Fassung ist eine ältere Programmfassung');
+
   renderMode('direkter Draht zum Monolith · Spiel v' + game.version +
-    (stale ? ' · <span class="warn">Snapshot vom ' + stale + ' ist veraltet, build-livery-snapshot.js neu laufen lassen</span>' : ''));
+    (warn.length ? ' · <span class="warn">' + warn.join(' · ') +
+      ' → <span class="mono">node tools/build-livery-snapshot.js</span></span>' : ''));
 }
 
 async function bootSnapshot(whyLive) {
@@ -400,6 +429,7 @@ function loadWork() {
   } catch (e) { /* leerer Start ist ein gültiger Zustand */ }
 }
 function saveWork() {
+  S.work.rev = (S.work.rev || 0) + 1;
   try { localStorage.setItem(WORK_KEY, JSON.stringify(S.work)); }
   catch (e) { alert('Arbeitsstand konnte nicht gespeichert werden: ' + e.message + '\nExportiere ihn lieber als Datei.'); }
 }
@@ -616,6 +646,7 @@ function renderStats() {
   const n = cells.length;
   const by = s => cells.filter(c => c.source === s).length;
   const banner = cells.filter(c => c.colors.length > 1).length;
+  const unsaved = (S.work.rev || 0) - (S.work.savedRev || 0);
   let open = 0, work = 0;
   for (const key in S.cells) {
     if (S.ui.indy && S.cells[key].indy) continue;
@@ -633,7 +664,11 @@ function renderStats() {
     <span>offene Posten <b class="${open ? 'warn' : 'ok'}">${open}</b></span>
     <span>Werkstatt <b>${work}</b></span>` +
     (work ? '' : ` <span class="warn">— noch nichts eingelesen, das Google-Calc-Material
-      steckt hinter „Import"</span>`);
+      steckt hinter „Import"</span>`) +
+    (unsaved > 0
+      ? ` <span class="warn">— <b>${unsaved}</b> Änderungen nur in diesem Browser,
+          noch nicht als Datei gesichert</span>`
+      : (S.work.savedAt ? ` <span class="ok">— gesichert ${esc(S.work.savedAt)}</span>` : ''));
 }
 
 /** Kopfhöhe messen – sie ändert sich, sobald die Werkzeugleiste umbricht. */
@@ -968,11 +1003,22 @@ function showExport() {
     <textarea id="expTodo">${esc(JSON.stringify(todo, null, 2))}</textarea>
     <div class="hint" style="margin-top:6px">In den Projektordner legen, dann
       <span class="mono">./add-livery -BatchFile liveries-todo.json</span></div>
-    <h4 style="margin:16px 0 6px">Arbeitsstand (alles, für Umzug auf ein anderes Gerät)</h4>
-    <div class="hint">${Object.keys(S.work.cells).length} Zellen, ${S.work.imports.length} Importe</div>`,
+    <h4 style="margin:16px 0 6px">Arbeitsstand sichern</h4>
+    <div class="hint">${Object.keys(S.work.cells).length} Zellen, ${S.work.imports.length} Importe.
+      Der Stand liegt sonst <b>nur im Speicher dieses Browsers</b> (Adresse
+      <span class="mono">${esc(location.origin)}</span>) – ein anderer Port, ein anderer
+      Browser oder gelöschte Website-Daten heißt: leer.<br>
+      Lege die Datei als <span class="mono">tools/quellen/livery-work.json</span> ins Projekt
+      und committe sie. Dann lädt die Werkstatt sie beim Start von selbst – überall.</div>`,
     [
       { label: 'liveries-todo.json laden', primary: true, fn: () => download('liveries-todo.json', JSON.stringify(todo, null, 2)) },
-      { label: 'Arbeitsstand laden', fn: () => download('livery-work.json', JSON.stringify(S.work, null, 2)) },
+      { label: 'Arbeitsstand laden', fn: () => {
+          download('livery-work.json', JSON.stringify(S.work, null, 2));
+          S.work.savedRev = S.work.rev || 0;
+          S.work.savedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+          try { localStorage.setItem(WORK_KEY, JSON.stringify(S.work)); } catch (e) {}
+          render();
+        } },
       { label: 'Arbeitsstand einlesen', fn: importWork }
     ]);
 }

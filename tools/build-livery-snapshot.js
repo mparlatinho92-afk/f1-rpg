@@ -9,8 +9,9 @@
  * unterwegs, ohne laufenden Server. Im Live-Modus holt sie sich dieselben
  * Daten selbst und ignoriert den Snapshot bis auf den Veraltet-Vergleich.
  *
- * Optional:  --inline   schreibt zusätzlich tools/livery-report.standalone.html
- *                       mit eingebettetem Snapshot (eine Datei, überall lauffähig)
+ * Die Unterwegs-Fassung (tools/livery-report.standalone.html) wird IMMER
+ * mitgebaut – sie darf nie hinter der Werkstatt zurückbleiben.
+ * --no-inline unterdrückt das nur für Sonderfälle.
  */
 'use strict';
 
@@ -35,7 +36,7 @@ function loadDataFile(rel, names) {
 }
 
 function main() {
-    const inline = process.argv.includes('--inline');
+    const inline = !process.argv.includes('--no-inline');
 
     console.log('  lese data/seasons.js …');
     const { SEASON_DATA } = loadDataFile('data/seasons.js', ['SEASON_DATA']);
@@ -69,9 +70,14 @@ function main() {
         if (t.indy) teams[id].indy = 1;
     }
 
+    const reportPath = p('tools/livery-report.html');
+    const reportHash = fs.existsSync(reportPath)
+        ? Core.fnv1a(fs.readFileSync(reportPath, 'utf8')) : null;
+
     const snapshot = {
         meta: {
             schema: 'f1rpg-livery-snapshot/1',
+            reportHash: reportHash,
             gameVersion: game.version,
             colorHash: game.hash,
             generated: new Date().toISOString().slice(0, 10),

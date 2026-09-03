@@ -218,6 +218,36 @@ und `getTeamHeaderGradient` aus `index.html` und führt sie aus. Findet er einen
 Block nicht, bricht er ab statt zu raten. Ein Nachbau wäre eine zweite Wahrheit —
 dasselbe Muster wie die Live-Ticker-Divergenz.
 
+## 8a. Wo der Arbeitsstand liegt – und wo nicht
+
+**Der Live-Modus speichert nichts.** „Direkter Draht zum Monolith" heißt nur:
+`index.html` wird gelesen. Geschrieben wird dorthin nie.
+
+| Was | Wo | Überlebt | Überlebt NICHT |
+|---|---|---|---|
+| Kandidaten, Picks, Notizen | `localStorage` `f1rpg-livery-work-v1` | Browser schließen, PC-Neustart, Server-Neustart | Website-Daten löschen, anderer Browser, privates Fenster, **anderer Port**, anderes Gerät |
+| gesammelte Bilder | IndexedDB `f1rpg-livery-images` | dasselbe | dasselbe |
+
+Beides hängt an der **Adresse** (`http://localhost:3000`). Startet der Server
+einmal auf 3333, ist das für den Browser eine andere Seite – die Werkstatt ist
+dann leer, ohne dass etwas kaputt wäre.
+
+**Dauerhaft wird ein Stand erst als Datei im Projekt:** Export → „Arbeitsstand
+laden" → die Datei als `tools/quellen/livery-work.json` ablegen und committen.
+Beim Start lädt die Werkstatt sie automatisch, wenn der Browser leer ist – so
+kommt der Stand auf jedes Gerät und in jeden Browser. Solange ungesicherte
+Änderungen offen sind, sagt das die Statuszeile mit Zähler.
+
+## 8b. Unterwegs-Fassung synchron halten
+
+`node tools/build-livery-snapshot.js` baut die Standalone **immer** mit
+(`--no-inline` nur für Sonderfälle) – sie kann nicht mehr vergessen werden.
+
+Zusätzlich trägt der Snapshot einen Hash von `livery-report.html`. Der
+Live-Modus vergleicht ihn mit seinem eigenen Quelltext und schreibt in die
+Kopfzeile „Unterwegs-Fassung ist eine ältere Programmfassung", wenn die
+Werkstatt weiterentwickelt wurde, ohne neu zu bauen.
+
 ## 9. Fallen
 
 - `isIndyOnlyConstructor` trifft über den **Namen** (`t[1]`), nie über die
