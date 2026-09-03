@@ -283,7 +283,11 @@
      * übernehmen?" – nie aus der Datei selbst.
      */
     function normalizeImport(doc, built, trusted) {
-        const res = { entries: [], skipped: [], source: (doc && doc.source) || {} };
+        const res = {
+            entries: [], skipped: [],
+            source: (doc && doc.source) || {},
+            context: (doc && doc.context) || null   // Bilder/Links je Saison und Team
+        };
         const list = (doc && doc.entries) || [];
         for (const e of list) {
             const team = resolveTeam(e.team, built);
@@ -304,8 +308,12 @@
                     colors: parsed.colors,
                     raw: parsed.raw,
                     unresolved: parsed.unresolved,
-                    stage: trusted && parsed.colors ? 'bestaetigt' : (parsed.colors ? 'vorschlag' : 'idee'),
+                    stage: trusted && parsed.colors
+                        ? 'bestaetigt'
+                        : (parsed.colors ? (e.stageHint === 'idee' ? 'idee' : 'vorschlag') : 'idee'),
                     note: e.comment || e.note || '',
+                    image: e.image || '',
+                    ref: e.ref || '',
                     spanFrom: from, spanTo: to
                 });
             }

@@ -72,6 +72,9 @@
   .axis span.dec{color:var(--muted);font-weight:600}
 
   /* ---- Jahr-Kacheln ---- */
+  .yearref{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 10px;
+           padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+  .yearref img{max-height:150px;border-radius:6px;display:block}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;
         cursor:pointer}
@@ -127,6 +130,25 @@
   .find:hover{border-color:var(--info)}
   .find .t{font-weight:600}
   .find .d{color:var(--muted);font-size:12px}
+
+  /* ---- Farbeditor ---- */
+  .drop{border:2px dashed var(--line);border-radius:9px;padding:16px;text-align:center;
+        color:var(--muted);display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .drop.over{border-color:var(--info);background:#58a6ff14;color:var(--text)}
+  .linkish{color:var(--info);cursor:pointer;text-decoration:underline}
+  .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .thumb{border:2px solid var(--line);border-radius:5px;cursor:pointer;background:#000}
+  .thumb.on{border-color:var(--info)}
+  .pkstage{display:flex;gap:12px;margin-top:12px;align-items:flex-start}
+  #pkCanvas{max-width:100%;border-radius:7px;cursor:crosshair;display:block}
+  .pkside{flex:none;width:120px}
+  #pkLoupe{border:1px solid var(--line);border-radius:7px;background:#000;display:block;margin-bottom:6px}
+  .picked-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .pk{display:inline-flex;gap:6px;align-items:center;padding:4px 6px;border-radius:6px;
+      border:1px solid #0006;box-shadow:0 0 0 1px var(--line)}
+  .pk b{background:#000c;color:#fff;padding:1px 5px;border-radius:4px;font-size:11px}
+  .pk button{padding:1px 5px;font-size:11px;background:#000a;border-color:#0000}
+  .pkpreview{margin-top:6px}
 
   /* ---- Dialog ---- */
   dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);
@@ -195,7 +217,8 @@ const S = {
   meta: null,
   teams: {}, cells: {},  // Spielseite (Snapshot ODER live gelesen)
   findings: { luecke: [], einheitsfarbe: [] },
-  work: { cells: {}, imports: [], images: {} },   // deine Werkstatt
+  // deine Werkstatt: Kandidaten je Zelle + Referenzmaterial aus dem Sheet
+  work: { cells: {}, imports: [], images: {}, teamNotes: {}, yearImages: {}, yearRefs: {} },
   ui: { view: 'team', year: 2025, sel: null, q: '', indy: true, filter: '' }
 };
 const WORK_KEY = 'f1rpg-livery-work-v1';
@@ -222,6 +245,21 @@ async function boot() {
   wire();
   render();
   addEventListener('resize', measureHeader);
+
+  // Bild irgendwo auf die Seite ziehen oder einfuegen oeffnet den Farbeditor.
+  addEventListener('dragover', e => { if (!dlg.open) e.preventDefault(); });
+  addEventListener('drop', e => {
+    if (dlg.open) return;
+    const imgs = [...(e.dataTransfer.files || [])].filter(f => /^image\//.test(f.type));
+    if (!imgs.length) return;
+    e.preventDefault();
+    openPicker(S.ui.sel, imgs);
+  });
+  addEventListener('paste', e => {
+    if (dlg.open) return;
+    const imgs = [...(e.clipboardData.files || [])].filter(f => /^image\//.test(f.type));
+    if (imgs.length) openPicker(S.ui.sel, imgs);
+  });
 }
 
 async function bootLive() {
@@ -302,7 +340,7 @@ function renderMode(html) {
 function loadWork() {
   try {
     const raw = localStorage.getItem(WORK_KEY);
-    if (raw) S.work = Object.assign({ cells: {}, imports: [], images: {} }, JSON.parse(raw));
+    if (raw) S.work = Object.assign({ cells: {}, imports: [], images: {}, teamNotes: {}, yearImages: {}, yearRefs: {} }, JSON.parse(raw));
   } catch (e) { /* leerer Start ist ein gültiger Zustand */ }
 }
 function saveWork() {
@@ -320,6 +358,9 @@ const newCandId = () => 'c' + (++candSeq).toString(36);
 /* ======================================================================
    Zustände einer Zelle: Fortschritt (gesetzt) + Lieferstatus (berechnet)
    ====================================================================== */
+const STAGE_RANK = { idee: 0, vorschlag: 1, bestaetigt: 2 };
+const rank = c => STAGE_RANK[c && c.stage] || 0;
+
 function picked(key) {
   const w = cellWork(key);
   if (!w || !w.pick) return null;
@@ -348,6 +389,14 @@ function verdict(key) {
   if (cands.length) {
     const conf = cands.filter(c => c.stage === 'bestaetigt');
     if (conf.length > 1) return 'widerspruch';
+    // Zwei gleichrangige Kandidaten mit verschiedenen Farben sind eine echte
+    // Meinungsverschiedenheit – auch wenn schon einer vorausgewählt ist.
+    const withColors = cands.filter(c => c.colors && c.colors.length);
+    if (withColors.length > 1) {
+      const top = Math.max.apply(null, withColors.map(rank));
+      const distinct = new Set(withColors.filter(c => rank(c) === top).map(c => c.colors.join(',')));
+      if (distinct.size > 1) return 'unentschieden';
+    }
     if (!w.pick) return cands.length > 1 ? 'unentschieden' : (cands[0].stage === 'idee' ? 'nur-idee' : 'offen');
     const d = delivery(key);
     if (d === 'abweichend') return 'abweichend';
@@ -476,7 +525,15 @@ function renderYearView() {
     </div>`;
   }).join('');
 
-  $('#view').innerHTML = `<div class="grid">${cards || '<div class="hint">Keine Teams in diesem Jahr.</div>'}</div>`;
+  const yImg = S.work.yearImages[y], yRef = S.work.yearRefs[y];
+  const head = (yImg || yRef) ? `<div class="yearref">
+      <b>Saison ${y}</b>
+      ${yRef ? `<a href="${esc(yRef)}" target="_blank" rel="noopener">Quelle öffnen</a>` : ''}
+      ${yImg ? `<a href="${esc(yImg)}" target="_blank" rel="noopener">Referenzbild</a>` : ''}
+      ${yImg ? `<img src="${esc(yImg)}" alt="Liveries ${y}"
+        onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'bad',textContent:'Bild nicht erreichbar (URL abgelaufen)'}))">` : ''}
+    </div>` : '';
+  $('#view').innerHTML = head + `<div class="grid">${cards || '<div class="hint">Keine Teams in diesem Jahr.</div>'}</div>`;
 }
 
 function renderStats() {
@@ -554,12 +611,16 @@ function renderSide() {
         <input id="nc" placeholder="z. B. #FF6600-#FF6600-weiß"></label>
       <label class="field"><span>Notiz / Quelle</span><input id="nn" placeholder="optional"></label>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button data-pick="1" title="Bild reinziehen und Farbe abnehmen">Farbe aus Bild</button>
         <button data-add="idee">als Idee</button>
         <button data-add="vorschlag">als Vorschlag</button>
         <button data-add="note">als Auftrag (ohne Farbe)</button>
       </div>
       <div style="margin-top:8px"><button data-span="1">… für eine Zeitspanne übernehmen</button></div>
     </div>
+
+    ${S.work.teamNotes[team] ? `<div class="sect"><h4>Notiz aus dem Sheet</h4>
+      <div class="hint">${esc(S.work.teamNotes[team])}</div></div>` : ''}
 
     <div class="sect"><h4>Referenzbild</h4>
       <label class="field"><input id="img" placeholder="Bild-URL für ${esc(t.name)}"
@@ -573,6 +634,8 @@ function renderSide() {
     b.onclick = () => addCandidate(key, b.dataset.add));
   const span = $('#side').querySelector('[data-span]');
   if (span) span.onclick = () => addSpan(key);
+  const pick = $('#side').querySelector('[data-pick]');
+  if (pick) pick.onclick = () => openPicker(key);
   const img = $('#img');
   if (img) img.onchange = () => { S.work.images[team] = img.value.trim(); saveWork(); renderSide(); };
 }
@@ -628,8 +691,13 @@ function pushCand(key, data) {
   const w = ensureWork(key);
   const c = Object.assign({ id: newCandId(), origin: { kind: 'hand', date: new Date().toISOString().slice(0, 10) } }, data);
   w.candidates.push(c);
-  // Erster brauchbarer Kandidat wird gewählt – bei mehreren entscheidest du.
-  if (!w.pick && c.colors) w.pick = c.id;
+  // Der höherrangige Kandidat gewinnt die Vorauswahl: eine jahresgenaue Angabe
+  // darf nicht von einer pauschalen Idee ohne Jahr verdrängt werden (Surtees
+  // stand im Sheet flach als „weiß", in der Aufschlüsselung jahresweise anders).
+  if (c.colors) {
+    const cur = w.pick && w.candidates.find(x => x.id === w.pick);
+    if (!cur || rank(c) > rank(cur)) w.pick = c.id;
+  }
   return c;
 }
 
@@ -746,6 +814,25 @@ function doImport() {
   }
 
   const stamp = new Date().toISOString().slice(0, 10);
+
+  // Kontext: Referenzbilder und Chat-/Doc-Links je Saison und Team. Die tragen
+  // im Sheet die halbe Arbeitsgrundlage – ohne sie wäre der Import halbiert.
+  let ctxYears = 0, ctxTeams = 0;
+  if (res.context) {
+    for (const y in (res.context.years || {})) {
+      const c = res.context.years[y];
+      if (c.image) { S.work.yearImages[y] = c.image; }
+      if (c.ref) { S.work.yearRefs[y] = c.ref; }
+      ctxYears++;
+    }
+    for (const t in (res.context.teams || {})) {
+      const c = res.context.teams[t];
+      if (c.image && !S.work.images[t]) S.work.images[t] = c.image;
+      if (c.note) S.work.teamNotes[t] = c.note;
+      ctxTeams++;
+    }
+  }
+
   let n = 0, conflicts = 0;
   for (const e of res.entries) {
     const w = ensureWork(e.key);
@@ -763,6 +850,8 @@ function doImport() {
   saveWork(); dlg.close(); render();
 
   alert(`${n} Kandidaten übernommen${trusted ? ' (als bestätigt)' : ''}.` +
+    (ctxYears || ctxTeams ? `
+${ctxYears} Saisons und ${ctxTeams} Teams mit Referenzbild/Link.` : '') +
     (conflicts ? `\n${conflicts} Zellen haben jetzt mehrere bestätigte Werte – stehen als Widerspruch in den offenen Posten.` : '') +
     (res.skipped.length ? `\n\nÜbersprungen:\n` + res.skipped.slice(0, 12).map(s => '· ' + s.why).join('\n') : ''));
 }
@@ -806,7 +895,7 @@ function importWork() {
         if (!w.cells) throw new Error('Keine cells im Arbeitsstand');
         if (!confirm('Ersetzt den lokalen Arbeitsstand (' + Object.keys(S.work.cells).length +
                      ' Zellen) durch ' + Object.keys(w.cells).length + ' Zellen. Weiter?')) return;
-        S.work = Object.assign({ cells: {}, imports: [], images: {} }, w);
+        S.work = Object.assign({ cells: {}, imports: [], images: {}, teamNotes: {}, yearImages: {}, yearRefs: {} }, w);
         saveWork(); dlg.close(); render();
       } catch (e) { alert('Fehler: ' + e.message); }
     };
@@ -820,6 +909,194 @@ function download(name, text) {
   const a = document.createElement('a');
   a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ======================================================================
+   Farbeditor: Bilder reinziehen, Farbe mit der Pipette abnehmen
+   ====================================================================== */
+const PICK = { images: [], active: 0, picked: [], key: null };
+
+function openPicker(key, files) {
+  if (!key) return alert('Erst ein Team-Jahr anklicken – die Farbe muss ja irgendwo hin.');
+  PICK.key = key;
+  PICK.picked = [];
+  const [team, year] = key.split(':');
+  const t = S.teams[team] || { name: team };
+
+  openDialog(`Farbe aus Bild – ${t.name} ${year}`, `
+    <div id="pkDrop" class="drop">Bilder hierher ziehen, einfügen (Strg+V) oder
+      <label class="linkish">auswählen<input type="file" id="pkFile" accept="image/*" multiple hidden></label>
+      ${S.work.images[team] ? `<button id="pkRef" type="button">Referenzbild des Teams laden</button>` : ''}
+    </div>
+    <div id="pkThumbs" class="thumbs"></div>
+    <div id="pkStage" class="pkstage" hidden>
+      <canvas id="pkCanvas"></canvas>
+      <div class="pkside">
+        <canvas id="pkLoupe" width="120" height="120"></canvas>
+        <div id="pkHover" class="mono hint">Zeiger über das Bild</div>
+      </div>
+    </div>
+    <div class="sect" style="margin-top:12px">
+      <h4>Abgenommen (max. 3 – Reihenfolge ist die Banner-Reihenfolge)</h4>
+      <div id="pkPicked" class="picked-row"></div>
+      <div id="pkPreview" class="pkpreview"></div>
+    </div>`,
+    [{ label: 'Übernehmen', primary: true, fn: applyPicked }]);
+
+  const drop = $('#pkDrop');
+  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); drop.classList.add('over');
+  }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('over')));
+  drop.addEventListener('drop', e => { e.preventDefault(); addImages(e.dataTransfer.files); });
+  $('#pkFile').onchange = e => addImages(e.target.files);
+  const refBtn = $('#pkRef');
+  if (refBtn) refBtn.onclick = () => addImageUrl(S.work.images[team]);
+
+  renderPicked();
+  if (files && files.length) addImages(files);
+}
+
+function addImages(fileList) {
+  const files = [...(fileList || [])].filter(f => /^image\//.test(f.type));
+  if (!files.length) return;
+  let pending = files.length;
+  files.forEach(f => {
+    const img = new Image();
+    img.onload = () => { PICK.images.push({ img, name: f.name }); if (!--pending) showImage(PICK.images.length - 1); };
+    img.onerror = () => { if (!--pending) renderThumbs(); };
+    img.src = URL.createObjectURL(f);
+  });
+}
+
+/** Externe Bilder gehen nur, wenn die fremde Seite CORS erlaubt. */
+function addImageUrl(url) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { PICK.images.push({ img, name: 'Referenzbild' }); showImage(PICK.images.length - 1); };
+  img.onerror = () => alert('Das Bild ließ sich nicht zum Auslesen laden.\n' +
+    'Fremde Seiten (pinimg, Instagram) erlauben das meist nicht – ' +
+    'lade es herunter und zieh es hier hinein.');
+  img.src = url;
+}
+
+function renderThumbs() {
+  $('#pkThumbs').innerHTML = PICK.images.map((it, i) =>
+    `<canvas class="thumb ${i === PICK.active ? 'on' : ''}" data-img="${i}" width="64" height="44"></canvas>`).join('');
+  PICK.images.forEach((it, i) => {
+    const c = $('#pkThumbs').querySelector(`[data-img="${i}"]`);
+    const ctx = c.getContext('2d');
+    const s = Math.min(64 / it.img.width, 44 / it.img.height);
+    ctx.drawImage(it.img, (64 - it.img.width * s) / 2, (44 - it.img.height * s) / 2,
+                  it.img.width * s, it.img.height * s);
+    c.onclick = () => showImage(i);
+  });
+}
+
+function showImage(i) {
+  PICK.active = i;
+  renderThumbs();
+  const it = PICK.images[i];
+  if (!it) return;
+  const stage = $('#pkStage');
+  stage.hidden = false;
+
+  const cv = $('#pkCanvas');
+  const maxW = 620, scale = Math.min(1, maxW / it.img.width);
+  cv.width = Math.round(it.img.width * scale);
+  cv.height = Math.round(it.img.height * scale);
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(it.img, 0, 0, cv.width, cv.height);
+
+  cv.onmousemove = e => {
+    const p = canvasPos(cv, e);
+    const hex = sampleAt(ctx, p.x, p.y);
+    drawLoupe(ctx, p.x, p.y);
+    $('#pkHover').innerHTML = hex
+      ? `<span class="sw" style="display:inline-block;background:${hex};vertical-align:-2px"></span> ${hex}`
+      : 'außerhalb';
+  };
+  cv.onclick = e => {
+    const p = canvasPos(cv, e);
+    const hex = sampleAt(ctx, p.x, p.y);
+    if (!hex) return;
+    if (PICK.picked.length >= 3) return alert('Drei Farben sind das Maximum – erst eine entfernen.');
+    PICK.picked.push(hex);
+    renderPicked();
+  };
+}
+
+function canvasPos(cv, e) {
+  const r = cv.getBoundingClientRect();
+  return {
+    x: Math.round((e.clientX - r.left) * (cv.width / r.width)),
+    y: Math.round((e.clientY - r.top) * (cv.height / r.height))
+  };
+}
+
+/** 5×5-Mittel statt Einzelpixel – JPEG-Rauschen trifft sonst daneben. */
+function sampleAt(ctx, x, y) {
+  try {
+    const d = ctx.getImageData(Math.max(0, x - 2), Math.max(0, y - 2), 5, 5).data;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue;
+      r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+    }
+    if (!n) return null;
+    const h = v => Math.round(v / n).toString(16).padStart(2, '0');
+    return ('#' + h(r) + h(g) + h(b)).toUpperCase();
+  } catch (err) {
+    $('#pkHover').innerHTML = '<span class="bad">Bild von fremder Seite – Auslesen gesperrt (CORS). ' +
+      'Herunterladen und hineinziehen.</span>';
+    return null;
+  }
+}
+
+function drawLoupe(srcCtx, x, y) {
+  const lp = $('#pkLoupe'), z = 10, span = 12;
+  const g = lp.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, lp.width, lp.height);
+  try {
+    g.drawImage(srcCtx.canvas, x - span / 2, y - span / 2, span, span, 0, 0, lp.width, lp.height);
+  } catch (e) { return; }
+  g.strokeStyle = '#fff'; g.lineWidth = 1;
+  g.strokeRect(lp.width / 2 - z / 2, lp.height / 2 - z / 2, z, z);
+  g.strokeStyle = '#000';
+  g.strokeRect(lp.width / 2 - z / 2 - 1, lp.height / 2 - z / 2 - 1, z + 2, z + 2);
+}
+
+function renderPicked() {
+  $('#pkPicked').innerHTML = PICK.picked.map((c, i) =>
+    `<span class="pk" style="background:${c}">
+       <b class="mono">${c}</b>
+       <button data-dup="${i}" title="verdoppeln – zwei gleiche = ⅔ Anteil">×2</button>
+       <button data-rm="${i}" title="entfernen">✕</button>
+     </span>`).join('') || '<span class="hint">Noch nichts abgenommen. Ins Bild klicken.</span>';
+
+  $('#pkPreview').innerHTML = PICK.picked.length
+    ? `<div style="height:34px;border-radius:6px;background:${gradient(PICK.picked)}"></div>
+       <div class="mono hint" style="margin-top:4px">${PICK.picked.join(' ')} · Schriftfarbe wäre
+         <span style="color:${PICK.picked[0]}">${PICK.picked[0]}</span></div>` : '';
+
+  $('#pkPicked').querySelectorAll('[data-rm]').forEach(b =>
+    b.onclick = () => { PICK.picked.splice(+b.dataset.rm, 1); renderPicked(); });
+  $('#pkPicked').querySelectorAll('[data-dup]').forEach(b =>
+    b.onclick = () => {
+      if (PICK.picked.length >= 3) return alert('Drei Farben sind das Maximum.');
+      PICK.picked.splice(+b.dataset.dup, 0, PICK.picked[+b.dataset.dup]);
+      renderPicked();
+    });
+}
+
+function applyPicked() {
+  if (!PICK.picked.length) return alert('Noch keine Farbe abgenommen.');
+  S.ui.sel = PICK.key;
+  dlg.close();
+  render();
+  const nc = $('#nc');
+  if (nc) { nc.value = PICK.picked.join('-'); nc.focus(); }
 }
 
 /* ======================================================================

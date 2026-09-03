@@ -9,6 +9,9 @@ Ersetzt den Google-Calc-Reiter „teamfarben". **Gebaut und geprüft am 02.09.20
 | `tools/build-livery-snapshot.js` | `node tools/build-livery-snapshot.js [--inline]` → Snapshot, optional Standalone |
 | `tools/livery-snapshot.json` | Spielstand der Farben, für den Werkstatt-Modus |
 | `tools/livery-report.standalone.html` | eine Datei mit allem drin – für unterwegs |
+| `tools/build-livery-sheet-import.js` | überträgt den Google-Calc-Reiter ins Import-Format |
+| `tools/quellen/teamfarben-sheet.md` | Rohkopie des Sheets vom 02.09.2026 (Quelle, nicht von Hand pflegen) |
+| `tools/quellen/livery-sheet-import.json` | das Ergebnis – in der Werkstatt über „Import" einlesen |
 
 ## 0. Grundsatz
 
@@ -154,6 +157,21 @@ Ziel ist das bestehende `liveries-todo.json`, das `add-livery.ps1` liest:
 4. Ranges, die exakt so schon im Spiel stehen, werden weggelassen
 5. Einzeljahre, die eine bestehende Range durchbrechen, gehen nach
    `TEAM_COLORS_EXTRA` statt `TEAM_COLORS_RANGES` (Jahr-Override hat Vorrang)
+
+## 6a. Farbeditor (Pipette)
+
+Bilder per Drag & Drop, Einfügen (Strg+V) oder Dateiauswahl in den Dialog
+„Farbe aus Bild"; mehrere Bilder liegen als Miniaturen nebeneinander. Klick ins
+Bild nimmt die Farbe ab, bis zu drei in der Banner-Reihenfolge; `×2` verdoppelt
+eine Farbe für den ⅔-Anteil. Übernehmen schreibt sie ins Eingabefeld der
+gewählten Zelle.
+
+- **5×5-Mittelwert statt Einzelpixel** – JPEG-Rauschen trifft sonst daneben
+- Lupe mit 10× Vergrößerung und Fadenkreuz, damit man die Fläche trifft
+- **Externe Bilder lassen sich meist nicht auslesen**: fremde Seiten (pinimg,
+  Instagram) erlauben kein CORS, `getImageData` wirft dann. Der Dialog sagt das
+  und rät zum Herunterladen. Die Referenzbilder aus dem Sheet sind also zum
+  *Ansehen* da, zum Pipettieren muss das Bild lokal vorliegen.
 
 ## 7. Farbworte
 
