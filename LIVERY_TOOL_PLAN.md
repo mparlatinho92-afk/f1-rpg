@@ -232,11 +232,24 @@ Beides hängt an der **Adresse** (`http://localhost:3000`). Startet der Server
 einmal auf 3333, ist das für den Browser eine andere Seite – die Werkstatt ist
 dann leer, ohne dass etwas kaputt wäre.
 
-**Dauerhaft wird ein Stand erst als Datei im Projekt:** Export → „Arbeitsstand
-laden" → die Datei als `tools/quellen/livery-work.json` ablegen und committen.
-Beim Start lädt die Werkstatt sie automatisch, wenn der Browser leer ist – so
-kommt der Stand auf jedes Gerät und in jeden Browser. Solange ungesicherte
-Änderungen offen sind, sagt das die Statuszeile mit Zähler.
+**Dauerhaft wird ein Stand erst als Datei im Projekt.** Dafür der Knopf
+**Speichern** (oder Strg+S) – er schreibt direkt nach
+`tools/quellen/livery-work.json`, ohne Download-Ordner und ohne Pfadsuche.
+Beim Start lädt die Werkstatt diese Datei automatisch, wenn der Browser leer
+ist – so kommt der Stand auf jedes Gerät und in jeden Browser. Solange
+ungesicherte Änderungen offen sind, sagt das die Statuszeile mit Zähler.
+
+Der Knopf probiert drei Wege in dieser Reihenfolge:
+
+1. **Datei-Handle** (Chrome/Edge): einmal die Zieldatei wählen, danach genügt
+   ein Klick. Der Handle überlebt in IndexedDB.
+2. **Speicher-Dienst**: `node tools/livery-server.js` in einem zweiten Fenster,
+   neben `npx serve`. Funktioniert in jedem Browser, auch Firefox.
+3. **Download** – der alte Weg, wenn beides fehlt.
+
+Der Dienst ist absichtlich eng: hört nur auf `127.0.0.1`, schreibt nur die zwei
+fest eingetragenen Dateien (kein Pfad kommt aus der Anfrage), prüft das JSON
+und legt vor jedem Überschreiben eine `.bak`-Kopie an.
 
 ## 8b. Unterwegs-Fassung synchron halten
 

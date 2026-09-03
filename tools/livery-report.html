@@ -176,6 +176,13 @@
                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cell[draggable],.card[draggable]{-webkit-user-drag:element}
 
+  /* ---- Meldung ---- */
+  #toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);z-index:60;
+         background:var(--panel2);border:1px solid var(--ok);color:var(--text);
+         padding:9px 16px;border-radius:8px;box-shadow:0 6px 24px #0008;
+         opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
   /* ---- Dialog ---- */
   dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);
          border-radius:10px;padding:0;max-width:96vw;width:min(760px,96vw);
@@ -230,6 +237,7 @@
       </optgroup>
     </select>
     <span class="grow"></span>
+    <button id="btnSave">Speichern</button>
     <button id="btnLib">Bilder</button>
     <button id="btnFind">Offene Posten</button>
     <button id="btnImport">Import</button>
@@ -1008,8 +1016,10 @@ function showExport() {
       Der Stand liegt sonst <b>nur im Speicher dieses Browsers</b> (Adresse
       <span class="mono">${esc(location.origin)}</span>) – ein anderer Port, ein anderer
       Browser oder gelöschte Website-Daten heißt: leer.<br>
-      Lege die Datei als <span class="mono">tools/quellen/livery-work.json</span> ins Projekt
-      und committe sie. Dann lädt die Werkstatt sie beim Start von selbst – überall.</div>`,
+      Der Knopf <b>Speichern</b> oben (oder Strg+S) schreibt direkt nach
+      <span class="mono">tools/quellen/livery-work.json</span> – dafür einmal
+      <span class="mono">node tools/livery-server.js</span> starten. Danach committen,
+      dann lädt die Werkstatt den Stand beim Start von selbst, überall.</div>`,
     [
       { label: 'liveries-todo.json laden', primary: true, fn: () => download('liveries-todo.json', JSON.stringify(todo, null, 2)) },
       { label: 'Arbeitsstand laden', fn: () => {
@@ -1021,6 +1031,127 @@ function showExport() {
         } },
       { label: 'Arbeitsstand einlesen', fn: importWork }
     ]);
+}
+
+/* ======================================================================
+   Speichern ohne Umweg über den Download-Ordner
+
+   Drei Wege, in dieser Reihenfolge:
+   1. Datei-Handle (Chrome/Edge): einmal die Datei wählen, danach ein Klick.
+      Der Handle überlebt in IndexedDB.
+   2. Speicher-Dienst: node tools/livery-server.js – geht in jedem Browser.
+   3. Download – der alte Weg, wenn beides fehlt.
+   ====================================================================== */
+const SAVE = { port: 3011, handle: undefined };
+
+async function handleStore(mode, fn) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('images', mode);
+    const out = fn(tx.objectStore('images'));
+    tx.oncomplete = () => res(out && out.result !== undefined ? out.result : out);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+async function getSaveHandle() {
+  if (SAVE.handle !== undefined) return SAVE.handle;
+  try {
+    const rec = await handleStore('readonly', st => st.get('__savehandle'));
+    SAVE.handle = (rec && rec.handle) || null;
+  } catch (e) { SAVE.handle = null; }
+  return SAVE.handle;
+}
+
+async function pickSaveFile() {
+  if (!window.showSaveFilePicker) return null;
+  const handle = await window.showSaveFilePicker({
+    suggestedName: 'livery-work.json',
+    types: [{ description: 'Arbeitsstand', accept: { 'application/json': ['.json'] } }]
+  });
+  SAVE.handle = handle;
+  try { await handleStore('readwrite', st => st.put({ id: '__savehandle', handle })); } catch (e) {}
+  return handle;
+}
+
+async function serverAlive() {
+  try {
+    const r = await fetch(`http://127.0.0.1:${SAVE.port}/ping`, { cache: 'no-store' });
+    return r.ok;
+  } catch (e) { return false; }
+}
+
+function markSaved(where) {
+  S.work.savedRev = S.work.rev || 0;
+  S.work.savedAt = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' · ' + where;
+  try { localStorage.setItem(WORK_KEY, JSON.stringify(S.work)); } catch (e) {}
+  render();
+}
+
+/** Ein Klick, kein Pfad, kein Download-Ordner. */
+async function saveWorkFile(silent) {
+  const json = JSON.stringify(S.work, null, 2);
+
+  const handle = await getSaveHandle();
+  if (handle) {
+    try {
+      const perm = await handle.queryPermission({ mode: 'readwrite' });
+      if (perm === 'granted' || await handle.requestPermission({ mode: 'readwrite' }) === 'granted') {
+        const w = await handle.createWritable();
+        await w.write(json);
+        await w.close();
+        markSaved('Datei');
+        if (!silent) toast('Gespeichert in ' + handle.name);
+        return true;
+      }
+    } catch (e) { /* Handle tot – unten weiter */ }
+  }
+
+  if (await serverAlive()) {
+    try {
+      const r = await fetch(`http://127.0.0.1:${SAVE.port}/save/work`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json
+      });
+      const out = await r.json();
+      if (!r.ok) throw new Error(out.error || ('HTTP ' + r.status));
+      markSaved('Projekt');
+      if (!silent) toast('Gespeichert: ' + out.file);
+      return true;
+    } catch (e) {
+      alert('Der Speicher-Dienst antwortet, aber das Schreiben schlug fehl:\n' + e.message);
+      return false;
+    }
+  }
+
+  if (window.showSaveFilePicker) {
+    if (!confirm('Noch keine Zieldatei festgelegt.\n\n' +
+        'Jetzt einmalig tools/quellen/livery-work.json auswählen? ' +
+        'Danach speichert der Knopf ohne Nachfrage dorthin.')) return false;
+    try {
+      await pickSaveFile();
+      return saveWorkFile(silent);
+    } catch (e) { return false; }
+  }
+
+  if (!confirm('Ohne Speicher-Dienst kann dieser Browser nicht direkt ins Projekt schreiben.\n\n' +
+      'Starte in einem zweiten Fenster:  node tools/livery-server.js\n\n' +
+      'Stattdessen jetzt als Download ablegen?')) return false;
+  download('livery-work.json', json);
+  markSaved('Download');
+  return true;
+}
+
+function toast(text) {
+  let el = $('#toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('on'), 2600);
 }
 
 function importWork() {
@@ -1520,7 +1651,11 @@ function wire() {
   $('#fIndy').onchange = e => { S.ui.indy = e.target.checked; render(); };
   $('#filter').onchange = e => { S.ui.filter = e.target.value; render(); };
   $('#btnFind').onclick = showFindings;
+  $('#btnSave').onclick = () => saveWorkFile();
   $('#btnLib').onclick = () => toggleTray();
+  addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveWorkFile(); }
+  });
   $('#trayClose').onclick = () => toggleTray(false);
   $('#trayManage').onclick = showLibrary;
   $('#btnImport').onclick = showImport;
