@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.40</title>
+    <title>F1 RPG v0.9.17.41</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.40 (aktuell) - 03.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.41 (aktuell) - 04.09.2026</div>
+                            <div>&#8226; NEU: Strecken- und Rennnamen ziehen gewichtet statt gleichverteilt - an 1.171 realen F1-Rennen gemessen</div>
+                            <div>&#8226; NEU: Zeitfenster je Muster - Street Circuit erst ab den 80ern, Aerodrome Circuit nur in den 50ern</div>
+                            <div>&#8226; FIX: Grand Prix steht jetzt je nach Epoche in 57-100 Prozent der Rennnamen statt pauschal in einem Drittel</div>
+                            <div class="font-bold text-slate-400">v0.9.17.40 - 03.09.2026</div>
                             <div>&#8226; NEU: Teamnamen aus gewichteten Bausteinen statt fester Muster</div>
                             <div>&#8226; NEU: Aera-Grenzen aus realen Meldelisten - Ecurie endet 1971, F1 Team beginnt 1997</div>
                             <div>&#8226; NEU: Kuerzel-Teams wie MV Motorsport aus den Initialen des Gruenders</div>
@@ -17463,7 +17467,7 @@ const CIRCUIT_LAYOUTS = {
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.40';
+        const VERSION = '0.9.17.41';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28818,12 +28822,29 @@ const CIRCUIT_LAYOUTS = {
                 my: ['Teluk Sena','Sungai Emas','Bukit Delima','Lembah Jati','Tanjung Mas','Padang Seri'],
                 ae: ['Wadi Sarab','Ras Al Noor','Al Nokhba','Jazirat Al Fajr','Bandar Al Shams','Madinat Al Sahwa']
             },
+            // Einträge sind ein String ODER [muster, gewicht, vonÄra, bisÄra].
+            // Ein nackter String zählt als Gewicht 5 ohne Ära-Grenze — so mussten
+            // nur die Muster angefasst werden, die messbar abweichen.
+            // Gemessen an 1.171 realen F1-Rennen (f1db-races × f1db-circuits):
+            //   „Circuit" 45 %→71 % · „International" 1 %→17 % · „Street" erst ab
+            //   den 80ern · „Motor Racing Circuit" nur 50er/60er · „Park" 12 %→1 %.
             circuitPattern: {
-                it: ['Autodromo di {loc}','Autodromo Nazionale {loc}','Circuito di {loc}','Autodromo Internazionale {loc}'],
-                gb: ['{loc} Circuit','{loc} Park Circuit','{loc} Aerodrome Circuit','{loc} International Circuit','{loc} Racing Circuit'],
-                fr: ['Circuit de {loc}','Autodrome de {loc}','Circuit International de {loc}','Circuit des Collines de {loc}'],
-                de: ['{loc}ring','Motodrom {loc}','Rennstrecke {loc}','{loc}-Schleife','Motorsport-Arena {loc}'],
-                us: ['{loc} Speedway','{loc} Raceway','{loc} Motor Speedway','{loc} International Raceway','{loc} Road Course'],
+                it: ['Autodromo di {loc}', ['Autodromo Nazionale {loc}', 4], 'Circuito di {loc}', ['Autodromo Internazionale {loc}', { e62: 1, e76: 2, e94: 3, e10: 3 }]],
+                gb: [['{loc} Circuit', 10], ['{loc} Park Circuit', { e50: 4, e62: 5, e76: 3, e94: 1, e10: 1 }],
+                     // „Aerodrome" ist historisch korrekt (Silverstone, Aintree und
+                     // Snetterton waren Flugplätze), taucht in den realen fullName-
+                     // Daten aber mit 0 % auf — die Strecken heißen schlicht
+                     // „X Circuit". Deshalb klein und nur früh.
+                     ['{loc} Aerodrome Circuit', { e50: 2, e62: 1 }],
+                     ['{loc} International Circuit', { e50: 1, e62: 4, e76: 2, e94: 5, e10: 6 }],
+                     ['{loc} Motor Racing Circuit', { e50: 2, e62: 1 }],
+                     ['{loc} Street Circuit', { e76: 3, e94: 2, e10: 3 }]],
+                fr: [['Circuit de {loc}', 10], ['Autodrome de {loc}', 4], ['Circuit International de {loc}', { e62: 2, e76: 3, e94: 4, e10: 4 }], ['Circuit des Collines de {loc}', { e50: 3, e62: 3, e76: 2 }]],
+                de: [['{loc}ring', 10], ['Motodrom {loc}', { e50: 3, e62: 4, e76: 4, e94: 2 }], 'Rennstrecke {loc}', ['{loc}-Schleife', { e50: 3, e62: 3, e76: 2 }],
+                     // Der Begriff kam erst mit Oschersleben und den Umbenennungen
+                     // der 2000er auf; in F1-Streckennamen real 0 %.
+                     ['Motorsport-Arena {loc}', { e94: 1, e10: 3 }]],
+                us: [['{loc} Speedway', 8], ['{loc} Raceway', 6], ['{loc} Motor Speedway', 4], ['{loc} International Raceway', { e62: 3, e76: 4, e94: 5, e10: 5 }], ['{loc} Road Course', 4], ['{loc} Street Circuit', { e76: 3, e94: 2, e10: 3 }]],
                 jp: ['{loc} Circuit','{loc} Speedway','{loc} International Circuit','{loc} Highland Circuit'],
                 br: ['Autódromo de {loc}','Circuito {loc}','Autódromo Internacional de {loc}'],
                 es: ['Circuito de {loc}','Autódromo {loc}','Circuito Permanente de {loc}'],
@@ -28850,12 +28871,18 @@ const CIRCUIT_LAYOUTS = {
                 my: ['{loc} International Circuit','{loc} Circuit'],
                 ae: ['{loc} Autodrome','{loc} International Circuit','{loc} Circuit']
             },
+            // „Grand Prix" trägt real 64 % (50er) bis 92 % (2020er) der Rennnamen —
+            // gleichverteilt kam vorher dreimal so viel Coppa/Trofeo heraus, wie es
+            // je gab. Pokal-, Trophy- und Distanzformen („{loc} 200") sind
+            // Nicht-WM-Rennen und deshalb NICHT in f1db messbar; sie bleiben
+            // kuratiert, aber mit kleinem Gewicht und Ära-Fenster: die freien
+            // Rennen der 50er/60er sind mit der WM-Straffung verschwunden.
             racePattern: {
-                it: ['Gran Premio di {loc}','Coppa {loc}','Trofeo {loc}'],
-                gb: ['{loc} Grand Prix','{loc} Trophy','{loc} Gold Cup','International {loc} Trophy'],
-                fr: ['Grand Prix de {loc}','Coupe de {loc}','Grand Prix Automobile de {loc}'],
-                de: ['Großer Preis von {loc}','Internationales {loc}-Rennen','{loc}-Pokal'],
-                us: ['{loc} Grand Prix','{loc} 200','{loc} Classic','{loc} Trophy Race'],
+                it: [['Gran Premio di {loc}', 12], ['Coppa {loc}', { e50: 5, e62: 4, e76: 2, e94: 1 }], ['Trofeo {loc}', { e50: 4, e62: 3, e76: 1 }]],
+                gb: [['{loc} Grand Prix', 12], ['{loc} Trophy', { e50: 5, e62: 4, e76: 2, e94: 1 }], ['{loc} Gold Cup', { e50: 3, e62: 3, e76: 1 }], ['International {loc} Trophy', { e50: 3, e62: 2, e76: 1 }]],
+                fr: [['Grand Prix de {loc}', 12], ['Coupe de {loc}', { e50: 4, e62: 3, e76: 1 }], ['Grand Prix Automobile de {loc}', 4]],
+                de: [['Großer Preis von {loc}', 12], ['Internationales {loc}-Rennen', { e50: 4, e62: 4, e76: 2 }], ['{loc}-Pokal', { e50: 3, e62: 2, e76: 1 }]],
+                us: [['{loc} Grand Prix', 12], ['{loc} 200', { e50: 3, e62: 2 }], ['{loc} Classic', { e50: 3, e62: 3, e76: 2, e94: 1 }], ['{loc} Trophy Race', { e50: 3, e62: 2, e76: 1 }]],
                 jp: ['{loc} Grand Prix','{loc} Trophy'],
                 br: ['Grande Prêmio de {loc}','Copa {loc}'],
                 es: ['Gran Premio de {loc}','Copa de {loc}'],
@@ -28957,6 +28984,29 @@ const CIRCUIT_LAYOUTS = {
         };
 
         // 🎲 Zufalls-Komponierer: Nation → {loc} → Strecke + Rennen (kohärent), Ära-Mix-Sponsor.
+        // Strecken-/Rennnamen-Muster ziehen. Nimmt beide Eintragsformen: ein nackter
+        // String zählt als Gewicht 5 ohne Ära-Grenze, [muster, gewicht, von, bis]
+        // trägt Gewicht und Fenster. Außerhalb seines Fensters fällt ein Muster ganz
+        // weg — „Motorsport-Arena" gab es 1955 nicht, „Aerodrome Circuit" heute nicht.
+        function _circuitPick(list, era) {
+            const ei = TEAM_ERAS.indexOf(era);
+            // Gewicht je Eintragsform: String → 5; [m, {e50:.., e62:..}] → Gewicht
+            // dieser Ära (fehlt = 0, also ausgeblendet); [m, zahl, von, bis] → Fenster.
+            const gew = e => {
+                if (typeof e === 'string') return 5;
+                if (e[1] && typeof e[1] === 'object') return e[1][era] || 0;
+                if (e.length >= 4 && (ei < TEAM_ERAS.indexOf(e[2]) || ei > TEAM_ERAS.indexOf(e[3]))) return 0;
+                return e[1];
+            };
+            const ok = (list || []).map(e => [typeof e === 'string' ? e : e[0], gew(e)]).filter(e => e[1] > 0);
+            if (!ok.length) return typeof list[0] === 'string' ? list[0] : list[0][0];
+            let tot = 0;
+            for (const e of ok) tot += e[1];
+            let x = Math.random() * tot;
+            for (const e of ok) { x -= e[1]; if (x <= 0) return e[0]; }
+            return ok[ok.length - 1][0];
+        }
+
         window.editorRandomizeCircuit = function() {
             const yr = GAME_STATE.currentYear || 1990;
             const usedIOC = new Set((GAME_STATE.races || []).map(r => r.country).filter(Boolean));
@@ -28964,12 +29014,13 @@ const CIRCUIT_LAYOUTS = {
             const ioc = _pickCircuitNation(yr, usedIOC);
             const key = CIRCUIT_NATION_KEY[ioc];
             const places = CIRCUIT_NAME_POOLS.place[key], cPat = CIRCUIT_NAME_POOLS.circuitPattern[key], rPat = CIRCUIT_NAME_POOLS.racePattern[key];
+            const era = _teamEraKey(yr);   // dieselben fünf Register wie bei Teams/Texten
             const sponsorProb = yr < 1972 ? 0 : yr < 1994 ? 0.30 : yr < 2010 ? 0.50 : 0.70;
             let loc, trackName, raceName, tries = 0;
             do {
                 loc = places[Math.floor(Math.random() * places.length)];
-                trackName = cPat[Math.floor(Math.random() * cPat.length)].replace('{loc}', loc);
-                raceName = rPat[Math.floor(Math.random() * rPat.length)].replace('{loc}', loc);
+                trackName = _circuitPick(cPat, era).replace('{loc}', loc);
+                raceName = _circuitPick(rPat, era).replace('{loc}', loc);
                 if (Math.random() < sponsorProb) raceName = _circuitSponsor(yr) + ' ' + raceName;
                 tries++;
             } while (usedNames.has(raceName.toLowerCase()) && tries < 8);
