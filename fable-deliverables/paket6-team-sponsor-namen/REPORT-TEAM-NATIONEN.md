@@ -194,3 +194,65 @@ Datei selbst wurde neu gebaut, nicht von Hand editiert.
 
 Ein Randfall bleibt unangetastet: der US-Pool führt `Mac` als alleinstehenden
 Nachnamen (drei Zeichen, vom Längenfilter gerade noch durchgelassen).
+
+---
+
+# Nachtrag 3: Spanisch- und portugiesischsprachige Länder (v0.9.17.45)
+
+## Was die Daten sagen — und was sie widerlegen
+
+Vor der Zuordnung: alle F1-Melder dieser Länder aus `f1db-entrants.json`.
+
+| | Melder | Namensform |
+|---|---:|---|
+| **ARG** | 8 | **Scuderia** Achille Varzi, **Scuderia** Sud Americana, Rest Privatiers |
+| **ESP** | 6 | Hispania Racing, HRT Formula 1 Team, Centro Asegurador F1 |
+| **BRA** | 5 | Escuderia Bandeirantes, Copersucar Fittipaldi, Fittipaldi Automotive |
+| **MEX** | 1 | Team Rebaque |
+| POR · CHI · COL | 0 | — |
+
+Zwei Annahmen fallen damit: „Escudería" ist in der F1 **kaum belegt** (einmal, in
+Brasilien), und **Argentinien schreibt italienisch**. Beide bekannten F1-Melder
+heißen „Scuderia", und `Scuderia Buell` aus der heutigen Feeder-Liste macht drei
+von drei. Argentinien hat starke italienische Einwanderung — Fangio, Marimón und
+Estéfano sind italienischstämmige Namen.
+
+## Zuordnung
+
+- **`MEX CHI COL VEN PER URU → es`** — Escudería, Equipo, Competición, Automóviles
+- **`ARG → es 60 % / it 40 %`**, gewürfelt je Team wie bei der Schweiz. Drei Fälle
+  tragen keine Verteilung, deshalb bleibt Spanisch die Mehrheit — aber das
+  italienische Register ist sichtbar dabei
+- **`POR → pt`**, ein neues Mini-Register. Portugal an Brasilien zu hängen wäre
+  falsch: pt-PT schreibt **`Equipa`**, brasilianisch **`Equipe`**; `Automóveis` ist
+  die europäische Form. Portugal stellte nie einen F1-Melder, das Register ist
+  sprachlich hergeleitet, nicht gemessen
+
+Ergebnis: *Escudería Vidal* neben *Squadra Corse Bernal* (ARG), *Escudería
+Hernández* (MEX), *Equipa Cid* und *Boavida Competições* (POR), *Escudería Da Silva
+Automóviles* (URU).
+
+## Stand und was NICHT lohnt
+
+**`generic`: 7,14 % → 6,26 %.**
+
+Der Rest sollte **nicht** weiter verkleinert werden, und zwar aus zwei Gründen:
+
+1. **`generic` und `gb` sind identisch** — gleicher Präfix-Pool (`[['Team', 6]]`),
+   beide ohne `suffixNat`. Die englischsprachigen Länder (Indien, Australien,
+   Neuseeland, Malaysia, Hongkong, zusammen 2,3 %) umzuhängen ändert **kein
+   einziges Zeichen** an den Namen. Das wäre reine Statistikkosmetik.
+2. **Nordische und slawische Register wären schlechter als generic.** Die
+   Feeder-Liste belegt es: `JMT Engineering`, `Zengo Motorsport`, `Janik
+   Motorsport`, `STEP Motorsport`, `Sladecka Motorsport`, `SMP Racing` — Tschechen,
+   Ungarn, Dänen, Slowaken und Russen nennen ihre Teams englisch. Für sie ist
+   generic die richtige Antwort, nicht die Notlösung. Irreführend ist der Name des
+   Registers, nicht sein Verhalten.
+
+**Der lohnende Hebel liegt woanders:** `suffixNat` hat Einträge für Italien,
+Frankreich, Deutschland, Spanien, Brasilien, die USA, Japan, die Niederlande und
+jetzt Portugal — **nur für Großbritannien nicht.** Ausgerechnet die Nation, die je
+nach Ära 25–40 % aller Teams stellt, fällt immer aufs Ära-Basissuffix zurück.
+Dabei gäbe es reichlich: `Cars` (Lola Cars, Cooper Car Company), `Racing
+Organisation` (Tyrrell), `Engineering` (March), `Developments` (JHR). Das beträfe
+fünf- bis zehnmal so viele Teams wie die gesamte generic-Restmenge.
