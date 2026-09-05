@@ -24,7 +24,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 | 5 | Rivalitäts-/Duell-Texte | `paket5-rivalitaeten/SPEC.md` | ✅ **v0.9.14.69** (`rivalry-bank.js` → ⚔️-Duell-Card im Profil, nur aktive Fahrer). **Bank erweitert v0.9.17.30** (100 → 160 Zeilen, alle Pools auf 8) |
 | 6 | Fiktive Team- & Sponsornamen | `paket6-team-sponsor-namen/SPEC.md` | ✅ **v0.9.14.68** (`team-name-pools.js` → Team-Generator + Grid-Fill-Button). **Baukasten-Umbau v0.9.17.40**: gewichtete Bausteine statt gleichverteilter Muster, Ära-Fenster, Initial-Kürzel — Gewichte an 68 realen Feeder-/Endurance-Teams gemessen (`REPORT-BAUSTEINE.md`) |
 | 7 | Qualitatives Tuning (Audit) | `paket7-tuning/SPEC.md` | ✅ **v0.9.14.63/.64** (alle Text-Fixes: H1–H4, M1–M7, N1–N4, N6). Die drei Prüfaufträge N5/N7/N8 waren nie Text-Edits: **N5 + N7 v0.9.17.34**, N8 offen (s. Restliste) |
-| 8 | Fiktive Strecken- & Rennnamen | `paket8-strecken/SPEC.md` | ✅ **v0.9.14.65** (`circuit-name-pools.js` → Streckeneditor + Zufalls-Button) |
+| 8 | Fiktive Strecken- & Rennnamen | `paket8-strecken/SPEC.md` | ✅ **v0.9.14.65** (`circuit-name-pools.js` → Streckeneditor + Zufalls-Button). **Gewichte + Ära-Fenster v0.9.17.41** an 1.171 realen F1-Rennen gemessen (`REPORT-GEWICHTE.md`) |
 
 ## Daten-/Ableitungspakete (kein Text → `FABLE-GRUNDREGELN.md` gilt dort NICHT)
 
@@ -41,7 +41,7 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
    (Rezept: `name-data/analysis/pyramid-300kart-nation-demand.md`, Blob-Umbau als Schritt 0).
 2. **Paket I:** Kaggle-Ablösung offen; bekannte Grenzen: ITA vor 1999 kuratiert, GBR ohne Schottland.
 3. ~~**Paket J:** Cape-Coloured-Anteil RSA r0 18,9 %~~ — **nicht reproduzierbar** (Messung 2026-09-01: Nachnamen 0,0 %, Vornamen 2,5 %, und die drei Treffer Craig/Wayne/Shaun sind echte Doppelnamen). Der Wert stammt vermutlich aus der Zeit vor Welle 4, die RSA r3 erst eingeführt hat. Details: `paketJ-ethno-regionen/REPORT-WELLE5.md` §6.
-4. **Paket 3/6/8 — Bank-Tiefe:** Paket 3 auf 120 Zeilen gehoben (v0.9.17.37), Paket 6 als gewichteter Baukasten neu gebaut (v0.9.17.40). OFFEN nur noch `CIRCUIT_NAME_POOLS` (~168 Zeilen, seit v0.9.14.65 unangetastet).
+4. **Paket 3/6/8 — Bank-Tiefe:** Paket 3 auf 120 Zeilen (v0.9.17.37), Paket 6 als gewichteter Baukasten (v0.9.17.40), Paket 8 mit Gewichten + Ära-Fenstern (v0.9.17.41). OFFEN nur noch die **Ortsnamen** in `CIRCUIT_NAME_POOLS.place`: 212 Orte auf 30 Nationen ≈ 7 je Land, wiederholen sich im rotierenden Kalender. Einziger verbleibender echter Fable-Fall — dafür gibt es keine Datenquelle.
 4. ~~**Paket C (Alt-Paket):** Obituary-Text fehlt noch im Nekrolog-Tab~~ — **eingebaut v0.9.17.31** (`_necroObit`, gleiche Regeneration wie Off-Season-Modal). Bank zuvor erweitert v0.9.17.29 (174 → 256 Zeilen).
 5. ~~**Paket 7:** N5/N7/N8~~ — **komplett abgeschlossen.** Die drei waren **Prüfaufträge an Opus**, keine Text-Edits (deshalb standen sie nie in den Fix-Commits): **N5 + N7 v0.9.17.34** (pit-`{pos}` = Position beim Reinkommen, festgeschrieben; `{deadRaceBei}` löst den Kasusbruch bei deutschen Rennnamen), **N8 v0.9.17.35** (siegloser Champion fällt aus dem `dominant`-Pool).
 
