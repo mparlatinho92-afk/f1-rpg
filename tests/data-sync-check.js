@@ -56,6 +56,7 @@ const LEIT = {
     'data/race-grid.js':       ['RACE_GRID'],
     'data/home-only.js':       ['HOME_ONLY_DRIVERS', 'HOME_ONLY_CONSTRUCTORS',
                                 'SINGLE_DRIVER_CONSTRUCTORS', 'HOME_NATION_ALIAS'],
+    'data/places.js':          ['CIRCUIT_PLACES'],
 };
 // Zugriffs-Funktionen: die Bruecke zwischen Spiel und Daten.
 const FUNKTIONEN = ['getTeamPresence', 'homeOnlyConstructorNations', 'isSingleSeatConstructor',
