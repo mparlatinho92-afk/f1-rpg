@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.41</title>
+    <title>F1 RPG v0.9.17.42</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.41 (aktuell) - 04.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.42 (aktuell) - 05.09.2026</div>
+                            <div>&#8226; NEU: 15.420 echte Ortsnamen statt 212 erfundener - Strecken heissen jetzt nach realen Orten</div>
+                            <div>&#8226; NEU: Kalender kann 56 statt 30 Nationen ansteuern, gewichtet nach Motorsport-Tradition</div>
+                            <div>&#8226; FIX: Strassenkurse ziehen Staedte, permanente Kurse Kleinorte - wie bei echten F1-Strecken</div>
+                            <div class="font-bold text-slate-400">v0.9.17.41 - 04.09.2026</div>
                             <div>&#8226; NEU: Strecken- und Rennnamen ziehen gewichtet statt gleichverteilt - an 1.171 realen F1-Rennen gemessen</div>
                             <div>&#8226; NEU: Zeitfenster je Muster - Street Circuit erst ab den 80ern, Aerodrome Circuit nur in den 50ern</div>
                             <div>&#8226; FIX: Grand Prix steht jetzt je nach Epoche in 57-100 Prozent der Rennnamen statt pauschal in einem Drittel</div>
@@ -3547,6 +3551,7 @@
     <script src="data/venue-pull.js"></script>
     <script src="data/race-grid.js"></script>
     <script src="data/home-only.js"></script>
+    <script src="data/places.js"></script>
     <script src="data/images.js"></script>
     <script>
 
@@ -3893,7 +3898,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.41';
+        const VERSION = '0.9.17.42';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -14864,7 +14869,14 @@
             ['POL','Polen'],['POR','Portugal'],['RHO','Rhodesien'],['RUS','Russland'],
             ['SAU','Saudi-Arabien'],['SLO','Slowenien'],['THA','Thailand'],['TUN','Tunesien'],
             ['UAE','Vereinigte Arab. Emirate'],['URU','Uruguay'],['VEN','Venezuela'],
-            ['YUG','Jugoslawien'],['ZIM','Simbabwe']
+            ['YUG','Jugoslawien'],['ZIM','Simbabwe'],
+            // v0.9.17.42: Nationen, die MOTORSPORT_NATION_BLEND kennt, hier aber fehlten —
+            // ohne Eintrag zeigt der Streckeneditor nur den IOC-Code statt des Namens.
+            // INA ist der IOC-Code Indonesiens (der Blend nutzt ihn); IDN oben ist der
+            // ISO-Code desselben Landes und bleibt für Altstände stehen.
+            ['BUL','Bulgarien'],['CIV','Elfenbeinküste'],['EST','Estland'],['GRE','Griechenland'],
+            ['INA','Indonesien'],['KEN','Kenia'],['LUX','Luxemburg'],['PHI','Philippinen'],
+            ['ROU','Rumänien'],['SRB','Serbien'],['UKR','Ukraine']
         ];
 
         function renderAddTeamForm() {
@@ -15212,42 +15224,13 @@
 
         // ══════════════════════════════════════════════════════════════════════
         // STRECKENEDITOR (v0.9.14.65) – Nutzer-Strecken im Kalender-Tab
-        // Fable-Paket 8: nationskohärente Fiktiv-Namen (place/circuitPattern/racePattern).
+        // Fable-Paket 8: nationskohärente Namen (circuitPattern/racePattern).
         // Kohärenz: Strecke + Rennen ziehen denselben {loc}. Ära-Mix: Sponsor erst ab e76.
+        // v0.9.17.42: der frühere `place`-Block (212 erfundene Ortsnamen, ~7 je Land)
+        // ist ersetzt durch data/places.js — 15.420 echte Orte aus GeoNames für 56
+        // Nationen, getrennt nach Kleinort und Stadt. Ziehung über _pickPlace().
         // ══════════════════════════════════════════════════════════════════════
         const CIRCUIT_NAME_POOLS = {
-            place: {
-                it: ['Valdano','Montefiore','Castelrosso','San Verino','Lagoscuro','Torrelunga','Vallechiara','Montaverde','Rovalta','Pievalta'],
-                gb: ['Kingsmoor','Draycott','Feltonbury','Alderfield','Wexcombe','Harrowdale','Stanmere','Copperton','Ashwell Heath','Norbury Down'],
-                fr: ['Valmont','Beaurivage','Roche-Noire','Vireloup','Charmes-sur-Loire','Montbrison-le-Haut','Sainte-Claire','Lac-Argent','Fontaubert','Prévalon'],
-                de: ['Falkenried','Lindenfeld','Hohenfeld','Grünbach','Adlersheim','Steinfurth','Waldkron','Silberhausen','Ebenrode','Kranichtal'],
-                us: ['Redstone','Twin Buttes','Copper Flats','Lakeport','Dry Creek','Fairhaven','Bluff City','Cedar Ridge','Stonewall','Prairie Bend'],
-                jp: ['Kazemura','Hoshizaki','Minamigaoka','Tsukihara','Okabayashi','Harukawa','Shirotani','Nagisano','Yamaseki','Kurosawa-ko'],
-                br: ['Vale Verde','Santa Elisa','Porto Azul','Ribeirão Alto','Boa Vista do Sul','Campo Dourado','Serra Clara','Lagoa Funda','Monte Alegre do Norte','Cruzeiro Velho'],
-                es: ['Valdemora','Torrealta','Puerto Lindo','San Cebrián','Fuentelsol','Miravalles','Casaroja','Alcorbes','Peñablanca','Villaverde de Arriba'],
-                at: ['Almried','Steinwang','Zellmoos','Traunfeld','Murwald','Kirchleiten'],
-                ch: ['Neuenwil','Lindenmoos','Valclair','Sernatal','Hochwil','Montfleuri'],
-                be: ['Westerlinde','Bosduin','Vielrode','Hameau-du-Lac','Sint-Goriks','Ardevaux'],
-                nl: ['Westerduin','Leeuwenmeer','Kolkwijk','Bronsloot','Havezande','Vlasdonk'],
-                pt: ['Vila Serena','Alto do Sol','São Faustino','Miradouro','Vale Sereno','Cabo Sereno'],
-                se: ['Granlunda','Norrsjö','Ekvalla','Lindtorp','Silverfors','Havsbyn'],
-                fi: ['Korpivaara','Sinisalmi','Virtalahti','Kuusiranta','Peltokoski','Ilvesjärvi'],
-                hu: ['Zöldhalom','Napvölgy','Kisberek','Fehérpuszta','Szélmajor','Aranyliget'],
-                cz: ['Jestřebník','Modravka','Lipová Hora','Zelenov','Habrovec','Stříbrník'],
-                ru: ['Beloretschje','Kamengrad','Orlowka','Tichaja Reka','Krasnolessje','Sinjaja Gora'],
-                tr: ['Denizova','Yeşilkaya','Aytepe','Kartalca','Günova','Tuzlukale'],
-                za: ['Duinekloof','Vaalberg','Silwerkruin','Elandsvlakte','Môreson','Karookrans'],
-                ar: ['Villa Esperanza','Monte Claro','San Edelmiro','El Mirasol','Estancia del Sur','Alto Pampero'],
-                mx: ['San Bernal','Valle Escondido','Piedras Altas','El Roble Viejo','Lomas del Águila','Cerro Dorado'],
-                ca: ['Maplebrook','Baie-Claire','Whitepine','Fort Alder','Lac Bernier','Granite Bay'],
-                au: ['Warrandale','Silvergum','Bindarra','Wattle Creek','Marralong','Currawong Downs'],
-                nz: ['Aldermere','Glenorrin','Fernbrook','Seacliff Downs','Broadmere','Harringvale'],
-                cn: ['Yunhu','Jinshawan','Baiyunling','Shitanhe','Luyuan','Tianmawan'],
-                kr: ['Hanuiri','Dallaegol','Sinpyeongho','Gureumsan','Songdam-ri','Baekhasan'],
-                in: ['Kesargarh','Suryavan','Chandravati','Veerapalli','Mohanpura','Tejgarh'],
-                my: ['Teluk Sena','Sungai Emas','Bukit Delima','Lembah Jati','Tanjung Mas','Padang Seri'],
-                ae: ['Wadi Sarab','Ras Al Noor','Al Nokhba','Jazirat Al Fajr','Bandar Al Shams','Madinat Al Sahwa']
-            },
             // Einträge sind ein String ODER [muster, gewicht, vonÄra, bisÄra].
             // Ein nackter String zählt als Gewicht 5 ohne Ära-Grenze — so mussten
             // nur die Muster angefasst werden, die messbar abweichen.
@@ -15295,7 +15278,18 @@
                 kr: ['{loc} International Circuit','{loc} Speedway'],
                 in: ['{loc} International Circuit','{loc} Racing Circuit'],
                 my: ['{loc} International Circuit','{loc} Circuit'],
-                ae: ['{loc} Autodrome','{loc} International Circuit','{loc} Circuit']
+                ae: ['{loc} Autodrome','{loc} International Circuit','{loc} Circuit'],
+                // Auffangregister für alle Nationen ohne eigenes Sprachregister
+                // (v0.9.17.42: 26 Länder kamen mit data/places.js dazu). Bewusst
+                // sprachneutral — landestypische Register sind Fable-Paket 8b.
+                // Gewichte wie gemessen: „Circuit" trägt, „International" steigt
+                // mit den Jahrzehnten, „Street" gibt es erst ab den 80ern.
+                intl: [['{loc} Circuit', 10],
+                       ['{loc} International Circuit', { e50: 2, e62: 4, e76: 5, e94: 6, e10: 6 }],
+                       ['{loc} Raceway', 4],
+                       ['{loc} Autodrome', { e50: 3, e62: 3, e76: 2, e94: 1, e10: 1 }],
+                       ['{loc} Motor Racing Circuit', { e50: 3, e62: 2 }],
+                       ['{loc} Street Circuit', { e76: 3, e94: 3, e10: 4 }]]
             },
             // „Grand Prix" trägt real 64 % (50er) bis 92 % (2020er) der Rennnamen —
             // gleichverteilt kam vorher dreimal so viel Coppa/Trofeo heraus, wie es
@@ -15333,10 +15327,19 @@
                 kr: ['{loc} Grand Prix','Grand Prix of {loc}'],
                 in: ['{loc} Grand Prix','Grand Prix of {loc}'],
                 my: ['{loc} Grand Prix','Grand Prix of {loc}'],
-                ae: ['{loc} Grand Prix','Grand Prix of {loc}']
+                ae: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                // Auffangregister, siehe circuitPattern.intl. „Grand Prix" dominiert
+                // wie überall; die Pokalformen bleiben klein und früh.
+                intl: [['{loc} Grand Prix', 12], ['Grand Prix of {loc}', 6],
+                       ['{loc} Trophy', { e50: 4, e62: 3, e76: 1 }],
+                       ['{loc} Cup', { e50: 3, e62: 2, e76: 1 }]]
             }
         };
-        // IOC-3 → Pool-Key. Nation ohne Eintrag → Re-Roll (kein generic, Nutzer-Vorgabe).
+        // IOC-3 → Pool-Key für das SPRACHREGISTER (Muster), nicht mehr für die Ortsnamen.
+        // Bis v0.9.17.41 galt: Nation ohne Eintrag → Re-Roll, kein generisches Register.
+        // Seit .42 aufgehoben (Nutzer-Entscheidung): Nationen ohne eigenes Register
+        // bekommen 'intl'. Grund: die Ortsnamen kommen jetzt aus data/places.js für
+        // 56 Nationen, und ein Re-Roll hätte 26 davon wieder verworfen.
         const CIRCUIT_NATION_KEY = { ITA:'it',GBR:'gb',FRA:'fr',GER:'de',USA:'us',JPN:'jp',BRA:'br',
             ESP:'es',AUT:'at',SUI:'ch',BEL:'be',NED:'nl',POR:'pt',SWE:'se',FIN:'fi',HUN:'hu',CZE:'cz',
             RUS:'ru',TUR:'tr',RSA:'za',ARG:'ar',MEX:'mx',CAN:'ca',AUS:'au',NZL:'nz',CHN:'cn',KOR:'kr',
@@ -15385,17 +15388,38 @@
         }
         // Rennland ziehen (Motorsport-Frequenz), Mikrostaaten + poollose Nationen aus, optional
         // schon im Kalender vergebene Länder meiden (SPEC §2b).
+        // Gewicht einer Nation für den Kalender: dieselbe Quelle, aus der auch
+        // pickNationMotorsport zieht, über alle Dekaden aufsummiert. Damit ist
+        // Spanien rund 16-mal so wahrscheinlich wie die Elfenbeinküste.
+        function _circuitNationWeight(ioc) {
+            let w = 0;
+            for (const dek of Object.keys(MOTORSPORT_NATION_BLEND))
+                w += MOTORSPORT_NATION_BLEND[dek][ioc] || 0;
+            return w;
+        }
+
         function _pickCircuitNation(year, usedIOC) {
             const EXCL = new Set(['MON', 'SGP', 'SIN']);
+            // Eine Nation ist wählbar, wenn es Ortsnamen für sie gibt (data/places.js).
+            // Bis .41 hing das am Sprachregister — das schloss 26 Länder aus.
+            const waehlbar = ioc => !EXCL.has(ioc) && !!(CIRCUIT_PLACES && CIRCUIT_PLACES[ioc]);
             for (let t = 0; t < 40; t++) {
                 const ioc = pickNationMotorsport(year, true);
-                if (EXCL.has(ioc) || !CIRCUIT_NATION_KEY[ioc]) continue;
+                if (!waehlbar(ioc)) continue;
                 if (usedIOC && usedIOC.has(ioc)) continue;
                 return ioc;
             }
-            const free = Object.keys(CIRCUIT_NATION_KEY).filter(i => !usedIOC || !usedIOC.has(i));
-            const pool = free.length ? free : Object.keys(CIRCUIT_NATION_KEY);
-            return pool[Math.floor(Math.random() * pool.length)];
+            // Notausgang: greift, sobald die großen Nationen schon im Kalender stehen.
+            // Er zog bis .41 GLEICHVERTEILT — mit 56 statt 30 Nationen käme die
+            // Elfenbeinküste damit so oft wie Spanien. Jetzt nach demselben Gewicht.
+            const alle = Object.keys(CIRCUIT_PLACES).filter(waehlbar);
+            const free = alle.filter(i => !usedIOC || !usedIOC.has(i));
+            const pool = free.length ? free : alle;
+            let tot = 0;
+            const gew = pool.map(i => { const w = _circuitNationWeight(i) || 0.001; tot += w; return w; });
+            let x = Math.random() * tot;
+            for (let i = 0; i < pool.length; i++) { x -= gew[i]; if (x <= 0) return pool[i]; }
+            return pool[pool.length - 1];
         }
 
         const _gcv = id => { const e = document.getElementById(id); return e ? e.value : ''; };
@@ -15433,19 +15457,35 @@
             return ok[ok.length - 1][0];
         }
 
+        // Ortsnamen aus data/places.js. `gross` = Stadt (Straßenkurs), sonst Kleinort.
+        // Ist der gewünschte Eimer leer, füllt der andere auf — Korea und die Emirate
+        // haben kaum Kleinorte, dort heißt der permanente Kurs eben nach einer Stadt.
+        function _pickPlace(ioc, gross) {
+            const b = (typeof CIRCUIT_PLACES !== 'undefined' && CIRCUIT_PLACES[ioc]) || null;
+            if (!b) return 'Central';   // darf nie eintreten: _pickCircuitNation prüft es
+            const erst = gross ? b.g : b.k, dann = gross ? b.k : b.g;
+            const l = (erst && erst.length) ? erst : dann;
+            return l[Math.floor(Math.random() * l.length)];
+        }
+
         window.editorRandomizeCircuit = function() {
             const yr = GAME_STATE.currentYear || 1990;
             const usedIOC = new Set((GAME_STATE.races || []).map(r => r.country).filter(Boolean));
             const usedNames = new Set((GAME_STATE.races || []).map(r => (r.name || '').toLowerCase()));
             const ioc = _pickCircuitNation(yr, usedIOC);
-            const key = CIRCUIT_NATION_KEY[ioc];
-            const places = CIRCUIT_NAME_POOLS.place[key], cPat = CIRCUIT_NAME_POOLS.circuitPattern[key], rPat = CIRCUIT_NAME_POOLS.racePattern[key];
+            const key = CIRCUIT_NATION_KEY[ioc] || 'intl';   // Nation ohne eigenes Register
+            const cPat = CIRCUIT_NAME_POOLS.circuitPattern[key], rPat = CIRCUIT_NAME_POOLS.racePattern[key];
             const era = _teamEraKey(yr);   // dieselben fünf Register wie bei Teams/Texten
             const sponsorProb = yr < 1972 ? 0 : yr < 1994 ? 0.30 : yr < 2010 ? 0.50 : 0.70;
             let loc, trackName, raceName, tries = 0;
             do {
-                loc = places[Math.floor(Math.random() * places.length)];
-                trackName = _circuitPick(cPat, era).replace('{loc}', loc);
+                // Erst das Muster, dann der Ort: ein Straßenkurs braucht eine Stadt
+                // (Long Beach, Las Vegas), ein permanenter Kurs einen Kleinort
+                // (Silverstone, Nürburg, Magny-Cours). Genau so liegen die realen
+                // Streckennamen in f1db.
+                const cMuster = _circuitPick(cPat, era);
+                loc = _pickPlace(ioc, /Street/.test(cMuster));
+                trackName = cMuster.replace('{loc}', loc);
                 raceName = _circuitPick(rPat, era).replace('{loc}', loc);
                 if (Math.random() < sponsorProb) raceName = _circuitSponsor(yr) + ' ' + raceName;
                 tries++;
