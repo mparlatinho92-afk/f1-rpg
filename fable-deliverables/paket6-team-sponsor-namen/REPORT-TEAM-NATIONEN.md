@@ -87,3 +87,110 @@ fälschlich nach „Deutschland zu schwach" aus — Deutschland stellt über all
 
 `SIMCORE_FROM_INDEX=1 node tests/team-nation-weights.js` — vergleicht alt, neu und
 Realität nebeneinander. `JAHR=2020` wählt die Dekade.
+
+---
+
+# Nachtrag: Sprachregister zusammengefasst (v0.9.17.44)
+
+Nach der Gewichtung war das `generic`-Register der nächste Engpass: **15,5 %** aller
+Teams landeten dort. Zwei Gruppen ließen sich ohne neues Register auflösen.
+
+## Nationen, die eine vorhandene Sprache schreiben
+
+`AUT → de`, `IRL → gb`, `RSA → gb`. Österreich schreibt deutsch, Irland und
+Südafrika englisch — Jordan Grand Prix, Eddie Jordan Racing und Team Gunston
+klingen wie britische Rennställe, weil sie es sprachlich sind.
+
+Wichtig: **nur das Register wird geteilt, nicht der Namenspool.** Irische Teams
+bekommen irische Nachnamen im englischen Muster — *Crowe Racing, Tormey Racing,
+Roche Racing, Butler Racing Team* — keine britischen.
+
+## Mehrsprachige Länder: Region je Team ausgewürfelt
+
+Die Schweiz hat Sauber neben Scuderia Filipinetti neben Écurie Basilisk. Ein
+pauschales Register wäre in jedem Fall falsch. `TEAM_NATION_REGIONS` würfelt
+deshalb **pro Team** die Sprachregion:
+
+| | Regionen |
+|---|---|
+| **SUI** | de 55 % · fr 33 % · it 12 % |
+| **BEL** | fr 55 % · nl 45 % |
+
+Die Gewichte stammen aus `NAME_POOLS_BY_NATION` (Paket J) — derselben Quelle, aus
+der die Fahrernamen gezogen werden. Damit passen Teamname und Fahrername im selben
+Land zusammen, statt aus zwei unabhängigen Verteilungen zu stammen.
+
+Die Schweizer Werte sind auf die drei Landessprachen normalisiert. Der vierte
+Regionsanteil dort (0,06 portugiesisch) ist Zuwanderung — eine Herkunft von
+Personen, keine Sprachregion für Firmennamen.
+
+Ergebnis: *Stauffer Team · Équipe Rochat · Royal Falcon Rossi Racing* für die
+Schweiz, *Mortier Grand Prix · Blue Panther Callens Racing* für Belgien.
+
+## Kanada
+
+Ebenfalls zweisprachig, gleiche Behandlung: **`gb` 63 % · `fr` 37 %.** Der
+englische Teil zeigt auf das britische, nicht das amerikanische Register — Walter
+Wolf Racing klang wie ein britischer Rennstall, nicht wie ein Speedway-Team.
+Ergebnis: *Team Lavoie Racing · Dubé Engineering · Morin Team* neben *Antares
+Talon Racing*.
+
+## Stand
+
+**`generic`: 15,5 % → 7,3 %.** Was bleibt, sind Einzelposten unter 1 % — Indien
+0,83 %, Argentinien 0,69 %, Russland, Australien, Finnland, Malaysia, Tschechien.
+Für keines davon lohnt derzeit ein eigenes Register.
+
+---
+
+# Nachtrag 2: Keltische Großschreibung in den Namens-Pools (v0.9.17.44)
+
+Aufgefallen an einem generierten Teamnamen: *Mcmahon Racing*. Der Fehler saß aber
+nicht im Teamgenerator, sondern in `data/names.js` und betraf damit auch alle
+**Fahrernamen**. Der Pool führte `MacDonald` und `Mcdonald` nebeneinander.
+
+Ursache: `build-names-v3.js` **filterte** Namen mit abweichender Großschreibung nur
+(Zeile 501, `O'|Mc|Mac` als Ausnahme durchgelassen), **korrigierte** sie aber nie —
+die Schreibweise kam so aus den Rohdaten.
+
+## Warum eine pauschale Regel hier Schaden anrichtet
+
+`Machado`, `Macedo`, `Maciel` (portugiesisch), `Macias` (spanisch), `Machida`
+(japanisch), `Maciej`, `Maciejewski`, `Machnik`, `Mackiewicz` (polnisch),
+`Mchunu`, `Machava`, `Machaba` (Bantu) fangen nur zufällig so an. „Mac + Großbuchstabe"
+hätte daraus `MacHado` und `MacIas` gemacht — beim ersten Versuch ist genau das
+passiert.
+
+Drei Sicherungen in `fixCelticCaps()`:
+
+1. **Nationsfilter** — nur GBR, IRL, USA, CAN, AUS, NZL, RSA. Das erschlägt die
+   portugiesischen, spanischen, japanischen und polnischen Fälle auf einen Schlag.
+2. **Auf `Mac` folgt bei keltischen Namen kein `h`.** Das trennt `Machava`,
+   `Machaba`, `Machete` (über RSA im Pool) sauber ab. Bei `Mc` gilt das **nicht** —
+   McHugh und McHale sind echt.
+3. **Ausnahmeliste** für den Rest: `Mack`, `Mchunu`, `Macri`, `Macron` sowie
+   `Macken` und `Mackle`, eigenständige irische Namen (von Ó Maicín), nicht Mac +
+   Stamm.
+
+`O'` wird unabhängig von der Nation korrigiert — dort gibt es praktisch keine
+Fehlalarme. Zusätzlich wird die getrennte Schreibung zusammengezogen: die Rohdaten
+führten `Mc Nulty`.
+
+## Ergebnis
+
+**88 Namen korrigiert**, Pool-Einträge unverändert (23.837) — es hat sich nichts
+verschoben außer der Schreibweise. Gegenprobe je Nation:
+
+```
+IRL   O'Reilly, O'Sullivan, O'Connor, McGrath, McNulty
+USA   McDowell, McDonald, McCoy
+CAN   MacDonald, MacLeod, MacLean, McGuire, McKay
+BRA   Macedo, Maciel, Machado          <- unangetastet
+POL   Maciejewski, Machnik, Mackiewicz <- unangetastet
+```
+
+⚠ **`data/names.js` ist generiert.** Der Fix steht in `build-names-v3.js`; die
+Datei selbst wurde neu gebaut, nicht von Hand editiert.
+
+Ein Randfall bleibt unangetastet: der US-Pool führt `Mac` als alleinstehenden
+Nachnamen (drei Zeichen, vom Längenfilter gerade noch durchgelassen).

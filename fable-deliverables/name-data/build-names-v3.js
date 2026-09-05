@@ -127,7 +127,44 @@ const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clem
 const DE_ONLY = new Set(['Mueller','Schaefer','Koenig','Jaeger','Krueger','Schroeder']);
 const PT_NATIONS = new Set(['POR','BRA']);
 const PT_ONLY = new Set(['Goncalves','Araujo','Conceicao','Simoes','Goncalo','Joao','Antonio']);
+// ── Keltische Grossschreibung (v0.9.17.44) ─────────────────────────────────
+// Die Rohdaten liefern "Mcmahon", "Mcdonald", "Obrien" — der Filter weiter unten
+// liess das durch, korrigiert wurde nie. Ergebnis: der Pool fuehrte "MacDonald"
+// und "Mcdonald" nebeneinander.
+//
+// Eine pauschale Regel richtet hier Schaden an: Machado, Macedo, Maciel (PT),
+// Macias (ES), Machida (JP), Maciej/Maciejewski (PL) und Mchunu (Zulu) fangen
+// nur zufaellig so an. Aus ihnen wuerde "MacHado" und "MacIas".
+//
+// Deshalb zwei Sicherungen: nur in angelsaechsischen Nationen, und nie fuer
+// Namen auf der Ausnahmeliste.
+const KELT_NATIONEN = new Set(['GBR', 'IRL', 'USA', 'CAN', 'AUS', 'NZL', 'RSA']);
+const KELT_AUSNAHMEN = new Set([
+    'mack', 'macias', 'maciel', 'macedo', 'maciej', 'maciek', 'maciejewski',
+    'mchunu', 'macri', 'macron', 'macomber',
+    // eigenstaendige irische Namen, nicht Mac + Stamm (von O Maicin)
+    'macken', 'mackle'
+]);
+function fixCelticCaps(nat, n) {
+    // O' ist eindeutig keltisch, unabhaengig von der Nation.
+    if (/^O'[a-zà-ÿ]/.test(n)) return "O'" + n.charAt(2).toUpperCase() + n.slice(3);
+    if (!KELT_NATIONEN.has(nat)) return n;
+    // Getrennte Schreibung: die Rohdaten fuehren vereinzelt "Mc Nulty".
+    const sp = /^(Mac|Mc)\s+(\S.*)$/.exec(n);
+    if (sp) n = sp[1] + sp[2].charAt(0).toUpperCase() + sp[2].slice(1);
+    const m = /^(Mac|Mc)([a-zà-ÿ].*)$/.exec(n);
+    if (!m) return n;
+    if (KELT_AUSNAHMEN.has(n.toLowerCase())) return n;
+    if (m[2].length < 3) return n;            // "Mack", "Macey" — eigenstaendige Namen
+    // Auf "Mac" folgt bei keltischen Namen kein "h". Das Muster trennt zuverlaessig:
+    // Machado/Macedo (PT), Machida (JP), Machava/Machaba/Machete (Bantu, ueber RSA
+    // im Pool) bleiben unangetastet. Bei "Mc" gilt das NICHT — McHugh, McHale sind echt.
+    if (m[1] === 'Mac' && /^h/i.test(m[2])) return n;
+    return m[1] + m[2].charAt(0).toUpperCase() + m[2].slice(1);
+}
+
 function fixName(nat, n) {
+    n = fixCelticCaps(nat, n);
     if (!(n in ACCENT)) return n;
     if (ES_ONLY.has(n) && (NO_ACCENT_NATIONS.has(nat) || FR_NATIONS.has(nat))) return n;
     if (FR_ONLY.has(n) && !FR_NATIONS.has(nat) && nat !== 'GER') return n;
