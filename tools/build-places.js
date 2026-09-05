@@ -5,10 +5,15 @@
  * und neu bauen (gleiche Regel wie data/names.js / build-names-v3.js).
  *
  * Aufruf:
- *   node tools/build-places.js <pfad-zu-geonames>
- * erwartet dort cities500.txt und alternateNamesV2.txt
- * (https://download.geonames.org/export/dump/, CC-BY 4.0).
- * Die Rohdateien (~785 MB) gehören NICHT ins Repo.
+ *   node tools/build-places.js                 (nutzt tools/quellen/geonames/)
+ *   node tools/build-places.js <anderer-pfad>
+ *
+ * Rohdaten — liegen in tools/quellen/geonames/, per .gitignore aus dem Repo
+ * ausgeschlossen (~1 GB, allein alternateNamesV2.txt ist 746 MB). Fehlen sie,
+ * neu ziehen von https://download.geonames.org/export/dump/ (CC-BY 4.0):
+ *   cities500.zip          13 MB -> cities500.txt          39 MB
+ *   alternateNamesV2.zip  195 MB -> alternateNamesV2.txt  746 MB
+ * beide entpacken, mehr braucht es nicht.
  *
  * Warum zwei Dateien: cities500 liefert Ort + Einwohnerzahl, aber für
  * Großstädte oft das englische Exonym („Rome", „Munich", „Warsaw").
@@ -20,10 +25,16 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-const GEO = process.argv[2];
-if (!GEO) { console.error('Aufruf: node tools/build-places.js <geonames-verzeichnis>'); process.exit(1); }
+const GEO = process.argv[2] || path.join(__dirname, 'quellen', 'geonames');
 const F_CITIES = path.join(GEO, 'cities500.txt');
 const F_ALT = path.join(GEO, 'alternateNamesV2.txt');
+for (const f of [F_CITIES, F_ALT]) {
+    if (fs.existsSync(f)) continue;
+    console.error('Fehlt: ' + f + '\n'
+        + 'Neu ziehen von https://download.geonames.org/export/dump/ '
+        + '(cities500.zip + alternateNamesV2.zip) und dorthin entpacken.');
+    process.exit(1);
+}
 const DECKEL = parseInt(process.env.DECKEL || '300', 10);
 
 // ── Nationen ────────────────────────────────────────────────────────────────
