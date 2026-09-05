@@ -57,6 +57,7 @@ const LEIT = {
     'data/home-only.js':       ['HOME_ONLY_DRIVERS', 'HOME_ONLY_CONSTRUCTORS',
                                 'SINGLE_DRIVER_CONSTRUCTORS', 'HOME_NATION_ALIAS'],
     'data/places.js':          ['CIRCUIT_PLACES'],
+    'data/team-nations.js':    ['TEAM_NATION_BLEND'],
 };
 // Zugriffs-Funktionen: die Bruecke zwischen Spiel und Daten.
 const FUNKTIONEN = ['getTeamPresence', 'homeOnlyConstructorNations', 'isSingleSeatConstructor',
