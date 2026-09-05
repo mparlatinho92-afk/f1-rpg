@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.42</title>
+    <title>F1 RPG v0.9.17.43</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.42 (aktuell) - 05.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.43 (aktuell) - 05.09.2026</div>
+                            <div>&#8226; FIX: Neue Teams entstehen dort wo real Rennstaelle sitzen - Grossbritannien 10 auf 40 Prozent, Finnland 3,3 auf 0,5</div>
+                            <div>&#8226; NEU: Nationen-Gewichtung je Jahrzehnt aus 187 F1-Konstrukteuren plus 77 heutigen F2- und WEC-Teams</div>
+                            <div>&#8226; FIX: Indy-500-Konstrukteure verzerren die Fuenfziger nicht mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.17.42 - 05.09.2026</div>
                             <div>&#8226; NEU: 15.420 echte Ortsnamen statt 212 erfundener - Strecken heissen jetzt nach realen Orten</div>
                             <div>&#8226; NEU: Kalender kann 56 statt 30 Nationen ansteuern, gewichtet nach Motorsport-Tradition</div>
                             <div>&#8226; FIX: Strassenkurse ziehen Staedte, permanente Kurse Kleinorte - wie bei echten F1-Strecken</div>
@@ -17112,6 +17116,17 @@ const CIRCUIT_PLACES = {"ITA":{"k":["Pordenone","Nettuno","Acireale","Campobasso
 
     </script>
     <script>
+// GENERIERT von tools/build-team-nations.js — nicht von Hand editieren.
+// Nationen-Gewichtung fuer den TEAM-Generator, je Dekade.
+// Quellen: f1db-Konstrukteure je Saison (Rennstall-Realitaet) + 
+// tools/quellen/feeder-teams.csv (heutige F2/F4/WEC-Teams, ab 2010) +
+// 15 % MOTORSPORT_NATION_BLEND als Bodensatz,
+// damit Exoten moeglich bleiben. NICHT mit MOTORSPORT_NATION_BLEND verwechseln:
+// das ist die FAHRER-Verteilung und gilt weiter fuer Fahrer.
+const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.166,"USA":0.025,"ARG":0.008,"BEL":0.007,"SUI":0.005,"AUS":0.003,"ESP":0.003,"BRA":0.002,"EST":0.002,"SWE":0.002,"NED":0.002,"AUT":0.001,"JPN":0.001,"URU":0.001,"RUS":0.001,"CAN":0.001,"CZE":0.001,"FIN":0.001,"RSA":0.001,"NZL":0.001,"MON":0.001,"POR":0.001,"POL":0.001,"CHI":0.001,"IRL":0.001,"GRE":0.001,"NOR":0.001,"ROU":0.001,"TUR":0.001},"1960":{"ITA":0.136,"GBR":0.517,"GER":0.063,"USA":0.06,"BEL":0.012,"RSA":0.06,"CAN":0.011,"JPN":0.042,"FRA":0.042,"SUI":0.006,"NZL":0.005,"AUS":0.004,"ARG":0.004,"AUT":0.003,"EST":0.003,"SWE":0.003,"MEX":0.002,"ESP":0.002,"NED":0.002,"FIN":0.002,"CZE":0.001,"ZIM":0.001,"POL":0.001,"RUS":0.001,"POR":0.001,"BRA":0.001,"DEN":0.001,"HUN":0.001,"NOR":0.001,"GRE":0.001,"IRL":0.001,"KEN":0.001},"1970":{"GBR":0.554,"FRA":0.073,"ITA":0.106,"GER":0.028,"NZL":0.009,"JPN":0.03,"USA":0.05,"BRA":0.031,"NED":0.014,"AUS":0.01,"SUI":0.011,"CAN":0.02,"HKG":0.005,"MEX":0.007,"SWE":0.006,"AUT":0.006,"RSA":0.005,"BEL":0.004,"ARG":0.004,"ESP":0.003,"FIN":0.003,"EST":0.003,"RUS":0.002,"CZE":0.002,"POL":0.001,"POR":0.001,"NOR":0.001,"IRL":0.001,"KEN":0.001,"DEN":0.001,"TUR":0.001,"UKR":0.001,"CHI":0.001,"ZIM":0.001,"HUN":0.001,"MON":0.001},"1980":{"GBR":0.45,"FRA":0.121,"ITA":0.242,"BRA":0.022,"GER":0.07,"HKG":0.015,"USA":0.012,"JPN":0.005,"AUT":0.004,"SUI":0.004,"ESP":0.004,"ARG":0.004,"SWE":0.004,"FIN":0.003,"CAN":0.003,"BEL":0.003,"NED":0.003,"RUS":0.002,"AUS":0.002,"IRL":0.002,"EST":0.002,"CZE":0.001,"POR":0.001,"NOR":0.001,"CHN":0.001,"RSA":0.001,"HUN":0.001,"NZL":0.001,"MEX":0.001,"POL":0.001,"DEN":0.001,"TUR":0.001,"COL":0.001,"CHI":0.001,"GRE":0.001,"VEN":0.001,"ROU":0.001,"UKR":0.001},"1990":{"FRA":0.113,"ITA":0.289,"GBR":0.403,"IRL":0.056,"SUI":0.045,"BRA":0.01,"JPN":0.01,"USA":0.009,"GER":0.008,"FIN":0.005,"AUT":0.005,"BEL":0.004,"ARG":0.004,"ESP":0.003,"NED":0.003,"AUS":0.003,"POR":0.003,"CAN":0.002,"SWE":0.002,"CZE":0.002,"RUS":0.002,"NOR":0.002,"POL":0.002,"DEN":0.002,"HUN":0.001,"NZL":0.001,"EST":0.001,"MEX":0.001,"CHN":0.001,"RSA":0.001,"TUR":0.001,"UKR":0.001,"CHI":0.001,"BUL":0.001,"IND":0.001,"THA":0.001,"MON":0.001},"2000":{"GBR":0.296,"IRL":0.05,"FRA":0.089,"ITA":0.188,"SUI":0.05,"JPN":0.119,"AUT":0.044,"GER":0.048,"RUS":0.01,"NED":0.013,"IND":0.017,"BRA":0.013,"USA":0.009,"ESP":0.007,"FIN":0.007,"ARG":0.004,"AUS":0.003,"CAN":0.002,"POL":0.002,"POR":0.002,"SWE":0.002,"CZE":0.002,"NZL":0.001,"BEL":0.001,"EST":0.001,"HUN":0.001,"DEN":0.001,"CHN":0.001,"NOR":0.001,"TUR":0.001,"MEX":0.001,"COL":0.001,"UKR":0.001,"MAS":0.001,"INA":0.001,"RSA":0.001,"THA":0.001,"BUL":0.001,"CHI":0.001},"2010":{"GBR":0.252,"SUI":0.06,"IND":0.048,"ESP":0.029,"MAS":0.026,"GER":0.101,"AUT":0.056,"FRA":0.069,"ITA":0.147,"USA":0.044,"JPN":0.015,"NED":0.012,"NZL":0.005,"UAE":0.008,"ARG":0.011,"ROU":0.004,"SMR":0.004,"SLO":0.008,"IRL":0.004,"CZE":0.009,"HUN":0.009,"DEN":0.007,"SVK":0.004,"RUS":0.01,"KOR":0.004,"BEL":0.007,"BRA":0.007,"FIN":0.007,"AUS":0.004,"MEX":0.003,"SWE":0.003,"CAN":0.002,"POL":0.002,"NOR":0.002,"EST":0.001,"VEN":0.001,"MON":0.001,"THA":0.001,"CHN":0.001,"INA":0.001,"COL":0.001,"RSA":0.001,"POR":0.001,"TUR":0.001,"ISR":0.001},"2020":{"ITA":0.182,"AUT":0.06,"GBR":0.255,"USA":0.089,"GER":0.108,"FRA":0.096,"SUI":0.028,"JPN":0.015,"ESP":0.012,"NED":0.015,"NZL":0.006,"UAE":0.008,"ARG":0.011,"ROU":0.004,"SMR":0.004,"SLO":0.008,"IRL":0.004,"CZE":0.009,"HUN":0.009,"DEN":0.007,"SVK":0.004,"RUS":0.008,"KOR":0.004,"BEL":0.005,"AUS":0.007,"FIN":0.006,"CAN":0.005,"BRA":0.004,"MEX":0.003,"MON":0.002,"CHN":0.002,"THA":0.002,"POL":0.002,"SWE":0.001,"EST":0.001,"NOR":0.001,"RSA":0.001,"POR":0.001,"TUR":0.001,"IND":0.001,"URU":0.001,"MAR":0.001,"PER":0.001,"PHI":0.001,"VEN":0.001}};
+
+    </script>
+    <script>
         // BILDER — Fahrerfotos und externe Grafiken, eingebettet.
         // GENERIERT von tools/build-images.py — NICHT von Hand editieren.
         //
@@ -17479,7 +17494,7 @@ const CIRCUIT_PLACES = {"ITA":{"k":["Pordenone","Nettuno","Acireale","Campobasso
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.42';
+        const VERSION = '0.9.17.43';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28626,6 +28641,27 @@ const CIRCUIT_PLACES = {"ITA":{"k":["Pordenone","Nettuno","Acireale","Campobasso
         };
         // IOC-3 → Bausteine-Key; alles andere → 'generic'.
         const TEAM_NATION_KEY = { ITA: 'it', GBR: 'gb', FRA: 'fr', GER: 'de', USA: 'us', JPN: 'jp', BRA: 'br', ESP: 'es', NED: 'nl' };
+
+        // Nation für ein NEUES TEAM ziehen (v0.9.17.43).
+        // Vorher lief das über pickNationMotorsport — eine FAHRER-Verteilung.
+        // Fahrerländer und Rennstallländer sind zwei Landkarten: Finnland kam auf
+        // 3,4 % der Teams, hat aber in 76 Jahren F1 nie einen Konstrukteur gestellt;
+        // Großbritannien lag bei 9,6 %, obwohl 44 % aller Renneinsätze auf britische
+        // Rennställe entfallen. TEAM_NATION_BLEND (data/team-nations.js) misst die
+        // Rennstall-Seite je Dekade. Fahrer ziehen weiterhin über pickNationMotorsport.
+        function pickTeamNation(year) {
+            let d = Math.floor((year || 1990) / 10) * 10;
+            if (d < 1950) d = 1950;
+            if (d > 2020) d = 2020;
+            const w = (typeof TEAM_NATION_BLEND !== 'undefined' && TEAM_NATION_BLEND[d]) || null;
+            if (!w) return pickNationMotorsport(year, true);   // Datei fehlt: alter Weg
+            const nat = Object.keys(w);
+            let tot = 0;
+            for (const n of nat) tot += w[n];
+            let x = Math.random() * tot;
+            for (const n of nat) { x -= w[n]; if (x <= 0) return n; }
+            return nat[nat.length - 1];
+        }
         // Ära-Register aus Jahr (konsistent zu Paket B/Strecken: e50/e62/e76/e94/e10).
         function _teamEraKey(year) {
             return year < 1962 ? 'e50' : year < 1976 ? 'e62' : year < 1994 ? 'e76' : year < 2010 ? 'e94' : 'e10';
@@ -28746,7 +28782,7 @@ const CIRCUIT_PLACES = {"ITA":{"k":["Pordenone","Nettuno","Acireale","Campobasso
         // nation optional (IOC-3); ohne Angabe über den Motorsport-Frequenz-Trichter.
         window.generateTeam = function(year, nation) {
             year = year || (typeof GAME_STATE !== 'undefined' && GAME_STATE.currentYear) || 1990;
-            const ioc = nation || pickNationMotorsport(year, true);
+            const ioc = nation || pickTeamNation(year);
             const usedNames = new Set([
                 ...((GAME_STATE.teams || []).map(t => (t.name || '').toLowerCase())),
                 ...(((_pendingEdits && _pendingEdits.teamAdds) || []).map(t => (t.name || '').toLowerCase()))
@@ -28777,8 +28813,8 @@ const CIRCUIT_PLACES = {"ITA":{"k":["Pordenone","Nettuno","Acireale","Campobasso
         // Editor-🎲: füllt das Formular mit einem kohärenten Zufallsteam (Name aus der Nation).
         window.editorRandomizeTeamForm = function() {
             const yr = GAME_STATE.currentYear || 1990;
-            // Nation zuerst (Motorsport-Trichter, USA gedämpft) → Name kohärent dazu.
-            const ioc = pickNationMotorsport(yr, true);
+            // Nation zuerst (Rennstall-Verteilung je Dekade) → Name kohärent dazu.
+            const ioc = pickTeamNation(yr);
             const usedNames = new Set((GAME_STATE.teams || []).map(t => (t.name || '').toLowerCase()));
             const name = composeTeamName(ioc, yr, usedNames);
             const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
