@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.44</title>
+    <title>F1 RPG v0.9.17.45</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.44 (aktuell) - 05.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.45 (aktuell) - 05.09.2026</div>
+                            <div>&#8226; NEU: Mexiko, Chile, Kolumbien, Venezuela, Peru und Uruguay bekommen spanische Teamnamen - Escuderia, Equipo, Competicion</div>
+                            <div>&#8226; NEU: Argentinien mischt spanisch und italienisch - alle drei bekannten argentinischen Rennstaelle hiessen Scuderia</div>
+                            <div>&#8226; NEU: Portugal mit eigenem Register - Equipa statt des brasilianischen Equipe</div>
+                            <div class="font-bold text-slate-400">v0.9.17.44 - 05.09.2026</div>
                             <div>&#8226; FIX: Mcdonald heisst jetzt McDonald - 88 Namen korrigiert, betrifft Fahrer und Teams</div>
                             <div>&#8226; NEU: Schweiz, Belgien und Kanada wuerfeln ihre Sprachregion je Team - Equipe Rochat neben Rossi Racing</div>
                             <div>&#8226; FIX: Oesterreich nutzt das deutsche, Irland und Suedafrika das englische Register - Nachnamen bleiben landeseigen</div>
@@ -3907,7 +3911,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.44';
+        const VERSION = '0.9.17.45';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -14998,6 +15002,11 @@
                 us: [['Racing Enterprises', 3], ['Speed Equipment', 2, 'e50', 'e76'], ['Motorsports', 4, 'e94', 'e10']],
                 jp: [['Racing Project', 3], ['Technica', 2]],
                 nl: [['Autosport', 3]],
+                // Portugal getrennt von Brasilien (v0.9.17.45): pt-PT schreibt
+                // „Equipa", brasilianisch „Equipe"; „Automóveis" ist die
+                // europäische Form. Portugal stellte nie einen F1-Melder, das
+                // Register ist daher sprachlich hergeleitet, nicht gemessen.
+                pt: [['Competições', 3], ['Automóveis', 2]],
                 generic: []
             },
             // Präfix je Nation, mit Ära-Fenster. Écurie endet bewusst nach e76.
@@ -15014,6 +15023,7 @@
                 us: [['Team', 8]],
                 jp: [['Team', 10]],
                 nl: [['Team', 5]],
+                pt: [['Equipa', 6], ['Team', 3, 'e76', 'e10']],
                 generic: [['Team', 6]]
             },
             // Präfix-Anteil, gemessen an den F1-Meldern: Scuderia steigt von 5 %
@@ -15058,7 +15068,12 @@
             // vorhandene Sprache schreiben. Österreich deutsch, Irland und Südafrika
             // englisch — Jordan Grand Prix und Team Gunston klingen wie britische
             // Rennställe, weil sie es sprachlich sind. Kein eigenes Register nötig.
-            AUT: 'de', IRL: 'gb', RSA: 'gb' };
+            AUT: 'de', IRL: 'gb', RSA: 'gb',
+            // v0.9.17.45: spanischsprachiges Lateinamerika. Escudería, Equipo und
+            // Competición sind dort die üblichen Formen. Argentinien steht NICHT
+            // hier, sondern unten bei den gemischten Ländern.
+            MEX: 'es', CHI: 'es', COL: 'es', VEN: 'es', PER: 'es', URU: 'es',
+            POR: 'pt' };
 
         // Mehrsprachige Länder: das Register wird PRO TEAM ausgewürfelt, nicht
         // pauschal gesetzt. Die Schweiz hat Sauber neben Scuderia Filipinetti neben
@@ -15074,7 +15089,14 @@
         const TEAM_NATION_REGIONS = {
             SUI: [['de', 0.55], ['fr', 0.33], ['it', 0.12]],
             BEL: [['fr', 0.55], ['nl', 0.45]],
-            CAN: [['gb', 0.63], ['fr', 0.37]]
+            CAN: [['gb', 0.63], ['fr', 0.37]],
+            // Argentinien ist spanischsprachig, sein Motorsport aber italienisch
+            // geprägt (starke Einwanderung — Fangio, Marimón, Estéfano). ALLE drei
+            // bekannten argentinischen Rennställe heißen „Scuderia": Achille Varzi
+            // und Sud Americana in der F1, Buell in der heutigen Feeder-Liste.
+            // Drei Fälle tragen keine Verteilung, deshalb bleibt Spanisch die
+            // Mehrheit — aber das italienische Register sichtbar dabei.
+            ARG: [['es', 0.6], ['it', 0.4]]
         };
 
         // Welches Sprachregister bekommt ein Team dieser Nation?
