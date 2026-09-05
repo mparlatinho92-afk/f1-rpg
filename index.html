@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.43</title>
+    <title>F1 RPG v0.9.17.44</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.43 (aktuell) - 05.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.44 (aktuell) - 05.09.2026</div>
+                            <div>&#8226; FIX: Mcdonald heisst jetzt McDonald - 88 Namen korrigiert, betrifft Fahrer und Teams</div>
+                            <div>&#8226; NEU: Schweiz, Belgien und Kanada wuerfeln ihre Sprachregion je Team - Equipe Rochat neben Rossi Racing</div>
+                            <div>&#8226; FIX: Oesterreich nutzt das deutsche, Irland und Suedafrika das englische Register - Nachnamen bleiben landeseigen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.43 - 05.09.2026</div>
                             <div>&#8226; FIX: Neue Teams entstehen dort wo real Rennstaelle sitzen - Grossbritannien 10 auf 40 Prozent, Finnland 3,3 auf 0,5</div>
                             <div>&#8226; NEU: Nationen-Gewichtung je Jahrzehnt aus 187 F1-Konstrukteuren plus 77 heutigen F2- und WEC-Teams</div>
                             <div>&#8226; FIX: Indy-500-Konstrukteure verzerren die Fuenfziger nicht mehr</div>
@@ -3903,7 +3907,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.43';
+        const VERSION = '0.9.17.44';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -15049,7 +15053,42 @@
             }
         };
         // IOC-3 → Bausteine-Key; alles andere → 'generic'.
-        const TEAM_NATION_KEY = { ITA: 'it', GBR: 'gb', FRA: 'fr', GER: 'de', USA: 'us', JPN: 'jp', BRA: 'br', ESP: 'es', NED: 'nl' };
+        const TEAM_NATION_KEY = { ITA: 'it', GBR: 'gb', FRA: 'fr', GER: 'de', USA: 'us', JPN: 'jp', BRA: 'br', ESP: 'es', NED: 'nl',
+            // v0.9.17.44: Nationen ohne eigenes Register, die aber eine bereits
+            // vorhandene Sprache schreiben. Österreich deutsch, Irland und Südafrika
+            // englisch — Jordan Grand Prix und Team Gunston klingen wie britische
+            // Rennställe, weil sie es sprachlich sind. Kein eigenes Register nötig.
+            AUT: 'de', IRL: 'gb', RSA: 'gb' };
+
+        // Mehrsprachige Länder: das Register wird PRO TEAM ausgewürfelt, nicht
+        // pauschal gesetzt. Die Schweiz hat Sauber neben Scuderia Filipinetti neben
+        // Écurie Basilisk, Belgien flämische neben wallonischen Rennställen.
+        // Gewichte aus NAME_POOLS_BY_NATION (Paket J) — dieselbe Quelle, aus der die
+        // Fahrernamen kommen, damit Teamname und Fahrername im selben Land
+        // zusammenpassen. Die Schweizer Werte sind auf die drei Landessprachen
+        // normalisiert: der vierte Regionsanteil dort ist portugiesische Zuwanderung,
+        // also eine Herkunft von Personen, keine Sprachregion für Firmennamen.
+        // Kanada: englisch nach britischem Muster, nicht amerikanischem — Walter Wolf
+        // Racing klang wie ein britischer Rennstall, nicht wie ein Speedway-Team.
+        // Quebec bekommt das französische Register.
+        const TEAM_NATION_REGIONS = {
+            SUI: [['de', 0.55], ['fr', 0.33], ['it', 0.12]],
+            BEL: [['fr', 0.55], ['nl', 0.45]],
+            CAN: [['gb', 0.63], ['fr', 0.37]]
+        };
+
+        // Welches Sprachregister bekommt ein Team dieser Nation?
+        function _teamRegisterKey(ioc) {
+            const reg = TEAM_NATION_REGIONS[ioc];
+            if (reg) {
+                let tot = 0;
+                for (const r of reg) tot += r[1];
+                let x = Math.random() * tot;
+                for (const r of reg) { x -= r[1]; if (x <= 0) return r[0]; }
+                return reg[reg.length - 1][0];
+            }
+            return TEAM_NATION_KEY[ioc] || 'generic';
+        }
 
         // Nation für ein NEUES TEAM ziehen (v0.9.17.43).
         // Vorher lief das über pickNationMotorsport — eine FAHRER-Verteilung.
@@ -15111,7 +15150,7 @@
         // Komponiert EINEN Teamnamen nationskohärent aus Präfix + Kern + Suffix.
         // usedNames = Set bereits vergebener Namen (kleingeschrieben) für Dedup.
         function composeTeamName(ioc, year, usedNames) {
-            const key = TEAM_NATION_KEY[ioc] || 'generic';
+            const key = _teamRegisterKey(ioc);
             const era = _teamEraKey(year);
             const P = TEAM_NAME_POOLS;
             const pick = arr => arr[Math.floor(Math.random() * arr.length)];
