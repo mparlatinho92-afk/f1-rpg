@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.46</title>
+    <title>F1 RPG v0.9.17.47</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.46 (aktuell) - 06.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.47 (aktuell) - 06.09.2026</div>
+                            <div>&#8226; NEU: Sub-Tab 'Nationen' - Fahrer, Konstrukteure und Austragungslaender je Land, mit Dekaden- und Quellenfilter</div>
+                            <div>&#8226; NEU: Klick auf eine Nation zeigt alle Fahrer bzw. Rennstaelle dahinter</div>
+                            <div>&#8226; NEU: Konstrukteurs-Nationen fuer alle 187 F1DB-Rennstaelle statt bisher 13 Sonderfaelle</div>
+                            <div>&#8226; FIX: Rhodesien und DDR werden nicht mehr zu Simbabwe bzw. Deutschland zusammengefasst</div>
+                            <div>&#8226; FIX: Aserbaidschan, Singapur und Tuerkei hatten keinen deutschen Laendernamen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.46 - 06.09.2026</div>
                             <div>&#8226; NEU: Echte F1-Logos je Epoche in Rennen-Fenster, Saison-Uebersicht und Modal-Titeln</div>
                             <div>&#8226; FIX: Renn-Detail zeigt GP-Landesflagge statt Zielflagge, Strecke ausgeschrieben statt Slug</div>
                             <div>&#8226; FIX: Lotus F1, Watson, ATS und Alex Dunne ohne Nationsflagge</div>
@@ -3209,7 +3215,7 @@
             <button onclick="openDatasetManager()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--text-tertiary); color: white;">
                 📂 Datensätze
             </button>
-            <button onclick="openNationStatsModal()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--accent-blue, #2563eb); color: white;">
+            <button onclick="openNationsTab()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--accent-blue, #2563eb); color: white;">
                 🌍 Nationen-Statistik
             </button>
         </div>
@@ -17138,6 +17144,18 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
 
     </script>
     <script>
+// GENERIERT von tools/build-nations.js — NICHT von Hand editieren.
+// Quelle: f1db-json-splitted/ (f1db-drivers.json, f1db-constructors.json, f1db-countries.json)
+// Stand: 2026-09-06
+//
+// Slug -> IOC-Code. Wird von der Nationen-Statistik gelesen, um jedem Start im
+// Renn-Scan ein Land zuzuordnen. Die Spieldaten haben Vorrang (DDR!), siehe
+// nationOfDriverKey/nationOfTeamKey in index.html.
+const F1DB_DRIVER_NATIONS = {"adderly-fong":"HKG","adolf-brudes":"GER","adolfo-schwelm-cruz":"ARG","adrian-campos":"ESP","adrian-sutil":"GER","aguri-suzuki":"JPN","al-herman":"USA","al-keller":"USA","al-pease":"CAN","alain-de-changy":"BEL","alain-prost":"FRA","alan-brown":"GBR","alan-jones":"AUS","alan-rees":"GBR","alan-rollinson":"GBR","alan-stacey":"GBR","albert-scherrer":"SUI","alberto-ascari":"ITA","alberto-colombo":"ITA","alberto-crespo":"ARG","alberto-rodriguez-larreta":"ARG","alberto-uria":"URU","aldo-gordini":"FRA","alejandro-de-tomaso":"ARG","alessandro-nannini":"ITA","alessandro-pesenti-rossi":"ITA","alex-caffi":"ITA","alex-palou":"ESP","alex-ribeiro":"BRA","alex-soler-roig":"ESP","alex-yoong":"MAS","alex-zanardi":"ITA","alexander-albon":"THA","alexander-dunne":"IRL","alexander-rossi":"USA","alexander-wurz":"AUT","alexandre-premat":"FRA","alfonso-celis-jr":"MEX","alfonso-de-portago":"ESP","alfonso-thiele":"USA","alfredo-pian":"ARG","allan-mcnish":"GBR","allen-berg":"CAN","andre-guelfi":"FRA","andre-lotterer":"GER","andre-milhoux":"BEL","andre-pilette":"BEL","andre-simon":"FRA","andre-testut":"MON","andrea-chiesa":"SUI","andrea-de-adamich":"ITA","andrea-de-cesaris":"ITA","andrea-montermini":"ITA","andy-linden":"USA","andy-sutcliffe":"GBR","anthony-davidson":"GBR","anthony-joseph-foyt":"USA","antonio-creus":"ESP","antonio-fuoco":"ITA","antonio-giovinazzi":"ITA","antonio-pizzonia":"BRA","archie-scott-brown":"GBR","art-bisch":"USA","art-cross":"USA","artem-markelov":"RUS","arthur-leclerc":"MON","arthur-legat":"BEL","arthur-owen":"GBR","arturo-merzario":"ITA","arvid-lindblad":"GBR","asdrubal-fontes-bayardo":"URU","ayrton-senna":"BRA","ayumu-iwasa":"JPN","bas-leinders":"BEL","basil-van-rooyen":"RSA","bayliss-levrett":"USA","ben-pon":"NED","beppe-gabbiani":"ITA","bernard-collomb":"FRA","bernard-de-dryver":"BEL","bernd-schneider":"GER","bernie-ecclestone":"GBR","bertil-roos":"SWE","bertrand-gachot":"FRA","bill-aston":"GBR","bill-brack":"CAN","bill-cantrell":"USA","bill-cheesbourg":"USA","bill-holland":"USA","bill-homeier":"USA","bill-mackey":"USA","bill-moss":"GBR","bill-schindler":"USA","bill-vukovich":"USA","bill-whitehouse":"GBR","billy-garrett":"USA","birabongse-bhanudej":"THA","bjorn-wirdheim":"SWE","bob-anderson":"GBR","bob-bondurant":"USA","bob-christie":"USA","bob-drake":"USA","bob-evans":"GBR","bob-gerard":"GBR","bob-said":"USA","bob-scott":"USA","bob-sweikert":"USA","bob-veith":"USA","bobby-ball":"USA","bobby-grim":"USA","bobby-rahal":"USA","bobby-unser":"USA","boy-hayje":"NED","brausch-niemann":"RSA","brendon-hartley":"NZL","brett-lunger":"USA","brian-gubby":"GBR","brian-hart":"GBR","brian-henton":"GBR","brian-mcguire":"AUS","brian-naylor":"GBR","brian-redman":"GBR","brian-shawe-taylor":"GBR","bruce-halford":"GBR","bruce-johnstone":"RSA","bruce-kessler":"USA","bruce-mclaren":"NZL","bruno-giacomelli":"ITA","bruno-senna":"BRA","bud-tingelstad":"USA","cal-niday":"USA","callum-ilott":"GBR","carel-godin-de-beaufort":"NED","carl-forberg":"USA","carl-scarborough":"USA","carlo-facetti":"ITA","carlo-franchi":"ITA","carlos-menditeguy":"ARG","carlos-pace":"BRA","carlos-reutemann":"ARG","carlos-sainz-jr":"ESP","carroll-shelby":"USA","cecil-green":"USA","cesare-perdisa":"ITA","chanoch-nissany":"ISR","charles-de-tornaco":"BEL","charles-leclerc":"MON","charles-pic":"FRA","charles-pozzi":"FRA","chet-miller":"USA","chico-landi":"BRA","chico-serra":"BRA","chris-amon":"NZL","chris-bristow":"GBR","chris-craft":"GBR","chris-irwin":"GBR","chris-lawrence":"GBR","christian-danner":"GER","christian-fittipaldi":"BRA","christian-goethals":"BEL","christian-klien":"AUT","christijan-albers":"NED","christophe-bouchut":"FRA","chuck-arnold":"USA","chuck-daigh":"USA","chuck-stevenson":"USA","chuck-weyant":"USA","cian-shields":"GBR","claudio-langes":"ITA","clay-regazzoni":"SUI","clemar-bucci":"ARG","clemente-biondetti":"ITA","cliff-allison":"GBR","cliff-griffith":"USA","clive-puzey":"ZIM","colin-chapman":"GBR","colin-davis":"GBR","conny-andersson":"SWE","consalvo-sanesi":"ITA","corrado-fabi":"ITA","cristiano-da-matta":"BRA","cuth-harrison":"GBR","damien-magee":"GBR","damon-hill":"GBR","dan-gurney":"USA","dani-clos":"ESP","daniel-juncadella":"ESP","daniel-ricciardo":"AUS","daniil-kvyat":"RUS","danny-kladis":"USA","danny-ongais":"USA","danny-sullivan":"USA","dave-charlton":"RSA","dave-morgan":"GBR","david-brabham":"AUS","david-coulthard":"GBR","david-hampshire":"GBR","david-hobbs":"GBR","david-kennedy":"IRL","david-murray":"GBR","david-piper":"GBR","david-prophet":"GBR","david-purley":"GBR","david-walker":"AUS","davide-valsecchi":"ITA","dempsey-wilson":"USA","dennis-poore":"GBR","dennis-taylor":"GBR","denny-hulme":"NZL","derek-bell":"GBR","derek-daly":"IRL","derek-warwick":"GBR","desire-wilson":"RSA","desmond-titterington":"GBR","dick-gibson":"GBR","dick-rathmann":"USA","didier-pironi":"FRA","dieter-quester":"AUT","dino-beganovic":"SWE","divina-galica":"GBR","domenico-schiattarella":"ITA","don-beauman":"GBR","don-branson":"USA","don-edmunds":"USA","don-freeland":"USA","dorino-serafini":"ITA","doug-serrurier":"RSA","dries-van-der-lof":"NED","duane-carter":"USA","duke-dinsmore":"USA","duke-nalon":"USA","duncan-hamilton":"GBR","ed-elisian":"USA","eddie-cheever":"USA","eddie-irvine":"GBR","eddie-johnson":"USA","eddie-keizan":"RSA","eddie-russo":"USA","eddie-sachs":"USA","edgar-barth":"GER","eitel-cantoni":"URU","elie-bayol":"FRA","elio-de-angelis":"ITA","eliseo-salazar":"CHI","elmer-george":"USA","emanuele-naspetti":"ITA","emanuele-pirro":"ITA","emerson-fittipaldi":"BRA","emilio-de-villota":"ESP","emilio-zapico":"ESP","emmanuel-de-graffenried":"SUI","enrico-bertaggia":"ITA","enrico-toccacelo":"ITA","enrique-bernoldi":"BRA","eppie-wietzes":"CAN","eric-bernard":"FRA","eric-brandon":"GBR","eric-thompson":"GBR","eric-van-de-poele":"BEL","erik-comas":"FRA","ernesto-brambilla":"ITA","ernesto-prinoth":"ITA","ernesto-viso":"VEN","ernie-mccoy":"USA","ernie-pieterse":"RSA","ernst-klodwig":"GER","ernst-loof":"GER","erwin-bauer":"GER","esteban-gutierrez":"MEX","esteban-ocon":"FRA","esteban-tuero":"ARG","ettore-chimeri":"VEN","eugene-chaboud":"FRA","eugene-martin":"FRA","eugenio-castellotti":"ITA","fabio-leimer":"SUI","fabrizio-barbazza":"ITA","fairuz-fauzy":"MAS","felice-bonetto":"ITA","felipe-drugovich":"BRA","felipe-massa":"BRA","felipe-nasr":"BRA","fernando-alonso":"ESP","franck-lagorce":"FRA","franck-montagny":"FRA","franco-colapinto":"ARG","franco-comotti":"ITA","franco-forini":"SUI","franco-rol":"ITA","francois-cevert":"FRA","francois-hesnault":"FRA","francois-mazet":"FRA","francois-migault":"FRA","francois-picard":"FRA","frank-armi":"USA","frank-dochnal":"USA","frank-gardner":"AUS","fred-agabashian":"USA","fred-gamble":"USA","fred-wacker":"USA","frederik-vesti":"DEN","fritz-dorey":"BRA","fritz-riess":"GER","gabriel-bortoleto":"BRA","gabriele-tarquini":"ITA","gaetano-starrabba":"ITA","gary-brabham":"AUS","gaston-mazzacane":"ARG","gene-force":"USA","gene-hartley":"USA","geoff-lees":"GBR","geoffrey-crossley":"GBR","george-abecassis":"GBR","george-amick":"USA","george-connor":"USA","george-constantine":"USA","george-eaton":"CAN","george-follmer":"USA","george-fonder":"USA","george-russell":"GBR","georges-berger":"BEL","georges-grignard":"FRA","gerard-larrousse":"FRA","gerhard-berger":"AUT","gerhard-mitter":"GER","gerino-gerini":"ITA","gerry-ashmore":"GBR","giacomo-russo":"ITA","giancarlo-baghetti":"ITA","giancarlo-fisichella":"ITA","gianfranco-brancatelli":"ITA","gianmaria-bruni":"ITA","gianni-morbidelli":"ITA","giedo-van-der-garde":"NED","gijs-van-lennep":"NED","gilles-villeneuve":"CAN","gino-bianco":"BRA","gino-munaron":"ITA","giorgio-bassi":"ITA","giorgio-francia":"ITA","giorgio-mondini":"SUI","giorgio-pantano":"ITA","giorgio-scarlatti":"ITA","giovanna-amati":"ITA","giovanni-de-riu":"ITA","giovanni-lavaggi":"ITA","giulio-cabianca":"ITA","graham-hill":"GBR","graham-mcrae":"NZL","graham-whitehead":"GBR","gregor-foitek":"SUI","guanyu-zhou":"CHN","gunnar-nilsson":"SWE","gunther-seiffert":"GER","gus-hutchison":"USA","guy-edwards":"GBR","guy-ligier":"FRA","guy-mairesse":"FRA","guy-tunmer":"RSA","hans-binder":"AUT","hans-herrmann":"GER","hans-heyer":"GER","hans-joachim-stuck":"GER","hans-klenk":"GER","hans-stuck":"GER","hap-sharp":"USA","harald-ertl":"AUT","harry-blanchard":"USA","harry-merkel":"GER","harry-schell":"USA","hector-rebaque":"MEX","heikki-kovalainen":"FIN","heini-walter":"SUI","heinz-harald-frentzen":"GER","heinz-schiller":"SUI","helm-glockler":"GER","helmut-marko":"AUT","helmut-niedermayr":"GER","helmuth-koinigg":"AUT","henri-louveau":"FRA","henri-pescarolo":"FRA","henry-banks":"USA","henry-taylor":"GBR","herbert-mackay-fraser":"USA","hermann-lang":"GER","hermano-da-silva-ramos":"BRA","hideki-noda":"JPN","hiroshi-fushida":"JPN","horace-gould":"GBR","howden-ganley":"NZL","hubert-hahne":"GER","huub-rothengatter":"NED","ian-ashley":"GBR","ian-burgess":"GBR","ian-raby":"GBR","ian-scheckter":"RSA","ian-stewart":"GBR","ignazio-giunti":"ITA","ingo-hoffmann":"BRA","innes-ireland":"GBR","isack-hadjar":"FRA","ivan-capelli":"ITA","ivor-bueb":"GBR","jac-nellemann":"DEN","jack-aitken":"GBR","jack-brabham":"AUS","jack-doohan":"AUS","jack-fairman":"GBR","jack-mcgrath":"USA","jack-turner":"USA","jackie-holmes":"USA","jackie-lewis":"GBR","jackie-oliver":"GBR","jackie-pretorius":"RSA","jackie-stewart":"GBR","jacky-ickx":"BEL","jacques-laffite":"FRA","jacques-pollet":"FRA","jacques-swaters":"BEL","jacques-villeneuve-sr":"CAN","jacques-villeneuve":"CAN","jaime-alguersuari":"ESP","jak-crawford":"USA","jake-dennis":"GBR","james-calado":"GBR","james-hunt":"GBR","jan-charouz":"CZE","jan-flinterman":"NED","jan-lammers":"NED","jan-magnussen":"DEN","jarno-trulli":"ITA","jay-chamberlain":"USA","jean-alesi":"FRA","jean-behra":"FRA","jean-christophe-boullion":"FRA","jean-claude-rudaz":"SUI","jean-denis-deletraz":"SUI","jean-eric-vergne":"FRA","jean-louis-schlesser":"FRA","jean-lucas":"FRA","jean-lucienbonnet":"FRA","jean-marc-gounon":"FRA","jean-pierre-beltoise":"FRA","jean-pierre-jabouille":"FRA","jean-pierre-jarier":"FRA","jenson-button":"GBR","jerome-dambrosio":"BEL","jerry-hoyt":"USA","jerry-unser-jr":"USA","jesus-iglesias":"ARG","jim-clark":"GBR","jim-crawford":"GBR","jim-hall":"USA","jim-hurtubise":"USA","jim-mcwithey":"USA","jim-rathmann":"USA","jim-rigsby":"USA","jimmy-bryan":"USA","jimmy-davies":"USA","jimmy-daywalt":"USA","jimmy-jackson":"USA","jimmy-reece":"USA","jimmy-stewart":"GBR","jj-lehto":"FIN","jo-bonnier":"SWE","jo-gartner":"AUT","jo-schlesser":"FRA","jo-siffert":"SUI","jo-vonlanthen":"SUI","joachim-winkelhock":"GER","jochen-mass":"GER","jochen-rindt":"AUT","jody-scheckter":"RSA","joe-fry":"GBR","joe-james":"USA","joe-kelly":"IRL","john-barber":"GBR","john-campbell-jones":"GBR","john-cannon":"CAN","john-cordts":"CAN","john-fitch":"USA","john-james":"GBR","john-love":"ZIM","john-miles":"GBR","john-nicholson":"NZL","john-rhodes":"GBR","john-riseley-prichard":"GBR","john-surtees":"GBR","john-taylor":"GBR","john-watson":"GBR","johnnie-parsons":"USA","johnnie-tolan":"USA","johnny-boyd":"USA","johnny-cecotto":"VEN","johnny-claes":"BEL","johnny-dumfries":"GBR","johnny-herbert":"GBR","johnny-mantz":"USA","johnny-mcdowell":"USA","johnny-servoz-gavin":"FRA","johnny-thomson":"USA","joie-chitwood":"USA","jolyon-palmer":"GBR","jonathan-palmer":"GBR","jonathan-williams":"GBR","jordan-king":"GBR","jorge-daponte":"ARG","jos-verstappen":"NED","jose-dolhem":"FRA","jose-froilan-gonzalez":"ARG","josef-peters":"GER","juan-jover":"ESP","juan-manuel-bordeu":"ARG","juan-manuel-fangio":"ARG","juan-pablo-montoya":"COL","jud-larson":"USA","jules-bianchi":"FRA","julian-bailey":"GBR","juri-vips":"EST","justin-wilson":"GBR","kamui-kobayashi":"JPN","karl-gunther-bechem":"GER","karl-kling":"GER","karl-wendlinger":"AUT","karun-chandhok":"IND","kazuki-nakajima":"JPN","kazuyoshi-hoshino":"JPN","keith-andrews":"USA","keith-greene":"GBR","keke-rosberg":"FIN","ken-downing":"GBR","ken-kavanagh":"AUS","ken-richardson":"GBR","ken-wharton":"GBR","kenneth-mcalpine":"GBR","kenny-acheson":"GBR","kevin-cogan":"USA","kevin-magnussen":"DEN","kimi-antonelli":"ITA","kimi-raikkonen":"FIN","kunimitsu-takahashi":"JPN","kurt-adolff":"GER","kurt-ahrens-jr":"GER","kurt-kuhnke":"GER","lamberto-leoni":"ITA","lance-macklin":"GBR","lance-reventlow":"USA","lance-stroll":"CAN","lando-norris":"GBR","larry-crockett":"USA","larry-perkins":"AUS","lee-wallard":"USA","lella-lombardi":"ITA","len-duncan":"USA","len-sutton":"USA","leo-kinnunen":"FIN","les-leston":"GBR","leslie-johnson":"GBR","leslie-marr":"GBR","leslie-thorne":"GBR","lewis-hamilton":"GBR","liam-lawson":"NZL","lloyd-ruby":"USA","logan-sargeant":"USA","lorenzo-bandini":"ITA","loris-kessel":"SUI","louis-chiron":"MON","louis-rosier":"FRA","luca-badoer":"ITA","lucas-di-grassi":"BRA","luciano-burti":"BRA","lucien-bianchi":"BEL","ludovico-scarfiotti":"ITA","ludwig-fischer":"GER","luigi-fagioli":"ITA","luigi-musso":"ITA","luigi-piotti":"ITA","luigi-taramazzo":"ITA","luigi-villoresi":"ITA","luis-perez-sala":"ESP","luiz-bueno":"BRA","luiz-razia":"BRA","luke-browning":"GBR","luki-botha":"RSA","ma-qinghua":"CHN","mack-hellings":"USA","manfred-winkelhock":"GER","manny-ayulo":"USA","marc-gene":"ESP","marc-surer":"SUI","marcel-balsa":"FRA","marco-apicella":"ITA","marcus-ericsson":"SWE","maria-teresa-de-filippis":"ITA","mario-andretti":"USA","mario-de-araujo-cabral":"POR","mark-blundell":"GBR","mark-donohue":"USA","mark-webber":"AUS","markus-winkelhock":"GER","marshall-teague":"USA","martin-brundle":"GBR","martin-donnelly":"GBR","masahiro-hasemi":"JPN","masami-kuwashima":"JPN","massimo-natili":"ITA","masten-gregory":"USA","matteo-bobbi":"ITA","mauri-rose":"USA","maurice-trintignant":"FRA","mauricio-gugelmin":"BRA","mauro-baldi":"ITA","max-chilton":"GBR","max-de-terra":"SUI","max-jean":"FRA","max-papis":"ITA","max-verstappen":"NED","michael-ammermuller":"GER","michael-andretti":"USA","michael-bartels":"GER","michael-bleekemolen":"NED","michael-may":"SUI","michael-schumacher":"GER","michel-leclere":"FRA","michele-alboreto":"ITA","mick-schumacher":"GER","miguel-angel-guerra":"ARG","mika-hakkinen":"FIN","mika-salo":"FIN","mike-beuttler":"GBR","mike-fisher":"USA","mike-hailwood":"GBR","mike-harris":"RSA","mike-hawthorn":"GBR","mike-macdowel":"GBR","mike-magill":"USA","mike-nazaruk":"USA","mike-parkes":"GBR","mike-sparken":"FRA","mike-spence":"GBR","mike-taylor":"GBR","mike-thackwell":"NZL","mike-wilds":"GBR","mikko-kozarowitzky":"FIN","moises-solana":"MEX","myron-fohr":"USA","nanni-galli":"ITA","naoki-hattori":"JPN","naoki-yamamoto":"JPN","narain-karthikeyan":"IND","nasif-estefano":"ARG","neel-jani":"SUI","nello-pagani":"ITA","nelson-piquet-jr":"BRA","nelson-piquet":"BRA","neville-lederle":"RSA","nicholas-latifi":"CAN","nick-heidfeld":"GER","nico-hulkenberg":"GER","nico-rosberg":"GER","nicola-larini":"ITA","nicolas-kiesa":"DEN","nigel-mansell":"GBR","niki-lauda":"AUT","nikita-mazepin":"RUS","nino-farina":"ITA","nino-vaccarella":"ITA","norberto-fontana":"ARG","noritake-takahara":"JPN","nyck-de-vries":"NED","oliver-bearman":"GBR","olivier-beretta":"MON","olivier-gendebien":"BEL","olivier-grouillard":"FRA","olivier-panis":"FRA","onofre-marimon":"ARG","oscar-alfredo-galvez":"ARG","oscar-gonzalez":"URU","oscar-larrauri":"ARG","oscar-piastri":"AUS","oswald-karch":"GER","otto-stuppacher":"AUT","ottorino-volonterio":"SUI","pablo-birger":"ARG","paco-godia":"ESP","paddy-driver":"RSA","paolo-barilla":"ITA","pascal-fabre":"FRA","pascal-wehrlein":"GER","pastor-maldonado":"VEN","pat-flaherty":"USA","pat-oconnor":"USA","patricio-oward":"MEX","patrick-depailler":"FRA","patrick-friesacher":"AUT","patrick-gaillard":"FRA","patrick-neve":"BEL","patrick-tambay":"FRA","paul-aron":"EST","paul-belmondo":"FRA","paul-di-resta":"GBR","paul-emery":"GBR","paul-england":"AUS","paul-frere":"BEL","paul-goldsmith":"USA","paul-hawkins":"AUS","paul-pietsch":"GER","paul-russo":"USA","pedro-chaves":"POR","pedro-de-la-rosa":"ESP","pedro-diniz":"BRA","pedro-lamy":"POR","pedro-rodriguez":"MEX","perry-mccarthy":"GBR","pete-lovely":"USA","peter-arundell":"GBR","peter-ashdown":"GBR","peter-broeker":"CAN","peter-collins":"GBR","peter-de-klerk":"RSA","peter-gethin":"GBR","peter-hirt":"SUI","peter-revson":"USA","peter-ryan":"CAN","peter-walker":"GBR","peter-westbury":"GBR","peter-whitehead":"GBR","phil-cade":"USA","phil-hill":"USA","philip-fotheringham-parker":"GBR","philippe-adams":"BEL","philippe-alliot":"FRA","philippe-etancelin":"FRA","philippe-streiff":"FRA","piercarlo-ghinzani":"ITA","pierluigi-martini":"ITA","piero-carini":"ITA","piero-drogo":"ITA","piero-dusio":"ITA","piero-scotti":"ITA","piero-taruffi":"ITA","pierre-gasly":"FRA","pierre-henri-raphanel":"FRA","pierre-levegh":"FRA","piers-courage":"GBR","pietro-fittipaldi":"BRA","raffaele-marciello":"ITA","ralf-schumacher":"GER","ralph-firman":"IRL","raul-boesel":"BRA","ray-crawford":"USA","raymond-sommer":"FRA","red-amick":"USA","reg-parnell":"GBR","reine-wisell":"SWE","renato-pirocchi":"ITA","rene-arnoux":"FRA","renzo-zorzi":"ITA","ricardo-londono":"COL","ricardo-rodriguez":"MEX","ricardo-rosset":"BRA","ricardo-zonta":"BRA","ricardo-zunino":"ARG","riccardo-paletti":"ITA","riccardo-patrese":"ITA","richard-attwood":"GBR","richard-robarts":"GBR","richie-ginther":"USA","rikky-von-opel":"LIE","rio-haryanto":"INA","rob-schroeder":"USA","robert-doornbos":"NED","robert-kubica":"POL","robert-la-caze":"MAR","robert-manzon":"FRA","robert-obrien":"USA","robert-shwartzman":"RUS","robert-wickens":"CAN","roberto-bonomi":"ARG","roberto-bussinello":"ITA","roberto-guerrero":"COL","roberto-lippi":"ITA","roberto-merhi":"ESP","roberto-mieres":"ARG","roberto-moreno":"BRA","robin-frijns":"NED","robin-montgomerie-charrington":"GBR","robin-widdows":"GBR","rodger-ward":"USA","rodney-nuckey":"GBR","rodolfo-gonzalez":"VEN","roelof-wunderink":"NED","roger-laurent":"BEL","roger-loyer":"FRA","roger-penske":"USA","roger-williamson":"GBR","roland-ratzenberger":"AUT","rolf-stommelen":"GER","romain-grosjean":"FRA","ron-flockhart":"GBR","ronnie-bucknum":"USA","ronnie-peterson":"SWE","roy-nissany":"ISR","roy-salvadori":"GBR","rubens-barrichello":"BRA","rudi-fischer":"SUI","rudolf-krause":"GER","rudolf-schoeller":"SUI","rupert-keegan":"GBR","ryan-briscoe":"AUS","ryo-hirakawa":"JPN","sakon-yamamoto":"JPN","sam-hanks":"USA","sam-posey":"USA","sam-tingle":"ZIM","satoru-nakajima":"JPN","satoshi-motoyama":"JPN","scott-speed":"USA","sean-gelael":"INA","sebastian-vettel":"GER","sebastien-bourdais":"FRA","sebastien-buemi":"SUI","sergey-sirotkin":"RUS","sergio-mantovani":"ITA","sergio-perez":"MEX","shinji-nakano":"JPN","shorty-templeman":"USA","siegfried-stohr":"ITA","silvio-moser":"SUI","skip-barber":"USA","slim-borgudd":"SWE","spider-webb":"USA","stefan-bellof":"GER","stefan-johansson":"SWE","stefano-modena":"ITA","stephane-sarrazin":"FRA","stephen-south":"GBR","stirling-moss":"GBR","stoffel-vandoorne":"BEL","stuart-lewis-evans":"GBR","susie-wolff":"GBR","taki-inoue":"JPN","takuma-sato":"JPN","tarso-marques":"BRA","ted-whiteaway":"GBR","teddy-pilette":"BEL","teo-fabi":"ITA","theo-fitzau":"GER","theo-helfrich":"GER","theo-pourchaire":"FRA","thierry-boutsen":"BEL","tiago-monteiro":"POR","tiff-needell":"GBR","tim-parnell":"GBR","tim-schenken":"AUS","timmy-mayer":"USA","timo-glock":"GER","tom-belso":"DEN","tom-bridger":"GBR","tom-jones":"USA","tom-pryce":"GBR","tomas-enge":"CZE","tommy-byrne":"IRL","toni-branca":"SUI","toni-ulmen":"GER","tony-bettenhausen":"USA","tony-brise":"GBR","tony-brooks":"GBR","tony-crook":"GBR","tony-gaze":"AUS","tony-maggs":"RSA","tony-marsh":"GBR","tony-rolt":"GBR","tony-settember":"USA","tony-shelly":"NZL","tony-trimmer":"GBR","toranosuke-takagi":"JPN","torsten-palm":"SWE","toshio-suzuki":"JPN","trevor-blokdyk":"RSA","trevor-taylor":"GBR","troy-ruttman":"USA","ukyo-katayama":"JPN","umberto-maglioli":"ITA","valtteri-bottas":"FIN","vern-schuppan":"AUS","vic-elford":"GBR","vic-wilson":"GBR","victor-martins":"FRA","vincenzo-sospiri":"ITA","vitaly-petrov":"RUS","vitantonio-liuzzi":"ITA","vittorio-brambilla":"ITA","volker-weidler":"GER","walt-ader":"USA","walt-brown":"USA","walt-faulkner":"USA","walt-hansgen":"USA","warwick-brown":"AUS","wayne-weiler":"USA","will-stevens":"GBR","willi-heeks":"GER","willi-krakau":"GER","william-ferguson":"RSA","willy-mairesse":"BEL","wilson-fittipaldi":"BRA","wolfgang-seidel":"GER","wolfgang-von-trips":"GER","xavier-perrot":"SUI","yannick-dalmas":"FRA","yuji-ide":"JPN","yuki-tsunoda":"JPN","yves-giraud-cabantous":"FRA","zak-osullivan":"GBR","zsolt-baumgartner":"HUN"};
+const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-romeo":"ITA","alfa-special":"RSA","alphatauri":"ITA","alpine":"FRA","alta":"GBR","amon":"NZL","andrea-moda":"ITA","apollon":"SUI","arrows":"GBR","arzani-volpini":"ITA","aston-butterworth":"GBR","aston-martin":"GBR","ats-wheels":"GER","ats":"ITA","audi":"GER","balsa":"GER","bar":"GBR","behra-porsche":"GER","bellasi":"ITA","benetton":"ITA","bmw-sauber":"GER","bmw":"GER","boro":"NED","brabham":"GBR","brawn":"GBR","brm":"GBR","bromme":"USA","brp":"GBR","bugatti":"FRA","cadillac":"USA","caterham":"MAS","christensen":"USA","cisitalia":"ITA","coloni":"ITA","connaught":"GBR","connew":"GBR","cooper":"GBR","dallara":"ITA","de-tomaso":"ITA","deidt":"USA","del-roy":"USA","derrington-francis":"GBR","dunn":"USA","eagle":"USA","eifelland":"GER","elder":"USA","emeryson":"GBR","emw":"GER","enb":"BEL","ensign":"GBR","epperly":"USA","era":"GBR","eurobrun":"ITA","ewing":"USA","ferguson":"GBR","ferrari":"ITA","first":"ITA","fittipaldi":"BRA","fondmetal":"ITA","footwork":"GBR","force-india":"IND","forti":"ITA","frank-williams-racing-cars":"GBR","frazer-nash":"GBR","fry":"GBR","gilby":"GBR","gordini":"FRA","greifzu":"GER","haas":"USA","hall":"USA","heck":"GER","hesketh":"GBR","hill":"GBR","honda":"JPN","hrt":"ESP","hwm":"GBR","iso-marlboro":"GBR","jaguar":"GBR","jbw":"GBR","jordan":"IRL","kauhsen":"GER","kick-sauber":"SUI","klenk":"GER","kojima":"JPN","krakau":"GER","kurtis-kraft":"USA","kuzma":"USA","lancia":"ITA","langley":"USA","larrousse":"FRA","lds":"RSA","lec":"GBR","lesovsky":"USA","leyton-house":"GBR","life":"ITA","ligier":"FRA","lola":"GBR","lotus-f1":"GBR","lotus-racing":"MAS","lotus":"GBR","lyncar":"GBR","maki":"JPN","manor":"GBR","march":"GBR","marchese":"USA","martini":"FRA","marussia":"GBR","maserati":"ITA","matra":"FRA","mcguire":"AUS","mclaren":"GBR","mercedes":"GER","merzario":"ITA","meskowski":"USA","midland":"RUS","minardi":"ITA","modena":"ITA","moore":"USA","nacke":"GER","nichels":"USA","olson":"USA","onyx":"GBR","osca":"ITA","osella":"ITA","pacific":"GBR","pankratz":"USA","parnelli":"USA","pawl":"USA","penske":"USA","phillips":"USA","politoys":"GBR","porsche":"GER","prost":"FRA","protos":"GBR","racing-bulls":"ITA","racing-point":"GBR","rae":"USA","ram":"GBR","rb":"ITA","rebaque":"MEX","red-bull":"AUT","reif":"GER","renault":"FRA","rial":"GER","sauber":"SUI","scarab":"USA","schroeder":"USA","scirocco":"GBR","shadow":"GBR","shannon":"GBR","sherman":"USA","simca-gordini":"FRA","simtek":"GBR","snowberger":"USA","spirit":"GBR","spyker":"NED","stebro":"CAN","stevens":"USA","stewart":"GBR","super-aguri":"JPN","surtees":"GBR","sutton":"USA","talbot-lago":"FRA","tec-mec":"USA","tecno":"ITA","theodore":"HKG","token":"GBR","toleman":"GBR","toro-rosso":"ITA","toyota":"JPN","trevis":"USA","trojan":"GBR","turner":"USA","tyrrell":"GBR","vanwall":"GBR","venturi":"FRA","veritas":"GER","virgin":"GBR","watson":"USA","wetteroth":"USA","williams":"GBR","wolf-williams":"GBR","wolf":"CAN","zakspeed":"GER"};
+
+    </script>
+    <script>
         // BILDER — Fahrerfotos und externe Grafiken, eingebettet.
         // GENERIERT von tools/build-images.py — NICHT von Hand editieren.
         //
@@ -17559,7 +17577,7 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.46';
+        const VERSION = '0.9.17.47';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -20373,6 +20391,51 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
             return /^[A-Z]{2,3}$/.test(s) ? s : null;
         }
 
+        // ── Nationszuordnung für die Nationen-Statistik (v0.9.17.47) ──────────
+        // Anders als _iocOf bleiben DDR und RHO hier STEHEN. Beide sind im Spiel
+        // eigene Nationen mit eigener Flagge und eigenem Kalender-Verhalten; sie
+        // still zu GER/ZIM zu falten macht aus zwei Auskünften eine Unwahrheit.
+        function nationCodeOf(v) {
+            if (!v) return null;
+            // convertEmojiToIOC gibt bei einem REINEN IOC-String null zurück – deshalb
+            // der Fallback auf den Rohwert (derselbe Fallstrick wie in _iocOf).
+            const c = (typeof convertEmojiToIOC === 'function') ? convertEmojiToIOC(v) : null;
+            const s = c || String(v).trim().toUpperCase();
+            return /^[A-Z]{2,3}$/.test(s) ? s : null;
+        }
+
+        // Reihenfolge nach Verlässlichkeit, gemessen an 915 Fahrern (tools/build-nations.js):
+        // Spieldaten und F1DB stimmen bei 906 überein, die 9 Abweichungen sind ausschliesslich
+        // politisch (6 × DDR, 3 × Rhodesien) – dort hat das Spiel recht, nicht F1DB.
+        //   1. Spielstand-Nation (generierte Fahrer tragen sie, SEASON_DATA führt 'DDR' direkt)
+        //   2. exakter Namenstreffer in NAME_TO_IOC
+        //   3. F1DB-Slug – exakt, deckt alle 915 realen Fahrer
+        //   4. Namens-Raten über den Nachnamen – kann Namensvettern verwechseln, daher zuletzt
+        function nationOfDriverKey(key, name, snapNation) {
+            const snap = nationCodeOf(snapNation);
+            if (snap) return snap;
+            const nm = String(name || (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[key]) || '').toLowerCase().trim();
+            if (nm && typeof NAME_TO_IOC !== 'undefined' && NAME_TO_IOC[nm]) return NAME_TO_IOC[nm];
+            if (key && typeof F1DB_DRIVER_NATIONS !== 'undefined' && F1DB_DRIVER_NATIONS[key]) return F1DB_DRIVER_NATIONS[key];
+            return (typeof lookupNationByName === 'function'
+                ? lookupNationByName(nm || String(key || '').replace(/-/g, ' ')) : null) || null;
+        }
+
+        // Konstrukteure: CONSTRUCTOR_NATIONS in index.html kennt nur 13 Sonderfälle,
+        // die eigentliche Deckung kommt aus F1DB (187 Konstrukteure, 0 ohne Land).
+        // Die Sonderfälle stehen VOR F1DB, weil dort die vier DDR-Rennställe liegen
+        // (EMW, Greifzu, Heck, Reif – F1DB führt sie alle als 'germany').
+        function nationOfTeamKey(slug, name, snapNation) {
+            const key = String(slug || '').toUpperCase();
+            if (typeof CONSTRUCTOR_NATIONS !== 'undefined' && CONSTRUCTOR_NATIONS[key]) return CONSTRUCTOR_NATIONS[key];
+            if (slug && typeof F1DB_CONSTRUCTOR_NATIONS !== 'undefined' && F1DB_CONSTRUCTOR_NATIONS[slug]) return F1DB_CONSTRUCTOR_NATIONS[slug];
+            const snap = nationCodeOf(snapNation);
+            if (snap) return snap;
+            const nm = String(name || '').toLowerCase().trim();
+            if (nm && typeof NAME_TO_IOC !== 'undefined' && NAME_TO_IOC[nm]) return NAME_TO_IOC[nm];
+            return null;
+        }
+
         // Nationen-All-Time-Statistik: aggregiert Fahrer-Karrierewerte (Siege, Podien, Poles,
         // Titel, Punkte, Starts) je Nation. Quellen: F1 (allTimeStATS.drivers – Nation per Backfill
         // aus Live-Fahrern + SEASON_DATA, deckt auch ausgeschiedene reale Fahrer) + Junior-Welt
@@ -20435,50 +20498,15 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
             return out;
         }
 
-        // In-Game-Panel: Nationen-Statistik mit real/generiert/gesamt-Umschaltung + JSON-Export je Sicht.
-        let _nationStatsFilter = 'total';
-        function openNationStatsModal() {
-            let ov = document.getElementById('nationStatsModal');
-            if (!ov) {
-                ov = document.createElement('div');
-                ov.id = 'nationStatsModal';
-                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-                ov.onclick = e => { if (e.target === ov) ov.remove(); };
-                document.body.appendChild(ov);
-            }
-            _renderNationStats();
-        }
-        function _renderNationStats() {
-            const ov = document.getElementById('nationStatsModal'); if (!ov) return;
-            const f = _nationStatsFilter;
-            const rows = Object.entries(exportNationStats(f, false).byNation);
-            const tab = (id, label) => `<button onclick="_nationStatsFilter='${id}';_renderNationStats()" class="px-3 py-1 rounded font-bold text-sm" style="background:${f === id ? 'var(--accent-green)' : 'var(--text-tertiary)'};color:#fff;">${label}</button>`;
-            const flag = ioc => { try { return (typeof renderFlag === 'function' && ioc !== 'UNBEKANNT') ? renderFlag(ioc, null, viewingHistoricalYear || GAME_STATE.currentYear) : ''; } catch (e) { return ''; } };
-            const cell = v => `<td style="padding:3px 8px;text-align:right;">${v}</td>`;
-            const body = rows.map(([ioc, s]) => `<tr style="border-bottom:1px solid rgba(128,128,128,.15);">
-                <td style="padding:3px 8px;text-align:left;white-space:nowrap;">${flag(ioc)} ${ioc}</td>
-                ${cell(s.drivers)}<td style="padding:3px 8px;text-align:right;font-weight:bold;">${s.wins}</td>${cell(s.podiums)}${cell(s.poles)}${cell(s.titles)}${cell(Math.round(s.points))}${cell(s.starts)}</tr>`).join('');
-            ov.innerHTML = `<div class="card rounded-xl" style="max-width:660px;width:100%;max-height:85vh;display:flex;flex-direction:column;padding:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <h2 style="font-size:1.15rem;font-weight:bold;">🌍 Nationen-Statistik (All-Time)</h2>
-                    <button onclick="document.getElementById('nationStatsModal').remove()" style="font-size:1.3rem;line-height:1;cursor:pointer;">✕</button>
-                </div>
-                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-                    ${tab('real', 'Reale Fahrer')}${tab('generated', 'Generierte')}${tab('total', 'Gesamt')}
-                    <button onclick="exportNationStats('${f}',true)" class="px-3 py-1 rounded font-bold text-sm" style="background:var(--accent-purple);color:#fff;margin-left:auto;">⬇ JSON</button>
-                </div>
-                <div style="overflow:auto;flex:1;">
-                <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
-                    <thead><tr style="border-bottom:2px solid rgba(128,128,128,.4);">
-                        <th style="padding:4px 8px;text-align:left;">Nation</th><th style="padding:4px 8px;text-align:right;">Fahrer</th>
-                        <th style="padding:4px 8px;text-align:right;">Siege</th><th style="padding:4px 8px;text-align:right;">Podien</th>
-                        <th style="padding:4px 8px;text-align:right;">Poles</th><th style="padding:4px 8px;text-align:right;">Titel</th>
-                        <th style="padding:4px 8px;text-align:right;">Punkte</th><th style="padding:4px 8px;text-align:right;">Starts</th>
-                    </tr></thead><tbody>${body || '<tr><td colspan="8" style="padding:12px;text-align:center;">Keine Daten</td></tr>'}</tbody>
-                </table></div>
-                <div style="font-size:.7rem;color:var(--text-tertiary);margin-top:8px;">${rows.length} Nationen · „⬇ JSON" exportiert die aktuelle Sicht (real / generiert / gesamt einzeln).</div>
-            </div>`;
-        }
+        // Der 🌍-Knopf in der Werkzeugleiste fuehrt in den Sub-Tab „Nationen" (v0.9.17.47).
+        // Das fruehere Modal an dieser Stelle ist entfallen: es summierte Karrierewerte aus
+        // allTimeStATS, der Tab zaehlt je Rennen — zwei Ansichten mit zwei Zaehlweisen waeren
+        // frueher oder spaeter auseinandergelaufen. exportNationStats() bleibt als
+        // Konsolen-Werkzeug bestehen (es deckt zusaetzlich die Junior-Welt ab).
+        window.openNationsTab = function () {
+            switchTab('stATS');
+            setStATSSubTab('nations');
+        };
 
         // === GENERISCHE HOME-ONLY-ZUWEISUNG (v0.9.14.88) ===
         // HOME_ONLY_ENTRIES (data/f1db.js) deckt nur real belegte Fahrer ab – der Lookup
@@ -43183,6 +43211,9 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                     <button onclick="setStATSSubTab('records')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'records' ? 'btn-primary' : 'bg-secondary'}">
                         🏅 Rekorde
                     </button>
+                    <button onclick="setStATSSubTab('nations')" class="px-4 py-2 rounded-lg transition ${stATSSubTab === 'nations' ? 'btn-primary' : 'bg-secondary'}">
+                        🌍 Nationen
+                    </button>
                 </div>
 
                 ${stATSSubTab === 'drivers' ? renderAllTimeDrivers() : ''}
@@ -43193,6 +43224,7 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                 ${stATSSubTab === 'transfers' ? renderTransferChronicle() : ''}
                 ${stATSSubTab === 'necrology' ? renderNecrology() : ''}
                 ${stATSSubTab === 'records' ? renderRecords() : ''}
+                ${stATSSubTab === 'nations' ? renderNations() : ''}
             `;
         }
         
@@ -43464,6 +43496,12 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
         let _recordsCache = new Map();     // source -> {results, meta}
         let _recordsScan  = null;          // {year, from, to, abort} während des Laufs
         let _recIgnoreThr = {};            // recordId -> Schwelle ignorieren
+        // Sub-Tab „Nationen" (v0.9.17.47) – teilt sich Quelle und Dekade mit den Rekorden,
+        // weil beide aus demselben Scan lesen. Eigene Zustände nur für die Darstellung.
+        let _nationView = 'drivers';       // 'drivers' | 'teams' | 'gp'
+        let _nationSort = 'wins';
+        let _nationSortDir = 'desc';
+        let _nationOpen = null;            // aufgeklappte Nation (IOC)
 
         function _decadeOf(year) { return Math.floor(year / 10) * 10; }
 
@@ -43522,7 +43560,14 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                 entries.push({ driverKey: idMap(id), teamKey: null, pos: null,
                     status: 'dnq', points: 0, pole: false, fastestLap: false, grid: null });
             }
-            return { year, date, dateApprox, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
+            // country (v0.9.17.47): Kalender-Einträge tragen den IOC-Code, ältere Stände
+            // ein Flaggen-Emoji – nationCodeOf nimmt beides. Nutzer-Strecken ohne Land
+            // fallen auf die Strecken-Tabelle zurück.
+            const country = nationCodeOf(cal.country)
+                || (typeof CIRCUIT_COUNTRY !== 'undefined'
+                    ? CIRCUIT_COUNTRY[String(cal.circuit || cal.name || '').toLowerCase().replace(/\s+/g, '-')] : null)
+                || null;
+            return { year, date, dateApprox, country, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
                      qualiOrder: rawQ.map(r => ({ driverKey: idMap(qD(r)), pos: qP(r) })) };
         }
 
@@ -43556,7 +43601,12 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
             const qualiOrder = entries.filter(e => e.grid != null)
                 .map(e => ({ driverKey: e.driverKey, pos: e.grid }));
             // dateApprox immer false: F1DB-Daten sind überliefert, nie konstruiert.
+            // country (v0.9.17.47): Austragungsland für die Nationen-Statistik. Über die
+            // Strecken-ID, nicht den Rennnamen – der „Grosse Preis von Europa" fand in
+            // fünf Ländern statt. Deckung geprüft: 1171 von 1171 realen Rennen.
             return { year, date: race.date || null, dateApprox: false,
+                     country: (typeof CIRCUIT_COUNTRY !== 'undefined' && race.circuit
+                               ? CIRCUIT_COUNTRY[race.circuit] : null) || null,
                      raceIdx: race.round, isIndy: !!race.isIndy, entries, qualiOrder };
         }
 
@@ -43781,6 +43831,111 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
         }
 
         // ── Der Katalog ────────────────────────────────────────────────────
+        // ── Nationen-Aggregat (v0.9.17.47) ─────────────────────────────────
+        // Keine Rekord-Karte, sondern die Datenbasis des Sub-Tabs „Nationen" – deshalb
+        // hidden:true, renderRecords überspringt sie. Sie läuft im SELBEN Scan mit wie
+        // die Rekorde: zwei Zählwege über dieselben Rennen würden früher oder später
+        // auseinanderlaufen, und der Dekaden-Filter fällt hier von allein ab.
+        // Erwartet e.nat (Fahrer) und e.teamNat (Konstrukteur) an jedem Eintrag – die
+        // setzt _annotateNations() im Scan, weil nur dort der Saison-Snapshot vorliegt.
+        function _mkNationAgg() {
+            const EMPTY = () => ({ starts: 0, wins: 0, podiums: 0, poles: 0, points: 0, titles: 0 });
+            // Ein Treffer wird zweimal verbucht: einmal auf die Nation, einmal auf den
+            // Fahrer/das Team darunter – Letzteres trägt die Klick-Ansicht je Nation.
+            const bump = (grp, nat, key, e) => {
+                if (!nat) return;
+                let n = grp.get(nat);
+                if (!n) { n = { ...EMPTY(), members: new Map() }; grp.set(nat, n); }
+                let m = n.members.get(key);
+                if (!m) { m = { ...EMPTY(), from: 9999, to: 0 }; n.members.set(key, m); }
+                const podium = e.pos >= 1 && e.pos <= 3;
+                for (const o of [n, m]) {
+                    o.starts++;
+                    if (e.pos === 1) o.wins++;
+                    if (podium) o.podiums++;
+                    if (e.pole) o.poles++;
+                    o.points += e.points || 0;
+                }
+            };
+            return {
+                id: 'nations', label: 'Nationen', scope: 'nation', hidden: true,
+                init: () => ({ drv: new Map(), team: new Map(), gp: new Map(), natOf: new Map(),
+                               races: 0, starts: 0, natless: 0, natlessTeam: 0, teamStarts: 0 }),
+                onRace(evt, states) {
+                    for (const st of states) {
+                        st.races++;
+                        if (evt.country) {
+                            let g = st.gp.get(evt.country);
+                            if (!g) { g = { races: 0, years: new Set() }; st.gp.set(evt.country, g); }
+                            g.races++; g.years.add(evt.year);
+                        }
+                        for (const e of evt.entries) {
+                            if (!_STARTED.has(e.status)) continue;      // DNQ/DNS sind kein Start
+                            st.starts++;
+                            if (e.driverKey) {
+                                if (e.nat) { bump(st.drv, e.nat, e.driverKey, e); st.natOf.set(e.driverKey, e.nat); }
+                                else st.natless++;
+                                const m = e.nat && st.drv.get(e.nat).members.get(e.driverKey);
+                                if (m) { m.from = Math.min(m.from, evt.year); m.to = Math.max(m.to, evt.year); }
+                            }
+                            if (e.teamKey) {
+                                st.teamStarts++;
+                                if (e.teamNat) {
+                                    bump(st.team, e.teamNat, e.teamKey, e);
+                                    const t = st.team.get(e.teamNat).members.get(e.teamKey);
+                                    t.from = Math.min(t.from, evt.year); t.to = Math.max(t.to, evt.year);
+                                } else st.natlessTeam++;
+                            }
+                        }
+                    }
+                },
+                // Titel laufen über den Champion-Schlüssel. Seine Nation steht schon fest,
+                // wenn er in der Saison gefahren ist – ein Phantom-Champion ohne einen
+                // einzigen Start bleibt so ohne Nation und zählt hier nicht mit.
+                onTitle(key, year, states) {
+                    for (const st of states) {
+                        const nat = st.natOf.get(key);
+                        if (!nat || !st.drv.has(nat)) continue;
+                        const n = st.drv.get(nat);
+                        n.titles++;
+                        const m = n.members.get(key);
+                        if (m) m.titles++;
+                    }
+                },
+                finish: (st) => {
+                    // `last` = letztes Jahr, in dem diese Nation überhaupt vorkam. Es ist das
+                    // Bezugsjahr für Flagge und Name: sonst stünde Rhodesien unter der Flagge
+                    // Simbabwes und die DDR unter der bundesdeutschen.
+                    const pack = (grp) => [...grp.entries()].map(([ioc, n]) => {
+                        const members = [...n.members.entries()].map(([key, m]) => ({ key, ...m }));
+                        return {
+                            ioc, starts: n.starts, wins: n.wins, podiums: n.podiums, poles: n.poles,
+                            points: n.points, titles: n.titles,
+                            last: members.reduce((y, m) => Math.max(y, m.to || 0), 0) || null,
+                            members
+                        };
+                    }).sort((a, b) => b.wins - a.wins || b.points - a.points || b.starts - a.starts);
+                    return [{ key: '_nations', value: 0, data: {
+                        drivers: pack(st.drv),
+                        teams: pack(st.team),
+                        gp: [...st.gp.entries()].map(([ioc, g]) => ({ ioc, races: g.races, years: g.years.size,
+                                last: Math.max(...g.years) }))
+                            .sort((a, b) => b.races - a.races),
+                        totals: { races: st.races, starts: st.starts, natless: st.natless,
+                                  teamStarts: st.teamStarts, natlessTeam: st.natlessTeam }
+                    } }];
+                },
+                // Anzeigenamen kennt nur der Scan (names/teamNames) – generierte Fahrer
+                // tragen nichts als ihre histId. Deshalb hier nachziehen statt im Render.
+                finishNames(rows, names, teamNames) {
+                    const d = rows[0] && rows[0].data;
+                    if (!d) return;
+                    for (const n of d.drivers) for (const m of n.members) m.name = names.get(m.key) || m.key;
+                    for (const n of d.teams) for (const m of n.members) m.name = teamNames.get(m.key) || m.key;
+                }
+            };
+        }
+
         function _recordDefs(dobOf) {
             const isWin   = e => e.pos === 1;
             const scored  = e => (e.points || 0) > 0;
@@ -43844,7 +43999,8 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                       threshold: 'Nur exakte Geburts- und Entscheidungsdaten' }),
                 _mkAge('oldPole', '🅿️ Ältester Polesetter', 'max', 'pole', dobOf,
                     { def: 'Alter am Tag der Pole Position.',
-                      threshold: 'Nur exakte Geburts- und Renndaten' })
+                      threshold: 'Nur exakte Geburts- und Renndaten' }),
+                _mkNationAgg()      // keine Karte (hidden) – speist den Sub-Tab „Nationen"
             ];
         }
 
@@ -43874,6 +44030,34 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
             const buckets = {};                       // decade|'all' -> {defId -> state}
             const names = new Map();                  // key -> Anzeigename
             const teamNames = new Map();
+            // Nation je Schlüssel (v0.9.17.47). Der Saison-Snapshot ist die einzige Stelle,
+            // an der ein generierter Fahrer seine Nation mitbringt – deshalb wird sie hier
+            // eingesammelt und nicht erst beim Rendern gesucht. Einmal aufgelöst, gilt sie
+            // für den ganzen Scan: eine Nation wechselt nicht mitten in der Karriere.
+            const natSnap = new Map();                // driverKey -> IOC (aus dem Snapshot)
+            const teamNatSnap = new Map();            // teamKey   -> IOC (aus dem Snapshot)
+            const natCache = new Map();
+            const natOf = (key, name) => {
+                if (natCache.has(key)) return natCache.get(key);
+                const v = nationOfDriverKey(key, name || names.get(key), natSnap.get(key));
+                natCache.set(key, v);
+                return v;
+            };
+            const teamNatCache = new Map();
+            const teamNatOf = (key, name) => {
+                if (teamNatCache.has(key)) return teamNatCache.get(key);
+                const v = nationOfTeamKey(key, name || teamNames.get(key), teamNatSnap.get(key));
+                teamNatCache.set(key, v);
+                return v;
+            };
+            // Ein Aufruf für beide Pfade – sonst kennt die reale Hälfte der Historie
+            // andere Nationen als die simulierte (derselbe Fehler wie beim Live-Ticker).
+            const _annotateNations = (evt) => {
+                for (const e of evt.entries) {
+                    e.nat = e.driverKey ? natOf(e.driverKey) : null;
+                    e.teamNat = e.teamKey ? teamNatOf(e.teamKey, e.teamName) : null;
+                }
+            };
             // Herkunft je Schlüssel: bei Quelle „Alles" landen reale und simulierte
             // Anteile desselben Fahrers in EINER Zeile (Entscheidung) – dann muss die
             // Zeile aber ausweisen, dass sie zwei Epochen mischt.
@@ -43944,6 +44128,7 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                                 noteOrigin(e.driverKey, 'real');
                             }
                         }
+                        _annotateNations(evt);
                         for (const d of defs) d.onRace(evt, statesR(d.id));
                     }
                     const champ = (typeof HIST_CHAMPIONS !== 'undefined') ? HIST_CHAMPIONS[s.year] : null;
@@ -43954,12 +44139,13 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                     continue;
                 }
 
-                let results, qualis, calendar, driverSnap, championKey = null;
+                let results, qualis, calendar, driverSnap, teamSnap = [], championKey = null;
                 if (s.live) {
                     results = GAME_STATE.results || [];
                     qualis = GAME_STATE.qualifyingResults || [];
                     calendar = GAME_STATE.races || [];
                     driverSnap = GAME_STATE.drivers || [];
+                    teamSnap = GAME_STATE.teams || [];
                 } else {
                     // Fallback-Modus ohne IndexedDB: schwere Felder liegen inline
                     const detail = s.h.results ? s.h : (await getHistoryDetail(s.year)) || {};
@@ -43967,7 +44153,17 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                     qualis = detail.qualifyingResults || [];
                     calendar = detail.races || [];
                     driverSnap = detail.drivers || [];
+                    teamSnap = detail.teams || [];
                     championKey = s.h.championHistId || s.h.championId || null;
+                }
+                // Nation der generierten Teams: nur der Saison-Snapshot kennt sie. Der
+                // Schlüssel muss derselbe sein, den _normalizeSimRace bildet – erst der
+                // Anzeigename, dann teamSlug, sonst treffen sich beide Seiten nie.
+                for (const t of teamSnap) {
+                    if (!t || !t.name) continue;
+                    const key = teamSlug(teamDisplayName(t.name) || t.name);
+                    const ioc = nationCodeOf(t.nation);
+                    if (key && ioc && !teamNatSnap.has(key)) teamNatSnap.set(key, ioc);
                 }
                 // Schlüssel-Angleichung (Plan 5.2): der schwere Snapshot trägt id UND histId
                 const idToHist = {};
@@ -43979,6 +44175,10 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                     // wenn noch nichts da ist: der früheste Snapshot gewinnt, spätere Saisons
                     // tragen dieselbe Person und würden den Cache nur unnötig kippen.
                     if (!dobSnap.has(d.histId || d.id)) dobSnap.set(d.histId || d.id, d);
+                    // Nation am selben Schlüssel (v0.9.17.47) – für generierte Fahrer die
+                    // einzige Quelle überhaupt. Erster Snapshot gewinnt, wie beim Geburtsdatum.
+                    const _n = nationCodeOf(d.nation);
+                    if (_n && !natSnap.has(d.histId || d.id)) natSnap.set(d.histId || d.id, _n);
                 }
                 const idMap = (id) => idToHist[id] || id;
 
@@ -43999,6 +44199,7 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                         if (e.teamKey && e.teamName) { teamNames.set(e.teamKey, e.teamName); noteOrigin(e.teamKey, 'sim'); }
                         if (e.driverKey) noteOrigin(e.driverKey, 'sim');
                     }
+                    _annotateNations(evt);
                     for (const d of defs) d.onRace(evt, states(d.id));
                 }
                 // Titel der Saison melden (FirstTimeAcc + AgeAcc reagieren darauf).
@@ -44027,6 +44228,9 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                         || ((a.from || 9999) - (b.from || 9999))
                         || ((a._den || a.value || 0) - (b._den || b.value || 0))
                         || String(a.name).localeCompare(String(b.name)));
+                    // Aggregate mit eigener Zeilenform (Nationen) tragen ihre Namen tiefer
+                    // im Objekt – r.name oben greift dort nicht.
+                    if (d.finishNames) d.finishNames(rows, names, teamNames);
                     out[dec][d.id] = rows;
                 }
             }
@@ -44115,33 +44319,19 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                  + listHtml + footer + '</div>';
         }
 
-        function renderRecords() {
-            const cached = _recordsCache.get(stATSSource);
-            const srcBtn = (v, l) => '<button onclick="setRecordSource(\'' + v + '\')" class="px-3 py-1 rounded text-sm font-medium transition" '
+        // ── Gemeinsame Bedienelemente des Scans (v0.9.17.47) ───────────────
+        // Rekorde und Nationen lesen aus demselben Scan und müssen deshalb dieselbe
+        // Quelle- und Dekadenwahl zeigen. Zweimal gebaut hiesse: zwei Stellen, an denen
+        // ein neuer Zustand vergessen wird.
+        function _scanSourceBar() {
+            const btn = (v, l) => '<button onclick="setRecordSource(\'' + v + '\')" class="px-3 py-1 rounded text-sm font-medium transition" '
                 + 'style="background:' + (stATSSource === v ? '#3B82F6' : '#2D2D2D') + ';color:' + (stATSSource === v ? 'white' : '#aaa') + '">' + l + '</button>';
             const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
-            const head = '<div class="flex gap-2 mb-3 flex-wrap">'
-                + srcBtn('all', '🌍 Alles') + srcBtn('sim', '🏎️ Simuliert') + srcBtn('real', '📜 Real')
+            return '<div class="flex gap-2 mb-3 flex-wrap">'
+                + btn('all', '🌍 Alles') + btn('sim', '🏎️ Simuliert') + btn('real', '📜 Real')
                 + '<span class="text-xs text-tertiary self-center">Real = F1DB-Jahre vor ' + startYear + '</span></div>';
-
-            if (_recordsScan) {
-                return head + '<div class="card p-6 rounded-xl text-center">'
-                    + '<div class="text-lg font-bold mb-2">Rekorde werden berechnet …</div>'
-                    + '<div id="rec-progress" class="text-sm text-tertiary mb-3">Start …</div>'
-                    + '<button onclick="startRecordScan()" class="px-4 py-2 rounded-lg bg-secondary">Abbrechen</button></div>';
-            }
-            if (!cached) {
-                const simN = (GAME_STATE.history || []).length + ((GAME_STATE.results || []).length ? 1 : 0);
-                const realN = (stATSSource === 'sim' || typeof F1DB_RESULTS === 'undefined') ? 0
-                    : Object.keys(F1DB_RESULTS).map(Number).filter(y => y < startYear).length;
-                const n = (stATSSource === 'real' ? 0 : simN) + realN;
-                return head + '<div class="card p-6 rounded-xl text-center">'
-                    + '<div class="text-sm text-tertiary mb-3">Die Rekorde werden aus allen Rennen berechnet – '
-                    + n + ' Saisons. Das geschieht einmal; danach ist der Dekadenwechsel sofort.</div>'
-                    + '<button onclick="startRecordScan()" class="btn-primary px-5 py-2 rounded-lg font-bold">⚡ Rekorde berechnen</button></div>';
-            }
-
-            const { results, meta, defs } = cached;
+        }
+        function _scanDecadeChips(meta) {
             const chip = (v, l, mark) => '<button onclick="setRecordDecade(\'' + v + '\')" class="px-3 py-1 rounded text-sm transition" '
                 + 'style="background:' + (String(stATSDecade) === String(v) ? '#3B82F6' : '#2D2D2D') + ';color:'
                 + (String(stATSDecade) === String(v) ? 'white' : '#aaa') + '">' + l + (mark || '') + '</button>';
@@ -44153,9 +44343,42 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                 if (yrs < 6) mark += ' <span class="text-xs" style="opacity:.7">(' + yrs + 'J)</span>';
                 chips += chip(d, d + 'er', mark);
             }
+            return chips;
+        }
+        // Kein Ergebnis da? Liefert die Aufforderung bzw. den Fortschritt, sonst null.
+        // `was` benennt nur, was gerade gerechnet wird – gerechnet wird immer dasselbe.
+        function _scanGate(was) {
+            if (_recordsScan) {
+                return '<div class="card p-6 rounded-xl text-center">'
+                    + '<div class="text-lg font-bold mb-2">' + was + ' werden berechnet …</div>'
+                    + '<div id="rec-progress" class="text-sm text-tertiary mb-3">Start …</div>'
+                    + '<button onclick="startRecordScan()" class="px-4 py-2 rounded-lg bg-secondary">Abbrechen</button></div>';
+            }
+            if (_recordsCache.get(stATSSource)) return null;
+            const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
+            const simN = (GAME_STATE.history || []).length + ((GAME_STATE.results || []).length ? 1 : 0);
+            const realN = (stATSSource === 'sim' || typeof F1DB_RESULTS === 'undefined') ? 0
+                : Object.keys(F1DB_RESULTS).map(Number).filter(y => y < startYear).length;
+            const n = (stATSSource === 'real' ? 0 : simN) + realN;
+            return '<div class="card p-6 rounded-xl text-center">'
+                + '<div class="text-sm text-tertiary mb-3">' + was + ' werden aus allen Rennen berechnet – '
+                + n + ' Saisons. Das geschieht einmal; danach ist der Dekadenwechsel sofort. '
+                + 'Rekorde und Nationen teilen sich diese Rechnung.</div>'
+                + '<button onclick="startRecordScan()" class="btn-primary px-5 py-2 rounded-lg font-bold">⚡ Jetzt berechnen</button></div>';
+        }
+
+        function renderRecords() {
+            const head = _scanSourceBar();
+            const gate = _scanGate('Rekorde');
+            if (gate) return head + gate;
+
+            const cached = _recordsCache.get(stATSSource);
+            const { results, meta, defs } = cached;
+            const chips = _scanDecadeChips(meta);
             const bucket = results[stATSDecade] || {};
             const allB = results['all'] || {};
-            const cards = defs.map(def => _renderRecordCard(def, bucket[def.id] || [], allB[def.id] || [])).join('');
+            const cards = defs.filter(def => !def.hidden)
+                .map(def => _renderRecordCard(def, bucket[def.id] || [], allB[def.id] || [])).join('');
             const span = stATSDecade === 'all' ? meta.from + '–' + meta.to : stATSDecade + '–' + (Number(stATSDecade) + 9);
 
             return head
@@ -44168,6 +44391,185 @@ const TEAM_NATION_BLEND = {"1950":{"ITA":0.249,"FRA":0.111,"GBR":0.389,"GER":0.1
                 + '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">' + cards + '</div>'
                 + '<div class="text-xs text-tertiary mt-3">Serien, die eine Dekadengrenze überschreiten, zählen in beiden '
                 + 'Dekaden mit voller Länge – die Summe der Dekadenrekorde ergibt daher nicht den Allzeit-Rekord.</div>';
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SUB-TAB „NATIONEN" (v0.9.17.47)
+        // Liest das Aggregat aus DEMSELBEN Scan wie die Rekorde (Def 'nations').
+        // Drei Sichten über dieselbe Datenbasis: Fahrer, Konstrukteure, Grand Prix.
+        // ═══════════════════════════════════════════════════════════════════
+
+        // NATION_OPTIONS trägt 68 deutsche Ländernamen. Von den 53 Codes, die im Spiel
+        // überhaupt vorkommen (Fahrer + Konstrukteure + Streckenländer), fehlen dort fünf –
+        // die stehen hier, statt die Team-Editor-Auswahl dafür umzubauen.
+        // AZE/SGP/TUR sind reine Streckenländer und fielen deshalb erst auf, als die
+        // Austragungsland-Sicht sie zeigte: eine Namensprüfung nur gegen Fahrernationen
+        // hätte sie nie gefunden.
+        const _NATION_NAME_EXTRA = { 'HKG': 'Hongkong', 'DDR': 'DDR',
+            'AZE': 'Aserbaidschan', 'SGP': 'Singapur', 'TUR': 'Türkei' };
+        let _nationNameMap = null;
+        function nationDisplayName(ioc, year) {
+            if (!ioc) return '—';
+            // getCountryDisplayName kennt die politischen Sonderfälle mit Bezugsjahr
+            // (Sowjetunion bis 1991, Rhodesien bis 1979 …). Sie gibt den IOC-Code
+            // unverändert zurück, wenn sie nichts weiss – dann greift die Namensliste.
+            const hist = (typeof getCountryDisplayName === 'function') ? getCountryDisplayName(ioc, year) : ioc;
+            if (hist && hist !== ioc) return hist;
+            if (!_nationNameMap) {
+                _nationNameMap = { ..._NATION_NAME_EXTRA };
+                for (const [c, n] of (typeof NATION_OPTIONS !== 'undefined' ? NATION_OPTIONS : [])) {
+                    if (!_nationNameMap[c]) _nationNameMap[c] = n;
+                }
+            }
+            return _nationNameMap[ioc] || ioc;
+        }
+
+        window.setNationView = function (v) { _nationView = v; _nationOpen = null;
+            _nationSort = (v === 'gp') ? 'races' : 'wins'; _nationSortDir = 'desc'; renderContent(); };
+        window.sortNations = function (field) {
+            if (_nationSort === field) _nationSortDir = _nationSortDir === 'desc' ? 'asc' : 'desc';
+            else { _nationSort = field; _nationSortDir = 'desc'; }
+            renderContent();
+        };
+        window.toggleNationOpen = function (ioc) { _nationOpen = (_nationOpen === ioc) ? null : ioc; renderContent(); };
+
+        // Die Rohdaten der aktuellen Sicht als JSON – dieselbe Auswahl, die auf dem
+        // Schirm steht (Quelle + Zeitraum stehen im _meta-Block).
+        window.exportNationsTable = function () {
+            const cached = _recordsCache.get(stATSSource);
+            const rows = cached && ((cached.results[stATSDecade] || {}).nations || [])[0];
+            if (!rows || !rows.data) return;
+            const out = { _meta: { quelle: stATSSource, zeitraum: stATSDecade === 'all' ? 'alle' : stATSDecade + 'er',
+                                   sicht: _nationView, erzeugt: new Date().toISOString().slice(0, 10) },
+                          daten: rows.data[_nationView] || [], summen: rows.data.totals };
+            const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `nationen-${_nationView}-${stATSSource}-${stATSDecade}.json`;
+            a.click(); URL.revokeObjectURL(a.href);
+        };
+
+        function renderNations() {
+            const head = _scanSourceBar();
+            const gate = _scanGate('Nationen');
+            if (gate) return head + gate;
+
+            const { results, meta } = _recordsCache.get(stATSSource);
+            const agg = ((results[stATSDecade] || {}).nations || [])[0];
+            const data = agg && agg.data;
+            const chips = _scanDecadeChips(meta);
+            const viewBtn = (v, l) => '<button onclick="setNationView(\'' + v + '\')" class="px-3 py-1 rounded text-sm font-medium transition" '
+                + 'style="background:' + (_nationView === v ? 'var(--accent-green,#16a34a)' : '#2D2D2D') + ';color:'
+                + (_nationView === v ? 'white' : '#aaa') + '">' + l + '</button>';
+            const bar = '<div class="flex gap-2 mb-3 flex-wrap items-center">'
+                // Bewusst ausgeschriebene Namen: „Fahrer" und „Grand Prix" heissen daneben
+                // schon zwei Sub-Tabs – gleich benannte Knöpfe direkt untereinander wären
+                // nicht auseinanderzuhalten (im Test prompt den falschen erwischt).
+                + viewBtn('drivers', '👤 Fahrernationen') + viewBtn('teams', '🏎️ Konstrukteursnationen')
+                + viewBtn('gp', '🏁 Austragungsländer')
+                + '<button onclick="exportNationsTable()" class="px-3 py-1 rounded text-sm font-bold ml-auto" '
+                + 'style="background:var(--accent-purple);color:#fff">⬇ JSON</button></div>';
+            const frame = (inner) => head + '<div class="flex gap-2 mb-3 flex-wrap">' + chips + '</div>' + bar + inner;
+
+            if (!data) return frame('<div class="card p-6 rounded-xl text-center text-tertiary">Keine Daten in diesem Zeitraum.</div>');
+
+            // Bezugsjahr für Flagge und Ländername: bei einer Dekade deren Mitte, sonst
+            // das letzte erfasste Jahr. Sonst hiesse „UdSSR" in den 1980ern „Russland".
+            const refYear = stATSDecade === 'all' ? (meta.to || GAME_STATE.currentYear) : (Number(stATSDecade) + 5);
+            const rows = (data[_nationView] || []).slice();
+            const dir = _nationSortDir === 'desc' ? -1 : 1;
+            rows.sort((a, b) => {
+                const av = _nationSort === 'members' ? (a.members || []).length : (a[_nationSort] || 0);
+                const bv = _nationSort === 'members' ? (b.members || []).length : (b[_nationSort] || 0);
+                return (av - bv) * dir || (b.wins || 0) - (a.wins || 0) || String(a.ioc).localeCompare(String(b.ioc));
+            });
+
+            const arrow = (f) => _nationSort === f ? (_nationSortDir === 'desc' ? ' ▼' : ' ▲') : ' ↕';
+            const th = (f, l, align) => '<th class="p-2 ' + (align || 'text-center') + ' cursor-pointer hover:text-white" '
+                + 'onclick="sortNations(\'' + f + '\')">' + l + arrow(f) + '</th>';
+            const num = (v) => '<td class="p-2 text-center">' + Math.round(v || 0) + '</td>';
+
+            // Bezugsjahr je Zeile: nie später als das letzte Jahr, in dem die Nation
+            // vorkam. Rhodesien bleibt so Rhodesien und wird nicht rückwirkend Simbabwe.
+            const yearOfRow = (n) => Math.min(refYear, n.last || refYear);
+            const flagOf = (ioc, yr) => { try { return renderFlag(ioc, null, yr); } catch (e) { return ''; } };
+            const nameCell = (n, open) => '<td class="p-2 font-bold" style="white-space:nowrap">'
+                + '<span style="opacity:.6">' + (open ? '▾' : '▸') + '</span> ' + flagOf(n.ioc, yearOfRow(n)) + ' '
+                + nationDisplayName(n.ioc, yearOfRow(n)) + ' <span class="text-xs text-tertiary">' + n.ioc + '</span></td>';
+
+            // Aufgeklappte Nation: wer steckt dahinter. Fahrer wie Teams sind anklickbar –
+            // die Schlüssel sind dieselben, mit denen die Rekord-Listen ihre Profile öffnen.
+            const memberRows = (n, cols) => {
+                const ms = (n.members || []).slice().sort((a, b) => b.wins - a.wins || b.points - a.points || b.starts - a.starts);
+                const link = _nationView === 'teams' ? 'openTeamProfile' : 'openDriverProfile';
+                const cls = _nationView === 'teams' ? 'team-link' : 'driver-link';
+                const list = ms.slice(0, 60).map(m => '<div class="flex justify-between gap-2 py-1 border-t border-custom">'
+                    + '<span class="' + cls + ' font-bold" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" '
+                    + 'onclick="' + link + '(\'' + String(m.key).replace(/'/g, "\\'") + '\')">' + (m.name || m.key) + '</span>'
+                    + '<span class="text-xs text-tertiary" style="white-space:nowrap">'
+                    + (m.from && m.from < 9999 ? m.from + (m.to > m.from ? '–' + m.to : '') : '') + '</span>'
+                    + '<span class="text-xs" style="min-width:9rem;text-align:right">' + m.starts + ' St · '
+                    + m.wins + ' S · ' + m.podiums + ' P · ' + Math.round(m.points) + ' Pkt</span></div>').join('');
+                const more = ms.length > 60 ? '<div class="text-xs text-tertiary pt-1">… und ' + (ms.length - 60) + ' weitere</div>' : '';
+                return '<tr><td colspan="' + cols + '" class="p-3" style="background:rgba(128,128,128,.06)">' + list + more + '</td></tr>';
+            };
+
+            let table, foot;
+            if (_nationView === 'gp') {
+                // Austragungsland statt Fahrernation – die einzige Sicht, die nicht am
+                // Menschen hängt, sondern am Kalender.
+                table = '<table class="text-sm" style="width:100%;min-width:380px"><thead class="bg-secondary"><tr>'
+                    + '<th class="p-2 text-left">Land</th>' + th('races', 'Rennen') + th('years', 'Saisons') + '</tr></thead><tbody>'
+                    + rows.map(n => '<tr class="border-t border-custom">'
+                        + '<td class="p-2 font-bold" style="white-space:nowrap">' + flagOf(n.ioc, yearOfRow(n)) + ' '
+                        + nationDisplayName(n.ioc, yearOfRow(n)) + ' <span class="text-xs text-tertiary">' + n.ioc + '</span></td>'
+                        + num(n.races) + num(n.years) + '</tr>').join('')
+                    + '</tbody></table>';
+                const ohne = data.totals.races - rows.reduce((s, n) => s + n.races, 0);
+                foot = rows.length + ' Länder · ' + data.totals.races + ' Rennen erfasst'
+                    + (ohne > 0 ? ' · ' + ohne + ' ohne Austragungsland' : '');
+            } else {
+                const isTeams = _nationView === 'teams';
+                const cols = isTeams ? 7 : 8;
+                table = '<table class="text-sm" style="width:100%;min-width:560px"><thead class="bg-secondary"><tr>'
+                    + '<th class="p-2 text-left">Nation</th>'
+                    + th('members', isTeams ? 'Teams' : 'Fahrer') + th('starts', 'Starts') + th('wins', 'Siege')
+                    + th('podiums', 'Podien') + th('poles', 'Poles')
+                    + (isTeams ? '' : th('titles', 'Titel')) + th('points', 'Punkte') + '</tr></thead><tbody>'
+                    + rows.map(n => {
+                        const open = _nationOpen === n.ioc;
+                        return '<tr class="border-t border-custom card-hover cursor-pointer" onclick="toggleNationOpen(\'' + n.ioc + '\')">'
+                            + nameCell(n, open)
+                            + '<td class="p-2 text-center">' + (n.members || []).length + '</td>'
+                            + num(n.starts)
+                            + '<td class="p-2 text-center accent-gold font-bold">' + n.wins + '</td>'
+                            + num(n.podiums) + num(n.poles)
+                            + (isTeams ? '' : '<td class="p-2 text-center font-bold">' + n.titles + '</td>')
+                            + num(n.points) + '</tr>'
+                            + (open ? memberRows(n, cols) : '');
+                    }).join('')
+                    + '</tbody></table>';
+                // Deckung offen ausweisen statt Startlose still als „unbekannt" zu sammeln.
+                const ohne = isTeams ? data.totals.natlessTeam : data.totals.natless;
+                const ges = isTeams ? data.totals.teamStarts : data.totals.starts;
+                const quote = ges ? (100 * (ges - ohne) / ges) : 100;
+                foot = rows.length + ' Nationen · ' + ges.toLocaleString('de-DE') + ' Starts erfasst · '
+                    + quote.toFixed(1) + ' % mit Nation'
+                    + (ohne ? ' · <span style="color:#FBBF24">' + ohne.toLocaleString('de-DE') + ' ohne</span>' : '');
+            }
+
+            const span = stATSDecade === 'all' ? meta.from + '–' + meta.to : stATSDecade + '–' + (Number(stATSDecade) + 9);
+            return frame('<div class="text-sm text-tertiary mb-2">Quelle: '
+                + ({ sim: 'Simuliert', real: 'Real', all: 'Alles (real + simuliert)' }[stATSSource] || stATSSource)
+                + ' · Zeitraum ' + span + ' · ' + meta.years + ' Saisons'
+                + '<button onclick="startRecordScan()" class="ml-2 text-xs px-2 py-1 rounded bg-secondary">neu berechnen</button></div>'
+                + '<div class="card rounded-xl overflow-x-auto">' + table + '</div>'
+                + '<div class="text-xs text-tertiary mt-2">' + foot + '</div>'
+                + (_nationView === 'gp' ? ''
+                    : '<div class="text-xs text-tertiary mt-1">Zeile anklicken zeigt, wer dahintersteckt. '
+                      + (_nationView === 'teams' ? 'Ein Rennstall' : 'Ein Fahrer')
+                      + ' zählt in jeder Dekade mit, in der er gestartet ist – die Dekaden summieren sich '
+                      + 'daher nicht auf die Allzeit-Zahl.</div>'));
         }
 
         function renderAllTimeDrivers() {
