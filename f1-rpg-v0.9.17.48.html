@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.47</title>
+    <title>F1 RPG v0.9.17.48</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.47 (aktuell) - 06.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.48 (aktuell) - 06.09.2026</div>
+                            <div>&#8226; NEU: Austragungslaender lassen sich aufklappen - Strecken mit Zeitraum und Rennenzahl, Klick oeffnet das Streckenprofil</div>
+                            <div>&#8226; NEU: Listen je Nation nummeriert, als Tabelle mit ausgerichteten Spalten und Tausenderpunkten</div>
+                            <div>&#8226; FIX: Team-Steckbrief zeigte eine abgeschnittene Historie, wenn man ihn aus Rekorden oder Nationen-Statistik oeffnete - Rennstaelle mit Leerzeichen im Namen fanden KEINE ihrer Saisons</div>
+                            <div>&#8226; FIX: Zeitraum im Steckbrief ehemaliger Teams blieb leer, weil der Vergleich exakt und gross-klein-empfindlich war</div>
+                            <div>&#8226; AUFGERAEUMT: Der doppelte Nationen-Knopf unter der Seite ist entfallen</div>
+                            <div class="font-bold text-slate-400">v0.9.17.47 - 06.09.2026</div>
                             <div>&#8226; NEU: Sub-Tab 'Nationen' - Fahrer, Konstrukteure und Austragungslaender je Land, mit Dekaden- und Quellenfilter</div>
                             <div>&#8226; NEU: Klick auf eine Nation zeigt alle Fahrer bzw. Rennstaelle dahinter</div>
                             <div>&#8226; NEU: Konstrukteurs-Nationen fuer alle 187 F1DB-Rennstaelle statt bisher 13 Sonderfaelle</div>
@@ -3214,9 +3220,6 @@
             </button>
             <button onclick="openDatasetManager()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--text-tertiary); color: white;">
                 📂 Datensätze
-            </button>
-            <button onclick="openNationsTab()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--accent-blue, #2563eb); color: white;">
-                🌍 Nationen-Statistik
             </button>
         </div>
         
@@ -17577,7 +17580,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.47';
+        const VERSION = '0.9.17.48';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -18369,6 +18372,21 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Records hängen). Records OHNE Index (un-backfilled) konservativ einschließen; Records die schon
         // schwere Felder tragen (localStorage-Fallback ODER bereits hydriert) überspringen → werden NICHT
         // dehydriert. Gibt die frisch hydrierten Records zurück (für die Dehydrierung im Profil-Wrapper).
+        // Vergleichsformen eines Team-Schlüssels (v0.9.17.48). `teamHistIds` trägt den
+        // Anzeigenamen ("Team Lotus"), Links aus Rekorden und Nationen-Statistik schicken
+        // den Slug ("team-lotus"): case-insensitiv allein genügt da nicht, weil der Slug
+        // zusätzlich Leerzeichen und Satzzeichen ersetzt. Ohne diese Brücke passten nur
+        // EINIGE Saisons — die Historie brach ab, statt ganz zu fehlen, und die Notbremse
+        // „kein Treffer → alles laden" sprang nicht an.
+        function _teamKeyForms(v) {
+            const s = String(v || '').trim();
+            if (!s) return [];
+            const out = [s.toLowerCase()];
+            if (typeof teamSlug === 'function') out.push(teamSlug(s));
+            out.push(s.toLowerCase().replace(/-/g, ' '));       // Slug → Klarname
+            return out;
+        }
+
         async function _hydrateProfileYears(id, kind) {
             const idxField = kind === 'team' ? 'teamHistIds' : 'driverHistIds';
             const norm = v => String(v || '').toLowerCase();
@@ -18380,12 +18398,17 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             // Betrifft nur Saves mit gesplittetem Verlauf — im frischen Spielstand unsichtbar.
             const idSet = new Set([norm(id)]);
             if (kind === 'team') {
+                _teamKeyForms(id).forEach(f => idSet.add(f));
                 const t = (GAME_STATE.teams || []).find(t => norm(t.id) === norm(id) || norm(t.histId) === norm(id));
                 if (t) { idSet.add(norm(t.id)); if (t.histId) idSet.add(norm(t.histId)); if (t.name) idSet.add(norm(t.name)); }
                 const un = typeof unpackEnteredTeamId === 'function' ? unpackEnteredTeamId(id) : id;
                 if (un) idSet.add(norm(un));
                 const sdName = typeof seasonDataTeamName === 'function' ? seasonDataTeamName(un) : null;
-                if (sdName) idSet.add(norm(sdName));
+                if (sdName) { idSet.add(norm(sdName)); _teamKeyForms(sdName).forEach(f => idSet.add(f)); }
+                // Der Anzeigename aus der Allzeit-Statistik: der steht im Index, wenn ein
+                // Team mitten in der Saison eingestiegen ist.
+                const atName = GAME_STATE.allTimeStATS?.teams?.[id]?.name;
+                if (atName) _teamKeyForms(atName).forEach(f => idSet.add(f));
             } else {
                 const d = (GAME_STATE.drivers || []).find(d => norm(d.id) === norm(id) || norm(d.histId) === norm(id))
                        || (GAME_STATE.reservePool || []).find(d => norm(d.id) === norm(id) || norm(d.histId) === norm(id));
@@ -18396,7 +18419,10 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             for (const h of GAME_STATE.history || []) {
                 const idx = h[idxField];
                 if (Array.isArray(idx)) sawIndex = true;
-                const relevant = !Array.isArray(idx) || idx.some(x => idSet.has(norm(x)));   // kein Index → konservativ
+                // kein Index → konservativ. Beim Team zusätzlich über die Slug-Formen, sonst
+                // greift der Vergleich nur bei zufällig gleicher Schreibweise.
+                const relevant = !Array.isArray(idx) || idx.some(x => idSet.has(norm(x))
+                    || (kind === 'team' && _teamKeyForms(x).some(f => idSet.has(f))));
                 if (!relevant) continue;
                 matchedAny = true;
                 if (HISTORY_HEAVY_FIELDS.some(k => k in h)) continue;   // schon schwer (Fallback/hydriert)
@@ -20498,11 +20524,13 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             return out;
         }
 
-        // Der 🌍-Knopf in der Werkzeugleiste fuehrt in den Sub-Tab „Nationen" (v0.9.17.47).
-        // Das fruehere Modal an dieser Stelle ist entfallen: es summierte Karrierewerte aus
-        // allTimeStATS, der Tab zaehlt je Rennen — zwei Ansichten mit zwei Zaehlweisen waeren
-        // frueher oder spaeter auseinandergelaufen. exportNationStats() bleibt als
-        // Konsolen-Werkzeug bestehen (es deckt zusaetzlich die Junior-Welt ab).
+        // Sprung in den Sub-Tab „Nationen". Der eigene Knopf in der Werkzeugleiste ist mit
+        // v0.9.17.48 entfallen — die Statistik steht im Statistik-Tab, ein zweiter Einstieg
+        // an anderer Stelle war nur doppelt. Die Funktion bleibt als Ansprungpunkt (Konsole,
+        // kuenftige Verweise) bestehen.
+        // Historie: bis .46 lag hier ein eigenes Modal, das Karrierewerte aus allTimeStATS
+        // summierte, waehrend der Tab je Rennen zaehlt — zwei Zaehlweisen fuer dieselbe Frage.
+        // exportNationStats() bleibt als Konsolen-Werkzeug (deckt zusaetzlich die Junior-Welt ab).
         window.openNationsTab = function () {
             switchTab('stATS');
             setStATSSubTab('nations');
@@ -43563,11 +43591,14 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             // country (v0.9.17.47): Kalender-Einträge tragen den IOC-Code, ältere Stände
             // ein Flaggen-Emoji – nationCodeOf nimmt beides. Nutzer-Strecken ohne Land
             // fallen auf die Strecken-Tabelle zurück.
+            // Kalender führen mal den Slug, mal den Klarnamen ('Silverstone') – canonicalCircuitId
+            // bügelt das glatt, sonst steht dieselbe Strecke zweimal in der Länder-Aufklappung.
+            const circuit = (typeof canonicalCircuitId === 'function')
+                ? (canonicalCircuitId(cal.circuit || cal.circuitId || cal.name) || null) : null;
             const country = nationCodeOf(cal.country)
-                || (typeof CIRCUIT_COUNTRY !== 'undefined'
-                    ? CIRCUIT_COUNTRY[String(cal.circuit || cal.name || '').toLowerCase().replace(/\s+/g, '-')] : null)
+                || (typeof CIRCUIT_COUNTRY !== 'undefined' && circuit ? CIRCUIT_COUNTRY[circuit] : null)
                 || null;
-            return { year, date, dateApprox, country, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
+            return { year, date, dateApprox, country, circuit, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
                      qualiOrder: rawQ.map(r => ({ driverKey: idMap(qD(r)), pos: qP(r) })) };
         }
 
@@ -43607,6 +43638,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             return { year, date: race.date || null, dateApprox: false,
                      country: (typeof CIRCUIT_COUNTRY !== 'undefined' && race.circuit
                                ? CIRCUIT_COUNTRY[race.circuit] : null) || null,
+                     circuit: race.circuit || null,
                      raceIdx: race.round, isIndy: !!race.isIndy, entries, qualiOrder };
         }
 
@@ -43866,8 +43898,13 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                         st.races++;
                         if (evt.country) {
                             let g = st.gp.get(evt.country);
-                            if (!g) { g = { races: 0, years: new Set() }; st.gp.set(evt.country, g); }
+                            if (!g) { g = { races: 0, years: new Set(), circuits: new Map() }; st.gp.set(evt.country, g); }
                             g.races++; g.years.add(evt.year);
+                            if (evt.circuit) {
+                                let c = g.circuits.get(evt.circuit);
+                                if (!c) { c = { races: 0, from: 9999, to: 0 }; g.circuits.set(evt.circuit, c); }
+                                c.races++; c.from = Math.min(c.from, evt.year); c.to = Math.max(c.to, evt.year);
+                            }
                         }
                         for (const e of evt.entries) {
                             if (!_STARTED.has(e.status)) continue;      // DNQ/DNS sind kein Start
@@ -43919,7 +43956,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                         drivers: pack(st.drv),
                         teams: pack(st.team),
                         gp: [...st.gp.entries()].map(([ioc, g]) => ({ ioc, races: g.races, years: g.years.size,
-                                last: Math.max(...g.years) }))
+                                last: Math.max(...g.years),
+                                members: [...g.circuits.entries()].map(([key, c]) => ({ key, ...c }))
+                                    .sort((a, b) => b.races - a.races) }))
                             .sort((a, b) => b.races - a.races),
                         totals: { races: st.races, starts: st.starts, natless: st.natless,
                                   teamStarts: st.teamStarts, natlessTeam: st.natlessTeam }
@@ -44487,7 +44526,8 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             const arrow = (f) => _nationSort === f ? (_nationSortDir === 'desc' ? ' ▼' : ' ▲') : ' ↕';
             const th = (f, l, align) => '<th class="p-2 ' + (align || 'text-center') + ' cursor-pointer hover:text-white" '
                 + 'onclick="sortNations(\'' + f + '\')">' + l + arrow(f) + '</th>';
-            const num = (v) => '<td class="p-2 text-center">' + Math.round(v || 0) + '</td>';
+            // Tausenderpunkte: in einem lang gespielten Stand stehen hier sechsstellige Werte.
+            const num = (v) => '<td class="p-2 text-center">' + Math.round(v || 0).toLocaleString('de-DE') + '</td>';
 
             // Bezugsjahr je Zeile: nie später als das letzte Jahr, in dem die Nation
             // vorkam. Rhodesien bleibt so Rhodesien und wird nicht rückwirkend Simbabwe.
@@ -44497,21 +44537,47 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 + '<span style="opacity:.6">' + (open ? '▾' : '▸') + '</span> ' + flagOf(n.ioc, yearOfRow(n)) + ' '
                 + nationDisplayName(n.ioc, yearOfRow(n)) + ' <span class="text-xs text-tertiary">' + n.ioc + '</span></td>';
 
-            // Aufgeklappte Nation: wer steckt dahinter. Fahrer wie Teams sind anklickbar –
-            // die Schlüssel sind dieselben, mit denen die Rekord-Listen ihre Profile öffnen.
+            // Aufgeklappte Nation: wer steckt dahinter. Fahrer, Rennställe und Strecken sind
+            // anklickbar – die Schlüssel sind dieselben, mit denen die Rekord-Listen bzw.
+            // der Strecken-Tab ihre Profile öffnen.
+            // Als eigene Tabelle statt als Textzeile: in einem langen Spielstand stehen dort
+            // fünfstellige Starts und sechsstellige Punkte, die eine flex-Zeile zusammenstaucht.
             const memberRows = (n, cols) => {
-                const ms = (n.members || []).slice().sort((a, b) => b.wins - a.wins || b.points - a.points || b.starts - a.starts);
-                const link = _nationView === 'teams' ? 'openTeamProfile' : 'openDriverProfile';
-                const cls = _nationView === 'teams' ? 'team-link' : 'driver-link';
-                const list = ms.slice(0, 60).map(m => '<div class="flex justify-between gap-2 py-1 border-t border-custom">'
-                    + '<span class="' + cls + ' font-bold" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" '
-                    + 'onclick="' + link + '(\'' + String(m.key).replace(/'/g, "\\'") + '\')">' + (m.name || m.key) + '</span>'
-                    + '<span class="text-xs text-tertiary" style="white-space:nowrap">'
-                    + (m.from && m.from < 9999 ? m.from + (m.to > m.from ? '–' + m.to : '') : '') + '</span>'
-                    + '<span class="text-xs" style="min-width:9rem;text-align:right">' + m.starts + ' St · '
-                    + m.wins + ' S · ' + m.podiums + ' P · ' + Math.round(m.points) + ' Pkt</span></div>').join('');
-                const more = ms.length > 60 ? '<div class="text-xs text-tertiary pt-1">… und ' + (ms.length - 60) + ' weitere</div>' : '';
-                return '<tr><td colspan="' + cols + '" class="p-3" style="background:rgba(128,128,128,.06)">' + list + more + '</td></tr>';
+                const isGp = _nationView === 'gp';
+                const isTeams = _nationView === 'teams';
+                const ms = (n.members || []).slice().sort((a, b) => isGp
+                    ? (b.races - a.races || (a.from || 0) - (b.from || 0))
+                    : (b.wins - a.wins || b.points - a.points || b.starts - a.starts));
+                const link = isGp ? 'openGameCircuitProfile' : (isTeams ? 'openTeamProfile' : 'openDriverProfile');
+                const cls = isGp ? 'race-link' : (isTeams ? 'team-link' : 'driver-link');   // circuit-link gibt es nicht
+                const label = (m) => isGp
+                    ? ((typeof getCircuitDisplayName === 'function' ? getCircuitDisplayName(m.key) : null) || m.key)
+                    : (m.name || m.key);
+                const span = (m) => (m.from && m.from < 9999) ? (m.from + (m.to > m.from ? '–' + m.to : '')) : '';
+                const cell = (v, extra) => '<td class="p-1 text-right" style="white-space:nowrap' + (extra || '') + '">'
+                    + Math.round(v || 0).toLocaleString('de-DE') + '</td>';
+                const headCols = isGp
+                    ? '<th class="p-1 text-right">Rennen</th>'
+                    : '<th class="p-1 text-right">Starts</th><th class="p-1 text-right">Siege</th>'
+                      + '<th class="p-1 text-right">Podien</th><th class="p-1 text-right">Poles</th>'
+                      + '<th class="p-1 text-right">Punkte</th>';
+                const body = ms.slice(0, 60).map((m, i) => '<tr class="border-t border-custom">'
+                    + '<td class="p-1 text-tertiary text-right" style="width:2.2rem">' + (i + 1) + '.</td>'
+                    + '<td class="p-1 font-bold ' + cls + '" style="padding-left:.6rem;max-width:16rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
+                    + 'onclick="' + link + '(\'' + String(m.key).replace(/'/g, "\\'") + '\')">' + label(m) + '</td>'
+                    + '<td class="p-1 text-tertiary text-xs" style="white-space:nowrap">' + span(m) + '</td>'
+                    + (isGp ? cell(m.races)
+                            : cell(m.starts) + cell(m.wins, ';font-weight:bold') + cell(m.podiums) + cell(m.poles) + cell(m.points))
+                    + '</tr>').join('');
+                const more = ms.length > 60
+                    ? '<div class="text-xs text-tertiary pt-1">… und ' + (ms.length - 60) + ' weitere</div>' : '';
+                return '<tr><td colspan="' + cols + '" class="p-3" style="background:rgba(128,128,128,.06)">'
+                    + '<div style="overflow-x:auto"><table class="text-xs" style="width:100%">'
+                    + '<thead class="text-tertiary"><tr><th class="p-1 text-right" style="width:2.2rem">#</th>'
+                    + '<th class="p-1 text-left" style="padding-left:.6rem">'
+                    + (isGp ? 'Strecke' : (isTeams ? 'Rennstall' : 'Fahrer')) + '</th>'
+                    + '<th class="p-1 text-left">Zeitraum</th>' + headCols + '</tr></thead>'
+                    + '<tbody>' + body + '</tbody></table></div>' + more + '</td></tr>';
             };
 
             let table, foot;
@@ -44519,11 +44585,16 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 // Austragungsland statt Fahrernation – die einzige Sicht, die nicht am
                 // Menschen hängt, sondern am Kalender.
                 table = '<table class="text-sm" style="width:100%;min-width:380px"><thead class="bg-secondary"><tr>'
-                    + '<th class="p-2 text-left">Land</th>' + th('races', 'Rennen') + th('years', 'Saisons') + '</tr></thead><tbody>'
-                    + rows.map(n => '<tr class="border-t border-custom">'
-                        + '<td class="p-2 font-bold" style="white-space:nowrap">' + flagOf(n.ioc, yearOfRow(n)) + ' '
-                        + nationDisplayName(n.ioc, yearOfRow(n)) + ' <span class="text-xs text-tertiary">' + n.ioc + '</span></td>'
-                        + num(n.races) + num(n.years) + '</tr>').join('')
+                    + '<th class="p-2 text-left">Land</th>' + th('members', 'Strecken') + th('races', 'Rennen')
+                    + th('years', 'Saisons') + '</tr></thead><tbody>'
+                    + rows.map(n => {
+                        const open = _nationOpen === n.ioc;
+                        return '<tr class="border-t border-custom card-hover cursor-pointer" onclick="toggleNationOpen(\'' + n.ioc + '\')">'
+                            + nameCell(n, open)
+                            + '<td class="p-2 text-center">' + (n.members || []).length + '</td>'
+                            + num(n.races) + num(n.years) + '</tr>'
+                            + (open ? memberRows(n, 4) : '');
+                    }).join('')
                     + '</tbody></table>';
                 const ohne = data.totals.races - rows.reduce((s, n) => s + n.races, 0);
                 foot = rows.length + ' Länder · ' + data.totals.races + ' Rennen erfasst'
@@ -44565,7 +44636,8 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 + '<button onclick="startRecordScan()" class="ml-2 text-xs px-2 py-1 rounded bg-secondary">neu berechnen</button></div>'
                 + '<div class="card rounded-xl overflow-x-auto">' + table + '</div>'
                 + '<div class="text-xs text-tertiary mt-2">' + foot + '</div>'
-                + (_nationView === 'gp' ? ''
+                + (_nationView === 'gp'
+                    ? '<div class="text-xs text-tertiary mt-1">Zeile anklicken zeigt die Strecken des Landes.</div>'
                     : '<div class="text-xs text-tertiary mt-1">Zeile anklicken zeigt, wer dahintersteckt. '
                       + (_nationView === 'teams' ? 'Ein Rennstall' : 'Ein Fahrer')
                       + ' zählt in jeder Dekade mit, in der er gestartet ist – die Dekaden summieren sich '
@@ -50150,9 +50222,14 @@ Empfohlene Wertebereiche:
             // `teamHistIds` je Saison ist der LEICHTE Teilnehmer-Index und traegt die
             // Team-NAMEN; er ist ohne Nachladen der schweren Saisonfelder verfuegbar.
             // Damit ergibt sich der Zeitraum aus dem, was das Team wirklich gefahren ist.
+            // v0.9.17.48: Der Vergleich war exakt UND case-sensitiv. Aus Rekorden und
+            // Nationen-Statistik kommt der Slug ("team-lotus"), im Index steht der
+            // Anzeigename ("Team Lotus") — dann blieb der Zeitraum leer bzw. zu kurz.
+            const _teamKeySet = new Set();
+            [stATSId, team.id, team.name].forEach(v => _teamKeyForms(v).forEach(f => _teamKeySet.add(f)));
             const _teamYears = (GAME_STATE.history || [])
                 .filter(h => Array.isArray(h.teamHistIds)
-                    && h.teamHistIds.some(x => x === stATSId || x === team.id || x === team.name))
+                    && h.teamHistIds.some(x => _teamKeyForms(x).some(f => _teamKeySet.has(f))))
                 .map(h => Number(h.year)).filter(Number.isFinite);
             const _firstYear = allTimeTeam.firstYear || (_teamYears.length ? Math.min(..._teamYears) : null);
             const _lastYear  = allTimeTeam.lastYear  || (_teamYears.length ? Math.max(..._teamYears) : null);
