@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.49</title>
+    <title>F1 RPG v0.9.17.50</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.49 (aktuell) - 06.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.50 (aktuell) - 06.09.2026</div>
+                            <div>&#8226; FIX: Tec-Mec 1959 und Aston Butterworth 1952 haben eigene Kurz-IDs - sie wurden von Tecno bzw. Aston Martin geschluckt</div>
+                            <div>&#8226; FIX: BMW 1969 wird nicht mehr mit BMW Sauber 2006-2009 zusammengefasst</div>
+                            <div class="font-bold text-slate-400">v0.9.17.49 - 06.09.2026</div>
                             <div>&#8226; NEU: 66 Livery-Eras fuer 48 Teams (Schwerpunkt Kleinkonstrukteure 1952-1960)</div>
                             <div>&#8226; NEU: AGS 1986-1991 jahresgenau, Dallara, ATS, Coloni, Jaguar 2000, Forti</div>
                             <div class="font-bold text-slate-400">v0.9.17.48 - 06.09.2026</div>
@@ -3982,7 +3985,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.49';
+        const VERSION = '0.9.17.50';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28187,11 +28190,25 @@
             let resolvedId = lookupId;
             let sdYearColor = null;   // Template-Farbe GENAU dieses Jahres (s. Fallback unten)
             if (lookupId && typeof SEASON_DATA !== 'undefined') {
+                const flat = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+                const idFlat = flat(lookupId);
                 const words = lookupId.replace(/-/g, ' ').toLowerCase().split(' ').filter(w => w.length > 3);
-                const match = (sd) => sd?.t.find(t => t[0].toLowerCase() === lookupId.toLowerCase()
-                    || (words.length && words.some(w => t[1].toLowerCase().replace(/[^a-z0-9]/g,"").includes(w))));
-                const sdSameYear = match(SEASON_DATA[String(year)]);
-                const sdT = sdSameYear || Object.values(SEASON_DATA).map(match).find(Boolean);
+                // Stufe 1 - eindeutig: Kurz-ID oder vollstaendiger Name. Muss VOR der
+                // Wort-Heuristik UND vor der Alle-Jahre-Suche laufen, sonst schluckt eine
+                // gleichlautende Kurz-ID aus einer anderen Aera das Team: der F1DB-Slug
+                // 'bmw' (BMW 1969, SEASON_DATA-Key BWN) landete auf dem Key 'BMW' von
+                // BMW Sauber 2006-09, weil 'bmw' als Drei-Zeichen-Wort aus words faellt
+                // und danach nur noch der jahresblinde Key-Vergleich uebrig blieb.
+                const exact = (sd) => sd?.t.find(t => t[0].toLowerCase() === lookupId.toLowerCase()
+                    || flat(t[1]) === idFlat);
+                // Stufe 2 - unscharf: ein einzelnes Namenswort genuegt. Nur als Rueckfall.
+                const fuzzy = (sd) => words.length
+                    ? sd?.t.find(t => words.some(w => flat(t[1]).includes(w)))
+                    : undefined;
+                const sdYear = SEASON_DATA[String(year)];
+                const sdSameYear = exact(sdYear) || fuzzy(sdYear);
+                const alle = Object.values(SEASON_DATA);
+                const sdT = sdSameYear || alle.map(exact).find(Boolean) || alle.map(fuzzy).find(Boolean);
                 if (sdT) resolvedId = sdT[0];
                 if (sdSameYear && sdSameYear[2] && sdSameYear[2] !== '#888888') sdYearColor = sdSameYear[2];
             }
