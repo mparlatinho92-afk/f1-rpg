@@ -64,6 +64,11 @@
   .cell.sel{outline:2px solid #fff;z-index:3}
   .cell.gap{background:repeating-linear-gradient(45deg,#2a2f38 0 3px,#1c2027 3px 6px)}
   .cell.void{background:transparent}
+  /* Platzhalter: die Farbe kommt roh aus SEASON_DATA, niemand hat sie geprueft.
+     Schraffur liegt UEBER dem Ton, damit man beides sieht - welche Farbe das
+     Spiel zeigt UND dass sie ungeprueft ist. */
+  .cell.ph::after{content:'';position:absolute;inset:0;border-radius:1px;pointer-events:none;
+    background:repeating-linear-gradient(45deg,rgba(0,0,0,.42) 0 2px,rgba(255,255,255,.16) 2px 4px)}
   .dot{position:absolute;right:1px;top:1px;width:5px;height:5px;border-radius:50%}
   .axis{display:flex;gap:1px;margin:0 0 6px;color:var(--dim);font-size:10px;
         position:sticky;top:0;z-index:6;background:var(--bg);padding:10px 0 3px}
@@ -220,6 +225,7 @@
       <optgroup label="Befund">
         <option value="luecke">nur Lücken</option>
         <option value="einheitsfarbe">nur Einheitsfarbe</option>
+        <option value="platzhalter">nur Platzhalter (Basisfarbe)</option>
         <option value="offen">alle offenen Posten</option>
         <option value="unentschieden">unentschieden</option>
         <option value="widerspruch">Widerspruch</option>
@@ -280,7 +286,7 @@ const S = {
   mode: 'lädt',          // live | snapshot | fehler
   meta: null,
   teams: {}, cells: {},  // Spielseite (Snapshot ODER live gelesen)
-  findings: { luecke: [], einheitsfarbe: [] },
+  findings: { luecke: [], einheitsfarbe: [], basisfarbe: [] },
   // deine Werkstatt: Kandidaten je Zelle + Referenzmaterial aus dem Sheet
   work: { cells: {}, imports: [], images: {}, teamNotes: {}, yearImages: {}, yearRefs: {} },
   ui: { view: 'team', year: 2025, sel: null, q: '', indy: true, filter: '' }
@@ -406,7 +412,9 @@ async function bootSnapshot(whyLive) {
     S.cells[key] = { team, year: +year, name: snap.teams[team] ? snap.teams[team].name : team,
                      colors: c.c || [], source: c.s, indy: !!c.i };
   }
-  S.findings = snap.findings || { luecke: [], einheitsfarbe: [] };
+  // Aeltere Snapshots kennen `basisfarbe` nicht - fehlende Listen auffuellen,
+  // sonst laeuft der Platzhalter-Filter auf undefined.
+  S.findings = Object.assign({ luecke: [], einheitsfarbe: [], basisfarbe: [] }, snap.findings || {});
   S.meta = snap.meta;
   S.mode = 'snapshot';
 
@@ -499,16 +507,22 @@ function verdict(key) {
     return 'geklaert';
   }
   if (game && game.source === 'none') return 'luecke';
+  // Farbe da, aber ungeprueft: sie faellt aus SEASON_DATA durch, weil keine Range
+  // greift. Sobald in der Werkstatt ein Kandidat haengt, greift der Zweig oben und
+  // die Zelle ist kein Platzhalter mehr.
+  if (game && game.source === 'sd') return 'platzhalter';
   return null;
 }
 
 const VERDICT_LABEL = {
   luecke: 'Lücke', unentschieden: 'unentschieden', widerspruch: 'Widerspruch',
-  'nur-idee': 'nur Idee', offen: 'offen', abweichend: 'weicht vom Spiel ab', geklaert: 'geklärt'
+  'nur-idee': 'nur Idee', offen: 'offen', abweichend: 'weicht vom Spiel ab', geklaert: 'geklärt',
+  platzhalter: 'Platzhalter (Basisfarbe)'
 };
 const VERDICT_COLOR = {
   luecke: '#6b7280', unentschieden: '#d29922', widerspruch: '#f85149',
-  'nur-idee': '#8b949e', offen: '#d29922', abweichend: '#f85149', geklaert: '#3fb950'
+  'nur-idee': '#8b949e', offen: '#d29922', abweichend: '#f85149', geklaert: '#3fb950',
+  platzhalter: '#a371f7'
 };
 
 const einheitsSet = () => new Set(S.findings.einheitsfarbe.map(f => f.team));
@@ -553,7 +567,7 @@ function cellMatchesFilter(key) {
     return !!p && p.stage === 'bestaetigt' && d !== 'im-spiel' && d !== 'im-spiel*';
   }
   if (f === 'werkstatt') return !!w;
-  if (f === 'offen') return !!v && v !== 'geklaert';
+  if (f === 'offen') return !!v && v !== 'geklaert' && v !== 'platzhalter';
   if (f === 'einheitsfarbe') return einheitsSet().has(key.split(':')[0]);
   return v === f;
 }
@@ -590,10 +604,10 @@ function renderTeamView() {
       if (!has.has(y)) { seg += '<div class="cell void"></div>'; continue; }
       const eff = effective(key);
       const v = verdict(key);
-      const cls = eff.colors.length ? '' : ' gap';
+      const cls = (eff.colors.length ? '' : ' gap') + (v === 'platzhalter' ? ' ph' : '');
       const sel = S.ui.sel === key ? ' sel' : '';
       const style = eff.colors.length ? `background:${gradient(eff.colors)}` : '';
-      const dot = (v && v !== 'geklaert' && v !== 'luecke')
+      const dot = (v && v !== 'geklaert' && v !== 'luecke' && v !== 'platzhalter')
         ? `<i class="dot" style="background:${VERDICT_COLOR[v]}"></i>` : '';
       seg += `<div class="cell${cls}${sel}" style="${style}" data-key="${key}" draggable="true" title="${esc(t.name)} ${y}${v ? ' – ' + VERDICT_LABEL[v] : ''}">${dot}</div>`;
     }
@@ -659,7 +673,7 @@ function renderStats() {
   for (const key in S.cells) {
     if (S.ui.indy && S.cells[key].indy) continue;
     const v = verdict(key);
-    if (v && v !== 'geklaert') open++;
+    if (v && v !== 'geklaert' && v !== 'platzhalter') open++;
     if (cellWork(key)) work++;
   }
   $('#stats').innerHTML = `
@@ -669,6 +683,7 @@ function renderStats() {
     <span>SEASON_DATA <b>${by('sd')}</b></span>
     <span>ohne Farbe <b>${by('none')}</b></span>
     <span>Einheitsfarbe <b>${S.findings.einheitsfarbe.length}</b> Teams</span>
+    <span>Platzhalter <b>${(S.findings.basisfarbe || []).length}</b> Teams</span>
     <span>offene Posten <b class="${open ? 'warn' : 'ok'}">${open}</b></span>
     <span>Werkstatt <b>${work}</b></span>` +
     (work ? '' : ` <span class="warn">— noch nichts eingelesen, das Google-Calc-Material
@@ -855,7 +870,7 @@ function showFindings() {
     if (!v || v === 'geklaert') continue;
     (groups[v] = groups[v] || []).push(key);
   }
-  const order = ['widerspruch', 'abweichend', 'unentschieden', 'offen', 'nur-idee', 'luecke'];
+  const order = ['widerspruch', 'abweichend', 'unentschieden', 'offen', 'nur-idee', 'luecke', 'platzhalter'];
   let html = '';
 
   for (const v of order) {

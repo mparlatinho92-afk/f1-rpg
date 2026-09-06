@@ -104,10 +104,23 @@ darauf zeigt. Alles andere ist Kladde und wird als offener Posten gezählt:
 | `widerspruch` | ≥2 Kandidaten mit `stage: bestaetigt` | Saison-Chat gegen Team-Chat auf derselben Zelle |
 | `nur-idee` | Kandidaten vorhanden, keiner über `idee` hinaus | BAR „einfach weiß" |
 | `einheitsfarbe` | Team ≥3 Saisons, alle Zellen identisch, Herkunft `spiel` | **March 14× `#ff6600`**, BRM 23×, Cooper 19× — 17 Teams, 179 Team-Jahre |
+| `platzhalter` | Zelle zieht ihre Farbe roh aus SEASON_DATA (`source: sd`) | Ferrari 75×, Williams 47×, Red Bull 21× — 33 Teams, 350 Team-Jahre |
 | `abweichend` | Lieferstatus (s. o.) | Beschlossenes ≠ Eingebautes |
 
 `einheitsfarbe` ist der Befund, den das Sheet nicht liefern konnte: kein Fehler,
 sondern die fehlende Ära-Struktur. Nicht mit `luecke` in einen Topf werfen.
+
+`platzhalter` ist die Zellsicht darauf, und der Grund, warum es beide gibt:
+`einheitsfarbe` beschreibt ein **Team** und verlangt, dass **alle** seine Jahre
+aus SEASON_DATA kommen — ein einziges Jahr mit Range lässt den Befund kippen.
+Ferrari fällt genau so durch (75 Jahre Basisfarbe, aber 1999 hat eine Range) und
+sah im Editor deshalb aus wie erledigte Arbeit. `platzhalter` fragt dagegen je
+**Zelle** und übersieht nichts. In der Matrix liegt eine Schraffur über der Farbe:
+man sieht den Ton, den das Spiel zeigt, **und** dass ihn niemand geprüft hat.
+Sobald in der Werkstatt ein Kandidat an der Zelle hängt, verschwindet sie von selbst.
+
+Platzhalter zählen **nicht** in die „offenen Posten". 350 Team-Jahre würden dort
+jede echte Baustelle ertränken; sie haben ihren eigenen Filter und ihre eigene Zahl.
 
 ## 5. Import – was der Livery-Chat liefern soll
 
@@ -157,6 +170,24 @@ Ziel ist das bestehende `liveries-todo.json`, das `add-livery.ps1` liest:
 4. Ranges, die exakt so schon im Spiel stehen, werden weggelassen
 5. Einzeljahre, die eine bestehende Range durchbrechen, gehen nach
    `TEAM_COLORS_EXTRA` statt `TEAM_COLORS_RANGES` (Jahr-Override hat Vorrang)
+
+**Wenn ein Eintrag eine bestehende Range überschneidet**, entscheidet
+`add-livery.ps1` nach Farbe und Laufzeit — eine Überschneidung ist nicht
+automatisch ein Fehler. Farben werden dabei normalisiert: dieselbe Farbe
+dreimal notiert ist dieselbe Livery wie einmal notiert, beides ist solid.
+
+| Meldung | Bedingung | Wirkung |
+|---|---|---|
+| `[UNVERAENDERT]` | gleiche Jahre, gleiche Farben | nichts, gilt als erledigt |
+| `[VERLAENGERT]` | gleiche Farben, umschließt die alte(n) Range(s) | alte Zeilen fallen weg, eine neue tritt an ihre Stelle |
+| `[KORRIGIERT]` | exakt dieselben Jahre, andere Farben | alter Wert wird ersetzt, beide Werte stehen im Protokoll |
+| `[KONFLIKT]` | alles andere | wird gemeldet und übersprungen |
+
+Der Grenzfall *umschließt die alte Range **und** trägt andere Farben* ist
+bewusst ein Konflikt: dort steckt eine Korrektur **und** eine Laufzeitänderung
+in einem Eintrag, und welche von beiden gemeint war, kann das Skript nicht
+wissen. `-Ueberschreiben` gibt genau diesen Fall frei — echte Teilüberlappungen
+bleiben auch damit Konflikte.
 
 ## 6a. Farbeditor (Pipette)
 

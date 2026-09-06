@@ -128,16 +128,29 @@
      * `einheitsfarbe`: Team fährt ≥3 Saisons und trägt über alle denselben Wert,
      * gezogen aus SEASON_DATA – das ist keine Lücke, sondern eine fehlende
      * Ära-Struktur (March 14× orange). Muss anders aussehen als grau.
+     * `basisfarbe`: alle Jahre, deren Farbe aus SEASON_DATA stammt – auch bei
+     * Teams, die daneben schon echte Ranges haben.
      */
     function gameFindings(built, minSeasons) {
         const min = minSeasons || 3;
-        const out = { luecke: [], einheitsfarbe: [] };
+        const out = { luecke: [], einheitsfarbe: [], basisfarbe: [] };
         for (const id of Object.keys(built.teams)) {
             const team = built.teams[id];
             if (team.indy) continue;
             const rows = team.years.map(y => built.cells[id + ':' + y]);
             const missing = rows.filter(r => r.source === 'none');
             if (missing.length) out.luecke.push({ team: id, name: team.name, years: missing.map(r => r.year) });
+
+            // Jahre, die roh aus SEASON_DATA kommen. Anders als `einheitsfarbe`
+            // ist das KEINE Aussage ueber das ganze Team: Ferrari traegt 75 Jahre
+            // die Basisfarbe und faellt trotzdem durch den Einheitsfarben-Test,
+            // weil ein einziges Jahr (1999) eine Range hat. Genau diese Jahre sind
+            // im Editor die Platzhalter - Farbe da, aber nie recherchiert.
+            const basis = rows.filter(r => r.source === 'sd');
+            if (basis.length) out.basisfarbe.push({
+                team: id, name: team.name, seasons: basis.length,
+                years: basis.map(r => r.year), value: basis[0].colors.slice()
+            });
 
             if (rows.length >= min && !missing.length) {
                 const vals = new Set(rows.map(r => r.colors.join(',')));
@@ -152,6 +165,7 @@
             }
         }
         out.einheitsfarbe.sort((a, b) => b.seasons - a.seasons);
+        out.basisfarbe.sort((a, b) => b.seasons - a.seasons);
         out.luecke.sort((a, b) => b.years.length - a.years.length);
         return out;
     }
