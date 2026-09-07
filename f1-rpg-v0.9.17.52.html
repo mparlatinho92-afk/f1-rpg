@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.51</title>
+    <title>F1 RPG v0.9.17.52</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.51 (aktuell) - 06.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.52 (aktuell) - 07.09.2026</div>
+                            <div>&#8226; NEU: 25 historische Liveries (De Tomaso, Coloni, Theodore, Pacific, March, Fondmetal u.a.)</div>
+                            <div>&#8226; NEU: Saison 2015-2023 jahresgenau eingefaerbt statt Sammel-Ranges</div>
+                            <div>&#8226; FIX: Arrows 1983 grau-beige statt Creme-Blau</div>
+                            <div>&#8226; FIX: Sauber 2015-2018 Farbtoene korrigiert</div>
+                            <div class="font-bold text-slate-400">v0.9.17.51 - 06.09.2026</div>
                             <div>&#8226; NEU: 67 Livery-Eras fuer 46 Teams - farblose Teams von 79 auf 37 gesunken</div>
                             <div>&#8226; FIX: JBW 1959/1960 von Graublau auf Gruen korrigiert (alte Werte stammten aus einer Zeichnung)</div>
                             <div>&#8226; FIX: March trug 15 Jahre lang dasselbe Platzhalter-Orange - entfernt, damit die echten Liveries auffallen</div>
@@ -17591,7 +17596,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.51';
+        const VERSION = '0.9.17.52';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -41489,24 +41494,33 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [1972, 1986, 'LOT', ['#111111', '#111111', '#D4A017']], // JPS: 2/3 Schwarz + 1/3 Gold
             [1987, 1990, 'LOT', ['#FFD100', '#FFD100', '#111111']], // Camel: 2/3 Gelb + 1/3 Schwarz
             [1991, 1994, 'LOT', ['#FFFFFF', '#FFFFFF', '#2D8C4E']], // Elf-Ära: 2/3 Weiß + 1/3 Grün (kein BRG)
-            [2012, 2015, 'LTF', ['#111111', '#111111', '#CC0000']], // Lotus F1: 2/3 Schwarz + 1/3 Rot
+            [2012, 2014, 'LTF', ['#111111', '#111111', '#CC0000']], // Lotus F1 bis 2014: 2/3 Schwarz + 1/3 Rot (2015 jahresgenau)
+            [2015, 2015, 'LTF', ['#1A1A1A', '#1A1A1A', '#B8992C']], // #1A1A1A-#1A1A1A-#B8992C
             [2009, 2009, 'BGP', ['#FFFFFF', '#FFFFFF', '#DCFF00']], // Brawn (einzige Saison): 2/3 Weiß + 1/3 Fluo-Gelb
             [1966, 1973, 'MCL', ['#FF8000', '#FF8000', '#FFFFFF']], // Papaya: 2/3 Orange + 1/3 Weiß
             [1974, 1996, 'MCL', ['#FFFFFF', '#FFFFFF', '#CC0000']], // Marlboro: 2/3 Weiß + 1/3 Rot
             [1997, 2006, 'MCL', ['#A8A8A8', '#A8A8A8', '#111111']], // West/Silver: 2/3 Silber + 1/3 Schwarz
             [2007, 2014, 'MCL', ['#C0C0C0', '#C0C0C0', '#E60026']], // Vodafone: 2/3 Chrome + 1/3 Rot
-            [2015, 2016, 'MCL', ['#3A3A3A', '#3A3A3A', '#E60026']], // Honda-Übergang: 2/3 Anthrazit + 1/3 Rot
-            [2017, 2099, 'MCL', ['#FF8000', '#FF8000', '#0090D0']], // Papaya modern: 2/3 Orange + 1/3 Blau
+            [2024, 2099, 'MCL', ['#FF8000', '#FF8000', '#0090D0']], // Papaya modern ab 2024 (2015-2023 jahresgenau)
+            [2015, 2015, 'MCL', ['#2C2C2C', '#1A1A1A']],     // #2C2C2C-#1A1A1A
+            [2016, 2016, 'MCL', ['#1A1A1A']],                // #1A1A1A
+            [2017, 2018, 'MCL', ['#FF8000', '#FF8000', '#2C2C2C']], // #FF8000-#FF8000-#2C2C2C
+            [2019, 2021, 'MCL', ['#FF8000', '#FF8000', '#0057A8']], // #FF8000-#FF8000-#0057A8
+            [2022, 2022, 'MCL', ['#FF8000', '#FF8000', '#2C2C2C']], // #FF8000-#FF8000-#2C2C2C
+            [2023, 2023, 'MCL', ['#FF8000', '#FF8000', '#1A1A1A']], // #FF8000-#FF8000-#1A1A1A
             [1976, 1992, 'LIG', ['#1A52CC', '#1A52CC', '#FFFFFF']], // Gitanes: 2/3 Dunkelblau + 1/3 Weiß
             [1993, 1996, 'LIG', ['#003FBB', '#003FBB', '#FFFFFF']], // Gitanes spät: Elektroblau + Weiß
             [1997, 2001, 'PRO', ['#0033CC', '#0033CC', '#0033CC']], // Prost GP: Solid Gauloises-Blau
             [1985, 1988, 'MIN', ['#111111', '#111111', '#FFD700']], // Simod: 2/3 Schwarz + 1/3 Gelb
             [1989, 1992, 'MIN', ['#FFD700', '#FFD700', '#111111']], // Transition: 2/3 Gelb + 1/3 Schwarz
             [1995, 2005, 'MIN', ['#111111', '#111111', '#FFFFFF']], // Schwarz-Weiß-Ära (1993/94/97/2000 via EXTRA)
-            [2006, 2018, 'TOR', ['#1E2D6E', '#1E2D6E', '#CC0000']], // Toro Rosso: 2/3 Navy + 1/3 Rot
+            [2006, 2014, 'TOR', ['#1E2D6E', '#1E2D6E', '#CC0000']], // Toro Rosso bis 2014: 2/3 Navy + 1/3 Rot (ab 2015 jahresgenau)
+            [2015, 2016, 'TOR', ['#1B2C6B', '#1B2C6B', '#CC1E1E']], // #1B2C6B-#1B2C6B-#CC1E1E
+            [2017, 2019, 'TOR', ['#14119A', '#CC1E1E', '#A8A9AD']], // #14119A-#CC1E1E-#A8A9AD
             [1978, 1980, 'ARR', ['#FFD100', '#FFD100', '#FFFFFF']], // Warsteiner: 2/3 Gelb + 1/3 Weiß
             [1981, 1982, 'ARR', ['#FF6600', '#FF6600', '#FFFFFF']], // Orange+Weiß
-            [1983, 1985, 'ARR', ['#F0EAD0', '#F0EAD0', '#1A4FCC']], // Creme+Blau
+            [1983, 1983, 'ARR', ['#B9AEA4', '#ACB3B9', '#631E0F']], // #B9AEA4-#ACB3B9-#631E0F
+            [1984, 1985, 'ARR', ['#F0EAD0', '#F0EAD0', '#1A4FCC']], // Creme+Blau (nur 1984/85 - 1983 war grau-beige)
             [1986, 1993, 'ARR', ['#FFFFFF', '#FFFFFF', '#CC0000']], // Weiß+Rot (1996/97/98 via EXTRA)
             [1994, 1995, 'ARR', ['#CC0000', '#FFFFFF', '#0044CC']], // Rot+Weiß+Blau (je 1/3)
             [1999, 2002, 'ARR', ['#FF6600', '#FF6600', '#111111']], // Danka: 2/3 Orange + 1/3 Schwarz
@@ -41532,10 +41546,13 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [2011, 2011, 'SAU', ['#FFFFFF', '#111111', '#CC0000']], // C30: Weiß+Schwarz+Rot
             [2012, 2012, 'SAU', ['#FFFFFF', '#3A3A3A', '#CC0000']], // C31: Weiß+Grau+Rot
             [2013, 2014, 'SAU', ['#2D2D2D', '#2D2D2D', '#FFFFFF']], // NEC-Ära: 2/3 Dunkelgrau + 1/3 Weiß
-            [2015, 2016, 'SAU', ['#003B8C', '#FFFFFF', '#FFD700']], // Banco do Brasil C34/C35: Blau+Weiß+Gelb
-            [2017, 2017, 'SAU', ['#003B8C', '#003B8C', '#FFFFFF']], // 25 Jahre C36: 2/3 Blau + 1/3 Weiß
-            [2018, 2018, 'SAU', ['#CC0000', '#CC0000', '#FFFFFF']], // Alfa Romeo Sauber C37: 2/3 Rot + 1/3 Weiß
-            [2019, 2020, 'ALF', ['#CC0000', '#CC0000', '#FFFFFF']], // Alfa Romeo Racing: 2/3 Rot + 1/3 Weiß
+            [2015, 2016, 'SAU', ['#0047AB', '#FFFFFF', '#FFD700']], // #0047AB-#FFFFFF-#FFD700
+            [2017, 2017, 'SAU', ['#1E5EAE', '#1E5EAE', '#FFFFFF']], // #1E5EAE-#1E5EAE-#FFFFFF
+            [2018, 2018, 'SAU', ['#FFFFFF', '#FFFFFF', '#8B1A1A']], // #FFFFFF-#FFFFFF-#8B1A1A
+            [2022, 2022, 'ALF', ['#8B1A1A', '#FFFFFF']],     // #8B1A1A-#FFFFFF
+            [2023, 2023, 'ALF', ['#1A1A1A', '#1A1A1A', '#DC0000']], // #1A1A1A-#1A1A1A-#DC0000
+            [2019, 2019, 'ALF', ['#FFFFFF', '#FFFFFF', '#8B1A1A']], // #FFFFFF-#FFFFFF-#8B1A1A
+            [2020, 2021, 'ALF', ['#FFFFFF', '#8B1A1A']],     // #FFFFFF-#8B1A1A
             [1991, 1991, 'JOR', ['#007A3D', '#007A3D', '#0044CC']], // Jordan 191: 2/3 Grün + 1/3 Königsblau
             [1992, 1992, 'JOR', ['#3F2DC8', '#3F2DC8', '#FFFFFF']], // Jordan 921: 2/3 Blau-Lila + 1/3 Weiß
             [1993, 1993, 'JOR', ['#0044CC', '#0044CC', '#FFFFFF']], // Jordan 931: 2/3 Königsblau + 1/3 Weiß
@@ -41577,6 +41594,12 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [1977, 1977, 'SUR', ['#FFFFFF']],                        // Solid Weiß
             [1978, 1978, 'SUR', ['#FF6600', '#FFFFFF']],            // Orange-Weiß
             [1954, 1955, 'MER', ['#C0C0C0']],                        // Silberpfeil
+            [2015, 2015, 'MER', ['#9C9FA3', '#1A1A1A', '#00A19C']], // #9C9FA3-#1A1A1A-#00A19C
+            [2016, 2018, 'MER', ['#9C9FA3', '#9C9FA3', '#00D2BE']], // #9C9FA3-#9C9FA3-#00D2BE
+            [2019, 2019, 'MER', ['#C0C0C0', '#C0C0C0', '#00D2BE']], // #C0C0C0-#C0C0C0-#00D2BE
+            [2020, 2021, 'MER', ['#1A1A1A', '#1A1A1A', '#00D2BE']], // #1A1A1A-#1A1A1A-#00D2BE
+            [2022, 2022, 'MER', ['#9C9FA3', '#9C9FA3', '#00D2BE']], // #9C9FA3-#9C9FA3-#00D2BE
+            [2023, 2023, 'MER', ['#1A1A1A', '#1A1A1A', '#00D2BE']], // #1A1A1A-#1A1A1A-#00D2BE
             [1951, 1953, 'OSC', ['#CC0000']],                        // Solid Rot
             [1958, 1958, 'OSC', ['#CC0000', '#CC0000', '#C0C0C0']], // Rot-Rot-Silber (F2/S)
             [1960, 1960, 'BEH', ['#3E6890', '#3E6890', '#3E6890']], // #3E6890-#3E6890-#3E6890
@@ -41600,11 +41623,15 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [1956, 1956, 'BUG', ['#1E7D92', '#1E7D92', '#1E7D92']], // #1E7D92-#1E7D92-#1E7D92
             [1956, 1956, 'EME', ['#155B28', '#155B28', '#155B28']], // #155B28-#155B28-#155B28
             [1961, 1961, 'EME', ['#FED51A']],                // #FED51A
+            [1962, 1962, 'EME', ['#20302F', '#20302F', '#951D13']], // #20302F-#20302F-#951D13
             [1952, 1952, 'GOR', ['#2579BB', '#2579BB', '#2579BB']], // #2579BB-#2579BB-#2579BB
             [1956, 1956, 'GOR', ['#0073C2', '#0073C2', '#0073C2']], // #0073C2-#0073C2-#0073C2
             [1970, 1970, 'BEL', ['#992312', '#992312', '#992312']], // #992312-#992312-#992312
             [1970, 1970, 'MAT', ['#0982C4', '#0982C4', '#0982C4']], // #0982C4-#0982C4-#0982C4
             [1970, 1970, 'DET', ['#AA211E', '#AA211E', '#AA211E']], // #AA211E-#AA211E-#AA211E
+            [1961, 1961, 'DET', ['#CC0000']],                // rot
+            [1962, 1962, 'DET', ['#CC0000', '#CC0000', '#FFFFFF']], // rot-rot-weiß
+            [1963, 1963, 'DET', ['#FD3F38', '#FD3F38', '#4FCAFE']], // #FD3F38-#FD3F38-#4FCAFE
             [1952, 1952, 'AFM', ['#929292', '#929292', '#929292']], // #929292-#929292-#929292
             [1953, 1953, 'AFM', ['#818585']],                // #818585
             [1952, 1952, 'CIS', ['#9A1219', '#9A1219', '#9A1219']], // #9A1219-#9A1219-#9A1219
@@ -41623,6 +41650,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [1990, 1990, 'AGS', ['#000000', '#000000', '#FBFB74']], // #000000-#000000-#FBFB74
             [1991, 1991, 'AGS', ['#121A3B', '#0F6FA0', '#DE3A26']], // #121A3B-#0F6FA0-#DE3A26
             [1987, 1988, 'COL', ['#FDFD03', '#FDFD03', '#FDFD03']], // #FDFD03-#FDFD03-#FDFD03
+            [1989, 1989, 'COL', ['#EFEEEA', '#1B221A', '#E6DD02']], // #EFEEEA-#1B221A-#E6DD02
+            [1990, 1990, 'COL', ['#FEFC02']],                // #FEFC02
+            [1991, 1991, 'COL', ['#F6EFED', '#586379', '#3B69A4']], // #F6EFED-#586379-#3B69A4
             [1988, 1992, 'DAL', ['#B11918', '#B11918', '#FBFEFB']], // #B11918-#B11918-#FBFEFB
             [1978, 1982, 'ATS', ['#DDAC1E', '#DDAC1E', '#101010']], // #DDAC1E-#DDAC1E-#101010
             [1983, 1984, 'ATS', ['#E3AE07', '#020001']],     // #E3AE07-#020001
@@ -41643,6 +41673,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [1972, 1972, 'CNW', ['#CB010D', '#E3C401']],     // #CB010D-#E3C401
             [1960, 1960, 'KUR', ['#DEDEE9', '#DEDEE9', '#622E1E']], // #DEDEE9-#DEDEE9-#622E1E
             [1976, 1976, 'BOR', ['#F3F2F1', '#F3F2F1', '#332F2B']], // #F3F2F1-#F3F2F1-#332F2B
+            [1977, 1977, 'BOR', ['#1F201A', '#1F201A', '#C3B3A7']], // #1F201A-#1F201A-#C3B3A7
             [1963, 1964, 'BRP', ['#7EA995']],                // #7EA995
             [1977, 1977, 'LEC', ['#061016', '#DEECE9', '#D92107']], // #061016-#DEECE9-#D92107
             [1972, 1972, 'EIF', ['#175291', '#F0EFEB', '#FBDF46']], // #175291-#F0EFEB-#FBDF46
@@ -41706,6 +41737,61 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             [1995, 1995, 'SIM', ['#584FB0']],                // #584FB0
             [2006, 2006, 'MID', ['#EF1F18', '#181A17', '#CFD7DA']], // #EF1F18-#181A17-#CFD7DA
             [1963, 1963, 'SCI', ['#295289', '#FDFDFD']],     // #295289-#FDFDFD
+            [1964, 1964, 'SCI', ['#FAEF13']],                // #FAEF13
+            [1952, 1952, 'KRA', ['#878787', '#878787', '#797979']], // #878787-#878787-#797979
+            [2006, 2007, 'SUP', ['#FFFDFE', '#9E1315']],     // #FFFDFE-#9E1315
+            [2008, 2008, 'SUP', ['#AE191D', '#F9FEFC']],     // #AE191D-#F9FEFC
+            [2025, 2025, 'RBF', ['#2852A7', '#F2F3EE']],     // #2852A7-#F2F3EE
+            [1978, 1978, 'THE', ['#FAFBF5', '#FAFBF5', '#641A20']], // #FAFBF5-#FAFBF5-#641A20
+            [1981, 1981, 'THE', ['#F1F3F2', '#F1F3F2', '#99160E']], // #F1F3F2-#F1F3F2-#99160E
+            [1982, 1982, 'THE', ['#F8F8F6', '#F8F8F6', '#A42815']], // #F8F8F6-#F8F8F6-#A42815
+            [1983, 1983, 'THE', ['#1C3561', '#1C3561', '#F8F8F8']], // #1C3561-#1C3561-#F8F8F8
+            [1994, 1994, 'PAC', ['#95A9B8', '#1C94C4', '#CA4D82']], // #95A9B8-#1C94C4-#CA4D82
+            [1995, 1995, 'PAC', ['#2C84CC', '#3A5B9C', '#D1D7DB']], // #2C84CC-#3A5B9C-#D1D7DB
+            [1952, 1952, 'NAC', ['#B0C2C1']],                // #B0C2C1
+            [1970, 1973, 'MAR', ['#9E1016']],                // #9E1016
+            [1974, 1974, 'MAR', ['#D65A18', '#D65A18', '#B9B9B9']], // #D65A18-#D65A18-#B9B9B9
+            [1974, 1975, 'PAR', ['#7B130E', '#D4DFE0']],     // #7B130E-#D4DFE0
+            [1991, 1991, 'FON', ['#040503', '#940917', '#C6E1DE']], // #040503-#940917-#C6E1DE
+            [1992, 1992, 'FON', ['#050507', '#C72924', '#A3A5B7']], // #050507-#C72924-#A3A5B7
+            [2015, 2023, 'RED', ['#1B2559', '#1B2559', '#CC1E1E']], // #1B2559-#1B2559-#CC1E1E
+            [2015, 2015, 'WIL', ['#FFFFFF', '#FFFFFF', '#002F6C']], // #FFFFFF-#FFFFFF-#002F6C
+            [2016, 2018, 'WIL', ['#FFFFFF', '#FFFFFF', '#009FDA']], // #FFFFFF-#FFFFFF-#009FDA
+            [2019, 2020, 'WIL', ['#FFFFFF', '#FFFFFF', '#41B6E6']], // #FFFFFF-#FFFFFF-#41B6E6
+            [2021, 2021, 'WIL', ['#003DA5', '#2B7BB9', '#FFFFFF']], // #003DA5-#2B7BB9-#FFFFFF
+            [2022, 2023, 'WIL', ['#003DA5', '#2B7BB9']],     // #003DA5-#2B7BB9
+            [2015, 2015, 'FER', ['#DC0000', '#DC0000', '#1A1A1A']], // #DC0000-#DC0000-#1A1A1A
+            [2016, 2016, 'FER', ['#DC0000', '#DC0000', '#FFFFFF']], // #DC0000-#DC0000-#FFFFFF
+            [2017, 2018, 'FER', ['#DC0000', '#DC0000', '#1A1A1A']], // #DC0000-#DC0000-#1A1A1A
+            [2019, 2020, 'FER', ['#C00000', '#C00000', '#1A1A1A']], // #C00000-#C00000-#1A1A1A
+            [2021, 2023, 'FER', ['#DC0000', '#DC0000', '#1A1A1A']], // #DC0000-#DC0000-#1A1A1A
+            [2015, 2015, 'FOR', ['#1A1A1A', '#1A1A1A', '#E3611C']], // #1A1A1A-#1A1A1A-#E3611C
+            [2016, 2016, 'FOR', ['#2A2A2A', '#A8A9AD', '#E8611A']], // #2A2A2A-#A8A9AD-#E8611A
+            [2017, 2017, 'FOR', ['#F9C4D8']],                // #F9C4D8
+            [2018, 2018, 'FOR', ['#F9C4D8', '#F9C4D8', '#FFFFFF']], // #F9C4D8-#F9C4D8-#FFFFFF
+            [2015, 2015, 'MRS', ['#CC1417', '#FFFFFF', '#002F6C']], // #CC1417-#FFFFFF-#002F6C
+            [2016, 2016, 'REN', ['#FFD100', '#FFD100', '#1A1A1A']], // #FFD100-#FFD100-#1A1A1A
+            [2017, 2020, 'REN', ['#FFD100', '#1A1A1A']],     // #FFD100-#1A1A1A
+            [2016, 2016, 'MAN', ['#003087', '#CC1417', '#FFFFFF']], // #003087-#CC1417-#FFFFFF
+            [2016, 2016, 'HAA', ['#FFFFFF', '#CC1417', '#1A1A1A']], // #FFFFFF-#CC1417-#1A1A1A
+            [2017, 2017, 'HAA', ['#B0B0B0', '#B0B0B0', '#CC1417']], // #B0B0B0-#B0B0B0-#CC1417
+            [2018, 2018, 'HAA', ['#E8E8E8', '#CC1417', '#1A1A1A']], // #E8E8E8-#CC1417-#1A1A1A
+            [2019, 2019, 'HAA', ['#1A1A1A', '#1A1A1A', '#C9A84C']], // #1A1A1A-#1A1A1A-#C9A84C
+            [2020, 2020, 'HAA', ['#FFFFFF', '#CC1417', '#1A1A1A']], // #FFFFFF-#CC1417-#1A1A1A
+            [2021, 2021, 'HAA', ['#FFFFFF', '#0039A6', '#D52B1E']], // #FFFFFF-#0039A6-#D52B1E
+            [2022, 2022, 'HAA', ['#FFFFFF', '#CC1417', '#1A1A1A']], // #FFFFFF-#CC1417-#1A1A1A
+            [2023, 2023, 'HAA', ['#1A1A1A', '#C3C3C3', '#CC1417']], // #1A1A1A-#C3C3C3-#CC1417
+            [2019, 2019, 'RAC', ['#F9C4D8', '#FFFFFF', '#0057A8']], // #F9C4D8-#FFFFFF-#0057A8
+            [2020, 2020, 'RAC', ['#F9C4D8']],                // #F9C4D8
+            [2020, 2020, 'TAU', ['#FFFFFF', '#1B2559']],     // #FFFFFF-#1B2559
+            [2021, 2021, 'TAU', ['#1B2559', '#1B2559', '#FFFFFF']], // #1B2559-#1B2559-#FFFFFF
+            [2022, 2022, 'TAU', ['#1B2559', '#FFFFFF']],     // #1B2559-#FFFFFF
+            [2023, 2023, 'TAU', ['#0D1B3E', '#0D1B3E', '#FFFFFF']], // #0D1B3E-#0D1B3E-#FFFFFF
+            [2021, 2022, 'AST', ['#00352F']],                // #00352F
+            [2023, 2023, 'AST', ['#00677C']],                // #00677C
+            [2021, 2021, 'ALP', ['#0055A4', '#0055A4', '#EF4135']], // #0055A4-#0055A4-#EF4135
+            [2022, 2022, 'ALP', ['#0055A4', '#0055A4', '#F9C4D8']], // #0055A4-#0055A4-#F9C4D8
+            [2023, 2023, 'ALP', ['#146ADE', '#146ADE', '#F9C4D8']], // #146ADE-#146ADE-#F9C4D8
         ];
 
         // Teams die WÄHREND der Simulation einsteigen tragen die generierte ID
