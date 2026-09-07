@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.53</title>
+    <title>F1 RPG v0.9.17.54</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.53 (aktuell) - 07.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.54 (aktuell) - 07.09.2026</div>
+                            <div>&#8226; NEU: Rennliste in Wikipedia-Reihenfolge - Pole, Schnellste Runde, Sieger, Konstrukteur</div>
+                            <div>&#8226; NEU: Flagge vor jedem Namen, auch beim Siegerkonstrukteur (jahresgenau)</div>
+                            <div>&#8226; NEU: Siegerkonstrukteur je Rennen, klickbar zum Team-Profil</div>
+                            <div>&#8226; FIX: Ungefahrene Rennen lassen alle Ergebnisspalten leer statt nur teilweise</div>
+                            <div class="font-bold text-slate-400">v0.9.17.53 - 07.09.2026</div>
                             <div>&#8226; FIX: Pole-Spalte archivierter Saisons blieb leer - getYearData reichte qualifyingResults nicht durch</div>
                             <div>&#8226; NEU: Poles-Spalte in All-Time-Fahrer- und Team-Tabelle, sortierbar</div>
                             <div>&#8226; FIX: Team-Poles wurden nie gezaehlt (alle Teams standen auf 0)</div>
@@ -4000,7 +4005,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.53';
+        const VERSION = '0.9.17.54';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -29183,6 +29188,54 @@
                 if (typeof HIST_NAMES !== 'undefined' && HIST_NAMES[id]) return HIST_NAMES[id];
                 return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             }
+
+            // === WIKIPEDIA-SPALTEN (v0.9.17.54) =============================
+            // Reihenfolge Pole -> Schnellste Runde -> Sieger -> Konstrukteur, jeder
+            // Eintrag mit Flagge davor. Nation kommt aus `nationOfDriverKey` /
+            // `nationOfTeamKey` (index.html:6860/6874) - dieselbe Aufloesung wie die
+            // Nationen-Statistik, sonst kennt die Rennliste andere Laender als der
+            // Rekord-Scan. `year` MUSS an renderFlag durchgereicht werden, sonst zeigt
+            // 1961 die heutige Flagge (RSA/CAN/ESP/DDR haengen daran).
+            const _flag = (ioc) => {
+                if (!ioc) return '';
+                const f = renderFlag(ioc, null, year);
+                return f ? `<span class="inline-block mr-1 align-baseline">${f}</span>` : '';
+            };
+            // Fahrerzelle: Flagge + klickbarer Name. `key` ist die stabile Form
+            // (histId/Slug), `id` das Klickziel fuer den Steckbrief.
+            const _driverCell = (name, id, ioc) => {
+                if (!name) return '<span class="text-tertiary">-</span>';
+                const inner = id
+                    ? `<span class="driver-link" onclick="openDriverProfile('${String(id).replace(/'/g, "\\'")}')">${name}</span>`
+                    : name;
+                return _flag(ioc) + inner;
+            };
+            // Simulierte Saisons: die Nation steckt im Saison-Snapshot, nicht in F1DB
+            // (generierte Fahrer und Rennstaelle gibt es dort nicht). Deshalb je Zweig mit
+            // SEINEN Listen instanziieren - die Fahrerliste heisst in beiden anders.
+            const _simNat = (drvList, teamList) => ({
+                simDriverNat: (id, name) => {
+                    const d = (drvList || []).find(x => x.id === id);
+                    return nationOfDriverKey(d?.histId || id, name || d?.name, d?.nation);
+                },
+                // Siegerkonstrukteur aus einer Ergebniszeile. Archiviert steht dort `tmn`
+                // (Klartext, die ID-Form geht beim Archivieren verloren), laufend
+                // `teamName` plus `team`-Id - teamDisplayName buegelt eingestiegene
+                // Teams glatt, sonst steht dort die Roh-Id "ent_ZAK_1985".
+                simTeamOf: (row) => {
+                    if (!row) return null;
+                    const name = teamDisplayName(row.tmn || row.teamName || row.team || '') || null;
+                    if (!name) return null;
+                    const t = (teamList || []).find(x => x.id === row.team || x.histId === name || x.name === name);
+                    return { name, nat: nationOfTeamKey(teamSlug(name), name, t?.nation) };
+                }
+            });
+            // Konstrukteurszelle: darf umbrechen (Wunsch) - "Frank Williams Racing Cars"
+            // sprengt sonst die Zeile. Die drei Fahrerspalten bleiben einzeilig.
+            const _teamCell = (name, ioc) => {
+                if (!name) return '<span class="text-tertiary">-</span>';
+                return _flag(ioc) + `<span class="team-link" onclick="openTeamProfile('${String(name).replace(/'/g, "\\'")}')">${name}</span>`;
+            };
             
             // ── F1DB-Modus: immer wenn F1DB-Daten für dieses Jahr vorhanden ───
             const isSimulated = isHistorical && historicalViewData?.type === 'simulated';
@@ -29201,6 +29254,8 @@
                     const d = simDrivers.find(d => d.id === id);
                     return d ? d.name : id;
                 };
+                const { simDriverNat, simTeamOf } = _simNat(simDrivers,
+                    (isHistorical ? historicalViewData?.teams : GAME_STATE.teams) || []);
                 
                 const rows = f1dbRaces.map((race, idx) => {
                     const laps = race.entries.length > 0
@@ -29213,15 +29268,22 @@
                     
                     let winnerName = null, poleName = null, flName = null;
                     let winnerId = null, poleId = null, flId = null;
+                    let winnerNat = null, poleNat = null, flNat = null;
+                    let ctorName = null, ctorNat = null;
 
                     if (isPureHistorical) {
                         // Echte Ergebnisse aus F1DB
                         const w = race.entries.find(e => e.posNum === 1);
                         const p = race.entries.find(e => e.pole);
                         const f = race.entries.find(e => e.fastestLap);
-                        if (w) { winnerName = dn(w.driverId); winnerId = w.driverId; }
-                        if (p) { poleName = dn(p.driverId); poleId = p.driverId; }
-                        if (f) { flName = dn(f.driverId); flId = f.driverId; }
+                        if (w) { winnerName = dn(w.driverId); winnerId = w.driverId; winnerNat = nationOfDriverKey(w.driverId, winnerName); }
+                        if (p) { poleName = dn(p.driverId); poleId = p.driverId; poleNat = nationOfDriverKey(p.driverId, poleName); }
+                        if (f) { flName = dn(f.driverId); flId = f.driverId; flNat = nationOfDriverKey(f.driverId, flName); }
+                        // Siegerkonstrukteur: `constrId` IST bereits der F1DB-Slug, den
+                        // F1DB_CONSTRUCTOR_NATIONS als Schluessel fuehrt - nicht erneut
+                        // durch teamSlug() drehen, das zerlegt 'de-tomaso' nicht falsch,
+                        // aber der Anzeigename muss ueber formatConstructorName laufen.
+                        if (w && w.constrId) { ctorName = formatConstructorName(w.constrId); ctorNat = nationOfTeamKey(w.constrId, ctorName); }
                     } else if (isCompleted) {
                         // Simulierte Ergebnisse
                         const res = isHistorical
@@ -29231,15 +29293,19 @@
                             ? simQualis.find(q => q.ri === idx)
                             : simQualis.find(q => q.raceIndex === idx);
                         if (isHistorical) {
-                            if (res?.res?.[0]) { winnerName = getSimName(res.res[0].d); winnerId = res.res[0].d; }
+                            if (res?.res?.[0]) { winnerName = getSimName(res.res[0].d); winnerId = res.res[0].d; winnerNat = simDriverNat(res.res[0].d, winnerName); }
                             const fl = res?.res?.find(r => r.fl);
-                            if (fl) { flName = getSimName(fl.d); flId = fl.d; }
-                            if (q?.res?.[0]) { poleName = getSimName(q.res[0].d); poleId = q.res[0].d; }
+                            if (fl) { flName = getSimName(fl.d); flId = fl.d; flNat = simDriverNat(fl.d, flName); }
+                            if (q?.res?.[0]) { poleName = getSimName(q.res[0].d); poleId = q.res[0].d; poleNat = simDriverNat(q.res[0].d, poleName); }
+                            const wc = simTeamOf(res?.res?.[0]);
+                            if (wc) { ctorName = wc.name; ctorNat = wc.nat; }
                         } else {
-                            if (res?.results?.[0]) { winnerName = res.results[0].name; winnerId = res.results[0].driver; }
+                            if (res?.results?.[0]) { winnerName = res.results[0].name; winnerId = res.results[0].driver; winnerNat = simDriverNat(res.results[0].driver, winnerName); }
                             const fl = res?.results?.find(r => r.fastestLap);
-                            if (fl) { flName = fl.name; flId = fl.driver; }
-                            if (q?.results?.[0]) { poleName = q.results[0].name; poleId = q.results[0].driver; }
+                            if (fl) { flName = fl.name; flId = fl.driver; flNat = simDriverNat(fl.driver, flName); }
+                            if (q?.results?.[0]) { poleName = q.results[0].name; poleId = q.results[0].driver; poleNat = simDriverNat(q.results[0].driver, poleName); }
+                            const wc = simTeamOf(res?.results?.[0]);
+                            if (wc) { ctorName = wc.name; ctorNat = wc.nat; }
                         }
                     }
                     
@@ -29272,9 +29338,10 @@
                             </td>
                             <td class="p-3 text-center text-sm text-tertiary">${laps}</td>
                             <td class="p-3 text-center">${statusCell}</td>
-                            <td class="p-3 text-sm" onclick="event.stopPropagation()">${winnerName ? `<span class="font-bold driver-link" onclick="openDriverProfile('${winnerId}')">${winnerName}</span>` : '<span class="text-tertiary">–</span>'}</td>
-                            <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${poleName ? (poleId ? `<span class="driver-link" onclick="openDriverProfile('${poleId}')">${poleName}</span>` : poleName) : (isCompleted || isPureHistorical ? '–' : '')}</td>
-                            <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flName ? `${flId ? `<span class="driver-link" onclick="openDriverProfile('${flId}')">${flName}</span>` : flName}` : (isCompleted || isPureHistorical ? '–' : '')}</td>
+                            <td class="p-3 text-sm text-tertiary" style="white-space:nowrap" onclick="event.stopPropagation()">${poleName ? _driverCell(poleName, poleId, poleNat) : (isCompleted || isPureHistorical ? '–' : '')}</td>
+                            <td class="p-3 text-sm text-tertiary" style="white-space:nowrap" onclick="event.stopPropagation()">${flName ? _driverCell(flName, flId, flNat) : (isCompleted || isPureHistorical ? '–' : '')}</td>
+                            <td class="p-3 text-sm font-bold" style="white-space:nowrap" onclick="event.stopPropagation()">${winnerName ? _driverCell(winnerName, winnerId, winnerNat) : (isCompleted || isPureHistorical ? '<span class="text-tertiary">–</span>' : '')}</td>
+                            <td class="p-3 text-sm" onclick="event.stopPropagation()">${ctorName ? _teamCell(ctorName, ctorNat) : (isCompleted || isPureHistorical ? '<span class="text-tertiary">–</span>' : '')}</td>
                         </tr>
                     `;
                 }).join('');
@@ -29289,9 +29356,10 @@
                                         <th class="p-3 text-left">Grand Prix</th>
                                         <th class="p-3 text-center w-20">Runden</th>
                                         <th class="p-3 text-center w-28">Status</th>
-                                        <th class="p-3 text-left">Sieger</th>
                                         <th class="p-3 text-left">Pole</th>
                                         <th class="p-3 text-left">Schnellste Runde</th>
+                                        <th class="p-3 text-left">Sieger</th>
+                                        <th class="p-3 text-left">Konstrukteur</th>
                                     </tr>
                                 </thead>
                                 <tbody>${rows}</tbody>
@@ -29309,6 +29377,8 @@
             const qualis   = isHistorical ? (season.qualifyingResults || []) : GAME_STATE.qualifyingResults;
             const drivers  = isHistorical ? (season.drivers || [])           : GAME_STATE.drivers;
             const currentRace = isHistorical ? races.length : GAME_STATE.currentRace;
+            const { simDriverNat, simTeamOf } = _simNat(drivers,
+                (isHistorical ? season.teams : GAME_STATE.teams) || []);
             
             const getDriverName = (id) => {
                 if (!id) return '-';
@@ -29322,25 +29392,33 @@
                 
                 let winner = null, flDriver = null, poleDriver = null;
                 let winnerId2 = null, flId2 = null, poleId2 = null;
+                let winnerNat2 = null, flNat2 = null, poleNat2 = null;
+                let ctorName2 = null, ctorNat2 = null;
                 if (isCompleted) {
                     if (isHistorical) {
                         const res = results.find(r => r.ri === idx);
                         if (res?.res?.length) {
                             winner = getDriverName(res.res[0].d); winnerId2 = res.res[0].d;
+                            winnerNat2 = simDriverNat(winnerId2, winner);
+                            const wc = simTeamOf(res.res[0]);
+                            if (wc) { ctorName2 = wc.name; ctorNat2 = wc.nat; }
                             const fl = res.res.find(r => r.fl);
-                            if (fl) { flDriver = getDriverName(fl.d); flId2 = fl.d; }
+                            if (fl) { flDriver = getDriverName(fl.d); flId2 = fl.d; flNat2 = simDriverNat(fl.d, flDriver); }
                         }
                         const q = qualis.find(q => q.ri === idx);
-                        if (q?.res?.length) { poleDriver = getDriverName(q.res[0].d); poleId2 = q.res[0].d; }
+                        if (q?.res?.length) { poleDriver = getDriverName(q.res[0].d); poleId2 = q.res[0].d; poleNat2 = simDriverNat(poleId2, poleDriver); }
                     } else {
                         const res = results.find(r => r.raceIndex === idx);
                         if (res?.results?.length) {
                             winner = res.results[0].name; winnerId2 = res.results[0].driver;
+                            winnerNat2 = simDriverNat(winnerId2, winner);
+                            const wc = simTeamOf(res.results[0]);
+                            if (wc) { ctorName2 = wc.name; ctorNat2 = wc.nat; }
                             const fl = res.results.find(r => r.fastestLap);
-                            if (fl) { flDriver = fl.name; flId2 = fl.driver; }
+                            if (fl) { flDriver = fl.name; flId2 = fl.driver; flNat2 = simDriverNat(fl.driver, flDriver); }
                         }
                         const q = qualis.find(q => q.raceIndex === idx);
-                        if (q?.results?.length) { poleDriver = q.results[0].name; poleId2 = q.results[0].driver; }
+                        if (q?.results?.length) { poleDriver = q.results[0].name; poleId2 = q.results[0].driver; poleNat2 = simDriverNat(poleId2, poleDriver); }
                     }
                 }
                 
@@ -29368,9 +29446,10 @@
                                     ? '<span class="accent-gold text-sm">▶ Nächstes</span>' 
                                     : '<span class="text-tertiary text-sm">–</span>'}
                         </td>
-                        <td class="p-3 text-sm" onclick="event.stopPropagation()">${winner ? `<span class="font-bold driver-link" onclick="openDriverProfile('${winnerId2}')">${winner}</span>` : '<span class="text-tertiary">–</span>'}</td>
-                        <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${poleDriver ? (poleId2 ? `<span class="driver-link" onclick="openDriverProfile('${poleId2}')">${poleDriver}</span>` : poleDriver) : (isCompleted ? '–' : '')}</td>
-                        <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flDriver ? `${flId2 ? `<span class="driver-link" onclick="openDriverProfile('${flId2}')">${flDriver}</span>` : flDriver}` : (isCompleted ? '–' : '')}</td>
+                        <td class="p-3 text-sm text-tertiary" style="white-space:nowrap" onclick="event.stopPropagation()">${poleDriver ? _driverCell(poleDriver, poleId2, poleNat2) : (isCompleted ? '–' : '')}</td>
+                        <td class="p-3 text-sm text-tertiary" style="white-space:nowrap" onclick="event.stopPropagation()">${flDriver ? _driverCell(flDriver, flId2, flNat2) : (isCompleted ? '–' : '')}</td>
+                        <td class="p-3 text-sm font-bold" style="white-space:nowrap" onclick="event.stopPropagation()">${winner ? _driverCell(winner, winnerId2, winnerNat2) : (isCompleted ? '<span class="text-tertiary">–</span>' : '')}</td>
+                        <td class="p-3 text-sm" onclick="event.stopPropagation()">${ctorName2 ? _teamCell(ctorName2, ctorNat2) : (isCompleted ? '<span class="text-tertiary">–</span>' : '')}</td>
                     </tr>
                 `;
             }).join('');
@@ -29389,9 +29468,10 @@
                                     <th class="p-3 text-left">Grand Prix</th>
                                     <th class="p-3 text-center w-20">Runden</th>
                                     <th class="p-3 text-center w-28">Status</th>
-                                    <th class="p-3 text-left">Sieger</th>
                                     <th class="p-3 text-left">Pole</th>
                                     <th class="p-3 text-left">Schnellste Runde</th>
+                                    <th class="p-3 text-left">Sieger</th>
+                                    <th class="p-3 text-left">Konstrukteur</th>
                                 </tr>
                             </thead>
                             <tbody>${rows}</tbody>
