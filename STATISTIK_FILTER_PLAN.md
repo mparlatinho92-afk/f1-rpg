@@ -662,3 +662,67 @@ Neu offen, aber **nicht blockierend** für Schritte 1–5:
 
 1. **Listenlänge pro Karte:** Top 5 mit „alle zeigen", oder Top 10 direkt? Bei ~25 Karten entscheidet das über die Scrolllänge der Seite.
 2. **Verhalten bei Quelle-Wechsel:** Der Scan ist pro Quelle gecacht. Ein Wechsel `simuliert → alles` erfordert einen zweiten Durchlauf. Direkt automatisch starten, oder Button anzeigen?
+
+
+---
+
+## 11. Nachtrag v0.9.17.55 — Quoten-Karten (Aeren-Vergleichbarkeit)
+
+**Anlass (Nutzer):** Jede Zaehl-Karte bevorzugt systematisch die Moderne. Wer 24 statt
+7 Rennen im Jahr faehrt, sammelt zwangslaeufig mehr Siege UND mehr Ausfaelle — Fangio
+und Hamilton sind ueber Summen nicht vergleichbar. Deshalb **zehn zusaetzliche
+Quoten-Karten** (`_mkRatio`, `pct: true`), fuenf fuer Fahrer, vier fuer Konstrukteure,
+je positiv und negativ. Die Summen-Karten bleiben stehen — ergaenzt, nicht ersetzt.
+
+| Karte | Zaehler | Nenner | Schwelle |
+|---|---|---|---|
+| 🏆 Siegquote | `pos === 1` | Starts | 20 Starts |
+| 🥂 Podestquote | `pos <= 3` | Starts | 20 Starts |
+| 🅿️ Polequote | `pole` | Starts | 20 Starts |
+| 📈 Punktequote | `points > 0` | Starts | 20 Starts |
+| 💥 Ausfallquote | `status === 'dnf'` | Starts | 20 Starts |
+| 🚫 Nichtqualifikations-Quote | `dnq`/`dnpq` | **Meldungen** | 20 Meldungen |
+| 🏆🥂🅿️💥 dieselben je Team | s. o. | Wagenstarts | 40 Wagenstarts |
+
+**Drei Festlegungen, die beim Nachbauen zaehlen:**
+
+1. **Nenner ist `started` (`_STARTED`), nicht die Meldung.** Sonst zaehlt ein
+   DNQ-Wochenende wie ein verlorenes Rennen und straft die Vor-Quali-Aeren doppelt.
+   Einzige Ausnahme ist die DNQ-Quote selbst, die genau nach dem Meldungsanteil fragt.
+2. **`neg: true`** faerbt den Wert rot statt gold (`_renderRecordCard`). Ohne das liest
+   sich eine 73-%-Ausfallquote wie eine Bestleistung. Sortiert wird weiter absteigend:
+   die Karte fragt „wer am meisten", nicht „wer am wenigsten".
+3. **Team-Quoten rechnen je Wagenstart, nicht je Rennen.** Ein Team mit drei Autos hat
+   drei Eintraege — das ist fuer eine Quote richtig, macht die Zahl aber nicht mit
+   „Rennen des Teams" vergleichbar.
+
+**Messfalle beim Gegenrechnen:** Der Scan zaehlt **Ergebniseintraege**, nicht
+Rennstarts. Geteilte Fahrten der 1950er stehen mit beiden Fahrern in F1DB, deshalb
+kommt Fangio auf 58 statt der offiziellen 51 Starts (Quote 41,4 % statt 47,1 %).
+Moderne Fahrer stimmen exakt (Hamilton 103/332 = 31,0 %, Stand Ende 2023). Das ist die
+etablierte Zaehlweise aller Karten, nicht ein Fehler der neuen — wer eine Quote gegen
+Wikipedia prueft, muss es wissen.
+
+### 11b. Nachtrag: Scope-Filter + zwei fehlende Karten (v0.9.17.55)
+
+**Scope-Chips (`_scanScopeChips`, Zustand `stATSScope`).** Eine zweite Chip-Leiste
+ueber den Dekaden-Chips: `🌍 Alles (33) · 👤 Fahrer (25) · 🏎️ Konstrukteure (8)`, mit
+der Kartenzahl je Bereich. **Die beiden Leisten sind bewusst unabhaengig** — Scope und
+Dekade filtern dieselbe Rechnung und lassen sich frei kombinieren. Gefiltert wird nur
+die Kartenliste (`defs.filter(d => d.scope === stATSScope)`), NICHT der Scan: ein
+Wechsel kostet deshalb nichts und braucht kein `neu berechnen`.
+
+**Zwei Luecken geschlossen:**
+- `fastestLaps` — ⚡ Meiste schnellste Runden (Fahrer, `_mkCount` auf `e.fastestLap`).
+  Gegengerechnet: Schumacher 77, Hamilton 65, Raeikkoenen 46 — alle exakt.
+- `youngPole` — 🍼🅿️ Juengster Polesetter, Gegenstueck zum vorhandenen `oldPole`.
+
+**Messfalle Pole-Alter:** Beide Pole-Alterskarten rechnen mit dem **Renntag**. Ein
+eigenes Qualifying-Datum fuehrt weder F1DB im Kompaktformat noch der simulierte
+Kalender. Gegen eine Quali-genaue Liste fehlt deshalb meist ein Tag — Vettel steht hier
+mit 21 J 73 T statt der bekannten 21 J 72 T (Pole Monza am Samstag, Rennen am Sonntag).
+Das steht jetzt in beiden Kartenbeschreibungen.
+
+**Beobachtung, nicht beauftragt:** Der Konstrukteure-Bereich hat mit 8 Karten deutlich
+weniger als der Fahrer-Bereich mit 25. Team-Gegenstuecke waeren u. a. Punktequote,
+schnellste Runden und Siegesserie.
