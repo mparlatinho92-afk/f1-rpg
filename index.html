@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.54</title>
+    <title>F1 RPG v0.9.17.55</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.54 (aktuell) - 07.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.55 (aktuell) - 07.09.2026</div>
+                            <div>&#8226; NEU: 10 Quoten-Karten - Sieg, Podest, Pole, Punkte, Ausfall, DNQ je Fahrer und Team</div>
+                            <div>&#8226; NEU: Quoten machen kurze Kalender der Fruehzeit mit der Moderne vergleichbar</div>
+                            <div>&#8226; NEU: Filter Fahrer/Konstrukteure, frei mit den Jahrzehnten kombinierbar</div>
+                            <div>&#8226; NEU: Karten Meiste schnellste Runden und Juengster Polesetter</div>
+                            <div>&#8226; FIX: Ausfall- und DNQ-Quote rot statt gold - hoch ist schlecht</div>
+                            <div class="font-bold text-slate-400">v0.9.17.54 - 07.09.2026</div>
                             <div>&#8226; NEU: Rennliste in Wikipedia-Reihenfolge - Pole, Schnellste Runde, Sieger, Konstrukteur</div>
                             <div>&#8226; NEU: Flagge vor jedem Namen, auch beim Siegerkonstrukteur (jahresgenau)</div>
                             <div>&#8226; NEU: Siegerkonstrukteur je Rennen, klickbar zum Team-Profil</div>
@@ -4005,7 +4011,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.54';
+        const VERSION = '0.9.17.55';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -30255,6 +30261,7 @@
         // Danach ist jeder Dekadenwechsel kostenlos (kein Nachladen).
         // ═══════════════════════════════════════════════════════════════════
         let stATSDecade = 'all';           // 'all' | 1950 | 1960 | ...
+        let stATSScope  = 'all';           // 'all' | 'driver' | 'team' (v0.9.17.55)
         let stATSSource = 'sim';           // 'sim' (Stufe 1) | 'real' | 'all' (Schritt 6)
         let _recordsCache = new Map();     // source -> {results, meta}
         let _recordsScan  = null;          // {year, from, to, abort} während des Laufs
@@ -30714,6 +30721,8 @@
             const isWin   = e => e.pos === 1;
             const scored  = e => (e.points || 0) > 0;
             const started = e => _STARTED.has(e.status);
+            const podium  = e => e.pos >= 1 && e.pos <= 3;
+            const entered = () => true;          // jede Meldung, auch DNQ/DNS
             return [
                 _mkStreak('winStreak', '🔥 Längste Siegesserie', 'driver', isWin,
                     { def: 'Aufeinanderfolgende Rennen mit Sieg. Läuft über Saisongrenzen; wer aussetzt, verliert die Serie nicht.' }),
@@ -30735,6 +30744,8 @@
                     { def: 'Starts ohne Platzierung unter den ersten zehn. Punktesystem-unabhängig.' }),
                 _mkCount('poles', '🅿️ Meiste Poles', 'driver', e => e.pole,
                     { def: 'Startplatz 1 in der Qualifikation.' }),
+                _mkCount('fastestLaps', '⚡ Meiste schnellste Runden', 'driver', e => e.fastestLap,
+                    { def: 'Schnellste Rennrunde. Ob sie einen Punkt bringt, haengt an der Aera – gezaehlt wird sie immer.' }),
                 _mkFirstTime('racesToWin', '⏳ Rennen bis zum ersten Sieg', 'racesBeforeFirstWin',
                     { def: 'Starts vor dem ersten Sieg. Nur Fahrer, die je gewonnen haben.',
                       threshold: 'Nur Fahrer mit mindestens einem Sieg' }),
@@ -30758,6 +30769,48 @@
                     e => e.pole && e.pos === 1, e => e.pole, 20,
                     { def: 'Anteil der Team-Poles, aus denen ein Sieg wurde.',
                       threshold: 'Mindestens 20 Poles', pct: true }),
+                // === QUOTEN STATT SUMMEN (v0.9.17.55) ==========================
+                // Jede Zaehl-Karte oben bevorzugt die Moderne: wer 24 statt 7 Rennen
+                // im Jahr faehrt, sammelt zwangslaeufig mehr Siege UND mehr Ausfaelle.
+                // Dieselben Ereignisse als Anteil an den eigenen Starts machen Fangio
+                // und Hamilton vergleichbar. Nenner ist ueberall `started` (gewertete
+                // Starts, _STARTED) - NICHT die Meldung, sonst zaehlt ein DNQ-Wochenende
+                // wie ein verlorenes Rennen. Einzige Ausnahme ist die DNQ-Quote selbst,
+                // die genau danach fragt und deshalb gegen alle Meldungen rechnet.
+                // Die Schwellen (20 Starts / 40 Team-Starts) haelt die Dekaden-Sicht
+                // aus: 20 Starts sind in den 1950ern rund drei Saisons.
+                _mkRatio('winRate', '🏆 Siegquote', 'driver', isWin, started, 20,
+                    { def: 'Anteil der Starts, die mit einem Sieg endeten. Macht Aeren mit kurzem Kalender vergleichbar.',
+                      threshold: 'Mindestens 20 Starts', pct: true }),
+                _mkRatio('podiumRate', '🥂 Podestquote', 'driver', podium, started, 20,
+                    { def: 'Anteil der Starts mit einer Platzierung unter den ersten drei.',
+                      threshold: 'Mindestens 20 Starts', pct: true }),
+                _mkRatio('poleRate', '🅿️ Polequote', 'driver', e => e.pole, started, 20,
+                    { def: 'Anteil der Starts, denen eine Pole vorausging.',
+                      threshold: 'Mindestens 20 Starts', pct: true }),
+                _mkRatio('pointRate', '📈 Punktequote', 'driver', scored, started, 20,
+                    { def: 'Anteil der Starts mit mindestens einem Punkt. Haengt am Punktesystem der Aera.',
+                      threshold: 'Mindestens 20 Starts', pct: true }),
+                _mkRatio('dnfRate', '💥 Ausfallquote', 'driver', e => e.status === 'dnf', started, 20,
+                    { def: 'Anteil der Starts, die mit einem Ausfall endeten. Hoch ist schlecht.',
+                      threshold: 'Mindestens 20 Starts', pct: true, neg: true }),
+                _mkRatio('dnqRate', '🚫 Nichtqualifikations-Quote', 'driver',
+                    e => e.status === 'dnq' || e.status === 'dnpq', entered, 20,
+                    { def: 'Anteil der Meldungen, die nicht ins Rennen fuehrten (DNQ und DNPQ). Hier ist der Nenner die Meldung, nicht der Start. Hoch ist schlecht.',
+                      threshold: 'Mindestens 20 Meldungen', pct: true, neg: true,
+                      warn: 'Simulierte Saisons speichern DNQ erst ab v0.9.15.25 – ältere Saisons fehlen hier.' }),
+                _mkRatio('teamWinRate', '🏆 Siegquote (Team)', 'team', isWin, started, 40,
+                    { def: 'Anteil der Wagenstarts, die mit einem Sieg endeten. Jedes gemeldete Auto zaehlt einzeln.',
+                      threshold: 'Mindestens 40 Wagenstarts', pct: true }),
+                _mkRatio('teamPodiumRate', '🥂 Podestquote (Team)', 'team', podium, started, 40,
+                    { def: 'Anteil der Wagenstarts mit einer Platzierung unter den ersten drei.',
+                      threshold: 'Mindestens 40 Wagenstarts', pct: true }),
+                _mkRatio('teamPoleRate', '🅿️ Polequote (Team)', 'team', e => e.pole, started, 40,
+                    { def: 'Anteil der Wagenstarts, denen eine Pole vorausging.',
+                      threshold: 'Mindestens 40 Wagenstarts', pct: true }),
+                _mkRatio('teamDnfRate', '💥 Ausfallquote (Team)', 'team', e => e.status === 'dnf', started, 40,
+                    { def: 'Anteil der Wagenstarts, die mit einem Ausfall endeten. Das Mass fuer Standfestigkeit. Hoch ist schlecht.',
+                      threshold: 'Mindestens 40 Wagenstarts', pct: true, neg: true }),
                 // Alters-Rekorde (Schritt 10). Gemeinsame Fussnote: nur exakte Daten.
                 _mkAge('youngWin', '🍼 Jüngster Rennsieger', 'min', 'win', dobOf,
                     { def: 'Alter am Tag des Sieges.',
@@ -30771,8 +30824,11 @@
                 _mkAge('oldTitle', '👑 Ältester Weltmeister', 'max', 'title', dobOf,
                     { def: 'Alter am Tag der rechnerischen Titelentscheidung.',
                       threshold: 'Nur exakte Geburts- und Entscheidungsdaten' }),
+                _mkAge('youngPole', '🍼🅿️ Jüngster Polesetter', 'min', 'pole', dobOf,
+                    { def: 'Alter am RENNtag – ein eigenes Qualifying-Datum gibt es in den Daten nicht. Gegen eine Quali-genaue Liste fehlt daher meist ein Tag.',
+                      threshold: 'Nur exakte Geburts- und Renndaten' }),
                 _mkAge('oldPole', '🅿️ Ältester Polesetter', 'max', 'pole', dobOf,
-                    { def: 'Alter am Tag der Pole Position.',
+                    { def: 'Alter am RENNtag – ein eigenes Qualifying-Datum gibt es in den Daten nicht. Gegen eine Quali-genaue Liste fehlt daher meist ein Tag.',
                       threshold: 'Nur exakte Geburts- und Renndaten' }),
                 _mkNationAgg()      // keine Karte (hidden) – speist den Sub-Tab „Nationen"
             ];
@@ -31031,6 +31087,7 @@
             renderContent();
         };
         window.setRecordSource = function(src) { stATSSource = src; renderContent(); };
+        window.setRecordScope = function(sc) { stATSScope = sc; renderContent(); };
         window.toggleRecordThreshold = function(id) { _recIgnoreThr[id] = !_recIgnoreThr[id]; renderContent(); };
 
         // ── Darstellung (Plan 6.3 + 8) ─────────────────────────────────────
@@ -31063,7 +31120,7 @@
                     + '<span class="flex-1 font-bold ' + (def.scope === 'team' ? 'team-link' : 'driver-link') + '" '
                     + 'style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ' + link + '>' + r.name + mix + '</span>'
                     + (r.detail ? '<span class="text-xs text-tertiary">' + r.detail + '</span>' : '')
-                    + '<span class="font-bold accent-gold" style="min-width:3.5rem;text-align:right">' + fmt(r) + '</span>'
+                    + '<span class="font-bold ' + (def.neg ? 'text-red-500' : 'accent-gold') + '" style="min-width:3.5rem;text-align:right">' + fmt(r) + '</span>'
                     + '</div>';
             }).join('') : '<div class="text-tertiary text-sm py-3">Noch keine Daten in diesem Zeitraum.</div>';
 
@@ -31104,6 +31161,19 @@
             return '<div class="flex gap-2 mb-3 flex-wrap">'
                 + btn('all', '🌍 Alles') + btn('sim', '🏎️ Simuliert') + btn('real', '📜 Real')
                 + '<span class="text-xs text-tertiary self-center">Real = F1DB-Jahre vor ' + startYear + '</span></div>';
+        }
+        // Scope-Chips (v0.9.17.55). Bewusst dieselbe Bauart wie die Dekaden-Chips,
+        // damit beide Leisten als das lesbar sind, was sie sind: zwei unabhaengige
+        // Filter auf DIESELBE Rechnung. Der Scan bleibt unberuehrt - gefiltert wird
+        // nur, welche Karten gezeigt werden, deshalb kostet ein Wechsel nichts.
+        function _scanScopeChips(counts) {
+            const chip = (v, l, n) => '<button onclick="setRecordScope(\'' + v + '\')" class="px-3 py-1 rounded text-sm transition" '
+                + 'style="background:' + (stATSScope === v ? '#3B82F6' : '#2D2D2D') + ';color:'
+                + (stATSScope === v ? 'white' : '#aaa') + '">' + l
+                + ' <span class="text-xs" style="opacity:.7">(' + n + ')</span></button>';
+            return chip('all', '🌍 Alles', counts.all)
+                 + chip('driver', '👤 Fahrer', counts.driver)
+                 + chip('team', '🏎️ Konstrukteure', counts.team);
         }
         function _scanDecadeChips(meta) {
             const chip = (v, l, mark) => '<button onclick="setRecordDecade(\'' + v + '\')" class="px-3 py-1 rounded text-sm transition" '
@@ -31149,13 +31219,19 @@
             const cached = _recordsCache.get(stATSSource);
             const { results, meta, defs } = cached;
             const chips = _scanDecadeChips(meta);
+            const visible = defs.filter(def => !def.hidden);
+            const scopeCounts = { all: visible.length,
+                                  driver: visible.filter(d => d.scope === 'driver').length,
+                                  team:   visible.filter(d => d.scope === 'team').length };
+            const shownDefs = stATSScope === 'all' ? visible : visible.filter(d => d.scope === stATSScope);
             const bucket = results[stATSDecade] || {};
             const allB = results['all'] || {};
-            const cards = defs.filter(def => !def.hidden)
+            const cards = shownDefs
                 .map(def => _renderRecordCard(def, bucket[def.id] || [], allB[def.id] || [])).join('');
             const span = stATSDecade === 'all' ? meta.from + '–' + meta.to : stATSDecade + '–' + (Number(stATSDecade) + 9);
 
             return head
+                + '<div class="flex gap-2 mb-2 flex-wrap">' + _scanScopeChips(scopeCounts) + '</div>'
                 + '<div class="flex gap-2 mb-3 flex-wrap">' + chips + '</div>'
                 + '<div class="text-sm text-tertiary mb-3">Quelle: '
                 + ({ sim: 'Simuliert', real: 'Real', all: 'Alles (real + simuliert)' }[stATSSource] || stATSSource)
