@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.17.52</title>
+    <title>F1 RPG v0.9.17.53</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.17.52 (aktuell) - 07.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.17.53 (aktuell) - 07.09.2026</div>
+                            <div>&#8226; FIX: Pole-Spalte archivierter Saisons blieb leer - getYearData reichte qualifyingResults nicht durch</div>
+                            <div>&#8226; NEU: Poles-Spalte in All-Time-Fahrer- und Team-Tabelle, sortierbar</div>
+                            <div>&#8226; FIX: Team-Poles wurden nie gezaehlt (alle Teams standen auf 0)</div>
+                            <div>&#8226; FIX: Blitz-Symbol vor der schnellsten Runde entfernt</div>
+                            <div class="font-bold text-slate-400">v0.9.17.52 - 07.09.2026</div>
                             <div>&#8226; NEU: 25 historische Liveries (De Tomaso, Coloni, Theodore, Pacific, March, Fondmetal u.a.)</div>
                             <div>&#8226; NEU: Saison 2015-2023 jahresgenau eingefaerbt statt Sammel-Ranges</div>
                             <div>&#8226; FIX: Arrows 1983 grau-beige statt Creme-Blau</div>
@@ -17596,7 +17601,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.17.52';
+        const VERSION = '0.9.17.53';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24474,6 +24479,8 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 t.races = t.races ?? 0;
                 t.wins = t.wins ?? 0;
                 t.points = t.points ?? 0;
+                t.podiums = t.podiums ?? 0;
+                t.poles = t.poles ?? 0;
                 t.championships = t.championships ?? 0;
             });
             
@@ -27809,7 +27816,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 }
                 if (!GAME_STATE.allTimeStATS.teams[teamStATSId]) {
                     GAME_STATE.allTimeStATS.teams[teamStATSId] = { 
-                        name: r.teamName, races: 0, wins: 0, points: 0, podiums: 0, championships: 0 
+                        name: r.teamName, races: 0, wins: 0, points: 0, podiums: 0, poles: 0, championships: 0 
                     };
                 }
                 const at = GAME_STATE.allTimeStATS.teams[teamStATSId];
@@ -27818,6 +27825,10 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 at.points += r.points;
                 if (r.position === 1 && !r.dnf) at.wins++;
                 if (r.position <= 3 && !r.dnf) at.podiums++;
+                // Poles wurden beim Fahrer gezaehlt, beim Team nie (v0.9.17.53) - die
+                // Team-Bestenliste stand deshalb ausnahmslos auf 0. getHistoricalStATS
+                // liefert den Vorgeschichts-Wert bereits, es fehlte nur der Spiel-Teil.
+                if (r.qualiPos === 1) at.poles = (at.poles || 0) + 1;
                 at.isHistorical = false; // Aktive Teams sind nicht historisch
                 // v0.8.2.4: Indy/F1 Tracking
                 if (raceIsIndy) at.hasIndy = true; else at.hasF1 = true;
@@ -39902,6 +39913,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     driverStandings: GAME_STATE.driverStandings,
                     teamStandings: GAME_STATE.teamStandings,
                     results: GAME_STATE.results,
+                    qualifyingResults: GAME_STATE.qualifyingResults,
                     races: GAME_STATE.races,
                     currentRace: GAME_STATE.currentRace,
                     champion: null,
@@ -39920,6 +39932,12 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     driverStandings: simulated.driverStandings || {},
                     teamStandings: simulated.teamStandings || {},
                     results: simulated.results || [],  // Ergebnisse aus History!
+                    // Qualifying MUSS mit (v0.9.17.53): ohne dieses Feld blieb die
+                    // Pole-Spalte jeder archivierten Saison auf "-" stehen, obwohl der
+                    // Detail-Store die Quali-Ergebnisse traegt - getYearData reichte sie
+                    // schlicht nicht durch. switchToYear haengt den Detail vorher an den
+                    // (leichten) Record, hier steht also bereits das volle Array.
+                    qualifyingResults: simulated.qualifyingResults || [],
                     races: simulated.races || generateRacesForYear(year),
                     currentRace: simulated.raceCount || simulated.results?.length || 0,
                     champion: simulated.champion,
@@ -42857,7 +42875,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                             <td class="p-3 text-center">${statusCell}</td>
                             <td class="p-3 text-sm" onclick="event.stopPropagation()">${winnerName ? `<span class="font-bold driver-link" onclick="openDriverProfile('${winnerId}')">${winnerName}</span>` : '<span class="text-tertiary">–</span>'}</td>
                             <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${poleName ? (poleId ? `<span class="driver-link" onclick="openDriverProfile('${poleId}')">${poleName}</span>` : poleName) : (isCompleted || isPureHistorical ? '–' : '')}</td>
-                            <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flName ? `<span class="accent-purple">⚡</span> ${flId ? `<span class="driver-link" onclick="openDriverProfile('${flId}')">${flName}</span>` : flName}` : (isCompleted || isPureHistorical ? '–' : '')}</td>
+                            <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flName ? `${flId ? `<span class="driver-link" onclick="openDriverProfile('${flId}')">${flName}</span>` : flName}` : (isCompleted || isPureHistorical ? '–' : '')}</td>
                         </tr>
                     `;
                 }).join('');
@@ -42953,7 +42971,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                         </td>
                         <td class="p-3 text-sm" onclick="event.stopPropagation()">${winner ? `<span class="font-bold driver-link" onclick="openDriverProfile('${winnerId2}')">${winner}</span>` : '<span class="text-tertiary">–</span>'}</td>
                         <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${poleDriver ? (poleId2 ? `<span class="driver-link" onclick="openDriverProfile('${poleId2}')">${poleDriver}</span>` : poleDriver) : (isCompleted ? '–' : '')}</td>
-                        <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flDriver ? `<span class="accent-purple">⚡</span> ${flId2 ? `<span class="driver-link" onclick="openDriverProfile('${flId2}')">${flDriver}</span>` : flDriver}` : (isCompleted ? '–' : '')}</td>
+                        <td class="p-3 text-sm text-tertiary" onclick="event.stopPropagation()">${flDriver ? `${flId2 ? `<span class="driver-link" onclick="openDriverProfile('${flId2}')">${flDriver}</span>` : flDriver}` : (isCompleted ? '–' : '')}</td>
                     </tr>
                 `;
             }).join('');
@@ -44943,13 +44961,14 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 <div class="text-sm text-tertiary mb-2">${drivers.length} Fahrer gesamt</div>
                 
                 <div class="card rounded-xl overflow-x-auto">
-                    <table class="text-sm" style="min-width:480px;width:100%">
+                    <table class="text-sm" style="min-width:540px;width:100%">
                         <thead class="bg-secondary">
                             <tr>
                                 <th class="p-3 text-left">#</th>
                                 <th class="p-3 text-left">Fahrer</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('championships')">🏆 ${sortIcon('championships')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('wins')">Siege ${sortIcon('wins')}</th>
+                                <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('poles')">Poles ${sortIcon('poles')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('races')">Rennen ${sortIcon('races')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('podiums')">Podien ${sortIcon('podiums')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('points')">Punkte ${sortIcon('points')}</th>
@@ -44970,6 +44989,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                                         '</td>' +
                                         '<td class="p-3 text-center font-bold">' + (d.championships || 0) + '</td>' +
                                         '<td class="p-3 text-center accent-gold font-bold">' + (d.wins || 0) + '</td>' +
+                                        '<td class="p-3 text-center">' + (d.poles || 0) + '</td>' +
                                         '<td class="p-3 text-center">' + (d.races || 0) + '</td>' +
                                         '<td class="p-3 text-center">' + (d.podiums || 0) + '</td>' +
                                         '<td class="p-3 text-center">' + Math.round(d.points || 0) + '</td>' +
@@ -45029,12 +45049,13 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 <div class="text-sm text-tertiary mb-2">${teams.length} Teams gesamt</div>
                 
                 <div class="card rounded-xl overflow-x-auto">
-                    <table class="text-sm" style="min-width:420px;width:100%">
+                    <table class="text-sm" style="min-width:480px;width:100%">
                         <thead class="bg-secondary">
                             <tr>
                                 <th class="p-3 text-left">#</th>
                                 <th class="p-3 text-left">Team</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('wins')">Siege ${sortIcon('wins')}</th>
+                                <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('poles')">Poles ${sortIcon('poles')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('races')">Rennen ${sortIcon('races')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('podiums')">Podien ${sortIcon('podiums')}</th>
                                 <th class="p-3 text-center cursor-pointer hover:text-white" onclick="sortStATS('points')">Punkte ${sortIcon('points')}</th>
@@ -45051,6 +45072,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                                         (isCurrentlyActive ? '🏎️' : '📜') + ' ' + (t.name || t.id) +
                                     '</td>' +
                                     '<td class="p-3 text-center accent-gold font-bold">' + (t.wins || 0) + '</td>' +
+                                    '<td class="p-3 text-center">' + (t.poles || 0) + '</td>' +
                                     '<td class="p-3 text-center">' + (t.races || 0) + '</td>' +
                                     '<td class="p-3 text-center">' + (t.podiums || 0) + '</td>' +
                                     '<td class="p-3 text-center">' + Math.round(t.points || 0) + '</td>' +
