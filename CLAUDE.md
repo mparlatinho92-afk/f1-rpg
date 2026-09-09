@@ -8,8 +8,8 @@ Code-Kommentare, Commit-Nachrichten und Changelog bleiben davon unberührt – d
 F1 RPG – Projekt-Regeln
 
 Projektkontext
-Git-Endprodukt: Einzelne HTML-Datei (~5.5MB Monolith), standalone ohne externe Abhängigkeiten.
-Entwicklung: `index.html` (~1.4MB) + `data/*.js` Dateien. `manage-v` inliniert data/*.js automatisch → Monolith.
+Git-Endprodukt: Einzelne HTML-Datei (~17MB Monolith), standalone ohne externe Abhängigkeiten. Der Löwenanteil ist `data/images.js` (9,2MB Fahrerfotos).
+Entwicklung: `index.html` (~3MB) + `data/*.js` Dateien. `manage-v` inliniert data/*.js automatisch → Monolith.
 
 Spiellogik-Priorität: plausibel vor perfekt, emergent vor gescriptet.
 
@@ -97,14 +97,35 @@ Sobald ein Task abgeschlossen ist, schlage unaufgefordert den passenden `./manag
 - Ältere Einträge bleiben bestehen (werden nach unten verdrängt)
 - Maximal ~3–5 Bullet-Points pro Version, prägnant auf Deutsch
 
-## Simulations-Architektur (Modi & Pfade, immer synchron)
+## Simulations-Architektur (eine Engine, mehrere Darstellungen)
 **Modus = Darstellung, nie Konsequenzen.** Ergebnisse, Statistiken und Effekte sind in allen Modi identisch (Sofort-Rennen, Live-Ticker, Komplette-Saison, Balancing-Tool).
 Neue Mechanik die nur in einem Modus wirkt = falsch platziert.
 
-**Live-Ticker-Regel (VERBINDLICH):** Klassische Simulation und Live-Ticker müssen für dasselbe Rennen **identische Ergebnisse** liefern (Reihenfolge, DNF, Tode, Punkte). Der Live-Ticker ist **nur das „Wie" (Darstellung)** – die Zahlen entstehen in **einer** Engine. Zielarchitektur: der Live-Ticker holt sein Ergebnis von `simulateRace()` und **animiert nur noch dorthin**, statt selbst zu würfeln.
-- **Beim Feintuning der Simulation IMMER beide Pfade synchron bearbeiten.** Eine Änderung nur in einem Modus = Bug.
-- Marker `// [SYNC simulateRace]` kennzeichnen duplizierte/gekoppelte Stellen (DNF, Todes-Check, Grid, Pace-Formel).
-- Historie: Bis v0.9.14.45 hatte der Live-Ticker eine **eigene** Lap-Pace-Formel (~L9379 `pace*0.02` / ~L9384 `carSpeed*0.015`) und baute sein Ergebnis aus akkumulierten Lap-Zeiten → divergierte von `simulateRace` (`pace*0.45`/`carSpeed*0.15` + Car-Ceiling). Parität ist das laufende Reform-Ziel.
+**Live-Ticker-Regel (VERBINDLICH):** Klassische Simulation und Live-Ticker liefern für dasselbe Rennen **identische Ergebnisse** (Reihenfolge, DNF, Tode, Punkte). Der Live-Ticker ist **nur das „Wie" (Darstellung)** – die Zahlen entstehen in **einer** Engine.
+
+**Seit v0.9.18.0 ist das umgesetzt, nicht mehr nur angestrebt:** `startLiveRace()` ruft `simulateRace()`, legt das Ergebnis in `liveRaceState.plannedResult` und der Ticker **animiert nur noch dorthin**. `closeLiveRace()` reicht dieses Ergebnis durch, statt ein zweites zu bauen.
+
+- ⚠ **Keine Renn-Logik mehr in den Ticker einbauen.** Die frühere Anweisung „immer beide Pfade synchron bearbeiten" gilt **nicht mehr** – es gibt nur noch einen Pfad. Wer im Ticker würfelt, legt die Divergenz neu an.
+- **Feintuning der Simulation passiert ausschließlich in `simulateRace()`.** Der Ticker erbt es automatisch.
+- **Reine Darstellung im Ticker ist erlaubt und erwünscht:** Boxenstopps, Positionswechsel, Überholmeldungen, die Ausfall*runde*. Alles davon darf das Ergebnis **nicht** verändern – Boxenstopps kosten deshalb bewusst keine Zeit. Ob jemand ausfällt, steht in `simulateRace` fest; nur das Wann ist frei.
+- Marker `// [SYNC simulateRace]` kennzeichnen weiterhin Stellen, die auf die Engine zeigen – aber als **Verweis**, nicht mehr als Pflicht zur Doppelpflege.
+- **Absicherung:** `node tests/ticker-paritaet.js --alle 40` vergleicht die Endreihenfolge des Tickers Fahrer für Fahrer mit `plannedResult`. Keine Toleranz. Bei jeder Änderung an Ticker oder `simulateRace` laufen lassen.
+
+**Messwerkzeuge:**
+
+| Befehl | Zweck |
+|---|---|
+| `node tests/ticker-paritaet.js --alle 40` | Beweist die Parität **direkt** (nicht statistisch) |
+| `node tests/ticker-vs-sim.js 1950 0 300` | Monte Carlo: sofort / ticker / **real aus F1DB**, Schwerpunkt Grid→Ziel |
+| `node tests/ticker-browser.js 1950` | Ticker im echten Browser mit `pageerror` – sim-core sieht UI-Fehler nicht |
+
+⚠ **Messfallen (jede hat schon Zeit gekostet):**
+- `GAME_STATE.seasonDeaths` enthält auch **Nicht-WM-Tode** aus `applyRaceResults`. Ohne Filter auf `fatalSession==='race'` sieht jede Zählung nach Doppelverbuchung aus.
+- Das `raceResult` entsteht in **`closeLiveRace()`**, nicht in `finishLiveRace()` – letzteres setzt nur `finished` und die Siegermeldung.
+- `liveRaceState` ist mit `let` deklariert und landet damit **nicht** auf dem vm-Kontext von sim-core; dort injiziert ein Patch den Getter `window.__liveState`. `startLiveRace`/`startRaceSimulation` hängen an `window`, nicht global.
+- Monte Carlo kann die Parität **nicht beweisen** – beide Pfade würfeln unabhängig, vergleichbar sind nur Verteilungen. Dafür ist `ticker-paritaet.js` da.
+
+**Historie:** Bis v0.9.18.0 hatte der Live-Ticker eine **eigene** Lap-Pace-Formel (`pace*0.02` / `carSpeed*0.015`, ohne `experience` und ohne Car-Ceiling) und baute sein Ergebnis aus akkumulierten Lap-Zeiten. Ein Fahrer mit pace 95 gegen einen mit 50 war dort **0,9 % pro Runde** schneller – in `simulateRace` entscheidet `pace` mit 0.45 von rund 100 Punkten. Deshalb kamen Balance-Fixes im Ticker nie an. Der Umbau entfernte ~345 Zeilen (netto 233 weniger).
 
 Zentrale Logik-Funktionen (nie duplizieren):
 - Saison-Ende → `processSeasonEndEvents()`
@@ -119,7 +140,7 @@ Claude simuliert NIEMALS selbst (Token-Verschwendung).
 → Monte-Carlo-Infrastruktur: siehe `tests/README.md`
 
 ## Schemas (Navigations-Zentrale)
-**Immer zuerst `/schemas/` lesen** – nicht blind in der 1,4MB-HTML suchen. Vor Zugriff auf GAME_STATE, Driver, SEASON_DATA oder HIST_SEASONS zwingend das zugehörige Schema lesen.
+**Immer zuerst `/schemas/` lesen** – nicht blind in der 3MB-HTML suchen. Vor Zugriff auf GAME_STATE, Driver, SEASON_DATA oder HIST_SEASONS zwingend das zugehörige Schema lesen.
 
 | Datei | Inhalt |
 |---|---|
@@ -134,7 +155,7 @@ Claude simuliert NIEMALS selbst (Token-Verschwendung).
 ## Dateistruktur
 ```
 /f1-rpg-vX.X.X.html     ← Git-Endprodukt (Standalone-Monolith, von manage-v erzeugt)
-/index.html              ← Entwicklungsdatei (~1.4MB, mit <script src="data/...">)
+/index.html              ← Entwicklungsdatei (~3MB, mit <script src="data/...">)
 /data/f1db.js            ← F1DB-Renndaten (3.6MB – Grep only, nicht lesen)
 /data/hist.js            ← Fahrer-/Saison-Historien (~286KB)
 /data/seasons.js         ← SEASON_DATA Templates (~238KB)
