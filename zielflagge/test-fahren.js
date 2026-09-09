@@ -43,12 +43,17 @@ function ladeSaison(jahr) {
       return {
         ok: true,
         gridLen: state.grid.length,
+        dnqLen: (state.dnq||[]).length,
+        starter: (state.starters||[]).length,
+        autos: Object.keys(carMeshes).length,
+        gemeldet: DRIVERS.length,
         eindeutigeBacks: new Set(backs).size,
         seiten: new Set(lats).size,
         polePos: state.grid[0].name,
         meinPlatz,
         spielerAufPole: meinPlatz === 1,
-        gridZeilenImUI: document.querySelectorAll('#grid-list .gridrow').length,
+        gridZeilenImUI: document.querySelectorAll('#grid-list .gridrow:not(.dnq)').length,
+        dnqZeilenImUI: document.querySelectorAll('#grid-list .gridrow.dnq').length,
         markierteZeile: document.querySelectorAll('#grid-list .gridrow.me').length
       };
     } catch (e) { return { ok: false, err: e.message }; }
@@ -59,6 +64,7 @@ function ladeSaison(jahr) {
     const probe = (taste) => {
       // definierter Ausgangszustand
       player.pos.set(0, 0, 0); player.heading = 0; player.speed = 25;
+      player.steerNow = 0;   // sonst schleppt Probe 2 den Einschlag von Probe 1 mit
       player.finished = false; player.aborted = false;
       Object.keys(keys).forEach(k => keys[k] = false);
       keys[taste] = true;
@@ -102,11 +108,14 @@ function ladeSaison(jahr) {
   const pruefWahr = (name, bed, hinweis) => p.push({ name, ist: hinweis, soll: 'erfuellt', ok: !!bed });
 
   pruef('Rennen startbar', start.ok, true);
-  pruef('Grid vollstaendig', start.gridLen, start.ok ? start.gridLen : 0);
+  pruef('Startfeld auf 26', start.gridLen, 26);
+  pruef('Rest ist DNQ', start.dnqLen, start.gemeldet-26);
+  pruef('Nur Starter mit Auto', start.autos, 26);
+  pruef('DNQ im UI', start.dnqZeilenImUI, start.gemeldet-26);
   pruefWahr('Startplaetze gestaffelt', start.eindeutigeBacks > 4, start.eindeutigeBacks + ' Laengsstufen');
   pruef('Zwei Startspuren', start.seiten, 2);
   pruefWahr('Spieler nicht auto-Pole', !start.spielerAufPole, 'Platz ' + start.meinPlatz);
-  pruef('Grid im UI gerendert', start.gridZeilenImUI, start.gridLen);
+  pruef('Grid im UI gerendert', start.gridZeilenImUI, 26);
   pruef('Eigene Zeile markiert', start.markierteZeile, 1);
 
   pruefWahr('LINKS lenkt nach links', lenk.links.nachLinks > 0.05,

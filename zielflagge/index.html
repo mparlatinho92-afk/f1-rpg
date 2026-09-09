@@ -62,6 +62,9 @@ main{flex:1;display:flex;overflow:hidden;position:relative;min-height:0;}
 .gridrow .griddot{width:8px;height:18px;border-radius:2px;flex-shrink:0;}
 .gridrow .gridname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .gridrow .gridteam{color:var(--muted);font-size:11px;flex-shrink:0;max-width:88px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gridrow.dnq{opacity:.45;}
+.dnqhead{font-family:var(--display);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 12px 5px;border-top:1px solid var(--line);margin-top:6px;}
+.dnqhinweis{background:rgba(255,176,32,.12);color:var(--amber);font-size:11.5px;line-height:1.5;padding:8px 12px;border-bottom:1px solid var(--line);}
 .leaderboard-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer;}
 .leaderboard-row:hover{background:var(--surface2);}
 .leaderboard-row .pos{font-family:var(--display);font-size:19px;font-weight:600;width:22px;color:var(--muted);flex-shrink:0;}
@@ -145,6 +148,13 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
           <button class="btn" id="btn-abort-race" onclick="confirmAbort()" style="display:none;">🚩 Abbrechen</button>
           <button class="btn" id="btn-restart" onclick="confirmRestart()" style="display:none;">↻ Neustart</button>
           <button class="btn" id="btn-playpause" onclick="togglePlay()" disabled>⏸ Pause</button>
+          <select class="btn" id="ai-mode" onchange="setAiMode(this.value)" title="Tempo der Gegner">
+            <option value="leicht">Gegner: locker</option>
+            <option value="mittel">Gegner: mittel</option>
+            <option value="adaptiv" selected>Gegner: anpassen</option>
+            <option value="hart">Gegner: realistisch</option>
+          </select>
+          <span id="ai-scale-info" class="legend" style="margin-left:0;"></span>
           <button class="btn speedbtn active" data-speed="1" onclick="setSpeed(1)">1×</button>
           <button class="btn speedbtn" data-speed="2" onclick="setSpeed(2)">2×</button>
           <button class="btn ghost" onclick="camFollowId=null;">🎮 Meine Kamera</button>
@@ -297,10 +307,18 @@ const APP_CLAIM='3D-Rennspiel — selbst fahren, Ergebnis für F1 RPG';
 document.title=APP_NAME+' — '+APP_CLAIM;
 document.getElementById('app-name').textContent=APP_NAME;
 
-const TRACK_WIDTH=9;
+// Fahrbahnbreite. War 9 - bei 1,6 breiten Autos so schmal, dass jede kleine
+// Linienabweichung schon das Gras-Malus ausloeste.
+const TRACK_WIDTH=15;
 
 /* ============================= STATE ============================= */
-let state = {laps:5, fastestLapPoint:true, playerDriverId:null, finalClassification:null};
+let state = {laps:5, fastestLapPoint:true, playerDriverId:null, finalClassification:null,
+             aiScale:1, aiMode:'adaptiv'};
+/* aiScale streckt die KI-Zeiten. Grund: die Simulation faehrt eine perfekte
+   Ideallinie mit konstantem Tempo, ein Mensch nicht - ohne Streckung ist das
+   Feld uneinholbar. Der Faktor wirkt auf Animation UND Wertung gleichermassen,
+   damit beide dieselbe Wahrheit erzaehlen, und steht im Export. */
+const AI_MODI={leicht:1.45, mittel:1.22, hart:1.0, adaptiv:1.30};
 let TEAMS = {};
 let DRIVERS = [];
 let currentView='track';
@@ -604,10 +622,37 @@ function addDriver(){
 function removeDriver(i){ DRIVERS.splice(i,1); renderGarageTables(); }
 
 /* ============================= AI-RENNSIMULATION ============================= */
-/* Gewichtung wie im F1 RPG (index.html:14370): pace 0.45, carSpeed 0.30,
-   strategy 0.10. Qualifying UND Rennen ziehen aus dieser einen Formel - hier
-   darf keine zweite entstehen, sonst faellt das Grid vom Rennergebnis ab. */
-function perfScore(d,t){ return d.pace*0.45 + t.carSpeed*0.30 + t.strategy*0.10 + 15; }
+/* [SYNC simulateRace] Spiegel der Kern-Engine des F1 RPG (index.html:13685 ff.,
+   in simulateRace selbst - NICHT die Trainings-Formel bei :14370, die anders
+   gewichtet). Vier Eigenheiten, die das Balancing ausmachen und deshalb hier
+   genauso stehen muessen:
+     1. Konstanz ist ein Schalter, keine Streubreite: mit cons/100 hat der Fahrer
+        einen guten Tag und seine Pace zaehlt, sonst faellt sie KOMPLETT weg.
+     2. experience geht mit 0.15 ein, carSpeed nur mit 0.20 (+15 Sockel).
+     3. Das Rauschen ist gleichverteilt +-(6..16), nicht gaussisch - eine Gauss-
+        Verteilung laesst Hinterbaenkler auf die Pole ausreissen.
+     4. Car-Ceiling: oberhalb carSpeed+4 wird Mehrleistung auf 0.18 gestaucht.
+        Das Auto ist Decke UND Boden.
+   Aendert sich das im RPG, muss es hier mitgezogen werden. */
+const CEIL_HEADROOM=4, CEIL_SOFT=0.18;
+
+/* Erwartungswert ohne Zufall - fuer Rangfolgen und Anzeige. */
+function perfScore(d,t){
+  return d.pace*(d.consistency/100)*0.45 + 15 + (d.experience||50)*0.15 + t.carSpeed*0.20;
+}
+
+/* Ein Wurf wie im RPG: guter/schlechter Tag, Rauschen, Car-Ceiling. */
+function rollPerformance(d,t){
+  const cons=d.consistency ?? 75;
+  const guterTag=Math.random()<(cons/100);
+  const paceFactor=guterTag?1:0;
+  let performance = d.pace*paceFactor*0.45 + 15 + (d.experience||50)*0.15 + t.carSpeed*0.20;
+  const halfVar=6+(100-cons)*0.10;
+  performance += (Math.random()-0.5)*2*halfVar;
+  const carCeil=t.carSpeed+CEIL_HEADROOM;
+  if(performance>carCeil) performance = carCeil + (performance-carCeil)*CEIL_SOFT;
+  return performance;
+}
 
 /* ---------------------------- STARTAUFSTELLUNG ----------------------------
    Vorher standen ALLE Autos auf demselben Kurvenpunkt, seitlich zufaellig aus
@@ -620,13 +665,12 @@ const GRID_ROW_GAP=9;      // Laengsabstand zweier Reihen
 const GRID_SIDE=2.4;       // seitlicher Versatz zur Mittellinie
 const GRID_STAGGER=3.5;    // ungerade Startplaetze stehen etwas zurueck
 const GRID_FADE_S=10;      // ueber so viele Sekunden verschwindet der Startversatz
+const GRID_MAX=26;         // Startplaetze; wer langsamer qualifiziert, ist DNQ
 
 function qualify(drivers){
   return drivers.map(d=>{
     const t=TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
-    // gleiche Gewichtung wie im Rennen, nur mit groesserer Streuung
-    const sigma=5+(100-(d.consistency||70))*0.09;
-    return {id:d.id, name:d.name, team:d.team, sc:perfScore(d,t)+gaussian(0,sigma)};
+    return {id:d.id, name:d.name, team:d.team, sc:rollPerformance(d,t)};
   }).sort((a,b)=>b.sc-a.sc);
 }
 function gridSlotFor(index){
@@ -648,6 +692,28 @@ function placeOnTrack(u, lateral){
           heading:Math.atan2(tangent.x,tangent.z)};
 }
 
+/* Nach der ersten gefahrenen Runde einmalig nachjustieren: das Feld soll so
+   schnell sein, dass der Spieler ungefaehr im Mittelfeld liegt - nicht dass er
+   gewinnt, nicht dass er ueberrundet wird. Danach bleibt der Faktor fest, damit
+   das Rennen nicht mitwandert (Gummiband) und die Wertung stabil bleibt. */
+function adaptAiPace(playerLapTime){
+  if(!aiSim||!aiSim.lapCumulative) return;
+  const erste=[];
+  for(const id in aiSim.lapCumulative){
+    const l=aiSim.lapCumulative[id];
+    if(l&&l.length) erste.push(l[0]);
+  }
+  if(!erste.length) return;
+  erste.sort((a,b)=>a-b);
+  const median=erste[Math.floor(erste.length/2)];
+  if(!median) return;
+  // Ziel: Median der KI liegt knapp ueber der Spielerrunde -> er kaempft ums Mittelfeld
+  const faktor=clamp((playerLapTime*0.99)/median, 0.8, 3.0);
+  state.aiScale=faktor;
+  const el=document.getElementById('ai-scale-info');
+  if(el) el.textContent='Feld angepasst: \u00d7'+faktor.toFixed(2);
+}
+
 function pickRetireReason(){
   const reasons=['Motorschaden','Unfall','Getriebeschaden','Aufhängungsschaden','Elektrikdefekt','Bremsversagen','Aufgabe im Kiesbett'];
   return reasons[Math.floor(Math.random()*reasons.length)];
@@ -655,6 +721,10 @@ function pickRetireReason(){
 function simulateRace(drivers,laps,playerId){
   const BASE_LAP=30; // Ziel-Rundenzeit in Echtzeit-Sekunden
   const team=d=>TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
+  // Wie im RPG faellt die Renn-Performance EINMAL pro Fahrer und Rennen, nicht
+  // je Runde neu - sonst mittelt sich der schlechte Tag ueber die Distanz weg.
+  const rennPerf={};
+  drivers.forEach(d=>{ if(d.id!==playerId) rennPerf[d.id]=rollPerformance(d,team(d)); });
   const cumulative={}, lapCumulative={};
   drivers.forEach(d=>{ if(d.id!==playerId){ cumulative[d.id]=0; lapCumulative[d.id]=[]; } });
   const retired={}, fastestLap={};
@@ -663,9 +733,10 @@ function simulateRace(drivers,laps,playerId){
     drivers.forEach(d=>{
       if(d.id===playerId || retired[d.id]) return;
       const t=team(d);
-      const perf=perfScore(d,t)/100;
+      const perf=rennPerf[d.id]/100;
       const idealLap=BASE_LAP-perf*6;
-      const sigma=clamp((100-d.consistency)/100,0.05,1)*0.55;
+      // klein halten: die grosse Streuung sitzt bereits in rennPerf (Tagesform)
+      const sigma=clamp((100-d.consistency)/100,0.05,1)*0.30;
       const lapTime=Math.max(idealLap+gaussian(0,sigma), idealLap*0.85);
       const relScore=t.reliability; // im F1 RPG sitzt Zuverlaessigkeit ausschliesslich am Team
       const dnfChance=0.02*(1-relScore/100);
@@ -696,7 +767,8 @@ function buildAiAnimData(sim, drivers, playerId){
     aiAnimData[d.id]={segs, endTime: segs.length?segs[segs.length-1].endT:0};
   });
 }
-function getProgressAI(id,t){
+function getProgressAI(id,tRoh){
+  const t=tRoh/(state.aiScale||1);
   const a=aiAnimData && aiAnimData[id];
   if(!a||a.segs.length===0) return {lap:0,frac:0,frozen:false,finished:true};
   if(t>=a.endTime){
@@ -722,7 +794,9 @@ let spacedPts=[], spacedTangents=[], trackLength=800;
 const trackPointsRaw=[[0,70],[45,88],[95,78],[132,48],[140,4],[112,-34],[128,-70],[96,-102],[46,-96],[8,-66],[-34,-70],[-70,-46],[-96,-58],[-134,-30],[-140,14],[-104,48],[-70,30],[-46,58],[-18,42]];
 
 let camIdle={theta:0.6, phi:0.85, radius:260, target:null, autoRotate:true};
-let camChase={theta:0, phi:0.72, radius:16, target:null};
+// phi ist der Polarwinkel: klein = von oben, gross = flach hinter dem Auto.
+// 0.72 blickte steil aufs Dach, vom Horizont war fast nichts zu sehen.
+let camChase={theta:0, phi:1.12, radius:15, target:null};
 let cameraMode='idle';
 let camFollowId=null;
 let dragging=false;
@@ -790,8 +864,29 @@ function buildTrack(){
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
   geo.computeVertexNormals();
-  const road=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x2b2d31, roughness:0.95}));
+  const road=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x3a3d43, roughness:0.95}));
   road.position.y=0.02; sceneScene.add(road);
+
+  // Randlinien. Ohne sie ist im Fahrbetrieb nicht zu erkennen, wo die Bahn endet -
+  // das Abkommen bemerkt man dann erst am Tempoverlust, was sich wie ein Bug anfuehlt.
+  const randMat=new THREE.MeshBasicMaterial({color:0xf2f2f2, side:THREE.DoubleSide});
+  [leftPts,rightPts].forEach(seite=>{
+    const rand=[];
+    for(let i=0;i<seite.length;i++){
+      const j=(i+1)%seite.length;
+      const a=seite[i], c=seite[j];
+      const t=new THREE.Vector3().subVectors(c,a).normalize();
+      const nv=new THREE.Vector3().crossVectors(t,up).normalize().multiplyScalar(0.35);
+      const a1=a.clone().add(nv), a2=a.clone().sub(nv);
+      const c1=c.clone().add(nv), c2=c.clone().sub(nv);
+      rand.push(a1.x,a1.y,a1.z, a2.x,a2.y,a2.z, c1.x,c1.y,c1.z);
+      rand.push(c1.x,c1.y,c1.z, a2.x,a2.y,a2.z, c2.x,c2.y,c2.z);
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(rand,3));
+    const m=new THREE.Mesh(g, randMat);
+    m.position.y=0.045; sceneScene.add(m);
+  });
 
   const centerGeo=new THREE.BufferGeometry().setFromPoints(spaced.map(p=>new THREE.Vector3(p.x,0.06,p.z)));
   const centerLine=new THREE.Line(centerGeo, new THREE.LineDashedMaterial({color:0xffffff, dashSize:3, gapSize:3, transparent:true, opacity:0.3}));
@@ -835,7 +930,7 @@ function attachCameraControls(){
     if(cameraMode==='idle'){
       camIdle.theta-=dx*0.005; camIdle.phi=clamp(camIdle.phi-dy*0.005,0.15,1.4);
     } else {
-      camChase.theta-=dx*0.006; camChase.phi=clamp(camChase.phi-dy*0.004,0.35,1.15);
+      camChase.theta-=dx*0.006; camChase.phi=clamp(camChase.phi-dy*0.004,0.35,1.45);
     }
   });
   canvas.addEventListener('wheel', e=>{
@@ -867,10 +962,13 @@ function updateCameraFrame(dt){
     const r=camChase.radius, phi=camChase.phi;
     camera.position.set(
       camChase.target.x + r*Math.sin(phi)*Math.sin(theta),
-      camChase.target.y + r*Math.cos(phi) + 1,
+      camChase.target.y + r*Math.cos(phi) + 3.2,
       camChase.target.z + r*Math.sin(phi)*Math.cos(theta)
     );
-    camera.lookAt(camChase.target.x, camChase.target.y+1.4, camChase.target.z);
+    // Blickpunkt liegt VOR dem Auto und etwas hoeher: so kommt der Horizont ins
+    // Bild, ohne dass das eigene Auto aus dem unteren Rand faellt.
+    const bw=new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)).multiplyScalar(11);
+    camera.lookAt(camChase.target.x+bw.x, camChase.target.y+2.6, camChase.target.z+bw.z);
   }
 }
 function onResize(){
@@ -917,7 +1015,7 @@ function initPlayer(driverId){
     id:driverId,
     pos:new THREE.Vector3(p.pos.x,0,p.pos.z),
     heading:p.heading,
-    speed:0, lap:0, frac:0, lapStartTime:0, lapTimes:[], bestLap:null,
+    speed:0, steerNow:0, lap:0, frac:0, lapStartTime:0, lapTimes:[], bestLap:null,
     finished:false, aborted:false,
   };
 }
@@ -936,7 +1034,7 @@ function updatePlayer(dt){
   const driverStats=DRIVERS.find(d=>d.id===player.id)||{pace:70,potential:70};
   const teamStats=TEAMS[driverStats.team]||{carSpeed:65};
   const maxSpeed=(trackLength/24)*(0.85+(driverStats.pace+teamStats.carSpeed)/400);
-  const accel=26, brakeDecel=34, reverseAccel=14;
+  const accel=38, brakeDecel=42, reverseAccel=16;
 
   if(throttle>0){ player.speed+=accel*dt; }
   else if(throttle<0){
@@ -947,13 +1045,21 @@ function updatePlayer(dt){
   }
   player.speed-=Math.sign(player.speed)*0.02*player.speed*player.speed*dt;
 
-  const offMult=offTrack?0.45:1;
+  // Weicher Uebergang statt Kante: direkt neben der Bahn kostet es kaum, weit
+  // draussen deutlich. Vorher fiel das Tempo schlagartig auf 45%.
+  const ueber=Math.max(0,Math.abs(info.lateral)-trackHalfWidth());
+  const offMult=clamp(1-ueber/9*0.45, 0.55, 1);
   const curMax=maxSpeed*offMult;
   player.speed=clamp(player.speed,-maxSpeed*0.35,curMax);
   if(Math.abs(player.speed)<0.05 && throttle===0) player.speed=0;
 
-  const speedFactor=clamp(Math.abs(player.speed)/(maxSpeed*0.35),0,1);
-  const turnRate=steer*2.0*speedFactor*(offTrack?0.7:1)*(player.speed<0?-1:1);
+  // Lenkung: unten herum bleibt Rest-Einschlag (vorher stand das Auto bei
+  // langsamer Fahrt praktisch quer zur Eingabe), oben herum wird sie ruhiger.
+  const speedFactor=clamp(0.35+Math.abs(player.speed)/(maxSpeed*0.30)*0.65,0.35,1);
+  // Einschlag laeuft weich auf den Zielwert zu - das nimmt das Zappelige raus,
+  // ohne den Eindruck von Verzoegerung zu erzeugen.
+  player.steerNow=(player.steerNow||0)+(steer-(player.steerNow||0))*Math.min(1,dt*11);
+  const turnRate=player.steerNow*2.35*speedFactor*(offTrack?0.85:1)*(player.speed<0?-1:1);
   player.heading+=turnRate*dt;
 
   const dir=new THREE.Vector3(Math.sin(player.heading),0,Math.cos(player.heading));
@@ -968,6 +1074,7 @@ function updatePlayer(dt){
       if(player.bestLap===null||lapTime<player.bestLap) player.bestLap=lapTime;
       player.lap++;
       player.lapStartTime=raceClock;
+      if(state.aiMode==='adaptiv' && player.lap===1) adaptAiPace(lapTime);
       if(player.lap>=state.laps){
         player.finished=true;
         document.getElementById('flag-overlay').style.display='block';
@@ -997,6 +1104,20 @@ function updateAICars(simTime){
   }
 }
 
+/* Mittlere Rundenzeit des Feldes, inklusive Gegner-Tempo-Faktor. Basis fuer
+   Rueckstaende im Klassement. */
+function aiRefLapTime(){
+  if(!aiSim||!aiSim.lapCumulative) return 30*(state.aiScale||1);
+  const erste=[];
+  for(const id in aiSim.lapCumulative){
+    const l=aiSim.lapCumulative[id];
+    if(l&&l.length) erste.push(l[0]);
+  }
+  if(!erste.length) return 30*(state.aiScale||1);
+  erste.sort((a,b)=>a-b);
+  return erste[Math.floor(erste.length/2)]*(state.aiScale||1);
+}
+
 /* ---------------------------- STARTAUFSTELLUNG (UI) ---------------------------- */
 function renderGrid(){
   const el=document.getElementById('grid-list');
@@ -1010,6 +1131,16 @@ function renderGrid(){
       +'<span class="gridname">'+escapeHTML(q.name)+(mich?' ◀':'')+'</span>'
       +'<span class="gridteam">'+escapeHTML(q.team)+'</span></div>';
   }).join('');
+  if(state.dnq&&state.dnq.length){
+    el.innerHTML+='<div class="dnqhead">Nicht qualifiziert ('+state.dnq.length+')</div>'
+      +state.dnq.map(q=>'<div class="gridrow dnq"><span class="gridpos">\u2013</span>'
+        +'<span class="griddot" style="background:'+(((TEAMS[q.team])||{}).color||'#888')+'"></span>'
+        +'<span class="gridname">'+escapeHTML(q.name)+'</span>'
+        +'<span class="gridteam">'+escapeHTML(q.team)+'</span></div>').join('');
+  }
+  if(state.playerWasDnq){
+    el.innerHTML='<div class="dnqhinweis">Dein Qualifying h\u00e4tte nicht gereicht \u2013 du startest vom letzten Platz.</div>'+el.innerHTML;
+  }
   document.getElementById('sidebar-title').textContent='Startaufstellung';
   el.style.display='block';
   document.getElementById('leaderboard').style.display='none';
@@ -1023,7 +1154,7 @@ function showLeaderboard(){
 /* ============================= HUD & KLASSEMENT (live) ============================= */
 function tickHudAndLeaderboard(simTime){
   if(!player) return;
-  const rows=DRIVERS.map(d=>{
+  const rows=(state.starters||DRIVERS).map(d=>{
     if(d.id===player.id){
       const isRet=player.aborted;
       const metric=isRet?(-1000-player.lap):(player.lap+player.frac);
@@ -1044,9 +1175,18 @@ function tickHudAndLeaderboard(simTime){
   document.getElementById('hud-best').textContent=fmtTime(player.bestLap);
 
   const leaderMetric=rows[0].metric;
+  // metric zaehlt RUNDEN (lap+frac). Der Rueckstand in Sekunden ist die Runden-
+  // differenz mal der tatsaechlichen Rundenzeit - vorher stand hier der Faktor
+  // 1.2, wodurch das ganze Feld immer bei "-0.0s" klebte.
+  const rundenZeit=aiRefLapTime();
   const html=rows.map((r,i)=>{
     const color=(TEAMS[r.d.team]&&TEAMS[r.d.team].color)||'#888';
-    const gapTxt=r.isRet?'Ausfall':(i===0?'Führung':('−'+((leaderMetric-r.metric)*1.2).toFixed(1)+'s'));
+    const dRunden=leaderMetric-r.metric;
+    let gapTxt;
+    if(r.isRet) gapTxt='Ausfall';
+    else if(i===0) gapTxt='Führung';
+    else if(dRunden>=1) gapTxt='+'+Math.floor(dRunden)+' Rd.';
+    else gapTxt='−'+(dRunden*rundenZeit).toFixed(1)+'s';
     return `<div class="leaderboard-row" data-id="${r.d.id}" style="${r.isRet?'opacity:.45;':''}${r.isPlayer?'font-weight:700;':''}">
       <span class="pos">${i+1}</span>
       <span class="swatch" style="background:${color}"></span>
@@ -1084,15 +1224,29 @@ function startRace(){
     alert('Bitte in der Box einen Fahrer auswählen, den du selbst steuern willst.'); return;
   }
   raceEnded=false; paused=false;
-  buildCars(DRIVERS);
   // Qualifying VOR initPlayer: der Spieler soll auf seinem erfahrenen Platz stehen
-  state.grid=qualify(DRIVERS);
+  const quali=qualify(DRIVERS);
+  state.grid=quali.slice(0,GRID_MAX);
+  state.dnq=quali.slice(GRID_MAX);
+  // Wer selbst faehrt, faellt nicht der Vorqualifikation zum Opfer: sonst waere das
+  // Rennen ohne Zutun vorbei. Er rutscht dann auf den letzten Startplatz.
+  state.playerWasDnq=false;
+  if(!state.grid.some(q=>q.id===state.playerDriverId)){
+    const idx=state.dnq.findIndex(q=>q.id===state.playerDriverId);
+    if(idx>=0){
+      state.playerWasDnq=true;
+      state.grid[state.grid.length-1]=state.dnq.splice(idx,1)[0];
+    }
+  }
+  // Nur das Startfeld bekommt Autos und faehrt mit
+  state.starters=state.grid.map(q=>DRIVERS.find(d=>d.id===q.id)).filter(Boolean);
+  buildCars(state.starters);
   state.gridSlots={};
   state.grid.forEach((q,i)=>{ state.gridSlots[q.id]=gridSlotFor(i); });
   renderGrid();
   initPlayer(state.playerDriverId);
-  aiSim=simulateRace(DRIVERS, state.laps, state.playerDriverId);
-  buildAiAnimData(aiSim, DRIVERS, state.playerDriverId);
+  aiSim=simulateRace(state.starters, state.laps, state.playerDriverId);
+  buildAiAnimData(aiSim, state.starters, state.playerDriverId);
   raceClock=0;
   updateAICars(0);
   const cm=carMeshes[player.id]; if(cm){ cm.group.position.set(player.pos.x,0.05,player.pos.z); cm.group.rotation.y=player.heading; }
@@ -1125,6 +1279,12 @@ function togglePlay(){
   paused=!paused;
   document.getElementById('btn-playpause').textContent = paused ? '▶ Weiter' : '⏸ Pause';
 }
+function setAiMode(m){
+  state.aiMode=m;
+  state.aiScale=AI_MODI[m]||1;
+  const el=document.getElementById('ai-scale-info');
+  if(el) el.textContent = m==='adaptiv' ? 'passt sich nach Runde 1 an' : '\u00d7'+state.aiScale.toFixed(2);
+}
 function setSpeed(s){
   raceSpeed=s;
   document.querySelectorAll('.speedbtn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===s));
@@ -1151,6 +1311,9 @@ function onPlayerFinished(){
 function resetForNewRace(){
   racing=false; paused=false; raceEnded=false;
   player=null; aiSim=null; aiAnimData=null; state.finalClassification=null;
+  state.aiScale=AI_MODI[state.aiMode]||1;
+  const _asi=document.getElementById('ai-scale-info');
+  if(_asi) _asi.textContent = state.aiMode==='adaptiv' ? 'passt sich nach Runde 1 an' : '';
   document.getElementById('btn-start-race').style.display='inline-block';
   document.getElementById('btn-abort-race').style.display='none';
   document.getElementById('btn-restart').style.display='none';
@@ -1172,12 +1335,12 @@ function finalizeAndShowResults(){
   document.getElementById('btn-abort-race').style.display='none';
 
   const entries=[];
-  DRIVERS.forEach(d=>{
+  (state.starters||DRIVERS).forEach(d=>{
     if(d.id===player.id) return;
     if(aiSim.retired[d.id]){
-      entries.push({id:d.id,name:d.name,team:d.team,status:'dnf',retiredLap:aiSim.retired[d.id].lap, reason:aiSim.retired[d.id].reason, totalTime:aiSim.retired[d.id].time});
+      entries.push({id:d.id,name:d.name,team:d.team,status:'dnf',retiredLap:aiSim.retired[d.id].lap, reason:aiSim.retired[d.id].reason, totalTime:aiSim.retired[d.id].time*state.aiScale});
     } else {
-      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',totalTime:aiSim.cumulative[d.id]});
+      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',totalTime:aiSim.cumulative[d.id]*state.aiScale});
     }
   });
   const playerDriverObj=DRIVERS.find(d=>d.id===player.id);
@@ -1247,6 +1410,7 @@ function buildExportJSON(){
     hinweis:'Stärkewerte gegen den F1-RPG-Quellcode abgeglichen (Team: carSpeed/reliability/strategy, Fahrer: pace/rain/consistency/experience). Ein Rückweg-Import ins RPG existiert noch nicht.',
     erzeugtAm:new Date().toISOString(),
     runden:state.laps,
+    gegnerTempo:{modus:state.aiMode, faktor:+state.aiScale.toFixed(3)},
     rennergebnis:rows,
     meisterschaftsstandNeu:standings,
   };
