@@ -9,6 +9,8 @@
 <!-- Three.js r128 liegt lokal daneben: das Spiel laeuft ohne Netz und ueberlebt es,
      wenn cdnjs die Version irgendwann fallen laesst. -->
 <script src="three.min.js"></script>
+<!-- Livery-Tabellen, erzeugt aus ../index.html via build-colors.js -->
+<script src="colors.js"></script>
 <style>
 :root{
   --bg:#0b0c0e; --surface:#15171b; --surface2:#1b1e23; --line:#282b31;
@@ -300,6 +302,30 @@ function fmtTime(s){
 }
 const PALETTE=['#ff5c5c','#4d8dff','#34d17a','#ffb020','#b26bff','#2fd9c4','#ff8fce','#c9d94a','#7c8cff','#ff9d4d','#59c1ff','#d15fff'];
 function colorForIndex(i){return PALETTE[i%PALETTE.length];}
+
+/* [SYNC getTeamColors] Livery-Aufloesung wie im F1 RPG (index.html:28368).
+   Reihenfolge: TEAM_COLORS_EXTRA[jahr] (jahresexakt) -> TEAM_COLORS_RANGES
+   (Jahresbereich) -> erst dann die SEASON_DATA-Farbe des Teams.
+   Die aufwendige ID-Normalisierung des Originals entfaellt hier: unsere teamId
+   kommt direkt aus dem Spielstand bzw. aus SEASON_DATA t[0] und IST bereits der
+   gesuchte Key. Wer team.color direkt nimmt, landet bei den meisten Teams auf
+   dem Platzhalter #888888 - genau das war der Fehler bis 09.09.2026. */
+function teamColorsFor(teamId, year, baseColor){
+  if(typeof TEAM_COLORS_EXTRA==='undefined') return [baseColor||'#888888'];
+  const extra=TEAM_COLORS_EXTRA[String(year)];
+  if(extra && teamId && extra[teamId]) return extra[teamId];
+  const y=Number(year);
+  if(teamId && !isNaN(y)){
+    for(const [von,bis,id,farben] of TEAM_COLORS_RANGES){
+      if(id===teamId && y>=von && y<=bis) return farben;
+    }
+  }
+  return [baseColor||'#888888'];
+}
+/* Der Nutzer will die HAUPTFARBE - mehrfarbige Liveries auf ihren ersten Ton. */
+function teamColorFor(teamId, year, baseColor){
+  return teamColorsFor(teamId, year, baseColor)[0];
+}
 /* Arbeitstitel. Der Name ist noch nicht final — er steht nur hier, damit ein
    Umbenennen ein Einzeiler bleibt statt Suchen-und-Ersetzen quer durch die Datei. */
 const APP_NAME='ZIELFLAGGE';
@@ -362,7 +388,7 @@ function loadDemoField(){
    Der Fahrer hat KEIN reliability und KEIN racecraft — Zuverlässigkeit sitzt am Team. */
 
 function teamFromRpg(t){
-  return {name:t.name, color:t.color||'#888888',
+  return {id:t.id||null, name:t.name, color:t.color||'#888888',
     carSpeed:normStat(t.carSpeed), reliability:normStat(t.reliability), strategy:normStat(t.strategy)};
 }
 function driverFromRpg(d, teamNameById){
@@ -415,7 +441,7 @@ function parseSeasonTemplate(node, jahr){
   const byId={};
   const teams = node.t.filter(t=>Array.isArray(t)&&t.length>=6).map(t=>{
     byId[t[0]]=t[1];
-    return {name:t[1], color:t[2]||'#888888',
+    return {id:t[0], name:t[1], color:t[2]||'#888888',
       carSpeed:normStat(t[3]), reliability:normStat(t[4]), strategy:normStat(t[5])};
   });
   const drivers = node.d.filter(d=>Array.isArray(d)&&d.length>=8).map(d=>({
@@ -558,8 +584,11 @@ function applyImportResult(res){
     const benutzt=new Set(res.drivers.map(d=>d.team));
     res.teams=res.teams.filter(t=>benutzt.has(t.name));
   }
+  // Jahr merken: die Livery haengt daran (Benetton 1988 ist nicht Benetton 1994)
+  state.jahr = res.jahr || state.jahr || null;
   res.teams.forEach((t,i)=>{
-    TEAMS[t.name] = {name:t.name, color:t.color||colorForIndex(i),
+    const farbe = teamColorFor(t.id, state.jahr, t.color) || colorForIndex(i);
+    TEAMS[t.name] = {id:t.id||null, name:t.name, color:farbe,
       carSpeed:t.carSpeed, reliability:t.reliability, strategy:t.strategy};
   });
   res.drivers.forEach(d=>{
