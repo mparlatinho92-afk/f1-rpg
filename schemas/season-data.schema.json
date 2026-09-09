@@ -10,9 +10,9 @@
           { "index": 0, "field": "id",          "type": "string",  "example": "ALF",      "description": "Team-Kurzform-ID (Großbuchstaben)" },
           { "index": 1, "field": "name",        "type": "string",  "example": "Alfa Romeo" },
           { "index": 2, "field": "color",       "type": "string",  "example": "#9B0000",  "description": "Basis-Hex-Farbe – wird von getTeamColors() als Fallback genutzt. Mehrfarbige Liveries werden NICHT hier gespeichert, sondern in TEAM_COLORS_EXTRA (jahresexakt) oder TEAM_COLORS_RANGES (Jahresbereich). getTeamColors(teamId, year, baseColor) gibt immer ein Array zurück: [c1] bis [c1,c2,c3]." },
-          { "index": 3, "field": "pace",        "type": "integer", "range": "0–100",      "description": "Basis-Pace des Teams" },
-          { "index": 4, "field": "rain",        "type": "integer", "range": "0–100",      "description": "Regen-Performance" },
-          { "index": 5, "field": "consistency", "type": "integer", "range": "0–100",      "description": "Zuverlässigkeit/Konstanz" }
+          { "index": 3, "field": "carSpeed",    "type": "integer", "range": "0–100",      "description": "Basis-Pace des Teams. Landet im Team-Objekt als carSpeed (expandSeasonData, index.html:10067) – NICHT als 'pace'. Das Team-Objekt hat kein Feld 'pace'." },
+          { "index": 4, "field": "reliability", "type": "integer", "range": "0–100",      "description": "Zuverlässigkeit des Wagens. Steuert die DNF-Wahrscheinlichkeit; Fahrer haben KEIN eigenes reliability." },
+          { "index": 5, "field": "strategy",    "type": "integer", "range": "0–100",      "description": "Strategie/Boxenarbeit. Geht mit 0.10 in die Performance-Formel ein (index.html:14370)." }
         ]
       },
       "d": {
@@ -34,5 +34,6 @@
   },
 
   "$pitfall": "SEASON_DATA-histId ('NINOFA') ≠ HIST_SEASONS-Slug ('nino-farina'). Konvertierung via nameToSlug-Lookup in initReservePool.",
+  "$pitfall3": "t[3..5] hießen in diesem Schema bis 2026-09-09 fälschlich pace/rain/consistency – das sind die Achsen der FAHRER (d[5..7]), nicht der Teams. Ein Team hat carSpeed/reliability/strategy, ein Fahrer pace/rain/consistency/experience. Im Zweifel expandSeasonData (index.html:10067 für t, :10092 für d) lesen.",
   "$pitfall2": "t[i][2] (color) ist NUR der Fallback. Mehrfarbige Liveries → TEAM_COLORS_EXTRA (jahresexakt) oder TEAM_COLORS_RANGES (Bereich). Nie Farben direkt aus t[i][2] rendern ohne getTeamColors() zu nutzen."
 }

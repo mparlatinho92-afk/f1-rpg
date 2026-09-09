@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ZIELFLAGGE — 3D-Rennspiel für F1 RPG</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Schriften liegen lokal (fonts/), damit das Spiel ohne Netz vollstaendig ist. -->
+<link href="fonts/fonts.css" rel="stylesheet">
 <!-- Three.js r128 liegt lokal daneben: das Spiel laeuft ohne Netz und ueberlebt es,
      wenn cdnjs die Version irgendwann fallen laesst. -->
 <script src="three.min.js"></script>
@@ -54,6 +54,14 @@ main{flex:1;display:flex;overflow:hidden;position:relative;min-height:0;}
 .sidebar{width:290px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;}
 .sidebar h2{font-family:var(--display);font-size:16px;font-weight:600;margin:0;padding:12px 14px 8px;border-bottom:1px solid var(--line);}
 #leaderboard{flex:1;overflow-y:auto;}
+#grid-list{flex:1;overflow-y:auto;}
+.gridrow{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:12.5px;}
+.gridrow.me{background:rgba(255,176,32,.10);border-left:2px solid var(--amber);}
+.gridrow .gridpos{font-family:var(--display);font-size:17px;font-weight:600;width:22px;color:var(--muted);flex-shrink:0;text-align:right;}
+.gridrow.me .gridpos{color:var(--amber);}
+.gridrow .griddot{width:8px;height:18px;border-radius:2px;flex-shrink:0;}
+.gridrow .gridname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gridrow .gridteam{color:var(--muted);font-size:11px;flex-shrink:0;max-width:88px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .leaderboard-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer;}
 .leaderboard-row:hover{background:var(--surface2);}
 .leaderboard-row .pos{font-family:var(--display);font-size:19px;font-weight:600;width:22px;color:var(--muted);flex-shrink:0;}
@@ -135,16 +143,18 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
         <div class="controls-bar">
           <button class="btn primary" id="btn-start-race" onclick="startRace()">▶ Rennen starten</button>
           <button class="btn" id="btn-abort-race" onclick="confirmAbort()" style="display:none;">🚩 Abbrechen</button>
+          <button class="btn" id="btn-restart" onclick="confirmRestart()" style="display:none;">↻ Neustart</button>
           <button class="btn" id="btn-playpause" onclick="togglePlay()" disabled>⏸ Pause</button>
           <button class="btn speedbtn active" data-speed="1" onclick="setSpeed(1)">1×</button>
           <button class="btn speedbtn" data-speed="2" onclick="setSpeed(2)">2×</button>
           <button class="btn ghost" onclick="camFollowId=null;">🎮 Meine Kamera</button>
-          <span class="legend">↑/W Gas · ↓/S Bremse · ←/A →/D Lenken · Maus ziehen = umschauen · Rad = Zoom</span>
+          <span class="legend">↑/W Gas · ↓/S Bremse · ←/A →/D Lenken · R = Neustart · Maus ziehen = umschauen · Rad = Zoom</span>
         </div>
       </div>
       <aside class="sidebar">
-        <h2>Klassement (live)</h2>
-        <div id="leaderboard"></div>
+        <h2 id="sidebar-title">Startaufstellung</h2>
+        <div id="grid-list"><p class="hint" style="padding:8px 10px;">Noch kein Rennen gestartet — die Aufstellung entsteht aus einem Qualifying, sobald du startest.</p></div>
+        <div id="leaderboard" style="display:none;"></div>
       </aside>
     </div>
 
@@ -594,6 +604,50 @@ function addDriver(){
 function removeDriver(i){ DRIVERS.splice(i,1); renderGarageTables(); }
 
 /* ============================= AI-RENNSIMULATION ============================= */
+/* Gewichtung wie im F1 RPG (index.html:14370): pace 0.45, carSpeed 0.30,
+   strategy 0.10. Qualifying UND Rennen ziehen aus dieser einen Formel - hier
+   darf keine zweite entstehen, sonst faellt das Grid vom Rennergebnis ab. */
+function perfScore(d,t){ return d.pace*0.45 + t.carSpeed*0.30 + t.strategy*0.10 + 15; }
+
+/* ---------------------------- STARTAUFSTELLUNG ----------------------------
+   Vorher standen ALLE Autos auf demselben Kurvenpunkt, seitlich zufaellig aus
+   dem ID-Hash versetzt - es gab gar keine Aufstellung. Jetzt: ein Qualifying
+   mit derselben perfScore-Gewichtung wie das Rennen, daraus ein klassisches
+   2-2-Grid.
+   Der Startversatz ist reine DARSTELLUNG: er blendet ueber die ersten Sekunden
+   aus, damit die Wertung weiter allein aus simulateRace kommt. */
+const GRID_ROW_GAP=9;      // Laengsabstand zweier Reihen
+const GRID_SIDE=2.4;       // seitlicher Versatz zur Mittellinie
+const GRID_STAGGER=3.5;    // ungerade Startplaetze stehen etwas zurueck
+const GRID_FADE_S=10;      // ueber so viele Sekunden verschwindet der Startversatz
+
+function qualify(drivers){
+  return drivers.map(d=>{
+    const t=TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
+    // gleiche Gewichtung wie im Rennen, nur mit groesserer Streuung
+    const sigma=5+(100-(d.consistency||70))*0.09;
+    return {id:d.id, name:d.name, team:d.team, sc:perfScore(d,t)+gaussian(0,sigma)};
+  }).sort((a,b)=>b.sc-a.sc);
+}
+function gridSlotFor(index){
+  const row=Math.floor(index/2), odd=index%2;
+  return {back: 5 + row*GRID_ROW_GAP + odd*GRID_STAGGER, lateral: (odd?1:-1)*GRID_SIDE};
+}
+/* Streckenposition eines Grid-Slots als Kurvenparameter (0..1), rueckwaerts vom Start */
+function gridU(back){
+  let u=(-back/trackLength)%1;
+  if(u<0) u+=1;
+  return u;
+}
+function placeOnTrack(u, lateral){
+  const uu=clamp(u,0,0.9999);
+  const point=curve.getPointAt(uu);
+  const tangent=curve.getTangentAt(uu).normalize();
+  const normal=new THREE.Vector3(-tangent.z,0,tangent.x);
+  return {pos:point.clone().add(normal.multiplyScalar(lateral)),
+          heading:Math.atan2(tangent.x,tangent.z)};
+}
+
 function pickRetireReason(){
   const reasons=['Motorschaden','Unfall','Getriebeschaden','Aufhängungsschaden','Elektrikdefekt','Bremsversagen','Aufgabe im Kiesbett'];
   return reasons[Math.floor(Math.random()*reasons.length)];
@@ -601,9 +655,6 @@ function pickRetireReason(){
 function simulateRace(drivers,laps,playerId){
   const BASE_LAP=30; // Ziel-Rundenzeit in Echtzeit-Sekunden
   const team=d=>TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
-  // Gewichtung wie im F1 RPG (index.html:14370): pace 0.45, carSpeed 0.30, strategy 0.10.
-  // Wichtig fuer spaetere Ergebnis-Paritaet - hier darf keine zweite Formel entstehen.
-  const perfScore=(d,t)=>(d.pace*0.45 + t.carSpeed*0.30 + t.strategy*0.10 + 15);
   const cumulative={}, lapCumulative={};
   drivers.forEach(d=>{ if(d.id!==playerId){ cumulative[d.id]=0; lapCumulative[d.id]=[]; } });
   const retired={}, fastestLap={};
@@ -838,6 +889,9 @@ const keys={};
 window.addEventListener('keydown', e=>{
   if(currentView!=='track') return;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  // R startet neu, P pausiert - beides nur, wenn ueberhaupt ein Rennen laeuft
+  if(e.code==='KeyR' && !e.repeat && (racing||raceEnded)){ e.preventDefault(); confirmRestart(); return; }
+  if(e.code==='KeyP' && !e.repeat && racing){ e.preventDefault(); togglePlay(); return; }
   keys[e.code]=true;
 });
 window.addEventListener('keyup', e=>{ keys[e.code]=false; });
@@ -857,11 +911,12 @@ function nearestTrackInfo(pos){
   return {idx:bestIdx, frac:bestIdx/spacedPts.length, lateral, tangent};
 }
 function initPlayer(driverId){
-  const sp=curve.getPointAt(0.0006), st=curve.getTangentAt(0.0006);
+  const slot=(state.gridSlots&&state.gridSlots[driverId])||{back:5,lateral:0};
+  const p=placeOnTrack(gridU(slot.back), slot.lateral);
   player={
     id:driverId,
-    pos:new THREE.Vector3(sp.x,0,sp.z),
-    heading:Math.atan2(st.x,st.z),
+    pos:new THREE.Vector3(p.pos.x,0,p.pos.z),
+    heading:p.heading,
     speed:0, lap:0, frac:0, lapStartTime:0, lapTimes:[], bestLap:null,
     finished:false, aborted:false,
   };
@@ -869,7 +924,11 @@ function initPlayer(driverId){
 function updatePlayer(dt){
   if(!player||player.finished||player.aborted) return;
   const throttle=(keys['ArrowUp']||keys['KeyW'])?1:((keys['ArrowDown']||keys['KeyS'])?-1:0);
-  const steer=(keys['ArrowLeft']||keys['KeyA'])?-1:((keys['ArrowRight']||keys['KeyD'])?1:0);
+  // Vorzeichen absichtlich andersherum als die Taste: heading zaehlt ueber
+  // atan2(x,z), und aus der Verfolgerkamera (Blick entlang +dir, oben +Y) liegt
+  // links bei +X. Linkslenken muss heading also ERHOEHEN. Vorher gedreht das Auto
+  // seitenverkehrt zur Taste.
+  const steer=(keys['ArrowLeft']||keys['KeyA'])?1:((keys['ArrowRight']||keys['KeyD'])?-1:0);
 
   const info=nearestTrackInfo(player.pos);
   const offTrack=Math.abs(info.lateral)>trackHalfWidth();
@@ -921,19 +980,44 @@ function updatePlayer(dt){
   if(cm){ cm.group.position.set(player.pos.x,0.05,player.pos.z); cm.group.rotation.y=player.heading; }
 }
 function updateAICars(simTime){
+  // Vor dem Start (simTime<=0) stehen alle auf ihrem Grid-Slot; danach schmilzt
+  // der Versatz linear weg, damit die Wertung aus simulateRace unberuehrt bleibt.
+  const fade=clamp(1-Math.max(simTime,0)/GRID_FADE_S,0,1);
   for(const id in carMeshes){
     if(player && id===player.id) continue;
-    const prog=getProgressAI(id, simTime);
-    const u=clamp(prog.frac,0,0.9999);
-    const point=curve.getPointAt(u);
-    const tangent=curve.getTangentAt(u).normalize();
-    const normal=new THREE.Vector3(-tangent.z,0,tangent.x);
     const cm=carMeshes[id];
-    const pos=point.clone().add(normal.multiplyScalar(cm.laneOffset));
-    pos.y=0.05;
-    cm.group.position.copy(pos);
-    cm.group.rotation.y=Math.atan2(tangent.x,tangent.z);
+    const slot=(state.gridSlots&&state.gridSlots[id])||{back:5,lateral:cm.laneOffset};
+    const prog=getProgressAI(id, simTime);
+    let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fade;
+    if(u<0) u+=1;
+    const lateral=slot.lateral*fade + cm.laneOffset*(1-fade);
+    const placed=placeOnTrack(u, lateral);
+    cm.group.position.set(placed.pos.x,0.05,placed.pos.z);
+    cm.group.rotation.y=placed.heading;
   }
+}
+
+/* ---------------------------- STARTAUFSTELLUNG (UI) ---------------------------- */
+function renderGrid(){
+  const el=document.getElementById('grid-list');
+  if(!el||!state.grid) return;
+  el.innerHTML=state.grid.map((q,i)=>{
+    const t=TEAMS[q.team];
+    const mich=q.id===state.playerDriverId;
+    return '<div class="gridrow'+(mich?' me':'')+'">'
+      +'<span class="gridpos">'+(i+1)+'</span>'
+      +'<span class="griddot" style="background:'+((t&&t.color)||'#888')+'"></span>'
+      +'<span class="gridname">'+escapeHTML(q.name)+(mich?' ◀':'')+'</span>'
+      +'<span class="gridteam">'+escapeHTML(q.team)+'</span></div>';
+  }).join('');
+  document.getElementById('sidebar-title').textContent='Startaufstellung';
+  el.style.display='block';
+  document.getElementById('leaderboard').style.display='none';
+}
+function showLeaderboard(){
+  document.getElementById('sidebar-title').textContent='Klassement (live)';
+  document.getElementById('grid-list').style.display='none';
+  document.getElementById('leaderboard').style.display='block';
 }
 
 /* ============================= HUD & KLASSEMENT (live) ============================= */
@@ -1001,6 +1085,11 @@ function startRace(){
   }
   raceEnded=false; paused=false;
   buildCars(DRIVERS);
+  // Qualifying VOR initPlayer: der Spieler soll auf seinem erfahrenen Platz stehen
+  state.grid=qualify(DRIVERS);
+  state.gridSlots={};
+  state.grid.forEach((q,i)=>{ state.gridSlots[q.id]=gridSlotFor(i); });
+  renderGrid();
   initPlayer(state.playerDriverId);
   aiSim=simulateRace(DRIVERS, state.laps, state.playerDriverId);
   buildAiAnimData(aiSim, DRIVERS, state.playerDriverId);
@@ -1011,6 +1100,7 @@ function startRace(){
   cameraMode='chase'; camFollowId=null;
   document.getElementById('btn-start-race').style.display='none';
   document.getElementById('btn-abort-race').style.display='inline-block';
+  document.getElementById('btn-restart').style.display='inline-block';
   switchView('track');
   runCountdown();
 }
@@ -1025,6 +1115,7 @@ function runCountdown(){
     else {
       clearInterval(iv); el.style.display='none';
       racing=true; raceClock=0; if(player) player.lapStartTime=0;
+      showLeaderboard();
       document.getElementById('btn-playpause').disabled=false;
     }
   },800);
@@ -1037,6 +1128,13 @@ function togglePlay(){
 function setSpeed(s){
   raceSpeed=s;
   document.querySelectorAll('.speedbtn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===s));
+}
+function confirmRestart(){
+  // Waehrend der Fahrt ist ein versehentlicher Neustart teuer - deshalb nachfragen.
+  // Nach dem Ziel ist nichts mehr zu verlieren, da geht es ohne Rueckfrage.
+  if(racing && !confirm('Rennen neu starten? Der aktuelle Lauf geht verloren.')) return;
+  resetForNewRace();
+  startRace();
 }
 function confirmAbort(){
   if(confirm('Rennen wirklich abbrechen und zum aktuellen Zwischenstand werten?')) abortRace();
@@ -1055,6 +1153,7 @@ function resetForNewRace(){
   player=null; aiSim=null; aiAnimData=null; state.finalClassification=null;
   document.getElementById('btn-start-race').style.display='inline-block';
   document.getElementById('btn-abort-race').style.display='none';
+  document.getElementById('btn-restart').style.display='none';
   document.getElementById('btn-playpause').disabled=true;
   document.getElementById('btn-playpause').textContent='⏸ Pause';
   document.getElementById('hud-lap').textContent='–/–';
