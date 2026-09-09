@@ -373,13 +373,30 @@ function driverFromRpg(d, teamNameById){
     prevPoints:0, prevWins:0};
 }
 
-/* Kernstueck eines Spielstands (core-Zeile oder blankes GAME_STATE) */
-function parseRpgCore(core){
-  if(!core || !Array.isArray(core.teams) || !Array.isArray(core.drivers)) return null;
+/* Kernstueck eines Spielstands.
+   ⚠ Die core-Zeile des NDJSON-Exports ist VERSCHACHTELT: {_t:'core', state:{...}}.
+   Der GAME_STATE liegt in .state, nicht auf der Zeile selbst. Ohne das Auspacken
+   faellt der Import stillschweigend auf die Rate-Heuristik zurueck - erkennbar
+   daran, dass Teams als ID ("MCL") statt als Name erscheinen und "Unbekanntes
+   Team" auftaucht. */
+function parseRpgCore(node){
+  if(!node || typeof node!=='object') return null;
+  const core = (node.state && typeof node.state==='object') ? node.state : node;
+  if(!Array.isArray(core.teams) || !Array.isArray(core.drivers)) return null;
+
   const teams = core.teams.filter(t=>t && t.name).map(teamFromRpg);
   const byId = {};
   core.teams.forEach(t=>{ if(t && t.id) byId[t.id]=t.name; });
-  const drivers = core.drivers.filter(d=>d && d.name).map(d=>driverFromRpg(d, byId));
+
+  // NUR das aktive Feld. reservePool ist ein eigenes Array und bleibt draussen;
+  // die drei Filter fangen ausserdem Reserven ab, die im Fahrerfeld mitlaufen.
+  const drivers = core.drivers
+    .filter(d=>d && d.name)
+    .filter(d=>!d.isReserve)
+    .filter(d=>!d.status || d.status==='active')
+    .filter(d=>d.team && byId[d.team])
+    .map(d=>driverFromRpg(d, byId));
+
   // Meisterschaftsstand mitnehmen, wenn vorhanden
   const st = core.driverStandings;
   if(st && typeof st==='object'){
@@ -388,6 +405,7 @@ function parseRpgCore(core){
       if(e){ d.prevPoints = e.points||0; d.prevWins = e.wins||0; }
     });
   }
+  if(!teams.length || !drivers.length) return null;
   return {teams, drivers, quelle:'Spielstand', jahr:core.currentYear||null};
 }
 
@@ -518,10 +536,28 @@ function parseImportedText(text){
   }
   return {drivers:Array.from(driverMap.values()), teams:Array.from(teamMap.values())};
 }
+/* Sagt klar, WELCHER Weg gegriffen hat. Vorher war nicht zu sehen, ob die echten
+   Formate gelesen oder Feldnamen geraten wurden - der Unterschied faellt sonst
+   erst im Rennen auf, wenn Teams als "MCL" oder "Unbekanntes Team" dastehen. */
+function importMeldung(res){
+  const q=res.quelle||'Rate-Heuristik';
+  const jahr=res.jahr?(' '+res.jahr):'';
+  const warnung=(!res.quelle)
+    ? ' – Achtung: Format nicht erkannt, Werte geraten. Tabellen unten prüfen.'
+    : '';
+  return q+jahr+': '+res.drivers.length+' Fahrer, '+res.teams.length+' Teams.'+warnung;
+}
+
 function applyImportResult(res){
   // Ein Import ersetzt das Feld, statt sich mit dem alten zu mischen: sonst bleiben
   // Teams aus dem Beispiel-Feld stehen und verfaelschen das importierte Kraefteverhaeltnis.
   if(res.teams.length) TEAMS = {};
+  // Rennstaelle ohne gemeldeten Fahrer fliegen raus - sie wuerden nur die Garage
+  // fuellen und tauchen im Rennen nie auf.
+  if(res.drivers.length){
+    const benutzt=new Set(res.drivers.map(d=>d.team));
+    res.teams=res.teams.filter(t=>benutzt.has(t.name));
+  }
   res.teams.forEach((t,i)=>{
     TEAMS[t.name] = {name:t.name, color:t.color||colorForIndex(i),
       carSpeed:t.carSpeed, reliability:t.reliability, strategy:t.strategy};
@@ -542,7 +578,7 @@ document.getElementById('import-file').addEventListener('change', function(e){
     try{
       const res=parseImportedText(reader.result);
       applyImportResult(res);
-      document.getElementById('import-status').textContent = `Importiert: ${res.drivers.length} Fahrer, ${res.teams.length} Teams erkannt.`;
+      document.getElementById('import-status').textContent = importMeldung(res);
     }catch(err){ document.getElementById('import-status').textContent = 'Fehler beim Import: '+err.message; }
   };
   reader.readAsText(file);
@@ -553,7 +589,7 @@ function handlePasteImport(){
   try{
     const res=parseImportedText(text);
     applyImportResult(res);
-    document.getElementById('import-status').textContent = `Importiert: ${res.drivers.length} Fahrer, ${res.teams.length} Teams erkannt.`;
+    document.getElementById('import-status').textContent = importMeldung(res);
   }catch(err){ document.getElementById('import-status').textContent = 'Fehler beim Import: '+err.message; }
 }
 
