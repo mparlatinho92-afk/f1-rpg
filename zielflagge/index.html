@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZIELFLAGGE — 3D-Rennspiel für F1 RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Three.js r128 liegt lokal daneben: das Spiel laeuft ohne Netz und ueberlebt es,
+     wenn cdnjs die Version irgendwann fallen laesst. -->
+<script src="three.min.js"></script>
+<style>
+:root{
+  --bg:#0b0c0e; --surface:#15171b; --surface2:#1b1e23; --line:#282b31;
+  --text:#e9eaed; --muted:#8b909b;
+  --amber:#ffb020; --teal:#2fd9c4; --purple:#b26bff; --green:#34d17a; --red:#ff5c5c; --blue:#4d8dff;
+  --display:'Barlow Condensed',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);}
+button,input,select,textarea{font-family:var(--mono);}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+header.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;flex-wrap:wrap;gap:10px;}
+.brand{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.3px;display:flex;align-items:center;gap:10px;}
+.brand small{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;display:block;letter-spacing:0;}
+.brand .flag{color:var(--amber);}
+nav.tabs{display:flex;gap:6px;}
+nav.tabs button{background:var(--surface2);border:1px solid var(--line);color:var(--muted);padding:9px 16px;cursor:pointer;font-size:13px;border-radius:4px;transition:background .15s,color .15s;}
+nav.tabs button.active{color:#1a1400;background:var(--amber);border-color:var(--amber);font-weight:700;}
+nav.tabs button:hover:not(.active){color:var(--text);border-color:var(--muted);}
+
+main{flex:1;display:flex;overflow:hidden;position:relative;min-height:0;}
+.view{display:none;width:100%;height:100%;}
+.view.active{display:flex;}
+
+/* ---- Track view ---- */
+#view-track{position:relative;}
+#canvas-wrap{flex:1;position:relative;min-width:0;}
+#gl{display:block;width:100%;height:100%;cursor:grab;outline:none;}
+#gl:active{cursor:grabbing;}
+
+.hud-top{position:absolute;top:14px;left:14px;right:14px;display:flex;gap:10px;pointer-events:none;flex-wrap:wrap;}
+.hud-chip{background:rgba(21,23,27,.88);border:1px solid var(--line);padding:6px 14px;border-radius:4px;font-family:var(--display);font-size:19px;font-weight:600;pointer-events:auto;}
+.hud-chip span.lbl{font-family:var(--mono);font-size:9.5px;color:var(--muted);display:block;font-weight:400;letter-spacing:.3px;}
+
+#countdown-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-family:var(--display);font-size:min(22vw,150px);font-weight:700;color:var(--amber);text-shadow:0 0 40px rgba(255,176,32,.55);pointer-events:none;background:rgba(0,0,0,0.12);}
+#flag-overlay{position:absolute;top:60px;left:50%;transform:translateX(-50%);font-family:var(--display);font-size:26px;font-weight:700;color:var(--green);background:rgba(21,23,27,.9);border:1px solid var(--line);padding:8px 22px;border-radius:4px;display:none;}
+
+.controls-bar{position:absolute;bottom:14px;left:14px;right:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.legend{color:var(--muted);font-size:11px;margin-left:auto;background:rgba(21,23,27,.7);padding:6px 10px;border-radius:4px;}
+
+.sidebar{width:290px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar h2{font-family:var(--display);font-size:16px;font-weight:600;margin:0;padding:12px 14px 8px;border-bottom:1px solid var(--line);}
+#leaderboard{flex:1;overflow-y:auto;}
+.leaderboard-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer;}
+.leaderboard-row:hover{background:var(--surface2);}
+.leaderboard-row .pos{font-family:var(--display);font-size:19px;font-weight:600;width:22px;color:var(--muted);flex-shrink:0;}
+.leaderboard-row .swatch{width:8px;height:20px;border-radius:2px;flex-shrink:0;}
+.leaderboard-row .name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.leaderboard-row .gap{color:var(--muted);font-size:11px;flex-shrink:0;}
+
+/* ---- shared ---- */
+.scroll-panel{width:100%;height:100%;overflow-y:auto;padding:22px;}
+.grid-2col{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start;}
+@media (max-width:900px){.grid-2col{grid-template-columns:1fr;} .sidebar{width:210px;}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;margin-bottom:18px;}
+.card h2{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 4px;}
+.card p.hint{color:var(--muted);font-size:12px;line-height:1.6;margin:0 0 14px;}
+.card p.hint.warn{color:var(--amber);}
+
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.field input[type=text], .field input[type=number], .field select, .field textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:4px;font-size:13px;}
+.field textarea{min-height:90px;resize:vertical;}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.row.between{justify-content:space-between;}
+
+.btn{background:var(--surface2);color:var(--text);border:1px solid var(--line);padding:9px 15px;border-radius:4px;cursor:pointer;font-size:12.5px;}
+.btn:hover{border-color:var(--muted);}
+.btn.primary{background:var(--amber);color:#1a1400;border-color:var(--amber);font-weight:700;}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.ghost{background:transparent;}
+.btn.small{padding:4px 8px;font-size:11px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.speedbtn.active{background:var(--teal);color:#032420;border-color:var(--teal);font-weight:700;}
+
+.status-line{font-size:11.5px;color:var(--teal);min-height:16px;margin-top:8px;}
+
+table.data{width:100%;border-collapse:collapse;font-size:12px;}
+table.data th{text-align:left;color:var(--muted);font-weight:500;font-size:10.5px;padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.data td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle;}
+table.data input[type=number]{width:56px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:4px;border-radius:3px;font-size:12px;}
+table.data input[type=text]{width:120px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:4px 6px;border-radius:3px;font-size:12px;}
+table.data select{background:var(--bg);border:1px solid var(--line);color:var(--text);padding:4px;border-radius:3px;font-size:12px;}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.table-wrap{overflow-x:auto;}
+
+.pos-cell{font-family:var(--display);font-size:18px;font-weight:600;}
+.fl-badge{background:var(--purple);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;margin-left:5px;}
+
+pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:12px;font-size:11px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand"><span class="flag">🏁</span><span id="app-name">ZIELFLAGGE</span>
+      <small>3D-Rennspiel — selbst fahren, Ergebnis für F1 RPG</small>
+    </div>
+    <nav class="tabs">
+      <button data-view="track" class="active" onclick="switchView('track')">Strecke</button>
+      <button data-view="garage" onclick="switchView('garage')">Box</button>
+      <button data-view="results" onclick="switchView('results')">Ergebnis</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TRACK VIEW -->
+    <div class="view active" id="view-track">
+      <div id="canvas-wrap">
+        <canvas id="gl" tabindex="0"></canvas>
+        <div class="hud-top">
+          <div class="hud-chip"><span class="lbl">Runde</span><span id="hud-lap">–/–</span></div>
+          <div class="hud-chip"><span class="lbl">Position</span><span id="hud-pos">–</span></div>
+          <div class="hud-chip"><span class="lbl">Tempo</span><span id="hud-speed">0 km/h</span></div>
+          <div class="hud-chip"><span class="lbl">Rundenzeit</span><span id="hud-laptime">–:--.---</span></div>
+          <div class="hud-chip"><span class="lbl">Beste Runde</span><span id="hud-best">–:--.---</span></div>
+        </div>
+        <div id="countdown-overlay"></div>
+        <div id="flag-overlay">🏁 Ziel!</div>
+        <div class="controls-bar">
+          <button class="btn primary" id="btn-start-race" onclick="startRace()">▶ Rennen starten</button>
+          <button class="btn" id="btn-abort-race" onclick="confirmAbort()" style="display:none;">🚩 Abbrechen</button>
+          <button class="btn" id="btn-playpause" onclick="togglePlay()" disabled>⏸ Pause</button>
+          <button class="btn speedbtn active" data-speed="1" onclick="setSpeed(1)">1×</button>
+          <button class="btn speedbtn" data-speed="2" onclick="setSpeed(2)">2×</button>
+          <button class="btn ghost" onclick="camFollowId=null;">🎮 Meine Kamera</button>
+          <span class="legend">↑/W Gas · ↓/S Bremse · ←/A →/D Lenken · Maus ziehen = umschauen · Rad = Zoom</span>
+        </div>
+      </div>
+      <aside class="sidebar">
+        <h2>Klassement (live)</h2>
+        <div id="leaderboard"></div>
+      </aside>
+    </div>
+
+    <!-- GARAGE VIEW -->
+    <div class="view" id="view-garage">
+      <div class="scroll-panel">
+        <div class="grid-2col">
+          <div>
+            <div class="card">
+              <h2>Import aus F1 RPG</h2>
+              <p class="hint">Nimmt den <b>NDJSON-Spielstand</b> aus F1 RPG (<code>exportSave</code>), ein blankes <b>GAME_STATE</b>-Objekt oder — wenn es noch keinen Spielstand gibt — eine <b>SEASON_DATA</b>-Saison. Gelesen werden die echten Achsen: <b>carSpeed/reliability/strategy</b> (Team) und <b>pace/rain/consistency/experience</b> (Fahrer). Fremde Formate landen in der Rate-Heuristik — dann die Tabellen unten prüfen.</p>
+              <p class="hint warn">Import/Export sind ein bestmöglicher Vorschlag, ohne Abgleich gegen den echten Quellcode. Werte lassen sich unten jederzeit von Hand korrigieren.</p>
+              <div class="field">
+                <label>Datei wählen</label>
+                <input type="file" id="import-file" accept=".json,.txt,.ndjson">
+              </div>
+              <div class="field">
+                <label>...oder JSON einfügen</label>
+                <textarea id="import-paste" placeholder="{ &quot;drivers&quot;: [...] }"></textarea>
+              </div>
+              <button class="btn primary" id="import-paste-btn" onclick="handlePasteImport()">Einlesen</button>
+              <div class="status-line" id="import-status"></div>
+            </div>
+
+            <div class="card">
+              <h2>Renneinstellungen</h2>
+              <div class="field">
+                <label>Dein Fahrer (🎮 den steuerst du selbst)</label>
+                <select id="player-select"></select>
+              </div>
+              <div class="field">
+                <label>Rundenanzahl</label>
+                <input type="number" id="laps-input" min="2" max="30" value="5" onchange="state.laps=+this.value">
+              </div>
+              <div class="row">
+                <input type="checkbox" id="fl-point" checked onchange="state.fastestLapPoint=this.checked">
+                <label for="fl-point" style="margin:0;font-size:12px;color:var(--text);">Zusatzpunkt für schnellste Runde</label>
+              </div>
+              <div class="row" style="margin-top:14px;">
+                <button class="btn" onclick="loadDemoField(); renderGarageTables();">Beispiel-Feld laden</button>
+                <button class="btn ghost" onclick="if(confirm('Alle Fahrer und Teams löschen?')){DRIVERS=[];TEAMS={};renderGarageTables();}">Alles löschen</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="row between">
+                <h2>Teams &amp; Stärkewerte</h2>
+                <button class="btn small" onclick="addTeam()">+ Team</button>
+              </div>
+              <p class="hint">Farbe, carSpeed (Wagen), reliability (Zuverlässigkeit), strategy (Strategie) — Werte 1–100.</p>
+              <div class="table-wrap">
+                <table class="data">
+                  <thead><tr><th></th><th>Team</th><th>carSpeed</th><th>reliability</th><th>strategy</th><th></th></tr></thead>
+                  <tbody id="teams-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="row between">
+                <h2>Fahrer &amp; Stärkewerte</h2>
+                <button class="btn small" onclick="addDriver()">+ Fahrer</button>
+              </div>
+              <p class="hint">Die Achsen des F1 RPG: pace, rain (Regen), consistency (Konstanz), experience (Erfahrung), potentialPace (Entwicklung) — Werte 1–100. Zuverlässigkeit hängt am Team, nicht am Fahrer.</p>
+              <div class="table-wrap">
+                <table class="data">
+                  <thead><tr><th>Name</th><th>Team</th><th>pace</th><th>rain</th><th>consist.</th><th>experience</th><th>potential</th><th>Punkte</th><th></th></tr></thead>
+                  <tbody id="drivers-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS VIEW -->
+    <div class="view" id="view-results">
+      <div class="scroll-panel">
+        <div class="grid-2col">
+          <div>
+            <div class="card">
+              <h2>Export nach F1 RPG</h2>
+              <p class="hint">Erzeugt eine JSON-Datei mit Rennergebnis und neuem Meisterschaftsstand. Format ist mein bester Vorschlag — ob F1 RPGs eigener Import genau dieses Schema erwartet, konnte ich nicht gegen den echten Quellcode prüfen.</p>
+              <div class="row">
+                <button class="btn primary" onclick="downloadExport()">JSON herunterladen</button>
+                <button class="btn" onclick="copyExport()">In Zwischenablage kopieren</button>
+              </div>
+              <div class="status-line" id="export-status"></div>
+            </div>
+            <div class="card">
+              <h2>JSON-Vorschau</h2>
+              <pre id="export-preview">Noch kein Rennen beendet.</pre>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row between">
+              <h2>Rennergebnis</h2>
+              <button class="btn small" onclick="resetForNewRace()">🔁 Neues Rennen</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>Platz</th><th>Fahrer</th><th>Team</th><th>Status</th><th>Rückstand</th><th>Punkte</th></tr></thead>
+                <tbody id="results-tbody"><tr><td colspan="6" style="color:var(--muted);padding:14px 6px;">Noch kein Rennen beendet — fahr eines in der Strecken-Ansicht.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============================= UTILITIES ============================= */
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function gaussian(mean,sigma){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return mean + sigma*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function uid(prefix){return prefix+'_'+Math.random().toString(36).slice(2,9);}
+function escapeHTML(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
+function escAttr(s){return String(s).replace(/"/g,'&quot;');}
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return Math.abs(h);}
+function fmtTime(s){
+  if(s==null||!isFinite(s)||s<0) return '–:--.---';
+  const m=Math.floor(s/60); const sec=(s-m*60).toFixed(3).padStart(6,'0');
+  return m+':'+sec;
+}
+const PALETTE=['#ff5c5c','#4d8dff','#34d17a','#ffb020','#b26bff','#2fd9c4','#ff8fce','#c9d94a','#7c8cff','#ff9d4d','#59c1ff','#d15fff'];
+function colorForIndex(i){return PALETTE[i%PALETTE.length];}
+/* Arbeitstitel. Der Name ist noch nicht final — er steht nur hier, damit ein
+   Umbenennen ein Einzeiler bleibt statt Suchen-und-Ersetzen quer durch die Datei. */
+const APP_NAME='ZIELFLAGGE';
+const APP_CLAIM='3D-Rennspiel — selbst fahren, Ergebnis für F1 RPG';
+document.title=APP_NAME+' — '+APP_CLAIM;
+document.getElementById('app-name').textContent=APP_NAME;
+
+const TRACK_WIDTH=9;
+
+/* ============================= STATE ============================= */
+let state = {laps:5, fastestLapPoint:true, playerDriverId:null, finalClassification:null};
+let TEAMS = {};
+let DRIVERS = [];
+let currentView='track';
+
+function loadDemoField(){
+  TEAMS = {}; DRIVERS = [];
+  const demo = [
+    ['Falkon Racing', ['Mika Voss','Théo Lindqvist']],
+    ['Rosso Meccanica', ['Jonas Ferreira','Elin Kask']],
+    ['Nordwind GP', ['Sami Aho','Iker Zabala']],
+    ['Solstice Motorsport', ['Priya Nandan','Otto Brandt']],
+    ['Vantage Dynamics', ['Rafael Duarte','Nina Holt']],
+    ['Kestrel Works', ['Lukas Meier','Ana Petrova']],
+  ];
+  demo.forEach(([team,drivers],ti)=>{
+    TEAMS[team] = {name:team, color:colorForIndex(ti),
+      carSpeed:Math.round(clamp(55+Math.random()*40,40,95)),
+      reliability:Math.round(clamp(70+Math.random()*25,50,99)),
+      strategy:Math.round(clamp(50+Math.random()*40,40,95))};
+    drivers.forEach(name=>{
+      DRIVERS.push({id:uid('drv'), name, team,
+        pace:Math.round(clamp(55+Math.random()*40,40,98)),
+        rain:Math.round(clamp(45+Math.random()*45,30,98)),
+        consistency:Math.round(clamp(50+Math.random()*45,35,98)),
+        experience:Math.round(clamp(40+Math.random()*50,10,99)),
+        potentialPace:Math.round(clamp(50+Math.random()*45,40,99)),
+        prevPoints:0, prevWins:0, importId:null, histId:null});
+    });
+  });
+  state.playerDriverId = DRIVERS.length ? DRIVERS[0].id : null;
+}
+
+/* ============================= F1-RPG-IMPORT =============================
+   Liest die echten Formate des Spiels, statt Feldnamen zu raten:
+     a) NDJSON-Export (window.exportSave) — Zeile 1 Meta, Zeile 2 core, dann je Saison eine
+     b) ein blankes GAME_STATE-Objekt mit .teams[] und .drivers[]
+     c) SEASON_DATA[jahr] als Fallback, wenn es gar keinen Spielstand gibt
+   Achsen laut Quellcode (index.html:10067 / :10092):
+     Team   t[] = [id, name, color, carSpeed, reliability, strategy]
+     Fahrer d[] = [histId, name, teamId, nation, birthYear, pace, rain, consistency, experience, starts]
+   Der Fahrer hat KEIN reliability und KEIN racecraft — Zuverlässigkeit sitzt am Team. */
+
+function teamFromRpg(t){
+  return {name:t.name, color:t.color||'#888888',
+    carSpeed:normStat(t.carSpeed), reliability:normStat(t.reliability), strategy:normStat(t.strategy)};
+}
+function driverFromRpg(d, teamNameById){
+  return {id:d.id||uid('drv'), importId:d.id||null, histId:d.histId||null,
+    name:d.name, team:teamNameById[d.team]||'Ohne Team',
+    pace:normStat(d.pace), rain:normStat(d.rain), consistency:normStat(d.consistency),
+    experience:normStat(d.experience), potentialPace:normStat(d.potentialPace ?? d.pace),
+    prevPoints:0, prevWins:0};
+}
+
+/* Kernstueck eines Spielstands (core-Zeile oder blankes GAME_STATE) */
+function parseRpgCore(core){
+  if(!core || !Array.isArray(core.teams) || !Array.isArray(core.drivers)) return null;
+  const teams = core.teams.filter(t=>t && t.name).map(teamFromRpg);
+  const byId = {};
+  core.teams.forEach(t=>{ if(t && t.id) byId[t.id]=t.name; });
+  const drivers = core.drivers.filter(d=>d && d.name).map(d=>driverFromRpg(d, byId));
+  // Meisterschaftsstand mitnehmen, wenn vorhanden
+  const st = core.driverStandings;
+  if(st && typeof st==='object'){
+    drivers.forEach(d=>{
+      const e = st[d.importId];
+      if(e){ d.prevPoints = e.points||0; d.prevWins = e.wins||0; }
+    });
+  }
+  return {teams, drivers, quelle:'Spielstand', jahr:core.currentYear||null};
+}
+
+/* SEASON_DATA[jahr] — die Arrays-in-Arrays-Form */
+function parseSeasonTemplate(node, jahr){
+  if(!node || !Array.isArray(node.t) || !Array.isArray(node.d)) return null;
+  const byId={};
+  const teams = node.t.filter(t=>Array.isArray(t)&&t.length>=6).map(t=>{
+    byId[t[0]]=t[1];
+    return {name:t[1], color:t[2]||'#888888',
+      carSpeed:normStat(t[3]), reliability:normStat(t[4]), strategy:normStat(t[5])};
+  });
+  const drivers = node.d.filter(d=>Array.isArray(d)&&d.length>=8).map(d=>({
+    id:uid('drv'), importId:null, histId:d[0]||null,
+    name:d[1], team:byId[d[2]]||'Ohne Team',
+    pace:normStat(d[5]), rain:normStat(d[6]), consistency:normStat(d[7]),
+    experience:normStat(d[8]), potentialPace:normStat(d[5]),
+    prevPoints:0, prevWins:0
+  }));
+  if(!teams.length || !drivers.length) return null;
+  return {teams, drivers, quelle:'Saison-Vorlage', jahr:jahr||null};
+}
+
+/* Findet in beliebigem JSON/NDJSON den F1-RPG-Inhalt. null = nichts erkannt. */
+function parseF1Rpg(chunks){
+  // a) NDJSON: Meta-Header + core-Zeile
+  const meta = chunks.find(c=>c && c._format==='f1rpg-ndjson');
+  const core = chunks.find(c=>c && c._t==='core');
+  if(core){
+    const r = parseRpgCore(core);
+    if(r){ r.quelle = meta ? ('Spielstand v'+(meta.exportVersion||'?')) : 'Spielstand';
+           if(meta && meta.currentYear) r.jahr = meta.currentYear;
+           return r; }
+  }
+  // b) blankes GAME_STATE
+  for(const c of chunks){
+    const r = parseRpgCore(c);
+    if(r) return r;
+  }
+  // c) SEASON_DATA — entweder direkt {t,d} oder als {"1988":{t,d}, ...}
+  for(const c of chunks){
+    if(!c || typeof c!=='object') continue;
+    const direct = parseSeasonTemplate(c, c.year);
+    if(direct) return direct;
+    const jahre = Object.keys(c).filter(k=>/^(19|20)\d\d$/.test(k));
+    if(jahre.length){
+      // juengstes Jahr nehmen, das brauchbar ist
+      for(const j of jahre.sort().reverse()){
+        const r = parseSeasonTemplate(c[j], +j);
+        if(r) return r;
+      }
+    }
+  }
+  return null;
+}
+
+/* ============================= IMPORT-HEURISTIK =============================
+   Nur noch Auffanglinie fuer FREMDE Formate. Der F1-RPG-Weg oben laeuft zuerst. */
+function normStat(v){
+  if(v===undefined||v===null||isNaN(v)) return Math.round(50+Math.random()*20);
+  if(v>=0 && v<=1.0001) return Math.round(v*100);
+  if(v>=-12 && v<=12) return Math.round(clamp(50+v*4,5,99));
+  return Math.round(clamp(v,1,100));
+}
+function parseImportedText(text){
+  let chunks=[];
+  try{ chunks=[JSON.parse(text)]; }
+  catch(e){
+    const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+    for(const line of lines){ try{ chunks.push(JSON.parse(line)); }catch(e2){} }
+  }
+  if(chunks.length===0) throw new Error('Keine gültigen JSON-Daten gefunden.');
+
+  const allObjects=[]; let count=0;
+  function walk(node,depth){
+    if(count>8000||depth>7||node==null) return;
+    if(Array.isArray(node)){ for(const item of node) walk(item,depth+1); }
+    else if(typeof node==='object'){ count++; allObjects.push(node); for(const k in node) walk(node[k],depth+1); }
+  }
+  // Zuerst die echten F1-RPG-Formate versuchen — nur wenn das scheitert, wird geraten.
+  const rpg = parseF1Rpg(chunks);
+  if(rpg) return rpg;
+
+  chunks.forEach(c=>walk(c,0));
+
+  const DRIVER_KEYS=['pace','potentialpace','potential','consistency','konstanz','rain','experience','skill','talent','overall','rating','currentpace','pacecurrent'];
+  const TEAM_KEYS=['carspeed','autospeed','strategy','chassis'];
+  const NAME_KEYS=['name','fahrername','drivername','fullname'];
+  const TEAM_NAME_KEYS=['team','teamname','constructor','konstrukteur','rennstall'];
+  const POINTS_KEYS=['points','punkte','pts'];
+
+  function lowerKeys(o){const r={};for(const k in o)r[k.toLowerCase()]=o[k];return r;}
+  function findVal(lo,keys){for(const k of keys){if(typeof lo[k]==='number')return lo[k];}return undefined;}
+  function findName(lo,keys){for(const k of keys){if(typeof lo[k]==='string'&&lo[k].trim())return lo[k].trim();}return undefined;}
+
+  const driverMap=new Map(), teamMap=new Map();
+  for(const obj of allObjects){
+    if(typeof obj!=='object'||Array.isArray(obj)) continue;
+    const lo=lowerKeys(obj);
+    const name=findName(lo,NAME_KEYS);
+    if(!name) continue;
+    const hasDriverSignal=DRIVER_KEYS.some(k=>typeof lo[k]==='number');
+    const hasTeamSignal=TEAM_KEYS.some(k=>typeof lo[k]==='number')||(typeof lo['reliability']==='number'&&typeof lo['strategy']==='number');
+    if(hasDriverSignal){
+      if(driverMap.has(name.toLowerCase())) continue;
+      const team=findName(lo,TEAM_NAME_KEYS)||'Unbekanntes Team';
+      driverMap.set(name.toLowerCase(),{
+        id: obj.id||obj.driverId||obj.histId||uid('drv'),
+        importId: obj.id||obj.driverId||obj.histId||null,
+        name, team,
+        pace:normStat(findVal(lo,['pace','currentpace','pacecurrent','tempo'])),
+        rain:normStat(findVal(lo,['rain','regen','wet'])),
+        consistency:normStat(findVal(lo,['consistency','konstanz','constancy'])),
+        experience:normStat(findVal(lo,['experience','erfahrung','starts'])),
+        potentialPace:normStat(findVal(lo,['potentialpace','potential','potenzial'])),
+        prevPoints:findVal(lo,POINTS_KEYS)||0,
+        prevWins:findVal(lo,['wins','siege'])||0,
+      });
+    } else if(hasTeamSignal && !driverMap.has(name.toLowerCase())){
+      if(teamMap.has(name.toLowerCase())) continue;
+      teamMap.set(name.toLowerCase(),{
+        name,
+        carSpeed:normStat(findVal(lo,['carspeed','autospeed','speed'])),
+        reliability:normStat(findVal(lo,['reliability','zuverlaessigkeit'])),
+        strategy:normStat(findVal(lo,['strategy','strategie'])),
+      });
+    }
+  }
+  return {drivers:Array.from(driverMap.values()), teams:Array.from(teamMap.values())};
+}
+function applyImportResult(res){
+  // Ein Import ersetzt das Feld, statt sich mit dem alten zu mischen: sonst bleiben
+  // Teams aus dem Beispiel-Feld stehen und verfaelschen das importierte Kraefteverhaeltnis.
+  if(res.teams.length) TEAMS = {};
+  res.teams.forEach((t,i)=>{
+    TEAMS[t.name] = {name:t.name, color:t.color||colorForIndex(i),
+      carSpeed:t.carSpeed, reliability:t.reliability, strategy:t.strategy};
+  });
+  res.drivers.forEach(d=>{
+    if(!TEAMS[d.team]){
+      TEAMS[d.team]={name:d.team, color:colorForIndex(Object.keys(TEAMS).length),
+        carSpeed:Math.round(50+Math.random()*30), reliability:Math.round(60+Math.random()*30), strategy:Math.round(50+Math.random()*30)};
+    }
+  });
+  if(res.drivers.length){ DRIVERS = res.drivers; state.playerDriverId = DRIVERS[0].id; }
+  renderGarageTables();
+}
+document.getElementById('import-file').addEventListener('change', function(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const res=parseImportedText(reader.result);
+      applyImportResult(res);
+      document.getElementById('import-status').textContent = `Importiert: ${res.drivers.length} Fahrer, ${res.teams.length} Teams erkannt.`;
+    }catch(err){ document.getElementById('import-status').textContent = 'Fehler beim Import: '+err.message; }
+  };
+  reader.readAsText(file);
+});
+function handlePasteImport(){
+  const text=document.getElementById('import-paste').value;
+  if(!text.trim()) return;
+  try{
+    const res=parseImportedText(text);
+    applyImportResult(res);
+    document.getElementById('import-status').textContent = `Importiert: ${res.drivers.length} Fahrer, ${res.teams.length} Teams erkannt.`;
+  }catch(err){ document.getElementById('import-status').textContent = 'Fehler beim Import: '+err.message; }
+}
+
+/* ============================= GARAGE CRUD/RENDER ============================= */
+function renderPlayerSelect(){
+  const sel=document.getElementById('player-select');
+  const prev=state.playerDriverId;
+  sel.innerHTML = DRIVERS.map(d=>`<option value="${escAttr(d.id)}">${escapeHTML(d.name)} (${escapeHTML(d.team)})</option>`).join('');
+  if(DRIVERS.some(d=>d.id===prev)) sel.value=prev;
+  else if(DRIVERS.length){ state.playerDriverId=DRIVERS[0].id; sel.value=DRIVERS[0].id; }
+  sel.onchange=()=>{ state.playerDriverId=sel.value; };
+}
+function renderGarageTables(){
+  const teamsHtml = Object.values(TEAMS).map(t=>`
+    <tr>
+      <td><input type="color" value="${t.color}" onchange="TEAMS['${escAttr(t.name)}'].color=this.value"></td>
+      <td><input type="text" value="${escAttr(t.name)}" onchange="renameTeam('${escAttr(t.name)}', this.value)"></td>
+      <td><input type="number" min="1" max="100" value="${t.carSpeed}" onchange="TEAMS['${escAttr(t.name)}'].carSpeed=+this.value"></td>
+      <td><input type="number" min="1" max="100" value="${t.reliability}" onchange="TEAMS['${escAttr(t.name)}'].reliability=+this.value"></td>
+      <td><input type="number" min="1" max="100" value="${t.strategy}" onchange="TEAMS['${escAttr(t.name)}'].strategy=+this.value"></td>
+      <td><button class="btn small" onclick="removeTeam('${escAttr(t.name)}')">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('teams-tbody').innerHTML = teamsHtml || '<tr><td colspan="6" style="color:var(--muted);">Keine Teams — importiere Daten oder lade das Beispiel-Feld.</td></tr>';
+
+  const driversHtml = DRIVERS.map((d,i)=>`
+    <tr>
+      <td><input type="text" value="${escAttr(d.name)}" onchange="DRIVERS[${i}].name=this.value"></td>
+      <td><select onchange="DRIVERS[${i}].team=this.value">${Object.keys(TEAMS).map(n=>`<option value="${escAttr(n)}" ${n===d.team?'selected':''}>${escapeHTML(n)}</option>`).join('')}</select></td>
+      <td><input type="number" min="1" max="100" value="${d.pace}" onchange="DRIVERS[${i}].pace=+this.value"></td>
+      <td><input type="number" min="1" max="100" value="${d.rain}" onchange="DRIVERS[${i}].rain=+this.value"></td>
+      <td><input type="number" min="1" max="100" value="${d.consistency}" onchange="DRIVERS[${i}].consistency=+this.value"></td>
+      <td><input type="number" min="1" max="100" value="${d.experience}" onchange="DRIVERS[${i}].experience=+this.value"></td>
+      <td><input type="number" min="1" max="100" value="${d.potentialPace}" onchange="DRIVERS[${i}].potentialPace=+this.value"></td>
+      <td><input type="number" min="0" value="${d.prevPoints||0}" onchange="DRIVERS[${i}].prevPoints=+this.value"></td>
+      <td><button class="btn small" onclick="removeDriver(${i})">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('drivers-tbody').innerHTML = driversHtml || '<tr><td colspan="9" style="color:var(--muted);">Keine Fahrer — importiere Daten oder lade das Beispiel-Feld.</td></tr>';
+  renderPlayerSelect();
+}
+function renameTeam(oldName,newName){
+  newName=newName.trim();
+  if(!newName||TEAMS[newName]){ renderGarageTables(); return; }
+  TEAMS[newName]=TEAMS[oldName]; TEAMS[newName].name=newName; delete TEAMS[oldName];
+  DRIVERS.forEach(d=>{ if(d.team===oldName) d.team=newName; });
+  renderGarageTables();
+}
+function addTeam(){
+  let base='Neues Team', name=base, n=1;
+  while(TEAMS[name]){ name=base+' '+(++n); }
+  TEAMS[name]={name, color:colorForIndex(Object.keys(TEAMS).length), carSpeed:60, reliability:75, strategy:60};
+  renderGarageTables();
+}
+function removeTeam(name){
+  if(DRIVERS.some(d=>d.team===name)){
+    if(!confirm('Diesem Team sind noch Fahrer zugeordnet. Team samt Fahrern löschen?')) return;
+    DRIVERS = DRIVERS.filter(d=>d.team!==name);
+  }
+  delete TEAMS[name]; renderGarageTables();
+}
+function addDriver(){
+  const names=Object.keys(TEAMS);
+  if(names.length===0){ alert('Bitte zuerst ein Team anlegen.'); return; }
+  DRIVERS.push({id:uid('drv'), name:'Neuer Fahrer', team:names[0], pace:60,rain:60,consistency:60,experience:40,potentialPace:65, prevPoints:0, prevWins:0, importId:null, histId:null});
+  renderGarageTables();
+}
+function removeDriver(i){ DRIVERS.splice(i,1); renderGarageTables(); }
+
+/* ============================= AI-RENNSIMULATION ============================= */
+function pickRetireReason(){
+  const reasons=['Motorschaden','Unfall','Getriebeschaden','Aufhängungsschaden','Elektrikdefekt','Bremsversagen','Aufgabe im Kiesbett'];
+  return reasons[Math.floor(Math.random()*reasons.length)];
+}
+function simulateRace(drivers,laps,playerId){
+  const BASE_LAP=30; // Ziel-Rundenzeit in Echtzeit-Sekunden
+  const team=d=>TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
+  // Gewichtung wie im F1 RPG (index.html:14370): pace 0.45, carSpeed 0.30, strategy 0.10.
+  // Wichtig fuer spaetere Ergebnis-Paritaet - hier darf keine zweite Formel entstehen.
+  const perfScore=(d,t)=>(d.pace*0.45 + t.carSpeed*0.30 + t.strategy*0.10 + 15);
+  const cumulative={}, lapCumulative={};
+  drivers.forEach(d=>{ if(d.id!==playerId){ cumulative[d.id]=0; lapCumulative[d.id]=[]; } });
+  const retired={}, fastestLap={};
+
+  for(let lap=1; lap<=laps; lap++){
+    drivers.forEach(d=>{
+      if(d.id===playerId || retired[d.id]) return;
+      const t=team(d);
+      const perf=perfScore(d,t)/100;
+      const idealLap=BASE_LAP-perf*6;
+      const sigma=clamp((100-d.consistency)/100,0.05,1)*0.55;
+      const lapTime=Math.max(idealLap+gaussian(0,sigma), idealLap*0.85);
+      const relScore=t.reliability; // im F1 RPG sitzt Zuverlaessigkeit ausschliesslich am Team
+      const dnfChance=0.02*(1-relScore/100);
+      if(Math.random()<dnfChance){
+        const frac=clamp(0.1+Math.random()*0.8,0.05,0.95);
+        retired[d.id]={lap, reason:pickRetireReason(), time:cumulative[d.id]+lapTime*frac, fraction:frac};
+        return;
+      }
+      cumulative[d.id]+=lapTime;
+      lapCumulative[d.id].push(cumulative[d.id]);
+      if(!fastestLap[d.id]||lapTime<fastestLap[d.id]) fastestLap[d.id]=lapTime;
+    });
+  }
+  let bestLapVal=Infinity, bestLapId=null;
+  Object.entries(fastestLap).forEach(([id,v])=>{ if(v<bestLapVal){bestLapVal=v; bestLapId=id;} });
+  return {laps, cumulative, lapCumulative, retired, bestLapVal, bestLapId};
+}
+function buildAiAnimData(sim, drivers, playerId){
+  aiAnimData = {};
+  drivers.forEach(d=>{
+    if(d.id===playerId) return;
+    const segs=[]; let prev=0;
+    (sim.lapCumulative[d.id]||[]).forEach((endT,idx)=>{ segs.push({lapIndex:idx,startT:prev,endT}); prev=endT; });
+    if(sim.retired[d.id]){
+      const r=sim.retired[d.id];
+      segs.push({lapIndex:segs.length, startT:prev, endT:r.time, partial:true, fraction:r.fraction});
+    }
+    aiAnimData[d.id]={segs, endTime: segs.length?segs[segs.length-1].endT:0};
+  });
+}
+function getProgressAI(id,t){
+  const a=aiAnimData && aiAnimData[id];
+  if(!a||a.segs.length===0) return {lap:0,frac:0,frozen:false,finished:true};
+  if(t>=a.endTime){
+    const last=a.segs[a.segs.length-1];
+    if(last.partial) return {lap:last.lapIndex, frac:last.fraction, frozen:true, finished:false};
+    return {lap:last.lapIndex, frac:1, frozen:false, finished:true};
+  }
+  for(const seg of a.segs){
+    if(t<=seg.endT){
+      const span=Math.max(seg.endT-seg.startT,0.0001);
+      let frac=(t-seg.startT)/span;
+      if(seg.partial) frac*=seg.fraction;
+      return {lap:seg.lapIndex, frac:clamp(frac,0,1), frozen:false, finished:false};
+    }
+  }
+  const last=a.segs[a.segs.length-1];
+  return {lap:last.lapIndex, frac:1, frozen:false, finished:true};
+}
+
+/* ============================= THREE.JS SZENE ============================= */
+let renderer, sceneScene, camera, clock, curve, carMeshes={};
+let spacedPts=[], spacedTangents=[], trackLength=800;
+const trackPointsRaw=[[0,70],[45,88],[95,78],[132,48],[140,4],[112,-34],[128,-70],[96,-102],[46,-96],[8,-66],[-34,-70],[-70,-46],[-96,-58],[-134,-30],[-140,14],[-104,48],[-70,30],[-46,58],[-18,42]];
+
+let camIdle={theta:0.6, phi:0.85, radius:260, target:null, autoRotate:true};
+let camChase={theta:0, phi:0.72, radius:16, target:null};
+let cameraMode='idle';
+let camFollowId=null;
+let dragging=false;
+
+function initScene(){
+  const canvas=document.getElementById('gl');
+  renderer=new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  sceneScene=new THREE.Scene();
+  sceneScene.background=new THREE.Color(0x0b0c0e);
+  sceneScene.fog=new THREE.Fog(0x0b0c0e,220,520);
+  camera=new THREE.PerspectiveCamera(55,1,0.1,2000);
+  clock=new THREE.Clock();
+  camIdle.target=new THREE.Vector3(0,0,0);
+  camChase.target=new THREE.Vector3(0,0,0);
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) camIdle.autoRotate=false;
+
+  sceneScene.add(new THREE.HemisphereLight(0x9fb8ff,0x1a1c10,0.65));
+  const sun=new THREE.DirectionalLight(0xfff2d9,1.1); sun.position.set(120,180,80); sceneScene.add(sun);
+
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(360,64), new THREE.MeshStandardMaterial({color:0x16241a, roughness:1}));
+  ground.rotation.x=-Math.PI/2; sceneScene.add(ground);
+
+  buildTrack();
+
+  for(let i=0;i<3;i++){
+    const stand=new THREE.Mesh(new THREE.BoxGeometry(16,7,4), new THREE.MeshStandardMaterial({color:0x1f2229}));
+    stand.position.set(-24+i*22, 3.5, 98);
+    sceneScene.add(stand);
+  }
+
+  attachCameraControls();
+  const ro=new ResizeObserver(onResize); ro.observe(document.getElementById('canvas-wrap'));
+  onResize();
+  animateLoop();
+}
+
+function buildTrack(){
+  const pts=trackPointsRaw.map(p=>new THREE.Vector3(p[0],0,p[1]));
+  curve=new THREE.CatmullRomCurve3(pts,true,'catmullrom',0.5);
+  curve.arcLengthDivisions=600;
+  trackLength=curve.getLength();
+  const N=400;
+  const spaced=curve.getSpacedPoints(N);
+  spacedPts=spaced; spacedTangents=[];
+  const up=new THREE.Vector3(0,1,0);
+  const leftPts=[], rightPts=[];
+  for(let i=0;i<spaced.length;i++){
+    const p=spaced[i];
+    const pNext=spaced[(i+1)%spaced.length];
+    const pPrev=spaced[(i-1+spaced.length)%spaced.length];
+    const tangent=new THREE.Vector3().subVectors(pNext,pPrev).normalize();
+    spacedTangents.push(tangent);
+    const normal=new THREE.Vector3().crossVectors(tangent,up).normalize();
+    leftPts.push(p.clone().add(normal.clone().multiplyScalar(TRACK_WIDTH/2)));
+    rightPts.push(p.clone().add(normal.clone().multiplyScalar(-TRACK_WIDTH/2)));
+  }
+  const positions=[];
+  for(let i=0;i<leftPts.length;i++){
+    const j=(i+1)%leftPts.length;
+    const a=leftPts[i], b=rightPts[i], c=leftPts[j], d=rightPts[j];
+    positions.push(a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z);
+    positions.push(c.x,c.y,c.z, b.x,b.y,b.z, d.x,d.y,d.z);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.computeVertexNormals();
+  const road=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x2b2d31, roughness:0.95}));
+  road.position.y=0.02; sceneScene.add(road);
+
+  const centerGeo=new THREE.BufferGeometry().setFromPoints(spaced.map(p=>new THREE.Vector3(p.x,0.06,p.z)));
+  const centerLine=new THREE.Line(centerGeo, new THREE.LineDashedMaterial({color:0xffffff, dashSize:3, gapSize:3, transparent:true, opacity:0.3}));
+  centerLine.computeLineDistances(); sceneScene.add(centerLine);
+
+  const sf=new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH,1.2), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide}));
+  const sp=curve.getPointAt(0.001), st=curve.getTangentAt(0.001);
+  sf.position.set(sp.x,0.07,sp.z); sf.rotation.x=-Math.PI/2; sf.rotation.z=Math.atan2(st.x,st.z);
+  sceneScene.add(sf);
+}
+
+function buildCars(drivers){
+  Object.values(carMeshes).forEach(m=>sceneScene.remove(m.group));
+  carMeshes={};
+  drivers.forEach(d=>{
+    const color=new THREE.Color((TEAMS[d.team]&&TEAMS[d.team].color)||'#ffffff');
+    const group=new THREE.Group();
+    const body=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.5,3.2), new THREE.MeshStandardMaterial({color}));
+    body.position.y=0.4; group.add(body);
+    const wing=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.15,0.5), new THREE.MeshStandardMaterial({color:0x111111}));
+    wing.position.set(0,0.6,-1.7); group.add(wing);
+    const wheelGeo=new THREE.CylinderGeometry(0.35,0.35,0.3,10);
+    [[-0.9,0.35,1.1],[0.9,0.35,1.1],[-0.9,0.35,-1.1],[0.9,0.35,-1.1]].forEach(pos=>{
+      const wheel=new THREE.Mesh(wheelGeo, new THREE.MeshStandardMaterial({color:0x0a0a0a}));
+      wheel.rotation.z=Math.PI/2; wheel.position.set(pos[0],pos[1],pos[2]); group.add(wheel);
+    });
+    sceneScene.add(group);
+    const laneOffset=((hashStr(d.id)%100)/100-0.5)*4;
+    carMeshes[d.id]={group, laneOffset, driver:d};
+  });
+}
+
+function attachCameraControls(){
+  const canvas=document.getElementById('gl');
+  let lastX=0,lastY=0;
+  canvas.addEventListener('pointerdown', e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; if(cameraMode==='idle') camIdle.autoRotate=false; canvas.focus(); });
+  window.addEventListener('pointerup', ()=>dragging=false);
+  window.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+    if(cameraMode==='idle'){
+      camIdle.theta-=dx*0.005; camIdle.phi=clamp(camIdle.phi-dy*0.005,0.15,1.4);
+    } else {
+      camChase.theta-=dx*0.006; camChase.phi=clamp(camChase.phi-dy*0.004,0.35,1.15);
+    }
+  });
+  canvas.addEventListener('wheel', e=>{
+    e.preventDefault();
+    if(cameraMode==='idle') camIdle.radius=clamp(camIdle.radius+e.deltaY*0.2,60,440);
+    else camChase.radius=clamp(camChase.radius+e.deltaY*0.03,8,42);
+  }, {passive:false});
+}
+function updateCameraFrame(dt){
+  if(cameraMode==='idle'){
+    camIdle.target.lerp(new THREE.Vector3(0,0,0),0.1);
+    if(camIdle.autoRotate) camIdle.theta+=dt*0.05;
+    const r=camIdle.radius;
+    camera.position.set(
+      camIdle.target.x + r*Math.sin(camIdle.phi)*Math.cos(camIdle.theta),
+      camIdle.target.y + r*Math.cos(camIdle.phi),
+      camIdle.target.z + r*Math.sin(camIdle.phi)*Math.sin(camIdle.theta)
+    );
+    camera.lookAt(camIdle.target.x,camIdle.target.y,camIdle.target.z);
+  } else {
+    let pos, heading;
+    if(camFollowId && carMeshes[camFollowId]){
+      pos=carMeshes[camFollowId].group.position; heading=carMeshes[camFollowId].group.rotation.y;
+    } else if(player){
+      pos=player.pos; heading=player.heading;
+    } else { pos=new THREE.Vector3(0,0,0); heading=0; }
+    camChase.target.lerp(new THREE.Vector3(pos.x,0,pos.z),0.35);
+    const baseTheta=heading+Math.PI, theta=baseTheta+camChase.theta;
+    const r=camChase.radius, phi=camChase.phi;
+    camera.position.set(
+      camChase.target.x + r*Math.sin(phi)*Math.sin(theta),
+      camChase.target.y + r*Math.cos(phi) + 1,
+      camChase.target.z + r*Math.sin(phi)*Math.cos(theta)
+    );
+    camera.lookAt(camChase.target.x, camChase.target.y+1.4, camChase.target.z);
+  }
+}
+function onResize(){
+  const wrap=document.getElementById('canvas-wrap');
+  const w=wrap.clientWidth, h=wrap.clientHeight;
+  if(w<10||h<10) return;
+  renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+
+/* ============================= SPIELER-PHYSIK ============================= */
+let player=null;
+let aiSim=null, aiAnimData=null;
+let raceClock=0, racing=false, paused=false, raceEnded=false, raceSpeed=1;
+let lbTimer=0;
+const keys={};
+window.addEventListener('keydown', e=>{
+  if(currentView!=='track') return;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  keys[e.code]=true;
+});
+window.addEventListener('keyup', e=>{ keys[e.code]=false; });
+
+function trackHalfWidth(){ return TRACK_WIDTH/2; }
+function nearestTrackInfo(pos){
+  let best=Infinity, bestIdx=0;
+  for(let i=0;i<spacedPts.length;i++){
+    const dx=spacedPts[i].x-pos.x, dz=spacedPts[i].z-pos.z;
+    const d=dx*dx+dz*dz;
+    if(d<best){best=d; bestIdx=i;}
+  }
+  const tangent=spacedTangents[bestIdx];
+  const normal=new THREE.Vector3(-tangent.z,0,tangent.x);
+  const toPoint=new THREE.Vector3(pos.x-spacedPts[bestIdx].x,0,pos.z-spacedPts[bestIdx].z);
+  const lateral=toPoint.dot(normal);
+  return {idx:bestIdx, frac:bestIdx/spacedPts.length, lateral, tangent};
+}
+function initPlayer(driverId){
+  const sp=curve.getPointAt(0.0006), st=curve.getTangentAt(0.0006);
+  player={
+    id:driverId,
+    pos:new THREE.Vector3(sp.x,0,sp.z),
+    heading:Math.atan2(st.x,st.z),
+    speed:0, lap:0, frac:0, lapStartTime:0, lapTimes:[], bestLap:null,
+    finished:false, aborted:false,
+  };
+}
+function updatePlayer(dt){
+  if(!player||player.finished||player.aborted) return;
+  const throttle=(keys['ArrowUp']||keys['KeyW'])?1:((keys['ArrowDown']||keys['KeyS'])?-1:0);
+  const steer=(keys['ArrowLeft']||keys['KeyA'])?-1:((keys['ArrowRight']||keys['KeyD'])?1:0);
+
+  const info=nearestTrackInfo(player.pos);
+  const offTrack=Math.abs(info.lateral)>trackHalfWidth();
+
+  const driverStats=DRIVERS.find(d=>d.id===player.id)||{pace:70,potential:70};
+  const teamStats=TEAMS[driverStats.team]||{carSpeed:65};
+  const maxSpeed=(trackLength/24)*(0.85+(driverStats.pace+teamStats.carSpeed)/400);
+  const accel=26, brakeDecel=34, reverseAccel=14;
+
+  if(throttle>0){ player.speed+=accel*dt; }
+  else if(throttle<0){
+    if(player.speed>0.5) player.speed-=brakeDecel*dt;
+    else player.speed-=reverseAccel*dt;
+  } else {
+    player.speed-=Math.sign(player.speed)*8*dt;
+  }
+  player.speed-=Math.sign(player.speed)*0.02*player.speed*player.speed*dt;
+
+  const offMult=offTrack?0.45:1;
+  const curMax=maxSpeed*offMult;
+  player.speed=clamp(player.speed,-maxSpeed*0.35,curMax);
+  if(Math.abs(player.speed)<0.05 && throttle===0) player.speed=0;
+
+  const speedFactor=clamp(Math.abs(player.speed)/(maxSpeed*0.35),0,1);
+  const turnRate=steer*2.0*speedFactor*(offTrack?0.7:1)*(player.speed<0?-1:1);
+  player.heading+=turnRate*dt;
+
+  const dir=new THREE.Vector3(Math.sin(player.heading),0,Math.cos(player.heading));
+  player.pos.addScaledVector(dir, player.speed*dt);
+
+  const prevFrac=player.frac;
+  player.frac=info.frac;
+  if(prevFrac>0.85 && player.frac<0.15){
+    const lapTime=raceClock-player.lapStartTime;
+    if(lapTime>6){
+      player.lapTimes.push(lapTime);
+      if(player.bestLap===null||lapTime<player.bestLap) player.bestLap=lapTime;
+      player.lap++;
+      player.lapStartTime=raceClock;
+      if(player.lap>=state.laps){
+        player.finished=true;
+        document.getElementById('flag-overlay').style.display='block';
+        setTimeout(()=>{ document.getElementById('flag-overlay').style.display='none'; },2500);
+        onPlayerFinished();
+      }
+    }
+  }
+  const cm=carMeshes[player.id];
+  if(cm){ cm.group.position.set(player.pos.x,0.05,player.pos.z); cm.group.rotation.y=player.heading; }
+}
+function updateAICars(simTime){
+  for(const id in carMeshes){
+    if(player && id===player.id) continue;
+    const prog=getProgressAI(id, simTime);
+    const u=clamp(prog.frac,0,0.9999);
+    const point=curve.getPointAt(u);
+    const tangent=curve.getTangentAt(u).normalize();
+    const normal=new THREE.Vector3(-tangent.z,0,tangent.x);
+    const cm=carMeshes[id];
+    const pos=point.clone().add(normal.multiplyScalar(cm.laneOffset));
+    pos.y=0.05;
+    cm.group.position.copy(pos);
+    cm.group.rotation.y=Math.atan2(tangent.x,tangent.z);
+  }
+}
+
+/* ============================= HUD & KLASSEMENT (live) ============================= */
+function tickHudAndLeaderboard(simTime){
+  if(!player) return;
+  const rows=DRIVERS.map(d=>{
+    if(d.id===player.id){
+      const isRet=player.aborted;
+      const metric=isRet?(-1000-player.lap):(player.lap+player.frac);
+      return {d, metric, isRet, isPlayer:true};
+    } else {
+      const prog=getProgressAI(d.id, simTime);
+      const isRet=!!(aiSim && aiSim.retired[d.id]);
+      const metric=(isRet&&prog.frozen)?(-1000-prog.lap):(prog.lap+prog.frac);
+      return {d, metric, isRet, isPlayer:false};
+    }
+  }).sort((a,b)=>b.metric-a.metric);
+
+  const playerRank=rows.findIndex(r=>r.isPlayer)+1;
+  document.getElementById('hud-lap').textContent=`${Math.min(state.laps, player.lap+1)}/${state.laps}`;
+  document.getElementById('hud-pos').textContent=`P${playerRank}`;
+  document.getElementById('hud-speed').textContent=Math.round(Math.max(0,player.speed)*3.6)+' km/h';
+  document.getElementById('hud-laptime').textContent=fmtTime(raceClock-player.lapStartTime);
+  document.getElementById('hud-best').textContent=fmtTime(player.bestLap);
+
+  const leaderMetric=rows[0].metric;
+  const html=rows.map((r,i)=>{
+    const color=(TEAMS[r.d.team]&&TEAMS[r.d.team].color)||'#888';
+    const gapTxt=r.isRet?'Ausfall':(i===0?'Führung':('−'+((leaderMetric-r.metric)*1.2).toFixed(1)+'s'));
+    return `<div class="leaderboard-row" data-id="${r.d.id}" style="${r.isRet?'opacity:.45;':''}${r.isPlayer?'font-weight:700;':''}">
+      <span class="pos">${i+1}</span>
+      <span class="swatch" style="background:${color}"></span>
+      <span class="name">${r.isPlayer?'🎮 ':''}${escapeHTML(r.d.name)}</span>
+      <span class="gap">${gapTxt}</span>
+    </div>`;
+  }).join('');
+  const lb=document.getElementById('leaderboard');
+  lb.innerHTML=html;
+  lb.querySelectorAll('.leaderboard-row').forEach(el=>{
+    el.addEventListener('click', ()=>{ camFollowId = (el.dataset.id===player.id) ? null : el.dataset.id; });
+  });
+}
+
+/* ============================= HAUPTSCHLEIFE ============================= */
+function animateLoop(){
+  requestAnimationFrame(animateLoop);
+  const dt=Math.min(clock.getDelta(),0.1);
+  if(racing && !paused && currentView==='track'){
+    const sdt=dt*raceSpeed;
+    raceClock+=sdt;
+    updatePlayer(sdt);
+    updateAICars(raceClock);
+    lbTimer+=dt;
+    if(lbTimer>0.12){ lbTimer=0; tickHudAndLeaderboard(raceClock); }
+  }
+  updateCameraFrame(dt);
+  if(renderer) renderer.render(sceneScene, camera);
+}
+
+/* ============================= RENNABLAUF ============================= */
+function startRace(){
+  if(DRIVERS.length<4){ alert('Bitte mindestens 4 Fahrer eintragen oder importieren (Box-Ansicht).'); return; }
+  if(!state.playerDriverId || !DRIVERS.find(d=>d.id===state.playerDriverId)){
+    alert('Bitte in der Box einen Fahrer auswählen, den du selbst steuern willst.'); return;
+  }
+  raceEnded=false; paused=false;
+  buildCars(DRIVERS);
+  initPlayer(state.playerDriverId);
+  aiSim=simulateRace(DRIVERS, state.laps, state.playerDriverId);
+  buildAiAnimData(aiSim, DRIVERS, state.playerDriverId);
+  raceClock=0;
+  updateAICars(0);
+  const cm=carMeshes[player.id]; if(cm){ cm.group.position.set(player.pos.x,0.05,player.pos.z); cm.group.rotation.y=player.heading; }
+
+  cameraMode='chase'; camFollowId=null;
+  document.getElementById('btn-start-race').style.display='none';
+  document.getElementById('btn-abort-race').style.display='inline-block';
+  switchView('track');
+  runCountdown();
+}
+function runCountdown(){
+  let n=3;
+  const el=document.getElementById('countdown-overlay');
+  el.style.display='flex'; el.textContent=n;
+  const iv=setInterval(()=>{
+    n--;
+    if(n>0){ el.textContent=n; }
+    else if(n===0){ el.textContent='LOS!'; }
+    else {
+      clearInterval(iv); el.style.display='none';
+      racing=true; raceClock=0; if(player) player.lapStartTime=0;
+      document.getElementById('btn-playpause').disabled=false;
+    }
+  },800);
+}
+function togglePlay(){
+  if(!racing) return;
+  paused=!paused;
+  document.getElementById('btn-playpause').textContent = paused ? '▶ Weiter' : '⏸ Pause';
+}
+function setSpeed(s){
+  raceSpeed=s;
+  document.querySelectorAll('.speedbtn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===s));
+}
+function confirmAbort(){
+  if(confirm('Rennen wirklich abbrechen und zum aktuellen Zwischenstand werten?')) abortRace();
+}
+function abortRace(){
+  if(!player) return;
+  player.aborted=true; racing=false;
+  finalizeAndShowResults();
+}
+function onPlayerFinished(){
+  racing=false;
+  finalizeAndShowResults();
+}
+function resetForNewRace(){
+  racing=false; paused=false; raceEnded=false;
+  player=null; aiSim=null; aiAnimData=null; state.finalClassification=null;
+  document.getElementById('btn-start-race').style.display='inline-block';
+  document.getElementById('btn-abort-race').style.display='none';
+  document.getElementById('btn-playpause').disabled=true;
+  document.getElementById('btn-playpause').textContent='⏸ Pause';
+  document.getElementById('hud-lap').textContent='–/–';
+  document.getElementById('hud-pos').textContent='–';
+  document.getElementById('hud-speed').textContent='0 km/h';
+  document.getElementById('hud-laptime').textContent='–:--.---';
+  document.getElementById('hud-best').textContent='–:--.---';
+  cameraMode='idle'; camFollowId=null;
+  switchView('track');
+}
+
+/* ============================= ERGEBNIS & EXPORT ============================= */
+function finalizeAndShowResults(){
+  raceEnded=true;
+  document.getElementById('btn-start-race').style.display='none';
+  document.getElementById('btn-abort-race').style.display='none';
+
+  const entries=[];
+  DRIVERS.forEach(d=>{
+    if(d.id===player.id) return;
+    if(aiSim.retired[d.id]){
+      entries.push({id:d.id,name:d.name,team:d.team,status:'dnf',retiredLap:aiSim.retired[d.id].lap, reason:aiSim.retired[d.id].reason, totalTime:aiSim.retired[d.id].time});
+    } else {
+      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',totalTime:aiSim.cumulative[d.id]});
+    }
+  });
+  const playerDriverObj=DRIVERS.find(d=>d.id===player.id);
+  const playerTotalTime=player.lapTimes.reduce((a,b)=>a+b,0);
+  if(player.finished){
+    entries.push({id:player.id,name:playerDriverObj.name,team:playerDriverObj.team,status:'classified',totalTime:playerTotalTime, isPlayer:true});
+  } else {
+    entries.push({id:player.id,name:playerDriverObj.name,team:playerDriverObj.team,status:'dnf', retiredLap:player.lap+1, reason:'Aufgegeben', totalTime:playerTotalTime||99999, isPlayer:true});
+  }
+  const classified=entries.filter(e=>e.status==='classified').sort((a,b)=>a.totalTime-b.totalTime);
+  const dnf=entries.filter(e=>e.status==='dnf').sort((a,b)=>(b.retiredLap-a.retiredLap)||(a.totalTime-b.totalTime));
+  const leaderTime=classified.length?classified[0].totalTime:0;
+  const all=[...classified,...dnf];
+
+  let bestVal=aiSim.bestLapVal, bestId=aiSim.bestLapId;
+  if(player.bestLap!==null && player.bestLap<bestVal){ bestVal=player.bestLap; bestId=player.id; }
+
+  all.forEach((e,i)=>{
+    e.pos=i+1;
+    e.gap = e.status==='classified' ? (i===0?0:e.totalTime-leaderTime) : null;
+    e.fastestLap = e.id===bestId;
+  });
+  const POINTS=[25,18,15,12,10,8,6,4,2,1];
+  all.forEach(e=>{ e.points=(e.status==='classified'&&e.pos<=10)?POINTS[e.pos-1]:0; });
+  if(state.fastestLapPoint){
+    const fl=all.find(e=>e.fastestLap);
+    if(fl&&fl.status==='classified'&&fl.pos<=10) fl.points+=1;
+  }
+  state.finalClassification=all;
+  renderResultsFinal(all);
+  switchView('results');
+}
+function renderResultsFinal(all){
+  const rowsHtml=all.map(c=>{
+    const color=(TEAMS[c.team]&&TEAMS[c.team].color)||'#888';
+    const statusTxt = c.status==='classified' ? (c.pos===1?'Sieger':'gewertet') : `Ausfall (R${c.retiredLap} – ${c.reason})`;
+    return `<tr style="${c.isPlayer?'background:rgba(255,176,32,0.08);':''}">
+      <td class="pos-cell">${c.pos}</td>
+      <td><span class="swatch" style="background:${color}"></span>${c.isPlayer?'🎮 ':''}${escapeHTML(c.name)}</td>
+      <td>${escapeHTML(c.team)}</td>
+      <td>${statusTxt}${c.fastestLap?' <span class="fl-badge">SR</span>':''}</td>
+      <td>${c.status==='classified' ? (c.pos===1?'—':'+'+c.gap.toFixed(3)+'s') : '–'}</td>
+      <td>${c.points}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('results-tbody').innerHTML=rowsHtml;
+  document.getElementById('export-preview').textContent=JSON.stringify(buildExportJSON(),null,2);
+}
+function buildExportJSON(){
+  const all=state.finalClassification||[];
+  const rows=all.map(c=>{
+    const base={ platz:c.pos, fahrer:c.name, team:c.team, status: c.status==='classified'?'gewertet':'ausgefallen', punkte:c.points, schnellsteRunde: !!c.fastestLap, spieler: !!c.isPlayer };
+    if(c.status==='classified'){ base.rueckstand = c.pos===1?'0.000':'+'+c.gap.toFixed(3); }
+    else { base.ausfallRunde=c.retiredLap; base.ausfallGrund=c.reason; }
+    const orig=DRIVERS.find(d=>d.id===c.id);
+    if(orig && orig.importId) base.importId=orig.importId;   // Laufzeit-ID des Spielstands
+    if(orig && orig.histId)   base.histId=orig.histId;       // stabiler ueber Saisons hinweg
+    return base;
+  });
+  const standings=DRIVERS.map(d=>{
+    const res=all.find(c=>c.id===d.id);
+    return {fahrer:d.name, team:d.team, punkteVorher:d.prevPoints||0, punkteRennen:res?res.points:0, punkteGesamt:(d.prevPoints||0)+(res?res.points:0)};
+  }).sort((a,b)=>b.punkteGesamt-a.punkteGesamt);
+
+  return {
+    quelle:APP_NAME+' – 3D-Rennspiel (selbst gefahren)',
+    hinweis:'Stärkewerte gegen den F1-RPG-Quellcode abgeglichen (Team: carSpeed/reliability/strategy, Fahrer: pace/rain/consistency/experience). Ein Rückweg-Import ins RPG existiert noch nicht.',
+    erzeugtAm:new Date().toISOString(),
+    runden:state.laps,
+    rennergebnis:rows,
+    meisterschaftsstandNeu:standings,
+  };
+}
+function downloadExport(){
+  if(!state.finalClassification){ alert('Bitte zuerst ein Rennen beenden.'); return; }
+  const data=buildExportJSON();
+  const blob=new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='f1-rpg-rennergebnis.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  document.getElementById('export-status').textContent='Datei heruntergeladen.';
+}
+function copyExport(){
+  if(!state.finalClassification){ alert('Bitte zuerst ein Rennen beenden.'); return; }
+  const data=buildExportJSON();
+  navigator.clipboard.writeText(JSON.stringify(data,null,2))
+    .then(()=>{ document.getElementById('export-status').textContent='In die Zwischenablage kopiert.'; })
+    .catch(()=>{ document.getElementById('export-status').textContent='Kopieren nicht möglich – bitte Text im Feld oben manuell markieren.'; });
+}
+
+/* ============================= ANSICHTEN ============================= */
+function switchView(name){
+  currentView=name;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  if(name==='track') onResize();
+}
+
+/* ============================= INIT ============================= */
+loadDemoField();
+renderGarageTables();
+window.addEventListener('load', ()=>{ initScene(); });
+</script>
+</body>
+</html>
