@@ -155,7 +155,7 @@ function getContext() {
 
     // `let` → `var` für extern sichtbare Globals
     // Außerdem: Balancing-Parameter durch SIM_CONFIG ersetzen (index.html bleibt unverändert)
-    const patchedScript = script
+    let patchedScript = script
         .replace(/\blet\s+GAME_STATE\s*=/, 'var GAME_STATE =')
         // SIM_CONFIG-Block am Anfang injizieren (wird durch Replace-Kette danach genutzt)
         .replace(
@@ -207,6 +207,24 @@ function getContext() {
             /const _mult2 = \(GAME_STATE\.dnfRate \?\? 100\) \/ 100;/,
             'const _mult2 = (GAME_STATE.dnfRate ?? 100) / 100 * (SIM_CONFIG.dnfMultiplier ?? 1.0);'
         );
+
+
+    // Live-Ticker testbar machen (fuer tests/ticker-vs-sim.js):
+    // `let liveRaceState` landet in vm.runInNewContext NICHT auf dem Kontextobjekt,
+    // der Zustand des Tickers ist von aussen also unsichtbar. Statt die Deklaration
+    // umzuschreiben (haengt davon ab, ob sie in einem Block steht), setzen wir einen
+    // Getter in DENSELBEN Scope, direkt vor simulateLap - der sieht die Variable
+    // immer, unabhaengig vom Scope.
+    patchedScript = patchedScript.replace(
+        /(\n\s*)function simulateLap\(\)/,
+        '$1window.__liveState = function () { return liveRaceState; };$1function simulateLap()');
+
+    // Das fertige raceResult mitschneiden. Noetig, weil finishLiveRace sein
+    // applyRaceResults aus dem EIGENEN Scope ruft - ein Ueberschreiben von
+    // ctx.applyRaceResults von aussen erreicht diesen Aufruf nicht.
+    patchedScript = patchedScript.replace(
+        /applyRaceResults\((\w+)\);/g,
+        '{ window.__lastRaceResult = $1; applyRaceResults($1); }');
 
     const ctx = createBrowserStubs();
     try {
