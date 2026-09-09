@@ -16945,105 +16945,59 @@
             
             document.getElementById('liveLapCounter').textContent = `${lap} / ${totalLaps}`;
             
-            // === RUNDENZEIT-BERECHNUNG ===
+            // === RUNDENFORTSCHRITT NACH PLAN ===
+            // Kein Wuerfeln mehr: das Ergebnis steht seit startLiveRace fest. Hier
+            // wird nur noch der Weg dorthin erzeugt - vom Startplatz zur Zielposition.
+            // totalTime ist deshalb eine DARSTELLUNGSGROESSE, keine gerechnete Zeit:
+            // sie bildet den aktuellen Rang ab, damit Tabelle und Abstaende stimmen.
+            const _fortschritt = lap / Math.max(1, totalLaps);
+            const _liveRaceObj = GAME_STATE.races[liveRaceState.raceIndex];
+            const _basisRunde = getCircuitBaseTime(_liveRaceObj?.circuitId, GAME_STATE.currentYear, 'race') || 90;
+            const _abstandProRang = _basisRunde * 0.012;
+
             liveRaceState.positions.forEach((p, idx) => {
                 if (p.dnf) return;
-                
-                const driver = GAME_STATE.drivers.find(d => d.id === p.driver);
-                const team = GAME_STATE.teams.find(t => t.id === p.team);
-                if (!driver || !team) return;
-                
-                // Basis-Rundenzeit: Streckenlänge + Ära (circuit-spezifisch kalibriert)
-                const _liveRace = GAME_STATE.races[liveRaceState.raceIndex];
-                const _liveBase = getCircuitBaseTime(_liveRace?.circuitId, GAME_STATE.currentYear, 'race');
-                let lapTime = _liveBase + (Math.random() - 0.5) * (_liveBase * 0.02);
-                
-                // Fahrer-Skills
-                lapTime *= 1 - (driver.pace / 100) * 0.02; // ±2%
-                // [SYNC simulateRace] Konstanz: schlechter Tag → konstanter Rundenzeit-Malus (~0.3–0.6% pro Runde)
-                if (!p.isGoodDay) lapTime += _liveBase * (0.003 + Math.random() * 0.003);
-                
-                // Team-Skills
-                lapTime *= 1 - (team.carSpeed / 100) * 0.015; // ±1.5%
-                
-                // Reifenverschleiß
-                const tyreWear = (p.tyreLaps / 20) * 0.05; // 5% nach 20 Runden
-                lapTime *= 1 + tyreWear;
-                
-                // Pit-Stopp?
-                if (p.tyreLaps > 15 && team.strategy > 70 && !p.hasPitted && lap < totalLaps - 5) {
-                    const pitChance = (team.strategy + driver.experience) / 200;
-                    if (Math.random() < pitChance * 0.15) { // 15% Chance wenn Bedingungen erfüllt
-                        p.isPitting = true;
-                        p.hasPitted = true;
-                        p.tyreLaps = 0;
-                        lapTime += 22; // Pit-Stopp Zeit
-                        // {pos} = Position BEIM REINKOMMEN (Stand der letzten abgeschlossenen
-                        // Runde): `idx` stammt aus der Sortierung der Vorrunde, die 22 s des
-                        // Stopps fliessen erst unten in p.totalTime und damit in die Neusortierung
-                        // am Rundenende. Die pit-Texte formulieren deshalb "aktuell P{pos}" /
-                        // "von P{pos} an die Box" — nie den Stand nach dem Stopp. (Paket-7-Report N5)
-                        addLiveEvent(liveLine('pit', { driver: p.name, team: team.name, lap, totalLaps, pos: idx + 1, year: GAME_STATE.currentYear }), 'warning');
-                    }
-                } else {
-                    p.isPitting = false;
-                }
-                
-                p.totalTime += lapTime;
-                p.tyreLaps++;
-                
-                // ═══════════════════════════════════════════════════════════════
-                // LIVE-TICKER DNF-FORMEL v0.9.9.6 – Ära-basiert, pro Runde
-                // [SYNC simulateRace] DNF-Logik: Änderungen hier ↔ simulateRace() synchron halten
-                // ═══════════════════════════════════════════════════════════════
-                // Gleiche Formel wie simulateRace(), umgerechnet auf pro-Runde-Chance.
-                // P(ausfall/runde) = 1 - (1 - P(rennen))^(1/N), N=totalLaps-2 konstant.
-                // ═══════════════════════════════════════════════════════════════
 
-                if (lap < totalLaps - 2) { // Nicht in den letzten 2 Runden
-                    const _eraBase2 = getEraDNFRate(GAME_STATE.currentYear);
-                    const _mult2 = (GAME_STATE.dnfRate ?? 100) / 100;
-                    const _avgRel2 = GAME_STATE.teams.reduce((s, t) => s + (t.reliability || 75), 0) / GAME_STATE.teams.length;
-                    let _dnfPct2 = _eraBase2 * _mult2 * (1 + (_avgRel2 - (team.reliability || 75)) / 100);
-                    _dnfPct2 = Math.max(2, Math.min(99, _dnfPct2));
-                    // Umrechnung auf pro-Runde-Wahrscheinlichkeit (N=totalLaps-2 konstant)
-                    const _perLap = 1 - Math.pow(1 - _dnfPct2 / 100, 1 / (totalLaps - 2));
-                    let isDNF = _mult2 > 0 && Math.random() < _perLap;
-                    let dnfType = isDNF ? (Math.random() > 0.5 ? 'mechanical' : 'accident') : null;
-                    
-                    if (isDNF) {
-                        p.dnf = true;
-                        p.dnfType = dnfType;
-                        {
-                            const _y = GAME_STATE.currentYear;
-                            if (dnfType === 'accident') {
-                                const _acc = ['Accident','Collision','Spin','Off track','Crash'];
-                                p.dnfReason = _acc[Math.floor(Math.random() * _acc.length)];
-                            } else {
-                                let _pool;
-                                if (_y < 1966)      _pool = ['Engine','Gearbox','Overheating','Oil pressure','Fuel system','Suspension','Halfshaft','Magneto','Rear axle','Brakes','Throttle','Oil leak','Valve'];
-                                else if (_y < 1983) _pool = ['Engine','Gearbox','Suspension','Clutch','Brakes','Oil pressure','Driveshaft','Electrical','Fuel system','Overheating','Wheel','Transmission','Water leak','Fire'];
-                                else if (_y < 2000) _pool = ['Engine','Gearbox','Hydraulics','Electrical','Suspension','Brakes','Turbo','Clutch','Throttle','Driveshaft','Wheel failure','Fuel pressure','Fire'];
-                                else                _pool = ['Engine','Gearbox','Hydraulics','Electrical','Brakes','Suspension','Clutch','Wheel failure','MGU-K','Fuel system','Power unit','Cooling','Driveshaft','Battery'];
-                                p.dnfReason = _pool[Math.floor(Math.random() * _pool.length)];
-                            }
-                        }
-                        addLiveEvent(liveLine(dnfType === 'accident' ? 'dnf_accident' : 'dnf_mechanical', { driver: p.name, team: team.name, lap, reason: DNF_REASON_DE[p.dnfReason], pos: idx + 1, year: GAME_STATE.currentYear }), 'negative');
-                        
-                        // Todes-Check – Zwei-Würfel-Modell: Session bereits in Training gewürfelt
-                        // [SYNC simulateRace] Todes-Check: Änderungen hier ↔ simulateRace() synchron halten
-                        if (dnfType === 'accident' && GAME_STATE.deathRealism > 0 &&
-                            _weekendDeath[liveRaceState.raceIndex] === 'race' && !_liveRaceDeathFired) {
-                            p.fatal = true;
-                            p.fatalSession = 'race';
-                            p.dnfReason = '💀 Tödlich';
-                            _liveRaceDeathFired = true;
-                            addLiveEvent(liveLine('death', { driver: p.name, team: team.name, lap, year: GAME_STATE.currentYear }), 'negative');
-                        }
+                // Geplanter Ausfall - ob, stand fest; wann, ist Darstellung.
+                if (p._wirdDnf && p._dnfLap !== null && lap >= p._dnfLap) {
+                    p.dnf = true;
+                    p.dnfType = p._dnfTyp || 'mechanical';
+                    p.dnfReason = p._dnfGrund;
+                    p.dnfLap = lap;
+                    const _t = GAME_STATE.teams.find(t => t.id === p.team);
+                    addLiveEvent(liveLine(p.dnfType === 'accident' ? 'dnf_accident' : 'dnf_mechanical',
+                        { driver: p.name, team: _t ? _t.name : '', lap, reason: DNF_REASON_DE[p.dnfReason] || p.dnfReason,
+                          pos: idx + 1, year: GAME_STATE.currentYear }), 'negative');
+                    // Todesfall NUR melden. Status, seasonDeaths und Ersatzfahrer hat
+                    // simulateRace bereits erledigt - hier nochmal waere es doppelt.
+                    if (p._fatal && !_liveRaceDeathFired) {
+                        p.fatal = true;
+                        _liveRaceDeathFired = true;
+                        addLiveEvent(liveLine('death', { driver: p.name, team: _t ? _t.name : '', lap,
+                            year: GAME_STATE.currentYear }), 'negative');
                     }
+                    return;
                 }
+
+                // Rang wandert vom Startplatz zur Zielposition. Das Rauschen macht die
+                // Fahrt lebendig und laeuft gegen Null, damit die Schlussrunde exakt
+                // die geplante Reihenfolge zeigt.
+                const _rausch = (Math.random() - 0.5) * 1.2 * (1 - _fortschritt);
+                const _rang = p._startRang + (p._zielRang - p._startRang) * _fortschritt + _rausch;
+                p.totalTime = lap * _basisRunde + _rang * _abstandProRang;
+                p.tyreLaps++;
+
+                // Boxenstopp: reine Optik. Er kostet bewusst KEINE Zeit, sonst wuerde
+                // die Darstellung das feststehende Ergebnis verbiegen.
+                const _team = GAME_STATE.teams.find(t => t.id === p.team);
+                if (_team && p.tyreLaps > 15 && _team.strategy > 70 && !p.hasPitted && lap < totalLaps - 5) {
+                    if (Math.random() < ((_team.strategy + 60) / 200) * 0.15) {
+                        p.isPitting = true; p.hasPitted = true; p.tyreLaps = 0;
+                        addLiveEvent(liveLine('pit', { driver: p.name, team: _team.name, lap, totalLaps,
+                            pos: idx + 1, year: GAME_STATE.currentYear }), 'warning');
+                    } else { p.isPitting = false; }
+                } else { p.isPitting = false; }
             });
-            
             // === POSITIONEN NEU SORTIEREN ===
             const activeDrivers = liveRaceState.positions.filter(p => !p.dnf);
             activeDrivers.sort((a, b) => a.totalTime - b.totalTime);
@@ -17110,103 +17064,30 @@
                 return;
             }
             
-            // Rennergebnis erstellen (kompatibel mit existierendem System)
-            const race = GAME_STATE.races[liveRaceState.raceIndex];
-            
-            const results = liveRaceState.positions.map((p, idx) => ({
-                driver: p.driver,
-                name: p.name,
-                team: p.team,
-                teamName: p.teamName,
-                number: p.number,
-                nation: p.nation,
-                score: 100 - idx * 2,
-                position: idx + 1,
-                points: (!p.dnf) ? getPointsForPosition(idx + 1, GAME_STATE.currentYear) : 0,
-                dnf: p.dnf,
-                dnfType: p.dnfType || (p.dnf ? 'mechanical' : null),
-                dnfReason: p.dnfReason || null,
-                status: p.fatal ? '💀 Fatal' : (p.dnf ? `DNF (${p.dnfReason})` : 'Finished'),
-                fatal: p.fatal || false,
-                qualiPos: p.qualiPos,
-                isGuest: p.isGuest || false
-            }));
-            
-            // Fastest Lap (random Top 10) – nur in Ären mit FL-Punkt (1950–1959, 2019+)
-            const _flYearL = GAME_STATE.currentYear;
-            const _flGivesPointL = _flYearL <= 1959 || _flYearL >= 2019;
-            const eligibleFL = results.filter(r => !r.dnf && r.position <= 10);
-            if (eligibleFL.length > 0) {
-                const flDriver = eligibleFL[Math.floor(Math.random() * eligibleFL.length)];
-                flDriver.fastestLap = true;
-                if (_flGivesPointL) flDriver.points += 1;
+            // ════════════════════════════════════════════════════════════════
+            // Das Ergebnis wird NICHT mehr hier gebaut. Es entstand in
+            // startLiveRace ueber simulateRace() und wird nur durchgereicht.
+            // Damit ist ausgeschlossen, dass der Ticker eine zweite Wahrheit
+            // erzeugt - genau das war die Divergenz.
+            //
+            // Ebenfalls entfallen: Fastest-Lap-Vergabe sowie Todes-Check und
+            // Ersatzfahrer. simulateRace() setzt driver.status, fuellt
+            // GAME_STATE.seasonDeaths und zieht die Ersatzfahrer nach; ein
+            // zweiter Durchlauf hier haette alles doppelt getan.
+            // ════════════════════════════════════════════════════════════════
+            const raceResult = liveRaceState.plannedResult;
+            if (!raceResult) {
+                // Kann nur passieren, wenn startLiveRace nicht durchlief.
+                document.getElementById('liveTickerModal').style.display = 'none';
+                return;
             }
-            
-            const raceResult = {
-                raceId: race.id,
-                raceIndex: liveRaceState.raceIndex,
-                raceName: race.name,
-                raceCountry: race.country,
-                round: liveRaceState.raceIndex + 1,
-                isRain: liveRaceState.isRain,
-                results: results,
-                dnq: liveRaceState.dnq || [],
-                dns: liveRaceState.dns || [],   // [SYNC simulateRace] v0.9.17.17
-                dnpq: (GAME_STATE.qualifyingResults.find(q => q.raceIndex === liveRaceState.raceIndex)?.dnpqIds || []),
-                // [SYNC simulateRace] Rennstall je Melder (v0.9.17.23) — der Live-Ticker ist
-                // nur die Darstellung, aber er schreibt dasselbe Ergebnis-Objekt fort.
-                tms: _meldeTeamNamen([...(liveRaceState.dnq || []), ...(liveRaceState.dns || []),
-                    ...(GAME_STATE.qualifyingResults.find(q => q.raceIndex === liveRaceState.raceIndex)?.dnpqIds || [])])
-            };
-            
-            // === TODES-CHECK UND ERSATZFAHRER (wie in simulateRace) ===
-            if (GAME_STATE.deathRealism > 0) {
-                const fatalDrivers = liveRaceState.positions.filter(p => p.fatal);
-                const usedReplacementsThisRace = new Set();
-                
-                fatalDrivers.forEach(p => {
-                    const driver = GAME_STATE.drivers.find(d => d.id === p.driver);
-                    if (!driver) return;
-                    
-                    // Fahrer-Status auf deceased setzen
-                    driver.status = 'deceased';
-                    driver.deathYear = GAME_STATE.currentYear;
-                    driver.deathRace = race.name;
-                    
-                    logError('DEATH', `💀 ${driver.name} ist bei ${race.name} tödlich verunglückt`);
-                    
-                    // v0.9.15.17: geteilte Ersatzfahrer-Quelle (SYNC mit simulateRace) – Tier + Regler im Helper.
-                    const _victimTeam = GAME_STATE.teams.find(t => t.id === driver.team);
-                    const _rep = acquireSeatDriver(driver.team, GAME_STATE.currentYear, {
-                        excludeIds: usedReplacementsThisRace,
-                        replacedVictim: { id: driver.id, name: driver.name }
-                    });
-                    usedReplacementsThisRace.add(_rep.driver.id);
-                    logInfo('DRIVER', `${_victimTeam?.name || '?'}: ${_rep.driver.name} ersetzt ${driver.name} (${_rep.source})`);
-                    if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
-                    GAME_STATE.seasonDeaths.push({
-                        driver: driver.id,
-                        name: driver.name,
-                        team: _victimTeam?.name || '-',
-                        race: liveRaceState.raceIndex,
-                        raceName: race.name,
-                        raceCountry: race.country,
-                        fatalSession: p.fatalSession || 'race',
-                        replacement: _rep.driver.name,
-                        replacementId: _rep.driver.id,
-                        replacementTeam: _rep.driver.team,
-                        replacementOrigin: _seatOriginInfo(_rep)   // v0.9.15.19 Herkunft
-                    });
-                });
-            }
-            
             applyRaceResults(raceResult);
             
             document.getElementById('liveTickerModal').style.display = 'none';
             renderAll();
             
-            const winner = liveRaceState.positions[0];
-            logSuccess('RACE', `${raceResult.raceName} beendet - Sieger: ${winner.name}`);
+            const winner = raceResult.results.find(r => r.position === 1) || raceResult.results[0];
+            if (winner) logSuccess('RACE', `${raceResult.raceName} beendet - Sieger: ${winner.name}`);
 
             if (GAME_STATE.currentRace >= GAME_STATE.races.length) {
                 showSeasonEndModal();
@@ -17247,172 +17128,58 @@
                 qualiResult: qualiResult
             };
             
-            // Startaufstellung aus Qualifying
-            let activeDrivers = GAME_STATE.drivers.filter(d => (!d.status || d.status === 'active') && d.team);
+            // ════════════════════════════════════════════════════════════════
+            // ERGEBNIS ZUERST, DARSTELLUNG DANACH (v0.9.17.56)
+            // Der Live-Ticker wuerfelt NICHT mehr selbst. simulateRace() rechnet
+            // das Rennen einmal, der Ticker animiert nur noch darauf zu. Damit ist
+            // die Regel aus CLAUDE.md nicht mehr muehsam gepflegt, sondern erfuellt:
+            // beide Modi liefern dasselbe Ergebnis, weil es DASSELBE ist.
+            //
+            // Ersatzlos entfallen ist der frueher hier stehende Block fuer Startfeld,
+            // Indy-Crossover, Privateers und DNS (~130 Zeilen) - all das entscheidet
+            // jetzt ausschliesslich simulateRace, ebenso DNF und Todesfaelle.
+            // Boxenstopps und Positionswechsel bleiben als reine OPTIK erhalten.
+            // ════════════════════════════════════════════════════════════════
+            const geplant = simulateRace(raceIndex, isRain);
+            liveRaceState.plannedResult = geplant;
 
-            // Indy-Logik (wie im klassischen Modus)
-            const isIndyRace = race.isIndy || race.name === 'Indianapolis 500';
-            if (isIndyRace) {
-                const _hasIndyL = activeDrivers.some(d => {
-                    if (!d.team) return false;
-                    const team = GAME_STATE.teams.find(t => t.id === d.team);
-                    return d.isIndyOnly || (team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId)));
-                });
-                if (_hasIndyL) {
-                    activeDrivers = activeDrivers.filter(d => {
-                        if (!d.team) return false;
-                        const team = GAME_STATE.teams.find(t => t.id === d.team);
-                        return d.isIndyOnly || (team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId)));
-                    });
-                    const _indyCrossL = INDY_F1_CROSSOVER.indy[GAME_STATE.currentYear];
-                    if (_indyCrossL) {
-                        _indyCrossL.forEach(entry => {
-                            if (Math.random() > entry.chance) return;
-                            const _poolL = entry.retirementOk ? GAME_STATE.drivers.filter(d => !_istTot(d)) : GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
-                            let guestL = _poolL.find(d => (d.histId || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.driver));
-                            if (!guestL && entry.retirementOk && entry.guestName) {
-                                const gTeamL = GAME_STATE.teams.find(t => (t.histId || t.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-').includes(entry.guestTeamSlug));
-                                if (gTeamL) guestL = { id: '_cx_' + entry.driver, name: entry.guestName, histId: entry.driver, team: gTeamL.id, pace: entry.guestPace || 75, rain: entry.guestRain || 70, consistency: entry.guestConsistency || 75, isIndyOnly: false, _crossoverGuest: true };
-                            }
-                            if (guestL && !activeDrivers.includes(guestL)) activeDrivers.push(guestL);
-                        });
-                    }
-                }
-                // else: keine Indy-Teilnehmer → normales F1-Rennen, kein Filter
-            } else {
-                const _crossoverL = INDY_F1_CROSSOVER.f1[GAME_STATE.currentYear];
-                const _isCrossoverRaceL = _crossoverL && (race.name || '').toLowerCase().includes('united states');
-                activeDrivers = activeDrivers.filter(d => {
-                    const team = GAME_STATE.teams.find(t => t.id === d.team);
-                    const driverIsIndy = d.isIndyOnly || (team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId)));
-                    if (!driverIsIndy) return true;
-                    if (_isCrossoverRaceL && _crossoverL) {
-                        const teamHistId = (team?.histId || team?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
-                        if (teamHistId.includes(_crossoverL.constructor)) return true;
-                    }
-                    return false;
-                });
-            }
+            const _gridVon = new Map();
+            if (qualiResult) qualiResult.results.forEach(q => {
+                if (q.position) _gridVon.set(q.driver, q.position);
+            });
 
-            // === GRID-CAP + GRID-FÜLLER (Live-Ticker, identisch zu simulateRace) ===
-            // [SYNC simulateRace] Grid-Logik: Änderungen hier ↔ simulateRace() synchron halten
-            let _liveQnqIds = [];
-            if (!isIndyRace) {
-                // [SYNC simulateRace] VOR-QUALI IST BINDEND (v0.9.16.4) — identisch zum
-                // klassischen Pfad, vor der gesamten Grid-Logik.
-                const _dnpqOutLive = new Set(qualiResult?.dnpqIds || []);
-                if (_dnpqOutLive.size) activeDrivers = activeDrivers.filter(d => !_dnpqOutLive.has(d.id));
-                const gridSize = getGridSize(GAME_STATE.currentYear, race);
-                if (activeDrivers.length > gridSize) {
-                    if (qualiResult) {
-                        // Qualifying-Ergebnis nutzen – kein zweites unabhängiges Zufalls-Roll
-                        // qualiEntrants: nur wer tATSächlich am Qualifying teilnahm — DNPQ
-                        // gehört NICHT dazu, sonst würde ein Gescheiterter zusätzlich als
-                        // DNQ gezählt (zwei Kategorien für denselben Fahrer). [SYNC v0.9.16.4]
-                        const qualiEntrantsLive = new Set(qualiResult.results.filter(q => !q.dnpq).map(q => q.driver));
-                        const qualifiedSet = new Set(qualiResult.results.filter(q => !q.dnpq).slice(0, gridSize).map(q => q.driver));
-                        _liveQnqIds = activeDrivers.filter(d => qualiEntrantsLive.has(d.id) && !qualifiedSet.has(d.id)).map(d => d.id);
-                        activeDrivers = activeDrivers.filter(d => qualifiedSet.has(d.id));
-                    } else {
-                        const scored = activeDrivers.map(d => {
-                            const t = GAME_STATE.teams.find(t => t.id === d.team);
-                            const score = (d.pace || 70) * 0.6 + ((t && t.carSpeed) || 70) * 0.4 + (Math.random() * 8 - 4);
-                            return { d, score };
-                        }).sort((a, b) => b.score - a.score);
-                        _liveQnqIds = scored.slice(gridSize).map(x => x.d.id);
-                        activeDrivers = scored.slice(0, gridSize).map(x => x.d);
-                    }
-                } else if (activeDrivers.length < gridSize) {
-                    const activeIds = new Set(activeDrivers.map(d => d.id));
-                    const pool = (GAME_STATE.reservePool || []).filter(d =>
-                        !activeIds.has(d.id) && !_dnpqOutLive.has(d.id) &&   // [SYNC simulateRace] v0.9.16.4
-                        d.status !== 'retired' && !_istTot(d) &&
-                        GAME_STATE.teams.some(t => t.id === d.team)
-                    );
-                    if (pool.length > 0) {
-                        const slots = gridSize - activeDrivers.length;
-                        // [SYNC simulateRace] Wagendeckel gilt auch fuer Fueller (v0.9.16.3)
-                        const _deckel = _maxCarsPerConstructor(GAME_STATE.currentYear);
-                        const _belegt = {};
-                        activeDrivers.forEach(d => { if (d.team) _belegt[d.team] = (_belegt[d.team] || 0) + 1; });
-                        const weighted = pool.map(d => ({ d, weight: (d.pace || 60) + Math.random() * 20 }))
-                            .sort((a, b) => b.weight - a.weight);
-                        const fillers = [];
-                        for (const x of weighted) {
-                            if (fillers.length >= slots) break;
-                            const tid = x.d.team;
-                            if (tid && (_belegt[tid] || 0) >= _deckel) continue;
-                            if (tid) _belegt[tid] = (_belegt[tid] || 0) + 1;
-                            fillers.push({ ...x.d, isGuest: true });
-                        }
-                        activeDrivers = [...activeDrivers, ...fillers];
-                    }
-                }
-            }
-            liveRaceState.dnq = _liveQnqIds;
-
-            // === NICHT ANGETRETEN (v0.9.17.17) ===
-            // [SYNC simulateRace] Identisch zum klassischen Pfad: nach Grid-Cap und Fueller,
-            // vor dem Start. Der Ticker hatte den Wurf ueberhaupt nicht — jedes live gefahrene
-            // Rennen hatte damit garantiert null DNS, waehrend dasselbe Rennen sofort simuliert
-            // welche produzierte. Genau die Divergenz, die CLAUDE.md fuer den Ticker verbietet:
-            // der Modus ist die Darstellung, nie die Konsequenz.
-            const _dnsIdsLive = [];
-            {
-                const _rateLive = _dnsRateFor(GAME_STATE.currentYear);
-                if (_rateLive > 0 && activeDrivers.length > 2) {
-                    activeDrivers = activeDrivers.filter(d => {
-                        if (Math.random() >= _rateLive) return true;
-                        _dnsIdsLive.push(d.id);
-                        return false;
-                    });
-                }
-            }
-            liveRaceState.dns = _dnsIdsLive;
-
-            // [SYNC simulateRace] Grid-Gap: Startposition gibt Zeitvorsprung (P1=0s, ~0.3s pro Position)
-            const _liveBaseInit = getCircuitBaseTime(race?.circuitId, GAME_STATE.currentYear, 'race') || 90;
-            const _gridGapPerPos = _liveBaseInit * 0.015; // ~1.5% Basis-Rundenzeit pro Gitterplatz
-
-            liveRaceState.positions = activeDrivers.map(driver => {
-                const team = GAME_STATE.teams.find(t => t.id === driver.team);
-                const qualiPos = qualiResult ? qualiResult.results.find(q => q.driver === driver.id) : null;
-                // [SYNC simulateRace] Konstanz: Good-Day-Wurf einmal pro Fahrer vor Rennstart
-                const _consValLive = liveRaceState.isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
-                const isGoodDay = Math.random() < (_consValLive / 100);
-                const gridPos = qualiPos?.position ?? (activeDrivers.indexOf(driver) + 1);
-
+            liveRaceState.positions = geplant.results.map(r => {
+                const grid = _gridVon.get(r.driver) || r.position;
                 return {
-                    driver: driver.id,
-                    name: driver.name,
-                    team: driver.team,
-                    teamName: team ? team.name : '',
-                    number: driver.number,
-                    nation: driver.nation,
-                    isGuest: driver.isGuest || false,
-                    totalTime: (gridPos - 1) * _gridGapPerPos,
-                    gap: 0,
-                    tyreLaps: 0,
-                    hasPitted: false,
-                    isPitting: false,
-                    dnf: false,
-                    dnfType: null,
-                    dnfReason: null,
-                    fatal: false,
-                    qualiPos: qualiPos ? qualiPos.position : null,
-                    isGoodDay,
+                    driver: r.driver, name: r.name, team: r.team,
+                    teamName: r.teamName, number: r.number, nation: r.nation,
+                    isGuest: r.isGuest || false,
+                    totalTime: 0, gap: 0,
+                    tyreLaps: 0, hasPitted: false, isPitting: false,
+                    // dnf wird erst ab der geplanten Ausfallrunde gesetzt, damit der
+                    // Ausfall im Ticker im richtigen Moment sichtbar wird.
+                    dnf: false, dnfType: null, dnfReason: null, fatal: false,
+                    qualiPos: grid,
+                    _startRang: grid,
+                    _zielRang: r.position,
+                    _wirdDnf: !!r.dnf,
+                    _dnfTyp: r.dnfType || null,
+                    _dnfGrund: r.reasonRetired || r.dnfReason || null,
+                    _fatal: !!r.fatal
                 };
             });
-            
-            // Nach Quali-Position sortieren
-            if (qualiResult) {
-                liveRaceState.positions.sort((a, b) => {
-                    const aQuali = qualiResult.results.find(q => q.driver === a.driver);
-                    const bQuali = qualiResult.results.find(q => q.driver === b.driver);
-                    return (aQuali?.position || 99) - (bQuali?.position || 99);
-                });
-            }
-            
+
+            // Ausfallrunde je DNF wuerfeln - REINE DARSTELLUNG. Ob jemand ausfaellt,
+            // steht in geplant fest; nur das Wann ist frei und darf hier entstehen.
+            liveRaceState.positions.forEach(p => {
+                p._dnfLap = p._wirdDnf
+                    ? 1 + Math.floor(Math.random() * Math.max(1, liveRaceState.totalLaps - 2))
+                    : null;
+            });
+
+            // Start in Grid-Reihenfolge
+            liveRaceState.positions.sort((a, b) => a._startRang - b._startRang);
+
             // Pole-Position für Standings
             if (qualiResult && qualiResult.results.length > 0) {
                 const poleDriver = qualiResult.results[0];
