@@ -5384,6 +5384,37 @@
         }
 
         // Grid-Größe für ein spezifisches Rennen (berücksichtigt Strecken-Ausnahmen)
+        // ═══════════════════════════════════════════════════════════════════
+        // INDY 500 ODER INDY GP - NIE isIndy ALLEIN ABFRAGEN
+        // F1DB markiert JEDES Rennen in Indianapolis mit isIndy (data/f1db.js:
+        // 'isIndy500: meta[3] === 1'). Dahinter stecken zwei grundverschiedene Rennen
+        // auf derselben circuitId:
+        //   Indy 500 (1950-1960): Oval, 200 Runden, per Reglement 33 Startplaetze,
+        //                         eigenes Starterfeld aus Indy-Teams
+        //   Indy GP  (2000-2007): Infield-Rundkurs, ~73 Runden, normales F1-Feld
+        //                         mit real nur 20-22 Startern
+        // Wer nur isIndy prueft, gibt dem US-GP 2005 ein 33er-Feld (gemessen: 27
+        // Starter statt 20) und frueher ~5 Phantom-Tode je Jahrzehnt (HOCH#4).
+        // Das Kalender-Objekt traegt seit v0.9.18.1 isIndy500/isIndyGP; fuer
+        // Altstaende loesen die Helfer ueber das Jahr auf.
+        // ═══════════════════════════════════════════════════════════════════
+        function istIndy500(race, year) {
+            if (!race) return false;
+            if (race.isIndy500 !== undefined) return !!race.isIndy500;
+            const j = (year === undefined || year === null) ? GAME_STATE.currentYear : year;
+            const aufDemKurs = race.isIndy500 || race.name === 'Indianapolis 500'
+                || /indianapolis/i.test(race.circuit || race.circuitId || '');
+            return !!aufDemKurs && j <= 1960;
+        }
+        function istIndyGP(race, year) {
+            if (!race) return false;
+            if (race.isIndyGP !== undefined) return !!race.isIndyGP;
+            const j = (year === undefined || year === null) ? GAME_STATE.currentYear : year;
+            const aufDemKurs = race.isIndy500
+                || /indianapolis/i.test(race.circuit || race.circuitId || '');
+            return !!aufDemKurs && j > 1960;
+        }
+
         function getGridSize(year, race) {
             const base = GRID_SIZES[year] ?? 20;
             if (!race) return base;
@@ -5406,7 +5437,7 @@
             // die Funktion auf GRID_SIZES zurueck — und das ist das JAHRESMITTEL der
             // Grand-Prix-Felder, rund 20. Ergebnis im Spiel: ein Indy 500 mit 20
             // Startern statt 33 (Nutzer-Report „Indy 500 nur 20").
-            if (race.isIndy || circuit.includes('indianapolis') || name.includes('indianapolis')) return 33;
+            if (istIndy500(race, year)) return 33;
             const rg = _raceGridEntry(year, race);
             if (rg) return Array.isArray(rg) ? rg[0] : rg;
             // Monaco: engere Strecke → kleineres Grid. ÄRA-GENAU (v0.9.14.91) — die
@@ -7035,7 +7066,7 @@
                 // circuitId-Pflicht: der Filter in simulateRace vergleicht gegen
                 // race.circuitId – fehlt die (generierter Fallback-Kalender), würde ein
                 // homeOnly-Fahrer NIE starten. Lieber gar kein Flag als ein totes.
-                if (r.isIndy || !r.country || !r.circuitId) return;
+                if (istIndy500(r) || !r.country || !r.circuitId) return;
                 const c = r.country.length === 3 ? r.country : convertEmojiToIOC(r.country);
                 if (!c) return;
                 (byCountry[c] = byCountry[c] || []).push(r.circuitId.toLowerCase());
@@ -7105,7 +7136,7 @@
             if (typeof HOME_ONLY_ENTRIES === 'undefined') return 0;
             const byCountry = {};
             (races || []).forEach(r => {
-                if (r.isIndy || !r.country || !r.circuitId) return;
+                if (istIndy500(r) || !r.country || !r.circuitId) return;
                 const c = r.country.length === 3 ? r.country : convertEmojiToIOC(r.country);
                 if (!c) return;
                 (byCountry[c] = byCountry[c] || []).push(String(r.circuitId).toLowerCase());
@@ -7595,7 +7626,7 @@
             const out = [];
             for (let i = abRennen; i < (GAME_STATE.races || []).length; i++) {
                 const r = GAME_STATE.races[i];
-                if (!r || r.isIndy || !r.circuitId) continue;
+                if (!r || istIndy500(r) || !r.circuitId) continue;
                 out.push(String(r.circuitId).toLowerCase());
             }
             return out;
@@ -7876,7 +7907,7 @@
                     .sort((a, b) => (a.pace || 0) - (b.pace || 0))     // Langsamster zuerst
                     .forEach(d => {
                         if (zuviel <= 0) return;
-                        const voll = (GAME_STATE.races || []).filter(r => !r.isIndy && r.circuitId)
+                        const voll = (GAME_STATE.races || []).filter(r => !istIndy500(r) && r.circuitId)
                             .map(r => String(r.circuitId).toLowerCase());
                         d.scheduledRaces = (Array.isArray(d.scheduledRaces) ? d.scheduledRaces : voll)
                             .filter(c => c !== cid);
@@ -7948,7 +7979,7 @@
         function markPrivateers(drivers, year, races) {
             const _y = year || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.currentYear : null);
             const _r = races || (typeof GAME_STATE !== 'undefined' ? GAME_STATE.races : null) || [];
-            const kalLen = _r.filter(r => r && !r.isIndy && r.circuitId).length || 99;
+            const kalLen = _r.filter(r => r && !istIndy500(r) && r.circuitId).length || 99;
             const zeile = (typeof DRIVER_STARTS !== 'undefined' && _y) ? DRIVER_STARTS[_y] : null;
             // Reale Rennzahl dieser Saison, oder null wenn unbekannt.
             const realStarts = d => {
@@ -8256,7 +8287,7 @@
         // Seit v0.9.14.93 auch für WERKSfahrer von Kleinstkonstrukteuren — deren Team
         // fährt nur eine Teilsaison, also fahren sie es auch.
         function assignPrivateerSchedules(drivers, races, year, teams) {
-            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            const cal = (races || []).filter(r => !istIndy500(r) && r.circuitId);
             if (!cal.length) return;
             const ids = cal.map(r => r.circuitId.toLowerCase());
 
@@ -8458,7 +8489,7 @@
         function enforceMinCarsPerConstructor(drivers, teams, races, year) {
             const min = _minCarsPerConstructor(year);
             if (!min) return 0;
-            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            const cal = (races || []).filter(r => !istIndy500(r) && r.circuitId);
             if (!cal.length) return 0;
             let ergaenzt = 0;
             for (const t of (teams || [])) {
@@ -8484,7 +8515,7 @@
         }
 
         function fillGridEntries(drivers, teams, races, year) {
-            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            const cal = (races || []).filter(r => !istIndy500(r) && r.circuitId);
             if (!cal.length) return;
             const ids = cal.map(r => r.circuitId.toLowerCase());
             const idxOf = {}; ids.forEach((c, i) => { idxOf[c] = i; });
@@ -8575,7 +8606,7 @@
         const TAIL_FILL_P = 0.75;
         function fillMissingTailEntries(drivers, teams, races, year) {
             if (typeof DRIVER_STARTS === 'undefined' || !DRIVER_STARTS[year]) return 0;
-            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            const cal = (races || []).filter(r => !istIndy500(r) && r.circuitId);
             if (!cal.length) return 0;
             const ids = cal.map(r => String(r.circuitId).toLowerCase());
             const idSet = new Set(ids);
@@ -8796,7 +8827,7 @@
         // Werksfahrer (kein scheduledRaces-Array = jedes Rennen) sind nie betroffen.
         // Kern: findet Fahrer mit Plan aber 0 Meldungen (arbeitet auf beliebigen Arrays).
         function _findZeroEntryDrivers(drivers, teams, races) {
-            const cal = (races || []).filter(r => !r.isIndy && r.circuitId);
+            const cal = (races || []).filter(r => !istIndy500(r) && r.circuitId);
             if (!cal.length) return [];
             return (drivers || []).filter(d => {
                 if (!d.team || (d.status && d.status !== 'active')) return false;
@@ -8827,7 +8858,7 @@
         //     je Aufruf, sonst zittert die Entscheidung wie der Kleinstkonstrukteur-Wurf
         //     vor v0.9.16.10.
         function stabilizeConstructorPresence(year) {
-            const cal = (GAME_STATE.races || []).filter(r => !r.isIndy && r.circuitId);
+            const cal = (GAME_STATE.races || []).filter(r => !istIndy500(r) && r.circuitId);
             if (!cal.length) return 0;
             let geholfen = 0;
             for (const t of (GAME_STATE.teams || [])) {
@@ -13376,7 +13407,7 @@
                     if (!races) continue;
                     const finishScores = [];
                     for (const race of races) {
-                        if (race.isIndy) continue;
+                        if (race.isIndy500) continue;
                         const entry = race.entries.find(e => e.driverId === driver.histId);
                         if (!entry) continue;
                         const finishers = race.entries.filter(
@@ -13442,7 +13473,7 @@
 
             // === INDY 500 SPEZIAL-LOGIK ===
             // Beim Indianapolis 500 fahren NUR Indy-Teams, normale F1-Teams fahren NICHT
-            const isIndyRace = race.isIndy || race.name === 'Indianapolis 500';
+            const isIndyRace = istIndy500(race, GAME_STATE.currentYear);
             
             if (isIndyRace) {
                 // Prüfen ob überhaupt Indy-only-Teilnehmer im aktuellen Game State vorhanden sind.
@@ -13572,7 +13603,8 @@
             //   Fahrerwechsel mitten im Rennen, nicht mehr Starter. Wer das mitzaehlt, misst
             //   ein Feld, das es nie gab.
             // ⚠ NUR DAS INDY 500, NICHT DER US-GRAND-PRIX. Ab 2000 faehrt die Formel 1 in
-            //   Indianapolis ein normales Rennen mit normalem Feld; `race.isIndy` trennt das.
+            //   Indianapolis ein normales Rennen mit normalem Feld. race.isIndy500 trennt das,
+            //   das frühere race.isIndy500 tat es NICHT (stand auch 2005 auf true).
             if (isIndyRace) {
                 const INDY_FELD = 33;
                 // Meldeliste auffuellen — dieselbe Funktion wie im Qualifying, damit beide
@@ -14217,7 +14249,8 @@
                 if (r.qualiPos === 1) ad.poles++;
                 ad.isLegend = false; // Aktive Fahrer sind keine Legenden
                 // v0.8.2.4: Indy/F1 Tracking
-                const raceIsIndy = !!(raceResult.isIndy || raceResult.raceName === 'Indianapolis 500');
+                const raceIsIndy = istIndy500({ isIndy500: raceResult.isIndy500, isIndy500: raceResult.isIndy500,
+                    name: raceResult.raceName }, GAME_STATE.currentYear);
                 if (raceIsIndy) ad.hasIndy = true; else ad.hasF1 = true;
                 
                 // Finde das Team um seine historische ID zu bekommen
@@ -14291,7 +14324,7 @@
             // Indy-500-WM-Runden (1950–1960). Der moderne US-GP auf dem Indy-Kurs (2000–2007)
             // trägt in F1DB ebenfalls isIndy=true, ist aber ein normales F1-Rennen → sonst
             // ~5 Phantom-Tode in den 2000ern (HOCH#4-Befund).
-            const isIndy500 = (race.isIndy || race.name === 'Indianapolis 500') && year <= 1960;
+            const isIndy500 = istIndy500(race, year);
             const baseDeathRate = isIndy500 ? INDY_DEATH_RATE : (getEraValue(ERA_DEATH_RATES, year) || 0);
             if (baseDeathRate <= 0 || !(GAME_STATE.deathRealism > 0)) {
                 _weekendDeath[raceIndex] = null; return;
@@ -14318,7 +14351,7 @@
             if (!race) return null;
 
             const year = GAME_STATE.currentYear;
-            const isIndyRace = race.isIndy || race.name === 'Indianapolis 500';
+            const isIndyRace = istIndy500(race, GAME_STATE.currentYear);
 
             // Fahrerpool – gleiche Logik wie simulateQualifying (Indy/F1-Trennung + Privateer-Quote)
             let activeDrivers = GAME_STATE.drivers.filter(d => (!d.status || d.status === 'active') && d.team);
@@ -14456,7 +14489,7 @@
             let activeDrivers = GAME_STATE.drivers.filter(d => (!d.status || d.status === 'active') && d.team);
 
             // Indy-Logik: wie in simulateRace
-            const isIndyRace = race.isIndy || race.name === 'Indianapolis 500';
+            const isIndyRace = istIndy500(race, GAME_STATE.currentYear);
             if (isIndyRace) {
                 const _hasIndyQ = activeDrivers.some(d => {
                     const team = GAME_STATE.teams.find(t => t.id === d.team);
@@ -24023,7 +24056,7 @@
             // bedeutet. Ohne diesen zweiten Trimm meldete ein Rennstall mit einer
             // einzigen realen Saison-Teilnahme im ganzen Kalender.
             {
-                const _cal = (GAME_STATE.races || []).filter(r => !r.isIndy && r.circuitId);
+                const _cal = (GAME_STATE.races || []).filter(r => !istIndy500(r) && r.circuitId);
                 if (_cal.length) applyTeamPresenceToPlans(GAME_STATE.teams, GAME_STATE.drivers,
                     _cal, _cal.map(r => r.circuitId.toLowerCase()), newYear, true);
             }
@@ -24085,7 +24118,9 @@
                         circuitId: r.circuit,  // Raw F1DB-ID für Längen-Lookup
                         country: ioc,   // IOC-Code ('AUS'), kein Emoji
                         laps: laps,
-                        isIndy: r.isIndy || false,
+                        // getF1DBYear trennt bereits nach Jahr - hier nur uebernehmen.
+                        isIndy500: !!r.isIndy500,
+                        isIndyGP:  !!r.isIndyGP,
                         // v0.9.15.78: volles Datum mitspeichern statt nur den Monat. Bisher warf
                         // der Bau den Tag weg, obwohl F1DB ihn liefert – der Rekord-Scan musste
                         // ihn über die raceId zurückholen. Für Alt-Saves tut er das weiterhin.
@@ -24107,7 +24142,7 @@
                 id: 0, raceId: null,
                 name: c.raceName, circuit: c.trackName, circuitId: c.circuitId,
                 country: c.country || '', laps: c.laps || Math.max(5, Math.round(305 / (c.length || 4.5))),
-                isIndy: false, month: c.month || null, custom: true
+                isIndy500: false, month: c.month || null, custom: true
             };
         }
         function injectCustomCircuitsIntoCalendar(races, year) {
@@ -24420,7 +24455,7 @@
                 1950: [
                     { name: 'British GP', country: '🇬🇧', circuit: 'Silverstone', laps: 70 },
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 100 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Swiss GP', country: '🇨🇭', circuit: 'Bremgarten', laps: 42 },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 35 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 64 },
@@ -24428,7 +24463,7 @@
                 ],
                 1951: [
                     { name: 'Swiss GP', country: '🇨🇭', circuit: 'Bremgarten', laps: 42 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 77 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Silverstone', laps: 90 },
@@ -24438,7 +24473,7 @@
                 ],
                 1952: [
                     { name: 'Swiss GP', country: '🇨🇭', circuit: 'Bremgarten', laps: 62 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Rouen', laps: 77 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Silverstone', laps: 85 },
@@ -24448,7 +24483,7 @@
                 ],
                 1953: [
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 97 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Dutch GP', country: '🇳🇱', circuit: 'Zandvoort', laps: 90 },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 60 },
@@ -24459,7 +24494,7 @@
                 ],
                 1954: [
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 87 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 61 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Silverstone', laps: 90 },
@@ -24471,7 +24506,7 @@
                 1955: [
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 96 },
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 100 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'Dutch GP', country: '🇳🇱', circuit: 'Zandvoort', laps: 100 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Aintree', laps: 90 },
@@ -24480,7 +24515,7 @@
                 1956: [
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 98 },
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 100 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 61 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Silverstone', laps: 101 },
@@ -24490,7 +24525,7 @@
                 1957: [
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 100 },
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 105 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Rouen', laps: 77 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Aintree', laps: 90 },
                     { name: 'German GP', country: '🇩🇪', circuit: 'Nürburgring', laps: 22 },
@@ -24501,7 +24536,7 @@
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 80 },
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 100 },
                     { name: 'Dutch GP', country: '🇳🇱', circuit: 'Zandvoort', laps: 75 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 24 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 50 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Silverstone', laps: 75 },
@@ -24512,7 +24547,7 @@
                 ],
                 1959: [
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 100 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Dutch GP', country: '🇳🇱', circuit: 'Zandvoort', laps: 75 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 50 },
                     { name: 'British GP', country: '🇬🇧', circuit: 'Aintree', laps: 75 },
@@ -24524,7 +24559,7 @@
                 1960: [
                     { name: 'Argentine GP', country: '🇦🇷', circuit: 'Buenos Aires', laps: 80 },
                     { name: 'Monaco GP', country: '🇲🇨', circuit: 'Monaco', laps: 100 },
-                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy: true },
+                    { name: 'Indianapolis 500', country: '🇺🇸', circuit: 'Indianapolis', laps: 200, isIndy500: true },
                     { name: 'Dutch GP', country: '🇳🇱', circuit: 'Zandvoort', laps: 75 },
                     { name: 'Belgian GP', country: '🇧🇪', circuit: 'Spa', laps: 36 },
                     { name: 'French GP', country: '🇫🇷', circuit: 'Reims', laps: 50 },
@@ -26242,7 +26277,7 @@
             if (f1dbYear && f1dbYear.length > 0) {
                 const teamMap = {};
                 f1dbYear.forEach(race => {
-                    if (race.isIndy) return; // Indy 500 ausschließen
+                    if (race.isIndy500) return; // Indy 500 ausschließen
                     race.entries.forEach(e => {
                         if (!e.constrId) return;
                         if (!teamMap[e.constrId]) {
@@ -26291,7 +26326,7 @@
                 const _tdRaces = {}; // constrId → { driverId → raceCount }
                 const _drvConstrs = {}; // driverId → Set of constrIds
                 f1dbYear.forEach(race => {
-                    if (race.isIndy) return;
+                    if (race.isIndy500) return;
                     race.entries.forEach(e => {
                         if (!e.driverId || !e.constrId) return;
                         if (!_tdRaces[e.constrId]) _tdRaces[e.constrId] = {};
@@ -26315,7 +26350,7 @@
                 // avgFinish pro Fahrer aus F1DB-Einzelrennen berechnen
                 const drvFinTotals = {};
                 f1dbYear.forEach(race => {
-                    if (race.isIndy) return;
+                    if (race.isIndy500) return;
                     race.entries.forEach(e => {
                         if (!e.driverId || !e.posNum || e.posNum < 1 || e.posNum > 50) return;
                         if (!drvFinTotals[e.driverId]) drvFinTotals[e.driverId] = { total: 0, count: 0 };
@@ -26356,7 +26391,7 @@
             // Generiere Rennen für dieses Jahr
             // Nutze F1DB-Reihenfolge wenn verfügbar (stimmt mit Rennen-Tab überein)
             if (f1dbYear && f1dbYear.length > 0) {
-                data.races = f1dbYear.map((r, i) => ({ name: r.name, circuit: r.circuit, isIndy: r.isIndy, id: i + 1, raceId: r.raceId, country: CIRCUIT_COUNTRY[r.circuit] || null }));
+                data.races = f1dbYear.map((r, i) => ({ name: r.name, circuit: r.circuit, isIndy500: r.isIndy500, id: i + 1, raceId: r.raceId, country: CIRCUIT_COUNTRY[r.circuit] || null }));
             } else {
                 data.races = generateRacesForYear(year);
             }
@@ -26365,7 +26400,7 @@
             // === ECHTE RENNERGEBNISSE AUS F1DB ===
             if (f1dbYear && f1dbYear.length > 0) {
                 data.results = f1dbYear
-                    .filter(race => !race.isIndy)
+                    .filter(race => !race.isIndy500)
                     .map((race, raceIdx) => {
                         const entries = (race.entries || [])
                             .filter(e => e.driverId)
@@ -27232,7 +27267,8 @@
                 return id.split('-').map(w => ({'fry':'Fry','red':'Red'}[w.toLowerCase()] || (w.length <= 3 ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))).join(' ');
             }
             
-            const indyBadge = raceData.isIndy ? '<span class="text-xs px-2 py-0.5 rounded ml-2" style="background:#B45309;color:white">🇺🇸 Indy 500</span>' : '';
+            const indyBadge = raceData.isIndy500 ? '<span class="text-xs px-2 py-0.5 rounded ml-2" style="background:#B45309;color:white">🇺🇸 Indy 500</span>'
+                : (raceData.isIndyGP ? '<span class="text-xs px-2 py-0.5 rounded ml-2" style="background:#3B5B8C;color:white">🇺🇸 Indy GP</span>' : '');
             
             return `
                 <div class="mb-4 flex items-center justify-between">
@@ -29038,7 +29074,8 @@
                     const laps = race.entries.length > 0
                         ? (race.entries.find(e => e.posNum === 1)?.laps || Math.max(...race.entries.map(e => e.laps || 0)) || '-')
                         : '-';
-                    const indyBadge = race.isIndy ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#B45309;color:white">Indy</span>' : '';
+                    const indyBadge = race.isIndy500 ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>'
+                    : (race.isIndyGP ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#3B5B8C;color:white">Indy GP</span>' : '');
                     
                     const isCompleted = idx < currentRace;
                     const isNext = !isHistorical && idx === GAME_STATE.currentRace;
@@ -29347,7 +29384,8 @@
             
             const rows = dbRaces.map(race => {
                 const winner = race.entries.find(e => e.posNum === 1);
-                const indyBadge = race.isIndy ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#B45309;color:white">Indy</span>' : '';
+                const indyBadge = race.isIndy500 ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>'
+                    : (race.isIndyGP ? ' <span class="text-xs px-1 py-0.5 rounded" style="background:#3B5B8C;color:white">Indy GP</span>' : '');
                 const wetBadge = WET_RACE_IDS.has(race.raceId) ? ' <span title="Regenrennen (historisch)">🌧️</span>' : '';
                 const hotBadge = HOT_RACE_IDS.has(race.raceId) || HOT_CIRCUITS.has(race.circuitId||'') ? ' <span title="Hitzerennen">🌡️</span>' : '';
                 const flag = typeof renderFlag === 'function' ? renderFlag(null, race.name, year) : '';
@@ -29400,7 +29438,8 @@
                 const p2 = race.entries.find(e => e.posNum === 2);
                 const p3 = race.entries.find(e => e.posNum === 3);
                 const fl = race.entries.find(e => e.fastestLap);
-                const indyBadge = race.isIndy ? '<span class="text-xs px-1.5 py-0.5 rounded ml-1" style="background:#B45309;color:white">Indy 500</span>' : '';
+                const indyBadge = race.isIndy500 ? '<span class="text-xs px-1.5 py-0.5 rounded ml-1" style="background:#B45309;color:white">Indy 500</span>'
+                    : (race.isIndyGP ? '<span class="text-xs px-1.5 py-0.5 rounded ml-1" style="background:#3B5B8C;color:white">Indy GP</span>' : '');
                 
                 return `<div class="card p-4 rounded-xl mb-3 cursor-pointer hover:opacity-80 transition" onclick="openHistoricalRace(${race.raceId})">
                     <div class="flex items-center justify-between mb-2">
@@ -30111,7 +30150,7 @@
             const country = nationCodeOf(cal.country)
                 || (typeof CIRCUIT_COUNTRY !== 'undefined' && circuit ? CIRCUIT_COUNTRY[circuit] : null)
                 || null;
-            return { year, date, dateApprox, country, circuit, raceIdx: race.ri, isIndy: !!cal.isIndy, entries,
+            return { year, date, dateApprox, country, circuit, raceIdx: race.ri, isIndy500: !!cal.isIndy500, entries,
                      qualiOrder: rawQ.map(r => ({ driverKey: idMap(qD(r)), pos: qP(r) })) };
         }
 
@@ -30152,7 +30191,7 @@
                      country: (typeof CIRCUIT_COUNTRY !== 'undefined' && race.circuit
                                ? CIRCUIT_COUNTRY[race.circuit] : null) || null,
                      circuit: race.circuit || null,
-                     raceIdx: race.round, isIndy: !!race.isIndy, entries, qualiOrder };
+                     raceIdx: race.round, isIndy500: !!race.isIndy500, entries, qualiOrder };
         }
 
         // ── Akkumulatoren (Plan 5.4) ───────────────────────────────────────
@@ -30715,8 +30754,8 @@
                     const statesR = (defId) => [bucketFor('all')[defId], bucketFor(dec0)[defId]];
                     for (const race of (getF1DBYear(s.year) || [])) {
                         const evt = _normalizeRealRace(s.year, race);
-                        if (stATSIndyFilter === 'none' && evt.isIndy) continue;
-                        if (stATSIndyFilter === 'only' && !evt.isIndy) continue;
+                        if (stATSIndyFilter === 'none' && evt.isIndy500) continue;
+                        if (stATSIndyFilter === 'only' && !evt.isIndy500) continue;
                         for (const e of evt.entries) {
                             if (e.teamKey) {
                                 if (!teamNames.has(e.teamKey)) teamNames.set(e.teamKey, formatConstructorName(e.teamKey));
@@ -30791,8 +30830,8 @@
                 for (const race of results) {
                     const ri = race.ri ?? race.raceIndex;
                     const evt = _normalizeSimRace(s.year, race, qByRi[ri], calendar, idMap);
-                    if (stATSIndyFilter === 'none' && evt.isIndy) continue;
-                    if (stATSIndyFilter === 'only' && !evt.isIndy) continue;
+                    if (stATSIndyFilter === 'none' && evt.isIndy500) continue;
+                    if (stATSIndyFilter === 'only' && !evt.isIndy500) continue;
                     // Anzeigename am Slug festhalten: simuliert kommt der Klarname ('Red Bull'),
                     // real nur die Konstrukteur-ID ('red-bull'). Ohne gemeinsamen Schlüssel
                     // stünde dasselbe Team bei Quelle „Alles" zweimal in der Liste.
@@ -31724,7 +31763,7 @@
                 const races = getF1DBYear(y);
                 if (!races) continue;
                 for (const race of races) {
-                    if (race.isIndy) continue;
+                    if (race.isIndy500) continue;
                     const cid = canonicalCircuitId(race.circuit);
                     if (!cid) continue;
                     const gpKey = extractGPCanonical(race.name || '');
@@ -31928,7 +31967,7 @@
                 (GAME_STATE.races || []).forEach(r => { const c = canonicalCircuitId(r.circuit || r.circuitId); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
             } else {
                 const histSeason = (GAME_STATE.history || []).find(h => h.year === yr);
-                const sched = histSeason ? (histSeason.races || []) : ((getF1DBYear(yr) || []).filter(r => !r.isIndy));
+                const sched = histSeason ? (histSeason.races || []) : ((getF1DBYear(yr) || []).filter(r => !r.isIndy500));
                 activeCircuits = new Set(sched.map(r => canonicalCircuitId(r.circuit || r.circuitId)).filter(Boolean));
                 sched.forEach(r => { const c = canonicalCircuitId(r.circuit || r.circuitId); if (c) gpKeyForYear[c] = extractGPCanonical(r.name || ''); });
             }
@@ -34779,7 +34818,7 @@ Empfohlene Wertebereiche:
                                 raceId: race.raceId,
                                 pos: entry.posNum, posText: entry.posText,
                                 points: entry.points, fastestLap: entry.fastestLap,
-                                pole: entry.pole, isIndy: race.isIndy,
+                                pole: entry.pole, isIndy500: race.isIndy500,
                                 // Konstrukteur je Rennen aus F1DB (v0.9.17.6). Der Nutzer wies
                                 // darauf hin, dass die Zuordnung fuer ALLE Jahre vorliegt —
                                 // e[4]/constrId steht in jedem Ergebnis-Eintrag.
@@ -37058,7 +37097,7 @@ Empfohlene Wertebereiche:
             if (!races) return null;
             const pts = {};
             for (const race of races) {
-                if (race.isIndy) continue;
+                if (race.isIndy500) continue;
                 for (const e of race.entries) {
                     if (!e.constrId || e.points == null) continue;
                     pts[e.constrId] = (pts[e.constrId] || 0) + e.points;
@@ -39220,7 +39259,7 @@ Empfohlene Wertebereiche:
                 ? '<th class="p-2 text-right">Zeit</th><th class="p-2 text-right">Abstand</th>'
                 : '<th class="p-2 text-right">Zeit / Abstand</th>';
 
-            const indyBadge = raceData.isIndy ? ' <span class="text-xs px-2 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>' : '';
+            const indyBadge = raceData.isIndy500 ? ' <span class="text-xs px-2 py-0.5 rounded" style="background:#B45309;color:white">Indy 500</span>' : '';
             let html = `
                 <div class="text-center mb-4">
                     <div class="text-4xl mb-2">${typeof renderFlag === 'function' ? renderFlag((typeof CIRCUIT_COUNTRY !== 'undefined' && CIRCUIT_COUNTRY[String(raceData.circuit || '').toLowerCase()]) || null, raceData.name, raceYear) : ''}</div>
