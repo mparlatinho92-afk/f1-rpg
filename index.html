@@ -3513,6 +3513,16 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="card p-4 rounded-lg cursor-pointer hover-bg" onclick="selectRaceMode('zielflagge')">
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">🕹️</div>
+                                <div>
+                                    <h4 class="font-bold">Selbst fahren (ZIELFLAGGE)</h4>
+                                    <p class="text-xs text-tertiary">Lädt eine Datei herunter. Das Rennen ist damit
+                                    entschieden und wartet — in ZIELFLAGGE fährst du deinen Wagen selbst.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -13461,6 +13471,110 @@
         }
         
         // === RENNEN SIMULATION ===
+        // ═══════════════════════════════════════════════════════════════════
+        // GEPARKTES ERGEBNIS — DAMIT NICHT ZWEIMAL GEWUERFELT WIRD
+        //
+        // Der ZIELFLAGGE-Export muss das Rennen rechnen, um es mitliefern zu
+        // koennen. Damit ist es entschieden — auch wenn der Spieler ZIELFLAGGE
+        // danach gar nicht startet. Das Ergebnis wird deshalb im Spielstand
+        // geparkt und beim naechsten Rennstart verwendet, statt neu zu wuerfeln.
+        // Sonst waere die exportierte Datei eine Luege: das Rennen im Spiel
+        // liefe anders aus als das, das ZIELFLAGGE animiert hat.
+        //
+        // ⚠ simulateRace hat NEBENWIRKUNGEN (setzt driver.status auf deceased,
+        //   fuellt seasonDeaths, zieht Ersatzfahrer nach). Ein zweiter Aufruf
+        //   fuer dasselbe Rennen wuerde sie doppelt ausloesen.
+        // ═══════════════════════════════════════════════════════════════════
+        function rennenErgebnisFuer(raceIndex, isRain) {
+            const p = GAME_STATE.pendingRaceResult;
+            if (p && p.raceIndex === raceIndex) {
+                GAME_STATE.pendingRaceResult = null;   // genau einmal verwendbar
+                logInfo('RACE', 'Geparktes Ergebnis verwendet (ZIELFLAGGE-Export) — nicht neu gewuerfelt.');
+                return p.result;
+            }
+            return simulateRace(raceIndex, isRain);
+        }
+
+        // Erzeugt die Lieferdatei fuer ZIELFLAGGE: Spielstand + fertiges Rennen.
+        // Bewusst OHNE Historie — ZIELFLAGGE braucht nur das aktuelle Feld, und
+        // ein voller Spielstand waere je nach Saisonzahl mehrere Hundert KB.
+        // Datenteil getrennt vom Download, damit er ohne Browser pruefbar ist
+        // (sim-core kennt kein Blob). Gibt den fertigen NDJSON-Text zurueck.
+        window.baueZielflaggeLieferung = function(raceIndex) {
+            if (raceIndex === undefined) raceIndex = GAME_STATE.currentRace;
+            const race = GAME_STATE.races[raceIndex];
+            if (!race) { alert('Kein Rennen an dieser Stelle im Kalender.'); return; }
+
+            const _wet = getRaceWetChance(race.raceId, race.circuitId || race.circuit, race.month, race.country);
+            const isRain = Math.random() < _wet;
+
+            // Rennwochenende wie in jedem anderen Modus — [SYNC Rennwochenende]
+            applyGuestMoves(raceIndex);
+            simulateTraining(raceIndex);
+            const qualiResult = simulateQualifying(raceIndex, isRain);
+            const ergebnis = simulateRace(raceIndex, isRain);
+            if (!ergebnis) { alert('Das Rennen liess sich nicht rechnen.'); return; }
+
+            // Parken: der naechste Rennstart nimmt genau dieses Ergebnis.
+            GAME_STATE.pendingRaceResult = { raceIndex, result: ergebnis, isRain };
+
+            const grid = (qualiResult && qualiResult.results ? qualiResult.results : [])
+                .filter(q => q.position)
+                .map(q => ({ driver: q.driver, position: q.position }));
+
+            const teams = (GAME_STATE.teams || []).map(t => ({
+                id: t.id, name: t.name, color: t.color, histId: t.histId,
+                carSpeed: t.carSpeed, reliability: t.reliability, strategy: t.strategy
+            }));
+            const drivers = (GAME_STATE.drivers || [])
+                .filter(d => (!d.status || d.status === 'active') && d.team)
+                .map(d => ({
+                    id: d.id, histId: d.histId, name: d.name, team: d.team, nation: d.nation,
+                    number: d.number, birthYear: d.birthYear, pace: d.pace, rain: d.rain,
+                    consistency: d.consistency, experience: d.experience,
+                    potentialPace: d.potentialPace, starts: d.starts, status: 'active'
+                }));
+
+            const zeilen = [
+                JSON.stringify({ _format: 'f1rpg-ndjson', _v: 1, exportVersion: VERSION,
+                    exportedAt: new Date().toISOString(), currentYear: GAME_STATE.currentYear,
+                    currentRace: raceIndex, seasons: 0, fuer: 'zielflagge' }),
+                JSON.stringify({ _t: 'core', state: {
+                    version: VERSION, currentYear: GAME_STATE.currentYear, currentRace: raceIndex,
+                    teams, drivers, driverStandings: GAME_STATE.driverStandings || {} } }),
+                JSON.stringify({ _t: 'rennen', _format: 'f1rpg-rennen', _v: 1,
+                    jahr: GAME_STATE.currentYear, rennIndex: raceIndex,
+                    rennName: race.name, circuitId: race.circuitId || race.circuit,
+                    runden: race.laps || 60, isRain,
+                    grid, results: ergebnis.results,
+                    dnq: ergebnis.dnq || [], dns: ergebnis.dns || [], dnpq: ergebnis.dnpq || [] })
+            ];
+            logSuccess('RACE', 'ZIELFLAGGE-Lieferung erzeugt: ' + race.name +
+                ' (' + ergebnis.results.length + ' Fahrer). Ergebnis ist geparkt.');
+            return {
+                text: zeilen.join('\n') + '\n',
+                dateiname: 'zielflagge_' + GAME_STATE.currentYear + '_R' + (raceIndex + 1) + '.json',
+                rennName: race.name, fahrer: ergebnis.results.length
+            };
+        };
+
+        // Erzeugt die Lieferung und laedt sie herunter.
+        window.exportRennenFuerZielflagge = function(raceIndex) {
+            const l = baueZielflaggeLieferung(raceIndex);
+            if (!l) return;
+            const blob = new Blob([l.text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = l.dateiname;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            saveGame();
+            alert('Rennen vorbereitet: ' + l.rennName + '\n\n' + l.fahrer + ' Fahrer.\n' +
+                  'Die Datei ' + l.dateiname + ' in ZIELFLAGGE laden.\n\n' +
+                  'Das Ergebnis ist im Spielstand geparkt — beim naechsten Rennstart ' +
+                  'wird es verwendet und nicht neu gewuerfelt.');
+        };
+
         function simulateRace(raceIndex, isRain = false) {
             const race = GAME_STATE.races[raceIndex];
             if (!race) return null;
@@ -17177,7 +17291,7 @@
             // jetzt ausschliesslich simulateRace, ebenso DNF und Todesfaelle.
             // Boxenstopps und Positionswechsel bleiben als reine OPTIK erhalten.
             // ════════════════════════════════════════════════════════════════
-            const geplant = simulateRace(raceIndex, isRain);
+            const geplant = rennenErgebnisFuer(raceIndex, isRain);
             liveRaceState.plannedResult = geplant;
 
             const _gridVon = new Map();
@@ -17302,6 +17416,13 @@
             const _wetChance = getRaceWetChance(_curRace?.raceId, _curRace?.circuitId || _curRace?.circuit, _curRace?.month, _curRace?.country);
             const isRain = Math.random() < _wetChance;
 
+            if (mode === 'zielflagge') {
+                // Lieferdatei erzeugen; das Rennen wird dabei gerechnet und geparkt.
+                // Gefahren wird ausserhalb — beim naechsten Rennstart im Spiel greift
+                // dann das geparkte Ergebnis, damit nicht zweimal gewuerfelt wird.
+                exportRennenFuerZielflagge(raceIndex);
+                return;
+            }
             if (mode === 'live') {
                 // Live-Ticker Modus
                 startLiveRace(raceIndex, isRain);
@@ -17312,7 +17433,7 @@
                 const qualiResult = simulateQualifying(raceIndex, isRain);
                 
                 // Dann Rennen simulieren
-                const raceResult = simulateRace(raceIndex, isRain);
+                const raceResult = rennenErgebnisFuer(raceIndex, isRain);
                 
                 // Qualifying-Positionen zu Rennergebnis hinzufügen
                 if (qualiResult && raceResult) {
@@ -25419,7 +25540,7 @@
                 simulateTraining(GAME_STATE.currentRace);
                 simulateQualifying(GAME_STATE.currentRace, isRain);
                 // Rennen simulieren
-                const result = simulateRace(GAME_STATE.currentRace, isRain);
+                const result = rennenErgebnisFuer(GAME_STATE.currentRace, isRain);
                 // Quali-Positionen hinzufügen
                 const quali = GAME_STATE.qualifyingResults[GAME_STATE.qualifyingResults.length - 1];
                 if (quali) {
