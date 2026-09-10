@@ -18,8 +18,9 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const OUT = process.env.ZF_OUT ||
-    'C:/Users/lyric/AppData/Local/Temp/claude/C--Users-lyric-Documents-F1-RPG-HTML/08f77b69-81cd-4baa-8be8-b505e1de5216/scratchpad/';
+// Bilder landen im Projekt, nicht im Scratchpad: dort findet sie niemand.
+const OUT = process.env.ZF_OUT || (path.join(__dirname, 'render') + '/');
+fs.mkdirSync(OUT, { recursive: true });
 
 const JAHRE = [1954, 1962, 1967, 1968, 1973, 1979, 1985, 1993, 2003, 2012, 2022];
 const FARBEN = ['#DC0000', '#005AFF', '#FFD100', '#00A550', '#FF8000', '#9B0000',
