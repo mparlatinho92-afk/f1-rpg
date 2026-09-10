@@ -133,6 +133,27 @@ Zentrale Logik-Funktionen (nie duplizieren):
 - Saison-Start → `startNewSeason()`
 - Between-Race-Events (geplant) → `processMidSeasonEvents()` via `applyRaceResults()`
 
+## Indianapolis: zwei Rennen, ein Gelände (NICHT verwechseln)
+In Indianapolis fanden **zwei grundverschiedene Rennen** statt — dieselbe `circuitId`, dasselbe Rohflag in F1DB:
+
+| | Jahre | Kurs | Runden | Startplätze |
+|---|---|---|---|---|
+| **Indy 500** | 1950–1960 | Oval | 200 | **33 per Reglement** |
+| **Indy GP** (US-GP) | 2000–2007 | Infield-Rundkurs | ~73 | normales Feld, real 20–22 |
+
+- **Das Feld heißt `isIndy500` bzw. `isIndyGP`.** Ein Feld `isIndy` gibt es nicht mehr — es stand bei BEIDEN auf `true` und gab dem US-GP 2005 ein 33er-Feld (27 Starter statt real 20) sowie ~5 Phantom-Tode je Jahrzehnt.
+- Getrennt wird **an der Quelle** in `getF1DBYear` (data/f1db.js) nach Jahr. Das Rohflag `meta[3]` sagt nur, auf welchem Gelände gefahren wurde — nie allein abfragen.
+- Altstände tragen noch `isIndy`; die Helfer `istIndy500(race, year)` / `istIndyGP(race, year)` lösen das über das Jahr auf. **Gespeicherte Stände werden nicht rückwirkend umgeschrieben.**
+- ⚠ Lokale Variablen namens `isIndy` bedeuten etwas ANDERES: ist der *Fahrer* oder das *Team* Indy-only. Nicht mit dem Rennen verwechseln.
+- **Wächter:** `node tests/indy-500-vs-gp.js` — 26 Prüfungen über sechs Jahrgänge (Flags, Deckel, Melder, Starter). Nach jeder Änderung an Kalender oder Startfeld laufen lassen.
+
+### Die hohe Melderzahl beim Indy 500 ist GEWOLLT — kein Bug
+Das Indy 500 bekommt **40–48 Melder auf 33 Startplätze**, also 12–15 DNQ. Das ist eine bewusst gesetzte **Halb-Fiktion** und darf nicht „korrigiert" werden:
+
+> Die offizielle F1-Statistik kennt keine Indy-DNQs. Fahrer, die es nie ins Rennen schafften, werden dort nie erwähnt — es gibt also keine Gegenzahl, gegen die man kalibrieren könnte.
+
+Der Kandidatenpool sollen **Datenbank-Fahrer** sein (halb-fiktional), generierte Fahrer nur als Rückfall.
+
 ## Testen vor Einbauen
 **Workflow:** Nutzer sagt „teste Feature X" → Claude nennt Befehl → Nutzer führt aus → Nutzer schickt Output → Claude interpretiert.
 Claude simuliert NIEMALS selbst (Token-Verschwendung).
