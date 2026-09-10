@@ -179,9 +179,9 @@ function _rumpf(p, mat) {
   return new THREE.Mesh(g, mat);
 }
 
-function _nase(p, mat) {
+function _nase(p, laenge, mat) {
   const g = new THREE.CylinderGeometry(p.nasenSpitze / 2, p.rumpfBreite / 2,
-    p.nasenLaenge, 7, 1, false);
+    laenge, 7, 1, false);
   g.rotateX(Math.PI / 2);
   g.scale(1, Math.max(0.35, p.nasenHoehe / p.nasenSpitze) * (p.nasenRund * 0.5 + 0.5), 1);
   return new THREE.Mesh(g, mat);
@@ -230,12 +230,18 @@ function baueWagen(jahr, farben) {
 
   // Getriebe hinter der Hinterachse: ohne es endete die Karosserie 13 cm
   // hinter der Achse und der Heckfluegel schwebte frei dahinter.
-  const getriebe = _box(p.rumpfBreite * 0.52, p.rumpfHoehe * 0.72, p.laenge * 0.16, mDunkel);
-  getriebe.position.set(0, p.bodenfreiheit + p.rumpfHoehe * 0.36, -p.laenge * 0.40);
+  const rumpfHintenZ = -p.laenge * 0.34;
+  const getrL = p.laenge * 0.10;
+  const getriebe = _box(p.rumpfBreite * 0.46, p.rumpfHoehe * 0.60, getrL, mDunkel);
+  getriebe.position.set(0, p.bodenfreiheit + p.rumpfHoehe * 0.32,
+    rumpfHintenZ - getrL / 2 + 0.02);
   g.add(getriebe);
 
-  const nase = _nase(p, mLack);
-  nase.position.set(0, p.bodenfreiheit + p.nasenHoehe, halbeL - p.nasenLaenge / 2 - 0.15);
+  const rumpfVornZ = -p.laenge * 0.08 + p.laenge * 0.26;
+  const naseSpitzeZ = halbeL - 0.15;
+  const naseL = naseSpitzeZ - rumpfVornZ + 0.06;   // 6 cm Ueberlappung
+  const nase = _nase(p, naseL, mLack);
+  nase.position.set(0, p.bodenfreiheit + p.nasenHoehe, naseSpitzeZ - naseL / 2 + 0.03);
   g.add(nase);
 
   // Seitenkaesten (ab Wing-Car-Aera deutlich, davor nur angedeutet)
@@ -245,9 +251,9 @@ function baueWagen(jahr, farben) {
     const radInnen = p.breite / 2 - Math.max(p.reifenBreiteV, p.reifenBreiteH);
     const skBreite = Math.max(0.12, (radInnen - p.rumpfBreite / 2) * 0.86);
     for (const s of [-1, 1]) {
-      const sk = _box(skBreite, p.rumpfHoehe * 0.62, p.laenge * 0.34, mZweit);
+      const sk = _box(skBreite, p.rumpfHoehe * 0.62, p.laenge * 0.28, mZweit);
       sk.position.set(s * (p.rumpfBreite / 2 + skBreite / 2),
-        p.bodenfreiheit + p.rumpfHoehe * 0.34, -p.laenge * 0.04);
+        p.bodenfreiheit + p.rumpfHoehe * 0.34, -p.laenge * 0.02);
       g.add(sk);
       if (p.schuerzen) {
         const sch = _box(0.03, p.bodenfreiheit + 0.05, p.laenge * 0.32, mDunkel);
@@ -279,7 +285,6 @@ function baueWagen(jahr, farben) {
     // Fluegelblatt in der HAUPTfarbe: bei hellem Zweitton verschwand sonst
     // genau das Merkmal, an dem die Aera zu erkennen ist.
     // Hinterkante nie vor der Nasenspitze: sonst haengt der Fluegel im Nichts.
-    const naseSpitzeZ = halbeL - 0.15;
     const ffZ = Math.min(halbeL - p.ffTiefe / 2 - 0.02, naseSpitzeZ - p.ffTiefe * 0.25);
     const ffY = p.bodenfreiheit + p.ffHoehe;
     const ff = _fluegel(p.ffBreite, p.ffTiefe, mLack);
@@ -290,9 +295,11 @@ function baueWagen(jahr, farben) {
       ep.position.set(s * p.ffBreite / 2, ffY + p.ffTiefe * 0.3, ffZ);
       g.add(ep);
     }
-    // Stelzen zur Nase - ab der Hochnasen-Aera das sichtbare Merkmal.
-    const ffStH = p.bodenfreiheit + p.nasenHoehe - ffY;
-    if (ffStH > 0.08) {
+    // Halter zur Nase - ab der Hochnasen-Aera lang und das sichtbare Merkmal,
+    // davor kurz. Immer setzen: ohne Anbindung liest sich der Fluegel als
+    // loser Kasten vor dem Wagen.
+    const ffStH = Math.max(0.06, p.bodenfreiheit + p.nasenHoehe - ffY);
+    {
       for (const s of [-1, 1]) {
         const st = _box(0.04, ffStH, 0.06, mDunkel);
         st.position.set(s * p.nasenSpitze * 0.32, ffY + ffStH / 2, ffZ + p.ffTiefe * 0.25);
@@ -305,7 +312,7 @@ function baueWagen(jahr, farben) {
     // Fluegel bei langen Aeren immer weiter nach hinten weg.
     const achseHz = -p.radstand / 2;
     const hfZ = p.hfStelzen ? achseHz - 0.05
-      : Math.max(-halbeL + p.hfTiefe / 2, achseHz - 0.52);
+      : Math.max(-halbeL + p.hfTiefe / 2, achseHz - 0.42);
     const hf = _fluegel(p.hfBreite, p.hfTiefe, mLack);
     hf.position.set(0, p.hfHoehe, hfZ);
     g.add(hf);
@@ -317,9 +324,15 @@ function baueWagen(jahr, farben) {
     // Stelzen der 68er-Aera sind das Erkennungsmerkmal schlechthin
     const stH = p.hfHoehe - p.bodenfreiheit - p.rumpfHoehe * 0.5;
     if (stH > 0.05) {
-      for (const s of [-1, 1]) {
-        const st = _box(0.035, stH, 0.05, mDunkel);
-        st.position.set(s * p.rumpfBreite * 0.28, p.hfHoehe - stH / 2, hfZ + 0.02);
+      if (p.hfStelzen) {
+        for (const s of [-1, 1]) {
+          const st = _box(0.035, stH, 0.05, mDunkel);
+          st.position.set(s * p.rumpfBreite * 0.28, p.hfHoehe - stH / 2, hfZ + 0.02);
+          g.add(st);
+        }
+      } else {
+        const st = _box(p.rumpfBreite * 0.30, stH, p.hfTiefe * 0.55, mDunkel);
+        st.position.set(0, p.hfHoehe - stH / 2, hfZ + 0.02);
         g.add(st);
       }
     }

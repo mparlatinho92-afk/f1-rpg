@@ -161,6 +161,9 @@ window.zeigeRaster(4, 4.2, 6.2, 0.42, 1.05);
     await schuss('wagen-profil', 'zeigeProfil', [3, 5.0, 1.55]);
     await schuss('wagen-1967-1968', 'zeigePaar', [2, 3, 0.55, 1.12]);
     await schuss('wagen-einzeln', 'zeigeEinzeln', [6, 0.75, 1.10, 2.6]);
+    // Seitenriss einzeln: dort faellt jede Luecke zwischen Bauteilen auf.
+    await schuss('wagen-seite-1968', 'zeigeEinzeln', [3, Math.PI/2, 1.5708, 2.5]);
+    await schuss('wagen-seite-2012', 'zeigeEinzeln', [9, Math.PI/2, 1.5708, 2.7]);
 
     console.log('\nSkriptfehler: ' + (errs.length ? errs.join(' | ') : 'keine'));
     console.log('Bilder in: ' + OUT);
