@@ -1569,9 +1569,17 @@ function finalizeAndShowResults(){
     e.gap = e.status==='classified' ? (i===0?0:e.totalTime-leaderTime) : null;
     e.fastestLap = e.id===bestId;
   });
-  const POINTS=[25,18,15,12,10,8,6,4,2,1];
-  all.forEach(e=>{ e.points=(e.status==='classified'&&e.pos<=10)?POINTS[e.pos-1]:0; });
-  if(state.fastestLapPoint){
+  // Punktetabelle: bei Lieferung die des Spieljahres, sonst das moderne Schema.
+  // Ohne das zeigte ZIELFLAGGE 26 Punkte fuer einen Sieg, den das F1 RPG mit 9
+  // wertet (1988: 9-6-4-3-2-1) - zwei Zahlen fuer dasselbe Rennen.
+  const POINTS=(state.lieferung && Array.isArray(state.lieferung.punkte) && state.lieferung.punkte.length)
+    ? state.lieferung.punkte
+    : [25,18,15,12,10,8,6,4,2,1];
+  all.forEach(e=>{ e.points=(e.status==='classified'&&e.pos<=POINTS.length)?(POINTS[e.pos-1]||0):0; });
+  // Zusatzpunkt fuer die schnellste Runde gibt es erst seit 2019 und nur unter
+  // Bedingungen. Bei einer Lieferung vergibt das F1 RPG die Punkte ohnehin selbst
+  // neu - hier waere er nur eine irrefuehrende Anzeige.
+  if(state.fastestLapPoint && !state.lieferung){
     const fl=all.find(e=>e.fastestLap);
     if(fl&&fl.status==='classified'&&fl.pos<=10) fl.points+=1;
   }
@@ -1687,7 +1695,7 @@ function downloadRpgRueckgabe(){
   a.download='zielflagge_ergebnis_'+(data.jahr||'x')+'_R'+((data.rennIndex??0)+1)+'.json';
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   document.getElementById('export-status').textContent=
-    'Rueckgabe gespeichert - im F1 RPG unter "Rennmodus" einlesen.';
+    'Rückgabe gespeichert — im F1 RPG unter "Rennmodus" einlesen.';
 }
 
 function downloadExport(){

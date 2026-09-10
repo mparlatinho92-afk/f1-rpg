@@ -109,9 +109,12 @@ function ladeSaison(jahr) {
 
   pruef('Rennen startbar', start.ok, true);
   pruef('Startfeld auf 26', start.gridLen, 26);
-  pruef('Rest ist DNQ', start.dnqLen, start.gemeldet-26);
+  // ⚠ NICHT gemeldet-26 pruefen: wer selbst faehrt, wird nicht aussortiert,
+  // sondern rutscht auf den letzten Startplatz - dann ist ein DNQ weniger.
+  // Richtig ist der Erhaltungssatz: Starter + DNQ = Melder.
+  pruef('Starter + DNQ = Melder', start.gridLen + start.dnqLen, start.gemeldet);
   pruef('Nur Starter mit Auto', start.autos, 26);
-  pruef('DNQ im UI', start.dnqZeilenImUI, start.gemeldet-26);
+  pruef('DNQ im UI', start.dnqZeilenImUI, start.dnqLen);
   pruefWahr('Startplaetze gestaffelt', start.eindeutigeBacks > 4, start.eindeutigeBacks + ' Laengsstufen');
   pruef('Zwei Startspuren', start.seiten, 2);
   pruefWahr('Spieler nicht auto-Pole', !start.spielerAufPole, 'Platz ' + start.meinPlatz);
