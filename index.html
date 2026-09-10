@@ -3523,6 +3523,16 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="card p-4 rounded-lg cursor-pointer hover-bg" onclick="selectRaceMode('zielflagge-import')">
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl">📥</div>
+                                <div>
+                                    <h4 class="font-bold">Gefahrenes Ergebnis einlesen</h4>
+                                    <p class="text-xs text-tertiary">Übernimmt das Ergebnis aus ZIELFLAGGE in den
+                                    Spielstand. Punkte vergibt das Spiel nach der Ära.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -13495,6 +13505,119 @@
             return simulateRace(raceIndex, isRain);
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // RUECKWEG: das in ZIELFLAGGE gefahrene Ergebnis uebernehmen
+        //
+        // ZIELFLAGGE schickt NUR die Reihenfolge zurueck. Alles andere - Namen,
+        // Teams, dnfType, und vor allem `fatal` - stammt aus dem geparkten
+        // Ergebnis, das beim Export entstanden ist. Das ist keine Bequemlichkeit:
+        // simulateRace hat den Todesfall bereits vollzogen (driver.status,
+        // seasonDeaths, Ersatzfahrer). Wuerde man das Ergebnis hier aus der
+        // duennen Rueckgabe neu bauen, verschwaende der Tote aus der Wertung,
+        // waere im Kader aber tot.
+        //
+        // Ohne passendes geparktes Ergebnis wird deshalb ABGELEHNT statt geraten.
+        // ═══════════════════════════════════════════════════════════════════
+        window.uebernehmeZielflaggeErgebnis = function(rueck) {
+            if (!rueck || rueck._format !== 'f1rpg-zielflagge-ergebnis') {
+                return { ok: false, grund: 'Das ist keine ZIELFLAGGE-Rueckgabe.' };
+            }
+            if (!Array.isArray(rueck.reihenfolge) || !rueck.reihenfolge.length) {
+                return { ok: false, grund: 'Die Rueckgabe enthaelt keine Reihenfolge.' };
+            }
+            if (!rueck.ausLieferung) {
+                return { ok: false, grund: 'Dieses Rennen wurde in ZIELFLAGGE selbst gewuerfelt und '
+                    + 'gehoert zu keinem Spielstand. Es kann nicht uebernommen werden.' };
+            }
+            const geparkt = GAME_STATE.pendingRaceResult;
+            if (!geparkt) {
+                return { ok: false, grund: 'Im Spielstand liegt kein vorbereitetes Rennen. '
+                    + 'Wurde es zwischenzeitlich schon gefahren?' };
+            }
+            if (rueck.jahr !== GAME_STATE.currentYear || rueck.rennIndex !== geparkt.raceIndex) {
+                return { ok: false, grund: 'Die Rueckgabe gehoert zu ' + rueck.jahr + ' Rennen '
+                    + ((rueck.rennIndex ?? 0) + 1) + ', vorbereitet ist ' + GAME_STATE.currentYear
+                    + ' Rennen ' + (geparkt.raceIndex + 1) + '.' };
+            }
+
+            const original = geparkt.result;
+            const nachId = {};
+            original.results.forEach(r => { nachId[r.driver] = r; });
+
+            // Fehlt ein Fahrer aus dem Original, stimmt das Feld nicht ueberein.
+            const unbekannt = rueck.reihenfolge.filter(x => !nachId[x.driver]);
+            if (unbekannt.length) {
+                return { ok: false, grund: unbekannt.length + ' Fahrer der Rueckgabe kommen im '
+                    + 'vorbereiteten Rennen nicht vor - die Dateien gehoeren nicht zusammen.' };
+            }
+
+            // Neue Reihenfolge aufbauen, Originaldaten behalten
+            const gewertet = rueck.reihenfolge.filter(x => !x.dnf && x.position)
+                .sort((a, b) => a.position - b.position);
+            const raus = rueck.reihenfolge.filter(x => x.dnf);
+            const neu = [];
+            gewertet.forEach((x, i) => {
+                const o = nachId[x.driver];
+                neu.push(Object.assign({}, o, {
+                    position: i + 1,
+                    // Punkte NACH DER AERA des Spiels, nicht nach ZIELFLAGGEs Schema
+                    points: getPointsForPosition(i + 1, GAME_STATE.currentYear),
+                    dnf: false,
+                    fastestLap: !!x.schnellsteRunde,
+                    gefahrenInZielflagge: !!x.spieler
+                }));
+            });
+            raus.forEach(x => {
+                const o = nachId[x.driver];
+                neu.push(Object.assign({}, o, {
+                    position: neu.length + 1, points: 0, dnf: true,
+                    gefahrenInZielflagge: !!x.spieler
+                }));
+            });
+
+            const raceResult = Object.assign({}, original, { results: neu, ausZielflagge: true });
+            GAME_STATE.pendingRaceResult = null;
+            applyRaceResults(raceResult);
+            GAME_STATE.currentRace = geparkt.raceIndex + 1;
+            saveGame();
+            renderAll();
+
+            const sieger = neu.find(r => r.position === 1);
+            const spieler = neu.find(r => r.gefahrenInZielflagge);
+            logSuccess('RACE', 'ZIELFLAGGE-Ergebnis uebernommen: ' + (original.raceName || '')
+                + ' - Sieger ' + (sieger ? sieger.name : '?'));
+            return {
+                ok: true, sieger: sieger ? sieger.name : null,
+                spieler: spieler ? { name: spieler.name, position: spieler.position, dnf: spieler.dnf } : null,
+                fahrer: neu.length
+            };
+        };
+
+        // Dateiauswahl + Rueckmeldung
+        window.ladeZielflaggeErgebnis = function() {
+            const inp = document.createElement('input');
+            inp.type = 'file'; inp.accept = '.json,application/json';
+            inp.onchange = function() {
+                const f = inp.files && inp.files[0];
+                if (!f) return;
+                const leser = new FileReader();
+                leser.onload = function() {
+                    let daten = null;
+                    try { daten = JSON.parse(leser.result); }
+                    catch (e) { alert('Die Datei ist kein gueltiges JSON.'); return; }
+                    const r = uebernehmeZielflaggeErgebnis(daten);
+                    if (!r.ok) { alert('Nicht uebernommen:\n\n' + r.grund); return; }
+                    const s = r.spieler;
+                    alert('Ergebnis uebernommen.\n\nSieger: ' + r.sieger + '\n'
+                        + (s ? ('Dein Fahrer: ' + s.name + ' - '
+                            + (s.dnf ? 'ausgefallen' : 'P' + s.position)) : '')
+                        + '\n\n' + r.fahrer + ' Fahrer gewertet.');
+                };
+                leser.readAsText(f);
+            };
+            inp.click();
+        };
+
         // Erzeugt die Lieferdatei fuer ZIELFLAGGE: Spielstand + fertiges Rennen.
         // Bewusst OHNE Historie — ZIELFLAGGE braucht nur das aktuelle Feld, und
         // ein voller Spielstand waere je nach Saisonzahl mehrere Hundert KB.
@@ -17416,6 +17539,10 @@
             const _wetChance = getRaceWetChance(_curRace?.raceId, _curRace?.circuitId || _curRace?.circuit, _curRace?.month, _curRace?.country);
             const isRain = Math.random() < _wetChance;
 
+            if (mode === 'zielflagge-import') {
+                ladeZielflaggeErgebnis();
+                return;
+            }
             if (mode === 'zielflagge') {
                 // Lieferdatei erzeugen; das Rennen wird dabei gerechnet und geparkt.
                 // Gefahren wird ausserhalb — beim naechsten Rennstart im Spiel greift

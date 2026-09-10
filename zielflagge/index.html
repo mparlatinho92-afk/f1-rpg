@@ -251,13 +251,21 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
         <div class="grid-2col">
           <div>
             <div class="card">
-              <h2>Export nach F1 RPG</h2>
-              <p class="hint">Erzeugt eine JSON-Datei mit Rennergebnis und neuem Meisterschaftsstand. Format ist mein bester Vorschlag — ob F1 RPGs eigener Import genau dieses Schema erwartet, konnte ich nicht gegen den echten Quellcode prüfen.</p>
+              <h2>Zurück ins F1 RPG</h2>
+              <p class="hint">Schickt das gefahrene Ergebnis an den Spielstand zurück. Übertragen wird nur die
+              <b>Reihenfolge</b> — die Punkte vergibt das F1 RPG selbst, weil das Punktesystem an der Ära hängt
+              (1988 gab es 9-6-4-3-2-1, heute 25-18-15…). Alles außer deinem eigenen Wagen stammt ohnehin aus
+              der Simulation des Spiels; fährst du von P7 auf P4, rutschen die drei dazwischen je einen Platz zurück.</p>
               <div class="row">
-                <button class="btn primary" onclick="downloadExport()">JSON herunterladen</button>
-                <button class="btn" onclick="copyExport()">In Zwischenablage kopieren</button>
+                <button class="btn primary" onclick="downloadRpgRueckgabe()">Ergebnis für F1 RPG speichern</button>
               </div>
               <div class="status-line" id="export-status"></div>
+              <p class="hint" style="margin-top:14px;">Darunter das alte Rohformat — eigenständige JSON-Ausgabe,
+              unabhängig vom Spielstand.</p>
+              <div class="row">
+                <button class="btn ghost" onclick="downloadExport()">Rohdaten (JSON)</button>
+                <button class="btn ghost" onclick="copyExport()">In Zwischenablage</button>
+              </div>
             </div>
             <div class="card">
               <h2>JSON-Vorschau</h2>
@@ -1587,6 +1595,58 @@ function renderResultsFinal(all){
   document.getElementById('results-tbody').innerHTML=rowsHtml;
   document.getElementById('export-preview').textContent=JSON.stringify(buildExportJSON(),null,2);
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   RUECKWEG INS F1 RPG
+
+   Geliefert wird NUR die Reihenfolge, keine Punkte. Gruende:
+     - Das Punktesystem haengt an der Aera (1988: 9-6-4-3-2-1, heute 25-18-15...).
+       ZIELFLAGGE rechnet intern mit dem modernen Schema; das RPG kennt die
+       richtige Tabelle je Jahr und vergibt selbst.
+     - Namen, Teams und Nationen stehen im RPG ohnehin - sie hier mitzuschicken
+       hiesse, zwei Wahrheiten zu pflegen.
+
+   Wertungsmodell "nur dein Slot ist frei": alles ausser dem eigenen Fahrer kommt
+   aus simulateRace. Faehrst du von P7 auf P4, rutschen die drei dazwischen je
+   einen Platz zurueck - deshalb wird die VOLLSTAENDIGE neue Reihenfolge
+   geschickt und nicht nur die eigene Position. Das RPG muss so nicht raten,
+   und es funktioniert auch, wenn das geparkte Ergebnis dort schon weg ist.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function buildRpgRueckgabe(){
+  const all = state.finalClassification || [];
+  if(!all.length) return null;
+  const lief = state.lieferung || {};
+  const spieler = all.find(e=>e.isPlayer);
+  return {
+    _format: 'f1rpg-zielflagge-ergebnis',
+    _v: 1,
+    erzeugtAm: new Date().toISOString(),
+    jahr: lief.jahr ?? state.jahr ?? null,
+    rennIndex: lief.rennIndex ?? null,
+    rennName: lief.rennName || null,
+    // Ohne Lieferung ist das Ergebnis in ZIELFLAGGE selbst gewuerfelt worden.
+    // Das RPG soll das wissen und darf es dann ablehnen.
+    ausLieferung: !!state.lieferung,
+    gegnerTempo: { modus: state.aiMode, faktor: +(state.aiScale||1).toFixed(3) },
+    gefahren: spieler ? {
+      driver: spieler.id, name: spieler.name,
+      position: spieler.status==='classified' ? spieler.pos : null,
+      dnf: spieler.status!=='classified',
+      grund: spieler.status!=='classified' ? (spieler.reason||'Aufgegeben') : null,
+      besteRunde: player && player.bestLap!==null ? +player.bestLap.toFixed(3) : null,
+      runden: player ? player.lap : null
+    } : null,
+    // Vollstaendige neue Reihenfolge - OHNE Punkte, die vergibt das RPG.
+    reihenfolge: all.map(e=>({
+      driver: e.id,
+      position: e.status==='classified' ? e.pos : null,
+      dnf: e.status!=='classified',
+      grund: e.status!=='classified' ? (e.reason||null) : null,
+      schnellsteRunde: !!e.fastestLap,
+      spieler: !!e.isPlayer
+    }))
+  };
+}
+
 function buildExportJSON(){
   const all=state.finalClassification||[];
   const rows=all.map(c=>{
@@ -1613,6 +1673,23 @@ function buildExportJSON(){
     meisterschaftsstandNeu:standings,
   };
 }
+function downloadRpgRueckgabe(){
+  if(!state.finalClassification){ alert('Bitte zuerst ein Rennen beenden.'); return; }
+  const data=buildRpgRueckgabe();
+  if(!data){ alert('Kein Ergebnis vorhanden.'); return; }
+  if(!data.ausLieferung && !confirm(
+      'Dieses Rennen wurde NICHT aus dem F1 RPG geliefert, sondern hier selbst gewuerfelt.\n\n'
+      +'Das Ergebnis passt damit nicht zu einem laufenden Spielstand. Trotzdem exportieren?')) return;
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='zielflagge_ergebnis_'+(data.jahr||'x')+'_R'+((data.rennIndex??0)+1)+'.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  document.getElementById('export-status').textContent=
+    'Rueckgabe gespeichert - im F1 RPG unter "Rennmodus" einlesen.';
+}
+
 function downloadExport(){
   if(!state.finalClassification){ alert('Bitte zuerst ein Rennen beenden.'); return; }
   const data=buildExportJSON();
