@@ -196,6 +196,7 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
               <div class="field">
                 <label>Dein Fahrer (🎮 den steuerst du selbst)</label>
                 <select id="player-select"></select>
+                <p class="hint" id="player-select-hint" style="margin:6px 0 0;"></p>
               </div>
               <div class="field">
                 <label>Rundenanzahl</label>
@@ -644,13 +645,42 @@ function handlePasteImport(){
 }
 
 /* ============================= GARAGE CRUD/RENDER ============================= */
+/* Wer im Rennen sitzt, steht bei einer Lieferung laengst fest: das RPG hat
+   Training, Qualifying und Rennen in einem Zug gerechnet, bevor ZIELFLAGGE
+   ueberhaupt startet. Zur Auswahl stehen deshalb NUR die Qualifizierten -
+   einen Nichtqualifizierten zu fahren hiesse, ein Rennen zu fahren, das es
+   nicht gab. Ohne Lieferung (Standalone) bleibt die ganze Liste offen. */
+function auswaehlbareFahrer(){
+  if(!state.lieferung) return DRIVERS;
+  const drin=new Set((state.lieferung.results||[]).map(r=>r.driver));
+  const gefiltert=DRIVERS.filter(d=>drin.has(d.id));
+  return gefiltert.length?gefiltert:DRIVERS;
+}
+
 function renderPlayerSelect(){
   const sel=document.getElementById('player-select');
   const prev=state.playerDriverId;
-  sel.innerHTML = DRIVERS.map(d=>`<option value="${escAttr(d.id)}">${escapeHTML(d.name)} (${escapeHTML(d.team)})</option>`).join('');
-  if(DRIVERS.some(d=>d.id===prev)) sel.value=prev;
-  else if(DRIVERS.length){ state.playerDriverId=DRIVERS[0].id; sel.value=DRIVERS[0].id; }
+  const wahl=auswaehlbareFahrer();
+  // Startreihenfolge, damit die Liste dem Grid entspricht statt dem Kader
+  const rang={};
+  ((state.lieferung&&state.lieferung.grid)||[]).forEach(g=>{ rang[g.driver]=g.position; });
+  const sortiert=wahl.slice().sort((a,b)=>(rang[a.id]||99)-(rang[b.id]||99));
+  sel.innerHTML = sortiert.map(d=>{
+    const p=rang[d.id];
+    const platz=p?('P'+p+' — '):'';
+    return `<option value="${escAttr(d.id)}">${platz}${escapeHTML(d.name)} (${escapeHTML(d.team)})</option>`;
+  }).join('');
+  if(sortiert.some(d=>d.id===prev)) sel.value=prev;
+  else if(sortiert.length){ state.playerDriverId=sortiert[0].id; sel.value=sortiert[0].id; }
   sel.onchange=()=>{ state.playerDriverId=sel.value; };
+
+  const hinweis=document.getElementById('player-select-hint');
+  if(hinweis){
+    hinweis.textContent = state.lieferung
+      ? ('Nur qualifizierte Fahrer — ' + sortiert.length + ' von ' + DRIVERS.length +
+         ' haben es ins Rennen geschafft.')
+      : '';
+  }
 }
 function renderGarageTables(){
   const teamsHtml = Object.values(TEAMS).map(t=>`
@@ -1387,6 +1417,17 @@ function startRace(){
   if(!state.playerDriverId || !DRIVERS.find(d=>d.id===state.playerDriverId)){
     alert('Bitte in der Box einen Fahrer auswählen, den du selbst steuern willst.'); return;
   }
+  // Bei Lieferung: gehoert der gewaehlte Fahrer ueberhaupt ins Rennen?
+  if(state.lieferung){
+    const drin=(state.lieferung.results||[]).some(r=>r.driver===state.playerDriverId);
+    if(!drin){
+      alert('Dieser Fahrer hat sich für dieses Rennen nicht qualifiziert.\n\n'
+        +'Das Startfeld stand fest, bevor die Datei erzeugt wurde — bitte einen '
+        +'Fahrer aus der Liste wählen, die nur die Qualifizierten zeigt.');
+      return;
+    }
+  }
+
   raceEnded=false; paused=false;
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -1425,7 +1466,9 @@ function startRace(){
   // Wer selbst faehrt, faellt nicht der Vorqualifikation zum Opfer: sonst waere das
   // Rennen ohne Zutun vorbei. Er rutscht dann auf den letzten Startplatz.
   state.playerWasDnq=false;
-  if(!state.grid.some(q=>q.id===state.playerDriverId)){
+  // Nur ohne Lieferung: dort wuerfelt ZIELFLAGGE das Qualifying selbst und darf
+  // den Spieler nachruecken lassen. Bei einer Lieferung ist das Feld entschieden.
+  if(!state.lieferung && !state.grid.some(q=>q.id===state.playerDriverId)){
     const idx=state.dnq.findIndex(q=>q.id===state.playerDriverId);
     if(idx>=0){
       state.playerWasDnq=true;
