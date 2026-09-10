@@ -77,7 +77,7 @@ const WAGEN_AEREN = [
   [1970, 1976, 'Keil mit Hochairbox', {
     breite: 1.88, laenge: 4.30, hoehe: 1.05, radstand: 2.55,
     rumpfBreite: 0.70, rumpfHoehe: 0.44, bodenfreiheit: 0.07,
-    nasenLaenge: 0.95, nasenSpitze: 0.42, nasenHoehe: 0.24, nasenRund: 0.35,
+    nasenLaenge: 0.95, nasenSpitze: 0.34, nasenHoehe: 0.24, nasenRund: 0.35,
     reifenBreiteV: 0.26, reifenBreiteH: 0.44, radR: 0.33,
     frontFluegel: 1, ffBreite: 1.35, ffHoehe: 0.20, ffTiefe: 0.28,
     heckFluegel: 1, hfBreite: 1.25, hfHoehe: 0.72, hfTiefe: 0.34, hfStelzen: 0,
@@ -88,7 +88,7 @@ const WAGEN_AEREN = [
   [1977, 1982, 'Wing-Car', {
     breite: 2.00, laenge: 4.45, hoehe: 1.00, radstand: 2.65,
     rumpfBreite: 0.66, rumpfHoehe: 0.42, bodenfreiheit: 0.04,
-    nasenLaenge: 1.00, nasenSpitze: 0.46, nasenHoehe: 0.22, nasenRund: 0.25,
+    nasenLaenge: 1.00, nasenSpitze: 0.36, nasenHoehe: 0.22, nasenRund: 0.25,
     reifenBreiteV: 0.28, reifenBreiteH: 0.50, radR: 0.33,
     frontFluegel: 1, ffBreite: 1.42, ffHoehe: 0.17, ffTiefe: 0.30,
     heckFluegel: 1, hfBreite: 1.30, hfHoehe: 0.70, hfTiefe: 0.36, hfStelzen: 0,
@@ -99,7 +99,7 @@ const WAGEN_AEREN = [
   [1983, 1988, 'Turbo-Keil', {
     breite: 2.00, laenge: 4.50, hoehe: 0.95, radstand: 2.72,
     rumpfBreite: 0.64, rumpfHoehe: 0.40, bodenfreiheit: 0.05,
-    nasenLaenge: 1.05, nasenSpitze: 0.42, nasenHoehe: 0.24, nasenRund: 0.2,
+    nasenLaenge: 1.05, nasenSpitze: 0.34, nasenHoehe: 0.24, nasenRund: 0.2,
     reifenBreiteV: 0.28, reifenBreiteH: 0.52, radR: 0.33,
     frontFluegel: 1, ffBreite: 1.45, ffHoehe: 0.15, ffTiefe: 0.30,
     heckFluegel: 1, hfBreite: 1.32, hfHoehe: 0.68, hfTiefe: 0.36, hfStelzen: 0,
@@ -228,20 +228,30 @@ function baueWagen(jahr, farben) {
   aufbau.position.set(0, p.bodenfreiheit + p.rumpfHoehe * 0.92, -p.laenge * 0.16);
   g.add(aufbau);
 
+  // Getriebe hinter der Hinterachse: ohne es endete die Karosserie 13 cm
+  // hinter der Achse und der Heckfluegel schwebte frei dahinter.
+  const getriebe = _box(p.rumpfBreite * 0.52, p.rumpfHoehe * 0.72, p.laenge * 0.16, mDunkel);
+  getriebe.position.set(0, p.bodenfreiheit + p.rumpfHoehe * 0.36, -p.laenge * 0.40);
+  g.add(getriebe);
+
   const nase = _nase(p, mLack);
   nase.position.set(0, p.bodenfreiheit + p.nasenHoehe, halbeL - p.nasenLaenge / 2 - 0.15);
   g.add(nase);
 
   // Seitenkaesten (ab Wing-Car-Aera deutlich, davor nur angedeutet)
   if (p.seitenkasten) {
+    // Breite aus der Luecke zwischen Rumpf und Radinnenkante ableiten, nicht
+    // pauschal aus der Wagenbreite: sonst steckt der Kasten IM Vorderrad.
+    const radInnen = p.breite / 2 - Math.max(p.reifenBreiteV, p.reifenBreiteH);
+    const skBreite = Math.max(0.12, (radInnen - p.rumpfBreite / 2) * 0.86);
     for (const s of [-1, 1]) {
-      const sk = _box(p.breite * 0.22, p.rumpfHoehe * 0.62, p.laenge * 0.34, mZweit);
-      sk.position.set(s * (p.rumpfBreite / 2 + p.breite * 0.11),
+      const sk = _box(skBreite, p.rumpfHoehe * 0.62, p.laenge * 0.34, mZweit);
+      sk.position.set(s * (p.rumpfBreite / 2 + skBreite / 2),
         p.bodenfreiheit + p.rumpfHoehe * 0.34, -p.laenge * 0.04);
       g.add(sk);
       if (p.schuerzen) {
         const sch = _box(0.03, p.bodenfreiheit + 0.05, p.laenge * 0.32, mDunkel);
-        sch.position.set(s * (p.rumpfBreite / 2 + p.breite * 0.21),
+        sch.position.set(s * (p.rumpfBreite / 2 + skBreite),
           (p.bodenfreiheit + 0.05) / 2, -p.laenge * 0.04);
         g.add(sch);
       }
@@ -268,22 +278,40 @@ function baueWagen(jahr, farben) {
   if (p.frontFluegel) {
     // Fluegelblatt in der HAUPTfarbe: bei hellem Zweitton verschwand sonst
     // genau das Merkmal, an dem die Aera zu erkennen ist.
+    // Hinterkante nie vor der Nasenspitze: sonst haengt der Fluegel im Nichts.
+    const naseSpitzeZ = halbeL - 0.15;
+    const ffZ = Math.min(halbeL - p.ffTiefe / 2 - 0.02, naseSpitzeZ - p.ffTiefe * 0.25);
+    const ffY = p.bodenfreiheit + p.ffHoehe;
     const ff = _fluegel(p.ffBreite, p.ffTiefe, mLack);
-    ff.position.set(0, p.bodenfreiheit + p.ffHoehe, halbeL - 0.06);
+    ff.position.set(0, ffY, ffZ);
     g.add(ff);
     for (const s of [-1, 1]) {
       const ep = _box(0.02, p.ffTiefe * 0.7, p.ffTiefe, mZweit);
-      ep.position.set(s * p.ffBreite / 2, p.bodenfreiheit + p.ffHoehe + p.ffTiefe * 0.3, halbeL - 0.06);
+      ep.position.set(s * p.ffBreite / 2, ffY + p.ffTiefe * 0.3, ffZ);
       g.add(ep);
+    }
+    // Stelzen zur Nase - ab der Hochnasen-Aera das sichtbare Merkmal.
+    const ffStH = p.bodenfreiheit + p.nasenHoehe - ffY;
+    if (ffStH > 0.08) {
+      for (const s of [-1, 1]) {
+        const st = _box(0.04, ffStH, 0.06, mDunkel);
+        st.position.set(s * p.nasenSpitze * 0.32, ffY + ffStH / 2, ffZ + p.ffTiefe * 0.25);
+        g.add(st);
+      }
     }
   }
   if (p.heckFluegel) {
+    // Bezug ist die Hinterachse, nicht das Laengen-Ende: sonst wandert der
+    // Fluegel bei langen Aeren immer weiter nach hinten weg.
+    const achseHz = -p.radstand / 2;
+    const hfZ = p.hfStelzen ? achseHz - 0.05
+      : Math.max(-halbeL + p.hfTiefe / 2, achseHz - 0.52);
     const hf = _fluegel(p.hfBreite, p.hfTiefe, mLack);
-    hf.position.set(0, p.hfHoehe, -halbeL + 0.10);
+    hf.position.set(0, p.hfHoehe, hfZ);
     g.add(hf);
     for (const s of [-1, 1]) {
       const ep = _box(0.02, p.hfTiefe * 0.9, p.hfTiefe, mZweit);
-      ep.position.set(s * p.hfBreite / 2, p.hfHoehe + p.hfTiefe * 0.2, -halbeL + 0.10);
+      ep.position.set(s * p.hfBreite / 2, p.hfHoehe + p.hfTiefe * 0.2, hfZ);
       g.add(ep);
     }
     // Stelzen der 68er-Aera sind das Erkennungsmerkmal schlechthin
@@ -291,7 +319,7 @@ function baueWagen(jahr, farben) {
     if (stH > 0.05) {
       for (const s of [-1, 1]) {
         const st = _box(0.035, stH, 0.05, mDunkel);
-        st.position.set(s * p.rumpfBreite * 0.28, p.hfHoehe - stH / 2, -halbeL + 0.12);
+        st.position.set(s * p.rumpfBreite * 0.28, p.hfHoehe - stH / 2, hfZ + 0.02);
         g.add(st);
       }
     }
@@ -317,6 +345,17 @@ function baueWagen(jahr, farben) {
       f.rotateZ(Math.PI / 2);
       f.position.copy(r.position);
       g.add(f);
+
+      const nabeX = Math.abs(r.position.x) - br / 2;
+      const wurzelX = p.rumpfBreite * 0.42;
+      const spanne = nabeX - wurzelX;
+      if (spanne > 0.05) {
+        for (const [hoehe, tiefe] of [[p.radR * 1.05, 0.05], [p.radR * 0.45, 0.06]]) {
+          const ql = _box(spanne, 0.035, tiefe, mDunkel);
+          ql.position.set(s * (wurzelX + spanne / 2), hoehe, z);
+          g.add(ql);
+        }
+      }
     }
   }
 
