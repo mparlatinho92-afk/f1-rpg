@@ -457,6 +457,11 @@ function parseSeasonTemplate(node, jahr){
 
 /* Findet in beliebigem JSON/NDJSON den F1-RPG-Inhalt. null = nichts erkannt. */
 function parseF1Rpg(chunks){
+  // Mitgeliefertes Rennergebnis (_t:'rennen'). Ist es da, WUERFELT ZIELFLAGGE NICHT:
+  // das Rennen wurde im RPG von simulateRace gerechnet, hier wird nur animiert.
+  // Siehe simAusLieferung - ZIELFLAGGE ist ein Live-Ticker in 3D, keine zweite Engine.
+  const rennen = chunks.find(c=>c && (c._t==='rennen' || c._format==='f1rpg-rennen'));
+
   // a) NDJSON: Meta-Header + core-Zeile
   const meta = chunks.find(c=>c && c._format==='f1rpg-ndjson');
   const core = chunks.find(c=>c && c._t==='core');
@@ -464,12 +469,13 @@ function parseF1Rpg(chunks){
     const r = parseRpgCore(core);
     if(r){ r.quelle = meta ? ('Spielstand v'+(meta.exportVersion||'?')) : 'Spielstand';
            if(meta && meta.currentYear) r.jahr = meta.currentYear;
+           if(rennen) r.lieferung = rennen;
            return r; }
   }
   // b) blankes GAME_STATE
   for(const c of chunks){
     const r = parseRpgCore(c);
-    if(r) return r;
+    if(r){ if(rennen) r.lieferung = rennen; return r; }
   }
   // c) SEASON_DATA — entweder direkt {t,d} oder als {"1988":{t,d}, ...}
   for(const c of chunks){
@@ -571,7 +577,10 @@ function importMeldung(res){
   const warnung=(!res.quelle)
     ? ' – Achtung: Format nicht erkannt, Werte geraten. Tabellen unten prüfen.'
     : '';
-  return q+jahr+': '+res.drivers.length+' Fahrer, '+res.teams.length+' Teams.'+warnung;
+  const rennen = res.lieferung
+    ? ' \u2014 Rennergebnis mitgeliefert, ZIELFLAGGE animiert nur.'
+    : '';
+  return q+jahr+': '+res.drivers.length+' Fahrer, '+res.teams.length+' Teams.'+rennen+warnung;
 }
 
 function applyImportResult(res){
@@ -584,6 +593,10 @@ function applyImportResult(res){
     const benutzt=new Set(res.drivers.map(d=>d.team));
     res.teams=res.teams.filter(t=>benutzt.has(t.name));
   }
+  // Mitgeliefertes Rennergebnis merken. Liegt eines vor, ist das Rennen bereits
+  // entschieden und ZIELFLAGGE animiert nur noch darauf zu.
+  state.lieferung = res.lieferung || null;
+
   // Jahr merken: die Livery haengt daran (Benetton 1988 ist nicht Benetton 1994)
   state.jahr = res.jahr || state.jahr || null;
   res.teams.forEach((t,i)=>{
@@ -783,6 +796,84 @@ function pickRetireReason(){
   const reasons=['Motorschaden','Unfall','Getriebeschaden','Aufhängungsschaden','Elektrikdefekt','Bremsversagen','Aufgabe im Kiesbett'];
   return reasons[Math.floor(Math.random()*reasons.length)];
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   ERGEBNIS VON AUSSEN: ZIELFLAGGE IST EIN LIVE-TICKER IN 3D
+
+   Die Architektur des F1 RPG kennt EINE Engine und mehrere Darstellungen:
+       simulateRace()  -> Sofort-Sim  |  Live-Ticker  |  ZIELFLAGGE
+   ZIELFLAGGE ist kein dritter Modus, sondern eine Spielart des Live-Tickers -
+   dieselbe Wahrheit, nur in 3D und mit Lenkrad. Dass es in einer eigenen Datei
+   liegt, ist Verpackung, nicht Architektur.
+
+   Der Live-Ticker kann simulateRace() direkt rufen, weil er im selben Dokument
+   sitzt. ZIELFLAGGE kann das nicht - es bekommt das Ergebnis GELIEFERT und
+   uebersetzt es hier in dieselbe Struktur, die die eigene Simulation zurueckgibt.
+   Dadurch bleibt die gesamte Animation unveraendert; es wechselt nur die Quelle.
+
+   Wie im Live-Ticker gilt: das Ergebnis steht fest, nur der WEG dorthin entsteht
+   hier. Der Rang wandert vom Startplatz zur Zielposition, das Rauschen laeuft
+   gegen Null, damit die Schlussrunde exakt die gelieferte Reihenfolge zeigt.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function simAusLieferung(ergebnis, drivers, laps, gridMap, playerId){
+  const BASE_LAP=30;
+  const cumulative={}, lapCumulative={}, retired={}, fastestLap={};
+
+  // Zielrang je Fahrer aus dem gelieferten Ergebnis
+  const ziel={}, faelltAus={}, grund={};
+  (ergebnis.results||[]).forEach(r=>{
+    const id=r.driver;
+    ziel[id]=r.position||99;
+    faelltAus[id]=!!r.dnf;
+    grund[id]=r.dnfReason||r.reasonRetired||null;
+  });
+
+  const feld=drivers.filter(d=>d.id!==playerId && ziel[d.id]!==undefined);
+  const gapProRang=BASE_LAP*0.012;
+
+  feld.forEach(d=>{
+    cumulative[d.id]=0; lapCumulative[d.id]=[];
+    const start=(gridMap&&gridMap[d.id])||ziel[d.id];
+    // Ausfallrunde ist DARSTELLUNG - ob, steht im gelieferten Ergebnis fest
+    const dnfLap=faelltAus[d.id] ? 1+Math.floor(Math.random()*Math.max(1,laps-1)) : null;
+    for(let lap=1; lap<=laps; lap++){
+      const f=lap/laps;
+      const rausch=(Math.random()-0.5)*1.2*(1-f);
+      const rang=start+(ziel[d.id]-start)*f+rausch;
+      const lapTime=BASE_LAP+rang*gapProRang;
+      if(dnfLap!==null && lap>=dnfLap){
+        const frac=clamp(0.1+Math.random()*0.8,0.05,0.95);
+        retired[d.id]={lap:dnfLap, reason:grund[d.id]||pickRetireReason(),
+                       time:cumulative[d.id]+lapTime*frac, fraction:frac};
+        break;
+      }
+      cumulative[d.id]+=lapTime;
+      lapCumulative[d.id].push(cumulative[d.id]);
+      if(!fastestLap[d.id]||lapTime<fastestLap[d.id]) fastestLap[d.id]=lapTime;
+    }
+  });
+
+  // Die Endzeiten muessen die gelieferte Reihenfolge EXAKT abbilden. Das Rauschen
+  // laeuft zwar gegen Null, kann in der Schlussrunde aber noch zwei Fahrer
+  // vertauschen - deshalb hier hart nachziehen statt hoffen.
+  const gewertet=feld.filter(d=>!retired[d.id]).sort((a,b)=>ziel[a.id]-ziel[b.id]);
+  let vorige=null;
+  gewertet.forEach(d=>{
+    if(vorige!==null && cumulative[d.id]<=vorige) cumulative[d.id]=vorige+0.05;
+    vorige=cumulative[d.id];
+    const lc=lapCumulative[d.id];
+    if(lc&&lc.length) lc[lc.length-1]=cumulative[d.id];
+  });
+
+  let bestLapVal=Infinity, bestLapId=null;
+  Object.entries(fastestLap).forEach(([id,v])=>{ if(v<bestLapVal){bestLapVal=v; bestLapId=id;} });
+  return {laps, cumulative, lapCumulative, retired, bestLapVal, bestLapId, ausLieferung:true};
+}
+
+/* NOTBEHELF: eigene Simulation, wenn KEIN Ergebnis geliefert wurde (Standalone-
+   Betrieb, etwa nach einem Import aus SEASON_DATA ohne laufendes Spiel).
+   Sie spiegelt die Engine des RPG so genau wie moeglich - aber sie ist eine
+   ZWEITE Wuerfelquelle und damit genau das, was im Live-Ticker gerade beseitigt
+   wurde. Sobald eine Lieferung vorliegt, hat die immer Vorrang. */
 function simulateRace(drivers,laps,playerId){
   const BASE_LAP=30; // Ziel-Rundenzeit in Echtzeit-Sekunden
   const team=d=>TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
@@ -1289,10 +1380,40 @@ function startRace(){
     alert('Bitte in der Box einen Fahrer auswählen, den du selbst steuern willst.'); return;
   }
   raceEnded=false; paused=false;
-  // Qualifying VOR initPlayer: der Spieler soll auf seinem erfahrenen Platz stehen
-  const quali=qualify(DRIVERS);
-  state.grid=quali.slice(0,GRID_MAX);
-  state.dnq=quali.slice(GRID_MAX);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LIEGT EIN GELIEFERTES ERGEBNIS VOR, IST AUCH DAS FELD ENTSCHIEDEN.
+  // Dann wird hier weder qualifiziert noch auf GRID_MAX gedeckelt - beides
+  // hat das RPG bereits getan. Wer hier nachfiltert, wirft Fahrer aus einem
+  // Rennen, das ohne sie nie stattgefunden haette (gemessen: 23 statt 30).
+  // ═══════════════════════════════════════════════════════════════════════
+  let quali;
+  if(state.lieferung){
+    const erg=state.lieferung.results||[];
+    // Startaufstellung: mitgeliefert, sonst aus der Ergebnisreihenfolge abgeleitet
+    const gridRoh=state.lieferung.grid;
+    const rangVon={};
+    if(Array.isArray(gridRoh)&&gridRoh.length){
+      gridRoh.forEach(g=>{ rangVon[g.driver||g.id]=g.position||g.grid; });
+    } else {
+      erg.slice().sort((a,b)=>(a.position||99)-(b.position||99))
+         .forEach((r,i)=>{ rangVon[r.driver]=i+1; });
+    }
+    const nachId={}; DRIVERS.forEach(d=>{ nachId[d.id]=d; });
+    quali=erg.map(r=>{
+      const d=nachId[r.driver];
+      return { id:r.driver, name:(d&&d.name)||r.name||r.driver,
+               team:(d&&d.team)||r.teamName||'Ohne Team',
+               sc:0, _grid:rangVon[r.driver]||99 };
+    }).sort((a,b)=>a._grid-b._grid);
+    state.grid=quali;
+    state.dnq=[];
+  } else {
+    // Qualifying VOR initPlayer: der Spieler soll auf seinem erfahrenen Platz stehen
+    quali=qualify(DRIVERS);
+    state.grid=quali.slice(0,GRID_MAX);
+    state.dnq=quali.slice(GRID_MAX);
+  }
   // Wer selbst faehrt, faellt nicht der Vorqualifikation zum Opfer: sonst waere das
   // Rennen ohne Zutun vorbei. Er rutscht dann auf den letzten Startplatz.
   state.playerWasDnq=false;
@@ -1305,12 +1426,22 @@ function startRace(){
   }
   // Nur das Startfeld bekommt Autos und faehrt mit
   state.starters=state.grid.map(q=>DRIVERS.find(d=>d.id===q.id)).filter(Boolean);
+  // Bei Lieferung darf kein Fahrer verloren gehen: wer im Ergebnis steht, faehrt.
+  if(state.lieferung && state.starters.length!==state.grid.length){
+    console.warn('ZIELFLAGGE: '+(state.grid.length-state.starters.length)+
+      ' gelieferte Fahrer fehlen im Kader - Import unvollstaendig?');
+  }
   buildCars(state.starters);
   state.gridSlots={};
   state.grid.forEach((q,i)=>{ state.gridSlots[q.id]=gridSlotFor(i); });
   renderGrid();
   initPlayer(state.playerDriverId);
-  aiSim=simulateRace(state.starters, state.laps, state.playerDriverId);
+  // Geliefertes Ergebnis hat IMMER Vorrang - dann wird hier nicht gewuerfelt.
+  const _gridMap={};
+  state.grid.forEach(q=>{ _gridMap[q.id]=state.grid.indexOf(q)+1; });
+  aiSim = state.lieferung
+    ? simAusLieferung(state.lieferung, state.starters, state.laps, _gridMap, state.playerDriverId)
+    : simulateRace(state.starters, state.laps, state.playerDriverId);
   buildAiAnimData(aiSim, state.starters, state.playerDriverId);
   raceClock=0;
   updateAICars(0);
@@ -1377,6 +1508,8 @@ function resetForNewRace(){
   racing=false; paused=false; raceEnded=false;
   player=null; aiSim=null; aiAnimData=null; state.finalClassification=null;
   state.aiScale=AI_MODI[state.aiMode]||1;
+  // state.lieferung bleibt: sie gehoert zum importierten Rennen, nicht zum Lauf.
+  // Ein Neustart faehrt dasselbe Rennen noch einmal - mit demselben Ergebnis.
   const _asi=document.getElementById('ai-scale-info');
   if(_asi) _asi.textContent = state.aiMode==='adaptiv' ? 'passt sich nach Runde 1 an' : '';
   document.getElementById('btn-start-race').style.display='inline-block';
