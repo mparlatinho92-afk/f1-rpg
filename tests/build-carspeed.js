@@ -4,6 +4,23 @@
  * Leitet Team-carSpeed aus F1DB-Konstrukteurs-Standings ab (Option A).
  * Unabhängig von Fahrer-Elo – rein auf Basis realer Konstrukteurs-Punkte.
  *
+ * ⚠⚠ WAS DIESE ZAHL NICHT IST (festgehalten 11.09.2026):
+ *   Konstrukteurspunkte sind das Ergebnis von AUTO UND FAHRER. Benetton 1995
+ *   hat 137 Punkte, weil Schumacher fuhr — daraus wird hier carSpeed 96, und
+ *   die schreiben wir dem WAGEN zu. "Unabhängig von Fahrer-Elo" stimmt formal
+ *   (kein Elo-Wert fliesst ein), aber die Trennung Fahrer/Auto ist damit NICHT
+ *   vollzogen — sie wird nur benannt.
+ *
+ *   Der einzige saubere Weg waere der TEAMKOLLEGEN-Vergleich: zwei Fahrer,
+ *   dasselbe Material, dieselben Rennen. Fittipaldi gegen Dave Walker im Lotus
+ *   72 sagt nichts ueber das Auto, aber alles ueber die beiden; umgekehrt
+ *   bildet der SCHWAECHERE Fahrer eines Teams das Auto ehrlicher ab als der
+ *   Star. Die Daten liegen bereit (F1DB-Ergebnisse, dazu h2hSeason/h2hCareer
+ *   im Spiel). Offene Baustelle, bewusst nicht angefasst.
+ *
+ *   Siehe tests/team-pace-herkunft.js — dort steht auch, ueber welche drei
+ *   Wege team.carSpeed im Spiel gesetzt wird.
+ *
  * Formel pro Jahr:
  *   raw = pts / yearMax                          (0..1, relativ zum Jahresbesten)
  *   carSpeed = round(CS_MIN + raw * (CS_MAX - CS_MIN))
