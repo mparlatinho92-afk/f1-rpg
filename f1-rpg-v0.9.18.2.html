@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.1</title>
+    <title>F1 RPG v0.9.18.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.1 (aktuell) - 10.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.2 (aktuell) - 10.09.2026</div>
+                            <div>&#8226; FIX: ZIELFLAGGE zeigte moderne Punkte (26 statt 9 fuer einen Sieg 1988) - die Lieferung bringt jetzt die Punktetabelle des Jahres mit</div>
+                            <div>&#8226; NEU: in ZIELFLAGGE stehen nur noch qualifizierte Fahrer zur Wahl, sortiert nach Startplatz</div>
+                            <div>&#8226; FIX: fehlende Umlaute in den Meldungen rund um den ZIELFLAGGE-Austausch</div>
+                            <div class="font-bold text-slate-400">v0.9.18.1 - 10.09.2026</div>
                             <div>&#8226; NEU: Rennmodus 'Selbst fahren' exportiert das Rennen für ZIELFLAGGE und liest das gefahrene Ergebnis zurück</div>
                             <div>&#8226; FIX: Indy 500 und US-GP in Indianapolis werden nicht mehr verwechselt (isIndy500/isIndyGP) - der US-GP 2005 hatte ein 33er-Feld</div>
                             <div>&#8226; NEU: Punkte für ZIELFLAGGE-Rennen vergibt das Spiel nach der Ära</div>
@@ -17650,7 +17654,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.1';
+        const VERSION = '0.9.18.2';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -27114,7 +27118,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             const p = GAME_STATE.pendingRaceResult;
             if (p && p.raceIndex === raceIndex) {
                 GAME_STATE.pendingRaceResult = null;   // genau einmal verwendbar
-                logInfo('RACE', 'Geparktes Ergebnis verwendet (ZIELFLAGGE-Export) — nicht neu gewuerfelt.');
+                logInfo('RACE', 'Geparktes Ergebnis verwendet (ZIELFLAGGE-Export) — nicht neu gewürfelt.');
                 return p.result;
             }
             return simulateRace(raceIndex, isRain);
@@ -27135,14 +27139,14 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // ═══════════════════════════════════════════════════════════════════
         window.uebernehmeZielflaggeErgebnis = function(rueck) {
             if (!rueck || rueck._format !== 'f1rpg-zielflagge-ergebnis') {
-                return { ok: false, grund: 'Das ist keine ZIELFLAGGE-Rueckgabe.' };
+                return { ok: false, grund: 'Das ist keine ZIELFLAGGE-Rückgabe.' };
             }
             if (!Array.isArray(rueck.reihenfolge) || !rueck.reihenfolge.length) {
-                return { ok: false, grund: 'Die Rueckgabe enthaelt keine Reihenfolge.' };
+                return { ok: false, grund: 'Die Rückgabe enthält keine Reihenfolge.' };
             }
             if (!rueck.ausLieferung) {
-                return { ok: false, grund: 'Dieses Rennen wurde in ZIELFLAGGE selbst gewuerfelt und '
-                    + 'gehoert zu keinem Spielstand. Es kann nicht uebernommen werden.' };
+                return { ok: false, grund: 'Dieses Rennen wurde in ZIELFLAGGE selbst gewürfelt und '
+                    + 'gehört zu keinem Spielstand. Es kann nicht übernommen werden.' };
             }
             const geparkt = GAME_STATE.pendingRaceResult;
             if (!geparkt) {
@@ -27150,7 +27154,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     + 'Wurde es zwischenzeitlich schon gefahren?' };
             }
             if (rueck.jahr !== GAME_STATE.currentYear || rueck.rennIndex !== geparkt.raceIndex) {
-                return { ok: false, grund: 'Die Rueckgabe gehoert zu ' + rueck.jahr + ' Rennen '
+                return { ok: false, grund: 'Die Rückgabe gehört zu ' + rueck.jahr + ' Rennen '
                     + ((rueck.rennIndex ?? 0) + 1) + ', vorbereitet ist ' + GAME_STATE.currentYear
                     + ' Rennen ' + (geparkt.raceIndex + 1) + '.' };
             }
@@ -27163,7 +27167,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             const unbekannt = rueck.reihenfolge.filter(x => !nachId[x.driver]);
             if (unbekannt.length) {
                 return { ok: false, grund: unbekannt.length + ' Fahrer der Rueckgabe kommen im '
-                    + 'vorbereiteten Rennen nicht vor - die Dateien gehoeren nicht zusammen.' };
+                    + 'vorbereiteten Rennen nicht vor — die Dateien gehören nicht zusammen.' };
             }
 
             // Neue Reihenfolge aufbauen, Originaldaten behalten
@@ -27199,7 +27203,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
 
             const sieger = neu.find(r => r.position === 1);
             const spieler = neu.find(r => r.gefahrenInZielflagge);
-            logSuccess('RACE', 'ZIELFLAGGE-Ergebnis uebernommen: ' + (original.raceName || '')
+            logSuccess('RACE', 'ZIELFLAGGE-Ergebnis übernommen: ' + (original.raceName || '')
                 + ' - Sieger ' + (sieger ? sieger.name : '?'));
             return {
                 ok: true, sieger: sieger ? sieger.name : null,
@@ -27219,7 +27223,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 leser.onload = function() {
                     let daten = null;
                     try { daten = JSON.parse(leser.result); }
-                    catch (e) { alert('Die Datei ist kein gueltiges JSON.'); return; }
+                    catch (e) { alert('Die Datei ist kein gültiges JSON.'); return; }
                     const r = uebernehmeZielflaggeErgebnis(daten);
                     if (!r.ok) { alert('Nicht uebernommen:\n\n' + r.grund); return; }
                     const s = r.spieler;
@@ -27251,7 +27255,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             simulateTraining(raceIndex);
             const qualiResult = simulateQualifying(raceIndex, isRain);
             const ergebnis = simulateRace(raceIndex, isRain);
-            if (!ergebnis) { alert('Das Rennen liess sich nicht rechnen.'); return; }
+            if (!ergebnis) { alert('Das Rennen ließ sich nicht rechnen.'); return; }
 
             // Parken: der naechste Rennstart nimmt genau dieses Ergebnis.
             GAME_STATE.pendingRaceResult = { raceIndex, result: ergebnis, isRain };
@@ -27281,6 +27285,10 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     version: VERSION, currentYear: GAME_STATE.currentYear, currentRace: raceIndex,
                     teams, drivers, driverStandings: GAME_STATE.driverStandings || {} } }),
                 JSON.stringify({ _t: 'rennen', _format: 'f1rpg-rennen', _v: 1,
+                    // Punktetabelle des Jahres mitgeben: ZIELFLAGGE kennt die Aera nicht
+                    // und rechnete sonst mit dem modernen Schema (25-18-15). Angezeigt
+                    // wuerden dann 26 Punkte fuer einen Sieg, den das Spiel mit 9 wertet.
+                    punkte: Array.from({ length: 12 }, (_, i) => getPointsForPosition(i + 1, GAME_STATE.currentYear)),
                     jahr: GAME_STATE.currentYear, rennIndex: raceIndex,
                     rennName: race.name, circuitId: race.circuitId || race.circuit,
                     runden: race.laps || 60, isRain,
@@ -27309,7 +27317,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             saveGame();
             alert('Rennen vorbereitet: ' + l.rennName + '\n\n' + l.fahrer + ' Fahrer.\n' +
                   'Die Datei ' + l.dateiname + ' in ZIELFLAGGE laden.\n\n' +
-                  'Das Ergebnis ist im Spielstand geparkt — beim naechsten Rennstart ' +
+                  'Das Ergebnis ist im Spielstand geparkt — beim nächsten Rennstart ' +
                   'wird es verwendet und nicht neu gewuerfelt.');
         };
 
