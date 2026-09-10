@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.2</title>
+    <title>F1 RPG v0.9.18.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.2 (aktuell) - 10.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.3 (aktuell) - 11.09.2026</div>
+                            <div>&#8226; FIX: Die Pace eines Fahrers faerbte auf JEDES Team ab, bei dem er unter Vertrag stand - Dallara hatte Pace 96, weil dort Schumacher fuhr</div>
+                            <div>&#8226; FIX: Damit wirkt das Car-Ceiling wieder - ein schwacher Wagen bremst seinen Fahrer, statt dessen Pace zu erben</div>
+                            <div>&#8226; NEU: tests/team-pace-herkunft.js prueft das und haelt fest, woher die Team-Pace ueberhaupt stammt</div>
+                            <div class="font-bold text-slate-400">v0.9.18.2 - 10.09.2026</div>
                             <div>&#8226; FIX: ZIELFLAGGE zeigte moderne Punkte (26 statt 9 fuer einen Sieg 1988) - die Lieferung bringt jetzt die Punktetabelle des Jahres mit</div>
                             <div>&#8226; NEU: in ZIELFLAGGE stehen nur noch qualifizierte Fahrer zur Wahl, sortiert nach Startplatz</div>
                             <div>&#8226; FIX: fehlende Umlaute in den Meldungen rund um den ZIELFLAGGE-Austausch</div>
@@ -17654,7 +17658,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.2';
+        const VERSION = '0.9.18.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19661,12 +19665,34 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 if (d.team !== teamId || !d.histId) continue;
                 const pr = PACE_RATINGS[d.histId]?.[yearStr];
                 if (!pr || pr[3] <= 0) continue;
-                // Prüfe ob Fahrer historisch bei diesem Team war – verhindert dass
-                // ein versetzter Fahrer (z.B. Cheever bei Lola) fremde carSpeed-Daten mitbringt
+                // ═══════════════════════════════════════════════════════════════
+                // WAR DIESER FAHRER HISTORISCH BEI DIESEM TEAM?
+                //
+                // pr[3] ist die carSpeed des WAGENS, in dem der Fahrer damals sass
+                // (Format PACE_RATINGS: [pace, potentialPace, consistency, carSpeed]).
+                // Schumacher 1995 = [95,98,75,96] — die 96 gehoert Benetton, nicht ihm.
+                // Sitzt er im Spiel bei Dallara, darf Dallara diese 96 NICHT erben.
+                //
+                // ⚠ Der Vergleich lief bis v0.9.18.3 ins Leere: `sd.d[i][0]` ist die
+                //   SEASON_DATA-KURZFORM ('NIGELM'), `driver.histId` der F1DB-SLUG
+                //   ('nigel-mansell'). Gemessen: 0 Treffer bei 39 Fahrern — histEntry
+                //   war IMMER undefined, die Bedingung `histEntry && ...` also immer
+                //   falsch, und JEDER Fahrer brachte seine carSpeed mit. Genau daher
+                //   der Nutzer-Report: Dallara Anfang der 90er mit Pace 96, weil dort
+                //   Schumacher unter Vertrag war — und sein Teamkollege profitierte.
+                //   Das hebelt zugleich das Car-Ceiling aus: das Auto kann einen
+                //   Fahrer nicht mehr bremsen, wenn es seine Pace geerbt hat.
+                //   Siehe reference_id_slug_shortid (drei Identitaetsformen).
+                //
+                // Verglichen wird deshalb ueber den NAMEN: 39 von 39 Treffern.
+                // Und wer sich NICHT zuordnen laesst, bringt nichts mit (`!histEntry`)
+                // — im Zweifel lieber kein Elo-Wert als ein fremder.
+                // ═══════════════════════════════════════════════════════════════
                 if (sd?.d) {
-                    if (!teamSdId) continue; // Team nicht in SEASON_DATA → kann nicht validieren → überspringen
-                    const histEntry = sd.d.find(e => e[0] === d.histId);
-                    if (histEntry && histEntry[2] !== teamSdId) continue; // Falsches Team → überspringen
+                    if (!teamSdId) continue; // Team nicht in SEASON_DATA → nicht pruefbar
+                    const histEntry = sd.d.find(e => e[1] === d.name)
+                                   || sd.d.find(e => e[0] === d.histId);   // Rueckfall
+                    if (!histEntry || histEntry[2] !== teamSdId) continue;
                 }
                 return pr[3];
             }

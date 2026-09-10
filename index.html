@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.2</title>
+    <title>F1 RPG v0.9.18.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.2 (aktuell) - 10.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.3 (aktuell) - 11.09.2026</div>
+                            <div>&#8226; FIX: Die Pace eines Fahrers faerbte auf JEDES Team ab, bei dem er unter Vertrag stand - Dallara hatte Pace 96, weil dort Schumacher fuhr</div>
+                            <div>&#8226; FIX: Damit wirkt das Car-Ceiling wieder - ein schwacher Wagen bremst seinen Fahrer, statt dessen Pace zu erben</div>
+                            <div>&#8226; NEU: tests/team-pace-herkunft.js prueft das und haelt fest, woher die Team-Pace ueberhaupt stammt</div>
+                            <div class="font-bold text-slate-400">v0.9.18.2 - 10.09.2026</div>
                             <div>&#8226; FIX: ZIELFLAGGE zeigte moderne Punkte (26 statt 9 fuer einen Sieg 1988) - die Lieferung bringt jetzt die Punktetabelle des Jahres mit</div>
                             <div>&#8226; NEU: in ZIELFLAGGE stehen nur noch qualifizierte Fahrer zur Wahl, sortiert nach Startplatz</div>
                             <div>&#8226; FIX: fehlende Umlaute in den Meldungen rund um den ZIELFLAGGE-Austausch</div>
@@ -4043,7 +4047,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.2';
+        const VERSION = '0.9.18.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
