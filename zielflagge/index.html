@@ -1446,15 +1446,24 @@ function showLeaderboard(){
 /* ============================= HUD & KLASSEMENT (live) ============================= */
 function tickHudAndLeaderboard(simTime){
   if(!player) return;
+  // Ausgefallene stehen unterhalb aller Fahrenden (-1000), untereinander aber
+  // nach GEFAHRENER Distanz: wer weiter kam, steht hoeher. Vorher stand hier
+  // -1000-lap, wodurch die Reihenfolge verkehrt herum lief (Runde 13 ueber
+  // Runde 20). Die Endwertung sortiert laengst richtig - nur das Live-
+  // Klassement lief dagegen.
   const rows=(state.starters||DRIVERS).map(d=>{
     if(d.id===player.id){
       const isRet=player.aborted;
-      const metric=isRet?(-1000-player.lap):(player.lap+player.frac);
+      const metric=isRet?(-1000+player.lap):(player.lap+player.frac);
       return {d, metric, isRet, isPlayer:true};
     } else {
       const prog=getProgressAI(d.id, simTime);
-      const isRet=!!(aiSim && aiSim.retired[d.id]);
-      const metric=(isRet&&prog.frozen)?(-1000-prog.lap):(prog.lap+prog.frac);
+      // ⚠ aiSim.retired sagt nur, OB jemand ausfaellt - nicht, ob es schon
+      // passiert ist. Ohne prog.frozen stand ein Fahrer ab der ersten Runde
+      // blass und mit "Ausfall" in der Liste, obwohl er noch fuhr und normal
+      // einsortiert wurde.
+      const isRet=!!(aiSim && aiSim.retired[d.id]) && prog.frozen;
+      const metric=isRet?(-1000+prog.lap+prog.frac):(prog.lap+prog.frac);
       return {d, metric, isRet, isPlayer:false};
     }
   }).sort((a,b)=>b.metric-a.metric);

@@ -91,7 +91,34 @@ function ladeSaison(jahr) {
       if (Math.abs(info.lateral) > halb) amRand++; else aufDerLinie++;
     }
 
+    // ── Regel 3: Klassement ────────────────────────────────────
+    // Mitten im Rennen darf niemand als "Ausfall" markiert sein, der noch faehrt.
+    raceClock = ende * 0.35;
+    updateAICars(raceClock); tickHudAndLeaderboard(raceClock);
+    let etikettZuFrueh = 0;
+    Array.from(document.querySelectorAll('.leaderboard-row')).forEach(el => {
+      if (el.querySelector('.gap').textContent.trim() !== 'Ausfall') return;
+      const nm = el.querySelector('.name').textContent.trim();
+      const d = (state.starters || DRIVERS).find(x => nm.indexOf(x.name) >= 0);
+      if (d && !getProgressAI(d.id, raceClock).frozen) etikettZuFrueh++;
+    });
+    // Am Ende: Ausgefallene unten, untereinander nach gefahrener Distanz.
+    raceClock = ende + 5;
+    updateAICars(raceClock); tickHudAndLeaderboard(raceClock);
+    const zeilen = Array.from(document.querySelectorAll('.leaderboard-row')).map((el, i) => {
+      const nm = el.querySelector('.name').textContent.trim();
+      const d = (state.starters || DRIVERS).find(x => nm.indexOf(x.name) >= 0);
+      const rr = d && aiSim.retired[d.id];
+      return { i, ausgefallen: !!rr, runde: rr ? rr.lap : null };
+    });
+    const letzterFahrende = Math.max.apply(null, zeilen.filter(z => !z.ausgefallen).map(z => z.i));
+    const ausUeberFahrenden = zeilen.filter(z => z.ausgefallen && z.i < letzterFahrende).length;
+    const runden = zeilen.filter(z => z.ausgefallen).map(z => z.runde);
+    let absteigend = true;
+    for (let i = 1; i < runden.length; i++) if (runden[i] > runden[i - 1]) absteigend = false;
+
     return {
+      etikettZuFrueh, ausUeberFahrenden, runden, absteigend,
       weg1: +weg1.toFixed(3), weg10: +weg10.toFixed(3),
       tempoNachKlick, hinweis: hinweis.length > 0, gesperrteKnoepfe,
       ausgefallen, aufDerLinie, amRand,
@@ -112,6 +139,12 @@ function ladeSaison(jahr) {
   pruefWahr('Ausfaelle vorhanden', r.ausgefallen > 0, r.ausgefallen + ' ausgefallen');
   pruefWahr('Keiner steht auf der Ideallinie', r.aufDerLinie === 0,
     r.amRand + ' am Rand, ' + r.aufDerLinie + ' auf der Linie');
+  pruefWahr('Kein "Ausfall" bei Fahrenden', r.etikettZuFrueh === 0,
+    r.etikettZuFrueh + ' zu frueh markiert');
+  pruefWahr('Ausgefallene stehen unten', r.ausUeberFahrenden === 0,
+    r.ausUeberFahrenden + ' ueber einem Fahrenden');
+  pruefWahr('Ausgefallene nach Distanz sortiert', r.absteigend,
+    'Ausfallrunden ' + r.runden.join(', '));
 
   console.log('=== ZIELFLAGGE: Tempo-Regel und Ausfall-Parken (' + JAHR + ') ===\n');
   p.forEach(x => console.log((x.ok ? '  OK  ' : ' FEHL ') + x.name.padEnd(38) + String(x.ist)));
