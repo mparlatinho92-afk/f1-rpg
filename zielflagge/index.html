@@ -11,6 +11,8 @@
 <script src="three.min.js"></script>
 <!-- Livery-Tabellen, erzeugt aus ../index.html via build-colors.js -->
 <script src="colors.js"></script>
+
+<script src="wagen.js"></script>
 <style>
 :root{
   --bg:#0b0c0e; --surface:#15171b; --surface2:#1b1e23; --line:#282b31;
@@ -1092,21 +1094,27 @@ function buildTrack(){
   sceneScene.add(sf);
 }
 
+/* Zweitfarbe erfinden, wenn die Livery nur einen Ton kennt. Ohne sie faellt
+   der Fluegel mit der Karosserie zusammen und die Aera ist nicht mehr ablesbar:
+   Endplatten und Seitenkasten sind genau die Teile, die sie zeigen. */
+function kontrastfarbe(hex){
+  const c=new THREE.Color(hex||'#888888');
+  const hell=(c.r*0.299+c.g*0.587+c.b*0.114);
+  return hell>0.45 ? '#1a1a1a' : '#e8e8e8';
+}
+
 function buildCars(drivers){
   Object.values(carMeshes).forEach(m=>sceneScene.remove(m.group));
   carMeshes={};
+  // Ohne Jahr kein Aera-Modell: 1988 ist der Mittelwert der Spanne, die der
+  // Nutzer als Zielbild genannt hat ("Ende 80er/Anfang 90er").
+  const jahr=Number(state.jahr)||1988;
   drivers.forEach(d=>{
-    const color=new THREE.Color((TEAMS[d.team]&&TEAMS[d.team].color)||'#ffffff');
-    const group=new THREE.Group();
-    const body=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.5,3.2), new THREE.MeshStandardMaterial({color}));
-    body.position.y=0.4; group.add(body);
-    const wing=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.15,0.5), new THREE.MeshStandardMaterial({color:0x111111}));
-    wing.position.set(0,0.6,-1.7); group.add(wing);
-    const wheelGeo=new THREE.CylinderGeometry(0.35,0.35,0.3,10);
-    [[-0.9,0.35,1.1],[0.9,0.35,1.1],[-0.9,0.35,-1.1],[0.9,0.35,-1.1]].forEach(pos=>{
-      const wheel=new THREE.Mesh(wheelGeo, new THREE.MeshStandardMaterial({color:0x0a0a0a}));
-      wheel.rotation.z=Math.PI/2; wheel.position.set(pos[0],pos[1],pos[2]); group.add(wheel);
-    });
+    const t=TEAMS[d.team]||{};
+    let farben=teamColorsFor(t.id, jahr, t.color);
+    if(!farben || !farben.length) farben=['#888888'];
+    if(farben.length<2) farben=[farben[0], kontrastfarbe(farben[0])];
+    const group=baueWagen(jahr, farben);
     sceneScene.add(group);
     const laneOffset=((hashStr(d.id)%100)/100-0.5)*4;
     carMeshes[d.id]={group, laneOffset, driver:d};
@@ -1472,7 +1480,15 @@ function startRace(){
     const idx=state.dnq.findIndex(q=>q.id===state.playerDriverId);
     if(idx>=0){
       state.playerWasDnq=true;
+      // TAUSCH, nicht Ueberschreiben: wer auf dem letzten Startplatz stand,
+      // wandert in die DNQ-Liste. Vorher wurde er einfach ersetzt und war
+      // danach weder im Grid noch bei den Nichtqualifizierten - ein Melder
+      // verschwand spurlos (Starter + DNQ = Melder - 1).
+      // Er kommt an den ANFANG der DNQ-Liste: sie ist nach Quali-Zeit
+      // sortiert, und er war schneller als alle darin.
+      const verdraengt=state.grid[state.grid.length-1];
       state.grid[state.grid.length-1]=state.dnq.splice(idx,1)[0];
+      if(verdraengt) state.dnq.unshift(verdraengt);
     }
   }
   // Nur das Startfeld bekommt Autos und faehrt mit
