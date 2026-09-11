@@ -115,15 +115,82 @@ function ladeSaison(jahr) {
     const gegnerId = Object.keys(carMeshes).find(id => id !== player.id);
     const g = carMeshes[gegnerId].group.position.clone();
     const gegnerVorher = g.clone();
+    // ⚠ Echtes AUFFAHREN, nicht in den Gegner hineinsetzen. Der Verlust
+    // haengt an der Annaeherungsgeschwindigkeit; wer im Gegner startet, naehert
+    // sich ihm nicht an und verliert deshalb zu Recht fast nichts.
     setzen(0.5, 30);
-    player.pos.set(g.x + 0.6, 0, g.z + 0.6);         // mitten im Gegner
+    const gd = new THREE.Vector3(Math.sin(player.heading), 0, Math.cos(player.heading));
+    player.pos.set(g.x - gd.x * 5.2, 0, g.z - gd.z * 5.2);   // 5,2 m dahinter
+    carMeshes[gegnerId].group.rotation.y = player.heading;
+    carMeshes[gegnerId].letztePos = null; carMeshes[gegnerId].versatz = null;
     const vVorher = player.speed;
-    updatePlayer(1 / 60);
+    let kontaktIrgendwann = false;
+    for (let i = 0; i < 12; i++) { updatePlayer(1 / 60); kontaktIrgendwann = kontaktIrgendwann || !!player.kontakt; }
     out.tempoNachKontakt = +player.speed.toFixed(1);
     out.tempoVorKontakt = +vVorher.toFixed(1);
-    out.kontaktErkannt = !!player.kontakt;
+    // ⚠ NICHT das letzte Bild abfragen: da sind die Wagen laengst getrennt
+    // und kontakt wieder false. Gemerkt wird, ob es waehrend der Anfahrt knallte.
+    out.kontaktErkannt = kontaktIrgendwann;
+    // ⚠ Die Ueberdeckung wird jetzt SCHRITTWEISE aufgeloest (Ueberdeckung
+    // schieben + abklingender Impuls), nicht in einem Sprung auf festen
+    // Abstand. Gemessen wird deshalb, wo die Trennung ankommt, nicht wo sie
+    // nach einem Bild steht. Die alte Schwelle "> 2 m" stammte vom Kreis
+    // mit 2,2 m Radius; bei der Kapsel sind 2,0 m der richtige Abstand.
+    // Tempo auf null: sonst misst die Zeile, wie weit der Wagen in 0,33 s
+    // wegfaehrt (12 m), nicht wie weit die Ueberdeckung aufgeloest wird.
+    player.speed = 0;
+    for (let i = 0; i < 20; i++) { player.speed = 0; updatePlayer(1 / 60); }
     out.abstandNachher = +Math.hypot(player.pos.x - g.x, player.pos.z - g.z).toFixed(2);
     out.gegnerUnbewegt = carMeshes[gegnerId].group.position.distanceTo(gegnerVorher) < 0.001;
+
+    // ── 2b. Nebeneinander darf NICHT beruehren ────────────────────────────
+    // Ein Wagen ist 4,5 m lang, aber nur 2,0 m breit. Mit dem alten Kreis
+    // (R 2,2) rempelten sich Nachbarn schon bei 4,4 m Abstand - auf dem Grid
+    // stehen sie 4,8 m auseinander, und beim Abbau des Startversatzes wurde
+    // der Spieler vom ganzen Feld durchgereicht.
+    const nebenAbstand = (abstand) => {
+      const pp = placeOnTrack(0.5, 0);
+      const t = curve.getTangentAt(0.5).normalize();
+      const n = new THREE.Vector3(-t.z, 0, t.x);
+      carMeshes[gegnerId].group.position.set(pp.pos.x, 0.05, pp.pos.z);
+      carMeshes[gegnerId].group.rotation.y = pp.heading;
+      player.pos.set(pp.pos.x + n.x * abstand, 0, pp.pos.z + n.z * abstand);
+      player.heading = pp.heading; player.speed = 30; player.steerNow = 0;
+      player.schub.set(0, 0, 0);
+      Object.keys(keys).forEach(k => { keys[k] = false; });
+      updatePlayer(1 / 60);
+      return !!player.kontakt;
+    };
+    out.nebenGridAbstand = nebenAbstand(4.8);   // Grid-Nachbarn: darf nicht
+    out.nebenEng = nebenAbstand(1.6);           // Rad an Rad: muss
+
+    // ── 2c. Kein Mitschleifen ─────────────────────────────────────────────
+    // Der Gegner faehrt weiter, der Spieler steht daneben. Frueher klebte er
+    // an dessen Oberflaeche und wurde mitgezogen ("wie ein Zug").
+    {
+      const pp = placeOnTrack(0.5, 0);
+      const t = curve.getTangentAt(0.5).normalize();
+      const n = new THREE.Vector3(-t.z, 0, t.x);
+      const gm = carMeshes[gegnerId].group;
+      gm.position.set(pp.pos.x, 0.05, pp.pos.z);
+      gm.rotation.y = pp.heading;
+      player.pos.set(pp.pos.x + n.x * 1.2, 0, pp.pos.z + n.z * 1.2);
+      player.heading = pp.heading; player.speed = 0; player.steerNow = 0;
+      player.schub.set(0, 0, 0);
+      Object.keys(keys).forEach(k => { keys[k] = false; });
+      const start = player.pos.clone();
+      // Gegner faehrt 1 s an ihm vorbei
+      for (let i = 0; i < 60; i++) {
+        gm.position.x += Math.sin(pp.heading) * 25 / 60;
+        gm.position.z += Math.cos(pp.heading) * 25 / 60;
+        updatePlayer(1 / 60);
+      }
+      const weg = player.pos.clone().sub(start);
+      const laengs = weg.x * Math.sin(pp.heading) + weg.z * Math.cos(pp.heading);
+      const quer = weg.x * n.x + weg.z * n.z;
+      out.mitgeschlepptLaengs = +laengs.toFixed(2);
+      out.weggedruecktQuer = +Math.abs(quer).toFixed(2);
+    }
 
     // ── 3. Mauer hinter der Auslaufzone ───────────────────────────────────
     const p2 = placeOnTrack(0.25, 0);
@@ -160,8 +227,14 @@ function ladeSaison(jahr) {
   pruefWahr('Beruehrung erkannt', r.kontaktErkannt, 'ja');
   pruefWahr('Beruehrung kostet Tempo', r.tempoNachKontakt < r.tempoVorKontakt * 0.95,
     r.tempoVorKontakt + ' auf ' + r.tempoNachKontakt + ' m/s');
-  pruefWahr('Wagen werden getrennt', r.abstandNachher > 2, r.abstandNachher + ' m');
+  pruefWahr('Wagen werden getrennt', r.abstandNachher >= 1.9, r.abstandNachher + ' m (Soll 2,0)');
   pruefWahr('Gegner bleibt auf seinem Plan', r.gegnerUnbewegt, 'unbewegt');
+  pruefWahr('Grid-Nachbarn rempeln nicht', !r.nebenGridAbstand, '4,8 m Abstand: kein Kontakt');
+  pruefWahr('Rad an Rad beruehrt', r.nebenEng, '1,6 m Abstand: Kontakt');
+  pruefWahr('Kein Mitschleifen', Math.abs(r.mitgeschlepptLaengs) < 4,
+    r.mitgeschlepptLaengs + ' m laengs mitgenommen');
+  pruefWahr('Wird zur Seite gedrueckt', r.weggedruecktQuer > 0.3,
+    r.weggedruecktQuer + ' m quer');
   pruefWahr('Mauer haelt', r.maxAussen <= r.mauerBei + 0.5,
     r.maxAussen + ' m erreicht, Mauer bei ' + r.mauerBei + ' m');
 

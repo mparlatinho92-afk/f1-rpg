@@ -59,6 +59,9 @@ function ladeSaison(jahr) {
       raceSpeed = tempo;
       player.pos.copy(p0); player.heading = h0;
       player.speed = 0; player.lap = 0; player.frac = 0;
+      // ⚠ Auch den Ausweichimpuls zuruecksetzen: er ueberlebt sonst den
+      // ersten Durchgang und verfaelscht den zweiten um 0,6 %.
+      if (player.schub) player.schub.set(0, 0, 0);
       keys['ArrowUp'] = true;
       for (let i = 0; i < 60; i++) updatePlayer(1 / 60);   // genau 1 Sekunde
       keys['ArrowUp'] = false;

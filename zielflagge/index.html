@@ -805,7 +805,16 @@ const GRID_FADE_S=10;      // ueber so viele Sekunden verschwindet der Startvers
    Spaeter wird das je Aera und Wagen verschieden sein (Fluegel = mehr Grip). */
 const GRIP=30;
 const LENK_MAX=2.4;        // rad/s - Begrenzung fuer Schritttempo und Rueckwaerts
-const KOLLI_R=2.2;         // m - Wagen als Kreis, fuer die Beruehrungspruefung
+/* Kollisionsform. Ein einzelner Kreis war falsch: mit 2,2 m Radius beruehrten
+   sich zwei Wagen schon bei 4,4 m Mittenabstand. Auf dem Grid stehen Nachbarn
+   4,8 m auseinander - beim Abbau des Startversatzes rutschten sie darunter und
+   das ganze Feld rempelte den Spieler durch.
+   Ein Formel-1-Wagen ist lang und schmal (1988: 4,5 x 2,0 m). Deshalb drei
+   Kreise entlang der Laengsachse: nebeneinander beruehren sich Wagen erst bei
+   2,0 m, hintereinander bei 4,5 m - so wie es sein soll. */
+const KOLLI_HALB=1.25;     // m - Abstand Bug bzw. Heck zur Wagenmitte
+const KOLLI_BREIT=1.0;     // m - halbe Wagenbreite
+const KOLLI_NAH=7;         // m - Vorpruefung, darueber kann nichts beruehren
 const AUSLAUF=12;          // m - hinter dem Randstein, danach kommt die Mauer
 const GRID_MAX=26;         // Startplaetze; wer langsamer qualifiziert, ist DNQ
 
@@ -1336,21 +1345,60 @@ function updatePlayer(dt){
   // deshalb immer nur den Spieler. Das ist keine Bequemlichkeit, sondern die
   // Folge davon, dass ZIELFLAGGE ein Ergebnis animiert statt eines zu wuerfeln.
   player.kontakt=false;
+  if(!player.schub) player.schub=new THREE.Vector3();
+  const meine=[-KOLLI_HALB,0,KOLLI_HALB].map(o=>({
+    x:player.pos.x+dir.x*o, z:player.pos.z+dir.z*o }));
   for(const id in carMeshes){
     if(id===player.id) continue;
-    const o=carMeshes[id].group.position;
-    const dx=player.pos.x-o.x, dz=player.pos.z-o.z;
-    const d2=dx*dx+dz*dz;
-    if(d2>=KOLLI_R*KOLLI_R || d2<1e-9) continue;
-    const d=Math.sqrt(d2);
-    // aus der Ueberdeckung schieben
-    player.pos.x=o.x+dx/d*KOLLI_R;
-    player.pos.z=o.z+dz/d*KOLLI_R;
-    // Frontal kostet mehr als ein Streifschuss: Winkel zwischen Fahrtrichtung
-    // und Stossrichtung entscheidet.
-    const frontal=clamp(-(dir.x*dx/d+dir.z*dz/d),0,1);
-    player.speed*=1-0.45*frontal-0.10;
+    const cm=carMeshes[id];
+    const o=cm.group.position;
+    if(Math.abs(player.pos.x-o.x)>KOLLI_NAH||Math.abs(player.pos.z-o.z)>KOLLI_NAH) continue;
+    const oh=cm.group.rotation.y;
+    const od={x:Math.sin(oh), z:Math.cos(oh)};
+    // groesste Ueberdeckung aller Kreispaare suchen
+    let tiefe=0, nx=0, nz=0;
+    for(const a of meine){
+      for(const b of [-KOLLI_HALB,0,KOLLI_HALB]){
+        const bx=o.x+od.x*b, bz=o.z+od.z*b;
+        const ddx=a.x-bx, ddz=a.z-bz;
+        const dd=Math.hypot(ddx,ddz);
+        if(dd>=KOLLI_BREIT*2||dd<1e-6) continue;
+        const t=KOLLI_BREIT*2-dd;
+        if(t>tiefe){ tiefe=t; nx=ddx/dd; nz=ddz/dd; }
+      }
+    }
+    if(tiefe<=0) continue;
+    // Nur um die Ueberdeckung schieben - nicht auf einen festen Abstand
+    // setzen. Das alte Setzen klebte den Spieler an die Oberflaeche des
+    // Gegners: der fuhr weiter und schleppte ihn mit, und beim Einlenken
+    // drehte die Schubrichtung mit (das Wackeln in der Kurve).
+    player.pos.x+=nx*tiefe; player.pos.z+=nz*tiefe;
+    // Dazu ein Impuls, der ueber die naechsten Bilder abklingt. Ohne ihn
+    // faehrt der Spieler sofort wieder hinein, weil sein Tempo ausschliesslich
+    // laengs wirkt und er gar keine Moeglichkeit hat, seitlich wegzukommen.
+    player.schub.x+=nx*tiefe*9; player.schub.z+=nz*tiefe*9;
+    // Tempoverlust aus der ANNAEHERUNG, nicht aus der Resttiefe. Zwei falsche
+    // Fassungen lagen davor:
+    //   1. fester Faktor je Bild - wer eine halbe Sekunde nebenherfuhr, verlor
+    //      0,96^30 = 70 %, und bei 120 Bildern/s doppelt so viel wie bei 60.
+    //   2. Faktor mal Tiefe mal dt - die Ueberdeckung wird aber jedes Bild
+    //      sofort aufgeloest, also ist die Tiefe ab dem zweiten Bild null und
+    //      selbst ein harter Treffer kostete nichts.
+    // Richtig ist die Geschwindigkeit, mit der die Wagen aufeinander zukommen:
+    // laengs nebeneinander herfahren kostet nichts, auffahren viel.
+    const vg=cm.versatz?cm.versatz:null;
+    const vgx=vg?vg.x/Math.max(dt,1e-4):0, vgz=vg?vg.z/Math.max(dt,1e-4):0;
+    const annaeherung=(dir.x*player.speed-vgx)*(-nx)+(dir.z*player.speed-vgz)*(-nz);
+    const frontal=clamp(-(dir.x*nx+dir.z*nz),0,1);
+    if(annaeherung>0.5){
+      player.speed=Math.max(0, player.speed-annaeherung*(0.22+0.5*frontal));
+    }
     player.kontakt=true;
+  }
+  // Ausweichimpuls anwenden und abklingen lassen
+  if(player.schub.lengthSq()>1e-6){
+    player.pos.addScaledVector(player.schub, dt);
+    player.schub.multiplyScalar(Math.max(0,1-dt*6));
   }
 
   // ══ STRECKENBEGRENZUNG ═════════════════════════════════════════════════
@@ -1432,6 +1480,11 @@ function updateAICars(simTime){
       while(dk<-Math.PI) dk+=Math.PI*2;
       ph=state.uebergabeKurs+dk*w;
     }
+    // Weg dieses Bildes merken - daraus ergibt sich die Geschwindigkeit des
+    // Gegners, und nur mit ihr laesst sich eine Beruehrung bewerten: laengs
+    // nebeneinander herfahren ist keine Kollision, auffahren schon.
+    if(cm.letztePos) cm.versatz=new THREE.Vector3(px-cm.letztePos.x,0,pz-cm.letztePos.z);
+    cm.letztePos=new THREE.Vector3(px,0,pz);
     cm.group.position.set(px,0.05,pz);
     cm.group.rotation.y=ph;
     // Rundenzaehler des Spielers mitfuehren, sonst steht er still, waehrend der
