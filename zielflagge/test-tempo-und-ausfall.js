@@ -1,0 +1,124 @@
+/* Prueft zwei Regeln, die der Nutzer gesetzt hat:
+ *   1. Selbst fahren ist IMMER Echtzeit - Zeitraffer gilt nur dem Feld.
+ *   2. Ausgefallene Wagen stehen nicht mehr auf der Ideallinie.
+ *
+ *   node zielflagge/test-tempo-und-ausfall.js [jahr]
+ *
+ * Die Echtzeit-Probe misst den zurueckgelegten Weg des eigenen Wagens bei
+ * gleichem dt und verschiedenen raceSpeed-Werten. Frueher skalierte
+ * animateLoop auch updatePlayer mit - bei 2x beschleunigte der eigene Wagen
+ * doppelt so schnell.
+ */
+const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+const HTML = 'file:///' + path.join(__dirname, 'index.html').split(String.fromCharCode(92)).join('/');
+const JAHR = process.argv[2] || '1988';
+
+function ladeSaison(jahr) {
+  const src = fs.readFileSync(path.join(ROOT, 'data', 'seasons.js'), 'utf8');
+  const SD = new Function(src + '; return SEASON_DATA;')();
+  return { [jahr]: SD[jahr] };
+}
+
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  const fehler = [];
+  page.on('pageerror', e => fehler.push('PAGEERROR: ' + e.message));
+  page.on('console', m => { if (m.type() === 'error') fehler.push('CONSOLE: ' + m.text()); });
+
+  await page.goto(HTML, { waitUntil: 'load' });
+  await page.waitForTimeout(900);
+
+  // Rennen aufsetzen. 30 Runden, damit ueberhaupt jemand ausfaellt - mit drei
+  // Runden bleibt das Feld vollstaendig und die Ausfall-Probe misst nichts.
+  await page.evaluate((txt) => {
+    applyImportResult(parseImportedText(txt));
+    state.playerDriverId = DRIVERS[5].id;
+    state.laps = 30;
+    startRace();
+  }, JSON.stringify(ladeSaison(JAHR)));
+
+  // ⚠ Zwei Fallen auf einmal, beide beim ersten Entwurf getreten:
+  //   1. racing wird erst NACH dem Countdown (3x800 ms) true. Wer vorher misst,
+  //      findet spielerFaehrt()===false und haelt die Echtzeit-Sperre
+  //      faelschlich fuer kaputt.
+  //   2. racing ist mit "let" deklariert und landet damit NICHT auf window -
+  //      window.racing ist immer undefined. Ohne Praefix abfragen.
+  //      (Dieselbe Falle wie liveRaceState im Hauptprojekt, siehe CLAUDE.md.)
+  await page.waitForFunction(() => racing === true, null, { timeout: 15000 });
+
+  const r = await page.evaluate(() => {
+    // ── Regel 1: Weg des eigenen Wagens haengt NICHT an raceSpeed ──────────
+    // Vollstaendig gleicher Ausgangszustand, nur raceSpeed unterscheidet sich.
+    const p0 = player.pos.clone(), h0 = player.heading;
+    const wegBei = (tempo) => {
+      raceSpeed = tempo;
+      player.pos.copy(p0); player.heading = h0;
+      player.speed = 0; player.lap = 0; player.frac = 0;
+      keys['ArrowUp'] = true;
+      for (let i = 0; i < 60; i++) updatePlayer(1 / 60);   // genau 1 Sekunde
+      keys['ArrowUp'] = false;
+      return player.pos.distanceTo(p0);
+    };
+    const weg1 = wegBei(1);
+    const weg10 = wegBei(10);
+    player.pos.copy(p0); player.heading = h0; player.speed = 0;
+
+    // setSpeed darf waehrend der Fahrt gar nicht erst hochschalten
+    raceSpeed = 1;
+    setSpeed(10);
+    const tempoNachKlick = raceSpeed;
+    const hinweis = (document.getElementById('tempo-info') || {}).textContent || '';
+    const gesperrteKnoepfe = Array.from(document.querySelectorAll('.speedbtn'))
+      .filter(b => +b.dataset.speed > 1 && b.disabled).length;
+
+    // ── Regel 2: Ausgefallene stehen neben der Bahn ────────────────────────
+    const ende = Math.max.apply(null, Object.values(aiAnimData).map(a => a.endTime || 0));
+    updateAICars(ende + 5);
+    const halb = trackHalfWidth();
+    let ausgefallen = 0, aufDerLinie = 0, amRand = 0;
+    for (const id in carMeshes) {
+      if (player && id === player.id) continue;
+      if (!(aiSim.retired && aiSim.retired[id])) continue;
+      const prog = getProgressAI(id, ende + 5);
+      if (!prog.frozen) continue;
+      ausgefallen++;
+      const info = nearestTrackInfo(carMeshes[id].group.position);
+      if (Math.abs(info.lateral) > halb) amRand++; else aufDerLinie++;
+    }
+
+    return {
+      weg1: +weg1.toFixed(3), weg10: +weg10.toFixed(3),
+      tempoNachKlick, hinweis: hinweis.length > 0, gesperrteKnoepfe,
+      ausgefallen, aufDerLinie, amRand,
+      stufen: document.querySelectorAll('.speedbtn').length
+    };
+  });
+
+  const p = [];
+  const pruefWahr = (name, bed, hinweis) => p.push({ name, ist: hinweis, ok: !!bed });
+
+  pruefWahr('Vier Tempo-Stufen', r.stufen === 4, r.stufen + ' Knoepfe');
+  pruefWahr('Eigener Weg unabhaengig vom Tempo',
+    Math.abs(r.weg1 - r.weg10) < 0.01, r.weg1 + ' m bei 1x, ' + r.weg10 + ' m bei 10x');
+  pruefWahr('Hochschalten waehrend der Fahrt gesperrt', r.tempoNachKlick === 1,
+    'raceSpeed blieb ' + r.tempoNachKlick);
+  pruefWahr('Sperre wird begruendet', r.hinweis, r.hinweis ? 'Hinweis steht' : 'kein Hinweis');
+  pruefWahr('Hoehere Stufen ausgegraut', r.gesperrteKnoepfe === 3, r.gesperrteKnoepfe + ' von 3 gesperrt');
+  pruefWahr('Ausfaelle vorhanden', r.ausgefallen > 0, r.ausgefallen + ' ausgefallen');
+  pruefWahr('Keiner steht auf der Ideallinie', r.aufDerLinie === 0,
+    r.amRand + ' am Rand, ' + r.aufDerLinie + ' auf der Linie');
+
+  console.log('=== ZIELFLAGGE: Tempo-Regel und Ausfall-Parken (' + JAHR + ') ===\n');
+  p.forEach(x => console.log((x.ok ? '  OK  ' : ' FEHL ') + x.name.padEnd(38) + String(x.ist)));
+  console.log('\nSkriptfehler: ' + (fehler.length ? fehler.join(' | ') : 'keine'));
+
+  await browser.close();
+  const schlecht = p.filter(x => !x.ok).length;
+  console.log(schlecht ? '\n' + schlecht + ' PRUEFUNG(EN) FEHLGESCHLAGEN' : '\nALLES GRUEN');
+  process.exit(schlecht ? 1 : 0);
+})();

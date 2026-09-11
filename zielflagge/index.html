@@ -161,6 +161,9 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
           <span id="ai-scale-info" class="legend" style="margin-left:0;"></span>
           <button class="btn speedbtn active" data-speed="1" onclick="setSpeed(1)">1×</button>
           <button class="btn speedbtn" data-speed="2" onclick="setSpeed(2)">2×</button>
+          <button class="btn speedbtn" data-speed="5" onclick="setSpeed(5)">5×</button>
+          <button class="btn speedbtn" data-speed="10" onclick="setSpeed(10)">10×</button>
+          <span id="tempo-info" class="legend" style="margin-left:0;"></span>
           <button class="btn ghost" onclick="camFollowId=null;">🎮 Meine Kamera</button>
           <span class="legend">↑/W Gas · ↓/S Bremse · ←/A →/D Lenken · R = Neustart · Maus ziehen = umschauen · Rad = Zoom</span>
         </div>
@@ -1299,10 +1302,23 @@ function updateAICars(simTime){
     const prog=getProgressAI(id, simTime);
     let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fade;
     if(u<0) u+=1;
-    const lateral=slot.lateral*fade + cm.laneOffset*(1-fade);
+    let lateral=slot.lateral*fade + cm.laneOffset*(1-fade);
+    let schraeg=0;
+    if(prog.frozen){
+      // Ausgefallene standen bisher fuer den Rest des Rennens auf der
+      // Ideallinie - mitten im Weg. Sie werden jetzt an den Streckenrand
+      // gestellt und leicht quer, wie ein abgestellter Wagen aussieht.
+      // Seite und Winkel haengen an der Fahrer-ID, damit sie nicht flackern.
+      if(cm.abstellSeite===undefined){
+        cm.abstellSeite=(hashStr(id)%2)?1:-1;
+        cm.abstellWinkel=((hashStr(id)%7)-3)*0.10;
+      }
+      lateral=cm.abstellSeite*(trackHalfWidth()+2.5);
+      schraeg=cm.abstellWinkel;
+    }
     const placed=placeOnTrack(u, lateral);
     cm.group.position.set(placed.pos.x,0.05,placed.pos.z);
-    cm.group.rotation.y=placed.heading;
+    cm.group.rotation.y=placed.heading+schraeg;
   }
 }
 
@@ -1410,8 +1426,12 @@ function animateLoop(){
   if(racing && !paused && currentView==='track'){
     const sdt=dt*raceSpeed;
     raceClock+=sdt;
-    updatePlayer(sdt);
+    // dt statt sdt: der eigene Wagen faehrt in Echtzeit, auch wenn eine hoehere
+    // Stufe aktiv waere. setSpeed laesst das zwar gar nicht erst zu - hier steht
+    // es als zweite Sicherung, damit kein neuer Pfad die Regel aushebeln kann.
+    updatePlayer(dt);
     updateAICars(raceClock);
+    tempoKnoepfeAktualisieren();
     lbTimer+=dt;
     if(lbTimer>0.12){ lbTimer=0; tickHudAndLeaderboard(raceClock); }
   }
@@ -1548,9 +1568,35 @@ function setAiMode(m){
   const el=document.getElementById('ai-scale-info');
   if(el) el.textContent = m==='adaptiv' ? 'passt sich nach Runde 1 an' : '\u00d7'+state.aiScale.toFixed(2);
 }
+/* Sitzt der Spieler gerade selbst am Steuer? Dann gilt Echtzeit. */
+function spielerFaehrt(){
+  return !!(racing && player && !player.finished && !player.aborted);
+}
 function setSpeed(s){
+  // Nutzer-Regel: "bei beiden Versionen ist das selbst Fahren immer Echtzeit,
+  // also 1x". Zeitraffer gilt dem simulierten Feld - nie dem eigenen Wagen.
+  // Vorher skalierte animateLoop auch updatePlayer mit: bei 2x beschleunigte
+  // der eigene Wagen doppelt so schnell, das war keine Echtzeit mehr.
+  if(s>1 && spielerFaehrt()){
+    tempoHinweis('Solange du selbst fährst, läuft das Rennen in Echtzeit.');
+    return;
+  }
   raceSpeed=s;
+  tempoHinweis('');
   document.querySelectorAll('.speedbtn').forEach(b=>b.classList.toggle('active', +b.dataset.speed===s));
+}
+function tempoHinweis(txt){
+  const el=document.getElementById('tempo-info');
+  if(el) el.textContent=txt;
+}
+/* Knoepfe ueber 1x ausgrauen, solange der Spieler faehrt - sonst sieht die
+   Leiste nach einem kaputten Knopf aus statt nach einer Regel. */
+function tempoKnoepfeAktualisieren(){
+  const gesperrt=spielerFaehrt();
+  document.querySelectorAll('.speedbtn').forEach(b=>{
+    if(+b.dataset.speed>1){ b.disabled=gesperrt; b.style.opacity=gesperrt?0.4:1; }
+  });
+  if(gesperrt && raceSpeed!==1) setSpeed(1);
 }
 function confirmRestart(){
   // Waehrend der Fahrt ist ein versehentlicher Neustart teuer - deshalb nachfragen.
