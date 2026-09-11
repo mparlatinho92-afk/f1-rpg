@@ -1436,7 +1436,76 @@ function updatePlayer(dt){
   const cm=carMeshes[player.id];
   if(cm){ cm.group.position.set(player.pos.x,0.05,player.pos.z); cm.group.rotation.y=player.heading; }
 }
-function updateAICars(simTime){
+/* Laengsabstand zweier Streckenanteile in Metern, vorzeichenbehaftet.
+   Positiv heisst: a liegt vor b. Der Umweg ueber +1.5/-0.5 faengt den
+   Rundenuebergang ab (0.99 und 0.01 sind 20 m auseinander, nicht 820). */
+function laengsAbstand(a, b){
+  return (((a - b + 1.5) % 1) - 0.5) * trackLength;
+}
+
+/* ═══════════════ SEITLICHE FREIHEIT: HIER ENTSTEHEN ZWEIKAEMPFE ═══════════
+   Der Plan legt die LAENGSposition jedes Gegners fest - daran haengt das
+   Ergebnis, und daran wird nicht gerueckt. Wo ein Wagen QUER zur Bahn faehrt,
+   sagt der Plan nichts. Genau dort ist Platz zum Spielen: ausweichen,
+   verteidigen, nebeneinander durch eine Kurve.
+
+   Nutzer-Bild dazu: "es gibt ein drehbuch, aber ZIELFLAGGE gibt die
+   Moeglichkeit dagegen zu agieren." Das Drehbuch bleibt das Ergebnis; was
+   dagegen agiert, ist alles, was nicht im Drehbuch steht.
+
+   Nebeneffekt, der ein gemeldeter Fehler war: die Gegner fuhren bisher stur
+   durch den Spieler hindurch und schoben ihn beiseite - beim Start wurde er
+   dadurch vom ganzen Feld durchgereicht. Jetzt weichen sie ihm aus. */
+function seitlichesZiel(id, cm, u, basis){
+  const rand=trackHalfWidth()-1.2;
+  let ziel=basis;
+
+  // 1) Dem Spieler ausweichen.
+  //    Das Fenster nach HINTEN ist weit (35 m): wer von hinten kommt, faehrt
+  //    bei 28 m/s in 1,3 s heran und muss frueh anfangen zu ziehen. Mit den
+  //    urspruenglichen 10 m blieben 0,36 s Vorwarnung - viel zu wenig, der
+  //    Spieler wurde beim Start weiter angerempelt.
+  //    Und es wird ein ZIEL gesetzt, nicht nur genudgt: halb ausweichen heisst
+  //    treffen.
+  if(player && carMeshes[player.id] && id!==player.id){
+    const dl=laengsAbstand(u, player.frac);      // >0: Gegner liegt vorn
+    if(dl>-35 && dl<8){
+      const pq=nearestTrackInfo(player.pos).lateral;
+      const eigen=(cm.seitlich!==undefined)?cm.seitlich:basis;
+      if(Math.abs(eigen-pq)<2.9){
+        // Zur Seite mit mehr Platz - am Rand ginge es sonst in die Mauer.
+        const platzLinks=rand-pq, platzRechts=pq+rand;
+        const seite=(Math.abs(eigen-pq)<0.3) ? (platzLinks>=platzRechts?1:-1)
+                                             : (eigen>=pq?1:-1);
+        const noetig=pq+seite*2.9;
+        // Je naeher, desto entschiedener - aus der Ferne nur leicht anlegen.
+        const naehe=clamp(1-Math.abs(dl)/35,0.25,1);
+        ziel=ziel+(noetig-ziel)*naehe;
+      }
+    }
+  }
+
+  // 2) Abstand zu anderen Gegnern. Ohne das fahren zwei Wagen mit aehnlichem
+  //    Plan ineinander - sichtbar als ein Wagen mit acht Raedern.
+  for(const oid in carMeshes){
+    if(oid===id || (player && oid===player.id)) continue;
+    const o=carMeshes[oid];
+    if(o.planU===undefined) continue;
+    const dl=laengsAbstand(u, o.planU);
+    if(Math.abs(dl)>7) continue;
+    const dq=(cm.seitlich!==undefined?cm.seitlich:basis)-(o.seitlich!==undefined?o.seitlich:0);
+    if(Math.abs(dq)>2.4) continue;
+    const staerke=(1-Math.abs(dl)/7)*1.5;
+    // Bei exakt gleicher Hoehe entscheidet die ID, damit sich zwei Wagen nicht
+    // gegenseitig in dieselbe Richtung druecken.
+    const seite=Math.abs(dq)<0.05 ? ((hashStr(id)%2)?1:-1) : (dq>0?1:-1);
+    ziel+=seite*staerke;
+  }
+  return clamp(ziel, -rand, rand);
+}
+
+function updateAICars(simTime, dt){
+  dt=dt||1/60;
   // Vor dem Start (simTime<=0) stehen alle auf ihrem Grid-Slot; danach schmilzt
   // der Versatz linear weg, damit die Wertung aus simulateRace unberuehrt bleibt.
   const fade=clamp(1-Math.max(simTime,0)/GRID_FADE_S,0,1);
@@ -1452,8 +1521,20 @@ function updateAICars(simTime){
     const prog=getProgressAI(id, istSpieler ? simTime-(state.planVersatz||0) : simTime);
     let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fadeHier;
     if(u<0) u+=1;
-    let lateral=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
+    const basis=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
+    cm.planU=u;
+    let lateral=basis;
     let schraeg=0;
+    if(!istSpieler && !prog.frozen){
+      // Ziel weich anfahren, nicht springen: ein Wagen rutscht nicht seitwaerts.
+      const ziel=seitlichesZiel(id, cm, u, basis);
+      const vorher=(cm.seitlich!==undefined)?cm.seitlich:basis;
+      cm.seitlich=vorher+(ziel-vorher)*Math.min(1, dt*3.5);
+      lateral=cm.seitlich;
+      // Aus der Querbewegung einen kleinen Lenkwinkel machen, sonst schiebt
+      // der Wagen seitwaerts wie auf Eis.
+      schraeg=clamp((cm.seitlich-vorher)/Math.max(dt,1e-3)/14, -0.3, 0.3);
+    }
     if(prog.frozen){
       // Ausgefallene standen bisher fuer den Rest des Rennens auf der
       // Ideallinie - mitten im Weg. Sie werden jetzt an den Streckenrand
@@ -1625,7 +1706,7 @@ function animateLoop(){
     // es als zweite Sicherung, damit kein neuer Pfad die Regel aushebeln kann.
     uebernahmeTicken();
     updatePlayer(dt);
-    updateAICars(raceClock);
+    updateAICars(raceClock, sdt);
     tempoKnoepfeAktualisieren();
     lbTimer+=dt;
     if(lbTimer>0.12){ lbTimer=0; tickHudAndLeaderboard(raceClock); }
