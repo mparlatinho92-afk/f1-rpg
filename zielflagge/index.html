@@ -796,6 +796,17 @@ const GRID_ROW_GAP=9;      // Laengsabstand zweier Reihen
 const GRID_SIDE=2.4;       // seitlicher Versatz zur Mittellinie
 const GRID_STAGGER=3.5;    // ungerade Startplaetze stehen etwas zurueck
 const GRID_FADE_S=10;      // ueber so viele Sekunden verschwindet der Startversatz
+/* Querbeschleunigung in m/s^2 - die Zahl, aus der Bremspunkte ENTSTEHEN.
+   Ein Wagen kann eine Kurve vom Radius R hoechstens mit v = sqrt(GRIP*R)
+   nehmen. Bei 30 liegt der Grenzradius bei Hoechsttempo (41 m/s) auf 57 m;
+   der Median dieser Strecke sind 59 m, die engste Kurve 8 m. Schnelle
+   Passagen bleiben also voll, enge Kurven zwingen zum Bremsen.
+   Gemessen mit: node zielflagge/test-strecke.js <grip>
+   Spaeter wird das je Aera und Wagen verschieden sein (Fluegel = mehr Grip). */
+const GRIP=30;
+const LENK_MAX=2.4;        // rad/s - Begrenzung fuer Schritttempo und Rueckwaerts
+const KOLLI_R=2.2;         // m - Wagen als Kreis, fuer die Beruehrungspruefung
+const AUSLAUF=12;          // m - hinter dem Randstein, danach kommt die Mauer
 const GRID_MAX=26;         // Startplaetze; wer langsamer qualifiziert, ist DNQ
 
 function qualify(drivers){
@@ -1297,20 +1308,67 @@ function updatePlayer(dt){
   player.speed=clamp(player.speed,-maxSpeed*0.35,curMax);
   if(Math.abs(player.speed)<0.05 && throttle===0) player.speed=0;
 
-  // Lenkung: unten herum bleibt Rest-Einschlag (vorher stand das Auto bei
-  // langsamer Fahrt praktisch quer zur Eingabe), oben herum wird sie ruhiger.
-  const speedFactor=clamp(0.35+Math.abs(player.speed)/(maxSpeed*0.30)*0.65,0.35,1);
   // Einschlag laeuft weich auf den Zielwert zu - das nimmt das Zappelige raus,
   // ohne den Eindruck von Verzoegerung zu erzeugen.
   player.steerNow=(player.steerNow||0)+(steer-(player.steerNow||0))*Math.min(1,dt*11);
-  const turnRate=player.steerNow*2.35*speedFactor*(offTrack?0.85:1)*(player.speed<0?-1:1);
+
+  // ══ HAFTGRENZE: hier entstehen die Bremspunkte ══════════════════════════
+  // Querbeschleunigung ist v * Drehrate. Mehr als GRIP geht nicht, also sinkt
+  // die moegliche Drehrate mit dem Tempo: schnell = traeger. Vorher stand hier
+  // das Gegenteil (speedFactor STIEG mit dem Tempo) - damit liess sich jede
+  // Kurve voll nehmen, und Bremsen war nie noetig.
+  // Wer zu schnell in die Kurve faehrt, schiebt jetzt ueber die Vorderachse
+  // nach aussen - das muss niemand skripten, es faellt aus der Grenze heraus.
+  const v=Math.abs(player.speed);
+  const griffHier=GRIP*(offTrack?0.55:1);     // neben der Bahn ist wenig Haftung
+  const drehMax=Math.min(LENK_MAX, griffHier/Math.max(v,3));
+  const turnRate=player.steerNow*drehMax*(player.speed<0?-1:1);
   player.heading+=turnRate*dt;
+  // Wie nah an der Grenze? Fuer Anzeige und Reifenqualm spaeter.
+  player.griffLast=clamp(Math.abs(turnRate)*v/GRIP,0,1.5);
 
   const dir=new THREE.Vector3(Math.sin(player.heading),0,Math.cos(player.heading));
   player.pos.addScaledVector(dir, player.speed*dt);
 
+  // ══ BERUEHRUNGEN ═══════════════════════════════════════════════════════
+  // Die Gegner fahren ihren Plan und lassen sich NICHT abdraengen - ihr
+  // Ergebnis steht fest, bevor das Rennen beginnt. Eine Beruehrung kostet
+  // deshalb immer nur den Spieler. Das ist keine Bequemlichkeit, sondern die
+  // Folge davon, dass ZIELFLAGGE ein Ergebnis animiert statt eines zu wuerfeln.
+  player.kontakt=false;
+  for(const id in carMeshes){
+    if(id===player.id) continue;
+    const o=carMeshes[id].group.position;
+    const dx=player.pos.x-o.x, dz=player.pos.z-o.z;
+    const d2=dx*dx+dz*dz;
+    if(d2>=KOLLI_R*KOLLI_R || d2<1e-9) continue;
+    const d=Math.sqrt(d2);
+    // aus der Ueberdeckung schieben
+    player.pos.x=o.x+dx/d*KOLLI_R;
+    player.pos.z=o.z+dz/d*KOLLI_R;
+    // Frontal kostet mehr als ein Streifschuss: Winkel zwischen Fahrtrichtung
+    // und Stossrichtung entscheidet.
+    const frontal=clamp(-(dir.x*dx/d+dir.z*dz/d),0,1);
+    player.speed*=1-0.45*frontal-0.10;
+    player.kontakt=true;
+  }
+
+  // ══ STRECKENBEGRENZUNG ═════════════════════════════════════════════════
+  // Auslaufzone bremst (das gab es schon), dahinter steht die Mauer. Ohne sie
+  // konnte man quer durchs Gelaende abkuerzen.
+  const infoNach=nearestTrackInfo(player.pos);
+  const grenze=trackHalfWidth()+AUSLAUF;
+  if(Math.abs(infoNach.lateral)>grenze){
+    const t=infoNach.tangent;
+    const n=new THREE.Vector3(-t.z,0,t.x);
+    const zurueck=(Math.abs(infoNach.lateral)-grenze)*Math.sign(infoNach.lateral);
+    player.pos.addScaledVector(n,-zurueck);
+    player.speed*=0.30;
+    player.kontakt=true;
+  }
+
   const prevFrac=player.frac;
-  player.frac=info.frac;
+  player.frac=infoNach.frac;
   if(prevFrac>0.85 && player.frac<0.15){
     const lapTime=raceClock-player.lapStartTime;
     if(lapTime>6){

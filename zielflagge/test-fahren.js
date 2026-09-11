@@ -62,8 +62,14 @@ function ladeSaison(jahr) {
   // Lenktest gegen die Kamerabasis
   const lenk = await page.evaluate(() => {
     const probe = (taste) => {
-      // definierter Ausgangszustand
-      player.pos.set(0, 0, 0); player.heading = 0; player.speed = 25;
+      // definierter Ausgangszustand AUF DER BAHN.
+      // ⚠ Frueher stand hier player.pos.set(0,0,0) - der Weltursprung liegt
+      // mitten im Infeld, also hinter der Streckenbegrenzung. Seit es dort eine
+      // Mauer gibt, schiebt die den Wagen jeden Frame zurueck und ueberlagert
+      // die Lenkung: das Heading blieb korrekt und symmetrisch, der gemessene
+      // Versatz war in BEIDE Richtungen negativ.
+      const auf = placeOnTrack(0.5, 0);
+      player.pos.set(auf.pos.x, 0, auf.pos.z); player.heading = auf.heading; player.speed = 25;
       player.steerNow = 0;   // sonst schleppt Probe 2 den Einschlag von Probe 1 mit
       player.finished = false; player.aborted = false;
       Object.keys(keys).forEach(k => keys[k] = false);
