@@ -50,6 +50,9 @@ main{flex:1;display:flex;overflow:hidden;position:relative;min-height:0;}
 .hud-chip span.lbl{font-family:var(--mono);font-size:9.5px;color:var(--muted);display:block;font-weight:400;letter-spacing:.3px;}
 
 #countdown-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-family:var(--display);font-size:min(22vw,150px);font-weight:700;color:var(--amber);text-shadow:0 0 40px rgba(255,176,32,.55);pointer-events:none;background:rgba(0,0,0,0.12);}
+#uebernahme-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;
+  font-family:var(--display);font-size:min(7vw,46px);font-weight:700;color:var(--amber);
+  text-shadow:0 0 30px rgba(255,176,32,.5);pointer-events:none;}
 #flag-overlay{position:absolute;top:60px;left:50%;transform:translateX(-50%);font-family:var(--display);font-size:26px;font-weight:700;color:var(--green);background:rgba(21,23,27,.9);border:1px solid var(--line);padding:8px 22px;border-radius:4px;display:none;}
 
 .controls-bar{position:absolute;bottom:14px;left:14px;right:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -147,8 +150,15 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
         </div>
         <div id="countdown-overlay"></div>
         <div id="flag-overlay">🏁 Ziel!</div>
+        <div id="uebernahme-overlay"></div>
         <div class="controls-bar">
           <button class="btn primary" id="btn-start-race" onclick="startRace()">▶ Rennen starten</button>
+          <select id="start-modus" class="btn" title="Womit das Rennen beginnt">
+            <option value="mensch" selected>Start: selbst fahren</option>
+            <option value="ki">Start: Autopilot</option>
+          </select>
+          <button class="btn" id="btn-fahrer" onclick="fahrerUmschalten()">🤖 Autopilot</button>
+          <span id="fahrer-info" class="legend" style="margin-left:0;"></span>
           <button class="btn" id="btn-abort-race" onclick="confirmAbort()" style="display:none;">🚩 Abbrechen</button>
           <button class="btn" id="btn-restart" onclick="confirmRestart()" style="display:none;">↻ Neustart</button>
           <button class="btn" id="btn-playpause" onclick="togglePlay()" disabled>⏸ Pause</button>
@@ -165,7 +175,7 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
           <button class="btn speedbtn" data-speed="10" onclick="setSpeed(10)">10×</button>
           <span id="tempo-info" class="legend" style="margin-left:0;"></span>
           <button class="btn ghost" onclick="camFollowId=null;">🎮 Meine Kamera</button>
-          <span class="legend">↑/W Gas · ↓/S Bremse · ←/A →/D Lenken · R = Neustart · Maus ziehen = umschauen · Rad = Zoom</span>
+          <span class="legend">↑/W Gas · ↓/S Bremse · ←/A →/D Lenken · E = Autopilot an/aus · R = Neustart · Maus ziehen = umschauen · Rad = Zoom</span>
         </div>
       </div>
       <aside class="sidebar">
@@ -907,6 +917,24 @@ function simAusLieferung(ergebnis, drivers, laps, gridMap, playerId){
     if(lc&&lc.length) lc[lc.length-1]=cumulative[d.id];
   });
 
+  // Plan fuer den SPIELERWAGEN - nur als Vorlage fuer den Autopiloten.
+  // Bewusst NACH dem Nachziehen oben und NICHT in "gewertet": dort werden die
+  // Endzeiten auf die gelieferte Reihenfolge gezwungen. Der Spielerslot bleibt
+  // frei, sein Ergebnis entsteht aus dem, was tatsaechlich gefahren wurde.
+  // Auch nicht in fastestLap: die schnellste Runde soll er sich erfahren.
+  const spieler=drivers.find(d=>d.id===playerId);
+  if(spieler){
+    cumulative[playerId]=0; lapCumulative[playerId]=[];
+    const start=(gridMap&&gridMap[playerId])||ziel[playerId]||drivers.length;
+    const zielRang=ziel[playerId]!==undefined?ziel[playerId]:start;
+    for(let lap=1; lap<=laps; lap++){
+      const f=lap/laps;
+      const rang=start+(zielRang-start)*f+(Math.random()-0.5)*1.2*(1-f);
+      cumulative[playerId]+=BASE_LAP+rang*gapProRang;
+      lapCumulative[playerId].push(cumulative[playerId]);
+    }
+  }
+
   let bestLapVal=Infinity, bestLapId=null;
   Object.entries(fastestLap).forEach(([id,v])=>{ if(v<bestLapVal){bestLapVal=v; bestLapId=id;} });
   return {laps, cumulative, lapCumulative, retired, bestLapVal, bestLapId, ausLieferung:true};
@@ -923,14 +951,15 @@ function simulateRace(drivers,laps,playerId){
   // Wie im RPG faellt die Renn-Performance EINMAL pro Fahrer und Rennen, nicht
   // je Runde neu - sonst mittelt sich der schlechte Tag ueber die Distanz weg.
   const rennPerf={};
-  drivers.forEach(d=>{ if(d.id!==playerId) rennPerf[d.id]=rollPerformance(d,team(d)); });
+  drivers.forEach(d=>{ rennPerf[d.id]=rollPerformance(d,team(d)); });
   const cumulative={}, lapCumulative={};
-  drivers.forEach(d=>{ if(d.id!==playerId){ cumulative[d.id]=0; lapCumulative[d.id]=[]; } });
+  drivers.forEach(d=>{ cumulative[d.id]=0; lapCumulative[d.id]=[]; });
   const retired={}, fastestLap={};
 
   for(let lap=1; lap<=laps; lap++){
     drivers.forEach(d=>{
-      if(d.id===playerId || retired[d.id]) return;
+      if(retired[d.id]) return;
+      const istSpieler=(d.id===playerId);
       const t=team(d);
       const perf=rennPerf[d.id]/100;
       const idealLap=BASE_LAP-perf*6;
@@ -938,7 +967,10 @@ function simulateRace(drivers,laps,playerId){
       const sigma=clamp((100-d.consistency)/100,0.05,1)*0.30;
       const lapTime=Math.max(idealLap+gaussian(0,sigma), idealLap*0.85);
       const relScore=t.reliability; // im F1 RPG sitzt Zuverlaessigkeit ausschliesslich am Team
-      const dnfChance=0.02*(1-relScore/100);
+      // Kein DNF-Wurf fuer den Spielerwagen: sein Plan ist nur die Vorlage fuer
+      // den Autopiloten. Aufgeben kann er selbst, ausfallen soll er nicht,
+      // waehrend er zuschaut.
+      const dnfChance=istSpieler?0:0.02*(1-relScore/100);
       if(Math.random()<dnfChance){
         const frac=clamp(0.1+Math.random()*0.8,0.05,0.95);
         retired[d.id]={lap, reason:pickRetireReason(), time:cumulative[d.id]+lapTime*frac, fraction:frac};
@@ -946,7 +978,8 @@ function simulateRace(drivers,laps,playerId){
       }
       cumulative[d.id]+=lapTime;
       lapCumulative[d.id].push(cumulative[d.id]);
-      if(!fastestLap[d.id]||lapTime<fastestLap[d.id]) fastestLap[d.id]=lapTime;
+      // Schnellste Runde soll sich der Spieler erfahren, nicht sein Plan.
+      if(!istSpieler && (!fastestLap[d.id]||lapTime<fastestLap[d.id])) fastestLap[d.id]=lapTime;
     });
   }
   let bestLapVal=Infinity, bestLapId=null;
@@ -956,7 +989,8 @@ function simulateRace(drivers,laps,playerId){
 function buildAiAnimData(sim, drivers, playerId){
   aiAnimData = {};
   drivers.forEach(d=>{
-    if(d.id===playerId) return;
+    // Der Spieler ist jetzt DABEI: sein Plan ist die Vorlage, nach der der
+    // Autopilot seinen Wagen faehrt, solange er nicht selbst am Steuer sitzt.
     const segs=[]; let prev=0;
     (sim.lapCumulative[d.id]||[]).forEach((endT,idx)=>{ segs.push({lapIndex:idx,startT:prev,endT}); prev=endT; });
     if(sim.retired[d.id]){
@@ -1194,6 +1228,7 @@ window.addEventListener('keydown', e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   // R startet neu, P pausiert - beides nur, wenn ueberhaupt ein Rennen laeuft
   if(e.code==='KeyR' && !e.repeat && (racing||raceEnded)){ e.preventDefault(); confirmRestart(); return; }
+  if(e.code==='KeyE' && !e.repeat && racing){ e.preventDefault(); fahrerUmschalten(); return; }
   if(e.code==='KeyP' && !e.repeat && racing){ e.preventDefault(); togglePlay(); return; }
   keys[e.code]=true;
 });
@@ -1226,6 +1261,10 @@ function initPlayer(driverId){
 }
 function updatePlayer(dt){
   if(!player||player.finished||player.aborted) return;
+  // Waehrend des Autopiloten faehrt updateAICars den Wagen - auch noch waehrend
+  // der Drei-Sekunden-Uebernahme. Sonst haette der Spieler die Lenkung schon,
+  // bevor der Countdown abgelaufen ist, und genau das soll er nicht.
+  if(state.autopilot) return;
   const throttle=(keys['ArrowUp']||keys['KeyW'])?1:((keys['ArrowDown']||keys['KeyS'])?-1:0);
   // Vorzeichen absichtlich andersherum als die Taste: heading zaehlt ueber
   // atan2(x,z), und aus der Verfolgerkamera (Blick entlang +dir, oben +Y) liegt
@@ -1296,13 +1335,18 @@ function updateAICars(simTime){
   // der Versatz linear weg, damit die Wertung aus simulateRace unberuehrt bleibt.
   const fade=clamp(1-Math.max(simTime,0)/GRID_FADE_S,0,1);
   for(const id in carMeshes){
-    if(player && id===player.id) continue;
+    const istSpieler=!!(player && id===player.id);
+    // Der eigene Wagen wird hier nur bewegt, solange der Autopilot faehrt.
+    if(istSpieler && !state.autopilot) continue;
     const cm=carMeshes[id];
     const slot=(state.gridSlots&&state.gridSlots[id])||{back:5,lateral:cm.laneOffset};
-    const prog=getProgressAI(id, simTime);
-    let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fade;
+    const fadeHier=(istSpieler && state.planOhneGrid) ? 0 : fade;
+    // Planuhr des Spielerwagens ist um seinen Rueckstand verschoben, damit beim
+    // Abgeben kein Sprung entsteht.
+    const prog=getProgressAI(id, istSpieler ? simTime-(state.planVersatz||0) : simTime);
+    let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fadeHier;
     if(u<0) u+=1;
-    let lateral=slot.lateral*fade + cm.laneOffset*(1-fade);
+    let lateral=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
     let schraeg=0;
     if(prog.frozen){
       // Ausgefallene standen bisher fuer den Rest des Rennens auf der
@@ -1317,8 +1361,38 @@ function updateAICars(simTime){
       schraeg=cm.abstellWinkel;
     }
     const placed=placeOnTrack(u, lateral);
-    cm.group.position.set(placed.pos.x,0.05,placed.pos.z);
-    cm.group.rotation.y=placed.heading+schraeg;
+    let px=placed.pos.x, pz=placed.pos.z, ph=placed.heading+schraeg;
+    if(istSpieler && state.uebergabeBis && raceClock<state.uebergabeBis){
+      // weich von der eigenen Position auf die Ideallinie, statt zu springen
+      const rest=(state.uebergabeBis-raceClock)/1.2;
+      const g=clamp(1-rest,0,1);
+      const w=g*g*(3-2*g);                       // sanft rein, sanft raus
+      px=state.uebergabeVon.x+(px-state.uebergabeVon.x)*w;
+      pz=state.uebergabeVon.z+(pz-state.uebergabeVon.z)*w;
+      let dk=ph-state.uebergabeKurs;
+      while(dk>Math.PI) dk-=Math.PI*2;
+      while(dk<-Math.PI) dk+=Math.PI*2;
+      ph=state.uebergabeKurs+dk*w;
+    }
+    cm.group.position.set(px,0.05,pz);
+    cm.group.rotation.y=ph;
+    // Rundenzaehler des Spielers mitfuehren, sonst steht er still, waehrend der
+    // Autopilot faehrt - und das Ziel waere nie erreicht.
+    if(istSpieler){
+      if(prog.lap>player.lap){
+        player.lap=prog.lap;
+        player.lapStartTime=raceClock;
+        if(player.lap>=state.laps && !player.finished){
+          player.finished=true;
+          document.getElementById('flag-overlay').style.display='block';
+          setTimeout(()=>{ document.getElementById('flag-overlay').style.display='none'; },2500);
+          onPlayerFinished();
+        }
+      }
+      player.frac=prog.frac;
+      player.pos.set(placed.pos.x,0,placed.pos.z);
+      player.heading=placed.heading;
+    }
   }
 }
 
@@ -1429,6 +1503,7 @@ function animateLoop(){
     // dt statt sdt: der eigene Wagen faehrt in Echtzeit, auch wenn eine hoehere
     // Stufe aktiv waere. setSpeed laesst das zwar gar nicht erst zu - hier steht
     // es als zweite Sicherung, damit kein neuer Pfad die Regel aushebeln kann.
+    uebernahmeTicken();
     updatePlayer(dt);
     updateAICars(raceClock);
     tempoKnoepfeAktualisieren();
@@ -1457,6 +1532,14 @@ function startRace(){
   }
 
   raceEnded=false; paused=false;
+
+  // Womit das Rennen beginnt, entscheidet der Nutzer vor dem Start.
+  const modusWahl=document.getElementById('start-modus');
+  state.autopilot = !!(modusWahl && modusWahl.value==='ki');
+  state.uebernahmeBis = null;
+  state.planVersatz = 0;
+  state.planOhneGrid = false;
+  state.uebergabeBis = 0;
 
   // ═══════════════════════════════════════════════════════════════════════
   // LIEGT EIN GELIEFERTES ERGEBNIS VOR, IST AUCH DAS FELD ENTSCHIEDEN.
@@ -1519,6 +1602,7 @@ function startRace(){
       ' gelieferte Fahrer fehlen im Kader - Import unvollstaendig?');
   }
   buildCars(state.starters);
+  fahrerHinweis();
   state.gridSlots={};
   state.grid.forEach((q,i)=>{ state.gridSlots[q.id]=gridSlotFor(i); });
   renderGrid();
@@ -1568,9 +1652,104 @@ function setAiMode(m){
   const el=document.getElementById('ai-scale-info');
   if(el) el.textContent = m==='adaptiv' ? 'passt sich nach Runde 1 an' : '\u00d7'+state.aiScale.toFixed(2);
 }
+/* AUTOPILOT ODER SELBST FAHREN
+   Prinzip wie in anderen Rennspielen: frei umschaltbar. Beim Start waehlst du,
+   womit es losgeht. Der Wechsel Autopilot -> Mensch bekommt drei Sekunden
+   Vorlauf, damit die Uebernahme dich nicht mitten in einer Kurve erwischt;
+   umgekehrt geht es sofort, denn abgeben ist nie gefaehrlich.
+   Fuer das Ergebnis ist egal, wer gefahren ist - das Umschalten ist eine Art
+   zu interagieren, keine Wertungsmechanik (Nutzer-Vorgabe). */
+
 /* Sitzt der Spieler gerade selbst am Steuer? Dann gilt Echtzeit. */
 function spielerFaehrt(){
-  return !!(racing && player && !player.finished && !player.aborted);
+  return !!(racing && player && !player.finished && !player.aborted
+            && (!state.autopilot || state.uebernahmeBis!==null));
+}
+
+/* Planzeit, zu der der Plan den Wagen an genau dieser Stelle hat. Ohne diese
+   Umkehrung springt der Wagen beim Abgeben auf die Planposition. */
+function planZeitFuer(id, lap, frac){
+  const a=aiAnimData && aiAnimData[id];
+  if(!a || !a.segs.length) return 0;
+  const seg=a.segs[Math.min(lap, a.segs.length-1)];
+  if(!seg) return 0;
+  return seg.startT + clamp(frac,0,1)*(seg.endT-seg.startT);
+}
+
+/* Abgeben: sofort. Die Planuhr wird um den eigenen Rueckstand verschoben,
+   damit der Wagen dort weiterfaehrt, wo er steht - statt auf die Planposition
+   zu springen. Der erfahrene Vorsprung oder Rueckstand bleibt erhalten. */
+function autopilotUebernehmen(){
+  if(!racing || !player || player.finished || player.aborted) return;
+  state.planVersatz = raceClock - planZeitFuer(player.id, player.lap, player.frac);
+  // Ab jetzt ohne Startaufstellungs-Versatz: der zieht in den ersten zehn
+  // Sekunden jeden Wagen um seinen Gridplatz zurueck. planZeitFuer rechnet aber
+  // nur die reine Streckenposition um - beides zusammen ergab beim Abgeben
+  // einen Sprung von bis zu 79 m. Der Versatz gehoert zum stehenden Start,
+  // nicht zu einer Uebergabe mitten im Rennen.
+  state.planOhneGrid = true;
+  // Der Autopilot faehrt die Ideallinie. Wer neben der Bahn abgibt, wuerde
+  // sonst dorthin springen - gemessen bis zu 50 m. Deshalb ueber 1,2 Sekunden
+  // zurueckgleiten. Die STRECKENposition stimmt dabei von Anfang an, nur die
+  // seitliche Abweichung wird weggeblendet.
+  state.uebergabeVon = player.pos.clone();
+  state.uebergabeKurs = player.heading;
+  state.uebergabeBis = raceClock + 1.2;
+  state.autopilot = true;
+  state.uebernahmeBis = null;
+  // keys ist const - Inhalt leeren, nicht neu zuweisen. Sonst bleibt Gas
+  // gedrueckt haengen, wenn beim Abgeben eine Taste unten war.
+  Object.keys(keys).forEach(k=>{ keys[k]=false; });
+  fahrerHinweis();
+}
+
+/* Zurueckholen: drei Sekunden Countdown, erst danach reagiert die Lenkung. */
+function selbstUebernehmen(){
+  if(!racing || !player || player.finished || player.aborted) return;
+  if(!state.autopilot || state.uebernahmeBis!==null) return;
+  state.uebernahmeBis = raceClock + 3;
+  fahrerHinweis();
+}
+
+/* Laeuft einmal je Bild: schliesst eine angemeldete Uebernahme ab. */
+function uebernahmeTicken(){
+  if(state.uebernahmeBis===null || !player) return;
+  const rest=state.uebernahmeBis-raceClock;
+  const el=document.getElementById('uebernahme-overlay');
+  if(rest>0){
+    if(el){ el.style.display='block'; el.textContent='Du \u00fcbernimmst in '+Math.ceil(rest); }
+    return;
+  }
+  if(el) el.style.display='none';
+  // Der Wagen steht dort, wo der Autopilot ihn gelassen hat - Position und
+  // Blickrichtung von dort uebernehmen, sonst setzt der Spieler woanders auf.
+  const cm=carMeshes[player.id];
+  if(cm){
+    player.pos.set(cm.group.position.x,0,cm.group.position.z);
+    player.heading=cm.group.rotation.y;
+    player.frac=nearestTrackInfo(player.pos).frac;
+  }
+  // Mit Schwung uebernehmen statt aus dem Stand: das Tempo der Planrunde.
+  const a=aiAnimData && aiAnimData[player.id];
+  const seg=a && a.segs[Math.min(player.lap, a.segs.length-1)];
+  player.speed=trackLength/Math.max(seg?seg.endT-seg.startT:30, 1);
+  state.autopilot=false;
+  state.uebernahmeBis=null;
+  fahrerHinweis();
+}
+
+function fahrerHinweis(){
+  const btn=document.getElementById('btn-fahrer');
+  if(btn){
+    btn.textContent = state.autopilot ? '\ud83c\udfae Ich \u00fcbernehme' : '\ud83e\udd16 Autopilot';
+    btn.classList.toggle('primary', !!state.autopilot);
+  }
+  const el=document.getElementById('fahrer-info');
+  if(el) el.textContent = state.uebernahmeBis!==null ? '\u00dcbernahme l\u00e4uft \u2026'
+    : (state.autopilot ? 'Autopilot f\u00e4hrt' : 'Du f\u00e4hrst');
+}
+function fahrerUmschalten(){
+  if(state.autopilot) selbstUebernehmen(); else autopilotUebernehmen();
 }
 function setSpeed(s){
   // Nutzer-Regel: "bei beiden Versionen ist das selbst Fahren immer Echtzeit,
@@ -1618,6 +1797,10 @@ function onPlayerFinished(){
   finalizeAndShowResults();
 }
 function resetForNewRace(){
+  state.uebernahmeBis=null; state.planVersatz=0; state.planOhneGrid=false;
+  state.uebergabeBis=0;
+  const uo=document.getElementById('uebernahme-overlay');
+  if(uo) uo.style.display='none';
   racing=false; paused=false; raceEnded=false;
   player=null; aiSim=null; aiAnimData=null; state.finalClassification=null;
   state.aiScale=AI_MODI[state.aiMode]||1;
