@@ -1402,7 +1402,17 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
          verschoben - also gar keine Rennlinien, sondern Parallelspuren, die
          die Kurve nicht anschnitten. */
       const q=(i+(scheitelVersatz||0)+N*4)%N;
-      const f=(skala[q]>1e-9 ? clamp(roh[q]/skala[q],-1,1) : 0)*maxAb;
+      /* ⚠ UEBERSTEUERN, dann kappen - und die Sperre gegen Schlaengeln auf
+         Geraden anwenden. Ohne den Faktor erreicht die Form den Rand nur an
+         einem einzigen Punkt und faellt sofort wieder ab: die Linie streift
+         den Randstein, statt an ihm entlangzufahren. Gemessen lag sie bei
+         hoechstens 5,8 m von 6,35 m moeglichen, und KEIN einziger Punkt der
+         Runde am Rand.
+         Mit Faktor 1,8 saettigt sie schon vorher und bleibt ueber eine ganze
+         Strecke aussen bzw. innen liegen - so wie die handgezeichnete Linie
+         des Nutzers: aussen am Randstein hinein, innen am Randstein durch den
+         Scheitel, aussen wieder hinaus. */
+      const f=(skala[q]>1e-9 ? clamp(roh[q]/skala[q]*1.8,-1,1) : 0)*maxAb*amplitude[q];
       form0[i]=clamp(f, Math.max(u,-maxAb), Math.min(o,maxAb));
     }
     void besteStaerke;
