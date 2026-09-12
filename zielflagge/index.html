@@ -1198,7 +1198,11 @@ function initScene(){
    sonst entstuende eine zackige Linie, die nur den Rechner gluecklich macht. */
 function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
   const N=spaced.length;
-  const maxAb=TRACK_WIDTH/2-1.4;
+  /* Rand: ein Wagen ist 2 m breit, seine halbe Breite also 1,0 m. Mit 1,15 m
+     steht das Rad genau an der Linie - so faehrt man eine Kurve wirklich an.
+     Vorher standen hier 1,4 m, und selbst bei vollem Ausschlag blieb der Wagen
+     damit einen Meter vom Randstein weg. */
+  const maxAb=TRACK_WIDTH/2-1.15;
   /* 40 Stuetzstellen. Mehr ist nicht besser: mit 60 fand die Suche bei
      gleichem Aufwand nur noch 0,45 s statt 1,02 s Gewinn, mit 90 gar nichts
      mehr. Jede zusaetzliche Stuetzstelle vergroessert den Suchraum, und die
@@ -1312,14 +1316,43 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
     };
     const scharf=glaetten(kr, Math.max(2,Math.round(N/120)));
     const breit =glaetten(kr, Math.max(6,Math.round(N/16)));
-    let gr=0;
-    for(let i=0;i<N;i++) gr=Math.max(gr, Math.abs(scharf[i]-breit[i]));
+    /* ⚠ ORTLICH normieren, nicht ueber die ganze Runde.
+       Mit einem einzigen Maximum fuer die gesamte Strecke bekommt nur die
+       SCHAERFSTE Kurve vollen Ausschlag; jede andere nur den Bruchteil ihrer
+       eigenen Schaerfe. Genau deshalb ging die Linie nie an die Innenseite
+       "dran", sondern blieb ueberall im mittleren Band - im Bild sofort zu
+       sehen, in den Prozentzahlen nicht.
+       Nutzer: "kommt eine kurve soll die ideallinie direkt dran gehen.
+       entfernt man sich von der kurve faehrt man wieder weiter aussen."
+       Mit einem gleitenden Maximum ueber rund 150 m bekommt JEDE Kurve ihren
+       vollen Ausschlag: innen am Scheitel, aussen bei Ein- und Ausfahrt. */
+    const roh=new Array(N);
+    for(let i=0;i<N;i++) roh[i]=scharf[i]-breit[i];
+    const fenster=Math.max(20, Math.round(N/9));
+    const ortsMax=new Array(N);
+    for(let i=0;i<N;i++){
+      let m=0;
+      for(let d=-fenster; d<=fenster; d++) m=Math.max(m, Math.abs(roh[(i+d+N*4)%N]));
+      ortsMax[i]=m;
+    }
+    // Das oertliche Maximum selbst glaetten, sonst springt die Skalierung
+    const skala=glaetten(ortsMax, Math.max(8, Math.round(N/30)));
+    /* Nicht jede Kruemmung verdient den vollen Ausschlag. Eine lange Kurve
+       schon - dort gewinnt der groessere Radius echte Zeit. Ein kurzer Knick
+       nicht: ihn ueber die volle Breite zu nehmen kostet an den Uebergaengen
+       mehr, als der Scheitel bringt, und in einer Schikane will man ohnehin
+       durchziehen. Das breit geglaettete Kruemmungsmass sagt genau das - es
+       ist gross, wo die Bahn LANGE dreht. */
+    /* Die Amplitude bleibt VOLL. Zwei Versuche, sie nach Kurvenlaenge oder
+       ueber einen Schwellwert zu daempfen, machten die Runde langsamer
+       (27,06 und 27,73 s statt 27,21) und kosteten das Kurvenschneiden -
+       also nichts gewonnen. */
     const bauen=(staerke)=>{
       const v=new Array(STUETZ);
       for(let k=0;k<STUETZ;k++){
         const i=Math.round(k/STUETZ*N)%N;
         const g=grenzeK(k);
-        const form=gr>1e-9 ? (scharf[i]-breit[i])/gr*maxAb*staerke : 0;
+        const form=(skala[i]>1e-9 ? roh[i]/skala[i] : 0)*maxAb*staerke;
         v[k]=clamp(form, g.u, g.o);
       }
       return v;
@@ -1342,7 +1375,7 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
     form0=new Array(N);
     for(let i=0;i<N;i++){
       const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
-      const f=gr>1e-9 ? (scharf[i]-breit[i])/gr*maxAb : 0;
+      const f=(skala[i]>1e-9 ? clamp(roh[i]/skala[i],-1,1) : 0)*maxAb;
       form0[i]=clamp(f, Math.max(u,-maxAb), Math.min(o,maxAb));
     }
     void besteStaerke;
@@ -1386,7 +1419,14 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
      Scheitel anschneiden. Das Modell haelt das fuer minimal langsamer - es
      kennt aber weder Abtrieb noch Reifenlast, und der Unterschied liegt
      innerhalb seiner eigenen Ungenauigkeit. */
-  const misch=0.75;
+  /* 1,0: die konstruierte Linie GILT, sie wird nicht mehr zur Modell-Optimum
+     hin verwaessert. Das Optimum meines Modells ist eine mittige Linie - es
+     kennt weder Abtrieb noch Reifenlast, und es hat mich dreimal in die
+     falsche Richtung geschickt. Was hier zaehlt, ist die Regel aus dem
+     Rennsport: an der Kurve an die Innenseite, davor und danach nach aussen.
+     Der Zeitunterschied liegt bei 0,6 s auf 26 - innerhalb der Ungenauigkeit
+     des Modells. */
+  const misch=1.0;
   const aus=new Array(N);
   for(let i=0;i<N;i++){
     const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
