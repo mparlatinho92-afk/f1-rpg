@@ -1343,16 +1343,34 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
        mehr, als der Scheitel bringt, und in einer Schikane will man ohnehin
        durchziehen. Das breit geglaettete Kruemmungsmass sagt genau das - es
        ist gross, wo die Bahn LANGE dreht. */
-    /* Die Amplitude bleibt VOLL. Zwei Versuche, sie nach Kurvenlaenge oder
-       ueber einen Schwellwert zu daempfen, machten die Runde langsamer
-       (27,06 und 27,73 s statt 27,21) und kosteten das Kurvenschneiden -
-       also nichts gewonnen. */
+    /* ══ SPERRE GEGEN SCHLAENGELN AUF GERADEN ═══════════════════════════
+       Die oertliche Normierung teilt durch das lokale Maximum. Auf einer
+       Geraden ist das winzig - eine Krümmungsschwankung von wenigen
+       Zentimetern wird dadurch zum vollen Ausschlag ueber die halbe
+       Bahnbreite. Sichtbar als ueberfluessiges S in der Anfahrt auf Kurve 1,
+       und zwar bei ALLEN drei Linien (Nutzer-Bild "S alle drei linien").
+
+       ⚠ Zwei fruehere Versuche sind daran gescheitert, dass die Sperre zu
+       SPAET voll aufmachte: mit (rel-0,15)/0,35 erreicht sie erst bei halber
+       Maximalkruemmung den vollen Wert und daempfte damit auch echte Kurven -
+       das Kurvenschneiden fiel von 99 auf 71 %. Jetzt saettigt sie schon bei
+       einem Zehntel der staerksten Kruemmung: echte Kurven sind unberuehrt,
+       Geraden bleiben gerade.
+
+       Das Zeitmodell haelt die Sperre fuer leicht nachteilig. Es hat in dieser
+       Frage dreimal in die falsche Richtung gezeigt; das Auge nicht. */
+    let grB=0; for(let i=0;i<N;i++) grB=Math.max(grB, Math.abs(breit[i]));
+    const amplitude=new Array(N);
+    for(let i=0;i<N;i++){
+      const rel=grB>1e-9 ? Math.abs(breit[i])/grB : 0;
+      amplitude[i]=clamp(rel/0.10, 0, 1);
+    }
     const bauen=(staerke)=>{
       const v=new Array(STUETZ);
       for(let k=0;k<STUETZ;k++){
         const i=Math.round(k/STUETZ*N)%N;
         const g=grenzeK(k);
-        const form=(skala[i]>1e-9 ? roh[i]/skala[i] : 0)*maxAb*staerke;
+        const form=(skala[i]>1e-9 ? roh[i]/skala[i] : 0)*maxAb*staerke*amplitude[i];
         v[k]=clamp(form, g.u, g.o);
       }
       return v;
@@ -1422,8 +1440,40 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
      Ungenauigkeit des Modells selbst.
      Deshalb wird das Ergebnis zur konstruierten Linie hin gezogen. Die Staerke
      ist eine bewusste Entscheidung fuer das BILD, nicht fuer die Uhr. */
+  /* ══ WIE SCHNELL DARF DIE LINIE SEITLICH WANDERN ════════════════════
+     Ein Wagen kann sich nicht beliebig schnell versetzen. Ohne Grenze sprang
+     die konstruierte Linie in einer Kurvenfolge von ganz innen (-6,2 m) auf
+     ganz aussen (+4,9 m) - und das binnen 45 Metern. Das ist keine Fahrlinie,
+     sondern ein Zickzack, und genau als solches war es im Spiel zu sehen
+     ("S alle drei linien").
+     Abschaetzung: ein Versatz von b Metern ueber die Strecke L braucht
+     ungefaehr 8*b*v^2/L^2 an Querbeschleunigung. Bei 40 m/s und der Haelfte
+     der Haftung fuer den Spurwechsel ergibt das fuer die volle Bahnbreite
+     rund 80 m - also hoechstens 0,15 m Versatz je Meter Strecke.
+     Durchgesetzt wird das in beide Richtungen, sonst verschiebt sich die Linie
+     insgesamt statt sich zu glaetten. Nebeneffekt, der gewollt ist: wo zwei
+     Kurven zu dicht aufeinanderfolgen, kommt die Linie gar nicht mehr an
+     beide Scheitel - genau das tut ein Fahrer in einer Schikane auch. */
+  const grenzeSteigung=(L)=>{
+    const ds=laenge/N, maxD=0.15*ds;
+    const out=L.slice();
+    for(let runde=0; runde<3; runde++){
+      for(let i=0;i<N;i++){
+        const j=(i+1)%N, d=out[j]-out[i];
+        if(d> maxD) out[j]=out[i]+maxD;
+        if(d<-maxD) out[j]=out[i]-maxD;
+      }
+      for(let i=N-1;i>=0;i--){
+        const j=(i-1+N)%N, d=out[j]-out[i];
+        if(d> maxD) out[j]=out[i]+maxD;
+        if(d<-maxD) out[j]=out[i]-maxD;
+      }
+    }
+    return out;
+  };
+
   const roh=entfalten(st);
-  if(!form0) return roh;
+  if(!form0) return grenzeSteigung(roh);
   /* 0,75 statt 0,6: die Linie soll SICHTBAR aussen hineingehen und den
      Scheitel anschneiden. Das Modell haelt das fuer minimal langsamer - es
      kennt aber weder Abtrieb noch Reifenlast, und der Unterschied liegt
@@ -1441,7 +1491,7 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
     const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
     aus[i]=clamp(roh[i]*(1-misch)+form0[i]*misch, Math.max(u,-maxAb), Math.min(o,maxAb));
   }
-  return aus;
+  return grenzeSteigung(aus);
 }
 
 function buildTrack(){
