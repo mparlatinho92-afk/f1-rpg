@@ -3,17 +3,24 @@
  *
  *   node zielflagge/test-lieferung.js [laeufe]
  *
- * ZIELFLAGGE ist ein Live-Ticker in 3D, kein dritter Modus:
- *     simulateRace()  ->  Sofort-Sim | Live-Ticker | ZIELFLAGGE
- * Die Zahlen entstehen in EINER Engine. Liegt ein im RPG gerechnetes Ergebnis
- * bei, darf ZIELFLAGGE nicht wuerfeln, sondern nur noch dorthin animieren.
+ * ⚠ DIE ZUSAGE HAT SICH AM 12.09.2026 GEAENDERT.
+ * Bis dahin galt: ZIELFLAGGE animiert die Lieferung Fahrer fuer Fahrer, keine
+ * Toleranz - wie tests/ticker-paritaet.js fuer den Live-Ticker. Der Test las
+ * dafuer aiSim.cumulative, also den PLAN, und konnte deshalb gar nicht
+ * durchfallen.
  *
- * Geprueft wird deshalb genau das, was tests/ticker-paritaet.js fuer den
- * Live-Ticker prueft: die Reihenfolge am Ende muss Fahrer fuer Fahrer der
- * Lieferung entsprechen. Keine Toleranz.
+ * Seit die Gegner selbst fahren, ist ZIELFLAGGE der MANIPULATIVE Modus
+ * (Nutzer: "im endergebnis ist es egal ob es sofort-sim, zielgerade oder
+ * live-ticker war. der weg dahin ist entweder gescriptet, oder gescriptet und
+ * manipulation kaempfen gegeneinander").
  *
- * Der Spieler-Slot ist ausgenommen - der wird im Spiel durch echtes Fahren
- * ersetzt ("nur dein Slot ist frei").
+ * Die Lieferung ist damit der RAHMEN, nicht das Ergebnis:
+ *   - sie muss uebernommen werden (aiSim.ausLieferung),
+ *   - sie muss das Renngeschehen DOMINIEREN - wer im Plan vorn ist, kommt in
+ *     aller Regel vorn an,
+ *   - aber sie darf abweichen, sonst waere das Eingreifen wirkungslos.
+ * Geprueft wird deshalb die mittlere Platzverschiebung gegen die Lieferung,
+ * gemessen am TATSAECHLICH gefahrenen Rennen.
  */
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -75,6 +82,7 @@ function baueLieferung(jahr) {
     await page.waitForTimeout(900);
 
     let gut = 0, schlecht = 0;
+    const verschiebungen = [];
     const beispiele = [];
 
     for (let i = 0; i < LAEUFE; i++) {
@@ -89,10 +97,21 @@ function baueLieferung(jahr) {
                 state.laps = 8;
                 startRace();
                 if (!aiSim || !aiSim.ausLieferung) return { err: 'aiSim kam NICHT aus der Lieferung' };
-                // Endstand aus der Animation: nach Gesamtzeit sortieren
-                const gefahren = state.starters
-                    .filter(d => d.id !== state.playerDriverId && !aiSim.retired[d.id])
-                    .map(d => ({ id: d.id, t: aiSim.cumulative[d.id] }))
+                // Rennen wirklich durchlaufen lassen - nicht den Plan ablesen.
+                racing = true; raceClock = 0;
+                const gg = state.starters.filter(d => d.id !== state.playerDriverId);
+                let sicher = 0;
+                while (sicher++ < 60 * 60 * 6) {
+                    raceClock += 1 / 60;
+                    updateAICars(raceClock, 1 / 60);
+                    if (gg.every(d => carMeshes[d.id].imZiel
+                        || getProgressAI(d.id, raceClock).frozen)) break;
+                }
+                // Endstand aus dem GEFAHRENEN Rennen
+                const gefahren = gg
+                    .filter(d => !aiSim.retired[d.id])
+                    .map(d => ({ id: d.id, t: carMeshes[d.id].zielZeit !== undefined
+                        ? carMeshes[d.id].zielZeit : 1e9 - (carMeshes[d.id].fortschritt || 0) }))
                     .sort((a, b) => a.t - b.t).map(x => x.id);
                 const raus = state.starters
                     .filter(d => d.id !== state.playerDriverId && aiSim.retired[d.id])
@@ -110,12 +129,16 @@ function baueLieferung(jahr) {
         if (r.gefahren.length !== sollOhneSpieler.length) {
             abw.push('Anzahl gewertet: ' + r.gefahren.length + ' statt ' + sollOhneSpieler.length);
         }
-        for (let k = 0; k < Math.min(r.gefahren.length, sollOhneSpieler.length); k++) {
-            if (r.gefahren[k] !== sollOhneSpieler[k]) {
-                abw.push('P' + (k + 1) + ': ' + r.gefahren[k] + ' statt ' + sollOhneSpieler[k]);
-                if (abw.length > 3) break;
-            }
-        }
+        // Mittlere Platzverschiebung gegen die Lieferung. 0 hiesse: das
+        // Eingreifen ist wirkungslos. Gross hiesse: die Lieferung ist egal.
+        let summe = 0, n = 0;
+        r.gefahren.forEach((id, k) => {
+            const soll = sollOhneSpieler.indexOf(id);
+            if (soll < 0) return;
+            summe += Math.abs(soll - k); n++;
+        });
+        const schnittVersch = n ? summe / n : 0;
+        verschiebungen.push(schnittVersch);
         if (r.raus.join(',') !== sollDnfOhne.join(',')) abw.push('Ausfaelle weichen ab');
 
         if (abw.length === 0) gut++;
@@ -124,14 +147,26 @@ function baueLieferung(jahr) {
     }
     await browser.close();
 
-    console.log('\n\n═══ Nimmt ZIELFLAGGE die Lieferung exakt ab? ═══\n');
+    console.log('\n\n═══ Bleibt die Lieferung der Rahmen des gefahrenen Rennens? ═══\n');
     console.log('Laeufe geprueft : ' + (gut + schlecht));
     console.log('  identisch     : ' + gut);
     console.log('  abweichend    : ' + schlecht);
+    const vSchnitt = verschiebungen.length
+        ? verschiebungen.reduce((a, b) => a + b, 0) / verschiebungen.length : 0;
+    const vMax = verschiebungen.length ? Math.max.apply(null, verschiebungen) : 0;
+    console.log('');
+    console.log('Platzverschiebung gegen die Lieferung:');
+    console.log('  im Schnitt    : ' + vSchnitt.toFixed(2) + ' Plaetze');
+    console.log('  groesster Lauf: ' + vMax.toFixed(2) + ' Plaetze');
+    const rahmenHaelt = vSchnitt < 4.0;
+    const wirkung = vSchnitt > 0.05;
+    console.log((rahmenHaelt ? '  OK  ' : ' FEHL ') + 'Lieferung bleibt der Rahmen (<4 Plaetze)');
+    console.log((wirkung ? '  OK  ' : ' FEHL ') + 'Rennen weicht ueberhaupt ab (>0,05)');
+    if (!rahmenHaelt || !wirkung) schlecht++;
     if (beispiele.length) { console.log('\nAbweichungen:'); beispiele.forEach(b => console.log('  ' + b)); }
     console.log('\nSkriptfehler    : ' + (fehler.length ? fehler.slice(0, 3).join('\n  ') : 'keine'));
     console.log('\n' + (schlecht === 0 && !fehler.length
-        ? 'GRUEN — ZIELFLAGGE animiert das gelieferte Ergebnis, ohne selbst zu wuerfeln.'
+        ? 'GRUEN — die Lieferung bleibt der Rahmen, das Rennen entscheidet darin.'
         : 'FEHLGESCHLAGEN'));
     process.exit(schlecht === 0 && !fehler.length ? 0 : 1);
 })();

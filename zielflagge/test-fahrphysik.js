@@ -197,8 +197,11 @@ function ladeSaison(jahr) {
     const t2 = curve.getTangentAt(0.25).normalize();
     const n2 = new THREE.Vector3(-t2.z, 0, t2.x);
     // weit draussen starten und quer nach aussen fahren
-    player.pos.set(p2.pos.x + n2.x * (trackHalfWidth() + AUSLAUF - 1),
-      0, p2.pos.z + n2.z * (trackHalfWidth() + AUSLAUF - 1));
+    // Auslaufbreite haengt jetzt von der Seite ab (aussen weit, innen eng).
+    const idx2 = nearestTrackInfo(p2.pos).idx;
+    const auslauf2 = auslaufLinks[idx2];
+    player.pos.set(p2.pos.x + n2.x * (trackHalfWidth() + auslauf2 - 1),
+      0, p2.pos.z + n2.z * (trackHalfWidth() + auslauf2 - 1));
     player.heading = Math.atan2(n2.x, n2.z);
     player.speed = 35; player.steerNow = 0;
     let maxAussen = 0;
@@ -207,7 +210,7 @@ function ladeSaison(jahr) {
       maxAussen = Math.max(maxAussen, Math.abs(nearestTrackInfo(player.pos).lateral));
     }
     out.maxAussen = +maxAussen.toFixed(1);
-    out.mauerBei = +(trackHalfWidth() + AUSLAUF).toFixed(1);
+    out.mauerBei = +(trackHalfWidth() + auslauf2).toFixed(1);
     return out;
   });
 
@@ -222,7 +225,11 @@ function ladeSaison(jahr) {
     r.radiusBei12 + ' m bei 12 m/s, ' + r.radiusBei20 + ' bei 20, ' + r.radiusBei40 + ' bei 40');
   pruefWahr('Radius entspricht v²/GRIP', Math.abs(r.radiusBei40 - r.theorie40) < r.theorie40 * 0.15,
     r.radiusBei40 + ' m gemessen, ' + r.theorie40 + ' m erwartet');
-  pruefWahr('Engste Kurve nicht voll fahrbar', r.radiusBei40 > r.engsterRadius * 3,
+  // Faktor 1,5 statt 3: der Faktor 3 war auf die alte Beispielstrecke geeicht
+  // (engste Kurve 8,3 m). Die neue hat 25,9 m - was zaehlt, ist dass der bei
+  // Vollgas fahrbare Radius deutlich groesser bleibt als die Kurve, nicht um
+  // welchen Faktor genau.
+  pruefWahr('Engste Kurve nicht voll fahrbar', r.radiusBei40 > r.engsterRadius * 1.5,
     'Kurve ' + r.engsterRadius + ' m, bei Vollgas nur ' + r.radiusBei40 + ' m moeglich');
   pruefWahr('Beruehrung erkannt', r.kontaktErkannt, 'ja');
   pruefWahr('Beruehrung kostet Tempo', r.tempoNachKontakt < r.tempoVorKontakt * 0.95,

@@ -165,7 +165,8 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
           <select class="btn" id="ai-mode" onchange="setAiMode(this.value)" title="Tempo der Gegner">
             <option value="leicht">Gegner: locker</option>
             <option value="mittel">Gegner: mittel</option>
-            <option value="adaptiv" selected>Gegner: anpassen</option>
+            <option value="leicht">Gegner: gemaechlich</option>
+            <option value="mittel" selected>Gegner: normal</option>
             <option value="hart">Gegner: realistisch</option>
           </select>
           <span id="ai-scale-info" class="legend" style="margin-left:0;"></span>
@@ -363,12 +364,12 @@ const TRACK_WIDTH=15;
 
 /* ============================= STATE ============================= */
 let state = {laps:5, fastestLapPoint:true, playerDriverId:null, finalClassification:null,
-             aiScale:1, aiMode:'adaptiv'};
+             aiScale:1.22, aiMode:'mittel'};
 /* aiScale streckt die KI-Zeiten. Grund: die Simulation faehrt eine perfekte
    Ideallinie mit konstantem Tempo, ein Mensch nicht - ohne Streckung ist das
    Feld uneinholbar. Der Faktor wirkt auf Animation UND Wertung gleichermassen,
    damit beide dieselbe Wahrheit erzaehlen, und steht im Export. */
-const AI_MODI={leicht:1.45, mittel:1.22, hart:1.0, adaptiv:1.30};
+const AI_MODI={leicht:1.45, mittel:1.22, hart:1.0};
 let TEAMS = {};
 let DRIVERS = [];
 let currentView='track';
@@ -824,7 +825,10 @@ const KOLLI_NAH=7;         // m - Vorpruefung, darueber kann nichts beruehren
    zwei Wagen, die im Plan 5 m auseinanderliegen, und wenig genug, dass daraus
    keine andere Geschichte wird. */
 const LAENGS_BAND=12;
-const AUSLAUF=12;          // m - hinter dem Randstein, danach kommt die Mauer
+const TOP_TEMPO=53;        // m/s Basis - mit mittleren Werten rund 63 m/s (227 km/h)
+const AUSLAUF_AUSSEN=22;   // m - aussen an Kurven: Platz fuer Fahrfehler
+const AUSLAUF_INNEN=2.5;   // m - innen praktisch nichts, sonst kuerzt man ab
+const AUSLAUF_GERADE=9;    // m - auf Geraden beidseitig
 const GRID_MAX=26;         // Startplaetze; wer langsamer qualifiziert, ist DNQ
 
 function qualify(drivers){
@@ -856,23 +860,12 @@ function placeOnTrack(u, lateral){
    schnell sein, dass der Spieler ungefaehr im Mittelfeld liegt - nicht dass er
    gewinnt, nicht dass er ueberrundet wird. Danach bleibt der Faktor fest, damit
    das Rennen nicht mitwandert (Gummiband) und die Wertung stabil bleibt. */
-function adaptAiPace(playerLapTime){
-  if(!aiSim||!aiSim.lapCumulative) return;
-  const erste=[];
-  for(const id in aiSim.lapCumulative){
-    const l=aiSim.lapCumulative[id];
-    if(l&&l.length) erste.push(l[0]);
-  }
-  if(!erste.length) return;
-  erste.sort((a,b)=>a-b);
-  const median=erste[Math.floor(erste.length/2)];
-  if(!median) return;
-  // Ziel: Median der KI liegt knapp ueber der Spielerrunde -> er kaempft ums Mittelfeld
-  const faktor=clamp((playerLapTime*0.99)/median, 0.8, 3.0);
-  state.aiScale=faktor;
-  const el=document.getElementById('ai-scale-info');
-  if(el) el.textContent='Feld angepasst: \u00d7'+faktor.toFixed(2);
-}
+/* adaptAiPace ENTFERNT (12.09.2026).
+   Sie zog nach der ERSTEN Spielerrunde das ganze Feld auf dessen Tempo: wer
+   langsam fuhr, bekam ein langsames Feld, wer schnell fuhr, ein schnelles.
+   Das Rennen wanderte also mit statt stattzufinden.
+   Nutzer: 'entferne aufholen in runde 2, das ist primitiv.'
+   Das Gegner-Tempo steht jetzt fest und wird ueber die Modus-Liste gewaehlt. */
 
 function pickRetireReason(){
   const reasons=['Motorschaden','Unfall','Getriebeschaden','Aufhängungsschaden','Elektrikdefekt','Bremsversagen','Aufgabe im Kiesbett'];
@@ -897,7 +890,7 @@ function pickRetireReason(){
    gegen Null, damit die Schlussrunde exakt die gelieferte Reihenfolge zeigt.
    ═══════════════════════════════════════════════════════════════════════════ */
 function simAusLieferung(ergebnis, drivers, laps, gridMap, playerId){
-  const BASE_LAP=30;
+  const BASE_LAP=referenzRunde();
   const cumulative={}, lapCumulative={}, retired={}, fastestLap={};
 
   // Zielrang je Fahrer aus dem gelieferten Ergebnis
@@ -975,7 +968,7 @@ function simAusLieferung(ergebnis, drivers, laps, gridMap, playerId){
    ZWEITE Wuerfelquelle und damit genau das, was im Live-Ticker gerade beseitigt
    wurde. Sobald eine Lieferung vorliegt, hat die immer Vorrang. */
 function simulateRace(drivers,laps,playerId){
-  const BASE_LAP=30; // Ziel-Rundenzeit in Echtzeit-Sekunden
+  const BASE_LAP=referenzRunde(); // aus der Streckengeometrie, siehe dort
   const team=d=>TEAMS[d.team]||{carSpeed:60,reliability:75,strategy:60};
   // Wie im RPG faellt die Renn-Performance EINMAL pro Fahrer und Rennen, nicht
   // je Runde neu - sonst mittelt sich der schlechte Tag ueber die Distanz weg.
@@ -1053,7 +1046,25 @@ function getProgressAI(id,tRoh){
 /* ============================= THREE.JS SZENE ============================= */
 let renderer, sceneScene, camera, clock, curve, carMeshes={};
 let spacedPts=[], spacedTangents=[], trackLength=800;
-const trackPointsRaw=[[0,70],[45,88],[95,78],[132,48],[140,4],[112,-34],[128,-70],[96,-102],[46,-96],[8,-66],[-34,-70],[-70,-46],[-96,-58],[-134,-30],[-140,14],[-104,48],[-70,30],[-46,58],[-18,42]];
+/* Auslaufbreite je Bahnpunkt und Seite, in Metern ab Bahnrand. */
+let auslaufLinks=[], auslaufRechts=[];
+/* Kurvenradius je Bahnpunkt in Metern. Ohne ihn kann ein KI-Fahrer nicht
+   wissen, wo er bremsen muss - er ist die Grundlage jeder Bremspunkt-Rechnung
+   (Grenztempo = sqrt(GRIP * R)). */
+let bahnRadius=[];
+/* Beispielstrecke. Der erste Punkt ist die Start-Ziel-Linie.
+   Sie liegt jetzt auf einer LANGEN GERADEN (rund 290 m bis zur ersten Kurve)
+   statt wie vorher in einer Kurve. Grund: wer am Start in einer Kurve steht,
+   verliert sofort Plaetze, weil er weder beschleunigen noch ausweichen kann,
+   ohne von der Bahn zu fallen. Die sechs kollinearen Punkte halten die Gerade
+   wirklich gerade - Catmull-Rom bogen sie sonst aus. */
+const trackPointsRaw=[
+  [-130,-120],[-130,-60],[-130,0],[-130,60],[-130,120],[-130,170],
+  [-112,212],[-65,236],[-15,228],[22,194],
+  [30,146],[62,112],[112,96],[137,56],
+  [122,12],[78,-4],[56,-46],[88,-88],
+  [122,-132],[102,-176],[52,-198],[-10,-208],[-72,-206],[-118,-186]
+];
 
 let camIdle={theta:0.6, phi:0.85, radius:260, target:null, autoRotate:true};
 // phi ist der Polarwinkel: klein = von oben, gross = flach hinter dem Auto.
@@ -1106,6 +1117,15 @@ function buildTrack(){
   spacedPts=spaced; spacedTangents=[];
   const up=new THREE.Vector3(0,1,0);
   const leftPts=[], rightPts=[];
+  /* AUSLAUFZONEN NUR AUSSEN.
+     Innen an einer Kurve darf es keinen Platz geben - sonst schneidet man die
+     Kurve ueber die Wiese ab und ist schneller als auf der Bahn. Aussen muss
+     Platz sein, sonst ist jeder Fahrfehler sofort ein Einschlag.
+     Welche Seite aussen ist, ergibt sich geometrisch: der Bahnpunkt liegt
+     gegenueber der Sehne durch seine Nachbarn immer nach AUSSEN. Diese
+     Richtung auf die Normale projiziert, und das Vorzeichen sagt die Seite.
+     Auf Geraden ist der Wert nahe null - dort bleibt es symmetrisch. */
+  auslaufLinks=[]; auslaufRechts=[]; bahnRadius=[];
   for(let i=0;i<spaced.length;i++){
     const p=spaced[i];
     const pNext=spaced[(i+1)%spaced.length];
@@ -1113,6 +1133,26 @@ function buildTrack(){
     const tangent=new THREE.Vector3().subVectors(pNext,pPrev).normalize();
     spacedTangents.push(tangent);
     const normal=new THREE.Vector3().crossVectors(tangent,up).normalize();
+    {
+      const W=Math.max(2,Math.round(spaced.length/80));
+      const a=spaced[(i-W+spaced.length)%spaced.length];
+      const b=spaced[(i+W)%spaced.length];
+      const sehne=new THREE.Vector3((a.x+b.x)/2,0,(a.z+b.z)/2);
+      const nachAussen=new THREE.Vector3(p.x-sehne.x,0,p.z-sehne.z);
+      const proj=nachAussen.x*normal.x+nachAussen.z*normal.z;
+      // proj ist in Metern; ab etwa 1,5 m ist es eine richtige Kurve.
+      const staerke=clamp(Math.abs(proj)/3,0,1);
+      const weit=AUSLAUF_AUSSEN, eng=AUSLAUF_INNEN, gerade=AUSLAUF_GERADE;
+      const aussenIstPlus=proj>0;
+      auslaufLinks.push(gerade+(aussenIstPlus?(weit-gerade):(eng-gerade))*staerke);
+      auslaufRechts.push(gerade+(aussenIstPlus?(eng-gerade):(weit-gerade))*staerke);
+      // Umkreisradius durch die drei Punkte: R = a*b*c / (4*Flaeche).
+      // ⚠ Stuetzweite W, nicht die direkten Nachbarn - sonst misst man das
+      //   Rauschen der Kurve statt der Kurve (siehe test-strecke.js).
+      const ab=a.distanceTo(p), bc=p.distanceTo(b), ca=b.distanceTo(a);
+      const fl=Math.abs((p.x-a.x)*(b.z-a.z)-(b.x-a.x)*(p.z-a.z))/2;
+      bahnRadius.push(fl<1e-6 ? 1e6 : (ab*bc*ca)/(4*fl));
+    }
     leftPts.push(p.clone().add(normal.clone().multiplyScalar(TRACK_WIDTH/2)));
     rightPts.push(p.clone().add(normal.clone().multiplyScalar(-TRACK_WIDTH/2)));
   }
@@ -1148,6 +1188,34 @@ function buildTrack(){
     g.setAttribute('position', new THREE.Float32BufferAttribute(rand,3));
     const m=new THREE.Mesh(g, randMat);
     m.position.y=0.045; sceneScene.add(m);
+  });
+
+  /* Auslaufzonen sichtbar machen. Ohne Belag sieht man nicht, wo Platz ist und
+     wo die Mauer direkt hinter dem Randstein steht - und genau das ist die
+     Information, die eine Kurve fahrbar macht. */
+  const auslaufMat=new THREE.MeshStandardMaterial({color:0x6b5f4a, roughness:1});
+  [1,-1].forEach(seite=>{
+    const breiten=(seite>0?auslaufLinks:auslaufRechts);
+    const pts=[];
+    for(let i=0;i<spaced.length;i++){
+      const j=(i+1)%spaced.length;
+      const t1=spacedTangents[i], t2=spacedTangents[j];
+      const n1=new THREE.Vector3(-t1.z,0,t1.x), n2=new THREE.Vector3(-t2.z,0,t2.x);
+      const b1=TRACK_WIDTH/2, b2=TRACK_WIDTH/2+(breiten[i]||AUSLAUF_GERADE);
+      const c2=TRACK_WIDTH/2+(breiten[j]||AUSLAUF_GERADE);
+      const p1=spaced[i], p2=spaced[j];
+      const a=p1.clone().add(n1.clone().multiplyScalar(seite*b1));
+      const b=p1.clone().add(n1.clone().multiplyScalar(seite*b2));
+      const c=p2.clone().add(n2.clone().multiplyScalar(seite*b1));
+      const d=p2.clone().add(n2.clone().multiplyScalar(seite*c2));
+      pts.push(a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z);
+      pts.push(c.x,c.y,c.z, b.x,b.y,b.z, d.x,d.y,d.z);
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+    g.computeVertexNormals();
+    const m=new THREE.Mesh(g, auslaufMat);
+    m.position.y=0.01; sceneScene.add(m);
   });
 
   const centerGeo=new THREE.BufferGeometry().setFromPoints(spaced.map(p=>new THREE.Vector3(p.x,0.06,p.z)));
@@ -1306,7 +1374,11 @@ function updatePlayer(dt){
 
   const driverStats=DRIVERS.find(d=>d.id===player.id)||{pace:70,potential:70};
   const teamStats=TEAMS[driverStats.team]||{carSpeed:65};
-  const maxSpeed=(trackLength/24)*(0.85+(driverStats.pace+teamStats.carSpeed)/400);
+  // Hoechsttempo haengt am Wagen, nicht an der Rundenlaenge. Vorher stand hier
+  // trackLength/24: eine laengere Strecke machte die Wagen automatisch
+  // schneller. Beim Wechsel auf die neue Strecke sprang das Tempo dadurch von
+  // 149 auf 230 km/h, ohne dass es jemand so gewollt haette.
+  const maxSpeed=TOP_TEMPO*(0.85+(driverStats.pace+teamStats.carSpeed)/400);
   const accel=38, brakeDecel=42, reverseAccel=16;
 
   if(throttle>0){ player.speed+=accel*dt; }
@@ -1414,7 +1486,13 @@ function updatePlayer(dt){
   // Auslaufzone bremst (das gab es schon), dahinter steht die Mauer. Ohne sie
   // konnte man quer durchs Gelaende abkuerzen.
   const infoNach=nearestTrackInfo(player.pos);
-  const grenze=trackHalfWidth()+AUSLAUF;
+  // Die Mauer steht je Seite anders weit weg: aussen viel Auslauf, innen fast
+  // keiner. Sonst waere die Abkuerzung ueber die Kurveninnenseite schneller
+  // als die Bahn.
+  const auslaufHier=(infoNach.lateral>=0
+    ? (auslaufLinks[infoNach.idx] ?? AUSLAUF_GERADE)
+    : (auslaufRechts[infoNach.idx] ?? AUSLAUF_GERADE));
+  const grenze=trackHalfWidth()+auslaufHier;
   if(Math.abs(infoNach.lateral)>grenze){
     const t=infoNach.tangent;
     const n=new THREE.Vector3(-t.z,0,t.x);
@@ -1433,7 +1511,6 @@ function updatePlayer(dt){
       if(player.bestLap===null||lapTime<player.bestLap) player.bestLap=lapTime;
       player.lap++;
       player.lapStartTime=raceClock;
-      if(state.aiMode==='adaptiv' && player.lap===1) adaptAiPace(lapTime);
       if(player.lap>=state.laps){
         player.finished=true;
         document.getElementById('flag-overlay').style.display='block';
@@ -1445,6 +1522,68 @@ function updatePlayer(dt){
   const cm=carMeshes[player.id];
   if(cm){ cm.group.position.set(player.pos.x,0.05,player.pos.z); cm.group.rotation.y=player.heading; }
 }
+/* Referenz-Rundenzeit fuer den Plan: die physikalisch schnellste Runde plus
+   Reserve. Ohne Reserve muesste schon der Beste am absoluten Limit fahren und
+   alle anderen waeren gleich schnell, weil niemand langsamer sein DARF. */
+function referenzRunde(){
+  const vMax=TOP_TEMPO*(0.85+(75+75)/400);
+  return optimaleRundenzeit(vMax)*1.10;
+}
+
+/* Hoechsttempo, mit dem eine Stelle der Bahn noch fahrbar ist. Genau dieselbe
+   Rechnung wie beim Spieler: die Querbeschleunigung ist begrenzt, also
+   v = sqrt(GRIP * R). Damit bremsen KI und Mensch nach derselben Physik. */
+function grenzTempoBei(u){
+  if(!bahnRadius.length) return 999;
+  const i=Math.round(clamp(u,0,0.9999)*bahnRadius.length)%bahnRadius.length;
+  return Math.sqrt(GRIP*bahnRadius[i]);
+}
+
+/* Wie schnell darf ich JETZT sein, um in vorausliegenden Kurven noch
+   rechtzeitig langsam genug zu sein? Blickt ein Stueck voraus und rechnet
+   rueckwaerts: v^2 = vKurve^2 + 2*a*Weg. Das ist der Bremspunkt. */
+function vorausschauTempo(u, bremsA){
+  let grenze=999;
+  for(let m=10; m<=160; m+=10){
+    const vk=grenzTempoBei(u+m/trackLength);
+    const erlaubt=Math.sqrt(vk*vk+2*bremsA*m);
+    if(erlaubt<grenze) grenze=erlaubt;
+  }
+  return grenze;
+}
+
+/* Schnellstmoegliche Rundenzeit dieser Strecke, in Sekunden.
+   Vorwaerts-Rueckwaerts-Durchgang ueber das Tempoprofil: erst begrenzt die
+   Haftung in jeder Kurve, dann wird rueckwaerts der Bremsweg eingerechnet und
+   vorwaerts die Beschleunigung. Zwei Runden, damit der Start nicht bei null
+   haengt. So rechnet man Rundenzeiten seit jeher.
+
+   Wozu: die Referenzzeit des Plans war fest auf 30 s gesetzt - eine Zahl von
+   der alten, 835 m kurzen Beispielstrecke. Auf der neuen (1293 m) verlangte
+   der Plan damit ein Tempo, das die Strecke gar nicht hergibt: die Gegner
+   fielen 23 % zurueck und fuhren alle am Anschlag, womit die Unterschiede
+   zwischen den Fahrern verschwanden. Abgeleitet stimmt es fuer JEDE Strecke -
+   auch fuer die echten, die als naechstes kommen. */
+function optimaleRundenzeit(vMax){
+  if(!bahnRadius.length||!trackLength) return 30;
+  const n=bahnRadius.length, ds=trackLength/n;
+  const v=new Array(n);
+  for(let i=0;i<n;i++) v[i]=Math.min(vMax, Math.sqrt(GRIP*bahnRadius[i]));
+  for(let k=0;k<2;k++){
+    for(let i=n-1;i>=0;i--){          // rueckwaerts: Bremsweg
+      const j=(i+1)%n;
+      v[i]=Math.min(v[i], Math.sqrt(v[j]*v[j]+2*KI_BREMS*ds));
+    }
+    for(let i=0;i<n;i++){             // vorwaerts: Beschleunigung
+      const j=(i-1+n)%n;
+      v[i]=Math.min(v[i], Math.sqrt(v[j]*v[j]+2*KI_BESCHL*ds));
+    }
+  }
+  let t=0;
+  for(let i=0;i<n;i++) t+=ds/Math.max(v[i],1);
+  return t;
+}
+
 /* Laengsabstand zweier Streckenanteile in Metern, vorzeichenbehaftet.
    Positiv heisst: a liegt vor b. Der Umweg ueber +1.5/-0.5 faengt den
    Rundenuebergang ab (0.99 und 0.01 sind 20 m auseinander, nicht 820). */
@@ -1494,69 +1633,151 @@ function seitlichesZiel(id, cm, u, basis){
     }
   }
 
-  // 2) Abstand zu anderen Gegnern. Ohne das fahren zwei Wagen mit aehnlichem
-  //    Plan ineinander - sichtbar als ein Wagen mit acht Raedern.
+  /* 2) Abstand zu anderen Gegnern.
+     ZWEI Konstruktionsfehler steckten hier und erzeugten das Zittern:
+     a) Die Wagen wurden NACHEINANDER aktualisiert und lasen dabei teils schon
+        die neuen Werte der anderen. A weicht B aus, B weicht dem bereits
+        verschobenen A aus, A korrigiert zurueck - das schaukelt sich jedes
+        Bild auf. Deshalb wird jetzt nur aus der MOMENTAUFNAHME des letzten
+        Bildes gelesen (seitlichVor/uVor), die der Vorpass anlegt.
+     b) Es wurde ueber ALLE Nachbarn summiert. Die Menge der Nachbarn wechselt
+        von Bild zu Bild, und mit ihr sprang die Summe. Jetzt zaehlt nur der
+        naechste - der bestimmt ohnehin, wohin man ausweichen muss. */
+  let naechster=null, naechsteEntf=Infinity;
+  const eigenQ=(cm.seitlichVor!==undefined)?cm.seitlichVor:basis;
   for(const oid in carMeshes){
     if(oid===id || (player && oid===player.id)) continue;
     const o=carMeshes[oid];
-    if(o.planU===undefined) continue;
-    const dl=laengsAbstand(u, o.planU);
+    if(o.uVor===undefined) continue;
+    const dl=laengsAbstand(u, o.uVor);
     if(Math.abs(dl)>7) continue;
-    const dq=(cm.seitlich!==undefined?cm.seitlich:basis)-(o.seitlich!==undefined?o.seitlich:0);
+    const dq=eigenQ-((o.seitlichVor!==undefined)?o.seitlichVor:0);
     if(Math.abs(dq)>2.4) continue;
-    const staerke=(1-Math.abs(dl)/7)*1.5;
-    // Bei exakt gleicher Hoehe entscheidet die ID, damit sich zwei Wagen nicht
-    // gegenseitig in dieselbe Richtung druecken.
-    const seite=Math.abs(dq)<0.05 ? ((hashStr(id)%2)?1:-1) : (dq>0?1:-1);
+    const entf=Math.abs(dl)+Math.abs(dq)*2;
+    if(entf<naechsteEntf){ naechsteEntf=entf; naechster={oid,dl,dq}; }
+  }
+  if(naechster){
+    const staerke=(1-Math.abs(naechster.dl)/7)*1.6;
+    // Seitenwahl fest je Paar, nicht nach dem momentanen Vorzeichen: sonst
+    // kippt sie, sobald zwei Wagen quer aneinander vorbeigleiten.
+    const seite=Math.abs(naechster.dq)>0.9 ? (naechster.dq>0?1:-1)
+              : ((hashStr(id)>hashStr(naechster.oid))?1:-1);
     ziel+=seite*staerke;
   }
   return clamp(ziel, -rand, rand);
 }
 
-/* Laengs-Spielraum eines Gegners fortschreiben.
-   Drei Kraefte: ein langsamer Eigenrhythmus (jeder Wagen atmet anders),
-   Windschatten (dicht hinter jemandem geht es leichter) und die Rueckholung
-   zum Plan. Auf der Schlussrunde wird alles auf null gezogen. */
-function laengsSpielraum(id, cm, u, prog, dt){
-  if(cm.phase===undefined) cm.phase=(hashStr(id)%1000)/1000*Math.PI*2;
-  if(cm.laengsVersatz===undefined) cm.laengsVersatz=0;
+/* ═══════════════ DIE GEGNER FAHREN SELBST ═══════════════════════════════
+   Bis zum 12.09.2026 sassen sie laengs auf einer Schiene: ihre Position kam
+   direkt aus dem Plan, und alles andere (Abstand halten, Zweikaempfe) musste
+   als Versatz darumherum gebaut werden. Das erzeugte Regelkreise, die
+   gegeneinander schwangen - sichtbar als Zittern und als Wagen, die mit der
+   Nase im Heck des Vordermanns steckten.
 
-  // Auf der letzten Runde ausblenden: was man ueber die Linie fahren sieht,
-  // muss der Wertung entsprechen.
-  // Ueber die letzten ZWEI Runden ausblenden, nicht ueber eine: mit nur einer
-  // Runde standen am Ziel noch 7,7 m offen, weil die Rueckholung traege ist.
-  const restRunden=(state.laps||1)-prog.lap-1;
-  const auslauf=clamp(restRunden/2, 0, 1);
+   Nutzer-Entscheidung: "vielleicht waere es besser wir befreien uns vom
+   starren kampf aufs exakte endergebnis hinzuarbeiten. das drehbuch ist nur
+   ein rahmen. je mehr ich eingreife desto mehr verfaelsche ich den
+   unsichtbaren plan."
 
-  let ziel=Math.sin(raceClock*0.22+cm.phase)*LAENGS_BAND*0.45;
+   Jeder Gegner hat jetzt eigenes Tempo und eigene Position. Der Plan ist sein
+   ZIEL, nicht seine Schiene: er beschleunigt, wenn er zurueckliegt, und laesst
+   rollen, wenn er vorn ist. Begrenzt wird er von derselben Physik wie der
+   Spieler - Haftgrenze in der Kurve, Bremsweg, Vordermann, Beruehrungen.
+   Was daraus an Rundenzeit herauskommt, IST das Ergebnis. */
 
-  // Windschatten: wer dicht hinter einem anderen liegt, holt auf.
+const KI_BESCHL=11;        // m/s^2 - was ein Gegner an Zug aufbauen kann
+const KI_BREMS=26;         // m/s^2 - Verzoegerung, Basis der Vorausschau
+const KI_ABSTAND=9;        // m - Wunschabstand zum Vordermann
+const DREH_ABKLING=1.8;    // 1/s - wie schnell ein Dreher sich faengt
+
+function fahreGegner(id, cm, prog, dt){
+  if(cm.tempo===undefined){
+    // Erststart: auf Planposition und Plantempo setzen.
+    cm.fortschritt=prog.lap+clamp(prog.frac,0,0.9999);
+    cm.tempo=trackLength/30;
+    cm.dreher=0;
+  }
+  const skala=state.aiScale||1;
+
+  /* 1) Was will der Plan? Sein Fortschritt in Runden und seine Geschwindigkeit.
+        Die Ableitung wird numerisch genommen - ein eigener Ausdruck dafuer
+        waere nur eine zweite Wahrheit. */
+  const planJetzt=prog.lap+clamp(prog.frac,0,0.9999);
+  const spaeter=getProgressAI(id, raceClock+0.5);
+  let planTempo=((spaeter.lap+clamp(spaeter.frac,0,0.9999))-planJetzt)*trackLength/0.5;
+  if(!(planTempo>1)) planTempo=trackLength/(30*skala);
+
+  /* 2) Regler auf den Plan. Rueckstand in Metern -> Tempozuschlag. Bewusst
+        begrenzt: ein Gegner soll aufholen duerfen, aber nicht teleportieren. */
+  const rueckstand=(planJetzt-cm.fortschritt)*trackLength;
+  let vZiel=planTempo+clamp(rueckstand*0.30, -7, 9);
+
+  /* 3) Haftgrenze und Bremspunkt - dieselbe Rechnung wie beim Spieler. */
+  const u=((cm.fortschritt%1)+1)%1;
+  vZiel=Math.min(vZiel, vorausschauTempo(u, KI_BREMS), grenzTempoBei(u)*1.02);
+
+  /* 4) Vordermann. Wer aufschliesst, muss bremsen - nicht durchfahren. Das
+        ersetzt die alte Abstandsregel, die als Positionsversatz gebaut war
+        und deshalb schwang. */
+  let vorn=null, vornAbstand=Infinity;
   for(const oid in carMeshes){
     if(oid===id) continue;
     const o=carMeshes[oid];
-    if(o.planU===undefined) continue;
-    const dl=laengsAbstand(o.planU, u);          // >0: der andere liegt vorn
-    if(dl<5||dl>26) continue;
-    const dq=Math.abs((cm.seitlich||0)-(o.seitlich||0));
-    if(dq>3) continue;
-    ziel+=LAENGS_BAND*0.3;
-    break;
+    if(o.fortschrittVor===undefined) continue;
+    if(Math.abs((cm.seitlichVor||0)-(o.seitlichVor||0))>2.2) continue;
+    const dl=(o.fortschrittVor-cm.fortschritt)*trackLength;
+    if(dl<=0||dl>60) continue;
+    if(dl<vornAbstand){ vornAbstand=dl; vorn=o; }
+  }
+  if(vorn){
+    // Auf Abstand einregeln: naeher als KI_ABSTAND heisst langsamer als er.
+    const seins=vorn.tempo!==undefined?vorn.tempo:vZiel;
+    const zuNah=KI_ABSTAND-vornAbstand;
+    if(zuNah>0) vZiel=Math.min(vZiel, seins-zuNah*1.8);
+    else if(vornAbstand<26) vZiel=Math.min(vZiel, seins+6);   // Windschatten
   }
 
-  // Waehrend der Startaufstellung KEIN Spielraum: dort stehen die Wagen dicht
-  // gestaffelt, und ein Laengsversatz schiebt sie ineinander - der Spieler
-  // wurde dadurch beim Start wieder angerempelt. Erst danach anlaufen lassen.
-  const startFrei=clamp((raceClock-GRID_FADE_S)/4, 0, 1);
-  ziel=clamp(ziel, -LAENGS_BAND, LAENGS_BAND)*auslauf*startFrei;
-  // Traege folgen - ein Rennwagen springt nicht um zehn Meter. Beim Ausblenden
-  // aber zuegig, damit am Ziel wirklich nichts uebrig bleibt.
-  const rate=(auslauf>0.05)?0.7:2.5;
-  cm.laengsVersatz+=(ziel-cm.laengsVersatz)*Math.min(1, dt*rate);
-  return cm.laengsVersatz;
+  /* 5) Dreher: wer quer steht, kommt kaum vom Fleck. */
+  if(Math.abs(cm.dreher)>0.25) vZiel=Math.min(vZiel, 6);
+  cm.dreher-=cm.dreher*Math.min(1, dt*DREH_ABKLING);
+  if(Math.abs(cm.dreher)<0.01) cm.dreher=0;
+
+  /* 6) Tempo dorthin fuehren, mit echten Grenzen. */
+  vZiel=Math.max(vZiel, 0);
+  if(vZiel>cm.tempo) cm.tempo=Math.min(vZiel, cm.tempo+KI_BESCHL*dt);
+  else cm.tempo=Math.max(vZiel, cm.tempo-KI_BREMS*dt);
+
+  cm.fortschritt+=cm.tempo*dt/trackLength;
+
+  /* Ziel. Ohne diese Bedingung faehrt ein Gegner ewig weiter: der Plan endet,
+     der Regler sieht einen riesigen Vorsprung, bremst ihn auf -7 m/s ab und
+     laesst ihn trotzdem rollen. Wer durch ist, bekommt seine Zeit und rollt
+     aus. */
+  if(state.laps && cm.fortschritt>=state.laps && cm.zielZeit===undefined){
+    // Zeitpunkt der Durchfahrt linear zwischen den beiden Bildern schaetzen
+    const ueber=(cm.fortschritt-state.laps)*trackLength;
+    cm.zielZeit=raceClock-(cm.tempo>0?ueber/cm.tempo:0);
+    cm.imZiel=true;
+  }
+  // Auslaufrunde: wer durch ist, rollt aus. Ohne das faehrt er ewig weiter -
+  // der Plan endet, seine Abweichung davon waechst unbegrenzt, und im Bild
+  // kreisen nach dem Rennen noch Wagen.
+  if(cm.imZiel) cm.tempo=Math.max(0, cm.tempo-KI_BREMS*0.25*dt);
+  return cm.fortschritt;
 }
 
 function updateAICars(simTime, dt){
   dt=dt||1/60;
+  /* VORPASS: Momentaufnahme des letzten Bildes. Alle Wechselwirkungen der
+     Gegner lesen ausschliesslich daraus. Ohne das liest Wagen B bereits den
+     neuen Wert von Wagen A, waehrend A noch den alten von B gelesen hat - die
+     beiden schaukeln sich gegenseitig auf, und das Feld zittert. */
+  for(const id in carMeshes){
+    const cm=carMeshes[id];
+    cm.seitlichVor=cm.seitlich;
+    cm.uVor=cm.planU;
+    cm.fortschrittVor=cm.fortschritt;
+  }
   // Vor dem Start (simTime<=0) stehen alle auf ihrem Grid-Slot; danach schmilzt
   // der Versatz linear weg, damit die Wertung aus simulateRace unberuehrt bleibt.
   const fade=clamp(1-Math.max(simTime,0)/GRID_FADE_S,0,1);
@@ -1570,27 +1791,41 @@ function updateAICars(simTime, dt){
     // Planuhr des Spielerwagens ist um seinen Rueckstand verschoben, damit beim
     // Abgeben kein Sprung entsteht.
     const prog=getProgressAI(id, istSpieler ? simTime-(state.planVersatz||0) : simTime);
-    let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fadeHier;
-    // Laengs-Spielraum NUR fuer Gegner und nur solange sie fahren. Der eigene
-    // Wagen haengt am Plan, weil sein Versatz beim Abgeben gesetzt wurde.
+    let u;
     if(!istSpieler && !prog.frozen){
-      cm.laengsIst=laengsSpielraum(id, cm, u, prog, dt);
-      u+=cm.laengsIst/trackLength;
-    } else { cm.laengsIst=0; }
+      // Der Gegner FAEHRT. Der Plan ist sein Ziel, nicht seine Position.
+      const fort=fahreGegner(id, cm, prog, dt);
+      u=((fort%1)+1)%1;
+      // Startaufstellung: solange der Versatz noch nicht abgebaut ist, steht
+      // er hinter seinem Platz. Er wird ihm ABGEZOGEN, nicht aufgezwungen -
+      // beim Losfahren schmilzt er von selbst.
+      if(fadeHier>0){
+        u-=(slot.back/trackLength)*fadeHier;
+      }
+      // Rundenzaehler des Gegners mitfuehren
+      cm.runde=Math.floor(fort);
+    } else {
+      u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fadeHier;
+    }
     if(u<0) u+=1; if(u>=1) u-=1;
-    const basis=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
     cm.planU=u;
+    const basis=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
     let lateral=basis;
     let schraeg=0;
     if(!istSpieler && !prog.frozen){
       // Ziel weich anfahren, nicht springen: ein Wagen rutscht nicht seitwaerts.
       const ziel=seitlichesZiel(id, cm, u, basis);
       const vorher=(cm.seitlich!==undefined)?cm.seitlich:basis;
-      cm.seitlich=vorher+(ziel-vorher)*Math.min(1, dt*3.5);
+      cm.seitlich=vorher+(ziel-vorher)*Math.min(1, dt*2.2);
       lateral=cm.seitlich;
       // Aus der Querbewegung einen kleinen Lenkwinkel machen, sonst schiebt
-      // der Wagen seitwaerts wie auf Eis.
-      schraeg=clamp((cm.seitlich-vorher)/Math.max(dt,1e-3)/14, -0.3, 0.3);
+      // der Wagen seitwaerts wie auf Eis. GEGLAETTET: der Rohwert folgt jedem
+      // Bild und liess die Wagen flimmern.
+      const roh=clamp((cm.seitlich-vorher)/Math.max(dt,1e-3)/16, -0.28, 0.28);
+      cm.schraegGl=(cm.schraegGl||0)*0.88+roh*0.12;
+      // Ein Dreher legt sich obendrauf: der Wagen steht quer und faengt sich
+      // ueber ein bis zwei Sekunden wieder.
+      schraeg=cm.schraegGl+(cm.dreher||0);
     }
     if(prog.frozen){
       // Ausgefallene standen bisher fuer den Rest des Rennens auf der
@@ -1712,12 +1947,12 @@ function tickHudAndLeaderboard(simTime){
       // blass und mit "Ausfall" in der Liste, obwohl er noch fuhr und normal
       // einsortiert wurde.
       const isRet=!!(aiSim && aiSim.retired[d.id]) && prog.frozen;
-      // Der Laengs-Spielraum gehoert MIT in die Wertung dieser Tabelle: sonst
-      // sieht man ein Ueberholmanoever, das im Klassement nicht stattfindet.
-      // Die ENDwertung kommt aus aiSim und bleibt davon unberuehrt; auf der
-      // Schlussrunde laeuft der Spielraum ohnehin auf null.
-      const vs=((carMeshes[d.id]&&carMeshes[d.id].laengsIst)||0)/trackLength;
-      const metric=isRet?(-1000+prog.lap+prog.frac):(prog.lap+prog.frac+vs);
+      // Das Klassement zeigt, was TATSAECHLICH gefahren wurde - nicht den
+      // Plan. Seit die Gegner selbst fahren, ist cm.fortschritt die Wahrheit;
+      // der Plan ist nur noch ihr Ziel.
+      const cmx=carMeshes[d.id];
+      const echt=(cmx&&cmx.fortschritt!==undefined)?cmx.fortschritt:(prog.lap+prog.frac);
+      const metric=isRet?(-1000+prog.lap+prog.frac):echt;
       return {d, metric, isRet, isPlayer:false};
     }
   }).sort((a,b)=>b.metric-a.metric);
@@ -1913,7 +2148,7 @@ function setAiMode(m){
   state.aiMode=m;
   state.aiScale=AI_MODI[m]||1;
   const el=document.getElementById('ai-scale-info');
-  if(el) el.textContent = m==='adaptiv' ? 'passt sich nach Runde 1 an' : '\u00d7'+state.aiScale.toFixed(2);
+  if(el) el.textContent='\u00d7'+state.aiScale.toFixed(2);
 }
 /* AUTOPILOT ODER SELBST FAHREN
    Prinzip wie in anderen Rennspielen: frei umschaltbar. Beim Start waehlst du,
@@ -1944,7 +2179,15 @@ function planZeitFuer(id, lap, frac){
    zu springen. Der erfahrene Vorsprung oder Rueckstand bleibt erhalten. */
 function autopilotUebernehmen(){
   if(!racing || !player || player.finished || player.aborted) return;
-  state.planVersatz = raceClock - planZeitFuer(player.id, player.lap, player.frac);
+  /* ⚠ EINHEITEN: planZeitFuer liefert PLANzeit, raceClock ist RENNzeit, und
+     getProgressAI rechnet intern (raceClock - planVersatz) / state.aiScale.
+     Der Versatz muss deshalb in Rennzeit vorliegen - also die Planzeit mit
+     aiScale strecken. Ohne das sprang der Wagen beim Abgeben um
+     Planzeit*(aiScale-1), gemessen 16,9 m. Bis zum 12.09.2026 blieb das
+     unsichtbar, weil aiScale zu Rennbeginn exakt 1 war und erst adaptAiPace
+     es spaeter aenderte. */
+  state.planVersatz = raceClock
+    - planZeitFuer(player.id, player.lap, player.frac)*(state.aiScale||1);
   // Ab jetzt ohne Startaufstellungs-Versatz: der zieht in den ersten zehn
   // Sekunden jeden Wagen um seinen Gridplatz zurueck. planZeitFuer rechnet aber
   // nur die reine Streckenposition um - beides zusammen ergab beim Abgeben
@@ -2091,13 +2334,37 @@ function finalizeAndShowResults(){
   document.getElementById('btn-start-race').style.display='none';
   document.getElementById('btn-abort-race').style.display='none';
 
+  /* ═══ DIE WERTUNG KOMMT AUS DEM GEFAHRENEN RENNEN ═══════════════════════
+     Bis zum 12.09.2026 stand hier aiSim.cumulative - der PLAN. Das Rennen
+     durfte zusehen, gewertet wurde das Drehbuch. Seit die Gegner selbst
+     fahren, waere das eine Luege: man saehe ein Ueberholmanoever und bekaeme
+     die alte Reihenfolge.
+     Nutzer: "im endergebnis ist es egal ob es sofort-sim, zielgerade oder
+     live-ticker war. der weg dahin ist entweder gescriptet, oder gescriptet
+     und manipulation kaempfen gegeneinander."
+     Der Plan bleibt der Rahmen: er bestimmt, wie schnell jeder faehrt und wer
+     technisch ausfaellt. Was daraus wird, entscheidet das Rennen. */
   const entries=[];
   (state.starters||DRIVERS).forEach(d=>{
     if(d.id===player.id) return;
+    const cm=carMeshes[d.id];
     if(aiSim.retired[d.id]){
-      entries.push({id:d.id,name:d.name,team:d.team,status:'dnf',retiredLap:aiSim.retired[d.id].lap, reason:aiSim.retired[d.id].reason, totalTime:aiSim.retired[d.id].time*state.aiScale});
+      // Technischer Ausfall - der steht im Plan und passiert so auch.
+      entries.push({id:d.id,name:d.name,team:d.team,status:'dnf',
+        retiredLap:aiSim.retired[d.id].lap, reason:aiSim.retired[d.id].reason,
+        totalTime:aiSim.retired[d.id].time*state.aiScale});
+    } else if(cm && cm.zielZeit!==undefined){
+      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',
+        totalTime:cm.zielZeit});
+    } else if(cm && cm.fortschritt!==undefined){
+      // Noch unterwegs, als der Spieler durch war: nach gefahrener Distanz
+      // einsortieren, hochgerechnet auf die volle Zeit.
+      const anteil=Math.max(cm.fortschritt,0.01)/(state.laps||1);
+      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',
+        totalTime:raceClock/anteil, nochUnterwegs:true});
     } else {
-      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',totalTime:aiSim.cumulative[d.id]*state.aiScale});
+      entries.push({id:d.id,name:d.name,team:d.team,status:'classified',
+        totalTime:aiSim.cumulative[d.id]*state.aiScale});
     }
   });
   const playerDriverObj=DRIVERS.find(d=>d.id===player.id);

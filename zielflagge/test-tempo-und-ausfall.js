@@ -80,7 +80,14 @@ function ladeSaison(jahr) {
       .filter(b => +b.dataset.speed > 1 && b.disabled).length;
 
     // ── Regel 2: Ausgefallene stehen neben der Bahn ────────────────────────
-    const ende = Math.max.apply(null, Object.values(aiAnimData).map(a => a.endTime || 0));
+    /* ⚠ EINHEITEN: endTime ist PLANzeit, raceClock ist RENNzeit, dazwischen
+       steht state.aiScale (getProgressAI rechnet raceClock/aiScale). Ohne die
+       Streckung misst man bei aiScale 1,22 nur 82 % des Plans - dort faehrt
+       ein Fahrer, der spaeter ausfaellt, noch, wird von diesem Test aber schon
+       als ausgefallen gezaehlt. Ergebnis: "Ausgefallener steht ueber einem
+       Fahrenden" in 3 von 5 Laeufen. */
+    const ende = Math.max.apply(null, Object.values(aiAnimData).map(a => a.endTime || 0))
+      * (state.aiScale || 1);
     updateAICars(ende + 5);
     const halb = trackHalfWidth();
     let ausgefallen = 0, aufDerLinie = 0, amRand = 0;
@@ -111,7 +118,10 @@ function ladeSaison(jahr) {
     const zeilen = Array.from(document.querySelectorAll('.leaderboard-row')).map((el, i) => {
       const nm = el.querySelector('.name').textContent.trim();
       const d = (state.starters || DRIVERS).find(x => nm.indexOf(x.name) >= 0);
-      const rr = d && aiSim.retired[d.id];
+      // Nur wer WIRKLICH SCHON draussen ist, zaehlt als ausgefallen - nicht,
+      // wer irgendwann ausfaellt.
+      const rr = d && aiSim.retired[d.id] && getProgressAI(d.id, raceClock).frozen
+        ? aiSim.retired[d.id] : null;
       return { i, ausgefallen: !!rr, runde: rr ? rr.lap : null };
     });
     const letzterFahrende = Math.max.apply(null, zeilen.filter(z => !z.ausgefallen).map(z => z.i));
