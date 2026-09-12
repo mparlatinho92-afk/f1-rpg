@@ -1199,6 +1199,10 @@ function initScene(){
 function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
   const N=spaced.length;
   const maxAb=TRACK_WIDTH/2-1.4;
+  /* 40 Stuetzstellen. Mehr ist nicht besser: mit 60 fand die Suche bei
+     gleichem Aufwand nur noch 0,45 s statt 1,02 s Gewinn, mit 90 gar nichts
+     mehr. Jede zusaetzliche Stuetzstelle vergroessert den Suchraum, und die
+     Koordinatensuche braucht dann mehr Durchgaenge fuer dasselbe Ergebnis. */
   const STUETZ=40;
   const vMax=TOP_TEMPO*(0.85+(75+75)/400);
 
@@ -1237,16 +1241,83 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
     return t;
   };
 
+  /* ══ AUSGANGSFORM: AUSSEN - INNEN - AUSSEN ═══════════════════════════
+     Von der Mitte aus findet die Suche keinen Scheitel. Um von dort zur
+     klassischen Linie zu kommen, muessten mehrere Stuetzstellen GLEICHZEITIG
+     wandern; jede einzelne Aenderung fuer sich macht es zunaechst langsamer.
+     Die Suche bleibt deshalb nahe der Mitte haengen - gemessen lag der groesste
+     Versatz bei 1,4 m auf einer 15 m breiten Bahn.
+     Die Ausgangsform wird darum konstruiert, und zwar aus der Kruemmung selbst:
+     SCHARF geglaettet zeigt sie den Scheitel, BREIT geglaettet den ganzen
+     Kurvenbereich. Ihre Differenz ist am Scheitel gross und davor wie dahinter
+     negativ - also innen am Scheitel, aussen bei Ein- und Ausfahrt.
+     Den SPAETEN Scheitel findet danach die Suche von selbst: sie bewertet die
+     echte Rundenzeit, und spaeter einlenken kostet zwar Kurventempo, bringt
+     aber die fruehere Beschleunigung auf die folgende Gerade. Genau das zeigen
+     die Lehrbilder in zielflagge/Ideallinie. */
+  /* ══ MEHRERE AUSGANGSFORMEN, die beste gewinnt ═══════════════════════
+     Von der Mitte aus findet die Suche keinen Scheitel: um von dort zur
+     klassischen Linie zu kommen, muessten mehrere Stuetzstellen GLEICHZEITIG
+     wandern, und jede einzelne Aenderung fuer sich macht es zunaechst
+     langsamer. Der groesste Versatz blieb deshalb bei 1,4 m auf 15 m Breite.
+
+     Eine konstruierte Form allein war aber auch falsch: aus der Kruemmung
+     gebaut (scharf geglaettet zeigt den Scheitel, breit geglaettet den ganzen
+     Kurvenbereich, die Differenz ergibt innen am Scheitel und aussen bei Ein-
+     und Ausfahrt) schwingt sie ueber die volle Breite und erzeugt dabei MEHR
+     Kruemmung als sie spart - gemessen 29,7 s gegen 27,7 s auf der
+     Mittellinie.
+
+     Deshalb werden mehrere Startformen bewertet - Mitte, die konstruierte in
+     verschiedenen Staerken, und beide Vorzeichen - und die Suche beginnt bei
+     der besten. So kann das Ergebnis nie schlechter sein als vorher, und der
+     spaete Scheitel kommt aus der Verfeinerung: sie bewertet die echte
+     Rundenzeit, und spaeter einlenken bringt die fruehere Beschleunigung auf
+     die folgende Gerade (siehe die Lehrbilder in zielflagge/Ideallinie). */
+  const grenzeK=(k)=>{
+    const i=Math.round(k/STUETZ*N)%N;
+    return {u:Math.max(unten?unten[i]:-maxAb, -maxAb),
+            o:Math.min(oben ?oben [i]: maxAb,  maxAb)};
+  };
   let st=new Array(STUETZ).fill(0);
-  // Startwert in den erlaubten Bereich ziehen, sonst sucht der erste Durchgang
-  // von einer verbotenen Stelle aus.
-  for(let k=0;k<STUETZ;k++){
-    const u=unten?unten[Math.round(k/STUETZ*N)%N]:-maxAb;
-    const o=oben ?oben [Math.round(k/STUETZ*N)%N]: maxAb;
-    st[k]=clamp(0, Math.max(u,-maxAb), Math.min(o,maxAb));
+  {
+    const kr=new Array(N);
+    for(let i=0;i<N;i++){
+      const a2=spaced[(i-3+N*2)%N], m=spaced[i], c=spaced[(i+3)%N];
+      kr[i]=-((m.x-a2.x)*(c.z-a2.z)-(c.x-a2.x)*(m.z-a2.z));
+    }
+    const glaetten=(arr,w)=>{
+      const out=new Array(N);
+      for(let i=0;i<N;i++){
+        let sum=0;
+        for(let d=-w;d<=w;d++) sum+=arr[(i+d+N*4)%N];
+        out[i]=sum/(2*w+1);
+      }
+      return out;
+    };
+    const scharf=glaetten(kr, Math.max(2,Math.round(N/120)));
+    const breit =glaetten(kr, Math.max(6,Math.round(N/16)));
+    let gr=0;
+    for(let i=0;i<N;i++) gr=Math.max(gr, Math.abs(scharf[i]-breit[i]));
+    const bauen=(staerke)=>{
+      const v=new Array(STUETZ);
+      for(let k=0;k<STUETZ;k++){
+        const i=Math.round(k/STUETZ*N)%N;
+        const g=grenzeK(k);
+        const form=gr>1e-9 ? (scharf[i]-breit[i])/gr*maxAb*staerke : 0;
+        v[k]=clamp(form, g.u, g.o);
+      }
+      return v;
+    };
+    let bestT=Infinity;
+    for(const staerke of [0, 0.25, 0.5, 0.8, 1.0, -0.25, -0.5, -0.8, -1.0]){
+      const kand=bauen(staerke);
+      const t=zeit(entfalten(kand));
+      if(t<bestT){ bestT=t; st=kand; }
+    }
   }
   let beste=zeit(entfalten(st));
-  for(let schritt=maxAb*0.6; schritt>0.25; schritt*=0.6){
+  for(let schritt=maxAb*0.6; schritt>0.2; schritt*=0.62){
     let verbessert=true, runden=0;
     while(verbessert && runden++<8){
       verbessert=false;
@@ -2150,6 +2221,11 @@ function updateAICars(simTime, dt){
     const istSpieler=!!(player && id===player.id);
     // Der eigene Wagen wird hier nur bewegt, solange der Autopilot faehrt.
     if(istSpieler && !state.autopilot) continue;
+    /* ⚠ Der Autopilot ist dieselbe KI wie die der Gegner - kein Sonderweg.
+       Nutzer: "auto-pilots ki uebernimmt 100% der ki der anderen."
+       Vorher hing der eigene Wagen unter Autopilot am PLAN und wurde nur
+       dorthin animiert: er wich niemandem aus, kaempfte nicht und konnte
+       nichts gewinnen oder verlieren. Jetzt faehrt er wie jeder andere. */
     const cm=carMeshes[id];
     const slot=(state.gridSlots&&state.gridSlots[id])||{back:5,lateral:cm.laneOffset};
     const fadeHier=(istSpieler && state.planOhneGrid) ? 0 : fade;
@@ -2157,7 +2233,7 @@ function updateAICars(simTime, dt){
     // Abgeben kein Sprung entsteht.
     const prog=getProgressAI(id, istSpieler ? simTime-(state.planVersatz||0) : simTime);
     let u;
-    if(!istSpieler && !prog.frozen){
+    if(!prog.frozen){
       // Der Gegner FAEHRT. Der Plan ist sein Ziel, nicht seine Position.
       const fort=fahreGegner(id, cm, prog, dt);
       u=((fort%1)+1)%1;
@@ -2179,12 +2255,12 @@ function updateAICars(simTime, dt){
        Lage: wer dicht hinter jemandem haengt, versucht es auf einer anderen.
        Die laneOffset-Streuung bleibt als kleiner Rest, sonst faehrt das ganze
        Feld exakt uebereinander. */
-    if(!istSpieler && !prog.frozen) waehleLinie(id, cm);
+    if(!prog.frozen) waehleLinie(id, cm);
     const basis=slot.lateral*fadeHier
       + (idealBei(u, cm.linie||0)+cm.laneOffset*0.25)*(1-fadeHier);
     let lateral=basis;
     let schraeg=0;
-    if(!istSpieler && !prog.frozen){
+    if(!prog.frozen){
       // Ziel weich anfahren, nicht springen: ein Wagen rutscht nicht seitwaerts.
       const ziel=seitlichesZiel(id, cm, u, basis);
       const vorher=(cm.seitlich!==undefined)?cm.seitlich:basis;
@@ -2231,6 +2307,19 @@ function updateAICars(simTime, dt){
     if(cm.letztePos) cm.versatz=new THREE.Vector3(px-cm.letztePos.x,0,pz-cm.letztePos.z);
     cm.letztePos=new THREE.Vector3(px,0,pz);
     cm.group.position.set(px,0.05,pz);
+    /* Blickrichtung aus der TATSAECHLICHEN Bewegung, nicht aus der Tangente
+       der Bahnmitte. Ein Wagen auf einer versetzten Linie faehrt eine ANDERE
+       Kurve als die Mittellinie - zeigte er entlang deren Tangente, stand er
+       schraeg zu seinem eigenen Weg und sah aus, als rutsche er seitlich durch
+       die Kurve. Genau das war die Meldung "die anderen rutschen in den
+       kurven". Der kleine Zusatzwinkel aus Querbewegung und Dreher bleibt. */
+    if(cm.versatz && cm.versatz.lengthSq()>1e-6 && !prog.frozen){
+      const fahrt=Math.atan2(cm.versatz.x, cm.versatz.z);
+      let d=fahrt-ph;
+      while(d>Math.PI) d-=Math.PI*2;
+      while(d<-Math.PI) d+=Math.PI*2;
+      ph+=clamp(d, -0.6, 0.6);
+    }
     cm.group.rotation.y=ph;
     // Rundenzaehler des Spielers mitfuehren, sonst steht er still, waehrend der
     // Autopilot faehrt - und das Ziel waere nie erreicht.
@@ -2662,6 +2751,20 @@ function autopilotUebernehmen(){
   // einen Sprung von bis zu 79 m. Der Versatz gehoert zum stehenden Start,
   // nicht zu einer Uebergabe mitten im Rennen.
   state.planOhneGrid = true;
+  /* ⚠ Der Autopilot FAEHRT jetzt selbst (dieselbe KI wie die Gegner), statt am
+     Plan zu haengen. Er muss deshalb dort uebernehmen, wo der Spieler wirklich
+     ist - mit seiner Position und seinem Tempo. Ohne das setzt fahreGegner den
+     Wagen beim ersten Aufruf auf die PLANposition und auf Tempo null: der
+     Wagen springt und bleibt stehen. */
+  {
+    const cm=carMeshes[player.id];
+    if(cm){
+      cm.fortschritt=player.lap+clamp(player.frac,0,0.9999);
+      cm.tempo=Math.max(0, player.speed);
+      cm.dreher=player.dreh||0;
+      cm.seitlich=nearestTrackInfo(player.pos).lateral;
+    }
+  }
   // Der Autopilot faehrt die Ideallinie. Wer neben der Bahn abgibt, wuerde
   // sonst dorthin springen - gemessen bis zu 50 m. Deshalb ueber 1,2 Sekunden
   // zurueckgleiten. Die STRECKENposition stimmt dabei von Anfang an, nur die
