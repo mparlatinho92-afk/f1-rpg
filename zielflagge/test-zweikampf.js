@@ -151,14 +151,74 @@ function ladeSaison(jahr) {
     }
     out.startVersatz = +player.pos.distanceTo(startPos).toFixed(2);
     out.startKontakte = kontakte;
+
+    // ── 5. Laengs-Spielraum: Positionswechsel ja, Ergebnis nein ───────────
+    resetForNewRace();
+    document.getElementById('start-modus').value = 'ki';
+    startRace();
+    racing = true; raceClock = 0;
+    const gg = Object.keys(carMeshes).filter(id => id !== player.id);
+    // Reihenfolge nach PLAN (ohne Spielraum) als Referenz
+    const planOrdnung = (t) => gg.filter(id => !getProgressAI(id, t).frozen)
+      .map(id => { const p = getProgressAI(id, t); return { id, m: p.lap + p.frac }; })
+      .sort((a, b) => b.m - a.m).map(x => x.id).join(',');
+    // Reihenfolge wie SICHTBAR (mit Spielraum)
+    const sichtOrdnung = (t) => gg.filter(id => !getProgressAI(id, t).frozen)
+      .map(id => { const p = getProgressAI(id, t);
+        return { id, m: p.lap + p.frac + ((carMeshes[id].laengsIst || 0) / trackLength) }; })
+      .sort((a, b) => b.m - a.m).map(x => x.id).join(',');
+
+    const simVorher = { c: JSON.stringify(aiSim.cumulative), r: JSON.stringify(aiSim.retired) };
+    let wechselGesehen = 0, maxBand = 0;
+    /* ⚠ EINHEITEN: aiAnimData[].endTime ist PLANzeit, raceClock ist RENNzeit.
+       getProgressAI rechnet intern raceClock/state.aiScale. Wer bis endTime
+       laufen laesst, ist bei aiScale 1,2 erst bei Runde 25 von 30 - und haelt
+       dann faelschlich fuer kaputt, dass der Laengs-Spielraum noch nicht
+       ausgelaufen ist. Genau das ist hier passiert. */
+    const skala = state.aiScale || 1;
+    const ende = Math.max.apply(null, Object.values(aiAnimData).map(a => a.endTime || 0)) * skala;
+    while (raceClock < ende * 0.5) {
+      raceClock += 1 / 60;
+      updateAICars(raceClock, 1 / 60);
+      if (Math.random() < 0.02) {
+        if (planOrdnung(raceClock) !== sichtOrdnung(raceClock)) wechselGesehen++;
+        gg.forEach(id => { maxBand = Math.max(maxBand, Math.abs(carMeshes[id].laengsIst || 0)); });
+      }
+    }
+    out.wechselGesehen = wechselGesehen;
+    out.maxBand = +maxBand.toFixed(1);
+
+    // Bis zum Ziel durchlaufen: der Spielraum muss auf null auslaufen
+    while (raceClock < ende + 6) { raceClock += 1 / 60; updateAICars(raceClock, 1 / 60); }
+    let bandAmEnde = 0;
+    gg.forEach(id => {
+      if (getProgressAI(id, raceClock).frozen) return;
+      bandAmEnde = Math.max(bandAmEnde, Math.abs(carMeshes[id].laengsIst || 0));
+    });
+    out.bandAmEnde = +bandAmEnde.toFixed(2);
+    out.zielOrdnungGleich = planOrdnung(raceClock) === sichtOrdnung(raceClock);
+
+    /* Die Wertung darf vom Spielraum nichts mitbekommen.
+       ⚠ NICHT ueber "Reihenfolge nach Distanz gegen Reihenfolge nach Zeit"
+          pruefen: wer im Ziel ist, steht bei lap+frac auf dem Maximum, also
+          haben alle Fertigen denselben Wert und ihre Reihenfolge ist
+          willkuerlich. Zwei Anlaeufe sind daran gescheitert.
+       Gefragt ist, ob der Spielraum jemals in aiSim zurueckschreibt - und das
+       laesst sich direkt messen: Momentaufnahme vorher gegen nachher. Aus aiSim
+       baut finalizeAndShowResults die Endwertung. */
+    out.wertungUnveraendert = (JSON.stringify(aiSim.cumulative) === simVorher.c)
+                           && (JSON.stringify(aiSim.retired) === simVorher.r);
     return out;
   });
 
   const p = [];
   const pruefWahr = (name, bed, hinweis) => p.push({ name, ist: hinweis, ok: !!bed });
 
-  pruefWahr('Laengsposition bleibt der Plan', r.maxLaengsFehler < 0.05,
-    r.maxLaengsFehler + ' m groesste Abweichung');
+  // Die Zusage hat sich mit dem Laengs-Spielraum absichtlich geaendert: nicht
+  // mehr "exakt auf dem Plan", sondern "innerhalb des Bandes". Was exakt bleibt,
+  // ist die ENDwertung - die kommt aus aiSim und sieht den Spielraum nie.
+  pruefWahr('Laengsabweichung bleibt im Band', r.maxLaengsFehler <= 12.5,
+    r.maxLaengsFehler + ' m von ' + 12 + ' m erlaubt');
   pruefWahr('Quer gibt es Bewegung', r.querSpanneMittel > 1.0,
     r.querSpanneMittel + ' m im Schnitt, ' + r.querSpanneMax + ' m maximal');
   pruefWahr('Gegner fahren nicht ineinander', r.anteilZuNah < 1.0,
@@ -169,6 +229,13 @@ function ladeSaison(jahr) {
     r.startVersatz + ' m verschoben in 12 s');
   pruefWahr('Kaum Rempler beim Start', r.startKontakte < 60,
     r.startKontakte + ' Bilder mit Kontakt von 720');
+  pruefWahr('Positionswechsel im Feld', r.wechselGesehen > 0,
+    r.wechselGesehen + ' Stichproben mit anderer Reihenfolge');
+  pruefWahr('Spielraum bleibt im Band', r.maxBand <= 12.5, r.maxBand + ' m maximal');
+  pruefWahr('Spielraum laeuft zum Ziel aus', r.bandAmEnde < 0.5, r.bandAmEnde + ' m am Ende');
+  pruefWahr('Zielreihenfolge = Planreihenfolge', r.zielOrdnungGleich, 'identisch');
+  pruefWahr('Wertungsdaten unveraendert', r.wertungUnveraendert,
+    'aiSim vor und nach dem Rennen identisch');
 
   console.log('=== ZIELFLAGGE: Zweikaempfe ohne Eingriff ins Ergebnis (' + JAHR + ') ===\n');
   p.forEach(x => console.log((x.ok ? '  OK  ' : ' FEHL ') + x.name.padEnd(34) + String(x.ist)));

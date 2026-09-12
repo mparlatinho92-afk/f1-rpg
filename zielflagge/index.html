@@ -815,6 +815,15 @@ const LENK_MAX=2.4;        // rad/s - Begrenzung fuer Schritttempo und Rueckwaer
 const KOLLI_HALB=1.25;     // m - Abstand Bug bzw. Heck zur Wagenmitte
 const KOLLI_BREIT=1.0;     // m - halbe Wagenbreite
 const KOLLI_NAH=7;         // m - Vorpruefung, darueber kann nichts beruehren
+/* Laengs-Spielraum der Gegner in Metern. Innerhalb dieses Bandes darf ein
+   Wagen vor oder hinter seinem Planpunkt liegen - dadurch entstehen sichtbare
+   Ueberholmanoever IM FELD, nicht nur gegen den Spieler. Das Band wird staendig
+   zum Plan zurueckgezogen und auf der letzten Runde auf null gefahren, damit
+   die Zielreihenfolge exakt der Wertung entspricht.
+   12 m sind bei 28 m/s rund 0,43 s - genug fuer einen Positionstausch zwischen
+   zwei Wagen, die im Plan 5 m auseinanderliegen, und wenig genug, dass daraus
+   keine andere Geschichte wird. */
+const LAENGS_BAND=12;
 const AUSLAUF=12;          // m - hinter dem Randstein, danach kommt die Mauer
 const GRID_MAX=26;         // Startplaetze; wer langsamer qualifiziert, ist DNQ
 
@@ -1504,6 +1513,48 @@ function seitlichesZiel(id, cm, u, basis){
   return clamp(ziel, -rand, rand);
 }
 
+/* Laengs-Spielraum eines Gegners fortschreiben.
+   Drei Kraefte: ein langsamer Eigenrhythmus (jeder Wagen atmet anders),
+   Windschatten (dicht hinter jemandem geht es leichter) und die Rueckholung
+   zum Plan. Auf der Schlussrunde wird alles auf null gezogen. */
+function laengsSpielraum(id, cm, u, prog, dt){
+  if(cm.phase===undefined) cm.phase=(hashStr(id)%1000)/1000*Math.PI*2;
+  if(cm.laengsVersatz===undefined) cm.laengsVersatz=0;
+
+  // Auf der letzten Runde ausblenden: was man ueber die Linie fahren sieht,
+  // muss der Wertung entsprechen.
+  // Ueber die letzten ZWEI Runden ausblenden, nicht ueber eine: mit nur einer
+  // Runde standen am Ziel noch 7,7 m offen, weil die Rueckholung traege ist.
+  const restRunden=(state.laps||1)-prog.lap-1;
+  const auslauf=clamp(restRunden/2, 0, 1);
+
+  let ziel=Math.sin(raceClock*0.22+cm.phase)*LAENGS_BAND*0.45;
+
+  // Windschatten: wer dicht hinter einem anderen liegt, holt auf.
+  for(const oid in carMeshes){
+    if(oid===id) continue;
+    const o=carMeshes[oid];
+    if(o.planU===undefined) continue;
+    const dl=laengsAbstand(o.planU, u);          // >0: der andere liegt vorn
+    if(dl<5||dl>26) continue;
+    const dq=Math.abs((cm.seitlich||0)-(o.seitlich||0));
+    if(dq>3) continue;
+    ziel+=LAENGS_BAND*0.3;
+    break;
+  }
+
+  // Waehrend der Startaufstellung KEIN Spielraum: dort stehen die Wagen dicht
+  // gestaffelt, und ein Laengsversatz schiebt sie ineinander - der Spieler
+  // wurde dadurch beim Start wieder angerempelt. Erst danach anlaufen lassen.
+  const startFrei=clamp((raceClock-GRID_FADE_S)/4, 0, 1);
+  ziel=clamp(ziel, -LAENGS_BAND, LAENGS_BAND)*auslauf*startFrei;
+  // Traege folgen - ein Rennwagen springt nicht um zehn Meter. Beim Ausblenden
+  // aber zuegig, damit am Ziel wirklich nichts uebrig bleibt.
+  const rate=(auslauf>0.05)?0.7:2.5;
+  cm.laengsVersatz+=(ziel-cm.laengsVersatz)*Math.min(1, dt*rate);
+  return cm.laengsVersatz;
+}
+
 function updateAICars(simTime, dt){
   dt=dt||1/60;
   // Vor dem Start (simTime<=0) stehen alle auf ihrem Grid-Slot; danach schmilzt
@@ -1520,7 +1571,13 @@ function updateAICars(simTime, dt){
     // Abgeben kein Sprung entsteht.
     const prog=getProgressAI(id, istSpieler ? simTime-(state.planVersatz||0) : simTime);
     let u=clamp(prog.frac,0,0.9999) - (slot.back/trackLength)*fadeHier;
-    if(u<0) u+=1;
+    // Laengs-Spielraum NUR fuer Gegner und nur solange sie fahren. Der eigene
+    // Wagen haengt am Plan, weil sein Versatz beim Abgeben gesetzt wurde.
+    if(!istSpieler && !prog.frozen){
+      cm.laengsIst=laengsSpielraum(id, cm, u, prog, dt);
+      u+=cm.laengsIst/trackLength;
+    } else { cm.laengsIst=0; }
+    if(u<0) u+=1; if(u>=1) u-=1;
     const basis=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
     cm.planU=u;
     let lateral=basis;
@@ -1655,7 +1712,12 @@ function tickHudAndLeaderboard(simTime){
       // blass und mit "Ausfall" in der Liste, obwohl er noch fuhr und normal
       // einsortiert wurde.
       const isRet=!!(aiSim && aiSim.retired[d.id]) && prog.frozen;
-      const metric=isRet?(-1000+prog.lap+prog.frac):(prog.lap+prog.frac);
+      // Der Laengs-Spielraum gehoert MIT in die Wertung dieser Tabelle: sonst
+      // sieht man ein Ueberholmanoever, das im Klassement nicht stattfindet.
+      // Die ENDwertung kommt aus aiSim und bleibt davon unberuehrt; auf der
+      // Schlussrunde laeuft der Spielraum ohnehin auf null.
+      const vs=((carMeshes[d.id]&&carMeshes[d.id].laengsIst)||0)/trackLength;
+      const metric=isRet?(-1000+prog.lap+prog.frac):(prog.lap+prog.frac+vs);
       return {d, metric, isRet, isPlayer:false};
     }
   }).sort((a,b)=>b.metric-a.metric);
