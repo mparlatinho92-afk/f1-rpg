@@ -1567,20 +1567,58 @@ function updatePlayer(dt){
        Folge schlicht: nie ein Dreher.
        quer ist der Anteil der Stossrichtung QUER zur eigenen Fahrtrichtung.
        Jeder Wagen bekommt sein eigenes Paar aus Hebel und Querkraft. */
-    /* Schwelle 6 statt 1,5 m/s und am Start gar kein Dreher.
-       Auf dem Grid beruehrt man sich staendig mit ein paar Metern pro Sekunde
-       Differenz; mit der niedrigen Schwelle wurde der Spieler dabei jedes Mal
-       weggedreht. Ein Dreher soll ein Ereignis sein, kein Grundrauschen. */
-    const drehErlaubt=(raceClock>GRID_FADE_S) && annaeherung>6;
+    /* ══ WER WIE ARG GEDREHT WIRD ═══════════════════════════════════════
+       Drei Groessen entscheiden, und alle drei stehen hier schon zur Verfuegung:
+
+       1. Die ANNAEHERUNG - wie schnell die beiden aufeinander zukommen. Das
+          ist die Wucht. Zwei Wagen, die mit 60 nebeneinander herfahren und
+          sich beruehren, ist etwas anderes als einer, der mit 40 Differenz
+          auffaehrt.
+       2. Der HEBELARM - wo am Wagen es trifft. Nase oder Heck drehen, Mitte
+          schiebt.
+       3. Das TEMPOVERHAELTNIS - wer von einem viel Schnelleren getroffen wird,
+          fliegt; wer selbst schnell unterwegs ist und angetippt wird, merkt
+          kaum etwas. Nutzer: "die geschwindigkeit des rammens entscheidet wer
+          wie arg betroffen ist. und die geschwindigkeit des getroffenen."
+
+       Schwelle 3,5 m/s statt 6: bei 6 passierte fast nie etwas ("zu brav").
+       Waehrend der Startaufstellung bleibt es aus - dort ist jede Beruehrung
+       Grundrauschen. Gedeckelt bei 2,0 rad/s, damit aus einem Rempler kein
+       Kreisel wird. */
+    /* Die Relativgeschwindigkeit hat zwei Anteile, und beide drehen anders:
+       - ENTLANG der Beruehrungsnormalen (annaeherung): das ist das Rammen.
+       - QUER dazu (tangential): das ist das Aneinander-Vorbeigleiten.
+       Zwei Wagen, die nebeneinander herfahren und sich streifen, haben fast
+       keine Annaeherung - sie gleiten. Rechnerisch dreht das nichts, und das
+       stimmt auch: ein Streifen an der Flanke schiebt nur.
+       WAS im Rennsport dabei trotzdem dreht, sind die RAEDER. Beruehrt es sich
+       an Bug oder Heck - dort sitzen sie - und laufen die Wagen mit deutlich
+       verschiedenem Tempo, verhaken sie sich und werfen einen hoch. Das ist
+       der klassische Zweikampf-Unfall, und ohne ihn bleibt das Spiel brav. */
+    const relX=dir.x*player.speed-vgx, relZ=dir.z*player.speed-vgz;
+    const tang=relX*(-nz)+relZ*nx;
+    const wucht=Math.hypot(relX,relZ);
+    const drehErlaubt=(raceClock>GRID_FADE_S) && wucht>3.5;
     if(drehErlaubt){
       const meinQuer=dir.x*nz-dir.z*nx;
       const seinQuer=od.x*nz-od.z*nx;
-      const drallIch=clamp(annaeherung*meinQuer*meinHebel*0.10, -2.4, 2.4);
-      const drallEr =clamp(annaeherung*seinQuer*seinHebel*0.10, -2.4, 2.4);
-      player.dreh=(player.dreh||0)+drallIch;
-      // Der Gegner wird gedreht, nicht der Spieler gespiegelt: wer wo getroffen
-      // wird, entscheidet sein eigener Hebel.
-      cm.dreher=(cm.dreher||0)-drallEr*0.8;
+      const vIch=Math.abs(player.speed);
+      const vEr=Math.hypot(vgx,vgz);
+      // Je schneller der ANDERE gegenueber mir, desto mehr reisst es mich.
+      const gegenMich=clamp(vEr/Math.max(vIch,8), 0.35, 2.2);
+      const gegenIhn =clamp(vIch/Math.max(vEr,8), 0.35, 2.2);
+      // Verhaken: nur wenn es BEIDE an Bug oder Heck erwischt, nie an der Mitte.
+      const radKontakt=(Math.abs(meinHebel)>0.5 && Math.abs(seinHebel)>0.5);
+      const verhaken=radKontakt ? tang*0.05 : 0;
+      const drallIch=clamp((annaeherung*meinQuer*0.085+verhaken)*meinHebel*gegenMich, -2.0, 2.0);
+      const drallEr =clamp((annaeherung*seinQuer*0.085-verhaken)*seinHebel*gegenIhn,  -2.0, 2.0);
+      /* ⚠ Die SUMME deckeln, nicht den Einzelbeitrag. Solange sich zwei Wagen
+         beruehren, kommt in JEDEM Bild ein Impuls dazu - bei 60 Bildern je
+         Sekunde wurde aus einem Rempler ein Kreisel, obwohl jeder einzelne
+         Beitrag brav gedeckelt war. Gemessen: 2,53 rad/s trotz Deckel 2,0. */
+      player.dreh=clamp((player.dreh||0)+drallIch, -2.0, 2.0);
+      // Der Gegner wird nach SEINEM Hebel gedreht, nicht als Spiegelbild.
+      cm.dreher=clamp((cm.dreher||0)-drallEr*0.8, -2.0, 2.0);
     }
     player.kontakt=true;
   }

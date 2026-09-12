@@ -109,14 +109,68 @@ function ladeSaison(jahr) {
     player.schub.set(0, 0, 0);
     for (let i = 0; i < 40; i++) updatePlayer(1 / 60);
     out.laengsSpieler = +Math.abs(player.dreh).toFixed(2);
+
+    /* ── Tempoverhaeltnis: wer wie arg betroffen ist ─────────────────────
+       Echte Rennsituation statt Querschlaeger: beide Wagen zeigen in
+       Fahrtrichtung, der eine trifft die hintere Ecke des anderen. Nur die
+       Tempi unterscheiden sich. Der erste Entwurf liess den Spieler quer
+       hineinfahren - das ist kein Rennunfall, sondern ein Rammstoss, und die
+       Annaeherung war dort immer das volle Spielertempo. */
+    const laengsRi = new THREE.Vector3(Math.sin(pp.heading), 0, Math.cos(pp.heading));
+    const treffer = (meinTempo, seinTempo, meinVersatzLaengs) => {
+      // Gegner in der Mitte, Spieler seitlich versetzt dahinter bzw. davor
+      gm.position.set(pp.pos.x, 0.05, pp.pos.z);
+      gm.rotation.y = pp.heading;
+      carMeshes[gid].dreher = 0;
+      carMeshes[gid].versatz = new THREE.Vector3(
+        laengsRi.x * seinTempo / 60, 0, laengsRi.z * seinTempo / 60);
+      player.pos.set(pp.pos.x + n.x * 1.15 + laengsRi.x * meinVersatzLaengs,
+        0, pp.pos.z + n.z * 1.15 + laengsRi.z * meinVersatzLaengs);
+      player.heading = pp.heading;          // beide in Fahrtrichtung
+      player.speed = meinTempo; player.steerNow = 0; player.dreh = 0;
+      player.schub.set(0, 0, 0);
+      Object.keys(keys).forEach(k => { keys[k] = false; });
+      let maxIch = 0, maxEr = 0;
+      for (let i = 0; i < 30; i++) {
+        // Der Gegner bewegt sich wirklich - sonst stimmt die Annaeherung nicht
+        gm.position.x += laengsRi.x * seinTempo / 60;
+        gm.position.z += laengsRi.z * seinTempo / 60;
+        updatePlayer(1 / 60);
+        maxIch = Math.max(maxIch, Math.abs(player.dreh || 0));
+        maxEr = Math.max(maxEr, Math.abs(carMeshes[gid].dreher || 0));
+      }
+      return { ich: +maxIch.toFixed(2), er: +maxEr.toFixed(2) };
+    };
+    out.schnellGegenLangsam = treffer(45, 5, -3.2);   // ich ramme einen Langsamen
+    out.langsamGegenSchnell = treffer(5, 45, 3.2);    // ich werde ueberfahren
+    out.beideSchnell = treffer(45, 43, -3.2);         // Beruehrung bei Renntempo
     return out;
   });
 
-  pruefWahr('Seitlicher Einschlag dreht den Spieler', d.querSpieler > 0.3,
-    d.querSpieler.toFixed(2) + ' rad/s');
-  pruefWahr('... und den Gegner', d.querGegner > 0.1, d.querGegner.toFixed(2) + ' rad');
-  pruefWahr('Auffahren von hinten dreht kaum', d.laengsSpieler < d.querSpieler * 0.5,
-    d.laengsSpieler.toFixed(2) + ' gegen ' + d.querSpieler.toFixed(2));
+  /* Wer quer in einen Stehenden faehrt, dreht DEN - und selbst kaum. Genau das
+     war die Anforderung ("die geschwindigkeit des rammens entscheidet wer wie
+     arg betroffen ist"), also darf hier nicht mehr verlangt werden, dass es
+     auch den Rammenden herumreisst. */
+  pruefWahr('Seitlicher Einschlag dreht den Getroffenen', d.querGegner > 0.8,
+    d.querGegner.toFixed(2) + ' rad');
+  pruefWahr('... den Rammenden kaum', d.querSpieler < d.querGegner * 0.3,
+    d.querSpieler.toFixed(2) + ' gegen ' + d.querGegner.toFixed(2));
+  pruefWahr('Auffahren genau von hinten dreht nicht', d.laengsSpieler < 0.1,
+    d.laengsSpieler.toFixed(2) + ' rad/s');
+  pruefWahr('Rammen dreht den Getroffenen staerker',
+    d.schnellGegenLangsam.er > d.schnellGegenLangsam.ich * 1.5,
+    'ich ' + d.schnellGegenLangsam.ich + ' / er ' + d.schnellGegenLangsam.er);
+  pruefWahr('Ueberfahren werden dreht mich staerker',
+    d.langsamGegenSchnell.ich > d.schnellGegenLangsam.ich,
+    'langsam getroffen ' + d.langsamGegenSchnell.ich
+    + ' gegen schnell rammend ' + d.schnellGegenLangsam.ich);
+  pruefWahr('Beruehrung bei Renntempo bleibt harmlos',
+    d.beideSchnell.ich < 0.5 && d.beideSchnell.er < 0.8,
+    'ich ' + d.beideSchnell.ich + ' / er ' + d.beideSchnell.er);
+  pruefWahr('Kein Kreisel', Math.max(d.schnellGegenLangsam.er,
+    d.langsamGegenSchnell.ich, d.langsamGegenSchnell.er) <= 2.05,
+    'groesste Drehung ' + Math.max(d.schnellGegenLangsam.er,
+      d.langsamGegenSchnell.ich, d.langsamGegenSchnell.er));
 
   // ══ 1b. DER START ══════════════════════════════════════════════════════
   // Zwei vom Nutzer gemeldete Beobachtungen: er wurde am Start immer
