@@ -1330,14 +1330,22 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
       const t=zeit(entfalten(kand));
       if(t<bestT){ bestT=t; st=kand; besteStaerke=staerke; }
     }
-    // Die gewaehlte Form in voller Aufloesung merken - sie ist die
-    // Lehrbuchlinie, zu der am Ende gemischt wird.
+    /* ⚠ Die Lehrbuchlinie in VOLLER Staerke merken, nicht in der vom Modell
+       gewaehlten. besteStaerke kommt aus der Rundenzeit, und das Modell
+       bevorzugt schwache Formen - es waehlte 0,25 bis 0,5. Gemischt wurde
+       damit zu einer Linie, die selbst schon fast mittig war: am Scheitel
+       blieben 2,6 m auf einer 15 m breiten Bahn, also fuenf Pixel im Bild.
+       Der Nutzer sah zu Recht keinen Unterschied.
+       Welche Seite innen ist, steht geometrisch fest (Vektor zur Sehnenmitte)
+       und muss nicht erraten werden - deshalb hier volle Staerke, festes
+       Vorzeichen. */
     form0=new Array(N);
     for(let i=0;i<N;i++){
       const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
-      const f=gr>1e-9 ? (scharf[i]-breit[i])/gr*maxAb*(besteStaerke||1) : 0;
+      const f=gr>1e-9 ? (scharf[i]-breit[i])/gr*maxAb : 0;
       form0[i]=clamp(f, Math.max(u,-maxAb), Math.min(o,maxAb));
     }
+    void besteStaerke;
   }
   let beste=zeit(entfalten(st));
   for(let schritt=maxAb*0.6; schritt>0.2; schritt*=0.62){
@@ -1374,7 +1382,11 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
      ist eine bewusste Entscheidung fuer das BILD, nicht fuer die Uhr. */
   const roh=entfalten(st);
   if(!form0) return roh;
-  const misch=0.6;
+  /* 0,75 statt 0,6: die Linie soll SICHTBAR aussen hineingehen und den
+     Scheitel anschneiden. Das Modell haelt das fuer minimal langsamer - es
+     kennt aber weder Abtrieb noch Reifenlast, und der Unterschied liegt
+     innerhalb seiner eigenen Ungenauigkeit. */
+  const misch=0.75;
   const aus=new Array(N);
   for(let i=0;i<N;i++){
     const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
@@ -1520,7 +1532,12 @@ function buildTrack(){
      so schnell wie moeglich sind. */
   idealLinie=rechneIdeallinie(spaced, spacedTangents, trackLength);
   {
-    const abstand=1.6;
+    /* 3,4 m statt 1,6 m Abstand. Bei 1,6 m lagen die drei Linien so dicht
+       beieinander, dass das ganze Feld wie auf EINER Linie im Gaensemarsch
+       fuhr - im Spiel deutlich zu sehen, in den Zahlen nicht. Ein Wagen ist
+       2 m breit; damit zwei nebeneinander passen, muessen die Linien mehr als
+       eine Wagenbreite trennen. */
+    const abstand=3.4;
     const unten=idealLinie.map(x=>x+abstand);
     const oben =idealLinie.map(x=>x-abstand);
     LINIEN=[

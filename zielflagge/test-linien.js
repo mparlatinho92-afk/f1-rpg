@@ -86,6 +86,11 @@ const OUT=path.join(__dirname,'render')+'/';
       maxAb:+maxAb.toFixed(1), befund, schikanenDetail:schikanen};
   });
   const befund = mess.befund;
+  const abstand01 = await p.evaluate(()=>{
+    const N=LINIEN[0].length; let s=0;
+    for(let i=0;i<N;i++) s+=Math.abs(LINIEN[1][i]-LINIEN[0][i]);
+    return s/N;
+  });
   console.log(JSON.stringify(mess, null, 2));
   const zeiten = await p.evaluate(()=>{
     const N=spacedPts.length, W=Math.max(2,Math.round(N/80));
@@ -116,7 +121,7 @@ const OUT=path.join(__dirname,'render')+'/';
   await p.evaluate(()=>{
     const N=spacedPts.length;
     const cv=document.createElement('canvas');
-    cv.width=1300; cv.height=950; cv.id='karte';
+    cv.width=1400; cv.height=1000; cv.id='karte';
     cv.style.cssText='position:fixed;left:0;top:0;z-index:9999;background:#f4f2ee';
     document.body.appendChild(cv);
     const g=cv.getContext('2d');
@@ -160,7 +165,8 @@ const OUT=path.join(__dirname,'render')+'/';
   await p.screenshot({path:OUT+'linien-draufsicht.png'});
 
   // Ausschnitt: die grossen Kurven 6-8 und eine Schikane
-  for(const [name, von, bis] of [['linien-kurve', 150, 290], ['linien-schikane', 90, 200]]){
+  for(const [name, von, bis] of [['linien-kurve', 150, 290], ['linien-schikane', 90, 200],
+                                 ['linien-eine-kurve', 188, 240]]){
     await p.evaluate(([von,bis])=>{
       const N=spacedPts.length;
       const cv=document.getElementById('karte'); const g=cv.getContext('2d');
@@ -193,6 +199,17 @@ const OUT=path.join(__dirname,'render')+'/';
       for(let i=von-6;i<=bis+6;i++){ const j=(i+N*2)%N;
         i===von-6?g.moveTo(X(spacedPts[j].x),Z(spacedPts[j].z)):g.lineTo(X(spacedPts[j].x),Z(spacedPts[j].z)); }
       g.stroke(); g.setLineDash([]);
+      // Randsteine: rot-weiss gestreift, damit die Bahnkante unuebersehbar ist
+      [TRACK_WIDTH/2,-TRACK_WIDTH/2].forEach(o=>{
+        for(let i=von-6;i<=bis+6;i++){
+          const j=(i+N*2)%N, j2=(i+1+N*2)%N;
+          const t=spacedTangents[j], t2=spacedTangents[j2];
+          const a={x:spacedPts[j].x-t.z*o, z:spacedPts[j].z+t.x*o};
+          const c={x:spacedPts[j2].x-t2.z*o, z:spacedPts[j2].z+t2.x*o};
+          g.strokeStyle=(i%4<2)?'#e0e0e0':'#c62828'; g.lineWidth=7;
+          g.beginPath(); g.moveTo(X(a.x),Z(a.z)); g.lineTo(X(c.x),Z(c.z)); g.stroke();
+        }
+      });
       const farben=['#e53935','#1e88e5','#43a047'];
       LINIEN.forEach((L,k)=>{
         g.strokeStyle=farben[k]; g.lineWidth=k===0?6:4; g.globalAlpha=k===0?1:0.7;
@@ -228,9 +245,17 @@ const OUT=path.join(__dirname,'render')+'/';
     Math.round(schnittKurz * 100) + ' % gegen ' + Math.round(schnittGross * 100) + ' %');
   pruef('Linien sind schneller als die Mittellinie', zeiten.linien[0] < zeiten.mitte,
     zeiten.linien[0] + ' s gegen ' + zeiten.mitte + ' s');
-  pruef('Alternativen sind nah dran',
-    Math.max.apply(null, zeiten.linien) - Math.min.apply(null, zeiten.linien) < 0.6,
+  /* Schwelle von 0,6 auf 0,9 s. Die Linien liegen jetzt 3,5 m auseinander -
+     sonst fuhr das ganze Feld im Gaensemarsch auf derselben Spur, weil 1,6 m
+     schmaler sind als ein Wagen. Weiter auseinander heisst zwangslaeufig
+     groesserer Zeitunterschied. Die Alternativen sind auch nicht fuer die
+     ganze Runde gedacht, sondern fuer ein Ueberholmanoever - dort zaehlt die
+     Position, nicht die Rundenzeit. */
+  pruef('Alternativen bleiben brauchbar',
+    Math.max.apply(null, zeiten.linien) - Math.min.apply(null, zeiten.linien) < 0.9,
     zeiten.linien.join(' / ') + ' s');
+  pruef('Linien liegen mehr als eine Wagenbreite auseinander', abstand01 > 2.2,
+    abstand01.toFixed(1) + ' m im Schnitt zur Nachbarlinie');
 
   console.log('');
   console.log('=== ZIELFLAGGE: Fahrlinien ===');
