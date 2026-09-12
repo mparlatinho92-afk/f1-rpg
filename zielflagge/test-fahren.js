@@ -8,10 +8,12 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { festerZufall } = require('./test-hilfe');
 
 const ROOT = path.join(__dirname, '..');
 const HTML = 'file:///' + path.join(__dirname, 'index.html').replace(/\\/g, '/');
 const JAHR = process.argv[2] || '1988';
+const SAMEN = Number(process.argv[3] || 20260912);
 
 function ladeSaison(jahr) {
   const src = fs.readFileSync(path.join(ROOT, 'data', 'seasons.js'), 'utf8');
@@ -26,6 +28,9 @@ function ladeSaison(jahr) {
   page.on('pageerror', e => fehler.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') fehler.push('CONSOLE: ' + m.text()); });
 
+  // Fester Zufallssamen: sonst tastet jeder Lauf ein anderes Rennen ab
+  // und dieselbe Pruefung ist mal gruen, mal rot (siehe test-hilfe.js).
+  await festerZufall(page, SAMEN);
   await page.goto(HTML, { waitUntil: 'load' });
   await page.waitForTimeout(900);
 

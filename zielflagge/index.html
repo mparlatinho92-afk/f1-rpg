@@ -892,6 +892,7 @@ const KOLLI_NAH=7;         // m - Vorpruefung, darueber kann nichts beruehren
    keine andere Geschichte wird. */
 const LAENGS_BAND=12;
 const TOP_TEMPO=53;        // m/s Basis - mit mittleren Werten rund 63 m/s (227 km/h)
+const BESCHL=32;           // m/s^2 - Anfahrt, fuer Spieler UND Gegner dieselbe
 const AUSLAUF_AUSSEN=22;   // m - aussen an Kurven: Platz fuer Fahrfehler
 const AUSLAUF_INNEN=2.5;   // m - innen praktisch nichts, sonst kuerzt man ab
 const AUSLAUF_GERADE=9;    // m - auf Geraden beidseitig
@@ -1420,6 +1421,9 @@ function initPlayer(driverId){
     heading:p.heading,
     speed:0, steerNow:0, lap:0, frac:0, lapStartTime:0, lapTimes:[], bestLap:null,
     finished:false, aborted:false, dreh:0,
+    // Hier anlegen, nicht erst beim ersten Bild in updatePlayer: sonst ist
+    // schub undefiniert, solange die Hauptschleife nicht lief.
+    schub:new THREE.Vector3(),
   };
 }
 function updatePlayer(dt){
@@ -1445,7 +1449,7 @@ function updatePlayer(dt){
   // schneller. Beim Wechsel auf die neue Strecke sprang das Tempo dadurch von
   // 149 auf 230 km/h, ohne dass es jemand so gewollt haette.
   const maxSpeed=TOP_TEMPO*(0.85+(driverStats.pace+teamStats.carSpeed)/400);
-  const accel=38, brakeDecel=42, reverseAccel=16;
+  const accel=BESCHL, brakeDecel=42, reverseAccel=16;
 
   if(throttle>0){ player.speed+=accel*dt; }
   else if(throttle<0){
@@ -1563,7 +1567,12 @@ function updatePlayer(dt){
        Folge schlicht: nie ein Dreher.
        quer ist der Anteil der Stossrichtung QUER zur eigenen Fahrtrichtung.
        Jeder Wagen bekommt sein eigenes Paar aus Hebel und Querkraft. */
-    if(annaeherung>1.5){
+    /* Schwelle 6 statt 1,5 m/s und am Start gar kein Dreher.
+       Auf dem Grid beruehrt man sich staendig mit ein paar Metern pro Sekunde
+       Differenz; mit der niedrigen Schwelle wurde der Spieler dabei jedes Mal
+       weggedreht. Ein Dreher soll ein Ereignis sein, kein Grundrauschen. */
+    const drehErlaubt=(raceClock>GRID_FADE_S) && annaeherung>6;
+    if(drehErlaubt){
       const meinQuer=dir.x*nz-dir.z*nx;
       const seinQuer=od.x*nz-od.z*nx;
       const drallIch=clamp(annaeherung*meinQuer*meinHebel*0.10, -2.4, 2.4);
@@ -1784,7 +1793,11 @@ function seitlichesZiel(id, cm, u, basis){
    Spieler - Haftgrenze in der Kurve, Bremsweg, Vordermann, Beruehrungen.
    Was daraus an Rundenzeit herauskommt, IST das Ergebnis. */
 
-const KI_BESCHL=11;        // m/s^2 - was ein Gegner an Zug aufbauen kann
+/* EINE Beschleunigung fuer Mensch und Gegner. Vorher hatte der Spieler 38 und
+   die Gegner 11 - zwei Massstaebe, und je nachdem war einer im Vorteil.
+   Wer sich am Start ueberholt fuehlt, hat dann recht, ohne dass es an ihm
+   liegt. */
+const KI_BESCHL=BESCHL;
 const KI_BREMS=26;         // m/s^2 - Verzoegerung, Basis der Vorausschau
 const KI_ABSTAND=9;        // m - Wunschabstand zum Vordermann
 const DREH_ABKLING=1.8;    // 1/s - wie schnell ein Dreher sich faengt
@@ -1793,7 +1806,12 @@ function fahreGegner(id, cm, prog, dt){
   if(cm.tempo===undefined){
     // Erststart: auf Planposition und Plantempo setzen.
     cm.fortschritt=prog.lap+clamp(prog.frac,0,0.9999);
-    cm.tempo=trackLength/30;
+    /* Aus dem STAND. Vorher stand hier trackLength/30 - die Gegner hatten im
+       ersten Bild volles Renntempo (43 m/s), waehrend der Spieler bei null
+       begann. Er wurde am Start zwangslaeufig durchgereicht, und es sah aus
+       wie eine bessere Beschleunigung. Es war schlicht ein fliegender Start
+       fuer die einen und ein stehender fuer den anderen. */
+    cm.tempo=0;
     cm.dreher=0;
   }
   const skala=state.aiScale||1;
@@ -1827,6 +1845,24 @@ function fahreGegner(id, cm, prog, dt){
     const dl=(o.fortschrittVor-cm.fortschritt)*trackLength;
     if(dl<=0||dl>60) continue;
     if(dl<vornAbstand){ vornAbstand=dl; vorn=o; }
+  }
+  /* ⚠ DER SPIELER GEHOERT DAZU. Er stand bisher nicht in dieser Pruefung: die
+     Gegner bremsten fuereinander, fuhren aber in ihn hinein. Nutzer:
+     "ausweichen eines objektes das im weg steht ist pflicht."
+     Er faehrt nicht nach fortschritt, sondern nach player.lap/frac - deshalb
+     eigene Rechnung. */
+  if(player && !player.finished && !player.aborted && carMeshes[player.id]){
+    const pQuer=(carMeshes[player.id].seitlich!==undefined)
+      ? carMeshes[player.id].seitlich
+      : nearestTrackInfo(player.pos).lateral;
+    if(Math.abs((cm.seitlichVor||0)-pQuer)<=2.4){
+      const pFort=player.lap+clamp(player.frac,0,0.9999);
+      const dl=(pFort-cm.fortschritt)*trackLength;
+      if(dl>0 && dl<60 && dl<vornAbstand){
+        vornAbstand=dl;
+        vorn={tempo:Math.max(player.speed,0)};
+      }
+    }
   }
   if(vorn){
     // Auf Abstand einregeln: naeher als KI_ABSTAND heisst langsamer als er.

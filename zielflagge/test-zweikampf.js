@@ -10,10 +10,12 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { festerZufall } = require('./test-hilfe');
 
 const ROOT = path.join(__dirname, '..');
 const HTML = 'file:///' + path.join(__dirname, 'index.html').split(String.fromCharCode(92)).join('/');
 const JAHR = process.argv[2] || '1988';
+const SAMEN = Number(process.argv[3] || 20260912);
 
 function ladeSaison(jahr) {
   const src = fs.readFileSync(path.join(ROOT, 'data', 'seasons.js'), 'utf8');
@@ -28,6 +30,9 @@ function ladeSaison(jahr) {
   page.on('pageerror', e => fehler.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') fehler.push('CONSOLE: ' + m.text()); });
 
+  // Fester Zufallssamen: sonst tastet jeder Lauf ein anderes Rennen ab
+  // und dieselbe Pruefung ist mal gruen, mal rot (siehe test-hilfe.js).
+  await festerZufall(page, SAMEN);
   await page.goto(HTML, { waitUntil: 'load' });
   await page.waitForTimeout(900);
 
@@ -37,9 +42,18 @@ function ladeSaison(jahr) {
     state.laps = 30;
     document.getElementById('start-modus').value = 'ki';
     startRace();
+    paused = true;   // sofort, siehe unten
   }, JSON.stringify(ladeSaison(JAHR)));
 
   await page.waitForFunction(() => racing === true, null, { timeout: 15000 });
+  /* ⚠ Die Hauptschleife ist schon beim startRace() angehalten worden.
+     Sie laeuft ueber requestAnimationFrame
+     in Echtzeit weiter und schiebt raceClock vor, waehrend der Test sie
+     gleichzeitig von Hand taktet. Wie viele Bilder dazwischenkommen, haengt an
+     der Wanduhr - dann schwankt das Ergebnis trotz festem Zufallssamen.
+     ⚠ Erst NACH dem Countdown anzuhalten genuegt nicht: zwischen "racing wird
+     true" und dem Anhalten liegen je nach Rechnerlaune ein paar Bilder. */
+  await page.evaluate(() => { paused = true; });   // Absicherung
 
   const r = await page.evaluate(() => {
     const out = {};
@@ -78,7 +92,10 @@ function ladeSaison(jahr) {
     let maxLaengsFehler = 0;
     const querSpanne = {};
     gegner.forEach(id => { querSpanne[id] = { min: 99, max: -99 }; });
-    for (let i = 0; i < 900; i++) {
+    /* 60 s statt 15 s abtasten. Mit dem stehenden Start beschleunigt das Feld
+       die ersten Sekunden nur geradeaus - in einem so kurzen Fenster gibt es
+       kaum Begegnungen, und die Querbewegung sieht kleiner aus als sie ist. */
+    for (let i = 0; i < 3600; i++) {
       raceClock += 1 / 60;
       updateAICars(raceClock, 1 / 60);
       gegner.forEach(id => {
@@ -209,6 +226,7 @@ function ladeSaison(jahr) {
     resetForNewRace();
     document.getElementById('start-modus').value = 'mensch';
     startRace();
+    paused = true;   // sofort, siehe unten
     racing = true; raceClock = 0;
     const startPos = player.pos.clone();
     let kontakte = 0;
@@ -225,6 +243,7 @@ function ladeSaison(jahr) {
     resetForNewRace();
     document.getElementById('start-modus').value = 'ki';
     startRace();
+    paused = true;   // sofort, siehe unten
     racing = true; raceClock = 0;
     const gg = Object.keys(carMeshes).filter(id => id !== player.id);
     // Reihenfolge nach PLAN (ohne Spielraum) als Referenz

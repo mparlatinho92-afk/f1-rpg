@@ -11,10 +11,12 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { festerZufall } = require('./test-hilfe');
 
 const ROOT = path.join(__dirname, '..');
 const HTML = 'file:///' + path.join(__dirname, 'index.html').split(String.fromCharCode(92)).join('/');
 const JAHR = process.argv[2] || '1990';
+const SAMEN = Number(process.argv[3] || 20260912);
 
 function ladeSaison(jahr) {
   const src = fs.readFileSync(path.join(ROOT, 'data', 'seasons.js'), 'utf8');
@@ -29,6 +31,9 @@ function ladeSaison(jahr) {
   page.on('pageerror', e => fehler.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') fehler.push('CONSOLE: ' + m.text()); });
 
+  // Fester Zufallssamen: sonst tastet jeder Lauf ein anderes Rennen ab
+  // und dieselbe Pruefung ist mal gruen, mal rot (siehe test-hilfe.js).
+  await festerZufall(page, SAMEN);
   await page.goto(HTML, { waitUntil: 'load' });
   await page.waitForTimeout(800);
 
@@ -42,11 +47,26 @@ function ladeSaison(jahr) {
     state.laps = 20;
     document.getElementById('start-modus').value = 'mensch';
     startRace();
+    paused = true;   // sofort, siehe unten
   }, JSON.stringify(ladeSaison(JAHR)));
   await page.waitForFunction(() => racing === true, null, { timeout: 15000 });
+  /* ⚠ Die Hauptschleife ist schon beim startRace() angehalten worden.
+     Sie laeuft ueber requestAnimationFrame
+     in Echtzeit weiter und schiebt raceClock vor, waehrend der Test sie
+     gleichzeitig von Hand taktet. Wie viele Bilder dazwischenkommen, haengt an
+     der Wanduhr - dann schwankt das Ergebnis trotz festem Zufallssamen.
+     ⚠ Erst NACH dem Countdown anzuhalten genuegt nicht: zwischen "racing wird
+     true" und dem Anhalten liegen je nach Rechnerlaune ein paar Bilder. */
+  await page.evaluate(() => { paused = true; });   // Absicherung
 
   const d = await page.evaluate(() => {
     const out = {};
+    /* ⚠ Ueber die Startphase hinausdrehen. In den ersten GRID_FADE_S Sekunden
+       gibt es absichtlich KEINE Dreher: auf dem Grid beruehrt man sich
+       staendig mit ein paar Metern pro Sekunde Differenz, und der Spieler
+       wurde dabei jedes Mal weggedreht. Wer davor misst, haelt die Mechanik
+       faelschlich fuer kaputt. */
+    raceClock = GRID_FADE_S + 5;
     const gid = Object.keys(carMeshes).find(id => id !== player.id);
     const gm = carMeshes[gid].group;
 
@@ -97,6 +117,44 @@ function ladeSaison(jahr) {
   pruefWahr('... und den Gegner', d.querGegner > 0.1, d.querGegner.toFixed(2) + ' rad');
   pruefWahr('Auffahren von hinten dreht kaum', d.laengsSpieler < d.querSpieler * 0.5,
     d.laengsSpieler.toFixed(2) + ' gegen ' + d.querSpieler.toFixed(2));
+
+  // ══ 1b. DER START ══════════════════════════════════════════════════════
+  // Zwei vom Nutzer gemeldete Beobachtungen: er wurde am Start immer
+  // weggedreht, und die Gegner beschleunigten schneller als er.
+  const st = await page.evaluate(() => {
+    resetForNewRace();
+    document.getElementById('start-modus').value = 'mensch';
+    startRace();
+    paused = true;
+    racing = true; raceClock = 0;
+    const gg = Object.keys(carMeshes).filter(id => id !== player.id);
+    // Alle geben Vollgas, 3 Sekunden lang
+    keys['ArrowUp'] = true;
+    let maxDreh = 0;
+    for (let i = 0; i < 180; i++) {
+      raceClock += 1 / 60;
+      updatePlayer(1 / 60);
+      updateAICars(raceClock, 1 / 60);
+      maxDreh = Math.max(maxDreh, Math.abs(player.dreh || 0));
+    }
+    keys['ArrowUp'] = false;
+    const tempi = gg.map(id => carMeshes[id].tempo || 0).sort((a, b) => a - b);
+    return {
+      maxDreh: +maxDreh.toFixed(3),
+      spielerTempo: +player.speed.toFixed(1),
+      gegnerMedian: +tempi[Math.floor(tempi.length / 2)].toFixed(1),
+      gegnerMax: +tempi[tempi.length - 1].toFixed(1)
+    };
+  });
+  pruefWahr('Am Start kein Dreher', st.maxDreh < 0.05, st.maxDreh + ' rad/s');
+  /* Gegen den MEDIAN vergleichen, nicht gegen den Schnellsten. Der Schnellste
+     ist der Polesetter in freier Luft, der Spieler steht im Mittelfeld im
+     Verkehr - dass jener frueher Tempo aufbaut, ist richtig so. Die Frage
+     lautet, ob der Spieler gegenueber vergleichbar Platzierten benachteiligt
+     ist, und dafuer ist der Median die Groesse. */
+  pruefWahr('Spieler am Start nicht benachteiligt', st.gegnerMedian <= st.spielerTempo * 1.15,
+    'nach 3 s: Spieler ' + st.spielerTempo + ', Gegner-Median ' + st.gegnerMedian
+    + ', schnellster ' + st.gegnerMax + ' m/s');
 
   // ══ 2. ZWISCHENSPEICHER ════════════════════════════════════════════════
   const vorher = await page.evaluate((txt) => {

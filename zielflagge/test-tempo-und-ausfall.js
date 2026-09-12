@@ -12,10 +12,12 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { festerZufall } = require('./test-hilfe');
 
 const ROOT = path.join(__dirname, '..');
 const HTML = 'file:///' + path.join(__dirname, 'index.html').split(String.fromCharCode(92)).join('/');
 const JAHR = process.argv[2] || '1988';
+const SAMEN = Number(process.argv[3] || 20260912);
 
 function ladeSaison(jahr) {
   const src = fs.readFileSync(path.join(ROOT, 'data', 'seasons.js'), 'utf8');
@@ -30,6 +32,9 @@ function ladeSaison(jahr) {
   page.on('pageerror', e => fehler.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') fehler.push('CONSOLE: ' + m.text()); });
 
+  // Fester Zufallssamen: sonst tastet jeder Lauf ein anderes Rennen ab
+  // und dieselbe Pruefung ist mal gruen, mal rot (siehe test-hilfe.js).
+  await festerZufall(page, SAMEN);
   await page.goto(HTML, { waitUntil: 'load' });
   await page.waitForTimeout(900);
 
@@ -40,6 +45,7 @@ function ladeSaison(jahr) {
     state.playerDriverId = DRIVERS[5].id;
     state.laps = 30;
     startRace();
+    paused = true;   // sofort, siehe unten
   }, JSON.stringify(ladeSaison(JAHR)));
 
   // ⚠ Zwei Fallen auf einmal, beide beim ersten Entwurf getreten:
@@ -50,6 +56,14 @@ function ladeSaison(jahr) {
   //      window.racing ist immer undefined. Ohne Praefix abfragen.
   //      (Dieselbe Falle wie liveRaceState im Hauptprojekt, siehe CLAUDE.md.)
   await page.waitForFunction(() => racing === true, null, { timeout: 15000 });
+  /* ⚠ Die Hauptschleife ist schon beim startRace() angehalten worden.
+     Sie laeuft ueber requestAnimationFrame
+     in Echtzeit weiter und schiebt raceClock vor, waehrend der Test sie
+     gleichzeitig von Hand taktet. Wie viele Bilder dazwischenkommen, haengt an
+     der Wanduhr - dann schwankt das Ergebnis trotz festem Zufallssamen.
+     ⚠ Erst NACH dem Countdown anzuhalten genuegt nicht: zwischen "racing wird
+     true" und dem Anhalten liegen je nach Rechnerlaune ein paar Bilder. */
+  await page.evaluate(() => { paused = true; });   // Absicherung
 
   const r = await page.evaluate(() => {
     // ── Regel 1: Weg des eigenen Wagens haengt NICHT an raceSpeed ──────────
@@ -74,6 +88,9 @@ function ladeSaison(jahr) {
     // setSpeed darf waehrend der Fahrt gar nicht erst hochschalten
     raceSpeed = 1;
     setSpeed(10);
+    // ⚠ tempoKnoepfeAktualisieren laeuft sonst in der Hauptschleife - die ist
+    //   im Test angehalten, damit die Messung reproduzierbar bleibt.
+    tempoKnoepfeAktualisieren();
     const tempoNachKlick = raceSpeed;
     const hinweis = (document.getElementById('tempo-info') || {}).textContent || '';
     const gesperrteKnoepfe = Array.from(document.querySelectorAll('.speedbtn'))
