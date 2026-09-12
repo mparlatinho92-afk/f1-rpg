@@ -1752,6 +1752,11 @@ function laengsAbstand(a, b){
    dadurch vom ganzen Feld durchgereicht. Jetzt weichen sie ihm aus. */
 function seitlichesZiel(id, cm, u, basis){
   const rand=trackHalfWidth()-1.2;
+  /* Wer durch ist, raeumt die Bahn. Vorher rollte er auf der Ideallinie aus und
+     blieb dort stehen - und weil die Nachfolgenden fuer ihn bremsen, stand
+     kurz darauf das halbe Feld. Gemessen: 15 stehende Wagen, die meisten noch
+     gar nicht im Ziel. Die Auslaufrunde geht an den Rand, wie in echt. */
+  if(cm.imZiel) return (cm.abstellSeite!==undefined?cm.abstellSeite:1)*rand;
   let ziel=basis;
 
   // 1) Dem Spieler ausweichen.
@@ -1879,8 +1884,19 @@ function fahreGegner(id, cm, prog, dt){
     if(oid===id) continue;
     const o=carMeshes[oid];
     if(o.fortschrittVor===undefined) continue;
+    // Wer im Ziel ist, raeumt gerade die Bahn - fuer den wird nicht gebremst,
+    // sonst pflanzt sich ein Stillstand durch das ganze Feld fort.
+    if(o.imZiel) continue;
     if(Math.abs((cm.seitlichVor||0)-(o.seitlichVor||0))>2.2) continue;
-    const dl=(o.fortschrittVor-cm.fortschritt)*trackLength;
+    /* ⚠ BEIDE Seiten aus derselben Momentaufnahme. Vorher stand hier
+       cm.fortschritt (aktuell) gegen o.fortschrittVor (vom letzten Bild).
+       Liegen zwei Wagen dicht beieinander, sieht damit JEDER den anderen einen
+       Meter vor sich - beide bremsen fuereinander, beide bleiben stehen, und
+       die Schlange dahinter friert mit ein. Gemessen: 18 stehende Wagen kurz
+       vor der Ziellinie, jeder mit einem Stehenden 1 m vor sich.
+       Mit derselben Momentaufnahme ist die Beziehung eindeutig: wer vorn ist,
+       ist vorn. */
+    const dl=(o.fortschrittVor-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
     if(dl<=0||dl>60) continue;
     if(dl<vornAbstand){ vornAbstand=dl; vorn=o; }
   }
@@ -1895,7 +1911,7 @@ function fahreGegner(id, cm, prog, dt){
       : nearestTrackInfo(player.pos).lateral;
     if(Math.abs((cm.seitlichVor||0)-pQuer)<=2.4){
       const pFort=player.lap+clamp(player.frac,0,0.9999);
-      const dl=(pFort-cm.fortschritt)*trackLength;
+      const dl=(pFort-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
       if(dl>0 && dl<60 && dl<vornAbstand){
         vornAbstand=dl;
         vorn={tempo:Math.max(player.speed,0)};
@@ -1927,6 +1943,8 @@ function fahreGegner(id, cm, prog, dt){
      laesst ihn trotzdem rollen. Wer durch ist, bekommt seine Zeit und rollt
      aus. */
   if(state.laps && cm.fortschritt>=state.laps && cm.zielZeit===undefined){
+    // Seite fuer die Auslaufrunde festlegen, falls noch keine gewaehlt wurde
+    if(cm.abstellSeite===undefined) cm.abstellSeite=(hashStr(id)%2)?1:-1;
     // Zeitpunkt der Durchfahrt linear zwischen den beiden Bildern schaetzen
     const ueber=(cm.fortschritt-state.laps)*trackLength;
     cm.zielZeit=raceClock-(cm.tempo>0?ueber/cm.tempo:0);
@@ -1935,7 +1953,9 @@ function fahreGegner(id, cm, prog, dt){
   // Auslaufrunde: wer durch ist, rollt aus. Ohne das faehrt er ewig weiter -
   // der Plan endet, seine Abweichung davon waechst unbegrenzt, und im Bild
   // kreisen nach dem Rennen noch Wagen.
-  if(cm.imZiel) cm.tempo=Math.max(0, cm.tempo-KI_BREMS*0.25*dt);
+  // Auslaufrunde: langsamer werden, aber weiterrollen. Wer ganz stehen bleibt,
+  // steht fuer den Rest des Rennens im Bild herum.
+  if(cm.imZiel) cm.tempo=Math.max(12, cm.tempo-KI_BREMS*0.25*dt);
   return cm.fortschritt;
 }
 
@@ -2039,12 +2059,22 @@ function updateAICars(simTime, dt){
       if(prog.lap>player.lap){
         player.lap=prog.lap;
         player.lapStartTime=raceClock;
-        if(player.lap>=state.laps && !player.finished){
-          player.finished=true;
-          document.getElementById('flag-overlay').style.display='block';
-          setTimeout(()=>{ document.getElementById('flag-overlay').style.display='none'; },2500);
-          onPlayerFinished();
-        }
+      }
+      /* ⚠ ZAEHLFEHLER, der das halbe Feld anhielt.
+         Der Plan zaehlt Runden ab 0, seine letzte traegt also den Index
+         laps-1. Die Bedingung fragte aber player.lap >= state.laps - bei fuenf
+         Runden erreicht player.lap nur die 4, und der Spieler wurde unter
+         Autopilot NIE als im Ziel erkannt. Sein Wagen stand danach fuer immer
+         auf der Ziellinie, und weil die Gegner fuer ihn bremsen (Ausweichen
+         ist Pflicht), stand kurz darauf das ganze Feld dahinter.
+         Gemessen: 18 Wagen mit Tempo 0, keiner davon ausgefallen.
+         Richtig ist der zurueckgelegte Weg: lap + frac erreicht laps. */
+      const gefahren=prog.lap+clamp(prog.frac,0,1);
+      if((prog.finished || gefahren>=state.laps) && !player.finished){
+        player.finished=true;
+        document.getElementById('flag-overlay').style.display='block';
+        setTimeout(()=>{ document.getElementById('flag-overlay').style.display='none'; },2500);
+        onPlayerFinished();
       }
       player.frac=prog.frac;
       player.pos.set(placed.pos.x,0,placed.pos.z);

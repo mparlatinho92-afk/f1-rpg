@@ -300,6 +300,29 @@ function ladeSaison(jahr) {
        baut finalizeAndShowResults die Endwertung. */
     out.wertungUnveraendert = (JSON.stringify(aiSim.cumulative) === simVorher.c)
                            && (JSON.stringify(aiSim.retired) === simVorher.r);
+
+    /* ── 6. Niemand bleibt einfach stehen ────────────────────────────────
+       Vom Nutzer gemeldet: "drei NICHT-ausgeschiedene bleiben einfach auf der
+       strecke stehen." Ursache war ein Zaehlfehler an der Ziellinie - der
+       Spieler wurde unter Autopilot nie als im Ziel erkannt, sein Wagen stand
+       fuer immer auf der Linie, und weil die Gegner fuer ihn bremsen, stand
+       kurz darauf das ganze Feld dahinter. Kurzes Rennen, ganz durchfahren. */
+    resetForNewRace();
+    document.getElementById('start-modus').value = 'ki';
+    startRace();
+    paused = true;
+    state.laps = 5;
+    racing = true; raceClock = 0;
+    const g5 = Object.keys(carMeshes).filter(id => id !== player.id);
+    for (let i = 0; i < 60 * 260; i++) {
+      raceClock += 1 / 60;
+      updateAICars(raceClock, 1 / 60);
+    }
+    out.stehenGeblieben = g5.filter(id =>
+      (carMeshes[id].tempo || 0) < 1 && !aiSim.retired[id]).length;
+    out.alleImZiel = g5.filter(id => carMeshes[id].imZiel || aiSim.retired[id]).length;
+    out.feldGroesse = g5.length;
+    out.spielerImZiel = !!player.finished;
     return out;
   });
 
@@ -348,6 +371,11 @@ function ladeSaison(jahr) {
     r.maxBand + ' m, entspricht ' + (r.maxBand / r.trackLaenge).toFixed(2) + ' Runden');
   pruefWahr('Wertungsdaten unveraendert', r.wertungUnveraendert,
     'aiSim vor und nach dem Rennen identisch');
+  pruefWahr('Niemand bleibt stehen', r.stehenGeblieben === 0,
+    r.stehenGeblieben + ' Wagen mit Tempo 0, nicht ausgefallen');
+  pruefWahr('Alle kommen an', r.alleImZiel === r.feldGroesse,
+    r.alleImZiel + ' von ' + r.feldGroesse);
+  pruefWahr('Spieler kommt unter Autopilot an', r.spielerImZiel, 'ja');
 
   console.log('=== ZIELFLAGGE: Zweikaempfe ohne Eingriff ins Ergebnis (' + JAHR + ') ===\n');
   p.forEach(x => console.log((x.ok ? '  OK  ' : ' FEHL ') + x.name.padEnd(34) + String(x.ist)));
