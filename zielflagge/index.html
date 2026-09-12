@@ -1415,6 +1415,64 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
       const f=(skala[q]>1e-9 ? clamp(roh[q]/skala[q]*1.8,-1,1) : 0)*maxAb*amplitude[q];
       form0[i]=clamp(f, Math.max(u,-maxAb), Math.min(o,maxAb));
     }
+    /* ══ EIN BOGEN, EINE RICHTUNG ══════════════════════════════
+       Nutzer: "im selben kurvenradius erst nach links und nach rechts lenken
+       ist unnoetig." Gemessen stimmte das: in EINEM durchgehenden Linksbogen
+       (Punkt 191-231, Kruemmung durchweg negativ) wich die Linie zweimal um
+       1,3-1,4 m nach aussen zurueck, um danach wieder hereinzuziehen.
+       Die Ursache steckt in der Ausgangsform. Sie entsteht als Bandpass der
+       Kruemmung, und in einem langen Bogen schwankt die Kruemmung leicht
+       (-0,31 ... -0,57 ... -0,33). Der Bandpass macht aus dieser Welligkeit
+       Querversatz: wo der Bogen kurz aufmacht, zieht die Form nach aussen.
+       Die Regel dagegen ist einfach - ein Bogen hat GENAU EINEN Scheitel. Bis
+       dahin geht die Linie nur nach innen, danach nur nach aussen.
+       ⚠ Die Richtung der Korrektur ist entscheidend. Der Rueckzieher wird auf
+       den bereits erreichten Wert nach INNEN gezogen, nicht die Anfahrt nach
+       aussen aufgemacht - sonst verliert man genau das Anschneiden, das die
+       ganze Konstruktion bezweckt. Ueber den Scheitel hinaus kann das nie
+       fuehren: mehr als der Scheitelwert wird nie gesetzt. */
+    const einBogenEineRichtung=(L)=>{
+      const out=L.slice();
+      // Bogen = zusammenhaengender Bereich gleichen Drehsinns. Dieselbe
+      // Schwelle wie die Amplituden-Sperre: wo die Form ohnehin gedaempft
+      // ist, gibt es auch nichts zu begradigen.
+      const seite=new Array(N);
+      for(let i=0;i<N;i++){
+        const rel=grB>1e-9 ? Math.abs(breit[i])/grB : 0;
+        seite[i]= rel>=0.10 ? Math.sign(breit[i]) : 0;
+      }
+      let i0=-1;
+      for(let i=0;i<N;i++) if(seite[i]===0){ i0=i; break; }
+      if(i0<0) return out;          // reines Oval - nichts zu trennen
+      let a=0;
+      while(a<N){
+        const s2=seite[(i0+a)%N];
+        if(s2===0){ a++; continue; }
+        let b=a; while(b<N && seite[(i0+b)%N]===s2) b++;
+        // Scheitel = weiteste Annaeherung an die Innenseite in diesem Bogen
+        let sch=a, best=-Infinity;
+        for(let k=a;k<b;k++){
+          const w=s2*out[(i0+k)%N];
+          if(w>best){ best=w; sch=k; }
+        }
+        for(let k=a+1;k<=sch;k++){
+          const p=(i0+k)%N, v=(i0+k-1)%N;
+          if(s2*out[p] < s2*out[v]) out[p]=out[v];
+        }
+        for(let k=b-2;k>=sch;k--){
+          const p=(i0+k)%N, v=(i0+k+1)%N;
+          if(s2*out[p] < s2*out[v]) out[p]=out[v];
+        }
+        a=b;
+      }
+      // Uebernommene Nachbarwerte koennen die Grenze DIESES Punktes verletzen
+      for(let i=0;i<N;i++){
+        const u2=unten?unten[i]:-maxAb, o2=oben?oben[i]:maxAb;
+        out[i]=clamp(out[i], Math.max(u2,-maxAb), Math.min(o2,maxAb));
+      }
+      return out;
+    };
+    form0=einBogenEineRichtung(form0);
     void besteStaerke;
   }
   let beste=zeit(entfalten(st));
@@ -1645,16 +1703,32 @@ function buildTrack(){
        Nutzer: "es soll mehrere moeglichkeiten geben, die auch versuchen diese
        neue variante zu nehmen."
 
-       Zwei Wege dahin wurden abgetastet:
-       - Scheitel entlang der Strecke VERSCHIEBEN (early/late apex). Richtig
-         gedacht, aber im Modell sehr teuer: schon 6 m Versatz kosten 0,6 s,
-         26 m kosten 3,5 s. Als "genauso schnelle" Alternative unbrauchbar.
-       - Seitlich versetzen, aber NUR AUSSERHALB der Kurven. Die Wagen fahren
-         dann auf der Geraden und beim Anbremsen versetzt nebeneinander und
-         laufen zum Scheitel hin zusammen - genau das Bild aus dem Rennsport.
-         Bei 2,5 m kostet es 0,3 bis 1,0 s und gibt 2,5 m Abstand.
-       Der zweite Weg gewinnt. Entscheidend: das Kurvenverhalten bleibt bei
-       allen dreien gleich, also geht jede an die Innenseite. */
+       ══ WAS EINE ALTERNATIVE IST - aus den Lehrbildern, nicht geraten ══
+       zielflagge/Ideallinie/images3.jpg stellt "geometrische Linie" gegen
+       "Late-Apex-Linie": die beiden unterscheiden sich im EINLENKPUNKT und in
+       der LAGE DES SCHEITELS, und sie kreuzen sich zweimal.
+       racing-line-showing-earlier-and-later-apex zeigt denselben Gedanken als
+       Pfeil - der Scheitel wandert AM INNENRANDSTEIN ENTLANG, frueher oder
+       spaeter, und beide Enden beruehren ihn.
+       "welche idealliniie ist die beste" und fzsu4qce99oa1 zeigen drei echte
+       Linien: bei Ein- und Ausfahrt faechern sie um etwa eine Wagenbreite auf,
+       am Scheitel liegen sie fast aufeinander.
+       Eine Alternative ist also DIESELBE Linie mit verschobenem Scheitel -
+       KEINE seitlich verschobene Kopie. Genau das war vorher gebaut, und
+       gemessen hatten alle drei Linien denselben Scheitel, waren also gar
+       keine Varianten.
+
+       ⚠ Die frueher hier notierte Absage an das Scheitel-Verschieben ("schon
+       6 m kosten 0,6 s, 26 m kosten 3,5 s") ist UEBERHOLT. Sie stammt von vor
+       der Amplituden- und der Monotonie-Korrektur. Neu gemessen:
+         +23 m frueher  +0,10 s      -10 m spaeter  +0,42 s
+         +10 m frueher  -0,17 s      -23 m spaeter  +1,69 s
+       Frueher scheiteln ist fast gratis, spaeter scheiteln teuer - deshalb die
+       unsymmetrische Wahl +7 / -4 Stuetzpunkte (rund +23 / -13 m).
+
+       Der kleine Seitenversatz bleibt, aber NUR AUSSERHALB der Kurven: dort
+       sollen zwei Wagen nebeneinander anbremsen koennen. Zum Scheitel hin
+       laufen die Linien zusammen - genau das Bild aus den Lehrbildern. */
     const kurvenMass=new Array(spaced.length);
     {
       let gr2=0;
@@ -1670,12 +1744,52 @@ function buildTrack(){
       for(let i=0;i<spaced.length;i++)
         kurvenMass[i]=gr2>1e-9 ? Math.min(1, Math.abs(roh2[i])/gr2/0.4) : 0;
     }
-    const nebenlinie=(seite)=>{
+    /* ⚠ Das Kurvenmass wird ueber den BOGEN gedeckelt, nicht punktweise
+       genommen. Punktweise schwankt es innerhalb einer langen Kurve (0,33 ...
+       0,57 ... 0,33), und der Seitenversatz der Alternativen schwankt mit -
+       sie wichen dadurch mitten im Bogen wieder nach aussen aus und zogen
+       danach erneut herein. Dieselbe Regel wie fuer die Hauptlinie: ein Bogen,
+       eine Richtung. Mit einem gleitenden Maximum ueber rund 100 m bleibt der
+       Versatz im ganzen Bogen konstant und faellt nur auf den Geraden weg. */
+    const kurvenPlateau=(()=>{
+      const M=spaced.length, out=kurvenMass.slice();
+      /* ⚠ Nur INNERHALB des Bogens deckeln. Ein gleitendes Maximum ueber ein
+         festes Fenster schluckt die Geraden mit: die Alternativen ruecken dann
+         ueberall an die Hauptlinie und es passt kein zweiter Wagen mehr
+         daneben (gemessen 0,7 m statt 3,4 m). */
+      let i0=-1;
+      for(let i=0;i<M;i++) if(kurvenMass[i]<0.25){ i0=i; break; }
+      if(i0<0) return out;
+      let a=0;
+      while(a<M){
+        if(kurvenMass[(i0+a)%M]<0.25){ a++; continue; }
+        let b=a; while(b<M && kurvenMass[(i0+b)%M]>=0.25) b++;
+        let m=0;
+        for(let k=a;k<b;k++) m=Math.max(m, kurvenMass[(i0+k)%M]);
+        for(let k=a;k<b;k++) out[(i0+k)%M]=m;
+        a=b;
+      }
+      // Die Bogenkante ist jetzt eine Stufe - der Versatz wuerde dort seitlich
+      // springen. Kurz glaetten macht daraus eine Rampe.
+      const w=6, g=new Array(M);
+      for(let i=0;i<M;i++){
+        let sum=0;
+        for(let d=-w;d<=w;d++) sum+=out[(i+d+M*2)%M];
+        g[i]=sum/(2*w+1);
+      }
+      return g;
+    })();
+    /* scheitelVersatz: POSITIV heisst FRUEHER scheiteln. Die Form wird bei
+       i+versatz abgetastet, das Merkmal wandert also nach vorn. Der frueher
+       hier stehende Kommentar hatte das Vorzeichen verkehrt herum. */
+    const variante=(versatz, seite)=>{
+      const basis=rechneIdeallinie(spaced, spacedTangents, trackLength,
+                                   null, null, versatz);
       const rand=TRACK_WIDTH/2-1.15;
-      return idealLinie.map((x,i)=>
-        clamp(x+seite*2.5*(1-kurvenMass[i]), -rand, rand));
+      return basis.map((x,i)=>
+        clamp(x+seite*2.5*(1-kurvenPlateau[i]), -rand, rand));
     };
-    LINIEN=[idealLinie, nebenlinie(+1), nebenlinie(-1)];
+    LINIEN=[idealLinie, variante(+7,+1), variante(-4,-1)];
   }
 
   /* Ideallinie zeichnen - wer sie nicht sieht, kann sie nicht fahren. */
