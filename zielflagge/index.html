@@ -224,6 +224,7 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
               </div>
               <div class="row" style="margin-top:14px;">
                 <button class="btn" onclick="loadDemoField(); renderGarageTables();">Beispiel-Feld laden</button>
+                <button class="btn ghost" onclick="standVergessen();">Zwischenspeicher leeren</button>
                 <button class="btn ghost" onclick="if(confirm('Alle Fahrer und Teams löschen?')){DRIVERS=[];TEAMS={};renderGarageTables();}">Alles löschen</button>
               </div>
             </div>
@@ -645,6 +646,7 @@ document.getElementById('import-file').addEventListener('change', function(e){
     try{
       const res=parseImportedText(reader.result);
       applyImportResult(res);
+      standSpeichern(reader.result, file.name||'Datei');
       document.getElementById('import-status').textContent = importMeldung(res);
     }catch(err){ document.getElementById('import-status').textContent = 'Fehler beim Import: '+err.message; }
   };
@@ -656,8 +658,72 @@ function handlePasteImport(){
   try{
     const res=parseImportedText(text);
     applyImportResult(res);
+    standSpeichern(text, 'Einfuegen');
     document.getElementById('import-status').textContent = importMeldung(res);
   }catch(err){ document.getElementById('import-status').textContent = 'Fehler beim Import: '+err.message; }
+}
+
+/* ══════════════ ZWISCHENSPEICHER ═══════════════════════════════════════
+   Beim Entwickeln laedt man den Tab staendig neu. Ohne Zwischenspeicher ist
+   danach der importierte Spielstand weg und man klickt sich jedes Mal neu
+   durch den Import - bei einer 23-KB-Lieferung aus dem RPG jedes Mal.
+
+   Gespeichert wird der ROHTEXT des Imports, nicht der ausgewertete Zustand.
+   Grund: der Text ist die einzige Form, die auch dann noch stimmt, wenn sich
+   die Auswertung aendert - und genau das passiert beim Entwickeln laufend.
+   Ein alter, eingefrorener Zustand waere stiller Ballast.
+
+   Der Browser gibt je Herkunft einige Megabyte; eine Lieferung liegt bei 23 KB.
+   Schlaegt das Schreiben fehl (privater Modus, volle Quote), ist das kein
+   Fehler - es wird dann eben nicht gemerkt. */
+const SPEICHER_SCHLUESSEL='zielflagge.stand.v1';
+
+function standSpeichern(text, quelle){
+  try{
+    localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({
+      text, quelle,
+      // ⚠ NAME statt ID. Fahrer-IDs tragen einen Zeitstempel und werden bei
+      // jedem Einlesen neu vergeben - nach dem Neuladen heisst derselbe Fahrer
+      // anders, und die gemerkte Wahl trifft niemanden. Dieselbe Falle ist im
+      // Hauptprojekt teuer bezahlt worden (siehe CLAUDE.md, Verknuepfung immer
+      // ueber histId oder Name).
+      fahrerName: (DRIVERS.find(x=>x.id===state.playerDriverId)||{}).name||null,
+      runden: state.laps||null,
+      jahr: state.jahr||null,
+      zeit: Date.now()
+    }));
+  }catch(e){ /* kein Speicher verfuegbar - dann eben nicht */ }
+}
+
+function standVergessen(){
+  try{ localStorage.removeItem(SPEICHER_SCHLUESSEL); }catch(e){}
+  const el=document.getElementById('import-status');
+  if(el) el.textContent='Zwischenspeicher geleert. Beim naechsten Laden kommt das Beispiel-Feld.';
+}
+
+/* Gibt true zurueck, wenn ein Stand geladen wurde. */
+function standLaden(){
+  let roh=null;
+  try{ roh=localStorage.getItem(SPEICHER_SCHLUESSEL); }catch(e){ return false; }
+  if(!roh) return false;
+  try{
+    const d=JSON.parse(roh);
+    if(!d||!d.text) return false;
+    const res=parseImportedText(d.text);
+    applyImportResult(res);
+    // Fahrerwahl und Rundenzahl mit zurueckholen, sonst steht man wieder bei
+    // den Vorgabewerten und muss beides neu einstellen.
+    if(d.fahrerName){
+      const treffer=DRIVERS.find(x=>x.name===d.fahrerName);
+      if(treffer) state.playerDriverId=treffer.id;
+    }
+    if(d.runden) state.laps=d.runden;
+    const alter=Math.round((Date.now()-(d.zeit||0))/60000);
+    const el=document.getElementById('import-status');
+    if(el) el.textContent='Aus dem Zwischenspeicher: '+importMeldung(res)
+      +(alter>=1?(' (vor '+alter+' min gesichert)'):' (gerade eben gesichert)');
+    return true;
+  }catch(e){ return false; }
 }
 
 /* ============================= GARAGE CRUD/RENDER ============================= */
@@ -1353,7 +1419,7 @@ function initPlayer(driverId){
     pos:new THREE.Vector3(p.pos.x,0,p.pos.z),
     heading:p.heading,
     speed:0, steerNow:0, lap:0, frac:0, lapStartTime:0, lapTimes:[], bestLap:null,
-    finished:false, aborted:false,
+    finished:false, aborted:false, dreh:0,
   };
 }
 function updatePlayer(dt){
@@ -1417,18 +1483,34 @@ function updatePlayer(dt){
   // Wie nah an der Grenze? Fuer Anzeige und Reifenqualm spaeter.
   player.griffLast=clamp(Math.abs(turnRate)*v/GRIP,0,1.5);
 
+  /* Dreher: eine Drehrate, die abklingt. Solange sie anliegt, steht der Wagen
+     quer und kommt kaum vom Fleck - dieselbe Regel wie bei den Gegnern. */
+  if(player.dreh){
+    player.heading+=player.dreh*dt;
+    player.dreh-=player.dreh*Math.min(1, dt*DREH_ABKLING);
+    if(Math.abs(player.dreh)<0.02) player.dreh=0;
+    else if(Math.abs(player.dreh)>0.6) player.speed*=Math.max(0,1-1.2*dt);
+  }
+
   const dir=new THREE.Vector3(Math.sin(player.heading),0,Math.cos(player.heading));
   player.pos.addScaledVector(dir, player.speed*dt);
 
-  // ══ BERUEHRUNGEN ═══════════════════════════════════════════════════════
-  // Die Gegner fahren ihren Plan und lassen sich NICHT abdraengen - ihr
-  // Ergebnis steht fest, bevor das Rennen beginnt. Eine Beruehrung kostet
-  // deshalb immer nur den Spieler. Das ist keine Bequemlichkeit, sondern die
-  // Folge davon, dass ZIELFLAGGE ein Ergebnis animiert statt eines zu wuerfeln.
+  /* ══ BERUEHRUNGEN ══════════════════════════════════════════════════════
+     Seit die Gegner selbst fahren, geht das in BEIDE Richtungen: du kannst sie
+     drehen und sie dich. Vorher kostete eine Beruehrung nur den Spieler, weil
+     das Ergebnis der Gegner feststand - diese Begruendung gibt es nicht mehr.
+     Nutzer: "bau ein dass ich sie drehen darf und die mich."
+
+     Wie stark es dreht, haengt davon ab, WIE getroffen wird: ein Stoss genau
+     von hinten schiebt nur, einer quer zur Fahrtrichtung dreht. Das
+     Kreuzprodukt aus Fahrtrichtung und Stossrichtung liefert genau dieses
+     Mass, samt Vorzeichen fuer die Drehrichtung. */
   player.kontakt=false;
   if(!player.schub) player.schub=new THREE.Vector3();
+  // Der Laengsversatz jedes Pruefkreises wird mitgefuehrt: er ist der HEBELARM
+  // des Treffers. Ein Stoss auf die Nase dreht, einer auf die Mitte schiebt.
   const meine=[-KOLLI_HALB,0,KOLLI_HALB].map(o=>({
-    x:player.pos.x+dir.x*o, z:player.pos.z+dir.z*o }));
+    x:player.pos.x+dir.x*o, z:player.pos.z+dir.z*o, hebel:o }));
   for(const id in carMeshes){
     if(id===player.id) continue;
     const cm=carMeshes[id];
@@ -1437,7 +1519,7 @@ function updatePlayer(dt){
     const oh=cm.group.rotation.y;
     const od={x:Math.sin(oh), z:Math.cos(oh)};
     // groesste Ueberdeckung aller Kreispaare suchen
-    let tiefe=0, nx=0, nz=0;
+    let tiefe=0, nx=0, nz=0, meinHebel=0, seinHebel=0;
     for(const a of meine){
       for(const b of [-KOLLI_HALB,0,KOLLI_HALB]){
         const bx=o.x+od.x*b, bz=o.z+od.z*b;
@@ -1445,7 +1527,7 @@ function updatePlayer(dt){
         const dd=Math.hypot(ddx,ddz);
         if(dd>=KOLLI_BREIT*2||dd<1e-6) continue;
         const t=KOLLI_BREIT*2-dd;
-        if(t>tiefe){ tiefe=t; nx=ddx/dd; nz=ddz/dd; }
+        if(t>tiefe){ tiefe=t; nx=ddx/dd; nz=ddz/dd; meinHebel=a.hebel; seinHebel=b; }
       }
     }
     if(tiefe<=0) continue;
@@ -1473,6 +1555,23 @@ function updatePlayer(dt){
     const frontal=clamp(-(dir.x*nx+dir.z*nz),0,1);
     if(annaeherung>0.5){
       player.speed=Math.max(0, player.speed-annaeherung*(0.22+0.5*frontal));
+    }
+    /* Drehmoment = Hebelarm mal Querkraft.
+       Ohne den HEBEL war es falsch: ein Stoss genau durch die Wagenmitte drehte
+       dann rechnerisch, obwohl er in Wahrheit nur schiebt - und ein Treffer auf
+       Nase oder Heck, der wirklich dreht, wurde nicht erfasst. Gemessen war die
+       Folge schlicht: nie ein Dreher.
+       quer ist der Anteil der Stossrichtung QUER zur eigenen Fahrtrichtung.
+       Jeder Wagen bekommt sein eigenes Paar aus Hebel und Querkraft. */
+    if(annaeherung>1.5){
+      const meinQuer=dir.x*nz-dir.z*nx;
+      const seinQuer=od.x*nz-od.z*nx;
+      const drallIch=clamp(annaeherung*meinQuer*meinHebel*0.10, -2.4, 2.4);
+      const drallEr =clamp(annaeherung*seinQuer*seinHebel*0.10, -2.4, 2.4);
+      player.dreh=(player.dreh||0)+drallIch;
+      // Der Gegner wird gedreht, nicht der Spieler gespiegelt: wer wo getroffen
+      // wird, entscheidet sein eigener Hebel.
+      cm.dreher=(cm.dreher||0)-drallEr*0.8;
     }
     player.kontakt=true;
   }
@@ -2543,7 +2642,9 @@ function switchView(name){
 }
 
 /* ============================= INIT ============================= */
-loadDemoField();
+/* Zuerst den Zwischenspeicher, dann das Beispiel-Feld. So steht nach einem
+   Neuladen der zuletzt importierte Spielstand wieder da. */
+if(!standLaden()) loadDemoField();
 renderGarageTables();
 window.addEventListener('load', ()=>{ initScene(); });
 </script>
