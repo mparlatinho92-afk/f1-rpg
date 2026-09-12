@@ -1220,12 +1220,21 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
   };
 
   // Rundenzeit einer Linie
+  /* ⚠ STUETZWEITE. Mit den DIREKTEN Nachbarn (3,2 m Abstand) misst man das
+     Rauschen der Linie, nicht ihre Kruemmung - dieselbe Falle steht seit
+     Monaten in test-strecke.js, und ich bin trotzdem hineingelaufen. Die Folge
+     war schlimmer als ein ungenauer Wert: die Suche hat das RAUSCHEN
+     wegpoliert statt eine Linie zu finden. Sie meldete 1,06 s Gewinn, waehrend
+     die Linie in 8 von 10 Kurven mittig blieb und in den restlichen zwei am
+     Scheitel sogar AUSSEN lag. Ueber rund 16 m gemessen zaehlt nur noch die
+     Form. */
+  const W=Math.max(2, Math.round(N/80));
   const zeit=(lat)=>{
     const ds=laenge/N, v=new Array(N);
     const pt=(k)=>({x:spaced[k].x-tangenten[k].z*lat[k],
                     z:spaced[k].z+tangenten[k].x*lat[k]});
     for(let i=0;i<N;i++){
-      const a=pt((i-1+N)%N), m=pt(i), c=pt((i+1)%N);
+      const a=pt((i-W+N*2)%N), m=pt(i), c=pt((i+W)%N);
       const ab=Math.hypot(m.x-a.x,m.z-a.z), bc=Math.hypot(c.x-m.x,c.z-m.z);
       const ca=Math.hypot(c.x-a.x,c.z-a.z);
       const fl=Math.abs((m.x-a.x)*(c.z-a.z)-(c.x-a.x)*(m.z-a.z))/2;
@@ -1280,11 +1289,17 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
             o:Math.min(oben ?oben [i]: maxAb,  maxAb)};
   };
   let st=new Array(STUETZ).fill(0);
+  let form0=null;
   {
     const kr=new Array(N);
     for(let i=0;i<N;i++){
       const a2=spaced[(i-3+N*2)%N], m=spaced[i], c=spaced[(i+3)%N];
-      kr[i]=-((m.x-a2.x)*(c.z-a2.z)-(c.x-a2.x)*(m.z-a2.z));
+      /* ⚠ Der Vektor vom Punkt zur Mitte der Sehne zeigt nach INNEN. Das
+         Kreuzprodukt-Vorzeichen war genau verkehrt - gemessen bei 177 von 177
+         starken Kurvenstellen. Die konstruierte Ausgangsform lag damit aussen
+         am Scheitel statt innen, also spiegelverkehrt zur Rennlinie. */
+      const t2=tangenten[i];
+      kr[i]=((a2.x+c.x)/2-m.x)*(-t2.z)+((a2.z+c.z)/2-m.z)*(t2.x);
     }
     const glaetten=(arr,w)=>{
       const out=new Array(N);
@@ -1309,11 +1324,19 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
       }
       return v;
     };
-    let bestT=Infinity;
+    let bestT=Infinity, besteStaerke=0;
     for(const staerke of [0, 0.25, 0.5, 0.8, 1.0, -0.25, -0.5, -0.8, -1.0]){
       const kand=bauen(staerke);
       const t=zeit(entfalten(kand));
-      if(t<bestT){ bestT=t; st=kand; }
+      if(t<bestT){ bestT=t; st=kand; besteStaerke=staerke; }
+    }
+    // Die gewaehlte Form in voller Aufloesung merken - sie ist die
+    // Lehrbuchlinie, zu der am Ende gemischt wird.
+    form0=new Array(N);
+    for(let i=0;i<N;i++){
+      const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
+      const f=gr>1e-9 ? (scharf[i]-breit[i])/gr*maxAb*(besteStaerke||1) : 0;
+      form0[i]=clamp(f, Math.max(u,-maxAb), Math.min(o,maxAb));
     }
   }
   let beste=zeit(entfalten(st));
@@ -1337,7 +1360,27 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
       }
     }
   }
-  return entfalten(st);
+  /* ══ ZUM SCHLUSS RICHTUNG LEHRBUCHLINIE ZIEHEN ══════════════════════
+     Die Suche findet ein Optimum MEINES Modells - und das Modell ist eine
+     Naeherung: konstante Haftung, kein Abtrieb, keine Reifenlast. Gemessen
+     bevorzugt es eine Linie, die fast die ganze Runde mittig bleibt (nur 9 %
+     der Punkte am Rand) und trotzdem als schnellste herauskommt. Eine
+     lehrbuchmaessige Linie misst es sogar langsamer: 26,05 s gegen 25,72 s.
+     Fuer ein Rennspiel ist das die falsche Auskunft. Wer zusieht, erwartet
+     aussen-innen-aussen, und die Gegner sollen erkennbar um die Innenseite
+     kaempfen. Der Zeitunterschied liegt bei rund 0,3 s auf 26 - innerhalb der
+     Ungenauigkeit des Modells selbst.
+     Deshalb wird das Ergebnis zur konstruierten Linie hin gezogen. Die Staerke
+     ist eine bewusste Entscheidung fuer das BILD, nicht fuer die Uhr. */
+  const roh=entfalten(st);
+  if(!form0) return roh;
+  const misch=0.6;
+  const aus=new Array(N);
+  for(let i=0;i<N;i++){
+    const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
+    aus[i]=clamp(roh[i]*(1-misch)+form0[i]*misch, Math.max(u,-maxAb), Math.min(o,maxAb));
+  }
+  return aus;
 }
 
 function buildTrack(){
