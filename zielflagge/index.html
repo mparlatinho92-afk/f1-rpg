@@ -1196,7 +1196,7 @@ function initScene(){
    Tempoprofil), also wird genau sie minimiert. Gesucht wird auf einem groben
    Raster von Stuetzstellen, das weich auf die volle Aufloesung interpoliert -
    sonst entstuende eine zackige Linie, die nur den Rechner gluecklich macht. */
-function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
+function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersatz){
   const N=spaced.length;
   /* Rand: ein Wagen ist 2 m breit, seine halbe Breite also 1,0 m. Mit 1,15 m
      steht das Rad genau an der Linie - so faehrt man eine Kurve wirklich an.
@@ -1375,7 +1375,16 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
     form0=new Array(N);
     for(let i=0;i<N;i++){
       const u=unten?unten[i]:-maxAb, o=oben?oben[i]:maxAb;
-      const f=(skala[i]>1e-9 ? clamp(roh[i]/skala[i],-1,1) : 0)*maxAb;
+      /* Der SCHEITELVERSATZ macht aus einer Linie eine Variante.
+         Die Form wird um ein Stueck Strecke verschoben abgetastet: positiv
+         heisst spaeter einlenken und spaeter scheiteln (tighter am Scheitel,
+         besserer Ausgang), negativ frueher. Genau die beiden Varianten, die
+         in den Lehrbildern als "early apex" und "late apex" stehen.
+         Vorher waren die Alternativen die Hauptlinie um 3,4 m seitlich
+         verschoben - also gar keine Rennlinien, sondern Parallelspuren, die
+         die Kurve nicht anschnitten. */
+      const q=(i+(scheitelVersatz||0)+N*4)%N;
+      const f=(skala[q]>1e-9 ? clamp(roh[q]/skala[q],-1,1) : 0)*maxAb;
       form0[i]=clamp(f, Math.max(u,-maxAb), Math.min(o,maxAb));
     }
     void besteStaerke;
@@ -1572,19 +1581,41 @@ function buildTrack(){
      so schnell wie moeglich sind. */
   idealLinie=rechneIdeallinie(spaced, spacedTangents, trackLength);
   {
-    /* 3,4 m statt 1,6 m Abstand. Bei 1,6 m lagen die drei Linien so dicht
-       beieinander, dass das ganze Feld wie auf EINER Linie im Gaensemarsch
-       fuhr - im Spiel deutlich zu sehen, in den Zahlen nicht. Ein Wagen ist
-       2 m breit; damit zwei nebeneinander passen, muessen die Linien mehr als
-       eine Wagenbreite trennen. */
-    const abstand=3.4;
-    const unten=idealLinie.map(x=>x+abstand);
-    const oben =idealLinie.map(x=>x-abstand);
-    LINIEN=[
-      idealLinie,
-      rechneIdeallinie(spaced, spacedTangents, trackLength, unten, null),
-      rechneIdeallinie(spaced, spacedTangents, trackLength, null, oben)
-    ];
+    /* DREI LINIEN, DIE ALLE AN DIE KURVE GEHEN.
+       Nutzer: "es soll mehrere moeglichkeiten geben, die auch versuchen diese
+       neue variante zu nehmen."
+
+       Zwei Wege dahin wurden abgetastet:
+       - Scheitel entlang der Strecke VERSCHIEBEN (early/late apex). Richtig
+         gedacht, aber im Modell sehr teuer: schon 6 m Versatz kosten 0,6 s,
+         26 m kosten 3,5 s. Als "genauso schnelle" Alternative unbrauchbar.
+       - Seitlich versetzen, aber NUR AUSSERHALB der Kurven. Die Wagen fahren
+         dann auf der Geraden und beim Anbremsen versetzt nebeneinander und
+         laufen zum Scheitel hin zusammen - genau das Bild aus dem Rennsport.
+         Bei 2,5 m kostet es 0,3 bis 1,0 s und gibt 2,5 m Abstand.
+       Der zweite Weg gewinnt. Entscheidend: das Kurvenverhalten bleibt bei
+       allen dreien gleich, also geht jede an die Innenseite. */
+    const kurvenMass=new Array(spaced.length);
+    {
+      let gr2=0;
+      const roh2=new Array(spaced.length);
+      for(let i=0;i<spaced.length;i++){
+        const a2=spaced[(i-3+spaced.length*2)%spaced.length];
+        const m2=spaced[i];
+        const c2=spaced[(i+3)%spaced.length];
+        const t2=spacedTangents[i];
+        roh2[i]=((a2.x+c2.x)/2-m2.x)*(-t2.z)+((a2.z+c2.z)/2-m2.z)*(t2.x);
+        gr2=Math.max(gr2, Math.abs(roh2[i]));
+      }
+      for(let i=0;i<spaced.length;i++)
+        kurvenMass[i]=gr2>1e-9 ? Math.min(1, Math.abs(roh2[i])/gr2/0.4) : 0;
+    }
+    const nebenlinie=(seite)=>{
+      const rand=TRACK_WIDTH/2-1.15;
+      return idealLinie.map((x,i)=>
+        clamp(x+seite*2.5*(1-kurvenMass[i]), -rand, rand));
+    };
+    LINIEN=[idealLinie, nebenlinie(+1), nebenlinie(-1)];
   }
 
   /* Ideallinie zeichnen - wer sie nicht sieht, kann sie nicht fahren. */

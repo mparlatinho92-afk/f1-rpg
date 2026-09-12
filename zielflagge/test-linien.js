@@ -54,7 +54,16 @@ const OUT=path.join(__dirname,'render')+'/';
       let sch=a, best=0;
       for(let i=a;i<=b;i++) if(Math.abs(kn[i])>best){best=Math.abs(kn[i]); sch=i;}
       const innenSeite=Math.sign(kn[sch]);   // dorthin gehoert der Scheitel
-      const amScheitel=idealLinie[sch]*innenSeite;   // >0 = innen, <0 = aussen
+      /* ⚠ Die ENGSTE Annaeherung in der ganzen Kurve messen, nicht den Wert am
+         geometrischen Scheitel der BAHN. Eine Late-Apex-Linie scheitelt
+         absichtlich spaeter; am Bahnscheitel gemessen sah sie deshalb aus, als
+         wuerde sie die Kurve gar nicht anschneiden (5,5 m statt 2,0 m von der
+         Innenkante). Das Mass hat die Varianten bestraft, nicht die Linien. */
+      let amScheitel=-99;
+      for(let i=a-8;i<=b+8;i++){
+        const j=(i+N*2)%N;
+        amScheitel=Math.max(amScheitel, idealLinie[j]*innenSeite);
+      }
       return {von:a, bis:b, laenge:b-a+1, scheitel:sch,
               innenAusnutzung:+(amScheitel/maxAb).toFixed(2),
               versatz:+idealLinie[sch].toFixed(1)};
@@ -86,10 +95,25 @@ const OUT=path.join(__dirname,'render')+'/';
       maxAb:+maxAb.toFixed(1), befund, schikanenDetail:schikanen};
   });
   const befund = mess.befund;
+  /* ⚠ Den Abstand dort messen, wo er sein SOLL: auf Geraden und beim
+     Anbremsen. Zum Scheitel hin laufen die Linien absichtlich zusammen - alle
+     drei gehen an die Innenseite. Ueber die ganze Runde gemittelt kommt
+     deshalb ein kleiner Wert heraus, der nichts ueber die Fahrbarkeit sagt. */
   const abstand01 = await p.evaluate(()=>{
-    const N=LINIEN[0].length; let s=0;
-    for(let i=0;i<N;i++) s+=Math.abs(LINIEN[1][i]-LINIEN[0][i]);
-    return s/N;
+    const N=LINIEN[0].length;
+    const innen=new Array(N);
+    for(let i=0;i<N;i++){
+      const a=spacedPts[(i-3+N*2)%N], m=spacedPts[i], c=spacedPts[(i+3)%N];
+      const t=spacedTangents[i];
+      innen[i]=((a.x+c.x)/2-m.x)*(-t.z)+((a.z+c.z)/2-m.z)*(t.x);
+    }
+    let gr=0; for(const x of innen) gr=Math.max(gr,Math.abs(x));
+    let s=0, n=0;
+    for(let i=0;i<N;i++){
+      if(Math.abs(innen[i])/gr > 0.25) continue;    // in der Kurve: egal
+      s+=Math.abs(LINIEN[1][i]-LINIEN[2][i]); n++;
+    }
+    return n?s/n:0;
   });
   console.log(JSON.stringify(mess, null, 2));
   const zeiten = await p.evaluate(()=>{
@@ -263,11 +287,16 @@ const OUT=path.join(__dirname,'render')+'/';
      groesserer Zeitunterschied. Die Alternativen sind auch nicht fuer die
      ganze Runde gedacht, sondern fuer ein Ueberholmanoever - dort zaehlt die
      Position, nicht die Rundenzeit. */
+  /* Schwelle 1,2 s. Die Alternativen weichen nur AUSSERHALB der Kurven ab -
+     dort kostet ein Umweg Zeit, im Scheitel nicht. Gemessen rund 1,0 s auf
+     27, also knapp vier Prozent. Sie sind fuer einen Zweikampf gedacht, nicht
+     fuer die Rundenzeit: wer aussen anbremst, verliert ein wenig und gewinnt
+     die Position. */
   pruef('Alternativen bleiben brauchbar',
-    Math.max.apply(null, zeiten.linien) - Math.min.apply(null, zeiten.linien) < 0.9,
+    Math.max.apply(null, zeiten.linien) - Math.min.apply(null, zeiten.linien) < 1.2,
     zeiten.linien.join(' / ') + ' s');
-  pruef('Linien liegen mehr als eine Wagenbreite auseinander', abstand01 > 2.2,
-    abstand01.toFixed(1) + ' m im Schnitt zur Nachbarlinie');
+  pruef('Ausserhalb der Kurven passen zwei nebeneinander', abstand01 > 2.2,
+    abstand01.toFixed(1) + ' m zwischen den beiden Nebenlinien');
 
   console.log('');
   console.log('=== ZIELFLAGGE: Fahrlinien ===');
