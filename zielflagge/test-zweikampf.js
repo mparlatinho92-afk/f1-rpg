@@ -172,7 +172,14 @@ function ladeSaison(jahr) {
     // es tut.
     out.zittern90 = +proSek[Math.floor(proSek.length * 0.9)].toFixed(2);
 
-    // ── 2c. Nase im Heck: kleinster Laengsabstand seitlich fluchtender Wagen ─
+    /* ── 2c. Stecken Wagen ineinander? ──────────────────────────────────
+       ⚠ Frueher wurde der Laengsabstand seitlich fluchtender Wagen gemessen.
+       Das taugt nicht mehr: seit die Gegner einander rammen, kommen sie sich
+       zu Recht nahe, und zwei diagonal versetzte Wagen koennen 1,7 m Laengs-
+       abstand haben, ohne sich zu beruehren. Gemessen wird jetzt die Sache
+       selbst - ob sich die Kollisionskoerper ueberlappen. Kurzzeitig ist das
+       normal (die Aufloesung braucht ein paar Bilder), dauerhaft nicht. */
+    let ueberlappStichproben = 0, ueberlappTreffer = 0;
     let engsterHintereinander = 999;
     for (let k = 0; k < 300; k++) {
       raceClock += 1 / 60;
@@ -185,6 +192,19 @@ function ladeSaison(jahr) {
           if (A.planU === undefined || B.planU === undefined) continue;
           if (getProgressAI(gegner[x], raceClock).frozen) continue;
           if (getProgressAI(gegner[y], raceClock).frozen) continue;
+          // Kollisionskoerper gegeneinander: drei Kreise je Wagen
+          const pa = A.group.position, pb = B.group.position;
+          if (Math.abs(pa.x - pb.x) > 8 || Math.abs(pa.z - pb.z) > 8) continue;
+          ueberlappStichproben++;
+          const ad = { x: Math.sin(A.group.rotation.y), z: Math.cos(A.group.rotation.y) };
+          const bd = { x: Math.sin(B.group.rotation.y), z: Math.cos(B.group.rotation.y) };
+          let drin = false;
+          for (const oa of [-1.25, 0, 1.25]) for (const ob of [-1.25, 0, 1.25]) {
+            const d = Math.hypot(pa.x + ad.x * oa - (pb.x + bd.x * ob),
+              pa.z + ad.z * oa - (pb.z + bd.z * ob));
+            if (d < 2.0) drin = true;
+          }
+          if (drin) ueberlappTreffer++;
           if (Math.abs((A.seitlich || 0) - (B.seitlich || 0)) > 1.8) continue;
           const dl = laengsAbstand(B.planU, A.planU);
           if (dl > 0 && dl < engsterHintereinander) engsterHintereinander = dl;
@@ -192,6 +212,7 @@ function ladeSaison(jahr) {
       }
     }
     out.engsterHintereinander = +engsterHintereinander.toFixed(2);
+    out.ueberlappAnteil = +(ueberlappTreffer / Math.max(ueberlappStichproben, 1) * 100).toFixed(2);
 
     // ── 3. Gegner weicht dem Spieler aus ──────────────────────────────────
     // ⚠ Waehrend der VORBEIFAHRT messen, nicht danach: bei 28 m/s ist das
@@ -338,8 +359,14 @@ function ladeSaison(jahr) {
      Geprueft wird nur noch, dass sie nicht davonlaufen: mehr als eine halbe
      Runde Abstand zum Plan hiesse, der Regler haelt den Rahmen nicht mehr.
      Wie stark das Rennen die Lieferung verschiebt, misst test-lieferung.js. */
-  pruefWahr('Gegner laufen dem Plan nicht davon', r.maxLaengsFehler < trackLaenge * 0.5,
-    r.maxLaengsFehler + ' m von ' + Math.round(trackLaenge * 0.5) + ' m erlaubt');
+  /* Schranke von einer halben auf drei Runden. Seit die Gegner EINANDER
+     rammen, kostet ein Zwischenfall echte Zeit, die niemand zurueckholt -
+     genau das war die Anforderung. Ein Rueckstand von einer Runde ist dann
+     kein Fehler, sondern das Ergebnis. Hier bleibt nur die Schranke gegen
+     einen durchgedrehten Regler; wie stark das Rennen die Lieferung
+     verschiebt, misst test-lieferung.js in Plaetzen. */
+  pruefWahr('Regler laeuft nicht davon', r.maxLaengsFehler < trackLaenge * 3,
+    r.maxLaengsFehler + ' m, entspricht ' + (r.maxLaengsFehler / trackLaenge).toFixed(2) + ' Runden');
   /* Am MAXIMUM messen, nicht am Mittel. Im freien Modell verteilt sich das
      Feld: in manchen Rennen begegnen sich kaum zwei Wagen, dann ist der
      Mittelwert klein, ohne dass etwas kaputt waere. Die Frage lautet, ob
@@ -353,8 +380,8 @@ function ladeSaison(jahr) {
   pruefWahr('Kein Zittern', r.zitternMittel < 2 && r.zittern90 < 4,
     r.zitternMittel + '/s im Schnitt, ' + r.zittern90 + ' im 90. Perzentil, '
     + r.zitternMax + ' maximal');
-  pruefWahr('Keine Nase im Heck', r.engsterHintereinander > 4.0,
-    r.engsterHintereinander + ' m engster Abstand hintereinander');
+  pruefWahr('Wagen stecken nicht ineinander', r.ueberlappAnteil < 2.0,
+    r.ueberlappAnteil + ' % der Paare mit ueberlappenden Kollisionskoerpern');
   pruefWahr('Beim Start nicht durchgereicht', r.startVersatz < 6,
     r.startVersatz + ' m verschoben in 12 s');
   pruefWahr('Kaum Rempler beim Start', r.startKontakte < 60,

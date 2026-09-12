@@ -1119,6 +1119,12 @@ let auslaufLinks=[], auslaufRechts=[];
    wissen, wo er bremsen muss - er ist die Grundlage jeder Bremspunkt-Rechnung
    (Grenztempo = sqrt(GRIP * R)). */
 let bahnRadius=[];
+/* Ideallinie: seitlicher Versatz je Bahnpunkt, in Metern von der Mitte. */
+let idealLinie=[];
+/* Alle fahrbaren Linien: [0] die schnellste, [1]/[2] die Alternativen daneben.
+   Sie sind nicht gleich schnell im Hundertstel, aber nah genug, dass die Wahl
+   eine Frage der Lage ist und nicht des Koennens. */
+let LINIEN=[];
 /* Beispielstrecke. Der erste Punkt ist die Start-Ziel-Linie.
    Sie liegt jetzt auf einer LANGEN GERADEN (rund 290 m bis zur ersten Kurve)
    statt wie vorher in einer Kurve. Grund: wer am Start in einer Kurve steht,
@@ -1174,6 +1180,95 @@ function initScene(){
   animateLoop();
 }
 
+/* ══════════════════ IDEALLINIE ═══════════════════════════════════════════
+   Sie wird DIREKT gegen die Rundenzeit optimiert - nicht ueber einen Umweg.
+
+   Zwei Umwege sind vorher gescheitert, beide gemessen:
+   - "Kuerzeste Linie" (jeder Punkt zur Mitte seiner Nachbarn): klebt am
+     inneren Rand und schneidet jeden Scheitel spitz an. 30,5 s je Runde gegen
+     27,9 s auf der schlichten Mittellinie - also deutlich LANGSAMER.
+   - "Kleinste Kruemmung" ueber den Gradienten der zweiten Differenz: richtig
+     gedacht, aber der Gradient wird fuer glatte Formen winzig. Nach 3000
+     Durchgaengen lag der Versatz bei 1,4 m und die Zeit immer noch hoeher.
+
+   Was hier steht, braucht keine Stellvertreter-Groesse: die Rundenzeit laesst
+   sich ausrechnen (Haftgrenze je Punkt, dann vorwaerts und rueckwaerts das
+   Tempoprofil), also wird genau sie minimiert. Gesucht wird auf einem groben
+   Raster von Stuetzstellen, das weich auf die volle Aufloesung interpoliert -
+   sonst entstuende eine zackige Linie, die nur den Rechner gluecklich macht. */
+function rechneIdeallinie(spaced, tangenten, laenge, unten, oben){
+  const N=spaced.length;
+  const maxAb=TRACK_WIDTH/2-1.4;
+  const STUETZ=40;
+  const vMax=TOP_TEMPO*(0.85+(75+75)/400);
+
+  // Stuetzstellen weich auf alle Punkte verteilen (Kosinus-Uebergang)
+  const entfalten=(st)=>{
+    const lat=new Array(N);
+    for(let i=0;i<N;i++){
+      const x=i/N*STUETZ;
+      const a=Math.floor(x)%STUETZ, b=(a+1)%STUETZ;
+      const f=x-Math.floor(x);
+      const w=(1-Math.cos(f*Math.PI))/2;
+      lat[i]=st[a]*(1-w)+st[b]*w;
+    }
+    return lat;
+  };
+
+  // Rundenzeit einer Linie
+  const zeit=(lat)=>{
+    const ds=laenge/N, v=new Array(N);
+    const pt=(k)=>({x:spaced[k].x-tangenten[k].z*lat[k],
+                    z:spaced[k].z+tangenten[k].x*lat[k]});
+    for(let i=0;i<N;i++){
+      const a=pt((i-1+N)%N), m=pt(i), c=pt((i+1)%N);
+      const ab=Math.hypot(m.x-a.x,m.z-a.z), bc=Math.hypot(c.x-m.x,c.z-m.z);
+      const ca=Math.hypot(c.x-a.x,c.z-a.z);
+      const fl=Math.abs((m.x-a.x)*(c.z-a.z)-(c.x-a.x)*(m.z-a.z))/2;
+      const R=fl<1e-9?1e6:(ab*bc*ca)/(4*fl);
+      v[i]=Math.min(vMax, Math.sqrt(GRIP*R));
+    }
+    for(let k=0;k<2;k++){
+      for(let i=N-1;i>=0;i--) v[i]=Math.min(v[i], Math.sqrt(v[(i+1)%N]*v[(i+1)%N]+2*KI_BREMS*ds));
+      for(let i=0;i<N;i++)    v[i]=Math.min(v[i], Math.sqrt(v[(i-1+N)%N]*v[(i-1+N)%N]+2*KI_BESCHL*ds));
+    }
+    let t=0;
+    for(let i=0;i<N;i++) t+=ds/Math.max(v[i],1);
+    return t;
+  };
+
+  let st=new Array(STUETZ).fill(0);
+  // Startwert in den erlaubten Bereich ziehen, sonst sucht der erste Durchgang
+  // von einer verbotenen Stelle aus.
+  for(let k=0;k<STUETZ;k++){
+    const u=unten?unten[Math.round(k/STUETZ*N)%N]:-maxAb;
+    const o=oben ?oben [Math.round(k/STUETZ*N)%N]: maxAb;
+    st[k]=clamp(0, Math.max(u,-maxAb), Math.min(o,maxAb));
+  }
+  let beste=zeit(entfalten(st));
+  for(let schritt=maxAb*0.6; schritt>0.25; schritt*=0.6){
+    let verbessert=true, runden=0;
+    while(verbessert && runden++<8){
+      verbessert=false;
+      for(let k=0;k<STUETZ;k++){
+        for(const d of [schritt,-schritt]){
+          const alt=st[k];
+          // Grenzen je Stuetzstelle: so entstehen die Varianten
+          const u=unten?unten[Math.round(k/STUETZ*N)%N]:-maxAb;
+          const o=oben ?oben [Math.round(k/STUETZ*N)%N]: maxAb;
+          const neu=clamp(alt+d, Math.max(u,-maxAb), Math.min(o,maxAb));
+          if(neu===alt) continue;
+          st[k]=neu;
+          const t=zeit(entfalten(st));
+          if(t<beste-1e-4){ beste=t; verbessert=true; }
+          else st[k]=alt;
+        }
+      }
+    }
+  }
+  return entfalten(st);
+}
+
 function buildTrack(){
   const pts=trackPointsRaw.map(p=>new THREE.Vector3(p[0],0,p[1]));
   curve=new THREE.CatmullRomCurve3(pts,true,'catmullrom',0.5);
@@ -1192,7 +1287,7 @@ function buildTrack(){
      gegenueber der Sehne durch seine Nachbarn immer nach AUSSEN. Diese
      Richtung auf die Normale projiziert, und das Vorzeichen sagt die Seite.
      Auf Geraden ist der Wert nahe null - dort bleibt es symmetrisch. */
-  auslaufLinks=[]; auslaufRechts=[]; bahnRadius=[];
+  auslaufLinks=[]; auslaufRechts=[]; bahnRadius=[]; idealLinie=[]; LINIEN=[];
   for(let i=0;i<spaced.length;i++){
     const p=spaced[i];
     const pNext=spaced[(i+1)%spaced.length];
@@ -1288,6 +1383,53 @@ function buildTrack(){
   const centerGeo=new THREE.BufferGeometry().setFromPoints(spaced.map(p=>new THREE.Vector3(p.x,0.06,p.z)));
   const centerLine=new THREE.Line(centerGeo, new THREE.LineDashedMaterial({color:0xffffff, dashSize:3, gapSize:3, transparent:true, opacity:0.3}));
   centerLine.computeLineDistances(); sceneScene.add(centerLine);
+
+  /* ══════════════════ IDEALLINIE ═══════════════════════════════════════
+     Nicht von Hand eingezeichnet, sondern gerechnet: die Linie KLEINSTER
+     KRUEMMUNG. Jeder Punkt zieht zur Mitte zwischen seinen Nachbarn, begrenzt
+     durch die Bahnbreite. Nach genug Durchgaengen bleibt die geradest
+     moegliche Linie uebrig - und die geht von selbst aussen hinein, schneidet
+     den Scheitel und laeuft aussen wieder heraus. Genau das, was ein Fahrer
+     tut, ohne dass es jemand als Regel formulieren muesste.
+     Ein Rand bleibt frei (halbe Wagenbreite plus etwas Luft), sonst haengt der
+     Wagen auf der Ideallinie schon halb im Gras. */
+  /* ⚠ ES GIBT NICHT DIE EINE LINIE.
+     Nutzer: "ideallinie ist nicht die eine linie. strategisch werden andere
+     genauso schnelle linien gewaehlt. dann wird eben schneller beschleunigt."
+     Genau so ist es: wer aussen bleibt, faehrt weiter, aber mit groesserem
+     Radius und besserem Ausgang; wer innen verteidigt, bremst spaeter und
+     muss dafuer haerter herausbeschleunigen. In der Zeit liegen beide dicht
+     beieinander - und nur deshalb koennen zwei Wagen nebeneinander fahren,
+     ohne dass einer davon einen Fehler macht.
+     Gerechnet werden deshalb DREI Linien: die freie Bestzeit und zwei, die
+     jeweils auf einer Seite davon bleiben muessen und unter dieser Bedingung
+     so schnell wie moeglich sind. */
+  idealLinie=rechneIdeallinie(spaced, spacedTangents, trackLength);
+  {
+    const abstand=1.6;
+    const unten=idealLinie.map(x=>x+abstand);
+    const oben =idealLinie.map(x=>x-abstand);
+    LINIEN=[
+      idealLinie,
+      rechneIdeallinie(spaced, spacedTangents, trackLength, unten, null),
+      rechneIdeallinie(spaced, spacedTangents, trackLength, null, oben)
+    ];
+  }
+
+  /* Ideallinie zeichnen - wer sie nicht sieht, kann sie nicht fahren. */
+  {
+    const pts=[];
+    for(let i=0;i<=spaced.length;i++){
+      const j=i%spaced.length;
+      const t=spacedTangents[j];
+      const n2=new THREE.Vector3(-t.z,0,t.x);
+      pts.push(spaced[j].clone().add(n2.multiplyScalar(idealLinie[j])).setY(0.07));
+    }
+    const g=new THREE.BufferGeometry().setFromPoints(pts);
+    const m=new THREE.Line(g, new THREE.LineDashedMaterial({
+      color:0x4fd1c5, dashSize:4, gapSize:5, transparent:true, opacity:0.55}));
+    m.computeLineDistances(); sceneScene.add(m);
+  }
 
   const sf=new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH,1.2), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide}));
   const sp=curve.getPointAt(0.001), st=curve.getTangentAt(0.001);
@@ -1676,6 +1818,36 @@ function referenzRunde(){
   return optimaleRundenzeit(vMax)*1.10;
 }
 
+/* Welche Linie faehrt dieser Gegner gerade?
+   Grundhaltung ist die eigene Stammlinie (aus der Fahrer-ID, damit das Feld
+   nicht uebereinander liegt). Wer dicht hinter einem anderen klebt, wechselt
+   auf eine andere - das ist der Ueberholversuch. Der Wechsel hat eine Sperre
+   von zwei Sekunden, sonst flattert die Wahl von Bild zu Bild. */
+function waehleLinie(id, cm){
+  if(cm.stammLinie===undefined) cm.stammLinie=hashStr(id)%Math.max(LINIEN.length,1);
+  if(cm.linie===undefined) cm.linie=cm.stammLinie;
+  if(raceClock<(cm.linieBis||0)) return;
+  let klebt=false;
+  for(const oid in carMeshes){
+    if(oid===id) continue;
+    const o=carMeshes[oid];
+    if(o.fortschrittVor===undefined||o.imZiel) continue;
+    if(Math.abs((cm.seitlichVor||0)-(o.seitlichVor||0))>2.0) continue;
+    const dl=(o.fortschrittVor-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
+    if(dl>0&&dl<18){ klebt=true; break; }
+  }
+  const neu=klebt ? (cm.linie+1)%Math.max(LINIEN.length,1) : cm.stammLinie;
+  if(neu!==cm.linie){ cm.linie=neu; cm.linieBis=raceClock+2; }
+}
+
+/* Seitlicher Versatz der Ideallinie an einer Streckenstelle. */
+function idealBei(u, welche){
+  const L=(LINIEN.length&&LINIEN[welche||0])||idealLinie;
+  if(!L||!L.length) return 0;
+  const i=Math.round(clamp(u,0,0.9999)*L.length)%L.length;
+  return L[i];
+}
+
 /* Hoechsttempo, mit dem eine Stelle der Bahn noch fahrbar ist. Genau dieselbe
    Rechnung wie beim Spieler: die Querbeschleunigung ist begrenzt, also
    v = sqrt(GRIP * R). Damit bremsen KI und Mensch nach derselben Physik. */
@@ -2002,7 +2174,14 @@ function updateAICars(simTime, dt){
     }
     if(u<0) u+=1; if(u>=1) u-=1;
     cm.planU=u;
-    const basis=slot.lateral*fadeHier + cm.laneOffset*(1-fadeHier);
+    /* Grundlage der Querlage ist eine der LINIEN - nicht mehr eine feste Spur
+       je Wagen und auch nicht die eine Ideallinie. Welche, entscheidet die
+       Lage: wer dicht hinter jemandem haengt, versucht es auf einer anderen.
+       Die laneOffset-Streuung bleibt als kleiner Rest, sonst faehrt das ganze
+       Feld exakt uebereinander. */
+    if(!istSpieler && !prog.frozen) waehleLinie(id, cm);
+    const basis=slot.lateral*fadeHier
+      + (idealBei(u, cm.linie||0)+cm.laneOffset*0.25)*(1-fadeHier);
     let lateral=basis;
     let schraeg=0;
     if(!istSpieler && !prog.frozen){
@@ -2079,6 +2258,92 @@ function updateAICars(simTime, dt){
       player.frac=prog.frac;
       player.pos.set(placed.pos.x,0,placed.pos.z);
       player.heading=placed.heading;
+    }
+  }
+  gegnerKollisionen(dt);
+}
+
+/* ═══════════ DIE GEGNER RAMMEN AUCH EINANDER ════════════════════════════
+   Bis hierher konnte nur der Spieler etwas anrichten: die Gegner wichen sich
+   aus und bremsten fuereinander, also ging bei ihnen NIE etwas schief. Die
+   Platzverschiebung gegen die Lieferung lag deshalb bei 0,12 Plaetzen - das
+   Feld sortierte sich brav nach Drehbuch.
+   Nutzer: "ja echte abweichungen vom drehbuch."
+
+   Gerechnet wird mit denselben drei Groessen wie beim Spieler: Annaeherung
+   (die Wucht), Hebelarm (wo es trifft) und Tempoverhaeltnis (wer wen). Dazu
+   das Verhaken der Raeder, ohne das ein Streifen nichts bewirkt.
+   Der Zeitverlust ist die eigentliche Abweichung: er steht in keinem Plan und
+   wird auch nicht zurueckgeholt. */
+function gegnerKollisionen(dt){
+  const ids=Object.keys(carMeshes).filter(id=>{
+    const cm=carMeshes[id];
+    return (!player||id!==player.id) && cm.tempo!==undefined && !cm.imZiel;
+  });
+  for(let a=0;a<ids.length;a++){
+    const A=carMeshes[ids[a]];
+    if(aiSim && aiSim.retired && aiSim.retired[ids[a]]) continue;
+    for(let b=a+1;b<ids.length;b++){
+      const B=carMeshes[ids[b]];
+      if(aiSim && aiSim.retired && aiSim.retired[ids[b]]) continue;
+      const pa=A.group.position, pb=B.group.position;
+      if(Math.abs(pa.x-pb.x)>KOLLI_NAH||Math.abs(pa.z-pb.z)>KOLLI_NAH) continue;
+      const ah=A.group.rotation.y, bh=B.group.rotation.y;
+      const ad={x:Math.sin(ah), z:Math.cos(ah)}, bd={x:Math.sin(bh), z:Math.cos(bh)};
+      // tiefste Ueberdeckung der drei Kreise je Wagen
+      let tiefe=0, nx=0, nz=0, hebelA=0, hebelB=0;
+      for(const oa of [-KOLLI_HALB,0,KOLLI_HALB]){
+        const ax=pa.x+ad.x*oa, az=pa.z+ad.z*oa;
+        for(const ob of [-KOLLI_HALB,0,KOLLI_HALB]){
+          const bx=pb.x+bd.x*ob, bz=pb.z+bd.z*ob;
+          const dx=ax-bx, dz=az-bz;
+          const d=Math.hypot(dx,dz);
+          if(d>=KOLLI_BREIT*2||d<1e-6) continue;
+          const t=KOLLI_BREIT*2-d;
+          if(t>tiefe){ tiefe=t; nx=dx/d; nz=dz/d; hebelA=oa; hebelB=ob; }
+        }
+      }
+      if(tiefe<=0) continue;
+
+      /* Auseinanderschieben, und zwar in BEIDE Richtungen.
+         Seitlich allein genuegt nicht: bei einem Auffahrunfall steht die
+         Beruehrungsnormale laengs, und ein seitlicher Schub bewirkt dort
+         nichts. Gemessen steckten dadurch 13,6 % der nahen Paare ineinander.
+         Die Querlage wird ueber cm.seitlich verschoben (die Position wird im
+         naechsten Bild ohnehin daraus neu gesetzt), die Laengslage direkt
+         ueber den Fortschritt. */
+      const t0=spacedTangents[nearestTrackInfo(pa).idx];
+      const querN={x:-t0.z, z:t0.x};
+      const seitAnteil=nx*querN.x+nz*querN.z;
+      const laengsAnteil=nx*t0.x+nz*t0.z;
+      A.seitlich=(A.seitlich||0)+seitAnteil*tiefe*0.6;
+      B.seitlich=(B.seitlich||0)-seitAnteil*tiefe*0.6;
+      A.fortschritt+=laengsAnteil*tiefe*0.6/trackLength;
+      B.fortschritt-=laengsAnteil*tiefe*0.6/trackLength;
+
+      // Wucht aus der Relativgeschwindigkeit
+      const va={x:ad.x*A.tempo, z:ad.z*A.tempo};
+      const vb={x:bd.x*B.tempo, z:bd.z*B.tempo};
+      const relX=va.x-vb.x, relZ=va.z-vb.z;
+      const annaeherung=relX*(-nx)+relZ*(-nz);
+      const wucht=Math.hypot(relX,relZ);
+      if(wucht<=3.5||raceClock<=GRID_FADE_S) continue;
+
+      const querA=ad.x*nz-ad.z*nx, querB=bd.x*nz-bd.z*nx;
+      const tang=relX*(-nz)+relZ*nx;
+      const verhaken=(Math.abs(hebelA)>0.5&&Math.abs(hebelB)>0.5) ? tang*0.05 : 0;
+      const gegenA=clamp(B.tempo/Math.max(A.tempo,8), 0.35, 2.2);
+      const gegenB=clamp(A.tempo/Math.max(B.tempo,8), 0.35, 2.2);
+      A.dreher=clamp((A.dreher||0)+(annaeherung*querA*0.085+verhaken)*hebelA*gegenA, -2.0, 2.0);
+      B.dreher=clamp((B.dreher||0)-(annaeherung*querB*0.085-verhaken)*hebelB*gegenB, -2.0, 2.0);
+
+      // Zeitverlust - DAS ist die Abweichung vom Drehbuch.
+      if(annaeherung>0.5){
+        const frontA=clamp(-(ad.x*nx+ad.z*nz),0,1);
+        const frontB=clamp( (bd.x*nx+bd.z*nz),0,1);
+        A.tempo=Math.max(0, A.tempo-annaeherung*(0.18+0.42*frontA)*gegenA);
+        B.tempo=Math.max(0, B.tempo-annaeherung*(0.18+0.42*frontB)*gegenB);
+      }
     }
   }
 }
