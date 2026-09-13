@@ -82,9 +82,14 @@ function ladeSaison(jahr) {
     out.sprungBeimAbgeben = +(Math.abs(progNach.frac - fracVor) * trackLength).toFixed(2);
     // Das erste Bild muss noch nah an der eigenen Position liegen (Blend).
     out.blendStartNah = carMeshes[player.id].group.position.distanceTo(vorAbgabe) < 6;
-    // Nach dem Blend sitzt der Wagen auf der Bahn.
-    raceClock += 1.3;
-    updateAICars(raceClock);
+    /* Nach dem Blend sitzt der Wagen auf der Bahn.
+       ⚠ Der Blend muss WIRKLICH gefahren werden. Vorher sprang der Test
+       raceClock um 1,3 s vor und rechnete EIN Bild - der Wagen bewegt sich je
+       Bild aber nur 3,7 % auf sein Querziel zu (dt*2.2). Solange der Spieler
+       am Start langsam war, stand er nach der Handfahrt noch auf der Bahn und
+       die Pruefung ging trotzdem durch; seit er richtig beschleunigt, steht er
+       weiter draussen und ein einzelnes Bild holt ihn nicht zurueck. */
+    for (let i = 0; i < 78; i++) { raceClock += 1 / 60; updateAICars(raceClock, 1 / 60); }
     out.nachBlendAufDerBahn = Math.abs(nearestTrackInfo(carMeshes[player.id].group.position).lateral) < trackHalfWidth();
 
     // Ein Stueck Autopilot: der Wagen muss sich bewegen und Runden zaehlen.

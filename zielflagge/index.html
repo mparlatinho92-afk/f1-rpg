@@ -2061,6 +2061,13 @@ function updatePlayer(dt){
     // setzen. Das alte Setzen klebte den Spieler an die Oberflaeche des
     // Gegners: der fuhr weiter und schleppte ihn mit, und beim Einlenken
     // drehte die Schubrichtung mit (das Wackeln in der Kurve).
+    /* ⚠ VERWORFEN: den Gegner bei der Beruehrung mitzuschieben, so wie
+       gegnerKollisionen es zwischen zwei Gegnern tut. Klingt nach Symmetrie,
+       macht es aber durchweg schlimmer - Spieler nach drei Sekunden 15,4 m/s
+       (quer und laengs geschoben), 9,0 m/s (nur quer), gegen 23,5 m/s ohne.
+       Laengs schieben liest sein Regler als Rueckstand zum Plan und
+       beschleunigt mit bis zu +9 m/s dagegen, also direkt wieder hinein; quer
+       schieben laesst ihn zurueckzielen. Die Trennung bleibt beim Spieler. */
     player.pos.x+=nx*tiefe; player.pos.z+=nz*tiefe;
     // Dazu ein Impuls, der ueber die naechsten Bilder abklingt. Ohne ihn
     // faehrt der Spieler sofort wieder hinein, weil sein Tempo ausschliesslich
@@ -2079,7 +2086,15 @@ function updatePlayer(dt){
     const vgx=vg?vg.x/Math.max(dt,1e-4):0, vgz=vg?vg.z/Math.max(dt,1e-4):0;
     const annaeherung=(dir.x*player.speed-vgx)*(-nx)+(dir.z*player.speed-vgz)*(-nz);
     const frontal=clamp(-(dir.x*nx+dir.z*nz),0,1);
-    if(annaeherung>0.5){
+    /* ⚠ DIESELBE Schonfrist wie fuer die Gegner. gegnerKollisionen ueberspringt
+       Tempoverlust UND Dreher, solange raceClock<=GRID_FADE_S laeuft - in der
+       Startphase schmilzt der Aufstellungsversatz weg, und die Beruehrungen
+       dabei sind ein Artefakt der Darstellung, kein Fahrfehler. Beim Spieler
+       war nur der DREHER so abgesichert (drehErlaubt), der Tempoverlust nicht:
+       er zahlte also in genau dem Fenster, in dem die KI nichts zahlt.
+       Gemessen fuhr er nach drei Sekunden 23,5 m/s gegen 35,2 im Feld, obwohl
+       er sauber bis 36,5 beschleunigt hatte und dann umgefahren wurde. */
+    if(annaeherung>0.5 && raceClock>GRID_FADE_S){
       player.speed=Math.max(0, player.speed-annaeherung*(0.22+0.5*frontal));
       /* ⚠ Der GEGNER zahlt mit. Bisher verlor bei Spieler-KI-Beruehrungen nur
          der Spieler Tempo, bei KI-KI dagegen beide (gegnerKollisionen). Im
@@ -2225,7 +2240,9 @@ function waehleLinie(id, cm){
     const o=carMeshes[oid];
     if(o.fortschrittVor===undefined||o.imZiel) continue;
     if(Math.abs((cm.seitlichVor||0)-(o.seitlichVor||0))>2.0) continue;
-    const dl=(o.fortschrittVor-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
+    // Gezeichnetes Bezugssystem, siehe die Warnung in fahreGegner.
+    if(o.uVor===undefined) continue;
+    const dl=laengsAbstand(o.uVor, (cm.uVor!==undefined)?cm.uVor:(((cm.fortschritt%1)+1)%1));
     if(dl>0&&dl<18){ klebt=true; break; }
   }
   /* ⚠ Nicht blind auf die naechste Linie. Sie kann genauso besetzt sein wie
@@ -2242,7 +2259,8 @@ function waehleLinie(id, cm){
       const o=carMeshes[oid];
       if(o.fortschrittVor===undefined||o.imZiel) continue;
       if(Math.abs(q-((o.seitlichVor!==undefined)?o.seitlichVor:0))>2.2) continue;
-      const dl=(o.fortschrittVor-meinFort)*trackLength;
+      if(o.uVor===undefined) continue;
+      const dl=laengsAbstand(o.uVor, meinU);
       if(dl>0&&dl<naechst) naechst=dl;
     }
     return naechst;
@@ -2704,8 +2722,18 @@ function fahreGegner(id, cm, prog, dt){
        die Schlange dahinter friert mit ein. Gemessen: 18 stehende Wagen kurz
        vor der Ziellinie, jeder mit einem Stehenden 1 m vor sich.
        Mit derselben Momentaufnahme ist die Beziehung eindeutig: wer vorn ist,
-       ist vorn. */
-    const dl=(o.fortschrittVor-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
+       ist vorn.
+       ⚠ UND im GEZEICHNETEN Bezugssystem, nicht im Plan. Am Start stehen alle
+       26 Wagen im Plan auf demselben Punkt - der Startaufstellungs-Versatz
+       wird erst auf planU aufgeschlagen. Mit fortschritt gerechnet war dl also
+       rund null und fiel durch die Pruefung dl>0: KEIN Gegner sah einen
+       anderen, das ganze Feld beschleunigte ungehindert auf exakt dieselben
+       38,9 m/s und pfluegte durch alles, was wirklich dort stand.
+       uVor enthaelt den Versatz und ist dieselbe Welt, in der auch die
+       Kollisionen stattfinden. */
+    const meinU=(cm.uVor!==undefined)?cm.uVor:(((cm.fortschritt%1)+1)%1);
+    if(o.uVor===undefined) continue;
+    const dl=laengsAbstand(o.uVor, meinU);
     if(dl<=0||dl>60) continue;
     if(dl<vornAbstand){ vornAbstand=dl; vorn=o; }
   }
@@ -2719,8 +2747,19 @@ function fahreGegner(id, cm, prog, dt){
       ? carMeshes[player.id].seitlich
       : nearestTrackInfo(player.pos).lateral;
     if(Math.abs((cm.seitlichVor||0)-pQuer)<=2.4){
-      const pFort=player.lap+clamp(player.frac,0,0.9999);
-      const dl=(pFort-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
+      /* ⚠ IM GEZEICHNETEN BEZUGSSYSTEM vergleichen, nicht im Plan.
+         Waehrend der Startphase liegt die Planposition eines Gegners
+         (cm.fortschritt) bis zu 70 m vor der Stelle, an der sein Wagen
+         wirklich steht - der Startaufstellungs-Versatz wird erst auf planU
+         aufgeschlagen. Der Spieler dagegen lebt immer in der gezeichneten
+         Welt (player.frac kommt aus seiner echten Position).
+         Beides direkt zu verrechnen ergibt Unsinn: die Gegner sahen den
+         Spieler am Start gar nicht und fuhren ihn von hinten um. Gemessen
+         beschleunigte er sauber auf 31 m/s und stand 1,5 s spaeter bei 3 m/s,
+         mit Kontakt in 50 von 180 Bildern.
+         planU enthaelt den Startversatz und ist damit dieselbe Welt. */
+      const meinU=(cm.uVor!==undefined)?cm.uVor:(((cm.fortschritt%1)+1)%1);
+      const dl=laengsAbstand(clamp(player.frac,0,0.9999), meinU);
       if(dl>0 && dl<60 && dl<vornAbstand){
         vornAbstand=dl;
         vorn={tempo:Math.max(player.speed,0)};

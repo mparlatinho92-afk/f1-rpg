@@ -19,7 +19,7 @@ Entwicklung zwei- und dreimal neu ausprobiert, weil die Gegenmessung nirgends st
 | `test-hindernis.js` | Stehendes Hindernis, Auslaufzone, Lückensuche |
 | `test-linien.js` | Kurvenschneiden, Schikanen, Alternativen |
 | `test-freihand.js` | Rechnet eine **handgezeichnete** Linie aus einem Bild zurück und vergleicht sie in Metern mit `LINIEN[0]` |
-| `test-dreher-cache.js` | Dreher, Cache — und die **Startgerechtigkeit** (siehe „Offen") |
+| `test-dreher-cache.js` | Dreher, Cache — und die **Startgerechtigkeit** |
 
 Alle nutzen `test-hilfe.js` (fester Zufallssamen). Ohne den tastet jeder Lauf ein anderes
 Rennen ab, und dieselbe Prüfung ist mal grün, mal rot.
@@ -136,35 +136,54 @@ Schlüssen geführt.
 
 ---
 
-## OFFEN: Startgerechtigkeit
+## GELÖST 13.09.2026: Startgerechtigkeit und Kurve 1
 
-**`test-dreher-cache.js` ist rot** — bewusst so eingecheckt, nicht übersehen.
+Beide hingen an **zwei** Fehlern, keiner davon in der Beschleunigung.
 
-Gemessen nach 3 Sekunden Vollgas: Spieler **23,4 m/s**, Gegner **38,9 m/s**. 38,9 ist der
-physikalisch richtige Wert (Beschleunigung 32 gegen Luftwiderstand 0,02·v² ergibt eine
-Grenze von 40 m/s). Der Spieler bleibt zurück, weil er im Startgetümmel wirklich anstößt.
+### 1. Zwei Bezugssysteme, die vermischt wurden
+Während der Startphase liegt die **Planposition** eines Gegners (`cm.fortschritt`) bis zu
+70 m vor der Stelle, an der sein Wagen **gezeichnet** wird — der Aufstellungsversatz wird
+erst auf `planU` aufgeschlagen. Der Spieler dagegen lebt immer in der gezeichneten Welt
+(`player.frac` kommt aus seiner echten Position).
 
-**Die Wurzel:** die Startaufstellung hat zwei Spalten. In den Augen der KI liegt der
-Nachbar in der anderen Spalte 6 m seitlich entfernt — mehr als die 2,2 m der
-Vordermann-Prüfung. Die Gegner fahren am Start also durch das Feld, als wäre es leer, und
-werden von niemandem aufgehalten. Nur der Spieler kollidiert physisch.
+Alle Längsvergleiche rechneten im Plan. Folge:
 
-Vorher war das verdeckt: die alte Windschatten-Deckelung (`seins+6`) hat die KI am Start
-zufällig gebremst und die Werte damit nebeneinander plausibel aussehen lassen.
+- Am Start stehen alle 26 Wagen im Plan auf **demselben Punkt**. `dl` war damit rund null
+  und fiel durch die Prüfung `dl > 0`: **kein Gegner sah einen anderen.** Das ganze Feld
+  beschleunigte ungehindert auf exakt dieselben 38,9 m/s und pflügte durch alles, was
+  wirklich dort stand.
+- Den Spieler sahen sie erst recht nicht und fuhren ihn von hinten um: er beschleunigte
+  sauber auf 31 m/s und stand 1,5 s später bei 3 m/s, mit Kontakt in 50 von 180 Bildern.
 
-Nutzer-Regel, die hier auf dem Spiel steht: *„wer sich am start überholt fühlt, hat dann
-recht, ohne dass es an ihm liegt."*
+Korrigiert in `fahreGegner` (Gegner und Spieler), `waehleLinie` und `freiAuf`: alle
+vergleichen jetzt über `laengsAbstand` auf `uVor`/`planU` — dieselbe Welt, in der auch die
+Kollisionen stattfinden.
 
-Zu klären ist also, wie die KI das Feld am Start wahrnimmt — nicht, wie schnell sie
-beschleunigt. Die Schwelle von 2,2 m stammt aus der Spurbreite und passt nicht auf eine
-Aufstellung, die absichtlich versetzt steht.
+### 2. Die Schonfrist galt nur für die KI
+`gegnerKollisionen` überspringt **Tempoverlust und Dreher**, solange `raceClock <=
+GRID_FADE_S` läuft: in der Startphase schmilzt der Aufstellungsversatz weg, und die
+Berührungen dabei sind ein Artefakt der Darstellung, kein Fahrfehler.
 
-## OFFEN: Kurve 1
+Beim Spieler war nur der **Dreher** so abgesichert (`drehErlaubt`), der **Tempoverlust**
+nicht. Er zahlte also in genau dem Fenster, in dem die KI nichts zahlt — 23,5 m/s gegen
+35,2 im Feld nach drei Sekunden, obwohl er bis 36,5 beschleunigt hatte. Jetzt gilt
+dieselbe Frist für beide.
 
-Von 19 + 33 Drehern je Runde auf 26 gesunken, verteilt statt geballt. 15 von 26 Wagen
-bekommen in den ersten 60 Sekunden noch einen Dreher ab, drei davon schwer.
+### Ergebnis
+Kurve 1 von **52 auf 22 Dreher** je Minute, und nicht mehr dort geballt: 6 in Kurve 1,
+6 an anderer Stelle, der Rest verteilt — normaler Rennkontakt statt Karambolage.
+Spieler nach 3 s 38,9 m/s, Feld-Median 35,3. Alle 18 Tests grün.
 
-Der Rest hängt am selben Punkt wie die Startgerechtigkeit: 26 Wagen führen aus zwei
-Spalten auf eine Linie zusammen, und im Scheitel liegen alle drei Fahrlinien auf demselben
-Randstein. Auf 15 m Bahnbreite haben bei 2,2 m Sicherheitsabstand sechs Wagen
-nebeneinander Platz — es sammeln sich dort mehr.
+### Weiteres Verworfenes aus diesem Durchgang
+
+| Versuch | Ergebnis |
+|---|---|
+| Den **Gegner mitschieben** bei Spieler-Kontakt, wie `gegnerKollisionen` es zwischen zwei Gegnern tut | Durchweg schlechter: 15,4 m/s (quer + längs), 9,0 m/s (nur quer) gegen 23,5 ohne. Längs schieben liest sein Regler als Rückstand zum Plan und beschleunigt mit bis zu +9 m/s dagegen, also direkt wieder hinein |
+| Dem Spieler die Überdeckung **halbieren** (`tiefe *= 0.5`) | Er bleibt länger im Gegner stecken und verliert mehr Tempo statt weniger: 13,8 statt 23,5 m/s |
+
+### Messfalle, die dabei auffiel
+**`raceClock` vorspringen lassen und ein Bild rechnen simuliert nichts.** `test-autopilot`
+sprang 1,3 s vor und rief `updateAICars` einmal auf — der Wagen bewegt sich je Bild aber
+nur 3,7 % auf sein Querziel zu (`dt*2.2`). Solange der Spieler am Start langsam war, stand
+er zufällig noch auf der Bahn und die Prüfung ging durch. Jetzt werden die 78 Bilder
+wirklich gefahren.
