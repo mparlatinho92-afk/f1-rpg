@@ -231,7 +231,12 @@ function ladeSaison(jahr) {
     // Import wie ueber das Einfuegefeld - das schreibt den Zwischenspeicher
     document.getElementById('import-paste').value = txt;
     handlePasteImport();
+    /* Eine EIGENE Wahl treffen, so wie es die Auswahlliste tut. Ohne den
+       Merker gilt die Fahrerwahl als blosse Vorgabe und wird beim Neuladen
+       absichtlich NICHT wiederhergestellt - sonst schreibt der
+       Zwischenspeicher den Polesetter fuer immer fest. */
     state.playerDriverId = DRIVERS[7].id;
+    state.fahrerSelbstGewaehlt = true;
     state.laps = 17;
     standSpeichern(txt, 'Test');
     return { jahr: state.jahr, fahrer: state.playerDriverId,
@@ -262,6 +267,27 @@ function ladeSaison(jahr) {
     vorher.runden + ' -> ' + nachher.runden);
   pruefWahr('Herkunft wird gemeldet', /Zwischenspeicher/.test(nachher.meldung),
     nachher.meldung.slice(0, 60));
+
+  /* Gegenprobe: OHNE eigene Wahl darf der Zwischenspeicher den Fahrer nicht
+     festschreiben. Sonst sitzt man nach jedem Neuladen wieder auf demselben
+     Platz - vom Nutzer gemeldet, nachdem der Wuerfel eingebaut war. */
+  const ohneWahl = await page.evaluate((txt) => {
+    document.getElementById('import-paste').value = txt;
+    handlePasteImport();
+    state.fahrerSelbstGewaehlt = false;
+    standSpeichern(txt, 'Test');
+    return { name: (DRIVERS.find(x => x.id === state.playerDriverId) || {}).name };
+  }, JSON.stringify(ladeSaison(JAHR)));
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(900);
+  const nachOhneWahl = await page.evaluate(() => ({
+    selbst: !!state.fahrerSelbstGewaehlt,
+    name: (DRIVERS.find(x => x.id === state.playerDriverId) || {}).name
+  }));
+  pruefWahr('Ohne eigene Wahl bleibt der Wuerfel zustaendig',
+    nachOhneWahl.selbst === false,
+    'Merker nach dem Neuladen: ' + nachOhneWahl.selbst
+    + ' (' + (ohneWahl.name || '?') + ' -> ' + (nachOhneWahl.name || '?') + ')');
 
   // Leeren muss auch wirken
   await page.evaluate(() => standVergessen());

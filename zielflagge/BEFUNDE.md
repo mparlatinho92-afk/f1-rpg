@@ -119,6 +119,11 @@ Nutzer: *„immer nur polesitter als default will ich nicht. würfel entscheidet
 Auswahlliste — die übernimmt aber jede gültige Vorwahl, und die kam aus dem Import:
 24 von 24 Läufen wieder der oberste Eintrag.
 
+⚠ **Der Zwischenspeicher darf die Vorgabe nicht festschreiben.** `standLaden` holte den
+gespeicherten Fahrer immer zurück — also nach jedem Neuladen wieder denselben. Der Stand
+merkt sich jetzt in `fahrerSelbst`, **ob** die Wahl eine eigene war; nur dann wird sie
+wiederhergestellt. Alte Stände ohne das Feld gelten als „nicht selbst gewählt".
+
 ⚠ Und er darf keinen **Nichtqualifizierten** erwischen. Die teilen sich einen Ersatzplatz,
 stehen dort übereinander und keilen sich ein. `startRace` würfelt deshalb neu, sobald der
 gewählte Fahrer keinen echten Startplatz hat — außer der Nutzer hat selbst gewählt.
