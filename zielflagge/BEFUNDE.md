@@ -97,6 +97,48 @@ Berührung Spieler↔KI jetzt auch der Gegner Tempo; bei KI↔KI war das schon s
 
 ---
 
+### Auffahren wird vorher abgefangen, aber nicht immer
+Reicht die Abstandsregel nicht — der Vordermann bremst härter als einkalkuliert —, wird
+gerechnet, welche Verzögerung nötig *wäre*: `a = (v² − v_vorn²) / (2 · Restweg)`. Liegt die
+über der Komfortgrenze, fällt **einmal je Begegnung** ein Würfel. Die Trefferchance hängt
+an der **Annäherung**, nicht am absoluten Tempo: mit 3 m/s Überschuss fängt man es fast
+immer ab, mit 25 m/s selten.
+
+⚠ **Der Engpass ist die Bremsrate, nicht das Ziel.** Zwei Fassungen liefen ins Leere: ein
+festes Ziel (`seins−2`) war zu hart und löste hinten die nächste Notbremsung aus (Dreher
+22 → 39); ein Ziel aus voller Bremskraft war gar nicht bindend, weil die normale
+Abstandsregel mit ihren 60 % ohnehin strenger rechnet. Wer aufläuft, ist längst am
+Anschlag seines `vZiel` — er kommt nur nicht schnell genug herunter. Wirksam war erst
+`KI_BREMS * 1.6` für die Dauer der Notbremsung: 19 Dreher, davon **keiner schwer**, und
+90 % der Gefahren abgefangen.
+
+### Der Startfahrer wird gewürfelt
+Nutzer: *„immer nur polesitter als default will ich nicht. würfel entscheidet."*
+
+⚠ Der Würfel muss an **jeder** Vorgabestelle rollen. Zuerst stand er nur in der
+Auswahlliste — die übernimmt aber jede gültige Vorwahl, und die kam aus dem Import:
+24 von 24 Läufen wieder der oberste Eintrag.
+
+⚠ Und er darf keinen **Nichtqualifizierten** erwischen. Die teilen sich einen Ersatzplatz,
+stehen dort übereinander und keilen sich ein. `startRace` würfelt deshalb neu, sobald der
+gewählte Fahrer keinen echten Startplatz hat — außer der Nutzer hat selbst gewählt.
+
+---
+
+## Beobachtung: die Startgerade ist für 26 Wagen zu kurz
+
+Startplatz 26 liegt **119 m vor der Linie** — und damit mitten in der letzten Kurve
+(1164–1229 m). Wer dort steht, fährt bei Vollgas ohne Lenkeinschlag sofort ins Kiesbett.
+Für einen Menschen ist das fahrbar, es heißt nur, dass er vom ersten Meter an lenken muss.
+Es ist kein Fehler, aber ein Grund, bei den echten Strecken auf die Länge der Start-Ziel-
+Geraden zu achten.
+
+⚠ **Messfalle daraus:** eine Prüfung, die „Vollgas, kein Lenken" fährt, misst ab Startplatz
+18 nicht mehr die Beschleunigung, sondern die Mauer. `test-dreher-cache` setzt für seinen
+Startvergleich deshalb ausdrücklich den Polesetter.
+
+---
+
 ## Verworfene Versuche (nicht noch einmal probieren)
 
 | Versuch | Ergebnis |

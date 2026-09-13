@@ -158,7 +158,7 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
             <option value="ki">Start: Autopilot</option>
           </select>
           <button class="btn" id="btn-fahrer" onclick="fahrerUmschalten()">🤖 Autopilot</button>
-          <span id="fahrer-info" class="legend" style="margin-left:0;"></span>
+          <span id="fahrer-info" style="margin-left:0;padding:3px 10px;border-radius:11px;font-weight:700;font-size:12px;letter-spacing:.4px;white-space:nowrap;"></span>
           <button class="btn" id="btn-abort-race" onclick="confirmAbort()" style="display:none;">🚩 Abbrechen</button>
           <button class="btn" id="btn-restart" onclick="confirmRestart()" style="display:none;">↻ Neustart</button>
           <button class="btn" id="btn-playpause" onclick="togglePlay()" disabled>⏸ Pause</button>
@@ -400,7 +400,26 @@ function loadDemoField(){
         prevPoints:0, prevWins:0, importId:null, histId:null});
     });
   });
-  state.playerDriverId = DRIVERS.length ? DRIVERS[0].id : null;
+  state.playerDriverId = zufallsFahrerId();
+}
+
+/* Welchen Fahrer bekommt der Spieler, solange er nicht selbst gewaehlt hat?
+   ⚠ NICHT DRIVERS[0] und nicht der Polesetter. Beides hiess: man startet jedes
+   Mal an der Spitze. Nutzer: "immer nur polesitter als default will ich nicht.
+   wuerfel entscheidet. das feld beobachten und aktiv teilnehmen ist
+   interessanter als vorne fahren."
+   ⚠ Der Wuerfel muss an JEDER Vorgabestelle rollen. Zuerst stand er nur in der
+   Auswahlliste - die uebernimmt aber jede gueltige Vorwahl, und die kam aus
+   dem Import. Gemessen: 24 von 24 Laeufen wieder der oberste Eintrag. */
+function zufallsFahrerId(){
+  /* ⚠ Nur unter den STARTBERECHTIGTEN wuerfeln. Ueber alle DRIVERS gezogen
+     erwischt es auch Fahrer, die sich nicht qualifiziert haben - dann steht
+     der Spielerwagen und bewegt sich das ganze Rennen nicht (gemessen 0,2 m/s
+     nach drei Sekunden Vollgas).
+     auswaehlbareFahrer faellt ohne Lieferung von selbst auf DRIVERS zurueck. */
+  const wahl=(typeof auswaehlbareFahrer==='function') ? auswaehlbareFahrer() : DRIVERS;
+  if(!wahl.length) return DRIVERS.length?DRIVERS[0].id:null;
+  return wahl[Math.floor(Math.random()*wahl.length)].id;
 }
 
 /* ============================= F1-RPG-IMPORT =============================
@@ -636,7 +655,7 @@ function applyImportResult(res){
         carSpeed:Math.round(50+Math.random()*30), reliability:Math.round(60+Math.random()*30), strategy:Math.round(50+Math.random()*30)};
     }
   });
-  if(res.drivers.length){ DRIVERS = res.drivers; state.playerDriverId = DRIVERS[0].id; }
+  if(res.drivers.length){ DRIVERS = res.drivers; state.playerDriverId = zufallsFahrerId(); }
   renderGarageTables();
 }
 document.getElementById('import-file').addEventListener('change', function(e){
@@ -753,8 +772,19 @@ function renderPlayerSelect(){
     return `<option value="${escAttr(d.id)}">${platz}${escapeHTML(d.name)} (${escapeHTML(d.team)})</option>`;
   }).join('');
   if(sortiert.some(d=>d.id===prev)) sel.value=prev;
-  else if(sortiert.length){ state.playerDriverId=sortiert[0].id; sel.value=sortiert[0].id; }
-  sel.onchange=()=>{ state.playerDriverId=sel.value; };
+  else if(sortiert.length){
+    /* WUERFEL STATT POLE. Vorher stand hier sortiert[0] - also immer der
+       Polesetter, und damit startete man jedes Mal an der Spitze. Nutzer:
+       "immer nur polesitter als default will ich nicht. wuerfel entscheidet.
+       das feld beobachten und aktiv teilnehmen ist interessanter als vorne
+       fahren."
+       Gewuerfelt wird NUR, wenn es keine gueltige vorherige Wahl gibt - sonst
+       wechselte jede Neuzeichnung der Liste den Fahrer unter der Hand. */
+    const w=sortiert[Math.floor(Math.random()*sortiert.length)];
+    state.playerDriverId=w.id; sel.value=w.id;
+  }
+  // Ab hier zaehlt die eigene Wahl - der Wuerfel redet nicht mehr hinein.
+  sel.onchange=()=>{ state.playerDriverId=sel.value; state.fahrerSelbstGewaehlt=true; };
 
   const hinweis=document.getElementById('player-select-hint');
   if(hinweis){
@@ -2706,7 +2736,7 @@ function fahreGegner(id, cm, prog, dt){
   /* 4) Vordermann. Wer aufschliesst, muss bremsen - nicht durchfahren. Das
         ersetzt die alte Abstandsregel, die als Positionsversatz gebaut war
         und deshalb schwang. */
-  let vorn=null, vornAbstand=Infinity;
+  let vorn=null, vornAbstand=Infinity, vornId=null;
   for(const oid in carMeshes){
     if(oid===id) continue;
     const o=carMeshes[oid];
@@ -2735,7 +2765,7 @@ function fahreGegner(id, cm, prog, dt){
     if(o.uVor===undefined) continue;
     const dl=laengsAbstand(o.uVor, meinU);
     if(dl<=0||dl>60) continue;
-    if(dl<vornAbstand){ vornAbstand=dl; vorn=o; }
+    if(dl<vornAbstand){ vornAbstand=dl; vorn=o; vornId=oid; }
   }
   /* ⚠ DER SPIELER GEHOERT DAZU. Er stand bisher nicht in dieser Pruefung: die
      Gegner bremsten fuereinander, fuhren aber in ihn hinein. Nutzer:
@@ -2763,6 +2793,7 @@ function fahreGegner(id, cm, prog, dt){
       if(dl>0 && dl<60 && dl<vornAbstand){
         vornAbstand=dl;
         vorn={tempo:Math.max(player.speed,0)};
+        vornId=player.id;
       }
     }
   }
@@ -2793,7 +2824,48 @@ function fahreGegner(id, cm, prog, dt){
     const puffer=vornAbstand-wunsch;             // darf negativ werden
     const sicher=Math.sqrt(Math.max(0, seins*seins+2*KI_BREMS*0.6*puffer));
     vZiel=Math.min(vZiel, sicher);
-  }
+
+    /* ══ AUFFAHREN VERMEIDEN ═══════════════════════════════════════════════
+       Nutzer: "wenn ein wagen den vordermann kollidiert, faengt er zu zittern
+       an. er soll besser abbremsen bevor es passiert. nicht automatisch aber
+       je nach geschwindigkeit mit hoher wahrscheinlichkeit."
+
+       Die Regel oben haelt Abstand, solange der Vordermann nicht STAERKER
+       verzoegert als sie einkalkuliert. Bremst er haerter - Kurve, Zwischenfall,
+       eigener Vordermann - reicht sie nicht, und es gibt einen Auffahrunfall.
+       Gerechnet wird, welche Verzoegerung noetig WAERE, um hinter ihm zum
+       Stehen zu kommen: a = (v^2 - v_vorn^2) / (2 * Restweg). Liegt die ueber
+       der Komfortgrenze, ist Gefahr im Verzug.
+
+       Dann wird EINMAL je Begegnung gewuerfelt, nicht in jedem Bild - sonst
+       kaeme bei sechzig Bildern je Sekunde immer der Einschlag heraus.
+       Die Trefferwahrscheinlichkeit haengt an der ANNAEHERUNG, nicht am
+       absoluten Tempo: wer mit 3 m/s Ueberschuss auflaeuft, faengt es fast
+       immer ab, wer mit 25 m/s kommt, selten. Dieselbe Logik wie beim Drehen -
+       die Wucht entscheidet, nicht der Zufall allein. */
+    const rest=Math.max(vornAbstand-2.5, 0.5);
+    const noetig=(cm.tempo*cm.tempo-seins*seins)/(2*rest);
+    if(noetig>KI_BREMS*0.6){
+      if(cm.notbremsFuer!==vornId){
+        cm.notbremsFuer=vornId;
+        const annaeherung=Math.max(cm.tempo-seins, 0);
+        cm.notbremsGlueckt=Math.random()>clamp(annaeherung/28, 0.02, 0.55);
+      }
+      /* ⚠ Nicht das ZIEL ist der Engpass, sondern die BREMSRATE.
+         Zwei Fassungen liefen ins Leere:
+           1. festes Ziel seins-2 - zu hart, die Notbremsung loeste hinten die
+              naechste aus;
+           2. Ziel aus voller Bremskraft - gar nicht bindend, weil die normale
+              Abstandsregel mit ihren 60 % ohnehin strenger rechnet.
+         Wer auflaeuft, ist laengst am Anschlag seines vZiel und kommt trotzdem
+         nicht schnell genug herunter: pro Bild baut er nur KI_BREMS ab. Ein
+         Fahrer tritt in dieser Lage haerter rein, als er es freiwillig taete -
+         genau das gibt das Kennzeichen frei. */
+      if(cm.notbremsGlueckt) cm.notbremst=true;
+    } else if(cm.notbremsFuer===vornId && noetig<KI_BREMS*0.3){
+      cm.notbremsFuer=undefined;      // Lage entschaerft, naechstes Mal neu
+    }
+  } else cm.notbremsFuer=undefined;
 
   /* 4b) Wer in die Auslaufzone ausgewichen ist, verliert Tempo - nach
          derselben Formel wie der Spieler, sonst waere die Abkuerzung ueber
@@ -2821,8 +2893,11 @@ function fahreGegner(id, cm, prog, dt){
 
   /* 6) Tempo dorthin fuehren, mit echten Grenzen. */
   vZiel=Math.max(vZiel, 0);
+  // Notbremsung: 60 % mehr Verzoegerung als im Normalbetrieb.
+  const brems=cm.notbremst ? KI_BREMS*1.6 : KI_BREMS;
+  cm.notbremst=false;
   if(vZiel>cm.tempo) cm.tempo=Math.min(vZiel, cm.tempo+KI_BESCHL*dt);
-  else cm.tempo=Math.max(vZiel, cm.tempo-KI_BREMS*dt);
+  else cm.tempo=Math.max(vZiel, cm.tempo-brems*dt);
   /* ⚠ DERSELBE Luftwiderstand wie beim Spieler. Er stand nur in updatePlayer
      (0,02*v^2), die Gegner beschleunigten flach mit KI_BESCHL. Am Start
      bedeutete das 35 m/s fuer die KI gegen 24,9 fuer den Spieler nach drei
@@ -3326,6 +3401,19 @@ function startRace(){
   state.gridSlots={};
   state.grid.forEach((q,i)=>{ state.gridSlots[q.id]=gridSlotFor(i); });
   renderGrid();
+  /* ⚠ SICHERUNG FUER DEN WUERFEL. Gewuerfelt wird beim Import und in der
+     Auswahlliste - dort ist das Startfeld aber noch gar nicht bekannt, und ohne
+     Lieferung stehen 36 Fahrer zur Wahl, von denen nur 26 starten. Erwischte
+     der Wuerfel einen Nichtqualifizierten, bekam der den Ersatzplatz
+     slot.back=113, den sich ALLE Nichtqualifizierten teilen: die stehen dort
+     uebereinander, und der Spielerwagen kam keinen Meter vom Fleck (gemessen
+     0,2 m/s nach drei Sekunden Vollgas).
+     Wer selbst gewaehlt hat, behaelt seine Wahl - fuer ihn gibt es den
+     Rutsch auf den letzten Platz. */
+  if(!state.fahrerSelbstGewaehlt && state.grid.length
+     && !state.gridSlots[state.playerDriverId]){
+    state.playerDriverId=state.grid[Math.floor(Math.random()*state.grid.length)].id;
+  }
   initPlayer(state.playerDriverId);
   // Geliefertes Ergebnis hat IMMER Vorrang - dann wird hier nicht gewuerfelt.
   const _gridMap={};
@@ -3486,9 +3574,24 @@ function fahrerHinweis(){
     btn.textContent = state.autopilot ? '\ud83c\udfae Ich \u00fcbernehme' : '\ud83e\udd16 Autopilot';
     btn.classList.toggle('primary', !!state.autopilot);
   }
+  /* Der Modus muss auf einen Blick lesbar sein, nicht als graue Kleinschrift
+     neben einem Knopf, der das GEGENTEIL anbietet ("Ich uebernehme" heisst ja,
+     dass gerade der Autopilot faehrt). Deshalb eine farbige Plakette mit
+     eindeutigem Text - und waehrend der Uebernahme der laufende Countdown. */
   const el=document.getElementById('fahrer-info');
-  if(el) el.textContent = state.uebernahmeBis!==null ? '\u00dcbernahme l\u00e4uft \u2026'
-    : (state.autopilot ? 'Autopilot f\u00e4hrt' : 'Du f\u00e4hrst');
+  if(el){
+    if(state.uebernahmeBis!==null){
+      const rest=Math.max(0, state.uebernahmeBis-raceClock);
+      el.textContent='\u23f1 \u00dcBERNAHME IN '+rest.toFixed(1)+' s';
+      el.style.background='#4a3b12'; el.style.color='#ffd75e';
+    } else if(state.autopilot){
+      el.textContent='\ud83e\udd16 AUTOPILOT F\u00c4HRT';
+      el.style.background='#123a4a'; el.style.color='#6ed0f0';
+    } else {
+      el.textContent='\ud83c\udfae DU F\u00c4HRST';
+      el.style.background='#14401d'; el.style.color='#74e08a';
+    }
+  }
 }
 function fahrerUmschalten(){
   if(state.autopilot) selbstUebernehmen(); else autopilotUebernehmen();

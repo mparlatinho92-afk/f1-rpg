@@ -179,6 +179,22 @@ function ladeSaison(jahr) {
     resetForNewRace();
     document.getElementById('start-modus').value = 'mensch';
     startRace();
+    /* ⚠ Fuer DIESE Pruefung muss der Spieler VORN stehen.
+       Gemessen wird die Beschleunigung bei Vollgas OHNE Lenkeingabe - das
+       funktioniert nur, solange vor ihm Gerade liegt. Seit der Startfahrer
+       gewuerfelt wird, kann er auf Platz 26 stehen, und der liegt 119 m vor
+       der Linie, also mitten in der letzten Kurve: der Wagen faehrt dann
+       geradeaus ins Kiesbett (quer 2,4 -> 29,4 m) und die Mauer bremst ihn auf
+       0,2 m/s. Das ist richtiges Verhalten und keine Benachteiligung.
+       Deshalb wird hier der Polesetter genommen - erst nach startRace() steht
+       fest, wer das ist. */
+    if (state.grid.length && state.playerDriverId !== state.grid[0].id) {
+      state.fahrerSelbstGewaehlt = true;
+      state.playerDriverId = state.grid[0].id;
+      resetForNewRace();
+      document.getElementById('start-modus').value = 'mensch';
+      startRace();
+    }
     paused = true;
     racing = true; raceClock = 0;
     const gg = Object.keys(carMeshes).filter(id => id !== player.id);
