@@ -191,7 +191,14 @@ Claude simuliert NIEMALS selbst (Token-Verschwendung).
 /tests/                  ← isolierte Logik-Tests (Monte Carlo, Balancing)
 /schemas/                ← Datenstruktur-Dokumentation (NUR Referenz, kein Laufzeit-Code)
 /CLAUDE.md               ← diese Datei
+/zielflagge/BEFUNDE.md   ← ZIELFLAGGE: gemessene Befunde zur Fahr-KI (PFLICHTLEKTÜRE
+                            vor Arbeit an Fahrlinien, Abstandsregeln, Kollisionen)
 ```
+
+**ZIELFLAGGE-Regel:** `zielflagge/BEFUNDE.md` hält die **verworfenen Versuche mit ihren
+Zahlen** — mehrere Ansätze wurden dort zwei- und dreimal neu ausprobiert, weil die
+Gegenmessung nirgends stand. Neue Messung, die eine Annahme widerlegt: dort eintragen,
+nicht nur im Commit.
 **Daten editieren:** SEASON_DATA → `data/seasons.js`, HIST_SEASONS → `data/hist.js`, F1DB → `data/f1db.js`
 **manage-v** inliniert alle drei automatisch → `f1-rpg-vX.html` ist danach ohne Hilfsdateien lauffähig.
 
