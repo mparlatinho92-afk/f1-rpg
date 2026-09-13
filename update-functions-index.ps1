@@ -1,4 +1,4 @@
-# update-functions-index.ps1
+﻿# update-functions-index.ps1
 $SchemaPath = "schemas/functions.schema.json"
 
 # Indizierte Quellen. index.html steht ZUERST und bleibt die Leitdatei: dort
@@ -11,7 +11,8 @@ $Quellen = @(
     "zielflagge/index.html",
     "zielflagge/wagen.js",
     "zielflagge/colors.js",
-    "zielflagge/build-colors.js"
+    "zielflagge/build-colors.js",
+    "zielflagge/strecken.js"
 )
 
 # WICHTIG: explizit UTF-8 lesen, sonst liest Windows PowerShell 5.1 (via manage-v/powershell.exe)

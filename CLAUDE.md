@@ -174,7 +174,7 @@ Claude simuliert NIEMALS selbst (Token-Verschwendung).
 - Zeilennummern in `functions.schema.json` verschieben sich – nach signifikanten Edits `./update-functions-index.ps1` ausführen
 
 **Der Index umfasst seit 11.09.2026 auch ZIELFLAGGE.** Gescannt werden in dieser Reihenfolge:
-`index.html` · `zielflagge/index.html` · `zielflagge/wagen.js` · `zielflagge/colors.js` · `zielflagge/build-colors.js`.
+`index.html` · `zielflagge/index.html` · `zielflagge/wagen.js` · `zielflagge/colors.js` · `zielflagge/build-colors.js` · `zielflagge/strecken.js`.
 - **`index.html` bleibt die Leitdatei:** dort gefundene Funktionen haben KEIN `file`-Feld, ihre Zeilennummer gilt wie bisher für `index.html`. Alles andere trägt `file`.
 - Bei Namensgleichheit gewinnt die erste Quelle – also `index.html`.
 - **Nicht gescannt:** `zielflagge/three.min.js` (Fremdcode, eine Zeile mit tausenden Treffern) und `zielflagge/test-*.js` (Werkzeug, genau wie `tests/` im Hauptprojekt).

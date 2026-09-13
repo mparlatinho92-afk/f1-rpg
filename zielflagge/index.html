@@ -13,6 +13,10 @@
 <script src="colors.js"></script>
 
 <script src="wagen.js"></script>
+<!-- Echte Strecken: Layouts + Laengen, erzeugt aus ../data via build-strecken-daten.js -->
+<script src="strecken-daten.js"></script>
+<!-- Echte Strecken: SVG-Pfad zu Mittellinie -->
+<script src="strecken.js"></script>
 <style>
 :root{
   --bg:#0b0c0e; --surface:#15171b; --surface2:#1b1e23; --line:#282b31;
@@ -1170,7 +1174,7 @@ let LINIEN=[];
    verliert sofort Plaetze, weil er weder beschleunigen noch ausweichen kann,
    ohne von der Bahn zu fallen. Die sechs kollinearen Punkte halten die Gerade
    wirklich gerade - Catmull-Rom bogen sie sonst aus. */
-const trackPointsRaw=[
+let trackPointsRaw=[
   [-130,-120],[-130,-60],[-130,0],[-130,60],[-130,120],[-130,170],
   [-112,212],[-65,236],[-15,228],[22,194],
   [30,146],[62,112],[112,96],[137,56],
@@ -1599,6 +1603,67 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
     aus[i]=clamp(roh[i]*(1-misch)+form0[i]*misch, Math.max(u,-maxAb), Math.min(o,maxAb));
   }
   return grenzeSteigung(aus);
+}
+
+/* ══ ECHTE STRECKE LADEN ═══════════════════════════════════════════════════
+   Holt die zum Jahr passende Ausbaustufe aus CIRCUIT_LAYOUTS, rechnet den
+   SVG-Pfad in Meter um, dreht ihn auf Start/Ziel und in die Fahrtrichtung -
+   und legt das Ergebnis als trackPointsRaw ab. Alles Weitere (Bahnradien,
+   Fahrlinien, Auslaufzonen, Startfeld) rechnet buildTrack daraus wie bisher.
+
+   ⚠ Drei Angaben stehen NICHT im SVG und werden hier abgeleitet:
+   MASSSTAB aus CIRCUIT_LENGTHS (eine Zahl je Strecke, gilt fuer alle Stufen,
+   weil sie sich ein Koordinatensystem teilen), START/ZIEL ueber
+   STRECKEN.startZiel, FAHRTRICHTUNG aus der Zeichenrichtung der Quelle.
+   ⚠ Die Quellrichtung stimmt nicht immer: in einer Stichprobe von 22 Kursen
+   lag sie bei Sotschi, Schanghai und Sepang falsch. Deshalb die Ausnahmeliste
+   - sie ist erweiterbar und hat Vorrang. */
+const STRECKE_RICHTUNG={ sochi:true, shanghai:true, sepang:true };
+
+function stufeFuerJahr(strecke, jahr){
+  if(!strecke||!strecke.l||!strecke.l.length) return null;
+  /* ⚠ Die Jahresangaben sind LUECKENHAFT, weil sie die tatsaechlich
+     gefahrenen Rennen auflisten - Silverstone-2 steht als
+     "1975,1977,1979,1981,1983,1985", weil der Grand Prix sich mit Brands Hatch
+     abwechselte. Ein Jahr wie 1980 trifft deshalb keinen Eintrag.
+     Gesucht ist nicht der Treffer, sondern die Stufe, die damals IN BENUTZUNG
+     war: die mit dem groessten Jahr, das nicht nach dem gesuchten liegt.
+     Ohne das lieferte 1980 das Layout von 2010. */
+  let beste=null, besteJahr=-1;
+  for(const st of strecke.l){
+    for(const teil of String(st.y||'').split(',')){
+      const m=teil.match(/^\s*(\d{4})(?:-(\d{4}))?\s*$/);
+      if(!m) continue;
+      const von=+m[1], bis=m[2]?+m[2]:von;
+      if(jahr>=von && jahr<=bis) return st;          // genauer Treffer
+      if(von<=jahr && von>besteJahr){ besteJahr=von; beste=st; }
+    }
+  }
+  return beste || strecke.l[0];
+}
+
+function streckeLaden(slug, jahr){
+  if(typeof CIRCUIT_LAYOUTS==='undefined'||typeof STRECKEN==='undefined') return false;
+  const strecke=CIRCUIT_LAYOUTS[slug];
+  if(!strecke) return false;
+  const stufe=stufeFuerJahr(strecke, Number(jahr)||1988);
+  if(!stufe) return false;
+  const kmTab=(typeof CIRCUIT_LENGTHS!=='undefined') ? CIRCUIT_LENGTHS[slug] : null;
+  if(!kmTab) return false;                    // ohne Massstab kein Rennen
+  const skala=STRECKEN.massstabFuer(strecke.l[0].d, kmTab*1000);
+  let pts=STRECKEN.stufeZuMittellinie(stufe.d, skala, 260).pts;
+  const imUhr=(STRECKE_RICHTUNG[slug]!==undefined)
+    ? STRECKE_RICHTUNG[slug] : (STRECKEN.flaeche(pts)<=0);
+  pts=STRECKEN.richtungSetzen(pts, imUhr);
+  const sz=STRECKEN.startZiel(pts);
+  pts=STRECKEN.aufStartDrehen(pts, sz.idx);
+  trackPointsRaw=pts.map(p=>[p.x, p.z]);
+  state.streckeName=strecke.n;
+  state.streckeStufe=stufe.id;
+  state.streckeJahre=stufe.y;
+  state.streckeStartQuelle=sz.quelle;
+  buildTrack();
+  return true;
 }
 
 function buildTrack(){
