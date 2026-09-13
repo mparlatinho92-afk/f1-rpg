@@ -2212,7 +2212,33 @@ function waehleLinie(id, cm){
     const dl=(o.fortschrittVor-(cm.fortschrittVor!==undefined?cm.fortschrittVor:cm.fortschritt))*trackLength;
     if(dl>0&&dl<18){ klebt=true; break; }
   }
-  const neu=klebt ? (cm.linie+1)%Math.max(LINIEN.length,1) : cm.stammLinie;
+  /* ⚠ Nicht blind auf die naechste Linie. Sie kann genauso besetzt sein wie
+     die eigene - dann wechselt man aus einer Schlange in die naechste und
+     zurueck. Geprueft wird, wie weit die Bahn auf JEDER Linie frei ist; bei
+     gleichem Ergebnis gewinnt die, die naeher an der Stammlinie liegt. */
+  const meinU=(cm.planU!==undefined)?cm.planU:0;
+  const meinFort=(cm.fortschrittVor!==undefined)?cm.fortschrittVor:cm.fortschritt;
+  const freiAuf=(welche)=>{
+    const q=idealBei(meinU, welche);
+    let naechst=999;
+    for(const oid in carMeshes){
+      if(oid===id) continue;
+      const o=carMeshes[oid];
+      if(o.fortschrittVor===undefined||o.imZiel) continue;
+      if(Math.abs(q-((o.seitlichVor!==undefined)?o.seitlichVor:0))>2.2) continue;
+      const dl=(o.fortschrittVor-meinFort)*trackLength;
+      if(dl>0&&dl<naechst) naechst=dl;
+    }
+    return naechst;
+  };
+  let neu=cm.stammLinie;
+  if(klebt){
+    let beste=-1;
+    for(let k=0;k<Math.max(LINIEN.length,1);k++){
+      const w=freiAuf(k) - Math.abs(k-cm.stammLinie)*0.5;   // Stammlinie bevorzugt
+      if(w>beste){ beste=w; neu=k; }
+    }
+  }
   if(neu!==cm.linie){ cm.linie=neu; cm.linieBis=raceClock+2; }
 }
 
@@ -2522,25 +2548,42 @@ function seitlichesZiel(id, cm, u, basis){
         naechste - der bestimmt ohnehin, wohin man ausweichen muss. */
   let naechster=null, naechsteEntf=Infinity;
   const eigenQ=(cm.seitlichVor!==undefined)?cm.seitlichVor:basis;
+  /* Der KORRIDOR: was der Nudge uebersieht, wenn mehr als zwei Wagen im Spiel
+     sind. Jeder Nachbar verengt den erlaubten Bereich von seiner Seite her.
+     ⚠ Das ist ausdruecklich KEINE Summe ueber alle Nachbarn - genau daran ist
+     die erste Fassung gescheitert: die Menge der Nachbarn wechselt von Bild zu
+     Bild, und mit ihr sprang die Summe. Eine SCHRANKE springt nicht, solange
+     ihre Forderung am Fensterrand auf null zurueckgeht. Genau so ist sie
+     gebaut: der geforderte Abstand waechst erst, wenn der Nachbar naeher
+     kommt. Wer neu ins Fenster faehrt, aendert deshalb zunaechst nichts. */
+  let korrUnten=-rechtsGrenze, korrOben=linksGrenze;
   for(const oid in carMeshes){
     if(oid===id || (player && oid===player.id)) continue;
     const o=carMeshes[oid];
     if(o.uVor===undefined) continue;
     const dl=laengsAbstand(u, o.uVor);
     if(Math.abs(dl)>7) continue;
-    const dq=eigenQ-((o.seitlichVor!==undefined)?o.seitlichVor:0);
+    const oq=(o.seitlichVor!==undefined)?o.seitlichVor:0;
+    const dq=eigenQ-oq;
+    // Seitenwahl fest je Paar, nicht nach dem momentanen Vorzeichen: sonst
+    // kippt sie, sobald zwei Wagen quer aneinander vorbeigleiten.
+    const seite=Math.abs(dq)>0.9 ? (dq>0?1:-1)
+              : ((hashStr(id)>hashStr(oid))?1:-1);
+    const noetigQ=2.2*clamp(1-Math.abs(dl)/7, 0, 1);
+    if(seite>0) korrUnten=Math.max(korrUnten, oq+noetigQ);
+    else        korrOben =Math.min(korrOben,  oq-noetigQ);
     if(Math.abs(dq)>2.4) continue;
     const entf=Math.abs(dl)+Math.abs(dq)*2;
-    if(entf<naechsteEntf){ naechsteEntf=entf; naechster={oid,dl,dq}; }
+    if(entf<naechsteEntf){ naechsteEntf=entf; naechster={oid,dl,dq,seite}; }
   }
   if(naechster){
     const staerke=(1-Math.abs(naechster.dl)/7)*1.6;
-    // Seitenwahl fest je Paar, nicht nach dem momentanen Vorzeichen: sonst
-    // kippt sie, sobald zwei Wagen quer aneinander vorbeigleiten.
-    const seite=Math.abs(naechster.dq)>0.9 ? (naechster.dq>0?1:-1)
-              : ((hashStr(id)>hashStr(naechster.oid))?1:-1);
-    ziel+=seite*staerke;
+    ziel+=naechster.seite*staerke;
   }
+  /* Faellt der Korridor in sich zusammen, gibt es keine Loesung, die zu allen
+     Abstand haelt - dann bleibt es beim Ausweichen vor dem Naechsten. Ein
+     leerer Bereich duerfte sonst irgendeinen Wert erzwingen. */
+  if(korrUnten<=korrOben) ziel=clamp(ziel, korrUnten, korrOben);
   return clamp(ziel, -rechtsGrenze, linksGrenze);
 }
 
