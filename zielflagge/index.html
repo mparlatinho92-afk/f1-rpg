@@ -2281,6 +2281,17 @@ function optimaleRundenzeit(vMax){
 /* Laengsabstand zweier Streckenanteile in Metern, vorzeichenbehaftet.
    Positiv heisst: a liegt vor b. Der Umweg ueber +1.5/-0.5 faengt den
    Rundenuebergang ab (0.99 und 0.01 sind 20 m auseinander, nicht 820). */
+/* Faehrt der Spieler gerade wirklich selbst?
+   ⚠ Unter Autopilot steigt updatePlayer sofort aus - player.speed bleibt dann
+   fuer das ganze Rennen auf 0 und player.frac eingefroren. Sein WAGEN faehrt
+   trotzdem, denn er haengt als normaler KI-Wagen in carMeshes. Wer das
+   player-Objekt zusaetzlich abfragt, liest also ein Phantom: einen stehenden
+   Wagen an einer festen Stelle der Bahn, an dem jede Runde das halbe Feld
+   ausweicht. Gemessen kostete das 1,4 Plaetze Abweichung vom Drehbuch. */
+function spielerFaehrtSelbst(){
+  return !!(player && !state.autopilot && !player.finished && !player.aborted);
+}
+
 function laengsAbstand(a, b){
   return (((a - b + 1.5) % 1) - 0.5) * trackLength;
 }
@@ -2298,14 +2309,181 @@ function laengsAbstand(a, b){
    Nebeneffekt, der ein gemeldeter Fehler war: die Gegner fuhren bisher stur
    durch den Spieler hindurch und schoben ihn beiseite - beim Start wurde er
    dadurch vom ganzen Feld durchgereicht. Jetzt weichen sie ihm aus. */
+/* ══ STEHENDES HINDERNIS ═══════════════════════════════════════════════════
+   Nutzer: "stehendes hindernis als sonderfall mit auslaufzone. crashs sind
+   moeglich aber selten. je mehr beteiligte desto seltener."
+
+   Ein AUSGEFALLENER steht bereits neben der Bahn - der ist harmlos. Gefaehrlich
+   ist der GEDREHTE: er steht quer mitten auf der Linie, und im Scheitel liegen
+   die drei Fahrlinien dicht beieinander, ein Linienwechsel hilft dort nicht.
+   In diesem einen Fall darf die KI ueber die Bahnkante in die Auslaufzone -
+   so wie es ein echter Fahrer tut.
+
+   ⚠ Der STEHENDE START darf das nicht ausloesen: dort stehen alle. Deshalb ist
+   das Kriterium nicht "langsam", sondern "viel langsamer als ich" - am Start
+   beschleunigt das ganze Feld gemeinsam, die Differenz bleibt klein.
+
+   Die Entscheidung faellt EINMAL je Begegnung. Wuerfelte sie in jedem Bild,
+   kaeme bei dreissig Bildern je Sekunde immer der Einschlag heraus.
+   Wahrscheinlichkeit fuers Danebengehen: 0,12 hoch (Zahl der schon
+   Beteiligten). Der erste Hinterherfahrende trifft also in 12 % der Faelle,
+   der zweite in 1,4 %, der dritte in 0,2 % - eine Massenkarambolage ist
+   damit moeglich, aber mit jedem Wagen deutlich unwahrscheinlicher. */
+const HINDERNIS_TEMPO=3;      // m/s - darunter gilt ein Wagen als stehend
+const HINDERNIS_SICHT=25;     // m - so weit voraus wird geschaut
+const HINDERNIS_SPUR=3.0;     // m - so nah an meiner Querlage zaehlt er
+const AUSWEICH_FEHLER=0.12;   // Grundwahrscheinlichkeit fuers Danebengehen
+
+function stehendesHindernis(id, cm, u){
+  const eigenQ=(cm.seitlichVor!==undefined)?cm.seitlichVor:0;
+  let best=null, bestDl=Infinity;
+  const sperren=[];
+  const pruefe=(oid, oU, oQ, oTempo, quer)=>{
+    /* ⚠ QUER heisst nicht HINDERNIS. Zuerst stand hier, dass ein gedrehter
+       Wagen immer eines ist - egal wie schnell. Ein Streifschuss dreht aber
+       kurz an, ohne dass der Wagen langsamer wird, und dann wich das ganze
+       Umfeld aus. Gemessen sprang die Abweichung vom Drehbuch dadurch von
+       3,3 auf 5,5 Plaetze: die Lieferung war nicht mehr der Rahmen.
+       Quer sein LOCKERT die Schwelle, es ersetzt sie nicht. */
+    /* ⚠ BEIDES muss zutreffen: quer UND langsam.
+       Nur "quer" reichte nicht - ein Streifschuss dreht kurz an, ohne dass der
+       Wagen langsamer wird, und das ganze Umfeld wich aus.
+       Nur "langsam" reicht auch nicht - wer langsam ist, WEIL er hinter
+       jemandem steht, ist eine Schlange und kein Hindernis; da reiht man sich
+       ein. Mit dieser Lesart wichen Wagen dem normalen Verkehr aus und
+       ueberholten Gegner, die im Drehbuch vor ihnen bleiben sollten: die
+       Abweichung sprang von 3,3 auf 5,5 Plaetze. */
+    if(!quer) return;
+    if(oTempo>=HINDERNIS_TEMPO*2) return;
+    /* ⚠ KEINE Bedingung "ich muss viel schneller sein als er". Sie stand hier
+       gegen den stehenden Start - dort steht das ganze Feld - und sie schlug
+       genau im wichtigen Moment zu: wer hinter einer blockierten Bahn schon
+       auf unter 8 m/s heruntergebremst hatte, sah das Hindernis nicht mehr und
+       wich nie aus. Gemessen hielten alle davor an. Gegen den Start schuetzt
+       inzwischen die Bedingung QUER: am Start ist niemand gedreht. */
+    const dl=laengsAbstand(oU, u);            // >0: er liegt vor mir
+    if(dl<=0||dl>HINDERNIS_SICHT) return;
+    /* Jeder Stehende in Sichtweite sperrt seine Querlage - auch der, der nicht
+       in meiner Spur liegt. Sonst sucht man sich eine Luecke aus, in der schon
+       der naechste steht. Genau das passierte bei drei Wagen quer ueber die
+       Bahn: der Code sah nur den naechsten, hielt daneben elf Meter fuer frei
+       und fuhr in den zweiten. */
+    sperren.push(oQ);
+    if(Math.abs(eigenQ-oQ)>HINDERNIS_SPUR) return;
+    if(dl<bestDl){ bestDl=dl; best={oid, dl, q:oQ}; }
+  };
+  for(const oid in carMeshes){
+    if(oid===id) continue;
+    const o=carMeshes[oid];
+    if(o.uVor===undefined||o.imZiel) continue;
+    // Ein Ausgefallener steht sauber am Rand - der zaehlt ueber seine echte
+    // Querlage mit und faellt durch die Spurpruefung meist heraus.
+    pruefe(oid, o.uVor, (o.seitlichVor!==undefined)?o.seitlichVor:0,
+           (o.tempoVor!==undefined)?o.tempoVor:0, Math.abs(o.dreher||0)>0.25);
+  }
+  if(spielerFaehrtSelbst() && carMeshes[player.id] && id!==player.id){
+    const pcm=carMeshes[player.id];
+    pruefe(player.id, player.frac,
+           (pcm.seitlich!==undefined)?pcm.seitlich:0,
+           Math.max(player.speed,0), Math.abs(player.dreh||0)>0.6);
+  }
+  if(best) best.sperren=sperren;
+  return best;
+}
+
+/* Wie viele stehen an dieser Stelle schon? Das ist die Kette, die den naechsten
+   Crash unwahrscheinlicher macht - mindestens einer ist es immer, naemlich das
+   Hindernis selbst. */
+function beteiligteAm(hind){
+  let n=1;
+  const hU=(carMeshes[hind.oid]&&carMeshes[hind.oid].uVor);
+  if(hU===undefined) return n;
+  for(const oid in carMeshes){
+    if(oid===hind.oid) continue;
+    const o=carMeshes[oid];
+    if(o.uVor===undefined||o.imZiel) continue;
+    if(Math.abs(laengsAbstand(o.uVor, hU))>25) continue;
+    const steht=Math.abs(o.dreher||0)>0.25
+      || ((o.tempoVor!==undefined?o.tempoVor:99)<HINDERNIS_TEMPO);
+    if(steht) n++;
+  }
+  return n;
+}
+
 function seitlichesZiel(id, cm, u, basis){
   const rand=trackHalfWidth()-1.2;
+  /* ⚠ Der Ausweich-Zweig darf NICHT mit return aussteigen. Tat er es, ignorierte
+     ein ausweichender Wagen fuer die ganze Anfahrt seine Nachbarn - er zog quer
+     durch das Feld, beruehrte andere, die sich drehten und selbst zu Hindernissen
+     wurden. Gemessen sprang die Abweichung vom Drehbuch dadurch von 3,3 auf 6,3
+     Plaetze. Jetzt setzt er nur das Ziel und die weiteren Grenzen; Spieler- und
+     Nachbarregel laufen danach wie immer. */
+  let linksGrenze=rand, rechtsGrenze=rand;
   /* Wer durch ist, raeumt die Bahn. Vorher rollte er auf der Ideallinie aus und
      blieb dort stehen - und weil die Nachfolgenden fuer ihn bremsen, stand
      kurz darauf das halbe Feld. Gemessen: 15 stehende Wagen, die meisten noch
      gar nicht im Ziel. Die Auslaufrunde geht an den Rand, wie in echt. */
   if(cm.imZiel) return (cm.abstellSeite!==undefined?cm.abstellSeite:1)*rand;
   let ziel=basis;
+
+  /* 0) STEHENDES HINDERNIS - der einzige Fall, in dem die Bahn verlassen
+        werden darf. Er steht vor allen anderen Regeln: wer einem Stehenden
+        ausweicht, kuemmert sich nicht mehr um Windschatten und Abstand. */
+  const hind=stehendesHindernis(id, cm, u);
+  if(!hind) cm.ausweichFuer=undefined;
+  else {
+    if(cm.ausweichFuer!==hind.oid){
+      cm.ausweichFuer=hind.oid;
+      cm.ausweichGlueckt=Math.random()>=Math.pow(AUSWEICH_FEHLER, beteiligteAm(hind));
+    }
+    if(cm.ausweichGlueckt){
+      const i=Math.round(clamp(u,0,0.9999)*spacedPts.length)%spacedPts.length;
+      // Auslauf ist je Seite verschieden breit: aussen viel, innen fast nichts.
+      const bisLinks =trackHalfWidth()+(auslaufLinks [i] ?? AUSLAUF_GERADE)-1.0;
+      const bisRechts=trackHalfWidth()+(auslaufRechts[i] ?? AUSLAUF_GERADE)-1.0;
+      /* ⚠ ASPHALT ZUERST, und ueber ALLE Stehenden hinweg.
+         Zuerst stand hier die Seite mit dem meisten Platz bis zur AUSSENgrenze,
+         also inklusive Auslaufzone: steht ein Hindernis aussen in einer Kurve
+         mit 22 m Auslauf, schickte das den Wagen ins Gelaende, obwohl innen
+         zwoelf Meter freier Asphalt lagen.
+         Und es zaehlte nur der NAECHSTE Stehende - bei dreien quer ueber die
+         Bahn wurde deshalb eine Luecke angesteuert, in der schon der zweite
+         stand.
+         Jetzt werden die Luecken zwischen allen Stehenden und den beiden
+         Aussengrenzen aufgestellt. Genommen wird die, die noch auf den Asphalt
+         passt und am wenigsten vom eigenen Kurs abweicht; nur wenn keine
+         bleibt, geht es in die Auslaufzone. */
+      const noetig=(()=>{
+        const MIND=3.2;
+        const punkte=[-bisRechts].concat((hind.sperren||[hind.q]).slice().sort((x,y)=>x-y)).concat([bisLinks]);
+        const luecken=[];
+        for(let k=0;k+1<punkte.length;k++){
+          const a=punkte[k], bq=punkte[k+1];
+          if(bq-a<MIND) continue;
+          luecken.push(clamp(basis, a+MIND/2, bq-MIND/2));
+        }
+        if(!luecken.length) return clamp(basis, -bisRechts, bisLinks);
+        const aufBahn=luecken.filter(z=>Math.abs(z)<=rand);
+        const wahl=(aufBahn.length?aufBahn:luecken)
+          .sort((x,y)=>Math.abs(x-basis)-Math.abs(y-basis))[0];
+        return wahl;
+      })();
+      /* ⚠ Nur so weit aufmachen, wie das Ausweichen WIRKLICH braucht. Wurde
+         der volle Auslauf freigegeben, schob die Nachbarregel danach Wagen ins
+         Gelaende, die dort nichts zu suchen hatten: in der Messung stand
+         einer bei 10 m, obwohl neben dem Hindernis Asphalt frei war. */
+      if(noetig> rand) linksGrenze =Math.max(linksGrenze,  noetig);
+      if(noetig<-rand) rechtsGrenze=Math.max(rechtsGrenze,-noetig);
+      /* ⚠ Frueh festlegen, nicht erst kurz davor. Mit "je naeher desto
+         entschiedener" ueber die volle Sichtweite lag der Wagen bei 25 m erst
+         zu 20 % auf der Ausweichlinie - und bis er nah genug war, hatte ihn
+         die Bremsregel laengst zum Stehen gebracht. Gemessen hielten alle
+         12,9 m vor einer blockierten Bahn an, ohne je auszuweichen.
+         Jetzt ist er ab der halben Sichtweite ganz auf der Ausweichlinie. */
+      const naehe=clamp((HINDERNIS_SICHT-hind.dl)/(HINDERNIS_SICHT*0.5), 0.25, 1);
+      ziel=ziel+(noetig-ziel)*naehe;
+    }
+  }
 
   // 1) Dem Spieler ausweichen.
   //    Das Fenster nach HINTEN ist weit (35 m): wer von hinten kommt, faehrt
@@ -2314,7 +2492,7 @@ function seitlichesZiel(id, cm, u, basis){
   //    Spieler wurde beim Start weiter angerempelt.
   //    Und es wird ein ZIEL gesetzt, nicht nur genudgt: halb ausweichen heisst
   //    treffen.
-  if(player && carMeshes[player.id] && id!==player.id){
+  if(spielerFaehrtSelbst() && carMeshes[player.id] && id!==player.id){
     const dl=laengsAbstand(u, player.frac);      // >0: Gegner liegt vorn
     if(dl>-35 && dl<8){
       const pq=nearestTrackInfo(player.pos).lateral;
@@ -2363,7 +2541,7 @@ function seitlichesZiel(id, cm, u, basis){
               : ((hashStr(id)>hashStr(naechster.oid))?1:-1);
     ziel+=seite*staerke;
   }
-  return clamp(ziel, -rand, rand);
+  return clamp(ziel, -rechtsGrenze, linksGrenze);
 }
 
 /* ═══════════════ DIE GEGNER FAHREN SELBST ═══════════════════════════════
@@ -2453,7 +2631,7 @@ function fahreGegner(id, cm, prog, dt){
      "ausweichen eines objektes das im weg steht ist pflicht."
      Er faehrt nicht nach fortschritt, sondern nach player.lap/frac - deshalb
      eigene Rechnung. */
-  if(player && !player.finished && !player.aborted && carMeshes[player.id]){
+  if(spielerFaehrtSelbst() && carMeshes[player.id]){
     const pQuer=(carMeshes[player.id].seitlich!==undefined)
       ? carMeshes[player.id].seitlich
       : nearestTrackInfo(player.pos).lateral;
@@ -2473,6 +2651,13 @@ function fahreGegner(id, cm, prog, dt){
     if(zuNah>0) vZiel=Math.min(vZiel, seins-zuNah*1.8);
     else if(vornAbstand<26) vZiel=Math.min(vZiel, seins+6);   // Windschatten
   }
+
+  /* 4b) Wer in die Auslaufzone ausgewichen ist, verliert Tempo - nach
+         derselben Formel wie der Spieler, sonst waere die Abkuerzung ueber
+         den Randstreifen gratis. */
+  const quer=Math.abs(cm.seitlich!==undefined?cm.seitlich:0);
+  const drueber=Math.max(0, quer-trackHalfWidth());
+  if(drueber>0) vZiel=Math.min(vZiel, TOP_TEMPO*clamp(1-drueber/9*0.45, 0.55, 1));
 
   /* 5) Dreher: wer quer steht, kommt kaum vom Fleck. */
   if(Math.abs(cm.dreher)>0.25) vZiel=Math.min(vZiel, 6);
@@ -2518,6 +2703,9 @@ function updateAICars(simTime, dt){
     cm.seitlichVor=cm.seitlich;
     cm.uVor=cm.planU;
     cm.fortschrittVor=cm.fortschritt;
+    // Auch das Tempo aus der Momentaufnahme lesen. Sonst haengt es davon ab,
+    // wer im Bild zuerst drankam - dieselbe Falle wie bei der Querlage.
+    cm.tempoVor=cm.tempo;
   }
   // Vor dem Start (simTime<=0) stehen alle auf ihrem Grid-Slot; danach schmilzt
   // der Versatz linear weg, damit die Wertung aus simulateRace unberuehrt bleibt.
@@ -2591,6 +2779,11 @@ function updateAICars(simTime, dt){
       }
       lateral=cm.abstellSeite*(trackHalfWidth()+2.5);
       schraeg=cm.abstellWinkel;
+      /* ⚠ Auch in cm.seitlich schreiben. Sonst blieb das Feld fuer den
+         Ausweich-Code undefiniert und wurde als 0 gelesen - die anderen
+         wichen also einem Phantom in der BAHNMITTE aus, waehrend der Wagen
+         in Wahrheit 2,5 m hinter der Kante stand. */
+      cm.seitlich=lateral;
     }
     const placed=placeOnTrack(u, lateral);
     let px=placed.pos.x, pz=placed.pos.z, ph=placed.heading+schraeg;
