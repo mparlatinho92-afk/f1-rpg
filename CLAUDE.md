@@ -191,9 +191,13 @@ Claude simuliert NIEMALS selbst (Token-Verschwendung).
 /tests/                  ← isolierte Logik-Tests (Monte Carlo, Balancing)
 /schemas/                ← Datenstruktur-Dokumentation (NUR Referenz, kein Laufzeit-Code)
 /CLAUDE.md               ← diese Datei
-/zielflagge/BEFUNDE.md   ← ZIELFLAGGE: gemessene Befunde zur Fahr-KI (PFLICHTLEKTÜRE
-                            vor Arbeit an Fahrlinien, Abstandsregeln, Kollisionen)
+/zielflagge/STAND.md     ← ZIELFLAGGE: Übergabe — was es ist, was läuft, was offen ist
+/zielflagge/BEFUNDE.md   ← ZIELFLAGGE: gemessene Befunde zur Fahr-KI und zu den echten
+                            Strecken (PFLICHTLEKTÜRE vor Arbeit an Fahrlinien,
+                            Abstandsregeln, Kollisionen, Streckendaten)
 ```
+
+**ZIELFLAGGE pausiert seit 14.09.2026** — Einstieg über `zielflagge/STAND.md`.
 
 **ZIELFLAGGE-Regel:** `zielflagge/BEFUNDE.md` hält die **verworfenen Versuche mit ihren
 Zahlen** — mehrere Ansätze wurden dort zwei- und dreimal neu ausprobiert, weil die
