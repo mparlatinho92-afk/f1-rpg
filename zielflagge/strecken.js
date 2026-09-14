@@ -315,38 +315,26 @@
     const gerade = k.map(x => x < GERADE_GRAD_PRO_M);
     if (!gerade.some(Boolean)) return 0;              // reines Oval
     // Laengste zusammenhaengende Gerade, ueber den Rundenschluss hinweg
-    let besteLen = -1, besteEnde = 0;
+    let besteLen = -1, besteAnfang = 0;
     for (let start = 0; start < n; start++) {
       if (!gerade[start] || gerade[(start - 1 + n) % n]) continue;   // nur Anfaenge
       let len = 0, i = start;
       while (gerade[i % n] && (i - start) < n) { len += absch[i % n]; i++; }
-      if (len > besteLen) { besteLen = len; besteEnde = (i - 1) % n; }
+      if (len > besteLen) { besteLen = len; besteAnfang = start; }
     }
     if (besteLen < 0) return 0;
-    /* Ein Stueck VOR das Ende der Geraden: dahinter steht das Feld, davor
-       kommt gleich die erste Kurve - so wie auf einem echten Kurs. */
-    const zurueck = Math.min(25, besteLen * 0.12);
-    let i = besteEnde, weg = 0;
-    while (weg < zurueck) { i = (i - 1 + n) % n; weg += absch[i]; }
+    /* ⚠ NACH DEM ERSTEN DRITTEL der Geraden, nicht an ihrem Ende.
+       Nutzer: "die karierte startflagge ist zu weit hinten. ende des ersten
+       drittels der zielgeraden muesste die stelle der pole-position sein."
+       Das ist auch sachlich richtig: hinter der Linie steht das Feld (ein
+       26er-Grid reicht rund 120 m zurueck), vor ihr muss genug Platz bleiben,
+       um bis zur ersten Kurve zu beschleunigen. Am Ende der Geraden gesetzt
+       hatte man beides falsch herum. */
+    let i = besteAnfang, weg = 0;
+    const ziel = besteLen / 3;
+    while (weg < ziel) { weg += absch[i % n]; i = (i + 1) % n; }
     void bedarfM;
     return i;
-  }
-
-  /**
-   * Start/Ziel mit zwei Stufen.
-   *
-   * ⚠ Zuerst der PFADANFANG. Die Quelle zeichnet viele Kurse an der
-   *   Start-Ziel-Linie an - gemessen liegen bei Silverstone 363 m und bei Spa
-   *   363 m Gerade davor. Verlassen kann man sich darauf aber nicht: Catalunya
-   *   und Zandvoort fangen mitten in einer Kurve an (0 m).
-   *   Also: hat der Pfadanfang genug Gerade fuer das Startfeld, ist er die
-   *   ehrlichste Wahl - er trifft die ECHTE Linie. Sonst die laengste Gerade,
-   *   die zwar nicht immer die richtige Stelle ist, aber immer eine fahrbare.
-   */
-  function startZiel(pts, bedarfM) {
-    const bedarf = bedarfM || 150;
-    if (geradeVor(pts, 0) >= bedarf) return { idx: 0, quelle: 'Pfadanfang' };
-    return { idx: startZielIndex(pts), quelle: 'laengste Gerade' };
   }
 
   /** Laenge der Geraden VOR einem Punkt - so viel Platz hat das Startfeld. */
@@ -362,6 +350,24 @@
   }
 
   /** Dreht die Punktfolge so, dass idx zum Anfang wird. */
+  /**
+   * Start/Ziel mit zwei Stufen.
+   *
+   * ⚠ Zuerst der PFADANFANG. Die Quelle zeichnet viele Kurse an der
+   *   Start-Ziel-Linie an - gemessen liegen bei Silverstone und Spa je 363 m
+   *   Gerade davor. Verlassen kann man sich darauf aber nicht: Catalunya und
+   *   Zandvoort fangen mitten in einer Kurve an (0 m).
+   *   Hat der Pfadanfang genug Gerade fuer das Startfeld, ist er die
+   *   ehrlichste Wahl - er trifft die ECHTE Linie. Sonst wird sie ueber die
+   *   laengste Gerade gesetzt: nicht immer die richtige Stelle, aber immer
+   *   eine fahrbare.
+   */
+  function startZiel(pts, bedarfM) {
+    const bedarf = bedarfM || 150;
+    if (geradeVor(pts, 0) >= bedarf) return { idx: 0, quelle: 'Pfadanfang' };
+    return { idx: startZielIndex(pts), quelle: 'laengste Gerade' };
+  }
+
   function aufStartDrehen(pts, idx) {
     return pts.slice(idx).concat(pts.slice(0, idx));
   }

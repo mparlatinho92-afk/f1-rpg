@@ -144,6 +144,60 @@ Startvergleich deshalb ausdrücklich den Polesetter.
 
 ---
 
+## Echte Strecken: was aus den Rohdaten NICHT hervorgeht
+
+### ⚠ Jede Ausbaustufe ist einzeln auf die 500er-Box normiert
+Gemessen füllt jeder SVG-Pfad **470 von 500 Bildpunkten** in seiner längeren Achse aus,
+mit 15 px Rand. Der Österreichring liegt als 470×236 da, der heutige Red Bull Ring als
+430×438 — zwei unabhängig eingepasste Zeichnungen.
+
+Die frühere Behauptung *„alle Stufen einer Strecke teilen sich ein Koordinatensystem,
+deshalb genügt ein Maßstab"* ist damit **falsch**. Sie ging bei Silverstone auf, weil dort
+alle Umrisse fast gleich groß sind (318×470 gegen 286×470) — und daraus wurde vorschnell
+eine Regel. Der Red Bull Ring kam dadurch mit 5,514 statt 4,318 km heraus.
+
+Richtig ist eine Längenangabe **je Stufe** (`STRECKE_STUFEN_KM`). Wo eine fehlt, wird über
+die Bezugsstufe geschätzt, und die Karte schreibt ein `~` vor die Zahl.
+
+### ⚠ CIRCUIT_LENGTHS ist nicht einheitlich
+Eine Zahl je Strecke, und welche Stufe gemeint ist, steht nirgends — und es ist nicht
+immer dieselbe: für den Red Bull Ring sind 4,32 km die **heutige** Länge, für Silverstone
+sind 4,71 km die von **1950**. Vorgabe ist die jüngste Stufe (`STRECKE_BEZUG` hält die
+Ausnahmen).
+
+### ⚠ Start/Ziel lässt sich nicht ableiten
+Zwei Signale, beide unzuverlässig:
+- Der **Pfadanfang** trifft die echte Linie, wenn die Quelle dort anfängt — das tut sie
+  bei 49 von 160 Layouts (bei 60 m Mindestgerade 63). Beim Red Bull Ring beginnt der Pfad
+  mitten in einer Kurve.
+- Die **längste Gerade** ist immer fahrbar, aber nicht immer die richtige: am Red Bull
+  Ring ist das die Gerade zwischen Kurve 1 und 3, nicht die Boxengerade.
+
+Die Linie liegt deshalb nach dem **ersten Drittel** der gewählten Geraden (Nutzer-Regel:
+dahinter steht das Feld, davor bleibt Platz bis zur ersten Kurve) und ist über
+`STRECKE_START` von Hand einstellbar.
+
+### ⚠ Die Fahrtrichtung stimmt in der Quelle nur meistens
+Stichprobe über 22 bekannte Kurse: 19 richtig. Falsch liegen Sotschi, Schanghai, Sepang
+und Spielberg — sie stehen in `STRECKE_RICHTUNG`.
+
+### ⚠ Jahr → Stufe: die Jahresangaben sind lückenhaft
+Sie listen die tatsächlich gefahrenen Rennen. Silverstone-2 steht als
+„1975,1977,1979,1981,…", weil der Grand Prix sich mit Brands Hatch abwechselte. 1980
+trifft damit keinen Eintrag und landete auf dem Layout von 2010. Gesucht ist die Stufe,
+die damals **in Benutzung** war.
+
+### ⚠ Runden der SVG-Zahlen ist unmöglich
+Die Pfade sind **relativ** aufgebaut; jede gerundete Verschiebung addiert sich auf. Selbst
+zwei Nachkommastellen ergeben bis zu **33 %** Längenfehler. Wer die Daten kleiner machen
+will, muss sie erst absolut abwickeln.
+
+### ⚠ buildTrack räumte nicht auf
+Die Bahn-Netze wurden angelegt und nie entfernt — ein zweiter Aufruf stapelt die alte
+Strecke unter die neue. Solange es nur die eine Beispielstrecke gab, fiel es nicht auf.
+
+---
+
 ## Verworfene Versuche (nicht noch einmal probieren)
 
 | Versuch | Ergebnis |

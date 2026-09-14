@@ -155,8 +155,32 @@ pre#export-preview{background:var(--bg);border:1px solid var(--line);border-radi
         <div id="countdown-overlay"></div>
         <div id="flag-overlay">🏁 Ziel!</div>
         <div id="uebernahme-overlay"></div>
+        <div id="karte-panel" style="position:absolute;right:14px;top:14px;z-index:6;
+             background:rgba(16,18,22,.82);border:1px solid rgba(255,255,255,.12);
+             border-radius:10px;padding:8px 10px 6px;backdrop-filter:blur(3px);">
+          <div id="karte-titel" style="font:700 12px system-ui;color:#e8e8e8;
+               letter-spacing:.3px;white-space:nowrap;margin-bottom:2px;">–</div>
+          <div id="karte-unter" style="font:11px system-ui;color:#9aa3ad;
+               white-space:nowrap;margin-bottom:5px;">–</div>
+          <canvas id="karte-canvas" width="230" height="230"
+                  style="display:block;width:230px;height:230px;"></canvas>
+          <div style="display:flex;gap:5px;align-items:center;margin-top:5px;
+                      font:11px system-ui;color:#9aa3ad;">
+            <button class="btn" style="padding:1px 7px;font-size:12px;"
+                    onclick="startVerschieben(-0.01)" title="Start/Ziel zurueck">&#9664;</button>
+            <button class="btn" style="padding:1px 7px;font-size:12px;"
+                    onclick="startVerschieben(0.01)" title="Start/Ziel vor">&#9654;</button>
+            <span id="karte-versatz" style="margin-left:2px;">Start/Ziel ±0 %</span>
+            <button class="btn" style="padding:1px 7px;font-size:11px;margin-left:auto;"
+                    onclick="startVerschieben(0,true)" title="zurueck auf den abgeleiteten Punkt">↺</button>
+          </div>
+        </div>
         <div class="controls-bar">
           <button class="btn primary" id="btn-start-race" onclick="startRace()">▶ Rennen starten</button>
+          <select id="strecken-wahl" class="btn" title="Welche Strecke gefahren wird"
+                  onchange="streckeGewaehlt()"></select>
+          <select id="stufen-wahl" class="btn" title="Welche Ausbaustufe"
+                  onchange="streckeGewaehlt()"></select>
           <select id="start-modus" class="btn" title="Womit das Rennen beginnt">
             <option value="mensch" selected>Start: selbst fahren</option>
             <option value="ki">Start: Autopilot</option>
@@ -1618,7 +1642,50 @@ function rechneIdeallinie(spaced, tangenten, laenge, unten, oben, scheitelVersat
    ⚠ Die Quellrichtung stimmt nicht immer: in einer Stichprobe von 22 Kursen
    lag sie bei Sotschi, Schanghai und Sepang falsch. Deshalb die Ausnahmeliste
    - sie ist erweiterbar und hat Vorrang. */
-const STRECKE_RICHTUNG={ sochi:true, shanghai:true, sepang:true };
+const STRECKE_RICHTUNG={ sochi:true, shanghai:true, sepang:true, spielberg:true };
+
+/* ⚠⚠ JEDE STUFE IST EINZELN AUF DIE 500er-BOX NORMIERT.
+   Gemessen fuellt jeder Pfad 470 von 500 Bildpunkten in seiner laengeren
+   Achse aus, mit 15 px Rand. Der Oesterreichring liegt als 470x236, der heutige
+   Red Bull Ring als 430x438 - zwei unabhaengig eingepasste Zeichnungen.
+   Damit ist die Annahme "ein Massstab je Strecke, weil die Stufen sich ein
+   Koordinatensystem teilen" FALSCH. Sie ging bei Silverstone auf, weil dort
+   alle Umrisse fast gleich gross sind (318x470 gegen 286x470) - und daraus
+   wurde vorschnell eine Regel.
+   Folge: dimensionsgenau ist immer nur die BEZUGSSTUFE. Alle anderen Stufen
+   bekommen eine geschaetzte Laenge, und die Karte sagt das mit einem "~".
+   Sauber wird es erst mit einer Laengenangabe JE STUFE. */
+const STRECKE_STUFEN_KM={
+  // Nachgerechnet gegen die echten Laengen (Stand 13.09.2026)
+  'silverstone-1':4.711, 'silverstone-2':4.719, 'silverstone-3':4.778,
+  'silverstone-4':5.226, 'silverstone-5':5.057, 'silverstone-6':5.072,
+  'silverstone-7':5.141, 'silverstone-8':5.891,
+  'spielberg-1':5.911, 'spielberg-2':5.942, 'spielberg-3':4.318
+};
+
+/* ⚠ AUF WELCHE AUSBAUSTUFE bezieht sich CIRCUIT_LENGTHS?
+   Die Tabelle haelt EINE Zahl je Strecke, und welche Stufe gemeint ist, steht
+   nirgends. Sie ist auch nicht einheitlich: fuer den Red Bull Ring sind 4,32 km
+   die HEUTIGE Laenge, fuer Silverstone sind 4,71 km die von 1950.
+   Vorgabe ist deshalb die JUENGSTE Stufe - das trifft bei Catalunya, Montreal,
+   Hungaroring und dem Red Bull Ring zu. Ausnahmen stehen hier.
+   Erkennungsmerkmal fuer einen falschen Bezug: die angezeigte Laenge passt
+   nicht zur Strecke. Genau dafuer steht sie in der Karte oben rechts.
+   Wert = Index der Bezugsstufe in strecke.l. */
+const STRECKE_BEZUG={ silverstone:0 };
+
+/* ⚠ START/ZIEL LAESST SICH NICHT ZUVERLAESSIG ABLEITEN.
+   Zwei Signale stehen zur Verfuegung, und beide versagen oft:
+   - der PFADANFANG trifft die echte Linie, wenn die Quelle dort anfaengt -
+     das tut sie aber nur bei 49 von 160 Layouts (bei 60 m Mindestgerade 63).
+     Beim Red Bull Ring faengt der Pfad mitten in einer Kurve an.
+   - die LAENGSTE GERADE ist immer fahrbar, aber nicht immer die richtige:
+     am Red Bull Ring ist die laengste Gerade die zwischen Kurve 1 und 3, nicht
+     die Boxengerade.
+   Deshalb ist der Punkt EINSTELLBAR. Was hier steht, hat Vorrang; der Wert ist
+   der Anteil einer Runde, der zum abgeleiteten Punkt addiert wird. Die Karte
+   zeigt Linie und Richtung, damit man es sehen und nachstellen kann. */
+const STRECKE_START={};
 
 function stufeFuerJahr(strecke, jahr){
   if(!strecke||!strecke.l||!strecke.l.length) return null;
@@ -1647,16 +1714,35 @@ function streckeLaden(slug, jahr){
   const strecke=CIRCUIT_LAYOUTS[slug];
   if(!strecke) return false;
   const stufe=stufeFuerJahr(strecke, Number(jahr)||1988);
-  if(!stufe) return false;
+  return streckeLadenStufe(slug, stufe);
+}
+
+/* Eine BESTIMMTE Ausbaustufe laden - der Kern, den sowohl die Jahreswahl als
+   auch die freie Auswahl in der Leiste benutzen. */
+function streckeLadenStufe(slug, stufe){
+  const strecke=(typeof CIRCUIT_LAYOUTS!=='undefined') ? CIRCUIT_LAYOUTS[slug] : null;
+  if(!strecke||!stufe) return false;
   const kmTab=(typeof CIRCUIT_LENGTHS!=='undefined') ? CIRCUIT_LENGTHS[slug] : null;
   if(!kmTab) return false;                    // ohne Massstab kein Rennen
-  const skala=STRECKEN.massstabFuer(strecke.l[0].d, kmTab*1000);
+  /* Hat die Stufe eine EIGENE Laengenangabe, wird sie damit skaliert - das ist
+     der einzige dimensionsgenaue Weg, solange jede Stufe fuer sich normiert
+     ist. Sonst der Umweg ueber die Bezugsstufe, mit Hinweis in der Karte. */
+  const eigenKm=STRECKE_STUFEN_KM[stufe.id];
+  const bezugIdx=(STRECKE_BEZUG[slug]!==undefined)
+    ? STRECKE_BEZUG[slug] : (strecke.l.length-1);
+  const skala=eigenKm
+    ? STRECKEN.massstabFuer(stufe.d, eigenKm*1000)
+    : STRECKEN.massstabFuer(strecke.l[bezugIdx].d, kmTab*1000);
+  state.streckeGenau=!!eigenKm || strecke.l[bezugIdx]===stufe;
   let pts=STRECKEN.stufeZuMittellinie(stufe.d, skala, 260).pts;
   const imUhr=(STRECKE_RICHTUNG[slug]!==undefined)
     ? STRECKE_RICHTUNG[slug] : (STRECKEN.flaeche(pts)<=0);
   pts=STRECKEN.richtungSetzen(pts, imUhr);
   const sz=STRECKEN.startZiel(pts);
-  pts=STRECKEN.aufStartDrehen(pts, sz.idx);
+  const versatz=STRECKE_START[stufe.id]||0;
+  const idx=(sz.idx+Math.round(versatz*pts.length)+pts.length*2)%pts.length;
+  pts=STRECKEN.aufStartDrehen(pts, idx);
+  state.streckeVersatz=versatz;
   trackPointsRaw=pts.map(p=>[p.x, p.z]);
   state.streckeName=strecke.n;
   state.streckeStufe=stufe.id;
@@ -1666,7 +1752,186 @@ function streckeLaden(slug, jahr){
   return true;
 }
 
+/* Alles, was zur BAHN gehoert, wird hier gesammelt - Asphalt, Raender,
+   Auslaufzonen, Mittellinie, Ideallinie, Start-Ziel-Flaeche.
+   ⚠ Ohne das Aufraeumen stapelt ein zweiter buildTrack die alte Strecke unter
+   die neue: die Netze wurden angelegt und nie entfernt. Solange es nur die
+   eine Beispielstrecke gab, fiel es nicht auf. */
+let bahnTeile=[];
+function bahnHinzu(obj){ bahnTeile.push(obj); sceneScene.add(obj); }
+function bahnAufraeumen(){
+  bahnTeile.forEach(o=>{
+    sceneScene.remove(o);
+    if(o.geometry) o.geometry.dispose();
+    if(o.material){ if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
+                    else o.material.dispose(); }
+  });
+  bahnTeile=[];
+}
+
+/* ══ FREIE STRECKENWAHL ════════════════════════════════════════════════════
+   Nutzer: "in zielflagge darf ich frei die strecke waehlen. erzaehlerisch-
+   historisch bloedsinn aber im dev-modus zielfuehrender."
+   Die Lieferung aus dem RPG bringt spaeter ihre eigene Strecke mit; bis dahin
+   entscheidet die Leiste. Die Beispielstrecke bleibt als erster Eintrag,
+   damit die bestehenden Messungen weiter darauf laufen. */
+const BEISPIEL_PUNKTE=trackPointsRaw.slice();
+
+function streckenAuswahlFuellen(){
+  const sel=document.getElementById('strecken-wahl');
+  if(!sel||typeof CIRCUIT_LAYOUTS==='undefined') return;
+  const namen=Object.keys(CIRCUIT_LAYOUTS)
+    .map(slug=>({slug, n:CIRCUIT_LAYOUTS[slug].n||slug,
+                 fahrbar: typeof CIRCUIT_LENGTHS!=='undefined' && !!CIRCUIT_LENGTHS[slug]}))
+    .sort((a,b)=>a.n.localeCompare(b.n,'de'));
+  sel.innerHTML='<option value="">Beispielstrecke</option>'
+    + namen.map(x=>'<option value="'+escAttr(x.slug)+'"'+(x.fahrbar?'':' disabled')+'>'
+        + escapeHTML(x.n) + (x.fahrbar?'':' (keine Laengenangabe)') + '</option>').join('');
+  stufenAuswahlFuellen();
+}
+
+function stufenAuswahlFuellen(){
+  const sel=document.getElementById('strecken-wahl');
+  const st=document.getElementById('stufen-wahl');
+  if(!sel||!st) return;
+  const strecke=sel.value ? CIRCUIT_LAYOUTS[sel.value] : null;
+  if(!strecke){ st.innerHTML='<option value="">–</option>'; st.disabled=true; return; }
+  st.disabled=false;
+  st.innerHTML=strecke.l.map((x,i)=>'<option value="'+i+'">'+escapeHTML(String(x.y))+'</option>').join('');
+  // Vorgabe: die Stufe zum Jahr des Spielstands
+  const jahr=Number(state.jahr)||1988;
+  const treffer=stufeFuerJahr(strecke, jahr);
+  const idx=strecke.l.indexOf(treffer);
+  if(idx>=0) st.value=String(idx);
+}
+
+function streckeGewaehlt(){
+  const sel=document.getElementById('strecken-wahl');
+  const st=document.getElementById('stufen-wahl');
+  if(!sel) return;
+  /* ⚠ Bei einem STRECKENwechsel die Stufenliste ZUERST neu fuellen. Sonst
+     steht dort noch die Auswahl der vorigen Strecke: angezeigt wurde
+     "1987-1990", geladen aber Stufe 1 von 1950. */
+  if(sel.value !== state.streckeSlug){
+    state.streckeSlug=sel.value;
+    stufenAuswahlFuellen();
+  }
+  if(!sel.value){
+    trackPointsRaw=BEISPIEL_PUNKTE.slice();
+    state.streckeName='Beispielstrecke'; state.streckeStufe=null;
+    buildTrack();
+  } else {
+    const strecke=CIRCUIT_LAYOUTS[sel.value];
+    const stufe=strecke.l[Math.max(0, +(st?st.value:0))] || strecke.l[0];
+    streckeLadenStufe(sel.value, stufe);
+  }
+  if(typeof renderGrid==='function') renderGrid();
+}
+
+/* ══ STRECKENKARTE IN DER OBERFLAECHE ══════════════════════════════════════
+   Nutzer: "am besten baust du die track map als anzeige in die ui ein."
+   Sie zeigt Umriss, Start/Ziel als kariertes Feld, die FAHRTRICHTUNG als Pfeil
+   und waehrend des Rennens die Wagen als Punkte.
+   Der Sinn ist nicht Zierde: Startstelle, Richtung und Laenge sind die drei
+   Angaben, die aus den Rohdaten ABGELEITET werden und deshalb falsch sein
+   koennen. Wer sie sieht, erkennt einen Fehler sofort - so ist der Red Bull
+   Ring aufgefallen (falsche Richtung, falsche Laenge, Linie zu weit hinten). */
+let karteBild=null;      // vorgerechneter Umriss, damit nicht jedes Bild neu
+let karteTakt=0;
+
+function karteVorrechnen(){
+  const cv=document.getElementById('karte-canvas');
+  if(!cv||!spacedPts||!spacedPts.length){ karteBild=null; return; }
+  const R=14, W=cv.width-2*R, H=cv.height-2*R;
+  let mnX=1e9,mxX=-1e9,mnZ=1e9,mxZ=-1e9;
+  spacedPts.forEach(q=>{mnX=Math.min(mnX,q.x);mxX=Math.max(mxX,q.x);
+                        mnZ=Math.min(mnZ,q.z);mxZ=Math.max(mxZ,q.z);});
+  const sk=Math.min(W/Math.max(mxX-mnX,1), H/Math.max(mxZ-mnZ,1));
+  const ox=R+(W-(mxX-mnX)*sk)/2, oz=R+(H-(mxZ-mnZ)*sk)/2;
+  karteBild={ sk, X:x=>ox+(x-mnX)*sk, Z:z=>oz+(z-mnZ)*sk };
+}
+
+function zeichneKarte(){
+  const cv=document.getElementById('karte-canvas');
+  if(!cv) return;
+  if(!karteBild) karteVorrechnen();
+  const g=cv.getContext('2d');
+  g.clearRect(0,0,cv.width,cv.height);
+  if(!karteBild||!spacedPts.length) return;
+  const {X,Z}=karteBild, N=spacedPts.length;
+  // Umriss
+  g.strokeStyle='#8b949e'; g.lineWidth=4; g.lineJoin='round';
+  g.beginPath();
+  for(let i=0;i<=N;i++){ const j=i%N; i?g.lineTo(X(spacedPts[j].x),Z(spacedPts[j].z))
+                                      :g.moveTo(X(spacedPts[j].x),Z(spacedPts[j].z)); }
+  g.closePath(); g.stroke();
+  g.strokeStyle='#2b3038'; g.lineWidth=1.6; g.stroke();
+  // Start/Ziel als kariertes Feld quer zur Bahn
+  const t0=spacedTangents[0], p0=spacedPts[0];
+  const nx=-t0.z, nz=t0.x, hb=TRACK_WIDTH/2;
+  const ax=X(p0.x-nx*hb), az=Z(p0.z-nz*hb), bx=X(p0.x+nx*hb), bz=Z(p0.z+nz*hb);
+  for(let i=0;i<6;i++){
+    g.strokeStyle=(i%2)?'#111':'#fff'; g.lineWidth=6;
+    g.beginPath();
+    g.moveTo(ax+(bx-ax)*i/6, az+(bz-az)*i/6);
+    g.lineTo(ax+(bx-ax)*(i+1)/6, az+(bz-az)*(i+1)/6);
+    g.stroke();
+  }
+  // Fahrtrichtung: Pfeil ein Stueck HINTER der Linie, zeigt nach vorn
+  const q=spacedPts[Math.min(12,N-1)], qt=spacedTangents[Math.min(12,N-1)];
+  const px=X(q.x), pz=Z(q.z);
+  const wx=qt.x, wz=qt.z, L=9;
+  g.fillStyle='#ffd75e';
+  g.beginPath();
+  g.moveTo(px+wx*L, pz+wz*L);
+  g.lineTo(px-wx*L*0.5-(-wz)*L*0.55, pz-wz*L*0.5-(wx)*L*0.55);
+  g.lineTo(px-wx*L*0.5+(-wz)*L*0.55, pz-wz*L*0.5+(wx)*L*0.55);
+  g.closePath(); g.fill();
+  // Wagen
+  if(typeof carMeshes!=='undefined'){
+    for(const id in carMeshes){
+      const cm=carMeshes[id];
+      if(!cm.group) continue;
+      const istSpieler=!!(player&&id===player.id);
+      g.fillStyle=istSpieler?'#ffffff':'#4fd1c5';
+      g.beginPath();
+      g.arc(X(cm.group.position.x), Z(cm.group.position.z), istSpieler?3.6:2.4, 0, 7);
+      g.fill();
+      if(istSpieler){ g.strokeStyle='#111'; g.lineWidth=1.2; g.stroke(); }
+    }
+  }
+}
+
+function karteBeschriften(){
+  const t=document.getElementById('karte-titel');
+  const u=document.getElementById('karte-unter');
+  if(!t||!u) return;
+  t.textContent=state.streckeName||'Beispielstrecke';
+  const km=(trackLength/1000).toFixed(3);
+  const genau=(state.streckeStufe && !state.streckeGenau) ? '~' : '';
+  u.textContent=(state.streckeJahre? (state.streckeJahre+'  ·  ') : '')
+    + genau + km + ' km' + (state.streckeStartQuelle? ('  ·  '+state.streckeStartQuelle) : '');
+  const v=document.getElementById('karte-versatz');
+  if(v){ const pz=Math.round((state.streckeVersatz||0)*1000)/10;
+    v.textContent='Start/Ziel '+(pz>0?'+':'')+pz.toFixed(1)+' %'; }
+}
+
+/* Start/Ziel von Hand verschieben - siehe die Warnung bei STRECKE_START.
+   Der Wert wird in der Karte angezeigt, damit man ihn ablesen und dauerhaft
+   in die Tabelle eintragen kann. */
+function startVerschieben(delta, zurueck){
+  const sel=document.getElementById('strecken-wahl');
+  const st=document.getElementById('stufen-wahl');
+  if(!sel||!sel.value) return;
+  const strecke=CIRCUIT_LAYOUTS[sel.value];
+  const stufe=strecke.l[Math.max(0,+(st?st.value:0))]||strecke.l[0];
+  const alt=STRECKE_START[stufe.id]||0;
+  STRECKE_START[stufe.id]= zurueck ? 0 : (((alt+delta)%1)+1)%1;
+  streckeLadenStufe(sel.value, stufe);
+}
+
 function buildTrack(){
+  bahnAufraeumen();
   const pts=trackPointsRaw.map(p=>new THREE.Vector3(p[0],0,p[1]));
   curve=new THREE.CatmullRomCurve3(pts,true,'catmullrom',0.5);
   curve.arcLengthDivisions=600;
@@ -1726,7 +1991,7 @@ function buildTrack(){
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
   geo.computeVertexNormals();
   const road=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x3a3d43, roughness:0.95}));
-  road.position.y=0.02; sceneScene.add(road);
+  road.position.y=0.02; bahnHinzu(road);
 
   // Randlinien. Ohne sie ist im Fahrbetrieb nicht zu erkennen, wo die Bahn endet -
   // das Abkommen bemerkt man dann erst am Tempoverlust, was sich wie ein Bug anfuehlt.
@@ -1746,7 +2011,7 @@ function buildTrack(){
     const g=new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(rand,3));
     const m=new THREE.Mesh(g, randMat);
-    m.position.y=0.045; sceneScene.add(m);
+    m.position.y=0.045; bahnHinzu(m);
   });
 
   /* Auslaufzonen sichtbar machen. Ohne Belag sieht man nicht, wo Platz ist und
@@ -1774,12 +2039,12 @@ function buildTrack(){
     g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
     g.computeVertexNormals();
     const m=new THREE.Mesh(g, auslaufMat);
-    m.position.y=0.01; sceneScene.add(m);
+    m.position.y=0.01; bahnHinzu(m);
   });
 
   const centerGeo=new THREE.BufferGeometry().setFromPoints(spaced.map(p=>new THREE.Vector3(p.x,0.06,p.z)));
   const centerLine=new THREE.Line(centerGeo, new THREE.LineDashedMaterial({color:0xffffff, dashSize:3, gapSize:3, transparent:true, opacity:0.3}));
-  centerLine.computeLineDistances(); sceneScene.add(centerLine);
+  centerLine.computeLineDistances(); bahnHinzu(centerLine);
 
   /* ══════════════════ IDEALLINIE ═══════════════════════════════════════
      Nicht von Hand eingezeichnet, sondern gerechnet: die Linie KLEINSTER
@@ -1912,13 +2177,14 @@ function buildTrack(){
     const g=new THREE.BufferGeometry().setFromPoints(pts);
     const m=new THREE.Line(g, new THREE.LineDashedMaterial({
       color:0x4fd1c5, dashSize:4, gapSize:5, transparent:true, opacity:0.55}));
-    m.computeLineDistances(); sceneScene.add(m);
+    m.computeLineDistances(); bahnHinzu(m);
   }
 
+  karteBild=null; karteBeschriften(); setTimeout(zeichneKarte,0);
   const sf=new THREE.Mesh(new THREE.PlaneGeometry(TRACK_WIDTH,1.2), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide}));
   const sp=curve.getPointAt(0.001), st=curve.getTangentAt(0.001);
   sf.position.set(sp.x,0.07,sp.z); sf.rotation.x=-Math.PI/2; sf.rotation.z=Math.atan2(st.x,st.z);
-  sceneScene.add(sf);
+  bahnHinzu(sf);
 }
 
 /* Zweitfarbe erfinden, wenn die Livery nur einen Ton kennt. Ohne sie faellt
@@ -3332,6 +3598,8 @@ function tickHudAndLeaderboard(simTime){
   document.getElementById('hud-lap').textContent=`${Math.min(state.laps, player.lap+1)}/${state.laps}`;
   document.getElementById('hud-pos').textContent=`P${playerRank}`;
   document.getElementById('hud-speed').textContent=Math.round(Math.max(0,player.speed)*3.6)+' km/h';
+  // Karte nur jedes vierte Bild - sie ist Anzeige, nicht Simulation
+  if((karteTakt=(karteTakt+1)%4)===0) zeichneKarte();
   document.getElementById('hud-laptime').textContent=fmtTime(raceClock-player.lapStartTime);
   document.getElementById('hud-best').textContent=fmtTime(player.bestLap);
 
@@ -3960,7 +4228,7 @@ function switchView(name){
    Neuladen der zuletzt importierte Spielstand wieder da. */
 if(!standLaden()) loadDemoField();
 renderGarageTables();
-window.addEventListener('load', ()=>{ initScene(); });
+window.addEventListener('load', ()=>{ initScene(); streckenAuswahlFuellen(); });
 </script>
 </body>
 </html>
