@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.3</title>
+    <title>F1 RPG v0.9.18.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.3 (aktuell) - 11.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.4 (aktuell) - 14.09.2026</div>
+                            <div>&#8226; FIX: debutYear generierter Fahrer war das Erzeugungsjahr - Pool-Wartezeit zaehlte als Karriere</div>
+                            <div>&#8226; NEU: Form und Trend daempfen den Alters-Ruecktritt, nicht mehr nur beim historischen Karriereende</div>
+                            <div>&#8226; NEU: tests/karriere-peak.js misst den Karriere-Bogen gegen F1DB</div>
+                            <div class="font-bold text-slate-400">v0.9.18.3 - 11.09.2026</div>
                             <div>&#8226; FIX: Die Pace eines Fahrers faerbte auf JEDES Team ab, bei dem er unter Vertrag stand - Dallara hatte Pace 96, weil dort Schumacher fuhr</div>
                             <div>&#8226; FIX: Damit wirkt das Car-Ceiling wieder - ein schwacher Wagen bremst seinen Fahrer, statt dessen Pace zu erben</div>
                             <div>&#8226; NEU: tests/team-pace-herkunft.js prueft das und haelt fest, woher die Team-Pace ueberhaupt stammt</div>
@@ -4047,7 +4051,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.3';
+        const VERSION = '0.9.18.4';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -5974,6 +5978,49 @@
             if (driver.histId && typeof PACE_RATINGS !== 'undefined'
                 && PACE_RATINGS[driver.histId]?.[String(year)]) return true; // reales Debütjahr
             return false;
+        }
+
+        // ── Echtes F1-Debütjahr (v0.9.18.4) ────────────────────────────────────
+        // `driver.debutYear` traegt bei generierten Fahrern das ERZEUGUNGSjahr,
+        // nicht das Debuet: generateDriver setzt es auf `year`, der Fahrer wandert
+        // aber erst in den Reserve-Pool und bekommt sein Cockpit im Schnitt 3,1
+        // Jahre spaeter (gemessen an einem 638-Saisons-Stand, Maximum 13 Jahre).
+        // Wer `currentYear - debutYear` rechnet, haelt ihn also fuer rund zwei
+        // Jahre erfahrener als er ist — und das zaehlt gegen ihn, weil daran die
+        // Ruecktritts- und Rookie-Pruefungen haengen.
+        //
+        // Rangfolge der Quellen:
+        //   1. HIST_DRIVERS[histId][6] – reales F1-Debuet, schlaegt alles
+        //   2. driver.f1DebutYear      – beim ersten Renneinsatz gesetzt (unten)
+        //   3. allTimeStATS.firstYear  – Aufloesung fuer ALTSTAENDE
+        //   4. careerScores[0].year    – dito, ohne preSim-Eintraege
+        //   5. driver.debutYear        – letzter Rueckfall
+        //
+        // Punkte 3 und 4 sind die Alt-Stand-Aufloesung: gespeicherte Staende
+        // werden NICHT umgeschrieben, das falsche debutYear bleibt dort stehen
+        // und wird nur nicht mehr gelesen.
+        function getF1DebutYear(driver) {
+            if (!driver) return null;
+            if (driver.histId && typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[driver.histId]?.[6]) {
+                return HIST_DRIVERS[driver.histId][6];
+            }
+            if (typeof driver.f1DebutYear === 'number') return driver.f1DebutYear;
+            const at = GAME_STATE?.allTimeStATS?.drivers?.[driver.histId || driver.id];
+            if (at && typeof at.firstYear === 'number') return at.firstYear;
+            if (Array.isArray(driver.careerScores)) {
+                const echt = driver.careerScores.filter(c => c && !c.preSim && typeof c.year === 'number');
+                if (echt.length) return Math.min(...echt.map(c => c.year));
+            }
+            return driver.debutYear ?? null;
+        }
+
+        // Jahre im WM-Feld. Ersetzt `currentYear - debutYear` ueberall dort, wo
+        // ECHTE Karrierejahre gemeint sind — nicht dort, wo es um das Alter oder
+        // die Entwicklung im Pool geht: wer im Pool sitzt, altert und trainiert
+        // weiter, er sammelt nur keine Karrierejahre.
+        function getCareerYears(driver, year) {
+            const d = getF1DebutYear(driver);
+            return (d && year) ? Math.max(0, year - d) : 0;
         }
 
         // ── Geburtsdaten (v0.9.15.79, Rekord-Bauplan Schritt 8) ────────────────
@@ -14506,7 +14553,14 @@
                 const driverObj = GAME_STATE.drivers.find(d => d.id === r.driver)
                                || (GAME_STATE.reservePool || []).find(d => d.id === r.driver);
                 const driverStATSId = driverObj?.histId || r.driver;
-                
+
+                // Echtes F1-Debuet festhalten (v0.9.18.4): der erste RENNEINSATZ zaehlt,
+                // nicht das Erzeugungsjahr und nicht eine DNQ — wer die Qualifikation nie
+                // besteht, hat nicht debuetiert. Steht in `raceResult.dnq`, nicht hier.
+                if (driverObj && typeof driverObj.f1DebutYear !== 'number') {
+                    driverObj.f1DebutYear = GAME_STATE.currentYear;
+                }
+
                 // Fahrer All-Time - nutze historische ID wenn vorhanden
                 if (!GAME_STATE.allTimeStATS.drivers[driverStATSId]) {
                     GAME_STATE.allTimeStATS.drivers[driverStATSId] = {
@@ -20615,7 +20669,9 @@
                 const standing = GAME_STATE.driverStandings[driver.id] || {};
                 const allTime = GAME_STATE.allTimeStATS.drivers[driver.id] || {};
                 const age = driver.birthYear ? GAME_STATE.currentYear - driver.birthYear : null;
-                const careerYears = driver.debutYear ? GAME_STATE.currentYear - driver.debutYear : 0;
+                // v0.9.18.4: echtes F1-Debuet statt Erzeugungsjahr — Jahre im Reserve-Pool
+                // sind keine Karrierejahre (s. getF1DebutYear).
+                const careerYears = getCareerYears(driver, GAME_STATE.currentYear);
 
                 // === 0. HISTORISCHES KARRIEREENDE (nur histId-Fahrer) ===
                 // Autoritative Quelle: HIST_DRIVERS[7] = F1DB lastYear (F1-spezifisch).
@@ -20712,10 +20768,52 @@
                     else if (yearsOver >= 2) retireChance = 0.05;
                     else if (yearsOver >= 1) retireChance = 0.02;
                     
-                    // Erfolgreiche Fahrer bleiben länger
-                    if (standing.wins > 0) retireChance *= 0.4; // -60% bei Sieg diese Saison
-                    else if (standing.podiums >= 2) retireChance *= 0.6; // -40% bei 2+ Podien
-                    
+                    // === FORM HAELT IM COCKPIT (v0.9.18.4) ===
+                    // Dieselbe Daempfung kennt der career_end-Pfad oben seit v0.9.17.1 —
+                    // hier stand sie nicht. Fuer GENERIERTE Fahrer war das folgenreich:
+                    // sie haben kein historisches Karriereende, erreichen jenen Zweig
+                    // also nie und hingen allein an dieser Kurve.
+                    // Gemessen an einem 638-Saisons-Stand (tests/karriere-peak.js):
+                    //   Sieg in der letzten Saison   generiert 29,2 %  real 8,4 %
+                    //   Formstand am Ende            generiert 60 %    real 22 % des Peaks
+                    //   Auslauf Peak -> Ende         generiert 2,7 J   real 3,8 J
+                    // Echte Fahrer im selben Stand lagen bei 5,9 % / 27 % / 4,4 J. Die
+                    // Mechanik stimmte also, sie hing nur am falschen Ast.
+                    const _form = typeof driver.seasonScore === 'number' ? driver.seasonScore : null;
+                    const _formDaempfung = (_form === null) ? 1
+                                         : (_form >= 75) ? 0.2
+                                         : (_form >= 55) ? 0.55 : 1;
+
+                    // === TREND SCHLAEGT MOMENTAUFNAHME ===
+                    // `standing.wins` ist eine Momentaufnahme: wer sich ueber drei Jahre
+                    // steigert, aber noch nicht gewinnt, sah darin aus wie einer im freien
+                    // Fall. 41,9 % der Alters-Ruecktritte hatten eine STEIGENDE Kurve — das
+                    // ist der Fall, den der Nutzer meinte: „da denkt man der fahrer ist jetzt
+                    // endlich an der reihe und jetzt ist er zu alt, ruecktritt."
+                    // careerScores traegt hier bereits die laufende Saison: updateDriverCareerScores()
+                    // laeuft in processSeasonEndEvents DREI Zeilen vor checkCareerEnds().
+                    // Deshalb vergleicht sich [-1] (=_form) mit [-2] und [-3].
+                    const _cs = Array.isArray(driver.careerScores) ? driver.careerScores : [];
+                    let _trendDaempfung = 1;
+                    if (_cs.length >= 3 && _form !== null) {
+                        const _vorher = ((_cs[_cs.length - 2]?.score ?? 0) + (_cs[_cs.length - 3]?.score ?? 0)) / 2;
+                        const _delta = _form - _vorher;
+                        if      (_delta >= 8) _trendDaempfung = 0.25;   // klar aufwaerts
+                        else if (_delta >= 3) _trendDaempfung = 0.50;
+                        else if (_delta >= 0) _trendDaempfung = 0.80;   // haelt sich
+                    }
+
+                    // Erfolgreiche Fahrer bleiben länger (Momentaufnahme der Saison)
+                    const _erfolgDaempfung = (standing.wins > 0) ? 0.4
+                                           : (standing.podiums >= 2) ? 0.6 : 1;
+
+                    // STAERKSTER Daempfer gewinnt, statt alle zu multiplizieren: drei
+                    // Blickwinkel auf dieselbe Frage („ist der noch gut genug?"), das
+                    // ueberzeugendste Argument entscheidet. Multipliziert kaeme 0.2×0.25×0.4
+                    // = 0.02 heraus — dann traete niemand mehr zurueck und die Kurve waere
+                    // ins andere Extrem gekippt.
+                    retireChance *= Math.min(_formDaempfung, _trendDaempfung, _erfolgDaempfung);
+
                     // Vertrag ist Vertrag: läuft er noch, hört niemand altersbedingt auf,
                     // und das Team löst auch nicht vorzeitig auf. EINZIGE Ausnahme ist ein
                     // Leistungsabfall, der so deutlich ist, dass beide Seiten aussteigen —
@@ -20756,7 +20854,10 @@
                 // === 2. ENTLASSUNG (katastrophale Performance) ===
                 const racesThisSeason = standing.races || 0;
                 if (racesThisSeason >= 5) {
-                    const isRookie = driver.debutYear === GAME_STATE.currentYear;
+                    // v0.9.18.4: Rookie-Schutz griff nicht, wenn der Fahrer vor seinem
+                    // Debuet im Pool gewartet hatte — sein debutYear lag dann in der
+                    // Vergangenheit und er war schon im ersten Jahr entlassbar.
+                    const isRookie = getF1DebutYear(driver) === GAME_STATE.currentYear;
                     if (!isRookie) {
                         const _ss = _computeDriverSeasonScore(driver.id);
                         const _seasonScore = _ss ? _ss.seasonScore : null;
@@ -20844,8 +20945,7 @@
 
                 // Rookie-Schutz (optional, Standard: AUS)
                 if (GAME_STATE.rookieProtection) {
-                    const _histD = (typeof HIST_DRIVERS !== 'undefined' && driver.histId) ? HIST_DRIVERS[driver.histId] : null;
-                    const _trueDebut = (_histD && _histD[6]) ? _histD[6] : driver.debutYear;
+                    const _trueDebut = getF1DebutYear(driver);   // v0.9.18.4 zentral
                     if (_trueDebut >= currentYear) return;
                 }
 
@@ -21137,13 +21237,10 @@
 
             const standing = GAME_STATE.driverStandings[driverId] || {};
             const team = GAME_STATE.teams.find(t => t.id === driver.team);
-            // Echtes F1-Debütjahr: für hist. Fahrer aus HIST_DRIVERS [6], für generierte aus debutYear
-            // Verhindert dass im ersten Sim-Jahr alle Fahrer als Rookie gelten
-            let _trueDebut = driver.debutYear;
-            if (driver.histId && typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[driver.histId]?.[6]) {
-                _trueDebut = HIST_DRIVERS[driver.histId][6];
-            }
-            const careerYears = _trueDebut ? GAME_STATE.currentYear - _trueDebut : 0;
+            // Echtes F1-Debütjahr (v0.9.18.4 zentral in getF1DebutYear): hist. Fahrer aus
+            // HIST_DRIVERS[6], generierte aus dem ersten Renneinsatz statt aus debutYear.
+            // Verhindert dass im ersten Sim-Jahr alle Fahrer als Rookie gelten.
+            const careerYears = getCareerYears(driver, GAME_STATE.currentYear);
             const isRookie = careerYears === 0;
             const isSecondYear = careerYears === 1;
 
