@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.4</title>
+    <title>F1 RPG v0.9.18.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.4 (aktuell) - 14.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.5 (aktuell) - 16.09.2026</div>
+                            <div>&#8226; NEU: Fahrer entwickeln sich nach der realen Pace-Kurve - Zenit im 4. Jahr, danach Abbau</div>
+                            <div>&#8226; FIX: Altersabbau verpuffte, weil potentialPace stehenblieb und den Verlust zurueckzog</div>
+                            <div>&#8226; NEU: tests/pace-kurve-real.js misst die Karrierekurve aus PACE_RATINGS</div>
+                            <div class="font-bold text-slate-400">v0.9.18.4 - 14.09.2026</div>
                             <div>&#8226; FIX: debutYear generierter Fahrer war das Erzeugungsjahr - Pool-Wartezeit zaehlte als Karriere</div>
                             <div>&#8226; NEU: Form und Trend daempfen den Alters-Ruecktritt, nicht mehr nur beim historischen Karriereende</div>
                             <div>&#8226; NEU: tests/karriere-peak.js misst den Karriere-Bogen gegen F1DB</div>
@@ -4051,7 +4055,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.4';
+        const VERSION = '0.9.18.5';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -5895,25 +5899,76 @@
         
         // Entwickelt die Pace eines Fahrers am Saisonende
         // performanceRating: 'excellent', 'good', 'average', 'poor'
-        function developDriverPace(driver, performanceRating) {
+        // === LERNKURVE STATT ERFOLGS-TREPPE (v0.9.18.5) ===
+        // Vorher: excellent +2, good +1, average/poor 0. Zwei Folgen, beide gemessen
+        // (tests/karriere-peak.js an einem 638-Saisons-Stand):
+        //   • Ein Fahrer im schwachen Auto bekommt NIE 'excellent' oder 'good' — er
+        //     entwickelte sich also NIE. Ein Beispielfahrer stand nach zehn Saisons
+        //     immer noch auf pace 69 bei potentialPace 87.
+        //   • Selbst mit Dauer-'good' braucht ein Gap von 12-17 Punkten 12-17 Jahre.
+        // Ergebnis war ein FLACHER Karriere-Bogen: generierte Fahrer standen ihre
+        // ganze Karriere bei ~60 % ihres Peaks (real 32 %), Rookie-Saison 54 % statt
+        // real 14 %. Sie kamen fertig ins Feld und gingen fertig wieder heraus.
+        //
+        // Jetzt: der Fortschritt haengt an den F1-JAHREN und frisst einen ANTEIL des
+        // verbleibenden Gaps — anfangs viel, spaeter wenig. Wer faehrt, lernt; die
+        // Leistung moduliert das nur noch. Das bildet ab, dass ein Rookie auch im
+        // Hinterbaenkler-Auto besser wird, und laesst den Gap in ~4 Jahren zu rund
+        // 80 % schliessen statt in 15.
+        // ⚠ Karrierejahre ueber getF1DebutYear — `debutYear` ist bei generierten
+        //   Fahrern das Erzeugungsjahr und zaehlt die Pool-Wartezeit mit (v0.9.18.4).
+        function developDriverPace(driver, performanceRating, year) {
             if (!driver.currentPace || !driver.potentialPace) {
                 return driver;
             }
-            
-            // Entwicklungsrate basierend auf Performance
-            let development = 0;
-            switch(performanceRating) {
-                case 'excellent': development = 2; break;
-                case 'good': development = 1; break;
-                case 'average': development = 0; break;
-                case 'poor': development = 0; break; // Keine Regression, aber auch keine Entwicklung
+
+            const jahre = getCareerYears(driver, year || GAME_STATE.currentYear);
+
+            // === ZENIT UND VERFALL (v0.9.18.5) ===
+            // Gemessen mit tests/pace-kurve-real.js an PACE_RATINGS (160 reale
+            // Fahrer mit lueckenloser Jahresfolge): der Pace-Peak liegt im
+            // Karrierejahr 4,2 (Median 4), danach faellt die Pace um Ø 2,95
+            // Punkte pro Jahr.
+            // Das POTENZIAL muss mitfallen, nicht nur die aktuelle Pace. Vorher
+            // senkte der Altersabbau (Phase 4a) nur `pace` — der Aufbau hier zog
+            // es im Folgejahr sofort wieder hoch, weil der Gap wieder offen war.
+            // Dieses Tauziehen ist der Grund, warum generierte Fahrer nie
+            // sichtbar abbauten und ihr Karriere-Bogen flach blieb.
+            if (jahre > PACE_PEAK_YEAR) {
+                driver.potentialPace = Math.max(50, driver.potentialPace - PACE_CAREER_DECLINE);
             }
-            
-            // Entwicklung anwenden (kann potentialPace nicht überschreiten)
+
             const gap = driver.potentialPace - driver.currentPace;
-            const actualDevelopment = Math.min(development, gap);
-            
-            driver.currentPace += actualDevelopment;
+
+            if (gap < 0) {
+                // Zenit ueberschritten: das Potenzial ist unter die aktuelle Pace
+                // gefallen, der Fahrer baut ab.
+                driver.currentPace = driver.potentialPace;
+                driver.pace = driver.currentPace;
+                return driver;
+            }
+            if (gap === 0) return driver;
+
+            // Anteil des verbleibenden Gaps, der pro Jahr geschlossen wird —
+            // die realen Werte aus derselben Messung. Er STEIGT mit den Jahren
+            // (32/42/46/53 %), weil der Rest-Gap zum Zenit hin kleiner wird.
+            const anteil = jahre <= 1 ? 0.32
+                         : jahre <= 2 ? 0.42
+                         : jahre <= 3 ? 0.46
+                         : 0.52;
+
+            // Leistung moduliert, entscheidet aber nicht allein: auch 'poor'
+            // entwickelt sich noch, nur langsamer. Wer faehrt, lernt.
+            const mod = performanceRating === 'excellent' ? 1.25
+                      : performanceRating === 'good'      ? 1.10
+                      : performanceRating === 'poor'      ? 0.80
+                      : 1.0;
+
+            // Mindestens 1 Punkt, solange ueberhaupt Gap da ist — sonst bleiben
+            // kleine Restluecken ewig stehen (Math.round(0.4) = 0).
+            const dev = Math.max(1, Math.round(gap * anteil * mod));
+
+            driver.currentPace = Math.min(driver.potentialPace, driver.currentPace + dev);
             driver.pace = driver.currentPace; // Sync halten
 
             return driver;
@@ -5929,6 +5984,26 @@
         // Zenit; dort läuft der Aufbau weiter über developDriverPace).
         // Konstanten MC-getunt gegen: ≥40-Champions → 0 %, ≥37 → ~3 %
         // (tests/paketD-h3-age-decline.js).
+        // ── Karriere-Zenit (v0.9.18.5, gemessen mit tests/pace-kurve-real.js) ──
+        // 160 reale Fahrer mit lueckenloser Jahresfolge aus PACE_RATINGS:
+        //   Debuet-Pace  Ø 88,5 % des eigenen Peaks (NICHT ein tiefes Tal)
+        //   Peak         Karrierejahr Ø 4,2 / Median 4
+        //   Abbau danach Ø 2,95 Pace-Punkte pro Jahr
+        // Der Karriere-Bogen entsteht also fast ganz aus dem ABBAU nach dem
+        // Zenit, nicht aus einem schwachen Start. Der Wert unten ist bewusst
+        // kleiner als 2,95: die aera-relative Altersbremse (ageDeclineRate)
+        // kommt fuer aeltere Fahrer noch obendrauf, zusammen treffen sie den
+        // realen Wert.
+        // 2,2 statt der vollen 2,95 ist GEMESSEN, nicht geschaetzt: die
+        // aera-relative Altersbremse unten zahlt den Rest ein. 1,5 wurde
+        // ebenfalls gefahren und ist in jeder Kennzahl schlechter (Peak in der
+        // letzten Saison 14,9 statt 13,2 %, Formstand am Ende 51 statt 47 %),
+        // ohne dass 2,2 die Karrieren verkuerzt (6,8 Saisons, Endalter 29,9).
+        // Hoeher NICHT ohne neue Messung — daruber schiesst man ueber den real
+        // belegten Abbau hinaus.
+        const PACE_PEAK_YEAR      = 4;    // Zenit im vierten F1-Jahr
+        const PACE_CAREER_DECLINE = 2.2;  // Potenzial-Verfall pro Jahr danach
+
         const AGE_DECLINE_OFFSET = 1;    // Zenit-Ende = ERA_RETIREMENT_AGE + 1 (steiler: 40er klar unter Rivalen)
         const AGE_DECLINE_SLOPE  = 1.1;  // Pace-Verlust/Jahr je Jahr über dem Zenit
         const AGE_DECLINE_CAP    = 9;    // Deckel Verfall/Jahr
@@ -21504,7 +21579,7 @@
                 const oldPace = driver.currentPace;
                 
                 // Entwickle Pace
-                developDriverPace(driver, eval_.rating);
+                developDriverPace(driver, eval_.rating, GAME_STATE.currentYear);
                 
                 // Log wenn Entwicklung stattfand
                 if (driver.currentPace > oldPace) {
@@ -24054,6 +24129,13 @@
                     const _ageRate = ageDeclineRate(age, newYear);
                     if (_ageRate > 0) {
                         driver.pace = Math.max(50, driver.pace - _ageRate);
+                        // v0.9.18.5: das POTENZIAL muss mitfallen. Vorher sank hier
+                        // nur `pace` — developDriverPace() sah im Folgejahr wieder
+                        // einen offenen Gap und zog alles zurueck nach oben. Dieses
+                        // Tauziehen liess den Altersabbau wirkungslos verpuffen.
+                        if (driver.potentialPace) {
+                            driver.potentialPace = Math.max(50, driver.potentialPace - _ageRate);
+                        }
                     }
                     if (!driver.potentialPace) driver.potentialPace = pot;
                     driver.currentPace = driver.pace; // sync: developDriverPace() könnte pace verändert haben
