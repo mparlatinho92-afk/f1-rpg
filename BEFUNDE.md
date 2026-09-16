@@ -1,19 +1,25 @@
 # BEFUNDE – Hauptprojekt (F1 RPG)
 
-**Gemessene Befunde, Messfallen und Negativergebnisse.** Pendant zu
+**Warum etwas so ist, und was schon vergeblich versucht wurde.** Gemessene Zahlen,
+Messfallen, Negativergebnisse und Architektur-Historie. Pendant zu
 `zielflagge/BEFUNDE.md`, nur für das Hauptspiel.
 
 ⚠ **Diese Datei wird NICHT automatisch geladen.** Sie ist Nachschlagewerk, kein
 Kontext: gelesen wird sie **vor** Arbeit am jeweiligen Thema, nicht bei jeder Sitzung.
-Genau dafür gibt es sie — `CLAUDE.md` läuft in jeder Sitzung mit und muss deshalb
-knapp bleiben, hier darf es ausführlich sein.
+Genau dafür gibt es sie — `CLAUDE.md` läuft in jeder Sitzung mit und muss deshalb knapp
+bleiben, hier darf es ausführlich sein.
 
-**Wann hier nachschlagen:** vor Arbeit an Fahrerentwicklung, Karriereenden,
-Alterskurven oder Renn-Balancing. Und immer dann, wenn eine Messung eine Annahme
-widerlegt — dann gehört das Ergebnis hierher, samt Zahlen.
+**Warum auch Negativergebnisse und Historie:** „X wurde versucht und bringt nichts"
+spart beim nächsten Mal einen ganzen Anlauf — ohne Zahlen probiert es irgendwann wieder
+jemand. Und wer weiß, warum eine Konstruktion entstanden ist, baut sie nicht
+versehentlich zurück.
 
-**Warum auch Negativergebnisse:** „X wurde versucht und bringt nichts" spart beim
-nächsten Mal einen ganzen Anlauf. Ohne Zahlen probiert es irgendwann jemand wieder.
+## Inhalt
+
+| Thema | Nachschlagen vor Arbeit an … |
+|---|---|
+| Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
+| Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 
 ---
 
@@ -69,3 +75,26 @@ war es ein Drittel.
 **NEGATIVERGEBNIS – nicht nochmal versuchen:** Den Rücktritt zu verzögern (Form- und
 Trenddämpfung am Alterszweig, v0.9.18.4) bewegt die Kennzahl **nicht**. Solange die
 Karriere flach ist, ändert der Zeitpunkt des Abgangs nichts.
+
+---
+
+## Live-Ticker: warum Balance-Fixes nicht ankamen (bis v0.9.18.0)
+
+Bis v0.9.18.0 hatte der Live-Ticker eine **eigene** Lap-Pace-Formel und baute sein
+Ergebnis aus akkumulierten Lap-Zeiten — er war damit eine zweite, stillschweigend
+abweichende Engine.
+
+Die eigene Formel war `pace*0.02` / `carSpeed*0.015`, **ohne** `experience` und **ohne**
+Car-Ceiling. Ein Fahrer mit pace 95 gegen einen mit 50 war dort **0,9 % pro Runde**
+schneller — in `simulateRace` entscheidet `pace` dagegen mit **0.45 von rund 100
+Punkten**. Deshalb kamen Balance-Fixes im Ticker nie an. Der Umbau entfernte ~345 Zeilen
+(netto 233 weniger).
+
+**Warum das hier steht:** Der Fall zeigt dasselbe Muster wie der Karriere-Bogen weiter
+oben — eine Stellschraube wird gedreht, aber ein zweiter Pfad rechnet daneben weiter,
+und die Wirkung verpufft. Wer eine Balance-Änderung misst und **gar nichts** sieht,
+sucht zuerst nach dem zweiten Pfad.
+
+Die geltende Regel steht in `CLAUDE.md` unter *Simulations-Architektur*: seit .18.0 gibt
+es nur noch einen Pfad, der Ticker animiert nur noch dorthin. Absicherung:
+`node tests/ticker-paritaet.js --alle 40`.

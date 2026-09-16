@@ -162,8 +162,6 @@ Neue Mechanik die nur in einem Modus wirkt = falsch platziert.
 - `liveRaceState` ist mit `let` deklariert und landet damit **nicht** auf dem vm-Kontext von sim-core; dort injiziert ein Patch den Getter `window.__liveState`. `startLiveRace`/`startRaceSimulation` hängen an `window`, nicht global.
 - Monte Carlo kann die Parität **nicht beweisen** – beide Pfade würfeln unabhängig, vergleichbar sind nur Verteilungen. Dafür ist `ticker-paritaet.js` da.
 
-**Historie:** Bis v0.9.18.0 hatte der Live-Ticker eine **eigene** Lap-Pace-Formel (`pace*0.02` / `carSpeed*0.015`, ohne `experience` und ohne Car-Ceiling) und baute sein Ergebnis aus akkumulierten Lap-Zeiten. Ein Fahrer mit pace 95 gegen einen mit 50 war dort **0,9 % pro Runde** schneller – in `simulateRace` entscheidet `pace` mit 0.45 von rund 100 Punkten. Deshalb kamen Balance-Fixes im Ticker nie an. Der Umbau entfernte ~345 Zeilen (netto 233 weniger).
-
 Zentrale Logik-Funktionen (nie duplizieren):
 - Saison-Ende → `processSeasonEndEvents()`
 - Saison-Ende-UI → `showSeasonEndModal()` – liest State, schreibt nie
