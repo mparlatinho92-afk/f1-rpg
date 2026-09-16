@@ -55,6 +55,51 @@ eingelesen werden, weil letzteres schon Sitzverluste nachzieht.
 
 Für die unkommittete `index.html` statt des letzten Monolithen: `SIMCORE_FROM_INDEX=1` davorsetzen. Gilt für **alle** sim-core-Skripte.
 
+## Karriere-Bogen & Pace-Entwicklung — `karriere-peak*.js`, `pace-kurve-real.js`
+
+Hat eine Fahrerkarriere einen **Bogen** (Aufstieg, Zenit, Abbau) oder ist sie flach?
+Gemessen wird der **Punkteanteil am Saisonbesten** (`points / championPoints`) – der
+überlebt Punktereformen und Feldgrößen, im Gegensatz zu Rohpunkten oder WM-Rang.
+
+```
+node tests/karriere-peak.js <export.json>              Export gegen F1DB, drei Gruppen
+node tests/karriere-peak-sim.js 1980 160 2010 --laeufe=3   simuliert und misst
+node tests/pace-kurve-real.js                          Zielkurve aus PACE_RATINGS
+```
+
+**Drei Gruppen, eine Metrik.** `karriere-peak.js` vergleicht immer:
+
+| | Bedeutung |
+|---|---|
+| **A** | Realität aus F1DB (`f1db-seasons-drivers.json`) |
+| **B** | echte Fahrer im Spielstand – **der realistische Zielwert**, gleiche Engine |
+| **C** | generierte Fahrer |
+
+Für A/B-Läufe: **ohne** `SIMCORE_FROM_INDEX` misst `karriere-peak-sim.js` den letzten
+gebauten Monolithen (= Stand vor der Änderung), **mit** die Arbeitskopie. Beide Läufe
+parallel starten, dann die Blöcke vergleichen.
+
+**Die reale Zielkurve** (`pace-kurve-real.js`, 160 Fahrer mit lückenloser Jahresfolge):
+Debüt bei **88,5 %** des eigenen Peaks, Zenit im Karrierejahr **4,2**, danach **2,95**
+Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
+(32/42/46/53 %).
+
+⚠ **Messfallen:**
+- `f1db-seasons-driver-standings.json` ist die **falsche** Quelle – sie listet nur
+  Fahrer in der Wertung, punktlose Saisons fehlen. Richtig: `f1db-seasons-drivers.json`.
+- Fahrer-IDs tragen einen Zeitstempel und sind **nicht stabil** – echte Fahrer über
+  `histId` zusammenfassen, nie über `id`.
+- **Noch aktive Karrieren müssen raus**, sonst zählt eine laufende Saison als
+  Karriereende.
+- Ein Lauf über 80 Saisons liefert nur ~40 abgeschlossene generierte Karrieren – bei
+  dem n liegen 10 Prozentpunkte im Rauschen. `--laeufe=N` fasst mehrere zu **einer**
+  Kohorte zusammen (Schlüssel werden je Lauf eindeutig gehalten).
+- Rücktritte erst **nach `processTeamChanges()`** abgreifen, sonst fehlen die
+  Entlassungen (16 statt ~300) und der Rest sieht „spurlos verschwunden" aus.
+- `GAME_STATE.history` taugt **nicht** als Quelle: `drivers` ist dort ein heavy field
+  und im Steady-State leer. Der Snapshot wird Saison für Saison selbst gezogen.
+- **Feldgröße kontrollieren**, bevor ein Streuungsbefund geglaubt wird.
+
 ## Ausführen
 
 Immer aus dem **Projektordner** starten (`C:\Users\lyric\Documents\F1 RPG HTML`).

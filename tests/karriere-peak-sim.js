@@ -164,6 +164,49 @@ console.log('  Saisons im Feld: Ø' + avg(dauer).toFixed(1) + '  max ' + Math.ma
 console.log('  Alter letzte Saison: Ø' + avg(alterEnde).toFixed(1) + '  max ' + Math.max.apply(null, alterEnde));
 console.log('  Zielwerte real: Karriere 4-7 Saisons, Alter am Ende ~33-35, Sieg zuletzt ~8 %');
 
+// ── PACE-KURVE der generierten Fahrer ───────────────────────────────────
+// Dieselben Kennzahlen, die tests/pace-kurve-real.js fuer die ECHTEN Fahrer
+// aus PACE_RATINGS liefert — damit direkt vergleichbar:
+//   real: Debuet 88,5 % des Peaks, Zenit Karrierejahr 4,2, Abbau 2,95/Jahr
+// Die Pace steht im Schnappschuss, deshalb ist das hier ohne Extralauf zu haben.
+const paceVerlauf = new Map();
+for (const sn of saisonListe) {
+    for (const d of (sn.drivers || [])) {
+        if (typeof d.pace !== 'number') continue;
+        const istGen = d.generated === true || /^(gen|exp)-/.test(String(d.id));
+        if (!istGen) continue;
+        if (!paceVerlauf.has(d.id)) paceVerlauf.set(d.id, []);
+        paceVerlauf.get(d.id).push({ year: sn.year, pace: d.pace });
+    }
+}
+const debutRel = [], peakJahr = [], zuwachs = [], abbauN = [];
+const relJahr = {};
+for (const [, reihe] of paceVerlauf) {
+    if (reihe.length < 5) continue;
+    reihe.sort((a, b) => a.year - b.year);
+    const ps = reihe.map(r => r.pace);
+    const peak = Math.max.apply(null, ps);
+    if (peak <= 0) continue;
+    const pi = ps.indexOf(peak);
+    debutRel.push(ps[0] / peak);
+    peakJahr.push(pi + 1);
+    zuwachs.push(peak - ps[0]);
+    if (pi < ps.length - 1) abbauN.push((peak - ps[ps.length - 1]) / (ps.length - 1 - pi));
+    ps.forEach((p, i) => { (relJahr[i + 1] = relJahr[i + 1] || []).push(p / peak); });
+}
+console.log('\n--- PACE-KURVE generiert (n=' + debutRel.length + ') gegen real ---');
+console.log('  Debuet-Pace in % des Peaks:  ' + (100 * avg(debutRel)).toFixed(1) + ' %      real 88,5 %');
+console.log('  Zenit im Karrierejahr:       ' + avg(peakJahr).toFixed(1) + '         real 4,2');
+console.log('  Zuwachs Debuet->Peak:        ' + avg(zuwachs).toFixed(1) + ' Punkte   real 10,4');
+console.log('  Abbau nach dem Zenit:        ' + avg(abbauN).toFixed(2) + ' /Jahr    real 2,95');
+const zeile = [];
+for (let j = 1; j <= 10; j++) {
+    if (!relJahr[j] || relJahr[j].length < 8) break;
+    zeile.push(j + ':' + (100 * avg(relJahr[j])).toFixed(0) + '%');
+}
+console.log('  Verlauf je Karrierejahr: ' + zeile.join('  '));
+console.log('  real:                    1:89%  2:91%  3:93%  4:94%  5:94%  6:94%  7:93%  8:92%  9:90%  10:90%');
+
 // Karriere-Bogen: der eigentliche Befund. Karriere in fuenf Abschnitte, je
 // Anteil am eigenen Peak. Real 16/37/42/37/26, Flachheit 32 %.
 const Bg = [[], [], [], [], []]; const flach = []; let nb = 0;
