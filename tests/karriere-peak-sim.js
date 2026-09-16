@@ -60,7 +60,7 @@ function schnappschuss(c, year) {
         // Kaders ueber 90 Saisons kostet sonst mehrere Gigabyte
         drivers: (gs.drivers || []).map(d => ({
             id: d.id, histId: d.histId, name: d.name,
-            generated: d.generated, birthYear: d.birthYear
+            generated: d.generated, birthYear: d.birthYear, pace: d.pace
         })),
         driverStandings: JSON.parse(JSON.stringify(gs.driverStandings || {})),
         retirements: []
@@ -74,10 +74,11 @@ console.log('[karriere-peak-sim] ' + startYear + '-' + endYear + ' (' + saisons 
 // Saisons liefert nur rund 40 abgeschlossene generierte Karrieren — bei so
 // einem n liegen 10 Prozentpunkte Unterschied noch im Rauschen.
 let serien = [];
+let saisonListe = [];
 let gesamtKarrieren = 0;
 for (let lauf = 0; lauf < LAEUFE; lauf++) {
     ctx.initFromYear(startYear);
-    const saisonListe = [];
+    saisonListe = [];
     for (let year = startYear; year <= endYear; year++) {
         simuliereSaison(ctx);
         const snap = schnappschuss(ctx, year);
@@ -161,7 +162,41 @@ const alterEnde = C.map(x => x.jahre[x.jahre.length - 1].alter).filter(Boolean);
 console.log('\n--- Gegenprobe Karrierelaenge (Kippt es ins andere Extrem?) ---');
 console.log('  Saisons im Feld: Ø' + avg(dauer).toFixed(1) + '  max ' + Math.max.apply(null, dauer));
 console.log('  Alter letzte Saison: Ø' + avg(alterEnde).toFixed(1) + '  max ' + Math.max.apply(null, alterEnde));
-console.log('  Zielwerte real: Karriere 4-7 Saisons, Alter am Ende Ø33-35, Sieg zuletzt ~8 %');
+console.log('  Zielwerte real: Karriere 4-7 Saisons, Alter am Ende ~33-35, Sieg zuletzt ~8 %');
+
+// Karriere-Bogen: der eigentliche Befund. Karriere in fuenf Abschnitte, je
+// Anteil am eigenen Peak. Real 16/37/42/37/26, Flachheit 32 %.
+const Bg = [[], [], [], [], []]; const flach = []; let nb = 0;
+for (const x of C.filter(v => v.jahre.length >= 5)) {
+    const s2 = x.jahre.map(v => v.share); const bst = Math.max.apply(null, s2);
+    if (bst <= 0) continue; nb++;
+    const norm = s2.map(v => v / bst);
+    for (let i = 0; i < 5; i++) {
+        const a = Math.floor(i * norm.length / 5), b = Math.max(a + 1, Math.floor((i + 1) * norm.length / 5));
+        Bg[i].push(avg(norm.slice(a, b)));
+    }
+    flach.push(avg(norm));
+}
+console.log('\n--- KARRIERE-BOGEN (n=' + nb + ') ---');
+console.log('  Abschnitt 1-5: ' + Bg.map(x => (100 * avg(x)).toFixed(0) + '%').join('  '));
+console.log('  Flachheit: ' + (100 * avg(flach)).toFixed(0) + '%   (real 32 %, je hoeher desto flacher)');
+console.log('  real:          16%  37%  42%  37%  26%');
+
+// Gegenprobe Pace-Inflation: steigt das Feldniveau ueber die Saisons davon?
+const jahrPace = {};
+for (const sn of saisonListe) {
+    const ps = (sn.drivers || []).map(d => d.pace).filter(v => typeof v === 'number');
+    if (ps.length) jahrPace[sn.year] = avg(ps);
+}
+const jahre2 = Object.keys(jahrPace).map(Number).sort((a, b) => a - b);
+if (jahre2.length > 20) {
+    const frueh = jahre2.slice(0, 10).map(y => jahrPace[y]);
+    const spaet = jahre2.slice(-10).map(y => jahrPace[y]);
+    console.log('\n--- Gegenprobe Pace-Inflation (letzter Lauf) ---');
+    console.log('  Feld-Pace erste 10 Saisons Ø' + avg(frueh).toFixed(1)
+        + '  letzte 10 Ø' + avg(spaet).toFixed(1)
+        + '   Drift ' + (avg(spaet) - avg(frueh) >= 0 ? '+' : '') + (avg(spaet) - avg(frueh)).toFixed(1));
+}
 
 console.log('\n--- Urteil ---');
 console.log('  Sieg in der letzten Saison: generiert ' + pct(c.sieg, c.n) + '  gegen real ' + pct(a.sieg, a.n));
