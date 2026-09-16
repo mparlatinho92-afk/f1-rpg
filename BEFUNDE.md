@@ -20,6 +20,7 @@ versehentlich zurück.
 |---|---|
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
+| Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace` |
 
 ---
 
@@ -45,8 +46,8 @@ pro Jahr geschlossene Gap-Anteil **steigt** (32/42/46/53 %).
   Folgejahr wieder einen offenen Gap und holt den Altersverlust zurück – dieses
   Tauziehen ließ den Abbau jahrelang unsichtbar verpuffen.
 - **Zielwert ist Gruppe B, nicht die nackte Realität.** Echte Fahrer im Spielstand
-  fahren in derselben Engine und Feldgröße; was sie nicht erreichen, liegt am
-  20er-Feld mit 10 Punkterängen, nicht an der Fahrerkurve.
+  fahren in derselben Engine und Feldgröße; was sie nicht erreichen, liegt an der
+  Feldzusammensetzung, nicht an der Fahrerkurve (→ *Das Feld ist zu ausgeglichen*).
 - **Feldgröße kontrollieren.** Von Feld Ø53 auf Ø29 ändert sich die reale Flachheit
   nur 32 → 35 % – aber prüfen, sonst misst man ein Artefakt (s. Ticker-Realismus).
 - `debutYear` ist bei generierten Fahrern das **Erzeugungsjahr**, nicht das Debüt
@@ -68,9 +69,12 @@ Dieselben echten Fahrer mit derselben echten Pace-Kurve, nur nach Aera getrennt:
 
 ⚠ **Im 20er-Feld ist ~34 % / ~50 % die Grenze, nicht die nackte Realitaet (16 % / 32 %).**
 Wer den Startwert darunter druecken will, muss die Pace-Kurve gegen die Daten
-verbiegen — oder das Startfeld vergroessern (s. `project_presence_vs_fieldsize`).
-Ein 20er-Feld mit 10 Punkteraengen laesst die halbe Startaufstellung punkten, real
-war es ein Drittel.
+verbiegen — die Ursache liegt woanders.
+
+⚠ **Die urspruengliche Erklaerung „10 Punkteraenge bei 20 Startern" ist WIDERLEGT**
+(16.09.2026): die moderne reale F1 hat dieselben 10 Raenge. Nachgemessen steht der
+Grund im Abschnitt *Das Feld ist zu ausgeglichen* — es fehlen die Fahrer und Teams,
+die real leer ausgehen.
 
 **NEGATIVERGEBNIS – nicht nochmal versuchen:** Den Rücktritt zu verzögern (Form- und
 Trenddämpfung am Alterszweig, v0.9.18.4) bewegt die Kennzahl **nicht**. Solange die
@@ -98,3 +102,74 @@ sucht zuerst nach dem zweiten Pfad.
 Die geltende Regel steht in `CLAUDE.md` unter *Simulations-Architektur*: seit .18.0 gibt
 es nur noch einen Pfad, der Ticker animiert nur noch dorthin. Absicherung:
 `node tests/ticker-paritaet.js --alle 40`.
+
+---
+
+## Das Feld ist zu ausgeglichen: niemand geht leer aus (gemessen 16.09.2026)
+
+Ausgangsfrage des Nutzers zum flachen Karriere-Bogen: „was ist mit der Differenz, dass
+noch im Schnitt die Hälfte in die Punkte fahren statt ein Drittel?"
+
+⚠ **Die Vermutung „10 Punkteränge bei 20 Startern" war FALSCH** — und zwar meine eigene,
+ungemessen behauptet. Die moderne reale F1 hat dieselben 10 Ränge. Die Messung zeigt
+etwas anderes.
+
+### Wie viele Fahrer einer Saison holen überhaupt Punkte?
+
+| | Feld Ø | mit Punkten Ø | Quote |
+|---|---|---|---|
+| real 1950er | 90,1 | 22,2 | 25 % |
+| real 1960–79 | 50,8 | 20,7 | 42 % |
+| real 1980–99 | 35,5 | 20,6 | 59 % |
+| real 2010–24 | 29,6 | 19,2 | **66 %** |
+| generiert | 18,5 | 18,5 | **99,8 %** |
+
+**Die Zahl der Punktefahrer ist über alle Ären stabil bei 19–22 — das Spiel trifft sie
+mit 18,5.** Was fehlt, sind die rund zehn Fahrer je Saison, die real **leer ausgehen**.
+
+### Der fehlende Tiefpunkt: Nullsaisons
+
+| | Karriere mit ≥1 Nullsaison | **erste** Saison punktlos |
+|---|---|---|
+| real, alle Ären | 88,8 % | 62,8 % |
+| real, Ende ab 2000 | 71,7 % | 32,6 % |
+| echte Fahrer im Save | 76,5 % | 43,7 % |
+| **generiert** | **1,2 %** | **0,0 %** |
+
+Kein einziger generierter Fahrer hat je eine punktlose Debütsaison. **Das ist der
+fehlende Tiefpunkt in Abschnitt 1 des Karriere-Bogens** (38 % statt real 16 %) — nicht
+eine falsch kalibrierte Pace-Kurve. Die stimmt seit .18.5.
+
+### Die Ursache liegt bei den AUTOS, nicht am Punktesystem
+
+| | Teams Ø | ohne Punkte | Top-Team hält | Champion hält |
+|---|---|---|---|---|
+| real 2010–24 | 10,7 | **1,1 (10 %)** | 31,6 % | 38,5 % |
+| real 1980–99 | 11,4 | 0,1 (0 %) | 33,0 % | 20,2 % |
+| generiert | 10,0 | **0,0** | **19,7 %** | **13,5 %** |
+
+Die Teamzahl stimmt. Aber im Spiel ist **kein Auto chancenlos und keins dominant**. Das
+letzte Team holt **10,6 %** der Punkte des Meisterteams — real sind es 0–2 %.
+
+### Warum die Spanne nicht durchschlägt
+
+Nominell ist sie da: carSpeed Ø68,0 bis Ø95,9 (Spanne 27,8), Fahrer-pace Ø59,9 bis
+Ø86,3 (Spanne 26,4). Sie übersetzt sich nur nicht ins Ergebnis. In `simulateRace`
+(index.html ~14071):
+
+```
+_effPace * _paceFactor * 0.45  +  (trocken: 15)  +  experience * 0.15  +  _effCarSpeed * 0.20
+```
+
+- 28 Punkte carSpeed-Spanne × 0.20 = **5,6** Performance-Punkte
+- Rauschen: **±6 bis ±16** (`_halfVar = 6 + (100 - Konstanz) * 0.10`)
+- dazu ein **fester Sockel von 15**, der alle gleich anhebt
+
+Der Abstand zwischen bestem und schlechtestem Auto ist damit kleiner als das Rauschen
+eines einzelnen Rennens. Deshalb punktet jeder.
+
+▶ **OFFEN, nicht angefasst:** Der Hebel wäre die Gewichtung oder der Sockel in
+`simulateRace` — die zentrale Engine, die der Live-Ticker seit .18.0 miterbt. Jede
+Änderung dort wirkt auf Titelverteilung, DNF-Raten und Ticker-Parität. Verwandt:
+`project_presence_vs_fieldsize` (Startfeld zu klein, 19,8 gegen real 22,7) und die
+offene carSpeed-Herkunft — Konstrukteurspunkte messen Auto UND Fahrer.
