@@ -1,4 +1,12 @@
-.claude/
+# .claude/ bleibt lokal, AUSSER settings.json: dort haengen die Hooks (index.html-Sync
+# nach manage-v, Befund-Inventur am Task-Ende). Ohne die Ausnahme waere die
+# Verdrahtung nach einem Neuaufsetzen weg. settings.local.json bleibt draussen —
+# das sind ~73 KB maschinenlokale Permissions.
+# Verzeichnis-Muster statt `.claude/`: Git kann eine Datei nicht einschliessen,
+# wenn ihr VERZEICHNIS ausgeschlossen ist (dieselbe Falle wie bei archive/).
+.claude/*
+!.claude/settings.json
+
 # archive/ bleibt lokal (496 Monolithen, 2,7 GB) - die Versionen liegen ohnehin
 # in der Git-Historie unter ihrem damaligen Wurzelpfad. AUSNAHME: vier Staende, die
 # es sonst NIRGENDS gibt (drei Vorabstaende zu 0.9.7.3 mit je ~100 abweichenden

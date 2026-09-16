@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let b='';process.stdin.on('data',c=>b+=c);process.stdin.on('end',()=>{try{const f=(JSON.parse(b).tool_input||{}).file_path||'';if(/f1-rpg-v[\\d.]+\\.html$/.test(f)){const p=require('path'),fs=require('fs');fs.copyFileSync(f,p.join(p.dirname(f),'index.html'));process.stderr.write('[hook] index.html synced: '+f+'\\n');}}catch(e){}});\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/tools/befund-inventur.js\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
