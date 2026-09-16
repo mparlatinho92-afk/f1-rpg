@@ -116,29 +116,67 @@ etwas anderes.
 
 ### Wie viele Fahrer einer Saison holen überhaupt Punkte?
 
-| | Feld Ø | mit Punkten Ø | Quote |
-|---|---|---|---|
-| real 1950er | 90,1 | 22,2 | 25 % |
-| real 1960–79 | 50,8 | 20,7 | 42 % |
-| real 1980–99 | 35,5 | 20,6 | 59 % |
-| real 2010–24 | 29,6 | 19,2 | **66 %** |
-| generiert | 18,5 | 18,5 | **99,8 %** |
+⚠ **Ära-abhängig messen, nicht pauschal „generiert".** Generierte Fahrer gibt es
+theoretisch in jeder Epoche (Lückenfüller, Ersatz, Privatiers) — wer nur die
+Zukunftsjahre betrachtet, misst die eingefrorene Ära-Kurve und hält ein
+Feldgrößen-Problem für ein Generator-Problem.
 
-**Die Zahl der Punktefahrer ist über alle Ären stabil bei 19–22 — das Spiel trifft sie
-mit 18,5.** Was fehlt, sind die rund zehn Fahrer je Saison, die real **leer ausgehen**.
+| Ära | Feld Spiel | Quote Spiel | Quote real | |
+|---|---|---|---|---|
+| 1950er | 105,3 | 24,4 % | 25 % | ✓ |
+| 1960er | 59,5 | 42,9 % | 42 % | ✓ |
+| 1970er | 50,1 | 51,7 % | ~50 % | ✓ |
+| 1980er | 37,0 | **73,5 %** | 59 % | ✗ |
+| 1990er | 29,4 | **77,6 %** | 59 % | ✗ |
+| 2000er | 22,4 | **93,3 %** | 70 % | ✗ |
+| 2010er | 21,8 | **99,1 %** | 66 % | ✗✗ |
+| 2020–2025 | 20,0 | **100,0 %** | ~66 % | ✗✗ |
+| 2026+ (nur generierte) | 20,0 | 99,5 % | — | |
+
+**Die Abweichung beginnt in den 1980ern — mit ECHTEN Fahrern.** Im gemessenen Stand
+(Start 1950) gab es vor 2026 überhaupt keine generierten Fahrer; das Feld war
+historisch besetzt. Die Zukunft erbt also nur den Zustand der Gegenwart, sie
+verursacht ihn nicht. **Ein Spielstand, der 1990 oder 2010 startet, hat das Problem
+sofort** — nicht erst nach 400 Simjahren.
+
+Bis in die 1970er trifft das Spiel die Realität genau. Dort ist das Feld groß genug,
+dass viele Melder nur ein, zwei Rennen fahren und zwangsläufig leer ausgehen.
+
+**Das Punktesystem ist NICHT die Ursache** — `getPointsForPosition` (index.html ~26902)
+ist ära-korrekt: 5 Ränge bis 1960, 6 bis 2002, 8 bis 2009, 10 ab 2010. Geprüft.
+
+Aussagekräftiger als die Quote ist die **absolute** Zahl: real holen über siebzig Jahre
+stabil **19–22** Fahrer Punkte, und das Spiel trifft sie mit 18,5. Was fehlt, sind die
+Fahrer, die real **leer ausgehen** — 1980er real ~15 davon, im Spiel ~10; 2010er real
+~10, im Spiel praktisch keiner.
+
+⚠ **Messgrenze:** Der ausgewertete Stand enthält keine generierten Fahrer vor 2026. Ob
+ein Generator-Fahrer in den 1950ern sich ära-gerecht verhält (also auch mal leer
+ausgeht), ist damit **nicht gemessen** — dafür bräuchte es einen Stand mit Lücken in
+den frühen Jahrgängen.
 
 ### Der fehlende Tiefpunkt: Nullsaisons
 
-| | Karriere mit ≥1 Nullsaison | **erste** Saison punktlos |
-|---|---|---|
-| real, alle Ären | 88,8 % | 62,8 % |
-| real, Ende ab 2000 | 71,7 % | 32,6 % |
-| echte Fahrer im Save | 76,5 % | 43,7 % |
-| **generiert** | **1,2 %** | **0,0 %** |
+Auch hier ära-getrennt, und auch hier verläuft der Bruch quer durch die **historische**
+Phase — nicht zwischen echt und generiert:
 
-Kein einziger generierter Fahrer hat je eine punktlose Debütsaison. **Das ist der
-fehlende Tiefpunkt in Abschnitt 1 des Karriere-Bogens** (38 % statt real 16 %) — nicht
-eine falsch kalibrierte Pace-Kurve. Die stimmt seit .18.5.
+| Karriere in … | n | mit ≥1 Nullsaison | **erste** Saison punktlos |
+|---|---|---|---|
+| Spiel 1950–1969 | 82 | 96,3 % | 59,8 % |
+| Spiel 1970–1989 | 29 | 86,2 % | 48,3 % |
+| Spiel 1990–2009 | 22 | **45,5 %** | **13,6 %** |
+| Spiel 2010–2025 | 11 | **0,0 %** | **0,0 %** |
+| Spiel 2026–2100 | 132 | 4,5 % | 0,8 % |
+| Spiel 2400–2585 | 377 | 1,1 % | 0,0 % |
+| — real, alle Ären | 215 | 88,8 % | 62,8 % |
+| — real, Ende ab 2000 | 46 | 71,7 % | 32,6 % |
+
+In den 50ern und 60ern trifft das Spiel die Realität (96 % gegen 89 %). Ab den 90ern
+bricht es weg, ab 2010 gibt es **keine einzige** punktlose Saison mehr — real ist es in
+derselben Zeit noch jede dritte Debütsaison.
+
+**Das ist der fehlende Tiefpunkt in Abschnitt 1 des Karriere-Bogens** (38 % statt real
+16 %) — nicht eine falsch kalibrierte Pace-Kurve. Die stimmt seit .18.5.
 
 ### Die Ursache liegt bei den AUTOS, nicht am Punktesystem
 
