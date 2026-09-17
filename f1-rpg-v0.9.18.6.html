@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.5</title>
+    <title>F1 RPG v0.9.18.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.5 (aktuell) - 16.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.6 (aktuell) - 17.09.2026</div>
+                            <div>&#8226; NEU: Ein schlechter Tag kostet 30 Prozent der Pace statt 100 - Spitzenfahrer brechen nicht mehr auf Hinterbank-Niveau ein</div>
+                            <div>&#8226; FIX: Zu viele Fahrer in den Punkten (Abweichung 3,3 auf 2,1 Fahrer bei realem Feld)</div>
+                            <div>&#8226; NEU: carSpeed-Gewicht als benannte Konstante - Erhoehung gemessen und verworfen</div>
+                            <div class="font-bold text-slate-400">v0.9.18.5 - 16.09.2026</div>
                             <div>&#8226; NEU: Fahrer entwickeln sich nach der realen Pace-Kurve - Zenit im 4. Jahr, danach Abbau</div>
                             <div>&#8226; FIX: Altersabbau verpuffte, weil potentialPace stehenblieb und den Verlust zurueckzog</div>
                             <div>&#8226; NEU: tests/pace-kurve-real.js misst die Karrierekurve aus PACE_RATINGS</div>
@@ -17666,7 +17670,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.5';
+        const VERSION = '0.9.18.6';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19595,6 +19599,24 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Zenit; dort läuft der Aufbau weiter über developDriverPace).
         // Konstanten MC-getunt gegen: ≥40-Champions → 0 %, ≥37 → ~3 %
         // (tests/paketD-h3-age-decline.js).
+        // ── Form-Vielfalt: was ein schlechter Tag kostet (v0.9.18.6) ──────────
+        // Anteil der Pace, der an einem schlechten Tag noch zur Verfuegung steht.
+        // 0.0 (der alte Wert) heisst Totalausfall des Koennens — das erzeugte mehr
+        // Streuung als jede andere Quelle in simulateRace und liess zu viele Fahrer
+        // in die Punkte rutschen. Zielgroesse ist die Zahl der Punktefahrer bei
+        // fixiertem Feld: `node tests/vakuum-saison.js 2010 20`.
+        // ⚠ Nicht ohne Messung anfassen — der Wert ist die staerkste einzelne
+        //   Stellschraube der Ergebnisstreuung.
+        const BAD_DAY_PACE_FACTOR = 0.70;
+
+        // Gewicht des Autos in der Renn-Performance. Die carSpeed-SPANNE im Feld ist
+        // mit 28-36 Punkten breit genug (gemessen ueber alle Aeren), sie kam nur zu
+        // schwach im Ergebnis an: 28 Punkte Spanne x 0.20 = 5,6 Performance-Punkte.
+        // Messgroesse ist die Top-3-Ueberschneidung mit der Realitaet in
+        // `tests/vakuum-saison.js` — zu wenig Gewicht heisst, die starken Autos setzen
+        // sich nicht durch.
+        const CAR_SPEED_WEIGHT = 0.20;
+
         // ── Karriere-Zenit (v0.9.18.5, gemessen mit tests/pace-kurve-real.js) ──
         // 160 reale Fahrer mit lueckenloser Jahresfolge aus PACE_RATINGS:
         //   Debuet-Pace  Ø 88,5 % des eigenen Peaks (NICHT ein tiefes Tal)
@@ -27722,15 +27744,28 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 // gelistet sind. Ihr Fahrer-Können (effPace/ELO) bleibt echt, aber das GERÄT ist
                 // schwächer. Ohne das trägt ein Werks-BRM/Lotus den Gast zu P5–P8 (Nutzer-Report).
                 if (driver.homeOnly) _effCarSpeed = Math.min(_effCarSpeed, 52);
-                // Konstanz = P(Skill-Zugriff): Schlechter Tag → Pace + Regen komplett weg
+                // === SCHLECHTER TAG KOSTET, ABER ENTWAFFNET NICHT (v0.9.18.6) ===
+                // Konstanz = P(Skill-Zugriff). Der schlechte Tag hat die Pace bis
+                // hierher KOMPLETT gestrichen (_paceFactor 0.0). Bei pace 85 waren das
+                // 38 Performance-Punkte — bei einem kontinuierlichen Rauschen von nur
+                // ±8,5. Der Einbruch war damit VIERMAL so gross wie das eigentliche
+                // Rauschen und traf einen Fahrer mit Konstanz 75 in jedem vierten
+                // Rennen. Ein Spitzenfahrer fiel dadurch regelmaessig auf
+                // Backmarker-Niveau und raeumte Punkteplaetze frei.
+                // Gemessen mit tests/vakuum-saison.js (reales Feld, 100 % Deckung):
+                // 2,5 (1988) bis 5,1 (2010) Fahrer zu viel in den Punkten.
+                // Real bricht ein Spitzenfahrer nicht auf Hinterbank-Niveau ein — er
+                // faellt aus (DNF, separat modelliert) oder faehrt seine Leistung.
+                // Jetzt kostet ein schlechter Tag 30 % der Pace statt 100 %. Die
+                // Konstanz bleibt voll wirksam: sie bestimmt weiter die HAEUFIGKEIT.
                 const _consVal = isRain ? (driver.rain ?? 75) : _effCon;
                 const _isGoodDay = Math.random() < (_consVal / 100);
-                const _paceFactor = _isGoodDay ? 1.0 : 0.0;
+                const _paceFactor = _isGoodDay ? 1.0 : BAD_DAY_PACE_FACTOR;
                 let performance = (
                     _effPace * _paceFactor * 0.45 +
                     (isRain ? driver.rain * _paceFactor * 0.2 : 15) +
                     driver.experience * 0.15 +
-                    _effCarSpeed * 0.20   // v0.9.14.53: 0.15→0.20 – Auto ist Ceiling UND Floor
+                    _effCarSpeed * CAR_SPEED_WEIGHT   // v0.9.14.53: 0.15→0.20, v0.9.18.6: Konstante
                 );
                 // Kontinuierliches Rauschen: ±6 (Konstanz=100) bis ±16 (Konstanz=0)
                 const _halfVar = 6 + (100 - _consVal) * 0.10;
