@@ -100,6 +100,68 @@ Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
   und im Steady-State leer. Der Snapshot wird Saison für Saison selbst gezogen.
 - **Feldgröße kontrollieren**, bevor ein Streuungsbefund geglaubt wird.
 
+## Feld-Spreizung — `feld-spreizung.js`
+
+Liegt das Feld so weit auseinander wie real? Vier Kennzahlen je Ära gegen F1DB:
+Punktequote, Anteil des schwächsten Teams, Champion-Anteil, DNF-Quote.
+
+```
+node tests/feld-spreizung.js <export.json>
+node tests/feld-spreizung.js <export.json> --csv
+```
+
+Gedacht als **Zielkurve** für carSpeed, Elo-Übersetzung und Form-Vielfalt — dieselbe
+Rolle, die `ERA_ROOKIE_AGE` für das Debütalter spielt. Gemessen wird für **alle**
+Fahrer gemeinsam, echt wie generiert: sie laufen durch dieselbe `simulateRace`.
+
+⚠ **Messfallen:**
+- **Betrag UND Vorzeichen lesen.** „Letztes Team" trifft im Mittel mit −0,4 — in
+  Wahrheit ist das Spiel in den 1950ern zu hart und ab 2000 zu weich, zwei echte
+  Fehler heben sich auf. Das Werkzeug warnt mit `⚠ VORZEICHEN KIPPT`.
+- **Bei Anteilen dieselbe Grundgesamtheit verwenden.** Ein Champion-Anteil auf
+  gefilterten Karrieren (nur ≥4 Saisons) gegen einen auf allen Fahrern ergibt 38,5 %
+  gegen 18,2 % — reiner Messartefakt.
+- Reale Feldgröße aus `f1db-seasons-drivers.json`, nicht aus den Standings: letztere
+  listen nur Fahrer in der Wertung, und genau die punktlosen fehlen dort.
+- Reales DNF: `positionText` ist bei Ausfällen keine Zahl; DNS/DNQ/DNPQ/EX vorher
+  herausfiltern, das sind Nicht-Starter.
+
+Stand 16.09.2026: **nur die Punktequote liegt daneben** (+17,6 Punkte, immer dieselbe
+Richtung). Details in `BEFUNDE.md`.
+
+## Vakuum-Saison — `vakuum-saison.js`
+
+Misst die Ergebniserzeugung **ohne** das Drumherum: echte Fahrer, echte Teams, echtes
+Startfeld aus F1DB. Was hier abweicht, kommt aus `simulateRace` selbst — aus carSpeed,
+Elo-Übersetzung oder Form-Vielfalt.
+
+```
+SIMCORE_FROM_INDEX=1 node tests/vakuum-saison.js 1988 20
+SIMCORE_FROM_INDEX=1 node tests/vakuum-saison.js 2010 20 --quali
+```
+
+**Zwei Modi, und ihre Differenz ist selbst ein Messwert:** ohne `--quali` reale
+Startplätze (misst nur das Rennen), mit `--quali` qualifiziert das Spiel selbst und nur
+das Teilnehmerfeld ist fixiert. Die Differenz ist der Beitrag der Qualifikation.
+
+Setzt nicht das Fahrerfeld, sondern `qualifyingResults` — seit v0.9.17.14 folgt das
+Rennen der Qualifikation, also bestimmt das Quali-Ergebnis Teilnehmer und Startplätze.
+
+⚠ **Messfallen:**
+- **Deckung zuerst lesen.** Ein Fahrer ohne gültiges `team` wird in `simulateRace`
+  stillschweigend übersprungen. Unter ~90 % Deckung ist das Ergebnis wertlos.
+- **Spiel-IDs sind keine F1DB-Slugs** — über `histId` auflösen, sonst stehen
+  Trefferquoten von 100 % neben Top-3 von 0 %.
+- **Streichresultate** bis 1990 (1988: beste 11 von 16). Beide Seiten rechnen hier
+  ohne, deshalb führt 1988 Prost statt Senna. Für solche Jahre Rangabweichung und
+  Top-3 lesen, nicht die Meister-Trefferquote.
+- Indy 500 der 50er fliegt raus (anderes Rennen, eigenes Feld).
+
+Stand 17.09.2026: Deckung 100 %, Rangabweichung 1,2–1,6 Plätze. Die Punktequote trifft
+1988 fast genau (+2,6) und weicht 2010 um +14,9 ab — gegen +34,0 im vollen Spielstand.
+Der größere Hebel liegt also im **Startfeld**, nicht in der Engine. Details in
+`BEFUNDE.md`.
+
 ## Ausführen
 
 Immer aus dem **Projektordner** starten (`C:\Users\lyric\Documents\F1 RPG HTML`).

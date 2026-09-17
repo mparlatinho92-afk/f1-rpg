@@ -20,7 +20,8 @@ versehentlich zurück.
 |---|---|
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
-| Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace` |
+| Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
+| Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 
 ---
 
@@ -34,6 +35,7 @@ Eine Karriere hat einen **Bogen** – Aufstieg, Zenit, Abbau. Wer an `developDri
 | `node tests/karriere-peak.js <export.json>` | Drei Gruppen gegen F1DB: Realität, echte Fahrer im Save, generierte |
 | `node tests/karriere-peak-sim.js 1980 160 2010 --laeufe=3` | Simuliert und misst – für A/B **ohne** und **mit** `SIMCORE_FROM_INDEX=1` |
 | `node tests/pace-kurve-real.js` | Die **Zielkurve** aus `PACE_RATINGS` (160 reale Fahrer) |
+| `node tests/feld-spreizung.js <export.json>` | Spreizung des Feldes je Ära gegen F1DB — Zielkurve für carSpeed/Form |
 
 **Die reale Zielkurve** (gemessen, nicht geschätzt): Debüt bei **88,5 %** des eigenen
 Peaks, Zenit im Karrierejahr **4,2**, danach **2,95** Pace-Punkte Abbau pro Jahr. Der
@@ -178,16 +180,58 @@ derselben Zeit noch jede dritte Debütsaison.
 **Das ist der fehlende Tiefpunkt in Abschnitt 1 des Karriere-Bogens** (38 % statt real
 16 %) — nicht eine falsch kalibrierte Pace-Kurve. Die stimmt seit .18.5.
 
-### Die Ursache liegt bei den AUTOS, nicht am Punktesystem
+### Nur EINE Kennzahl liegt daneben — die Punktequote
 
-| | Teams Ø | ohne Punkte | Top-Team hält | Champion hält |
-|---|---|---|---|---|
-| real 2010–24 | 10,7 | **1,1 (10 %)** | 31,6 % | 38,5 % |
-| real 1980–99 | 11,4 | 0,1 (0 %) | 33,0 % | 20,2 % |
-| generiert | 10,0 | **0,0** | **19,7 %** | **13,5 %** |
+Gemessen mit `node tests/feld-spreizung.js <export.json>`, vier Kennzahlen je Ära:
 
-Die Teamzahl stimmt. Aber im Spiel ist **kein Auto chancenlos und keins dominant**. Das
-letzte Team holt **10,6 %** der Punkte des Meisterteams — real sind es 0–2 %.
+| | Betrag | vorzeichenbehaftet | |
+|---|---|---|---|
+| Punktequote | 17,7 | **+17,6** | **DANEBEN** |
+| letztes Team | 4,4 | −0,4 | trifft — ⚠ **Vorzeichen kippt** |
+| Champion-Anteil | 3,2 | −3,2 | trifft |
+| DNF-Quote | 2,6 | +0,7 | trifft |
+
+**Die Punktequote ist die einzige systematische Abweichung**, und sie geht immer in
+dieselbe Richtung: zu viele Fahrer punkten. Spitze und Ausfallrate sind richtig
+modelliert — es fehlt nur der Schwanz.
+
+⚠ **Zwei Messfallen, beide selbst hineingelaufen:**
+
+1. **Der Mittelwert der Beträge verdeckt kippende Vorzeichen.** „Letztes Team" trifft
+   mit −0,4 scheinbar perfekt — tatsächlich ist das Spiel in den 1950ern **zu hart**
+   (0,0 gegen real 9,4) und ab 2000 **zu weich** (5,4 gegen 1,0). Zwei echte Fehler,
+   die sich gegenseitig aufheben. Das Werkzeug warnt seither explizit.
+2. ⚠ **KORREKTUR einer früheren Zahl in diesem Dokument:** Der Champion-Anteil stand
+   hier mit „real 38,5 % gegen Spiel 13,5 %". **Falsch** — beide Werte waren auf
+   unterschiedlich gefilterten Kohorten berechnet (nur Karrieren ab 4 Saisons, nicht
+   aktive). Über die vollständige Saisonkohorte sind es **real 18,2 % gegen Spiel
+   16,8 %** — die Kennzahl **trifft**. Wer Anteile misst, muss bei Spiel und Realität
+   dieselbe Grundgesamtheit nehmen.
+
+**Die DNF-Quote ist der Gegenbeweis, dass so eine Kalibrierung möglich ist:** Sie folgt
+der realen Ära-Kurve bereits genau — 52,2 % in den 1980ern, 11,9 % heute, Abweichung
+im Schnitt 2,6 Punkte. Das Rauschen aus Ausfällen ist also **nicht** die Ursache; diese
+Hypothese wurde aufgestellt und sofort widerlegt.
+
+### Power-to-Weight trennt moderne Autos NICHT
+
+Aus dem Recherche-Sheet des Nutzers (PS und Leergewicht je Wagen und Jahr):
+
+| Jahr | Top-Team | Backmarker | Spanne |
+|---|---|---|---|
+| 1965 | 0,461 | 0,258 | Faktor 1,8 |
+| 1985 | 1,596 | 0,994 | Faktor 2,3 |
+| **2025** | 1,313 | **1,319** | **praktisch null** |
+
+2025 hat der Haas dieselbe PS/kg wie der McLaren. Power-to-Weight taugt damit für die
+**Ära-Skalierung** und den **Serienvergleich** (F1 1,313 · F2 0,780 · F3 0,565 · Kart
+0,250 — relevant für die Junior-Welt), **nicht** für die Rangfolge innerhalb einer
+modernen Saison.
+
+Bemerkenswert: Real ist die technische Spanne früher **groß** und heute **klein**, die
+Punktespreizung aber genau umgekehrt (letztes Team 9,4 % → 0,4 %). Kleine technische
+Unterschiede erzeugen heute also große Ergebnisunterschiede — weil sie über eine ganze
+Saison konsistent wirken und kaum noch Ausfälle dazwischenfunken.
 
 ### Warum die Spanne nicht durchschlägt
 
@@ -211,3 +255,60 @@ eines einzelnen Rennens. Deshalb punktet jeder.
 Änderung dort wirkt auf Titelverteilung, DNF-Raten und Ticker-Parität. Verwandt:
 `project_presence_vs_fieldsize` (Startfeld zu klein, 19,8 gegen real 22,7) und die
 offene carSpeed-Herkunft — Konstrukteurspunkte messen Auto UND Fahrer.
+
+---
+
+## Vakuum-Saison: die Ursache ist zerlegt (17.09.2026)
+
+`node tests/vakuum-saison.js <jahr> [laeufe] [--quali]` fixiert das Drumherum —
+echte Fahrer, echte Teams, echtes Startfeld aus F1DB — und misst, was `simulateRace`
+allein daraus macht. Alles, was hier noch abweicht, kommt aus carSpeed, der
+Elo-Übersetzung oder der Form-Vielfalt.
+
+**Mechanik:** nicht das Fahrerfeld wird umgebaut, sondern `qualifyingResults` gesetzt.
+Seit v0.9.17.14 gilt „das Rennen folgt der Qualifikation", also bestimmt das
+Quali-Ergebnis Teilnehmer **und** Startplätze. Deckung real → Spiel: **100 %**.
+
+### Die Abweichung der Punktequote, aufgeteilt
+
+| | 1988 | 2010 |
+|---|---|---|
+| im **Spielstand** (volle Welt) | +16,3 | **+34,0** |
+| im **Vakuum**, reale Startplätze | **+2,6** | +14,9 |
+| im **Vakuum**, fiktive Quali | — | +19,6 |
+
+Daraus für 2010: rund **19 Punkte kommen aus der Feldzusammensetzung** (die fehlenden
+schwachen Fahrer und Teams), **10 aus der Rennsimulation**, **5 aus der eigenen
+Qualifikation** — die streut das Feld stärker durch als die reale Startaufstellung.
+
+**1988 trifft im Vakuum fast genau** (49,8 gegen real 47,2 %). Dort stammt die
+Abweichung praktisch vollständig aus dem Feld, nicht aus der Engine.
+
+### Was die Engine gut kann
+
+| | 1988 | 2010 |
+|---|---|---|
+| Ø Rangabweichung, reale Top 10 | 1,57 Plätze | **1,22 Plätze** |
+| Top-3-Überschneidung | 93 % | 63 % |
+| Meister getroffen | 10 % | 60 % (fiktive Quali: 80 %) |
+
+Die Rangfolge trifft die Engine bei korrektem Feld **sehr genau**. Das stützt den
+Befund von oben: Spitze und Reihenfolge stimmen, es fehlt der Schwanz.
+
+⚠ **Messfallen:**
+- **Streichresultate.** Bis 1990 zählten nur die besten N Rennen (1988: 11 von 16).
+  Das Werkzeug rechnet beide Seiten **ohne** Streichresultate, deshalb führt 1988 dort
+  Prost statt Senna. „Meister getroffen 10 %" ist für solche Jahre kein Qualitätsmaß —
+  Rangabweichung und Top-3 lesen.
+- **Spiel-IDs sind keine F1DB-Slugs.** Die Standings-Keys tragen Zeitstempel; ohne
+  Auflösung über `histId` vergleicht man Äpfel mit Birnen und bekommt Trefferquoten
+  von 100 % neben Top-3 von 0 % (genau so zuerst passiert).
+- **Ein Fahrer ohne gültiges `team` wird in `simulateRace` stillschweigend
+  übersprungen.** Deshalb weist das Werkzeug die Deckung aus; unter ~90 % ist das
+  Ergebnis wertlos.
+- Indy 500 der 50er fliegt raus — anderes Rennen, eigenes Feld.
+
+▶ **Folge für die Kalibrierung:** Der größere Hebel liegt **nicht** in `simulateRace`,
+sondern im Startfeld — womit `project_presence_vs_fieldsize` vom vertagten Nebenthema
+zum Hauptweg wird. Die Engine selbst braucht eine kleinere Korrektur, als die
+Spielstand-Zahlen nahelegten.
