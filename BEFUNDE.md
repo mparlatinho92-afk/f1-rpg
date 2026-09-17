@@ -22,7 +22,8 @@ versehentlich zurück.
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
-| Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, `CAR_SPEED_WEIGHT`, Streuung im Rennen |
+| Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
+| Ära-Abhängigkeit: das Auto zählt heute mehr | `ERA_CAR_WEIGHT`, Auto/Fahrer-Verhältnis, Spearman-Fallen |
 
 ---
 
@@ -420,3 +421,75 @@ jahresabhängig — 2010 zu dominant (7,1 gegen 5), 2018 zu wenig (8,3 gegen 11)
 ⚠ **Regel:** Wer die Streuung in `simulateRace` senkt, misst die Dominanz mit.
 `tests/vakuum-saison.js` gibt sie seit .18.6 aus — ohne diese Gegenprobe tauscht man
 ein Problem gegen ein anderes.
+
+---
+
+## Ära-Abhängigkeit: das AUTO zählt heute mehr, nicht weniger (v0.9.18.7)
+
+### Der Messfehler, der beinahe durchging
+
+Erst hatte ich die **Elo-Spanne** verdächtigt: 1965 drängen sich 40 Starter auf 27
+Pace-Punkten, 2018 verteilen sich 20 auf 40 (Deckung jeweils 100 %). Also eine
+Feld-Spreizung eingebaut, die die Spanne auf ein festes Maß streckt.
+
+⚠ **Nutzer-Einwand, methodisch entscheidend:** „elo in der zweiten aufgabe darf nicht
+die erste aufgabe der ären beeinflussen. das darf kein Bias sein." Genau das war es:
+Die Zielspanne war **am modernen Feld abgelesen** und alten Ären aufgezwungen. Die
+Spreizung wurde zurückgenommen — Wirkung war ohnehin marginal (1965 Spearman 0,018 →
+0,094).
+
+⚠ **Und ein zweiter Fehler im selben Anlauf:** „Elo korreliert 1965 nur mit 0,414 mit
+dem Endstand" gelesen als „Elo ist dort schlecht". Falsch — diese Korrelation misst
+auch, **wie stark das Auto den Endstand bestimmt**. Ein Weltklassefahrer im schwachen
+Auto landet hinten, ganz ohne Datenfehler.
+
+### Die bias-freie Messung
+
+Rein aus F1DB, Konstrukteurswertung gegen Fahrerwertung — ohne Spiel, ohne Elo:
+
+| Jahr | 1965 | 1975 | 1985 | 1990 | 2010 | 2024 |
+|---|---|---|---|---|---|---|
+| Auto erklärt den Endstand | −0,17 | 0,38 | 0,48 | **0,93** | **0,97** | 0,94 |
+
+**Heute bestimmt das Auto den Endstand fast vollständig, früher kaum.** Und zwar
+entgegen der Technik: Die Power-to-Weight-Spanne war früher **größer** (1965 Faktor 1,8;
+2025 praktisch null). Der Grund ist die Feldzusammensetzung — heute fährt jeder Vollzeit
+im Werkswagen, früher mischten Gelegenheitsfahrer in guten Autos und Stammfahrer in
+schlechten das Bild.
+
+⚠ **Spearman korrekt rechnen.** Der erste Versuch ergab Werte wie −5,642 — unmöglich für
+eine Korrelation. Ursache: Fahrer-Ränge (0–47) gegen Team-Ränge (0–10) gerechnet. Beide
+Größen müssen Ränge über **dieselbe** Menge sein.
+
+### `ERA_CAR_WEIGHT` statt konstantem Gewicht
+
+Ein konstantes carSpeed-Gewicht kann beides nicht treffen: 0.26 half 2010
+(Rangabweichung 1,22 → 1,16) und schadete 1965 (3,07 → 4,09). Jetzt ära-abhängig,
+0.14 (50er/60er) bis 0.27 (ab 2010).
+
+Die Werte sind **bewusst flacher** als die gemessene Korrelation: Die Messung sagt, wie
+stark das Auto den **Endstand** erklärt, nicht welchen Anteil es an **einem**
+Rennergebnis hat. Wer die Korrelation direkt als Gewicht einsetzt, verwechselt Wirkung
+mit Ursache.
+
+### Ergebnis über sieben Jahre, drei davon ungesehen
+
+| | Ø Fahrer-Abweichung | Ø Spearman |
+|---|---|---|
+| Baseline (.18.6, konstant 0.20) | 3,03 | 0,703 |
+| **`ERA_CAR_WEIGHT`** | **2,27** | 0,710 |
+
+Validiert auf 1975, 1995, 2005 — die nicht zur Kalibrierung dienten. Größter Gewinn
+1995 (+4,5 → +0,7 Fahrer).
+
+### ▶ OFFEN: zwei Ausreißer und eine Obergrenze
+
+- **2005 fehlen 6,5 Punktefahrer** (real 24, Spiel 17,5) — hier streut das Spiel zu
+  **wenig**, das Gegenteil des ursprünglichen Befunds. Schon in der Baseline so (−7,1),
+  also kein Nebeneffekt dieser Änderung.
+- **1975 −3,1** Fahrer, leicht schlechter als Baseline (−2,6).
+- **1965 bleibt bei Spearman 0,064.** Dort war real die Zuordnung Auto ↔ Endstand
+  nahezu zufällig (−0,17); was eine Simulation dort überhaupt treffen kann, ist offen.
+  Keine Streuungs- oder Gewichtsfrage mehr.
+
+**Abgesichert:** `node tests/ticker-paritaet.js --alle 40` → 40/40 identisch.

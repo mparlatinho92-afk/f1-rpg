@@ -202,6 +202,9 @@ function realerStand(real, punkteFn) {
     // heisst zwangslaeufig konsistentere Spitze. Wer die Streuung senkt, muss HIER
     // nachsehen, sonst tauscht er ein Problem gegen ein anderes.
     const champAnteil = [], champSiege = [];
+    // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
+    // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
+    const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [];
     for (let l = 0; l < LAEUFE; l++) {
         const { stand, deckung, siegeChamp } = einLauf(ctx, real, punkteFn);
         deckungen.push(deckung);
@@ -220,6 +223,37 @@ function realerStand(real, punkteFn) {
         // mittlere Rangabweichung ueber die realen Top 10
         const simRang = new Map();
         stand.forEach((x, i) => { const k = schluessel(x); if (k && !simRang.has(k)) simRang.set(k, i); });
+
+        // === VOLLSTAENDIGER ENDSTAND (v0.9.18.7) ===
+        // Wie nah kommt das Vakuum an das ECHTE Jahr? Ueber ALLE zuordenbaren
+        // Fahrer, nicht nur die Top 10 — dort faellt der Schwanz sonst unter den
+        // Tisch, und genau der ist das offene Thema.
+        // Was hier noch abweicht, ist im Wesentlichen die FAHRERBEWERTUNG: Feld,
+        // Teams und Startplaetze sind fixiert, die Streuung ist kalibriert.
+        const paare = [];
+        rStand.forEach((r, ri) => {
+            const s = simRang.get(norm(r.id));
+            if (s !== undefined) paare.push({ realRang: ri, simRang: s, realPunkte: r.punkte });
+        });
+        if (paare.length > 3) {
+            alleAbw.push(avg(paare.map(p => Math.abs(p.simRang - p.realRang))));
+            // Spearman ueber die gemeinsamen Fahrer
+            const n = paare.length;
+            const d2 = paare.reduce((a, p) => a + Math.pow(p.simRang - p.realRang, 2), 0);
+            spearman.push(1 - (6 * d2) / (n * (n * n - 1)));
+            zuordenbar.push(n);
+            // Punktabweichung, normiert auf die Meisterpunkte des Jahres — sonst
+            // sind Aeren mit 9-Punkte-Siegen und 25-Punkte-Siegen nicht vergleichbar
+            const simPunkte = new Map();
+            stand.forEach(x => { const k = schluessel(x); if (k && !simPunkte.has(k)) simPunkte.set(k, x.punkte); });
+            const cp = rStand[0].punkte || 1;
+            const pAbw = [];
+            for (const r of rStand) {
+                const sp = simPunkte.get(norm(r.id));
+                if (sp !== undefined) pAbw.push(Math.abs(sp - r.punkte) / cp);
+            }
+            if (pAbw.length) punktAbw.push(100 * avg(pAbw));
+        }
         const abw = [];
         rTop.forEach((id, i) => {
             const s = simRang.get(norm(id));
@@ -258,6 +292,12 @@ function realerStand(real, punkteFn) {
     for (const e of real.erg) {
         if (String(e.positionText) === '1' && e.driverId === rStand[0].id) rSiege++;
     }
+    console.log('\n  ── ENDSTAND gegen das echte Jahr ──');
+    console.log('  zuordenbare Fahrer:           ' + Math.round(avg(zuordenbar)) + ' von ' + rStand.length);
+    console.log('  Ø Rangabweichung, ALLE:       ' + avg(alleAbw).toFixed(2) + ' Plaetze');
+    console.log('  Spearman-Rangkorrelation:     ' + avg(spearman).toFixed(3) + '   (1,0 = identische Reihenfolge)');
+    console.log('  Ø Punktabweichung je Fahrer:  ' + avg(punktAbw).toFixed(1) + ' % der Meisterpunkte');
+
     console.log('\n  ── DOMINANZ des Besten ──');
     console.log('  Punktanteil des Fuehrenden:  Spiel ' + avg(champAnteil).toFixed(1)
         + ' %   real ' + rAnteil.toFixed(1) + ' %');

@@ -157,6 +157,14 @@ Rennen der Qualifikation, also bestimmt das Quali-Ergebnis Teilnehmer und Startp
   Top-3 lesen, nicht die Meister-Trefferquote.
 - Indy 500 der 50er fliegt raus (anderes Rennen, eigenes Feld).
 
+⚠ **Spearman korrekt rechnen.** Beide Größen müssen Ränge über DIESELBE Menge sein.
+Fahrer-Ränge (0–47) gegen Team-Ränge (0–10) ergeben Werte wie −5,6 — unmöglich für eine
+Korrelation, aber leicht zu übersehen.
+
+⚠ **Kein Zielwert vom modernen Feld auf alte Ären übertragen.** Genau so entstand am
+17.09.2026 ein Bias: eine Feld-Spreizung mit Zielspanne 40, abgelesen an 2010/2018 und
+den 60ern aufgezwungen. Zurückgenommen.
+
 ⚠ **Wer die Streuung senkt, liest die DOMINANZ mit.** Das Werkzeug gibt Punktanteil und
 Siege des Führenden gegen real aus. Weniger Zufall heißt konsistentere Spitze — ohne
 diese Gegenprobe tauscht man ein Problem gegen ein anderes.
