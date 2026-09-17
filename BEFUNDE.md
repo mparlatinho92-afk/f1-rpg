@@ -269,20 +269,37 @@ Elo-Übersetzung oder der Form-Vielfalt.
 Seit v0.9.17.14 gilt „das Rennen folgt der Qualifikation", also bestimmt das
 Quali-Ergebnis Teilnehmer **und** Startplätze. Deckung real → Spiel: **100 %**.
 
-### Die Abweichung der Punktequote, aufgeteilt
+### Bei IDENTISCHEM Feld punkten zu viele — das ist die Engine
 
-| | 1988 | 2010 |
-|---|---|---|
-| im **Spielstand** (volle Welt) | +16,3 | **+34,0** |
-| im **Vakuum**, reale Startplätze | **+2,6** | +14,9 |
-| im **Vakuum**, fiktive Quali | — | +19,6 |
+Die belastbare Größe ist die **absolute Zahl der Punktefahrer**, nicht die Quote: Die
+Quote hängt mechanisch an der Feldgröße (10 Punkteränge auf 22 Fahrer ergeben eine
+höhere Quote als auf 29, ohne dass die Engine anders rechnet).
 
-Daraus für 2010: rund **19 Punkte kommen aus der Feldzusammensetzung** (die fehlenden
-schwachen Fahrer und Teams), **10 aus der Rennsimulation**, **5 aus der eigenen
-Qualifikation** — die streut das Feld stärker durch als die reale Startaufstellung.
+| bei identischem Feld, 10 Läufe | Spiel | real | Differenz |
+|---|---|---|---|
+| 1988 (36 Starter) | 19,5 | 17 | **+2,5 Fahrer** |
+| 2010 (27 Starter) | 24,1 | 19 | **+5,1 Fahrer** |
 
-**1988 trifft im Vakuum fast genau** (49,8 gegen real 47,2 %). Dort stammt die
-Abweichung praktisch vollständig aus dem Feld, nicht aus der Engine.
+**Das Feld ist fixiert, die Deckung 100 % — also kommt das vollständig aus
+`simulateRace`.** Die Abweichung ist in der modernen Ära doppelt so groß: enge Felder
+strafen eine zu flache Leistungsübersetzung härter.
+
+⚠ **KORREKTUR einer früheren Zerlegung in diesem Dokument** (17.09.2026, am selben Tag):
+Hier stand, rund 19 von 34 Punkten der Abweichung kämen aus der Feldzusammensetzung und
+nur 10 aus der Rennsimulation. **Falsch.** Die Rechnung zog die Spielstand-Abweichung
+(+34,0, bezogen auf *alle Fahrer einer Saison*) von der Vakuum-Abweichung (+14,9,
+bezogen auf *die Starter eines Jahres*) ab — zwei verschiedene Grundgesamtheiten, die
+Differenz ist bedeutungslos. Nutzer-Einwand: „die meldungen an sich nicht das problem
+sondern die leistung, der erfolg, was daraus gemacht wird, deswegen das vakuum."
+
+**Die dritte Anteils-Falle derselben Art in einer Sitzung.** Merksatz: Eine Differenz
+von Differenzen ist nur zulässig, wenn ALLE vier Werte dieselbe Bezugsgruppe haben.
+Sonst absolute Zahlen nehmen.
+
+**Was die Feldgröße damit zu tun hat: sie ist ein eigenes Thema, keine Ursache.** Im
+vollen Spielstand fehlen Fahrer im Feld (21,8 gegen real 29,4), was die *Quote*
+zusätzlich hochtreibt. Die Leistungsverteilung wird dadurch nicht erklärt — die weicht
+schon bei perfektem Feld ab.
 
 ### Was die Engine gut kann
 
@@ -308,7 +325,11 @@ Befund von oben: Spitze und Reihenfolge stimmen, es fehlt der Schwanz.
   Ergebnis wertlos.
 - Indy 500 der 50er fliegt raus — anderes Rennen, eigenes Feld.
 
-▶ **Folge für die Kalibrierung:** Der größere Hebel liegt **nicht** in `simulateRace`,
-sondern im Startfeld — womit `project_presence_vs_fieldsize` vom vertagten Nebenthema
-zum Hauptweg wird. Die Engine selbst braucht eine kleinere Korrektur, als die
-Spielstand-Zahlen nahelegten.
+▶ **Folge für die Kalibrierung:** Der Hebel liegt in `simulateRace` — carSpeed-Gewicht,
+Elo-Übersetzung, Form-Vielfalt. Zielgröße ist die **absolute Zahl der Punktefahrer**:
+2,5 bis 5,1 zu viel bei fixiertem Feld, mit wachsender Abweichung in der modernen Ära.
+
+Das Startfeld (`project_presence_vs_fieldsize`) bleibt ein **eigenes, paralleles**
+Thema: Es fehlen Melder (21,8 gegen real 29,4), was die Quote zusätzlich verzerrt und
+die Meldelisten betrifft — aber es erklärt die Leistungsverteilung nicht und ist keine
+Vorbedingung für die Kalibrierung.

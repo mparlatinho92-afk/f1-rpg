@@ -157,10 +157,15 @@ Rennen der Qualifikation, also bestimmt das Quali-Ergebnis Teilnehmer und Startp
   Top-3 lesen, nicht die Meister-Trefferquote.
 - Indy 500 der 50er fliegt raus (anderes Rennen, eigenes Feld).
 
-Stand 17.09.2026: Deckung 100 %, Rangabweichung 1,2–1,6 Plätze. Die Punktequote trifft
-1988 fast genau (+2,6) und weicht 2010 um +14,9 ab — gegen +34,0 im vollen Spielstand.
-Der größere Hebel liegt also im **Startfeld**, nicht in der Engine. Details in
-`BEFUNDE.md`.
+⚠ **Absolute Zahlen vergleichen, nicht Quoten.** Die Punktequote hängt mechanisch an
+der Feldgröße. Und eine **Differenz von Differenzen** ist nur zulässig, wenn alle vier
+Werte dieselbe Bezugsgruppe haben — sonst rechnet man Spielstand-Werte (alle Fahrer
+einer Saison) gegen Vakuum-Werte (Starter eines Jahres) und bekommt Unsinn. Genau so
+entstand am 17.09.2026 ein falscher Befund.
+
+Stand 17.09.2026: Deckung 100 %, Rangabweichung 1,2–1,6 Plätze. Bei **fixiertem Feld**
+punkten 2,5 (1988) bis 5,1 (2010) Fahrer zu viel — das kommt vollständig aus
+`simulateRace`. Details in `BEFUNDE.md`.
 
 ## Ausführen
 

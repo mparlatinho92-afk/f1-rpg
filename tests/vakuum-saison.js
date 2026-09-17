@@ -194,7 +194,7 @@ function realerStand(real, punkteFn) {
         + LAEUFE + ' Laeufe, ' + (FIKTIVE_QUALI ? 'FIKTIVE Quali' : 'reale Startplaetze') + ')');
     console.log('Realer Meister: ' + rStand[0].id + ' mit ' + rStand[0].punkte + ' Punkten\n');
 
-    const champTreffer = [], top3Treffer = [], rangAbw = [], deckungen = [], quoten = [];
+    const champTreffer = [], top3Treffer = [], rangAbw = [], deckungen = [], quoten = [], absolut = [];
     for (let l = 0; l < LAEUFE; l++) {
         const { stand, deckung } = einLauf(ctx, real, punkteFn);
         deckungen.push(deckung);
@@ -221,6 +221,7 @@ function realerStand(real, punkteFn) {
         if (abw.length) rangAbw.push(avg(abw));
 
         quoten.push(100 * stand.filter(x => x.punkte > 0).length / stand.length);
+        absolut.push(stand.filter(x => x.punkte > 0).length);
     }
 
     const d = avg(deckungen) * 100;
@@ -229,9 +230,17 @@ function realerStand(real, punkteFn) {
     console.log('  Meister getroffen:               ' + (100 * avg(champTreffer)).toFixed(0) + ' % der Laeufe');
     console.log('  Top-3-Ueberschneidung:           ' + (100 * avg(top3Treffer)).toFixed(0) + ' %');
     console.log('  Ø Rangabweichung (reale Top 10): ' + avg(rangAbw).toFixed(2) + ' Plaetze');
-    console.log('  Punktequote Spiel:               ' + avg(quoten).toFixed(1) + ' %');
-    const realQuote = 100 * rStand.filter(x => x.punkte > 0).length
-        / new Set(real.erg.map(e => e.driverId)).size;
-    console.log('  Punktequote real:                ' + realQuote.toFixed(1) + ' %');
+    // ⚠ ABSOLUTE Zahl ist die belastbare Groesse, nicht die Quote: die Quote haengt
+    //   mechanisch an der Feldgroesse (10 Punkteraenge auf 22 Fahrer ergeben eine
+    //   hoehere Quote als auf 29, ohne dass die Engine anders rechnet). Nur wenn
+    //   Feld und Bezugsgruppe identisch sind, darf man Quoten vergleichen.
+    const realFeld = new Set(real.erg.map(e => e.driverId)).size;
+    const realPunktefahrer = rStand.filter(x => x.punkte > 0).length;
+    console.log('  Fahrer mit Punkten:  Spiel ' + avg(absolut).toFixed(1)
+        + '   real ' + realPunktefahrer
+        + '   Differenz ' + (avg(absolut) - realPunktefahrer >= 0 ? '+' : '')
+        + (avg(absolut) - realPunktefahrer).toFixed(1) + ' Fahrer');
+    console.log('  (Quote Spiel ' + avg(quoten).toFixed(1) + ' %  gegen real '
+        + (100 * realPunktefahrer / realFeld).toFixed(1) + ' %  bei ' + realFeld + ' Startern)');
     console.log('\n  Beide Modi fahren und die Differenz lesen: sie ist der Beitrag der Quali.');
 })();
