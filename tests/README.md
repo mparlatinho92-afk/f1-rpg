@@ -157,6 +157,10 @@ Rennen der Qualifikation, also bestimmt das Quali-Ergebnis Teilnehmer und Startp
   Top-3 lesen, nicht die Meister-Trefferquote.
 - Indy 500 der 50er fliegt raus (anderes Rennen, eigenes Feld).
 
+⚠ **Wer die Streuung senkt, liest die DOMINANZ mit.** Das Werkzeug gibt Punktanteil und
+Siege des Führenden gegen real aus. Weniger Zufall heißt konsistentere Spitze — ohne
+diese Gegenprobe tauscht man ein Problem gegen ein anderes.
+
 ⚠ **Absolute Zahlen vergleichen, nicht Quoten.** Die Punktequote hängt mechanisch an
 der Feldgröße. Und eine **Differenz von Differenzen** ist nur zulässig, wenn alle vier
 Werte dieselbe Bezugsgruppe haben — sonst rechnet man Spielstand-Werte (alle Fahrer

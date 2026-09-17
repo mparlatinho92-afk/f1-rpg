@@ -22,6 +22,7 @@ versehentlich zurück.
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
+| Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, `CAR_SPEED_WEIGHT`, Streuung im Rennen |
 
 ---
 
@@ -333,3 +334,89 @@ Das Startfeld (`project_presence_vs_fieldsize`) bleibt ein **eigenes, paralleles
 Thema: Es fehlen Melder (21,8 gegen real 29,4), was die Quote zusätzlich verzerrt und
 die Meldelisten betrifft — aber es erklärt die Leistungsverteilung nicht und ist keine
 Vorbedingung für die Kalibrierung.
+
+---
+
+## Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen (v0.9.18.6)
+
+Zielgröße war die **absolute Zahl der Punktefahrer bei fixiertem Feld**
+(`tests/vakuum-saison.js`). Fünf Jahre, je 10 Läufe, Deckung überall 100 %.
+
+### Der wirksame Hebel: `BAD_DAY_PACE_FACTOR`
+
+`_paceFactor` war ein Alles-oder-nichts-Schalter: an einem schlechten Tag fiel
+`pace * 0.45` **komplett** weg — bei pace 85 sind das 38 Performance-Punkte, bei einem
+kontinuierlichen Rauschen von nur ±8,5. **Der Einbruch war viermal so groß wie das
+eigentliche Rauschen** und traf einen Fahrer mit Konstanz 75 in jedem vierten Rennen.
+Ein Spitzenfahrer fiel dadurch regelmäßig auf Hinterbank-Niveau und räumte
+Punkteplätze frei. Real bricht er nicht ein — er fällt aus (DNF, separat modelliert)
+oder fährt seine Leistung.
+
+Jetzt `0.70`: ein schlechter Tag kostet 30 % der Pace statt 100 %. Die Konstanz bleibt
+voll wirksam, sie bestimmt weiter die **Häufigkeit**.
+
+| Jahr | Baseline | nur BAD_DAY 0.70 | + carSpeed 0.26 |
+|---|---|---|---|
+| 1965 | +5,8 / 3,07 | +5,4 / 2,89 | +4,8 / **4,09** |
+| 1988 | +2,5 / 1,57 | −0,6 / 1,73 | −0,3 / 1,59 |
+| 1995 | +3,3 / 2,51 | +2,6 / 2,55 | +3,3 / 2,52 |
+| 2010 | +5,1 / 1,22 | +1,5 / 1,29 | +0,7 / 1,16 |
+| 2018 | **+0,0** / 1,28 | −0,2 / 1,42 | **−1,2** / 1,49 |
+| **Ø Betrag** | **3,34** / 1,93 | **2,06** / 1,98 | **2,06** / **2,17** |
+
+*(Fahrer-Differenz / Rangabweichung über die realen Top 10)*
+
+### NEGATIVERGEBNIS: das carSpeed-Gewicht bringt nichts
+
+`CAR_SPEED_WEIGHT` von 0.20 auf 0.26 (und 0.32) getestet: **keine** weitere
+Verbesserung der Zielgröße (Ø 2,06 wie ohne), aber die Rangabweichung verschlechtert
+sich von 1,98 auf 2,17 — und 2018, das ohne carSpeed-Änderung fast perfekt trifft
+(−0,2), rutscht auf −1,2. Bei 0.32 wird es deutlicher (Ø −1,6 bei 1988).
+
+Die carSpeed-**Spanne** ist also nicht das Problem und ihr Gewicht auch nicht. Der Wert
+steht seit .18.6 als benannte Konstante da, damit die nächste Messung nicht wieder bei
+einer Magic Number anfängt — aber **nicht ohne neue Messung anfassen**.
+
+### ▶ OFFEN: die Ära-Abhängigkeit bleibt
+
+1965 (+5,4) und 1995 (+2,6) liegen weiter daneben, 1988/2010/2018 treffen auf unter
+einen Fahrer. Eine **globale** Konstante kann das nicht lösen — die Abweichung streut
+ära- und jahresabhängig. Der nächste Schritt wäre, `BAD_DAY_PACE_FACTOR` (oder die
+Streuung insgesamt) ära-abhängig zu machen, wie es `ERA_RETIREMENT_AGE` für die
+Karrierelänge längst ist. Dafür braucht es mehr Messpunkte je Ära als fünf Jahre.
+
+⚠ **Messfalle, selbst hineingelaufen:** Zuerst auf 1988 und 2010 kalibriert — dort traf
+es glänzend (−0,3 / +0,7). Die Validierung auf drei **ungesehenen** Jahren zeigte die
+Überanpassung: 1965 +4,8, und 2018 wurde von +0,0 auf −1,2 **verschlechtert**.
+Kalibrierwerte immer auf Jahren prüfen, die nicht zur Kalibrierung dienten.
+
+**Abgesichert:** `node tests/ticker-paritaet.js --alle 40` → 40/40 identisch.
+
+### Gegenprobe: steigt dadurch die Dominanz des Besten?
+
+Nutzer-Einwand zur Streuungs-Senkung: „ist form jetzt glatter als sonst, also dominanz
+des besten fahrers wahrscheinlicher? das muss nicht sein, war vorher schon leicht zu
+viel." Berechtigt — weniger Zufall heißt zwangsläufig konsistentere Spitze. Gemessen:
+
+| | Punktanteil des Führenden | | | Siege des Führenden | | |
+|---|---|---|---|---|---|---|
+| | Baseline | .18.6 | real | Baseline | .18.6 | real |
+| 1988 | 20,3 % | 22,0 % | 26,3 % | 6,1 | **7,0** | 7 |
+| 2010 | 16,2 % | 16,6 % | 13,3 % | **8,5** | **7,1** | 5 |
+| 2018 | 17,1 % | 16,6 % | 19,2 % | 8,7 | 8,3 | 11 |
+
+**Die Dominanz steigt nicht.** Der Punktanteil bleibt stabil (±1,7), die Siege werden
+realistischer. Mechanischer Grund: Der schlechte Tag traf vorher **alle**, auch die
+Schwachen — bricht ein Hinterbänkler ein, ändert das an der Spitze nichts; bricht ein
+Starker ein, gewinnt meist ein anderer Starker.
+
+Der Eindruck „vorher schon leicht zu viel" trifft für 2010 zu (8,5 Siege statt real 5)
+und wird durch den Eingriff **verbessert** (7,1).
+
+▶ **Eigener offener Punkt, keine Folge der Änderung:** Die Siegverteilung streut
+jahresabhängig — 2010 zu dominant (7,1 gegen 5), 2018 zu wenig (8,3 gegen 11). Dieselbe
+Ära-Abhängigkeit wie bei den Punktefahrern.
+
+⚠ **Regel:** Wer die Streuung in `simulateRace` senkt, misst die Dominanz mit.
+`tests/vakuum-saison.js` gibt sie seit .18.6 aus — ohne diese Gegenprobe tauscht man
+ein Problem gegen ein anderes.

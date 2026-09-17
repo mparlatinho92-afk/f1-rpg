@@ -165,7 +165,10 @@ function einLauf(ctx, real, punkteFn) {
         .map(([id, s]) => ({ id, hist: idx.get(id) || null, name: s.name, punkte: s.points || 0 }))
         .sort((a, b) => b.punkte - a.punkte);
 
-    return { stand, deckung: gesucht ? gesetzt / gesucht : 0 };
+    const siegeChamp = stand.length
+        ? (gs.driverStandings[stand[0].id] || {}).wins || 0
+        : 0;
+    return { stand, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp };
 }
 
 // ── Realer Endstand mit derselben Punktefunktion ─────────────────────────
@@ -195,8 +198,12 @@ function realerStand(real, punkteFn) {
     console.log('Realer Meister: ' + rStand[0].id + ' mit ' + rStand[0].punkte + ' Punkten\n');
 
     const champTreffer = [], top3Treffer = [], rangAbw = [], deckungen = [], quoten = [], absolut = [];
+    // DOMINANZ des Besten — Gegenprobe zu jeder Streuungs-Senkung: weniger Zufall
+    // heisst zwangslaeufig konsistentere Spitze. Wer die Streuung senkt, muss HIER
+    // nachsehen, sonst tauscht er ein Problem gegen ein anderes.
+    const champAnteil = [], champSiege = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, deckung } = einLauf(ctx, real, punkteFn);
+        const { stand, deckung, siegeChamp } = einLauf(ctx, real, punkteFn);
         deckungen.push(deckung);
         if (!stand.length) continue;
 
@@ -222,6 +229,9 @@ function realerStand(real, punkteFn) {
 
         quoten.push(100 * stand.filter(x => x.punkte > 0).length / stand.length);
         absolut.push(stand.filter(x => x.punkte > 0).length);
+        const summe = stand.reduce((a, b) => a + b.punkte, 0);
+        if (summe > 0) champAnteil.push(100 * stand[0].punkte / summe);
+        champSiege.push(siegeChamp);
     }
 
     const d = avg(deckungen) * 100;
@@ -242,5 +252,17 @@ function realerStand(real, punkteFn) {
         + (avg(absolut) - realPunktefahrer).toFixed(1) + ' Fahrer');
     console.log('  (Quote Spiel ' + avg(quoten).toFixed(1) + ' %  gegen real '
         + (100 * realPunktefahrer / realFeld).toFixed(1) + ' %  bei ' + realFeld + ' Startern)');
+    const rSumme = rStand.reduce((a, b) => a + b.punkte, 0);
+    const rAnteil = rSumme > 0 ? 100 * rStand[0].punkte / rSumme : NaN;
+    let rSiege = 0;
+    for (const e of real.erg) {
+        if (String(e.positionText) === '1' && e.driverId === rStand[0].id) rSiege++;
+    }
+    console.log('\n  ── DOMINANZ des Besten ──');
+    console.log('  Punktanteil des Fuehrenden:  Spiel ' + avg(champAnteil).toFixed(1)
+        + ' %   real ' + rAnteil.toFixed(1) + ' %');
+    console.log('  Siege des Fuehrenden:        Spiel ' + avg(champSiege).toFixed(1)
+        + '     real ' + rSiege + '  (von ' + rundenZahl + ' Rennen)');
+
     console.log('\n  Beide Modi fahren und die Differenz lesen: sie ist der Beitrag der Quali.');
 })();
