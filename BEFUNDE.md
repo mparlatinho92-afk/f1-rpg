@@ -709,3 +709,51 @@ Größte Ausreißer bleiben 1965 (+5,0) und 2005 (−4,2).
 ⚠ **Deckungs-Warnungen ernst nehmen:** 1982 (86,8 %) und 1995 (83,3 %) liegen deutlich
 unter den übrigen Jahren — dort misst das Werkzeug ein anderes Feld als das reale, die
 Zahlen sind entsprechend weich. Ursache noch nicht bestimmt.
+
+### 18.09.2026 (4): Nicht-Starter blieben im Feld — die letzte Deckungslücke
+
+Die auffälligen Deckungswerte (1982 86,8 %, 1995 83,3 %) hatten eine einfache Ursache,
+die drei falsche Fährten überlebt hat:
+
+⚠ **Die realen Starter zu setzen genügt nicht — die ÜBRIGEN müssen raus.** Fahrer aus
+`SEASON_DATA`, die ein Rennen real nicht bestritten, blieben im Kader und konkurrierten
+um dieselben Startplätze. Ferrari stand 1982 dadurch mit drei Autos da, und
+`simulateRace` warf einen heraus — **ohne DNQ, DNS oder sonst eine Spur**. Gilles
+Villeneuve fehlte so in Rennen, die er real gefahren ist. Das Werkzeug setzt jetzt
+`team = null` für alle, die in der jeweiligen Runde nicht real starteten.
+
+Geprüft und verworfen auf dem Weg dorthin: der **Grid-Cap** (26 = 26, passt exakt), die
+**Team-Kapazität** (1982 hatte real gar keine Drittwagen, max 2 Autos) und der
+**Privateer-Filter** (war schon behoben).
+
+| | 1982 | 1995 |
+|---|---|---|
+| Deckung vorher | 86,8 % | 83,3 % |
+| **nachher** | **99,0 %** | **99,3 %** |
+
+⚠ Die Punktefahrer-Werte wurden dadurch teils **schlechter** (1995 +1,3 → +2,2) — vorher
+wurde mit einem zu kleinen Feld gemessen, das zufällig näher am realen Ergebnis lag.
+Spearman verbessert sich dagegen überall (1995 0,782 → 0,826).
+
+### Stand über zehn Saisons, alle Messfehler behoben
+
+| Jahr | Ziel | Ist | Diff | Spearman | Deckung |
+|---|---|---|---|---|---|
+| 1955 | 17 | 16,0 | −1,0 | 0,777 | 96,6 % |
+| 1961 | 17 | 18,8 | +1,8 | 0,623 | 96,2 % |
+| 1965 | 16 | 21,5 | **+5,5** | 0,655 | 96,0 % |
+| 1975 | 21 | 20,3 | −0,7 | 0,690 | 97,8 % |
+| 1982 | 23 | 19,3 | **−3,7** | 0,872 | 98,9 % |
+| 1988 | 17 | 17,5 | +0,5 | 0,797 | 98,8 % |
+| 1995 | 18 | 20,2 | +2,2 | 0,826 | 99,3 % |
+| 2005 | 21 | 18,3 | −2,7 | 0,933 | 99,3 % |
+| 2010 | 19 | 20,2 | +1,2 | 0,938 | 99,5 % |
+| 2018 | 20 | 19,3 | −0,7 | 0,936 | 99,5 % |
+| **Ø** | | | **2,00** | **0,805** | |
+
+Sechs von zehn Saisons liegen unter 1,5 Fahrern Abweichung. Die Ausreißer sind **1965
+(+5,5)** und **1982 (−3,7)**, und das Vorzeichen kippt — es ist also kein einheitlicher
+Fehler.
+
+▶ **Offen:** Die 50er/60er erreichen weiterhin nur 96 % Deckung (gegen 99 % ab 1982).
+Dort geht noch etwas verloren, das keine der geprüften Ursachen erklärt.

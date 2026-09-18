@@ -150,6 +150,19 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         }
         if (!eintraege.length) continue;
 
+        // ⚠ WER REAL NICHT STARTETE, DARF AUCH NICHT IM FELD STEHEN (18.09.2026).
+        // Die realen Starter zu setzen genuegt NICHT: die uebrigen Fahrer aus
+        // SEASON_DATA bleiben sonst im Kader und konkurrieren um dieselben
+        // Startplaetze. Ferrari stand 1982 dadurch mit drei Autos da, und
+        // simulateRace warf einen heraus — ohne DNQ, DNS oder sonst eine Spur.
+        // Gilles Villeneuve fehlte so in Rennen, die er real bestritten hat.
+        // Betrifft besonders Jahre mit vielen Fahrerwechseln: 1982 kam auf 86,8 %
+        // Renn-Deckung, 1995 auf 83,3 %.
+        const startetHier = new Set(eintraege.map(e => e.driver));
+        for (const d of gs.drivers) {
+            if (!startetHier.has(d.id)) d.team = null;
+        }
+
         if (FIKTIVE_QUALI) {
             // Feld fixiert, Reihenfolge würfelt das Spiel selbst aus
             ctx.simulateQualifying(i, false);
