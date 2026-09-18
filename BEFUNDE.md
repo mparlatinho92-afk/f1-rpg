@@ -591,3 +591,56 @@ sogar 2,9.
 real die Zuordnung Auto ↔ Endstand nahezu zufällig (−0,17), die Elo-Spanne ist mit 27
 die engste aller Ären. Eine Obergrenze dessen, was dort überhaupt treffbar ist, ist
 nicht bestimmt.
+
+### 18.09.2026 (2): Indy synchronisiert und ein Spearman-Bug — beide Ausreißer weg
+
+**Nutzeridee:** „2005er indy real und fiktion rausrechnen. und indy 500 1950-1960
+sowieso, da ganz andere fahrer- und team-welt und eh fix 33 starter."
+
+Das Werkzeug überging Indianapolis im **Spiel**, rechnete es in der **realen** Referenz
+aber mit. Das Spiel wurde also gegen Punkte gemessen, die es nie erreichen konnte:
+
+| | real MIT Indy | real OHNE | Differenz |
+|---|---|---|---|
+| 1950 | 22 | 16 | 6 |
+| **1955** | 24 | **17** | **7** |
+| 1960 | 24 | 19 | 5 |
+| 2005 | 24 | 21 | 3 |
+
+Jetzt bestimmt `gefahreneRunden()` die Menge **einmal** und beide Seiten nutzen sie.
+Ausgeschlossen werden das Indy 500 der 50er (eigene Fahrer- und Teamwelt, fix 33
+Startplätze) und Rennen mit unter 60 % der medianen Starterzahl — das trifft den US-GP
+2005 (6 Starter nach dem Michelin-Rückzug) und sonst nichts.
+
+### ⚠ Spearman-Bug im Werkzeug — alte Jahre waren systematisch zu schlecht
+
+Aufgefallen, weil 1955 plötzlich **−1,520** ergab, unmöglich für eine Korrelation.
+Ursache: `simRang` kam aus der vollen Spiel-Tabelle (0..m), `realRang` aus der realen
+(0..n) — die d²-Formel setzt aber Permutationen **gleicher Länge** voraus. Je größer
+der Längenunterschied, desto falscher: alte Jahre mit vielen Gelegenheitsfahrern traf
+es am härtesten. Derselbe Fehler war zuvor schon in der Auto-Dominanz-Messung
+aufgetreten und dort korrigiert worden — im Werkzeug blieb er stehen.
+
+### Stand nach beiden Korrekturen
+
+| Jahr | Fahrer-Differenz | Spearman (vorher → jetzt) |
+|---|---|---|
+| 1955 | **+0,5** | −1,52 → **0,736** |
+| 1965 | +5,0 | 0,138 → **0,687** |
+| 1975 | −2,3 | 0,598 → 0,714 |
+| 1988 | **+0,0** | 0,801 → 0,808 |
+| 1995 | +1,1 | 0,767 → 0,777 |
+| 2005 | −3,6 | 0,898 → 0,941 |
+| 2010 | +1,4 | 0,934 → 0,944 |
+| 2018 | −1,9 | 0,946 → 0,947 |
+| **Ø** | **1,98** | **0,819** (vorher ~0,63) |
+
+**1965 war nie bei 0,12** — das war der Bug. Und 1955 ist mit korrekter Referenz
+praktisch perfekt. Beide „offenen Ausreißer" der letzten Runden waren Messfehler, kein
+Balancing-Problem.
+
+▶ **Offen:** 1965 punkten weiter 5,0 Fahrer zu viel, 2005 3,6 zu wenige — das
+Skalierungsmuster (das Spiel produziert immer 16–19 Punktefahrer) besteht fort.
+⚠ Und: `ERA_CAR_WEIGHT` wurde gegen die **falschen** Spearman-Werte bewertet
+(„keine messbare Verbesserung"). Diese Aussage ist damit hinfällig und müsste neu
+geprüft werden.

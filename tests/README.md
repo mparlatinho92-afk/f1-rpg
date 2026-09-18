@@ -173,6 +173,12 @@ unabhaengig vom Qualifying ueber die Teilnahme — in alten Aeren fehlten dadurc
 im Rennen fehlen: `simulateRace` filtert still. Das Werkzeug weist beides aus; unter
 97 % im Rennen misst man ein anderes Feld als das reale (1988: nur 95,2 %).
 
+⚠ **Beide Seiten muessen dieselben RUNDEN fahren.** Das Werkzeug ueberging Indianapolis
+im Spiel und rechnete es real mit — 1955 wurde dadurch gegen 24 Punktefahrer gemessen
+statt gegen 17. `gefahreneRunden()` bestimmt die Menge jetzt einmal fuer beide Seiten
+(Indy 500 der 50er raus, dazu Rennen unter 60 % der medianen Starterzahl wie der US-GP
+2005 mit 6 Startern).
+
 ⚠ **Spearman korrekt rechnen.** Beide Größen müssen Ränge über DIESELBE Menge sein.
 Fahrer-Ränge (0–47) gegen Team-Ränge (0–10) ergeben Werte wie −5,6 — unmöglich für eine
 Korrelation, aber leicht zu übersehen.

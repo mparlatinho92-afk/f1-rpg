@@ -104,7 +104,7 @@ function findeTeam(z, constructorId) {
 }
 
 // ── Ein Lauf ─────────────────────────────────────────────────────────────
-function einLauf(ctx, real, punkteFn) {
+function einLauf(ctx, real, punkteFn, gefahren) {
     ctx.initFromYear(JAHR);
     const gs = ctx.GAME_STATE;
     const z = baueZuordnung(ctx);
@@ -114,8 +114,9 @@ function einLauf(ctx, real, punkteFn) {
 
     for (let i = 0; i < rennen.length; i++) {
         const r = rennen[i];
-        // Indy 500 der 50er ist ein anderes Rennen mit eigenem Feld
-        if (r.isIndy500 || /indianapolis/i.test(r.circuit || '')) continue;
+        // Ausschluss zentral in gefahreneRunden() — beide Seiten MUESSEN dieselbe
+        // Menge verwenden, sonst misst man gegen Rennen, die nie stattfanden.
+        if (!gefahren.has(i + 1)) continue;
 
         const rund = real.runden[i + 1];
         if (!rund) continue;
@@ -192,15 +193,45 @@ function einLauf(ctx, real, punkteFn) {
 }
 
 // ── Realer Endstand mit derselben Punktefunktion ─────────────────────────
-function realerStand(real, punkteFn) {
+// ⚠ NUR ueber die Runden, die das Spiel auch faehrt. Sonst misst man gegen eine
+//   Wertung, die Rennen enthaelt, die im Spiel gar nicht stattfanden:
+//     1955  real 24 Punktefahrer MIT Indy 500, nur 17 ohne  → 7 Fahrer Differenz
+//     1950  22 gegen 16 · 1960  24 gegen 19 · 2005  24 gegen 21
+//   Das Spiel konnte diese Fahrer nie erreichen; die Abweichung war ein reiner
+//   Messfehler. 1955 stand dadurch bei -7,6 statt bei -0,6.
+function realerStand(real, punkteFn, gefahren) {
     const p = {};
     for (const e of real.erg) {
+        if (gefahren && !gefahren.has(e.round)) continue;
         const pt = String(e.positionText || '');
         if (!/^\d+$/.test(pt)) continue;
         p[e.driverId] = (p[e.driverId] || 0) + punkteFn(Number(pt), JAHR);
     }
     return Object.entries(p).map(([id, punkte]) => ({ id, punkte }))
         .sort((a, b) => b.punkte - a.punkte);
+}
+
+// Welche Runden faehrt das Spiel? Muss dieselbe Logik sein wie in einLauf().
+//   - Indy 500 der 50er: eigene Fahrer- und Teamwelt, fix 33 Startplaetze —
+//     gehoert nicht in einen Vergleich der F1-Saison.
+//   - Rennen mit einem Bruchteil des ueblichen Feldes: Anomalie, kein Massstab.
+//     Trifft den US-GP 2005 (6 Starter nach dem Michelin-Rueckzug).
+function gefahreneRunden(ctx, real) {
+    const gefahren = new Set(), raus = [];
+    const groessen = Object.values(real.runden).map(r => r.starter.length).sort((a, b) => a - b);
+    const median = groessen.length ? groessen[groessen.length >> 1] : 0;
+    (ctx.GAME_STATE.races || []).forEach((r, i) => {
+        const rund = real.runden[i + 1];
+        if (!rund) return;
+        if (r.isIndy500 || /indianapolis/i.test(r.circuit || '')) {
+            raus.push((i + 1) + ' Indianapolis'); return;
+        }
+        if (median > 0 && rund.starter.length < median * 0.6) {
+            raus.push((i + 1) + ' nur ' + rund.starter.length + ' Starter'); return;
+        }
+        gefahren.add(i + 1);
+    });
+    return { gefahren, raus };
 }
 
 (async () => {
@@ -210,10 +241,14 @@ function realerStand(real, punkteFn) {
     if (!rundenZahl) { console.error('Keine Startaufstellungen fuer ' + JAHR + ' in F1DB.'); process.exit(1); }
 
     const punkteFn = ctx.getPointsForPosition;
-    const rStand = realerStand(real, punkteFn);
+    // Rundenmenge EINMAL bestimmen und an beide Seiten geben
+    ctx.initFromYear(JAHR);
+    const { gefahren, raus } = gefahreneRunden(ctx, real);
+    const rStand = realerStand(real, punkteFn, gefahren);
     const rTop = rStand.slice(0, 10).map(x => x.id);
 
-    console.log('VAKUUM-SAISON ' + JAHR + '  (' + rundenZahl + ' Rennen mit realem Grid, '
+    if (raus.length) console.log('  ausgeschlossen (beide Seiten): ' + raus.join(' · '));
+    console.log('VAKUUM-SAISON ' + JAHR + '  (' + gefahren.size + ' von ' + rundenZahl + ' Rennen, '
         + LAEUFE + ' Laeufe, ' + (FIKTIVE_QUALI ? 'FIKTIVE Quali' : 'reale Startplaetze') + ')');
     console.log('Realer Meister: ' + rStand[0].id + ' mit ' + rStand[0].punkte + ' Punkten\n');
 
@@ -226,7 +261,7 @@ function realerStand(real, punkteFn) {
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn);
+        const { stand, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
         rennDeck.push(rennDeckung);
         deckungen.push(deckung);
         if (!stand.length) continue;
@@ -258,9 +293,22 @@ function realerStand(real, punkteFn) {
         });
         if (paare.length > 3) {
             alleAbw.push(avg(paare.map(p => Math.abs(p.simRang - p.realRang))));
-            // Spearman ueber die gemeinsamen Fahrer
+            // ⚠ Spearman NUR ueber Raenge derselben Menge. Vorher standen hier
+            // simRang (aus der vollen Spiel-Tabelle, 0..m) gegen realRang
+            // (0..n) — zwei verschiedene Wertebereiche. Die d²-Formel setzt
+            // Permutationen gleicher Laenge voraus und lieferte sonst Unsinn:
+            // 1955 ergab -1,520, unmoeglich fuer eine Korrelation.
+            // Deshalb beide Seiten INNERHALB der gemeinsamen Fahrer neu ranken.
             const n = paare.length;
-            const d2 = paare.reduce((a, p) => a + Math.pow(p.simRang - p.realRang, 2), 0);
+            const rangVon = werte => {
+                const idx = werte.map((w, i) => [w, i]).sort((a, b) => a[0] - b[0]);
+                const r = new Array(werte.length);
+                idx.forEach((x, i) => { r[x[1]] = i; });
+                return r;
+            };
+            const rr = rangVon(paare.map(p => p.realRang));
+            const rs = rangVon(paare.map(p => p.simRang));
+            const d2 = rr.reduce((a, v, i) => a + Math.pow(v - rs[i], 2), 0);
             spearman.push(1 - (6 * d2) / (n * (n * n - 1)));
             zuordenbar.push(n);
             // Punktabweichung, normiert auf die Meisterpunkte des Jahres — sonst
@@ -314,6 +362,7 @@ function realerStand(real, punkteFn) {
     const rAnteil = rSumme > 0 ? 100 * rStand[0].punkte / rSumme : NaN;
     let rSiege = 0;
     for (const e of real.erg) {
+        if (!gefahren.has(e.round)) continue;
         if (String(e.positionText) === '1' && e.driverId === rStand[0].id) rSiege++;
     }
     console.log('\n  ── ENDSTAND gegen das echte Jahr ──');
@@ -326,7 +375,7 @@ function realerStand(real, punkteFn) {
     console.log('  Punktanteil des Fuehrenden:  Spiel ' + avg(champAnteil).toFixed(1)
         + ' %   real ' + rAnteil.toFixed(1) + ' %');
     console.log('  Siege des Fuehrenden:        Spiel ' + avg(champSiege).toFixed(1)
-        + '     real ' + rSiege + '  (von ' + rundenZahl + ' Rennen)');
+        + '     real ' + rSiege + '  (von ' + gefahren.size + ' Rennen)');
 
     console.log('\n  Beide Modi fahren und die Differenz lesen: sie ist der Beitrag der Quali.');
 })();
