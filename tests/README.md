@@ -157,6 +157,16 @@ Rennen der Qualifikation, also bestimmt das Quali-Ergebnis Teilnehmer und Startp
   Top-3 lesen, nicht die Meister-Trefferquote.
 - Indy 500 der 50er fliegt raus (anderes Rennen, eigenes Feld).
 
+⚠ **Historische Sonderfaelle verfaelschen die Punktefahrer-Zahl.** 1955 punkten 4 von
+24 Fahrern nur durch **geteilte Autos** (`sharedCar` in den F1DB-Ergebnissen, ab 1965
+kommt das nicht mehr vor), 2005 punkten 3 nur durch den **6-Starter-US-GP**
+(Michelin-Farce). Beides kann das Spiel nicht abbilden und soll es auch nicht — in
+solchen Jahren stattdessen Spearman und Rangabweichung lesen.
+
+⚠ **Renn-Deckung, nicht Quali-Deckung.** Ein Fahrer kann im gesetzten Quali stehen und
+im Rennen fehlen: `simulateRace` filtert still. Das Werkzeug weist beides aus; unter
+97 % im Rennen misst man ein anderes Feld als das reale (1988: nur 95,2 %).
+
 ⚠ **Spearman korrekt rechnen.** Beide Größen müssen Ränge über DIESELBE Menge sein.
 Fahrer-Ränge (0–47) gegen Team-Ränge (0–10) ergeben Werte wie −5,6 — unmöglich für eine
 Korrelation, aber leicht zu übersehen.

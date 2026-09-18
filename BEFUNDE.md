@@ -493,3 +493,51 @@ Validiert auf 1975, 1995, 2005 — die nicht zur Kalibrierung dienten. Größter
   Keine Streuungs- oder Gewichtsfrage mehr.
 
 **Abgesichert:** `node tests/ticker-paritaet.js --alle 40` → 40/40 identisch.
+
+### Nachtrag 18.09.2026: die 1960er sind ein TAL, und zwei Ausreißer sind historisch
+
+**Ganze Kurve statt Stichjahre.** Auf die Nutzerfrage, ob eine Fünf-Jahres-Prüfung die
+Nachbarjahre abdeckt, alle 75 Jahre gerechnet:
+
+| Dekade | Ø | Ø Sprung Jahr→Jahr |
+|---|---|---|
+| 1960er | 0,04 | **0,25** ⚠ unruhig |
+| 1970er | 0,43 | 0,12 |
+| 1980er | 0,71 | 0,19 |
+| 2010er | 0,92 | **0,06** |
+
+**Ab 1970 trägt ein Stichjahr** — Nachbarjahre springen nur 0,06–0,19. Die 1960er sind
+unruhig, schwanken aber um **null**: dort erklärt das Auto in keinem Jahr etwas, ein
+niedriger Wert ist für alle richtig.
+
+**1950–57 ist doch messbar** (Nutzer-Hinweis): Die Konstrukteurs-WM lässt sich nach der
+1958er Regel nachrechnen — nur das bestplatzierte Auto je Konstrukteur, 8-6-4-3-2.
+Ergebnis **0,28 bis 0,44, Ø 0,36** — also **deutlich höher als die 1960er (0,04)**.
+
+⚠ **Die 1960er sind ein Tal, nicht der Beginn einer Steigung.** Ära der Kundenmotoren,
+das halbe Feld fuhr Coventry Climax und war technisch gleich; in den 50ern standen
+Werks-Alfa und -Mercedes gegen Privatiers. `ERA_CAR_WEIGHT` bildet das jetzt ab
+(1950er 0.19, 1960er 0.15).
+
+**NEGATIVERGEBNIS:** Die Korrektur bringt **keine messbare Verbesserung** —
+Spearman-Mittel 0,626 vorher wie nachher über sechs Jahre. Behalten, weil datentreu
+begründet, nicht weil sie hilft.
+
+### Die zwei großen Ausreißer sind historische Sonderfälle
+
+| | real | Spiel | davon nicht abbildbar |
+|---|---|---|---|
+| **1955** | 24 Punktefahrer | 15,0 | **4 nur durch geteilte Autos** (23 `sharedCar`-Zeilen) |
+| **2005** | 24 Punktefahrer | 17,9 | **3 nur durch den 6-Starter-US-GP** (Michelin-Farce) |
+
+Beides kann das Spiel nicht abbilden und soll es auch nicht — geteilte Fahrzeuge gibt
+es nicht, und ein Rennen mit sechs Startern ist ein Einzelereignis. ⚠ **Die
+Punktefahrer-Zahl ist in solchen Jahren kein faires Maß.** Ab 1965 gibt es keine
+`sharedCar`-Zeilen mehr.
+
+### Neue Kennzahl: Renn-Deckung
+
+Die gemeldete Deckung bezog sich auf das gesetzte **Quali**. Gemessen 2005: in 6 von 19
+Runden stand ein Fahrer im Quali und fehlte im Rennen — `simulateRace` filtert still
+(Team nicht in `GAME_STATE.teams`, `homeOnly`, Indy-Regel, Status). Das Werkzeug weist
+jetzt beides aus; **1988 erreicht nur 95,2 %**, 2005 und 2010 über 99 %.

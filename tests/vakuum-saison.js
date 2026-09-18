@@ -110,7 +110,7 @@ function einLauf(ctx, real, punkteFn) {
     const z = baueZuordnung(ctx);
 
     const rennen = gs.races || [];
-    let gesucht = 0, gesetzt = 0;
+    let gesucht = 0, gesetzt = 0, imRennen = 0, imQuali = 0;
 
     for (let i = 0; i < rennen.length; i++) {
         const r = rennen[i];
@@ -152,6 +152,14 @@ function einLauf(ctx, real, punkteFn) {
 
         const erg = ctx.simulateRace(i, false);
         if (erg) ctx.applyRaceResults(erg);
+
+        // ⚠ Die Deckung muss die RENNTEILNAHME messen, nicht das gesetzte Quali.
+        // Gemessen 2005: in 6 von 19 Runden stand ein Fahrer im Quali, tauchte im
+        // Rennen aber nicht auf — simulateRace filtert still (kein Team in
+        // GAME_STATE.teams, homeOnly, Indy-Regel, Status). Wer nur das Quali zaehlt,
+        // meldet 100 % Deckung und misst trotzdem ein anderes Feld als das reale.
+        imRennen += erg ? (erg.results || []).length : 0;
+        imQuali += eintraege.length;
     }
 
     // Endstand des Spiels — ⚠ die Standings-Keys sind SPIEL-IDs (mit Zeitstempel),
@@ -168,7 +176,8 @@ function einLauf(ctx, real, punkteFn) {
     const siegeChamp = stand.length
         ? (gs.driverStandings[stand[0].id] || {}).wins || 0
         : 0;
-    return { stand, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp };
+    return { stand, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
+             rennDeckung: imQuali ? imRennen / imQuali : 0 };
 }
 
 // ── Realer Endstand mit derselben Punktefunktion ─────────────────────────
@@ -204,9 +213,10 @@ function realerStand(real, punkteFn) {
     const champAnteil = [], champSiege = [];
     // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
-    const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [];
+    const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, deckung, siegeChamp } = einLauf(ctx, real, punkteFn);
+        const { stand, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn);
+        rennDeck.push(rennDeckung);
         deckungen.push(deckung);
         if (!stand.length) continue;
 
@@ -269,8 +279,11 @@ function realerStand(real, punkteFn) {
     }
 
     const d = avg(deckungen) * 100;
-    console.log('  Deckung reales Grid → Spielfeld: ' + d.toFixed(1) + ' %'
+    const rd = avg(rennDeck) * 100;
+    console.log('  Deckung reales Grid → Quali:     ' + d.toFixed(1) + ' %'
         + (d < 90 ? '   ⚠ ZU NIEDRIG, Ergebnis nicht belastbar' : ''));
+    console.log('  davon auch im RENNEN gestartet:  ' + rd.toFixed(1) + ' %'
+        + (rd < 97 ? '   ⚠ simulateRace filtert still — Feld weicht ab' : ''));
     console.log('  Meister getroffen:               ' + (100 * avg(champTreffer)).toFixed(0) + ' % der Laeufe');
     console.log('  Top-3-Ueberschneidung:           ' + (100 * avg(top3Treffer)).toFixed(0) + ' %');
     console.log('  Ø Rangabweichung (reale Top 10): ' + avg(rangAbw).toFixed(2) + ' Plaetze');
