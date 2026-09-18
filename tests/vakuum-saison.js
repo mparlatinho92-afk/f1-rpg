@@ -128,6 +128,17 @@ function einLauf(ctx, real, punkteFn) {
             if (!d || !t) continue;
             d.team = t.id;                 // reale Zuordnung erzwingen
             if (!d.status || d.status !== 'active') d.status = 'active';
+            // ⚠ MELDE-FILTER AUSHEBELN (18.09.2026). Wer real in der
+            // Startaufstellung stand, hat nachweislich teilgenommen — der
+            // Privateer-/Meldeplan darf ihn im Vakuum nicht aussortieren.
+            // Ohne das fehlten in alten Jahren bis zu 17 % der realen Starter
+            // (1955 83,2 % Renn-Deckung, 1965 87,0 %, 2010 dagegen 99,5 %), weil
+            // dort fast jeder Zweite als Privatier markiert ist. Die Messung lief
+            // damit auf einem kleineren Feld als dem realen und meldete trotzdem
+            // 100 % Deckung — jede Aussage ueber alte Aeren war dadurch verzerrt.
+            d.isPrivateer = false;
+            d.scheduledRaces = null;
+            d.homeOnly = false;
             if (!gs.drivers.some(x => x.id === d.id)) gs.drivers.push(d);
             eintraege.push({
                 driver: d.id, name: d.name, team: t.id, teamName: t.name,

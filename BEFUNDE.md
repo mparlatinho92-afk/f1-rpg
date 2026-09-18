@@ -541,3 +541,53 @@ Die gemeldete Deckung bezog sich auf das gesetzte **Quali**. Gemessen 2005: in 6
 Runden stand ein Fahrer im Quali und fehlte im Rennen — `simulateRace` filtert still
 (Team nicht in `GAME_STATE.teams`, `homeOnly`, Indy-Regel, Status). Das Werkzeug weist
 jetzt beides aus; **1988 erreicht nur 95,2 %**, 2005 und 2010 über 99 %.
+
+### 18.09.2026: Der Melde-Filter verfälschte JEDE Vakuum-Messung alter Jahre
+
+Bei der Suche nach den Ausreißern 1965 und 1975 aufgefallen: Die Renn-Deckung fiel mit
+dem Alter des Jahrgangs.
+
+| Jahr | 1955 | 1965 | 1975 | 1988 | 2005 | 2010 |
+|---|---|---|---|---|---|---|
+| vorher | **83,2 %** | **87,0 %** | **89,4 %** | 94,6 % | 99,4 % | 99,5 % |
+| nachher | **97,2 %** | **97,3 %** | **97,9 %** | 94,3 % | 99,4 % | 99,5 % |
+
+**Ursache: der Privateer-/Meldeplan.** In alten Ären ist fast jeder Zweite als
+Privatier markiert, und `privateerEntersRace` entscheidet unabhängig vom Qualifying
+über die Teilnahme — im Vakuum falsch, denn wer real in der Startaufstellung stand, hat
+nachweislich teilgenommen. Das Werkzeug setzt jetzt `isPrivateer`, `scheduledRaces` und
+`homeOnly` für gesetzte Fahrer zurück.
+
+⚠ Der Grid-Cap war es **nicht**: `getGridSize` trifft die reale Starterzahl exakt, kein
+Rennen lag darüber. Erst geprüft, dann verworfen.
+
+⚠ **Alle früheren Aussagen dieses Dokuments zu 1955/1965/1975 beruhten auf einem bis zu
+17 % zu kleinen Feld.** Die korrigierten Werte weichen nur wenig ab (1975 −3,5 → −3,0;
+1965 +4,9 → +4,5), aber das war Glück, nicht Methode.
+
+### ▶ Der eigentliche Befund: das Spiel skaliert nicht mit den Punkteplätzen
+
+| Jahr | Punkteplätze (Rennen × Ränge) | real | Spiel |
+|---|---|---|---|
+| 1965 | 10 × 6 = 60 | 16 | **20,5** |
+| 1975 | 14 × 6 = 84 | 21 | 18,0 |
+| 1995 | 17 × 6 = 102 | 18 | 18,9 |
+| 2005 | 19 × 8 = 152 | 24 | **16,8** |
+| 2018 | 21 × 10 = 210 | 20 | 18,6 |
+
+**Das Spiel produziert fast immer 16–19 Punktefahrer, real schwankt es zwischen 16 und
+24.** Real skaliert die Zahl mit den verfügbaren Punkteplätzen — das Spiel nicht. Bei
+2005 heißt das konkret: im Spiel bleiben ~10 Fahrer über 19 Rennen ohne jeden Punkt,
+real nur 3.
+
+Das ist **kein Ära-Problem**, sondern ein Skalierungsproblem, und es erklärt beide
+Ausreißer in einer Linie: 1965 (wenige Plätze) zu viele, 2005 (viele Plätze) zu wenige.
+
+▶ **Geprüft und verworfen:** Die reale DNF-Spreizung nach Teamstärke (schwache Teams
+fallen öfter aus) reicht als Erklärung nicht — 2005 beträgt sie nur 5,2 Punkte, 2018
+sogar 2,9.
+
+▶ **Offen und vermutlich zusammenhängend:** 1965 bleibt bei Spearman 0,138. Dort war
+real die Zuordnung Auto ↔ Endstand nahezu zufällig (−0,17), die Elo-Spanne ist mit 27
+die engste aller Ären. Eine Obergrenze dessen, was dort überhaupt treffbar ist, ist
+nicht bestimmt.

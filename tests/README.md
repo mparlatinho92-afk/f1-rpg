@@ -163,6 +163,12 @@ kommt das nicht mehr vor), 2005 punkten 3 nur durch den **6-Starter-US-GP**
 (Michelin-Farce). Beides kann das Spiel nicht abbilden und soll es auch nicht — in
 solchen Jahren stattdessen Spearman und Rangabweichung lesen.
 
+⚠ **Der Melde-/Privateer-Filter muss im Vakuum aus.** `privateerEntersRace` entscheidet
+unabhaengig vom Qualifying ueber die Teilnahme — in alten Aeren fehlten dadurch bis zu
+17 % der realen Starter, bei gemeldeter Quali-Deckung von 100 %. Das Werkzeug setzt
+`isPrivateer`, `scheduledRaces` und `homeOnly` zurueck. (Der Grid-Cap war es NICHT —
+`getGridSize` trifft die reale Starterzahl exakt.)
+
 ⚠ **Renn-Deckung, nicht Quali-Deckung.** Ein Fahrer kann im gesetzten Quali stehen und
 im Rennen fehlen: `simulateRace` filtert still. Das Werkzeug weist beides aus; unter
 97 % im Rennen misst man ein anderes Feld als das reale (1988: nur 95,2 %).
