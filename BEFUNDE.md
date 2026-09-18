@@ -23,6 +23,7 @@ versehentlich zurück.
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
+| Die Leistungspyramide `TEAM_PYRAMID_EXP` | carSpeed-Verteilung, punktende Teams, große Felder |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
@@ -871,3 +872,53 @@ die DNF-Verteilung nach Teamstärke ist im Spiel viel zu flach (7–14 statt rea
 ▶ **Nächster Schritt:** nicht an der Fahrer-Streuung drehen (die ist über
 `BAD_DAY_PACE_FACTOR` kalibriert), sondern an der **Spreizung der Teamstärken bei
 großen Feldern**. Zielgröße ist „Teams mit Punkten" je Saison, nicht die Fahrerzahl.
+
+### 18.09.2026 (7): Die Leistungspyramide — `TEAM_PYRAMID_EXP` von 1.8 auf 1.4
+
+Die Ursache der fehlenden punktenden Teams steckt in einer **Setzung, nicht in Daten**.
+`carSpeed` wird nicht roh aus `SEASON_DATA` genommen, sondern aus dem **Rang** neu
+berechnet (index.html:10338 und ~24262, seit v0.9.14.53):
+
+```
+carSpeed = 60 + pos^EXP * (max - 60)      pos = 1 beim Besten, 0 beim Letzten
+```
+
+⚠ **Der Exponent wirkt feldgrößenabhängig** — das erklärt, warum die Abweichung
+ausgerechnet bei großen Feldern auftrat:
+
+| | Teams mit carSpeed ≤ 65 |
+|---|---|
+| 10 Teams, exp 1.8 | 4 |
+| **20 Teams, exp 1.8** | **7** |
+| 20 Teams, exp 1.4 | 5 |
+
+Bei 20 Teams landeten die Plätze 12–20 zwischen 60 und 65 — praktisch ununterscheidbar
+und alle chancenlos. Bei 10 Teams traf das kaum jemanden, deshalb passten die modernen
+Jahre.
+
+**A/B über zwölf Saisons, je sechs Läufe:**
+
+| | EXP 1.8 | **EXP 1.4** |
+|---|---|---|
+| Ø Punktefahrer-Abweichung | 1,33 | **1,09** |
+| Ø vorzeichenbehaftet | −0,81 | **−0,52** |
+| Ø Spearman | 0,817 | 0,813 |
+| 1989 | −10,8 | **−4,5** |
+| 1978 | −3,3 | **−2,2** |
+
+Punktefahrer deutlich besser, Spearman unverändert (−0,004 liegt im Rauschen).
+⚠ Bei sechs Läufen und zwölf Jahren ist 1,33 → 1,09 **nicht sauber signifikant** — die
+Richtung stimmt und wird von den Einzeljahren gestützt, ein Vollauf steht aus.
+
+**Das ursprüngliche Problem bleibt gelöst:** Der Exponent kam in v0.9.14.53, weil rohe
+SD-Werte für Backmarker zu hoch waren (Minardi 2001 pace 78 → 60). Der **letzte Platz
+liegt bei jedem Exponenten exakt auf dem Floor 60** (pos = 0) — angehoben wird nur das
+Mittelfeld.
+
+Beide Fundstellen nutzen jetzt die gemeinsamen Konstanten `TEAM_PYRAMID_FLOOR` und
+`TEAM_PYRAMID_EXP`; vorher stand der Wert zweimal als Magic Number im Code, einmal davon
+mit einem toten Kommentar („Variant B: _EXP = 2.0").
+
+▶ **Offen:** 1989 bleibt mit −4,5 der größte Ausreißer, 1965 mit +5,0 unverändert (dort
+stimmen die Teams, es liegt an den Fahrern). Ein Vollauf über alle 75 Saisons mit exp
+1.4 steht aus.
