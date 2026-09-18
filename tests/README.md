@@ -129,6 +129,26 @@ Fahrer gemeinsam, echt wie generiert: sie laufen durch dieselbe `simulateRace`.
 Stand 16.09.2026: **nur die Punktequote liegt daneben** (+17,6 Punkte, immer dieselbe
 Richtung). Details in `BEFUNDE.md`.
 
+## Vakuum-Verteilung — `vakuum-verteilung.js`
+
+Wertet einen Batch-**Vollauf** aus: Histogramm, groesste Abweichungen, Dekaden,
+Korrelationen.
+
+```
+SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js --alle 1 4 > tests/output/vakuum-alle.txt
+node tests/vakuum-verteilung.js tests/output/vakuum-alle.txt
+```
+
+⚠ **STICHPROBEN HABEN HIER ZWEIMAL IN DIE IRRE GEFUEHRT.** Aus zehn Jahren waren 1965
+und 1982 als „Ausreisser" benannt — im Vollauf liegt 1982 nicht einmal unter den zehn
+groessten und der wahre Ausreisser ist 1989 (-11,8). Fuer jede Aussage ueber Ausreisser
+oder Muster den Vollauf nehmen, nicht den Standardsatz.
+
+Stand 18.09.2026 (75 Saisons): Ø Abweichung 1,84 Fahrer, Median 1,5, 67 % unter 2.
+**Staerkster Zusammenhang: Abweichung gegen Ziel-Zahl -0,703** — das Spiel zieht zur
+Mitte, real 12 bis 29 Punktefahrer, Spiel 16 bis 21. Spearman steigt monoton mit dem
+Jahr (0,680 in den 50ern auf 0,950 in den 2020ern).
+
 ## Vakuum-Batch — `vakuum-batch.js`
 
 Mehrere Vakuum-Saisons in einem Lauf, eine Tabelle. Fuer Kalibrierung immer DAS
