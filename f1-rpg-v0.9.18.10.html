@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.9</title>
+    <title>F1 RPG v0.9.18.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.9 (aktuell) - 18.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.10 (aktuell) - 18.09.2026</div>
+                            <div>&#8226; FIX: Bei grossen Feldern waren zu viele Teams chancenlos - Pyramiden-Exponent 1.8 auf 1.4</div>
+                            <div>&#8226; NEU: TEAM_PYRAMID_EXP und _FLOOR als gemeinsame Konstanten statt zweifacher Magic Number</div>
+                            <div>&#8226; NEU: Vakuum-Messung zeigt punktende Teams je Saison - real der staerkste Treiber der Punktefahrer-Zahl</div>
+                            <div class="font-bold text-slate-400">v0.9.18.9 - 18.09.2026</div>
                             <div>&#8226; FIX: Aera-abhaengiges Auto-Gewicht zurueckgenommen - ueber zehn Saisons gemessen schlechter als konstant</div>
                             <div>&#8226; NEU: tests/vakuum-batch.js misst viele Saisons auf einmal, Ziel je Saison statt global</div>
                             <div class="font-bold text-slate-400">v0.9.18.8 - 18.09.2026</div>
@@ -17681,7 +17685,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.9';
+        const VERSION = '0.9.18.10';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19610,6 +19614,22 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Zenit; dort läuft der Aufbau weiter über developDriverPace).
         // Konstanten MC-getunt gegen: ≥40-Champions → 0 %, ≥37 → ~3 %
         // (tests/paketD-h3-age-decline.js).
+        // ── Leistungspyramide der Teams (v0.9.18.10) ──────────────────────────
+        // carSpeed wird NICHT roh aus SEASON_DATA genommen, sondern aus dem RANG
+        // neu berechnet:  carSpeed = FLOOR + pos^EXP * (max - FLOOR),  pos = 1 beim
+        // Besten, 0 beim Letzten. Eingefuehrt in v0.9.14.53, weil die rohen
+        // SD-Werte fuer Backmarker zu hoch waren (Minardi 2001 pace 78).
+        // ⚠ Der Exponent entscheidet, wie viele Teams chancenlos sind, und wirkt
+        //   FELDGROESSENABHAENGIG: bei 20 Teams landen mit 1.8 die Plaetze 12-20
+        //   alle zwischen 60 und 65 — ununterscheidbar. Bei 10 Teams trifft das
+        //   kaum jemanden. Gemessen (tests/vakuum-saison.js): 1989 punkten im
+        //   Spiel 11 von 20 Teams statt real 16, 1978 zehn statt 14 — waehrend
+        //   moderne Jahre mit zehn Teams passen.
+        //   Zielgroesse ist "Teams mit Punkten" je Saison; real treibt die Zahl
+        //   der punktenden Teams die Zahl der Punktefahrer (Korrelation 0,602).
+        const TEAM_PYRAMID_FLOOR = 60;
+        const TEAM_PYRAMID_EXP = 1.4;
+
         // ── Form-Vielfalt: was ein schlechter Tag kostet (v0.9.18.6) ──────────
         // Anteil der Pace, der an einem schlechten Tag noch zur Verfuegung steht.
         // 0.0 (der alte Wert) heisst Totalausfall des Koennens — das erzeugte mehr
@@ -23948,7 +23968,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 const _csMax = _csV[0]?.[3] ?? 96, _csN = _csV.length;
                 const _csRM = new Map(_csV.map((e, i) => {
                     const pos = _csN > 1 ? 1 - i / (_csN - 1) : 1;
-                    return [e[0], Math.round(60 + Math.pow(pos, 1.8) * (_csMax - 60))];
+                    return [e[0], Math.round(TEAM_PYRAMID_FLOOR + Math.pow(pos, TEAM_PYRAMID_EXP) * (_csMax - TEAM_PYRAMID_FLOOR))];
                 }));
                 const teams = data.t.map(t => ({
                     id: t[0], name: t[1], nation: CONSTRUCTOR_NATIONS[t[0]] || '🏁', color: t[2],
@@ -37867,7 +37887,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     const _sdSorted = [..._sdValid].sort((a, b) => b[3] - a[3]);
                     const _sdN = _sdSorted.length;
                     const _sdMax = _sdSorted[0]?.[3] ?? 96;
-                    const _FLOOR = 60, _EXP = 1.8; // Variant B: _EXP = 2.0
+                    const _FLOOR = TEAM_PYRAMID_FLOOR, _EXP = TEAM_PYRAMID_EXP;   // s. Konstante
                     _sdRemap = new Map(_sdSorted.map((e, i) => {
                         const pos = _sdN > 1 ? 1 - i / (_sdN - 1) : 1;
                         return [e[1], Math.round(_FLOOR + Math.pow(pos, _EXP) * (_sdMax - _FLOOR))];
