@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.7</title>
+    <title>F1 RPG v0.9.18.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.7 (aktuell) - 18.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.8 (aktuell) - 18.09.2026</div>
+                            <div>&#8226; FIX: Auto-Gewicht der 1950er war zu niedrig - die 1960er sind ein Tal (Aera der Kundenmotoren), nicht der Beginn einer Steigung</div>
+                            <div>&#8226; NEU: Konstrukteurs-Staerke 1950-1957 nach der 1958er Regel nachgerechnet</div>
+                            <div>&#8226; NEU: Vakuum-Messung weist die Renn-Deckung aus, nicht nur die Quali-Deckung</div>
+                            <div class="font-bold text-slate-400">v0.9.18.7 - 18.09.2026</div>
                             <div>&#8226; NEU: Wie stark das Auto zaehlt, haengt jetzt an der Aera - 1950er 0.14 bis heute 0.27, aus F1DB gemessen</div>
                             <div>&#8226; FIX: Endstand naeher am echten Jahr (Abweichung 3,0 auf 2,3 Fahrer, ueber sieben Saisons validiert)</div>
                             <div>&#8226; NEU: Vakuum-Messung zeigt Rangkorrelation und Punktabweichung gegen das reale Jahr</div>
@@ -4063,7 +4067,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.7';
+        const VERSION = '0.9.18.8';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6024,10 +6028,21 @@
         //   stark das Auto den ENDSTAND erklaert — nicht, welchen Anteil es an EINEM
         //   Rennergebnis hat. Wer die Korrelation direkt als Gewicht einsetzt,
         //   verwechselt Wirkung mit Ursache.
+        // Abgeleitet aus der je Dekade gemessenen Korrelation, linear gestaucht auf
+        // 0.14-0.27  (gewicht = 0.14 + korrelation * 0.14):
+        //   1950er 0,36 → 0.19   1960er 0,04 → 0.15   1970er 0,43 → 0.20
+        //   1980er 0,71 → 0.24   1990er 0,81 → 0.25   2000er 0,83 → 0.26
+        //   2010er 0,92 → 0.27
+        // ⚠ Die 1960er sind ein TAL, nicht der Beginn einer Steigung: Aera der
+        //   Kundenmotoren, das halbe Feld fuhr Coventry Climax und war technisch
+        //   gleich. In den 50ern standen Werks-Alfa und -Mercedes gegen Privatiers,
+        //   deshalb liegt der Wert dort HOEHER als ein Jahrzehnt spaeter.
+        // ⚠ 1950-57 gab es noch keine Konstrukteurs-WM. Die Werte sind nach der
+        //   1958er Regel nachgerechnet (nur das bestplatzierte Auto je Konstrukteur
+        //   bekommt Punkte, 8-6-4-3-2) — inoffiziell, aber in sich konsistent.
         const ERA_CAR_WEIGHT = {
-            1950: 0.14, 1960: 0.14, 1970: 0.17, 1975: 0.19,
-            1980: 0.20, 1985: 0.22, 1990: 0.26, 2000: 0.28,
-            2010: 0.27, 2020: 0.27
+            1950: 0.19, 1960: 0.15, 1970: 0.20, 1980: 0.24,
+            1990: 0.25, 2000: 0.26, 2010: 0.27, 2020: 0.27
         };
 
         // ── Karriere-Zenit (v0.9.18.5, gemessen mit tests/pace-kurve-real.js) ──
