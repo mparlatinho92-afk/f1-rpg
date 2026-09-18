@@ -23,7 +23,7 @@ versehentlich zurück.
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
-| Ära-Abhängigkeit: das Auto zählt heute mehr | `ERA_CAR_WEIGHT`, Auto/Fahrer-Verhältnis, Spearman-Fallen |
+| Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
 ---
 
@@ -662,3 +662,50 @@ Skalierungsmuster (das Spiel produziert immer 16–19 Punktefahrer) besteht fort
 ⚠ Und: `ERA_CAR_WEIGHT` wurde gegen die **falschen** Spearman-Werte bewertet
 („keine messbare Verbesserung"). Diese Aussage ist damit hinfällig und müsste neu
 geprüft werden.
+
+### 18.09.2026 (3): ERA_CAR_WEIGHT gemessen und ZURÜCKGENOMMEN
+
+Die Bewertung „keine messbare Verbesserung" beruhte auf den fehlerhaften
+Spearman-Werten und war hinfällig. Nachgeholt mit korrigierter Messung, **zehn
+Saisons** statt vier, über `tests/vakuum-batch.js`:
+
+| | konstant 0.20 | Ära-Kurve 0.15–0.27 |
+|---|---|---|
+| Ø Punktefahrer-Abweichung | **2,13** | 2,56 |
+| Ø Spearman | 0,809 | 0,810 |
+| Ø Rangabweichung | **5,63** | 5,67 |
+
+Die Kurve war in **6 von 10 Jahren schlechter** und verbesserte die Rangfolge nicht.
+Zurückgenommen, `CAR_SPEED_WEIGHT` ist wieder konstant 0.20.
+
+⚠ **LEHRE, die den ganzen Anlauf erklärt:** „Wie stark X den **Endstand** erklärt" ist
+nicht „welches Gewicht X in der **Rennformel** braucht". Der Endstand summiert eine
+ganze Saison inklusive Ausfällen, Feldstruktur und Meldeverhalten; das Gewicht wirkt
+auf ein einzelnes Rennen. Ich hatte genau das in den Code-Kommentar geschrieben
+(„verwechselt Wirkung mit Ursache") und es dann trotzdem getan.
+
+**Die Auto-Dominanz-Messung selbst bleibt gültig** (real 1965 −0,17 bis 2010 0,97, aus
+F1DB, bias-frei) — sie sagt nur nichts über das richtige Gewicht in `simulateRace`.
+
+### Das Punktefahrer-Ziel ist SAISONSPEZIFISCH
+
+Auf Nutzerwunsch legt `tests/vakuum-batch.js` das Ziel jetzt **pro Saison** fest statt
+gegen eine globale Zahl zu messen. Es gibt keine gute globale Zahl: real schwanken die
+Punktefahrer zwischen **16 (1965) und 26 (1982)**, ohne systematischen Zusammenhang mit
+Rennzahl (0,256), Punkterängen (0,044) oder Punkteplätzen (0,119).
+
+```
+SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js              Standardsatz, 12 Saisons
+SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js 1965,1988 8  eigene Auswahl
+node tests/vakuum-batch.js --alle 5                          jedes 5. Jahr ab 1950
+```
+
+Für A/B denselben Aufruf zweimal: ohne `SIMCORE_FROM_INDEX` (Vorher, letzter Monolith)
+und mit (Nachher, Arbeitskopie).
+
+**Stand über zehn Saisons:** Ø Abweichung 2,13 Fahrer, Ø Spearman 0,809.
+Größte Ausreißer bleiben 1965 (+5,0) und 2005 (−4,2).
+
+⚠ **Deckungs-Warnungen ernst nehmen:** 1982 (86,8 %) und 1995 (83,3 %) liegen deutlich
+unter den übrigen Jahren — dort misst das Werkzeug ein anderes Feld als das reale, die
+Zahlen sind entsprechend weich. Ursache noch nicht bestimmt.
