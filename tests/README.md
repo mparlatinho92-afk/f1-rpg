@@ -129,6 +129,31 @@ Fahrer gemeinsam, echt wie generiert: sie laufen durch dieselbe `simulateRace`.
 Stand 16.09.2026: **nur die Punktequote liegt daneben** (+17,6 Punkte, immer dieselbe
 Richtung). Details in `BEFUNDE.md`.
 
+## Vakuum-Batch — `vakuum-batch.js`
+
+Mehrere Vakuum-Saisons in einem Lauf, eine Tabelle. Fuer Kalibrierung immer DAS
+nehmen — ein oder zwei Jahre reichen nie, so entstand die Ueberanpassung bei
+`BAD_DAY_PACE_FACTOR`.
+
+```
+SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js              12 Saisons, alle Aeren
+SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js 1965,1988 8  eigene Auswahl
+node tests/vakuum-batch.js --alle 5                          jedes 5. Jahr ab 1950
+```
+
+**Das Punktefahrer-Ziel ist SAISONSPEZIFISCH** und steht in der Tabelle neben dem
+Ist-Wert. Eine globale Zahl gibt es nicht: real schwanken die Punktefahrer zwischen
+16 (1965) und 26 (1982), ohne systematischen Zusammenhang mit Rennzahl (0,256),
+Punkteraengen (0,044) oder Punkteplaetzen (0,119).
+
+**A/B:** denselben Aufruf zweimal — ohne `SIMCORE_FROM_INDEX` (letzter Monolith,
+Vorher) und mit (Arbeitskopie, Nachher). Nur so ist eine Aenderung von Rauschen zu
+trennen.
+
+⚠ **Deckungs-Warnung (⚠ in der Tabelle) ernst nehmen.** 1982 kommt auf 86,8 %,
+1995 auf 83,3 % — dort misst das Werkzeug ein anderes Feld als das reale und die
+Zeile ist weich. Ursache noch offen.
+
 ## Vakuum-Saison — `vakuum-saison.js`
 
 Misst die Ergebniserzeugung **ohne** das Drumherum: echte Fahrer, echte Teams, echtes
