@@ -22,6 +22,7 @@ versehentlich zurück.
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
+| **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
@@ -757,3 +758,60 @@ Fehler.
 
 ▶ **Offen:** Die 50er/60er erreichen weiterhin nur 96 % Deckung (gegen 99 % ab 1982).
 Dort geht noch etwas verloren, das keine der geprüften Ursachen erklärt.
+
+### 18.09.2026 (5): VOLLAUF über alle 75 Saisons — „das Spiel zieht zur Mitte"
+
+Nutzerfrage: „sind das einzelfälle die besonders hervorstechen, weil du wirklich jedes
+jahr geprüft hast?" Nein — es waren zehn von 75 Jahren. Nachgeholt mit
+`node tests/vakuum-batch.js --alle 1 4`, ausgewertet mit `tests/vakuum-verteilung.js`.
+
+⚠ **Die benannten Ausreißer waren Stichproben-Artefakte.** 1982 liegt nicht einmal
+unter den zehn größten, 1965 nur auf Platz 6. Der tatsächliche Ausreißer ist **1989 mit
+−11,8** (Ziel 29, Ist 17,3) — das Jahr mit 39 Meldungen und Vor-Qualifikation, in dem
+real 29 verschiedene Fahrer punkteten.
+
+**Die Verteilung ist gesund:** Ø Betrag 1,84 · Median 1,5 · 67 % aller Jahre unter 2
+Fahrern · nur eines über 6. Vorzeichenbehaftet −0,08, also kein globaler Drall.
+
+### Der stärkste Zusammenhang im Datensatz
+
+| Abweichung korreliert mit | |
+|---|---|
+| Jahr | −0,286 |
+| Rennzahl | −0,270 |
+| Renn-Deckung | −0,218 |
+| **Ziel-Zahl** | **−0,703** |
+
+**−0,703 heißt: das Spiel zieht zur Mitte.** Wo real viele punkten, hat es zu wenige; wo
+real wenige punkten, zu viele. Real reicht die Spanne von **12 (1953) bis 29 (1989)**,
+das Spiel bleibt bei 16–21.
+
+⚠ **Damit ist meine eigene Widerlegung von vorhin zu kurz gegriffen.** Der Nutzer hatte
+eingewandt, „immer 16-19 jede saison ergibt kein sinn". Ich hatte gezeigt, dass die
+reale Zahl nicht mit Rennzahl oder Punkterängen skaliert — und daraus geschlossen, das
+Spiel liege im Band. Richtig ist: Sie skaliert nicht mit dem **Kalender**, schwankt aber
+sehr wohl (12 bis 29), und dieser Schwankung folgt das Spiel nicht. Der Einwand war
+berechtigt, nur die vermutete Ursache nicht.
+
+### Zweites Muster: die Engine wird mit dem Jahr besser
+
+| Dekade | Ø Diff | Ø Spearman | Ø Deckung |
+|---|---|---|---|
+| 1950er | **+1,55** | 0,680 | 96,6 % |
+| 1960er | +1,28 | 0,744 | 96,3 % |
+| 1970er | −0,80 | 0,758 | 98,0 % |
+| 1980er | **−1,93** | 0,865 | 98,8 % |
+| 1990er | −0,74 | 0,865 | 99,1 % |
+| 2000er | −0,23 | 0,926 | 99,2 % |
+| 2010er | +0,67 | 0,947 | 99,3 % |
+| 2020er | −0,78 | 0,950 | 99,2 % |
+
+Spearman steigt **monoton** mit dem Jahr (Korrelation 0,848), von 0,680 auf 0,950. Und
+das Vorzeichen der Abweichung kippt um 1970 von plus nach minus — alte Jahre zu viele
+Punktefahrer, 1970–90er zu wenige.
+
+▶ **Der eigentliche offene Punkt ist damit benannt:** nicht einzelne Jahre, sondern die
+fehlende Spreizung. Das Spiel müsste in Saisons wie 1989 (29 reale Punktefahrer) deutlich
+breiter streuen und in Saisons wie 1953 (12) enger. Werkzeug für jeden Versuch:
+`tests/vakuum-batch.js --alle 1 4` plus `tests/vakuum-verteilung.js` — Stichproben haben
+hier zweimal in die Irre geführt.
