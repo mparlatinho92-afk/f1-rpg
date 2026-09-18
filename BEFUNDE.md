@@ -565,7 +565,7 @@ Rennen lag darüber. Erst geprüft, dann verworfen.
 17 % zu kleinen Feld.** Die korrigierten Werte weichen nur wenig ab (1975 −3,5 → −3,0;
 1965 +4,9 → +4,5), aber das war Glück, nicht Methode.
 
-### ▶ Der eigentliche Befund: das Spiel skaliert nicht mit den Punkteplätzen
+### ▶ WIDERLEGT: „das Spiel skaliert nicht mit den Punkteplätzen"
 
 | Jahr | Punkteplätze (Rennen × Ränge) | real | Spiel |
 |---|---|---|---|
@@ -580,8 +580,26 @@ Rennen lag darüber. Erst geprüft, dann verworfen.
 2005 heißt das konkret: im Spiel bleiben ~10 Fahrer über 19 Rennen ohne jeden Punkt,
 real nur 3.
 
-Das ist **kein Ära-Problem**, sondern ein Skalierungsproblem, und es erklärt beide
-Ausreißer in einer Linie: 1965 (wenige Plätze) zu viele, 2005 (viele Plätze) zu wenige.
+⚠ **Diese Deutung war falsch — aus zwei Datenpunkten geschlossen.** Über alle 75 Jahre
+gerechnet (Indy der 50er raus) korreliert die Zahl der Punktefahrer mit **nichts**
+davon:
+
+| Rennzahl | Punkteränge | Punkteplätze | Feld/Rennen | Starter gesamt |
+|---|---|---|---|---|
+| 0,256 | 0,044 | **0,119** | 0,211 | −0,062 |
+
+1950: 6 Rennen, 5 Ränge → **16** Punktefahrer. 2024: 24 Rennen, 10 Ränge → **21**.
+Vervierfachte Rennzahl, verdoppelte Ränge, fünf Fahrer mehr.
+
+**Warum das stabil bleibt:** 1950 fuhren **46 verschiedene Starter** bei 6 Rennen, 2018
+nur **20** bei 21 Rennen. Wenige Rennen mit buntem Feld und viele Rennen mit konstantem
+Feld ergeben dieselbe Zahl — das kompensiert sich.
+
+Das Spiel liegt mit 16–19 damit **im realen Band** (16–26, Schwerpunkt 17–21). Die
+verbliebenen Abweichungen sind **Einzeljahre** (1965 +5,0; 2005 −3,6), kein
+systematischer Skalierungsfehler. Nutzer-Einwand dazu: „immer 16-19 jede saison ergibt
+kein sinn, gerade wenn es kleine kalender gibt und 24er kalender" — die Erwartung ist
+intuitiv, die Realität verhält sich aber genauso flach.
 
 ▶ **Geprüft und verworfen:** Die reale DNF-Spreizung nach Teamstärke (schwache Teams
 fallen öfter aus) reicht als Erklärung nicht — 2005 beträgt sie nur 5,2 Punkte, 2018
