@@ -201,7 +201,14 @@ function einLauf(ctx, real, punkteFn, gefahren) {
     const siegeChamp = stand.length
         ? (gs.driverStandings[stand[0].id] || {}).wins || 0
         : 0;
-    return { stand, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
+    // Wie viele TEAMS punkten? Real ist das der staerkste Treiber der
+    // Punktefahrer-Zahl: Korrelation 0,602 ueber 75 Jahre, und die
+    // Top-2-Konzentration -0,555 — beides deutlich vor DNF-Quote (0,139),
+    // Feldgroesse (0,229) oder Rennzahl (0,276).
+    // 1953 punkten real 3 Teams und 12 Fahrer, 1989 sind es 16 Teams und 29
+    // Fahrer. Wer die Fahrerzahl treffen will, muss die TEAMS treffen.
+    const teamPunkte = Object.values(gs.teamStandings || {}).filter(t => (t.points || 0) > 0).length;
+    return { stand, teamPunkte, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
              rennDeckung: imQuali ? imRennen / imQuali : 0 };
 }
 
@@ -272,10 +279,11 @@ function gefahreneRunden(ctx, real) {
     const champAnteil = [], champSiege = [];
     // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
-    const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [];
+    const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
+        const { stand, teamPunkte, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
         rennDeck.push(rennDeckung);
+        teamsMitPunkten.push(teamPunkte);
         deckungen.push(deckung);
         if (!stand.length) continue;
 
@@ -365,6 +373,18 @@ function gefahreneRunden(ctx, real) {
     //   Feld und Bezugsgruppe identisch sind, darf man Quoten vergleichen.
     const realFeld = new Set(real.erg.map(e => e.driverId)).size;
     const realPunktefahrer = rStand.filter(x => x.punkte > 0).length;
+    // reale Teams mit Punkten, nur ueber die gefahrenen Runden
+    const rTeam = {};
+    for (const e of real.erg) {
+        if (!gefahren.has(e.round)) continue;
+        const pt = String(e.positionText || '');
+        if (!/^[0-9]+$/.test(pt)) continue;
+        if (punkteFn(Number(pt), JAHR) > 0) rTeam[e.constructorId] = 1;
+    }
+    console.log('  Teams mit Punkten:   Spiel ' + avg(teamsMitPunkten).toFixed(1)
+        + '   real ' + Object.keys(rTeam).length
+        + '   Differenz ' + (avg(teamsMitPunkten) - Object.keys(rTeam).length >= 0 ? '+' : '')
+        + (avg(teamsMitPunkten) - Object.keys(rTeam).length).toFixed(1));
     console.log('  Fahrer mit Punkten:  Spiel ' + avg(absolut).toFixed(1)
         + '   real ' + realPunktefahrer
         + '   Differenz ' + (avg(absolut) - realPunktefahrer >= 0 ? '+' : '')

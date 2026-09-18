@@ -815,3 +815,59 @@ fehlende Spreizung. Das Spiel müsste in Saisons wie 1989 (29 reale Punktefahrer
 breiter streuen und in Saisons wie 1953 (12) enger. Werkzeug für jeden Versuch:
 `tests/vakuum-batch.js --alle 1 4` plus `tests/vakuum-verteilung.js` — Stichproben haben
 hier zweimal in die Irre geführt.
+
+### 18.09.2026 (6): Die Ursache sind die TEAMS, nicht die Fahrerstreuung
+
+Der Vollauf hatte „das Spiel zieht zur Mitte" ergeben (Korrelation −0,703). Die Frage
+war, **wodurch** die reale Zahl schwankt. Über 75 Jahre gemessen:
+
+| Die reale Punktefahrer-Zahl korreliert mit | |
+|---|---|
+| **Teams mit Punkten** | **0,602** |
+| **Top-2-Konzentration** | **−0,555** |
+| Teams gesamt | 0,312 |
+| Rennzahl | 0,276 |
+| Feld pro Rennen | 0,229 |
+| DNF-Quote | 0,139 |
+
+**Die Zahl der Punktefahrer ist im Kern die Zahl der punktenden TEAMS.** 1953 punkten
+3 Teams und 12 Fahrer; 1989 sind es 16 Teams und 29 Fahrer. Wer die Fahrerzahl treffen
+will, muss die Teams treffen.
+
+Und genau dort weicht das Spiel ab:
+
+| Jahr | Teams mit Punkten Spiel → real | Fahrer-Differenz |
+|---|---|---|
+| 1953 | 6 → 3 (**+3**) | +3,3 |
+| 1965 | 6 → 6 (0) | +4,5 |
+| 1978 | 10 → 14 (**−4**) | −4,8 |
+| 1989 | 11 → 16 (**−5**) | −11,8 |
+| 2005 | 9 → 9 (0) | −2,7 |
+| 2010 | 10 → 9 (+1) | +2,3 |
+
+Gleiches Vorzeichen, gleiche Größenordnung. **Bei großen Feldern punkten im Spiel zu
+wenige Teams** — 1989 nur 11 von 20 statt real 16. Bei zehn Teams (moderne Ära) stimmt
+es. Die Kennzahl steht seit .18.9 in `tests/vakuum-saison.js`.
+
+### Geprüft und verworfen: die Ausfälle
+
+Naheliegende Erklärung wäre, dass im Spiel die schwachen Teams zu oft ausfallen und
+deshalb nicht punkten. **Das Gegenteil ist der Fall:**
+
+| DNF-Spreizung (schwach minus stark) | Spiel | real |
+|---|---|---|
+| 1989 | 14,3 | **21,5** |
+| 2010 | 7,4 | **21,9** |
+| 1978 | **−4,6** | 14,2 |
+
+Im Spiel fallen schwache Teams **zu selten** aus, 1978 sogar seltener als die starken.
+Sie kommen also häufiger ins Ziel als real — und punkten trotzdem nicht. Damit bleibt
+nur die **Leistungslücke**: die schwachen Autos sind zu weit weg, um bei einem
+Ausfall vorne hineinzurutschen.
+
+▶ **Das ist ein eigenständiger Realismus-Befund**, unabhängig vom Punktefahrer-Thema:
+die DNF-Verteilung nach Teamstärke ist im Spiel viel zu flach (7–14 statt real ~21).
+
+▶ **Nächster Schritt:** nicht an der Fahrer-Streuung drehen (die ist über
+`BAD_DAY_PACE_FACTOR` kalibriert), sondern an der **Spreizung der Teamstärken bei
+großen Feldern**. Zielgröße ist „Teams mit Punkten" je Saison, nicht die Fahrerzahl.
