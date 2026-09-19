@@ -24,6 +24,7 @@ versehentlich zurück.
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
 | Die Leistungspyramide `TEAM_PYRAMID_EXP` | carSpeed-Verteilung, punktende Teams, große Felder |
+| **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
@@ -896,19 +897,27 @@ Bei 20 Teams landeten die Plätze 12–20 zwischen 60 und 65 — praktisch ununt
 und alle chancenlos. Bei 10 Teams traf das kaum jemanden, deshalb passten die modernen
 Jahre.
 
-**A/B über zwölf Saisons, je sechs Läufe:**
+⚠⚠ **Die ursprünglich hier stehende A/B-Tabelle war UNGÜLTIG** (1,33 → 1,09, „1989 von
+−10,8 auf −4,5"). Sie maß nicht die Fahrer, sondern die **Teams** — Ursache und
+Richtigstellung stehen im nächsten Abschnitt. Ersetzt durch den Vollauf unten.
 
-| | EXP 1.8 | **EXP 1.4** |
-|---|---|---|
-| Ø Punktefahrer-Abweichung | 1,33 | **1,09** |
-| Ø vorzeichenbehaftet | −0,81 | **−0,52** |
-| Ø Spearman | 0,817 | 0,813 |
-| 1989 | −10,8 | **−4,5** |
-| 1978 | −3,3 | **−2,2** |
+**A/B über alle 75 Saisons, je vier Läufe, gepaart (19.09.2026):**
 
-Punktefahrer deutlich besser, Spearman unverändert (−0,004 liegt im Rauschen).
-⚠ Bei sechs Läufen und zwölf Jahren ist 1,33 → 1,09 **nicht sauber signifikant** — die
-Richtung stimmt und wird von den Einzeljahren gestützt, ein Vollauf steht aus.
+| | EXP 1.8 | EXP 1.4 | Delta | SE | t |
+|---|---|---|---|---|---|
+| Ø \|Punktefahrer-Abweichung\| | 1,88 | 1,76 | −0,12 | 0,13 | **−0,94** |
+| Ø \|Team-Abweichung\| | 0,97 | 0,88 | −0,10 | 0,06 | **−1,51** |
+| Ø Spearman | 0,832 | 0,834 | +0,002 | 0,003 | 0,52 |
+
+**Kein Effekt ist nachweisbar.** Alle drei Kennzahlen zeigen in die gewünschte Richtung,
+keine erreicht Signifikanz; bei den Fahrern ist exp 1.4 in 34 Jahren besser und in 36
+schlechter. Der große Sprung, den die alte Tabelle zeigte, existiert nicht.
+
+**Warum der Wert trotzdem stehen bleibt:** 1.4 ist nicht schlechter, und die
+Feldgrößen-Analyse oben gilt unabhängig von der Messung — bei 20 Teams liegen unter exp
+1.8 sieben Teams im ununterscheidbaren Band 60–65, unter 1.4 nur fünf. Das ist ein
+Argument aus der Formel, kein gemessener Gewinn. Wer ihn misst, braucht mehr als vier
+Läufe je Jahr: bei SE 0,13 verschwindet ein Effekt dieser Größe im Rauschen.
 
 **Das ursprüngliche Problem bleibt gelöst:** Der Exponent kam in v0.9.14.53, weil rohe
 SD-Werte für Backmarker zu hoch waren (Minardi 2001 pace 78 → 60). Der **letzte Platz
@@ -919,6 +928,82 @@ Beide Fundstellen nutzen jetzt die gemeinsamen Konstanten `TEAM_PYRAMID_FLOOR` u
 `TEAM_PYRAMID_EXP`; vorher stand der Wert zweimal als Magic Number im Code, einmal davon
 mit einem toten Kommentar („Variant B: _EXP = 2.0").
 
-▶ **Offen:** 1989 bleibt mit −4,5 der größte Ausreißer, 1965 mit +5,0 unverändert (dort
-stimmen die Teams, es liegt an den Fahrern). Ein Vollauf über alle 75 Saisons mit exp
-1.4 steht aus.
+▶ **Offen:** 1989 bleibt mit **−9,3** der größte Ausreißer (nicht −4,5, das war die
+Team-Zahl), 1991 mit −6,0 der zweite, 1965 mit +5,0 unverändert.
+
+---
+
+### 19.09.2026: Der Parser des Batch maß zwei Sitzungen lang die TEAMS
+
+**Wie es passierte.** `vakuum-batch.js` liest die Zahlen aus der Textausgabe von
+`vakuum-saison.js`. Am 18.09. kam dort die Zeile „Teams mit Punkten" **vor** die Zeile
+„Fahrer mit Punkten" — ab da gab es zwei Zeilen der Form `Spiel X real Y Differenz Z`,
+und beide Muster des Batch trafen die erste davon:
+
+| Muster | fand | Folge |
+|---|---|---|
+| `/real\s+(\d+)\s+Differenz/` | Teams-Zeile | Teamzahl in der Ziel-Spalte |
+| `/Differenz\s+([+-][\d.]+)\s+Fahrer/` | Teams-Zeile | **Ø Betrag des ganzen Vollaufs falsch** |
+
+Das zweite ist die Falle, die zweimal durchging: **`\s` matcht auch den Zeilenumbruch.**
+Das Muster verlangte das Wort „Fahrer" — und fand die Team-Differenz, gefolgt von
+`\n  Fahrer mit Punkten`. Ein Regex, der nach „Fahrer" sucht, kann die Teamzahl liefern.
+
+Am 18.09. fiel nur der erste Fehler auf (die Ziel-Spalte sah unstimmig aus). Ich hielt
+den Ø Betrag daraufhin für unbetroffen, „weil er aus einem anderen Regex stammt" — er
+stammte aus dem zweiten, der denselben Fehler hatte.
+
+**Tragweite, über `git log` eingegrenzt** (die Teams-Zeile kam mit `9d0e364`, 21:31):
+
+| Messung | gültig? |
+|---|---|
+| Vollauf Ø 1,84 (Abschnitt 5, 21:01 gelaufen) | ✅ echte Fahrer-Zahl |
+| A/B `TEAM_PYRAMID_EXP` 1,33 → 1,09 (Abschnitt 7) | ❌ maß Teams |
+| Vollauf Ø 0,99, „kein Jahr über 4" | ❌ maß Teams |
+
+Der gefeierte Sprung „1,84 → 0,99" verglich eine Fahrer-Zahl mit einer Team-Zahl.
+
+**Gegenprobe, die es sofort gezeigt hätte:** In jeder Tabellenzeile muss
+`Ist − Ziel = Diff` aufgehen. Bei 1951 stand „Ziel 11, Ist 14,3, Diff +2,0" — und +2,0
+war die Team-Differenz 5,0 minus 3. Diese Prüfung kostet einen Blick.
+
+**Behoben:** alle Muster auf `Fahrer mit Punkten:` verankert, und die Teams laufen als
+eigene Spalte `Ist/Ziel` in der Tabelle mit — eine Verwechslung ist damit sichtbar statt
+still.
+
+### Der korrigierte Vollauf (exp 1.4, 75 Saisons × 4 Läufe)
+
+| | Wert |
+|---|---|
+| Ø Betrag | **1,76** Fahrer |
+| Median | 1,3 |
+| Standardabw. | 2,33 |
+| vorzeichenbehaftet | +0,08 — kein globaler Drall |
+| Ø Spearman | 0,832 |
+| größte Abweichung | 1989 −9,3 · 1991 −6,0 · 1965 +5,0 |
+
+69 % aller Jahre liegen unter 2 Fahrern Abweichung, zwei über 6. **Beide Muster aus
+Abschnitt 5 überleben die Korrektur unverändert:**
+
+- **„Das Spiel zieht zur Mitte"** — Korrelation der Abweichung mit der Ziel-Zahl −0,646
+- **Die Engine wird mit dem Jahr besser** — Ø\|Diff\| von 2,06 (1950er) auf 0,76
+  (2020er), Spearman von 0,667 auf 0,949
+
+### Und die Kette „Teams → Fahrer" hält, jetzt über 75 Jahre
+
+Abschnitt 6 hatte sie aus sechs Jahren geschlossen. Mit der Teams-Spalte im Vollauf ist
+sie nachgerechnet:
+
+| | |
+|---|---|
+| Team-Differenz ↔ Fahrer-Differenz | **r = 0,709** |
+| \|Team-Diff\| ↔ \|Fahrer-Diff\| | r = 0,542 |
+| relativer Fehler Teams | 0,88 von 9,1 = **9,6 %** |
+| relativer Fehler Fahrer | 1,76 von 19,4 = **9,1 %** |
+| **Punktefahrer je punktendem Team** | **Spiel 2,18 · real 2,12** |
+
+Die letzte Zeile ist der Beleg: **innerhalb der punktenden Teams verteilt die Engine die
+Fahrer korrekt.** Der relative Fehler ist auf beiden Ebenen praktisch gleich groß — die
+Fahrer-Abweichung ist die durchgereichte Team-Abweichung, kein zusätzlicher Fehler in
+der Fahrer-Streuung. Wer an `BAD_DAY_PACE_FACTOR` oder der Pace-Streuung dreht, um die
+Punktefahrer-Zahl zu treffen, arbeitet an der falschen Stelle.

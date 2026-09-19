@@ -62,8 +62,8 @@ function zahl(text, muster) {
 console.log('VAKUUM-BATCH — ' + JAHRE.length + ' Saisons, je ' + LAEUFE + ' Laeufe');
 console.log('Quelle: ' + (process.env.SIMCORE_FROM_INDEX ? 'index.html (Arbeitskopie)' : 'letzter Monolith'));
 console.log('');
-console.log('  Jahr   Renn  |  Punktefahrer            |  Rang   Spearman  Deckung');
-console.log('               |  Ziel   Ist    Diff      |');
+console.log('  Jahr   Renn  |  Punktefahrer            |  Rang   Spearman  Deckung   Teams');
+console.log('               |  Ziel   Ist    Diff      |                            Ist/Ziel');
 console.log('  ' + '─'.repeat(72));
 
 const diffs = [], spears = [], abws = [];
@@ -77,8 +77,17 @@ for (const jahr of JAHRE) {
         continue;
     }
     const ist = zahl(out, /Fahrer mit Punkten:\s+Spiel\s+([\d.]+)/);
-    const ziel = zahl(out, /real\s+(\d+)\s+Differenz/);
-    const diff = zahl(out, /Differenz\s+([+-][\d.]+)\s+Fahrer/);
+    // ⚠ JEDES Muster hier auf "Fahrer mit Punkten:" ankern. Seit die Team-Kennzahl
+    // dazukam, gibt es ZWEI Zeilen der Form "Spiel X real Y Differenz Z", und beide
+    // allgemeinen Muster griffen die TEAMS-Zeile ab:
+    //   /real\s+(\d+)\s+Differenz/        → Teamzahl in der Ziel-Spalte
+    //   /Differenz\s+([+-][\d.]+)\s+Fahrer/ → \s frisst den Zeilenumbruch, also
+    //     matchte es die Team-Differenz gefolgt von "\n  Fahrer mit Punkten".
+    // Der zweite Fehler verfaelschte den Ø Betrag des ganzen Vollaufs.
+    const ziel = zahl(out, /Fahrer mit Punkten:\s+Spiel\s+[\d.]+\s+real\s+(\d+)/);
+    const diff = zahl(out, /Fahrer mit Punkten:.*?Differenz\s+([+-][\d.]+)/);
+    const teamsSpiel = zahl(out, /Teams mit Punkten:\s+Spiel\s+([\d.]+)/);
+    const teamsReal = zahl(out, /Teams mit Punkten:\s+Spiel\s+[\d.]+\s+real\s+(\d+)/);
     const sp = zahl(out, /Spearman-Rangkorrelation:\s+([-\d.]+)/);
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
@@ -96,7 +105,8 @@ for (const jahr of JAHRE) {
         + String(isNaN(diff) ? '-' : (diff >= 0 ? '+' : '') + diff.toFixed(1)).padStart(8)
         + '      |' + String(isNaN(abw) ? '-' : abw.toFixed(2)).padStart(7)
         + String(isNaN(sp) ? '-' : sp.toFixed(3)).padStart(10)
-        + String(isNaN(deck) ? '-' : deck.toFixed(1) + ' %').padStart(10) + warn);
+        + String(isNaN(deck) ? '-' : deck.toFixed(1) + ' %').padStart(10)
+        + ((isNaN(teamsSpiel) ? '-' : teamsSpiel.toFixed(1)) + '/' + (isNaN(teamsReal) ? '-' : teamsReal)).padStart(11) + warn);
 }
 
 console.log('  ' + '─'.repeat(72));

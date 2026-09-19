@@ -174,6 +174,25 @@ trennen.
 1995 auf 83,3 % — dort misst das Werkzeug ein anderes Feld als das reale und die
 Zeile ist weich. Ursache noch offen.
 
+⚠ **Der Batch PARST die Ausgabe von `vakuum-saison.js` — jedes Muster muss an seiner
+Kennzahl verankert sein.** Am 18.09.2026 kam die Zeile „Teams mit Punkten" dazu, und
+damit gab es ZWEI Zeilen der Form `Spiel X real Y Differenz Z`. Beide bis dahin
+allgemeinen Muster griffen ab da die **Teams**-Zeile ab:
+
+| Muster | griff | Folge |
+|---|---|---|
+| `/real\s+(\d+)\s+Differenz/` | Teams-Zeile | Teamzahl in der Ziel-Spalte |
+| `/Differenz\s+([+-][\d.]+)\s+Fahrer/` | Teams-Zeile | **falscher Ø Betrag im ganzen Vollauf** |
+
+Das zweite ist die heimtückischere Variante: `\s` matcht auch den **Zeilenumbruch**, das
+Muster fand also die Team-Differenz gefolgt von `\n  Fahrer mit Punkten`. Ein Regex, der
+„Fahrer" verlangt, kann trotzdem die Teamzahl liefern. Alle Muster heißen jetzt
+`/Fahrer mit Punkten:.*?…/`, und die Teams laufen als eigene Spalte mit, damit die
+Verwechslung sichtbar wird statt still zu passieren.
+
+**Gegenprobe, die den Fehler sofort zeigt:** In jeder Zeile muss `Ist − Ziel = Diff`
+aufgehen. Ging es nicht, war der Fehler zwei Sitzungen lang unbemerkt.
+
 ## Vakuum-Saison — `vakuum-saison.js`
 
 Misst die Ergebniserzeugung **ohne** das Drumherum: echte Fahrer, echte Teams, echtes
