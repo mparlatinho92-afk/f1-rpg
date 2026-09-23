@@ -24,6 +24,9 @@ versehentlich zurück.
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
 | Die Leistungspyramide `TEAM_PYRAMID_EXP` | carSpeed-Verteilung, punktende Teams, große Felder |
+| **Todesfälle je Ebene neu abgeglichen** | Renntote aus Unfällen, Gastfahrer-Tote, nonWM- und Indy-Anker (alte Anker zu niedrig) |
+| **Unfall-Anteil je Saison statt 50/50** | `dnfType`, Todesfälle im Rennen (−20 % WM-Tode durch weniger Unfälle) |
+| **Ausfall-Spreizung nach Teamstärke: Formel liefert die Hälfte** | jede Arbeit an der DNF-Formel, `reliability`, `dnfType` |
 | **`ERA_DNF_RATES` neu: DNQ im Nenner drückte Vor-Quali-Jahre** | Ausreißer 1989/1991, jede Arbeit an Ausfallraten — global neutral, Vor-Quali-Jahre besser |
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
@@ -1109,3 +1112,145 @@ Rate nur 45 → 50 stieg. Belastbar ist das Muster über die fünf Jahre hinweg,
 einzelne Zahl. Die Korrektur bleibt drin, weil sie einen Zählfehler behebt. Das
 Punktefahrer-Problem insgesamt (Ø 1,80, Zug zur Mitte −0,59) löst sie nicht: das
 bleibt die Teams-Frage. Ticker-Parität 40/40 geprüft.
+
+---
+
+### 23.09.2026 (2): Die Ausfall-Spreizung nach Teamstärke — die Formel trifft die Hälfte
+
+Frage des Nutzers: statt einzelner Saisons eine globale Korrektur. Die Jahresrate ist
+nur die Grundlinie. Wie sie sich auf die Teams verteilt, entscheidet in `simulateRace`
+`dnf = Jahresrate × (1 + (Ø reliability − team.reliability) / 100)`.
+
+Werkzeug `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js`, analytisch und ohne
+Würfel. Stärke = mittlerer realer Startplatz, Drittel je Jahr, Teams ab 8 Starts:
+
+| Ära | real stark | real schwach | **real Spreiz.** | Faktor | Formel Spreiz. | r(rel, DNF) | r(rel, Stärke) | Unfall-Anteil | Spreiz. mech / Unfall |
+|---|---|---|---|---|---|---|---|---|---|
+| 1950er | 39,3 | 57,1 | **17,8** | 1,45 | 6,3 | −0,71 | 0,60 | 13 % | 19,3 / −1,5 |
+| 1960er | 46,0 | 50,0 | **4,0** | 1,09 | 1,5 | −0,61 | 0,11 | 13 % | 3,7 / 0,3 |
+| 1970er | 37,0 | 49,3 | **12,3** | 1,33 | 7,7 | −0,40 | 0,77 | 24 % | 13,5 / −1,2 |
+| 1980er | 44,3 | 56,8 | **12,5** | 1,28 | 11,0 | −0,64 | 0,86 | 23 % | 9,5 / 3,0 |
+| 1990er | 35,8 | 55,7 | **19,9** | 1,56 | 10,4 | −0,65 | 0,94 | 35 % | 17,3 / 2,6 |
+| 2000er | 20,4 | 36,2 | **15,8** | 1,77 | 5,7 | −0,67 | 0,93 | 38 % | 11,1 / 4,7 |
+| 2010er | 11,4 | 20,6 | **9,2** | 1,81 | 3,6 | −0,55 | 0,96 | 40 % | 7,4 / 1,9 |
+| 2020er | 8,8 | 14,2 | **5,4** | 1,62 | 2,4 | −0,49 | 0,95 | 51 % | 2,9 / 2,5 |
+| **alle** | 31,5 | 44,0 | **12,5** | 1,40 | **6,3** | −0,59 | 0,76 | 29 % | **11,0 / 1,5** |
+
+**Vier Befunde:**
+
+1. **Die Formel liefert die halbe Spreizung** (6,3 statt 12,5 Punkte). Am stärksten
+   fehlt sie in den 1950ern, 1990ern, 2000ern und 2010ern (Faktor 2,5–2,8). Die
+   1980er passen (11,0 gegen 12,5), die 1960er sind real selbst flach. Der Hebel ist
+   die **Amplitude** des reliability-Terms, nicht die Jahresrate.
+2. **Die Spreizung ist mechanisch, nicht fahrerisch.** Schwache Teams haben 11 Punkte
+   mehr technische Ausfälle, aber nur 1,5 Punkte mehr Unfälle. Unfälle verteilen sich
+   fast gleich über das Feld.
+3. **Der Unfall-Anteil ist stark ära-abhängig:** 13 % in den 50ern/60ern, 51 % heute.
+   Das Spiel würfelt den Typ 50/50 (`dnfType`), für frühe Epochen also viel zu viele
+   Unfälle. Das betrifft die Darstellung und möglicherweise Todesfälle, nicht die
+   Ergebnisse.
+4. **`reliability` taugt als Vorhersage** (r = −0,59 mit der echten DNF-Quote), ist
+   ab 1990 aber praktisch eine Kopie der Stärke (r = 0,93–0,96). In den 1960ern ist
+   sie unabhängig (0,11). Eine stärkere Amplitude verstärkt damit ab 1990 auch den
+   Abstand stark/schwach im Ergebnis.
+
+⚠ **Messfalle:** Stärke über Punkte oder WM-Rang zu definieren, wäre zirkulär.
+Unzuverlässige Teams verlieren Punkte und landen dadurch im schwachen Drittel. Deshalb
+wird hier der Startplatz genommen.
+
+⚠ Einzelwerte streuen. 1989 fiel Ferrari real zu 70 % aus, bei reliability 83. Die
+Tabelle ist ein Mittel über die Jahre, kein Maßstab je Team.
+
+---
+
+### 23.09.2026 (3): Unfall oder Technik — der 50/50-Würfel ist ersetzt
+
+`simulateRace` würfelte die Ausfallart 50/50. Real liegt der Unfall-Anteil (Unfall,
+Kollision, Dreher an allen Ausfällen, echte Starter, ohne Indy 500) je Saison zwischen
+**2 % (1965)** und **63 % (2008)**: in den 50ern/60ern meist 8–19 %, 1975–82 25–38 %,
+1983–88 14–22 %, ab 1992 35–45 %, seit 2020 47–60 %. Jetzt steht er je Jahr in
+`ERA_DNF_ACCIDENT_SHARE` (Quelle `generate-truth.js` → `accidentShare`).
+
+**Folge für die Todesfälle:** Der Todes-Check wählt sein Opfer nur unter den
+Unfall-Ausfällen. Gibt es keinen, fällt ein geplanter Tod still weg. Bei ~1,3
+Unfall-Ausfällen je Rennen in den 50ern passiert das in gut einem Viertel der Rennen.
+
+`node tests/death-era-mc.js 10`, 1950–2025, alt = Monolith v0.9.18.11:
+
+| Dekade | F1-WM alt | F1-WM neu |
+|---|---|---|
+| 1950er | 5,7 | 5,0 |
+| 1960er | 6,8 | **4,3** |
+| 1970er | 9,1 | 8,3 |
+| 1980er | 2,1 | 1,7 |
+| 1990er | 2,8 | 1,9 |
+| **Summe** | **26,5** | **21,2 (−20 %)** |
+
+Das passt zur Überschlagsrechnung; die 1960er trifft es am stärksten (1965: 2 %
+Unfälle). Bei 10 Läufen ist die Summe etwa 2,4 Standardfehler auseinander.
+
+⚠ Messfalle: `death-era-mc.js` setzt `SIMCORE_FROM_INDEX` fest auf 1. Für ein A/B gegen
+den Monolithen braucht es eine Kopie ohne diese Zeile.
+
+Beobachtung am Rand, schon vor der Änderung so: F1 gesamt 67,7 Tote gegen real ~40.
+Der Überschuss kommt vor allem aus F1-nonWM (41,2).
+
+### 23.09.2026 (4): Todesfälle je Ebene neu abgeglichen
+
+Auftrag des Nutzers: Die Todeszahl jeder Ebene muss realistisch bleiben. Keine festen
+Toten je Rennen (kein „Spa 1960 hat einen Toten"), sondern Ära-Raten.
+
+**1. Tote im Rennen entstehen jetzt aus Unfällen.** Jeder Unfall-Ausfall würfelt mit
+`ERA_ACCIDENT_LETHALITY` (je Dekade = reale Renntote ÷ reale Unfall-Ausfälle, F1DB,
+ohne Indy 500): 50er 3/98 · 60er 6/109 · 70er 5/383 · 80er 1/466 · 90er 1/621 ·
+00er 0/387 · 10er 1/293 · 20er 0/154. Der Wochenend-Würfel (`ERA_DEATH_RATES`)
+trägt außer beim Indy 500 nur noch Training und Qualifying. Je Dekade und nicht je
+Jahrfünft, weil ein Jahrfünft nur 0–3 Tote hat. ⚠ Nenner nur Unfall-**Ausfälle**,
+weil im Spiel nur ein Ausfall ein Unfall sein kann. Mit gewerteten Unfällen wären es
+~7 % weniger Tote.
+
+**2. Gastfahrer-Tote wurden nie gebucht.** Indy-Nachrücker und Lückenfüller kommen aus
+dem Reserve-Pool und stehen nicht im Kader. Traf es einen, stand „Fatal" im Ergebnis,
+aber der Tod fehlte in `seasonDeaths`, und der Fahrer lebte weiter. Beim Indy 500
+war das ein Viertel der Renntoten (Sonde über 1000 Wochenenden 1955: 103 von 427
+markierten Opfern waren Gäste). Rennen, Training und Qualifying buchen den Tod jetzt
+über `_bucheGastTod`, ohne Ersatzfahrer (kein Kaderplatz).
+
+**3. Die Anker für Tote außerhalb der WM waren zu niedrig.** Neu hergeleitet aus F1DB:
+Fahrer mit WM-Start, gestorben zwischen erstem Einsatz und letztem Einsatz +1, ohne
+WM-Tote. F1DB kennt keine Todesursachen. Nicht-Rennbezug ist aus Kenntnis abgezogen
+und hier nachprüfbar:
+
+| Dekade | real | Namen (abgezogen) |
+|---|---|---|
+| 50er | 12 | Sommer, Fry, Fagioli, Bonetto, de Tornaco, Ascari, Beauman, Rosier, de Portago, Castellotti, MacKay-Fraser, Bueb (− Claes Krankheit, − Hawthorn Straße) |
+| 60er | 13 | Chimeri, Blanchard, Schell, Cabianca, Ryan, R. Rodríguez, Anderson, Russo, Clark, Scarfiotti, Spence, L. Bianchi, Solana (− Barth Krankheit) |
+| 70er | 7 | McLaren, Giunti, Siffert, P. Rodríguez, Bonnier, Revson, McGuire (− G. Hill, Brise, Pace Flugzeug, − Nilsson Krankheit) |
+| 80er | 4 | Depailler, Winkelhock, Bellof, de Angelis |
+
+Alter Anker im Werkzeug: 6/4/5/2. **Indy-Fahrer** (nur Indy-500-Starts, gestorben
+1950–61): 30, davon 7 am 500-Wochenende im Mai (Vukovich, O'Connor, Scarborough, Miller,
+Ayulo, Andrews, Unser), − Hellings Flugzeug → **~22 in AAA/USAC/Sprint/Midget** statt
+des alten Ankers ~9. ⚠ Diese Zuordnung stammt aus Kenntnis, nicht aus einer Datenbank.
+
+**Raten:** `ERA_NONWM_F1_DEATH_RATE` 1950–59 0,020 → 0,0125,
+`ERA_NONWM_INDY_DEATH_RATE` 0,040 → 0,100. Die übrigen Dekaden trafen bereits.
+
+**Ergebnis** `node tests/death-era-mc.js 10`, vorher = Monolith mit 50/50-Würfel:
+
+| Ebene | vorher | nachher | real |
+|---|---|---|---|
+| WM-Rennen | – | 14,1–15,7 (2 Läufe) | 17 |
+| WM Training/Quali | – | 5,4–5,6 | 8 |
+| außerhalb WM (F1) | 41,2 | 38,1 | 36 |
+| Indy 500 | 3,4 | 6,1–6,6 | 7 |
+| Indy außerhalb | 7,8 | 20,8 | ~22 |
+| **F1 je Dekade 50er–80er** | 24,4 / 17,9 / 16,6 / 5,7 | 17,2 / 19,1 / 13,5 / 5,4 | 16 / 21 / 15 / 6 |
+
+Alle Dekaden liegen jetzt innerhalb ±2. Die WM-Rennen liegen je Dekade im Rauschen
+(3,1/3 · 5,8/6 · 4,6/5), in der Summe aber in beiden Läufen unter 17. Training/Quali
+liegt mit ~5,5 unter real 8. Beides nicht nachgeregelt: bei ±1,2 Standardfehler und
+Einzelzahlen von 1–3 je Dekade würde man auf Rauschen kalibrieren.
+
+Indy 500: Restlücke ~8 %. So oft gibt es im Rennen keinen Unfall-Ausfall, in dem das
+geplante Opfer liegen könnte.

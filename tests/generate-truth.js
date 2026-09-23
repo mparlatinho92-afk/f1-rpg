@@ -91,15 +91,30 @@ for (const [year, wins] of Object.entries(winsPerTeam)) {
 // Quelle von ERA_DNF_RATES in index.html.
 const NICHT_GESTARTET = /^(DNQ|DNPQ|DNS|DNP|EX|WD)$/;
 const indy500 = new Set(races.filter(r => r.circuitId === 'indianapolis' && r.year <= 1960).map(r => r.id));
+// Unfall-Anteil: welcher Teil der Ausfälle auf Unfall/Kollision/Dreher geht.
+// Quelle von ERA_DNF_ACCIDENT_SHARE; der Rest gilt im Spiel als technisch.
+const UNFALL = /accident|collision|spun off|\bspin\b/i;
 const dnfStats = {};
 for (const e of raceResults) {
     if (NICHT_GESTARTET.test(e.positionText) || indy500.has(e.raceId)) continue;
-    if (!dnfStats[e.year]) dnfStats[e.year] = { total: 0, dnf: 0 };
+    if (!dnfStats[e.year]) dnfStats[e.year] = { total: 0, dnf: 0, unfall: 0, rennUnfaelle: 0, rennTote: 0 };
     dnfStats[e.year].total++;
-    if (!/^\d+$/.test(e.positionText)) dnfStats[e.year].dnf++;
+    // Tödlichkeit eines Rennunfalls, Quelle von ERA_ACCIDENT_LETHALITY.
+    // Nenner nur Unfall-AUSFÄLLE: im Spiel kann nur ein Ausfall ein Unfall sein.
+    // Zähler alle Renntoten, auch gewertete (Bianchi 2014 steht als 20.).
+    if (/^fatal/i.test(e.reasonRetired || '')) dnfStats[e.year].rennTote++;
+    if (!/^\d+$/.test(e.positionText) && UNFALL.test(e.reasonRetired || '')) dnfStats[e.year].rennUnfaelle++;
+    if (!/^\d+$/.test(e.positionText)) {
+        dnfStats[e.year].dnf++;
+        if (UNFALL.test(e.reasonRetired || '')) dnfStats[e.year].unfall++;
+    }
 }
 for (const [year, s] of Object.entries(dnfStats)) {
-    if (truth[year]) truth[year].dnfRate = parseFloat((s.dnf / s.total).toFixed(3));
+    if (!truth[year]) continue;
+    truth[year].dnfRate = parseFloat((s.dnf / s.total).toFixed(3));
+    truth[year].accidentShare = parseFloat((s.unfall / s.dnf).toFixed(3));
+    truth[year].raceAccidents = s.rennUnfaelle;
+    truth[year].raceDeaths    = s.rennTote;
 }
 
 // ── Rennen pro Jahr ───────────────────────────────────────────────────────

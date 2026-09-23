@@ -10,6 +10,8 @@
 | `monte-carlo-multi.js` | Multi-Saison-Variante |
 | `history-mc.js` | Historische Saisons |
 | `mc-entries-dnq.js` | **Meldungen, DNQ und Einzelauswahl** je Fahrer/Team/Strecke, gegen F1DB |
+| `death-era-mc.js` | **Todesfälle je Dekade und Ebene**: WM-Wochenende (davon Rennen, gegen F1DB), außerhalb der WM, Indy 500, Indy außerhalb (AAA/USAC/Midget). `node tests/death-era-mc.js 10` (misst immer `index.html`). ⚠ Für A/B gegen den Monolithen eine Kopie ohne die `SIMCORE_FROM_INDEX`-Zeile. ⚠ 10 Läufe: Renntote ±1,2 in der Summe |
+| `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |
 
 ## Meldungen & DNQ — `mc-entries-dnq.js`
 
