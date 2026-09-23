@@ -5,7 +5,7 @@
 | Datei | Zweck |
 |---|---|
 | `sim-core.js` | Lädt die echte HTML-Datei in Node via `vm.runInNewContext` mit Browser-Stubs (Proxy) |
-| `generate-truth.js` | Erzeugt `historical_truth.json` aus F1DB-Rohdaten (einmalig ausführen) |
+| `generate-truth.js` | Erzeugt `historical_truth.json` aus F1DB-Rohdaten (einmalig ausführen). `dnfRate` ist die Quelle von `ERA_DNF_RATES` — ⚠ Nenner nur echte Starter, sonst drücken DNQ/DNPQ die Rate (1989 stand bis 23.09.2026 auf 37 statt 54 %) |
 | `monte-carlo.js` | Simuliert N Saisons, vergleicht mit historical_truth, gibt Bericht aus |
 | `monte-carlo-multi.js` | Multi-Saison-Variante |
 | `history-mc.js` | Historische Saisons |

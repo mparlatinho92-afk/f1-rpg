@@ -24,6 +24,7 @@ versehentlich zurück.
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
 | Die Leistungspyramide `TEAM_PYRAMID_EXP` | carSpeed-Verteilung, punktende Teams, große Felder |
+| **`ERA_DNF_RATES` neu: DNQ im Nenner drückte Vor-Quali-Jahre** | Ausreißer 1989/1991, jede Arbeit an Ausfallraten — global neutral, Vor-Quali-Jahre besser |
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
@@ -1007,3 +1008,104 @@ Fahrer korrekt.** Der relative Fehler ist auf beiden Ebenen praktisch gleich gro
 Fahrer-Abweichung ist die durchgereichte Team-Abweichung, kein zusätzlicher Fehler in
 der Fahrer-Streuung. Wer an `BAD_DAY_PACE_FACTOR` oder der Pace-Streuung dreht, um die
 Punktefahrer-Zahl zu treffen, arbeitet an der falschen Stelle.
+
+---
+
+### 23.09.2026: 1989: `ERA_DNF_RATES` ist in den Vor-Quali-Jahren zu niedrig
+
+Gefragt war, warum 1989 mit −9,3 am stärksten abweicht. Das ist reine Datenanalyse gegen
+F1DB, kein Spiel-Lauf.
+
+**Was 1989 real besonders macht** (nur echte Starter, DNQ/DNPQ/DNS/EX herausgefiltert):
+
+| | Starter/Rennen | DNF-Quote | im Ziel/Rennen | Punktefahrer | davon nur 1× | Top-2-Anteil Punkteplätze |
+|---|---|---|---|---|---|---|
+| 1988 | 26,0 | 46,4 % | 13,9 | 17 | 3 | 46 % |
+| **1989** | 26,0 | **53,8 %** | **12,0** | **29** | **11** | **39 %** |
+| 1990 | 25,9 | 47,1 % | 13,7 | 18 | 5 | 43 % |
+| 1991 | 25,9 | 46,5 % | 13,9 | 24 | 11 | 46 % |
+
+Nur zwölf Autos kamen im Schnitt ins Ziel, bei sechs Punkteplätzen. Wer 1989 durchkam,
+landete oft schon in den Punkten. Das erklärt 11 Fahrer mit einer einzigen Punkteplatzierung
+und 16 punktende Teams.
+
+**Im Spiel steht für 1989 aber 37 %** (`ERA_DNF_RATES`, index.html ~5542). Die Rate wird
+in `simulateRace` je Starter und Rennen angewandt (~14266). Das Spiel bringt also etwa
+16 statt 12 Autos ins Ziel.
+
+| Jahr | Tabelle | real, Nenner = Starter | real, Nenner = alle Meldungen |
+|---|---|---|---|
+| 1984 | 62 | 60,0 | 57,4 |
+| 1988 | 42 | 46,4 | 38,9 |
+| **1989** | **37** | **53,8** | **36,1** |
+| 1990 | 39 | 47,1 | 36,0 |
+| 1991 | 39 | 46,5 | 35,8 |
+
+Von 1988 bis 1991 passt die Tabelle zur Variante **mit DNQ/DNPQ im Nenner**. In
+anderen Jahren passt sie besser zur Starter-Variante. `generate-truth.js` hat die
+Quote also offenbar nicht einheitlich berechnet. Über alle 76 Jahre liegt die Tabelle
+im Schnitt ~4 Punkte neben jeder der vier geprüften Zählweisen. Der große Fehler sitzt
+genau dort, wo es viele Nicht-Qualifizierte gab. 1989 hatte 38,8 Meldungen auf 26
+Startplätze.
+
+⚠ **Messfalle:** `feld-spreizung.js` meldete am 16.09.2026 „DNF-Quote trifft bereits".
+Das stimmt **je Ära**. Der Ära-Schnitt deckt ein einzelnes Jahr mit −17 Punkten zu.
+
+**Passt zu beiden großen Ausreißern:** 1989 (−9,3) und 1991 (−6,0) haben beide eine
+deutlich zu niedrige Tabellenrate (−17 bzw. −7,5 Punkte).
+
+**A/B 1989, Tabellenwert 37 → 54, je 20 Läufe** (`SIMCORE_FROM_INDEX=1 node
+tests/vakuum-saison.js 1989 20`):
+
+| | 37 % | **54 %** | real |
+|---|---|---|---|
+| Fahrer mit Punkten | 18,8 (−10,2) | **24,3 (−4,7)** | 29 |
+| Teams mit Punkten | 11,4 (−4,6) | **13,4 (−2,6)** | 16 |
+| Punktequote | 40,2 % | 51,4 % | 61,7 % |
+| Spearman Endstand | 0,767 | 0,753 | |
+| Punktanteil des Führenden | 21,2 % | 19,1 % | 20,3 % |
+
+Die Ausfallrate erklärt gut die Hälfte der Lücke. Der Rest von −4,7 Fahrern und
+−2,6 Teams passt zur Teams-Erklärung (Leistungslücke, flache DNF-Spreizung nach
+Teamstärke). Spearman sinkt um 0,014: bei mehr Ausfällen erwartbar, Standardfehler aber
+nicht bestimmt.
+
+### Danach: die ganze Tabelle einheitlich neu berechnet
+
+**Wurzel:** `tests/generate-truth.js` teilte durch **alle** Ergebniszeilen, also samt
+DNQ/DNPQ, und zählte im Zähler nur `reasonRetired`. Jetzt gilt: Nenner = echte
+Starter, Zähler = jede Nicht-Zahl in `positionText` (DNF/NC/DSQ), Indy 500 1950–60
+ausgenommen. F1DB gibt dort allen 33 Startern eine Platzziffer, deshalb würde es die
+50er künstlich senken (mit Indy 1950: 41 %, ohne: 53 %). `ERA_DNF_RATES` ist daraus
+erzeugt. In `historical_truth.json` hat sich nur das Feld `dnfRate` geändert.
+
+Die größten Änderungen: 1950er +3 bis +7, 1978 38 → 46, 1981 40 → 49, 1989 37 → 54,
+1990/91 39 → 47, 1960–65 −3 bis −5, ab 2000 durchgehend −2 bis −5.
+
+**A/B alle 75 Saisons × 4 Läufe, gepaart** (Monolith v0.9.18.10 gegen `index.html`,
+`tests/output/vakuum-alle-dnf-alt.txt` / `-neu.txt`):
+
+| | alt | neu | Delta | SE | t |
+|---|---|---|---|---|---|
+| Ø \|Punktefahrer-Abw.\| | 1,80 | 1,80 | −0,003 | 0,14 | −0,02 |
+| Ø \|Team-Abw.\| | 0,92 | 0,89 | −0,035 | 0,065 | −0,53 |
+| Ø Spearman | 0,833 | 0,831 | −0,002 | 0,004 | −0,61 |
+| vorzeichenbehaftet | −0,11 | −0,02 | | | |
+| Korrelation Diff ↔ Ziel | −0,631 | −0,592 | | | |
+
+**Global kein messbarer Effekt** (35 Jahre besser, 32 schlechter). Die korrigierten
+Vor-Quali-Jahre verbessern sich alle in die erwartete Richtung:
+
+| Jahr | Rate alt → neu | Punktefahrer-Diff alt → neu | Teams Ist/Ziel alt → neu |
+|---|---|---|---|
+| 1978 | 38 → 46 | −4,8 → −1,5 | 10,8 → 12,0 / 14 |
+| 1988 | 42 → 46 | −1,5 → +0,3 | 9,3 → 10,3 / 10 |
+| **1989** | **37 → 54** | **−8,8 → −4,8** | 12,5 → 13,5 / 16 |
+| 1990 | 39 → 47 | −1,8 → +0,3 | 9,8 → 10,8 / 10 |
+| 1991 | 39 → 47 | −4,5 → −3,0 | 11,0 → 11,3 / 12 |
+
+⚠ **Einzeljahre bei 4 Läufen sind weich.** 1953 ging von +4,0 auf +6,3, obwohl die
+Rate nur 45 → 50 stieg. Belastbar ist das Muster über die fünf Jahre hinweg, nicht die
+einzelne Zahl. Die Korrektur bleibt drin, weil sie einen Zählfehler behebt. Das
+Punktefahrer-Problem insgesamt (Ø 1,80, Zug zur Mitte −0,59) löst sie nicht: das
+bleibt die Teams-Frage. Ticker-Parität 40/40 geprüft.

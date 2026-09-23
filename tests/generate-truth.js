@@ -84,11 +84,19 @@ for (const [year, wins] of Object.entries(winsPerTeam)) {
 }
 
 // ── DNF-Rate pro Jahr ─────────────────────────────────────────────────────
+// Nenner = echte Starter. Frueher zaehlten DNQ/DNPQ mit und drueckten die
+// Rate in Vor-Quali-Jahren (1989: 37 statt 54 %). Nicht gewertet = jede
+// Nicht-Zahl (DNF, NC, DSQ). Indy 500 (1950-60) fliegt raus: F1DB fuehrt
+// dort alle 33 Starter mit Platzziffer, Ausfaelle sind nicht erkennbar.
+// Quelle von ERA_DNF_RATES in index.html.
+const NICHT_GESTARTET = /^(DNQ|DNPQ|DNS|DNP|EX|WD)$/;
+const indy500 = new Set(races.filter(r => r.circuitId === 'indianapolis' && r.year <= 1960).map(r => r.id));
 const dnfStats = {};
 for (const e of raceResults) {
+    if (NICHT_GESTARTET.test(e.positionText) || indy500.has(e.raceId)) continue;
     if (!dnfStats[e.year]) dnfStats[e.year] = { total: 0, dnf: 0 };
     dnfStats[e.year].total++;
-    if (e.reasonRetired) dnfStats[e.year].dnf++;
+    if (!/^\d+$/.test(e.positionText)) dnfStats[e.year].dnf++;
 }
 for (const [year, s] of Object.entries(dnfStats)) {
     if (truth[year]) truth[year].dnfRate = parseFloat((s.dnf / s.total).toFixed(3));
