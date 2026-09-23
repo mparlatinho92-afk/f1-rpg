@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.10</title>
+    <title>F1 RPG v0.9.18.11</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.10 (aktuell) - 18.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.11 (aktuell) - 23.09.2026</div>
+                            <div>&#8226; FIX: Ausfallraten je Jahr neu aus F1DB – Nicht-Qualifizierte drückten sie in Vor-Quali-Jahren (1989: 37 statt 54 %)</div>
+                            <div>&#8226; FIX: 1978/1988–1991 mehr punktende Teams und Fahrer</div>
+                            <div class="font-bold text-slate-400">v0.9.18.10 - 18.09.2026</div>
                             <div>&#8226; FIX: Bei grossen Feldern waren zu viele Teams chancenlos - Pyramiden-Exponent 1.8 auf 1.4</div>
                             <div>&#8226; NEU: TEAM_PYRAMID_EXP und _FLOOR als gemeinsame Konstanten statt zweifacher Magic Number</div>
                             <div>&#8226; NEU: Vakuum-Messung zeigt punktende Teams je Saison - real der staerkste Treiber der Punktefahrer-Zahl</div>
@@ -17685,7 +17688,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.10';
+        const VERSION = '0.9.18.11';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19150,23 +19153,25 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
 
         // Historische DNF-Rate pro Jahr (% pro Fahrer pro Rennen), exakt aus F1DB
         // Quelle: F1DB via generate-truth.js – alle DNF-Ursachen kombiniert
+        // Nenner = echte Starter (ohne DNQ/DNPQ), ohne Indy 500. Bis 23.09.2026 zaehlten
+        // Nicht-Qualifizierte mit und drueckten die Rate in Vor-Quali-Jahren (1989: 37 statt 54).
         const ERA_DNF_RATES = {
-            1950: 47, 1951: 48, 1952: 39, 1953: 45, 1954: 45,
-            1955: 47, 1956: 49, 1957: 43, 1958: 47, 1959: 44,
-            1960: 46, 1961: 44, 1962: 39, 1963: 47, 1964: 46,
-            1965: 42, 1966: 52, 1967: 51, 1968: 55, 1969: 50,
-            1970: 44, 1971: 43, 1972: 43, 1973: 45, 1974: 42,
-            1975: 44, 1976: 40, 1977: 41, 1978: 38, 1979: 49,
-            1980: 43, 1981: 40, 1982: 47, 1983: 46, 1984: 62,
-            1985: 55, 1986: 57, 1987: 55, 1988: 42, 1989: 37,
-            1990: 39, 1991: 39, 1992: 44, 1993: 50, 1994: 50,
-            1995: 50, 1996: 49, 1997: 46, 1998: 44, 1999: 49,
-            2000: 42, 2001: 42, 2002: 43, 2003: 36, 2004: 29,
-            2005: 27, 2006: 32, 2007: 28, 2008: 24, 2009: 21,
-            2010: 25, 2011: 18, 2012: 19, 2013: 16, 2014: 22,
-            2015: 22, 2016: 18, 2017: 24, 2018: 20, 2019: 14,
-            2020: 17, 2021: 13, 2022: 17, 2023: 15, 2024: 12,
-            2025: 13
+            1950: 53, 1951: 43, 1952: 44, 1953: 50, 1954: 52,
+            1955: 49, 1956: 51, 1957: 44, 1958: 48, 1959: 46,
+            1960: 42, 1961: 40, 1962: 38, 1963: 42, 1964: 39,
+            1965: 37, 1966: 57, 1967: 52, 1968: 57, 1969: 47,
+            1970: 49, 1971: 46, 1972: 42, 1973: 44, 1974: 46,
+            1975: 42, 1976: 43, 1977: 46, 1978: 46, 1979: 51,
+            1980: 48, 1981: 49, 1982: 53, 1983: 50, 1984: 60,
+            1985: 53, 1986: 56, 1987: 53, 1988: 46, 1989: 54,
+            1990: 47, 1991: 47, 1992: 49, 1993: 46, 1994: 50,
+            1995: 49, 1996: 47, 1997: 42, 1998: 41, 1999: 45,
+            2000: 38, 2001: 39, 2002: 40, 2003: 33, 2004: 28,
+            2005: 22, 2006: 31, 2007: 25, 2008: 22, 2009: 18,
+            2010: 23, 2011: 17, 2012: 16, 2013: 12, 2014: 19,
+            2015: 18, 2016: 16, 2017: 21, 2018: 18, 2019: 11,
+            2020: 15, 2021: 11, 2022: 14, 2023: 11, 2024: 10,
+            2025: 11
         };
 
         // Historische DNF-Rate für ein Jahr ermitteln (exakt oder letzter bekannter Wert)
