@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.11</title>
+    <title>F1 RPG v0.9.18.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.11 (aktuell) - 23.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.12 (aktuell) - 23.09.2026</div>
+                            <div>&#8226; NEU: Unfall oder Technik je Saison aus F1DB statt 50/50</div>
+                            <div>&#8226; NEU: Tote im Rennen entstehen aus Unfällen, Tödlichkeit je Dekade</div>
+                            <div>&#8226; FIX: tödlich verunglückte Gastfahrer (v. a. Indy 500) wurden nie als tot gebucht</div>
+                            <div>&#8226; FIX: Todesraten außerhalb der WM (F1 50er, AAA/USAC) neu kalibriert</div>
+                            <div class="font-bold text-slate-400">v0.9.18.11 - 23.09.2026</div>
                             <div>&#8226; FIX: Ausfallraten je Jahr neu aus F1DB – Nicht-Qualifizierte drückten sie in Vor-Quali-Jahren (1989: 37 statt 54 %)</div>
                             <div>&#8226; FIX: 1978/1988–1991 mehr punktende Teams und Fahrer</div>
                             <div class="font-bold text-slate-400">v0.9.18.10 - 18.09.2026</div>
@@ -4077,7 +4082,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.11';
+        const VERSION = '0.9.18.12';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -5344,6 +5349,16 @@
         // Indy 500: 7 bestätigte Tode über 11 WM-Rennen (1950–1960) = 0.636/Rennen
         // (Miller'50/Ayulo'53/Scarborough'53/Vukovich'55/O'Connor'58/Unser'59/Cortner'60)
         // Grid: immer 33 Starter (fester Wert, unabhängig von normalem GRID_SIZES)
+        // Tödlichkeit eines Rennunfalls je Dekade: P(Tod) pro Unfall-Ausfall im RENNEN.
+        // = reale Renntote ÷ reale Unfall-Ausfälle (F1DB via generate-truth.js, raceDeaths /
+        // raceAccidents, ohne Indy 500). Tote im Rennen entstehen damit aus den Unfällen
+        // (ERA_DNF_ACCIDENT_SHARE) statt aus dem Wochenend-Würfel — mehr Unfälle, mehr Tote.
+        // Je Dekade statt Jahrfünft: je Jahrfünft gibt es nur 0–3 Tote.
+        //   50er 3/98 · 60er 6/109 · 70er 5/383 · 80er 1/466 · 90er 1/621 · 00er 0/387 · 10er 1/293 · 20er 0/154
+        const ERA_ACCIDENT_LETHALITY = {
+            1950: 0.0306, 1960: 0.0550, 1970: 0.0131, 1980: 0.0021,
+            1990: 0.0016, 2000: 0, 2010: 0.0034, 2020: 0
+        };
         const INDY_DEATH_RATE = 0.636;
         const INDY_GRID_SIZE  = 33;
 
@@ -5360,14 +5375,19 @@
         // realen Dekaden-Häufigkeiten (F1: 50er~6/60er~4/70er~5/80er~2), MC-getunt via
         // tests/death-era-mc.js. Reale F1-Non-WM-Tode: Ascari'55, Castellotti'57, de Portago'57,
         // Behra'59, Siffert'71, Bonnier'72, Revson'74, Depailler'80, de Angelis'86 …
+        // 23.09.2026 nachgemessen gegen F1DB (Fahrer mit WM-Start, gestorben zwischen erstem
+        // Einsatz und letztem Einsatz +1, ohne WM-Tote, ohne Krankheit/Straße/Flugzeug):
+        //   real 50er 12 · 60er 13 · 70er 7 · 80er 4 — die alten Anker (6/4/5/2) waren zu niedrig.
+        //   1950–59 von 0.020 auf 0.0125 (Spiel lag bei 19,3). Namen in BEFUNDE.md.
+        // Indy: ~22 Tote in AAA/USAC/Sprint/Midget 1950–61 statt ~9 → 0.040 auf 0.100.
         const ERA_NONWM_F1_DEATH_RATE = {
-            1950: 0.020, 1955: 0.020, 1960: 0.014, 1965: 0.014,
+            1950: 0.0125, 1955: 0.0125, 1960: 0.014, 1965: 0.014,
             1970: 0.012, 1975: 0.012, 1980: 0.008, 1985: 0.008,
             1990: 0.002, 1995: 0, 2000: 0, 2005: 0,
             2010: 0, 2015: 0, 2020: 0, 2025: 0
         };
         const ERA_NONWM_INDY_DEATH_RATE = {
-            1950: 0.040, 1955: 0.040, 1960: 0.040, 1965: 0  // Indy nur bis 1960 im F1-Sim
+            1950: 0.100, 1955: 0.100, 1960: 0.100, 1965: 0  // Indy nur bis 1960 im F1-Sim
         };
         const NONWM_F1_VENUES   = ['Testfahrt', 'Nicht-WM-Rennen', 'Sportwagen-Rennen'];
         const NONWM_INDY_VENUES = ['AAA-Champ-Car', 'Midget-Rennen', 'Sprint-Car-Rennen'];
@@ -5573,6 +5593,35 @@
                 else break;
             }
             return result;
+        }
+
+        // Anteil der Unfälle (Unfall/Kollision/Dreher) an allen Ausfällen je Jahr, in %.
+        // Rest = technisch. Quelle: F1DB via tests/generate-truth.js (accidentShare), echte
+        // Starter ohne Indy 500. Ersetzt den früheren 50/50-Würfel: real 13 % in den 50ern,
+        // über 50 % heute. Unfälle verteilen sich fast gleich über das Feld (BEFUNDE.md).
+        const ERA_DNF_ACCIDENT_SHARE = {
+            1950: 19, 1951: 13, 1952: 8, 1953: 8, 1954: 7,
+            1955: 17, 1956: 12, 1957: 16, 1958: 19, 1959: 18,
+            1960: 15, 1961: 15, 1962: 22, 1963: 13, 1964: 5,
+            1965: 2, 1966: 16, 1967: 8, 1968: 17, 1969: 13,
+            1970: 8, 1971: 16, 1972: 19, 1973: 22, 1974: 20,
+            1975: 30, 1976: 28, 1977: 36, 1978: 32, 1979: 27,
+            1980: 25, 1981: 38, 1982: 33, 1983: 19, 1984: 20,
+            1985: 22, 1986: 14, 1987: 14, 1988: 18, 1989: 29,
+            1990: 24, 1991: 25, 1992: 34, 1993: 41, 1994: 41,
+            1995: 35, 1996: 42, 1997: 40, 1998: 36, 1999: 33,
+            2000: 37, 2001: 30, 2002: 28, 2003: 25, 2004: 31,
+            2005: 35, 2006: 39, 2007: 45, 2008: 63, 2009: 44,
+            2010: 43, 2011: 35, 2012: 52, 2013: 47, 2014: 30,
+            2015: 33, 2016: 42, 2017: 39, 2018: 40, 2019: 44,
+            2020: 47, 2021: 53, 2022: 48, 2023: 38, 2024: 58,
+            2025: 60
+        };
+
+        function getEraAccidentShare(year) {
+            if (ERA_DNF_ACCIDENT_SHARE[year] != null) return ERA_DNF_ACCIDENT_SHARE[year];
+            const keys = Object.keys(ERA_DNF_ACCIDENT_SHARE).map(Number).sort((a, b) => a - b);
+            return ERA_DNF_ACCIDENT_SHARE[year < keys[0] ? keys[0] : keys[keys.length - 1]];
         }
 
         const ERA_GRID_SIZES = {
@@ -14279,7 +14328,9 @@
                     isDNF = false;
                 } else {
                     isDNF = Math.random() < dnfPercent / 100;
-                    dnfType = isDNF ? (Math.random() > 0.5 ? 'mechanical' : 'accident') : null;
+                    dnfType = isDNF
+                        ? (Math.random() * 100 < getEraAccidentShare(GAME_STATE.currentYear) ? 'accident' : 'mechanical')
+                        : null;
                 }
 
                 // === HITZE-EFFEKT (zufällig, kein Fahrerattribut) ===
@@ -14404,22 +14455,31 @@
                 if (_flGivesPoint) flDriver.points += 1;
             }
             
-            // === TODES-CHECK bei Unfällen (Zwei-Würfel-Modell: ein Tod pro Wochenende) ===
+            // === TODES-CHECK bei Unfällen ===
+            // Reguläre Rennen: jeder Unfall-Ausfall würfelt mit der Tödlichkeit seiner Dekade
+            // (ERA_ACCIDENT_LETHALITY). Indy 500: F1DB kennt dort keine Ausfallgründe, also
+            // bleibt es beim Wochenend-Würfel mit einem Opfer unter den Unfall-Ausfällen.
             // [SYNC Live-Ticker] Todes-Check: Änderungen hier ↔ Live-Ticker (~L9633) synchron halten
-            if (GAME_STATE.deathRealism > 0 && _weekendDeath[raceIndex] === 'race') {
+            if (GAME_STATE.deathRealism > 0) {
                 const accidentDrivers = results.filter(r => r.dnf && r.dnfType === 'accident');
                 const usedReplacementsThisRace = new Set();
-                // Zufälliger Unfallfahrer als einmaliges Opfer
-                const r = accidentDrivers.length > 0
-                    ? accidentDrivers[Math.floor(Math.random() * accidentDrivers.length)]
-                    : null;
-                if (r) {
+                let opfer = [];
+                if (istIndy500(race, GAME_STATE.currentYear)) {
+                    if (_weekendDeath[raceIndex] === 'race' && accidentDrivers.length > 0)
+                        opfer = [accidentDrivers[Math.floor(Math.random() * accidentDrivers.length)]];
+                } else if (simRule('deaths')) {
+                    const _letal = getEraValue(ERA_ACCIDENT_LETHALITY, GAME_STATE.currentYear)
+                        * (GAME_STATE.deathRealism / 100);
+                    opfer = accidentDrivers.filter(() => Math.random() < _letal);
+                }
+                for (const r of opfer) {
                         r.fatal = true;
                         r.fatalSession = 'race';
                         r.status = '💀 Fatal';
 
                         // Fahrer-Status auf deceased setzen
                         const driver = GAME_STATE.drivers.find(d => d.id === r.driver);
+                        if (!driver) _bucheGastTod(r.driver, raceIndex, race, 'race', r.teamName);
                         if (driver) {
                             driver.status = 'deceased';
                             driver.deathYear = GAME_STATE.currentYear;
@@ -14429,7 +14489,7 @@
                             driver.deathRace = race.name;
 
                             logError('DEATH', `💀 ${driver.name} ist im Rennen bei ${race.name} tödlich verunglückt`);
-                            
+
                             // v0.9.15.17: geteilte Ersatzfahrer-Quelle (Tier + realPreference + poachPreference).
                             // Ersetzt die alte top/mid/back-Verzweigung; Tier + Top=0 stecken im Helper.
                             const _victimTeam = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -14820,6 +14880,29 @@
             return !!d && (d.status === 'deceased' || d.status === 'dead');
         }
 
+        // Tod eines Gastfahrers buchen. Gäste kommen aus dem Reserve-Pool und stehen NICHT
+        // im Kader (Indy-Nachrücker, Lückenfüller, s. fillIndyEntryList). Ohne das trug ihr
+        // Eintrag „Fatal", der Tod wurde aber nie gebucht — beim Indy 500 ein Viertel der
+        // Renntoten. Kein Kaderplatz, also kein Ersatzfahrer. Liefert true, wenn gebucht.
+        function _bucheGastTod(driverId, raceIndex, race, session, teamName) {
+            const gast = (GAME_STATE.reservePool || []).find(d => d.id === driverId);
+            if (!gast || _istTot(gast)) return false;
+            const year = GAME_STATE.currentYear;
+            gast.status = 'deceased';
+            gast.deathYear = year;
+            gast.lastRacedYear = year;
+            gast.deathRace = race.name;
+            const wo = session === 'race' ? 'im Rennen' : session === 'training' ? 'im Training' : 'im Qualifying';
+            logError('DEATH', `💀 ${gast.name} ist ${wo} bei ${race.name} tödlich verunglückt`);
+            if (!GAME_STATE.seasonDeaths) GAME_STATE.seasonDeaths = [];
+            GAME_STATE.seasonDeaths.push({
+                driver: gast.id, name: gast.name, team: teamName || '-',
+                race: raceIndex, raceName: race.name, raceCountry: race.country,
+                fatalSession: session, replacement: null
+            });
+            return true;
+        }
+
         function _rollWeekendDeath(raceIndex) {
             if (_weekendDeath[raceIndex] !== undefined) return; // bereits gewürfelt
             // Historischer Modus (deaths AUS): keine Mid-Season-Tode – der deterministische
@@ -14845,7 +14928,9 @@
             const trainFrac = ERA_TRAINING_FRACTION;
             const rand = Math.random();
             if (rand < raceFrac) {
-                _weekendDeath[raceIndex] = 'race';
+                // Außer beim Indy 500 entstehen Renntote aus den Unfällen (ERA_ACCIDENT_LETHALITY
+                // in simulateRace). Der Wochenend-Würfel trägt hier nur Training und Qualifying.
+                _weekendDeath[raceIndex] = isIndy500 ? 'race' : null;
             } else if (rand < raceFrac + (1 - raceFrac) * trainFrac) {
                 _weekendDeath[raceIndex] = 'training';
             } else {
@@ -14943,6 +15028,7 @@
                 victimEntry.fatalSession = 'training';
 
                 const victim = GAME_STATE.drivers.find(d => d.id === victimEntry.driver);
+                if (!victim) _bucheGastTod(victimEntry.driver, raceIndex, race, 'training', victimEntry.teamName);
                 if (victim) {
                     victim.status = 'deceased';
                     victim.deathYear = year;
@@ -15182,6 +15268,7 @@
                 victimEntry.fatalSession = 'qualifying';
 
                 const victim = GAME_STATE.drivers.find(d => d.id === victimEntry.driver);
+                if (!victim) _bucheGastTod(victimEntry.driver, raceIndex, race, 'qualifying', victimEntry.teamName);
                 if (victim) {
                     victim.status = 'deceased';
                     victim.deathYear = year;
@@ -20531,9 +20618,9 @@
                                             <span class="font-bold driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span><span class="font-bold"> (${d.team || '?'})</span>
                                             <span class="text-tertiary">${d.raceName}</span>
                                         </div>
-                                        <div class="text-xs text-tertiary mt-1">
+                                        ${d.replacement ? `<div class="text-xs text-tertiary mt-1">
                                             → Ersetzt durch: ${d.replacement} (${replacementTeam?.name || d.team || '?'})
-                                        </div>
+                                        </div>` : ''}
                                         ${obit ? `<div class="text-xs italic mt-1.5" style="opacity:0.85">${obit}</div>` : ''}
                                     </div>
                                 `;
@@ -26210,7 +26297,7 @@
                 if (deaths.length > 0) {
                     confirmMsg += `💀 Verstorben (${deaths.length}):\n`;
                     deaths.forEach(d => {
-                        confirmMsg += `   • ${d.name} → ${d.replacement}\n`;
+                        confirmMsg += `   • ${d.name}${d.replacement ? ' → ' + d.replacement : ''}\n`;
                     });
                 }
                 
