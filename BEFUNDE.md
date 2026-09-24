@@ -1464,3 +1464,33 @@ zufälliger, und das starke Drittel verliert gut 1 Pp.
 gegen eine einzelne reale Saison nicht 1,0. Prüfbar über Spearman zwischen zwei
 Spiel-Läufen. Liegt Spiel↔Spiel nahe bei Spiel↔real, ist der Verlust kein echter
 Realismusverlust.
+
+### 24.09.2026 (5): Was eine Regel-Ära real ausmacht — Grundlage für Zukunfts-Ären
+
+Frage des Nutzers: Nach 2025 enden die Ära-Tabellen, und künftige Saisons laufen mit
+dem letzten Wert weiter. Braucht es künstliche Ären? Dafür gemessen, was eine Ära real
+ausmacht. Ärenwechsel = große Regelumbrüche: 1954, 1961, 1966, 1983, 1989, 1995, 1998,
+2006, 2009, 2014, 2017, 2022 (2026 steht an).
+
+| Befund | Zahl |
+|---|---|
+| Ära-Länge | 4, 7, 5, 17, 6, 6, 3, 8, 3, 5, 3, 5, 4 → **Ø 5,8, σ 3,7** |
+| DNF-Rate relativ zum Ära-Mittel, Jahr 0 / 1 / 2 / 3 / 4 / 5 / 6+ | **1,12 / 1,08** / 0,95 / 1,00 / 0,93 / 0,95 / 0,92 |
+| Quali-Abstand schwaches Drittel, relativ | 0,95 / 0,98 / 1,06 / 0,98 / 0,93 / 0,87 / 1,12 → **kein Muster** |
+| Spearman Teamreihenfolge Vorjahr → Jahr | Ärenwechsel **0,765 ± 0,047** (n 10) · sonst 0,675 ± 0,040 (n 55) |
+
+**Negativergebnisse:**
+- **Kein Umwürfeln beim Ärenwechsel.** Die Teamreihenfolge ist in Wechseljahren eher
+  *stabiler* als sonst (nicht signifikant). Brawn 2009 und Mercedes 2014 sind
+  Einzelfälle, die im Gedächtnis bleiben, kein Muster.
+- **Kein Zusammenrücken innerhalb einer Ära**, jedenfalls nicht beim schwachen Drittel.
+
+**Positiv:** Neue Regeln kosten Zuverlässigkeit. In den ersten beiden Jahren fallen
+8–12 % mehr Autos aus als im Ära-Mittel.
+
+**Umgesetzt (v0.9.18.15):** `REAL_ERA_CHANGES` bis 2026, danach würfelt
+`eraChangesBis` die Längen aus den echten Längen und hält sie in
+`GAME_STATE.futureEraChanges`. `eraReliabilityFactor` moduliert `getEraDNFRate` nur für
+Jahre nach der Tabelle (2026: 12,3 %, 2027: 11,9 %, danach 10,5 %). Das
+Saisonende-Modal kündigt einen Wechsel an („📜 Neues Reglement ab …"). Teamstärken
+werden bewusst **nicht** umgewürfelt (s. oben).
