@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.13</title>
+    <title>F1 RPG v0.9.18.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.13 (aktuell) - 24.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.14 (aktuell) - 24.09.2026</div>
+                            <div>&#8226; NEU: Abstand der Teams je Ära (ERA_TEAM_SPREAD) statt überall gleich</div>
+                            <div>&#8226; FIX: schwache Teams bekamen ab 2000 ein Drittel zu wenig Punkte – jetzt in jeder Ära realistisch</div>
+                            <div>&#8226; INTERN: Pyramiden-Formel an einer Stelle (teamPyramidCarSpeed)</div>
+                            <div class="font-bold text-slate-400">v0.9.18.13 - 24.09.2026</div>
                             <div>&#8226; INTERN: Ausfall-Formel an einer Stelle (Rennen, Vorschau, Messwerkzeug) – Verhalten unverändert</div>
                             <div class="font-bold text-slate-400">v0.9.18.12 - 23.09.2026</div>
                             <div>&#8226; NEU: Unfall oder Technik je Saison aus F1DB statt 50/50</div>
@@ -4084,7 +4088,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.13';
+        const VERSION = '0.9.18.14';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6085,8 +6089,34 @@
         //   moderne Jahre mit zehn Teams passen.
         //   Zielgroesse ist "Teams mit Punkten" je Saison; real treibt die Zahl
         //   der punktenden Teams die Zahl der Punktefahrer (Korrelation 0,602).
-        const TEAM_PYRAMID_FLOOR = 60;
+        // (Der feste Boden TEAM_PYRAMID_FLOOR = 60 ist seit v0.9.18.14 durch
+        //  ERA_TEAM_SPREAD ersetzt: Boden = max − Spreizung der Ära.)
         const TEAM_PYRAMID_EXP = 1.4;
+
+        // ── Spreizung der Pyramide je Ära (v0.9.18.14) ─────────────────────────
+        // Abstand bester → letzter carSpeed. Vorher fest max − 60 ≈ 36 in jeder Ära.
+        // KALIBRIERT AM ERGEBNIS, nicht am Quali-Abstand: Zielgröße ist der Punkteanteil
+        // des schwachen Team-Drittels gegen F1DB (tests/vakuum-batch.js --alle 1 4).
+        // Der reale Quali-Rückstand als alleinige Quelle (Spreizung 9,62 × Rückstand)
+        // reparierte 2000+, verschlechterte aber die 80er (t −5,0): dort holten schwache
+        // Teams ihre Punkte über ~50 % Ausfälle, nicht über Tempo. Deshalb braucht es
+        // in den 80ern trotz 6 % Quali-Rückstand eine KLEINE Spreizung.
+        // 1950–79: bei 36 nicht signifikant daneben, Messung dort zu verrauscht
+        // (±0,9–1,5 Pp je Dekade) — bleibt 36. BEFUNDE.md 24.09.2026.
+        // Künftige Saisons: letzter Wert. Später soll ein realer Abstand je Team und
+        // Saison (Variante B) diese Ära-Pyramide überschreiben, wo es ihn gibt.
+        const ERA_TEAM_SPREAD = {
+            1950: 36, 1960: 36, 1970: 36, 1980: 17,
+            1990: 33, 2000: 22, 2010: 26, 2020: 22
+        };
+
+        // carSpeed eines Teams aus seinem Rang: pos = 1 beim Besten, 0 beim Letzten.
+        // Einzige Quelle der Pyramide (Saisonstart expandSeasonData und
+        // Saisonwechsel startNewSeason Phase 4b).
+        function teamPyramidCarSpeed(pos, max, year) {
+            const floor = max - getEraValue(ERA_TEAM_SPREAD, year);
+            return Math.round(floor + Math.pow(pos, TEAM_PYRAMID_EXP) * (max - floor));
+        }
 
         // ── Form-Vielfalt: was ein schlechter Tag kostet (v0.9.18.6) ──────────
         // Anteil der Pace, der an einem schlechten Tag noch zur Verfuegung steht.
@@ -10426,7 +10456,7 @@
                 const _csMax = _csV[0]?.[3] ?? 96, _csN = _csV.length;
                 const _csRM = new Map(_csV.map((e, i) => {
                     const pos = _csN > 1 ? 1 - i / (_csN - 1) : 1;
-                    return [e[0], Math.round(TEAM_PYRAMID_FLOOR + Math.pow(pos, TEAM_PYRAMID_EXP) * (_csMax - TEAM_PYRAMID_FLOOR))];
+                    return [e[0], teamPyramidCarSpeed(pos, _csMax, year)];
                 }));
                 const teams = data.t.map(t => ({
                     id: t[0], name: t[1], nation: CONSTRUCTOR_NATIONS[t[0]] || '🏁', color: t[2],
@@ -24383,10 +24413,9 @@
                     const _sdSorted = [..._sdValid].sort((a, b) => b[3] - a[3]);
                     const _sdN = _sdSorted.length;
                     const _sdMax = _sdSorted[0]?.[3] ?? 96;
-                    const _FLOOR = TEAM_PYRAMID_FLOOR, _EXP = TEAM_PYRAMID_EXP;   // s. Konstante
                     _sdRemap = new Map(_sdSorted.map((e, i) => {
                         const pos = _sdN > 1 ? 1 - i / (_sdN - 1) : 1;
-                        return [e[1], Math.round(_FLOOR + Math.pow(pos, _EXP) * (_sdMax - _FLOOR))];
+                        return [e[1], teamPyramidCarSpeed(pos, _sdMax, newYear)];
                     }));
                 }
             }
