@@ -24,6 +24,7 @@ versehentlich zurück.
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
 | Die Leistungspyramide `TEAM_PYRAMID_EXP` | carSpeed-Verteilung, punktende Teams, große Felder |
+| **⚠ Rauschgrenze: „Zug zur Mitte" bei den Fahrern ist Artefakt** | JEDE Auswertung von  gegen Einzelsaisons — Fahrer-Kennzahl ausgereizt (Ø ~1,71 wäre perfekt), Teams mit echtem Rest |
 | **Todesfälle je Ebene neu abgeglichen** | Renntote aus Unfällen, Gastfahrer-Tote, nonWM- und Indy-Anker (alte Anker zu niedrig) |
 | **Unfall-Anteil je Saison statt 50/50** | `dnfType`, Todesfälle im Rennen (−20 % WM-Tode durch weniger Unfälle) |
 | **Ausfall-Spreizung nach Teamstärke: Formel liefert die Hälfte** | jede Arbeit an der DNF-Formel, `reliability`, `dnfType` |
@@ -767,6 +768,12 @@ Dort geht noch etwas verloren, das keine der geprüften Ursachen erklärt.
 
 ### 18.09.2026 (5): VOLLAUF über alle 75 Saisons — „das Spiel zieht zur Mitte"
 
+⚠⚠ **Am 24.09.2026 zum größten Teil als Messartefakt erkannt** (s. Abschnitt „Die
+Rauschgrenze" unten). Der reale Wert ist EINE Saison mit ihrem ganzen Zufall, der
+Spielwert ein Mittel über 4 Läufe. Das allein ergibt bei den Fahrern r ≈ −0,70 und
+einen mittleren Fehler von ~1,71. Die Fahrer-Kennzahl liegt damit an ihrer
+Rauschgrenze. Bei den Teams bleibt ein echter Rest.
+
 Nutzerfrage: „sind das einzelfälle die besonders hervorstechen, weil du wirklich jedes
 jahr geprüft hast?" Nein — es waren zehn von 75 Jahren. Nachgeholt mit
 `node tests/vakuum-batch.js --alle 1 4`, ausgewertet mit `tests/vakuum-verteilung.js`.
@@ -1303,3 +1310,157 @@ sie im Tempo näher dran sind als im Spiel.
 **Entscheidung des Nutzers (24.09.2026):** Zurück auf Faktor 1. Zuerst wird die
 Leistungslücke der Teams angegangen, danach Faktor 2 neu gemessen. Die gemeinsame
 Funktion `dnfTeamFaktor` bleibt. Mit Faktor 1 rechnet sie exakt wie die alte Formel.
+
+---
+
+### 24.09.2026: Die Rauschgrenze — „Zug zur Mitte" ist bei den Fahrern ein Artefakt
+
+Auftrag: die Leistungslücke der Teams angehen. Vorher drei Prüfungen, alle reine
+Datenanalyse ohne Code-Änderung.
+
+**1. Verworfen: die Rang-Pyramide verschluckt den echten Tempo-Abstand.** `carSpeed`
+entsteht nur aus dem Rang (`TEAM_PYRAMID_*`), jede Saison hat also dieselbe Kurve.
+Vermutung: Dominanz-Jahre und dichte Jahre lassen sich so nicht abbilden. Gemessen mit
+dem echten Abstand zur Pole (F1DB-Qualifying, Median je Team-Saison, bis 2005
+`timeMillis`, ab 2006 `q1Millis`, Teams ab 8 Starts, 71 Saisons):
+
+| Tempo-Abstand-Kennzahl | r mit realen Punkte-Teams | r mit Spiel-Abweichung Teams |
+|---|---|---|
+| Abstand 2. Team | 0,06 | −0,09 |
+| Abstand 4. Team | −0,29 | 0,18 |
+| Abstand Mitte | 0,10 | 0,08 |
+| Teams innerhalb 2 % | 0,18 | −0,08 |
+| **Teams gesamt** | **0,84** | **−0,26** |
+
+Der echte Tempo-Abstand erklärt weder die reale Zahl punktender Teams noch die
+Abweichung des Spiels. Real bestimmt sie die Feldgröße.
+
+**2. Verworfen: die Tempo-Reihenfolge in `SEASON_DATA` ist falsch.** Spearman
+SD-Tempo gegen reale Quali-Reihenfolge je Dekade: 50er 0,75 · **60er 0,53** · 70er 0,86 ·
+80er 0,83 · 90er 0,94 · 00er 0,92 · 10er 0,92 · 20er 0,92. Kein Zusammenhang mit der
+Spiel-Abweichung (r = −0,08). Nebenbefund: 1964–68 passt die Reihenfolge kaum
+(1966: 0,09, 1968: 0,24).
+
+**3. Die Rauschgrenze.** Zwei Vollläufe mit praktisch gleichem Code (v0.9.18.11
+`vakuum-alle-dnf-neu.txt` gegen v0.9.18.12 `vakuum-alle-spread-alt.txt`) unterscheiden
+sich nur durch Zufall. Streuung ihrer Differenz ergibt die Streuung eines Einzellaufs.
+
+| | σ Einzellauf | σ reale Zahl über die Jahre | r(Diff, Ziel) bei perfektem Spiel | gemessen | E\|Diff\| bei perfektem Spiel | gemessen |
+|---|---|---|---|---|---|---|
+| Fahrer mit Punkten | 1,92 | 2,75 | **−0,70** | −0,61 | **~1,71** | 1,80–1,87 |
+| Teams mit Punkten | 0,89 | 2,71 | −0,33 | −0,60 | ~0,79 | 0,90 |
+
+Rechnung: E\|Diff\| = 0,8 × √(σ² + σ²/4), weil real ein Einzelwert und das Spiel ein
+4er-Mittel ist. r ≈ −σ / σ(real). Annahme: eine reale Saison streut so stark wie ein
+Spiel-Lauf.
+
+**Folgen:**
+- **Die Fahrer-Kennzahl ist ausgereizt.** Ø \|Diff\| ~1,8 liegt an der Grenze, die ein
+  perfektes Spiel hätte. „Das Spiel zieht zur Mitte" ist dort fast vollständig Artefakt,
+  denn das gemessene r ist sogar schwächer als das reine Rauschen.
+- **Bei den Teams bleibt ein echter Rest:** r −0,60 gegen −0,33 aus Rauschen, und
+  Ø 0,90 gegen 0,79. Das Spiel staucht die Zahl punktender Teams etwas. Der Rest hängt an
+  der Feldgröße (r = −0,26): große Felder zu wenige, kleine zu viele.
+- ⚠ **Messfalle für alle künftigen Vollläufe:** Eine Einzelsaison als Ziel hat selbst
+  σ ≈ 1,9 Fahrer. Ein Jahr mit −4 ist bei 75 Jahren **erwartbar** und kein Ausreißer.
+  Einzeljahre nur jagen, wenn sie über ~2,5 σ liegen (Fahrer ~5, Teams ~2,3). 1989
+  (−9,3, jetzt −4,8) lag darüber, der Rest selten.
+
+### 24.09.2026 (2): Punkteanteil je Team-Drittel — ab 2000 zu wenig für die schwachen Teams
+
+Neue Zielgröße in `vakuum-saison.js` / `vakuum-batch.js`: Punkteanteil des starken,
+mittleren und schwachen Drittels. Die Drittel richten sich nach dem realen mittleren
+Startplatz, gezählt werden Fahrerpunkte je realem Konstrukteur. Vollauf 75 × 4 auf
+v0.9.18.13 (`tests/output/vakuum-alle-drittel-basis.txt`):
+
+| Zeitraum | schwaches Drittel Spiel − real | t |
+|---|---|---|
+| 1950–69 | +0,56 Pp | 0,6 |
+| 1970–99 | −0,55 Pp | −1,6 |
+| **2000–24** | **−1,26 Pp** (Spiel ~2,2 %, real ~3,5 %) | **−4,1** |
+| gesamt | −0,49 Pp | −1,6 |
+
+Je Dekade Spiel/real: 50er 3,6/1,7 · 60er 14,2/14,9 · 70er 6,8/7,9 · 80er 2,6/3,2 ·
+90er 2,2/2,2 · 00er 2,9/4,6 · 10er 2,1/3,0 · 20er 1,6/2,6. Das starke Drittel liegt
+im Mittel richtig (−0,25 Pp).
+
+**Die Leistungslücke existiert, aber nur ab 2000 signifikant.** Dort bekommen die
+schwachen Teams etwa ein Drittel zu wenig Punkte.
+
+**Passt zur festen Pyramide.** Realer Quali-Abstand des schwachen Drittels zur Pole je
+Dekade: 6,4 % · 3,0 · 3,0 · 6,2 · 4,7 · 2,8 · 2,6 · **1,3 %**. Die Pyramide gibt jeder
+Ära dieselbe Form (Letzter = 60). Korrelation realer Abstand ↔ Spiel-Abweichung des
+schwachen Drittels über 70 Jahre: **r = +0,28**. Bei engem realen Feld bekommt das
+schwache Drittel im Spiel zu wenig, bei weitem zu viel. Mäßig, aber in die erwartete
+Richtung. Die 80er (weiter Abstand 6,2 %, trotzdem −0,54) passen nicht ins Bild.
+
+Zur Einordnung von Abschnitt „Die Rauschgrenze" Punkt 1: Der Tempo-Abstand erklärt
+nicht die ANZAHL punktender Teams, wohl aber teilweise den ANTEIL des schwachen
+Drittels. Die Anzahl war die zu verrauschte Zielgröße.
+
+### 24.09.2026 (3): `ERA_TEAM_SPREAD` aus dem Quali-Abstand — 2000+ repariert, 70er/80er schlechter
+
+Variante A: Spreizung der Pyramide = 9,62 × realer Quali-Rückstand des schwachen Drittels
+je Dekade (50er 61,9 · 60er 28,6 · 70er 29,1 · 80er 59,6 · 90er 44,9 · 00er 27,1 ·
+10er 24,9 · 20er 11,8; vorher überall ~36). `carSpeed` 1955: 96…34, 1985: 96…36,
+2023: 96…84. Die Pyramiden-Formel steht jetzt einmal, in `teamPyramidCarSpeed`.
+
+**A/B 75 × 4, gepaart** (Monolith v0.9.18.13 gegen `index.html`,
+`tests/output/vakuum-alle-spreizA-alt.txt` / `-neu.txt`):
+
+| Block | schwaches Drittel alt | neu | Δ \|Fahrer-Abw.\| | Δ Spearman | Δ \|Team-Abw.\| |
+|---|---|---|---|---|---|
+| 1950–69 | +0,62 (t 0,6) | +0,38 (t 0,4) | +0,24 | +0,01 | −0,17 |
+| 1970–79 | −1,04 (t −1,1) | **−1,44 (t −2,5)** | **−0,80 (t −2,9)** | +0,01 | −0,57 (t −2,5) |
+| 1980–89 | −0,66 (t −1,3) | **−1,47 (t −5,0)** | +0,74 (t 1,9) | +0,02 | **+0,90 (t 2,2)** |
+| 1990–99 | −0,20 | −0,82 (t −1,8) | +0,38 | 0,00 | +0,14 |
+| **2000–24** | **−1,39 (t −5,0)** | **−0,03 (t −0,1)** | +0,04 | **−0,02 (t −4,7)** | −0,02 |
+| alle | −0,55 | −0,41 | +0,12 | 0,00 | +0,01 |
+
+- **2000–24 repariert:** Das schwache Drittel trifft jetzt die Realität. **Preis:**
+  Spearman sinkt signifikant um 0,02 (0,95 → 0,93). Das engere Feld wird bei
+  unverändertem Rauschen zufälliger.
+- **80er wie vorhergesagt schlechter:** Spreizung 60 macht das schwache Drittel
+  chancenlos (−1,47, t −5,0), obwohl es real bei ~50 % Ausfällen 3,2 % der Punkte holte.
+- **70er unerwartet:** Eine kleinere Spreizung (29 statt 36) nimmt dem schwachen Drittel
+  trotzdem Anteil (−1,04 → −1,44). Das Mittelfeld profitiert vom Zusammenrücken stärker.
+  Die Fahrer- und Team-Zahlen werden dabei aber besser.
+
+**Schluss:** Der reale Quali-Abstand ist als alleinige Quelle der Spreizung nur dort
+tragfähig, wo das Tempo das Ergebnis bestimmt (ab 2000, wenige Ausfälle). In den
+Ausfall-Ären 70er/80er holen schwache Teams ihre Punkte über das Chaos, nicht über das
+Tempo. Ein großer Quali-Rückstand darf dort nicht in eine große `carSpeed`-Lücke
+übersetzt werden.
+
+### 24.09.2026 (4): `ERA_TEAM_SPREAD` am Ergebnis kalibriert
+
+Aus den zwei Messpunkten je Dekade (Spreizung 36 und Quali-Wert) linear auf
+„schwaches Drittel = real" interpoliert. Nur wo die Messung trägt (Messfehler je Dekade
+≤ 0,6 Pp): **80er 17 · 90er 33 · 00er 22 · 10er 26 · 20er 22**. Die 50er bis 70er sind
+zu verrauscht (±0,9–1,5 Pp; die 70er zeigten sogar eine Steigung mit falschem
+Vorzeichen, die 50er hätten 80 verlangt) und bleiben bei 36.
+
+**A/B 75 × 4, gepaart** (Monolith v0.9.18.13 mit 36 überall gegen `index.html`,
+`tests/output/vakuum-alle-spreizA-alt.txt` / `-spreizA2-neu.txt`):
+
+| Block | schwaches Drittel alt | neu | Δ \|Fahrer\| | Δ Spearman | Δ \|Teams\| |
+|---|---|---|---|---|---|
+| 1950–79 | +0,06 | +0,25 | −0,17 | 0,00 | **−0,26 (t −2,4)** |
+| 1980–89 | −0,66 | +0,20 | +0,08 | **−0,02 (t −2,8)** | +0,46 |
+| 1990–99 | −0,20 | +0,33 | −0,15 | 0,00 | −0,38 |
+| 2000–09 | **−1,77 (t −3,0)** | −0,10 | −0,30 | −0,01 | −0,37 |
+| 2010–24 | **−1,14 (t −4,9)** | +0,01 | −0,12 | **−0,02 (t −4,0)** | +0,07 |
+| **alle** | −0,55 | **+0,16** | −0,14 | −0,01 (t −1,6) | −0,13 |
+
+Summen: Ø \|Fahrer-Abw.\| 1,91 → **1,77** · Spearman 0,828 → 0,822 · starkes Drittel
+−0,01 → −1,09 Pp.
+
+**Das schwache Drittel stimmt jetzt in jeder Ära**, keine Abweichung ist mehr
+signifikant. Fahrer- und Team-Zahlen werden leicht besser. **Preis:** Spearman sinkt
+in den 80ern und ab 2010 um 0,02. Ein engeres Feld wird bei gleichem Rauschen
+zufälliger, und das starke Drittel verliert gut 1 Pp.
+
+⚠ Offen: Wo liegt die Rauschgrenze für Spearman? Auch ein perfektes Spiel erreicht
+gegen eine einzelne reale Saison nicht 1,0. Prüfbar über Spearman zwischen zwei
+Spiel-Läufen. Liegt Spiel↔Spiel nahe bei Spiel↔real, ist der Verlust kein echter
+Realismusverlust.

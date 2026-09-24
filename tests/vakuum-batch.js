@@ -62,11 +62,11 @@ function zahl(text, muster) {
 console.log('VAKUUM-BATCH — ' + JAHRE.length + ' Saisons, je ' + LAEUFE + ' Laeufe');
 console.log('Quelle: ' + (process.env.SIMCORE_FROM_INDEX ? 'index.html (Arbeitskopie)' : 'letzter Monolith'));
 console.log('');
-console.log('  Jahr   Renn  |  Punktefahrer            |  Rang   Spearman  Deckung   Teams');
-console.log('               |  Ziel   Ist    Diff      |                            Ist/Ziel');
-console.log('  ' + '─'.repeat(72));
+console.log('  Jahr   Renn  |  Punktefahrer            |  Rang   Spearman  Deckung   Teams     schwaches Drittel');
+console.log('               |  Ziel   Ist    Diff      |                            Ist/Ziel  Anteil Ist/Ziel %');
+console.log('  ' + '─'.repeat(86));
 
-const diffs = [], spears = [], abws = [];
+const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [];
 for (const jahr of JAHRE) {
     let out;
     try {
@@ -92,6 +92,10 @@ for (const jahr of JAHRE) {
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
+    // Punkteanteil je Drittel: "Spiel a/b/c   real x/y/z" — Muster auf die Zeile ankern
+    const dr = out.match(/Punkteanteil Drittel: Spiel ([\d.]+)\/([\d.]+)\/([\d.]+)\s+real ([\d.]+)\/([\d.]+)\/([\d.]+)/);
+    const schwachIst = dr ? Number(dr[3]) : NaN, schwachZiel = dr ? Number(dr[6]) : NaN;
+    if (dr) { schwachDiffs.push(schwachIst - schwachZiel); starkDiffs.push(Number(dr[1]) - Number(dr[4])); }
 
     if (!isNaN(diff)) diffs.push(diff);
     if (!isNaN(sp)) spears.push(sp);
@@ -106,14 +110,19 @@ for (const jahr of JAHRE) {
         + '      |' + String(isNaN(abw) ? '-' : abw.toFixed(2)).padStart(7)
         + String(isNaN(sp) ? '-' : sp.toFixed(3)).padStart(10)
         + String(isNaN(deck) ? '-' : deck.toFixed(1) + ' %').padStart(10)
-        + ((isNaN(teamsSpiel) ? '-' : teamsSpiel.toFixed(1)) + '/' + (isNaN(teamsReal) ? '-' : teamsReal)).padStart(11) + warn);
+        + ((isNaN(teamsSpiel) ? '-' : teamsSpiel.toFixed(1)) + '/' + (isNaN(teamsReal) ? '-' : teamsReal)).padStart(11)
+        + ((isNaN(schwachIst) ? '-' : schwachIst.toFixed(1)) + '/' + (isNaN(schwachZiel) ? '-' : schwachZiel.toFixed(1))).padStart(14) + warn);
 }
 
-console.log('  ' + '─'.repeat(72));
+console.log('  ' + '─'.repeat(86));
 console.log('  Ø Betrag Punktefahrer-Abweichung : ' + avg(diffs.map(Math.abs)).toFixed(2) + ' Fahrer');
 console.log('  Ø vorzeichenbehaftet             : ' + (avg(diffs) >= 0 ? '+' : '') + avg(diffs).toFixed(2)
     + '   (kippt das Vorzeichen, heben sich zwei Fehler auf)');
 console.log('  Ø Spearman                       : ' + avg(spears).toFixed(3));
+console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
+    + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));
+console.log('  Punkteanteil starkes Drittel     : Ø Spiel − real ' + (avg(starkDiffs) >= 0 ? '+' : '') + avg(starkDiffs).toFixed(2)
+    + ' Prozentpunkte · Ø Betrag ' + avg(starkDiffs.map(Math.abs)).toFixed(2));
 console.log('  Ø Rangabweichung ueber alle      : ' + avg(abws).toFixed(2) + ' Plaetze');
 console.log('');
 console.log('  Fuer A/B denselben Aufruf zweimal: ohne SIMCORE_FROM_INDEX (Vorher)');

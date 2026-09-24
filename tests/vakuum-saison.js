@@ -111,6 +111,9 @@ function einLauf(ctx, real, punkteFn, gefahren) {
 
     const rennen = gs.races || [];
     let gesucht = 0, gesetzt = 0, imRennen = 0, imQuali = 0;
+    // Punkte je REALEM Konstrukteur, aus den Fahrerpunkten jedes Rennens. Nicht
+    // teamStandings: dort gelten je nach Aera Konstrukteursregeln (nur bestes Auto).
+    const teamZuKonstr = new Map(), konstrPunkte = {};
 
     for (let i = 0; i < rennen.length; i++) {
         const r = rennen[i];
@@ -128,6 +131,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
             const t = findeTeam(z, s.constructorId);
             if (!d || !t) continue;
             d.team = t.id;                 // reale Zuordnung erzwingen
+            teamZuKonstr.set(t.id, s.constructorId);
             if (!d.status || d.status !== 'active') d.status = 'active';
             // ⚠ MELDE-FILTER AUSHEBELN (18.09.2026). Wer real in der
             // Startaufstellung stand, hat nachweislich teilgenommen — der
@@ -177,6 +181,10 @@ function einLauf(ctx, real, punkteFn, gefahren) {
 
         const erg = ctx.simulateRace(i, false);
         if (erg) ctx.applyRaceResults(erg);
+        for (const e of (erg ? erg.results || [] : [])) {
+            const k = teamZuKonstr.get(e.team);
+            if (k && e.points > 0) konstrPunkte[k] = (konstrPunkte[k] || 0) + e.points;
+        }
 
         // ⚠ Die Deckung muss die RENNTEILNAHME messen, nicht das gesetzte Quali.
         // Gemessen 2005: in 6 von 19 Runden stand ein Fahrer im Quali, tauchte im
@@ -208,7 +216,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
     // 1953 punkten real 3 Teams und 12 Fahrer, 1989 sind es 16 Teams und 29
     // Fahrer. Wer die Fahrerzahl treffen will, muss die TEAMS treffen.
     const teamPunkte = Object.values(gs.teamStandings || {}).filter(t => (t.points || 0) > 0).length;
-    return { stand, teamPunkte, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
+    return { stand, teamPunkte, konstrPunkte, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
              rennDeckung: imQuali ? imRennen / imQuali : 0 };
 }
 
@@ -280,8 +288,10 @@ function gefahreneRunden(ctx, real) {
     // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
+    const konstrLaeufe = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, teamPunkte, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
+        const { stand, teamPunkte, konstrPunkte, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
+        konstrLaeufe.push(konstrPunkte);
         rennDeck.push(rennDeckung);
         teamsMitPunkten.push(teamPunkte);
         deckungen.push(deckung);
@@ -389,6 +399,40 @@ function gefahreneRunden(ctx, real) {
         + '   real ' + realPunktefahrer
         + '   Differenz ' + (avg(absolut) - realPunktefahrer >= 0 ? '+' : '')
         + (avg(absolut) - realPunktefahrer).toFixed(1) + ' Fahrer');
+    // === PUNKTEANTEIL JE TEAM-DRITTEL (24.09.2026) ===
+    // Die ANZAHL punktender Fahrer/Teams liegt an ihrer Rauschgrenze (BEFUNDE.md
+    // "Die Rauschgrenze"). Der Punkteanteil je Drittel sagt direkt, ob schwache
+    // Teams zu schwach sind. Drittel nach realem mittlerem Startplatz, nicht nach
+    // Punkten (die haengen selbst am Ergebnis). Teams ab 3 Starts.
+    {
+        const gridSum = {}, gridN = {}, rPkt = {};
+        for (const [rd, rund] of Object.entries(real.runden)) {
+            if (!gefahren.has(Number(rd))) continue;
+            for (const st of rund.starter) {
+                gridSum[st.constructorId] = (gridSum[st.constructorId] || 0) + st.platz;
+                gridN[st.constructorId] = (gridN[st.constructorId] || 0) + 1;
+            }
+        }
+        for (const e of real.erg) {
+            if (!gefahren.has(e.round)) continue;
+            const pt = String(e.positionText || '');
+            if (!/^[0-9]+$/.test(pt)) continue;
+            rPkt[e.constructorId] = (rPkt[e.constructorId] || 0) + punkteFn(Number(pt), JAHR);
+        }
+        const konstr = Object.keys(gridN).filter(k => gridN[k] >= 3)
+            .sort((a, b) => gridSum[a] / gridN[a] - gridSum[b] / gridN[b]);
+        const n3 = Math.max(1, Math.round(konstr.length / 3));
+        const drittel = [konstr.slice(0, n3), konstr.slice(n3, konstr.length - n3), konstr.slice(konstr.length - n3)];
+        const anteile = pkt => {
+            const ges = konstr.reduce((a, k) => a + (pkt[k] || 0), 0) || 1;
+            return drittel.map(d => 100 * d.reduce((a, k) => a + (pkt[k] || 0), 0) / ges);
+        };
+        const rA = anteile(rPkt);
+        const sA = [0, 1, 2].map(i => avg(konstrLaeufe.map(p => anteile(p)[i])));
+        console.log('  Punkteanteil Drittel: Spiel ' + sA.map(v => v.toFixed(1)).join('/')
+            + '   real ' + rA.map(v => v.toFixed(1)).join('/')
+            + '   (stark/mittel/schwach nach realem Startplatz, ' + konstr.length + ' Teams)');
+    }
     console.log('  (Quote Spiel ' + avg(quoten).toFixed(1) + ' %  gegen real '
         + (100 * realPunktefahrer / realFeld).toFixed(1) + ' %  bei ' + realFeld + ' Startern)');
     const rSumme = rStand.reduce((a, b) => a + b.punkte, 0);

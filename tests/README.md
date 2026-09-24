@@ -168,6 +168,14 @@ Ist-Wert. Eine globale Zahl gibt es nicht: real schwanken die Punktefahrer zwisc
 16 (1965) und 26 (1982), ohne systematischen Zusammenhang mit Rennzahl (0,256),
 Punkteraengen (0,044) oder Punkteplaetzen (0,119).
 
+**Punkteanteil je Team-Drittel (seit 24.09.2026)** — Spalte „schwaches Drittel
+Ist/Ziel" und zwei Summenzeilen (schwaches und starkes Drittel, Ø Spiel − real). Die
+Drittel richten sich nach dem realen mittleren **Startplatz**, beide Seiten zählen
+Fahrerpunkte je realem Konstrukteur über dieselben Runden. Das ist die Zielgröße für
+die Leistungslücke der Teams, weil die Anzahl punktender Fahrer an ihrer Rauschgrenze
+liegt. ⚠ Nicht `teamStandings` nehmen: dort gelten je nach Ära Konstrukteursregeln
+(nur das beste Auto zählt).
+
 **A/B:** denselben Aufruf zweimal — ohne `SIMCORE_FROM_INDEX` (letzter Monolith,
 Vorher) und mit (Arbeitskopie, Nachher). Nur so ist eine Aenderung von Rauschen zu
 trennen.
@@ -191,6 +199,8 @@ Muster fand also die Team-Differenz gefolgt von `\n  Fahrer mit Punkten`. Ein Re
 „Fahrer" verlangt, kann trotzdem die Teamzahl liefern. Alle Muster heißen jetzt
 `/Fahrer mit Punkten:.*?…/`, und die Teams laufen als eigene Spalte mit, damit die
 Verwechslung sichtbar wird statt still zu passieren.
+
+⚠ **Rauschgrenze (24.09.2026):** Das Ziel ist EINE reale Saison mit σ ≈ 1,9 Punktefahrern bzw. 0,9 Teams. Ein perfektes Spiel hätte bei 4 Läufen Ø |Diff| ≈ 1,71 Fahrer / 0,79 Teams und r(Diff, Ziel) ≈ −0,70 / −0,33. Gemessen 1,8 / 0,9: die Fahrer-Kennzahl ist ausgereizt. Einzeljahre erst ab ~2,5 σ (Fahrer ~5, Teams ~2,3) als Ausreißer behandeln. Herleitung in BEFUNDE.md.
 
 **Gegenprobe, die den Fehler sofort zeigt:** In jeder Zeile muss `Ist − Ziel = Diff`
 aufgehen. Ging es nicht, war der Fehler zwei Sitzungen lang unbemerkt.

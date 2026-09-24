@@ -117,6 +117,44 @@ for (const [year, s] of Object.entries(dnfStats)) {
     truth[year].raceDeaths    = s.rennTote;
 }
 
+// ── Quali-Abstand des schwachen Drittels zur Pole (%) ───────────────────
+// Quelle von ERA_TEAM_SPREAD. Je Rennen: beste Zeit jedes Teams relativ zur
+// Pole; je Team-Saison der Median (robust gegen Regen-Qualis); Teams ab 8
+// Starts; Mittel über das Drittel mit dem größten Rückstand.
+// Zeit: bis 2005 timeMillis, ab 2006 q1Millis (in Q1 fahren alle).
+// Rückstände über 15 % gelten als Ausreißer (Regen, Defekt) und fliegen raus.
+{
+    const med = a => { const s = [...a].sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+    const indy = new Set(races.filter(r => r.circuitId === 'indianapolis' && r.year <= 1960).map(r => r.id));
+    const proRennen = {};
+    for (const q of qualiResults) {
+        if (indy.has(q.raceId)) continue;
+        const t = q.year >= 2006 ? q.q1Millis : (q.timeMillis || q.q1Millis);
+        if (!t) continue;
+        const r = proRennen[q.raceId] = proRennen[q.raceId] || { year: q.year, team: {} };
+        r.team[q.constructorId] = Math.min(r.team[q.constructorId] || Infinity, t);
+    }
+    const gaps = {};
+    for (const r of Object.values(proRennen)) {
+        const pole = Math.min(...Object.values(r.team));
+        for (const [c, t] of Object.entries(r.team)) {
+            const g = (t / pole - 1) * 100;
+            if (g <= 15) ((gaps[r.year] = gaps[r.year] || {})[c] = gaps[r.year][c] || []).push(g);
+        }
+    }
+    const starts = {};
+    for (const e of raceResults) {
+        if (indy.has(e.raceId) || /^(DNQ|DNPQ|DNS|DNP|EX|WD)$/.test(e.positionText)) continue;
+        (starts[e.year] = starts[e.year] || {})[e.constructorId] = (starts[e.year][e.constructorId] || 0) + 1;
+    }
+    for (const [year, g] of Object.entries(gaps)) {
+        const t = Object.entries(g).filter(([c]) => (starts[year] || {})[c] >= 8).map(([, v]) => med(v)).sort((a, b) => a - b);
+        if (t.length < 5 || !truth[year]) continue;
+        const n3 = Math.round(t.length / 3), schwach = t.slice(-n3);
+        truth[year].weakThirdGapPct = parseFloat((schwach.reduce((a, b) => a + b, 0) / schwach.length).toFixed(3));
+    }
+}
+
 // ── Rennen pro Jahr ───────────────────────────────────────────────────────
 const raceCount = {};
 for (const r of races) {
