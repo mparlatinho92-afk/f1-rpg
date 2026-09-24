@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.12</title>
+    <title>F1 RPG v0.9.18.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.12 (aktuell) - 23.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.13 (aktuell) - 24.09.2026</div>
+                            <div>&#8226; INTERN: Ausfall-Formel an einer Stelle (Rennen, Vorschau, Messwerkzeug) – Verhalten unverändert</div>
+                            <div class="font-bold text-slate-400">v0.9.18.12 - 23.09.2026</div>
                             <div>&#8226; NEU: Unfall oder Technik je Saison aus F1DB statt 50/50</div>
                             <div>&#8226; NEU: Tote im Rennen entstehen aus Unfällen, Tödlichkeit je Dekade</div>
                             <div>&#8226; FIX: tödlich verunglückte Gastfahrer (v. a. Indy 500) wurden nie als tot gebucht</div>
@@ -17693,7 +17695,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.12';
+        const VERSION = '0.9.18.13';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19204,6 +19206,19 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 else break;
             }
             return result;
+        }
+
+        // Wie stark die Team-Zuverlässigkeit die Ausfallrate um den Jahreswert verschiebt.
+        // Bei 1 liefert die Formel nur die halbe reale Spreizung schwach/stark (6,3 statt
+        // 12,5 Prozentpunkte, tests/dnf-spreizung.js). 2 trifft sie im Mittel, senkt aber
+        // die punktenden Teams signifikant (t = −5,1): die zu flache Spreizung verdeckt eine
+        // zu große Leistungslücke. Erst die Lücke beheben, dann 2 neu messen (BEFUNDE.md 24.09.2026).
+        const DNF_REL_SPREAD = 1;
+
+        // Faktor auf die Jahres-Ausfallrate für ein Team. Einzige Quelle der Formel:
+        // simulateRace, DNF-Vorschau und tests/dnf-spreizung.js rufen alle diese Funktion.
+        function dnfTeamFaktor(avgRel, rel) {
+            return 1 + DNF_REL_SPREAD * (avgRel - rel) / 100;
         }
 
         // Anteil der Unfälle (Unfall/Kollision/Dreher) an allen Ausfällen je Jahr, in %.
@@ -27931,7 +27946,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 const _eraBase = getEraDNFRate(GAME_STATE.currentYear);
                 const _multiplier = (GAME_STATE.dnfRate ?? 100) / 100;
                 const _avgRel = GAME_STATE.teams.reduce((s, t) => s + (t.reliability || 75), 0) / GAME_STATE.teams.length;
-                let dnfPercent = _eraBase * _multiplier * (1 + (_avgRel - (team.reliability || 75)) / 100);
+                let dnfPercent = _eraBase * _multiplier * dnfTeamFaktor(_avgRel, team.reliability || 75);
                 dnfPercent = Math.max(2, Math.min(99, dnfPercent));
                 let isDNF = false;
                 let dnfType = null;
@@ -52840,7 +52855,7 @@ Empfohlene Wertebereiche:
             const worstTeam = sortedTeams[sortedTeams.length - 1];
 
             function calcDnf(rel) {
-                return Math.max(2, Math.min(99, eraBase * multiplier * (1 + (avgRel - rel) / 100)));
+                return Math.max(2, Math.min(99, eraBase * multiplier * dnfTeamFaktor(avgRel, rel)));
             }
 
             const bestDnf  = calcDnf(bestTeam.reliability  || 75);
