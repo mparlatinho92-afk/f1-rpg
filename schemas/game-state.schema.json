@@ -36,7 +36,8 @@
     },
 
     "$saisonEvents": {
-      "seasonDeaths":       { "type": "array", "itemShape": "{ driver, name, race, raceName, replacement }" },
+      "seasonDeaths":       { "type": "array", "itemShape": "{ driver, name, race, raceName, replacement }", "note": "replacement: null bei Gastfahrern aus dem Reserve-Pool (seit v0.9.18.12)" },
+      "futureEraChanges":   { "type": "array", "items": "number (Jahr)", "description": "Gewürfelte Regel-Ärenwechsel nach 2026 (Längen aus REAL_ERA_CHANGES). Wird bei Bedarf ein Jahr voraus ergänzt (eraChangesBis). Seit v0.9.18.15." },
       "seasonRetirements":  { "type": "array", "itemShape": "{ driver, name, age, reason }" },
       "seasonTransfers":    { "type": "array" }
     },

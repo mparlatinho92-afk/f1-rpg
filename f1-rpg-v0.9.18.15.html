@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.14</title>
+    <title>F1 RPG v0.9.18.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.14 (aktuell) - 24.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.15 (aktuell) - 24.09.2026</div>
+                            <div>&#8226; NEU: Zukunfts-Saisons bekommen Regel-Ären mit echter Längenverteilung</div>
+                            <div>&#8226; NEU: erste Jahre einer Ära mit mehr Ausfällen (gemessen: +12 %/+8 %)</div>
+                            <div>&#8226; NEU: Ankündigung „Neues Reglement“ im Saisonende</div>
+                            <div class="font-bold text-slate-400">v0.9.18.14 - 24.09.2026</div>
                             <div>&#8226; NEU: Abstand der Teams je Ära (ERA_TEAM_SPREAD) statt überall gleich</div>
                             <div>&#8226; FIX: schwache Teams bekamen ab 2000 ein Drittel zu wenig Punkte – jetzt in jeder Ära realistisch</div>
                             <div>&#8226; INTERN: Pyramiden-Formel an einer Stelle (teamPyramidCarSpeed)</div>
@@ -17699,7 +17703,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.14';
+        const VERSION = '0.9.18.15';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19209,7 +19213,46 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 if (year >= k) result = ERA_DNF_RATES[k];
                 else break;
             }
-            return result;
+            // Nach der Tabelle: Regel-Ära moduliert die letzte bekannte Rate
+            return Math.round(result * eraReliabilityFactor(year) * 10) / 10;
+        }
+
+        // === REGEL-ÄREN (v0.9.18.15) ===
+        // Echte große Regelumbrüche. Danach würfelt das Spiel die Länge jeder weiteren
+        // Ära aus den echten Längen (4,7,5,17,6,6,3,8,3,5,3,5,4 → Ø 5,8). Gemessen
+        // (BEFUNDE.md 24.09.2026): neue Regeln kosten Zuverlässigkeit, im 1. Jahr
+        // +12 %, im 2. +8 % Ausfälle, danach −5 %. KEIN Umwürfeln der Teamstärken beim
+        // Wechsel — die Reihenfolge ist real in Wechseljahren sogar stabiler.
+        // Bis 2025 steckt der Effekt schon in den jahresgenauen ERA_DNF_RATES; er gilt
+        // deshalb nur für Jahre nach der Tabelle.
+        const REAL_ERA_CHANGES = [1950, 1954, 1961, 1966, 1983, 1989, 1995, 1998, 2006, 2009, 2014, 2017, 2022, 2026];
+        const ERA_START_DNF_FACTOR = [1.12, 1.08];   // Jahr 0, 1 der Ära; danach ERA_LATE_DNF_FACTOR
+        const ERA_LATE_DNF_FACTOR = 0.95;
+
+        // Liste aller Ärenwechsel bis mindestens bisJahr. Künftige Wechsel werden einmal
+        // gewürfelt und im Spielstand gehalten (GAME_STATE.futureEraChanges), damit sie
+        // beim Neuladen gleich bleiben.
+        function eraChangesBis(bisJahr) {
+            const alle = [...REAL_ERA_CHANGES];
+            if (bisJahr <= alle[alle.length - 1]) return alle;
+            if (!Array.isArray(GAME_STATE.futureEraChanges)) GAME_STATE.futureEraChanges = [];
+            const fut = GAME_STATE.futureEraChanges;
+            const laengen = REAL_ERA_CHANGES.slice(1).map((y, i) => y - REAL_ERA_CHANGES[i]);
+            let letzte = fut.length ? fut[fut.length - 1] : alle[alle.length - 1];
+            while (letzte <= bisJahr) {
+                letzte += laengen[Math.floor(Math.random() * laengen.length)];
+                fut.push(letzte);
+            }
+            return alle.concat(fut);
+        }
+
+        // Faktor auf die Ausfallrate für Jahre nach ERA_DNF_RATES, je nach Jahr in der Ära.
+        // Plant immer ein Jahr voraus, damit das Saisonende-Modal den Wechsel ankündigen kann.
+        function eraReliabilityFactor(year) {
+            const keys = Object.keys(ERA_DNF_RATES).map(Number);
+            if (year <= Math.max(...keys)) return 1;
+            const start = eraChangesBis(year + 1).filter(y => y <= year).pop();
+            return ERA_START_DNF_FACTOR[year - start] ?? ERA_LATE_DNF_FACTOR;
         }
 
         // Wie stark die Team-Zuverlässigkeit die Ausfallrate um den Jahreswert verschiebt.
@@ -34222,6 +34265,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     <div class="text-6xl mb-4">🏆</div>
                     <h2 class="text-3xl font-bold mb-2">Saison ${GAME_STATE.currentYear}</h2>
                     <p class="text-sm text-tertiary">Ø Rücktrittsalter dieser Ära: ${eraRetirementAge.toFixed(0)} Jahre</p>
+                    ${[...REAL_ERA_CHANGES, ...(GAME_STATE.futureEraChanges || [])].includes(GAME_STATE.currentYear + 1)
+                        ? `<p class="text-sm font-bold mt-2">📜 Neues Reglement ab ${GAME_STATE.currentYear + 1} — die ersten Jahre einer Regel-Ära kosten Zuverlässigkeit</p>`
+                        : ''}
                 </div>
                 
                 <!-- Weltmeister -->
