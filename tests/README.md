@@ -176,6 +176,13 @@ die Leistungslücke der Teams, weil die Anzahl punktender Fahrer an ihrer Rausch
 liegt. ⚠ Nicht `teamStandings` nehmen: dort gelten je nach Ära Konstrukteursregeln
 (nur das beste Auto zählt).
 
+**Spearman-Rauschgrenze (seit 24.09.2026)** — Zeile „Spearman Spiel<->Spiel" in
+`vakuum-saison.js`, Spalte „Sp-Grenze" im Batch: Spearman zwischen zwei unabhängigen
+Spiel-Läufen über dieselbe Fahrermenge wie gegen real. Leseregel: Ist Spiel↔real
+**kleiner** als Spiel↔Spiel, steckt der Rest im Modell. Ist Spiel↔real **gleich**, ist
+der Rest Zufall. Ist es **größer**, würfelt das Spiel mehr als die Realität. Braucht
+mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
+
 **A/B:** denselben Aufruf zweimal — ohne `SIMCORE_FROM_INDEX` (letzter Monolith,
 Vorher) und mit (Arbeitskopie, Nachher). Nur so ist eine Aenderung von Rauschen zu
 trennen.

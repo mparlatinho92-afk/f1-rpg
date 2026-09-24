@@ -288,6 +288,7 @@ function gefahreneRunden(ctx, real) {
     // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
+    const laufRaenge = [];   // je Lauf: Map Fahrer-Schluessel -> Rang, fuer Spiel<->Spiel
     const konstrLaeufe = [];
     for (let l = 0; l < LAEUFE; l++) {
         const { stand, teamPunkte, konstrPunkte, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
@@ -366,6 +367,7 @@ function gefahreneRunden(ctx, real) {
         const summe = stand.reduce((a, b) => a + b.punkte, 0);
         if (summe > 0) champAnteil.push(100 * stand[0].punkte / summe);
         champSiege.push(siegeChamp);
+        laufRaenge.push(simRang);
     }
 
     const d = avg(deckungen) * 100;
@@ -446,6 +448,25 @@ function gefahreneRunden(ctx, real) {
     console.log('  zuordenbare Fahrer:           ' + Math.round(avg(zuordenbar)) + ' von ' + rStand.length);
     console.log('  Ø Rangabweichung, ALLE:       ' + avg(alleAbw).toFixed(2) + ' Plaetze');
     console.log('  Spearman-Rangkorrelation:     ' + avg(spearman).toFixed(3) + '   (1,0 = identische Reihenfolge)');
+    // === RAUSCHGRENZE (24.09.2026) ===
+    // Auch ein perfektes Spiel erreicht gegen EINE reale Saison nicht 1,0 — die reale
+    // Saison ist selbst ein Zufallswurf. Spiel<->Spiel (zwei unabhaengige Laeufe,
+    // dieselbe Fahrermenge wie gegen real) zeigt die Obergrenze. Liegt Spiel<->real
+    // nahe daran, ist der Rest Zufall und kein Modellfehler.
+    {
+        const realSchl = rStand.map(r => norm(r.id));
+        const werte = [];
+        for (let i = 0; i + 1 < laufRaenge.length; i += 2) {
+            const a = laufRaenge[i], b = laufRaenge[i + 1];
+            const gem = realSchl.filter(k => a.has(k) && b.has(k));
+            if (gem.length < 4) continue;
+            const rangVon = w => { const o = w.map((v, j) => [v, j]).sort((x, y) => x[0] - y[0]); const r = []; o.forEach((x, j) => { r[x[1]] = j; }); return r; };
+            const ra = rangVon(gem.map(k => a.get(k))), rb = rangVon(gem.map(k => b.get(k)));
+            const n = gem.length, d2 = ra.reduce((acc, v, j) => acc + (v - rb[j]) ** 2, 0);
+            werte.push(1 - 6 * d2 / (n * (n * n - 1)));
+        }
+        if (werte.length) console.log('  Spearman Spiel<->Spiel:       ' + avg(werte).toFixed(3) + '   (Rauschgrenze, ' + werte.length + ' Laufpaare)');
+    }
     console.log('  Ø Punktabweichung je Fahrer:  ' + avg(punktAbw).toFixed(1) + ' % der Meisterpunkte');
 
     console.log('\n  ── DOMINANZ des Besten ──');

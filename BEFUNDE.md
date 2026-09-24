@@ -1494,3 +1494,44 @@ ausmacht. Ärenwechsel = große Regelumbrüche: 1954, 1961, 1966, 1983, 1989, 19
 Jahre nach der Tabelle (2026: 12,3 %, 2027: 11,9 %, danach 10,5 %). Das
 Saisonende-Modal kündigt einen Wechsel an („📜 Neues Reglement ab …"). Teamstärken
 werden bewusst **nicht** umgewürfelt (s. oben).
+
+**Nachtrag, These des Nutzers: „ein Ärenwechsel beendet die Dominanz"** (1959–2025):
+
+| | Ärenwechsel (n 11) | sonst (n 56) |
+|---|---|---|
+| Konstrukteurs-Meister wechselt | **64 %** | 46 % |
+| schnellstes Team (bester Ø Startplatz) wechselt | 45 % | 57 % |
+
+Beim Titel ist eine kleine Neumischung möglich, beim Tempo nicht. Keiner der beiden
+Unterschiede ist bei n = 11 belastbar (±15 Pp). Deshalb bleibt es beim Verzicht auf ein
+künstliches Umwürfeln.
+
+### 24.09.2026 (6): Spearman-Rauschgrenze — wo die Fahrerreihenfolge wirklich danebenliegt
+
+Neue Kennzahl „Spearman Spiel<->Spiel" (zwei unabhängige Läufe über dieselbe
+Fahrermenge wie gegen real). Vollauf 75 × 4 auf v0.9.18.15
+(`tests/output/vakuum-alle-spgrenze.txt`):
+
+| Dekade | Spiel↔real | Spiel↔Spiel (Grenze) | Diff | t |
+|---|---|---|---|---|
+| **1950er** | 0,647 | 0,762 | **−0,115** | **−5,7** |
+| 1960er | 0,734 | 0,773 | −0,039 | −1,5 |
+| **1970er** | 0,760 | 0,840 | **−0,080** | **−5,6** |
+| 1980er | 0,810 | 0,809 | 0,000 | 0,0 |
+| **1990er** | 0,865 | 0,901 | **−0,036** | **−4,3** |
+| 2000er | 0,903 | 0,904 | −0,001 | −0,1 |
+| 2010er | 0,936 | 0,940 | −0,004 | −0,8 |
+| 2020er | 0,933 | 0,931 | +0,002 | 0,2 |
+
+**Folgen:**
+- **Der Spearman-Verlust aus `ERA_TEAM_SPREAD` (−0,02 in den 80ern und ab 2010) ist
+  kein Realismusverlust.** Genau dort liegt das Spiel an seiner Rauschgrenze. Der Rest
+  ist Zufall.
+- **Echte Modellfehler in der Fahrerreihenfolge: 1950er, 1970er, 1990er.** Dort ordnet
+  das Spiel die Fahrer deutlich schlechter, als der Zufall erklärt. Bei fixiertem Feld
+  und realen Startplätzen bleibt als Ursache die **Fahrer- bzw. Autobewertung** dieser
+  Ären (`PACE_RATINGS`, Auto/Fahrer-Gewicht; vgl. „Ära-Abhängigkeit: das Auto zählt heute
+  mehr").
+
+Leseregel: Spiel↔real < Grenze heißt Modellfehler, = heißt Zufall, > heißt, das Spiel
+würfelt mehr als die Realität.
