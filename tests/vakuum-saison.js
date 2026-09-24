@@ -285,6 +285,28 @@ function gefahreneRunden(ctx, real) {
     // heisst zwangslaeufig konsistentere Spitze. Wer die Streuung senkt, muss HIER
     // nachsehen, sonst tauscht er ein Problem gegen ein anderes.
     const champAnteil = [], champSiege = [];
+    // === AUTO-BIAS (24.09.2026) ===
+    // Wohin zeigt der Rangfehler? Autostaerke = mittlerer realer Startplatz des
+    // Hauptteams eines Fahrers (meiste Starts). r(Rangfehler, Auto-Startplatz) > 0:
+    // Fahrer in schwachen Autos landen im Spiel weiter hinten als real, also zaehlt
+    // das Auto im Spiel zu viel. < 0: zu wenig.
+    const fahrerAuto = new Map(), biasPaare = [], biasKontrolle = [];
+    {
+        const kGrid = {}, kN = {}, fk = {};
+        for (const [rd, rund] of Object.entries(real.runden)) {
+            if (!gefahren.has(Number(rd))) continue;
+            for (const st of rund.starter) {
+                kGrid[st.constructorId] = (kGrid[st.constructorId] || 0) + st.platz;
+                kN[st.constructorId] = (kN[st.constructorId] || 0) + 1;
+                const f = fk[st.driverId] = fk[st.driverId] || {};
+                f[st.constructorId] = (f[st.constructorId] || 0) + 1;
+            }
+        }
+        for (const [d, ks] of Object.entries(fk)) {
+            const haupt = Object.entries(ks).sort((a, b) => b[1] - a[1])[0][0];
+            fahrerAuto.set(norm(d), kGrid[haupt] / kN[haupt]);
+        }
+    }
     // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
@@ -321,7 +343,7 @@ function gefahreneRunden(ctx, real) {
         const paare = [];
         rStand.forEach((r, ri) => {
             const s = simRang.get(norm(r.id));
-            if (s !== undefined) paare.push({ realRang: ri, simRang: s, realPunkte: r.punkte });
+            if (s !== undefined) paare.push({ realRang: ri, simRang: s, realPunkte: r.punkte, key: norm(r.id) });
         });
         if (paare.length > 3) {
             alleAbw.push(avg(paare.map(p => Math.abs(p.simRang - p.realRang))));
@@ -340,6 +362,7 @@ function gefahreneRunden(ctx, real) {
             };
             const rr = rangVon(paare.map(p => p.realRang));
             const rs = rangVon(paare.map(p => p.simRang));
+            paare.forEach((p, j) => { const a = fahrerAuto.get(p.key); if (a !== undefined) biasPaare.push([rs[j] - rr[j], a]); });
             const d2 = rr.reduce((a, v, i) => a + Math.pow(v - rs[i], 2), 0);
             spearman.push(1 - (6 * d2) / (n * (n * n - 1)));
             zuordenbar.push(n);
@@ -464,8 +487,27 @@ function gefahreneRunden(ctx, real) {
             const ra = rangVon(gem.map(k => a.get(k))), rb = rangVon(gem.map(k => b.get(k)));
             const n = gem.length, d2 = ra.reduce((acc, v, j) => acc + (v - rb[j]) ** 2, 0);
             werte.push(1 - 6 * d2 / (n * (n * n - 1)));
+            // Kontrolle fuer den Auto-Bias: Lauf a spielt 'real', Lauf b 'Spiel'
+            gem.forEach((k, j) => { const au = fahrerAuto.get(k); if (au !== undefined) biasKontrolle.push([rb[j] - ra[j], au]); });
         }
         if (werte.length) console.log('  Spearman Spiel<->Spiel:       ' + avg(werte).toFixed(3) + '   (Rauschgrenze, ' + werte.length + ' Laufpaare)');
+    }
+    if (biasPaare.length > 5) {
+        const korr = liste => {
+            const xs = liste.map(p => p[0]), ys = liste.map(p => p[1]);
+            const mx = avg(xs), my = avg(ys);
+            let c = 0, vx = 0, vy = 0;
+            for (let j = 0; j < xs.length; j++) { c += (xs[j] - mx) * (ys[j] - my); vx += (xs[j] - mx) ** 2; vy += (ys[j] - my) ** 2; }
+            return vx && vy ? c / Math.sqrt(vx * vy) : NaN;
+        };
+        // ⚠ Die Rohzahl traegt ein Artefakt: wer real Glueck hatte, steht vorn und
+        // sitzt meist im guten Auto; im Spiel faellt er im Mittel zurueck. Das zieht r
+        // nach unten. Die Kontrolle (Spiel gegen Spiel) misst genau dieses Artefakt,
+        // aussagekraeftig ist die DIFFERENZ.
+        const roh = korr(biasPaare), kontrolle = biasKontrolle.length > 5 ? korr(biasKontrolle) : NaN;
+        console.log('  Auto-Bias r(Rangfehler, Auto): ' + roh.toFixed(3) + '   Kontrolle Spiel<->Spiel ' + (isNaN(kontrolle) ? '-' : kontrolle.toFixed(3))
+            + '   Differenz ' + (isNaN(kontrolle) ? '-' : (roh - kontrolle >= 0 ? '+' : '') + (roh - kontrolle).toFixed(3))
+            + '   (> 0: Auto zaehlt im Spiel zu viel)');
     }
     console.log('  Ø Punktabweichung je Fahrer:  ' + avg(punktAbw).toFixed(1) + ' % der Meisterpunkte');
 

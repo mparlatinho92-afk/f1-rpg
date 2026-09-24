@@ -66,7 +66,7 @@ console.log('  Jahr   Renn  |  Punktefahrer            |  Rang   Spearman  Decku
 console.log('               |  Ziel   Ist    Diff      |                            Ist/Ziel  Anteil Ist/Ziel %');
 console.log('  ' + '─'.repeat(86));
 
-const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [], spSelbst = [];
+const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [], spSelbst = [], autoBias = [];
 for (const jahr of JAHRE) {
     let out;
     try {
@@ -91,6 +91,8 @@ for (const jahr of JAHRE) {
     const sp = zahl(out, /Spearman-Rangkorrelation:\s+([-\d.]+)/);
     const spS = zahl(out, /Spearman Spiel<->Spiel:\s+([-\d.]+)/);
     if (!isNaN(spS)) spSelbst.push(spS);
+    const ab = zahl(out, /Auto-Bias.*?Differenz ([+-][\d.]+)/);
+    if (!isNaN(ab)) autoBias.push(ab);
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
@@ -114,7 +116,8 @@ for (const jahr of JAHRE) {
         + String(isNaN(deck) ? '-' : deck.toFixed(1) + ' %').padStart(10)
         + ((isNaN(teamsSpiel) ? '-' : teamsSpiel.toFixed(1)) + '/' + (isNaN(teamsReal) ? '-' : teamsReal)).padStart(11)
         + ((isNaN(schwachIst) ? '-' : schwachIst.toFixed(1)) + '/' + (isNaN(schwachZiel) ? '-' : schwachZiel.toFixed(1))).padStart(14)
-        + (isNaN(spS) ? '' : '   Sp-Grenze ' + spS.toFixed(3)) + warn);
+        + (isNaN(spS) ? '' : '   Sp-Grenze ' + spS.toFixed(3))
+        + (isNaN(ab) ? '' : '   Auto-Bias ' + (ab >= 0 ? '+' : '') + ab.toFixed(3)) + warn);
 }
 
 console.log('  ' + '─'.repeat(86));
@@ -123,6 +126,8 @@ console.log('  Ø vorzeichenbehaftet             : ' + (avg(diffs) >= 0 ? '+' : 
     + '   (kippt das Vorzeichen, heben sich zwei Fehler auf)');
 console.log('  Ø Spearman                       : ' + avg(spears).toFixed(3)
     + (spSelbst.length ? '   (Rauschgrenze Spiel<->Spiel ' + avg(spSelbst).toFixed(3) + ')' : ''));
+if (autoBias.length) console.log('  Auto-Bias (Differenz zur Kontrolle): ' + (avg(autoBias) >= 0 ? '+' : '') + avg(autoBias).toFixed(3)
+    + '   (> 0: Auto zaehlt im Spiel zu viel)');
 console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
     + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));
 console.log('  Punkteanteil starkes Drittel     : Ø Spiel − real ' + (avg(starkDiffs) >= 0 ? '+' : '') + avg(starkDiffs).toFixed(2)

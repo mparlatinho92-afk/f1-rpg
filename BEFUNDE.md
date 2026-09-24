@@ -1535,3 +1535,73 @@ Fahrermenge wie gegen real). Vollauf 75 × 4 auf v0.9.18.15
 
 Leseregel: Spiel↔real < Grenze heißt Modellfehler, = heißt Zufall, > heißt, das Spiel
 würfelt mehr als die Realität.
+
+### 24.09.2026 (7): `DNF_REL_SPREAD` = 2 nach der Pyramiden-Korrektur — weiterhin nein
+
+Gemessen wie angekündigt, nachdem `ERA_TEAM_SPREAD` die Leistungslücke behoben hat.
+A/B 75 × 4, Monolith v0.9.18.15 (Faktor 1) gegen Faktor 2
+(`tests/output/vakuum-alle-dnf2b-alt.txt` / `-neu.txt`):
+
+| Block | Δ Teams mit Punkten (mit Vorzeichen) | schwaches Drittel neu | Δ \|Fahrer\| | Δ Spearman |
+|---|---|---|---|---|
+| 1950–69 | −0,57 (t −3,6) | −0,47 | −0,51 | −0,01 |
+| **1970–89** | **−1,15 (t −4,1)** | **−1,51 (t −3,7)** | +0,22 | 0,00 |
+| 1990–99 | −0,73 (t −2,3) | −0,38 | +0,30 | −0,01 |
+| 2000–24 | −0,13 | −0,42 | −0,11 | 0,00 |
+| alle | −0,60 (t −5,4) | −0,72 (t −2,4) | −0,07 | 0,00 |
+
+Keine Ergebnis-Kennzahl wird besser, die schwachen Teams der 70er/80er verlieren
+wieder. Ursache wie gehabt: Faktor 2 schießt dort über die reale Ausfall-Spreizung
+(80er 22,1 statt 12,5). **Zurück auf 1.** Offen bliebe ein Faktor je Ära (real ÷
+Formel: 50er 2,8 · 60er 2,7 · 70er 1,6 · 80er 1,1 · 90er 1,9 · 00er 2,8 · 10er 2,6 ·
+20er 2,3). Sein Gewinn wäre nur, dass die Ausfälle selbst realistisch verteilt sind.
+Keine Ergebnis-Kennzahl verlangt danach.
+
+### 24.09.2026 (8): Auto-Bias — in den 50ern und 70ern zählt das Auto im Spiel zu viel
+
+Neue Diagnose in `vakuum-saison.js`: Korrelation zwischen dem Rangfehler eines Fahrers
+(Spiel − real) und der Stärke seines Autos (mittlerer realer Startplatz des Hauptteams).
+Das ist die Rohzahl minus Kontrolle Spiel↔Spiel, die das Regressions-Artefakt
+herausrechnet. Werte > 0 heißen: Fahrer in schwachen Autos landen im Spiel weiter hinten
+als real, das Auto zählt also zu viel. Vollauf 75 × 4 auf v0.9.18.15
+(`tests/output/vakuum-alle-autobias.txt`):
+
+| Dekade | Auto-Bias | Spearman-Lücke zur Rauschgrenze |
+|---|---|---|
+| **1950er** | **+0,116 (t 2,3)** | −0,067 (t −2,6) |
+| 1960er | −0,010 | −0,039 |
+| **1970er** | **+0,140 (t 2,7)** | −0,087 (t −3,4) |
+| 1980er | +0,012 | +0,005 |
+| 1990er | +0,040 | −0,044 (t −3,4) |
+| 2000er | −0,003 | 0,000 |
+| 2010er | −0,038 | −0,012 |
+| 2020er | −0,073 | −0,013 |
+
+**r(Auto-Bias, Spearman-Lücke) über 75 Jahre = −0,48.** Die Dekaden mit echtem
+Modellfehler in der Fahrerreihenfolge sind genau die, in denen das Auto zu viel zählt.
+
+⚠ Bezug zu „`ERA_CAR_WEIGHT` gemessen und ZURÜCKGENOMMEN" (18.09.): Jene Bewertung
+stützte sich auf die Punktefahrer-Zahl (inzwischen als Rauschgrenzen-Kennzahl entlarvt)
+und 10 Saisons. Die Richtung damals (Auto früher schwächer gewichten) deckt sich mit
+diesem Befund.
+
+**Negativergebnis: die Auto-Decke (`_CEIL_HEADROOM`) ist nicht der Hebel.** Versuch 4 → 8
+in allen Ären (`tests/output/vakuum-alle-ceil8.txt`): Der Auto-Bias der 50er sinkt
+(0,116 → 0,026), der der 70er bleibt (0,140 → 0,139). Spearman ändert sich in keiner
+Dekade signifikant (größte Bewegung 70er +0,011, t 1,8). Zurück auf 4.
+
+**Negativergebnis: auch das Auto-Gewicht (`CAR_SPEED_WEIGHT`) ist nicht der Hebel.**
+Versuch 0,20 → 0,10 in allen Ären (`tests/output/vakuum-alle-carw010.txt`):
+
+| Dekade | Auto-Bias | Δ Spearman |
+|---|---|---|
+| 1950er | 0,116 → 0,023 | −0,013 |
+| 1970er | 0,140 → **0,135** | +0,015 (t 2,2) |
+| 2010er | −0,038 → −0,166 | −0,003, Punktefahrer schlechter (t 2,3) |
+
+**Schluss aus beiden Versuchen:** Den Auto-Bias der 50er drücken beide Hebel weg, die
+Fahrerreihenfolge wird dadurch nicht besser. Der der 70er reagiert auf keinen. Die
+Auto-Mechanik (Decke, Gewicht) ist also **nicht** die Ursache der Spearman-Lücke. Das
+Muster „Fahrer in schwachen Autos landen zu weit hinten" ist beobachtungsgleich mit
+„diese Fahrer sind zu schwach bewertet". ▶ Verbleibende Ursache: die
+**Fahrerbewertung** der 50er/70er (`PACE_RATINGS`). Beide Konstanten unverändert.
