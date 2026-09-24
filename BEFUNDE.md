@@ -1254,3 +1254,52 @@ Einzelzahlen von 1–3 je Dekade würde man auf Rauschen kalibrieren.
 
 Indy 500: Restlücke ~8 %. So oft gibt es im Rennen keinen Unfall-Ausfall, in dem das
 geplante Opfer liegen könnte.
+
+### 24.09.2026: `DNF_REL_SPREAD` = 2 — Ausfälle realistisch verteilt, Ergebnis schlechter
+
+Die Formel steht jetzt einmal, in `dnfTeamFaktor(avgRel, rel)` = `1 + DNF_REL_SPREAD ×
+(avgRel − rel) / 100`. Vorher stand sie doppelt: in `simulateRace` und in der DNF-Vorschau.
+
+**Spreizung schwach − stark mit Faktor 2** (`dnf-spreizung.js`, analytisch):
+
+| Ära | real | Faktor 1 | Faktor 2 |
+|---|---|---|---|
+| 1950er | 17,8 | 6,3 | 12,7 |
+| 1960er | 4,0 | 1,5 | 2,9 |
+| 1970er | 12,3 | 7,7 | 15,5 |
+| 1980er | 12,5 | 11,0 | **22,1** |
+| 1990er | 19,9 | 10,4 | 20,8 |
+| 2000er | 15,8 | 5,7 | 11,5 |
+| 2010er | 9,2 | 3,6 | 7,3 |
+| **alle** | **12,5** | 6,3 | **12,6** |
+
+Im Mittel getroffen, aber die 80er fast doppelt und die 70er zu breit.
+
+**A/B Vollauf 75 Saisons × 4, gepaart** (Monolith v0.9.18.12 mit Faktor 1 gegen
+`index.html` mit Faktor 2, `tests/output/vakuum-alle-spread-alt.txt` / `-neu.txt`):
+
+| | Faktor 1 | Faktor 2 | Delta | t |
+|---|---|---|---|---|
+| Ø \|Punktefahrer-Abw.\| | 1,87 | 1,95 | +0,08 | 0,47 |
+| Ø \|Team-Abw.\| | 0,90 | 1,00 | +0,10 | 1,34 |
+| **Teams mit Punkten, vorzeichenbehaftet** | −0,23 | **−0,58** | **−0,35** | **−5,09** |
+| Punktefahrer vorzeichenbehaftet | −0,19 | −1,02 | | |
+| Spearman | 0,835 | 0,832 | −0,003 | −0,97 |
+| Korrelation Diff ↔ Ziel | −0,607 | −0,644 | | |
+
+**Wie vorhergesagt:** Weil `reliability` ab 1970 fast eine Kopie der Stärke ist
+(r = 0,77–0,96), nimmt die realistischere Spreizung den schwachen Teams Punkte weg.
+Im Spiel punkten dadurch signifikant **weniger** Teams (t = −5,1). Am stärksten in
+den 70ern (−1,23 → −1,62) und 80ern (−0,52 → −1,19), also dort, wo Faktor 2 über das
+Ziel schießt. Aber auch die 90er, in denen die Spreizung passt, verschlechtern sich
+(−0,15 → −0,89). Die 50er und 60er werden besser (|Fahrer| 2,68 → 1,83 und
+2,07 → 1,56).
+
+**Deutung:** Bisher haben sich zwei Fehler teilweise aufgehoben. Die zu flache
+Ausfall-Verteilung hat eine zu große Leistungslücke zwischen den Teams verdeckt. Real
+fallen schwache Teams häufiger aus **und** punkten trotzdem öfter. Das geht nur, wenn
+sie im Tempo näher dran sind als im Spiel.
+
+**Entscheidung des Nutzers (24.09.2026):** Zurück auf Faktor 1. Zuerst wird die
+Leistungslücke der Teams angegangen, danach Faktor 2 neu gemessen. Die gemeinsame
+Funktion `dnfTeamFaktor` bleibt. Mit Faktor 1 rechnet sie exakt wie die alte Formel.

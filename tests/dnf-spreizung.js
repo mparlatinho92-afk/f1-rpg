@@ -4,7 +4,8 @@
  *
  * ERA_DNF_RATES legt nur die Grundlinie je Jahr fest. Wie sie sich auf die
  * Teams verteilt, entscheidet in simulateRace die Formel
- *     dnf = Jahresrate × (1 + (Ø reliability − team.reliability) / 100)
+ *     dnf = Jahresrate × dnfTeamFaktor(Ø reliability, team.reliability)
+ *     = Jahresrate × (1 + DNF_REL_SPREAD × (Ø rel − rel) / 100)
  * Dieses Werkzeug misst die ZIELKURVE dafür aus F1DB und hält die Formel
  * analytisch daneben. Kein Spiel-Lauf, keine Würfel: die Formel-Spalte ist
  * der Erwartungswert, den simulateRace für jedes Team ansetzt.
@@ -110,7 +111,7 @@ for (let y = 1950; y <= 2025; y++) {
             const rel = g ? (g.reliability || 75) : null;
             // Erwartungswert der Formel aus simulateRace, ohne Spieler-Multiplikator
             const formel = rel == null ? null
-                : Math.max(2, Math.min(99, basis * (1 + (avgRel - rel) / 100)));
+                : Math.max(2, Math.min(99, basis * ctx.dnfTeamFaktor(avgRel, rel)));
             return { id, ...t, grid: t.gridSumme / t.gridN, rel, formel,
                      real: t.dnf / t.starts * 100 };
         })
