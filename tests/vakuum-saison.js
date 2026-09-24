@@ -310,7 +310,29 @@ function gefahreneRunden(ctx, real) {
     // Vollstaendiger Endstand-Vergleich: was hier abweicht, ist bei fixiertem Feld
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
-    const laufRaenge = [];   // je Lauf: Map Fahrer-Schluessel -> Rang, fuer Spiel<->Spiel
+    const laufPunkte = [];   // je Lauf: Map Fahrer-Schluessel -> Punkte, fuer Spiel<->Spiel
+    // === RAENGE MIT GLEICHSTAND (24.09.2026) ===
+    // Raenge aus den PUNKTEN, Gleichstand = Durchschnittsrang; Spearman = Pearson
+    // der Raenge. Vorher kamen die Raenge aus der Tabellenposition, Gleichstaende
+    // waren also beliebig geordnet — real nach F1DB-Reihenfolge, im Spiel nach
+    // Kaderreihenfolge, und zwischen zwei Spiel-Laeufen IDENTISCH. In den 50ern sind
+    // 67 % der Fahrer punktlos, 2020er 12 %: das verzerrte Spearman, Rauschgrenze
+    // und Auto-Bias genau in den alten Aeren.
+    const rangMitGleichstand = punkte => {
+        const o = punkte.map((p, i) => [p, i]).sort((a, b) => b[0] - a[0]);
+        const r = new Array(punkte.length);
+        for (let i = 0; i < o.length;) {
+            let j = i; while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++;
+            for (let k = i; k <= j; k++) r[o[k][1]] = (i + j) / 2;
+            i = j + 1;
+        }
+        return r;
+    };
+    const pearsonR = (a, b) => {
+        const ma = avg(a), mb = avg(b); let c = 0, va = 0, vb = 0;
+        for (let i = 0; i < a.length; i++) { c += (a[i] - ma) * (b[i] - mb); va += (a[i] - ma) ** 2; vb += (b[i] - mb) ** 2; }
+        return va && vb ? c / Math.sqrt(va * vb) : NaN;
+    };
     const konstrLaeufe = [];
     for (let l = 0; l < LAEUFE; l++) {
         const { stand, teamPunkte, konstrPunkte, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
@@ -360,11 +382,12 @@ function gefahreneRunden(ctx, real) {
                 idx.forEach((x, i) => { r[x[1]] = i; });
                 return r;
             };
-            const rr = rangVon(paare.map(p => p.realRang));
-            const rs = rangVon(paare.map(p => p.simRang));
+            const simPktLauf = new Map();
+            stand.forEach(x => { const k = schluessel(x); if (k && !simPktLauf.has(k)) simPktLauf.set(k, x.punkte); });
+            const rr = rangMitGleichstand(paare.map(p => p.realPunkte));
+            const rs = rangMitGleichstand(paare.map(p => simPktLauf.get(p.key) ?? 0));
             paare.forEach((p, j) => { const a = fahrerAuto.get(p.key); if (a !== undefined) biasPaare.push([rs[j] - rr[j], a]); });
-            const d2 = rr.reduce((a, v, i) => a + Math.pow(v - rs[i], 2), 0);
-            spearman.push(1 - (6 * d2) / (n * (n * n - 1)));
+            spearman.push(pearsonR(rr, rs));
             zuordenbar.push(n);
             // Punktabweichung, normiert auf die Meisterpunkte des Jahres — sonst
             // sind Aeren mit 9-Punkte-Siegen und 25-Punkte-Siegen nicht vergleichbar
@@ -390,7 +413,7 @@ function gefahreneRunden(ctx, real) {
         const summe = stand.reduce((a, b) => a + b.punkte, 0);
         if (summe > 0) champAnteil.push(100 * stand[0].punkte / summe);
         champSiege.push(siegeChamp);
-        laufRaenge.push(simRang);
+        { const sp = new Map(); stand.forEach(x => { const k = schluessel(x); if (k && !sp.has(k)) sp.set(k, x.punkte); }); laufPunkte.push(sp); }
     }
 
     const d = avg(deckungen) * 100;
@@ -479,14 +502,12 @@ function gefahreneRunden(ctx, real) {
     {
         const realSchl = rStand.map(r => norm(r.id));
         const werte = [];
-        for (let i = 0; i + 1 < laufRaenge.length; i += 2) {
-            const a = laufRaenge[i], b = laufRaenge[i + 1];
+        for (let i = 0; i + 1 < laufPunkte.length; i += 2) {
+            const a = laufPunkte[i], b = laufPunkte[i + 1];
             const gem = realSchl.filter(k => a.has(k) && b.has(k));
             if (gem.length < 4) continue;
-            const rangVon = w => { const o = w.map((v, j) => [v, j]).sort((x, y) => x[0] - y[0]); const r = []; o.forEach((x, j) => { r[x[1]] = j; }); return r; };
-            const ra = rangVon(gem.map(k => a.get(k))), rb = rangVon(gem.map(k => b.get(k)));
-            const n = gem.length, d2 = ra.reduce((acc, v, j) => acc + (v - rb[j]) ** 2, 0);
-            werte.push(1 - 6 * d2 / (n * (n * n - 1)));
+            const ra = rangMitGleichstand(gem.map(k => a.get(k))), rb = rangMitGleichstand(gem.map(k => b.get(k)));
+            werte.push(pearsonR(ra, rb));
             // Kontrolle fuer den Auto-Bias: Lauf a spielt 'real', Lauf b 'Spiel'
             gem.forEach((k, j) => { const au = fahrerAuto.get(k); if (au !== undefined) biasKontrolle.push([rb[j] - ra[j], au]); });
         }

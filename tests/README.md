@@ -176,6 +176,8 @@ die Leistungslücke der Teams, weil die Anzahl punktender Fahrer an ihrer Rausch
 liegt. ⚠ Nicht `teamStandings` nehmen: dort gelten je nach Ära Konstrukteursregeln
 (nur das beste Auto zählt).
 
+⚠ **Gleichstände (seit 24.09.2026 korrigiert):** Spearman rangiert nach **Punkten** mit Durchschnittsrang bei Gleichstand. Vorher entschied bei punktlosen Fahrern (50er: 67 %) die Sortierreihenfolge, zwischen zwei Spiel-Läufen identisch. Das erzeugte einen scheinbaren Modellfehler in den 50ern/70ern. Werte vor dem 24.09. sind nicht vergleichbar.
+
 **Spearman-Rauschgrenze (seit 24.09.2026)** — Zeile „Spearman Spiel<->Spiel" in
 `vakuum-saison.js`, Spalte „Sp-Grenze" im Batch: Spearman zwischen zwei unabhängigen
 Spiel-Läufen über dieselbe Fahrermenge wie gegen real. Leseregel: Ist Spiel↔real

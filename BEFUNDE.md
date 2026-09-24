@@ -24,6 +24,7 @@ versehentlich zurück.
 | Vakuum-Saison: die Ursache ist zerlegt | Kalibrierung von carSpeed/Elo/Form, Startfeld, Quali |
 | **VOLLAUF 75 Saisons: das Spiel zieht zur Mitte** | jede Kalibrierung der Streuung — Stichproben führen hier in die Irre |
 | Die Leistungspyramide `TEAM_PYRAMID_EXP` | carSpeed-Verteilung, punktende Teams, große Felder |
+| **⚠ Spearman-Gleichstände: der „Modellfehler 50er/70er" war ein Messartefakt** | JEDE Rangkorrelation über Endstände mit vielen punktlosen Fahrern — Durchschnittsränge verwenden |
 | **⚠ Rauschgrenze: „Zug zur Mitte" bei den Fahrern ist Artefakt** | JEDE Auswertung von  gegen Einzelsaisons — Fahrer-Kennzahl ausgereizt (Ø ~1,71 wäre perfekt), Teams mit echtem Rest |
 | **Todesfälle je Ebene neu abgeglichen** | Renntote aus Unfällen, Gastfahrer-Tote, nonWM- und Indy-Anker (alte Anker zu niedrig) |
 | **Unfall-Anteil je Saison statt 50/50** | `dnfType`, Todesfälle im Rennen (−20 % WM-Tode durch weniger Unfälle) |
@@ -1508,6 +1509,8 @@ künstliches Umwürfeln.
 
 ### 24.09.2026 (6): Spearman-Rauschgrenze — wo die Fahrerreihenfolge wirklich danebenliegt
 
+⚠⚠ **WIDERRUFEN am 24.09.2026 (9):** Die Spearman-Werte dieses Abschnitts ordneten Gleichstände (punktlose Fahrer, 50er 67 %) beliebig und zwischen zwei Spiel-Läufen identisch. Mit Durchschnittsrängen verschwindet der „Modellfehler" der 50er/70er. Korrigierte Zahlen im Abschnitt (9).
+
 Neue Kennzahl „Spearman Spiel<->Spiel" (zwei unabhängige Läufe über dieselbe
 Fahrermenge wie gegen real). Vollauf 75 × 4 auf v0.9.18.15
 (`tests/output/vakuum-alle-spgrenze.txt`):
@@ -1559,6 +1562,9 @@ Keine Ergebnis-Kennzahl verlangt danach.
 
 ### 24.09.2026 (8): Auto-Bias — in den 50ern und 70ern zählt das Auto im Spiel zu viel
 
+⚠⚠ **WIDERRUFEN am 24.09.2026 (9):** Die Spearman-Werte dieses Abschnitts ordneten Gleichstände (punktlose Fahrer, 50er 67 %) beliebig und zwischen zwei Spiel-Läufen identisch. Mit Durchschnittsrängen verschwindet der „Modellfehler" der 50er/70er. Korrigierte Zahlen im Abschnitt (9).
+Die beiden Negativergebnisse unten (Decke, Gewicht) bleiben als Messung gültig. Sie haben nur ein Scheinproblem behandelt.
+
 Neue Diagnose in `vakuum-saison.js`: Korrelation zwischen dem Rangfehler eines Fahrers
 (Spiel − real) und der Stärke seines Autos (mittlerer realer Startplatz des Hauptteams).
 Das ist die Rohzahl minus Kontrolle Spiel↔Spiel, die das Regressions-Artefakt
@@ -1605,3 +1611,40 @@ Auto-Mechanik (Decke, Gewicht) ist also **nicht** die Ursache der Spearman-Lück
 Muster „Fahrer in schwachen Autos landen zu weit hinten" ist beobachtungsgleich mit
 „diese Fahrer sind zu schwach bewertet". ▶ Verbleibende Ursache: die
 **Fahrerbewertung** der 50er/70er (`PACE_RATINGS`). Beide Konstanten unverändert.
+
+### 24.09.2026 (9): Die Gleichstands-Falle — der „Modellfehler 50er/70er" war ein Messartefakt
+
+`vakuum-saison.js` bildete die Ränge für Spearman aus der **Tabellenposition**. Bei
+Punktgleichstand ist die Position beliebig: real die F1DB-Reihenfolge, im Spiel die
+Kaderreihenfolge, und die ist **zwischen zwei Spiel-Läufen identisch**. Punktlos waren
+je Dekade real 67 % (50er) · 55 % · 51 % · 39 % · 37 % · 23 % · 20 % · 12 % (2020er).
+Genau in den alten Ären hob das die Rauschgrenze künstlich an und drückte Spiel↔real.
+
+**Korrektur:** Ränge aus den **Punkten**, Gleichstand = Durchschnittsrang, Spearman =
+Pearson der Ränge (`rangMitGleichstand`, `pearsonR`). Gilt für Spiel↔real,
+Spiel↔Spiel und den Auto-Bias. Vollauf 75 × 4 auf v0.9.18.15
+(`tests/output/vakuum-alle-gleichstand.txt`):
+
+| Dekade | Spiel↔real | Grenze | Lücke | Auto-Bias |
+|---|---|---|---|---|
+| 1950er | 0,691 | 0,647 | +0,044 (t 1,8) | −0,120 (t −1,8) |
+| 1960er | 0,778 | 0,740 | +0,037 (t 2,3) | −0,038 |
+| 1970er | 0,820 | 0,819 | +0,001 | +0,037 |
+| 1980er | 0,819 | 0,800 | +0,019 (t 2,0) | −0,024 |
+| 1990er | 0,871 | 0,851 | +0,020 (t 2,6) | −0,060 (t −2,6) |
+| 2000er | 0,905 | 0,911 | −0,006 | −0,103 (t −1,7) |
+| 2010er | 0,934 | 0,949 | **−0,015 (t −2,6)** | −0,063 (t −1,9) |
+| 2020er | 0,936 | 0,952 | −0,016 (t −1,7) | **−0,179 (t −3,0)** |
+| alle | 0,838 | 0,826 | +0,012 | −0,062 (t −3,4) |
+
+**Folgen:**
+- **Kein Modellfehler in der Fahrerreihenfolge der 50er und 70er.** Das Spiel liegt dort
+  an oder knapp über der Rauschgrenze. Bis 1999 würfelt es leicht **mehr** als die
+  Realität (Lücke > 0).
+- **Übrig bleibt ein kleiner Befund ab 2000:** Spiel↔real knapp unter der Grenze, der
+  Auto-Bias negativ. Das Auto zählt im Spiel heute eher **zu wenig**, passend zur
+  F1DB-Messung „das Auto erklärt heute 0,93–0,97 des Endstands". Die Größenordnung
+  ist klein (−0,015).
+- ⚠ **Messfalle für jede Rangkorrelation über Endstände:** Gleichstände müssen
+  Durchschnittsränge bekommen. Sonst misst man in Ären mit vielen Punktlosen die
+  Sortierreihenfolge statt der Simulation.
