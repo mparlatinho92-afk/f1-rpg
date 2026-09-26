@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.15</title>
+    <title>F1 RPG v0.9.18.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.15 (aktuell) - 24.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.16 (aktuell) - 26.09.2026</div>
+                            <div>&#8226; FIX: Regenrennen ~15 % statt 41 % – echte Quote je Ära, Klima nur noch als Gewichtung</div>
+                            <div>&#8226; NEU: Training und Qualifying würfeln eigenes Wetter, Training kennt erstmals Regen</div>
+                            <div>&#8226; NEU: keine fest vorgegebenen historischen Regenrennen mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.18.15 - 24.09.2026</div>
                             <div>&#8226; NEU: Zukunfts-Saisons bekommen Regel-Ären mit echter Längenverteilung</div>
                             <div>&#8226; NEU: erste Jahre einer Ära mit mehr Ausfällen (gemessen: +12 %/+8 %)</div>
                             <div>&#8226; NEU: Ankündigung „Neues Reglement“ im Saisonende</div>
@@ -17703,7 +17707,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.15';
+        const VERSION = '0.9.18.16';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19266,6 +19270,50 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // simulateRace, DNF-Vorschau und tests/dnf-spreizung.js rufen alle diese Funktion.
         function dnfTeamFaktor(avgRel, rel) {
             return 1 + DNF_REL_SPREAD * (avgRel - rel) / 100;
+        }
+
+        // === WETTER JE WOCHENENDE (v0.9.18.16) ===
+        // Vorher: WET_RACE_IDS machte 154 historische Rennen FEST nass (1,0), alle übrigen
+        // würfelten mit der Klima-„Regentag"-Wahrscheinlichkeit des Monats — zusammen 41 %
+        // nasse Rennen statt real ~16 %. Qualifying und Rennen teilten einen Wurf, das
+        // Training war nie nass. (BEFUNDE.md 26.09.2026)
+        // Jetzt: echte Nass-Quote je Dekade (Wikipedia-Infobox, tests/stoerungen-real.js) ×
+        // Klima des Ortes im Monat, geteilt durch das Klima-Mittel des Kalenders. Ein Rennen,
+        // das in einen regnerischen Monat rückt, wird öfter nass; die Saison im Mittel bleibt
+        // bei der Quote. Keine Grand-Prix-genauen Vorgaben mehr.
+        const ERA_RAIN_RATE = {
+            1950: 0.218, 1960: 0.176, 1970: 0.154, 1980: 0.127,
+            1990: 0.167, 2000: 0.178, 2010: 0.116, 2020: 0.168
+        };
+        // Qualifying/Training sind real nur schwach an den Rennregen gekoppelt
+        // (tests/quali-regen-real.js: nass bei nassem Rennen 17–33 %, sonst 10–14 %).
+        const SESSION_RAIN_IF_RACE_WET = 0.25;
+        const SESSION_RAIN_IF_RACE_DRY = 0.12;
+        const _weekendWetter = {};   // 'Jahr|raceIndex' → { training, quali, rennen }
+
+        function _klimaRegen(race) {
+            if (!race || typeof _getClimate !== 'function') return null;
+            return _getClimate(race.circuitId || race.circuit, race.country, race.month).r;
+        }
+
+        // Wetter eines Wochenendes, einmal gewürfelt und gemerkt — alle Sessions und alle
+        // Modi (sofort, Ticker, ganze Saison, ZIELFLAGGE) lesen dasselbe Ergebnis.
+        function wochenendWetter(raceIndex) {
+            const key = GAME_STATE.currentYear + '|' + raceIndex;
+            if (_weekendWetter[key]) return _weekendWetter[key];
+            const races = GAME_STATE.races || [];
+            const quote = getEraValue(ERA_RAIN_RATE, GAME_STATE.currentYear);
+            const r = _klimaRegen(races[raceIndex]);
+            const alle = races.map(_klimaRegen).filter(v => v != null);
+            const mittel = alle.length ? alle.reduce((a, b) => a + b, 0) / alle.length : null;
+            const pRennen = (r != null && mittel > 0) ? Math.min(0.9, quote * r / mittel) : quote;
+            const rennen = Math.random() < pRennen;
+            const pSession = rennen ? SESSION_RAIN_IF_RACE_WET : SESSION_RAIN_IF_RACE_DRY;
+            return (_weekendWetter[key] = {
+                training: Math.random() < pSession,
+                quali: Math.random() < pSession,
+                rennen
+            });
         }
 
         // Anteil der Unfälle (Unfall/Kollision/Dreher) an allen Ausfällen je Jahr, in %.
@@ -27101,7 +27149,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             }
             
             // Wochenend-Todeseinträge löschen
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]);
             _liveRaceDeathFired = false;
 
             // Default deathRealism basierend auf Ära
@@ -27165,7 +27213,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             }
 
             // Wochenend-Todeseinträge löschen (damit Monte-Carlo-Sims frisch starten)
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]);
             _liveRaceDeathFired = false;
 
             const eraDeathRate = getEraValue(ERA_DEATH_RATES, year);
@@ -27623,13 +27671,12 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             const race = GAME_STATE.races[raceIndex];
             if (!race) { alert('Kein Rennen an dieser Stelle im Kalender.'); return; }
 
-            const _wet = getRaceWetChance(race.raceId, race.circuitId || race.circuit, race.month, race.country);
-            const isRain = Math.random() < _wet;
+            const isRain = wochenendWetter(raceIndex).rennen;   // s. ERA_RAIN_RATE
 
             // Rennwochenende wie in jedem anderen Modus — [SYNC Rennwochenende]
             applyGuestMoves(raceIndex);
             simulateTraining(raceIndex);
-            const qualiResult = simulateQualifying(raceIndex, isRain);
+            const qualiResult = simulateQualifying(raceIndex, wochenendWetter(raceIndex).quali);
             const ergebnis = simulateRace(raceIndex, isRain);
             if (!ergebnis) { alert('Das Rennen ließ sich nicht rechnen.'); return; }
 
@@ -28638,7 +28685,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         }
 
         // === TRAINING SIMULATION ===
-        function simulateTraining(raceIndex) {
+        function simulateTraining(raceIndex, isRain = wochenendWetter(raceIndex).training) {
             const race = GAME_STATE.races[raceIndex];
             if (!race) return null;
 
@@ -28695,12 +28742,15 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
                 if (!team) return;
+                // Regen wie im Qualifying: Regengeschick statt Pauschale, und die Streuung
+                // richtet sich nach dem Regengeschick — es zählt die beste Runde, ein Fehler
+                // lässt sich in der nächsten wettmachen (Nutzer 26.09.2026).
                 let perf = (
                     driver.pace * 0.45 +
                     team.carSpeed * 0.3 +
                     team.strategy * 0.1
-                ) + 15;
-                const _consVal = driver.consistency ?? 75;
+                ) + (isRain ? (driver.rain ?? 70) * 0.2 : 15);
+                const _consVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
                 const _halfVar = 5 + (100 - _consVal) * 0.09; // ±5..14 (mehr als Quali ±3..10)
                 perf += (Math.random() - 0.5) * 2 * _halfVar;
                 const baseTime = getCircuitBaseTime(race.circuitId, year, 'training');
@@ -31439,7 +31489,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             applyGuestMoves(raceIndex);
             // Training → Qualifying → Rennen
             simulateTraining(raceIndex);
-            const qualiResult = simulateQualifying(raceIndex, isRain);
+            const qualiResult = simulateQualifying(raceIndex, wochenendWetter(raceIndex).quali);
 
             // Live-Zustand initialisieren
             _liveRaceDeathFired = false;
@@ -31593,8 +31643,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             
             const raceIndex = GAME_STATE.currentRace;
             const _curRace = GAME_STATE.races[raceIndex];
-            const _wetChance = getRaceWetChance(_curRace?.raceId, _curRace?.circuitId || _curRace?.circuit, _curRace?.month, _curRace?.country);
-            const isRain = Math.random() < _wetChance;
+            const isRain = wochenendWetter(raceIndex).rennen;   // s. ERA_RAIN_RATE
 
             if (mode === 'zielflagge-import') {
                 ladeZielflaggeErgebnis();
@@ -31614,7 +31663,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 // === KLASSISCHER MODUS === Training → Qualifying → Rennen
                 applyGuestMoves(raceIndex);   // [SYNC Rennwochenende] s. startLiveRace
                 simulateTraining(raceIndex);
-                const qualiResult = simulateQualifying(raceIndex, isRain);
+                const qualiResult = simulateQualifying(raceIndex, wochenendWetter(raceIndex).quali);
                 
                 // Dann Rennen simulieren
                 const raceResult = rennenErgebnisFuer(raceIndex, isRain);
@@ -37865,7 +37914,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             GAME_STATE.seasonDeaths = [];      // Reset für neue Saison
             GAME_STATE.seasonRetirements = []; // Reset für neue Saison
             delete GAME_STATE._titleClinch;    // v0.9.15.79: Titel-Meldung gilt pro Saison
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]);
             
             // === INDY-500 REGEL: Ab 1961 verschwinden alle Indy-only Teams und Fahrer ===
             // Das Indianapolis 500 zählte nur 1950-1960 zur F1-WM
@@ -39769,12 +39818,11 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         function simulateSeasonRaces() {
             while (GAME_STATE.currentRace < GAME_STATE.races.length) {
                 const _fsRace = GAME_STATE.races[GAME_STATE.currentRace];
-                const _fsWetChance = getRaceWetChance(_fsRace?.raceId, _fsRace?.circuitId || _fsRace?.circuit, _fsRace?.month, _fsRace?.country);
-                const isRain = Math.random() < _fsWetChance;
+                const isRain = wochenendWetter(GAME_STATE.currentRace).rennen;   // s. ERA_RAIN_RATE
                 // Training → Qualifying → Rennen
                 applyGuestMoves(GAME_STATE.currentRace);   // [SYNC Rennwochenende] s. startLiveRace
                 simulateTraining(GAME_STATE.currentRace);
-                simulateQualifying(GAME_STATE.currentRace, isRain);
+                simulateQualifying(GAME_STATE.currentRace, wochenendWetter(GAME_STATE.currentRace).quali);
                 // Rennen simulieren
                 const result = rennenErgebnisFuer(GAME_STATE.currentRace, isRain);
                 // Quali-Positionen hinzufügen
