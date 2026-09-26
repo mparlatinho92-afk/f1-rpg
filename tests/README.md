@@ -11,6 +11,10 @@
 | `history-mc.js` | Historische Saisons |
 | `mc-entries-dnq.js` | **Meldungen, DNQ und Einzelauswahl** je Fahrer/Team/Strecke, gegen F1DB |
 | `death-era-mc.js` | **Todesfälle je Dekade und Ebene**: WM-Wochenende (davon Rennen, gegen F1DB), außerhalb der WM, Indy 500, Indy außerhalb (AAA/USAC/Midget). `node tests/death-era-mc.js 10` (misst immer `index.html`). ⚠ Für A/B gegen den Monolithen eine Kopie ohne die `SIMCORE_FROM_INDEX`-Zeile. ⚠ 10 Läufe: Renntote ±1,2 in der Summe |
+| `regel-aeren.js` | **Was eine Regel-Ära real ausmacht**: Längen, DNF je Jahr in der Ära, Stabilität der Teamreihenfolge und Meisterwechsel in Wechseljahren. Grundlage von `REAL_ERA_CHANGES`/`ERA_START_DNF_FACTOR`. ⚠ Wechseljahre sind eine Kopie von `REAL_ERA_CHANGES` |
+| `tod-anker.js` | **Kandidaten für reale Tote außerhalb der WM** (F1DB kennt keine Ursachen): Fahrer, die zwischen erstem und letztem Einsatz +1 starben, ohne WM-Tote. ⚠ Obergrenze: Krankheit, Straße und Flugzeug müssen von Hand raus (Zuordnung in BEFUNDE.md) |
+| `indy-tod-sonde.js` | **Tote je Indy-500-Wochenende**, isoliert simuliert, mit Zähler für markiert-aber-nicht-gebuchte Opfer. Fand den Gastfahrer-Fehler |
+| `quali-form-vs-punkte.js` | **Taugt der Quali-Rückstand als carSpeed-Quelle?** A Rang-Pyramide gegen B Quali-Form gegen realen Punkteanteil je Dekade (analytisch). Grund für das Verwerfen von Variante B |
 | `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |
 
 ## Meldungen & DNQ — `mc-entries-dnq.js`

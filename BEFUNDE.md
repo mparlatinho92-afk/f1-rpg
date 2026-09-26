@@ -1713,5 +1713,4 @@ Das ändert die Entscheidung nicht: B soll gerade die Ergebnisse besser treffen,
 tut es in keiner Dekade.
 
 **Entscheidung:** B nicht bauen. `ERA_TEAM_SPREAD` bleibt alleinige Quelle der Spreizung.
-Werkzeug der Prüfung: Skript im Sitzungs-Scratchpad, Logik oben beschrieben (Quali-Median
-wie `weakThirdGapPct` in `generate-truth.js`).
+Werkzeug: `node tests/quali-form-vs-punkte.js`.

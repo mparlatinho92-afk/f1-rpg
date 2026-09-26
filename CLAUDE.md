@@ -155,11 +155,13 @@ Neue Mechanik die nur in einem Modus wirkt = falsch platziert.
 | `node tests/ticker-paritaet.js --alle 40` | Beweist die Parität **direkt** (nicht statistisch) |
 | `node tests/ticker-vs-sim.js 1950 0 300` | Monte Carlo: sofort / ticker / **real aus F1DB**, Schwerpunkt Grid→Ziel |
 | `node tests/ticker-browser.js 1950` | Ticker im echten Browser mit `pageerror` – sim-core sieht UI-Fehler nicht |
+| `SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js --alle 1 4` | Engine gegen alle 75 echten Jahre bei fixiertem Feld: Punkteanteil je Team-Drittel, Spearman gegen Rauschgrenze, Auto-Bias. **Maßstab für jedes Renn-Balancing** |
 
 ⚠ **Messfallen (jede hat schon Zeit gekostet):**
 - `GAME_STATE.seasonDeaths` enthält auch **Nicht-WM-Tode** aus `applyRaceResults`. Ohne Filter auf `fatalSession==='race'` sieht jede Zählung nach Doppelverbuchung aus.
 - Das `raceResult` entsteht in **`closeLiveRace()`**, nicht in `finishLiveRace()` – letzteres setzt nur `finished` und die Siegermeldung.
 - `liveRaceState` ist mit `let` deklariert und landet damit **nicht** auf dem vm-Kontext von sim-core; dort injiziert ein Patch den Getter `window.__liveState`. `startLiveRace`/`startRaceSimulation` hängen an `window`, nicht global.
+- **Balancing-Messungen (Details `BEFUNDE.md` 23.–26.09.2026):** Die Zahl der Punktefahrer liegt an ihrer Rauschgrenze (eine reale Saison ist selbst ein Zufallswurf) → Zielgröße ist der Punkteanteil je Team-Drittel. Spearman über Endstände **nur mit Durchschnittsrängen**, sonst erzeugen punktlose Fahrer (50er: 67 %) Schein-Modellfehler.
 - Monte Carlo kann die Parität **nicht beweisen** – beide Pfade würfeln unabhängig, vergleichbar sind nur Verteilungen. Dafür ist `ticker-paritaet.js` da.
 
 Zentrale Logik-Funktionen (nie duplizieren):
