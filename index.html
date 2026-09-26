@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.16</title>
+    <title>F1 RPG v0.9.18.17</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.16 (aktuell) - 26.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.17 (aktuell) - 26.09.2026</div>
+                            <div>&#8226; NEU: Qualifying und Training kennen „ohne Zeit“ (Unfall/Defekt) – 0,2–3 % je Ära statt nie</div>
+                            <div>&#8226; NEU: bei Nässe häufiger, Betroffene starten von hinten oder verpassen die Qualifikation</div>
+                            <div class="font-bold text-slate-400">v0.9.18.16 - 26.09.2026</div>
                             <div>&#8226; FIX: Regenrennen ~15 % statt 41 % – echte Quote je Ära, Klima nur noch als Gewichtung</div>
                             <div>&#8226; NEU: Training und Qualifying würfeln eigenes Wetter, Training kennt erstmals Regen</div>
                             <div>&#8226; NEU: keine fest vorgegebenen historischen Regenrennen mehr</div>
@@ -4096,7 +4099,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.16';
+        const VERSION = '0.9.18.17';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -5679,6 +5682,33 @@
         const SESSION_RAIN_IF_RACE_WET = 0.25;
         const SESSION_RAIN_IF_RACE_DRY = 0.12;
         const _weekendWetter = {};   // 'Jahr|raceIndex' → { training, quali, rennen }
+
+        // === OHNE ZEIT IN QUALIFYING UND TRAINING (v0.9.18.17) ===
+        // Wer im Qualifying/Training keine Zeit setzt (Unfall, Defekt), steht hinten. Real
+        // viel seltener als ein Ausfall im Rennen (12–52 %): es zählt die beste Runde, und
+        // die Autos treffen seltener aufeinander. F1DB (tests/session-ausfaelle-real.js):
+        //   Quali   60er 0,49 % · 70er 0,16 · 80er 0,16 · 90er 0,27 · 00er 1,82 · 10er 1,75 · 20er 0,86
+        //   Training je Session 80er 0,30 % · 90er 0,11 · 00er 3,29 · 10er 2,09 · 20er 1,45
+        // Vor 2000 fast nie: mehrere Sitzungen, die beste zählte. 50er (4,6 %) sind in F1DB
+        // zum Teil Datenlücke → Wert der 60er. Training vor 1980 ohne Daten → 80er-Wert.
+        // Nass ×1,5 (Quali ab 2000: nass 2,13 %, trocken 1,44 %). Real starten 79 % derer
+        // ohne Zeit trotzdem, im Mittel von ganz hinten — das ergibt sich hier von selbst.
+        const ERA_QUALI_NO_TIME = {
+            1950: 0.0049, 1960: 0.0049, 1970: 0.0016, 1980: 0.0016,
+            1990: 0.0027, 2000: 0.0182, 2010: 0.0175, 2020: 0.0086
+        };
+        const ERA_TRAINING_NO_TIME = {
+            1950: 0.0030, 1990: 0.0011, 2000: 0.0329, 2010: 0.0209, 2020: 0.0145
+        };
+        const NO_TIME_WET_FACTOR = 1.5;
+
+        // Markiert Einträge ohne Zeit: keine Zeit, ans Ende sortiert (vor den Todesfällen).
+        function markiereOhneZeit(results, tabelle, isRain) {
+            const p = getEraValue(tabelle, GAME_STATE.currentYear) * (isRain ? NO_TIME_WET_FACTOR : 1);
+            for (const r of results) {
+                if (Math.random() < p) { r.keineZeit = true; r.time = null; r.score = -1e6; }
+            }
+        }
 
         function _klimaRegen(race) {
             if (!race || typeof _getClimate !== 'function') return null;
@@ -15193,6 +15223,8 @@
                 }
             }
 
+            markiereOhneZeit(results, ERA_TRAINING_NO_TIME, isRain);   // s. ERA_TRAINING_NO_TIME
+
             // Sortieren: fatal ans Ende, dann nach Score
             results.sort((a, b) => {
                 if (a.fatal && !b.fatal) return 1;
@@ -15378,6 +15410,8 @@
                 });
             });
             
+            markiereOhneZeit(results, ERA_QUALI_NO_TIME, isRain);   // s. ERA_QUALI_NO_TIME
+
             // Sortieren: Fatale ans Ende, dann nach Score (schnellste Zeit = höchste Score)
             results.sort((a, b) => {
                 if (a.fatal && !b.fatal) return 1;
