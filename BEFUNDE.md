@@ -1714,3 +1714,62 @@ tut es in keiner Dekade.
 
 **Entscheidung:** B nicht bauen. `ERA_TEAM_SPREAD` bleibt alleinige Quelle der Spreizung.
 Werkzeug: `node tests/quali-form-vs-punkte.js`.
+
+---
+
+### 26.09.2026 (3): Störungen und Regen — Bestandsaufnahme
+
+Auftrag: Chaos-Rennen („Störungen") über die Häufigkeit messen, nicht Grand-Prix-genau.
+Dazu den Regen in allen drei Sessions prüfen, in F1DB und im Spiel, nach Stärke
+aufgeschlüsselt, sowie Rennabbrüche und rote Flaggen.
+
+**Was F1DB hergibt:** keine Wetter- und keine Flaggen-Felder. Indirekt verfügbar sind
+`laps` < `scheduledLaps` (verkürzte Rennen) und Rundenzeiten. Rote Flaggen mit Neustart
+über die volle Distanz sind in F1DB **unsichtbar**.
+
+**Regen im Spiel heute** (`getRaceWetChance`, data/f1db.js):
+- `WET_RACE_IDS` (154 Rennen, Quelle „MitchellGleason/F1-Data-Analysis + Wikipedia") →
+  Wahrscheinlichkeit **1,0**, also Grand-Prix-genau fest vorgegeben
+- alle anderen Rennen → Klimawert „Regentag-Wahrscheinlichkeit im Monat" direkt als
+  Renn-Regenwahrscheinlichkeit
+- **ein** Wurf je Wochenende, Qualifying und Rennen immer gleich; **Training nie nass**
+
+**Messung Nass-Anteil je Dekade:**
+
+| Dekade | real (Liste) | Spiel erwartet |
+|---|---|---|
+| 1950er | 14,9 % | 44,2 % |
+| 1960er | 15,2 % | 45,7 % |
+| 1970er | 12,5 % | 42,5 % |
+| 1980er | 11,5 % | 40,6 % |
+| 1990er | 16,7 % | 44,5 % |
+| 2000er | 15,5 % | 44,7 % |
+| 2010er | 11,1 % | 42,7 % |
+| 2020er | 10,7 % | 37,5 % |
+
+Im echten Spielablauf nachgeprüft (1958/1976/1996/2012): 32–44 % erwartet nass.
+**Das Spiel hat rund dreimal so viele Regenrennen wie die Realität.** Der Klimawert misst
+Regentage im Monat, nicht „Rennen nass". Dazu kommt die feste Liste obendrauf.
+⚠ `vakuum-saison.js` fährt alle Rennen trocken (`simulateRace(i, false)`). Das gesamte
+Balancing der letzten Tage ist also **ohne Regen** gemessen.
+
+**Regenstärke aus Rundenzeiten** (schnellste Rennrunde bzw. beste Quali-Zeit gegen den
+Median derselben Streckenvariante ±4 Jahre):
+
+| | Median | 75 % | 90 % |
+|---|---|---|---|
+| Rennrunde, nass gelistet (n 144) | +1,4 % | +7,7 % | +16,3 % |
+| Rennrunde, nicht gelistet (n 926) | −0,2 % | +1,3 % | +2,7 % |
+| Quali, Rennen nass gelistet | +0,6 % | +2,4 % | +5,3 % |
+| Quali, nicht gelistet | −0,2 % | +1,6 % | +3,9 % |
+
+- Über 5 % langsamer: 31 % der nassen Rennen, 1,9 % der übrigen. **Etwa 30 % der
+  Regenrennen waren durchgehend nass, 70 % teilweise oder leicht nass** (die schnellste
+  Runde fiel auf trockener Strecke). Monaco 1996: Rennrunde +3,1 %, Quali +0,9 %.
+- **Qualifying und Rennen sind real weitgehend unabhängig nass.** Das Qualifying zu
+  Regenrennen war meist trocken. Für die Quali ist die Zeit-Erkennung unschärfer
+  (Formatwechsel), die Verteilungen überlappen stärker.
+
+**Weitere Grundzahlen je Dekade** (50er … 20er): verkürzt unter 90 % der geplanten
+Distanz: 0 · 0 · 6 · 4 · 4 · 3 · 1 · 3. Sieg ab Startplatz 10: 1,4 · 3,0 · 5,6 · 4,5 ·
+2,5 · 3,4 · 1,5 · 3,8 %.
