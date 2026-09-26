@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.17</title>
+    <title>F1 RPG v0.9.18.18</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.17 (aktuell) - 26.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.18 (aktuell) - 26.09.2026</div>
+                            <div>&#8226; NEU: teilweise nasse Rennen (mehr Durcheinander, Außenseiter aus dem Mittelfeld) und durchgehend nasse (mehr Unfälle)</div>
+                            <div>&#8226; NEU: Unfälle treffen alle Teams gleich, technische Ausfälle hängen an der Zuverlässigkeit</div>
+                            <div>&#8226; FIX: Regen senkte die Leistung aller pauschal und schob das Feld zusammen</div>
+                            <div class="font-bold text-slate-400">v0.9.18.17 - 26.09.2026</div>
                             <div>&#8226; NEU: Qualifying und Training kennen „ohne Zeit“ (Unfall/Defekt) – 0,2–3 % je Ära statt nie</div>
                             <div>&#8226; NEU: bei Nässe häufiger, Betroffene starten von hinten oder verpassen die Qualifikation</div>
                             <div class="font-bold text-slate-400">v0.9.18.16 - 26.09.2026</div>
@@ -17710,7 +17714,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.17';
+        const VERSION = '0.9.18.18';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -19275,6 +19279,22 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             return 1 + DNF_REL_SPREAD * (avgRel - rel) / 100;
         }
 
+        // === AUSFALL GETRENNT NACH ART (v0.9.18.18) ===
+        // Technik hängt am Team, Unfälle treffen alle gleich (F1DB nach Team-Drittel: trocken
+        // Technik 21/27/30 %, Unfall 7,6/10,0/9,5 %; nass Unfall 18,2/18,4/18,0 %). Vorher
+        // hingen ALLE Ausfälle an der Zuverlässigkeit — bei Nässe (mehr Unfälle) trafen sie
+        // dadurch die schwachen Teams, real trifft es dann die starken relativ mehr.
+        // Liefert Prozent je Art; simulateRace, DNF-Vorschau und tests/dnf-spreizung.js
+        // rufen alle diese Funktion.
+        function dnfWahrscheinlichkeit(eraBase, multiplier, avgRel, rel, year, regenArt) {
+            const unfallAnteil = getEraAccidentShare(year) / 100;
+            let mech = eraBase * multiplier * (1 - unfallAnteil) * dnfTeamFaktor(avgRel, rel) * (regenArt ? RAIN_MECH_FACTOR[regenArt] : 1);
+            let unfall = eraBase * multiplier * unfallAnteil * (regenArt ? RAIN_ACC_FACTOR[regenArt] : 1);
+            const ges = mech + unfall, grenze = Math.max(2, Math.min(99, ges));
+            if (ges > 0) { mech *= grenze / ges; unfall *= grenze / ges; }
+            return { mech, unfall, gesamt: mech + unfall };
+        }
+
         // === WETTER JE WOCHENENDE (v0.9.18.16) ===
         // Vorher: WET_RACE_IDS machte 154 historische Rennen FEST nass (1,0), alle übrigen
         // würfelten mit der Klima-„Regentag"-Wahrscheinlichkeit des Monats — zusammen 41 %
@@ -19292,6 +19312,34 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // (tests/quali-regen-real.js: nass bei nassem Rennen 17–33 %, sonst 10–14 %).
         const SESSION_RAIN_IF_RACE_WET = 0.25;
         const SESSION_RAIN_IF_RACE_DRY = 0.12;
+        // Regenstärke im Rennen (v0.9.18.18). Real (tests/regen-staerke-real.js, Wiki-Infobox):
+        //   teilweise nass: Ausfälle ×1,11, Unfälle ×1,69, Reihenfolge am stärksten gemischt
+        //     (Ø Spearman Start→Ziel 0,643, 11 % unter 0,3, Sieg ab P10 8,5 %)
+        //   durchgehend nass: Ausfälle ×1,01, Unfälle ×1,98, weniger gemischt (0,683 · 2,4 % · 4,8 %)
+        // Anteil teilweise an den Regenrennen je Dekade (alte Artikel schreiben knapp „wet" →
+        // „durchgehend" dort eher überschätzt):
+        const ERA_RAIN_PARTIAL_SHARE = {
+            1950: 0.33, 1960: 0.27, 1970: 0.33, 1980: 0.42,
+            1990: 0.52, 2000: 0.55, 2010: 0.70, 2020: 0.59
+        };
+        // Nässe wirkt je Ausfallart (relativ zu trocken derselben Dekade, regen-staerke-real.js):
+        // Technik seltener (langsamer gefahren), Unfälle häufiger.
+        //   teilweise: Ausfälle ×1,11, Unfälle ×1,69 → Technik ×0,90
+        //   durchgehend: Ausfälle ×1,01, Unfälle ×1,98 → Technik ×0,65
+        const RAIN_MECH_FACTOR = { teilweise: 0.90, durchgehend: 0.65 };
+        const RAIN_ACC_FACTOR  = { teilweise: 1.69, durchgehend: 1.98 };
+        // Wie stark das Regengeschick im Rennen die Konstanz ersetzt (0 = gar nicht, 1 = ganz).
+        // Das ist die Hauptquelle des Regen-Chaos: vollständiger Ersatz senkte den Spearman
+        // Start→Ziel von 0,765 auf 0,679 (Abschalt-Versuch 26.09.2026, BEFUNDE.md).
+        const RAIN_CONSISTENCY_WEIGHT = { teilweise: 1.0, durchgehend: 0.5 };
+        // Teilweise nass ist real eine Lotterie mit dickem Schwanz: die meisten Rennen normal,
+        // einige völlig durcheinander (11 % mit Spearman < 0,3). Außenseitersiege kommen aus dem
+        // Mittelfeld (Panis/Ligier 1996), die schwachen Teams punkten kaum öfter (+3,8 Pp je
+        // Dekade). In 30 % der teilweise nassen Rennen trifft deshalb jeder fünfte Fahrer die
+        // richtige Reifenwahl und gewinnt Leistung — bei schwachen Autos kappt die Auto-Decke
+        // den Bonus, im Mittelfeld wirkt er voll. Verworfen: Rauschen ×3 für alle und eine
+        // Strafe für zufällige Fahrer — beide spülten die schwachen Teams nach vorn.
+        const RAIN_PARTIAL_LOTTERY = { p: 0.30, anteil: 0.20, bonus: 14 };
         const _weekendWetter = {};   // 'Jahr|raceIndex' → { training, quali, rennen }
 
         // === OHNE ZEIT IN QUALIFYING UND TRAINING (v0.9.18.17) ===
@@ -19342,7 +19390,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             return (_weekendWetter[key] = {
                 training: Math.random() < pSession,
                 quali: Math.random() < pSession,
-                rennen
+                rennen,
+                // immer gewürfelt: auch ein ausdrücklich nass aufgerufenes Rennen hat eine Stärke
+                staerke: Math.random() < getEraValue(ERA_RAIN_PARTIAL_SHARE, GAME_STATE.currentYear) ? 'teilweise' : 'durchgehend'
             });
         }
 
@@ -28003,6 +28053,10 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             }
             const _nGrid = Object.keys(_gridPosMap).length || activeDrivers.length;
             const _GRID_K = 8;
+            // Regenstärke dieses Rennens (s. ERA_RAIN_PARTIAL_SHARE), nur bei Regen
+            const _regenArt = isRain ? (wochenendWetter(raceIndex).staerke || 'durchgehend') : null;
+            // Lotterie-Rennen: einmal je Rennen gewürfelt, gilt für das ganze Feld
+            const _lotterie = _regenArt === 'teilweise' && Math.random() < RAIN_PARTIAL_LOTTERY.p;
 
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -28041,18 +28095,21 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 // faellt aus (DNF, separat modelliert) oder faehrt seine Leistung.
                 // Jetzt kostet ein schlechter Tag 30 % der Pace statt 100 %. Die
                 // Konstanz bleibt voll wirksam: sie bestimmt weiter die HAEUFIGKEIT.
-                const _consVal = isRain ? (driver.rain ?? 75) : _effCon;
+                const _consVal = _regenArt
+                    ? _effCon + ((driver.rain ?? 75) - _effCon) * RAIN_CONSISTENCY_WEIGHT[_regenArt]
+                    : _effCon;
                 const _isGoodDay = Math.random() < (_consVal / 100);
                 const _paceFactor = _isGoodDay ? 1.0 : BAD_DAY_PACE_FACTOR;
                 let performance = (
                     _effPace * _paceFactor * 0.45 +
-                    (isRain ? driver.rain * _paceFactor * 0.2 : 15) +
+                    (isRain ? 15 + ((driver.rain ?? 75) - 75) * 0.2 : 15) +   // Regen: Abweichung vom Niveau, kein pauschaler Verlust (s. RAIN_CONSISTENCY_WEIGHT)
                     driver.experience * 0.15 +
                     _effCarSpeed * CAR_SPEED_WEIGHT   // konstant, s. Kommentar dort
                 );
                 // Kontinuierliches Rauschen: ±6 (Konstanz=100) bis ±16 (Konstanz=0)
                 const _halfVar = 6 + (100 - _consVal) * 0.10;
                 performance += (Math.random() - 0.5) * 2 * _halfVar;
+                if (_lotterie && Math.random() < RAIN_PARTIAL_LOTTERY.anteil) performance += RAIN_PARTIAL_LOTTERY.bonus;
 
                 // === CAR-CEILING (v0.9.14.45) ===
                 // Das Auto begrenzt, wie weit ein Fahrer nach oben ausreißen kann: oberhalb von
@@ -28096,17 +28153,15 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 const _eraBase = getEraDNFRate(GAME_STATE.currentYear);
                 const _multiplier = (GAME_STATE.dnfRate ?? 100) / 100;
                 const _avgRel = GAME_STATE.teams.reduce((s, t) => s + (t.reliability || 75), 0) / GAME_STATE.teams.length;
-                let dnfPercent = _eraBase * _multiplier * dnfTeamFaktor(_avgRel, team.reliability || 75);
-                dnfPercent = Math.max(2, Math.min(99, dnfPercent));
+                const _dnfW = dnfWahrscheinlichkeit(_eraBase, _multiplier, _avgRel, team.reliability || 75, GAME_STATE.currentYear, _regenArt);
+                const dnfPercent = _dnfW.gesamt;
                 let isDNF = false;
                 let dnfType = null;
                 if (_multiplier === 0) {
                     isDNF = false;
                 } else {
                     isDNF = Math.random() < dnfPercent / 100;
-                    dnfType = isDNF
-                        ? (Math.random() * 100 < getEraAccidentShare(GAME_STATE.currentYear) ? 'accident' : 'mechanical')
-                        : null;
+                    dnfType = isDNF ? (Math.random() * _dnfW.gesamt < _dnfW.unfall ? 'accident' : 'mechanical') : null;
                 }
 
                 // === HITZE-EFFEKT (zufällig, kein Fahrerattribut) ===
@@ -53012,7 +53067,7 @@ Empfohlene Wertebereiche:
             const worstTeam = sortedTeams[sortedTeams.length - 1];
 
             function calcDnf(rel) {
-                return Math.max(2, Math.min(99, eraBase * multiplier * dnfTeamFaktor(avgRel, rel)));
+                return dnfWahrscheinlichkeit(eraBase, multiplier, avgRel, rel, GAME_STATE.currentYear, null).gesamt;
             }
 
             const bestDnf  = calcDnf(bestTeam.reliability  || 75);
