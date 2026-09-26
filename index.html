@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.18</title>
+    <title>F1 RPG v0.9.18.19</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.18 (aktuell) - 26.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.19 (aktuell) - 26.09.2026</div>
+                            <div>&#8226; NEU: rote Flaggen mit echter Häufigkeit je Ära, bei Regen häufiger – ab 2000 mischen sie das Feld neu</div>
+                            <div>&#8226; FIX: trockene Rennen waren zu zufällig (Außenseitersiege 4,4 % statt real 2,8 %)</div>
+                            <div class="font-bold text-slate-400">v0.9.18.18 - 26.09.2026</div>
                             <div>&#8226; NEU: teilweise nasse Rennen (mehr Durcheinander, Außenseiter aus dem Mittelfeld) und durchgehend nasse (mehr Unfälle)</div>
                             <div>&#8226; NEU: Unfälle treffen alle Teams gleich, technische Ausfälle hängen an der Zuverlässigkeit</div>
                             <div>&#8226; FIX: Regen senkte die Leistung aller pauschal und schob das Feld zusammen</div>
@@ -4103,7 +4106,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.18';
+        const VERSION = '0.9.18.19';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -5729,6 +5732,32 @@
         // den Bonus, im Mittelfeld wirkt er voll. Verworfen: Rauschen ×3 für alle und eine
         // Strafe für zufällige Fahrer — beide spülten die schwachen Teams nach vorn.
         const RAIN_PARTIAL_LOTTERY = { p: 0.30, anteil: 0.20, bonus: 14 };
+        // === ROTE FLAGGE IM RENNEN (v0.9.18.19) ===
+        // Häufigkeit je Dekade aus der Wikipedia-Liste (tests/rote-flaggen-real.js, 91 seit 1971,
+        // davor als Verfahren nicht erfasst): Anteil der Rennen. Bei Nässe dreimal so häufig
+        // (ab 1971: 21,4 % gegen 7,3 %) — gewichtet so, dass die Dekaden-Quote erhalten bleibt.
+        const ERA_RED_FLAG_RATE = {
+            1950: 0, 1970: 0.083, 1980: 0.128, 1990: 0.123, 2000: 0.034, 2010: 0.056, 2020: 0.168
+        };
+        const RED_FLAG_WET_FACTOR = 3;
+        // Wirkung erst ab 2000: davor meist Neustart über die volle Distanz, die Reihenfolge
+        // änderte sich nicht (1980–99 Spearman 0,755 gegen 0,732 trocken). Seitdem wird
+        // fortgesetzt, mit freiem Reifenwechsel — real 2000–25: Spearman 0,674 statt 0,769,
+        // Sieg ab P10 8,6 % statt 1,9 %, schwaches Drittel punktet 66 % statt 51 %.
+        // Modelliert wie die Regen-Lotterie: ein Teil der Fahrer erwischt die Unterbrechung
+        // günstig (Reifen, Position) und gewinnt Leistung.
+        const RED_FLAG_WIRKUNG_AB = 2000;
+        // Beim Fortsetzen sind die Abstände gelöscht: der Startplatz-Vorteil entfällt weitgehend,
+        // starke Fahrer von hinten kommen nach vorn (real: Siege ab P10 8,6 % statt 1,9 %).
+        const RED_FLAG_GRID_FACTOR = 0.4;
+        const RED_FLAG_LOTTERY = { anteil: 0.15, bonus: 10 };
+
+        function roteFlaggeWahrscheinlichkeit(year, isRain) {
+            const rate = getEraValue(ERA_RED_FLAG_RATE, year);
+            const nass = getEraValue(ERA_RAIN_RATE, year);
+            return rate * (isRain ? RED_FLAG_WET_FACTOR : 1) / (1 + (RED_FLAG_WET_FACTOR - 1) * nass);
+        }
+
         const _weekendWetter = {};   // 'Jahr|raceIndex' → { training, quali, rennen }
 
         // === OHNE ZEIT IN QUALIFYING UND TRAINING (v0.9.18.17) ===
@@ -14446,6 +14475,9 @@
             const _regenArt = isRain ? (wochenendWetter(raceIndex).staerke || 'durchgehend') : null;
             // Lotterie-Rennen: einmal je Rennen gewürfelt, gilt für das ganze Feld
             const _lotterie = _regenArt === 'teilweise' && Math.random() < RAIN_PARTIAL_LOTTERY.p;
+            // Rote Flagge: einmal je Rennen gewürfelt; Wirkung auf die Leistung erst ab 2000
+            const _roteFlagge = Math.random() < roteFlaggeWahrscheinlichkeit(GAME_STATE.currentYear, isRain);
+            const _roteFlaggeWirkt = _roteFlagge && GAME_STATE.currentYear >= RED_FLAG_WIRKUNG_AB;
 
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -14495,10 +14527,15 @@
                     driver.experience * 0.15 +
                     _effCarSpeed * CAR_SPEED_WEIGHT   // konstant, s. Kommentar dort
                 );
-                // Kontinuierliches Rauschen: ±6 (Konstanz=100) bis ±16 (Konstanz=0)
-                const _halfVar = 6 + (100 - _consVal) * 0.10;
+                // Kontinuierliches Rauschen: ±4 (Konstanz=100) bis ±11 (Konstanz=0).
+                // v0.9.18.19: vorher ±6..16 — trockene Rennen mischten zu viel (Spearman Start→Ziel
+                // 0,692 statt real 0,733, Sieg ab P10 4,4 % statt 2,8 %). Gegen einen größeren
+                // Startplatz-Vorteil (_GRID_K 12) abgewogen: der traf trocken genauer, machte aber
+                // auch nasse Rennen zu geordnet (BEFUNDE.md 26.09.2026).
+                const _halfVar = 4 + (100 - _consVal) * 0.07;
                 performance += (Math.random() - 0.5) * 2 * _halfVar;
                 if (_lotterie && Math.random() < RAIN_PARTIAL_LOTTERY.anteil) performance += RAIN_PARTIAL_LOTTERY.bonus;
+                if (_roteFlaggeWirkt && Math.random() < RED_FLAG_LOTTERY.anteil) performance += RED_FLAG_LOTTERY.bonus;
 
                 // === CAR-CEILING (v0.9.14.45) ===
                 // Das Auto begrenzt, wie weit ein Fahrer nach oben ausreißen kann: oberhalb von
@@ -14529,7 +14566,7 @@
 
                 // Grid-Bonus: lineare Startposition (gleichmäßige Abstände auf dem Gitter)
                 const _gp = _gridPosMap[driver.id];
-                if (_gp && _nGrid > 1) performance += (_nGrid - _gp) / (_nGrid - 1) * _GRID_K;
+                if (_gp && _nGrid > 1) performance += (_nGrid - _gp) / (_nGrid - 1) * _GRID_K * (_roteFlaggeWirkt ? RED_FLAG_GRID_FACTOR : 1);   // rote Flagge: Abstände gelöscht
 
                 // ═══════════════════════════════════════════════════════════════
                 // DNF-FORMEL v0.9.9.6 – Ära-basiert
@@ -14742,6 +14779,7 @@
                 raceCountry: race.country,
                 isRain,
                 isHot,
+                roteFlagge: _roteFlagge,   // Darstellung (Ticker), Wirkung s. RED_FLAG_WIRKUNG_AB
                 results,
                 dnq: _dnqIds,
                 dns: _dnsIds,      // qualifiziert, aber nicht an den Start gegangen (v0.9.17.13)
