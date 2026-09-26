@@ -2021,3 +2021,76 @@ Ausfälle +11,2 → + Lotterie (Bonus) +14,9 Pp.
 Saison: schwaches Drittel +0,48 Pp (t 1,7), Spearman-Lücke +0,013 (t 2,6), Punktefahrer im
 Rauschen. ▶ **Offen:** Teilweise nass bringt den schwachen Teams ~+12 Pp zu viel (etwa 2
 Standardfehler). Trockene Rennen mischen weiter zu viel → Schritt 5.
+
+### 26.09.2026 (9): Außenseiter nach STÄRKE — je schwächer, desto seltener
+
+Frage des Nutzers. „Sieg ab Startplatz 10" misst nur den Startplatz, nicht die Stärke.
+Sieger nach Team-Drittel (mittlerer Startplatz der Saison), real (`chaos-real.js`) gegen
+Spiel (`vakuum-batch --regen`, Spalte „Sieger stark/mittel/schwach"):
+
+| | real stark/mittel/schwach | Spiel |
+|---|---|---|
+| trocken | 90,1 / 8,4 / 1,5 % | 87,5 / **11,7** / 0,8 % |
+| teilweise nass | 87,8 / 11,0 / 1,2 % | 81,6 / **16,7** / 1,7 % |
+| durchgehend nass | 81,2 / 15,3 / 3,5 % | 79,1 / 18,4 / 2,4 % |
+
+- **Die meisten Siege ab Startplatz 10 gehen real an starke Teams**, die von hinten
+  starten (2,1 von 3,4 %). Echte Siege aus dem schwachen Drittel: 1,7 %, davon ab P10 nur
+  0,2 %.
+- Bei durchgehender Nässe gewinnt das Mittelfeld real fast doppelt so oft (15,3 %).
+- **Im Spiel gewinnt das Mittelfeld zu oft**, trocken und teilweise nass. Gleiche Ursache
+  wie die zu vielen Siege ab P10: Trockene Rennen mischen zu viel (Schritt 5b).
+
+**Rote Flaggen, reale Wirkung nach Epoche** (`chaos-real.js`):
+
+| | Ø Spearman rote Flagge / trocken | Sieg ab P10 | schwaches Drittel punktet |
+|---|---|---|---|
+| 1980–99 (meist Neustart volle Distanz) | 0,755 / 0,732 | 2,6 / 2,6 % | 28 / 31 % |
+| 2000–25 (meist Fortsetzung) | **0,674 / 0,769** | **8,6 / 1,9 %** | **66 / 51 %** |
+
+Ab 1971 ist eine rote Flagge bei nassen Rennen dreimal so häufig (21,4 % gegen 7,3 %).
+Vor 2000 ändert sie die Reihenfolge nicht, erst mit der Fortsetzung samt freiem
+Reifenwechsel mischt sie.
+
+### 26.09.2026 (10): Rote Flaggen und Grundrauschen (v0.9.18.19) — Schritt 5
+
+**5a Rote Flaggen.** `ERA_RED_FLAG_RATE` je Dekade (Wikipedia-Liste: vor 1971 keine, 70er
+8,3 · 80er 12,8 · 90er 12,3 · 00er 3,4 · 10er 5,6 · 20er 16,8 %), bei Nässe ×3
+(`roteFlaggeWahrscheinlichkeit`, gewichtet so, dass die Dekaden-Quote bleibt). Wirkung
+erst **ab 2000** (`RED_FLAG_WIRKUNG_AB`). Davor Neustart über die volle Distanz ohne
+Wirkung auf die Reihenfolge. Das Ergebnis trägt `roteFlagge` für die Darstellung.
+
+Kalibrierung 2000–2024 (25 Jahre × 8, Δ zu trocken im selben Zeitraum; Ziel real
+Δ Spearman −0,095 · Δ Sieg ab P10 +6,7 Pp · Δ schwach punktet +15 Pp):
+
+| Versuch | Δ Spearman | Δ Sieg ab P10 | Δ schwach punktet |
+|---|---|---|---|
+| Bonus für 25 % (+14), Startplatz bleibt | −0,036 | −1,4 | +7 |
+| Startplatz-Vorteil weg, Bonus 15 % (+10) | −0,148 | +10,6 | +14 |
+| **Startplatz-Vorteil 40 %, Bonus 15 % (+10)** | −0,100 | +6,7 | +13 |
+| dito nach Rauschen −30 % (Endstand) | −0,092 | +4,9 | +9 |
+
+**Der Mechanismus ist das Löschen der Abstände** (`RED_FLAG_GRID_FACTOR`): Starke Fahrer
+von hinten kommen nach vorn. Ein Bonus für zufällige Fahrer allein erzeugte keine Siege
+von hinten.
+
+**5b Grundrauschen trockener Rennen.** Ausgangslage: Spearman Start→Ziel 0,692 statt 0,733,
+Sieg ab P10 4,4 % statt 2,8 %. Zwei Stellschrauben über alle Ären × 4 mit Regen und roten
+Flaggen:
+
+| | Ausgang | `_GRID_K` 12 | **Rauschen 4 + 0,07·(100−K)** | real |
+|---|---|---|---|---|
+| trocken Spearman / P10 / < 0,3 | 0,692 / 4,4 / 3,3 % | 0,740 / 2,8 / 1,2 % | 0,726 / 3,2 / 1,9 % | 0,733 / 2,8 / 3,8 % |
+| teilweise / durchgehend Spearman | 0,655 / 0,650 | 0,685 / 0,706 | 0,660 / 0,692 | 0,643 / 0,683 |
+| Punktefahrer Ø \|Diff\| | 1,88 | 1,60 | 1,65 | |
+| schwaches Drittel Ø \|Diff\| | 1,87 | 2,02 | **1,53** | |
+| Spearman / Rauschgrenze | 0,832 / 0,818 | 0,840 / 0,840 | 0,843 / 0,842 | |
+
+**Gewählt: weniger Rauschen** (±4..11 statt ±6..16). Es trifft trocken fast so gut wie ein
+größerer Startplatz-Vorteil, lässt nassen Rennen aber ihre Wirkung und mehr Extremfälle.
+`_GRID_K` 12 machte auch nasse Rennen zu geordnet. Die Spearman-Lücke zur Rauschgrenze ist
+damit geschlossen (+0,014 → +0,001), die Punktefahrer-Abweichung sinkt von 1,88 auf 1,65.
+
+▶ **Offen, klein:** Das Mittelfeld gewinnt über alle Ären noch etwas zu oft (11 % statt
+8,4 %, ab 2000 aber 8,6 %). Rennen mit Spearman < 0,3 sind trocken seltener als real
+(1,9 statt 3,8 %).

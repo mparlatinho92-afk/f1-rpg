@@ -194,7 +194,8 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         if (erg) {
             const startPl = new Map(eintraege.map(e => [e.driver, e.position]));
             const imZiel = (erg.results || []).filter(e => !e.dnf && startPl.has(e.driver));
-            rennChaos.push({ nass, art: regenArt, start: imZiel.map(e => startPl.get(e.driver)),
+            rennChaos.push({ nass, art: regenArt, rot: !!erg.roteFlagge, start: imZiel.map(e => startPl.get(e.driver)),
+                siegKonstr: imZiel.length ? teamZuKonstr.get(imZiel[0].team) : null,
                 punkteKonstr: (erg.results || []).filter(e => e.points > 0).map(e => teamZuKonstr.get(e.team)).filter(Boolean) });
         }
         if (erg) ctx.applyRaceResults(erg);
@@ -542,15 +543,19 @@ function gefahreneRunden(ctx, real) {
             for (const st of rund.starter) { kGrid[st.constructorId] = (kGrid[st.constructorId] || 0) + st.platz; kN[st.constructorId] = (kN[st.constructorId] || 0) + 1; } }
         const ks = Object.keys(kN).filter(k => kN[k] >= 3).sort((a, b) => kGrid[a] / kN[a] - kGrid[b] / kN[b]);
         const schwach = new Set(ks.slice(ks.length - Math.round(ks.length / 3)));
-        for (const art of ['trocken', 'teilweise', 'durchgehend', 'nass']) {
-            const l = alleRennChaos.filter(c => c.art === art && c.start.length >= 6);
+        const stark = new Set(ks.slice(0, Math.round(ks.length / 3)));
+        for (const art of ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot']) {
+            const l = alleRennChaos.filter(c => (art === 'rot' ? c.rot : c.art === art) && c.start.length >= 6);
             if (!l.length) continue;
             const sp = l.map(c => pearsonR(c.start.map((_, j) => j), c.start.map(v => v)));
             const unter03 = sp.filter(v => v < 0.3).length;
             const p10 = l.filter(c => c.start[0] >= 10).length;
             const schw = l.filter(c => c.punkteKonstr.some(k => schwach.has(k))).length;
+            // Sieger nach Team-Drittel: Außenseiter nach STÄRKE, nicht nach Startplatz
+            const siegStark = l.filter(c => stark.has(c.siegKonstr)).length, siegSchwach = l.filter(c => schwach.has(c.siegKonstr)).length;
             console.log('  Chaos ' + art + ': n ' + l.length + ' sp03 ' + unter03 + ' p10 ' + p10 + ' schwach ' + schw
-                + ' spsum ' + sp.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0).toFixed(3));
+                + ' spsum ' + sp.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0).toFixed(3)
+                + ' siegstark ' + siegStark + ' siegschwach ' + siegSchwach);
         }
     }
     if (biasPaare.length > 5) {

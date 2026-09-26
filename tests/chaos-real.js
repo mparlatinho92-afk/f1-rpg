@@ -77,3 +77,20 @@ for (const k of Object.keys(gruppen).sort()) { const g = gruppen[k];
     console.log('  ' + art.padEnd(10), 'Δ Spearman ' + (dsp / w).toFixed(3), '· Δ < 0,3 ' + (d03 / w * 100).toFixed(1) + ' Pp', '· Δ Sieg ab P10 ' + (dp10 / w * 100).toFixed(1) + ' Pp', '· Δ schwaches Drittel punktet ' + (dsw / w * 100).toFixed(1) + ' Pp', '(n ' + w + ')');
   }
 }
+
+// ── Sieger nach Team-Drittel (26.09.2026) ──────────────────────────────────
+// „Außenseiter" nach STÄRKE statt nach Startplatz: aus welchem Team-Drittel (mittlerer
+// Startplatz der Saison) kommt der Sieger? Und von wo startete er?
+{
+  const z = {};
+  for (const r of races) {
+    if (r.year > 2025 || (r.circuitId === 'indianapolis' && r.year <= 1960) || !e[r.id] || !e[r.id].regen.rennen) continue;
+    const s = (proRennen[r.id] || []).find(x => x.positionNumber === 1); if (!s) continue;
+    const d = drittel[r.year + '|' + s.constructorId]; if (d === undefined) continue;
+    const w = e[r.id].regen.rennen;
+    for (const k of [w, 'alle']) { const q = z[k] = z[k] || { n: 0, d: [0, 0, 0], p10: [0, 0, 0] }; q.n++; q.d[d]++; if ((G[r.id + '|' + s.driverId] || 0) >= 10) q.p10[d]++; }
+  }
+  console.log('\nSieger nach Team-Drittel (stark / mittel / schwach), dahinter davon ab Startplatz 10:');
+  for (const k of ['alle', 'trocken', 'teilweise', 'nass']) { const q = z[k]; if (!q) continue;
+    console.log('  ' + k.padEnd(10), q.d.map(v => (v / q.n * 100).toFixed(1) + ' %').join(' / '), '· ab P10:', q.p10.map(v => (v / q.n * 100).toFixed(1) + ' %').join(' / '), '(n ' + q.n + ')'); }
+}

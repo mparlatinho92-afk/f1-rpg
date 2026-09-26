@@ -196,6 +196,8 @@ Spiel-Läufen über dieselbe Fahrermenge wie gegen real. Leseregel: Ist Spiel↔
 der Rest Zufall. Ist es **größer**, würfelt das Spiel mehr als die Realität. Braucht
 mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
 
+**Chaos-Zeilen seit 26.09.2026** zusätzlich: Gruppe `rot` (Rennen mit roter Flagge, überlappt mit den Wetter-Gruppen) und „Sieger stark/mittel/schwach" (Außenseiter nach **Team-Stärke** statt nach Startplatz; real ~90/8/1,5 %). Für die Wirkung der roten Flagge nur Jahre ab 2000 messen (`$(seq -s, 2000 2024)`), davor wirkt sie bewusst nicht.
+
 **`--nur-nass`** — jedes Rennen nass (Stärke wie im Spiel gewürfelt), Chaos-Zeilen je Stärke. Für die Kalibrierung der Regenstärken. ⚠ Gegen die **Verhältnisse zu trocken** kalibrieren, nicht gegen absolute Werte: einzelne Jahre sind geordneter als der Schnitt aller Ären.
 
 **`--regen` (seit 26.09.2026)** — würfelt Regen wie im Spiel (`wochenendWetter`) statt alles trocken zu fahren, und gibt Chaos-Kennzahlen je Rennen aus (Spearman Start→Ziel, Sieg ab P10, schwaches Drittel punktet — getrennt trocken/nass, Vergleich: `tests/chaos-real.js`). ⚠ Alle Messungen vor dem 26.09.2026 liefen **ohne** Regen.
