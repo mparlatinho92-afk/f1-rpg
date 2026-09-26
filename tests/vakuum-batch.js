@@ -67,10 +67,12 @@ console.log('               |  Ziel   Ist    Diff      |                        
 console.log('  ' + '─'.repeat(86));
 
 const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [], spSelbst = [], autoBias = [];
+// Chaos je Rennen, ueber alle Jahre gepoolt (Zaehler aus vakuum-saison.js)
+const chaos = { trocken: { n: 0, sp03: 0, p10: 0, schwach: 0, spsum: 0 }, nass: { n: 0, sp03: 0, p10: 0, schwach: 0, spsum: 0 } };
 for (const jahr of JAHRE) {
     let out;
     try {
-        out = execFileSync(process.execPath, ['--max-old-space-size=4096', SKRIPT, String(jahr), String(LAEUFE)],
+        out = execFileSync(process.execPath, ['--max-old-space-size=4096', SKRIPT, String(jahr), String(LAEUFE)].concat(args.includes('--regen') ? ['--regen'] : []),
             { encoding: 'utf8', maxBuffer: 1 << 24, env: process.env });
     } catch (e) {
         console.log('  ' + jahr + '   — Lauf fehlgeschlagen: ' + String(e.message).slice(0, 40));
@@ -93,6 +95,10 @@ for (const jahr of JAHRE) {
     if (!isNaN(spS)) spSelbst.push(spS);
     const ab = zahl(out, /Auto-Bias.*?Differenz ([+-][\d.]+)/);
     if (!isNaN(ab)) autoBias.push(ab);
+    for (const art of ['trocken', 'nass']) {
+        const m = out.match(new RegExp('Chaos ' + art + String.raw`: n (\d+) sp03 (\d+) p10 (\d+) schwach (\d+) spsum ([-\d.]+)`));
+        if (m) { const c = chaos[art]; c.n += +m[1]; c.sp03 += +m[2]; c.p10 += +m[3]; c.schwach += +m[4]; c.spsum += +m[5]; }
+    }
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
@@ -128,6 +134,13 @@ console.log('  Ø Spearman                       : ' + avg(spears).toFixed(3)
     + (spSelbst.length ? '   (Rauschgrenze Spiel<->Spiel ' + avg(spSelbst).toFixed(3) + ')' : ''));
 if (autoBias.length) console.log('  Auto-Bias (Differenz zur Kontrolle): ' + (avg(autoBias) >= 0 ? '+' : '') + avg(autoBias).toFixed(3)
     + '   (> 0: Auto zaehlt im Spiel zu viel)');
+if (chaos.trocken.n + chaos.nass.n) {
+    const ges = chaos.trocken.n + chaos.nass.n;
+    console.log('  Regenrennen                      : ' + (chaos.nass.n / ges * 100).toFixed(1) + ' % von ' + ges + ' Rennen');
+    for (const art of ['trocken', 'nass']) { const c = chaos[art]; if (!c.n) continue;
+        console.log('  Chaos ' + art.padEnd(8) + '                 : Ø Spearman Start→Ziel ' + (c.spsum / c.n).toFixed(3)
+            + ' · < 0,3 ' + (c.sp03 / c.n * 100).toFixed(1) + ' % · Sieg ab P10 ' + (c.p10 / c.n * 100).toFixed(1) + ' % · schwaches Drittel punktet ' + (c.schwach / c.n * 100).toFixed(1) + ' %'); }
+}
 console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
     + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));
 console.log('  Punkteanteil starkes Drittel     : Ø Spiel − real ' + (avg(starkDiffs) >= 0 ? '+' : '') + avg(starkDiffs).toFixed(2)

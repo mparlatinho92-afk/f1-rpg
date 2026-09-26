@@ -1820,3 +1820,31 @@ trifft). Für rote Flaggen nur die Liste verwenden.
   Drittel der Rennen mit Punkten für ein schwaches Team.
 - Monaco 1996 (Panis von Startplatz 14): teilweise nass, **keine** rote Flagge (Ende per
   Zeitlimit, 75 von 78 Runden).
+
+### 26.09.2026 (5): Die Spielseite mit Regen — nasse Rennen stimmen, es sind nur zu viele
+
+`vakuum-saison.js --regen` würfelt je Rennen wie das Spiel (`getRaceWetChance`), dazu
+kommen Chaos-Kennzahlen je Rennen wie in `chaos-real.js`. Vollauf 75 × 4 auf v0.9.18.15
+(`tests/output/vakuum-alle-regen-ist.txt`, 4.372 Rennen):
+
+| | Spiel trocken | real trocken | Spiel nass | real nass (teilw.+durchg.) |
+|---|---|---|---|---|
+| Anteil der Rennen | 58,7 % | ~84 % | **41,3 %** | ~16 % |
+| Ø Spearman Start→Ziel | 0,700 | 0,733 | 0,619 | 0,663 |
+| Rennen mit Spearman < 0,3 | 2,8 % | 3,8 % | 7,2 % | 6,6 % |
+| Sieg ab Startplatz 10 | **4,4 %** | 2,8 % | 7,3 % | 6,6 % |
+| schwaches Drittel punktet | 47,8 % | 45,4 % | 52,4 % | 52,4 % |
+
+- **Ein nasses Rennen im Spiel ähnelt einem realen nassen Rennen.** Das Problem ist die
+  Häufigkeit (41 % statt 16 %).
+- **Trockene Rennen mischen im Spiel etwas zu viel:** Außenseitersiege 4,4 % statt
+  2,8 %, Spearman 0,70 statt 0,73.
+- Das Spiel kennt nur **eine** Regenart. Real verhalten sich teilweise nasse Rennen
+  (Chaos: 11 % unter 0,3) und durchgehend nasse (mehr Punkte für schwache Teams) anders.
+
+**Wirkung auf die Saisonkennzahlen** (gegen den trockenen Vollauf
+`vakuum-alle-gleichstand.txt`): Punktefahrer, Teams und Spearman-Lücke unverändert im
+Rauschen. **Schwaches Drittel** von −0,30 auf **+0,65 Pp** (t 1,9), 1980–99 +1,2 (t 2,7).
+Das starke Drittel verliert −2,95 Pp. Der zu häufige Regen verteilt also Punkte nach
+unten. `ERA_TEAM_SPREAD` wurde trocken kalibriert und muss nach der Regenkorrektur neu
+geprüft werden.

@@ -47,6 +47,9 @@ const { getContext } = require('./sim-core');
 const JAHR = Number(process.argv[2] || 1988);
 const LAEUFE = Number(process.argv[3] && !process.argv[3].startsWith('--') ? process.argv[3] : 20);
 const FIKTIVE_QUALI = process.argv.includes('--quali');
+// --regen: jedes Rennen wuerfelt Regen wie im Spiel (getRaceWetChance). Ohne die Option
+// faehrt das Vakuum alles trocken — so lief das gesamte Balancing bis 26.09.2026.
+const REGEN = process.argv.includes('--regen');
 const ROOT = path.join(__dirname, '..');
 const DB = path.join(ROOT, 'f1db-json-splitted');
 
@@ -114,6 +117,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
     // Punkte je REALEM Konstrukteur, aus den Fahrerpunkten jedes Rennens. Nicht
     // teamStandings: dort gelten je nach Aera Konstrukteursregeln (nur bestes Auto).
     const teamZuKonstr = new Map(), konstrPunkte = {};
+    const rennChaos = [];   // je Rennen: nass, Startplatz→Ziel, Sieger-Startplatz, punktende Konstrukteure
 
     for (let i = 0; i < rennen.length; i++) {
         const r = rennen[i];
@@ -153,6 +157,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
             gesetzt++;
         }
         if (!eintraege.length) continue;
+        const nass = REGEN && Math.random() < ctx.getRaceWetChance(r.raceId, r.circuitId || r.circuit, r.month, r.country);
 
         // ⚠ WER REAL NICHT STARTETE, DARF AUCH NICHT IM FELD STEHEN (18.09.2026).
         // Die realen Starter zu setzen genuegt NICHT: die uebrigen Fahrer aus
@@ -169,7 +174,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
 
         if (FIKTIVE_QUALI) {
             // Feld fixiert, Reihenfolge würfelt das Spiel selbst aus
-            ctx.simulateQualifying(i, false);
+            ctx.simulateQualifying(i, nass);
         } else {
             gs.qualifyingResults = (gs.qualifyingResults || []).filter(q => q.raceIndex !== i);
             gs.qualifyingResults.push({
@@ -179,7 +184,13 @@ function einLauf(ctx, real, punkteFn, gefahren) {
             });
         }
 
-        const erg = ctx.simulateRace(i, false);
+        const erg = ctx.simulateRace(i, nass);
+        if (erg) {
+            const startPl = new Map(eintraege.map(e => [e.driver, e.position]));
+            const imZiel = (erg.results || []).filter(e => !e.dnf && startPl.has(e.driver));
+            rennChaos.push({ nass, start: imZiel.map(e => startPl.get(e.driver)),
+                punkteKonstr: (erg.results || []).filter(e => e.points > 0).map(e => teamZuKonstr.get(e.team)).filter(Boolean) });
+        }
         if (erg) ctx.applyRaceResults(erg);
         for (const e of (erg ? erg.results || [] : [])) {
             const k = teamZuKonstr.get(e.team);
@@ -216,7 +227,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
     // 1953 punkten real 3 Teams und 12 Fahrer, 1989 sind es 16 Teams und 29
     // Fahrer. Wer die Fahrerzahl treffen will, muss die TEAMS treffen.
     const teamPunkte = Object.values(gs.teamStandings || {}).filter(t => (t.points || 0) > 0).length;
-    return { stand, teamPunkte, konstrPunkte, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
+    return { stand, teamPunkte, konstrPunkte, rennChaos, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
              rennDeckung: imQuali ? imRennen / imQuali : 0 };
 }
 
@@ -311,6 +322,7 @@ function gefahreneRunden(ctx, real) {
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
     const laufPunkte = [];   // je Lauf: Map Fahrer-Schluessel -> Punkte, fuer Spiel<->Spiel
+    const alleRennChaos = [];
     // === RAENGE MIT GLEICHSTAND (24.09.2026) ===
     // Raenge aus den PUNKTEN, Gleichstand = Durchschnittsrang; Spearman = Pearson
     // der Raenge. Vorher kamen die Raenge aus der Tabellenposition, Gleichstaende
@@ -335,7 +347,8 @@ function gefahreneRunden(ctx, real) {
     };
     const konstrLaeufe = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, teamPunkte, konstrPunkte, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
+        const { stand, teamPunkte, konstrPunkte, rennChaos, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
+        alleRennChaos.push(...rennChaos);
         konstrLaeufe.push(konstrPunkte);
         rennDeck.push(rennDeckung);
         teamsMitPunkten.push(teamPunkte);
@@ -512,6 +525,26 @@ function gefahreneRunden(ctx, real) {
             gem.forEach((k, j) => { const au = fahrerAuto.get(k); if (au !== undefined) biasKontrolle.push([rb[j] - ra[j], au]); });
         }
         if (werte.length) console.log('  Spearman Spiel<->Spiel:       ' + avg(werte).toFixed(3) + '   (Rauschgrenze, ' + werte.length + ' Laufpaare)');
+    }
+    // === CHAOS JE RENNEN (26.09.2026) — dieselben Kennzahlen wie tests/chaos-real.js ===
+    // Spearman Startplatz → Zielplatz (nur im Ziel), Sieg ab Startplatz 10, punktet ein
+    // Team des schwachen Drittels (Drittel nach realem mittlerem Startplatz).
+    // Maschinenlesbare Zeile fuer vakuum-batch (Zaehler, damit ueber Jahre gepoolt wird).
+    {
+        const kGrid = {}, kN = {};
+        for (const [rd, rund] of Object.entries(real.runden)) { if (!gefahren.has(Number(rd))) continue;
+            for (const st of rund.starter) { kGrid[st.constructorId] = (kGrid[st.constructorId] || 0) + st.platz; kN[st.constructorId] = (kN[st.constructorId] || 0) + 1; } }
+        const ks = Object.keys(kN).filter(k => kN[k] >= 3).sort((a, b) => kGrid[a] / kN[a] - kGrid[b] / kN[b]);
+        const schwach = new Set(ks.slice(ks.length - Math.round(ks.length / 3)));
+        for (const art of ['trocken', 'nass']) {
+            const l = alleRennChaos.filter(c => c.nass === (art === 'nass') && c.start.length >= 6);
+            const sp = l.map(c => pearsonR(c.start.map((_, j) => j), c.start.map(v => v)));
+            const unter03 = sp.filter(v => v < 0.3).length;
+            const p10 = l.filter(c => c.start[0] >= 10).length;
+            const schw = l.filter(c => c.punkteKonstr.some(k => schwach.has(k))).length;
+            console.log('  Chaos ' + art + ': n ' + l.length + ' sp03 ' + unter03 + ' p10 ' + p10 + ' schwach ' + schw
+                + ' spsum ' + sp.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0).toFixed(3));
+        }
     }
     if (biasPaare.length > 5) {
         const korr = liste => {

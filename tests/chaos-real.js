@@ -37,7 +37,8 @@ for (const r of races) {
   const sieg = erg.find(x => x.positionNumber === 1); const siegGrid = sieg ? G[r.id + '|' + sieg.driverId] : null;
   const schwachPunkte = (proRennen[r.id] || []).some(x => +x.points > 0 && drittel[r.year + '|' + x.constructorId] === 2);
   const wetter = e[r.id].regen.rennen, aera = r.year < 1980 ? '1950–79' : r.year < 2000 ? '1980–99' : '2000–25';
-  for (const k of [aera + ' ' + wetter, aera + ' alle', 'alle ' + wetter, 'alle alle', ...(rotIds.has(r.id) ? [aera + ' rote Flagge'] : [])]) {
+  const regenAlle = wetter === 'trocken' ? 'trocken' : 'nass (teilw.+durchg.)';
+  for (const k of [aera + ' ' + wetter, aera + ' alle', 'alle ' + wetter, 'alle alle', ...(wetter === 'trocken' ? [] : ['alle ' + regenAlle, aera + ' ' + regenAlle]), ...(rotIds.has(r.id) ? [aera + ' rote Flagge'] : [])]) {
     const g = gruppen[k] = gruppen[k] || { sp: [], s10: 0, sn: 0, schwach: 0, n: 0 };
     g.sp.push(sp); g.n++; if (siegGrid) { g.sn++; if (siegGrid >= 10) g.s10++; } if (schwachPunkte) g.schwach++;
   }
@@ -45,4 +46,4 @@ for (const r of races) {
 const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
 console.log('Gruppe                 |   n | Spearman Start→Ziel Median / 10%-Quantil | Anteil Rennen < 0,3 | Sieg ab P10 | schwaches Drittel punktet');
 for (const k of Object.keys(gruppen).sort()) { const g = gruppen[k];
-  console.log(k.padEnd(22), '|', String(g.n).padStart(4), '|', q(g.sp, 0.5).toFixed(2), '/', q(g.sp, 0.1).toFixed(2), '                          |', (g.sp.filter(v => v < 0.3).length / g.n * 100).toFixed(1).padStart(5) + ' %', '        |', (g.s10 / g.sn * 100).toFixed(1).padStart(5) + ' %', '|', (g.schwach / g.n * 100).toFixed(1) + ' %'); }
+  console.log(k.padEnd(22), '|', String(g.n).padStart(4), '|', q(g.sp, 0.5).toFixed(2), '/', q(g.sp, 0.1).toFixed(2), '(Ø ' + (g.sp.reduce((a, b) => a + b, 0) / g.n).toFixed(3) + ')                |', (g.sp.filter(v => v < 0.3).length / g.n * 100).toFixed(1).padStart(5) + ' %', '        |', (g.s10 / g.sn * 100).toFixed(1).padStart(5) + ' %', '|', (g.schwach / g.n * 100).toFixed(1) + ' %'); }
