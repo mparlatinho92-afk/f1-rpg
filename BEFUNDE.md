@@ -1648,3 +1648,35 @@ Spiel↔Spiel und den Auto-Bias. Vollauf 75 × 4 auf v0.9.18.15
 - ⚠ **Messfalle für jede Rangkorrelation über Endstände:** Gleichstände müssen
   Durchschnittsränge bekommen. Sonst misst man in Ären mit vielen Punktlosen die
   Sortierreihenfolge statt der Simulation.
+
+### 26.09.2026: Auto-Gewicht ab 2000 — Konflikt mit dem Punkteanteil der schwachen Teams
+
+Versuch: `CAR_SPEED_WEIGHT` ab 2000 von 0,20 auf 0,30, bis 1999 unverändert. A/B 75 × 4
+gegen `tests/output/vakuum-alle-gleichstand.txt` (`tests/output/vakuum-alle-carw030.txt`):
+
+| 2000–2024 | 0,20 | 0,30 |
+|---|---|---|
+| Auto-Bias | −0,102 (t −3,4) | **−0,012** |
+| Δ Spearman | | **+0,019 (t 4,9)** |
+| schwaches Drittel Spiel − real | ≈ 0 | **−1,33 Pp (t −4,6)** |
+
+**Struktureller Konflikt, kein Kalibrierproblem.** In der Rennformel wirken Gewicht und
+Spreizung nur als **Produkt** (Tempo-Unterschied = Gewicht × `carSpeed`-Abstand). Eine
+kleinere `ERA_TEAM_SPREAD` gäbe den schwachen Teams ihre Punkte zurück, höbe aber die
+Wirkung des Gewichts wieder auf. Mit der jetzigen Formel lässt sich nur eins von
+beiden treffen. **Entscheidung des Nutzers: bei 0,20 bleiben.** Der Punkteanteil
+stimmt, der kleine Auto-Bias (Spearman-Lücke −0,015) ist der geringere Fehler.
+
+**Wie die Realität beides schafft:** Schwache Teams punkten heute nicht über Tempo,
+sondern über **einzelne chaotische Rennen** (Regen, Safety Car, Unfälle an der Spitze).
+Im Spiel ist das Rauschen in jedem Rennen gleich groß, echte Chaos-Rennen gibt es kaum.
+
+▶ **Für später notiert: Chaos-Rennen als Mechanik.** Ein kleiner Teil der Rennen bekommt
+deutlich mehr Streuung. Dann könnten Gewicht 0,30 und realistische Punkte für die
+schwachen Teams zusammengehen. **Indirekt messbar** (Nutzer), zum Beispiel über:
+- die Verteilung von Spearman(Startplatz, Zielplatz) **je Rennen**, real gegen Spiel.
+  Chaos-Rennen bilden real einen breiten unteren Schwanz.
+- den Anteil der Rennen, in denen ein Team des schwachen Drittels punktet, real gegen
+  Spiel. Nicht die Punktmenge, sondern ob sie sich auf wenige Rennen ballt.
+Mit Chaos-Rennen muss das schwache Drittel seine Punkte in **wenigen** Rennen holen,
+nicht gleichmäßig verteilt.
