@@ -1680,3 +1680,38 @@ schwachen Teams zusammengehen. **Indirekt messbar** (Nutzer), zum Beispiel über
   Spiel. Nicht die Punktmenge, sondern ob sie sich auf wenige Rennen ballt.
 Mit Chaos-Rennen muss das schwache Drittel seine Punkte in **wenigen** Rennen holen,
 nicht gleichmäßig verteilt.
+
+### 26.09.2026 (2): Variante B (Quali-Abstand je Team und Saison) — verworfen, bevor gebaut
+
+Konzept: A (`ERA_TEAM_SPREAD`) bestimmt den Maßstab, B die Lage jedes Teams innerhalb der
+Spanne, nach dem echten Quali-Rückstand (Median je Team-Saison, Teams ab 8 Starts;
+Letzter = Boden). Vorab analytisch geprüft, ohne Simulation: Welche
+`carSpeed`-Verteilung korreliert besser mit dem **realen Punkteanteil** der Teams?
+
+| Dekade | A Rang-Pyramide | B Quali-Form | B2 SD-Reihenfolge + Quali-Abstände |
+|---|---|---|---|
+| 1950er | **0,871** | 0,811 | 0,822 |
+| 1960er | **0,930** | 0,708 | 0,884 |
+| 1970er | **0,931** | 0,799 | 0,853 |
+| 1980er | **0,884** | 0,784 | 0,834 |
+| 1990er | **0,886** | 0,844 | 0,853 |
+| 2000er | **0,915** | 0,760 | 0,775 |
+| 2010er | **0,938** | 0,745 | 0,760 |
+| 2020er | **0,947** | 0,924 | 0,935 |
+| alle | **0,913** | 0,790 | 0,834 |
+
+**A schlägt B in jeder Dekade**, auch wenn B nur die Abstände liefert und die Reihenfolge
+aus `SEASON_DATA` übernimmt (B2). Die Qualifying-Runde misst Tempo auf einer Runde, die
+Punkte entstehen aus Renntempo, Zuverlässigkeit und Fahrern. Das Beispiel des Nutzers,
+**Ferrari 1980** (8 Punkte, außergewöhnlich schlecht): A setzt es auf 82, B auf **85**.
+Im Qualifying war Ferrari nicht so weit weg, das schlechte Jahr entstand im Rennen. Diesen
+Ausreißer bildet die Reihenfolge aus `SEASON_DATA` bereits ab.
+
+⚠ **Vorbehalt:** Die Tempo-Reihenfolge in `SEASON_DATA` ist vermutlich aus realen
+Ergebnissen abgeleitet. Der Vergleich gegen Punkte begünstigt A also teilweise zirkulär.
+Das ändert die Entscheidung nicht: B soll gerade die Ergebnisse besser treffen, und das
+tut es in keiner Dekade.
+
+**Entscheidung:** B nicht bauen. `ERA_TEAM_SPREAD` bleibt alleinige Quelle der Spreizung.
+Werkzeug der Prüfung: Skript im Sitzungs-Scratchpad, Logik oben beschrieben (Quali-Median
+wie `weakThirdGapPct` in `generate-truth.js`).
