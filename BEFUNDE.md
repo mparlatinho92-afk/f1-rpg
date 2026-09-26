@@ -1920,3 +1920,104 @@ oder NC):
 (vor den Todesfällen). DNQ entsteht bei vollem Feld von selbst. Kontrolle (40 Saisons):
 1985 Quali 0,18 % / Training 0,30 %, 2010 1,87 % / 2,20 %, Betroffene auf den
 letzten Plätzen. Ticker-Parität 40/40.
+
+### 26.09.2026 (8): Regenstärken (v0.9.18.18) — Schritt 4
+
+**Real** (`tests/regen-staerke-real.js`, relativ zu trocken in derselben Dekade):
+
+| | Ausfälle | Unfälle | Unfall-Anteil | Ø Spearman Start→Ziel | < 0,3 | Sieg ab P10 |
+|---|---|---|---|---|---|---|
+| trocken | 1,00 | 1,00 | 27 % | 0,733 | 3,8 % | 2,8 % |
+| teilweise nass | 1,11 | 1,69 | 44 % | 0,643 | 11,0 % | 8,5 % |
+| durchgehend nass | 1,01 | 1,98 | 48 % | 0,683 | 2,4 % | 4,8 % |
+
+Anteil teilweise unter den Regenrennen: 50er 33 % · 60er 27 · 70er 33 · 80er 42 · 90er 52 ·
+00er 55 · 10er 70 · 20er 59 (alte Artikel schreiben knapp „wet" → „durchgehend" dort eher
+überschätzt).
+
+**Umsetzung:** `wochenendWetter` würfelt `staerke` (`ERA_RAIN_PARTIAL_SHARE`). Im Rennen:
+Ausfälle × `RAIN_DNF_FACTOR` (1,11 / 1,0), Unfall-Anteil × `RAIN_ACCIDENT_FACTOR` 1,7,
+Konstanz ↔ Regengeschick nach `RAIN_CONSISTENCY_WEIGHT` (teilweise 1,0, durchgehend 0,5),
+Lotterie in teilweise nassen Rennen (`RAIN_PARTIAL_LOTTERY`: 15 % der Rennen,
+Rauschen ×3).
+
+**Die Quelle des Regen-Chaos, per Abschalten gefunden** (1975/1995/2010, 8 Läufe,
+alle Rennen nass):
+
+| Variante | Ø Spearman |
+|---|---|
+| trocken | 0,764 |
+| nass wie vorher | 0,679 |
+| Konstanz statt Regengeschick | 0,740 |
+| dazu Regenterm = 15 | 0,765 |
+
+**Der Ersatz der Konstanz durch das Regengeschick macht fast das ganze Chaos**, der
+Regenterm den Rest. **Negativergebnis:** Ein Rauschfaktor je Stärke wirkt kaum
+(durchgehend 1,0 → 0,6: 0,601 → 0,633, der Anteil unter 0,3 bleibt bei ~7 %). Auch der
+Anteil schlechter Tage (nass +3–4 Punkte) und die Kopplung Regengeschick ↔ Tempo
+(r 0,80–0,90) sind nicht die Ursache.
+
+⚠ **Messfalle bei der Kalibrierung:** Die drei Testjahre sind geordneter als der
+Durchschnitt (trocken 0,772 und 0,8 % unter 0,3, alle Ären 0,70 und 2,9 %). Dort gegen
+die absoluten Zielwerte aller Ären zu kalibrieren, hätte die Lotterie viel zu stark
+gemacht (Anteil 0,35, Rauschen ×5). Richtig ist, das **Verhältnis zu trocken** zu treffen.
+
+**Ergebnis über alle Ären, alle Rennen nass** (`tests/output/vakuum-nass-final.txt`):
+
+| | Spiel | Spiel ÷ Spiel trocken | real ÷ real trocken |
+|---|---|---|---|
+| teilweise nass | 0,605 · < 0,3 8,9 % · P10 6,6 % | 0,86 | 0,88 |
+| durchgehend nass | 0,635 · < 0,3 5,4 % · P10 4,9 % | 0,91 | 0,93 |
+
+Die Verhältnisse stimmen. Absolut liegen beide ~0,04 unter real, weil das Spiel schon
+trocken zu viel mischt (0,70 statt 0,73). Das gehört zu Schritt 5 (Grundrauschen).
+
+**Nachschärfung (Nutzer-Entscheidung „Punkt 2"), Endstand v0.9.18.18:**
+
+Der erste Stand vertauschte die Wirkung auf die schwachen Teams: Teilweise nass brachte
+ihnen viele Punkte, durchgehend nass zu wenige. Drei inhaltliche Korrekturen:
+
+1. **Ausfall getrennt nach Art** (`dnfWahrscheinlichkeit`, gilt auch trocken): Technik ×
+   Team-Faktor, Unfälle **ohne** Team-Faktor. F1DB nach Team-Drittel, Technik / Unfall je
+   Starter: trocken 21,1/7,6 · 27,2/10,0 · 30,1/9,5 %; durchgehend nass 15,4/18,2 ·
+   19,0/18,4 · 25,7/18,0 %. **Unfälle treffen alle gleich**, vorher hingen alle Ausfälle
+   an der Zuverlässigkeit. Nässe-Faktoren: Technik 0,90/0,65, Unfall 1,69/1,98
+   (teilweise/durchgehend).
+2. **Regenterm zentriert:** `15 + (rain − 75) × 0,2` statt `rain × 0,2 × Tagesform`.
+   Vorher verlor bei Regen jeder ein paar Punkte, und weil schwache Autos an ihrer
+   Auto-Decke hängen (oberhalb zählt Leistung nur zu 18 %), rückte das Feld zusammen.
+3. **Lotterie als Glücksgriff:** In 30 % der teilweise nassen Rennen bekommt jeder fünfte
+   Fahrer +14 (richtige Reifenwahl). Bei schwachen Autos kappt die Auto-Decke den Bonus.
+   Verworfen: Rauschen ×3 für alle (schwache Teams punkteten zu 64,8 %) und eine Strafe
+   für 35 % der Fahrer (+7 Pp für schwache Teams).
+
+⚠ **Messfalle: Mischung der Ären.** Der Anteil teilweise nass steigt mit der Zeit, und in
+modernen Jahren punkten schwache Teams ohnehin öfter (mehr Punkteplätze). Ein Vergleich
+„nass gegen trocken über alle Jahre" misst dann die Ära. Richtig: **Differenz innerhalb
+der Dekade bzw. des Jahres** (`chaos-real.js` unten, Drei-Jahres-Test im Scratchpad).
+Reale Wirkung innerhalb der Dekade:
+
+| | Δ Spearman | Δ < 0,3 | Δ Sieg ab P10 | Δ schwaches Drittel punktet |
+|---|---|---|---|---|
+| teilweise (n 82) | −0,101 | +7,7 Pp | +6,1 Pp | +3,8 Pp (±5,5) |
+| durchgehend (n 84) | −0,038 | −2,3 Pp | +1,7 Pp | +10,7 Pp (±5,5) |
+
+⚠ **Die realen Zielwerte sind unsicher:** Nur 82 bzw. 84 Rennen, beim Anteil „schwaches
+Drittel punktet" ±5,5 Pp Standardfehler. Feintuning darunter jagt Rauschen nach.
+
+**Zerlegung teilweise nass im Spiel** (1975/1995/2010, 12 Läufe, Δ zu trocken im Jahr):
+neutral ±0 → + zentrierter Regenterm −0,5 Pp → + Konstanz→Regengeschick +3,2 → + nasse
+Ausfälle +11,2 → + Lotterie (Bonus) +14,9 Pp.
+
+**Endstand, normaler Spielbetrieb 75 × 4** (`tests/output/vakuum-alle-regen-staerke2.txt`,
+15,3 % nass):
+
+| | Ø Spearman (real) | < 0,3 (real) | Sieg ab P10 (real) | schwach punktet (real) |
+|---|---|---|---|---|
+| trocken | 0,695 (0,733) | 2,7 % (3,8) | 5,2 % (2,8) | 47,8 % (45,4) |
+| teilweise | 0,638 (0,643) | 7,6 % (11,0) | 10,7 % (8,5) | 64,1 % (48,8) |
+| durchgehend | 0,672 (0,683) | 4,7 % (2,4) | 5,5 % (4,8) | 51,2 % (56,0) |
+
+Saison: schwaches Drittel +0,48 Pp (t 1,7), Spearman-Lücke +0,013 (t 2,6), Punktefahrer im
+Rauschen. ▶ **Offen:** Teilweise nass bringt den schwachen Teams ~+12 Pp zu viel (etwa 2
+Standardfehler). Trockene Rennen mischen weiter zu viel → Schritt 5.

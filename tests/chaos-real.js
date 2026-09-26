@@ -47,3 +47,33 @@ const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floo
 console.log('Gruppe                 |   n | Spearman Start→Ziel Median / 10%-Quantil | Anteil Rennen < 0,3 | Sieg ab P10 | schwaches Drittel punktet');
 for (const k of Object.keys(gruppen).sort()) { const g = gruppen[k];
   console.log(k.padEnd(22), '|', String(g.n).padStart(4), '|', q(g.sp, 0.5).toFixed(2), '/', q(g.sp, 0.1).toFixed(2), '(Ø ' + (g.sp.reduce((a, b) => a + b, 0) / g.n).toFixed(3) + ')                |', (g.sp.filter(v => v < 0.3).length / g.n * 100).toFixed(1).padStart(5) + ' %', '        |', (g.s10 / g.sn * 100).toFixed(1).padStart(5) + ' %', '|', (g.schwach / g.n * 100).toFixed(1) + ' %'); }
+
+// ── Wetter-Wirkung INNERHALB der Dekade (26.09.2026) ─────────────────────────
+// Der Anteil „teilweise nass" steigt mit den Jahren, und in modernen Jahren punkten die
+// schwachen Teams ohnehin öfter (mehr Punkteplätze). Ein Vergleich gegen „trocken über
+// alle Jahre" misst dann die Ära statt des Wetters. Hier: Differenz nass − trocken je
+// Dekade, gewichtet mit der Zahl der nassen Rennen.
+{
+  const je = {};
+  for (const r of races) {
+    if (r.year > 2025 || (r.circuitId === 'indianapolis' && r.year <= 1960) || !e[r.id] || !e[r.id].regen.rennen) continue;
+    const erg = (proRennen[r.id] || []).filter(x => /^\d+$/.test(x.positionText) && G[r.id + '|' + x.driverId]);
+    if (erg.length < 6) continue;
+    const sp = pear(rang(erg.map(x => G[r.id + '|' + x.driverId])), rang(erg.map(x => x.positionNumber)));
+    const sieg = erg.find(x => x.positionNumber === 1); const sg = sieg ? G[r.id + '|' + sieg.driverId] : null;
+    const sw = (proRennen[r.id] || []).some(x => +x.points > 0 && drittel[r.year + '|' + x.constructorId] === 2);
+    const k = Math.floor(r.year / 10) * 10 + '|' + e[r.id].regen.rennen;
+    const g = je[k] = je[k] || { n: 0, sp: 0, u03: 0, p10: 0, sw: 0 };
+    g.n++; g.sp += sp; if (sp < 0.3) g.u03++; if (sg >= 10) g.p10++; if (sw) g.sw++;
+  }
+  console.log('\nWetter-Wirkung innerhalb der Dekade (nass − trocken, gewichtet mit nassen Rennen):');
+  for (const art of ['teilweise', 'nass']) {
+    let w = 0, dsp = 0, d03 = 0, dp10 = 0, dsw = 0;
+    for (let d = 1950; d <= 2020; d += 10) {
+      const a = je[d + '|' + art], t = je[d + '|trocken']; if (!a || !t) continue;
+      w += a.n; dsp += a.n * (a.sp / a.n - t.sp / t.n); d03 += a.n * (a.u03 / a.n - t.u03 / t.n);
+      dp10 += a.n * (a.p10 / a.n - t.p10 / t.n); dsw += a.n * (a.sw / a.n - t.sw / t.n);
+    }
+    console.log('  ' + art.padEnd(10), 'Δ Spearman ' + (dsp / w).toFixed(3), '· Δ < 0,3 ' + (d03 / w * 100).toFixed(1) + ' Pp', '· Δ Sieg ab P10 ' + (dp10 / w * 100).toFixed(1) + ' Pp', '· Δ schwaches Drittel punktet ' + (dsw / w * 100).toFixed(1) + ' Pp', '(n ' + w + ')');
+  }
+}

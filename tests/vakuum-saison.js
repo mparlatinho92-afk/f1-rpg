@@ -51,6 +51,9 @@ const FIKTIVE_QUALI = process.argv.includes('--quali');
 // getRaceWetChance als Rueckfall fuer alte Monolithen). Ohne die Option
 // faehrt das Vakuum alles trocken — so lief das gesamte Balancing bis 26.09.2026.
 const REGEN = process.argv.includes('--regen');
+// --nur-nass: JEDES Rennen nass (Stärke wie im Spiel gewürfelt) — für die Kalibrierung der
+// Regenstärken, die sonst nur ~15 % der Rennen betreffen.
+const NUR_NASS = process.argv.includes('--nur-nass');
 const ROOT = path.join(__dirname, '..');
 const DB = path.join(ROOT, 'f1db-json-splitted');
 
@@ -158,8 +161,9 @@ function einLauf(ctx, real, punkteFn, gefahren) {
             gesetzt++;
         }
         if (!eintraege.length) continue;
-        const _wetter = REGEN && ctx.wochenendWetter ? ctx.wochenendWetter(i) : null;
-        const nass = _wetter ? _wetter.rennen : (REGEN && Math.random() < ctx.getRaceWetChance(r.raceId, r.circuitId || r.circuit, r.month, r.country));
+        const _wetter = (REGEN || NUR_NASS) && ctx.wochenendWetter ? ctx.wochenendWetter(i) : null;
+        const nass = NUR_NASS ? true : _wetter ? _wetter.rennen : (REGEN && Math.random() < ctx.getRaceWetChance(r.raceId, r.circuitId || r.circuit, r.month, r.country));
+        const regenArt = nass ? ((_wetter && _wetter.staerke) || 'nass') : 'trocken';
 
         // ⚠ WER REAL NICHT STARTETE, DARF AUCH NICHT IM FELD STEHEN (18.09.2026).
         // Die realen Starter zu setzen genuegt NICHT: die uebrigen Fahrer aus
@@ -190,7 +194,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         if (erg) {
             const startPl = new Map(eintraege.map(e => [e.driver, e.position]));
             const imZiel = (erg.results || []).filter(e => !e.dnf && startPl.has(e.driver));
-            rennChaos.push({ nass, start: imZiel.map(e => startPl.get(e.driver)),
+            rennChaos.push({ nass, art: regenArt, start: imZiel.map(e => startPl.get(e.driver)),
                 punkteKonstr: (erg.results || []).filter(e => e.points > 0).map(e => teamZuKonstr.get(e.team)).filter(Boolean) });
         }
         if (erg) ctx.applyRaceResults(erg);
@@ -538,8 +542,9 @@ function gefahreneRunden(ctx, real) {
             for (const st of rund.starter) { kGrid[st.constructorId] = (kGrid[st.constructorId] || 0) + st.platz; kN[st.constructorId] = (kN[st.constructorId] || 0) + 1; } }
         const ks = Object.keys(kN).filter(k => kN[k] >= 3).sort((a, b) => kGrid[a] / kN[a] - kGrid[b] / kN[b]);
         const schwach = new Set(ks.slice(ks.length - Math.round(ks.length / 3)));
-        for (const art of ['trocken', 'nass']) {
-            const l = alleRennChaos.filter(c => c.nass === (art === 'nass') && c.start.length >= 6);
+        for (const art of ['trocken', 'teilweise', 'durchgehend', 'nass']) {
+            const l = alleRennChaos.filter(c => c.art === art && c.start.length >= 6);
+            if (!l.length) continue;
             const sp = l.map(c => pearsonR(c.start.map((_, j) => j), c.start.map(v => v)));
             const unter03 = sp.filter(v => v < 0.3).length;
             const p10 = l.filter(c => c.start[0] >= 10).length;

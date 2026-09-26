@@ -20,6 +20,7 @@
 | `rote-flaggen-real.js` | **Reale rote Flaggen im Rennen** aus der Wikipedia-Liste (91 seit 1971, Ursache Wetter/Unfall, Neustart-Code) |
 | `quali-regen-real.js` | Qualifying nass, bedingt auf das Rennwetter (Wiki-Abschnitt ab 2000, Quali-Zeiten alle Jahre) |
 | `session-ausfaelle-real.js` | **Ohne Zeit in Qualifying und Training** je Dekade gegen die Rennausfallquote, nass gegen trocken, Startplatz derer ohne Zeit. Quelle von `ERA_QUALI_NO_TIME`/`ERA_TRAINING_NO_TIME` |
+| `regen-staerke-real.js` | **Teilweise gegen durchgehend nass**: Ausfälle und Unfälle relativ zu trocken derselben Dekade, Anteil teilweise je Dekade. Quelle von `ERA_RAIN_PARTIAL_SHARE`, `RAIN_DNF_FACTOR`, `RAIN_ACCIDENT_FACTOR` |
 | `chaos-real.js` | **Wie sehr Rennen die Reihenfolge mischen**: Spearman Start→Ziel je Rennen, Sieg ab P10, Punkte schwaches Drittel — nach Ära, Wetter, roter Flagge |
 | `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |
 
@@ -194,6 +195,8 @@ Spiel-Läufen über dieselbe Fahrermenge wie gegen real. Leseregel: Ist Spiel↔
 **kleiner** als Spiel↔Spiel, steckt der Rest im Modell. Ist Spiel↔real **gleich**, ist
 der Rest Zufall. Ist es **größer**, würfelt das Spiel mehr als die Realität. Braucht
 mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
+
+**`--nur-nass`** — jedes Rennen nass (Stärke wie im Spiel gewürfelt), Chaos-Zeilen je Stärke. Für die Kalibrierung der Regenstärken. ⚠ Gegen die **Verhältnisse zu trocken** kalibrieren, nicht gegen absolute Werte: einzelne Jahre sind geordneter als der Schnitt aller Ären.
 
 **`--regen` (seit 26.09.2026)** — würfelt Regen wie im Spiel (`wochenendWetter`) statt alles trocken zu fahren, und gibt Chaos-Kennzahlen je Rennen aus (Spearman Start→Ziel, Sieg ab P10, schwaches Drittel punktet — getrennt trocken/nass, Vergleich: `tests/chaos-real.js`). ⚠ Alle Messungen vor dem 26.09.2026 liefen **ohne** Regen.
 

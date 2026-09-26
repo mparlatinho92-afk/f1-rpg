@@ -111,7 +111,7 @@ for (let y = 1950; y <= 2025; y++) {
             const rel = g ? (g.reliability || 75) : null;
             // Erwartungswert der Formel aus simulateRace, ohne Spieler-Multiplikator
             const formel = rel == null ? null
-                : Math.max(2, Math.min(99, basis * ctx.dnfTeamFaktor(avgRel, rel)));
+                : ctx.dnfWahrscheinlichkeit(basis, 1, avgRel, rel, y, null).gesamt;
             return { id, ...t, grid: t.gridSumme / t.gridN, rel, formel,
                      real: t.dnf / t.starts * 100 };
         })
