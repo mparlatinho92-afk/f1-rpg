@@ -19,6 +19,7 @@
 | `stoerungen-real.js` | **Wetter je Session und Flaggen aus den Wiki-Artikeln**: Rennwetter aus der Infobox (trocken/teilweise/nass, erkennt 100 % von `WET_RACE_IDS`), Quali-/Trainingsregen aus den Abschnitten. ⚠ Abschnitte erst ab ~2000 verlässlich; die Textsuche nach roten Flaggen überzählt stark → dafür `rote-flaggen-real.js` |
 | `rote-flaggen-real.js` | **Reale rote Flaggen im Rennen** aus der Wikipedia-Liste (91 seit 1971, Ursache Wetter/Unfall, Neustart-Code) |
 | `quali-regen-real.js` | Qualifying nass, bedingt auf das Rennwetter (Wiki-Abschnitt ab 2000, Quali-Zeiten alle Jahre) |
+| `session-ausfaelle-real.js` | **Ohne Zeit in Qualifying und Training** je Dekade gegen die Rennausfallquote, nass gegen trocken, Startplatz derer ohne Zeit. Quelle von `ERA_QUALI_NO_TIME`/`ERA_TRAINING_NO_TIME` |
 | `chaos-real.js` | **Wie sehr Rennen die Reihenfolge mischen**: Spearman Start→Ziel je Rennen, Sieg ab P10, Punkte schwaches Drittel — nach Ära, Wetter, roter Flagge |
 | `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |
 

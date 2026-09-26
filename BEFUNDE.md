@@ -1887,3 +1887,36 @@ mit Regen, keine Neukalibrierung nötig.
 ▶ **Offen: Trockene Rennen mischen im Spiel zu viel** (Außenseitersiege 4,4 % statt 2,8 %,
 Ø Spearman 0,70 statt 0,73). Das wird wichtig, sobald rote Flaggen (Schritt 5) Chaos
 hinzufügen: Dann muss das Grundrauschen trockener Rennen sinken.
+
+### 26.09.2026 (7): Ohne Zeit in Qualifying und Training (v0.9.18.17)
+
+Nutzer: Training und Qualifying brauchen eine realistische, deutlich **niedrigere**
+Ausfallquote als das Rennen. Im Rennen treffen die Autos öfter aufeinander, und im
+Kampf um die Bestzeit lässt sich ein Fehler wieder wettmachen. Vorher setzte im Spiel
+jeder immer eine Zeit.
+
+`tests/session-ausfaelle-real.js` (F1DB, „ohne Zeit" = keine Zeit in irgendeiner Runde
+oder NC):
+
+| Dekade | Quali ohne Zeit | Training je Session | Rennen DNF |
+|---|---|---|---|
+| 1950er | 4,63 % ⚠ Datenlücke | – | 48 % |
+| 1960er | 0,49 % | – | 45 % |
+| 1970er | 0,16 % | – | 45 % |
+| 1980er | 0,16 % | 0,30 % | 52 % |
+| 1990er | 0,27 % | 0,11 % | 46 % |
+| 2000er | 1,82 % | 3,29 % | 29 % |
+| 2010er | 1,75 % | 2,09 % | 17 % |
+| 2020er | 0,86 % | 1,45 % | 12 % |
+
+- Vor 2000 fast nie ohne Zeit: mehrere Sitzungen, die beste zählte. Seit dem
+  K.-o.-Format etwa 1–2 %.
+- Nasses Qualifying (ab 2000): 2,13 % gegen 1,44 % trocken → Faktor 1,5.
+- Von 281 Fahrern ohne Quali-Zeit starteten 223 (79 %), im Mittel von Platz 93 % des
+  Feldes.
+
+**Umsetzung:** `ERA_QUALI_NO_TIME`, `ERA_TRAINING_NO_TIME`, `NO_TIME_WET_FACTOR`,
+`markiereOhneZeit`. Der Eintrag bekommt `keineZeit`, `time = null` und sortiert ans Ende
+(vor den Todesfällen). DNQ entsteht bei vollem Feld von selbst. Kontrolle (40 Saisons):
+1985 Quali 0,18 % / Training 0,30 %, 2010 1,87 % / 2,20 %, Betroffene auf den
+letzten Plätzen. Ticker-Parität 40/40.
