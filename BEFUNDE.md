@@ -1848,3 +1848,42 @@ Rauschen. **Schwaches Drittel** von −0,30 auf **+0,65 Pp** (t 1,9), 1980–99 
 Das starke Drittel verliert −2,95 Pp. Der zu häufige Regen verteilt also Punkte nach
 unten. `ERA_TEAM_SPREAD` wurde trocken kalibriert und muss nach der Regenkorrektur neu
 geprüft werden.
+
+### 26.09.2026 (6): Neues Regen-Modell (v0.9.18.16) — Schritt 1–3
+
+`wochenendWetter(raceIndex)` würfelt je Wochenende einmal und merkt sich das Ergebnis
+(Schlüssel Jahr|Rennen, geleert bei neuem Spiel und neuer Saison):
+- **Rennen:** `ERA_RAIN_RATE` je Dekade (Wiki-Quote 11,6–21,8 %) × Klima des Ortes im
+  Monat ÷ Klima-Mittel des Kalenders (Deckel 0,9). Ein Rennen, das in einen
+  regnerischen Monat rückt, wird öfter nass, die Saison bleibt im Mittel bei der Quote.
+- **Qualifying und Training:** eigene Würfe, nass mit 25 %, wenn das Rennen nass ist,
+  sonst mit 12 %.
+- **Training** kennt Regen jetzt wie das Qualifying: Regengeschick statt Pauschale,
+  Streuung nach Regengeschick. Nutzer: „Kampf um Bestzeit, Fahrfehler werden wieder
+  wettgemacht".
+- `WET_RACE_IDS` wird nicht mehr gewürfelt, nur noch für das 🌧️-Symbol angezeigt.
+
+⚠ **Falle beim Einbau:** Der Wetterspeicher überlebte zunächst `initFromYear`. Ein neues
+Spiel im selben Jahr bekam das Wetter des alten, und der Test zog 30 Läufe lang denselben
+Wurf. Jetzt wird er an allen drei Stellen geleert, an denen auch `_weekendDeath` geleert
+wird.
+
+**Kontrolle der Häufigkeit** (40 Läufe je Jahr): 50er 23,2 % (Ziel 21,8) · 70er 15,2 %
+(15,4) · 90er 17,6 % (16,7) · 2010er 9,7 % (11,6). Quali nass bei nassem/trockenem Rennen
+21–30 % / 10–13 %.
+
+**Vollauf 75 × 4 mit `--regen`** (`tests/output/vakuum-alle-regen-neu.txt`):
+
+| | trocken (vorher) | alter Spiel-Regen | **neuer Regen** | real |
+|---|---|---|---|---|
+| Regenrennen | 0 % | 41,3 % | **15,3 %** | ~16 % |
+| schwaches Drittel Spiel − real | −0,30 | +0,65 (t 1,9) | **+0,31 (t 0,9)** | 0 |
+| nass: Spearman < 0,3 / Sieg ab P10 | – | 7,2 / 7,3 % | 8,2 / 6,4 % | 6,6 / 6,6 % |
+| trocken: Sieg ab P10 | – | 4,4 % | **4,4 %** | 2,8 % |
+
+Spearman-Lücke je Ära im Rauschen, Punktefahrer unverändert. `ERA_TEAM_SPREAD` passt auch
+mit Regen, keine Neukalibrierung nötig.
+
+▶ **Offen: Trockene Rennen mischen im Spiel zu viel** (Außenseitersiege 4,4 % statt 2,8 %,
+Ø Spearman 0,70 statt 0,73). Das wird wichtig, sobald rote Flaggen (Schritt 5) Chaos
+hinzufügen: Dann muss das Grundrauschen trockener Rennen sinken.

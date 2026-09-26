@@ -194,6 +194,8 @@ Spiel-Läufen über dieselbe Fahrermenge wie gegen real. Leseregel: Ist Spiel↔
 der Rest Zufall. Ist es **größer**, würfelt das Spiel mehr als die Realität. Braucht
 mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
 
+**`--regen` (seit 26.09.2026)** — würfelt Regen wie im Spiel (`wochenendWetter`) statt alles trocken zu fahren, und gibt Chaos-Kennzahlen je Rennen aus (Spearman Start→Ziel, Sieg ab P10, schwaches Drittel punktet — getrennt trocken/nass, Vergleich: `tests/chaos-real.js`). ⚠ Alle Messungen vor dem 26.09.2026 liefen **ohne** Regen.
+
 **A/B:** denselben Aufruf zweimal — ohne `SIMCORE_FROM_INDEX` (letzter Monolith,
 Vorher) und mit (Arbeitskopie, Nachher). Nur so ist eine Aenderung von Rauschen zu
 trennen.

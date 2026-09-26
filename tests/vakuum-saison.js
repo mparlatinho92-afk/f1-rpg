@@ -47,7 +47,8 @@ const { getContext } = require('./sim-core');
 const JAHR = Number(process.argv[2] || 1988);
 const LAEUFE = Number(process.argv[3] && !process.argv[3].startsWith('--') ? process.argv[3] : 20);
 const FIKTIVE_QUALI = process.argv.includes('--quali');
-// --regen: jedes Rennen wuerfelt Regen wie im Spiel (getRaceWetChance). Ohne die Option
+// --regen: jedes Rennen wuerfelt Regen wie im Spiel (seit v0.9.18.16 wochenendWetter, davor
+// getRaceWetChance als Rueckfall fuer alte Monolithen). Ohne die Option
 // faehrt das Vakuum alles trocken — so lief das gesamte Balancing bis 26.09.2026.
 const REGEN = process.argv.includes('--regen');
 const ROOT = path.join(__dirname, '..');
@@ -157,7 +158,8 @@ function einLauf(ctx, real, punkteFn, gefahren) {
             gesetzt++;
         }
         if (!eintraege.length) continue;
-        const nass = REGEN && Math.random() < ctx.getRaceWetChance(r.raceId, r.circuitId || r.circuit, r.month, r.country);
+        const _wetter = REGEN && ctx.wochenendWetter ? ctx.wochenendWetter(i) : null;
+        const nass = _wetter ? _wetter.rennen : (REGEN && Math.random() < ctx.getRaceWetChance(r.raceId, r.circuitId || r.circuit, r.month, r.country));
 
         // ⚠ WER REAL NICHT STARTETE, DARF AUCH NICHT IM FELD STEHEN (18.09.2026).
         // Die realen Starter zu setzen genuegt NICHT: die uebrigen Fahrer aus
@@ -174,7 +176,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
 
         if (FIKTIVE_QUALI) {
             // Feld fixiert, Reihenfolge würfelt das Spiel selbst aus
-            ctx.simulateQualifying(i, nass);
+            ctx.simulateQualifying(i, _wetter ? _wetter.quali : nass);
         } else {
             gs.qualifyingResults = (gs.qualifyingResults || []).filter(q => q.raceIndex !== i);
             gs.qualifyingResults.push({
