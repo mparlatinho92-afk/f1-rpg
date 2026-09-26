@@ -1773,3 +1773,50 @@ Median derselben Streckenvariante ±4 Jahre):
 **Weitere Grundzahlen je Dekade** (50er … 20er): verkürzt unter 90 % der geplanten
 Distanz: 0 · 0 · 6 · 4 · 4 · 3 · 1 · 3. Sieg ab Startplatz 10: 1,4 · 3,0 · 5,6 · 4,5 ·
 2,5 · 3,4 · 1,5 · 3,8 %.
+
+### 26.09.2026 (4): Störungen, Regen je Session, rote Flaggen — die Realität
+
+Quelle neben F1DB: die Wikipedia-Artikel aller 1.138 WM-Grand-Prix (ohne Indy 500),
+abgerufen mit `tools/wiki-rennberichte.js`, dazu die „List of red-flagged Formula One
+races". Auswertung: `tests/stoerungen-real.js`, `rote-flaggen-real.js`,
+`quali-regen-real.js`, `chaos-real.js`.
+
+**Rennwetter** (Infobox, in 1.072 Artikeln): erkennt alle 152 Rennen von `WET_RACE_IDS`
+und 15 weitere. Nass-Anteil je Dekade (teilweise / durchgehend):
+
+| 50er | 60er | 70er | 80er | 90er | 00er | 10er | 20er |
+|---|---|---|---|---|---|---|---|
+| 21,8 % (7,3/14,5) | 17,6 (4,7/12,9) | 15,4 (5,1/10,3) | 12,7 (5,3/7,3) | 16,7 (8,6/8,0) | 17,8 (9,8/8,0) | 11,6 (8,1/3,5) | 16,8 (9,9/6,9) |
+
+⚠ Alte Artikel sind knapp („wet") und landen eher bei „durchgehend". Das
+Rundenzeit-Verfahren (Abschnitt (3)) sah über alle Ären ~30 % durchgehend nass.
+
+**Qualifying-Regen** ist nur schwach an den Rennregen gekoppelt: nass bei nassem Rennen
+17–33 %, bei trockenem 10–14 %, gesamt 11–17 %. **Training:** erst ab 2000 messbar
+(Wiki-Abschnitte), dort in 15–36 % der Wochenenden Regen in irgendeinem Training.
+
+**Rote Flaggen im Rennen** (Liste, ab 1971): 91, davon **21 wegen Wetter**. Je Dekade:
+70er 12 · 80er 20 · 90er 20 · 00er 6 · 10er 11 · 20er 22, bezogen auf die Rennzahl
+8,3 · 12,8 · 12,3 · 3,4 · 5,6 · **16,8 %**. Bis in die 90er meist Neustart über die volle
+Distanz (Y), seit 2010 fast nur Fortsetzung (R). ⚠ Die Textsuche in den Artikeln
+überzählt massiv (2000er 21,8 % statt 3,4 %, weil „restart" auch Safety-Car-Neustarts
+trifft). Für rote Flaggen nur die Liste verwenden.
+
+**Wo das Chaos herkommt** (`chaos-real.js`, 1.066 Rennen):
+
+| Gruppe | Spearman Start→Ziel Median / 10 % | Rennen mit Spearman < 0,3 | Sieg ab P10 | schwaches Drittel punktet |
+|---|---|---|---|---|
+| trocken | 0,78 / 0,48 | 3,8 % | 2,8 % | 45,4 % |
+| **teilweise nass** | 0,72 / **0,29** | **11,0 %** | **8,5 %** | 48,8 % |
+| durchgehend nass | 0,71 / 0,42 | 2,4 % | 4,8 % | **56,0 %** |
+| 2000–25 trocken | 0,81 / 0,58 | 2,1 % | 1,9 % | 50,6 % |
+| 2000–25 rote Flagge | 0,71 / 0,36 | 2,9 % | 8,6 % | **65,7 %** |
+
+- **Die echten Chaos-Rennen sind die teilweise nassen** (wechselnde Bedingungen). Dort
+  mischt sich die Reihenfolge am stärksten, und Außenseiter gewinnen dreimal so oft.
+- **Durchgehend nass** mischt die Spitze weniger, bringt aber öfter Punkte für die
+  schwachen Teams (Ausfälle vorn).
+- **Rote Flaggen seit 2000** sind Störungen eigener Art: 8,6 % Außenseitersiege, zwei
+  Drittel der Rennen mit Punkten für ein schwaches Team.
+- Monaco 1996 (Panis von Startplatz 14): teilweise nass, **keine** rote Flagge (Ende per
+  Zeitlimit, 75 von 78 Runden).

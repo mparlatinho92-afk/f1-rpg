@@ -15,6 +15,11 @@
 | `tod-anker.js` | **Kandidaten für reale Tote außerhalb der WM** (F1DB kennt keine Ursachen): Fahrer, die zwischen erstem und letztem Einsatz +1 starben, ohne WM-Tote. ⚠ Obergrenze: Krankheit, Straße und Flugzeug müssen von Hand raus (Zuordnung in BEFUNDE.md) |
 | `indy-tod-sonde.js` | **Tote je Indy-500-Wochenende**, isoliert simuliert, mit Zähler für markiert-aber-nicht-gebuchte Opfer. Fand den Gastfahrer-Fehler |
 | `quali-form-vs-punkte.js` | **Taugt der Quali-Rückstand als carSpeed-Quelle?** A Rang-Pyramide gegen B Quali-Form gegen realen Punkteanteil je Dekade (analytisch). Grund für das Verwerfen von Variante B |
+| `../tools/wiki-rennberichte.js` | Holt die Wikipedia-Artikel aller WM-Grand-Prix nach `tools/quellen/wiki-rennberichte.json` (32 MB, gitignored). ⚠ Die API kürzt große Antworten still → Paketgröße 10 oder 1; bei HTTP 429 Pause 5000 ms |
+| `stoerungen-real.js` | **Wetter je Session und Flaggen aus den Wiki-Artikeln**: Rennwetter aus der Infobox (trocken/teilweise/nass, erkennt 100 % von `WET_RACE_IDS`), Quali-/Trainingsregen aus den Abschnitten. ⚠ Abschnitte erst ab ~2000 verlässlich; die Textsuche nach roten Flaggen überzählt stark → dafür `rote-flaggen-real.js` |
+| `rote-flaggen-real.js` | **Reale rote Flaggen im Rennen** aus der Wikipedia-Liste (91 seit 1971, Ursache Wetter/Unfall, Neustart-Code) |
+| `quali-regen-real.js` | Qualifying nass, bedingt auf das Rennwetter (Wiki-Abschnitt ab 2000, Quali-Zeiten alle Jahre) |
+| `chaos-real.js` | **Wie sehr Rennen die Reihenfolge mischen**: Spearman Start→Ziel je Rennen, Sieg ab P10, Punkte schwaches Drittel — nach Ära, Wetter, roter Flagge |
 | `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |
 
 ## Meldungen & DNQ — `mc-entries-dnq.js`
