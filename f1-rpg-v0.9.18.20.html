@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.19</title>
+    <title>F1 RPG v0.9.18.20</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.19 (aktuell) - 26.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.20 (aktuell) - 27.09.2026</div>
+                            <div>&#8226; NEU: Zufriedenheit misst die Leistung relativ zum eigenen Auto – Glockenkurve, gleiche Leistung wird überall gleich bewertet</div>
+                            <div>&#8226; NEU: Ansehen als Marktwert mit Weltmeister- und Team-Bremse, fließt als Druck der Öffentlichkeit in Vertragsentscheidungen</div>
+                            <div>&#8226; FIX: Rohdiamant nur noch mit Ausnahmepotenzial statt jeder Rookie</div>
+                            <div class="font-bold text-slate-400">v0.9.18.19 - 26.09.2026</div>
                             <div>&#8226; NEU: rote Flaggen mit echter Häufigkeit je Ära, bei Regen häufiger – ab 2000 mischen sie das Feld neu</div>
                             <div>&#8226; FIX: trockene Rennen waren zu zufällig (Außenseitersiege 4,4 % statt real 2,8 %)</div>
                             <div class="font-bold text-slate-400">v0.9.18.18 - 26.09.2026</div>
@@ -17717,7 +17721,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.19';
+        const VERSION = '0.9.18.20';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -27548,7 +27552,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 d.pace = d.currentPace;
                 
                 // Status-Text für Logging
-                const status = gap === 0 ? 'ausgereizt' : gap <= 3 ? 'fast fertig' : gap <= 6 ? 'entwickelt' : 'Rohdiamant';
+                const status = gap === 0 ? 'ausgereizt' : gap <= 3 ? 'fast fertig' : 'entwickelt';   // Rohdiamant: s. istRohdiamant
                 logInfo('PACE', `${d.name} (${age}J, ${yearsActive}J aktiv): C:${d.currentPace} P:${d.potentialPace} [${status}]`);
             });
             
@@ -33818,6 +33822,26 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             URU:'der Uruguayer', IND:'der Inder', CHN:'der Chinese', THA:'der Thailänder', TUR:'der Türke',
             GRE:'der Grieche', MAS:'der Malaysier', INA:'der Indonesier', LIE:'der Liechtensteiner', LUX:'der Luxemburger'
         };
+        // === ROHDIAMANT — EIN KONZEPT (v0.9.18.20) ===
+        // Vorher vier Definitionen; die Anzeige nannte jeden mit Potenzial-Lücke > 6 so — und
+        // jeder Rookie bekommt beim Start 10–15 Lücke. Ergebnis: jeder Rookie ein „Rohdiamant",
+        // auch mit Potenzial 70 (Nutzer 26.09.2026: „zu viele, kein klares Konzept").
+        // Jetzt müssen alle drei Bedingungen gelten:
+        //   jung            Alter ≤ Rookie-Alter der Ära + 3
+        //   Ausnahmepotenzial  Potenzial im obersten Fünftel des aktiven Feldes
+        //   unfertig        mindestens 5 unter dem Potenzial
+        function istRohdiamant(drv, year) {
+            if (!drv) return false;
+            const pot = drv.potentialPace || drv.pace || 0, cur = drv.currentPace || drv.pace || 0;
+            if (pot - cur < 5) return false;
+            const age = drv.birthYear ? year - drv.birthYear : null;
+            if (age === null || age > (getEraValue(ERA_ROOKIE_AGE, year) || 22) + 3) return false;
+            const pots = (GAME_STATE.drivers || []).filter(d => (!d.status || d.status === 'active') && d.team)
+                .map(d => d.potentialPace || d.pace || 0).filter(Boolean).sort((a, b) => a - b);
+            if (pots.length < 5) return false;
+            return pot >= pots[Math.floor(pots.length * 0.8)];
+        }
+
         // Archetyp-Klassifikator (feld-relativ, Kaliber-Leitplanken – s. Bank-Header).
         function _bioArchetype(drv, year) {
             const field = (GAME_STATE.drivers || []).filter(d => !d.status || d.status === 'active');
@@ -33829,9 +33853,8 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             const pace = drv.pace || 0, rain = drv.rain || 0, cons = drv.consistency || 0;
             const exp = drv.experience || 0, starts = drv.starts || 0, pot = drv.potentialPace || pace;
             const age = drv.birthYear ? year - drv.birthYear : null;
-            const rookieMax = (getEraValue(ERA_ROOKIE_AGE, year) || 22) + 3;
             const retAge = getEraValue(ERA_RETIREMENT_AGE, year) || 34;
-            if (age !== null && age <= rookieMax && starts < 40 && pot >= avgPace + 3) return 'rohdiamant';
+            if (starts < 40 && istRohdiamant(drv, year)) return 'rohdiamant';   // s. istRohdiamant
             if (pace >= p75 && cons <= avgCons - 6) return 'draufgaenger';
             if (rain >= avgRain + 6 && rain >= pace + 4) return 'regenmeister';
             if (exp >= 82 && age !== null && age >= retAge - 2 && pace >= avgPace - 2) return 'routinier';
@@ -34967,7 +34990,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     // Rücktritte ist die VERTRAGSLÄNGE, s. _ageCappedContractLen.)
                     if (driver.contractEnd && driver.contractEnd > GAME_STATE.currentYear) {
                         const _ev = evaluateDriverPerformance(driver.id);
-                        const _kollaps = _ev && _ev.score < 25;
+                        const _kollaps = _ev && !_ev.schutz && _ev.score < 25;
                         retireChance = _kollaps ? retireChance * 0.5 : 0;
                     }
 
@@ -35332,6 +35355,99 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             return !!t && isLoyalOwnerDriver(driver, t.histId || t.id);
         }
 
+        // === LEISTUNG RELATIV ZUM AUTO (v0.9.18.20) ===
+        // Nutzer-Regel: der vorgesehene Platz ergibt sich aus dem Team-Rang (siebtbestes Team →
+        // Platz 13–14). Als Perzentil, damit Feldgröße, Wagenzahl je Team und Ausfallquote
+        // herausfallen: jedes Team belegt im Feld einen BLOCK so breit wie seine Starts,
+        // erwartet wird die Blockmitte. Tatsächlich = Mittel aus WM-Rang, Ø Startplatz und
+        // Ø Platz unter den Angekommenen (bereinigt um Ausfälle). u > 0: besser als das Auto.
+        // Dazu das Teamkollegen-Duell (h2hSeason) als zweiter, autofreier Maßstab.
+        // Vorher folgte die Zufriedenheit dem Auto (r 0,83 mit dem absoluten Abschneiden, nur
+        // 0,31 mit der Leistung relativ zum Auto; BEFUNDE.md 26.09.2026).
+        const BEWERTUNG_SIGMA = 0.145;   // Streuung von u über Fahrer-Saisons (bewertung-pruefung.js)
+        const BEWERTUNG_SKALA = 15;      // Punkte je Standardabweichung → Glockenkurve um 50
+        // Bänder so gelegt, dass ihre ANTEILE wie vorher bleiben (≈5 % / 26 % / 57 % / 10 %) —
+        // der Fahrermarkt dreht nicht schneller, nur fairer: wer wo landet, hängt jetzt an der
+        // Leistung relativ zum Auto statt am Auto.
+        const BEWERTUNG_BAENDER = { excellent: 75, good: 57, average: 31 };
+        function bewertungsBand(score) {
+            return score >= BEWERTUNG_BAENDER.excellent ? 'excellent' : score >= BEWERTUNG_BAENDER.good ? 'good'
+                 : score >= BEWERTUNG_BAENDER.average ? 'average' : 'poor';
+        }
+
+        // basis 'auto': Teams nach carSpeed geordnet — das TEAM kennt sein Auto (Zufriedenheit).
+        //   Ohne diesen Weg wäre die Erwartung zirkulär: die WM entsteht aus den Punkten der
+        //   Fahrer, zwei schwache Fahrer ziehen ihr Team und damit ihre eigene Erwartung herunter.
+        // basis 'wm': Teams nach Konstrukteurs-WM — die ÖFFENTLICHKEIT sieht nur Ergebnisse
+        //   (Ansehen, Marktwert); die Team-Bremse in updateDriverReputations fängt das auf.
+        function leistungRelativZumAuto(driverId, basis = 'auto') {
+            const results = GAME_STATE.results || [];
+            if (!results.length) return null;
+            const driver = GAME_STATE.drivers.find(d => d.id === driverId);
+            if (!driver) return null;
+            // Starts je Team = Breite seines Blocks
+            const starts = {};
+            for (const rr of results) for (const e of rr.results) if (e.team) starts[e.team] = (starts[e.team] || 0) + 1;
+            const pkt = t => (GAME_STATE.teamStandings[t] || {}).points || 0;
+            const auto = t => ((GAME_STATE.teams || []).find(x => x.id === t) || {}).carSpeed || 0;
+            const teams = Object.keys(starts).sort(basis === 'auto' ? (a, b) => auto(b) - auto(a) || pkt(b) - pkt(a) : (a, b) => pkt(b) - pkt(a));
+            const gesamt = teams.reduce((x, t) => x + starts[t], 0);
+            let davor = 0, erw = null;
+            for (const t of teams) { if (t === driver.team) { erw = (davor + starts[t] / 2) / gesamt; break; } davor += starts[t]; }
+            if (erw === null) return null;
+            // Tatsächlich: WM-Rang, Startplatz, Platz unter den Angekommenen (je als Anteil)
+            const mitStart = new Set();
+            for (const rr of results) for (const e of rr.results) mitStart.add(e.driver);
+            const wm = [...mitStart].map(id => ({ id, p: (GAME_STATE.driverStandings[id] || {}).points || 0 })).sort((a, b) => b.p - a.p);
+            const wmI = wm.findIndex(x => x.id === driverId);
+            const ziel = [], start = [];
+            for (const rr of results) {
+                const e = rr.results.find(x => x.driver === driverId);
+                if (!e) { if ((rr.dnq || []).includes(driverId)) { ziel.push(1); start.push(1); } continue; }
+                const angekommen = rr.results.filter(x => !x.dnf && !x.fatal && x.position > 0).sort((a, b) => a.position - b.position);
+                const i = angekommen.findIndex(x => x.driver === driverId);
+                if (i >= 0) ziel.push((i + 0.5) / angekommen.length);
+                const mitGrid = rr.results.filter(x => x.qualiPos > 0).length;
+                if (e.qualiPos > 0 && mitGrid) start.push((e.qualiPos - 0.5) / mitGrid);
+            }
+            const m = a => a.reduce((x, y) => x + y, 0) / a.length;
+            const teile = [];
+            if (wmI >= 0) teile.push((wmI + 0.5) / wm.length);
+            if (ziel.length) teile.push(m(ziel));
+            if (start.length) teile.push(m(start));
+            if (!teile.length) return null;
+            const tats = m(teile);
+            // Teamkollegen-Duell wie im Ansehen: Rennen 60 % / Quali 40 %, erst ab 6 Duellen
+            let h2h = null;
+            const h = driver.h2hSeason;
+            if (h && h._year === GAME_STATE.currentYear) {
+                const rT = h.rW + h.rL, qT = h.qW + h.qL;
+                if (rT + qT >= 6) {
+                    const r = rT > 0 ? (h.rW - h.rL) / rT : 0, q = qT > 0 ? (h.qW - h.qL) / qT : 0;
+                    h2h = (rT > 0 && qT > 0) ? 0.6 * r + 0.4 * q : rT > 0 ? r : q;
+                }
+            }
+            return { erw, tats, u: erw - tats, h2h };
+        }
+
+        // Skalierter Wert 0–100 aus der Leistung relativ zum Auto (Glockenkurve um 50)
+        // Entscheidungswert für Vertrag/Rauswurf: Zufriedenheit (Sicht des Teams) gemischt mit dem
+        // Ansehen (Marktwert — Sponsoren, Fans, Investoren, Motorenhersteller setzen das Team unter
+        // Druck; Nutzer 27.09.2026). Ein Fahrer mit hohem Ansehen ist schwer loszuwerden, einer mit
+        // niedrigem steht unter Druck, auch wenn das Team intern zufrieden ist.
+        const TEAM_ENTSCHEIDUNG_ANSEHEN = 0.35;
+        function teamEntscheidungsWert(driver, score) {
+            const rep = (driver && typeof driver.reputation === 'number') ? driver.reputation : 50;
+            return Math.round((1 - TEAM_ENTSCHEIDUNG_ANSEHEN) * score + TEAM_ENTSCHEIDUNG_ANSEHEN * rep);
+        }
+
+        function skalierteBeurteilung(l) {
+            if (!l) return null;
+            const z = l.u / BEWERTUNG_SIGMA;
+            const zGes = l.h2h !== null ? 0.75 * z + 0.25 * (l.h2h * 1.2) : z;
+            return Math.max(0, Math.min(100, Math.round(50 + BEWERTUNG_SKALA * zGes)));
+        }
+
         function _computeDriverSeasonScore(driverId) {
             const dnfPenalty = _getAvgDnfPenalty();
             const DNQ_SCORE = -0.30;
@@ -35413,39 +35529,26 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 if (tmData) vsTeammate = seasonScore - tmData.seasonScore;
             }
 
-            // Team-Kontext-Adjustierung: über-/unterperformen vs. Teamerwartung
-            const vsTeamDelta = seasonScore - teamScore;
-            let adjScore = seasonScore;
-            if      (vsTeamDelta >  0.20) adjScore += 0.08;
-            else if (vsTeamDelta >  0.05) adjScore += 0.04;
-            else if (vsTeamDelta < -0.20) adjScore -= 0.08;
-            else if (vsTeamDelta < -0.05) adjScore -= 0.04;
+            // Zufriedenheit = Leistung relativ zum Auto, skaliert als Glockenkurve (v0.9.18.20).
+            // Die frühere Stufen-Anpassung (±0,04/±0,08 auf das Feld-Abschneiden) ist ersetzt.
+            const _rel = leistungRelativZumAuto(driverId);
+            const score = skalierteBeurteilung(_rel);
+            if (score === null) return null;
 
-            // adjScore (-0.68..1.08) → score 0–100
-            let score = Math.round((adjScore + 0.68) / 1.76 * 100);
+            // Schutz für junge Fahrer und Rohdiamanten: KEIN Mindestwert mehr in der Bewertung
+            // (der schnitt die Glockenkurve unten ab), sondern ein Flag, das die Entscheidungen
+            // nach unten liest (Vertragsauflösung, Kollaps-Rücktritt, „schwach" bei Vertragsende).
+            const schutz = careerYears <= 3 || istRohdiamant(driver, GAME_STATE.currentYear);
 
-            // Nachwuchs-Schutz (im ersten Sim-Jahr kein Rookie-Floor – 1950-Sonderfall)
-            const _isFirstSimYear = GAME_STATE.currentYear === (GAME_STATE.templateUsed || -1);
-            if (isRookie && !_isFirstSimYear) score = Math.max(score, 42);
-            else if (isSecondYear)            score = Math.max(score, 36);
-            else if (careerYears <= 3)        score = Math.max(score, 30);
-
-            // Rohdiamant-Schutz
-            const myPotential   = driver.potentialPace || driver.pace || 75;
-            const myCurrentPace = driver.currentPace   || driver.pace || 75;
-            if (myPotential >= 92 && myPotential - myCurrentPace >= 5) score = Math.max(score, 38);
-            else if (myPotential >= 86 && myPotential - myCurrentPace >= 5) score = Math.max(score, 33);
-
-            score = Math.max(0, Math.min(100, score));
-
-            const rating      = score >= 75 ? 'excellent' : score >= 55 ? 'good' : score >= 40 ? 'average' : 'poor';
-            const ratingEmoji = score >= 75 ? '⭐' : score >= 55 ? '✅' : score >= 40 ? '➖' : '⚠️';
-            const ratingText  = score >= 75 ? 'Hervorragend' : score >= 55 ? 'Gut' : score >= 40 ? 'Durchschnitt' : 'Schwach';
+            const rating      = bewertungsBand(score);
+            const ratingEmoji = { excellent: '⭐', good: '✅', average: '➖', poor: '⚠️' }[rating];
+            const ratingText  = { excellent: 'Hervorragend', good: 'Gut', average: 'Durchschnitt', poor: 'Schwach' }[rating];
 
             return {
                 driverId, driverName: driver.name,
                 teamId: driver.team, teamName: team?.name || '-', teamTier, teamRanking: teamRank,
-                score, rating, ratingEmoji, ratingText,
+                score, rating, ratingEmoji, ratingText, schutz,
+                ueber: _rel ? _rel.u : null, erwartetAnteil: _rel ? _rel.erw : null,
                 seasonScore, teamScore, vsTeammate,
                 points: standing.points || 0, wins: standing.wins || 0, podiums: standing.podiums || 0,
                 isRookie, isSecondYear, careerYears,
@@ -35519,15 +35622,11 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             logInfo('CAREER', `Karriere-Scores für ${activeDrivers.length} Fahrer aktualisiert`);
         }
 
-        // === REPUTATIONS-SYSTEM (Welle 2, Paket G) ===
+        // === REPUTATIONS-SYSTEM (Welle 2, Paket G; seit v0.9.18.20 Marktwert, s. unten) ===
         // Interner Skalar 0–100 (neutral 50), 1×/Saison aktualisiert (VOR processTeamChanges).
-        // Speist sich aus: (1) Überperformance vs. Erwartungskurve je Konstrukteurs-Rang,
-        // (2) Titel/Sieg/Podium-Boni, (3) Teamkollegen-H2H (h2hSeason, Quali+Rennen) — Letzteres
-        // erfüllt die NUTZER-VORGABE, dass die pro-Rennen/Quali-Duelle aktiv gewichtet einfließen.
-        // EMA-geglättet; steuert Retention/Upgrade in processTeamChanges. Persistiert automatisch.
-        // Erwartungskurve = mediane Zielposition je Konstrukteurs-WM-Rang R1–R11 (Paket G,
-        // 1990–2025, ~14.900 Starts). Bei Rang > 11 wird auf R11 gekappt.
-        const EXPECTATION_MEDIAN = [2, 3, 5, 7, 8, 10, 10, 11, 13, 15, 16];
+        // Steuert Retention/Upgrade in processTeamChanges und fließt als Druck der Öffentlichkeit
+        // in teamEntscheidungsWert ein. Persistiert automatisch.
+        // (Die feste Erwartungstabelle EXPECTATION_MEDIAN ist durch leistungRelativZumAuto ersetzt.)
 
         // Reputations-Prior aus der Start-Pace (Kaliber): etablierte/talentierte Fahrer starten
         // nicht bei neutral 50, sondern nahe ihrem Kaliber und konvergieren dann per EMA an die
@@ -35538,93 +35637,125 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             return Math.max(32, Math.min(72, Math.round(50 + (p - 75) * 1.2)));
         }
 
+        // === ANSEHEN = MARKTWERT (v0.9.18.20) ===
+        // Sicht der Öffentlichkeit, geglättet (65 % alt / 35 % neu). Saison-Rohwert:
+        //   Leistung relativ zur Erwartung aus der WM (Perzentil-Block, s. leistungRelativZumAuto)
+        //   + Teamkollegen-Duell, skaliert wie die Zufriedenheit (Glockenkurve um 50)
+        //   + Erfolge mit einem Drittel des früheren Gewichts (Titel 6, Siege ≤3,3, Podien ≤2,1) —
+        //     Ruhm bleibt, die Leistung relativ zum Auto dominiert (Nutzer 26.09.2026).
+        // Zwei Bremsen gegen VERLUSTE:
+        //   Weltmeister: drei Saisons nach einem Titel (auch realer Titel aus F1DB) nur 15 % statt 35 %.
+        //   Team-Bremse: liegt das Team deutlich unter seinem Niveau der letzten 5 Jahre (zeitgewichtet
+        //     4/3/2/1/1), schließt die Öffentlichkeit eher auf das Auto; je mehr Fahrer das Team hat,
+        //     desto sicherer (1 − 1/Fahrerzahl).
+        // Vorher: feste Erwartungstabelle EXPECTATION_MEDIAN (1990–2025, durch Ausfälle
+        // zusammengedrückt, ab Rang 11 gekappt) und volle Erfolgs-Boni → Ansehen folgte dem Auto.
+        const ANSEHEN_EMA = 0.35, ANSEHEN_EMA_WELTMEISTER = 0.15, WELTMEISTER_BREMSE_JAHRE = 3;
+        const TEAM_BREMSE_AB = 0.10, TEAM_BREMSE_VOLL = 0.35, TEAM_BREMSE_MAX = 0.7;
+
+        // Letztes Titeljahr eines Fahrers: im Spiel errungen (titelJahre) oder real aus F1DB
+        let _realeTitel = null;
+        function letztesTitelJahr(driver, vorJahr) {
+            if (_realeTitel === null) {
+                _realeTitel = {};
+                if (typeof F1DB_STANDINGS !== 'undefined') {
+                    for (const [j, liste] of Object.entries(F1DB_STANDINGS)) {
+                        const m = liste && liste[0];
+                        if (m && m[1] === 1) (_realeTitel[m[0]] = _realeTitel[m[0]] || []).push(Number(j));
+                    }
+                }
+            }
+            const jahre = (driver.titelJahre || []).concat(driver.histId ? (_realeTitel[driver.histId] || []) : []);
+            const bis = jahre.filter(j => j <= vorJahr);
+            return bis.length ? Math.max(...bis) : null;
+        }
+
+        // Leistungsniveau eines Teams: zeitgewichtetes Mittel seines WM-Anteils (0 = vorn, 1 = hinten)
+        // der letzten bis zu 5 Saisons, neueste ×4, dann ×3, ×2, ×1, ×1.
+        function teamNiveau(team) {
+            const h = (team && team.niveauHist) || [];
+            if (!h.length) return null;
+            const l = [...h].sort((a, b) => b.year - a.year).slice(0, 5);
+            const g = [4, 3, 2, 1, 1];
+            let sw = 0, sa = 0;
+            l.forEach((e, i) => { sw += g[i]; sa += g[i] * e.anteil; });
+            return sa / sw;
+        }
+
         function updateDriverReputations() {
             const activeDrivers = GAME_STATE.drivers.filter(d => !d.status || d.status === 'active');
+            const jahr = GAME_STATE.currentYear;
 
-            // Team-Ranking auf Team-Ebene (identisch zu evaluateDriverPerformance)
-            const teamRankingList = Object.entries(GAME_STATE.teamStandings)
-                .map(([id, s]) => ({ id, points: s.points || 0 }))
-                .sort((a, b) => b.points - a.points);
-            const teamRankOf = id => {
-                const idx = teamRankingList.findIndex(t => t.id === id);
-                return idx >= 0 ? idx + 1 : teamRankingList.length;
-            };
-
-            // Fahrer-Weltmeister dieser Saison (P1 der Fahrer-WM)
+            // Fahrer-Weltmeister dieser Saison
             const champ = Object.entries(GAME_STATE.driverStandings)
                 .map(([id, s]) => ({ id, points: s.points || 0 }))
                 .sort((a, b) => b.points - a.points)[0];
             const championId = champ && champ.points > 0 ? champ.id : null;
 
+            // Fahrer je Team in dieser Saison (für die Sicherheit der Team-Bremse)
+            const fahrerJeTeam = {};
+            for (const rr of GAME_STATE.results || []) for (const e of rr.results) if (e.team) (fahrerJeTeam[e.team] = fahrerJeTeam[e.team] || new Set()).add(e.driver);
+
+            const teamAnteilJetzt = {};
             activeDrivers.forEach(driver => {
                 const standing = GAME_STATE.driverStandings[driver.id] || {};
+                const rel = leistungRelativZumAuto(driver.id, 'wm');
+                if (!rel) return;   // keine Datenbasis → Ansehen unverändert
+                if (driver.team) teamAnteilJetzt[driver.team] = rel.erw;
 
-                // Mediane klassifizierte Zielposition dieser Saison
-                const finishes = [];
-                for (const rr of GAME_STATE.results || []) {
-                    const r = rr.results.find(e => e.driver === driver.id);
-                    if (r && !r.dnf && !r.fatal && !r.dnpq && r.position > 0) finishes.push(r.position);
+                if (driver.id === championId) {
+                    if (!driver.titelJahre) driver.titelJahre = [];
+                    if (!driver.titelJahre.includes(jahr)) driver.titelJahre.push(jahr);
                 }
-                if (finishes.length === 0) return;   // keine Datenbasis → Reputation unverändert
-                finishes.sort((a, b) => a - b);
-                const medianFinish = finishes[Math.floor(finishes.length / 2)];
-
-                // Überperformance vs. Auto-Erwartung (positiv = schwaches Auto ausgereizt → Teil 7)
-                const teamRank = teamRankOf(driver.team);
-                const expectedPos = EXPECTATION_MEDIAN[Math.min(teamRank, EXPECTATION_MEDIAN.length) - 1];
-                let overperf = expectedPos - medianFinish;
-                // ±1.5 Positionen = Rauschen (P25/P75-Band); erst darüber ein Signal
-                if (Math.abs(overperf) <= 1.5) overperf = 0;
-                else overperf += (overperf > 0 ? -1.5 : 1.5);
-                const overperfTerm = Math.max(-6, Math.min(6, overperf)) * 3;   // ±18
-
-                // Titel / Siege / Podien
-                const titleTerm  = driver.id === championId ? 18 : 0;
-                const winTerm    = Math.min(standing.wins || 0, 5) * 2;         // 0..10
-                const podiumTerm = Math.min(standing.podiums || 0, 8) * 0.8;    // 0..6.4
-
-                // Teamkollegen-H2H (Saison): Rennen 60 % / Quali 40 %, gedeckelt ±10.
-                // Nur ab ≥6 Duellen werten (darunter Rauschen, s. Paket G Median-Delta 2).
-                let h2hTerm = 0, h2hCounted = false;
-                const h = driver.h2hSeason;
-                if (h && h._year === GAME_STATE.currentYear) {
-                    const rTot = h.rW + h.rL, qTot = h.qW + h.qL;
-                    if (rTot + qTot >= 6) {
-                        h2hCounted = true;
-                        const rShare = rTot > 0 ? (h.rW - h.rL) / rTot : 0;
-                        const qShare = qTot > 0 ? (h.qW - h.qL) / qTot : 0;
-                        const share = (rTot > 0 && qTot > 0) ? 0.6 * rShare + 0.4 * qShare
-                                    : rTot > 0 ? rShare : qShare;
-                        h2hTerm = Math.max(-10, Math.min(10, share * 10));
-                    }
-                }
-
-                const baseNoH2H = Math.max(0, Math.min(100,
-                    50 + overperfTerm + titleTerm + winTerm + podiumTerm));
-                const seasonRepValue = Math.max(0, Math.min(100,
-                    50 + overperfTerm + titleTerm + winTerm + podiumTerm + h2hTerm));
+                const leistung = skalierteBeurteilung(rel);
+                const titleTerm  = driver.id === championId ? 6 : 0;
+                const winTerm    = Math.min(standing.wins || 0, 5) * 0.67;
+                const podiumTerm = Math.min(standing.podiums || 0, 8) * 0.27;
+                const seasonRepValue = Math.max(0, Math.min(100, leistung + titleTerm + winTerm + podiumTerm));
 
                 const old = (typeof driver.reputation === 'number') ? driver.reputation : seedReputationFromPace(driver);
-                driver.reputation = Math.round(0.65 * old + 0.35 * seasonRepValue);
+                let alpha = ANSEHEN_EMA;
+                let teamBremse = 0;
+                if (seasonRepValue < old) {
+                    // Weltmeister verlieren Ruhm langsamer
+                    const lt = letztesTitelJahr(driver, jahr);
+                    if (lt !== null && jahr - lt < WELTMEISTER_BREMSE_JAHRE) alpha = Math.min(alpha, ANSEHEN_EMA_WELTMEISTER);
+                    // Team deutlich unter seinem Niveau → lag vermutlich am Auto
+                    const team = (GAME_STATE.teams || []).find(t => t.id === driver.team);
+                    const niveau = teamNiveau(team);
+                    if (niveau !== null) {
+                        const abfall = rel.erw - niveau;
+                        if (abfall > TEAM_BREMSE_AB) {
+                            const n = fahrerJeTeam[driver.team] ? fahrerJeTeam[driver.team].size : 1;
+                            teamBremse = Math.min(1, (abfall - TEAM_BREMSE_AB) / (TEAM_BREMSE_VOLL - TEAM_BREMSE_AB)) * (1 - 1 / Math.max(1, n));
+                            alpha = Math.min(alpha, ANSEHEN_EMA * (1 - TEAM_BREMSE_MAX * teamBremse));
+                        }
+                    }
+                }
+                driver.reputation = Math.round(old + alpha * (seasonRepValue - old));
 
                 // Reputations-Verlauf für die EMA-Sparkline (raw = Saison-Rohwert, rep = geglättet).
-                // Der Abstand raw↔rep macht die EMA-Glättung sichtbar. Auf 15 Einträge begrenzt.
                 if (!driver.repHistory) driver.repHistory = [];
-                if (!driver.repHistory.some(e => e.year === GAME_STATE.currentYear)) {
-                    driver.repHistory.push({ year: GAME_STATE.currentYear, rep: driver.reputation, raw: Math.round(seasonRepValue) });
+                if (!driver.repHistory.some(e => e.year === jahr)) {
+                    driver.repHistory.push({ year: jahr, rep: driver.reputation, raw: Math.round(seasonRepValue) });
                     if (driver.repHistory.length > 15) driver.repHistory.shift();
                 }
 
-                // Dev-Instrumentierung (nur im MC-Test aktiv, im Spiel kostenlos):
-                // legt die Reputations-Komponenten offen → H2H-Einflussanalyse.
+                // Dev-Instrumentierung (nur im MC-Test aktiv, im Spiel kostenlos)
                 if (typeof REP_DEBUG !== 'undefined' && REP_DEBUG) {
-                    driver._repParts = {
-                        overperfTerm, titleTerm, winTerm, podiumTerm, h2hTerm, h2hCounted,
-                        baseNoH2H, seasonRepValue, reputation: driver.reputation,
-                        races: finishes.length
-                    };
+                    driver._repParts = { leistung, titleTerm, winTerm, podiumTerm, teamBremse, alpha,
+                        seasonRepValue, reputation: driver.reputation, u: rel.u, h2h: rel.h2h };
                 }
             });
+
+            // Team-Niveau fortschreiben (erst NACH den Fahrern — die Bremse vergleicht mit den Vorjahren)
+            for (const [tid, anteil] of Object.entries(teamAnteilJetzt)) {
+                const team = (GAME_STATE.teams || []).find(t => t.id === tid);
+                if (!team) continue;
+                if (!team.niveauHist) team.niveauHist = [];
+                if (!team.niveauHist.some(e => e.year === jahr)) team.niveauHist.push({ year: jahr, anteil: Math.round(anteil * 1000) / 1000 });
+                if (team.niveauHist.length > 5) team.niveauHist.splice(0, team.niveauHist.length - 5);
+            }
 
             logInfo('CAREER', `Reputation für ${activeDrivers.length} Fahrer aktualisiert`);
         }
@@ -35739,9 +35870,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 .forEach(driver => {
                     if (_isLockedOwner(driver)) return;   // treuer Besitzer (v0.9.15.0)
                     const eval_ = evaluateDriverPerformance(driver.id);
-                    if (!eval_ || eval_.score >= 30) return;
+                    if (!eval_ || eval_.schutz || teamEntscheidungsWert(driver, eval_.score) >= BEWERTUNG_BAENDER.average) return;
 
-                    // ~20% Chance auf vorzeitige Auflösung bei Score < 30
+                    // ~20% Chance auf vorzeitige Auflösung unter dem Band „Durchschnitt"
                     if (Math.random() > 0.20) return;
                     
                     const oldTeam = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -35873,9 +36004,13 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     const _ca = weightedCareerAverage(_cs);
                     if (_ca !== null) {
                         eval_.score = _ca;
-                        eval_.rating = _ca >= 75 ? 'excellent' : _ca >= 55 ? 'good' : _ca >= 40 ? 'average' : 'poor';
                     }
                 }
+                // Druck der Öffentlichkeit: das Ansehen fließt in die Vertragsentscheidung ein
+                eval_.score = teamEntscheidungsWert(driver, eval_.score);
+                eval_.rating = bewertungsBand(eval_.score);
+                // Schutz für junge Fahrer/Rohdiamanten: nie „schwach" bei Vertragsende
+                if (eval_.schutz && eval_.rating === 'poor') eval_.rating = 'average';
 
                 const driverTeam = GAME_STATE.teams.find(t => t.id === driver.team);
 
@@ -48624,10 +48759,10 @@ Empfohlene Wertebereiche:
                             statusText = '↑ Fast am Limit';
                         } else if (driverAge >= 28) {
                             statusText = '⚠️ Späte Karriere';
-                        } else if (paceInfo.gap <= 6) {
-                            statusText = '📈 Entwickelt sich';
-                        } else {
+                        } else if (istRohdiamant(driver, GAME_STATE.currentYear)) {
                             statusText = '🌱 Rohdiamant';
+                        } else {
+                            statusText = '📈 Entwickelt sich';
                         }
                         
                         return `
