@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.21</title>
+    <title>F1 RPG v0.9.18.22</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.21 (aktuell) - 27.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.22 (aktuell) - 27.09.2026</div>
+                            <div>&#8226; FIX: Hinterbaenkler wurden in Aeren mit vielen Ausfaellen zu oft entlassen</div>
+                            <div>&#8226; FIX: Topteam-Fahrer traten schon mit 28-35 zurueck (Alterskurve beginnt jetzt am Aera-Median)</div>
+                            <div>&#8226; NEU: Generierte Fahrer hoeren seltener auf dem Hoehepunkt auf</div>
+                            <div class="font-bold text-slate-400">v0.9.18.21 - 27.09.2026</div>
                             <div>&#8226; NEU: Fahrer im Spitzenauto treten seltener zurueck (Cockpit-Bindung nach Auto-Rang)</div>
                             <div>&#8226; FIX: Aus starken Teams verschwanden 16-25 % der Stammfahrer statt real 3-10 %</div>
                             <div class="font-bold text-slate-400">v0.9.18.20 - 27.09.2026</div>
@@ -4113,7 +4117,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.21';
+        const VERSION = '0.9.18.22';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -21219,6 +21223,8 @@
         // Stufenlos nach Auto-Rang: bestes Auto ×COCKPIT_BINDUNG_TOP, schlechtestes ×1.
         // Ein Daempfer unter mehreren (Math.min), kein Multiplikator obendrauf.
         const COCKPIT_BINDUNG_TOP = 0.2;
+        // Jahre VOR dem Ära-Median, ab denen der Alters-Rücktritt einsetzt (bis 27.09.2026: 6)
+        const ALTERSKURVE_VORLAUF = 0;
         function cockpitBindung(driver) {
             const team = driver.team && GAME_STATE.teams.find(t => t.id === driver.team);
             if (!team || !(team.carSpeed > 0)) return 1;
@@ -21323,12 +21329,17 @@
                 // hoch. Gemessen Spiel vs. F1DB: 2010er 35 statt 28, 1990er 35 statt 31,
                 // 1960er 38 statt 33, 1970er 36 statt 32.
                 //
-                // Neu: die Kurve beginnt SECHS Jahre vor dem Median und steigt flach.
+                // v0.9.15.0: die Kurve begann SECHS Jahre vor dem Median und steigt flach.
                 // Flach ist wesentlich — die reale Verteilung ist breit (1950er 25–75 %
                 // bei 31–41, Maximum 59). Eine steile Kurve trifft den Median, kappt
                 // aber den Schwanz der Oldies (Brabham fuhr bis 44, Fangio bis 47).
-                if (age && age > eraRetirementAge - 6) {
-                    const yearsOver = age - (eraRetirementAge - 6);
+                // 27.09.2026: Beginn AM Median (ALTERSKURVE_VORLAUF 0). Der Median ist das Alter
+                // ALLER Abschiede, auch der unfreiwilligen — die erzeugt inzwischen der Markt
+                // (relative Entlassung, Nicht-Verlaengerung). Mit sechs Jahren Vorlauf traten
+                // Topteam-Fahrer mit 28–35 zurueck (Spiel 12–15 %, real 4–5 %). Das Median-Alter
+                // der Verschwundenen bleibt trotzdem real (BEFUNDE.md 27.09.2026 (6)).
+                if (age && age > eraRetirementAge - ALTERSKURVE_VORLAUF) {
+                    const yearsOver = age - (eraRetirementAge - ALTERSKURVE_VORLAUF);
                     let retireChance = 0;
                     // Deckel 0.40 GEPRUEFT (v0.9.15.1): eine Absenkung auf 0.26 wurde
                     // getestet und brachte nichts — der Schwanz der Oldies wird nicht von
@@ -21437,8 +21448,13 @@
                     if (!isRookie) {
                         const _ss = _computeDriverSeasonScore(driver.id);
                         const _seasonScore = _ss ? _ss.seasonScore : null;
-                        // Schwelle: durchgehend Schlusslicht/DNF-Territorium (unabhängig von Punktesystem)
-                        if (_seasonScore !== null && _seasonScore < 0.10) {
+                        // Katastrophal = weit UNTER dem eigenen Auto, wie der Kollaps im Alterszweig.
+                        // Bis 27.09.2026 absolut (_seasonScore < 0.10): jeder Ausfall zaehlt dort
+                        // negativ, in Ausfall-Aeren rutschte so der Hinterbaenkler unter die Schwelle,
+                        // der genau sein Auto fuhr. Schwaches Drittel 1975: 16 % entlassen, real
+                        // verschwanden dort insgesamt 21 % (BEFUNDE.md 27.09.2026 (5)).
+                        const _evK = evaluateDriverPerformance(driver.id);
+                        if (_seasonScore !== null && _evK && !_evK.schutz && _evK.score < 25) {
                             if (Math.random() < 0.35) {
                                 driver.status = 'dismissed';
                                 driver.dismissedYear = GAME_STATE.currentYear;
