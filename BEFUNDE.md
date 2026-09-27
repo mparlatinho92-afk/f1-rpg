@@ -2412,3 +2412,43 @@ relative Entlassung, Kurve ab Median):
 - ▶ Offen: „aktiv ohne Team" im starken Drittel (schwach bewertet im Topteam, kein Platz für
   den Abstieg → frei, findet nichts; real steigen diese Fahrer ab) und schwache Teams, die
   ihre Fahrer zu oft behalten (bleibt 43–59 % gegen real 24–43 %).
+
+### 28.09.2026: Marktvergleich — der Hinterbänkler, der immer „average" ist
+
+**Logiklücke (Nutzer):** die Zufriedenheit misst gegen das eigene Auto. Wer im letzten Auto
+jahrelang Platz 22 holt, erfüllt die Erwartung, bekommt „average" und wurde verlängert. Das
+fiel nicht auf, solange scheiternde vordere Fahrer abstiegen — reicht das nicht, schaut das
+Team auf die Rundenzeiten: ständig hinten und kein Potenzial = wenig Hoffnung auf Besserung.
+
+**Umgesetzt in Phase 2 von `processTeamChanges`:** auslaufende Verträge nach Teamrang (beste
+zuerst); bei „average" im Hinterbänkler-Team fragt das Team, ob am Markt (freie Fahrer, Reserve)
+ein um `MARKT_ABSTAND` = 4 Pace-Punkte schnellerer Kandidat verfügbar ist, sonst Verlängerung.
+Hoffnungslos-Stufe: Pace im unteren Sechstel des Feldes und Potenzial < 2 über Pace → ein
+Kandidat mit gleicher Effektiv-Pace (70 % Pace / 30 % Potenzial) genügt. Jeder Kandidat deckt
+nur eine Nicht-Verlängerung. Entlassungs-Cap `max(4, 0,4 × Teams)` statt fest 4.
+
+**Drei Irrwege mit Zahlen (NICHT nochmal versuchen):**
+1. **Geschützt = ≤ 3 Karrierejahre ausnehmen** → wirkt kaum (schwach 1995/2005/2012: 33/40/32 →
+   37/41/35 %, im Rauschen). `tests/markt-diagnose.js`: 63 von 94 auslaufenden Verträgen im
+   schwachen Drittel waren nur wegen „jung" geschützt. Real verlassen gerade die Jungen die
+   schwachen Teams (ab 1990: 36 % bis 27 Jahre). → nur Rohdiamanten ausnehmen.
+2. **Vergleich mit Effektiv-Pace (30 % Potenzial, wie beim Abwerben)** → jeder Reserve-Rookie
+   sieht besser aus: 3,4 Nicht-Verlängerungen und 3,8 Pool-Debüts je Saison, Abstand 4 oder 6
+   egal (Mittelfeld 2005/2012 31–36 %). → aktuelle Pace (die Rundenzeit), Potenzial nur in der
+   Hoffnungslos-Stufe.
+3. **Auch im Mittelfeld** → Mittelfeld 2005 38 % weg (real 16). Ohne Vergleich lag es schon
+   richtig (v0.9.18.22: 19–24 %). → nur Hinterbänkler.
+
+**Ergebnis** (`markt-abgang.js`, 8 × 4, weg stark / mittel / schwach; v.22 → neu; real):
+
+| Start | v0.9.18.22 | neu | real |
+|---|---|---|---|
+| 1965 | 8 / 14 / 24 | 11 / 13 / 25 | 60er 9 / 5 / 14 · 70er 9 / 13 / 21 |
+| 1975 | 9 / 18 / 33 | 10 / 17 / 33 | 9 / 13 / 21 |
+| 1995 | 9 / 19 / 33 | 9 / 26 / 46 | 90er 11 / 21 / 42 · 00er 4 / 16 / 45 |
+| 2005 | 12 / 24 / 40 | 12 / 24 / 44 | 4 / 16 / 45 |
+| 2012 | 9 / 21 / 32 | 10 / 18 / 46 | 3 / 23 / 36 |
+
+Schwaches Drittel „bleibt" 2005 48 → 41 % (real 26). 1,1 Markt-Nicht-Verlängerungen je Saison
+(2005), 2,1 Pool-Debüts. ▶ Offen: alte Ären (60er/70er) schwach weiterhin ~10 Punkte zu hoch —
+nicht durch den Marktvergleich verursacht; starkes Drittel ab 2000 weiterhin ~6 Punkte zu hoch.
