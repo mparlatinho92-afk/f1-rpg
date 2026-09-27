@@ -36,7 +36,7 @@ for (const k of Object.keys(haupt)) { const [y, d] = k.split('|'); const a = hau
 // ── Spiel ──
 const ctx = getContext();
 const pear = (a, b) => { const ma = a.reduce((x, y) => x + y) / a.length, mb = b.reduce((x, y) => x + y) / b.length; let c = 0, va = 0, vb = 0; for (let i = 0; i < a.length; i++) { c += (a[i] - ma) * (b[i] - mb); va += (a[i] - ma) ** 2; vb += (b[i] - mb) ** 2; } return c / Math.sqrt(va * vb); };
-const typen = {}; let saisonen = 0, stamm = 0, wechsel = 0, ruecktritte = 0; const karriere = [], sortierung = [];
+const bewegung = {}, wegGrund = {}; const typen = {}; let saisonen = 0, stamm = 0, wechsel = 0, ruecktritte = 0; const karriere = [], sortierung = [];
 for (let l = 0; l < LAEUFE; l++) {
     ctx.initFromYear(START);
     for (let s = 0; s < SAISONS; s++) {
@@ -56,9 +56,24 @@ for (let l = 0; l < LAEUFE; l++) {
         if (ctx.processTeamChanges) ctx.processTeamChanges();
         for (const t of gs.seasonTransfers || []) typen[t.type] = (typen[t.type] || 0) + 1;
         for (const d of gs.drivers) if (d.status === 'retired' && !vorRuecktritt.has(d.id)) { ruecktritte++; if (d.firstYear || d.debutYear) karriere.push(gs.currentYear - (d.firstYear || d.debutYear)); }
+        // Team-Drittel nach carSpeed (entspricht dem Startplatz-Drittel in markt-real.js)
+        const drittelVon = teams => { const l = teams.filter(t => t.carSpeed > 0).sort((a, b) => b.carSpeed - a.carSpeed);
+            const n3 = Math.round(l.length / 3), m3 = {}; l.forEach((t, i) => m3[t.id] = i < n3 ? 0 : i >= l.length - n3 ? 2 : 1); return m3; };
+        const drittelVorher = drittelVon(gs.teams);
         ctx.startNewSeason();
+        const drittelNachher = drittelVon(ctx.GAME_STATE.teams);
         for (const [key, alt] of teamVorher) { const d = ctx.GAME_STATE.drivers.find(x => (x.histId || x.name) === key && (!x.status || x.status === 'active'));
-            if (!d) continue; stamm++; if (d.team !== alt) wechsel++; }
+            const td = drittelVorher[alt]; if (td === undefined) continue;
+            const z = bewegung[td] = bewegung[td] || { n: 0, bleibt: 0, oben: 0, gleich: 0, unten: 0, weg: 0 };
+            z.n++;
+            if (!d || !d.team) { z.weg++;
+                const alle = ctx.GAME_STATE.drivers.concat(ctx.GAME_STATE.reservePool || []).filter(x => (x.histId || x.name) === key);
+                const w = alle.find(x => x.status === 'retired') ? (alle.find(x => x.status === 'retired').retirementReason || 'retired') : alle.find(x => x.status === 'deceased') ? 'tot' : d ? 'aktiv ohne Team' : alle.length ? 'Reserve' : 'nicht gefunden';
+                wegGrund[w] = (wegGrund[w] || 0) + 1; continue; }
+            stamm++; if (d.team !== alt) wechsel++;
+            if (d.team === alt) z.bleibt++;
+            else { const nd = drittelNachher[d.team]; if (nd === undefined || nd > td) z.unten++; else if (nd < td) z.oben++; else z.gleich++; }
+        }
         saisonen++;
     }
 }
@@ -69,4 +84,9 @@ const dk = Math.floor(START / 10) * 10;
 console.log('  real (F1DB) ' + [dk, dk + 10].map(d => d + 'er ' + (realQuote[d] ? (realQuote[d][1] / realQuote[d][0] * 100).toFixed(1) + ' %' : '–')).join(' · '));
 console.log('  Rücktritte je Saison: ' + (ruecktritte / saisonen).toFixed(1) + ' · Ø Karriere bis Rücktritt ' + m(karriere).toFixed(1) + ' Jahre');
 console.log('  Sortierung r(Tempo, Auto): ' + m(sortierung).toFixed(3));
+const NN = ['stark', 'mittel', 'schwach'];
+console.log('  Stammfahrer zur nächsten Saison (bleibt / oben / gleich / unten / weg) — Vergleich tests/markt-real.js:');
+for (let t = 0; t < 3; t++) { const z = bewegung[t]; if (!z) continue; const p = k => (z[k] / z.n * 100).toFixed(1) + ' %';
+    console.log('    Team ' + NN[t].padEnd(8) + p('bleibt') + ' / ' + p('oben') + ' / ' + p('gleich') + ' / ' + p('unten') + ' / ' + p('weg') + '  n ' + z.n); }
+console.log('  verschwunden, Grund: ' + Object.entries(wegGrund).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · '));
 console.log('  Wechsel je Saison nach Art: ' + Object.entries(typen).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + (v / saisonen).toFixed(1)).join(' · '));

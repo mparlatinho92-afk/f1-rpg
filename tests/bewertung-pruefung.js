@@ -61,7 +61,8 @@ for (const jahr of JAHRE) for (let l = 0; l < LAEUFE; l++) {
         const ev = ctx.evaluateDriverPerformance(d.id);
         const rep = (d.repHistory || []).find(h => h.year === gs.currentYear);
         if (!ev || !rep) continue;
-        zeilen.push({ jahr, ueber: erw - tats, absolut: 1 - tats, zufr: ev.score, repRoh: rep.raw, rep: d.reputation, rang: teamRang(d.team), teams: teams.length });
+        const autoRang = [...gs.teams].filter(t => t.carSpeed > 0).sort((a, b) => b.carSpeed - a.carSpeed).findIndex(t => t.id === d.team);
+        zeilen.push({ jahr, uSpiel: ev.ueber, autoDrittel: autoRang < 0 ? null : Math.floor(3 * autoRang / gs.teams.filter(t => t.carSpeed > 0).length), ueber: erw - tats, absolut: 1 - tats, zufr: ev.score, repRoh: rep.raw, rep: d.reputation, rang: teamRang(d.team), teams: teams.length });
     }
 }
 
@@ -87,4 +88,11 @@ console.log('\nFahrer GENAU auf Erwartung (|Über| < 0,05) — gleiche Leistung 
 for (const [n, f] of [['Team oben', z => z.rang <= z.teams / 3], ['Team Mitte', z => z.rang > z.teams / 3 && z.rang <= 2 * z.teams / 3], ['Team unten', z => z.rang > 2 * z.teams / 3]]) {
     const l = zeilen.filter(z => Math.abs(z.ueber) < 0.05 && f(z));
     if (l.length) console.log('  ' + n.padEnd(11), 'Zufriedenheit Ø ' + avg(l.map(z => z.zufr)).toFixed(0), '· Ansehen roh Ø ' + avg(l.map(z => z.repRoh)).toFixed(0), '(n ' + l.length + ')');
+}
+
+// Gleiche Probe mit der Erwartung, die die Zufriedenheit selbst nutzt (Auto-Rang, ev.ueber)
+console.log('\nGENAU auf Erwartung nach AUTO-Rang (|ev.ueber| < 0,05) — Maßstab der Zufriedenheit:');
+for (const [n, dr] of [['Auto oben', 0], ['Auto Mitte', 1], ['Auto unten', 2]]) {
+    const l = zeilen.filter(z => z.uSpiel !== null && Math.abs(z.uSpiel) < 0.05 && z.autoDrittel === dr);
+    if (l.length) console.log('  ' + n.padEnd(11), 'Zufriedenheit Ø ' + avg(l.map(z => z.zufr)).toFixed(1), '± ' + (sd(l.map(z => z.zufr)) / Math.sqrt(l.length)).toFixed(1), '(n ' + l.length + ')');
 }

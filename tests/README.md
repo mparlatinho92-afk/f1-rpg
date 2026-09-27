@@ -23,6 +23,7 @@
 | `regen-staerke-real.js` | **Teilweise gegen durchgehend nass**: Ausfälle und Unfälle relativ zu trocken derselben Dekade, Anteil teilweise je Dekade. Quelle von `ERA_RAIN_PARTIAL_SHARE`, `RAIN_DNF_FACTOR`, `RAIN_ACCIDENT_FACTOR` |
 | `talent-real.js` | **Talent im schwachen Auto**, real: Sieg/Podium/Top 10/Punkte je Team-Drittel × Fahrer-Drittel (PACE_RATINGS). Spielseite: Tabelle „Talent je Start" in `vakuum-batch` |
 | `bewertung-pruefung.js` | **Folgen Zufriedenheit und Ansehen der Leistung relativ zum Auto?** Korrelationen, Verteilungsform (Glockenkurve), Probe „genau auf Erwartung" je Team-Drittel |
+| `markt-real.js` | **Reale Stammfahrer-Bewegungen** je Team-Drittel und Dekade: bleibt / nach oben / gleich / nach unten / verschwindet. Bezug für `markt-ab.js` |
 | `markt-ab.js` | **Fahrermarkt** über fortgesetzte Saisons: Teamwechselquote (gegen F1DB), Sortierung Tempo↔Auto, Wechsel nach Art, Rücktritte. `node tests/markt-ab.js 1975 12 3`, A/B mit/ohne `SIMCORE_FROM_INDEX` |
 | `chaos-real.js` | **Wie sehr Rennen die Reihenfolge mischen**: Spearman Start→Ziel je Rennen, Sieg ab P10, Punkte schwaches Drittel — nach Ära, Wetter, roter Flagge |
 | `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |

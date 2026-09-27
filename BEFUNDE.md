@@ -2213,3 +2213,30 @@ gegen den Auto-Rang. Mit WM-Erwartung lag sie bei 0,81.)
 
 Die Wechselquote nähert sich der Realität, Talent wandert zu besseren Autos.
 ⚠ `tests/rep-h2h-mc.js` liest die alten `_repParts`-Felder und ist überholt.
+
+### 27.09.2026 (2): Nachfragen zu Bewertung und Markt
+
+**„Mittelfeld 59?"** Messunterschied, kein Fehler. `bewertung-pruefung.js` bestimmte „genau
+auf Erwartung" über die WM, die Zufriedenheit misst gegen den Auto-Rang. Mit dem eigenen
+Maßstab (6 Läufe): Auto oben 50,6 ± 0,3 · Mitte 50,2 ± 0,3 · unten 49,1 ± 0,7. Wer im
+Mittelfeld nach WM-Maßstab genau trifft, fährt über seinem Auto.
+
+**Stammfahrer-Bewegungen, real gegen Spiel** (`tests/markt-real.js`, `markt-ab.js`;
+bleibt / nach oben / gleich / nach unten / verschwindet aus der WM):
+
+| | stark | schwach |
+|---|---|---|
+| real alle Jahre | 67,6 / – / 10,3 / 13,6 / **8,6** % | 31,5 / 19,8 / 16,0 / 2,5 / 30,2 % |
+| real 2000er / 2010er | 75,0 / – / 9,7 / 11,1 / 4,2 · 84,7 / – / 5,6 / 6,9 / 2,8 | 26,1 / 17,4 / 11,6 / 0 / 44,9 · 43,1 / 6,9 / 13,9 / 0 / 36,1 |
+| Spiel ab 1975 (neu) | 51,6 / – / 6,2 / 12,4 / **29,8** % | 21,8 / 21,3 / 7,6 / 0 / 49,2 % |
+| Spiel ab 2000 (neu) | 62,2 / – / 4,7 / 11,0 / **22,0** % | 40,5 / 14,3 / 5,2 / 0 / 40,1 % |
+| Spiel ab 2000 (alt) | 64,2 / – / 3,5 / 11,5 / 20,8 % | 42,0 / 12,5 / 5,1 / 0 / 40,4 % |
+
+- **Aufstiege aus schwachen und mittleren Teams liegen im realen Rahmen.** Die
+  verdreifachten „poached" sind nur eine Bezeichnung für Aufstiege, die es real so gibt.
+- **Kleine Teams verlieren real ihre Fahrer am häufigsten** (bleibt 32 % gegen 68 %). Im
+  Spiel ist die Richtung da, überlagert von der nächsten Zeile.
+- ▶ **Zu viele Stammfahrer verschwinden aus der WM, schon vor dem Umbau:** starkes Team 22–30 %
+  statt 3–10 %. Grund (Spiel ab 2000, 2 Läufe): 132 von 167 sitzen danach **ohne Cockpit
+  in der Reserve**, 35 zurückgetreten. Nicht durch die neue Bewertung verursacht, der alte
+  Monolith zeigt dieselben Werte.
