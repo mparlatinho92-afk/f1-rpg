@@ -9,7 +9,9 @@
  * Abwerbungen realistisch, und verlieren kleine Teams ihre Fahrer öfter?).
  * ⚠ „nach oben" ist der reale Gegenwert von Abwerbung/Upgrade, F1DB kennt keine Wechsel-Art.
  *
- * Aufruf: node tests/markt-real.js
+ * Aufruf: node tests/markt-real.js [--alter]
+ *   --alter  zusätzlich: Anteil „weg" je Altersband und Team-Drittel, zwei Epochen (Zielgröße
+ *            der Alterskurve in checkCareerEnds — freiwillig UND unfreiwillig zusammen)
  */
 'use strict';
 const fs = require('fs');
@@ -31,6 +33,9 @@ for (const x of rr) { if (indy.has(x.raceId) || /^(DNQ|DNPQ|EX|WD)$/.test(x.posi
     const k = x.year + '|' + x.driverId; (starts[k] = starts[k] || {})[x.constructorId] = (starts[k][x.constructorId] || 0) + 1; }
 const haupt = k => { const h = starts[k]; if (!h) return null; const [t, n] = Object.entries(h).sort((a, b) => b[1] - a[1])[0]; return { t, n }; };
 
+const geb = {}; for (const d of L('f1db-drivers.json')) if (d.dateOfBirth) geb[d.id] = +d.dateOfBirth.slice(0, 4);
+const BAND = a => a <= 27 ? '≤27' : a <= 31 ? '28–31' : a <= 35 ? '32–35' : '36+';
+const ALT = {}, WEGALTER = {};   // epoche|drittel|band → [n, weg]; epoche → Alter der Verschwundenen
 const Z = {};
 for (const k of Object.keys(starts)) {
     const [y, d] = k.split('|'); const jahr = +y; if (jahr >= 2025) continue;
@@ -41,6 +46,7 @@ for (const k of Object.keys(starts)) {
     if (!b) erg = 'weg';
     else if (b.t === a.t) erg = 'bleibt';
     else { const nd = drittel[(jahr + 1) + '|' + b.t]; erg = nd === undefined ? 'unten' : nd < td ? 'oben' : nd > td ? 'unten' : 'gleich'; }
+    if (geb[d]) { const k = (jahr < 1990 ? '1950–1989' : '1990–2024') + '|' + td + '|' + BAND(jahr - geb[d]); const a = ALT[k] = ALT[k] || [0, 0]; a[0]++; if (erg === 'weg') { a[1]++; (WEGALTER[k.split('|')[0]] = WEGALTER[k.split('|')[0]] || []).push(jahr - geb[d]); } }
     for (const gr of [Math.floor(jahr / 10) * 10 + '', 'alle']) {
         const z = Z[gr + '|' + td] = Z[gr + '|' + td] || { n: 0, bleibt: 0, oben: 0, gleich: 0, unten: 0, weg: 0 };
         z.n++; z[erg]++;
@@ -53,4 +59,11 @@ for (const gr of ['alle', '1950', '1960', '1970', '1980', '1990', '2000', '2010'
     console.log('\n' + (gr === 'alle' ? 'alle Jahre' : gr + 'er'));
     for (let t = 0; t < 3; t++) { const z = Z[gr + '|' + t]; if (!z) continue;
         console.log('  Team ' + N[t].padEnd(8), p(z, 'bleibt'), '/', p(z, 'oben'), '/', p(z, 'gleich'), '/', p(z, 'unten'), '/', p(z, 'weg'), '  n ' + z.n); }
+}
+
+if (process.argv.includes('--alter')) {
+    console.log('\nAnteil „weg" je Altersband (Alter im Saisonjahr), stark / mittel / schwach, n in Klammern:');
+    for (const ep of ['1950–1989', '1990–2024']) { console.log('  ' + ep);
+        for (const b of ['≤27', '28–31', '32–35', '36+']) console.log('    ' + b.padEnd(6) + [0, 1, 2].map(t => { const a = ALT[ep + '|' + t + '|' + b] || [0, 0]; return (a[0] ? (a[1] / a[0] * 100).toFixed(0).padStart(3) + ' %' : '   –') + (' (' + a[0] + ')').padEnd(7); }).join(' / '));
+        const w = (WEGALTER[ep] || []).sort((x, y) => x - y); if (w.length) console.log('    Median-Alter der Verschwundenen: ' + w[Math.floor(w.length / 2)] + ' (n ' + w.length + ')'); }
 }

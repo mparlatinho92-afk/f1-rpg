@@ -2321,5 +2321,94 @@ stark / mittel / schwach, vorher → nachher (real):
   1975 18 / 29 / 46 · 1988 16 / 32 / 41 · 2000 13 / 26 / 33 · 2010 11 / 26 / 28 %.
   „dismissed ohne Grund" im starken Drittel 2–5 → 1–3 %. Das starke Drittel liegt damit in
   allen Ären 6–9 Punkte über real; übrig sind `career_end` 2–5 % und Alter 3–5 %.
+- ⚠ **Die Zeile darunter ist durch (5) überholt** — gemessen mit der alten Probe.
 - **Ältere Ären liegen in ALLEN Dritteln zu hoch**, vor allem Entlassung ohne Anschluss
   (`dismissed` → Reserve, schwach 11–16 %). Eigener Befund, noch nicht angegangen.
+
+### 27.09.2026 (5): Die Probe maß anders als die Realität — und die Entlassung war absolut
+
+**Messfalle:** Die Probe in (3)/(4) drittelte nach `carSpeed` und zählte „zu Saisonbeginn ohne
+Team" als verschwunden. `markt-real.js` drittelt nach **mittlerem Startplatz** (Teams mit ≥ 8
+Startplätzen) und zählt als verschwunden, wer im Folgejahr **keinen einzigen Start** hat.
+Neues Werkzeug mit exakt diesen Definitionen: `tests/markt-abgang.js`. Gleicher Spielstand
+(v0.9.18.21), nur richtig gemessen — 8 Saisons × 4, stark / mittel / schwach:
+
+| Start | alte Probe | richtig gemessen | real |
+|---|---|---|---|
+| 1975 | 18 / 29 / 46 % | 11 / 18 / 42 % | 70er 9 / 13 / 21 |
+| 1988 | 16 / 32 / 41 % | 12 / 23 / 44 % | 80er 10 / 16 / 25 · 90er 11 / 21 / 42 |
+| 2000 | 13 / 26 / 33 % | 11 / 24 / 34 % | 4 / 16 / 45 |
+| 2010 | 11 / 26 / 28 % | 10 / 25 / 35 % | 3 / 23 / 36 |
+
+Das starke Drittel der alten Ären stimmt also. Übrig: schwache Teams der 70er/80er doppelt,
+starkes Drittel ab 2000 rund 7 Punkte zu hoch.
+
+**Ursache im schwachen Drittel der 70er/80er:** die Entlassung wegen katastrophaler Leistung in
+`checkCareerEnds` hing am ABSOLUTEN Saisonwert (`_computeDriverSeasonScore < 0,10`), in dem
+jeder Ausfall negativ zählt. In Ausfall-Ären rutschte der Hinterbänkler, der genau sein Auto
+fuhr, darunter: `entlassen:dismissed` im schwachen Drittel 1975 16 %, 1988 12 %, 2000 3 %,
+2010 0 % — die Ära-Abhängigkeit kam allein aus der Ausfallquote.
+
+**Umgestellt auf relativ zum Auto** (wie der Kollaps im Alterszweig: nicht geschützt und
+Zufriedenheit < 25), 8 Saisons × 4:
+
+| Start | vorher | nachher | real |
+|---|---|---|---|
+| 1975 | 11 / 18 / 42 % | 10 / 21 / **29** % | 9 / 13 / 21 |
+| 1988 | 12 / 23 / 44 % | 12 / 23 / **35** % | 10 / 16 / 25 · 11 / 21 / 42 |
+| 2000 | 11 / 24 / 34 % | 13 / 25 / 32 % | 4 / 16 / 45 |
+| 2010 | 10 / 25 / 35 % | 8 / 20 / 38 % | 3 / 23 / 36 |
+
+- Die Ära-Unterschiede entstehen jetzt von selbst, ohne Tabelle: vor 1990 verlassen weniger
+  Fahrer die schwachen Teams als danach, wie real (21–25 gegen 36–45 %).
+- ▶ Offen: starkes Drittel ab 2000 (8–13 statt 3–4 %; `career_end` + Alter + nicht verlängert je
+  1–4 %), schwaches Drittel 2000 eher zu niedrig. Schwache Teams BEHALTEN ihre Fahrer zu oft
+  (bleibt 48–55 % gegen real 24–43 %) — die Verschwundenen fehlen dort als „nach oben".
+- Rauschen: ein Drittel schwankt zwischen zwei Läufen mit 4 × 8 Saisons um ±3–5 Punkte.
+
+### 27.09.2026 (6): Das Rücktrittsalter ist der Median ALLER Abschiede — auch der unfreiwilligen
+
+`ERA_RETIREMENT_AGE` ist das mittlere Alter in der letzten F1-Saison aller Fahrer (2015: 26,6).
+Diesen Wert prägen junge Hinterbänkler, die ihr Cockpit verlieren. `checkCareerEnds` ließ die
+Alterskurve aber 6 Jahre DAVOR beginnen (2015: mit 20,6) und wandte sie als freiwilligen
+Rücktritt auf jeden an — zusätzlich zu den unfreiwilligen Abgängen, die der Markt ohnehin
+erzeugt. `_noRenew` in `processTeamChanges` setzt am selben Median an.
+
+**Real ist der freiwillige Rücktritt eine Frage des Alters mit Knick bei ~35**
+(`node tests/markt-real.js --alter`, „weg" je Altersband, stark / mittel / schwach):
+
+| Alter | 1950–1989 | 1990–2024 |
+|---|---|---|
+| ≤27 | 4 / 4 / 15 % | 1 / 14 / **36** % |
+| 28–31 | 10 / 13 / 17 % | 5 / 17 / 43 % |
+| 32–35 | 12 / 12 / 26 % | **4** / 23 / 34 % |
+| 36+ | 18 / 18 / 24 % | 30 / 32 / 64 % |
+
+Aus starken Teams geht ab 1990 unter 36 kaum jemand. Die jungen Abgänge der schwachen Teams
+sind unfreiwillig (Paydriver-Wechsel).
+
+**Spiel ab 1990 (Starts 1995/2005/2012 gepoolt, `markt-abgang.js`, 8 × 4):** stark 28–31 12 %,
+32–35 15 % (real 5 / 4); schwach ≤27 21 % (real 36), 32–35 58 % (real 34). Das Spiel lässt die
+Alten gehen, wo real die Jungen gehen.
+
+**Test Kurve ab Median statt 6 Jahre davor (`ALTERSKURVE_VORLAUF` 6 → 0):** Alters-Rücktritt im
+starken Drittel 3–5 → 0,4–2,5 %, starkes Drittel gesamt 1995 9 → 7, 2005 10 → 10, 2012 15 →
+13 %. Übrig je 1–4 %: `career_end`, „aktiv ohne Team" (schwach bewertet im Topteam, kein
+Platz für den Abstieg) und `_noRenew` (Nicht-Verlängerung ab dem Median).
+
+**Übernommen: `ALTERSKURVE_VORLAUF` = 0.** Gegenproben mit dem ganzen Stand (Cockpit-Bindung,
+relative Entlassung, Kurve ab Median):
+- **Median-Alter der verschwundenen Stammfahrer** (neu in `markt-abgang.js` und `markt-real.js
+  --alter`): real 33 (1950–89) / 29 (ab 1990); Spiel 1975 → 33, 1995 → 32, 2005 → 30, 2012 → 29.
+  Das Problem, wegen dem v0.9.15.0 den Vorlauf eingeführt hatte (2010er 35 statt 28), kommt
+  NICHT zurück — die jungen Abgänge entstehen jetzt über den Markt.
+- **Karriere-Kennzahlen generierter Fahrer** (`karriere-peak-sim.js 1980 110 2010 --laeufe=2`):
+  Sieg in der letzten Saison 22,3 → 12,0 % (real 8,4), letzte Saison 41 → 31,5 % des Peaks
+  (real 22), Alter am Ende 31,2 → 32,7 (real 35,3), Saisons im Feld 6,2 → 7,2 (real 4–7),
+  Debüt 88,1 % des Peaks (real 88,5). Alles Richtung Realität, nichts kippt.
+- **Stammfahrer „weg", stark / mittel / schwach** (8 × 4): 1975 11 / 14 / 31 · 1995 12 / 21 / 32 ·
+  2005 12 / 24 / 34 · 2012 11 / 23 / 26 %. ⚠ Das starke Drittel schwankt zwischen zwei Läufen
+  um bis zu 5 Punkte (1995: 6,7 gegen 11,8 %).
+- ▶ Offen: „aktiv ohne Team" im starken Drittel (schwach bewertet im Topteam, kein Platz für
+  den Abstieg → frei, findet nichts; real steigen diese Fahrer ab) und schwache Teams, die
+  ihre Fahrer zu oft behalten (bleibt 43–59 % gegen real 24–43 %).
