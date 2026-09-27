@@ -87,12 +87,9 @@ for (let lauf = 0; lauf < LAEUFE; lauf++) {
         if (year >= endYear) break;
 
         // ── Saison-Uebergang, identisch zu monte-carlo-multi.js ──────────
-        if (typeof ctx.updateDriverCareerScores === 'function') ctx.updateDriverCareerScores();
-        if (typeof ctx.processDriverPaceDevelopment === 'function') ctx.processDriverPaceDevelopment();
-        if (typeof ctx.checkCareerEnds === 'function') ctx.checkCareerEnds();
-        if (typeof ctx.initReservePool === 'function') ctx.initReservePool(year + 1);
-        if (typeof ctx._injectNewSeasonDrivers === 'function') ctx._injectNewSeasonDrivers(year + 1);
-        if (typeof ctx.processTeamChanges === 'function') ctx.processTeamChanges();
+        // Saisonwechsel wie im Spiel (27.09.2026): die Hand-Kette lief doppelt, startNewSeason ruft
+        // processSeasonEndEvents selbst noch einmal. Siehe tests/README.md „Saisonkette".
+        ctx.processSeasonEndEvents();
 
         // Ruecktritte erst HIER abgreifen, nach processTeamChanges: checkCareerEnds
         // traegt nur Alters- und career_end-Abgaenge ein, die Entlassungen kommen

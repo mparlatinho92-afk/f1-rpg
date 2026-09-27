@@ -14,7 +14,7 @@
  *   - Phase 4c: Chassis-Würfel für nicht-Elo-Teams
  *   - Phase 4d: Era-Reset (1961, 1966, 1968 ...)
  *   - Phase 4e: Anti-Snowball / Dynasty-Bremse
- *   - processTeamChanges() + checkCareerEnds() zwischen Saisons
+ *   - processSeasonEndEvents() + startNewSeason() zwischen Saisons (wie im Spiel)
  */
 'use strict';
 const path = require('path');
@@ -200,22 +200,10 @@ for (let sim = 0; sim < N; sim++) {
             if (year >= endYear) break;
 
             // ── Saison-Übergang ────────────────────────────────────────────
-            // 1. Karriere-Scores + relScore aktualisieren (benötigt aiSimulation=true)
-            if (typeof ctx.updateDriverCareerScores === 'function') ctx.updateDriverCareerScores();
-            // 2. Pace-Entwicklung für generierte Fahrer
-            if (typeof ctx.processDriverPaceDevelopment === 'function') ctx.processDriverPaceDevelopment();
-            // 3. Karriere-Enden
-            if (typeof ctx.checkCareerEnds === 'function') ctx.checkCareerEnds();
-            // 3b. Neue Debüt-Fahrer für nächste Saison in Pool laden (ohne Modal)
-            //     initReservePool lädt SD[year±1], überspringt bereits vorhandene Fahrer
-            if (typeof ctx.initReservePool === 'function') ctx.initReservePool(year + 1);
-            // 3c. Hist. Fahrer des nächsten Jahrgangs JETZT injizieren (als Free Agents),
-            //     damit processTeamChanges sie sofort verpflichten kann.
-            //     FIX: startNewSeason() ruft _injectNewSeasonDrivers nochmal auf – idempotent,
-            //     bereits vorhandene Fahrer werden übersprungen.
-            if (typeof ctx._injectNewSeasonDrivers === 'function') ctx._injectNewSeasonDrivers(year + 1);
-            // 4. Teamwechsel (jetzt mit neu injizierten Fahrern verfügbar)
-            if (typeof ctx.processTeamChanges === 'function') ctx.processTeamChanges();
+            // 1.-4. Bewertung, Ansehen, Pace-Entwicklung, Karriereenden, Team-Austritte, neue Fahrer,
+            //      Teamwechsel: wie im Spiel über processSeasonEndEvents. Die Hand-Kette lief doppelt,
+            //      startNewSeason ruft die Kette selbst noch einmal (27.09.2026, tests/README.md „Saisonkette").
+            ctx.processSeasonEndEvents();
 
             // Era-Reset-Prüfung: carSpeed VOR startNewSeason speichern
             if (csBeforeReset && eraResetChecks[year + 1]) {

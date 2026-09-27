@@ -236,12 +236,9 @@ for (let s = 0; s < SIMS; s++) {
             // Saison-Uebergang: EXAKT die Kette aus monte-carlo-multi.js.
             // Nicht abkuerzen — sie ist dort gegen die Phase-4-Pruefungen verifiziert.
             const y = ctx.GAME_STATE.currentYear;
-            if (typeof ctx.updateDriverCareerScores === 'function') ctx.updateDriverCareerScores();
-            if (typeof ctx.processDriverPaceDevelopment === 'function') ctx.processDriverPaceDevelopment();
-            if (typeof ctx.checkCareerEnds === 'function') ctx.checkCareerEnds();
-            if (typeof ctx.initReservePool === 'function') ctx.initReservePool(y + 1);
-            if (typeof ctx._injectNewSeasonDrivers === 'function') ctx._injectNewSeasonDrivers(y + 1);
-            if (typeof ctx.processTeamChanges === 'function') ctx.processTeamChanges();
+            // Saisonwechsel wie im Spiel (27.09.2026): die Hand-Kette lief doppelt, startNewSeason ruft
+            // processSeasonEndEvents selbst noch einmal. Siehe tests/README.md „Saisonkette".
+            ctx.processSeasonEndEvents();
             ctx.startNewSeason();
         }
         okSims++;

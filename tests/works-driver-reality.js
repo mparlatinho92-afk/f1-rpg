@@ -123,12 +123,9 @@ if (process.argv.includes('--spiel')) {
             ctx.simulateTraining(r); ctx.simulateQualifying(r, false);
             ctx.applyRaceResults(ctx.simulateRace(r, false));
         }
-        ctx.updateDriverCareerScores && ctx.updateDriverCareerScores();
-        ctx.processDriverPaceDevelopment && ctx.processDriverPaceDevelopment();
-        ctx.checkCareerEnds && ctx.checkCareerEnds();
-        ctx.initReservePool && ctx.initReservePool(jahr + 1);
-        ctx._injectNewSeasonDrivers && ctx._injectNewSeasonDrivers(jahr + 1);
-        ctx.processTeamChanges && ctx.processTeamChanges();
+        // Saisonwechsel wie im Spiel (27.09.2026): die Hand-Kette lief doppelt, startNewSeason ruft
+        // processSeasonEndEvents selbst noch einmal. Siehe tests/README.md „Saisonkette".
+        ctx.processSeasonEndEvents();
         ctx.startNewSeason();
         const h = (ctx.GAME_STATE.history || []).find(x => x.year === jahr);
         if (!h) continue;

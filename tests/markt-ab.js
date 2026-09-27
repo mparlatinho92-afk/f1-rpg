@@ -50,10 +50,11 @@ for (let l = 0; l < LAEUFE; l++) {
         const tempo = st.map(d => d.currentPace || d.pace || 70), auto = st.map(d => ((gs.teams.find(t => t.id === d.team) || {}).carSpeed) || 60);
         if (st.length > 5) sortierung.push(pear(tempo, auto));
         const vorRuecktritt = new Set(gs.drivers.filter(d => d.status === 'retired').map(d => d.id));
-        if (ctx.checkCareerEnds) ctx.checkCareerEnds();
-        if (ctx.initReservePool) ctx.initReservePool(gs.currentYear + 1);
-        if (ctx._injectNewSeasonDrivers) ctx._injectNewSeasonDrivers(gs.currentYear + 1);
-        if (ctx.processTeamChanges) ctx.processTeamChanges();
+        // ⚠ Saisonwechsel wie im Spiel: processSeasonEndEvents (Bewertung, Ansehen, Karriereende,
+        //   Team-Austritte, neue Fahrer, Teamwechsel) und DANN startNewSeason. Früher standen hier
+        //   checkCareerEnds + processTeamChanges von Hand — startNewSeason ruft
+        //   processSeasonEndEvents aber selbst noch einmal auf, beides lief DOPPELT (27.09.2026).
+        ctx.processSeasonEndEvents();
         for (const t of gs.seasonTransfers || []) typen[t.type] = (typen[t.type] || 0) + 1;
         for (const d of gs.drivers) if (d.status === 'retired' && !vorRuecktritt.has(d.id)) { ruecktritte++; if (d.firstYear || d.debutYear) karriere.push(gs.currentYear - (d.firstYear || d.debutYear)); }
         // Team-Drittel nach carSpeed (entspricht dem Startplatz-Drittel in markt-real.js)

@@ -2240,3 +2240,86 @@ bleibt / nach oben / gleich / nach unten / verschwindet aus der WM):
   statt 3–10 %. Grund (Spiel ab 2000, 2 Läufe): 132 von 167 sitzen danach **ohne Cockpit
   in der Reserve**, 35 zurückgetreten. Nicht durch die neue Bewertung verursacht, der alte
   Monolith zeigt dieselben Werte.
+  ⚠ **Die Aufteilung „132 Reserve / 35 Rücktritt" ist WIDERRUFEN** — gemessen mit doppelter
+  Saisonkette, siehe (3).
+
+### 27.09.2026 (3): Die doppelte Saisonkette — und wer wirklich verschwindet
+
+**Messfalle in 24 Werkzeugen:** sie riefen `checkCareerEnds` + `processTeamChanges` von Hand
+und danach `startNewSeason`, das `processSeasonEndEvents` selbst noch einmal aufruft. Je
+Saisonwechsel liefen Karriereende und Teamwechsel also ZWEIMAL (gezählt: je 2 Aufrufe).
+Richtig ist `processSeasonEndEvents()` und dann `startNewSeason()` — seit 27.09.2026 in allen 23 Werkzeugen umgestellt.
+Betroffen sind alle Werkzeuge, die mehrere Saisons am Stück rechnen.
+
+**Richtige Kette, 8 Saisons × 3 Läufe, Anteil der Stammfahrer je Auto-Drittel (stark / mittel /
+schwach), die zur nächsten Saison aus der WM verschwinden:**
+
+| Start | Spiel gesamt | davon `career_end` | davon Alter | real (Dekade) |
+|---|---|---|---|---|
+| 1960 | 23 / 27 / 51 % | 8 / 6 / 11 | 6 / 4 / 9 | 9 / 5 / 14 |
+| 1975 | 25 / 34 / 40 % | 12 / 13 / 12 | 5 / 6 / 2 | 9 / 13 / 21 |
+| 1988 | 23 / 32 / 42 % | 10 / 11 / 14 | 7 / 2 / 6 | 10 / 16 / 25 · 11 / 21 / 42 |
+| 2000 | 16 / 29 / 35 % | 8 / 14 / 17 | 4 / 5 / 3 | 4 / 16 / 45 |
+| 2010 | 17 / 25 / 29 % | 8 / 15 / 15 | 7 / 6 / 1 | 3 / 23 / 36 |
+
+- **Der größte Posten ist der RÜCKTRITT, nicht der Cockpitverlust.** `career_end` (reales
+  Karriereende aus F1DB) plus Alters-Rücktritt machen im starken Drittel 12–17 Punkte aus —
+  real verschwinden dort insgesamt 3–10 %.
+- ▶ **WIDERLEGT: „die neue Bewertung (.20) schwächt die Erfolgsdämpfung von `career_end`."**
+  Alter Monolith (.19), gleiche Kette ab 2000: `career_end` 11,7 / 12,4 / 13,1 % — also eher
+  mehr als heute (8,1 / 13,8 / 17,0).
+- **Mechanismus:** `career_end` greift nach dem Abstand zum realen letzten Jahr, egal wo der
+  Fahrer im Spiel sitzt. Ab 2000: im starken Drittel sitzen 14 Fahrer-Saisons genau im realen
+  Abschiedsjahr und 13 danach — davon gehen 13. Real endeten Karrieren meist im schwachen
+  Auto; im Spiel sitzt derselbe Fahrer oft noch im guten.
+- Die schwachen Teams liegen ab 2000 dagegen UNTER der Realität (29–35 statt 36–45 %).
+- Werkzeug: Probe im Stil von `markt-ab.js` mit Aufschlüsselung nach `retirementReason`.
+
+**Hat die doppelte Kette die Karriere-Kalibrierung (.18.5) verfälscht? Kaum.**
+`karriere-peak-sim.js 1980 110 2010 --laeufe=2`, gleiche `index.html`, alte gegen neue Kette,
+generierte Fahrer (real in Klammern):
+
+| | doppelt | einfach | real |
+|---|---|---|---|
+| Peak in der letzten Saison | 12,9 % | 12,3 % | 11,3 % |
+| Sieg in der letzten Saison | 22,4 % | 22,3 % | **8,4 %** |
+| letzte Saison in % des Peaks | 43 % | 41 % | 22 % |
+| Alter am Ende | 30,3 | 31,2 | 35,3 |
+| Debüt in % des Peaks | 83,4 % | 87,0 % | 88,5 % |
+| Zuwachs Debüt → Peak | 14,3 | 10,8 | 10,4 |
+
+Die Pace-Kurve trifft mit richtiger Kette sogar besser (die doppelte Kette rechnete die
+Entwicklung nicht doppelt, verschob aber die Reihenfolge). ▶ **Offen und zum Thema passend:
+generierte Fahrer hören auf dem Höhepunkt auf** (Sieg zuletzt 22 statt 8 %, Ende mit 31 statt
+35). 125 von 220 gehen über den Alters-Rücktritt, dessen Formdämpfung an `seasonScore` ≥ 75/55
+hängt. Seit .20 liegt die Zufriedenheit relativ zum Auto um 50: der Sieger im Spitzenauto
+erfüllt nur die Erwartung und wird NICHT mehr gedämpft.
+
+### 27.09.2026 (4): Cockpit-Bindung — Rücktritt nach Auto-Rang
+
+`cockpitBindung(driver)`: bestes Auto ×0,2, schlechtestes ×1, stufenlos. Als weiterer Dämpfer
+im `Math.min` von `career_end` und Alters-Rücktritt (nicht multipliziert). Probe 8 Saisons × 3,
+stark / mittel / schwach, vorher → nachher (real):
+
+| Start | `career_end` stark | gesamt | real |
+|---|---|---|---|
+| 1975 | 12,0 → 4,9 | 25 / 34 / 40 → 22 / 26 / 47 | 9 / 13 / 21 |
+| 1988 | 9,6 → 3,6 | 23 / 32 / 42 → 17 / 37 / 45 | 10 / 16 / 25 |
+| 2000 | 8,1 → 2,9 | 16 / 29 / 35 → 12 / 19 / 39 | 4 / 16 / 45 |
+| 2010 | 7,8 → 3,4 | 17 / 25 / 29 → 11 / 25 / 32 | 3 / 23 / 36 |
+
+- Ab 2000 treffen Mittelfeld und schwache Teams jetzt die Realität. Das starke Drittel liegt
+  weiter 7–8 Punkte darüber.
+- **NEGATIVERGEBNIS: 0,1 statt 0,2 bringt nichts Messbares** (8 Saisons × 4: stark 18 / 13 / 9 /
+  12 %). Zwischen zwei Läufen schwankt ein Drittel um bis zu 10 Punkte (2000 mittel 18,5 gegen
+  28,8) — die Probe braucht ≥ 4 Läufe, bevor man Zehntel vergleicht.
+- **Der Rest im starken Drittel ist ein DRITTER Alters-Weg:** `processTeamChanges` verlängert ab
+  dem Ära-Rücktrittsalter nicht (`_noRenew`, bis 30 %), der Fahrer verlässt die F1
+  (`executeTransfer(…, null, 'contract_expired')`, in der Probe „dismissed ohne Grund", 2–5 %).
+  Gedämpft nur nach Sieg/Podium, nicht nach Auto.
+- **Dritter Weg gedämpft** (`_noRenew` × min(Sieg/Podium, Cockpit-Bindung)), 8 Saisons × 4:
+  1975 18 / 29 / 46 · 1988 16 / 32 / 41 · 2000 13 / 26 / 33 · 2010 11 / 26 / 28 %.
+  „dismissed ohne Grund" im starken Drittel 2–5 → 1–3 %. Das starke Drittel liegt damit in
+  allen Ären 6–9 Punkte über real; übrig sind `career_end` 2–5 % und Alter 3–5 %.
+- **Ältere Ären liegen in ALLEN Dritteln zu hoch**, vor allem Entlassung ohne Anschluss
+  (`dismissed` → Reserve, schwach 11–16 %). Eigener Befund, noch nicht angegangen.

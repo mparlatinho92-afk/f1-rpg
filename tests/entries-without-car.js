@@ -67,12 +67,9 @@ for (let k = 0; k < SEASONS; k++) {
     }
     kaderOhne = (ctx.GAME_STATE.drivers || []).filter(d => !d.team && (!d.status || d.status === 'active')).length;
 
-    if (typeof ctx.updateDriverCareerScores === 'function') ctx.updateDriverCareerScores();
-    if (typeof ctx.processDriverPaceDevelopment === 'function') ctx.processDriverPaceDevelopment();
-    if (typeof ctx.checkCareerEnds === 'function') ctx.checkCareerEnds();
-    if (typeof ctx.initReservePool === 'function') ctx.initReservePool(jahr + 1);
-    if (typeof ctx._injectNewSeasonDrivers === 'function') ctx._injectNewSeasonDrivers(jahr + 1);
-    if (typeof ctx.processTeamChanges === 'function') ctx.processTeamChanges();
+    // Saisonwechsel wie im Spiel (27.09.2026): die Hand-Kette lief doppelt, startNewSeason ruft
+    // processSeasonEndEvents selbst noch einmal. Siehe tests/README.md „Saisonkette".
+    ctx.processSeasonEndEvents();
     ctx.startNewSeason();
 
     // ZWEITE PRUEFUNG: ist der Rennstall auch NACH dem Archivieren noch da? Bis

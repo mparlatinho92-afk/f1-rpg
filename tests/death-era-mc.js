@@ -62,10 +62,9 @@ for (let sim = 0; sim < N; sim++) {
                 if (tally[dec] && cat === 'f1WM' && d.fatalSession === 'race') tally[dec].f1WMRennen++;
             }
             if (year >= END) break;
-            if (ctx.checkCareerEnds)         ctx.checkCareerEnds();
-            if (ctx.initReservePool)         ctx.initReservePool(year + 1);
-            if (ctx._injectNewSeasonDrivers) ctx._injectNewSeasonDrivers(year + 1);
-            if (ctx.processTeamChanges)      ctx.processTeamChanges();
+            // Saisonwechsel wie im Spiel (27.09.2026): die Hand-Kette lief doppelt, startNewSeason ruft
+            // processSeasonEndEvents selbst noch einmal. Siehe tests/README.md „Saisonkette".
+            ctx.processSeasonEndEvents();
             ctx.startNewSeason();
         }
         for (const dec of DECADES) for (const c of CATS) data[dec][c].push(tally[dec][c]);

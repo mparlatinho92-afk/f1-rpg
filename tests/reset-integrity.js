@@ -41,10 +41,7 @@ const SCHRITTE = [
         for(let k=0;k<3;k++){
             const n=GAME_STATE.races.length;
             for(let i=0;i<n;i++){ simulateTraining(i); simulateQualifying(i,false); applyRaceResults(simulateRace(i,false)); }
-            updateDriverCareerScores&&updateDriverCareerScores();
-            checkCareerEnds&&checkCareerEnds();
-            initReservePool(GAME_STATE.currentYear+1);
-            processTeamChanges();
+            processSeasonEndEvents();
             await startNewSeason();
         }
         await new Promise(r=>setTimeout(r,1500));

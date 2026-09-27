@@ -96,11 +96,13 @@ for (let sim = 0; sim < N; sim++) {
                 .map(d => ({ id: d.id, fromTier: tierBefore[d.team] }));
 
             // Saison-Übergang
-            if (typeof ctx.processDriverPaceDevelopment === 'function') ctx.processDriverPaceDevelopment();
-            if (typeof ctx.checkCareerEnds === 'function') ctx.checkCareerEnds();
-            if (typeof ctx.initReservePool === 'function') ctx.initReservePool(year + 1);
-            if (typeof ctx._injectNewSeasonDrivers === 'function') ctx._injectNewSeasonDrivers(year + 1);
-            if (typeof ctx.processTeamChanges === 'function') ctx.processTeamChanges();
+            // Rest der Kette wie im Spiel über processSeasonEndEvents. Bewertung und Ansehen liefen oben
+            // schon (für die Stichprobe) und werden dafür kurz übersprungen — die Ansehen-EMA ist nicht
+            // gegen Doppelaufrufe geschützt. Früher lief die Hand-Kette doppelt (27.09.2026).
+            const _schonGelaufen = ['updateDriverCareerScores', 'updateDriverReputations'].map(k => [k, ctx[k]]);
+            _schonGelaufen.forEach(([k]) => { ctx[k] = () => {}; });
+            ctx.processSeasonEndEvents();
+            _schonGelaufen.forEach(([k, fn]) => { ctx[k] = fn; });
             ctx.startNewSeason();
 
             const tierAfter = teamTierMap(ctx);
