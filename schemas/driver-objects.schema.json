@@ -20,6 +20,12 @@
       "experience":    { "type": "integer", "range": "0–100" }
     },
 
+    "$bewertung": {
+      "reputation":  { "type": "integer", "range": "0–100", "description": "Ansehen = Marktwert (Sicht der Öffentlichkeit). Seit v0.9.18.20: Leistung relativ zur WM-Erwartung + ein Drittel Erfolge, EMA 35 %; Weltmeister- und Team-Bremse gegen Verluste (updateDriverReputations)" },
+      "titelJahre":  { "type": "integer[]", "description": "Im Spiel errungene Titel (Weltmeister-Bremse). Reale Titel liest letztesTitelJahr aus F1DB_STANDINGS. Seit v0.9.18.20" },
+      "seasonScore": { "type": "integer", "range": "0–100", "description": "Zufriedenheit (Sicht des Teams): Leistung relativ zum Auto-Rang, Glockenkurve um 50. Seit v0.9.18.20" }
+    },
+
     "$karriere": {
       "starts":        { "type": "integer",     "description": "Gesamte F1-Starts" },
       "birthYear":     { "type": "integer|null" },
@@ -50,6 +56,7 @@
     "name":        { "type": "string",  "example": "Ferrari" },
     "color":       { "type": "string",  "description": "Hex-Farbe für UI" },
     "nation":      { "type": "string",  "description": "IOC-Code" },
+    "niveauHist":  { "type": "array",   "itemShape": "{ year, anteil }", "description": "WM-Anteil (0 = vorn, 1 = hinten) der letzten bis zu 5 Saisons — Grundlage der Team-Bremse im Ansehen (teamNiveau, gewichtet 4/3/2/1/1). Seit v0.9.18.20" },
     "speed":       { "type": "integer", "range": "0–100", "description": "Aktuelles Team-Pace-Level" },
     "rain":        { "type": "integer", "range": "0–100" },
     "consistency": { "type": "integer", "range": "0–100" },

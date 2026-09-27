@@ -15,6 +15,10 @@
  *   - Schatten-Reputation "ohne H2H" wird parallel per identischer EMA geführt.
  *   - Report: H2H-Abdeckung, Termgrößen, und wie oft H2H die Gameplay-Schwellen
  *     (rep≥75 Champion-Floor / rep<35 leicht ersetzbar) kippt.
+ * ⚠ ÜBERHOLT seit v0.9.18.20: updateDriverReputations wurde umgebaut (Leistung relativ zum
+ *   Auto, Glockenkurve). _repParts hat jetzt die Felder leistung/titleTerm/winTerm/podiumTerm/
+ *   teamBremse/alpha/u/h2h — dieses Skript liest noch die alten (h2hTerm, overperfTerm).
+ *   Nachfolger: tests/bewertung-pruefung.js.
  */
 'use strict';
 process.env.SIMCORE_FROM_INDEX = '1';   // gegen index.html testen, nicht gegen alten Monolith

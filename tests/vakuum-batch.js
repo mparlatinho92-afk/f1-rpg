@@ -68,6 +68,7 @@ console.log('  ' + '─'.repeat(86));
 
 const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [], spSelbst = [], autoBias = [];
 // Chaos je Rennen, ueber alle Jahre gepoolt (Zaehler aus vakuum-saison.js)
+const talent = {};   // 'Auto-Drittel|Fahrer-Drittel' → [Starts, Siege, Podien, Top10, Punkte, Ausfaelle]
 const CHAOS_ARTEN = ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot'];   // 'rot' überlappt mit den Wetter-Gruppen
 const chaos = Object.fromEntries(CHAOS_ARTEN.map(a => [a, { n: 0, sp03: 0, p10: 0, schwach: 0, spsum: 0, ss: 0, sw: 0 }]));
 for (const jahr of JAHRE) {
@@ -99,6 +100,11 @@ for (const jahr of JAHRE) {
     for (const art of CHAOS_ARTEN) {
         const m = out.match(new RegExp('Chaos ' + art + String.raw`: n (\d+) sp03 (\d+) p10 (\d+) schwach (\d+) spsum ([-\d.]+)(?: siegstark (\d+) siegschwach (\d+))?`));
         if (m) { const c = chaos[art]; c.n += +m[1]; c.sp03 += +m[2]; c.p10 += +m[3]; c.schwach += +m[4]; c.spsum += +m[5]; c.ss += +(m[6] || 0); c.sw += +(m[7] || 0); }
+    }
+    // Talent im schwachen Auto: "Talent t|f: Starts Siege Podien Top10 Punkte Ausfaelle"
+    for (const m of out.matchAll(/Talent (\d)\|(\d): (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)/g)) {
+        const z = talent[m[1] + '|' + m[2]] = talent[m[1] + '|' + m[2]] || [0, 0, 0, 0, 0, 0];
+        for (let i = 0; i < 6; i++) z[i] += Number(m[3 + i]);
     }
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
@@ -142,6 +148,16 @@ if (chaosGes) {
         console.log('  Chaos ' + art.padEnd(11) + '              : Ø Spearman Start→Ziel ' + (c.spsum / c.n).toFixed(3)
             + ' · < 0,3 ' + (c.sp03 / c.n * 100).toFixed(1) + ' % · Sieg ab P10 ' + (c.p10 / c.n * 100).toFixed(1) + ' % · schwaches Drittel punktet ' + (c.schwach / c.n * 100).toFixed(1) + ' %'
             + ' · Sieger stark/mittel/schwach ' + (c.ss / c.n * 100).toFixed(1) + '/' + ((c.n - c.ss - c.sw) / c.n * 100).toFixed(1) + '/' + (c.sw / c.n * 100).toFixed(1) + ' %'); }
+}
+if (Object.keys(talent).length) {
+    // Vergleich: tests/talent-real.js (gleiche Drittel-Logik)
+    const N = ['stark', 'mittel', 'schwach'];
+    console.log('  Talent je Start (Sieg / Podium / Top 10 / Punkte, Ausfall) — Auto × Fahrer:');
+    for (let t = 0; t < 3; t++) for (let f = 0; f < 3; f++) {
+        const z = talent[t + '|' + f]; if (!z || !z[0]) continue;
+        const p = i => (z[i] / z[0] * 100).toFixed(1) + ' %';
+        console.log('    Auto ' + N[t].padEnd(8) + 'Fahrer ' + N[f].padEnd(8) + p(1) + ' / ' + p(2) + ' / ' + p(3) + ' / ' + p(4) + '  (' + p(5) + ')  n ' + z[0]);
+    }
 }
 console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
     + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));

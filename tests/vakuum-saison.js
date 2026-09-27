@@ -122,6 +122,8 @@ function einLauf(ctx, real, punkteFn, gefahren) {
     // teamStandings: dort gelten je nach Aera Konstrukteursregeln (nur bestes Auto).
     const teamZuKonstr = new Map(), konstrPunkte = {};
     const rennChaos = [];   // je Rennen: nass, Startplatz→Ziel, Sieger-Startplatz, punktende Konstrukteure
+    const talentStarts = [];   // je Start: realer Konstrukteur, realer Fahrer, Zielplatz (null = Ausfall), Punkte
+    const spielZuReal = new Map();
 
     for (let i = 0; i < rennen.length; i++) {
         const r = rennen[i];
@@ -140,6 +142,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
             if (!d || !t) continue;
             d.team = t.id;                 // reale Zuordnung erzwingen
             teamZuKonstr.set(t.id, s.constructorId);
+            spielZuReal.set(d.id, s.driverId);
             if (!d.status || d.status !== 'active') d.status = 'active';
             // ⚠ MELDE-FILTER AUSHEBELN (18.09.2026). Wer real in der
             // Startaufstellung stand, hat nachweislich teilgenommen — der
@@ -191,6 +194,10 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         }
 
         const erg = ctx.simulateRace(i, nass);
+        for (const e of (erg ? erg.results || [] : [])) {
+            const k = teamZuKonstr.get(e.team), f = spielZuReal.get(e.driver);
+            if (k && f) talentStarts.push({ k, f, pos: e.dnf ? null : e.position, punkte: e.points || 0 });
+        }
         if (erg) {
             const startPl = new Map(eintraege.map(e => [e.driver, e.position]));
             const imZiel = (erg.results || []).filter(e => !e.dnf && startPl.has(e.driver));
@@ -234,7 +241,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
     // 1953 punkten real 3 Teams und 12 Fahrer, 1989 sind es 16 Teams und 29
     // Fahrer. Wer die Fahrerzahl treffen will, muss die TEAMS treffen.
     const teamPunkte = Object.values(gs.teamStandings || {}).filter(t => (t.points || 0) > 0).length;
-    return { stand, teamPunkte, konstrPunkte, rennChaos, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
+    return { stand, teamPunkte, konstrPunkte, rennChaos, talentStarts, deckung: gesucht ? gesetzt / gesucht : 0, siegeChamp,
              rennDeckung: imQuali ? imRennen / imQuali : 0 };
 }
 
@@ -329,7 +336,7 @@ function gefahreneRunden(ctx, real) {
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
     const laufPunkte = [];   // je Lauf: Map Fahrer-Schluessel -> Punkte, fuer Spiel<->Spiel
-    const alleRennChaos = [];
+    const alleRennChaos = [], alleTalent = [];
     // === RAENGE MIT GLEICHSTAND (24.09.2026) ===
     // Raenge aus den PUNKTEN, Gleichstand = Durchschnittsrang; Spearman = Pearson
     // der Raenge. Vorher kamen die Raenge aus der Tabellenposition, Gleichstaende
@@ -354,8 +361,9 @@ function gefahreneRunden(ctx, real) {
     };
     const konstrLaeufe = [];
     for (let l = 0; l < LAEUFE; l++) {
-        const { stand, teamPunkte, konstrPunkte, rennChaos, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
+        const { stand, teamPunkte, konstrPunkte, rennChaos, talentStarts, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
         alleRennChaos.push(...rennChaos);
+        alleTalent.push(...talentStarts);
         konstrLaeufe.push(konstrPunkte);
         rennDeck.push(rennDeckung);
         teamsMitPunkten.push(teamPunkte);
@@ -557,6 +565,30 @@ function gefahreneRunden(ctx, real) {
                 + ' spsum ' + sp.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0).toFixed(3)
                 + ' siegstark ' + siegStark + ' siegschwach ' + siegSchwach);
         }
+    }
+    // === TALENT IM SCHWACHEN AUTO (26.09.2026) — wie tests/talent-real.js ===
+    // Team-Drittel nach realem Startplatz, Fahrer-Drittel nach PACE_RATINGS der Saison unter den
+    // realen Startern. Zeile je Kombination: Starts, Siege, Podien, Top 10, Punkte, Ausfälle.
+    {
+        const kGrid = {}, kN = {}, fahrer = new Set();
+        for (const [rd, rund] of Object.entries(real.runden)) { if (!gefahren.has(Number(rd))) continue;
+            for (const st of rund.starter) { kGrid[st.constructorId] = (kGrid[st.constructorId] || 0) + st.platz; kN[st.constructorId] = (kN[st.constructorId] || 0) + 1; fahrer.add(st.driverId); } }
+        const ks = Object.keys(kN).filter(k => kN[k] >= 3).sort((a, b) => kGrid[a] / kN[a] - kGrid[b] / kN[b]);
+        const k3 = Math.round(ks.length / 3), tD = {};
+        ks.forEach((k, i) => tD[k] = i < k3 ? 0 : i >= ks.length - k3 ? 2 : 1);
+        // ⚠ PACE_RATINGS ist mit const deklariert und im sim-core-Kontext NICHT sichtbar
+        //   (wie liveRaceState) — deshalb direkt aus data/f1db.js laden.
+        const PR = (() => { const c = { window: {} }; require('vm').createContext(c);
+            require('vm').runInContext(fs.readFileSync(path.join(__dirname, '..', 'data', 'f1db.js'), 'utf8').replace(/\bconst (\w+)\s*=/g, 'var $1 ='), c);
+            return c.PACE_RATINGS || {}; })();
+        const fl = [...fahrer].map(d => [d, PR[d] && PR[d][JAHR] && PR[d][JAHR][0]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+        const f3 = Math.round(fl.length / 3), fD = {};
+        fl.forEach(([d], i) => fD[d] = i < f3 ? 0 : i >= fl.length - f3 ? 2 : 1);
+        const Z = {};
+        for (const s of alleTalent) { const t = tD[s.k], f = fD[s.f]; if (t === undefined || f === undefined) continue;
+            const z = Z[t + '|' + f] = Z[t + '|' + f] || [0, 0, 0, 0, 0, 0];
+            z[0]++; if (s.pos === 1) z[1]++; if (s.pos && s.pos <= 3) z[2]++; if (s.pos && s.pos <= 10) z[3]++; if (s.punkte > 0) z[4]++; if (!s.pos) z[5]++; }
+        for (const [k, z] of Object.entries(Z)) console.log('  Talent ' + k + ': ' + z.join(' '));
     }
     if (biasPaare.length > 5) {
         const korr = liste => {

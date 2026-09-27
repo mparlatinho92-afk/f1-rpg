@@ -2094,3 +2094,122 @@ damit geschlossen (+0,014 → +0,001), die Punktefahrer-Abweichung sinkt von 1,8
 ▶ **Offen, klein:** Das Mittelfeld gewinnt über alle Ären noch etwas zu oft (11 % statt
 8,4 %, ab 2000 aber 8,6 %). Rennen mit Spearman < 0,3 sind trocken seltener als real
 (1,9 statt 3,8 %).
+
+---
+
+### 26.09.2026 (11): Talent im schwachen Auto — das Spiel trifft die Realität
+
+Frage des Nutzers: Hängt die Außenseiter-Wahrscheinlichkeit auch vom Fahrer ab
+(Supertalent im Hinterbänkler, „Minardi 2001 Alonso: stark, aber nicht stark genug für
+Punkte")? Außenseiter ist keine eigene Kategorie, sondern das Ende einer durchgehenden
+Wahrscheinlichkeit aus Fahrer, Auto und Zufall. Gemessen je Start nach Team-Drittel ×
+Fahrer-Drittel (`PACE_RATINGS`, relativ zum Teamkollegen), real `tests/talent-real.js`,
+Spiel `vakuum-batch --regen` (Tabelle „Talent je Start"):
+
+| Sieg / Podium / Top 10 / Punkte | Spiel | real |
+|---|---|---|
+| Auto stark · Fahrer stark | 14,4 / 38,6 / 64,8 / 60,6 % | 14,6 / 38,9 / 69,0 / 63,8 % |
+| Auto stark · Fahrer mittel | 0,4 / **5,9** / 56,1 / 40,2 % | 1,8 / **12,8** / 55,2 / 43,2 % |
+| Auto stark · Fahrer schwach | 0,2 / 1,9 / 39,3 / 17,8 % | 0,3 / 4,1 / 39,3 / 20,1 % |
+| Auto mittel · Fahrer stark | 4,4 / 16,5 / 57,8 / 45,7 % | 3,5 / 13,4 / 53,2 / 39,9 % |
+| Auto mittel · Fahrer mittel | 0,1 / 2,0 / 45,4 / 31,8 % | 0,3 / 3,0 / 45,1 / 33,0 % |
+| Auto mittel · Fahrer schwach | 0,0 / 0,7 / 27,8 / 10,7 % | 0,0 / 0,8 / 29,6 / 14,3 % |
+| **Auto schwach · Fahrer stark** | 1,2 / 8,2 / **47,1** / 29,1 % | 2,0 / 8,5 / **43,2** / 25,7 % |
+| Auto schwach · Fahrer mittel | 0,0 / 0,5 / 30,5 / 14,4 % | 0,2 / 1,2 / 28,3 / 13,3 % |
+| Auto schwach · Fahrer schwach | 0,0 / 0,1 / 17,0 / 5,6 % | 0,0 / 0,3 / 16,4 / 6,2 % |
+
+**Die Auto-Decke schluckt das Talent nicht.** Ein starker Fahrer im schwachen Auto kommt
+fast dreimal so oft in die Top 10 wie ein schwacher im selben Auto, aufs Podium selten.
+Einzige Auffälligkeit: Die Nummer zwei im Top-Team (Fahrer mittel, Auto stark) kommt nur
+halb so oft aufs Podium wie real. ⚠ `PACE_RATINGS` entstehen aus Ergebnissen (Elo) und
+sind nur relativ zum Teamkollegen autofrei. ⚠ `PACE_RATINGS` ist im sim-core-Kontext
+nicht sichtbar (const), `vakuum-saison.js` lädt es direkt aus `data/f1db.js`.
+
+### 26.09.2026 (12): Zufriedenheit und Ansehen folgen dem Auto, nicht der Leistung relativ zum Auto
+
+Nutzer-Regel: Der vorgesehene Platz ergibt sich aus dem Team-Rang (siebtbestes Team →
+etwa Platz 13–14), geprüft an WM-Stand, Startplatz und Rennen bereinigt um Ausfälle.
+Über- und Unterperformance sollen Bewertung und Ansehen bestimmen, die skalierte
+Beurteilung soll eine Glockenkurve ergeben, und das Ansehen bleibt langsam.
+`tests/bewertung-pruefung.js` (258 Fahrer-Saisons, 1965/1985/2001/2015 × 3, als Perzentil:
+erwartet = (Teamrang − 0,5)/Teams, tatsächlich = Mittel aus WM-Rang, Ø Startplatz,
+Ø Platz unter den Angekommenen):
+
+| | r mit Über-/Unterperf. | r mit absolutem Abschneiden | Mittel | σ | Schiefe |
+|---|---|---|---|---|---|
+| Zufriedenheit | 0,31 | **0,83** | 54,5 | 13,3 | +0,71 |
+| Ansehen Saison-Rohwert | 0,48 | 0,49 | 55,4 | 10,8 | +1,07 |
+| Ansehen geglättet | 0,36 | 0,80 | 49,3 | 10,9 | +1,13 |
+
+**Fahrer genau auf Erwartung** (|Über| < 0,05): Zufriedenheit Top-Team 72 · Mittelfeld 53 ·
+hinten 44, Ansehen roh 67 · 54 · 56. **Gleiche Leistung relativ zum Auto wird nach dem Auto
+bewertet.**
+
+**Ursachen im Code:**
+- `evaluateDriverPerformance`: Grundlage ist die Platzierung relativ zum **Feld** (70 %
+  Rennen, 30 % Startplatz). Der Vergleich mit dem Team-Rang ist nur ein Stufenzuschlag
+  ±0,04/±0,08. Mindestwerte für Rookies (42/36/30) und Rohdiamanten (38/33) schneiden nach
+  unten ab.
+- `updateDriverReputations`: `EXPECTATION_MEDIAN` = [2, 3, 5, 7, 8, 10, 10, 11, 13, 15, 16]
+  je Konstrukteurs-Rang, gemessen nur 1990–2025, durch Ausfälle zusammengedrückt
+  (Rang 7 → Platz 10 statt 13–14 ohne Ausfälle), ab Rang 11 gekappt (18 Teams 1989 →
+  Ränge 11–18 gleich). Dazu Titel-, Sieg- und Podiums-Boni, die nur Top-Teams erreichen.
+- **Beide Verteilungen sind rechtsschief**, keine Glockenkurve. Kaum Werte unter 30.
+
+### 27.09.2026: Bewertung und Ansehen neu (v0.9.18.20)
+
+Nutzer-Vorgaben (26./27.09.2026): Über- und Unterperformance gegenüber dem vorgesehenen
+Platz sollen Bewertung und Ansehen bestimmen, beide als Glockenkurve. Das Ansehen bleibt
+langsam, Weltmeister verlieren Ruhm langsamer, und ein Team, das außergewöhnlich
+unterperformt, bremst den Verlust an Ansehen (je mehr Teamkollegen, desto sicherer).
+**Das Ansehen ist der Marktwert:** Die Öffentlichkeit (Sponsoren, Fans, Investoren,
+Motorenhersteller) setzt das Team unter Druck.
+
+**Umsetzung:**
+- `leistungRelativZumAuto(id, basis)`: Jedes Team belegt im Feld einen **Block so breit
+  wie seine Starts** (drei bis fünf Wagen in den 60ern funktionieren so von selbst),
+  erwartet wird die Blockmitte. Tatsächlich = Mittel aus WM-Rang, Ø Startplatz,
+  Ø Platz unter den Angekommenen. Dazu das Teamkollegen-Duell.
+- **Zufriedenheit** (Sicht des Teams): Erwartung aus dem **Auto-Rang** (`carSpeed`).
+  ⚠ Mit der WM als Erwartung wäre sie zirkulär: Zwei schwache Fahrer ziehen ihr Team und
+  damit ihre eigene Erwartung herunter.
+- **Ansehen** (Öffentlichkeit): Erwartung aus der WM, Erfolge nur noch zu einem Drittel,
+  EMA 35 %. Weltmeister-Bremse 15 % für drei Saisons nach einem Titel (auch reale Titel
+  aus `F1DB_STANDINGS`). Team-Bremse ab 0,10 WM-Anteil unter dem 5-Jahres-Niveau
+  (`team.niveauHist`), Sicherheit 1 − 1/Fahrerzahl.
+- `skalierteBeurteilung`: 50 + 15 × (u ÷ 0,145), mit Teamkollegen-Duell 75/25.
+- **Bänder** `BEWERTUNG_BAENDER` 75/57/31 halten die Anteile wie vorher (≈5/26/57/10 %).
+- **Entscheidungswert** für Vertrag und Rauswurf: 65 % Zufriedenheit + 35 % Ansehen
+  (`teamEntscheidungsWert`, Druck der Öffentlichkeit).
+- **Schutz statt Mindestwert:** Junge Fahrer (≤ 3 Karrierejahre) und Rohdiamanten werden
+  nicht mehr in der Bewertung angehoben (das schnitt die Glockenkurve ab). Ein Flag
+  `schutz` greift bei Vertragsauflösung, Kollaps-Rücktritt und „schwach" bei
+  Vertragsende.
+- **Rohdiamant, ein Konzept** (`istRohdiamant`): jung (≤ Rookie-Alter + 3),
+  Ausnahmepotenzial (oberstes Fünftel), unfertig (≥ 5 unter Potenzial). Vorher hießen
+  alle Rookies so (Startlücke 10–15, Anzeige ab Lücke > 6). Fortgesetzt 2028: **19 von 21
+  → 3**. Historisch: Stewart/Rindt 1965, Senna 1985, Alonso 2001, Verstappen 2015.
+
+**Ergebnis** `tests/bewertung-pruefung.js` (252 Fahrer-Saisons):
+
+| | vorher r(Über) / r(absolut) / Schiefe | nachher |
+|---|---|---|
+| Zufriedenheit | 0,31 / 0,83 / +0,71 | 0,66 / **0,03** / +0,10 |
+| Ansehen Saison-Rohwert | 0,48 / 0,49 / +1,07 | **0,79** / 0,11 / **−0,03** |
+| genau auf Erwartung, Zufriedenheit Top/Mitte/hinten | 72 / 53 / 44 | **51 / 59 / 52** |
+| genau auf Erwartung, Ansehen roh | 67 / 54 / 56 | **57 / 58 / 55** |
+
+(Zufriedenheit r(Über) 0,66: Das Prüfwerkzeug misst „Über" gegen die WM, die Zufriedenheit
+gegen den Auto-Rang. Mit WM-Erwartung lag sie bei 0,81.)
+
+**Fahrermarkt** `tests/markt-ab.js` (12 Saisons × 3, alt gegen neu):
+
+| | 1975 alt / neu | real 70er/80er | 2000 alt / neu | real 00er/10er |
+|---|---|---|---|---|
+| Teamwechsel je Saison | 32,5 / 34,7 % | 43 % | 20,2 / 27,5 % | 33,5 / 24,9 % |
+| r(Tempo, Auto) | 0,15 / 0,27 | | 0,22 / 0,32 | |
+| Abwerbungen je Saison | 0,2 / 0,7 | | 0,2 / 0,7 | |
+| Rücktritte je Saison | 9,7 / 9,1 | | 3,9 / 4,1 | |
+
+Die Wechselquote nähert sich der Realität, Talent wandert zu besseren Autos.
+⚠ `tests/rep-h2h-mc.js` liest die alten `_repParts`-Felder und ist überholt.
