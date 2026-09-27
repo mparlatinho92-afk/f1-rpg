@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.22</title>
+    <title>F1 RPG v0.9.18.23</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.22 (aktuell) - 27.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.23 (aktuell) - 28.09.2026</div>
+                            <div>&#8226; NEU: Schwache Teams verlaengern nicht, wenn ein klar schnellerer Fahrer frei ist</div>
+                            <div>&#8226; NEU: Wer dauerhaft zu langsam ist und kein Potenzial mehr hat, wird gegen Fahrer mit Perspektive getauscht</div>
+                            <div>&#8226; FIX: Entlassungs-Obergrenze waechst mit der Zahl der Teams</div>
+                            <div class="font-bold text-slate-400">v0.9.18.22 - 27.09.2026</div>
                             <div>&#8226; FIX: Hinterbaenkler wurden in Aeren mit vielen Ausfaellen zu oft entlassen</div>
                             <div>&#8226; FIX: Topteam-Fahrer traten schon mit 28-35 zurueck (Alterskurve beginnt jetzt am Aera-Median)</div>
                             <div>&#8226; NEU: Generierte Fahrer hoeren seltener auf dem Hoehepunkt auf</div>
@@ -4117,7 +4121,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.22';
+        const VERSION = '0.9.18.23';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22409,9 +22413,53 @@
             const expiredContracts = activeDrivers.filter(d => d.contractEnd && d.contractEnd <= currentYear && !d._movedThisSeason && !d._midSeasonDismissed);
             logInfo('TRANSFER', `📋 ${expiredContracts.length} auslaufende Verträge`);
 
-            // Cap: max 4 automatische Entlassungen (poor/average-Budget) pro Off-Season
+            // Cap automatischer Entlassungen (poor/average-Budget) pro Off-Season. Bis 28.09.2026
+            // fest 4 — bei 30 Fahrern in den 70ern genauso wie bei 20 heute.
             let _poorDismissCount = 0;
-            const _POOR_DISMISS_CAP = 4;
+            const _POOR_DISMISS_CAP = Math.max(4, Math.round(totalTeams * 0.4));
+
+            // === MARKTVERGLEICH (28.09.2026) ===
+            // Die Zufriedenheit misst gegen das eigene Auto: wer im letzten Auto jahrelang Platz 22
+            // holt, erfuellt die Erwartung („average") und wurde verlaengert. Real ist genau dieser
+            // Fahrer der am leichtesten ersetzbare — schwache Teams verlieren 36–45 % ihrer
+            // Stammfahrer je Saison (ab 1990), im Spiel blieben 43–59 % statt 24–43 %. Und weil
+            // kaum ein Sitz frei wurde, verschwand der Absteiger aus dem Topteam, statt den
+            // Hinterbaenkler zu verdraengen (BEFUNDE.md 28.09.2026).
+            // Deshalb fragt ein Nicht-Topteam bei „average" zusaetzlich: gibt es am Markt einen
+            // klar schnelleren Kandidaten? Erst dann faellt der Sitz frei (Phase 3 besetzt ihn).
+            // Zweite Stufe (Nutzer): reicht der Abstieg der vorderen Fahrer nicht, zaehlt die
+            // Rundenzeit. Wer im unteren Sechstel des Feldes faehrt und kein Potenzial mehr hat,
+            // bei dem sieht das Team wenig Hoffnung — dann genuegt ein gleichwertiger Kandidat.
+            // Verglichen wird die RUNDENZEIT (aktuelle Pace) — nicht die Abwerbe-Formel mit 30 %
+            // Potenzial: damit sah jeder Reserve-Rookie besser aus als der gestandene Fahrer
+            // (2005: 3,4 Nicht-Verlaengerungen und 3,8 Pool-Debuets je Saison, Mittelfeld 31–36 %
+            // statt 16–23 % weg). Nur die Hoffnungslos-Stufe sucht Perspektive (Effektiv-Pace).
+            const MARKT_ABSTAND = 4;   // Pace-Vorsprung, den ein Kandidat mitbringen muss
+            const _paceM = d => d.currentPace || d.pace || 0;
+            const _effPaceM = d => { const cur = _paceM(d); const pot = d.potentialPace || cur; return cur * 0.7 + pot * 0.3; };
+            const _feldPace = activeDrivers.filter(d => d.team).map(d => d.currentPace || d.pace || 0).sort((a, b) => a - b);
+            const _hoffnungsGrenze = _feldPace.length ? _feldPace[Math.floor(_feldPace.length / 6)] : 0;
+            const _marktVergeben = new Set();   // jeder Kandidat deckt nur EINEN Nicht-Verlaengerung ab
+            const _besserAmMarkt = (drv, isIndy) => {
+                const cur = _paceM(drv);
+                const hoffnungslos = cur <= _hoffnungsGrenze && (drv.potentialPace || cur) - cur < 2;
+                const mass = hoffnungslos ? _effPaceM : _paceM;
+                const noetig = mass(drv) + (hoffnungslos ? 0 : MARKT_ABSTAND);
+                const indyOk = c => !!(c.isIndyOnly || isIndyOnlyDriver(c.histId || c.id)) === !!isIndy;
+                const kand = GAME_STATE.drivers.filter(d => (!d.status || d.status === 'active') && !d.team)
+                    .concat(simRule('externalTransfers')
+                        ? (GAME_STATE.reservePool || []).filter(d => (!d.status || d.status === 'active') &&
+                              poolAgeGateOk(d, currentYear) && !GAME_STATE.drivers.some(x => x.id === d.id && x.team))
+                        : [])
+                    .filter(c => c !== drv && !_marktVergeben.has(c.id) && (c.currentPace || c.pace || 0) >= 60 && indyOk(c));
+                let best = null;
+                for (const c of kand) if (mass(c) >= noetig && (!best || mass(c) > mass(best))) best = c;
+                if (best) _marktVergeben.add(best.id);
+                return best ? { kandidat: best, hoffnungslos } : null;
+            };
+            // Beste Teams zuerst: wen sie fallen lassen, der steht danach den kleineren Teams zur Wahl
+            const _rangVon = d => { const i = teamRanking.findIndex(t => t.id === d.team); return i < 0 ? 999 : i; };
+            expiredContracts.sort((a, b) => _rangVon(a) - _rangVon(b));
             const _tryDismiss = (drv, ch) => {
                 if (_poorDismissCount >= _POOR_DISMISS_CAP) return false;
                 _poorDismissCount++;
@@ -22549,6 +22597,27 @@
                     logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (✅)`);
                     
                 } else if (eval_.rating === 'average') {
+                    // Marktvergleich (s. oben): Erwartung erfuellt reicht nicht, wenn ein klar
+                    // Schnellerer frei ist. Nur Hinterbaenkler-Teams: das Mittelfeld lag ohne den
+                    // Vergleich schon real (19–24 % weg gegen 16–23 %), mit ihm 29–38 %.
+                    // Rohdiamanten ausgenommen — NICHT aber
+                    // „nur jung": 63 von 94 auslaufenden Vertraegen im schwachen Drittel waren
+                    // wegen ≤ 3 Karrierejahren geschuetzt, real verlassen gerade die Jungen die
+                    // schwachen Teams am haeufigsten (ab 1990: 36 % bis 27 Jahre). Der Schutz vor
+                    // Entlassung wegen SCHLECHTER Leistung bleibt fuer sie bestehen.
+                    if (isBackmarker && !istRohdiamant(driver, currentYear)) {
+                        const _m = _besserAmMarkt(driver, driverIsIndy);
+                        if (_m) {
+                            driver.team = null;
+                            driver.contractEnd = currentYear;
+                            driver._movedThisSeason = true;
+                            changes.push({ driverId: driver.id, driverName: driver.name, type: 'released', typeEmoji: '🔄',
+                                typeText: _m.hoffnungslos ? 'Nicht verlängert (zu langsam)' : 'Nicht verlängert (Besserer am Markt)',
+                                contractSource: 'expired', fromTeam: driverTeam?.name || '–', toTeam: 'Free Agent', score: eval_.score });
+                            logInfo('TRANSFER', `🔄 ${driver.name} nicht verlängert bei ${driverTeam?.name} — ${_m.kandidat.name} ist am Markt${_m.hoffnungslos ? ' (zu langsam)' : ''}`);
+                            return;
+                        }
+                    }
                     // Backmarker-Teams: Budget-/Sponsoring-Entlassung auch bei Durchschnitt.
                     // Welle 2: niedrige Reputation (<35) → doppelt so leicht ersetzbar.
                     if (isBackmarker && !eval_.isRookie && Math.random() < (rep < 35 ? 0.30 : 0.15)) {
