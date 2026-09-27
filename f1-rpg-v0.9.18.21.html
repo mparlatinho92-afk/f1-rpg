@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.20</title>
+    <title>F1 RPG v0.9.18.21</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.20 (aktuell) - 27.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.21 (aktuell) - 27.09.2026</div>
+                            <div>&#8226; NEU: Fahrer im Spitzenauto treten seltener zurueck (Cockpit-Bindung nach Auto-Rang)</div>
+                            <div>&#8226; FIX: Aus starken Teams verschwanden 16-25 % der Stammfahrer statt real 3-10 %</div>
+                            <div class="font-bold text-slate-400">v0.9.18.20 - 27.09.2026</div>
                             <div>&#8226; NEU: Zufriedenheit misst die Leistung relativ zum eigenen Auto – Glockenkurve, gleiche Leistung wird überall gleich bewertet</div>
                             <div>&#8226; NEU: Ansehen als Marktwert mit Weltmeister- und Team-Bremse, fließt als Druck der Öffentlichkeit in Vertragsentscheidungen</div>
                             <div>&#8226; FIX: Rohdiamant nur noch mit Ausnahmepotenzial statt jeder Rookie</div>
@@ -17721,7 +17724,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.20';
+        const VERSION = '0.9.18.21';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -34819,6 +34822,23 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             document.getElementById('seasonEndModal').style.display = 'none';
         };
         
+        // === COCKPIT-BINDUNG (27.09.2026) ===
+        // Wer im Spitzenauto sitzt, hoert selten freiwillig auf. Real endeten Karrieren meist
+        // im schwachen Auto — das reale Karriereende (career_end) und die Alterskurve griffen
+        // aber unabhaengig davon, wo der Fahrer im Spiel sitzt. Gemessen (BEFUNDE.md 27.09.2026 (3)):
+        // aus dem starken Drittel verschwanden 16–25 % der Stammfahrer, real 3–10 %.
+        // Stufenlos nach Auto-Rang: bestes Auto ×COCKPIT_BINDUNG_TOP, schlechtestes ×1.
+        // Ein Daempfer unter mehreren (Math.min), kein Multiplikator obendrauf.
+        const COCKPIT_BINDUNG_TOP = 0.2;
+        function cockpitBindung(driver) {
+            const team = driver.team && GAME_STATE.teams.find(t => t.id === driver.team);
+            if (!team || !(team.carSpeed > 0)) return 1;
+            const l = GAME_STATE.teams.filter(t => t.carSpeed > 0).sort((a, b) => b.carSpeed - a.carSpeed);
+            if (l.length < 2) return 1;
+            const p = l.indexOf(team) / (l.length - 1);   // 0 = bestes Auto, 1 = schlechtestes
+            return COCKPIT_BINDUNG_TOP + (1 - COCKPIT_BINDUNG_TOP) * p;
+        }
+
         // === KARRIEREENDE CHECK (4 Typen: Tod, Alter, Entlassung, Aufgabe) ===
         function checkCareerEnds() {
             if (!simRule('careerEnd')) {
@@ -34886,7 +34906,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                         const _erfolgsDaempfung = (typeof _sc === 'number' && _sc >= 75) ? 0.2
                                                 : (typeof _sc === 'number' && _sc >= 55) ? 0.55
                                                 : 1;
-                        if (Math.random() < _histRetireChance * _erfolgsDaempfung) {
+                        if (Math.random() < _histRetireChance * Math.min(_erfolgsDaempfung, cockpitBindung(driver))) {
                             driver.status = 'retired';
                             driver.retirementYear = GAME_STATE.currentYear;
                             driver.retirementReason = 'career_end';
@@ -34979,7 +34999,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     // ueberzeugendste Argument entscheidet. Multipliziert kaeme 0.2×0.25×0.4
                     // = 0.02 heraus — dann traete niemand mehr zurueck und die Kurve waere
                     // ins andere Extrem gekippt.
-                    retireChance *= Math.min(_formDaempfung, _trendDaempfung, _erfolgDaempfung);
+                    retireChance *= Math.min(_formDaempfung, _trendDaempfung, _erfolgDaempfung, cockpitBindung(driver));
 
                     // Vertrag ist Vertrag: läuft er noch, hört niemand altersbedingt auf,
                     // und das Team löst auch nicht vorzeitig auf. EINZIGE Ausnahme ist ein
@@ -36059,8 +36079,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                         // Nicht-Verlaengerung den Schwanz der Oldies aus — 1990er nur
                         // noch 3 % ueber 38 statt realer 7 %. Der Median stimmt auch so.
                         let _noRenew = Math.min(0.30, (_age - _retAge + 1) * 0.10);
-                        if (_st.wins > 0) _noRenew *= 0.25;
-                        else if (_st.podiums >= 2) _noRenew *= 0.5;
+                        // Staerkster Daempfer gilt (wie in checkCareerEnds): Sieg, Podien oder
+                        // Cockpit-Bindung — ein Spitzenteam laesst seinen Fahrer selten ziehen (27.09.2026).
+                        _noRenew *= Math.min(_st.wins > 0 ? 0.25 : _st.podiums >= 2 ? 0.5 : 1, cockpitBindung(driver));
                         if (Math.random() < _noRenew) {
                             executeTransfer(driver, null, 'contract_expired', changes);
                             return;
