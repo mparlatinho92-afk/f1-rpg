@@ -12,6 +12,7 @@
  *
  * Aufruf: node tests/markt-abgang.js [startjahr] [saisons] [laeufe]   (misst index.html)
  *         node tests/markt-abgang.js 1975 8 4
+ * Zugang (28.09.2026): Herkunft der Stammfahrer je Drittel — Gegenstück zu markt-real.js --zugang.
  * Dazu „weg" je Altersband (≤27 / 28–31 / 32–35 / 36+) — Gegenstück zu markt-real.js --alter.
  */
 'use strict';
@@ -48,6 +49,7 @@ function zustand(gs, name) {
 }
 
 const Z = [0, 1, 2].map(() => ({ n: 0, bleibt: 0, oben: 0, gleich: 0, unten: 0, weg: 0 }));
+const ZU = [0, 1, 2].map(() => ({ n: 0, eigen: 0, stamm: 0, teilzeit: 0, ohne: 0 }));   // Zugang, wie markt-real.js --zugang
 const wege = {}, ALT = {}, WEGALTER = [];   // ALT: drittel|band → [n, weg]
 const BAND = a => a <= 27 ? '≤27' : a <= 31 ? '28–31' : a <= 35 ? '32–35' : '36+';
 for (let l = 0; l < LAEUFE; l++) {
@@ -65,6 +67,12 @@ for (let l = 0; l < LAEUFE; l++) {
             if (!b) { z.weg++; const w = zustandNachWechsel.get(name) || '?'; (wege[w] = wege[w] || [0, 0, 0])[td]++; }
             else if (b.t === a.t) z.bleibt++;
             else { const nd = jetzt.drittel[b.t]; if (nd === undefined || nd > td) z.unten++; else if (nd < td) z.oben++; else z.gleich++; }
+        }
+        if (vorher) for (const [name, b] of Object.entries(jetzt.haupt)) {
+            if (b.n < jetzt.rennen / 2) continue;
+            const td = jetzt.drittel[b.t]; if (td === undefined) continue;
+            const a = vorher.haupt[name], z = ZU[td]; z.n++;
+            z[!a ? 'ohne' : a.t === b.t ? 'eigen' : a.n >= vorher.rennen / 2 ? 'stamm' : 'teilzeit']++;
         }
         if (s === SAISONS) break;
         const alterJetzt = new Map(gs.drivers.filter(d => d.birthYear).map(d => [d.name, gs.currentYear - d.birthYear]));
@@ -85,3 +93,5 @@ for (const [k, v] of Object.entries(wege).sort((a, b) => b[1].reduce((x, y) => x
 console.log('„weg" je Altersband, stark / mittel / schwach (n):');
 for (const b of ['≤27', '28–31', '32–35', '36+']) console.log('  ' + b.padEnd(6) + [0, 1, 2].map(t => { const a = ALT[t + '|' + b] || [0, 0]; return (a[0] ? (a[1] / a[0] * 100).toFixed(0).padStart(3) + ' %' : '   –') + (' (' + a[0] + ')').padEnd(7); }).join(' / '));
 { const w = WEGALTER.sort((x, y) => x - y); if (w.length) console.log('  Median-Alter der Verschwundenen: ' + w[Math.floor(w.length / 2)] + ' (n ' + w.length + ')'); }
+console.log('ZUGANG — Stammfahrer nach Herkunft im Vorjahr: eigenes Team / anderes Team (Stamm) / Teilzeit / kein Start (Vergleich: markt-real.js --zugang)');
+for (let t = 0; t < 3; t++) console.log('  Team ' + N[t].padEnd(8), p(ZU[t], 'eigen'), '/', p(ZU[t], 'stamm'), '/', p(ZU[t], 'teilzeit'), '/', p(ZU[t], 'ohne'), '  n ' + ZU[t].n);

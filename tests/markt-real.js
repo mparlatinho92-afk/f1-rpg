@@ -31,6 +31,8 @@ const drittel = {};
 const starts = {};
 for (const x of rr) { if (indy.has(x.raceId) || /^(DNQ|DNPQ|EX|WD)$/.test(x.positionText)) continue;
     const k = x.year + '|' + x.driverId; (starts[k] = starts[k] || {})[x.constructorId] = (starts[k][x.constructorId] || 0) + 1; }
+// Umbenennungen zaehlen als dasselbe Team (28.09.2026), wie im Spiel — Liste in team-nachfolge.js
+const { gleichesTeam } = require('./team-nachfolge');
 const haupt = k => { const h = starts[k]; if (!h) return null; const [t, n] = Object.entries(h).sort((a, b) => b[1] - a[1])[0]; return { t, n }; };
 
 const geb = {}; for (const d of L('f1db-drivers.json')) if (d.dateOfBirth) geb[d.id] = +d.dateOfBirth.slice(0, 4);
@@ -44,7 +46,7 @@ for (const k of Object.keys(starts)) {
     const b = haupt((jahr + 1) + '|' + d);
     let erg;
     if (!b) erg = 'weg';
-    else if (b.t === a.t) erg = 'bleibt';
+    else if (gleichesTeam(a.t, b.t)) erg = 'bleibt';
     else { const nd = drittel[(jahr + 1) + '|' + b.t]; erg = nd === undefined ? 'unten' : nd < td ? 'oben' : nd > td ? 'unten' : 'gleich'; }
     if (geb[d]) { const k = (jahr < 1990 ? '1950–1989' : '1990–2024') + '|' + td + '|' + BAND(jahr - geb[d]); const a = ALT[k] = ALT[k] || [0, 0]; a[0]++; if (erg === 'weg') { a[1]++; (WEGALTER[k.split('|')[0]] = WEGALTER[k.split('|')[0]] || []).push(jahr - geb[d]); } }
     for (const gr of [Math.floor(jahr / 10) * 10 + '', 'alle']) {
@@ -66,4 +68,29 @@ if (process.argv.includes('--alter')) {
     for (const ep of ['1950–1989', '1990–2024']) { console.log('  ' + ep);
         for (const b of ['≤27', '28–31', '32–35', '36+']) console.log('    ' + b.padEnd(6) + [0, 1, 2].map(t => { const a = ALT[ep + '|' + t + '|' + b] || [0, 0]; return (a[0] ? (a[1] / a[0] * 100).toFixed(0).padStart(3) + ' %' : '   –') + (' (' + a[0] + ')').padEnd(7); }).join(' / '));
         const w = (WEGALTER[ep] || []).sort((x, y) => x - y); if (w.length) console.log('    Median-Alter der Verschwundenen: ' + w[Math.floor(w.length / 2)] + ' (n ' + w.length + ')'); }
+}
+
+// ── Zugang (28.09.2026): woher kommen die Stammfahrer eines Drittels? ──
+// Gegenrichtung zu „weg": Stammfahrer im Jahr Y+1 nach Herkunft im Jahr Y — eigenes Team /
+// anderes Team als Stammfahrer / Teilzeit (Starts, aber < halbe Saison im Hauptteam) / kein Start.
+// Gegenstück im Spiel: tests/markt-abgang.js (Abschnitt „Zugang").
+if (process.argv.includes('--zugang')) {
+    const ZU = {};
+    for (const k of Object.keys(starts)) {
+        const [y, d] = k.split('|'); const jahr = +y; if (jahr <= 1950 || jahr > 2025) continue;
+        const b = haupt(k); if (!b || b.n < rennen[jahr] / 2) continue;
+        const td = drittel[jahr + '|' + b.t]; if (td === undefined) continue;
+        const a = haupt((jahr - 1) + '|' + d);
+        const her = !a ? 'ohne' : gleichesTeam(a.t, b.t) ? 'eigen' : a.n >= rennen[jahr - 1] / 2 ? 'stamm' : 'teilzeit';
+        const gr = Math.floor((jahr - 1) / 10) * 10 + '';
+        const z = ZU[gr + '|' + td] = ZU[gr + '|' + td] || { n: 0, eigen: 0, stamm: 0, teilzeit: 0, ohne: 0 };
+        z.n++; z[her]++;
+    }
+    console.log('\nZUGANG — Stammfahrer im Folgejahr nach Herkunft: eigenes Team / anderes Team (Stamm) / Teilzeit / kein Start im Vorjahr');
+    console.log('(Drittel = Team im Folgejahr; Dekade = Vorjahr, passend zur Abgangs-Tabelle)');
+    for (const gr of ['1950', '1960', '1970', '1980', '1990', '2000', '2010', '2020']) {
+        console.log('  ' + gr + 'er');
+        for (let t = 0; t < 3; t++) { const z = ZU[gr + '|' + t]; if (!z) continue;
+            console.log('    Team ' + N[t].padEnd(8), p(z, 'eigen'), '/', p(z, 'stamm'), '/', p(z, 'teilzeit'), '/', p(z, 'ohne'), '  n ' + z.n); }
+    }
 }

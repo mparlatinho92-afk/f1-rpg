@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getContext } = require('./sim-core');
+const { gleichesTeam } = require('./team-nachfolge');
 const START = Number(process.argv[2] || 1975), SAISONS = Number(process.argv[3] || 12), LAEUFE = Number(process.argv[4] || 3);
 
 // ── Realer Vergleich: Teamwechselquote je Dekade ──
@@ -31,7 +32,7 @@ const hauptteam = k => { const h = haupt[k]; if (!h) return null; const [t, n] =
 const realQuote = {};
 for (const k of Object.keys(haupt)) { const [y, d] = k.split('|'); const a = hauptteam(k), b = hauptteam((+y + 1) + '|' + d);
     if (!a || !b || a.n < rennenJeJahr[y] / 2) continue; const dk = Math.floor(y / 10) * 10;
-    const q = realQuote[dk] = realQuote[dk] || [0, 0]; q[0]++; if (a.t !== b.t) q[1]++; }
+    const q = realQuote[dk] = realQuote[dk] || [0, 0]; q[0]++; if (!gleichesTeam(a.t, b.t)) q[1]++; }   // Umbenennung ≠ Wechsel (28.09.2026)
 
 // ── Spiel ──
 const ctx = getContext();

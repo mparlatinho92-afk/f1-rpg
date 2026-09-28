@@ -2452,3 +2452,69 @@ nur eine Nicht-Verlängerung. Entlassungs-Cap `max(4, 0,4 × Teams)` statt fest 
 Schwaches Drittel „bleibt" 2005 48 → 41 % (real 26). 1,1 Markt-Nicht-Verlängerungen je Saison
 (2005), 2,1 Pool-Debüts. ▶ Offen: alte Ären (60er/70er) schwach weiterhin ~10 Punkte zu hoch —
 nicht durch den Marktvergleich verursacht; starkes Drittel ab 2000 weiterhin ~6 Punkte zu hoch.
+
+### 28.09.2026 (2): Wer das Cockpit verliert, fand keins mehr — Zugang, Umbenennungen, Erfahrung
+
+**Neue Messgröße: der ZUGANG** (`markt-real.js --zugang`, Gegenstück im Abschnitt „Zugang" von
+`markt-abgang.js`): Stammfahrer eines Drittels nach Herkunft im Vorjahr — eigenes Team / anderes
+Team als Stammfahrer / Teilzeit / kein Start. Schwaches Drittel „kein Start", real: 60er 12 %,
+70er 21 %, 80er 26 %, 90er 35 %, 00er 33 %, 10er 33 %. Im Spiel (v0.9.18.23): 1975 34 %, 2005 48 %,
+2012 44 %, Mittelfeld 2005 36 % (real 20). Die Stammfahrer, die „weg" zu oft zeigte, fehlten als
+Zugang bei den anderen Teams — die drei offenen Markt-Punkte hatten EINE Ursache.
+
+**Woher die Neulinge kamen** (Stammfahrer ohne Vorjahresstart nach Weg ins Cockpit, 2005, 3 × 6):
+69 von 111 über das Sicherheitsnetz in `startNewSeason`, 29 über Phase 3, 12 in der Saison.
+Freigestellte Stammfahrer nach dem Saisonstart: 38 von 63 im Pool (Ghost-Sweep), 19 im Team.
+
+**Ursache 1 — Umbenennung wurde zum Austritt (Fehler):** `applyTeamExits` läuft in
+`processSeasonEndEvents` und kannte `CONSTRUCTOR_SUCCESSION` nicht. BAR, Sauber, Jordan und Minardi
+wurden 2005→06 gelöscht, ihre Fahrer frei; `applyTeamSuccessions` fand in `startNewSeason` nichts
+mehr umzubenennen, die Nachfolger starteten leer. Button (Pace 78) und Massa landeten im Pool.
+Fix: Teams mit Nachfolger im kommenden Jahr treten nicht aus.
+
+**Ursache 2 — die Cockpit-Lotterie war pro Los gebaut:** Phase 3 und das Sicherheitsnetz lassen
+jeden Pool-Fahrer als eigenes Los gegen die Freigestellten antreten (Pool 1975 Ø 88, 2005 Ø 41).
+Ein Erfahrungsgewicht je Fahrer (×4) allein wirkte kaum: Super Aguri 2006 nahm weiter zwei
+Pool-Rookies statt Albers/Doornbos. Fix: `ERA_ERFAHRUNG_VORRANG` steuert beides — Erfahrung ×(1+3v),
+Pool-Lose × (4/n)^v.
+
+**Die Ära-Abhängigkeit ist gemessen, nicht gesetzt** (schwaches Drittel „weg", 8 × 4):
+
+| Start | v0.9.18.23 | nur Nachfolge-Fix | + Pool-Skalierung | + Erfahrung, voller Vorrang | real |
+|---|---|---|---|---|---|
+| 1975 | 33 | 33 | 28 | 24 | 21 |
+| 1995 | 46 | 41 | 34 | 27 | 42 |
+| 2005 | 44 | 37 | 31 | 24 | 45 |
+| 2012 | 46 | 37 | 34 | 29 | 36 |
+
+Vor 1990 braucht es den Vorrang, ab 1990 nicht — passend zum realen Zugang (Paydriver,
+Juniorprogramme). Übernommen: `{ 1950: 1, 1985: 0.5, 1990: 0 }`.
+
+**Ergebnis** (`markt-abgang.js`, 8 × 4, weg stark / mittel / schwach):
+
+| Start | v0.9.18.23 | neu | real |
+|---|---|---|---|
+| 1965 | 11 / 13 / 25 | 8 / 13 / 22 | 60er 9 / 5 / 14 · 70er 9 / 13 / 21 |
+| 1975 | 10 / 17 / 33 | 8 / 16 / 22 | 9 / 13 / 21 |
+| 1985 | – | 10 / 20 / 34 | 80er 10 / 16 / 25 · 90er 11 / 21 / 42 |
+| 1995 | 9 / 26 / 46 | 11 / 19 / 42 | 11 / 21 / 42 |
+| 2005 | 12 / 24 / 44 | 11 / 18 / 41 | 4 / 16 / 45 |
+| 2012 | 10 / 18 / 46 | 10 / 18 / 39 | 3 / 23 / 36 |
+
+Teamwechselquote (`markt-ab.js`, 8 × 3): 1965 13 % (real 41), 1975 23 → 25 % (43), 1995 22 % (40 / 27),
+2005 16 → 19 % (27 / 23), 2012 19 % (23 / 17).
+
+**Messfalle:** F1DB führt eine Umbenennung als Konstrukteurswechsel, das Spiel behält die Team-ID.
+`markt-real.js` und `markt-ab.js` werten die Paare jetzt als dasselbe Team (`tests/team-nachfolge.js`).
+Die realen „weg"-Werte ändern sich nicht, „bleibt" gegen „Wechsel" um bis zu 10 Punkte (2000er
+schwach: bleibt 26 → 36 %), die reale Wechselquote der 2000er 33,5 → 27,4 %.
+
+**NEGATIVERGEBNIS — Nicht-Verlängerung wegen Alters als Freistellung statt Abgang:** Das starke
+Drittel ab 2000 verliert seine Fahrer v. a. über `_noRenew` („entlassen: kein Vertrag", 2005 4,6 %).
+Als Free Agent statt Abgang: stark 2005 11 → 9 %, 2012 10 → 12 % (im Rauschen). Die Fahrer landen
+dann „aktiv ohne Team", weil ab 1990 kein Erfahrungs-Vorrang gilt. Zurückgenommen.
+
+▶ Offen: starkes Drittel ab 2000 weiter 6–7 Punkte zu hoch (real 4 / 3 % bei n = 72 — Standardfehler
+~2 Punkte), verteilt auf `_noRenew` 2–5 %, `career_end` ~2,5 %, Rest je ≤ 1,5 %. Wechselquote vor
+1990 halb so hoch wie real — ⚠ vorher prüfen, wie viel davon Chassis-Wechsel von Privatiers sind
+(F1DB-`constructorId` ist der Chassis-Hersteller, nicht der Melder).
