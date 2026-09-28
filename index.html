@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.23</title>
+    <title>F1 RPG v0.9.18.24</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.23 (aktuell) - 28.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.24 (aktuell) - 28.09.2026</div>
+                            <div>&#8226; FIX: Umbenannte Teams (BAR-Honda, Jordan-Midland u. a.) behalten ihre Fahrer</div>
+                            <div>&#8226; NEU: Freigestellte F1-Fahrer finden vor 1990 wieder ein Cockpit statt Pool-Neulingen</div>
+                            <div>&#8226; NEU: Reserve-Pool zaehlt bei der Cockpit-Vergabe als Gruppe</div>
+                            <div class="font-bold text-slate-400">v0.9.18.23 - 28.09.2026</div>
                             <div>&#8226; NEU: Schwache Teams verlaengern nicht, wenn ein klar schnellerer Fahrer frei ist</div>
                             <div>&#8226; NEU: Wer dauerhaft zu langsam ist und kein Potenzial mehr hat, wird gegen Fahrer mit Perspektive getauscht</div>
                             <div>&#8226; FIX: Entlassungs-Obergrenze waechst mit der Zahl der Teams</div>
@@ -4121,7 +4125,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.23';
+        const VERSION = '0.9.18.24';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22226,6 +22230,37 @@
         // Neue Hierarchie: Verlängerung → Vertragslose → Abwerben → Rausgekauft → generateDriver
         // Vorzeitige Vertragsauflösung: Score < 25 → Fahrer wird free agent
         
+        // === ERFAHRUNG GEGEN NEULING BEI DER COCKPIT-VERGABE (28.09.2026) ===
+        // Phase 3 von processTeamChanges und das Sicherheitsnetz in startNewSeason lassen freigestellte
+        // F1-Fahrer gegen den Reserve-Pool losen. Jeder Pool-Fahrer war ein eigenes Los: 40–90 Pool-
+        // Fahrer gegen 2–3 Freigestellte. Die Stammfahrer schwacher Teams kamen so zu 34–48 % ohne
+        // Vorjahresstart ins Cockpit, die Freigestellten blieben draussen.
+        // Wie stark Erfahrung zaehlt, haengt real an der Aera (markt-real.js --zugang, schwaches
+        // Drittel ohne Vorjahresstart): 60er 12 %, 70er 21 %, 80er 26 %, ab den 90ern 33–35 %
+        // (Paydriver, Juniorprogramme). Gemessen mit markt-abgang.js, schwaches Drittel „weg":
+        // mit vollem Vorrang 1975 24 % (real 21), 1995 27 % (real 42); ohne Vorrang 1975 33 %,
+        // 1995 41 %, 2005 37 %, 2012 37 % (real 42 / 45 / 36) — BEFUNDE.md 28.09.2026 (2).
+        const ERA_ERFAHRUNG_VORRANG = { 1950: 1, 1985: 0.5, 1990: 0 };
+        const ERFAHRUNG_FAKTOR = 3;   // Stammfahrer der Vorsaison zaehlt bei vollem Vorrang 4-fach
+        const POOL_LOSE = 4;          // der Pool zaehlt bei vollem Vorrang hoechstens wie 4 Kandidaten
+        function erfahrungsVorrang() { return getEraValue(ERA_ERFAHRUNG_VORRANG, GAME_STATE.currentYear); }
+        // Multiplikator nach Starts in der abgelaufenen Saison: 1 ohne Start, voll ab halber Saison
+        function erfahrungsGewicht(driver) {
+            const v = erfahrungsVorrang();
+            const st = GAME_STATE.driverStandings && GAME_STATE.driverStandings[driver.id];
+            if (!v || !st || !(st.races > 0)) return 1;
+            const halb = Math.max(1, ((GAME_STATE.results || []).length || (GAME_STATE.races || []).length) / 2);
+            return 1 + ERFAHRUNG_FAKTOR * v * Math.min(1, st.races / halb);
+        }
+        // Pool-Lose gleichmaessig skalieren: die Rangfolge im Pool (Pace-Fit, Landsmann-Bonus) bleibt
+        function poolLoseSkalieren(cands) {
+            const v = erfahrungsVorrang();
+            const pool = cands.filter(c => c.type === 'pool');
+            if (!v || pool.length <= POOL_LOSE) return;
+            const f = Math.pow(POOL_LOSE / pool.length, v);
+            pool.forEach(c => { c.score *= f; });
+        }
+
         function processTeamChanges() {
             if (!simRule('transferSeasonEnd')) return [];
 
@@ -22834,6 +22869,12 @@
                             ? Math.max(5, 50 + diff * 3)
                             : Math.max(5, 100 - Math.abs(diff) * 3);
                         if (c.type === 'pool') c.score += 5; // hist. Fahrer leicht bevorzugt
+                        // F1-Erfahrung (28.09.2026): wer in der abgelaufenen Saison gefahren ist, schlaegt
+                        // den Neuling aus dem Pool. Vorher war jeder Pool-Fahrer ein gleichwertiges Los —
+                        // bei dutzenden Pool-Fahrern gegen eine Handvoll Freigestellter kamen die
+                        // Stammfahrer schwacher Teams zu 34–48 % ohne Vorjahresstart ins Cockpit (real
+                        // 21–33 %), die Freigestellten blieben „aktiv ohne Team" (BEFUNDE.md 28.09. (2)).
+                        if (c.type === 'freeagent') c.score *= erfahrungsGewicht(c.driver);
                         // Landsmann-Bonus — v0.9.14.93 auf GRÖSSE/TIER statt Ära umgestellt.
                         //
                         // Die alte Staffelung (1,5× bis 1964, 1,25× bis 1979, danach 1,0)
@@ -22863,6 +22904,8 @@
                             }
                         }
                     });
+
+                    poolLoseSkalieren(_cands);
 
                     // === GEWICHTETE ZUFALLSAUSWAHL ===
                     if (_cands.length > 0) {
@@ -23194,6 +23237,12 @@
                 // im Team-Editor bestehen.
                 if (t.userCreated) return false;
                 if (expectedNames.has(t.name)) return false;
+                // Umbenennung ist kein Austritt (28.09.2026): BAR→Honda, Jordan→Midland usw. stehen in
+                // CONSTRUCTOR_SUCCESSION und werden erst in startNewSeason von applyTeamSuccessions
+                // umbenannt. Lief der Austritt vorher (processSeasonEndEvents), war das Team schon
+                // geloescht, seine Fahrer frei und der Nachfolger startete leer — Button und Massa
+                // landeten 2006 im Reserve-Pool (BEFUNDE.md 28.09.2026 (2)).
+                if ((CONSTRUCTOR_SUCCESSION[t.histId || t.id] || []).some(e => e.yearTo === newYear - 1)) return false;
                 if (t.isIndyOnly) return _sdHasIndy;
                 return true;
             });
@@ -25066,7 +25115,12 @@
                             const diff = _eff - _tierTarget_;
                             c.score = isTopTeam_ ? Math.max(5, 50 + diff * 3) : Math.max(5, 100 - Math.abs(diff) * 3);
                             if (c.type === 'pool') c.score += 5;
+                            // F1-Erfahrung wie in Phase 3 (28.09.2026) — hier landen die meisten
+                            // Neulinge: 2005 kamen 69 von 111 Stammfahrern ohne Vorjahresstart
+                            // ueber dieses Netz ins Cockpit, nur 30 ueber Phase 3.
+                            if (c.type === 'freeagent') c.score *= erfahrungsGewicht(c.driver);
                         });
+                        poolLoseSkalieren(_sn_cands);
 
                         let assigned = false;
                         if (_sn_cands.length > 0) {
