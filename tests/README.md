@@ -24,9 +24,9 @@
 | `talent-real.js` | **Talent im schwachen Auto**, real: Sieg/Podium/Top 10/Punkte je Team-Drittel × Fahrer-Drittel (PACE_RATINGS). Spielseite: Tabelle „Talent je Start" in `vakuum-batch` |
 | `bewertung-pruefung.js` | **Folgen Zufriedenheit und Ansehen der Leistung relativ zum Auto?** Korrelationen, Verteilungsform (Glockenkurve), Probe „genau auf Erwartung" je Team-Drittel |
 | `markt-real.js` | **Reale Stammfahrer-Bewegungen** je Team-Drittel und Dekade: bleibt / nach oben / gleich / nach unten / verschwindet. Bezug für `markt-ab.js`. `--zugang`: Herkunft der Stammfahrer (eigenes Team / anderes Team / Teilzeit / kein Vorjahresstart). Umbenennungen (BAR→Honda) zählen als dasselbe Team, Liste in `team-nachfolge.js` |
-| `markt-abgang.js` | **Stammfahrer-Bewegungen im Spiel, exakt wie `markt-real.js`** (Drittel nach mittlerem Startplatz, „weg" = kein Start im Folgejahr) plus Abgangsweg, „weg" je Altersband und Median-Alter der Verschwundenen (Gegenstück: `markt-real.js --alter`), dazu der Zugang (Gegenstück `--zugang`). `node tests/markt-abgang.js 1975 8 4`. ⚠ ±3–5 Punkte Rauschen je Drittel bei 4 Läufen |
+| `markt-abgang.js` | **Stammfahrer-Bewegungen im Spiel, exakt wie `markt-real.js`** (Drittel nach mittlerem Startplatz, „weg" = kein Start im Folgejahr) plus Abgangsweg, „weg" je Altersband und Median-Alter der Verschwundenen (Gegenstück: `markt-real.js --alter`), dazu der Zugang (Gegenstück `--zugang`) und die Wechselquote (Teamwechsel unter denen, die weiterfahren — wie `markt-real.js`). `node tests/markt-abgang.js 1975 8 4`. ⚠ ±3–5 Punkte Rauschen je Drittel bei 4 Läufen |
 | `markt-diagnose.js` | **Warum Fahrer bleiben oder gehen**: auslaufende Verträge im schwachen Drittel nach Band und Schutz, Wechsel je Saison nach Art, Markt-Nicht-Verlängerungen je Drittel. `node tests/markt-diagnose.js 2005 8 3` |
-| `markt-ab.js` | **Fahrermarkt** über fortgesetzte Saisons: Teamwechselquote (gegen F1DB), Sortierung Tempo↔Auto, Wechsel nach Art, Rücktritte. `node tests/markt-ab.js 1975 12 3`, A/B mit/ohne `SIMCORE_FROM_INDEX`. Tabelle „verschwunden, Grund" zeigt den Abgangsweg |
+| `markt-ab.js` | **Fahrermarkt** über fortgesetzte Saisons: Teamwechselquote (gegen F1DB — ⚠ Spielseite vergleicht das Team zu Saisonbeginn und verpasst Wechsel in der Saison, zeigt 1975 25 statt ~40 %; Wechselquote nach realer Definition steht in `markt-abgang.js`), Sortierung Tempo↔Auto, Wechsel nach Art, Rücktritte. `node tests/markt-ab.js 1975 12 3`, A/B mit/ohne `SIMCORE_FROM_INDEX`. Tabelle „verschwunden, Grund" zeigt den Abgangsweg |
 | ⚠ **Saisonkette** | Mehrere Saisons am Stück: `processSeasonEndEvents()` und dann `startNewSeason()`. **Nie** `checkCareerEnds`/`processTeamChanges` von Hand davor: `startNewSeason` ruft die Kette selbst noch einmal, Rücktritte, Wechsel und die Ansehen-EMA liefen doppelt (27.09.2026, 22 Werkzeuge betroffen, alle umgestellt). Wer zwischen Bewertung und Transfers eine Stichprobe braucht: Bewertung von Hand, dann die zwei Schritte für `processSeasonEndEvents` kurz durch `() => {}` ersetzen (Muster in `rep-retention-mc.js`). ⚠ Im Spiel läuft `initReservePool(neuesJahr)` erst in `startNewSeason`, nicht davor |
 | `chaos-real.js` | **Wie sehr Rennen die Reihenfolge mischen**: Spearman Start→Ziel je Rennen, Sieg ab P10, Punkte schwaches Drittel — nach Ära, Wetter, roter Flagge |
 | `dnf-spreizung.js` | **Ausfälle je Teamstärke und Ära**: reale Spreizung schwach/stark gegen die Formel in `simulateRace` (analytisch, kein Lauf). `SIMCORE_FROM_INDEX=1 node tests/dnf-spreizung.js [--jahr 1989]`. ⚠ Stärke = mittlerer **Startplatz**, nie Punkte — die hängen selbst an den Ausfällen |
@@ -309,6 +309,20 @@ entstand am 17.09.2026 ein falscher Befund.
 Stand 17.09.2026: Deckung 100 %, Rangabweichung 1,2–1,6 Plätze. Bei **fixiertem Feld**
 punkten 2,5 (1988) bis 5,1 (2010) Fahrer zu viel — das kommt vollständig aus
 `simulateRace`. Details in `BEFUNDE.md`.
+
+## Textbänke im Ticker und Streckeneditor (Paket 1b / 8b, v0.9.18.25)
+
+| Befehl | Prüft |
+|---|---|
+| `node tests/ticker-wetter-meldungen.js 1985` | Regen-/Rotflaggen-Meldungen erscheinen im echten Browser, keine offenen Platzhalter, kein `pageerror`. Erzwingt `regenArt` + `roteFlagge`, fasst das Ergebnis nicht an. 1985 = Neustart, 2020 = Fortsetzung |
+| `SIMCORE_FROM_INDEX=1 node tests/circuit-namegen.js` | Abschnitt 5: alle 26 Nationen aus 8b haben ein Register, 0 Fehler bei Präfix (`Kota`/`Municipio`), frz. Elision, `de El`, Komposita mit mehrteiligem Ort, Stadtkurs ohne Stadt |
+
+⚠ **Messfalle:** Regex-Literale *innerhalb* des Template-Strings, der per `vm.runInContext`
+läuft, verlieren ihre Backslashes (`/\s/` wird zu `/s/`). Der erste Lauf meldete so 95
+„Komposita", die es nicht gab. Prüfungen node-seitig rechnen, nur die Spielfunktion aus
+dem Kontext holen (`run('_composeCircuitNames')`).
+
+Stand 30.09.2026: 11.700 Ziehungen, alle sechs Fehlerzähler 0; Parität 40/40.
 
 ## Ausführen
 

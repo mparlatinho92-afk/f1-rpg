@@ -58,10 +58,7 @@ const kopplung = run(`(() => {
     for (let i = 0; i < ${N}; i++) {
         const ioc = _pickCircuitNation(2005, new Set());
         const b = CIRCUIT_PLACES[ioc]; if (!b) continue;
-        const key = CIRCUIT_NATION_KEY[ioc] || 'intl';
-        const m = _circuitPick(CIRCUIT_NAME_POOLS.circuitPattern[key], 'e94');
-        const strasse = /Street/.test(m);
-        const loc = _pickPlace(ioc, strasse);
+        const { loc, stadt: strasse } = _composeCircuitNames(ioc, 2005);
         const istStadt = b.g.includes(loc);
         if (strasse) { strasseGesamt++; if (istStadt) strasseStadt++; }
         else { permGesamt++; if (!istStadt) permKlein++; }
@@ -81,15 +78,35 @@ for (const jahr of [1955, 1975, 1995, 2020]) {
         const out = [];
         for (let i = 0; i < 6; i++) {
             const ioc = _pickCircuitNation(${jahr}, new Set());
-            const key = CIRCUIT_NATION_KEY[ioc] || 'intl';
-            const era = _teamEraKey(${jahr});
-            const m = _circuitPick(CIRCUIT_NAME_POOLS.circuitPattern[key], era);
-            const loc = _pickPlace(ioc, /Street/.test(m));
-            const r = _circuitPick(CIRCUIT_NAME_POOLS.racePattern[key], era).replace('{loc}', loc);
-            out.push(m.replace('{loc}', loc) + '  —  ' + r + ' [' + ioc + ']');
+            const n = _composeCircuitNames(ioc, ${jahr});
+            out.push(n.trackName + '  —  ' + n.raceName + ' [' + ioc + ']');
         }
         return out;
     })()`);
     console.log('  ' + jahr + ':');
     for (const n of namen) console.log('    ' + n);
 }
+
+// ── 5. Paket 8b: jede der 26 Nationen hat ein eigenes Register ──────────────
+// Prüfungen node-seitig: Regex-Literale im Template-String verlieren ihre Backslashes.
+console.log('\nPAKET 8b (v0.9.18.25):');
+const neu8b = ['POL','ROU','UKR','GRE','SRB','BUL','EST','NOR','DEN','IRL','LUX','CIV','MAR','KEN',
+               'ZIM','EGY','SAU','ISR','THA','INA','PHI','COL','VEN','CHI','PER','URU'];
+const KEY = run('CIRCUIT_NATION_KEY'), POOLS = run('CIRCUIT_NAME_POOLS'), PLACES = run('CIRCUIT_PLACES');
+const compose = run('_composeCircuitNames');
+const ohne = neu8b.filter(i => !KEY[i] || !POOLS.circuitPattern[KEY[i]] || !POOLS.racePattern[KEY[i]]);
+const aufIntl = Object.keys(PLACES).filter(i => !KEY[i]);
+const f = { praefix: 0, elision: 0, deEl: 0, deLe: 0, kompositum: 0, stadtFalsch: 0 }; let n8b = 0;
+for (const ioc of neu8b) for (const jahr of [1955, 1985, 2020]) for (let i = 0; i < 150; i++) {
+    const x = compose(ioc, jahr); n8b++;
+    const s = x.trackName + ' | ' + x.raceName;
+    if (/^(Kota|Municipio) /.test(x.loc)) f.praefix++;
+    if (/\bde [AEIOUÉ]/.test(s) && ['LUX','CIV','MAR','EGY'].includes(ioc)) f.elision++;
+    if (/\bde El /.test(s)) f.deEl++;
+    if (/\bde (Le|Les) /.test(s) && ['LUX','CIV','MAR','EGY'].includes(ioc)) f.deLe++;
+    if (/\s/.test(x.loc) && s.split(x.loc).slice(1).some(rest => /^\p{Ll}/u.test(rest))) f.kompositum++;
+    if (x.stadt && PLACES[ioc].g.length && !PLACES[ioc].g.map(g => g.replace(/^(Kota|Municipio) /, '')).includes(x.loc)) f.stadtFalsch++;
+}
+console.log('  ohne Register: ' + (ohne.length ? ohne.join(' ') : 'keine (richtig)'));
+console.log('  noch auf intl (von data/places.js): ' + (aufIntl.length ? aufIntl.join(' ') : 'keine'));
+console.log('  Fehler bei ' + n8b + ' Ziehungen: ' + Object.entries(f).map(([k, v]) => k + ' ' + v).join(' · ') + '   (alle 0 = richtig)');
