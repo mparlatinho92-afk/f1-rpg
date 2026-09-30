@@ -87,6 +87,9 @@ const N = ['stark', 'mittel', 'schwach'];
 const p = (z, k) => (z[k] / z.n * 100).toFixed(1).padStart(5) + ' %';
 console.log('SPIEL ' + START + '+' + SAISONS + ' × ' + LAEUFE + ' · bleibt / nach oben / gleich / nach unten / weg (Vergleich: node tests/markt-real.js)');
 for (let t = 0; t < 3; t++) console.log('  Team ' + N[t].padEnd(8), p(Z[t], 'bleibt'), '/', p(Z[t], 'oben'), '/', p(Z[t], 'gleich'), '/', p(Z[t], 'unten'), '/', p(Z[t], 'weg'), '  n ' + Z[t].n);
+{ // Wechselquote wie markt-real.js: Teamwechsel unter denen, die im Folgejahr noch fahren (28.09.2026)
+    const w = Z.reduce((s, z) => s + z.oben + z.gleich + z.unten, 0), b = Z.reduce((s, z) => s + z.bleibt, 0);
+    console.log('  Wechselquote ' + (w / (w + b) * 100).toFixed(1) + ' % · je Drittel ' + Z.map(z => (100 * (z.oben + z.gleich + z.unten) / (z.n - z.weg)).toFixed(0) + ' %').join(' / ')); }
 console.log('Abgangsweg der Verschwundenen (Anteil an den Stammfahrern des Drittels):');
 for (const [k, v] of Object.entries(wege).sort((a, b) => b[1].reduce((x, y) => x + y) - a[1].reduce((x, y) => x + y)))
     console.log('  ' + k.padEnd(30) + v.map((x, i) => (x / Z[i].n * 100).toFixed(1).padStart(5) + ' %').join(' / '));

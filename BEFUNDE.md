@@ -2518,3 +2518,30 @@ dann „aktiv ohne Team", weil ab 1990 kein Erfahrungs-Vorrang gilt. Zurückgeno
 ~2 Punkte), verteilt auf `_noRenew` 2–5 %, `career_end` ~2,5 %, Rest je ≤ 1,5 %. Wechselquote vor
 1990 halb so hoch wie real — ⚠ vorher prüfen, wie viel davon Chassis-Wechsel von Privatiers sind
 (F1DB-`constructorId` ist der Chassis-Hersteller, nicht der Melder).
+
+### 29.09.2026: Wechselquote — der Wechselwunsch scheiterte an der Reihenfolge
+
+**Messfalle in `markt-ab.js`:** es vergleicht das Team zu Saisonbeginn und verpasst Wechsel in der
+Saison; 1975 zeigte es 25 %, dieselbe Simulation nach der realen Definition (Hauptteam nach Starts
+im Folgejahr) rund 40 %. Die Wechselquote steht jetzt direkt in `markt-abgang.js` und `markt-real.js`
+(Teamwechsel unter denen, die im Folgejahr noch fahren; Umbenennungen zählen nicht).
+
+**Chassis-Artefakt geprüft — klein:** F1DB-`constructorId` ist der Chassis-Hersteller. Wechsel nur
+des Chassis bei gleichem Melder (`f1db-seasons-entrants-drivers.json`): 50er 4,8 %, 60er 6,4 %,
+70er 1,5 %, ab 80er 0–1 %. Die realen ~40 % vor 2000 sind echte Teamwechsel.
+
+**Ursache:** Phase 2 bearbeitet auslaufende Verträge nach Teamrang (beste zuerst). Ein Wechsel
+brauchte SOFORT ein Team mit freiem Platz; die hinteren Teams hatten noch nichts geräumt. 1965
+scheiterten 5,1 von 7,7 `findTeamWithSpace`-Versuchen je Saison, 1995 2,6 von 4,6 — der Fahrer wurde
+verlängert. Fix: Warteschlange, nach Phase 2 in mehreren Durchgängen erneut versucht, danach der
+bisherige Ausweg. Würfel und Wahrscheinlichkeiten unverändert.
+
+**Ergebnis** (`markt-abgang.js`, 8 × 4, Wechselquote vorher → nachher, real):
+1955 23 → 20 % (43) · 1965 20 → 24 % (42) · 1975 37 → 38 % (43) · 1985 33 → 37 % (42) ·
+1995 21 → **32 %** (40) · 2005 22 → 28 % (27) · 2012 21 → 27 % (23). „weg" bleibt im Rauschen
+(1995 8 / 16 / 42 gegen real 11 / 21 / 42).
+
+▶ Offen: 50er/60er weiter halb so viele Wechsel wie real. Die Warteschlange braucht freie Plätze —
+1965 räumt Phase 2 kaum welche (wenig „weg": 11 / 14 / 19 %), real wechselten die Fahrer trotzdem
+(60er schwaches Drittel 63 %). Das sind Ringtausche (A geht zu B, B zu A), die ein Modell mit
+„freiem Platz" nicht abbilden kann. Starkes Drittel ab 2000 weiter 8–11 % gegen 3–4 %.

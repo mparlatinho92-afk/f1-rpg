@@ -61,6 +61,9 @@ for (const gr of ['alle', '1950', '1960', '1970', '1980', '1990', '2000', '2010'
     console.log('\n' + (gr === 'alle' ? 'alle Jahre' : gr + 'er'));
     for (let t = 0; t < 3; t++) { const z = Z[gr + '|' + t]; if (!z) continue;
         console.log('  Team ' + N[t].padEnd(8), p(z, 'bleibt'), '/', p(z, 'oben'), '/', p(z, 'gleich'), '/', p(z, 'unten'), '/', p(z, 'weg'), '  n ' + z.n); }
+    // Wechselquote: Teamwechsel unter denen, die im Folgejahr noch fahren (Gegenstück markt-abgang.js)
+    const zs = [0, 1, 2].map(t => Z[gr + '|' + t]).filter(Boolean), w = zs.reduce((s, z) => s + z.oben + z.gleich + z.unten, 0), b = zs.reduce((s, z) => s + z.bleibt, 0);
+    console.log('  Wechselquote ' + (w / (w + b) * 100).toFixed(1) + ' % · je Drittel ' + zs.map(z => (100 * (z.oben + z.gleich + z.unten) / (z.n - z.weg)).toFixed(0) + ' %').join(' / '));
 }
 
 if (process.argv.includes('--alter')) {
