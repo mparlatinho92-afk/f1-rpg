@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.24</title>
+    <title>F1 RPG v0.9.18.25</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.24 (aktuell) - 28.09.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.25 (aktuell) - 30.09.2026</div>
+                            <div>&#8226; NEU: Streckeneditor mit landestypischen Namen fuer 26 weitere Nationen</div>
+                            <div>&#8226; NEU: Live-Ticker meldet Regen, abtrocknende Strecke, rote Flagge und Neustart/Fortsetzung</div>
+                            <div>&#8226; NEU: erster mehrstimmiger Textpool (Regen 1976-93)</div>
+                            <div class="font-bold text-slate-400">v0.9.18.24 - 28.09.2026</div>
                             <div>&#8226; FIX: Umbenannte Teams (BAR-Honda, Jordan-Midland u. a.) behalten ihre Fahrer</div>
                             <div>&#8226; NEU: Freigestellte F1-Fahrer finden vor 1990 wieder ein Cockpit statt Pool-Neulingen</div>
                             <div>&#8226; NEU: Reserve-Pool zaehlt bei der Cockpit-Vergabe als Gruppe</div>
@@ -17736,7 +17740,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.24';
+        const VERSION = '0.9.18.25';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28410,6 +28414,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 isRain,
                 isHot,
                 roteFlagge: _roteFlagge,   // Darstellung (Ticker), Wirkung s. RED_FLAG_WIRKUNG_AB
+                regenArt: _regenArt,       // 'teilweise' | 'durchgehend' | null – für die Ticker-Meldungen (Paket 1b)
                 results,
                 dnq: _dnqIds,
                 dns: _dnsIds,      // qualifiziert, aber nicht an den Start gegangen (v0.9.17.13)
@@ -30034,9 +30039,116 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 in: ['{loc} International Circuit','{loc} Racing Circuit'],
                 my: ['{loc} International Circuit','{loc} Circuit'],
                 ae: ['{loc} Autodrome','{loc} International Circuit','{loc} Circuit'],
+                // Fable-Paket 8b (v0.9.18.25): die 26 Nationen, die seit .42 auf intl
+                // fielen. Stadtkurs-Muster tragen // STADT und stehen in CIRCUIT_STADT_MUSTER.
+                // Paket 8b: EUROPA
+                pl: [['Tor {loc}', 10],
+                     ['Tor Wyścigowy {loc}', { e50: 4, e62: 4, e76: 3, e94: 2, e10: 1 }],
+                     ['Autodrom {loc}', { e62: 2, e76: 4, e94: 5, e10: 5 }],
+                     ['{loc} Ring', { e94: 2, e10: 4 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                ro: [['Circuitul {loc}', 10],
+                     ['Autodromul {loc}', { e62: 2, e76: 3, e94: 3, e10: 2 }],
+                     ['{loc} Ring', { e94: 3, e10: 5 }],
+                     ['{loc} Motor Park', { e10: 3 }],
+                     ['Circuitul Stradal {loc}', { e76: 2, e94: 3, e10: 3 }]], // STADT
+                ua: [['Avtodrom {loc}', 10],
+                     ['Trasa {loc}', { e50: 4, e62: 4, e76: 3, e94: 1 }],
+                     ['{loc} Ring', { e94: 3, e10: 5 }],
+                     ['{loc} Circuit', { e94: 3, e10: 4 }],
+                     ['{loc} City Circuit', { e76: 1, e94: 2, e10: 3 }]], // STADT
+                gr: [['{loc} Circuit', 10],
+                     ['{loc} Racing Circuit', { e62: 3, e76: 4, e94: 5, e10: 4 }],
+                     ['{loc} Autodrome', { e50: 3, e62: 3, e76: 2, e94: 1 }],
+                     ['{loc} Motor Racing Circuit', { e50: 3, e62: 2 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 3, e10: 4 }]], // STADT
+                rs: [['Staza {loc}', 10],
+                     ['Automotodrom {loc}', { e50: 4, e62: 6, e76: 6, e94: 4, e10: 3 }],
+                     ['Autodrom {loc}', { e76: 3, e94: 5, e10: 6 }],
+                     ['{loc} Ring', { e94: 2, e10: 3 }],
+                     ['Gradska Staza {loc}', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                bg: [['Pista {loc}', 10],
+                     ['Avtodrom {loc}', { e62: 3, e76: 4, e94: 4, e10: 3 }],
+                     ['{loc} Ring', { e94: 2, e10: 4 }],
+                     ['Gradska Pista {loc}', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                ee: [['{loc} Ring', 10],
+                     ['{loc} Circuit', { e94: 3, e10: 4 }],
+                     ['{loc} Racing Park', { e10: 2 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                no: [['{loc}banen', 10],
+                     ['{loc} Ring', { e62: 2, e76: 3, e94: 3, e10: 3 }],
+                     ['{loc} Motorsenter', { e76: 3, e94: 5, e10: 5 }],
+                     ['{loc} Motorpark', { e94: 2, e10: 4 }],
+                     ['{loc} Raceway', { e94: 1, e10: 3 }],
+                     ['{loc} Street Circuit', { e76: 1, e94: 2, e10: 3 }]], // STADT
+                dk: [['{loc}ringen', 10],
+                     ['{loc} Park', { e50: 5, e62: 5, e76: 4, e94: 3, e10: 2 }],
+                     ['{loc} Ring', { e62: 2, e76: 3, e94: 3, e10: 3 }],
+                     ['Ring {loc}', { e94: 3, e10: 4 }],
+                     ['{loc} Street Circuit', { e76: 1, e94: 2, e10: 3 }]], // STADT
+                ie: [['{loc} Circuit', 10],
+                     ['{loc} Park', { e50: 8, e62: 8, e76: 6, e94: 5, e10: 4 }],
+                     ['{loc} Road Circuit', { e50: 4, e62: 3, e76: 2 }],
+                     ['{loc} Motor Racing Circuit', { e50: 3, e62: 2 }],
+                     ['{loc} International Raceway', { e94: 2, e10: 3 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                lu: [['Circuit de {loc}', 10],
+                     ['Circuit {loc}', 5],
+                     ['{loc}ring', { e50: 3, e62: 3, e76: 2 }],
+                     ['Circuit Urbain de {loc}', { e76: 2, e94: 3, e10: 3 }]], // STADT
+                // Paket 8b: AFRIKA / NAHOST
+                fr_af: [['Circuit de {loc}', 10],
+                        ['Circuit Routier de {loc}', { e50: 3, e62: 2 }],
+                        ['Autodrome de {loc}', { e50: 3, e62: 4, e76: 3, e94: 2, e10: 1 }],
+                        ['Circuit International de {loc}', { e76: 2, e94: 4, e10: 5 }],
+                        ['Circuit Urbain de {loc}', { e76: 2, e94: 3, e10: 4 }]], // STADT
+                en_af: [['{loc} Circuit', 10],
+                        ['{loc} Park', { e50: 6, e62: 6, e76: 4, e94: 2, e10: 1 }],
+                        ['{loc} Motor Racing Circuit', { e50: 3, e62: 2 }],
+                        ['{loc} Raceway', { e76: 2, e94: 3, e10: 4 }],
+                        ['{loc} International Circuit', { e76: 2, e94: 4, e10: 5 }],
+                        ['{loc} Street Circuit', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                eg: [['{loc} Circuit', 10],
+                     ['Circuit de {loc}', { e50: 4, e62: 3, e76: 1 }],
+                     ['{loc} Motor Racing Circuit', { e50: 2, e62: 2 }],
+                     ['{loc} International Circuit', { e76: 2, e94: 4, e10: 5 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                sa: [['{loc} Circuit', 10],
+                     ['{loc} Autodrome', { e50: 3, e62: 3, e76: 2 }],
+                     ['{loc} International Circuit', { e76: 2, e94: 4, e10: 6 }],
+                     ['{loc} Motorsport Park', { e10: 3 }],
+                     ['{loc} Speed Park', { e10: 2 }],
+                     ['{loc} Street Circuit', { e76: 1, e94: 2, e10: 4 }]], // STADT
+                il: [['{loc} Circuit', 10],
+                     ['Maslul {loc}', { e50: 4, e62: 4, e76: 3, e94: 2, e10: 1 }],
+                     ['{loc} Motorsport Park', { e10: 3 }],
+                     ['{loc} Street Circuit', { e76: 1, e94: 2, e10: 3 }]], // STADT
+                // Paket 8b: ASIEN
+                th: [['{loc} Circuit', 10],
+                     ['{loc} International Circuit', { e76: 2, e94: 4, e10: 6 }],
+                     ['Sanam Khaeng {loc}', { e50: 3, e62: 3, e76: 2, e94: 1 }],
+                     ['{loc} Speedway', { e76: 1, e94: 2, e10: 2 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 3, e10: 3 }]], // STADT
+                id: [['Sirkuit {loc}', 10],
+                     ['Sirkuit Internasional {loc}', { e76: 2, e94: 4, e10: 5 }],
+                     ['Sirkuit Balap {loc}', { e50: 3, e62: 3, e76: 2 }],
+                     ['{loc} International Circuit', { e94: 2, e10: 3 }],
+                     ['Sirkuit Jalan Raya {loc}', { e76: 1, e94: 2, e10: 3 }]], // STADT
+                ph: [['{loc} Circuit', 10],
+                     ['{loc} Race Track', { e50: 3, e62: 3, e76: 2 }],
+                     ['{loc} Racing Circuit', { e76: 3, e94: 4, e10: 4 }],
+                     ['{loc} International Speedway', { e94: 3, e10: 4 }],
+                     ['{loc} International Raceway', { e94: 2, e10: 3 }],
+                     ['{loc} Street Circuit', { e76: 2, e94: 2, e10: 3 }]], // STADT
+                // Paket 8b: SÜDAMERIKA
+                es_am: [['Autódromo de {loc}', 10],
+                        ['Autódromo {loc}', 4],
+                        ['Circuito de {loc}', 5],
+                        ['Autódromo Municipal de {loc}', { e50: 3, e62: 3, e76: 2 }],
+                        ['Autódromo Internacional de {loc}', { e62: 2, e76: 4, e94: 5, e10: 6 }],
+                        ['Circuito Callejero de {loc}', { e76: 2, e94: 3, e10: 3 }]], // STADT
                 // Auffangregister für alle Nationen ohne eigenes Sprachregister
-                // (v0.9.17.42: 26 Länder kamen mit data/places.js dazu). Bewusst
-                // sprachneutral — landestypische Register sind Fable-Paket 8b.
+                // (seit Paket 8b keine mehr unter den 56 aus data/places.js).
                 // Gewichte wie gemessen: „Circuit" trägt, „International" steigt
                 // mit den Jahrzehnten, „Street" gibt es erst ab den 80ern.
                 intl: [['{loc} Circuit', 10],
@@ -30083,6 +30195,55 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 in: ['{loc} Grand Prix','Grand Prix of {loc}'],
                 my: ['{loc} Grand Prix','Grand Prix of {loc}'],
                 ae: ['{loc} Grand Prix','Grand Prix of {loc}'],
+                // Paket 8b: EUROPA
+                pl: [['{loc} Grand Prix', 12], ['Grand Prix {loc}', 8]],
+                ro: [['{loc} Grand Prix', 12], ['Grand Prix {loc}', 6],
+                     ['Trofeul {loc}', { e50: 4, e62: 3, e76: 2 }],
+                     ['Cupa {loc}', { e50: 3, e62: 2, e76: 1 }]],
+                ua: [['{loc} Grand Prix', 12], ['Grand Prix {loc}', 6]],
+                gr: [['{loc} Grand Prix', 12], ['Grand Prix of {loc}', 4],
+                     ['{loc} Trophy', { e50: 3, e62: 2, e76: 1 }]],
+                rs: [['Grand Prix {loc}', 12], ['{loc} Grand Prix', 6]],
+                bg: [['Golyamata nagrada na {loc}', 12],
+                     ['{loc} Grand Prix', { e94: 4, e10: 6 }],
+                     ['Kupa na {loc}', { e50: 4, e62: 3, e76: 2 }]],
+                ee: [['{loc} Grand Prix', 12], ['Grand Prix {loc}', 5]],
+                no: [['{loc} Grand Prix', 12],
+                     ['{loc}-løpet', { e50: 4, e62: 3, e76: 2 }],
+                     ['{loc} Pokalløp', { e50: 3, e62: 2, e76: 1 }]],
+                dk: [['{loc} Grand Prix', 12], ['Grand Prix {loc}', 4],
+                     ['{loc}-løbet', { e50: 4, e62: 3, e76: 2 }]],
+                ie: [['{loc} Grand Prix', 12],
+                     ['{loc} Trophy', { e50: 5, e62: 4, e76: 2 }],
+                     ['{loc} Cup', { e50: 3, e62: 2, e76: 1 }]],
+                lu: [['Grand Prix de {loc}', 12], ['Grand Prix {loc}', 4],
+                     ['Coupe de {loc}', { e50: 4, e62: 3, e76: 1 }]],
+                // Paket 8b: AFRIKA / NAHOST
+                fr_af: [['Grand Prix de {loc}', 12],
+                        ['Coupe de {loc}', { e50: 4, e62: 3, e76: 1 }],
+                        ['Trophée de {loc}', { e50: 3, e62: 2, e76: 1 }]],
+                en_af: [['{loc} Grand Prix', 12],
+                        ['{loc} Trophy', { e50: 4, e62: 3, e76: 1 }],
+                        ['{loc} Cup', { e50: 3, e62: 2, e76: 1 }]],
+                eg: [['{loc} Grand Prix', 12],
+                     ['Grand Prix de {loc}', { e50: 4, e62: 3, e76: 1 }],
+                     ['{loc} Cup', { e50: 3, e62: 2, e76: 1 }]],
+                sa: [['{loc} Grand Prix', 12],
+                     ['{loc} Cup', { e50: 3, e62: 2, e76: 1 }]],
+                il: [['{loc} Grand Prix', 12], ['Grand Prix {loc}', 4]],
+                // Paket 8b: ASIEN
+                th: [['{loc} Grand Prix', 12],
+                     ['{loc} Trophy', { e50: 3, e62: 2, e76: 1 }],
+                     ['{loc} Speed Festival', { e10: 2 }]],
+                id: [['Grand Prix {loc}', 12], ['{loc} Grand Prix', 4],
+                     ['Piala {loc}', { e50: 4, e62: 3, e76: 2 }]],
+                ph: [['{loc} Grand Prix', 12],
+                     ['{loc} Trophy', { e50: 3, e62: 2, e76: 1 }],
+                     ['{loc} Cup', { e50: 3, e62: 2, e76: 1 }]],
+                // Paket 8b: SÜDAMERIKA
+                es_am: [['Gran Premio de {loc}', 12],
+                        ['Gran Premio Ciudad de {loc}', { e50: 3, e62: 3, e76: 2, e94: 1 }],
+                        ['Copa {loc}', { e50: 4, e62: 3, e76: 1 }]],
                 // Auffangregister, siehe circuitPattern.intl. „Grand Prix" dominiert
                 // wie überall; die Pokalformen bleiben klein und früh.
                 intl: [['{loc} Grand Prix', 12], ['Grand Prix of {loc}', 6],
@@ -30098,7 +30259,9 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         const CIRCUIT_NATION_KEY = { ITA:'it',GBR:'gb',FRA:'fr',GER:'de',USA:'us',JPN:'jp',BRA:'br',
             ESP:'es',AUT:'at',SUI:'ch',BEL:'be',NED:'nl',POR:'pt',SWE:'se',FIN:'fi',HUN:'hu',CZE:'cz',
             RUS:'ru',TUR:'tr',RSA:'za',ARG:'ar',MEX:'mx',CAN:'ca',AUS:'au',NZL:'nz',CHN:'cn',KOR:'kr',
-            IND:'in',MAS:'my',UAE:'ae' };
+            IND:'in',MAS:'my',UAE:'ae',
+            // Paket 8b (v0.9.18.25): 26 Nationen, die bis dahin auf 'intl' fielen
+            POL:'pl',ROU:'ro',UKR:'ua',GRE:'gr',SRB:'rs',BUL:'bg',EST:'ee',NOR:'no',DEN:'dk',IRL:'ie',LUX:'lu',CIV:'fr_af',MAR:'fr_af',KEN:'en_af',ZIM:'en_af',EGY:'eg',SAU:'sa',ISR:'il',THA:'th',INA:'id',PHI:'ph',COL:'es_am',VEN:'es_am',CHI:'es_am',PER:'es_am',URU:'es_am' };
         // Fiktive Sponsoren je Ära (Rennnamen-Präfix, nur e76+). Kollisionsfrei gehalten.
         const CIRCUIT_SPONSOR_POOLS = {
             e76: ['Vireon','Castellan','Aurex','Solvana','Meridia','Halcyon'],
@@ -30220,7 +30383,44 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             if (!b) return 'Central';   // darf nie eintreten: _pickCircuitNation prüft es
             const erst = gross ? b.g : b.k, dann = gross ? b.k : b.g;
             const l = (erst && erst.length) ? erst : dann;
-            return l[Math.floor(Math.random() * l.length)];
+            // GeoNames führt Verwaltungspräfixe mit („Kota Surabaya", „Municipio Tovar").
+            return l[Math.floor(Math.random() * l.length)].replace(/^(Kota|Municipio) /, '');
+        }
+
+        // Stadtkurs-Muster in allen Sprachregistern (Paket 8b markiert sie mit // STADT).
+        // Bis .24 hing die Erkennung am englischen „Street" allein.
+        const CIRCUIT_STADT_MUSTER = /Street|City Circuit|Urbain|Callejero|Stradal|Gradska|Jalan Raya/;
+        const _FR_REGISTER = new Set(['fr', 'be', 'ch', 'ca', 'lu', 'fr_af', 'eg']);
+        const _ES_REGISTER = new Set(['es', 'ar', 'mx', 'es_am']);
+        // Kompositum-Muster („{loc}ringen", „{loc}banen") vertragen keinen mehrteiligen Ort.
+        const _istKompositum = (muster, loc) => /\s/.test(loc) && /\{loc\}\p{Ll}/u.test(muster);
+
+        // Strecke + Rennen aus EINEM Ort, ohne Sponsor. Pure: editorRandomizeCircuit
+        // und tests/circuit-namegen.js ziehen darüber.
+        function _composeCircuitNames(ioc, yr) {
+            const key = CIRCUIT_NATION_KEY[ioc] || 'intl';   // Nation ohne eigenes Register
+            const cPat = CIRCUIT_NAME_POOLS.circuitPattern[key], rPat = CIRCUIT_NAME_POOLS.racePattern[key];
+            const era = _teamEraKey(yr);   // dieselben fünf Register wie bei Teams/Texten
+            // Erst das Muster, dann der Ort: ein Straßenkurs braucht eine Stadt
+            // (Long Beach, Las Vegas), ein permanenter Kurs einen Kleinort
+            // (Silverstone, Nürburg, Magny-Cours). Genau so liegen die realen
+            // Streckennamen in f1db.
+            let cMuster, loc;
+            for (let v = 0; v < 8; v++) {
+                cMuster = _circuitPick(cPat, era);
+                loc = _pickPlace(ioc, CIRCUIT_STADT_MUSTER.test(cMuster));
+                if (!_istKompositum(cMuster, loc)) break;
+            }
+            let rMuster = _circuitPick(rPat, era);
+            for (let v = 0; v < 8 && _istKompositum(rMuster, loc); v++) rMuster = _circuitPick(rPat, era);
+            const schliff = s => {
+                s = s.replace('{loc}', loc);
+                if (_FR_REGISTER.has(key)) s = s.replace(/\bde Le /g, 'du ').replace(/\bde Les /g, 'des ')
+                                               .replace(/\bde (?=[AEIOUÉÈÊÂÎÔÛ])/g, "d'");
+                if (_ES_REGISTER.has(key)) s = s.replace(/\bde El /g, 'del ');
+                return s;
+            };
+            return { loc, trackName: schliff(cMuster), raceName: schliff(rMuster), stadt: CIRCUIT_STADT_MUSTER.test(cMuster) };
         }
 
         window.editorRandomizeCircuit = function() {
@@ -30228,20 +30428,10 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             const usedIOC = new Set((GAME_STATE.races || []).map(r => r.country).filter(Boolean));
             const usedNames = new Set((GAME_STATE.races || []).map(r => (r.name || '').toLowerCase()));
             const ioc = _pickCircuitNation(yr, usedIOC);
-            const key = CIRCUIT_NATION_KEY[ioc] || 'intl';   // Nation ohne eigenes Register
-            const cPat = CIRCUIT_NAME_POOLS.circuitPattern[key], rPat = CIRCUIT_NAME_POOLS.racePattern[key];
-            const era = _teamEraKey(yr);   // dieselben fünf Register wie bei Teams/Texten
             const sponsorProb = yr < 1972 ? 0 : yr < 1994 ? 0.30 : yr < 2010 ? 0.50 : 0.70;
-            let loc, trackName, raceName, tries = 0;
+            let trackName, raceName, tries = 0;
             do {
-                // Erst das Muster, dann der Ort: ein Straßenkurs braucht eine Stadt
-                // (Long Beach, Las Vegas), ein permanenter Kurs einen Kleinort
-                // (Silverstone, Nürburg, Magny-Cours). Genau so liegen die realen
-                // Streckennamen in f1db.
-                const cMuster = _circuitPick(cPat, era);
-                loc = _pickPlace(ioc, /Street/.test(cMuster));
-                trackName = cMuster.replace('{loc}', loc);
-                raceName = _circuitPick(rPat, era).replace('{loc}', loc);
+                ({ trackName, raceName } = _composeCircuitNames(ioc, yr));
                 if (Math.random() < sponsorProb) raceName = _circuitSponsor(yr) + ' ' + raceName;
                 tries++;
             } while (usedNames.has(raceName.toLowerCase()) && tries < 8);
@@ -31238,6 +31428,476 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                     '🏁 P1! {driver} liefert – und {team} feiert.',
                     '🏁 Das war’s – {driver} bringt den Sieg über die Linie!'
                 ]
+            },
+            // Fable-Paket 1b (v0.9.18.25): Regen und rote Flagge. Reine Darstellung – ob es
+            // regnet oder rot wird, steht in simulateRace (regenArt, roteFlagge) fest.
+            // wet_start: durchgehend nass, direkt nach der Startmeldung.
+            wet_start: {
+                e50: [
+                    '🌧️ Der Himmel hat entschieden: Die Bahn liegt nass, und das Feld muss sich dem Wetter stellen.',
+                    '🌧️ Regenschwere Luft über der Strecke – heute wiegt der Mut ebenso schwer wie der Motor.',
+                    '🌧️ {fieldSize} Wagen stehen auf glänzender Bahn – ein Grand Prix im Zeichen des Wassers.',
+                    '🌧️ {fieldSize} Piloten wagen sich auf die nasse Bahn, und Beherrschung wird mehr gelten als Kraft.',
+                    '🌧️ {totalLaps} Runden auf nasser Fahrbahn – eine Prüfung für Mann und Maschine.',
+                    '🌧️ Über {totalLaps} Runden bleibt die Bahn ein glatter, tückischer Gegner.',
+                    '🌧️ {fieldSize} Wagen, {totalLaps} Runden, und über allem ein nasser Himmel – so beginnt dieser Grand Prix.',
+                    '🌧️ Das Feld von {fieldSize} Wagen geht auf die weite Reise über {totalLaps} Runden, auf einer Bahn, die vor Nässe glänzt.'
+                ],
+                e62: [
+                    '🌧️ Nasse Bahn zum Start: Das Rennen wird unter schwierigen Bedingungen ausgetragen.',
+                    '🌧️ Die Strecke ist von Beginn an nass, die Fahrer haben wenig Haftung zu erwarten.',
+                    '🌧️ {fieldSize} Wagen im Regenrennen – Haftung und Fingerspitzengefühl sind gefragt.',
+                    '🌧️ Für alle {fieldSize} Fahrer beginnt das Rennen auf nasser Bahn.',
+                    '🌧️ Auf nasser Bahn stehen {totalLaps} Runden bevor – Geduld und Kontrolle zählen.',
+                    '🌧️ {totalLaps} Runden bei Nässe – Konzentration wird über die gesamte Distanz verlangt.',
+                    '🌧️ {fieldSize} Wagen, {totalLaps} Runden, eine durchgehend nasse Bahn – ein Rennen der Vorsicht.',
+                    '🌧️ Ein Regenrennen: {fieldSize} Wagen gehen auf die Distanz von {totalLaps} Runden.'
+                ],
+                e76: [
+                    '🌧️ Regenrennen! Die Bahn ist klatschnass, das wird eine Rutschpartie.',
+                    '🌧️ Wasser auf der Strecke, Gischt in der Luft – das Feld fährt ins Ungewisse.',
+                    '🌧️ {fieldSize} Autos, eine nasse Piste – jetzt wird es wild!',
+                    '🌧️ Alle {fieldSize} Wagen kämpfen mit dem Wasser – kaum Grip, viel Risiko.',
+                    '🌧️ {totalLaps} Runden im Nassen – das ist Schwerstarbeit!',
+                    '🌧️ {totalLaps} Runden auf schmieriger Piste, da ist echte Fahrkunst gefragt.',
+                    '🌧️ {fieldSize} Wagen, {totalLaps} Runden, nasse Piste – Nervenkitzel pur!',
+                    '🌧️ Regenschlacht: {fieldSize} Autos, {totalLaps} Runden, und die Piste bleibt nass!'
+                ],
+                e94: [
+                    '🌧️ Nasses Rennen von Beginn an – Reifenwahl und Fahrzeugabstimmung stehen im Fokus.',
+                    '🌧️ Die Strecke ist durchgehend nass, Aquaplaning lauert in jeder Kurve.',
+                    '🌧️ {fieldSize} Fahrzeuge im Regen – der Grip bleibt das große Thema.',
+                    '🌧️ {fieldSize} Wagen auf nasser Piste – Traktion und Fingerspitzengefühl zählen.',
+                    '🌧️ {totalLaps} Runden bei Nässe – die Reifen werden über die Distanz gefordert.',
+                    '🌧️ Über {totalLaps} Runden bleibt die Strecke nass, Gischt und Sichtweite werden zum Thema.',
+                    '🌧️ {fieldSize} Fahrzeuge, {totalLaps} Runden, nasse Piste – ein technisch anspruchsvolles Rennen.',
+                    '🌧️ Regenrennen: {fieldSize} Autos gehen auf {totalLaps} Runden, Setup und Reifenwahl sind jetzt alles.'
+                ],
+                e10: [
+                    '🌧️ Nasses Rennen von Anfang an – hier ist alles möglich!',
+                    '🌧️ Die Bahn ist nass, die Gischt fliegt – das wird ein Kraftakt für alle.',
+                    '🌧️ {fieldSize} Autos im Regen – jetzt zählt jede Entscheidung!',
+                    '🌧️ Alle {fieldSize} Fahrzeuge fahren im Nassen – das kann jederzeit kippen.',
+                    '🌧️ {totalLaps} Runden auf nasser Strecke – das wird lang und wild!',
+                    '🌧️ {totalLaps} Runden im Nassen, hier ist volle Konzentration gefragt.',
+                    '🌧️ {fieldSize} Autos, {totalLaps} Runden, nasse Strecke – das verspricht Spektakel!',
+                    '🌧️ Regenrennen! {fieldSize} Fahrzeuge, {totalLaps} Runden – und die Piste bleibt nass.'
+                ]
+            },
+            // rain_arrives.e76 ist der erste mehrstimmige Pool: Claude + fünf Fremd-KIs, gefiltert
+            // mit filter_kandidaten.py (Konzept: browser-pakete/erledigt/P2-ergebnis/). {driver} wählt
+            // _tickerFahrerSlot, {leader} ist immer der Führende.
+            rain_arrives: {
+                e50: [
+                    '🌧️ Runde {lap}: Dunkle Wolken öffnen sich – die ersten Tropfen fallen auf die Bahn.',
+                    '🌧️ Runde {lap}: Der Regen setzt ein, und mit ihm wird die Prüfung härter.',
+                    '🌧️ Runde {lap}: Ein Schauer geht über der Strecke nieder, die Bahn beginnt zu glänzen.',
+                    '🌧️ Runde {lap}: Wetterumschwung! Das Wasser legt sich auf die Fahrbahn.',
+                    '🌧️ Runde {lap}: {leader} führt das Feld in den einsetzenden Regen.',
+                    '🌧️ Runde {lap}: Regen fällt, an der Spitze liegt {leader} – nun wird sich Können zeigen.',
+                    '🌧️ Runde {lap}: Der Himmel öffnet seine Schleusen, und {leader} führt durch das Nass.',
+                    '🌧️ Runde {lap}: Mit dem Regen beginnt ein neuer Kampf – an der Spitze: {leader}.'
+                ],
+                e62: [
+                    '🌧️ Runde {lap}: Regen setzt ein, die Strecke wird zusehends nass.',
+                    '🌧️ Runde {lap}: Die ersten Tropfen fallen, die Bahn verliert an Haftung.',
+                    '🌧️ Runde {lap}: Es beginnt zu regnen – die Fahrer müssen ihre Linie neu finden.',
+                    '🌧️ Runde {lap}: Ein Regenschauer zieht auf, die Bedingungen ändern sich.',
+                    '🌧️ Runde {lap}: Regen setzt ein, {leader} führt das Feld an.',
+                    '🌧️ Runde {lap}: Die Strecke wird nass, an der Spitze liegt {leader}.',
+                    '🌧️ Runde {lap}: Wetterwechsel – {leader} führt das Rennen nun auf feuchter Bahn.',
+                    '🌧️ Runde {lap}: Es regnet, und {leader} führt das Feld in die schwierigeren Bedingungen.'
+                ],
+                e76: [
+                    '🌧️ Runde {lap}: Jetzt regnet es! Die Piste wird rutschig.',
+                    '🌧️ Runde {lap}: Die ersten Tropfen fallen auf die Piste.',
+                    '🌧️ Runde {lap}: Ein plötzlicher Schauer erfasst die Strecke.',
+                    '🌧️ Runde {lap}: Regen setzt ein, und der Kurs verändert sich unter den Rädern.',
+                    '🌧️ Runde {lap}: Der Regen setzt ein, und {leader} muss die Führung auf nassem Asphalt verteidigen.',
+                    '🌧️ {leader} führt weiter, während der Regen einsetzt.',
+                    '🌧️ Runde {lap}: Regen setzt ein – {leader} führt, und die Piste wird glatt!',
+                    '🌧️ {driver} muss sich nun auf nasser Piste behaupten.',
+                    '🌧️ {leader} führt das Feld durch den einsetzenden Regen.',
+                    '🌧️ Über dem Kurs verdunkelt sich der Himmel, erste Tropfen mischen sich in den Kampf.',
+                    '🌧️ Runde {lap}: Die Bahn wird glatt – {leader} klebt weiter an der Spitze.',
+                    '🌧️ Runde {lap}: Regen setzt ein – die Strecke wird nass.',
+                    '🌧️ Runde {lap}: Es regnet! An der Spitze: {leader}.',
+                    '🌧️ Runde {lap}: Plötzlicher Wettersturz über der Strecke.',
+                    '🌧️ {driver} spürt die ersten Regentropfen.',
+                    '🌧️ Runde {lap}: Der Asphalt glänzt plötzlich, der Regen ist da.',
+                    '🌧️ In Runde {lap} erreicht der Regen die Strecke, und {leader} führt weiter.',
+                    '🌧️ Runde {lap}: Jetzt kommt der Regen ins Rennen.',
+                    '🌧️ Runde {lap}: Nasse Piste, neue Lage – {leader} führt das Feld an.',
+                    '🌧️ Runde {lap}: Regenwolken ziehen über dem Kurs auf.',
+                    '🌧️ {leader} führt durch die nassen Runden.',
+                    '🌧️ Nasser Asphalt, grauer Himmel – das Rennen bekommt eine neue Kulisse.',
+                    '🌧️ Runde {lap}: Regentropfen auf den Fernsehkameras – vorn fährt {leader} durch die feuchten Passagen.',
+                    '🌧️ Erste Tropfen fallen – die Bahn wird rutschiger.',
+                    '🌧️ Runde {lap}: Regen auf der Strecke, und {leader} liegt vorn – jetzt wird es spannend!',
+                    '🌧️ Runde {lap}: Die Bahn wird zunehmend nasser.',
+                    '🌧️ Runde {lap}: {driver} spürt den nassen Gripverlust.',
+                    '🌧️ Runde {lap}: Tropfen schlagen auf den Kurs, der Grip wirkt jetzt kostbarer.',
+                    '🌧️ Runde {lap}: Der Asphalt dunkelt ab, {leader} behält die Nase vorn.',
+                    '🌧️ Runde {lap}: Der Regen erreicht die Strecke.',
+                    '🌧️ Runde {lap}: Regen! Die Strecke wird nass, das Feld muss reagieren.',
+                    '🌧️ {driver} sieht sich plötzlich mit Nässe konfrontiert.',
+                    '🌧️ {driver} steuert den Wagen durch nasses Terrain.',
+                    '🌧️ Regen! Die Bilder zeigen nasse Stellen, und das Feld stellt sich darauf ein.',
+                    '🌧️ Ab Runde {lap} wird die Piste nass: {leader} bleibt die Referenz an der Spitze.',
+                    '🌧️ Runde {lap}: Nässe kommt auf, das Rennen nimmt eine neue Wendung.',
+                    '🌧️ Runde {lap}: Erst ein paar Tropfen, dann mehr – es regnet!',
+                    '🌧️ {driver} navigiert durch die einsetzenden Schauer.',
+                    '🌧️ Runde {lap}: {leader} behält im einsetzenden Regen die Führung.',
+                    '🌧️ Runde {lap}: Wassertropfen hängen an den Helmen, der Kurs wird feucht.',
+                    '🌧️ Runde {lap}: Wasser auf der Bahn! {leader} hält die Führung, dahinter wird es rutschig.',
+                    '🌧️ Der Himmel öffnet sich – Regen setzt ein.',
+                    '🌧️ Runde {lap}: Wetterumschwung! Das Rennen bekommt eine neue Wendung.',
+                    '🌧️ Runde {lap}: Nasse Bedingungen erreichen {driver}.',
+                    '🌧️ Runde {lap}: {driver} kämpft gegen die nassen Bedingungen.',
+                    '🌧️ Nasse Bedingungen auf dem Kurs – das Rennen bekommt einen raueren Anstrich.',
+                    '🌧️ Der Regen erwischt das Feld in Runde {lap}, und vorn führt {leader} durch die Nässe.',
+                    '🌧️ Runde {lap}: Regen mischt das Geschehen auf.',
+                    '🌧️ {driver} verliert durch den Regen an Sichtweite.',
+                    '🌧️ Tropfen fallen auf die Visiere, als der Regen beginnt.',
+                    '🌧️ Runde {lap}: Regen im Rennen, und vorne bleibt {leader} vorerst die Referenz.',
+                    '🌧️ Runde {lap}: Regen! Die Bahn wird rutschig, das Feld muss aufpassen.',
+                    '🌧️ {leader} an der Spitze, doch nun wird es nass.',
+                    '🌧️ Runde {lap}: Ein Schauer erreicht das Rennareal.',
+                    '🌧️ {driver} navigiert durch den plötzlichen Regenschauer.',
+                    '🌧️ Runde {lap}: Der Himmel öffnet sich, der Grand Prix bekommt nasse Füße.',
+                    '🌧️ Runde {lap}: Die Fernsehbilder lügen nicht – die Bahn ist nass, {leader} führt.',
+                    '🌧️ Runde {lap}: Jetzt wird die Bahn nass.',
+                    '🌧️ Runde {lap}: {driver} kämpft mit der glatten Fahrbahn.',
+                    '🌧️ Die Sicht wird schlechter, da Regen einsetzt.',
+                    '🌧️ Runde {lap}: {driver} nimmt die ersten Tropfen zur Kenntnis, die Spur wird feucht.',
+                    '🌧️ Ab Runde {lap} heißt es volle Konzentration auf nasser Strecke.',
+                    '🌧️ {leader} führt, während die Strecke zunehmend nass wird.',
+                    '🌧️ Runde {lap}: Nässe macht sich auf dem Asphalt breit.',
+                    '🌧️ Runde {lap}: {driver} trotzt dem nassen Wetter.',
+                    '🌧️ Plötzlich spritzt es an der Strecke, und jeder Meter wirkt schwerer.',
+                    '🌧️ Nasse Bahn ab Runde {lap}: {driver} muss nun mit weniger Haftung klarkommen.',
+                    '🌧️ Regen kommt auf – die Bedingungen ändern sich.',
+                    '🌧️ {driver} spürt den Wetterumschwung im Cockpit.',
+                    '🌧️ Runde {lap}: Plötzlich fängt es an zu regnen.',
+                    '🌧️ Runde {lap}: Über der Spitze um {leader} liegt Regenluft, der Kurs glänzt bereits nass.',
+                    '🌧️ Runde {lap}: Das Wetter dreht, die Piste wird nass.',
+                    '🌧️ {leader} bleibt vorn, doch der Regen ist da.',
+                    '🌧️ Runde {lap}: Der Himmel öffnet sich über der Piste.',
+                    '🌧️ Wasser auf dem Asphalt signalisiert den Regeneinbruch.',
+                    '🌧️ {leader} bleibt vorn, doch Runde {lap} bringt plötzlich Regen auf die Bahn.',
+                    '🌧️ Runde {lap}: {leader} hält die Spitze, während die Strecke glänzend wird.',
+                    '🌧️ Runde {lap}: Nasse Fahrbahn kündigt sich an.',
+                    '🌧️ {driver} findet auf der nassen Piste weniger Grip.',
+                    '🌧️ Dunkle Wolken bringen Regen über die Strecke.',
+                    '🌧️ Runde {lap}: Nasse Fahrbahn, dicker Himmel – {leader} führt in eine veränderte Szene.',
+                    '🌧️ In Runde {lap} erfasst der Regen die Bahn – jetzt ist Vorsicht angesagt.',
+                    '🌧️ {leader} führt weiter, jetzt unter nassen Bedingungen.',
+                    '🌧️ Runde {lap}: Sichtweite nimmt durch einsetzenden Regen ab.',
+                    '🌧️ Runde {lap}: Nässe überrascht die Piloten.',
+                    '🌧️ Die Kamera fängt Tropfen ein: Runde {lap}, Regen, und {leader} weiter an der Spitze.',
+                    '🌧️ Runde {lap}: Die Strecke verändert sich, {leader} bleibt vorne dran.',
+                    '🌧️ Runde {lap}: Der Regen setzt ein und verändert das Bild.',
+                    '🌧️ Runde {lap}: {driver} wird von den Tropfen überrascht.',
+                    '🌧️ Plötzlicher Niederschlag verändert die Bedingungen.',
+                    '🌧️ Runde {lap}: {driver} jagt durch feine Gischt, der Regen kommt nun zum Rennen.',
+                    '🌧️ Runde {lap}: Die Kameras an der Strecke bekommen nasse Objektive.',
+                    '🌧️ {leader} an der Spitze, während Regen einsetzt.',
+                    '🌧️ Runde {lap}: Feuchte Konditionen verändern die Strecke.',
+                    '🌧️ Runde {lap}: Regen setzt ein und macht die Fahrbahn nass.',
+                    '🌧️ Runde {lap}: Regentropfen auf der Strecke, {driver} sucht nun den richtigen Rhythmus.',
+                    '🌧️ Runde {lap}: Wetterwechsel! {leader} führt das Feld durch die nassen Kurven.',
+                    '🌧️ Nun wird es nass auf der Strecke.',
+                    '🌧️ {driver} muss das Tempo der Nässe anpassen.',
+                    '🌧️ Gischt steigt auf, da es zu regnen beginnt.',
+                    '🌧️ Das Funkeln auf dem Asphalt sagt alles: Runde {lap} wird nass, {leader} steht vorne.',
+                    '🌧️ Runde {lap}: Wasser auf dem Asphalt – das Rennen bekommt eine neue Note.',
+                    '🌧️ {leader} bleibt Spitzenreiter, während Regen einsetzt.',
+                    '🌧️ Runde {lap}: Wasserfilme bilden sich auf der Fahrbahn.',
+                    '🌧️ Runde {lap}: Das Wetter schlägt um und Regen setzt ein.',
+                    '🌧️ Runde {lap}: Regen bricht herein, während {leader} das Feld anführt.',
+                    '🌧️ In Runde {lap} dreht das Wetter, {leader} bleibt in Führung – die Bahn wird feucht.',
+                    '🌧️ Runde {lap}: Regen zieht auf und erreicht die Bahn.',
+                    '🌧️ Runde {lap}: {driver} tastet sich an die nassen Grenzen heran.',
+                    '🌧️ Die Piloten kämpfen mit plötzlich nasser Strecke.',
+                    '🌧️ Der Himmel schaltet auf grau: Runde {lap}, Regen, und {leader} führt das Feld an.',
+                    '🌧️ Der Himmel hält Wort: die Bahn wird nass, und das Rennen wechselt das Gesicht.',
+                    '🌧️ {leader} führt weiter, nun kommt Regen auf.',
+                    '🌧️ Runde {lap}: Ein Regenschauer überzieht den Kurs.',
+                    '🌧️ Ein Regenschauer zieht über den Kurs.',
+                    '🌧️ Runde {lap}: Tropfen treffen die Visiere, und {leader} führt durch die neue Szene.',
+                    '🌧️ Runde {lap}: Der Regen ist da – {driver} muss sich an die neue Bahn gewöhnen.',
+                    '🌧️ Runde {lap}: Die ersten Regentropfen sind da.',
+                    '🌧️ {driver} sieht sich mit rutschigem Untergrund konfrontiert.',
+                    '🌧️ Wasserflecken auf dem Visier kündigen Regen an.',
+                    '🌧️ Auf dem Bildschirm wird es nass: Runde {lap} stellt {driver} vor ein anderes Bild.',
+                    '🌧️ Regen! Die Tribünen öffnen die Regencapes, die Piste glänzt im Licht.',
+                    '🌧️ {leader} liegt vorn, während die Bahn nasser wird.',
+                    '🌧️ Runde {lap}: Die Witterung schlägt augenblicklich um.',
+                    '🌧️ Runde {lap}: Der Regen beginnt im laufenden Rennen.',
+                    '🌧️ Runde {lap}: {driver} blickt in einen grauen Horizont, die Fahrbahn glänzt schon.',
+                    '🌧️ Runde {lap}: Es wird nass, und {leader} gibt an der Spitze den Takt an.',
+                    '🌧️ Regen setzt ein – auf der Strecke wird es glatt.',
+                    '🌧️ Runde {lap}: {driver} durchfährt eine nasse Passage.',
+                    '🌧️ Rutschige Passagen entstehen durch einsetzenden Regen.',
+                    '🌧️ Runde {lap}: Aus der Ferne zieht Regen über den Kurs, vorne ist es {leader}.',
+                    '🌧️ Es regnet – ein Fehler auf dem nassen Asphalt bleibt nicht unbestraft.',
+                    '🌧️ Runde {lap}: Die Fahrbahn bekommt die ersten nassen Stellen.',
+                    '🌧️ {driver} muss bei einsetzendem Regen die Linie finden.',
+                    '🌧️ Der Zustand der Strecke ändert sich durch Regen.',
+                    '🌧️ Jetzt hängt Wasser in der Luft: Runde {lap}, nasse Strecke, {leader} an der Spitze.',
+                    '🌧️ Regen in Runde {lap}: {leader} fährt vorn, während die Piste das Licht reflektiert.',
+                    '🌧️ Runde {lap}: Nässe kommt ins Spiel.',
+                    '🌧️ Runde {lap}: {driver} spürt den nachlassenden Grip durch Nässe.',
+                    '🌧️ Grauer Himmel und Regen prägen das Bild.',
+                    '🌧️ Runde {lap}: Es regnet, und selbst {leader} bekommt die neue Härte zu spüren.',
+                    '🌧️ Regen auf der Piste – Konzentration ist jetzt das A und O.',
+                    '🌧️ Der Regen ist da – die Strecke wird feucht.',
+                    '🌧️ Runde {lap}: {driver} bewegt sich auf glatter werdendem Asphalt.',
+                    '🌧️ Runde {lap}: Schleudern auf nasser Piste droht.',
+                    '🌧️ Runde {lap}: Der Regen trifft den Asphalt, {driver} trifft auf eine andere Rennphase.',
+                    '🌧️ Runde {lap}: Der Himmel öffnet sich, und {driver} muss die nassen Bremszonen meistern.',
+                    '🌧️ Runde {lap}: Jetzt verändert der Regen die Bedingungen.',
+                    '🌧️ {driver} begegnet auf der Piste zunehmendem Wasserrisiko.',
+                    '🌧️ Regen setzt ein und fordert die Fahrer.',
+                    '🌧️ Regen auf dem Kurs in Runde {lap} – für {driver} beginnt der heikle Teil des Tages.',
+                    '🌧️ Runde {lap}: Wasser von oben, und {leader} behält oben die Übersicht.',
+                    '🌧️ Runde {lap}: Regen erreicht die Strecke, die Bahn wird nass.',
+                    '🌧️ Runde {lap}: Nasser Asphalt fordert alle heraus.',
+                    '🌧️ Feuchtigkeit auf dem Asphalt überrascht das Feld.',
+                    '🌧️ Runde {lap}: Die Spur verliert ihren trockenen Glanz, und {leader} führt ins Ungewisse.',
+                    '🌧️ Runde {lap}: Die Piste verlangt Feingefühl, {leader} liefert es an der Spitze.',
+                    '🌧️ Auf der Strecke setzt Regen ein.',
+                    '🌧️ Runde {lap}: {driver} muss die Fahrweise dem Regen angleichen.',
+                    '🌧️ Runde {lap}: Der Regen setzt dem Asphalt zu.',
+                    '🌧️ Mit Runde {lap} kommt der Regen, und {leader} führt das Feld in die nasse Phase.',
+                    '🌧️ Runde {lap}: Regen! {leader} führt – eine Bilderbuchkulisse fürs Fernsehen.',
+                    '🌧️ Runde {lap}: Die Bedingungen werden mit dem Regen nasser.',
+                    '🌧️ {driver} erlebt einen plötzlichen Wettereinbruch auf der Strecke.',
+                    '🌧️ Nasser Untergrund verändert das Renngeschehen.',
+                    '🌧️ Runde {lap}: Regen zieht auf, die Kulisse passt zum harten Rennen.',
+                    '🌧️ Runde {lap}: Nasser Asphalt – {leader} hat die Führung fest im Griff.',
+                    '🌧️ Runde {lap}: Der Regen beginnt und die Bahn wird rutschig.',
+                    '🌧️ Runde {lap}: {driver} behält die nasse Piste im Blick.',
+                    '🌧️ Wasser sammelt sich auf der Ideallinie.',
+                    '🌧️ Runde {lap}: Die Strecke spricht von Regen, {leader} zeigt die Richtung.',
+                    '🌧️ {leader} führt weiterhin, doch die Bahn wird mit jedem Meter nasser.',
+                    '🌧️ Feuchtigkeit kommt auf die Strecke – der Regen setzt ein.',
+                    '🌧️ Feuchter Asphalt und graues Licht – die Sache wird heikel.',
+                    '🌧️ Nasse Bahn, glatte Kurven – {leader} bleibt trotzdem vorne.',
+                    '🌧️ Runde {lap}: Regen macht sich auf der Bahn bemerkbar.',
+                    '🌧️ Runde {lap}: Die Bahn ist jetzt nass, und das TV-Bild zeigt die Regentropfen.',
+                    '🌧️ Es wird nass hier: {leader} führt, und die Strecke wird zur Prüfung.',
+                    '🌧️ Runde {lap}: Die Strecke wird nass, der Regen ist angekommen.',
+                    '🌧️ Auf glattem Asphalt führt weiterhin {leader}.',
+                    '🌧️ Regen fällt auf die Strecke.',
+                    '🌧️ Regenschirme an den Tribünen: {leader} fährt weiter an der Spitze.',
+                    '🌧️ Runde {lap}: Nun setzt der Regen spürbar ein.',
+                    '🌧️ Runde {lap}: Regen verändert die Bedingungen auf der Strecke.',
+                    '🌧️ Jetzt ist der Regen auf der Strecke angekommen.'
+                ],
+                e94: [
+                    '🌧️ Runde {lap}: Der Regen setzt ein, der Grip lässt nach.',
+                    '🌧️ Runde {lap}: Erste Tropfen auf der Strecke – die Frage nach den Reifen stellt sich.',
+                    '🌧️ Runde {lap}: Es beginnt zu regnen, die Bedingungen kippen.',
+                    '🌧️ Runde {lap}: Regenfront über der Strecke – die Bahn wird zunehmend nass.',
+                    '🌧️ Runde {lap}: {leader} führt, während der Regen einsetzt und der Grip merklich sinkt.',
+                    '🌧️ Runde {lap}: Die Strecke wird nass – an der Spitze liegt {leader}.',
+                    '🌧️ Runde {lap}: Wetterumschwung, und {leader} führt in die feuchten Bedingungen.',
+                    '🌧️ Runde {lap}: Regen zieht auf, vorn liegt {leader} – die Reifenwahl wird zum Thema.'
+                ],
+                e10: [
+                    '🌧️ Runde {lap}: Es fängt an zu regnen!',
+                    '🌧️ Runde {lap}: Regen setzt ein – jetzt wird es knifflig.',
+                    '🌧️ Runde {lap}: Die ersten Tropfen fallen, und die Strecke wird rutschig.',
+                    '🌧️ Runde {lap}: Wetterumschwung! Der Regen ist da.',
+                    '🌧️ Runde {lap}: Regen! {leader} führt das Feld in die nassen Bedingungen.',
+                    '🌧️ Runde {lap}: Der Regen setzt ein, an der Spitze liegt {leader}.',
+                    '🌧️ Runde {lap}: Jetzt wird es nass – {leader} führt, und die Strecke wird glatt.',
+                    '🌧️ Runde {lap}: Regen auf der Strecke, {leader} vorne – das kann alles verändern!'
+                ]
+            },
+            track_drying: {
+                e50: [
+                    '☀️ Runde {lap}: Die Wolken reißen auf, die Bahn beginnt langsam abzutrocknen.',
+                    '☀️ Runde {lap}: Ein erster Sonnenstrahl fällt auf die Strecke, das Wasser weicht.',
+                    '☀️ Runde {lap}: Der Regen hat nachgelassen, die Fahrbahn wird zusehends trockener.',
+                    '☀️ Runde {lap}: Die Bahn trocknet, eine helle Spur zeichnet sich ab.',
+                    '☀️ Runde {lap}: Die Bahn trocknet ab, und {leader} führt das Feld in bessere Bedingungen.',
+                    '☀️ Runde {lap}: Die Sonne bricht durch, an der Spitze liegt {leader}.',
+                    '☀️ Runde {lap}: Das Wasser verschwindet von der Strecke – an der Spitze: {leader}.',
+                    '☀️ Runde {lap}: Der Himmel klärt sich, und {leader} führt das Feld über die abtrocknende Bahn.'
+                ],
+                e62: [
+                    '☀️ Runde {lap}: Die Strecke trocknet ab, die Haftung nimmt wieder zu.',
+                    '☀️ Runde {lap}: Der Regen hat aufgehört, die Bahn wird zunehmend trocken.',
+                    '☀️ Runde {lap}: Es klart auf – auf der Ideallinie zeigt sich die erste trockene Spur.',
+                    '☀️ Runde {lap}: Die Bedingungen bessern sich, die Fahrbahn trocknet.',
+                    '☀️ Runde {lap}: Die Strecke trocknet ab, {leader} führt das Feld an.',
+                    '☀️ Runde {lap}: Der Regen lässt nach, an der Spitze liegt {leader}.',
+                    '☀️ Runde {lap}: Die Sonne setzt sich durch – {leader} führt auf abtrocknender Bahn.',
+                    '☀️ Runde {lap}: Die Nässe weicht von der Strecke, {leader} liegt vorn.'
+                ],
+                e76: [
+                    '☀️ Runde {lap}: Die Sonne kommt raus, die Piste trocknet ab!',
+                    '☀️ Runde {lap}: Es hört auf zu regnen – die Strecke wird griffiger.',
+                    '☀️ Runde {lap}: Eine trockene Linie zeichnet sich ab, das ändert einiges.',
+                    '☀️ Runde {lap}: Der Regen ist durch, jetzt trocknet die Bahn.',
+                    '☀️ Runde {lap}: Die Piste trocknet, und {leader} führt das Feld an.',
+                    '☀️ Runde {lap}: Sonne statt Regen – {leader} liegt vorn!',
+                    '☀️ Runde {lap}: Abtrocknende Strecke, {leader} an der Spitze – jetzt wird es spannend.',
+                    '☀️ Runde {lap}: Das Wasser verschwindet, vorne fährt {leader}.'
+                ],
+                e94: [
+                    '☀️ Runde {lap}: Die Strecke trocknet ab, die Ideallinie wird trocken.',
+                    '☀️ Runde {lap}: Der Regen hat aufgehört, der Grip kehrt zurück.',
+                    '☀️ Runde {lap}: Die Bahn trocknet, und die Reifenfrage stellt sich neu.',
+                    '☀️ Runde {lap}: Erste trockene Bereiche auf der Strecke, die Bedingungen werden besser.',
+                    '☀️ Runde {lap}: Die Strecke trocknet ab, vorn liegt {leader}, und die Ideallinie ist schon trocken.',
+                    '☀️ Runde {lap}: Der Grip kehrt zurück, an der Spitze liegt {leader}.',
+                    '☀️ Runde {lap}: Abtrocknende Bahn, {leader} vorn – die Reifenwahl rückt in den Fokus.',
+                    '☀️ Runde {lap}: Die Nässe verschwindet, und {leader} führt in die besseren Bedingungen.'
+                ],
+                e10: [
+                    '☀️ Runde {lap}: Die Strecke trocknet ab!',
+                    '☀️ Runde {lap}: Der Regen hört auf, die Ideallinie wird trocken.',
+                    '☀️ Runde {lap}: Die Sonne kommt raus – jetzt wird die Reifenfrage spannend!',
+                    '☀️ Runde {lap}: Es trocknet ab, die Bedingungen ändern sich schon wieder.',
+                    '☀️ Runde {lap}: Die Strecke trocknet, {leader} führt das Feld an.',
+                    '☀️ Runde {lap}: Der Regen ist vorbei, vorn liegt {leader}.',
+                    '☀️ Runde {lap}: Abtrocknende Piste, {leader} an der Spitze – das kann jetzt kippen!',
+                    '☀️ Runde {lap}: Trockene Linie in Sicht, {leader} führt.'
+                ]
+            },
+            // Grund unbekannt – keine Ursache nennen. Gewürfelt wird erst ab 1970.
+            red_flag: {
+                e62: [
+                    '🟥 Runde {lap}: Die rote Flagge wird gezeigt, das Rennen ist unterbrochen.',
+                    '🟥 Runde {lap}: Unterbrechung – die Rennleitung hat das Rennen angehalten.',
+                    '🟥 Runde {lap}: Das Rennen wird vorübergehend unterbrochen.',
+                    '🟥 Runde {lap}: Rote Flagge – für den Moment ruht das Rennen.',
+                    '🟥 Runde {lap}: Rote Flagge, das Rennen ist unterbrochen, {leader} lag zuletzt in Führung.',
+                    '🟥 Runde {lap}: Unterbrechung des Rennens, die Führung hatte {leader}.',
+                    '🟥 Runde {lap}: Das Rennen ruht – zum Zeitpunkt der Unterbrechung führte {leader}.',
+                    '🟥 Runde {lap}: Die rote Flagge weht, {leader} war in Führung.'
+                ],
+                e76: [
+                    '🟥 Runde {lap}: Rote Flagge! Das Rennen ist unterbrochen.',
+                    '🟥 Runde {lap}: Stopp! Die Rennleitung schwenkt die rote Flagge.',
+                    '🟥 Runde {lap}: Unterbrechung – vorerst steht das Rennen.',
+                    '🟥 Runde {lap}: Rot! Das Rennen wird gestoppt.',
+                    '🟥 Runde {lap}: Rote Flagge! {leader} führte, als das Rennen gestoppt wurde.',
+                    '🟥 Runde {lap}: Unterbrechung! Vorne lag {leader}.',
+                    '🟥 Runde {lap}: Das Rennen steht – {leader} war in Führung.',
+                    '🟥 Runde {lap}: Schluss für den Moment! {leader} lag an der Spitze.'
+                ],
+                e94: [
+                    '🟥 Runde {lap}: Rote Flagge – das Rennen ist unterbrochen.',
+                    '🟥 Runde {lap}: Die Rennleitung zeigt Rot, das Rennen wird gestoppt.',
+                    '🟥 Runde {lap}: Unterbrechung! Das Rennen ruht vorerst.',
+                    '🟥 Runde {lap}: Rot auf allen Signalen – das Rennen ist gestoppt.',
+                    '🟥 Runde {lap}: Rote Flagge! Bis zur Unterbrechung führte {leader}.',
+                    '🟥 Runde {lap}: Das Rennen ist unterbrochen, {leader} lag an der Spitze.',
+                    '🟥 Runde {lap}: Rot! {leader} war in Führung, als das Rennen gestoppt wurde.',
+                    '🟥 Runde {lap}: Unterbrechung – die Führung hatte zuletzt {leader}.'
+                ],
+                e10: [
+                    '🟥 Runde {lap}: Rote Flagge! Jetzt steht das Rennen.',
+                    '🟥 Runde {lap}: Rot – das Rennen ist angehalten!',
+                    '🟥 Runde {lap}: Unterbrechung – die Rennleitung greift ein.',
+                    '🟥 Runde {lap}: Das Rennen steht – rote Flagge!',
+                    '🟥 Runde {lap}: Rote Flagge! {leader} führte zuletzt das Feld an.',
+                    '🟥 Runde {lap}: Das Rennen ist unterbrochen, vorne lag {leader}.',
+                    '🟥 Runde {lap}: Rot – und {leader} liegt in Führung, als alles stoppt.',
+                    '🟥 Runde {lap}: Stopp! {leader} war der Führende, als die rote Flagge kam.'
+                ]
+            },
+            red_flag_wet: {
+                e62: [
+                    '🟥 Runde {lap}: Bei nasser Bahn wird die rote Flagge gezeigt, das Rennen ist unterbrochen.',
+                    '🟥 Runde {lap}: Unterbrechung im Regenrennen – die Rennleitung hält das Rennen an.',
+                    '🟥 Runde {lap}: Rote Flagge auf nasser Strecke, das Rennen ruht.',
+                    '🟥 Runde {lap}: Das Regenrennen wird vorübergehend unterbrochen.',
+                    '🟥 Runde {lap}: Rote Flagge im Regen, {leader} lag in Führung.',
+                    '🟥 Runde {lap}: Auf nasser Bahn wird unterbrochen, die Spitze hielt {leader}.',
+                    '🟥 Runde {lap}: Das Rennen ruht bei Nässe – zuletzt führte {leader}.',
+                    '🟥 Runde {lap}: Unterbrechung im Regen, {leader} war in Führung.'
+                ],
+                e76: [
+                    '🟥 Runde {lap}: Rote Flagge im Regen! Das Rennen ist gestoppt.',
+                    '🟥 Runde {lap}: Bei diesem Wetter wird das Rennen unterbrochen – rot!',
+                    '🟥 Runde {lap}: Nasse Piste, rote Flagge – das Rennen steht.',
+                    '🟥 Runde {lap}: Stopp im Regen, die Rennleitung zeigt Rot!',
+                    '🟥 Runde {lap}: Rote Flagge im Regen! {leader} führte, als das Rennen gestoppt wurde.',
+                    '🟥 Runde {lap}: Unterbrechung auf nasser Piste – vorne lag {leader}.',
+                    '🟥 Runde {lap}: Das Rennen steht im Regen, {leader} war in Führung.',
+                    '🟥 Runde {lap}: Rot bei Nässe! {leader} lag an der Spitze.'
+                ],
+                e94: [
+                    '🟥 Runde {lap}: Rote Flagge bei nasser Strecke – das Rennen ist unterbrochen.',
+                    '🟥 Runde {lap}: Unterbrechung im Regenrennen, das Rennen ruht.',
+                    '🟥 Runde {lap}: Rot auf nasser Piste – das Rennen wird gestoppt.',
+                    '🟥 Runde {lap}: Bei diesen Bedingungen zeigt die Rennleitung die rote Flagge.',
+                    '🟥 Runde {lap}: Rote Flagge im Regen, bis dahin führte {leader}.',
+                    '🟥 Runde {lap}: Das Rennen ist bei Nässe unterbrochen, {leader} lag vorn.',
+                    '🟥 Runde {lap}: Rot im Regenrennen – die Führung hatte {leader}.',
+                    '🟥 Runde {lap}: Unterbrechung auf nasser Strecke, {leader} war in Führung.'
+                ],
+                e10: [
+                    '🟥 Runde {lap}: Rote Flagge im Regen! Das Rennen ist unterbrochen.',
+                    '🟥 Runde {lap}: Rot bei Nässe – das Rennen wird gestoppt!',
+                    '🟥 Runde {lap}: Bei diesen Bedingungen ist Schluss für den Moment – rote Flagge.',
+                    '🟥 Runde {lap}: Das Regenrennen steht, die Rennleitung zeigt Rot.',
+                    '🟥 Runde {lap}: Rote Flagge im Regen! {leader} führte zuletzt das Feld an.',
+                    '🟥 Runde {lap}: Unterbrechung auf nasser Strecke, vorne lag {leader}.',
+                    '🟥 Runde {lap}: Rot im Nassen – {leader} war der Führende.',
+                    '🟥 Runde {lap}: Stopp bei Regen! {leader} lag an der Spitze, als es rot wurde.'
+                ]
+            },
+            // Wiederaufnahme vor 2000: Neustart.
+            restart_new: {
+                e62: [
+                    '🟢 Runde {lap}: Das Rennen wird neu gestartet, das Feld formiert sich für den zweiten Start.',
+                    '🟢 Runde {lap}: Die Unterbrechung ist vorüber, ein Neustart wird angesetzt.',
+                    '🟢 Runde {lap}: Neustart – die Wagen gehen erneut an den Start.',
+                    '🟢 Runde {lap} von {totalLaps}: Der Neustart erfolgt, das Rennen beginnt von Neuem.',
+                    '🟢 Runde {lap}: Neustart auf der Bahn – das Rennen über {totalLaps} Runden geht in seine zweite Phase.',
+                    '🟢 Nach der Unterbrechung geht es neu los – Runde {lap} von {totalLaps}.'
+                ],
+                e76: [
+                    '🟢 Runde {lap}: Neustart! Das Feld steht wieder bereit.',
+                    '🟢 Runde {lap}: Die Ampel kommt noch einmal – es geht von vorn los!',
+                    '🟢 Runde {lap}: Das Rennen wird neu gestartet, die Motoren heulen auf.',
+                    '🟢 Runde {lap} von {totalLaps}: Neustart, und alle wollen jetzt nach vorn!',
+                    '🟢 Runde {lap}: Zweiter Start, {totalLaps} Runden im Blick – es geht wieder los!',
+                    '🟢 Neustart nach der Unterbrechung – Runde {lap} von {totalLaps}.'
+                ],
+                e94: [
+                    '🟢 Runde {lap}: Das Rennen wird neu gestartet, das Feld nimmt die Startaufstellung ein.',
+                    '🟢 Runde {lap}: Neustart – die Ampel geht ein zweites Mal aus.',
+                    '🟢 Runde {lap}: Die Unterbrechung ist beendet, es folgt ein Neustart.',
+                    '🟢 Runde {lap} von {totalLaps}: Neustart, das Rennen beginnt erneut.',
+                    '🟢 Runde {lap}: Zweiter Start, die Distanz von {totalLaps} Runden bleibt im Blick.',
+                    '🟢 Nach der roten Flagge geht es neu los – Runde {lap} von {totalLaps}.'
+                ]
+            },
+            // Wiederaufnahme ab 2000: Fortsetzung, Abstände gelöscht.
+            restart_resume: {
+                e94: [
+                    '🟢 Runde {lap}: Das Rennen wird fortgesetzt, die Abstände sind gelöscht und das Feld steht dicht beisammen.',
+                    '🟢 Runde {lap}: Fortsetzung! Neue Reifen gibt es frei, das Feld ist zusammengeschoben.',
+                    '🟢 Runde {lap}: Weiter geht es, mit gelöschten Abständen und neuer Chance für die Verfolger.',
+                    '🟢 Runde {lap}: Fortsetzung mit {leader} an der Spitze – die Verfolger sind ganz dicht dran.',
+                    '🟢 Runde {lap}: Das Feld ist zusammengerückt, {leader} führt, und alle Reifen dürfen neu aufgezogen werden.',
+                    '🟢 Runde {lap}: Weiter im Rennen, {leader} vorn – die Abstände sind auf null gesetzt.'
+                ],
+                e10: [
+                    '🟢 Runde {lap}: Weiter geht es! Die Abstände sind gelöscht, das Feld steht dicht beisammen.',
+                    '🟢 Runde {lap}: Das Rennen wird fortgesetzt, neue Reifen gibt es frei!',
+                    '🟢 Runde {lap}: Fortsetzung – das Feld ist zusammengeschoben, und die Verfolger haben ihre Chance.',
+                    '🟢 Runde {lap}: Weiter im Rennen, {leader} an der Spitze, alle dicht dahinter!',
+                    '🟢 Runde {lap}: Fortsetzung mit {leader} vorn – frische Reifen und ein enges Feld, das wird wild!',
+                    '🟢 Runde {lap}: Es geht weiter, {leader} führt, und die Abstände sind weg.'
+                ]
             }
         };
         // Ausfallgrund-Token (engl., aus dem Live-DNF-Pool) → fertiges dt. artikel-freies Nomen.
@@ -31463,6 +32123,66 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             </tr></thead><tbody>${rows}</tbody></table>`;
         }
         
+        // Fable-Paket 1b (v0.9.18.25): Regen- und Rotflaggen-Meldungen im Ticker.
+        // Reine Darstellung: OB es nass wird und OB rot kommt, steht in plannedResult
+        // (regenArt, roteFlagge). Gewürfelt wird hier nur die Runde der Meldung – wie
+        // bei der Ausfallrunde. Teilweise nass = Regen kommt, geht oder beides.
+        function _tickerWetterPlan(geplant, totalLaps) {
+            const plan = {};
+            const runde = (von, bis) => Math.max(2, Math.min(totalLaps - 2,
+                Math.round(totalLaps * (von + Math.random() * (bis - von)))));
+            if (geplant.regenArt === 'teilweise') {
+                const art = Math.random();
+                if (art < 0.45) plan.rain = runde(0.15, 0.6);
+                else if (art < 0.75) plan.dry = runde(0.25, 0.7);
+                else { plan.rain = runde(0.1, 0.4); plan.dry = runde(0.55, 0.85); }
+            }
+            // Die Rot-Pools beginnen 1970 wie ERA_RED_FLAG_RATE – Absicherung, falls die Tabelle wandert.
+            if (geplant.roteFlagge && GAME_STATE.currentYear >= 1970) {
+                plan.red = runde(0.1, 0.8);
+                const nassBeiRot = geplant.regenArt === 'durchgehend'
+                    || (plan.rain != null && plan.red > plan.rain && (plan.dry == null || plan.red < plan.dry))
+                    || (plan.rain == null && plan.dry != null && plan.red < plan.dry);
+                plan.redEvent = nassBeiRot ? 'red_flag_wet' : 'red_flag';
+            }
+            return plan;
+        }
+
+        // {driver} in den Wetter-Pools: der Führende zu mindestens 50 %, der Rest gleich
+        // verteilt auf Weltmeister des Vorjahres, Meisterschaftsführenden, Polesitter und
+        // die zwei nächsten im Rennen – nur wer gerade im Rennen fährt.
+        // (Paket 1b, fahrer-slot-snippet.js; „Titel schon vorzeitig entschieden" fehlt.)
+        function _tickerFahrerSlot(aktive) {
+            const leader = aktive[0] && aktive[0].name;
+            if (!leader) return '';
+            const imRennen = new Set(aktive.map(p => p.name));
+            const nurImRennen = n => (n && imRennen.has(n)) ? n : null;
+            const yr = GAME_STATE.currentYear;
+            const wm = (GAME_STATE.worldChampions || []).filter(w => w.year < yr).sort((a, b) => b.year - a.year)[0];
+            const tab = Object.values(GAME_STATE.driverStandings || {}).sort((a, b) => (b.points || 0) - (a.points || 0))[0];
+            const pole = liveRaceState.qualiResult && (liveRaceState.qualiResult.results || []).find(r => r.position === 1);
+            const rollen = [nurImRennen(wm && wm.name), nurImRennen(tab && tab.points > 0 ? tab.name : null),
+                            nurImRennen(pole && pole.name)];
+            const vergeben = new Set([leader, ...rollen.filter(Boolean)]);
+            aktive.slice(1).map(p => p.name).filter(n => !vergeben.has(n)).slice(0, 2).forEach(n => rollen.push(n));
+            const andere = rollen.filter(Boolean);
+            if (!andere.length || Math.random() < 0.5) return leader;
+            return andere[Math.floor(Math.random() * andere.length)];
+        }
+
+        function _tickerWetterMeldungen(lap, aktive) {
+            const plan = liveRaceState.wetterPlan;
+            if (!plan) return;
+            const leader = aktive[0] ? aktive[0].name : '';
+            const ctx = { lap, leader, totalLaps: liveRaceState.totalLaps, year: GAME_STATE.currentYear };
+            if (lap === plan.rain) addLiveEvent(liveLine('rain_arrives', { ...ctx, driver: _tickerFahrerSlot(aktive) }), 'warning');
+            if (lap === plan.dry) addLiveEvent(liveLine('track_drying', ctx), 'neutral');
+            if (lap === plan.red) addLiveEvent(liveLine(plan.redEvent, ctx), 'negative');
+            // Wiederaufnahme eine Runde später: vor 2000 Neustart, ab 2000 Fortsetzung.
+            if (plan.red != null && lap === plan.red + 1)
+                addLiveEvent(liveLine(GAME_STATE.currentYear < 2000 ? 'restart_new' : 'restart_resume', ctx), 'positive');
+        }
+
         function simulateLap() {
             if (!liveRaceState.active || liveRaceState.paused) return;
             
@@ -31530,7 +32250,8 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             activeDrivers.sort((a, b) => a.totalTime - b.totalTime);
             const dnfDrivers = liveRaceState.positions.filter(p => p.dnf);
             liveRaceState.positions = [...activeDrivers, ...dnfDrivers];
-            
+            _tickerWetterMeldungen(lap, activeDrivers);   // Paket 1b, reine Darstellung
+
             // === GAPS BERECHNEN ===
             const leaderTime = liveRaceState.positions[0]?.totalTime || 0;
             liveRaceState.positions.forEach(p => {
@@ -31669,6 +32390,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             // ════════════════════════════════════════════════════════════════
             const geplant = rennenErgebnisFuer(raceIndex, isRain);
             liveRaceState.plannedResult = geplant;
+            liveRaceState.wetterPlan = _tickerWetterPlan(geplant, liveRaceState.totalLaps);   // nur Meldungsrunden
 
             const _gridVon = new Map();
             if (qualiResult) qualiResult.results.forEach(q => {
@@ -31750,6 +32472,8 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
             
             // Start-Event
             addLiveEvent(liveLine('start', { fieldSize: liveRaceState.positions.length, totalLaps: liveRaceState.totalLaps, year: GAME_STATE.currentYear }), 'positive');
+            if (liveRaceState.plannedResult && liveRaceState.plannedResult.regenArt === 'durchgehend')
+                addLiveEvent(liveLine('wet_start', { fieldSize: liveRaceState.positions.length, totalLaps: liveRaceState.totalLaps, year: GAME_STATE.currentYear }), 'warning');
             
             // Simulation starten mit dynamischem Interval
             function runSimulation() {
@@ -36113,6 +36837,20 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 return true;
             };
 
+            // === WECHSELWUNSCH MIT WARTESCHLANGE (29.09.2026) ===
+            // Die auslaufenden Vertraege laufen nach Teamrang (beste zuerst). Ein Wechsel brauchte
+            // SOFORT ein Team mit freiem Platz — bei den hinteren Teams war aber noch nichts geraeumt.
+            // 1965 scheiterten so 5,1 von 7,7 Wechselversuchen je Saison, 1995 2,6 von 4,6; der Fahrer
+            // wurde verlaengert. Wechselquote im Spiel 1965 20 %, 1995 21 % gegen real 42 / 40 %
+            // (BEFUNDE.md 29.09.2026). Jetzt wartet der Wunsch bis nach der Phase; Wuerfel und
+            // Wahrscheinlichkeiten bleiben, nur die Reihenfolge entscheidet nicht mehr.
+            const _wechselWarteschlange = [];
+            const _wechselOderWarten = (drv, von, bis, isIndy, typ, rueckfall) => {
+                const t = findTeamWithSpace(teamRanking, von, bis, drv.team, isIndy);
+                if (t) executeTransfer(drv, t, typ, changes);
+                else _wechselWarteschlange.push({ driver: drv, von, bis, isIndy, typ, rueckfall });
+            };
+
             expiredContracts.forEach(driver => {
                 const eval_ = evaluateDriverPerformance(driver.id);
                 if (!eval_) return;
@@ -36202,46 +36940,36 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                 const repUpgradeBonus = Math.max(0, rep - 50) / 100 * 0.4;   // rep 75 → +0.10, rep 100 → +0.20
                 const downgradeMax = rep >= 75 ? midTeamCount : totalTeams;   // Champion-Floor: nicht unter Mittelfeld
 
+                const _verlaengern = (jahre, zeichen) => () => {
+                    driver.contractEnd = currentYear + (jahre === 1 ? 1 : _ageCappedContractLen(driver, currentYear, jahre));
+                    driver._movedThisSeason = true;
+                    changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
+                    if (zeichen) logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (${zeichen})`);
+                };
+
                 if (eval_.rating === 'excellent') {
+                    const _verl = _verlaengern(2 + Math.floor(Math.random() * 2), '⭐');
                     const upgradeChance = 0.35 + longtimeBonus + repUpgradeBonus;
                     if (!isTopTeam && Math.random() < upgradeChance) {
                         // Rookies/Second-Year dürfen max 1 Tier aufsteigen (nicht direkt zu Top-Teams) (v0.8.6)
                         const isYoung = eval_.isRookie || eval_.isSecondYear;
                         const upgradeFloor = isYoung && isBackmarker ? topTeamCount : 0; // Backmarker-Rookie → nur bis Mittelfeld
-                        const betterTeam = findTeamWithSpace(teamRanking, upgradeFloor, teamRank - 1, driver.team, driverIsIndy);
-                        if (betterTeam) {
-                            executeTransfer(driver, betterTeam, 'upgrade', changes);
-                            return;
-                        }
+                        return _wechselOderWarten(driver, upgradeFloor, teamRank - 1, driverIsIndy, 'upgrade', _verl);
                     }
                     if (isTopTeam && yearsInTeam >= 5 && Math.random() < 0.40) {
-                        const otherTopTeam = findTeamWithSpace(teamRanking, 0, topTeamCount, driver.team, driverIsIndy);
-                        if (otherTopTeam) {
-                            executeTransfer(driver, otherTopTeam, 'lateral', changes);
-                            return;
-                        }
+                        return _wechselOderWarten(driver, 0, topTeamCount, driverIsIndy, 'lateral', _verl);
                     }
-                    driver.contractEnd = currentYear + _ageCappedContractLen(driver, currentYear, 2 + Math.floor(Math.random() * 2));
-                    driver._movedThisSeason = true;
-                    changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
-                    logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (⭐)`);
-                    
+                    _verl();
+
                 } else if (eval_.rating === 'good') {
+                    const _verl = _verlaengern(1 + Math.floor(Math.random() * 2), '✅');
                     const lateralChance = 0.20 + longtimeBonus;
                     if (Math.random() < lateralChance) {
-                        const newTeam = findTeamWithSpace(teamRanking, 
-                            Math.max(0, teamRank - 2), Math.min(totalTeams, teamRank + 2),
-                            driver.team, driverIsIndy);
-                        if (newTeam) {
-                            executeTransfer(driver, newTeam, 'lateral', changes);
-                            return;
-                        }
+                        return _wechselOderWarten(driver, Math.max(0, teamRank - 2), Math.min(totalTeams, teamRank + 2),
+                            driverIsIndy, 'lateral', _verl);
                     }
-                    driver.contractEnd = currentYear + _ageCappedContractLen(driver, currentYear, 1 + Math.floor(Math.random() * 2));
-                    driver._movedThisSeason = true;
-                    changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
-                    logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (✅)`);
-                    
+                    _verl();
+
                 } else if (eval_.rating === 'average') {
                     // Marktvergleich (s. oben): Erwartung erfuellt reicht nicht, wenn ein klar
                     // Schnellerer frei ist. Nur Hinterbaenkler-Teams: das Mittelfeld lag ohne den
@@ -36270,27 +36998,18 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                         if (_tryDismiss(driver, changes)) return;
                         // Cap erreicht → Verlängerung statt Entlassung
                     }
+                    const _verl = _verlaengern(1, '➖');
                     const lateralChance = 0.50 + longtimeBonus;
                     if (Math.random() < lateralChance) {
-                        const newTeam = findTeamWithSpace(teamRanking, teamRank, downgradeMax, driver.team, driverIsIndy);
-                        if (newTeam) {
-                            executeTransfer(driver, newTeam, isMidTeam ? 'lateral' : 'downgrade', changes);
-                            return;
-                        }
+                        return _wechselOderWarten(driver, teamRank, downgradeMax, driverIsIndy, isMidTeam ? 'lateral' : 'downgrade', _verl);
                     }
-                    driver.contractEnd = currentYear + 1;
-                    driver._movedThisSeason = true;
-                    changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
-                    logInfo('TRANSFER', `📝 ${driver.name} verlängert für 1 Jahr (➖)`);
-                    
+                    _verl();
+
                 } else {
                     // ⚠️ SCHWACH: Fahrer wird free agent (nicht dismissed!)
                     // → bleibt im Pool, kann von anderem Team aufgenommen werden
                     if (isTopTeam) {
-                        const worseTeam = findTeamWithSpace(teamRanking, topTeamCount, downgradeMax, driver.team, driverIsIndy);
-                        if (worseTeam) {
-                            executeTransfer(driver, worseTeam, 'downgrade', changes);
-                        } else {
+                        _wechselOderWarten(driver, topTeamCount, downgradeMax, driverIsIndy, 'downgrade', () => {
                             // Kein Platz: Free agent statt endlose Verlängerung
                             // v0.8.2.1: Indy-Flag bewahren
                             if (driverTeam && (isIndyOnlyConstructor(driverTeam.id) || isIndyOnlyConstructor(driverTeam.histId))) {
@@ -36300,36 +37019,38 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
                             driver.contractEnd = currentYear;
                             driver._movedThisSeason = true;
                             logInfo('TRANSFER', `🆓 ${driver.name} wird free agent (kein Platz für Abstieg)`);
-                        }
+                        });
                     } else if (isMidTeam) {
+                        // Cap erreicht: Verlängerung statt Entlassung
+                        const _entlassenOderVerl = () => { if (!_tryDismiss(driver, changes)) _verlaengern(1)(); };
                         if (Math.random() < 0.70) {
-                            const worseTeam = findTeamWithSpace(teamRanking, midTeamCount, downgradeMax, driver.team, driverIsIndy);
-                            if (worseTeam) {
-                                executeTransfer(driver, worseTeam, 'downgrade', changes);
-                                return;
-                            }
+                            return _wechselOderWarten(driver, midTeamCount, downgradeMax, driverIsIndy, 'downgrade', _entlassenOderVerl);
                         }
-                        if (!_tryDismiss(driver, changes)) {
-                            // Cap: Verlängerung statt Entlassung
-                            driver.contractEnd = currentYear + 1;
-                            driver._movedThisSeason = true;
-                            changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
-                        }
+                        _entlassenOderVerl();
                     } else {
                         if (Math.random() < 0.70) {
-                            if (!_tryDismiss(driver, changes)) {
-                                driver.contractEnd = currentYear + 1;
-                                driver._movedThisSeason = true;
-                                changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
-                            }
+                            if (!_tryDismiss(driver, changes)) _verlaengern(1)();
                         } else {
-                            driver.contractEnd = currentYear + 1;
-                            driver._movedThisSeason = true;
-                            changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
+                            _verlaengern(1)();
                         }
                     }
                 }
             });
+
+            // Warteschlange abarbeiten: jetzt sind die Plaetze frei, die Phase 2 geraeumt hat. Mehrere
+            // Durchgaenge, weil jeder Wechsel selbst einen Platz frei macht. Was dann noch kein Team
+            // findet, nimmt den bisherigen Ausweg (Verlaengerung, Freistellung, Entlassung).
+            for (let _neu = true; _neu && _wechselWarteschlange.length; ) {
+                _neu = false;
+                for (const w of [..._wechselWarteschlange]) {
+                    const t = findTeamWithSpace(teamRanking, w.von, w.bis, w.driver.team, w.isIndy);
+                    if (!t) continue;
+                    executeTransfer(w.driver, t, w.typ, changes);
+                    _wechselWarteschlange.splice(_wechselWarteschlange.indexOf(w), 1);
+                    _neu = true;
+                }
+            }
+            _wechselWarteschlange.forEach(w => w.rueckfall());
 
             // _midSeasonDismissed-Flag aufräumen (wurde als Phase-2-Filter genutzt)
             GAME_STATE.drivers.forEach(d => { delete d._midSeasonDismissed; });
