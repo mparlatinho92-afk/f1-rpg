@@ -86,6 +86,11 @@ Briefing mehr Sätze, die den Fahrer nur beschreiben und nicht als Führenden vo
 
 ## Auf ein anderes Paket übertragen
 
+**Erledigt am 01.10.2026:** Alle Satzbanken des Spiels (Pakete 1, 1b, 2, 3, 4, 5, B, C; 83 Pools)
+laufen über `fable-deliverables/mehrstimmig/` (Register `pools.py`, Briefing je Pool, Bestand
+direkt aus `index.html`). Die Schritte unten beschreiben, wie das gebaut wurde; neue Pools
+kommen dort in `pools.py`.
+
 1. In `filter_kandidaten.py` **einen Eintrag in `POOLS`** ergänzen: Emoji, erlaubte
    Platzhalter, ein Regex für verbotene Inhalte des Pools. Bei neuem Zeitschema die
    Ären in `ERA_WARN` anpassen. Die Logik bleibt unverändert.

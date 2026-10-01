@@ -26,6 +26,12 @@ vollständigen Regeln stehen nur in **`FABLE-GRUNDREGELN.md`** (immer zuerst les
 | 7 | Qualitatives Tuning (Audit) | `paket7-tuning/SPEC.md` | ✅ **v0.9.14.63/.64** (alle Text-Fixes: H1–H4, M1–M7, N1–N4, N6). Die drei Prüfaufträge N5/N7/N8 waren nie Text-Edits: **N5 + N7 v0.9.17.34**, N8 offen (s. Restliste) |
 | 8 | Fiktive Strecken- & Rennnamen | `paket8-strecken/SPEC.md` | ✅ **v0.9.14.65** (`circuit-name-pools.js` → Streckeneditor + Zufalls-Button). **Gewichte + Ära-Fenster v0.9.17.41** an 1.171 realen F1-Rennen gemessen (`REPORT-GEWICHTE.md`). **Ortsnamen v0.9.17.42**: 212 erfundene → 15.420 echte aus GeoNames, 30 → 56 Nationen (`REPORT-ORTSNAMEN.md`); Sprachregister je neuem Land: **Paket 8b v0.9.18.25** eingebaut (26 Nationen → 18 Register, Browser-Rücklauf in `browser-pakete/erledigt/`; Prüfer `tests/circuit-namegen.js` Abschnitt 5) |
 
+## Mehrstimmig erweitern (Fremd-KIs) — `mehrstimmig/`
+
+Seit 01.10.2026 lässt sich **jede** Satzbank der Pakete 1/1b/2/3/4/5/B/C mit Gemini, ChatGPT & Co.
+erweitern: fertiges Briefing je Pool in `mehrstimmig/briefings/`, stilneutraler Filter, Bestand
+direkt aus `index.html`. Einstieg `mehrstimmig/README.md`. Nicht für Paket 6/8 (Namensbaukästen).
+
 ## Daten-/Ableitungspakete (kein Text → `FABLE-GRUNDREGELN.md` gilt dort NICHT)
 
 | Paket | Brief | Status |
