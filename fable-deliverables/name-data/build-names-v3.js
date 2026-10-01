@@ -220,7 +220,7 @@ const CFG = {
     IRL: { iso:'IE', cls:'mid', banLast:[NORDIC_FOREIGN,IBERIAN_PT,HISPANIC,SLAVIC_EAST] },
     POR: { iso:'PT', cls:'mid', banLast:[NORDIC_FOREIGN,HISPANIC] },
     COL: { iso:'CO', cls:'mid' },
-    RUS: { iso:'RU', cls:'mid', translit:true, banLast:[/(ova|eva|ina|yna|aya)$/i], banFirst:[/(a|ya)$/i],
+    RUS: { iso:'RU', cls:'mid', translit:true, banLast:[/(ova|eva|ina|yna|aya|vna)$/i], banFirst:[/(a|ya)$/i],
            rename:{ 'Aleksandr':'Alexander','Sergey':'Sergei','Dmitrii':'Dmitri','Dmitriy':'Dmitri','Dmitry':'Dmitri','Evgenii':'Evgeni','Evgeniy':'Evgeni','Evgeny':'Evgeni','Aleksei':'Alexei','Aleksey':'Alexei','Alexey':'Alexei','Yurii':'Yuri','Yuriy':'Yuri','Yury':'Yuri','Andrey':'Andrei','Maksim':'Maxim','Vitalii':'Vitali','Vitaliy':'Vitali','Vitaly':'Vitali','Nikolay':'Nikolai','Georgii':'Georgi','Georgiy':'Georgi','Valerii':'Valeri','Valeriy':'Valeri','Valery':'Valeri','Anatoliy':'Anatoli','Anatoly':'Anatoli','Grigorii':'Grigori','Grigoriy':'Grigori' } },
     POL: { iso:'PL', cls:'mid', banLast:[/(ska|cka|zka)$/i,NORDIC_FOREIGN] },
     CZE: { iso:'CZ', cls:'mid', banLast:[/(ová|á)$/,NORDIC_FOREIGN] },
@@ -277,9 +277,16 @@ const OPS = {
     ITA: { drop: { last: ['Giuseppe','Mauro','Salvatore','Marco','Francesco','Luca','Simone'] } },
     FRA: { drop: { last: ['Ben','Lou','Bou'] },
            move: { last: { 'Ndiaye':1,'Diaby':1,'Diarra':1,'Benoit':0 }, first: { 'Benjamin':0 } } },
-    BRA: { drop: { last: ['Cristina','Aparecida','Junior','Neto','Filho','Felipe','Lucas','Alexandre','Roberto','Augusto','Paula','De Souza','De Oliveira'] } },
+    BRA: { drop: { first: ['Maria','Ana'], last: ['Cristina','Aparecida','Junior','Neto','Filho','Felipe','Lucas','Alexandre','Roberto','Augusto','Paula','De Souza','De Oliveira'] } },
     JPN: { drop: { first: ['Marcelo','Roberto','Jorge'] } },
-    ESP: { drop: { first: ['Mohamed','Javi','Rafa','Fran','Manolo','Pepe','Paco','Curro','Quique','Chema'], last: ['Garcia Garcia'] },
+    // Inventur 01.10.2026: "Maria"/"Ana" allein sind weiblich. Doppelnamen (José María) sind
+    // eigene Einträge und davon nicht betroffen — drop greift nur auf den exakten Namen.
+    POR: { drop: { first: ['Maria','Ana'] } },
+    ARG: { drop: { first: ['Maria','María','Ana','Emma'] } },
+    MEX: { drop: { first: ['Maria','María'] } },
+    COL: { drop: { first: ['Maria','María'] } },
+    URU: { drop: { first: ['Maria','María'] } },
+    ESP: { drop: { first: ['Mohamed','Javi','Rafa','Fran','Manolo','Pepe','Paco','Curro','Quique','Chema','Maria','María','Ana'], last: ['Garcia Garcia'] },
            move: { first: { 'Joan':1,'Jordi':1,'Marc':1,'Xavi':1,'Pau':1,'Oriol':1,'Mikel':2,'Iker':2,'Ander':2,'Unai':2,'Aitor':2,'Asier':2,'Gorka':2 } } },
     BEL: { drop: { first: ['Mohamed','Ali'], last: ['Ben','Vdb'] },
            move: { last: { 'Desmet':1,'Devos':1,'Lemmens':1,'Dhondt':1,'Wauters':1,'Smet':1,'Declercq':1,'Baert':1,'Lambrechts':1,'Lauwers':1,'Bosmans':1,'Christiaens':1,'Pieters':1,'Cornelis':1,'Timmermans':1,'Janssen':1,'Jansen':1 },
@@ -295,9 +302,25 @@ const OPS = {
            move: { first: { 'Thabiso':2,'Lucky':2,'Mandla':2,'Thapelo':2,'Vusi':2,'Sbusiso':2,'Sanele':2,'Thabo':2,'Sipho':2,'Bongani':2,'Tshepo':2,'Themba':2,'Sibusiso':2,'Xolani':2,'Andile':2,'Thulani':2,'Kagiso':2,'Lebogang':2,'Katlego':2,'Tumelo':2,'Karabo':2,'Lesego':2,'Neo':2,'Kabelo':2,'Oupa':2,'Solomon':2,'Moses':2,'Enoch':2,'Piet':1,'Johan':1,'Willem':1,'Jan':1,'Hennie':1,'Koos':1,'Danie':1,'Gert':1,'Pieter':1,'Jaco':1,'Riaan':1,'Christo':1,'Deon':1,'Ruan':1,'Heinrich':1,'Charl':1,'Divan':1,'Janco':1,'Wikus':1,'Hendrik':1,'Francois':1,'Wian':1,'Tiaan':1,'Johannes':1,'Stephanus':1,'Cornelius':1 },
                    last: { 'Moyo':2,'Baloyi':2,'Sibiya':2,'Chauke':2,'Mazibuko':2,'Cele':2,'Mathebula':2,'Molefe':2,'Sibanda':2,'Maluleke':2,'Motaung':2,'Moloi':2,'Zungu':2,'Zondi':2,'Hadebe':2,'Vilakazi':2,'Xaba':2,'Van Wyk':1 } } },
     IRL: { drop: { last: ['Obrien','Oconnor','Osullivan','O Connor','O Brien','O Sullivan','Oneill'] } },
-    RUS: { drop: { last: ['Magomedov','Aliev','Ibragimov','Akhmedov','Mamedov','Karimov','Gadzhiev','Yusupov','Abdullaev','Kurbanov','Shevchenko','Bondarenko','Kovalenko','Kravchenko','Tkachenko','Kim','Elena','Natalya','Tatyana','Sergeevich','Sergeevna','Aleksandrovich','Aleksandrovna','Vladimirovich','Aleksandr','Sergei','Vasilev'] } },
-    POL: { drop: { first: ['Tomek','Bartek','Kuba','Wojtek'] } },
-    CZE: { drop: { first: ['Honza','Jirka','Ondra','Vojta','Kuba','Jarda'], last: ['Petr','Pavel','Jan','Novakova','Novotna'] } },
+    RUS: { drop: { last: ['Magomedov','Aliev','Ibragimov','Akhmedov','Mamedov','Karimov','Gadzhiev','Yusupov','Abdullaev','Kurbanov','Shevchenko','Bondarenko','Kovalenko','Kravchenko','Tkachenko','Kim','Elena','Natalya','Tatyana','Sergeevich','Sergeevna','Aleksandrovich','Aleksandrovna','Vladimirovich','Aleksandr','Sergei','Vasilev',
+        // 01.10.2026 Inventur: weibliche Vornamen, Fragmente/englische Wörter, Kot/Lis (ukr./poln.), Pak/Lee (koreanisch, wie Kim)
+        'Olga','Yuliya','Anastasiya','Mariya','Kseniya','Nataliya','Kot','Lis','Bek','Pak','Lee','Nik','Pro','Fox','Cat','Net',
+        'Svetlana','Viktoriya','Oksana','Nadezhda','Lyudmila','Evgeniya','Darya','Lyubov',
+        // Vatersnamen auf -vich (die auf -vna faengt banLast ab)
+        'Nikolaevich','Viktorovich','Ivanovich','Petrovich','Andreevich','Yurevich','Alekseevich','Anatolevich','Mikhailovich','Olegovich','Vasilevich','Valerevich','Igorevich',
+        // Vornamen als Nachname (Ivanov bleibt — echter Nachname)
+        'Alexander','Andrei','Dmitri','Alexei','Vladimir','Evgeni','Ivan','Maxim','Alex','Mikhail','Roman','Nikolai','Ruslan','Aleks','Igor','Oleg','Pavel','Maks','Vitali','Viktor','German','Yuri','Nikita','Magomed','Anton',
+        // Platzhalter (Pupkin = russ. Mustermann, Nevazhno = "egal") und Fremdes
+        'Pupkin','Nevazhno','Miller','Smith','Nguyen','Black','White'],
+        first: ['Ivanov'] } },
+    POL: { drop: { first: ['Tomek','Bartek','Kuba','Wojtek','Anna','Agnieszka','Ewa','Kasia','Katarzyna','Magdalena','Maria','Karolina','Paulina','Vova','Mich'],   // weibl./russ./Fragment: Inventur 01.10.2026
+                   last: ['Lena','Kasia','Katarzyna','Magdalena','Ewa',
+                   // Standard-Vornamen als Nachname. Marek/Jurek/Janusz/Witek/Lech/Zygmunt/Roman/Borys/Bogdan bleiben: echte Nachnamen
+                   'Piotr','Dawid','Filip','Jan','Paweł','Krzysztof','Tomasz','Łukasz','Andrzej','Kamil','Michał','Dominik','Olek','Jacek','Seweryn','Tom','Bartosz','Jarek','Mar','Wiktor','Karol','Damian','Mateusz','Grzegorz','Tobiasz','Marcin','Mirek','Miller'] } },
+    CZE: { drop: { first: ['Honza','Jirka','Ondra','Vojta','Kuba','Jarda','Jana','Lucie','Eva','Marie','Vova'],   // weibl.: Inventur 01.10.2026
+                   last: ['Petr','Pavel','Jan','Novakova','Novotna','Jana','Lucie','Petra','Eva','Veronika','Black','Smith','Fox',
+                   // Standard-Vornamen als Nachname. Marek/Vítek/Kubík/Šimon/Jindra/Vašek/Vít/Hynek/Ludvík/Matouš/Franta/Štěpán/Roman bleiben
+                   'Tomáš','Lukáš','Filip','Michal','Jiří','Karel','Josef','Milan','Jonáš','Jakub','Jaroslav','Miroslav','Tom','Zdeněk','John','Rudolf','Radek','Vojtěch','Václav','Štefan','Matyáš','Paul','Alex','Ivan'] } },
     HUN: { drop: { first: ['Nagy'], last: ['László','Tamás','Gábor','Péter','Zoltán','Balázs','Attila','Sándor','István','Zsolt','János','Dávid','József','Csaba','Ferenc','András','Ádám','Máté','Tibor','Bálint','György','Gergely','Imre','Pál','Dániel','Andrea','Katalin','Éva','Judit'] } },
     GRE: { drop: { first: ['Kostas Alt'], last: ['Ali Khan'] } },
     ISR: { drop: { first: ['Mohammad','Mohamad'], last: ['Mohammad','Awad','Abed','Amer','Saleh','Nassar','Salah','Hamdan','Khateeb','Israel','Moshe'] } },
@@ -305,7 +328,7 @@ const OPS = {
     MAS: { drop: { first: ['Mohd','Muhd','Mohamad','Muhamad','Abdul','Mohammad','Wan','Tan','Lee'], last: ['Mohd','Raj'] },
            move: { last: { 'Yee':1 } } },
     INA: { drop: { first: ['Mas','Abdul'], last: ['Sari','Dewi','Putri','Wati','Lestari'] } },
-    EST: { drop: { first: ['Alex'], last: ['Ivanova','Smirnova','Petrova','Kuznetsova','Vassiljeva','Pavlova','Olen','Kadri','Kristi'] },
+    EST: { drop: { first: ['Alex','Vova'], last: ['Aleksandrovna','Olga','Miller','Smith','Fox','Aleksandr','Andrei','Ivanova','Smirnova','Petrova','Kuznetsova','Vassiljeva','Pavlova','Olen','Kadri','Kristi'] },
            move: { first: { 'Denis':1,'Viktor':1 }, last: { 'Hein':0 } } },
     MAR: { drop: { last: ['Med','Raja','Malak','Fleur','Khadija','Fatima','Mks','Agadir','Widadi','Nour','Rajawi'] } }
 };

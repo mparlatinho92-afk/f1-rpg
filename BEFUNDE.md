@@ -2545,3 +2545,58 @@ bisherige Ausweg. Würfel und Wahrscheinlichkeiten unverändert.
 1965 räumt Phase 2 kaum welche (wenig „weg": 11 / 14 / 19 %), real wechselten die Fahrer trotzdem
 (60er schwaches Drittel 63 %). Das sind Ringtausche (A geht zu B, B zu A), die ein Modell mit
 „freiem Platz" nicht abbilden kann. Starkes Drittel ab 2000 weiter 8–11 % gegen 3–4 %.
+
+### 01.10.2026: AUS/NZL-Vornamen nach Geburtsjahrgang (Kurven-Leihe GBR)
+Bis hier zogen AUS/NZL r0 ihre Vornamen aus einem flachen Topf (Jahrgang 1925 ebenso „Broc" wie 2005).
+Jetzt in `ERA_FIRST_ALIAS` wie ZIM: Spender GBR, Modus `union`.
+
+Effektive Poolgröße (1/Σp²) je Jahrgang 1925 / 1950 / 1975 / 2000:
+
+| | 1925 | 1950 | 1975 | 2000 |
+|---|---|---|---|---|
+| AUS intersect | 12 | 20 | 27 | 25 |
+| AUS union | 36 | 41 | 52 | 81 |
+| NZL intersect | 9 | 15 | 21 | 21 |
+| NZL union | 35 | 40 | 51 | 80 |
+
+- **Negativergebnis `intersect`:** r0 hat nur 79 (AUS) bzw. 60 (NZL) Vornamen, davon 40/30 GB-Leihen aus `BORROW`.
+  Die Schnittmenge mit der GBR-Kurve ist zu klein — NZL 1925 hieße jeder Vierte John (26 %). Gleicher Befund wie ZIM 2026-07-18.
+- Gegenprobe über den echten Spielcode (`pickPooledName`, 3000 Züge je Jahrgang): AUS 1925 John 9 % / William / George,
+  1975 Paul / Andrew / Mark, 2000 Jack / Thomas / James. Lokalnamen ohne Kurve (Ken, Les, Vern, Broc, Denny) bleiben mit Sockel 0,15.
+- **Messfalle:** `NAME_POOLS_BY_NATION` allein zeigt AUS r0 mit 39 Namen — die 40 GB-Vornamen aus `BORROW` liegen in
+  `NAME_TAILS_BY_NATION` und kommen erst über `ensureNamePoolsMerged()` dazu.
+
+### 01.10.2026 (2): Namens-Inventur — was noch ungeklärt ist
+Gemessen über `pickPooledName` nach `ensureNamePoolsMerged()` (sim-core, `SIMCORE_FROM_INDEX=1`).
+⚠ Die Memo-Analysen unter `fable-deliverables/name-data/analysis/` beschreiben den Stand VOR v4 — nicht als Ist-Stand lesen.
+
+**Ohne eigenen Pool (Fallback aus `NATION_NAME_FALLBACK`):** BUL/ROU/SRB → `INT` (12 Vor-, 12 Nachnamen: „Sam Martin", „Tom Costa").
+KEN → RSA (Afrikaans/Zulu statt kenianisch), CIV → FRA, PHI → MEX, UKR → RUS, LIE → SUI, LUX → BEL. Alle mit Ziehgewicht 0,0019 je Dekade.
+
+**Dünne Pools (r0 Vor/Nach, eff in Klammern):** QAT 15/15, UAE 16/15, SAU 18/15, MON 20/23, KOR 20 (19) Vornamen bei Nachnamen-eff 54,
+THA 32/40, MAR 30 Vornamen, CHN 37/52, TUR 44 Vornamen, VEN 64/114, NZL Nachnamen 118, AUS Nachnamen 173. Zum Vergleich: große Nationen ~450/1000.
+
+**Datenfehler:**
+- Weibliche Vornamen im (männlichen) Vornamen-Pool: POL (Anna, Agnieszka, Ewa, Kasia, Katarzyna, Magdalena, Maria), CZE (Jana, Lucie, Eva, Marie),
+  einzeln „Maria"/„Ana" bei ESP/POR/BRA/ARG/MEX/URU/COL (nur als Doppelname zweiter Teil plausibel), ARG „Emma", JPN „Yuki".
+- Weibliche Vornamen als Nachname: RUS (Olga, Yuliya, Anastasiya, Mariya, Kseniya, Nataliya — im Test gezogen: „Danil Yuliya"),
+  POL/CZE (Kasia, Katarzyna, Magdalena, Ewa, Jana, Lucie, Petra, Eva), dazu vereinzelt in fast allen Kaggle-Nationen (Laura, Daniela, Sofia, Fatima …).
+- RUS-Nachnamen-Fragmente: Kot, Lis, Bek, Pak, Fox, Nik, Pro, Lee, Cat, Net.
+- Vornamen als Nachname sind in vielen Nationen KEIN Fehler (EGY/MAR/MAS/HUN/POR/INA: Patronym- bzw. echte Familiennamen) — nicht pauschal filtern.
+
+**Strukturell flach (Vornamen ohne Jahrgangs-Gewicht):** alle Nationen außer GER/GBR/USA/FRA/ITA (Kurven) und RSA/ZIM/AUS/NZL (Leihe).
+
+### 01.10.2026 (3): Bereinigung der Namens-Datenfehler (`build-names-v3.js` → `OPS.drop`)
+Alle Fehler kamen aus dem Roh-Aggregat, nicht aus `curated-base-v2.js` — `drop` reicht. Die Kapazität füllt sich aus den
+nachrückenden Rängen wieder auf: POL bleibt bei 1027 Nachnamen, eff unverändert ±3.
+- **RUS war deutlich schlimmer als die Stichprobe vom Vormittag:** ~10 % des Nachnamen-Gewichts waren Müll — 26 Vatersnamen (3,2 %),
+  26 Vornamen (4,8 %), 8 Frauennamen (1,1 %), Platzhalter „Pupkin" (russ. Mustermann) und „Nevazhno" („egal"), Smith/Black/Nguyen.
+  Jetzt 623 Nachnamen, eff 310 (vorher 705/325). `banLast` um `vna$` ergänzt; Vatersnamen auf -vich stehen einzeln in `drop`,
+  weil es echte -vich-Nachnamen gibt (Abramovich).
+- **Messfalle:** Eine Regex auf „weibliche Endungen" fand nur 7 Fälle. Gefunden hat den Rest erst der Abgleich
+  „Nachname ∈ Vornamen-Pool derselben Nation" plus Sichtung der Top-Liste.
+- **Bewusst NICHT gelöscht** (echte Familiennamen trotz Vornamen-Gleichheit): POL Marek/Jurek/Janusz/Witek/Lech/Zygmunt/Roman/Borys/Bogdan,
+  CZE Marek/Vítek/Kubík/Šimon/Jindra/Vašek/Vít/Hynek/Ludvík/Matouš/Franta/Štěpán, EST Ott/Mikk/Kaur/Tiit…, RUS Ivanov, POL Kot/Lis.
+- „Maria"/„Ana" nur als Einzel-Vorname gesperrt; José Maria, Josep Maria, Zé Maria bleiben erhalten.
+- Offen und mehrdeutig, daher nicht angefasst: einzelne Frauennamen als Nachnamen in den Kaggle-Pools (BRA Julia/Laura/Sofia,
+  ESP/ARG/COL Elena/Daniela, FRA Sarah/Nicole …) — teils echte Nachnamen (Hanna, Sanna, Camille, Chiara), Gewicht je ≤ 0,5 %.
