@@ -2600,3 +2600,38 @@ nachrückenden Rängen wieder auf: POL bleibt bei 1027 Nachnamen, eff unverände
 - „Maria"/„Ana" nur als Einzel-Vorname gesperrt; José Maria, Josep Maria, Zé Maria bleiben erhalten.
 - Offen und mehrdeutig, daher nicht angefasst: einzelne Frauennamen als Nachnamen in den Kaggle-Pools (BRA Julia/Laura/Sofia,
   ESP/ARG/COL Elena/Daniela, FRA Sarah/Nicole …) — teils echte Nachnamen (Hanna, Sanna, Camille, Chiara), Gewicht je ≤ 0,5 %.
+
+### 02.10.2026: Eigene Namens-Pools für BUL und SRB (vorher Fallback INT, 12 Namen)
+Aus dem Kaggle-Aggregat (BG/RS je 600 Vor-/1500 Nachnamen), Bau in `build-names-v3.js` (`CFG` + `NEW_POOLS`).
+Ergebnis: BUL 280 Vor-/400 Nachnamen, SRB 232/350. Gegenprobe: außer BUL/SRB keine Nation verändert (Pool + Tails byte-gleich).
+
+- **BUL:** Kyrillisch fällt ohne `translit` weg (die lateinischen Formen sind häufiger). Weibliche -ova/-eva gesperrt.
+  Nachnamen nur mit -ov/-ev/-ski/-in — alles andere im Aggregat waren türkische Einzelnamen (Mustafa rang auf Platz 16).
+  Türkisch-muslimische Minderheit (`BG_TURKISH`) gesperrt, sonst „Ivan Mehmed" im selben Pool — eine eigene Region wäre der saubere Weg.
+  Chat-Latein: q = я (Stoqnov → Stoyanov), X = Х (Xristo → Hristo).
+- **SRB — Messfalle:** Das RS-Aggregat enthält Montenegro/Sandžak/Kosovo (ME fehlt im Datensatz). Bosniakische Namen bis auf
+  Platz 22 (Murić), dazu Orte (Podgorica, Budva, Tivat), Kleinanzeigen-Wörter („Prodajem" = verkaufe, „Kupujem", „Doo" = GmbH),
+  Vor- und Frauennamen als Nachnamen. Hinter Rang ~350 überwiegt der Müll → eigene Klasse `tiny` (350/220) statt endloser Sperrlisten.
+- **SRB-Diakritik:** Das Aggregat schreibt meist ASCII (Jovanovic). Rückführung über die Diakritik-Schreibungen aus RS+HR
+  (gleiches Lateinalphabet), danach -ic → -ić und Dj → Đ. Rest (š/ž/č ohne Datenvariante) per Hand-Liste `SRB_FIX`.
+- **Akzent-Falle:** `fixName` machte Martin → „Martín", Ivan → „Iván" (spanische Akzent-Reparatur). BUL/SRB stehen deshalb in `NO_ACCENT_NATIONS`.
+- **ROU fehlt im Kaggle-Datensatz komplett.** Moldau (MD) ist nur bedingt Ersatz: ~die Hälfte russisch, moldauische Schreibungen
+  (Iurie, Vasea, Ceban/Cojocari statt Cojocaru), Ion = 742 Treffer.
+
+### 02.10.2026 (2): Gewichtung BUL/SRB nachgeprüft, ROU-Pool aus worldnames.xyz + Moldau
+- **BUL war leicht verzerrt:** Das Aggregat ist zu 30 % kyrillisch, je Name zwischen 29 % (Martin) und 51 % (Nikolay).
+  Kyrillisch zu verwerfen hat manche Namen um bis zu ein Drittel zu leicht gemacht. Jetzt `translitNat` (bulgarische bzw.
+  serbische Umschrift) und auf die lateinische Form gezählt. SRB-Kyrillisch nur 2–4 % — dort war es vernachlässigbar.
+  Die Gewichtsformel ist für alle drei dieselbe wie für jede Kaggle-Nation: w = round(100 · (count/max)^0,6).
+- **ROU — Quelle:** worldnames.xyz liefert 200 männliche Vornamen (Alexandru 432.700 Träger) und nur **100** Nachnamen
+  (Popa 6.000 … Crețu 833). Rohdaten + Abrufskript in `fable-deliverables/name-data/ro-quellen/`, Aufbereitung `build-ro-names.js`.
+- **ROU — Schwanz:** Moldau aus Kaggle (`md_sur_agg.csv`, neu über `aggregate-names.js … MD`), russisch/ukrainisch/gagausisch
+  gesperrt, Moldau-Formen umgeschrieben (Cojocari → Cojocaru, Sîrbu → Sârbu).
+- **Messfalle Schwanzgewicht:** Mit Gewicht 1 wie bei allen anderen Nationen wäre der Schwanz fast unsichtbar gewesen — die
+  Top 100 hätten praktisch alle Rumänen gestellt. Stattdessen: Rang aus Moldau, Zählung aus der Rangkurve der rumänischen
+  Top 100 fortgeschrieben (Steigung −0,421 in log Träger je log Rang), auf Rang 100 kalibriert (Rang 100 = 31, Rang 101 = 31).
+  Gegenprobe im Spiel (20.000 Züge): **Popa 0,88 %** — die Top 96 stellen 40 % der Rumänen.
+  ⚠ Dieselbe Unterschätzung trifft strukturell die Gewicht-1-Schwänze ALLER Kaggle-Nationen — nicht gemessen, nicht angefasst.
+- **Messfalle Vornamen-Abgleich:** `md_fore_agg.csv` ist nur männlich; Frauennamen (Tatiana, Svetlana, Viorica) liefen als
+  Nachnamen durch → zusätzlich `md_fore_f_agg.csv`.
+- Ungarische Minderheit (Attila, Zsolt, Nagy, Szabo) gesperrt, gleiche Regel wie BUL/SRB. Ergebnis: 162 Vor-/350 Nachnamen.

@@ -2,17 +2,18 @@
 // Top-N Namen pro Land mit Count. Streaming, konstanter Speicher.
 // Aufruf:  node aggregate-names.js forenames.csv fore_agg.csv M 150
 //          node aggregate-names.js surnames.csv  sur_agg.csv  ALL 150
+//          node aggregate-names.js surnames.csv  md_sur_agg.csv ALL 1500 MD   (5. Arg: nur diese Länder, kommagetrennt)
 // Schema Input:  name,gender,country,count   (Header-Zeile wird erkannt)
 // Schema Output: country,name,count          (sortiert nach country, count desc)
 const fs = require('fs');
 const readline = require('readline');
 
-const [,, inFile, outFile, genderFilter = 'M', topNArg = '150'] = process.argv;
+const [,, inFile, outFile, genderFilter = 'M', topNArg = '150', onlyArg] = process.argv;
 const TOP_N = parseInt(topNArg, 10);
 if (!inFile || !outFile) { console.error('usage: node aggregate-names.js <in.csv> <out.csv> [M|ALL] [topN]'); process.exit(1); }
 
 // Nur die Länder, die das Spiel braucht (ISO-2) – hält die Map klein
-const WANTED = new Set(['GB','DE','IT','FR','US','BR','JP','AR','ES','NL','BE','CH','AT','SE','FI','DK','AU','NZ','CA','MX','ZA','IE','PT','MC','UY','VE','CO','RU','PL','CZ','HU','IN','IL','TH','MA','MY','ID','CN','EE','ZW','NO','IS','UA','SK','TR','GR','KR','KZ','LU','LT','LV','HR','RS','SI','BG','RO','PH','SG','HK','TW','AE','SA','EG','TN','CL','PE','EC','PA','CR','GT']);
+const WANTED = onlyArg ? new Set(onlyArg.split(',')) : new Set(['GB','DE','IT','FR','US','BR','JP','AR','ES','NL','BE','CH','AT','SE','FI','DK','AU','NZ','CA','MX','ZA','IE','PT','MC','UY','VE','CO','RU','PL','CZ','HU','IN','IL','TH','MA','MY','ID','CN','EE','ZW','NO','IS','UA','SK','TR','GR','KR','KZ','LU','LT','LV','HR','RS','SI','BG','RO','PH','SG','HK','TW','AE','SA','EG','TN','CL','PE','EC','PA','CR','GT']);
 
 const byCountry = new Map(); // country -> Map(name -> count)
 let lines = 0, kept = 0;

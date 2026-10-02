@@ -61,7 +61,10 @@ const CLASSES = {
     // Kopf (Ära-Kopf bleibt via curated-base geschützt), Masse in kompakte weight-1-Tails.
     big:   { sur: 1500, fore: 600, surT: 450, foreT: 260, modDup: 120 },
     mid:   { sur: 1000, fore: 450, surT: 340, foreT: 210, modDup: 90 },
-    small: { sur:  600, fore: 320, surT: 240, foreT: 150, modDup: 60 }
+    small: { sur:  600, fore: 320, surT: 240, foreT: 150, modDup: 60 },
+    // SRB (2026-10-02): das RS-Aggregat wird hinter Rang ~350 zu Müll (Orte, Kleinanzeigen,
+    // halb rückführbare ASCII-Schreibungen). Kleinere Masse statt endloser Sperrlisten.
+    tiny:  { sur:  350, fore: 220, surT: 240, foreT: 150, modDup: 60 }
 };
 
 // ── Transliteration & Basis-Filter (aus extract-tails.js portiert) ─────────
@@ -71,6 +74,21 @@ function translit(s) {
     for (const ch of s) {
         const lo = ch.toLowerCase();
         if (CYR[lo] !== undefined) { const t = CYR[lo]; out += (ch === lo) ? t : (t.charAt(0).toUpperCase() + t.slice(1)); }
+        else out += ch;
+    }
+    return out;
+}
+// Nationale Umschriften (2026-10-02): BUL-Aggregat ist zu 30 % kyrillisch, je Name 29–51 % —
+// Verwerfen verzerrte die Gewichte. Daher umschreiben und auf die lateinische Form zählen.
+const CYR_NAT = {
+    BG: { 'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sht','ъ':'a','ь':'y','ю':'yu','я':'ya' },
+    SR: { 'а':'a','б':'b','в':'v','г':'g','д':'d','ђ':'đ','е':'e','ж':'ž','з':'z','и':'i','ј':'j','к':'k','л':'l','љ':'lj','м':'m','н':'n','њ':'nj','о':'o','п':'p','р':'r','с':'s','т':'t','ћ':'ć','у':'u','ф':'f','х':'h','ц':'c','ч':'č','џ':'dž','ш':'š' }
+};
+function translitNat(s, T) {
+    let out = '';
+    for (const ch of s) {
+        const lo = ch.toLowerCase();
+        if (T[lo] !== undefined) { const t = T[lo]; out += (ch === lo) ? t : (t.charAt(0).toUpperCase() + t.slice(1)); }
         else out += ch;
     }
     return out;
@@ -120,7 +138,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA']);
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB']);
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -174,6 +192,12 @@ function fixName(nat, n) {
     if (n === 'Antonio' && nat !== 'BRA') return n; // Antônio nur BRA; POR nutzt António via Pool
     return ACCENT[n];
 }
+
+// Bulgarische Türken/Pomaken: Vornamen und daraus gebildete Nachnamen (Mehmed, Mehmedov, Mehmedova).
+const BG_TURKISH = /^(Mehmed|Ahmed|Ali|Mustaf|Hasan|Ismail|Osman|Ibr[iy]?ah?im|Ibryam|Yusein|H[yu]?useyin|Hyusein|Halil|Salih|Ramadan|Emin|Sali|Bayram|Rasim|Shaban|Sabri|Nazif|Fikri|Kemal|Erol|Orhan|Sevgin|Muharem|Musa|Isa|Redzheb|Rejep|Ferad|Feim|Myumyun|Mumun|Ahmet|Mehmet|Huseyin|Hüseyin|Recep|Ayhan|Ercan|Erkan|Ersin|Emre|Metin|Nevzat|Ilhan|Ilker|Gyunay|Gyuner|Shefket|Sezgin|Seyhan|Sevdzhan|Nedzhmi|Nurettin|Ramiz|Rafet|Raif|Bilyal|Bilal|Dzhem|Dzhevdet|Remzi|Zeki|Mustafa|Husein|Usein|Aydin|Sunay|Asan|Ismet|Amet|Samet|Oktay|Gunay|Beyhan|Reyhan|Memet|Shenol|Senol|Sami|Ridvan|Nihat|Eray|Yuksel|Ferdi|Nejdet|Basri|Nurhan|Arif|Ibram|Bilgin|Ibo|Suleyman|Erdinc|Rujdi|Bulent|Musi|Nuray|Gursel|Nazmi|Erdjan|Memo|Yasar|Ozcan|Saban|Hikmet|Redjeb|Akif|Sezer|Niyazi|Fahri|Bekir|Ertan|Guner|Berk|Birol|Bahri|Kadir|Salim|Adem|Yumer|Yusuf|Enis|Ergin|Nedret)(ov|ova|ev|eva)?$/;
+
+const SRB_FOREIGN_FIRST = /^(Edin|Haris|Senad|Admir|Jasmin|Almir|Sead|Mirsad|Enes|Elvis|Aldin|Safet|Semir|Adis|Esad|Suad|Amar|Armin|Amer|Nermin|Enis|Eldin|Elvir|Asmir|Mirza|Ermin|Amel|Edis|Nedzad|Nedžad|Bajram|Ismet|Emin|Enver|Demir|Muamer|Anes|Fatmir|Omer|Alija|Ferid|Dzevad|Džavad|Izet|Naser|Nihad|Fadil|Ramiz|Besim|Bekim|Ramo|Faruk|Dzenan|Dženan|Arben|Sanel|Baki|Anel|Mensur|Ernad|Amil|Resad|Rešad|Rifat|Mujo|Aladin|Rejhan|Belmin|Jusuf|Daris|Mehmed|Nusret|Elvedin|Almin|Zoltan|Attila|Kupujem|Prodajem|Marija|Mali)$/;
+const SRB_FOREIGN_LAST = /^(Murić|Kalač|Škrijelj|Hodžić|Muratović|Ramović|Nurković|Agović|Adrović|Dautović|Šabotić|Ćorović|Hasanović|Mujević|Omerović|Hadžić|Rastoder|Halilović|Mehović|Međedović|Kastratović|Radončić|Kurpejović|Begović|Ćatović|Musić|Husović|Osmanović|Avdić|Duraković|Sinanović|Sijarić|Redžović|Sabanović|Šabanović|Ibrahimović|Skenderović|Ahmetović|Muković|Sabović|Hamidović|Tahirović|Bećirović|Kurtagić|Spahić|Demirović|Turković|Adžović|Suljević|Seferović|Ljuca|Fetahović|Bihorac|Bajrović|Mahmutović|Mekić|Biševac|Redzović|Hajrović|Gutić|Rebronja|Kurtanović|Kadić|Mulić|Selimović|Kurtović|Musović|Mujović|Kasumović|Ličina|Kuč|Kurti|Camaj|Horvat|Montenegro|Podgorica|Budva|Tivat|Bar|Doo|Hott|Prodajem|Marko|Nikola|Ivan|Dragan|Aleksandar|Dejan|Milan|Miloš|Zoran|Saša|Luka|Vladimir|Goran|Nemanja|Petar|Štefan|Popov|Petrov|Ivanov|Jovanov)$/;
 
 // ── Nation-Konfiguration ────────────────────────────────────────────────────
 // iso, cls (Größenklasse), route [regex → regionIdx], banFirst/banLast,
@@ -242,7 +266,19 @@ const CFG = {
     // Golf: Roh-Aggregat = südasiatische Expats → foreCap0+surCap0 unterdrückt es, nur curated Gulf-Arabisch.
     SAU: { iso:'SA', cls:'small', foreCap0:true, surCap0:true },
     UAE: { iso:'AE', cls:'small', foreCap0:true, surCap0:true },
-    QAT: { iso:'QA', cls:'small', foreCap0:true, surCap0:true }
+    QAT: { iso:'QA', cls:'small', foreCap0:true, surCap0:true },
+    // Neue Nationen 2026-10-02 (vorher Fallback INT = 12 Namen). Kyrillisch wird national umgeschrieben
+    // (translitNat) und auf die lateinische Form gezählt.
+    // BUL: türkisch-muslimische Minderheit gesperrt, sonst entsteht im selben Pool "Ivan Mehmed".
+    // Nachnamen enden praktisch immer auf -ov/-ev/-ski/-in; alles andere im Aggregat sind türkische
+    // Einzelnamen (Mustafa, Yusuf, Kadir). rename: Chat-Latein "q" = я (Stoqnov → Stoyanov).
+    BUL: { iso:'BG', cls:'small', chatQ:true, translitNat:'BG', banLast:[/(ova|eva|ina|ska)$/i, /^(?!.*(ov|ev|ski|in)$)/, BG_TURKISH], banFirst:[BG_TURKISH] },
+    // SRB: Aggregat schreibt meist ASCII (Jovanovic). diacritics → Rückführung auf ć/š/ž/đ (s. srbDiacritics).
+    // Das RS-Aggregat enthält Montenegro/Sandžak/Kosovo (ME fehlt im Datensatz). Bosniakische und
+    // albanische Namen gesperrt wie die türkischen in BUL — sonst "Nikola Murić" im selben Pool.
+    // ROU: fehlt im Kaggle-Datensatz. Pool kommt fertig gewichtet aus build-ro-names.js → Aggregat aus.
+    ROU: { iso:'RO', cls:'small', foreCap0:true, surCap0:true },
+    SRB: { iso:'RS', cls:'tiny', diacritics:true, translitNat:'SR', banLast:[SRB_FOREIGN_LAST, /(a|i)$/], banFirst:[SRB_FOREIGN_FIRST] }
 };
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
@@ -335,7 +371,16 @@ const OPS = {
 
 // ── Neue Pool-Skelette (Bonus-Nationen mit Datenbasis) ──────────────────────
 // Vornamen-Fenster kuratiert (Ära-Wissen), Nachnamen kommen komplett aus den Daten.
+const RO = require('./ro-names.js');   // node build-ro-names.js (worldnames.xyz + Moldau)
 const NEW_POOLS = {
+    ROU: { regions: [ { w:1, first: RO.first, last: RO.last } ] },
+    // BUL/SRB 2026-10-02: kleiner kuratierter Kopf, Aggregat (BG/RS) füllt den Rest auto-gewichtet.
+    BUL: { regions: [ { w:1,
+        first: [['Ivan',5],['Georgi',5],['Dimitar',4],['Nikolay',4],['Petar',3],['Stefan',3],['Hristo',3],['Todor',3],['Krasimir',2],['Plamen',2],['Atanas',2],['Vasil',2]],
+        last:  [] } ] },
+    SRB: { regions: [ { w:1,
+        first: [['Nikola',5],['Marko',5],['Aleksandar',4],['Dragan',4],['Milan',4],['Zoran',3],['Dejan',3],['Miloš',3],['Goran',3],['Stefan',3],['Nenad',2],['Nemanja',2]],
+        last:  [] } ] },
     // Norwegen (bisher Fallback DEN — eigene Namenswelt, Daten sauber: Hansen/Olsen-Kopf)
     NOR: { regions: [ { w: 1,
         first: {
@@ -530,6 +575,32 @@ console.log(`Ära-Split flachgelegt: ${_flattened} Regionen in ${Object.keys(POO
 
 // Kern: eine Nation+Art (first/last) aus den Daten mergen
 const report = [];
+// SRB: das Aggregat schreibt serbische Namen fast immer ASCII (Jovanovic, Djordjevic, Milos).
+// Rückführung datengetrieben: jede Diakritik-Schreibung aus RS+HR (gleiches Lateinalphabet)
+// wird unter ihrem ASCII-Schlüssel abgelegt, die häufigste gewinnt. Ohne Treffer greifen nur
+// zwei sichere Regeln: Nachname -ic → -ić, Dj/dj → Đ/đ. (š/ž/č sind ohne Daten nicht ableitbar.)
+const asciiKey = s => key(s.replace(/đ/g, 'dj').replace(/Đ/g, 'Dj'));
+let _srbDiac = null;
+function srbDiacritics(name, kind) {
+    if (!_srbDiac) {
+        _srbDiac = new Map();
+        for (const by of [surBy, foreBy]) for (const iso of ['RS', 'HR']) for (const [n, c] of (by.get(iso) || [])) {
+            if (!/[čćšžđČĆŠŽĐ]/.test(n)) continue;
+            const k = asciiKey(n), have = _srbDiac.get(k);
+            if (!have || have.c < c) _srbDiac.set(k, { n, c });
+        }
+    }
+    // Ohne Diakritik-Variante im Datensatz — von Hand (Sichtprüfung 02.10.2026)
+    const SRB_FIX = { Jovicevic:'Jovičević', Jovicević:'Jovičević', Milacic:'Milačić', Bogicevic:'Bogićević', Karadzic:'Karadžić', Gardasevic:'Gardašević',
+        Glisic:'Glišić', Tesic:'Tešić', Mijuskovic:'Mijušković', Djuricic:'Đuričić', Cirkovic:'Ćirković', Blazo:'Blažo', Drasko:'Draško',
+        Cedomir:'Čedomir', Zika:'Žika', Radisa:'Radiša', Raso:'Rašo', Mica:'Mića' };
+    if (SRB_FIX[name]) return SRB_FIX[name];
+    const hit = _srbDiac.get(asciiKey(name));
+    if (hit) return hit.n;
+    if (kind === 'last') name = name.replace(/ic$/, 'ić');
+    return name.replace(/^Dj/, 'Đ').replace(/dj/g, 'đ');
+}
+
 function processNation(nat, cfg) {
     const cls = CLASSES[cfg.cls];
     const ops = OPS[nat] || {};
@@ -553,11 +624,14 @@ function processNation(nat, cfg) {
         for (let [name, count] of raw) {
             name = name.trim();
             if (cfg.translit && hasCyrillic(name)) name = translit(name);
+            if (cfg.translitNat && hasCyrillic(name)) name = translitNat(name, CYR_NAT[cfg.translitNat]);
             if (hasCyrillic(name) || !isLatinName(name) || name.length < 3) continue;
             // Junk-Filter (v4): kein Vokal → Daten-Artefakt/Abkürzung (z.B. "Dbs", "Xzy")
             if (!/[aeiouyàâäáéèêëíïîóôöúùûüøåÿ]/i.test(name)) continue;
             if (cfg.rename && cfg.rename[name]) name = cfg.rename[name];
             name = fixName(nat, name);
+            if (cfg.diacritics) name = srbDiacritics(name, kind);
+            if (cfg.chatQ) name = name.replace(/q/g, 'ya').replace(/^Q/, 'Ya').replace(/^X/, 'H');
             if (name !== name.charAt(0).toUpperCase() + name.slice(1) && !/^(De |Da |Van |Von |El |Le |La |Du |O'|Mc|Mac|St-)/.test(name)) continue;
             if (drops.has(name)) continue;
             // Kuratierte Nachnamen sind gegen Filter/Bans immun (sie sollen ihr
