@@ -253,7 +253,7 @@ Das ist gefahrlos, weil `manage-v` jede Version **committet, bevor** sie ins Arc
 - **Vier Stände sind Ausnahmen** und in `archive/` eingecheckt, weil sie nie im Repo landeten: `f1-rpg-v0.9.7.3_pre/b_pre/c_pre` (Vorabstände, weichen um ~100 Zeilen von der Release ab) und `f1-rpg-v0.9.9.37`. Die `.gitignore` nutzt dafür `archive/*` plus `!`-Ausnahmen — Git kann eine Datei nicht einschließen, wenn ihr Verzeichnis ausgeschlossen ist.
 - **Nie den ganzen Ordner einchecken.** Das erzeugte ~2,6 GB neue Objekte ohne Sicherheitsgewinn: die Arbeitskopien haben CRLF, die Git-Objekte LF — Git entdoppelt sie also nicht.
 
-**Wenn das Archiv wieder über ~15 Dateien wächst:** die ältesten löschen, die letzten 10 behalten. Vorher prüfen, dass die Löschkandidaten auf `origin/master` liegen.
+**Aufräumen passiert automatisch** in `manage-v.ps1` Schritt 6a: behält die 10 neuesten, fasst eingecheckte Dateien nie an, löscht nur, was in der Historie von `origin/master` liegt. **Sollstand = 14 Dateien** (10 + die 4 Ausnahmen) — das ist kein „knapp", sondern der Normalzustand. Nur bei mehr als 14 nachsehen, warum 6a nicht gegriffen hat (Warnung „ist NICHT auf origin/master").
 
 ## Nach PC-Neustart (Nutzer-Info)
 1. CMD im Projektordner öffnen
