@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.26</title>
+    <title>F1 RPG v0.9.18.27</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.26 (aktuell) - 02.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.27 (aktuell) - 02.10.2026</div>
+                            <div>&#8226; NEU: Eigene Namens-Pools fuer Bulgarien, Serbien und Rumaenien (vorher 12 Platzhalternamen)</div>
+                            <div>&#8226; FIX: Serbische Namen mit korrekten Sonderzeichen, rumaenische mit Kommaunterlegung</div>
+                            <div class="font-bold text-slate-400">v0.9.18.26 - 02.10.2026</div>
                             <div>&#8226; NEU: AUS/NZL Vornamen nach Geburtsjahrgang gewichtet (Leihe der GBR-Kurven)</div>
                             <div>&#8226; FIX: Russische Nachnamen ohne Vatersnamen, Vornamen und Platzhalter</div>
                             <div>&#8226; FIX: Keine Frauennamen mehr als Vor- oder Nachname bei POL/CZE/RUS/EST, Maria/Ana nur noch in Doppelnamen</div>
@@ -10720,6 +10723,168 @@ const NAME_POOLS_BY_NATION = {
           ] }
     ] },
 
+    // ── ROU ──
+    ROU: { regions: [
+        { w: 1,
+          first: [
+            ['Alexandru',100],['Ionuț',86],['Andrei',84],['Mihai',74],['Marius',74],['Adrian',73],['Florin',71],['Daniel',65],['Cristian',65],['Bogdan',60],
+            ['George',59],['Constantin',59],['Vasile',53],['Gabriel',51],['Ștefan',50],['Nicolae',48],['Gheorghe',46],['Cosmin',44],['Răzvan',43],['Robert',42],
+            ['Ion',42],['Alin',41],['Valentin',40],['Iulian',40],['Radu',38],['Claudiu',37],['Vlad',37],['Dan',37],['Paul',35],['Dumitru',35],['Sorin',35],
+            ['Lucian',34],['Ovidiu',33],['Dragoș',32],['Ionel',32],['Laurențiu',31],['Ciprian',31],['Silviu',29],['Sergiu',29],['Viorel',28],['Liviu',28],
+            ['Mircea',28],['Petru',26],['Sebastian',24],['Victor',24],['Eduard',23],['Costel',23],['Ilie',22],['Emanuel',21],['Raul',21],['Eugen',21],['Cornel',19],
+            ['Tudor',19],['Dorin',19],['Octavian',19],['Emil',19],['Teodor',18],['Alex',18],['Dănuț',18],['David',18],['Aurel',18],['Mihail',18],['Petrică',18],
+            ['Călin',17],['Norbert',17],['Florian',17],['Marcel',16],['Tiberiu',16],['Nicușor',16],['Petre',16],['Mihăiță',15],['Denis',15],['Darius',15],
+            ['Iosif',15],['Remus',14],['Doru',14],['Marin',14],['Nicu',14],['Costin',14],['Flavius',14],['Rareș',14],['Aurelian',14],['Florentin',13],
+            ['Stelian',12],['Traian',12],['Dorel',12],['Samuel',12],['Cristinel',12],['Virgil',12],['Beniamin',11],['Grigore',11],['Emilian',11],['Pavel',11],
+            ['Valeriu',10],['Ionuț-Alexandru',10],['Narcis',10],['Corneliu',10],['Mihai-Alexandru',10],['Cezar',10],['Alexandru-Ionuț',10],['Costinel',9],
+            ['Roland',9],['Vlăduț',9],['Arnold',9],['Leonard',9],['Nelu',9],['Romeo',9],['Flaviu',9],['Alexandru-Gabriel',9],['George-Alexandru',9],['Georgel',9],
+            ['Petrișor',9],['Horia',8],['Gelu',8],['Tudorel',8],['Alexandru-Mihai',8],['Ioan-Alexandru',8],['Albert',8],['Andrei-Alexandru',8],
+            ['Alexandru-Cristian',8],['Antonio',8],['Bogdan-Alexandru',8],['Neculai',8],['Alexandru-Marian',8],['Theodor',8],['Alexandru-Constantin',8],
+            ['Simion',8],['Alexandru-Daniel',8],['Irinel',7],['Florin-Alexandru',7],['Ionuț-Daniel',7],['Sabin',7],['Alexandru-Florin',7],['Horațiu',7],
+            ['Vladimir',7],['Peter',7],['Eusebiu',7],['Anton',7],['Mihnea',7],['Marius-Ionuț',7],['Marius-Alexandru',7],['Filip',7],['Adelin',7],['Roberto',7],
+            ['Richard',7],['Andrei-Cristian',7],['Andrei-Ionuț',7],['Augustin',7],['Dorian',7],['Marius-Daniel',7],['Șerban',7],['Alexandru-Nicolae',6],['Ervin',6],
+            ['Ionuț-Cristian',6],['Sandu',6],['Bogdan-Ionuț',6],['Alexandru-Ioan',6],['Costică',6],['Francisc',6],['Ionuț-Adrian',6],['Elvis',6],
+            ['Ionuț-Cătălin',6]
+          ],
+          last: [
+            ['Popa',100],['Pop',92],['Popescu',83],['Radu',71],['Dumitru',62],['Stoica',62],['Stan',61],['Matei',58],['Rusu',58],['Moldovan',58],['Mihai',58],
+            ['Ionescu',58],['Gheorghe',56],['Constantin',55],['Florea',52],['Ciobanu',52],['Marin',52],['Munteanu',50],['Vasile',50],['Ilie',50],['Oprea',49],
+            ['Stanciu',49],['Toma',49],['Sandu',47],['Ungureanu',47],['Tudor',45],['Cristea',45],['Barbu',45],['Ion',45],['Andrei',45],['Lazăr',44],['Anghel',44],
+            ['Șerban',44],['Ștefan',44],['Dinu',44],['Rus',44],['Neagu',44],['Vlad',42],['Lupu',42],['Roman',42],['Dragomir',42],['Enache',40],['Iancu',40],
+            ['Coman',40],['Badea',40],['Ivan',40],['Mocanu',40],['Lungu',40],['Iordache',40],['Dumitrescu',40],['David',38],['Cojocaru',38],['Nistor',38],
+            ['Luca',38],['Grigore',38],['Filip',38],['Preda',38],['Avram',38],['Costea',38],['Crăciun',38],['Dobre',38],['Iacob',38],['Suciu',38],['Pavel',36],
+            ['Ene',36],['Voicu',36],['Nicolae',36],['Simion',36],['Petre',36],['Manea',36],['Ioniță',36],['Marcu',36],['Tănase',36],['Olteanu',36],['Stoian',36],
+            ['Muntean',36],['Diaconu',34],['Mureșan',34],['Bucur',34],['Bogdan',34],['Dan',34],['Ardelean',34],['Călin',33],['Stancu',33],['Baciu',33],
+            ['Drăgan',33],['Zaharia',32],['Georgescu',32],['Rotaru',32],['Nedelcu',32],['Constantinescu',32],['Costache',32],['Alexandru',31],['Albu',31],
+            ['Petrescu',31],['Crețu',31],['Cebotaru',31],['Sârbu',30],['Botnaru',30],['Frunză',30],['Pleșca',30],['Josan',30],['Plămădeală',30],['Pascaru',30],
+            ['Spânu',30],['Cebanu',30],['Chiriac',30],['Musteață',30],['Buga',30],['Prodan',30],['Răileanu',29],['Tătaru',29],['Istrati',29],['Bostan',29],
+            ['Golban',29],['Mereuță',29],['Cibotaru',29],['Olaru',29],['Bejenaru',29],['Prisacaru',29],['Vieru',29],['Crudu',29],['Postica',29],['Arnaut',29],
+            ['Mardaru',29],['Vicol',29],['Scutaru',28],['Pânzaru',28],['Macovei',28],['Vârlan',28],['Pruteanu',28],['Leahu',28],['Secrieru',28],['Vlas',28],
+            ['Postolachi',28],['Vrabie',28],['Ciubotaru',28],['Gheorghiță',28],['Negară',28],['Paladi',28],['Gherman',28],['Botezatu',28],['Butnaru',28],
+            ['Bodiu',28],['Bujor',28],['Mihalachi',28],['Vizitiu',27],['Borș',27],['Triboi',27],['Știrbu',27],['Andronic',27],['Pâslaru',27],['Malai',27],
+            ['Bârcă',27],['Gorea',27],['Castraveț',27],['Madan',27],['Casian',27],['Eșanu',27],['Mocan',27],['Pascal',27],['Busuioc',27],['Cușnir',27],['Cucoș',27],
+            ['Trifan',27],['Brumă',27],['Stegarescu',27],['Boboc',27],['Luchian',27],['Sirghi',26],['Ignat',26],['Bordian',26],['Bâtca',26],['Hâncu',26],
+            ['Grigoraș',26],['Păduraru',26],['Chihai',26],['Cotorobai',26],['Gâscă',26],['Cozma',26],['Nastas',26],['Jalbă',26],['Gangan',26],['Croitor',26],
+            ['Roibu',26],['Racu',26],['Furtună',26],['Stavilă',26],['Bunescu',26],['Sochircă',26],['Mârza',26],['Axenti',26],['Vulpe',26],['Butuc',26],
+            ['Enachi',26],['Bodrug',26],['Macaru',26],['Burca',25],['Talpă',25],['Dabija',25],['Apostol',25],['Guțan',25],['Spătaru',25],['Popușoi',25],
+            ['Șeremet',25],['Țaran',25],['Plăcintă',25],['Sula',25],['Baltag',25],['Bologan',25],['Scurtu',25],['Eremia',25],['Borta',25],['Certan',25],
+            ['Solomon',25],['Manole',25],['Nacu',25],['Braga',25],['Iurcu',25],['Leancă',25],['Mereacre',25],['Pușcaș',25],['Leu',25],['Șchiopu',25],['Stati',25],
+            ['Cotruță',25],['Robu',25],['Spinei',25],['Manoli',25],['Ciorbă',25],['Perciun',24],['Mândru',24],['Cătană',24],['Donica',24],['Solonaru',24],
+            ['Bulgaru',24],['Jardan',24],['Gavriliță',24],['Andoni',24],['Filimon',24],['Nicolaescu',24],['Furdui',24],['Sănduță',24],['Mitu',24],['Brânză',24],
+            ['Gori',24],['Zmeu',24],['Cornea',24],['Leșan',24],['Duca',24],['Vataman',24],['Chirica',24],['Cârlig',24],['Calancea',24],['Sorocean',24],['Nani',24],
+            ['Morozan',24],['Gârbu',24],['Untilă',24],['Dascal',24],['Chiosa',24],['Cataragă',24],['Eni',24],['Grădinaru',24],['Lupan',24],['Drăguțan',24],
+            ['Bârgan',24],['Iovu',24],['Movilă',24],['Cecan',24],['Donciu',24],['Savca',24],['Efros',23],['Onica',23],['Burlac',23],['Chetraru',23],['Stratilă',23],
+            ['Stănilă',23],['Harea',23],['Surdu',23],['Gincu',23],['Curmei',23],['Cotoman',23],['Scutelnic',23],['Lozovanu',23],['Cerchez',23],['Chicu',23],
+            ['Beregoi',23],['Stratu',23],['Novac',23],['Perju',23],['Dănilă',23],['Pasat',23],['Cojuharu',23],['Cociug',23],['Petrache',23],['Verdeș',23],
+            ['Verejan',23],['Sili',23],['Casap',23],['Andriuță',23],['Neamțu',23],['Iabanji',23],['Vizir',23],['Mahu',23],['Verlan',23],['Gârlea',23],
+            ['Baltaga',23],['Găluscă',23],['Staver',23],['Marchitan',23],['Lefter',23],['Lavric',23],['Moldovanu',23],['Vărzaru',23],['Raiu',23],['Vasilachi',23],
+            ['Gojan',23],['Chiriță',23],['Hanganu',23],['Șendrea',23],['Isac',23],['Demian',23],['Donos',22],['Veveriță',22],['Colța',22],['Cocieru',22],
+            ['Buzdugan',22],['Buza',22],['Cioban',22],['Purice',22],['Chistol',22],['Zaporojan',22],['Groza',22],['Baran',22],['Balaban',22],['Ichim',22],
+            ['Bobeica',22],['Tudoș',22],['Onofraș',22],['Garaba',22],['Timofti',22],['Sprincean',22],['Iachim',22],['Cârlan',22],['Bătrâncea',22],['Ciugureanu',22],
+            ['Terzi',22],['Petrachi',22],['Bandalac',22]
+          ] }
+    ] },
+
+    // ── BUL ──
+    BUL: { regions: [
+        { w: 1,
+          first: [
+            ['Ivan',100],['Georgi',99],['Dimitar',79],['Nikolay',66],['Petar',57],['Stefan',52],['Hristo',53],['Todor',46],['Krasimir',48],['Plamen',53],
+            ['Atanas',45],['Vasil',43],['Martin',49],['Emil',45],['Aleksandar',44],['Stoyan',42],['Valentin',41],['Vladimir',39],['Ivaylo',39],['Nikolai',39],
+            ['Kiril',37],['Miroslav',37],['Rumen',37],['Yordan',36],['Borislav',36],['Daniel',36],['Ivo',35],['Stanislav',34],['Veselin',33],['Nikola',33],
+            ['Milen',33],['Radoslav',32],['Mihail',32],['Anton',31],['Mitko',31],['Boris',31],['Asen',30],['Rosen',30],['Svetoslav',29],['Ivailo',28],['Viktor',28],
+            ['Pavel',27],['Simeon',27],['Alexander',27],['Petko',26],['Kostadin',26],['Iliyan',26],['Kaloyan',25],['Teodor',25],['Lyubomir',25],['Marin',25],
+            ['Iliya',25],['Denis',24],['Kristiyan',24],['Stanimir',23],['Tihomir',23],['Konstantin',23],['Mario',23],['Valeri',22],['Evgeni',22],['Niki',21],
+            ['Tsvetan',21],['Boyan',21],['Kalin',20],['Alex',19],['Deyan',19],['Vladislav',19],['Zdravko',19],['Ventsislav',19],['Toni',19],['Kristian',19],
+            ['Danail',18],['Biser',18],['Aleks',18],['Ivelin',18],['Andrey',18],['Galin',18],['Zhivko',18],['Peter',18],['Bozhidar',18],['Yanko',17],['Yavor',17],
+            ['Mariyan',17],['Slavi',17],['Sasho',17],['Lachezar',17],['Mladen',16],['George',16],['Dimo',16],['Kamen',16],['Lubomir',16],['Filip',16],['Jordan',16],
+            ['Nasko',16],['Krasi',15],['Ognyan',15],['Pavlin',15],['Jivko',15],['Ilian',15],['Dobromir',15],['Bobi',15],['Metodi',15],['Radostin',14],['Diyan',14],
+            ['Vencislav',14],['Vasko',14],['Dragomir',14],['Svetlin',14],['Svilen',14],['Denislav',14],['Spas',14],['Dinko',14],['Yuliyan',14],['Venelin',13],
+            ['Marian',13],['Momchil',13],['Joro',13],['Tsvetomir',13],['Dani',13],['Bojidar',13],['Milko',13],['Anatoli',13],['Antonio',12],['Chavdar',12],
+            ['Sergey',12],['Cvetan',12],['Dian',12],['Stoian',12],['Miro',12],['Lyudmil',12],['Dancho',12],['Vesko',11],['Ilia',11],['Zlatko',11],['Dobrin',11],
+            ['Iordan',11],['Krum',11],['Yasen',11],['Boyko',11],['Victor',11],['Velizar',11],['Lazar',11],['Petyo',11],['Yulian',10],['Ilko',10],['Misho',10],
+            ['Slavcho',10],['Alexandar',10],['David',10],['Orlin',10],['Grigor',10],['Lyuben',10],['Stoycho',10],['Venci',10],['Bogomil',10],['Andrei',10],
+            ['Stiliyan',9],['Genadi',9],['Toshko',9],['Damyan',9],['Pencho',9],['Milcho',9]
+          ],
+          last: [
+            ['Ivanov',100],['Georgiev',82],['Dimitrov',81],['Petrov',67],['Nikolov',59],['Hristov',54],['Todorov',52],['Stoyanov',49],['Iliev',47],['Angelov',47],
+            ['Vasilev',45],['Atanasov',42],['Petkov',42],['Marinov',40],['Kolev',38],['Yordanov',37],['Stefanov',36],['Borisov',31],['Kostov',27],['Dimov',27],
+            ['Popov',27],['Kostadinov',27],['Asenov',27],['Mihaylov',26],['Simeonov',25],['Aleksandrov',25],['Pavlov',25],['Krastev',23],['Mitev',23],
+            ['Kirilov',22],['Dobrev',22],['Lazarov',21],['Yankov',21],['Markov',20],['Spasov',20],['Andreev',20],['Radev',20],['Mladenov',19],['Yanev',19],
+            ['Slavov',18],['Rusev',18],['Penev',17],['Kirov',17],['Mihailov',17],['Stanchev',17],['Grigorov',16],['Valchev',16],['Tsvetkov',16],['Stoev',16],
+            ['Stanev',16],['Minchev',16],['Vladimirov',16],['Uzunov',16],['Filipov',15],['Penchev',15],['Andonov',15],['Nedelchev',15],['Velikov',15],['Tomov',15],
+            ['Bonev',15],['Trifonov',14],['Milev',14],['Savov',14],['Mitkov',14],['Stoychev',14],['Kovachev',14],['Metodiev',14],['Ganchev',14],['Valkov',14],
+            ['Bogdanov',14],['Milanov',14],['Aleksiev',14],['Naydenov',14],['Gospodinov',14],['Zahariev',14],['Velev',14],['Manolov',14],['Stoilov',14],
+            ['Genov',14],['Antonov',14],['Tsvetanov',13],['Donchev',13],['Kamenov',13],['Stankov',13],['Panayotov',13],['Nikolaev',13],['Peev',13],['Tanev',13],
+            ['Tonev',13],['Dinev',13],['Ganev',13],['Enchev',13],['Rangelov',12],['Terziev',12],['Zhelev',12],['Nedyalkov',12],['Shopov',12],['Minkov',12],
+            ['Apostolov',12],['Ignatov',12],['Krumov',12],['Velichkov',12],['Zhelyazkov',12],['Velkov',12],['Damyanov',12],['Slavchev',12],['Stoianov',12],
+            ['Genchev',12],['Mirchev',12],['Tenev',12],['Cholakov',11],['Zlatev',11],['Draganov',11],['Stoykov',11],['Mitov',11],['Kanev',11],['Iordanov',11],
+            ['Hadzhiev',11],['Mihov',11],['Goranov',11],['Emilov',11],['Avramov',10],['Varbanov',10],['Tsonev',10],['Daskalov',10],['Nachev',10],['Nenov',10],
+            ['Blagoev',10],['Toshev',10],['Veselinov',10],['Sotirov',10],['Nedev',10],['Velinov',10],['Tonchev',10],['Zhekov',10],['Alexandrov',10],['Parvanov',10],
+            ['Kalchev',10],['Delchev',10],['Chakarov',10],['Yanakiev',9],['Sabev',9],['Tashev',9],['Kanchev',9],['Milchev',9],['Zdravkov',9],['Cvetkov',9],
+            ['Totev',9],['Lyubenov',9],['Stoimenov',9],['Raychev',9],['Arnaudov',9],['Shterev',9],['Yanchev',9],['Danailov',9],['Topalov',9],['Chaushev',9],
+            ['Jordanov',9],['Boyanov',9],['Panchev',9],['Krasimirov',9],['Rachev',9],['Gochev',9],['Donev',9],['Raykov',9],['Stamenov',9],['Zlatkov',9],['Minev',9],
+            ['Naidenov',9],['Grozdanov',9],['Penkov',9],['Pashov',9],['Jelev',8],['Nedkov',8],['Yosifov',8],['Sirakov',8],['Enev',8],['Bakalov',8],['Yovchev',8],
+            ['Trendafilov',8],['Anastasov',8],['Sokolov',8],['Manchev',8],['Chavdarov',8],['Karaivanov',8],['Dinkov',8],['Staykov',8],['Krustev',8],['Mihalev',8],
+            ['Cvetanov',8],['Hadjiev',8],['Evtimov',8],['Velchev',8],['Milkov',8],['Yotov',8],['Valev',8],['Mateev',8],['Denev',8],['Tsekov',8],['Tsankov',8],
+            ['Stavrev',8],['Hristev',8],['Lozanov',8],['Peychev',8],['Bozhkov',8],['Kehayov',8],['Boyadzhiev',8],['Dochev',8],['Stoichev',7],['Vassilev',7],
+            ['Ilchev',7],['Peshev',7],['Bozhilov',7],['Chernev',7],['Karadzhov',7],['Chobanov',7],['Koev',7],['Stoichkov',7],['Bachvarov',7],['Traykov',7],
+            ['Tsanev',7],['Kotsev',7],['Zlatanov',7],['Manov',7],['Jekov',7],['Manev',7],['Stoikov',7],['Mollov',6],['Tsenov',6],['Grozev',6],['Botev',6],
+            ['Milushev',6],['Panov',6],['Boychev',6],['Prodanov',6],['Tasev',6],['Konstantinov',6],['Nikov',6],['Matev',6],['Boev',6]
+          ] }
+    ] },
+
+    // ── SRB ──
+    SRB: { regions: [
+        { w: 1,
+          first: [
+            ['Nikola',100],['Marko',93],['Aleksandar',85],['Dragan',81],['Milan',76],['Zoran',73],['Dejan',70],['Miloš',81],['Goran',68],['Stefan',63],['Nenad',57],
+            ['Nemanja',59],['Ivan',72],['Saša',56],['Dušan',54],['Petar',54],['Vladimir',53],['Luka',52],['Jovan',49],['Bojan',49],['Igor',47],['Darko',45],
+            ['Željko',45],['Filip',44],['Predrag',43],['Nebojša',42],['Đorđe',42],['Lazar',42],['Srđan',41],['Slobodan',40],['Miroslav',39],['Aleksa',37],
+            ['Uroš',34],['Danilo',33],['Mladen',32],['Branko',31],['Mirko',30],['Branislav',30],['Miodrag',29],['Boris',29],['Andrija',29],['Vladan',29],
+            ['Veljko',28],['Ognjen',28],['Ilija',27],['Vuk',27],['Pavle',27],['Stevan',27],['Boban',26],['Rade',25],['Milorad',25],['Siniša',24],['Dalibor',24],
+            ['Bogdan',23],['David',23],['Radovan',22],['Duško',22],['Mihailo',22],['Matija',22],['Ivica',21],['Dimitrije',21],['Slavko',21],['Damir',20],
+            ['Mihajlo',20],['Danijel',20],['Miljan',20],['Peđa',20],['Ljubiša',20],['Mile',20],['Milovan',20],['Žarko',19],['Jovica',19],['Denis',19],['Ranko',18],
+            ['Strahinja',18],['Andrej',18],['Vasilije',18],['Slaviša',18],['Rajko',18],['Boško',18],['Miki',17],['Zlatko',17],['Vlada',17],['Viktor',17],
+            ['Vlado',17],['Vukašin',17],['Sava',17],['Tomislav',16],['Janko',16],['Novica',16],['Božidar',16],['Robert',16],['Alen',16],['Vesko',16],['Ratko',15],
+            ['Dražen',15],['Balša',15],['Davor',15],['Milenko',15],['Zdravko',14],['Radomir',14],['Savo',14],['Mitar',14],['Mateja',14],['Milutin',14],
+            ['Dragoslav',14],['Veselin',14],['Bane',13],['Ljubomir',13],['Marjan',13],['Dino',13],['Vojislav',13],['Mario',13],['Srećko',13],['Đuro',13],
+            ['Dragiša',13],['Mićo',13],['Dragoljub',13],['Miša',12],['Momčilo',12],['Pera',12],['Vanja',12],['Slađan',12],['Martin',12],['Aco',12],['Emil',12],
+            ['Kristijan',12],['Miško',12],['Pero',12],['Aca',12],['Damjan',12],['Novak',11],['Drago',11],['Ljubo',11],['Gojko',11],['Bratislav',11],['Borislav',11],
+            ['Dado',11],['Radoslav',11],['Slavoljub',10],['Zvonko',10],['Kosta',10],['Dragomir',10],['Toni',10],['Bato',10],['Velibor',10],['Stanko',10],
+            ['Stojan',10],['Sreten',10],['Vojin',10],['Milo',10],['Daniel',10],['Blažo',10],['Velimir',10],['Božo',10],['Đole',10],['Živko',10],['Miro',9],
+            ['Đorđije',9],['Vladica',9],['Danko',9],['Momir',9]
+          ],
+          last: [
+            ['Jovanović',100],['Petrović',88],['Marković',86],['Nikolić',83],['Popović',77],['Stojanović',65],['Ilić',60],['Đorđević',59],['Pavlović',57],
+            ['Ivanović',57],['Janković',55],['Stanković',55],['Kovačević',55],['Milošević',54],['Savić',49],['Mitrović',49],['Vuković',47],['Živković',47],
+            ['Knežević',47],['Todorović',46],['Radović',44],['Kostić',42],['Vujović',41],['Ristić',41],['Radulović',41],['Milić',41],['Šimić',41],['Bulatović',39],
+            ['Obradović',39],['Perović',39],['Stevanović',38],['Milovanović',38],['Tomić',37],['Mladenović',37],['Đurović',36],['Bošković',36],['Lukić',36],
+            ['Jović',36],['Milosavljević',36],['Novaković',35],['Mihajlović',35],['Milenković',35],['Krstić',35],['Pejović',35],['Filipović',35],['Marinković',35],
+            ['Cvetković',35],['Stojković',34],['Božović',34],['Radovanović',34],['Petković',34],['Lazarević',34],['Stefanović',34],['Đurić',34],['Aleksić',33],
+            ['Dimitrijević',33],['Babić',32],['Martinović',32],['Stanojević',32],['Milanović',32],['Đukić',32],['Lazić',31],['Vukčević',31],['Mirković',31],
+            ['Vasić',30],['Pavićević',30],['Marić',30],['Perić',30],['Živanović',30],['Vučković',29],['Maksimović',29],['Radonjić',29],['Mitić',29],
+            ['Bogdanović',28],['Đokić',28],['Radosavljević',28],['Krivokapić',28],['Pešić',28],['Raičević',28],['Matić',28],['Miletić',27],['Stanišić',27],
+            ['Šćepanović',26],['Gajić',26],['Marjanović',26],['Blagojević',26],['Antić',26],['Sekulić',26],['Mandić',25],['Stamenković',25],['Nedeljković',25],
+            ['Miljković',25],['Ostojić',24],['Šćekić',24],['Jovović',24],['Jokić',24],['Rajković',24],['Miličević',24],['Grujić',24],['Vojinović',24],
+            ['Rakočević',24],['Jevtić',23],['Milović',23],['Milojević',23],['Vasiljević',23],['Golubović',23],['Bojović',23],['Dacić',23],['Zdravković',23],
+            ['Arsić',23],['Milutinović',22],['Lazović',22],['Rakić',22],['Lekić',22],['Ivković',22],['Veličković',22],['Mijatović',22],['Đurđević',22],
+            ['Jakovljević',22],['Stanić',22],['Radojević',21],['Vlahović',21],['Spasić',21],['Tasić',21],['Anđelković',21],['Ćetković',21],['Miladinović',21],
+            ['Drašković',21],['Vuksanović',21],['Minić',21],['Kaluđerović',21],['Paunović',20],['Đukanović',20],['Lučić',20],['Radivojević',20],['Trifunović',20],
+            ['Gavrilović',20],['Andrić',20],['Jelić',20],['Samardžić',20],['Jovičić',20],['Mihailović',20],['Tomašević',20],['Simonović',20],['Joksimović',20],
+            ['Pantić',20],['Pepić',20],['Zečević',20],['Veljković',20],['Tošić',20],['Vujošević',19],['Ćirić',19],['Dragović',19],['Tadić',19],['Spasojević',19],
+            ['Pajović',19],['Vukotić',19],['Manojlović',19],['Nešić',19],['Nikčević',19],['Jeremić',19],['Đurišić',19],['Damjanović',19],['Simović',19],
+            ['Delić',19],['Vujačić',19],['Vučinić',19],['Perišić',18],['Vukičević',18],['Božić',18],['Terzić',18],['Veselinović',18],['Leković',18],['Adžić',18],
+            ['Vučetić',18],['Branković',18],['Vujičić',18],['Drobnjak',18],['Radić',18],['Korać',18],['Stošić',17],['Pantelić',17],['Radunović',17],
+            ['Milivojević',17],['Tomović',17],['Radojičić',17],['Davidović',17],['Šarić',17],['Kojić',17],['Bulajić',17],['Janjić',17],['Bojić',17],['Maraš',16],
+            ['Panić',16],['Ranković',16],['Trajković',16],['Ranđelović',16],['Kalezić',16],['Urošević',16],['Krsmanović',16],['Čolić',16],['Ignjatović',16],
+            ['Zorić',16],['Brajović',16],['Čolović',16],['Micić',15],['Vukadinović',15],['Mišić',15],['Novović',15],['Vojvodić',15],['Avramović',15],['Bakić',15],
+            ['Vuletić',15],['Radević',15],['Roganović',15],['Ratković',15],['Nikić',15],['Kovač',15],['Đoković',15],['Brkić',15],['Bajić',14],['Matović',14],
+            ['Đurković',14],['Stević',14],['Bojanić',14],['Mijailović',14],['Jovičević',14],['Zeković',14],['Jocić',14],['Despotović',14],['Grbović',14],
+            ['Luković',14],['Kuzmanović',14],['Mijović',14],['Zarić',14],['Raković',14],['Vukašinović',14],['Anđelić',14],['Adamović',14],['Danilović',14]
+          ] }
+    ] },
+
     // ── NOR ──
     NOR: { regions: [
         { w: 1,
@@ -11123,11 +11288,10 @@ const NAME_POOLS_BY_NATION = {
 const NATION_NAME_FALLBACK = {
     'ECU':'COL','BOL':'COL','PAR':'ARG','CRC':'MEX','GUA':'MEX','PAN':'COL','DOM':'COL','PUR':'MEX','CUB':'MEX','UKR':'RUS',
     'BLR':'RUS','KAZ':'RUS','LAT':'EST','LTU':'EST','KGZ':'INT','UZB':'INT','TJK':'INT','TKM':'INT','AZE':'INT','ARM':'INT',
-    'GEO':'INT','SVK':'CZE','SLO':'CZE','LUX':'BEL','LIE':'SUI','AND':'ESP','SMR':'ITA','MLT':'ITA','CRO':'INT','SRB':'INT',
-    'BIH':'INT','MKD':'INT','MNE':'INT','ALB':'INT','BUL':'INT','ROU':'INT','ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR',
-    'LBN':'MAR','TUN':'MAR','ALG':'MAR','JOR':'MAR','IRQ':'MAR','LBA':'MAR','PAK':'IND','BAN':'IND','SRI':'IND','NEP':'IND',
-    'SGP':'CHN','HKG':'CHN','TPE':'CHN','MAC':'CHN','PHI':'MEX','VIE':'INT','KEN':'RSA','NGR':'INT','GHA':'INT','SEN':'FRA',
-    'CIV':'FRA','ANG':'POR','MOZ':'POR'
+    'GEO':'INT','SVK':'CZE','SLO':'CZE','LUX':'BEL','LIE':'SUI','AND':'ESP','SMR':'ITA','MLT':'ITA','CRO':'INT','BIH':'INT',
+    'MKD':'INT','MNE':'INT','ALB':'INT','ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR','LBN':'MAR','TUN':'MAR','ALG':'MAR',
+    'JOR':'MAR','IRQ':'MAR','LBA':'MAR','PAK':'IND','BAN':'IND','SRI':'IND','NEP':'IND','SGP':'CHN','HKG':'CHN','TPE':'CHN',
+    'MAC':'CHN','PHI':'MEX','VIE':'INT','KEN':'RSA','NGR':'INT','GHA':'INT','SEN':'FRA','CIV':'FRA','ANG':'POR','MOZ':'POR'
 };
 
 // ── Raritäten-Schwänze (implizit Gewicht 1) ─────────────────────────────
@@ -13456,6 +13620,52 @@ const NAME_TAILS_BY_NATION = {
             'Basem','Nofal','Zein','Aref','Adm','Montaser','Eldaly','Abdelaal','Boda','Youssif','Koka','Nashat','Wbas','Halawa','Salh','Sheta','Fady','Shiko',
             'Webas','Elnady','Moner','Elmaghraby','Nagah','Toty','Foad','Antar','Elwan','Hessen','Eisa','Salm','Atif','Harb','Ragheb','Omry','Yaso','Hamde','Harby',
             'Meme','Rafaat','Bassem','Ibraheem','Esraa','Eman'
+          ] },
+    ],
+    BUL: [
+        { r: 0,
+          first: [
+            'Nedyalko','Lubo','Adrian','Dimitur','Dido','Tsvetelin','Radi','Svetlozar','Hristiyan','Zahari','Mincho','Cvetomir','Dimcho','Blagovest','Vladi',
+            'Bogdan','Julian','Vlado','Nayden','Ico','Stoil','Nedko','Kosta','Iskren','Desislav','Rado','Krasen','Zhoro','Velislav','Gabriel','Andon','Tony','Pepi',
+            'Velin','Petio','Preslav','Kaloian','Momo','Ventsi','Petur','Oleg','Naiden','Boiko','Trifon','Valio','Ludmil','Rangel','Sergei','Gogo','Ceco','Kolio',
+            'Dobri','Aleksander','Stoicho','Ognian','Maxim','Ruslan','Vassil','Svetozar','Koko','Christian','Dimityr','John','Stilian','Branimir','Antoan',
+            'Stancho','Kris','Michael','Gosho','Philip','Encho','Kolyo','Krassimir','Radko','Kiro','Rusi','Vesselin','Velko','Sevdalin','Gancho','Liubomir',
+            'Hristian','Dilyan','Cvetelin','Rossen','Aleksandr','Emo','Boian','Niko','Rostislav','Gospodin','Aleksandur','Yani','Asparuh','Manol','Yoan','Blagoi',
+            'Maksim','Nick','Mark','Aleksi','Luben','Gencho','Robert','Blagoy','Lyubo','Nedelcho','Doncho','Damian','Apostol','Anastas','Roman','Strahil','Emanuil',
+            'Toma','Zhelyazko','Evgeniy','Stamen','Roberto','Panayot','Yuri','Isko','Velichko','Delyan','Deivid','Bobby','Sava','Dimiter','Slav','Petyr'
+          ],
+          last: [
+            'Danchev','Rumenov','Kalinov','Dikov','Panev','Pehlivanov','Demirev','Galabov','Nakov','Malinov','Simov','Tabakov','Martinov','Balabanov','Belchev',
+            'Kosev','Raikov','Radkov','Dachev','Kolarov','Kazakov','Mitrev','Kurtev','Alexiev','Ninov','Dichev','Delev','Valentinov','Dechev','Bonchev','Karadjov',
+            'Kamburov','Lubenov','Nenkov','Danev','Vitanov','Belev','Rusinov','Bojkov','Paunov','Geshev','Paskalev','Gatev','Milenov','Monev','Gogov','Bankov',
+            'Kochev','Nenchev','Davidov','Genev','Shishkov','Argirov','Stoynov','Plamenov','Arsov','Halachev','Mikov','Vangelov','Valkanov','Denchev','Harizanov',
+            'Gerasimov','Bojinov','Bojilov','Kocev','Tzvetkov','Kuzmanov','Kirchev','Raichev','Gergov','Lilov','Kunev','Borislavov','Grancharov','Dragnev','Neykov',
+            'Mishev','Evgeniev','Kasabov','Lalev','Yakimov','Papazov','Kalev','Rashkov','Terziyski','Demirov','Zhivkov','Bratanov','Ognyanov','Lukanov','Stanoev',
+            'Rashev','Marchev','Sashev','Jivkov','Asparuhov','Slavkov','Radoslavov','Chervenkov','Eftimov','Donkov','Tanchev','Madjarov','Traikov','Yonchev',
+            'Videnov','Balev','Doichev','Ivanchev','Neshev','Paskov','Bashev','Milenkov','Zafirov','Kyosev','Filev','Grozdev','Jelyazkov','Vasev','Gerov','Staikov',
+            'Konov','Aleksov','Vladov','Stamatov','Atanassov','Kozarev','Boshnakov','Vankov','Kunchev','Cekov','Parushev','Ruskov','Tsolov','Hristozov','Mavrov',
+            'Stamov','Rizov','Antov','Panaiotov','Drumev','Yurukov','Kotev','Koychev','Malchev','Nanev','Vachev','Nestorov','Sharkov','Damianov','Lalov','Filchev',
+            'Nikiforov','Alekov','Tsanov','Kraev','Gyurov','Dyulgerov','Karamfilov','Arabadjiev','Dimchev','Romanov','Momchilov','Cankov','Bozov'
+          ] },
+    ],
+    SRB: [
+        { r: 0,
+          first: [
+            'Miroljub','Jovo','Vasko','Tihomir','Milivoje','Draško','Sergej','Alex','Svetislav','Marinko','Todor','Radoje','Maksim','Čedomir','Vaso','Milomir',
+            'Rašo','Svetozar','Branimir','Vojkan','Borko','Žika','Mišo','Krsto','Stevo','Jugoslav','Oliver','Sale','Ervin','Mileta','Radenko','Blagoje','Dule',
+            'Josip','Niko','Relja','Miladin','Milija','Ivo','Radivoje','Andreja','Slaven','Nino','Zvezdan','Dario','Anton','Perica','Miomir','Nedeljko','Edo',
+            'Radiša','Slobo','Vlatko','Alexandar','Vladislav','Marijan','Mijo','Ado','Bata','Vuko','Budimir','Boro','Obrad','Konstantin','Antonio','Vojo','Srđa',
+            'Tomo','Mića','Rastko'
+          ],
+          last: [
+            'Ražnatović','Babović','Dragičević','Radojković','Nedović','Miljanić','Ćurčić','Milinković','Radenković','Ćosić','Katić','Lalić','Boljević','Dabović',
+            'Velimirović','Pantović','Gogić','Rajić','Kljajić','Stojiljković','Stojadinović','Dašić','Milojković','Vučić','Kolić','Rosić','Stepanović','Peković',
+            'Rasović','Milačić','Gojković','Vidaković','Bogićević','Marović','Ćeranić','Karadžić','Lukač','Mrdak','Lakić','Grbić','Bašić','Gardašević','Račić',
+            'Stanisavljević','Glišić','Mikić','Lalović','Mišković','Krunić','Kocić','Tešić','Konatar','Zec','Lutovac','Prelević','Jakšić','Vujić','Antonijević',
+            'Nikšić','Dinić','Dukić','Zekić','Bogojević','Tanasković','Dedić','Pajić','Radanović','Đuranović','Balić','Nedić','Subotić','Abramović','Papić',
+            'Krstović','Vulović','Dakić','Gvozdenović','Klikovac','Vučićević','Radisavljević','Stanimirović','Savović','Mijajlović','Bošnjak','Dragojević',
+            'Vlaović','Asanović','Miranović','Radošević','Cvijović','Rakonjac','Medojević','Mijušković','Nešković','Banović','Matković','Đuričić','Uskoković',
+            'Kažić','Prodanović','Smiljanić','Damnjanović','Stevović','Ljumović','Šoškić','Kujović','Ćirković','Dimić','Popadić','Nenezić'
           ] },
     ],
     AUS: [
@@ -17737,7 +17947,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.26';
+        const VERSION = '0.9.18.27';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
