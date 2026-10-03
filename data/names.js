@@ -2539,15 +2539,50 @@ const NAME_POOLS_BY_NATION = {
     CHN: { regions: [
         { w: 1,
           first: [
-            ['Wei',3],['Hao',3],['Kai',3],['Yifan',3],['Ming',2],['Jian',2],['Zihan',2],['Junjie',2],['Bo',2],['Rui',2],['Yuhang',2],['Chenglong',1],['Haoran',2],
-            ['Zihao',2],['Jiahao',2],['Zeyu',2],['Yichen',2],['Boyuan',1],['Zhihao',2],['Junhao',1],['Yuxuan',2],['Zhenyu',2],['Sicheng',1],['Weijie',1],
-            ['Zhiqiang',1],['Xiaolong',1],['Wenbo',1],['Peng',2],['Lei',2],['Tao',2],['Chao',2],['Jun',2],['Qiang',1],['Bin',1],['Feng',1],['Gang',1],['Guanyu',1]
+            ['Wei',100],['Hao',67],['Kai',53],['Yifan',63],['Ming',62],['Jian',63],['Zihan',23],['Junjie',96],['Bo',12],['Rui',37],['Yuhang',40],['Chenglong',28],
+            ['Haoran',52],['Zihao',61],['Jiahao',71],['Zeyu',33],['Yichen',18],['Boyuan',2],['Zhihao',55],['Junhao',38],['Yuxuan',31],['Zhenyu',58],['Sicheng',11],
+            ['Weijie',57],['Zhiqiang',74],['Xiaolong',69],['Wenbo',44],['Peng',12],['Lei',71],['Tao',59],['Chao',55],['Jun',77],['Qiang',44],['Bin',66],['Feng',2],
+            ['Gang',36],['Guanyu',18],['Jiawei',79],['Xiaodong',76],['Pengfei',73],['Xiaoming',71],['Wenjie',67],['Dean',67],['Zhiwei',66],['Xiaofeng',63],
+            ['Jiaming',61],['Zhiyong',60],['Jack',60],['Jason',59],['Bowen',59],['Jiajun',58],['Jie',58],['Jianhua',58],['Haitao',57],['Haifeng',55],
+            ['Jianfeng',55],['Zhipeng',55],['Wenhao',54],['Wenbin',54],['Xin',54],['Xudong',53],['Jianjun',52],['Zhiyuan',52],['Michael',51],['Yong',50],
+            ['Yiming',50],['Eric',49],['Xiaojun',49],['Zhigang',49],['Haibo',49],['Xinyu',48],['Alex',48],['Zhenhua',48],['Hongwei',48],['Weifeng',48],
+            ['Wentao',48],['Xiaoyu',47],['Xiaobo',47],['Hui',47],['Dawei',47],['Andy',46],['Jiajie',46],['Tony',46],['Jiaqi',46],['Jianping',45],['Jianwei',45],
+            ['Julian',45],['Jiacheng',45],['Wenlong',44],['Junfeng',44],['Wenjun',44],['Zhijie',43],['John',43],['Weidong',43],['Fei',43],['Jiahui',42],
+            ['Zhiming',42],['Leo',41],['Pengcheng',41],['Xiaowei',41],['Zhihua',41],['Haibin',41],['Duke',41],['Hailong',41],['Zhichao',41],['Zhibin',41],
+            ['Yunfei',41],['Peter',40],['James',40],['Long',40],['Tianyu',40],['Xiaohui',40],['Frank',40],['Xiang',40],['Zijian',40],['Yufeng',40],['Zhicheng',40],
+            ['Haiyang',39],['Siyuan',38],['Jianhui',38],['Junwei',38],['Xiangyu',38],['Yunlong',38],['Liming',38],['Xiaobin',38],['Daniel',37],['Jianming',37],
+            ['Allen',37],['Yuchen',37],['Zilong',37],['Hongbo',37],['Yifeng',36],['Hongyu',36],['Zhijian',36],['Weibin',36],['Haotian',36],['Zhifeng',36],
+            ['Jing',36],['Min',36],['Yingjie',36],['Yifei',36],['Zhiwen',36],['Sam',36],['Zhen',36],['Haoyu',36],['Zhijun',36],['Lijun',36],['Jiale',36],
+            ['Xuefeng',35],['Guoqing',35],['Haijun',35],['Yunfeng',35],['Weijian',35],['Jianqiang',35],['Kun',35],['Sheng',35],['Yulong',35],['Guodong',35],
+            ['Weiming',35],['Jianbo',35],['Xiaopeng',35],['Yuxiang',35],['Jerry',34],['Hua',34],['Tengfei',34],['Xiaofei',34],['Guoqiang',34],['Jinlong',34],
+            ['Shaohua',34],['William',33],['Weijun',33],['Xingyu',33],['Vincent',33],['Yue',33],['Bing',33],['Jianguo',33],['Zhihong',33],['Guoliang',33],
+            ['Mingjie',33],['Ning',33],['Xiaolei',33],['Hongliang',33],['Wenfeng',33],['Xiaolin',33],['Weihua',33],['Shijie',32],['Xiaoping',32],['Dongsheng',32],
+            ['Xiaogang',32],['Jianbin',32],['Jialiang',32],['Jacky',32],['Dan',32],['Zhixiong',32],['Yongqiang',32],['Yufei',32],['Jianwen',32],['Simon',31],
+            ['Ping',31],['Yongjun',31],['Weimin',31],['Haidong',31],['Guohua',31],['Zhihui',31],['Haiming',31],['Chris',31],['Mark',31],['Yibo',31],['Jinhua',31],
+            ['Yunpeng',31],['Xiaojie',31],['Junhua',31],['Haojie',31],['Zijie',31],['Xiaoqiang',30],['Xiaoliang',30],['Junhui',30],['Xiaohua',30],['Mingyang',30],
+            ['Bruce',30],['Zhenwei',30],['Qing',29],['Xiaoyang',29],['Guofeng',29],['Richard',29],['Yun',29],['Jintao',29],['Wenchao',29],['Minghao',29],
+            ['Qinghua',29],['Xiaotian',29],['Nan',29],['Shuai',29],['Panda',29],['Zhenxing',29],['Wenhui',29],['Hailin',29],['Yonghui',29],['Jiawen',29],
+            ['Alan',28],['Henry',28],['Haipeng',28],['Shihao',28],['Hongtao',28],['Liwei',28],['Jiaxin',28],['Zhimin',28],['Zefeng',28],['Xiaohu',28],['Jimmy',28],
+            ['Ken',28],['Lifeng',28],['Weiqiang',28],['Xiaoguang',28],['Jinsong',28],['Minghui',28],['Zhiheng',28],['Yujie',28],['Xiaoyong',28],['Jianxiong',28],
+            ['Ben',27],['Paul',27],['Zhi',27],['Yuming',27],['Tianyi',27],['Haiping',27],['Shaojie',27],['Jincheng',27],['Longfei',27],['Hongjie',27],['Zixuan',27],
+            ['Jiandong',27],['Jianzhong',27],['Xiansen',27],['Mingliang',27],['Zhiping',27],['Jiabin',27],['Yongsheng',27],['Junming',27],['Guowei',27],['Zhe',26],
+            ['Hai',26],['Xinhua',26],['Qingsong',26],['Chenxi',26],['Qiming',26],['Ziyang',26],['Zhixiang',26],['Yongliang',26],['Tom',26],['Kaiwen',26],
+            ['Lixin',26],['Jingyu',26],['Yimin',26],['Jiahua',26],['Jianxin',26],['Weiguang',26]
           ],
           last: [
-            ['Wang',5],['Li',5],['Zhang',5],['Liu',4],['Chen',4],['Yang',4],['Zhao',3],['Huang',3],['Zhou',3],['Wu',3],['Xu',3],['Sun',3],['Ma',2],['Zhu',2],
-            ['Lin',2],['Guo',2],['He',3],['Gao',3],['Luo',3],['Zheng',3],['Liang',3],['Xie',2],['Tang',2],['Deng',2],['Han',2],['Feng',2],['Cao',2],['Peng',2],
-            ['Zeng',2],['Xiao',2],['Tian',2],['Dong',2],['Pan',2],['Yuan',2],['Cai',2],['Jiang',2],['Yu',2],['Du',2],['Ye',2],['Cheng',2],['Wei',2],['Su',2],
-            ['Lu',2],['Ding',1],['Ren',1],['Fang',1],['Shen',1],['Qin',1],['Kong',1],['Xue',1],['Hou',1],['Shao',1]
+            ['Wang',100],['Li',90],['Zhang',98],['Liu',83],['Chen',91],['Yang',61],['Zhao',44],['Huang',63],['Zhou',47],['Wu',26],['Xu',26],['Sun',40],['Ma',12],
+            ['Zhu',43],['Lin',48],['Guo',33],['He',26],['Gao',31],['Luo',31],['Zheng',36],['Liang',31],['Xie',30],['Tang',32],['Deng',25],['Han',23],['Feng',26],
+            ['Cao',23],['Peng',25],['Zeng',26],['Xiao',24],['Tian',18],['Dong',22],['Pan',25],['Yuan',23],['Cai',26],['Jiang',36],['Yu',12],['Du',12],['Ye',12],
+            ['Cheng',27],['Wei',28],['Su',12],['Lu',12],['Ding',21],['Ren',17],['Fang',21],['Shen',29],['Qin',18],['Kong',14],['Xue',15],['Hou',14],['Shao',13],
+            ['Yan',28],['Shi',27],['Song',25],['Zhong',23],['Tan',23],['Yao',22],['Jin',22],['Fan',22],['Qiu',20],['Yin',19],['Liao',19],['Wen',19],['Dai',19],
+            ['Chang',18],['Xia',18],['Zou',17],['Cui',16],['Hong',16],['Meng',16],['Gong',16],['Qian',16],['Mao',15],['Chu',15],['Jia',15],['Xiong',15],['Wan',15],
+            ['Lei',14],['Tao',14],['Tong',14],['Guan',13],['Bai',13],['Xiang',13],['Long',12],['Hao',12],['Lan',12],['Pang',12],['Bao',12],['Zhan',12],['Duan',12],
+            ['Zhuang',12],['Ling',11],['Kang',11],['Ouyang',11],['You',11],['Xing',10],['Yue',10],['Lou',10],['Jing',10],['Hua',10],['Miao',10],['Hui',9],['Niu',9],
+            ['Weng',9],['Sheng',9],['Xin',9],['Shan',9],['Mei',9],['Nie',9],['Gan',9],['Shang',9],['Shu',9],['Qiao',8],['Ruan',8],['Lian',8],['Zuo',8],['Kuang',8],
+            ['Chi',8],['Zhai',8],['Fei',8],['Ning',8],['Teng',7],['Bian',7],['Geng',7],['Chai',7],['Rong',7],['Rao',7],['Chong',7],['Huo',6],['Pei',6],['Zhuo',6],
+            ['Man',6],['Xian',6],['Zhen',6],['Quan',6],['Yong',6],['Cen',5],['Xuan',5],['Gui',5],['Kan',5],['Dou',5],['Ran',5],['Che',5],['Zang',5],['Nan',5],
+            ['Rui',5],['Yun',5],['Luan',5],['Leng',4],['Zong',4],['Diao',4],['Dang',4],['Lang',4],['Sang',4],['Situ',4],['Mou',4],['Kou',3],['Shangguan',3],
+            ['Heng',3],['Nong',3],['Shou',2],['Sima',2],['Zhuge',2],['Xun',2],['Tie',2],['Shuang',2],['Zan',1],['Murong',1],['Huangfu',1],['Dongfang',1]
           ] }
     ] },
 
@@ -6971,6 +7006,36 @@ const NAME_TAILS_BY_NATION = {
           ],
           last: [
             'Mallick','Acharjee','Mitra','Mandal','Kar','Bepari','Mollick','Podder','Pramanik','Malakar','Tripura','Chakrabarty'
+          ] },
+    ],
+    CHN: [
+        { r: 0,
+          first: [
+            'Guanghui','Zhiliang','Victor','Hansen','Yulin','Jingwei','Junyi','Wenhua','Yongjie','Zhiguo','Dapeng','Haonan','Ryan','Zhixin','Yuhao','Yucheng',
+            'Zehua','Jinwei','Junyu','Yukun','Jinfeng','Dongming','Chenyu','Ziwen','Jiangtao','Wenwei','Chaohui','Aaron','Nick','Jeff','Gary','Charles','Hang',
+            'Junpeng','Jianmin','Zhilong','Junlong','Yonggang','Chenyang','Weihao','Wenliang','Yupeng','Wenming','Guangyao','Haichao','Weilong','Haoyang','Leon',
+            'Chuang','Wenqiang','Weipeng','Yongfeng','Shaobo','Zhiyu','Changqing','Weiping','Jianan','Jianlong','Guohui','Qingshan','Jinhui','Renjie','Man','Jude',
+            'Yiwei','Yadong','Haowen','Haodong','Lingfeng','Zexin','Dongxu','Xuesong','Zhendong','Haoming','Zehao','Rong','Chong','Hongbin','Ruben','Gaofeng',
+            'Weijia','Xiangyang','Yijie','Yajun','Penghui','Jianfei','Pengyu','Mingjun','Xuhui','Yongjian','Hongfei','Chunlin','Ziheng','Yongbin','Huiming',
+            'Junlin','Jianyu','Jianyong','Jiancheng','Jiansheng','Zhiyang','Ray','George','Quan','Huan','Lihua','Feilong','Junbo','Weiwen','Chunhui','Jinbo',
+            'Yongkang','Wenkai','Junhong','Guilin','Shaowei','Wanli','Guangming','Shiwei','Zeming','Dahai','Guobin','Wenqi','Jialin','Ziming','Yufan','Zhilin',
+            'Jianchao','Martin','Stephen','Ting','Chaoyang','Yichao','Ziwei','Xiaobao','Xuyang','Haisheng','Weiguo','Linfeng','Chunhua','Tianhao','Zhicong',
+            'Chengwei','Zhiyi','Max','Sean','Thomas','Andrew','Shuo','Xuan','Sen','Cong','Ansen','Yubin','Libin','Yanlong','Hongjun','Senlin','Xiaowen','Xufeng',
+            'Guojun','Xiaobing','Haoyuan','Yiping','Junwen','Guangyu','Yunbo','Weitao','Jinpeng','Wenxiang','Shengjie','Jinhai','Zhongwei','Kunpeng','Justin',
+            'Terry','Chuan','Dale','Yuxin','Qingfeng','Andi','Dongyang','Zhenjie','Xiaochen','Yongxiang','Siwei','Dehua','Yinghao','Yuntao','Dongwei','Harry','Ran',
+            'Yubo','Yuhui','Zepeng','Siyu','Huaiyuan','Guoping','Tianming','Weiye','Xiaochun','Jinming','Yongbo','Jianghua','Wenqing','Zewei','Jiayu','Chunyang',
+            'Songtao','Minjie','Yahui','Xiangdong','Dongliang','Bolin','Boyu','Yuwen','Yuchao','Zifeng','Zicong','Haiqing','Robert','Raymond','Roy','Chun','Heng',
+            'Yicheng','Licheng','Huajie','Zhibo','Chaofan','Zifan','Xiaokang','Zelong','Xiaomin','Juntao','Wenyu','Liqun','Yaohua','Jiancong','Qifeng','Xiaoyao',
+            'Weibo','Junqiang','Zhengyu','Weichao','Zhiquan','Mingxing','Jinwen','Junchao','Weicheng','Edward','Patrick','Yanbo','Wenxuan','Shenzhen','Yizhou',
+            'Xinghua','Limin','Jinxin','Dongjie','Guoquan','Jinghui','Boyang','Yawei','Hanlin','Hongji','Xuejun','Yuqiang','Hanwen','Hongyi','Zebin','Mingwei',
+            'Jiangnan','Zhidong','Yonghua','Shaopeng','Jinrong','Junliang','Jinhao','Qingwei','Yongtao','Yafei','Shiming','Mingzhe','Jianhao','Ziqi','Jianhong',
+            'Junxi','Liqiang','Zekai','Felix','Jingbo','Shijun','Yanfeng','Yixin','Yihao','Dashuai','Junxian','Yijun','Ziyi','Jiayi','Hongyuan','Junjian','Jiarong',
+            'Yongming','Junkai','Mingyu','Hailiang','Chunlei','Weizhong','Weijiang','Zelin','Jiangang','Donghai','Xiaofan','Yaodong','Ronghua','Jianpeng','Zhentao',
+            'Yongchang','Shaofeng','Zijun','Qinglong','Weihong','Zhizhong','Yuyang','Yonglin','Zemin','Xuguang','Jiaheng','Louis','Kenny','Samuel','Joseph','Xun',
+            'Guang','Yiwen','Yuqing','Shimin','Shichao'
+          ],
+          last: [
+            
           ] },
     ],
     AUS: [
