@@ -2693,3 +2693,34 @@ ALB 600/320 · GEO 600/305 · AZE 513/320 · TKM 150/100 (Klasse `micro`) · NGR
   dazu ASCII-Stammliste auch für teilweise offizielle Namen (Mirzezadə → Mirzəzadə), w = vertipptes ş (Rewad → Rəşad).
   TKM: russische Formen zurück (Guseýnow → Hüseýnow, Gasanow → Hasanow, Ibragimow → Ibrahimow, Dj → J).
 - Vorschau aller neuen Pools: `fable-deliverables/name-data/namens-vorschau.md` — Momentaufnahme (Zufallsstichprobe), kein Build-Produkt.
+
+### 03.10.2026 (3): Namens-Pools HKG/MAC/TPE/SGP/KAZ/BAN (Welle 4)
+Vorher HKG/MAC/TPE/SGP → CHN (Pinyin: Chen/Wang statt Chan/Wong), KAZ → RUS, BAN → IND. Aggregate `w4_fore_agg.csv`,
+`w4_fore_f_agg.csv`, `w4_sur_agg.csv` (HK,TW,SG,MO,KZ,BD), Konfiguration `nations-w4.js`. Vorschau `namens-vorschau-w4.md`.
+- **Roh-Zählung aller 55 Rückfall-Nationen** (`node country-count.js …`, Zahlen in `name-data/README.md`): `country_codes.csv`
+  ist vollständig — was dort fehlt, fehlt auch roh. Neu als fehlend bestätigt: UA, BY, SK, PK, LK, NP, KE, SN, CI, MZ, CU, DO, PY, SM, LI, AD.
+- **Chinesische Vornamen sind im Datensatz unterbelegt** (Social-Media-Quelle: dort steht der englische Rufname). HK: zweisilbig
+  höchstens 1.281 (Chi Keung) gegen Andy 7.644; TW nur in Schriftzeichen (家豪 232 gegen Kevin 1.331); SG gar nicht. Nutzer-Entscheid:
+  Mischung, englische überwiegen. Ohne Eingriff Anteil am Vornamen-Gewicht HKG 7 % · MAC 4 % · TPE 10 % · SGP 9 % → Faktor auf die
+  Zählung (`CN_BOOST` HK 4 / MO 7 / TW 3) und SG-Kopf kuratiert mit 5/4 → **HKG 33 % · MAC 18 % · TPE 39 % · SGP 26 %**.
+  TW-Schriftzeichen per Tabelle in Wade-Giles (Chia-hao), unbekannte Zeichen fallen weg; Umschriften englischer Namen (大衛, 凱文) gesperrt.
+- ⚠ **Falle Auffangroute:** ein `routeFirst`-Eintrag `[/./, …]` hebelt die globale Vornamen-Guard (Paket J) komplett aus — die Guard
+  nimmt alles Geroutete aus. Folge in SGP: bangladeschische Vornamen in der chinesischen Region („Abul Tan"). Auffangroute muss die
+  `FIRST_CLASSES` selbst ausschließen (`SG_OTHER_FIRST`).
+- ⚠ **Falle Längensperre:** das übliche `SHORT = /^.{1,2}$/` hätte die chinesischen Zweibuchstaben-Nachnamen gelöscht (Ng Rang 7 in HK,
+  Ho, Li, Lo, Wu, Yu, Ma). Für HKG/MAC/TPE/SGP nur 1 Zeichen gesperrt, Form-Prüfung über `CN_SYL` (eine romanisierte Silbe).
+- ⚠ **Falle Akzente:** `fixName` setzt spanische Akzente in JEDER Nation außerhalb `NO_ACCENT_NATIONS` (Simón, Iván, Óscar in HK/KZ).
+  Zweitschaden: „Iván" verfehlte die russische Vornamen-Route in KAZ. Neue Nationen dort immer eintragen.
+- **Wanderarbeiter statt Bevölkerung:** SG-Nachnamen Islam 13.322, Khan 12.107, Hossain 11.312 (Bangladesch), Aung/Kyaw (Myanmar);
+  TW Putri 1.042, Sari 741, Wati 711, Putra 533 (Indonesien); MO Nguyen 3.120 (Vietnam) — alle gesperrt.
+- **SGP drei Regionen** (Volkszählung 2020: Chinesen 74 %, Malaien 13,5 %, Inder 9 %) → 0,74/0,14/0,12. Malaien und Tamilen tragen
+  den Vatersnamen als Nachnamen (Ismail, Kumar) — Listen statt Form-Regel; Chinesen-Region nimmt nur Einsilbiges.
+- **KAZ:** 85 % kyrillisch, Pass-Umschrift (Nutzer-Entscheid; ж=zh, х=kh, й=i, anlautend е=ye: Yerlan). Frauenformen auf die Männerform
+  gezählt (Akhmetova 6.360 + Akhmetov 4.440). Russische Region = im RU-Aggregat belegt minus muslimische Stämme; Koreaner (Kim 6.183
+  + 3.952, Pak, Tsoi, Li) mit russischen Vornamen ebenfalls r1. ⚠ Messfalle Schlüssel: y→i macht kasachisch Kasymov gleich tatarisch
+  Kasimov (im RU-Aggregat) → Stammsperre muss auf dem Schlüssel laufen, nicht auf der Anzeigeform. Gewichte 0,72/0,28 (Zensus 2021: 70,4 % Kasachen).
+- **BAN:** „Md" 287.051 ist Präfix (Md Rasel) → abgeschnitten, Mohammad gedämpft (×0,15). Rufnamen (daknam) im Nachnamenfeld (Sumon
+  11.479, Akash 9.406) — `givenRatio` greift nicht, weil im Vornamenfeld „Md Sumon" steht → Liste `BD_NICK_LAST`. Ahmed (Rang 2)
+  wäre an der globalen `GIVEN_AS_SURNAME` gescheitert → kuratiert. Hindu-Region 0,1 (Das, Roy, Saha; Chowdhury/Sarker geteilt).
+- ⚠ **Werkzeug-Falle (wie Welle 3):** Patch-Skripte als Node-Heredoc verlieren Backslashes in Regex-Mustern (`\s`, `\{`) — der Abgleich
+  scheitert dann mit „0×". Für Muster-Edits Edit-Werkzeug oder sed nehmen.

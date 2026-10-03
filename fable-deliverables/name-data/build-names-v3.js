@@ -140,7 +140,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA']);
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN']);
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -309,6 +309,8 @@ const CFG = {
 
 const W3 = require('./nations-w3.js');   // Welle 3 (2026-10-03): ALB/GEO/AZE/TKM/NGR/GHA
 Object.assign(CFG, W3.CFG);
+const W4 = require('./nations-w4.js');   // Welle 4 (2026-10-03): HKG/MAC/TPE/SGP/KAZ/BAN
+Object.assign(CFG, W4.CFG);
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
 // routeFirst wirkt NUR auf Vornamen, cfg.route NUR noch auf Nachnamen. Vorher lief
@@ -401,6 +403,7 @@ const OPS = {
 };
 
 Object.assign(OPS, W3.OPS);
+Object.assign(OPS, W4.OPS);
 
 // ── Neue Pool-Skelette (Bonus-Nationen mit Datenbasis) ──────────────────────
 // Vornamen-Fenster kuratiert (Ära-Wissen), Nachnamen kommen komplett aus den Daten.
@@ -534,9 +537,10 @@ const readAgg = (file) => {
 const foreBy = readAgg('fore_agg.csv');
 const surBy = readAgg('sur_agg.csv');
 // 2026-10-03: Länder, die erst nachträglich aggregiert wurden (aggregate-names.js … AL,AZ,GE,TM,NG,GH)
-for (const [by, file] of [[foreBy, 'w3_fore_agg.csv'], [surBy, 'w3_sur_agg.csv']])
+for (const [by, file] of [[foreBy, 'w3_fore_agg.csv'], [surBy, 'w3_sur_agg.csv'], [foreBy, 'w4_fore_agg.csv'], [surBy, 'w4_sur_agg.csv']])
     for (const [iso, rows] of readAgg(file)) if (!by.has(iso)) by.set(iso, rows);
-const foreFBy = readAgg('w3_fore_f_agg.csv');   // nur weibliche Vornamen, nur Welle-3-Länder
+const foreFBy = readAgg('w3_fore_f_agg.csv');   // nur weibliche Vornamen, nur Welle-3/4-Länder
+for (const [iso, rows] of readAgg('w4_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 
 // givenRatio: Nachname sperren, wenn derselbe Schlüssel als Vorname (m+w) häufiger belegt ist als
 // r × als Nachname. Trennt "Emmanuel"/"Ana" (Vorname) von "Adebayo"/"Kola" (beides, Nachname überwiegt).
@@ -558,6 +562,7 @@ const TAILS = {}; // wird komplett neu erzeugt
 
 // Neue Pools einhängen, Fallback-Einträge der neuen Nationen entfernen
 Object.assign(NEW_POOLS, W3.POOLS);
+Object.assign(NEW_POOLS, W4.POOLS);
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.

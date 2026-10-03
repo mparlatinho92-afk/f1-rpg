@@ -18,6 +18,8 @@ Roh-CSVs: forenames.csv 226 MB / surnames.csv 381 MB — lokal unter `F1 RPG Nam
 | `sur_agg.csv` | Top-400 Nachnamen je Land (beide Geschlechter summiert), aus 21,1 Mio. Zeilen |
 | `country_codes.csv` | ISO-2 → Ländername (105 Länder; es fehlen u.a. AU, NZ, TH, MC, VE, ZW) |
 | `w3_*.csv` + `nations-w3.js` | Welle 3 (ALB/GEO/AZE/TKM/NGR/GHA): Aggregate und Nationen-Konfiguration |
+| `w4_*.csv` + `nations-w4.js` | Welle 4 (HKG/MAC/TPE/SGP/KAZ/BAN): Aggregate und Nationen-Konfiguration; Vorschau `namens-vorschau-w4.md` |
+| `country-count.js` | Zeilen und Träger je Land in den Roh-CSVs — vor jeder neuen Welle prüfen, ob ein Land drin ist (`node country-count.js UA,BY,KZ`) |
 | `aggregate-names.js` | Streaming-Aggregator Roh-CSV → Aggregat (`node aggregate-names.js in.csv out.csv M|ALL topN`) |
 | `curation-view.js` | Kurations-Ansicht: Top-N je Land mit 1–5-Bucket (`node curation-view.js fore_agg.csv 30 DE,GB`) |
 | `extract-tails.js` | Raritäten-Schwänze aus den Aggregaten ziehen (Filter + Regions-Routing) → `name-tails.out.js` + Review |
@@ -35,3 +37,9 @@ Für SLO zwingend per Route/Ban trennen — der abgetrennte Teil taugt als Zusat
 LT enthält Platzhalter-Müll als Nachnamen (Nesvarbu = „egal", As, Ka, Ma, St, Ra). LV fehlt ganz.
 AL, AZ, GE, TM, NG, GH: seit 03.10.2026 in `w3_fore_agg.csv` / `w3_fore_f_agg.csv` (weiblich) / `w3_sur_agg.csv`, Konfiguration `nations-w3.js`.
 Nicht im Datensatz: KG, UZ, TJ, AM, BA, MK, ME, VN, LV.
+Zählung 03.10.2026 gegen die Roh-CSVs (alle Länder mit Rückfall-Pool): `country_codes.csv` ist vollständig — was dort fehlt,
+fehlt auch roh (zusätzlich zu oben: UA, BY, SK, PK, LK, NP, KE, SN, CI, MZ, CU, DO, PY, SM, LI, AD). Vorhanden, Träger Vor-/Nachname:
+SA 26,2/26,5 Mio · IQ 15,6/15,7 · DZ 10,4/10,2 · TN 5,8/5,7 · LY 3,6/3,7 · BD 3,3/3,5 · KW 3,1/3,1 · KZ 3,0/2,8 · JO 2,8/2,8 ·
+BO 2,7/2,4 · SG 2,6/2,6 · HK 2,5/2,7 · LB 1,7/1,6 · GT 1,4/1,4 · CR 1,3/1,2 · PA 1,3/1,3 · BH 1,2/1,2 · PH 0,68/0,72 ·
+TW 0,52/0,63 · MO 0,31/0,35 · AO 0,28/0,38 · EC 0,26/0,24 · LU 0,16/0,13 · PR 0,11/0,11 · MT 0,10/0,09 · IS 0,025/0,023.
+⚠ TW/MO: Vornamen extrem zersplittert (Spitze 1.588 bzw. 904 Träger), Nachnamen dagegen konzentriert (139.759 / 38.880).

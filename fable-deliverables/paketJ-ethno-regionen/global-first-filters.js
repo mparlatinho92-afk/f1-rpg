@@ -66,10 +66,11 @@ const FIRST_CLASSES = {
 
 // Nationen, für die eine Klasse NATIV ist (kein Ban — der eigene Namensstock):
 const NATIVE_FIRST_CLASSES = {
-    ARABIC: ['EGY', 'MAR', 'SAU', 'UAE', 'QAT', 'INA', 'MAS', 'TUR', 'AZE', 'ALB', 'TKM', 'NGR', 'GHA'],
-    TURKISH: ['TUR', 'AZE', 'TKM'],
-    SOUTH_ASIAN: ['IND'],
-    EAST_ASIAN_PINYIN: ['CHN', 'KOR'],
+    ARABIC: ['EGY', 'MAR', 'SAU', 'UAE', 'QAT', 'INA', 'MAS', 'TUR', 'AZE', 'ALB', 'TKM', 'NGR', 'GHA', 'KAZ', 'BAN'],
+    TURKISH: ['TUR', 'AZE', 'TKM', 'KAZ', 'BAN'],
+    SOUTH_ASIAN: ['IND', 'BAN'],
+    // SGP nicht nötig: malaiische/indische Vornamen dort geroutet → die Guard nimmt Geroutete aus
+    EAST_ASIAN_PINYIN: ['CHN', 'KOR', 'HKG', 'MAC', 'TPE', 'SGP'],
     HISPANIC: ['ESP', 'MEX', 'ARG', 'COL', 'VEN', 'CHI', 'PER', 'URU', 'BRA', 'POR']
 };
 // (ISR bewusst NICHT nativ-arabisch: arabisch-israelische Namen sind dort per
