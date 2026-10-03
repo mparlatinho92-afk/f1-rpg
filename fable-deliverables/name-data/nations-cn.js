@@ -10,6 +10,12 @@
 // Bausteinen besteht — Vorname: 1–2 Silben aus NAME_SYL; Nachname: aus CN_SURNAMES; englisch: EN_GIVEN.
 // Die Daten liefern nur noch die Häufigkeiten. Rohnamen werden nie ausgegeben (API-Inhaltsfilter).
 // Nutzer-Entscheid: überwiegend Pinyin (~90 %), englische Rufnamen als Farbe (~10 %).
+//
+// OFFEN (Nutzer-Wunsch 03.10.2026): fertigen Pool gezielt auf Schimpfwörter prüfen lassen — die Positiv-
+// Prüfung schließt sie nur indirekt aus (keine Silben aus Schimpf-/Kosewörtern). Weil Claude die Namen nicht
+// ausgeben kann (API-Inhaltsfilter), muss das ein anderes Werkzeug oder Modell übernehmen, z. B. ein
+// chinesischsprachiges. Prüfgegenstand: CHN-Einträge in data/names.js (Pinyin, keine Rohdaten), dazu
+// cn-hanzi-pinyin.json (Schriftzeichen). Gleiches gilt sinngemäß für die übrigen Pools aus dem Datensatz.
 'use strict';
 
 const fs = require('fs');
