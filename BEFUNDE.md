@@ -2654,3 +2654,42 @@ Vorher: CRO → INT (12 Platzhalternamen), SLO → CZE, LTU → EST. Quelle: `fo
   bei LT oft die ASCII-Form (Arturas 723 vor Artūras 492). Falle dabei: SI Rozman ≠ Rožman (zwei echte Namen, Rozman häufiger),
   daher `rename` Rožman → Rozman.
 - LAT-Fallback EST → LTU (baltisch statt finno-ugrisch; LV fehlt im Datensatz ganz).
+
+### 03.10.2026 (2): Namens-Pools ALB/GEO/AZE/TKM/NGR/GHA (Welle 3)
+Vorher alle sechs auf INT (12 Namen). Die Roh-CSVs liegen lokal (`fable-deliverables/name-data/F1 RPG Namenslisten &
+Namensgeneratoren/`, gitignored) — der README-Satz „bleiben im Drive" stimmte nicht mehr. Neu aggregiert nach `w3_fore_agg.csv`,
+`w3_fore_f_agg.csv` (weiblich), `w3_sur_agg.csv`; Konfiguration in `nations-w3.js`. Ergebnis Pool+Schwanz (Nach-/Vornamen):
+ALB 600/320 · GEO 600/305 · AZE 513/320 · TKM 150/100 (Klasse `micro`) · NGR 639/450 (4 Regionen) · GHA 926/322 (2 Regionen).
+- **Globale Vornamen-Guard (Paket J) sperrt arabisch/türkisch überall, wo eine Nation nicht nativ ist.** Ohne Eintrag in
+  `NATIVE_FIRST_CLASSES` hätten AZE/ALB/TKM/NGR/GHA Ali, Murad, Ibrahim verloren — kein Fehler, keine Warnung. GEO bewusst
+  NICHT eingetragen: dort hält die Guard die aserbaidschanische Minderheit fern.
+- **AZE: vier Schreibungen je Name** (Memmedov 2251 Chat-Latein ə→e, Mamedov 883 russisch, Mammadov 407 Pass, Məmmədov 313
+  offiziell). Nutzer-Entscheid: offizielles Alphabet. `mkey` = Lautskelett (ə/a→e, q/h/x/k→g, j/c, y→i, Doppelbuchstaben),
+  offizielle Form gewinnt per `prefer`. Unter den Top 70 Nachnamen liegt bei **47** die offizielle Form im Datensatz, bei den
+  Top 60 Vornamen bei **27**; der Rest ist meist schon richtig (Quliyev, Orxan). ⚠ Restfehler im Schwanz: ə lässt sich aus „e"
+  nicht ableiten (Elnur ist richtig, Eliyev nicht) → Wortstamm-Liste `AZE_ROOTS`; seltene Namen bleiben ASCII (Resid, Babek).
+  ⚠ Messfalle Skelett: Reihenfolge zählt — erst „Vokal+iev → Vokal+ev", dann Doppelbuchstaben, sonst bleiben Abdullaev/Abdullayev getrennt.
+- **GEO: drei Schriften** (georgisch ბერიძე, Umschrift, Chat-Latein Kvaracxelia: x=kh, c=ts, w=ts, q=k). Kosenamen auf Passform
+  (Dato → Davit, Gio → Giorgi, Zura → Zurab). Aserbaidschanische Minderheit im Aggregat: Mamedov Rang 2 (548), Aliyev Rang 4 —
+  raus über Vokal-Endungspflicht (georgische Nachnamen enden auf Vokal) und `foreignFirstIso: AZ` (Vorname häufiger in AZ → gesperrt).
+- **TKM: Spitze nur 156 Träger, halb kyrillisch.** Umschrift turkmenisch (в=w, ш=ş, ч=ç), -ov → -ow. Dubletten Kurbanov/Gurbanow,
+  Ataew/Atayew, Çaryyew/Çaryew per `mkey` zusammen.
+- **NGR: Nachnamen-Spitze voller Vornamen** (Ibrahim 58644, Emmanuel 42463, John 35222, Sunday 32682). `givenRatio:1` (Vorname
+  häufiger als Nachname → raus) plus Konsonanten-Regel: Yoruba/Igbo-Nachnamen enden auf Vokal, englische Vornamen fast nie →
+  unzugeordnete Konsonanten-Endung gesperrt. ⚠ Die Ratio-Sperre trifft auch Hausa-Patronyme (Bello 22569 vs. Vorname 11323 —
+  knapp über 0,5) → Hausa-Nachnamen kuratiert. Vier Regionen (Yoruba .36, Hausa .30, Igbo .24, Süden .10); christliche Vornamen
+  geteilt zwischen r0/r2/r3, gesamtislamische auch Yoruba (Faktor 0,2), Hausa-spezifische (Aminu, Sani) nur r1.
+- **GHA:** Akan-Wochentagsnamen sind Vornamen (Kofi 4537 vs. Nachname 2146), Akan-Nachnamen stehen oft als Vorname im Aggregat
+  (Owusu 1936 vs. 7663) → `surRatio:1.5`. Frauennamen auf -waa/-maa (Serwaa, Agyeiwaa); Ausnahme Amankwaa (männlich).
+- Neue Build-Optionen: `norm`, `mkey`, `prefer`, `finalize`, `givenRatio`, `surRatio`, `foreignFirstIso`, Klasse `micro`.
+- ⚠ **Werkzeug-Falle:** Regex-Rückverweise (`\1`) in Bash-Heredocs mit Node-Strings wurden zu Steuerzeichen (0x01) — der TKM-Schlüssel
+  war still kaputt. Nach Skript-Edits `grep -c -P "[\x01-\x08]"` laufen lassen.
+- **Nachbereinigung (Sichtprüfung der Stichprobe):** GEO-Vornamen von 305 auf **119** — die Masse waren Kosenamen
+  (Dato, Gio, Misho, Bacho …), Nominativ-Doppel (Daviti/Davit, Nugzari/Nugzar → `mkey` ohne End-i, Passform gewinnt),
+  armenische/russische/aserbaidschanische Vornamen (Armen, Karen, Vova, Serkhan) und Frauennamen. ⚠ Eigene Falle: die
+  Chat-Latein-Regel x → kh machte aus „Alexander" „Alekhander" — Alex* wird jetzt vorher abgefangen.
+  ALB: Kosenamen (Beni, Besi, Juli, Miri …) gesperrt, amtliche Kurznamen (Olsi, Igli, Ergi, Ylli) bleiben.
+  AZE: offizielle Stämme datengetrieben aus dem Aggregat selbst (Hebibov → Həbibov, sobald „Həbib…" irgendwo belegt ist),
+  dazu ASCII-Stammliste auch für teilweise offizielle Namen (Mirzezadə → Mirzəzadə), w = vertipptes ş (Rewad → Rəşad).
+  TKM: russische Formen zurück (Guseýnow → Hüseýnow, Gasanow → Hasanow, Ibragimow → Ibrahimow, Dj → J).
+- Vorschau aller neuen Pools: `fable-deliverables/name-data/namens-vorschau.md` — Momentaufnahme (Zufallsstichprobe), kein Build-Produkt.

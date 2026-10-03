@@ -326,7 +326,7 @@ Stand 30.09.2026: 11.700 Ziehungen, alle sechs Fehlerzähler 0; Parität 40/40.
 
 ## Ausführen
 
-Immer aus dem **Projektordner** starten (`C:\Users\lyric\Documents\F1 RPG HTML`).
+Immer aus dem **Projektordner** starten (`C:\Projekte\F1 RPG HTML`).
 
 ```
 node tests/generate-truth.js

@@ -66,8 +66,8 @@ const FIRST_CLASSES = {
 
 // Nationen, für die eine Klasse NATIV ist (kein Ban — der eigene Namensstock):
 const NATIVE_FIRST_CLASSES = {
-    ARABIC: ['EGY', 'MAR', 'SAU', 'UAE', 'QAT', 'INA', 'MAS', 'TUR'],
-    TURKISH: ['TUR'],
+    ARABIC: ['EGY', 'MAR', 'SAU', 'UAE', 'QAT', 'INA', 'MAS', 'TUR', 'AZE', 'ALB', 'TKM', 'NGR', 'GHA'],
+    TURKISH: ['TUR', 'AZE', 'TKM'],
     SOUTH_ASIAN: ['IND'],
     EAST_ASIAN_PINYIN: ['CHN', 'KOR'],
     HISPANIC: ['ESP', 'MEX', 'ARG', 'COL', 'VEN', 'CHI', 'PER', 'URU', 'BRA', 'POR']

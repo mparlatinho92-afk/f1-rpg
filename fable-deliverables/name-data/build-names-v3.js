@@ -64,7 +64,9 @@ const CLASSES = {
     small: { sur:  600, fore: 320, surT: 240, foreT: 150, modDup: 60 },
     // SRB (2026-10-02): das RS-Aggregat wird hinter Rang ~350 zu Müll (Orte, Kleinanzeigen,
     // halb rückführbare ASCII-Schreibungen). Kleinere Masse statt endloser Sperrlisten.
-    tiny:  { sur:  350, fore: 220, surT: 240, foreT: 150, modDup: 60 }
+    tiny:  { sur:  350, fore: 220, surT: 240, foreT: 150, modDup: 60 },
+    // TKM (2026-10-03): Datensatz dünn (Spitze 156 Träger), dahinter Einzelbelege
+    micro: { sur:  150, fore: 100, surT:  80, foreT:  60, modDup: 30 }
 };
 
 // ── Transliteration & Basis-Filter (aus extract-tails.js portiert) ─────────
@@ -94,7 +96,7 @@ function translitNat(s, T) {
     return out;
 }
 const hasCyrillic = s => /[Ѐ-ӿ]/.test(s);
-const isLatinName = s => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žŁłŚśŹźŻżĆćŃńĄąĘęİıĞğŞş][A-Za-zÀ-ÖØ-öø-ÿĀ-žŁłŚśŹźŻżĆćŃńĄąĘęİıĞğŞş' -]+$/.test(s);
+const isLatinName = s => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žŁłŚśŹźŻżĆćŃńĄąĘęİıĞğŞşəƏ][A-Za-zÀ-ÖØ-öø-ÿĀ-žŁłŚśŹźŻżĆćŃńĄąĘęİıĞğŞşəƏ' -]+$/.test(s);
 const key = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // ── Kulturfremd-Filter (aus extract-tails.js, unverändert) ──────────────────
@@ -138,7 +140,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU']);
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA']);
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -301,8 +303,12 @@ const CFG = {
     CRO: { iso:'HR', cls:'small', preferDiacritic:true, banGivenAsLast:true },
     // SLO: albanischer Teil per Endung (-i/-aj/-u/-a) + Schreibung gesperrt, s. SLO_FOREIGN_FIRST.
     SLO: { iso:'SI', cls:'tiny', preferDiacritic:true, banGivenAsLast:true, rename:{ 'Rožman':'Rozman' }, banLast:[ALB_SPELLING, /(i|aj|u|a)$/, SLO_FOREIGN_FIRST, /(ovic|evic)$/, /^(Hod[zž]i[cć]|Had[zž]i[cć]|Begi[cć]|Šabi[cć]|Sabi[cć]|Halilovi[cć]|Dizdarevi[cć]|Rami[cć]|Muji[cć]|Hasanovi[cć]|Mehmedovi[cć])$/], banFirst:[ALB_SPELLING, SLO_FOREIGN_FIRST] },
+    // ALB/GEO/AZE/TKM/NGR/GHA: nations-w3.js (unten per Object.assign)
     LTU: { iso:'LT', cls:'small', preferDiacritic:true, banGivenAsLast:true, banLast:[/^.{1,4}$/, LTU_FEMALE, LTU_NOT_SURNAME, /(skaja|ckaja|nina|tina)$/, /^(?!.*(as|is|ys|us|ius|a)$)/, /(ova|eva|ov|ev|in)$/], banFirst:[/^(?!.*(as|is|ys|us)$)/, LTU_NOT_SURNAME] }
 };
+
+const W3 = require('./nations-w3.js');   // Welle 3 (2026-10-03): ALB/GEO/AZE/TKM/NGR/GHA
+Object.assign(CFG, W3.CFG);
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
 // routeFirst wirkt NUR auf Vornamen, cfg.route NUR noch auf Nachnamen. Vorher lief
@@ -393,6 +399,8 @@ const OPS = {
     SLO: { drop: { last: ['Leo','Jan','King','Doo','Love','Ime','Emer','Marc','Smith'] } },
     MAR: { drop: { last: ['Med','Raja','Malak','Fleur','Khadija','Fatima','Mks','Agadir','Widadi','Nour','Rajawi'] } }
 };
+
+Object.assign(OPS, W3.OPS);
 
 // ── Neue Pool-Skelette (Bonus-Nationen mit Datenbasis) ──────────────────────
 // Vornamen-Fenster kuratiert (Ära-Wissen), Nachnamen kommen komplett aus den Daten.
@@ -525,6 +533,23 @@ const readAgg = (file) => {
 };
 const foreBy = readAgg('fore_agg.csv');
 const surBy = readAgg('sur_agg.csv');
+// 2026-10-03: Länder, die erst nachträglich aggregiert wurden (aggregate-names.js … AL,AZ,GE,TM,NG,GH)
+for (const [by, file] of [[foreBy, 'w3_fore_agg.csv'], [surBy, 'w3_sur_agg.csv']])
+    for (const [iso, rows] of readAgg(file)) if (!by.has(iso)) by.set(iso, rows);
+const foreFBy = readAgg('w3_fore_f_agg.csv');   // nur weibliche Vornamen, nur Welle-3-Länder
+
+// givenRatio: Nachname sperren, wenn derselbe Schlüssel als Vorname (m+w) häufiger belegt ist als
+// r × als Nachname. Trennt "Emmanuel"/"Ana" (Vorname) von "Adebayo"/"Kola" (beides, Nachname überwiegt).
+const _rawCount = new Map();
+function rawCount(by, iso, mk) {
+    const id = iso + (by === surBy ? ':s' : by === foreBy ? ':f' : ':w');
+    if (!_rawCount.has(id)) {
+        const m = new Map();
+        for (const [n, c] of (by.get(iso) || [])) { const k = mk(n.trim()); m.set(k, (m.get(k) || 0) + c); }
+        _rawCount.set(id, m);
+    }
+    return _rawCount.get(id);
+}
 
 const deepCopy = o => JSON.parse(JSON.stringify(o));
 const POOLS = deepCopy(BASE.NAME_POOLS_BY_NATION);
@@ -532,6 +557,7 @@ const FALLBACK = deepCopy(BASE.NATION_NAME_FALLBACK);
 const TAILS = {}; // wird komplett neu erzeugt
 
 // Neue Pools einhängen, Fallback-Einträge der neuen Nationen entfernen
+Object.assign(NEW_POOLS, W3.POOLS);
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.
@@ -670,6 +696,7 @@ function processNation(nat, cfg) {
             name = name.trim();
             if (cfg.translit && hasCyrillic(name)) name = translit(name);
             if (cfg.translitNat && hasCyrillic(name)) name = translitNat(name, CYR_NAT[cfg.translitNat]);
+            if (cfg.norm) name = cfg.norm(name, kind);
             if (hasCyrillic(name) || !isLatinName(name) || name.length < 3) continue;
             // Junk-Filter (v4): kein Vokal → Daten-Artefakt/Abkürzung (z.B. "Dbs", "Xzy")
             if (!/[aeiouyàâäáéèêëíïîóôöúùûüøåÿ]/i.test(name)) continue;
@@ -684,16 +711,34 @@ function processNation(nat, cfg) {
             const curatedProtected = kind === 'last' && curatedLastKeys.has(key(name));
             if (kind === 'last' && GIVEN_AS_SURNAME.test(name) && !curatedProtected) continue;
             if (kind === 'last' && cfg.banGivenAsLast && givenKeys(cfg.iso).has(key(name)) && !curatedProtected) continue;
+            if (kind === 'last' && cfg.givenRatio && !curatedProtected) {
+                const mk = cfg.mkey || key, k0 = mk(name);
+                const given = (rawCount(foreBy, cfg.iso, mk).get(k0) || 0) + (rawCount(foreFBy, cfg.iso, mk).get(k0) || 0);
+                if (given > cfg.givenRatio * (rawCount(surBy, cfg.iso, mk).get(k0) || 0)) continue;
+            }
+            // foreignFirstIso: Vorname, der im Nachbarland häufiger ist (GEO: Elvin/Ramin/Samir aus AZ)
+            if (kind === 'first' && cfg.foreignFirstIso) {
+                const own = rawCount(foreBy, cfg.iso, key).get(key(name)) || 0;
+                if (cfg.foreignFirstIso.some(iso => (rawCount(foreBy, iso, key).get(key(name)) || 0) > own)) continue;
+            }
+            // surRatio: Vorname sperren, der als Nachname viel häufiger ist (GH: Owusu, Mensah, Asare)
+            if (kind === 'first' && cfg.surRatio) {
+                const mk = cfg.mkey || key, k0 = mk(name);
+                if ((rawCount(surBy, cfg.iso, mk).get(k0) || 0) > cfg.surRatio * (rawCount(foreBy, cfg.iso, mk).get(k0) || 0)) continue;
+            }
             if (!curatedProtected && bans.some(b => b.test(name))) continue;
             for (const [re, f] of damps) if (re.test(name)) { count = Math.round(count * f); break; }
-            const k = key(name);
+            const k = cfg.mkey ? cfg.mkey(name) : key(name);
             if (merged.has(k)) {
                 const m = merged.get(k);
                 m.count += count;
-                if (cfg.preferDiacritic && !/[^\x00-\x7F]/.test(m.name) && /[^\x00-\x7F]/.test(name)) m.name = name;
+                // Anzeigeform: höchster prefer-Wert gewinnt, bei Gleichstand die häufigere (= zuerst gesehene)
+                const sc = cfg.prefer || (cfg.preferDiacritic ? (n => /[^\x00-\x7F]/.test(n) ? 1 : 0) : null);
+                if (sc && sc(name) > sc(m.name)) m.name = name;
             }
             else merged.set(k, { name, count });
         }
+        if (cfg.finalize) for (const e of merged.values()) e.name = cfg.finalize(e.name, kind);
         const list = [...merged.values()].sort((a, b) => b.count - a.count);
         if (!list.length) { natReport.notes.push(`KEINE Daten für ${kind}!`); continue; }
 
