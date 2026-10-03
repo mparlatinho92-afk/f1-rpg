@@ -2767,3 +2767,14 @@ Vorher alle acht auf MAR (30 Vor-/251 Nachnamen, marokkanisch-französische Schr
 - ⚠ **Globale Guard:** Ali/Mustafa/Hasan/Ibrahim stehen auch in der TURKISH-Klasse → arabische Länder dort als nativ eintragen, sonst
   fallen sie weg. Salman/Yasir/Tahir (SOUTH_ASIAN-Klasse) über eine Route freigestellt.
 - `KSA` aus der Rückfall-Liste entfernt: IOC-Code Saudi-Arabiens, das Spiel nutzt `SAU` (eigener Pool) → toter Eintrag.
+
+### 03.10.2026 (6): Namens-Pools CRC/GUA/PAN/ECU/BOL/PUR/PHI (Welle 6)
+Vorher MEX (CRC/GUA/PUR/PHI) bzw. COL (PAN/ECU/BOL). Aggregate `w6_*.csv`, Konfiguration `nations-w6.js`, Vorschau `namens-vorschau-w6.md`.
+- **Datenlage gut:** alle sieben mit Geschlechtsangabe und 100 % lateinisch (Gegenbeispiel Welle 5). Köpfe nach Sperren ohne Fund;
+  regionale Nachnamen kommen von selbst (BOL Mamani/Quispe/Choque/Condori vorn; CRC Araya/Quesada/Solano; PAN Abrego/Cedeño; PUR Rivera vorn).
+- **PHI:** Vornamen überwiegend englisch (Mark, John, Michael) — entspricht der Realität, keine Korrektur. Nachnamen spanisch (Clavería-
+  Katalog) + tagalisch. Filipino-Kosenamen/Kreativschreibungen (Jun, Jojo, Jhun, Mhark) gesperrt; John Paul/Mark Anthony sind echt und bleiben.
+  Chinesisch-philippinische Familien (Tan, Lim, Sy) raus: ~1–2 %, bilden mit Rodel/Pedro keine stimmigen Paare.
+- ⚠ **Falle Akzente (dritte Variante):** `NO_ACCENT_NATIONS` verhindert Akzente nur für die ES_ONLY-Liste — García/López/Pérez bekamen
+  sie auch in PHI. Lösung per `finalize` (Akzent weg, ñ bleibt: Ibañez). Merke: wer akzentfreie spanische Namen braucht, muss nach fixName ansetzen.
+- PUR klein (Klasse `tiny`): nur ~100.000 Träger im Datensatz.

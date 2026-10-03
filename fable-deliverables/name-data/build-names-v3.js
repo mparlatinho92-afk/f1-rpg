@@ -140,7 +140,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN','CHN','TUN','ALG','LBA','IRQ','JOR','LBN','BRN','KUW']);
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN','CHN','TUN','ALG','LBA','IRQ','JOR','LBN','BRN','KUW','PHI']);   // PHI: Gonzales ohne Akzent
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -315,6 +315,8 @@ const WCN = require('./nations-cn.js');  // CHN aus Daten (2026-10-03), Positiv-
 Object.assign(CFG, WCN.CFG);
 const W5 = require('./nations-w5.js');   // Welle 5 (2026-10-03): TUN/ALG/LBA/IRQ/JOR/LBN/BRN/KUW
 Object.assign(CFG, W5.CFG);
+const W6 = require('./nations-w6.js');   // Welle 6 (2026-10-03): CRC/GUA/PAN/ECU/BOL/PUR/PHI
+Object.assign(CFG, W6.CFG);
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
 // routeFirst wirkt NUR auf Vornamen, cfg.route NUR noch auf Nachnamen. Vorher lief
@@ -409,6 +411,7 @@ const OPS = {
 Object.assign(OPS, W3.OPS);
 Object.assign(OPS, W4.OPS);
 Object.assign(OPS, W5.OPS);
+Object.assign(OPS, W6.OPS);
 
 // ── Neue Pool-Skelette (Bonus-Nationen mit Datenbasis) ──────────────────────
 // Vornamen-Fenster kuratiert (Ära-Wissen), Nachnamen kommen komplett aus den Daten.
@@ -549,11 +552,12 @@ for (const [by, file] of [[foreBy, 'cn_fore_agg.csv'], [surBy, 'cn_sur_agg.csv']
     for (const [iso, rows] of readAgg(file)) by.set(iso, rows);
 // Welle 5: tiefe Aggregate ersetzen die Top-400-Zeilen (TN/SA/AE … stehen dort schon, aber flach).
 // w5_fore_u_agg = Länder OHNE Geschlecht im Datensatz (TN/DZ/LY/LB/BH) → Filter über w5_gender_ref.csv.
-for (const [by, file] of [[foreBy, 'w5_fore_agg.csv'], [foreBy, 'w5_fore_u_agg.csv'], [surBy, 'w5_sur_agg.csv']])
+for (const [by, file] of [[foreBy, 'w5_fore_agg.csv'], [foreBy, 'w5_fore_u_agg.csv'], [surBy, 'w5_sur_agg.csv'], [foreBy, 'w6_fore_agg.csv'], [surBy, 'w6_sur_agg.csv']])
     for (const [iso, rows] of readAgg(file)) if (rows.length > 5) by.set(iso, rows);
 const foreFBy = readAgg('w3_fore_f_agg.csv');   // nur weibliche Vornamen, nur Welle-3/4-Länder
 for (const [iso, rows] of readAgg('w4_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 for (const [iso, rows] of readAgg('w5_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
+for (const [iso, rows] of readAgg('w6_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 
 // givenRatio: Nachname sperren, wenn derselbe Schlüssel als Vorname (m+w) häufiger belegt ist als
 // r × als Nachname. Trennt "Emmanuel"/"Ana" (Vorname) von "Adebayo"/"Kola" (beides, Nachname überwiegt).
@@ -577,6 +581,7 @@ const TAILS = {}; // wird komplett neu erzeugt
 Object.assign(NEW_POOLS, W3.POOLS);
 Object.assign(NEW_POOLS, W4.POOLS);
 Object.assign(NEW_POOLS, W5.POOLS);
+Object.assign(NEW_POOLS, W6.POOLS);
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.

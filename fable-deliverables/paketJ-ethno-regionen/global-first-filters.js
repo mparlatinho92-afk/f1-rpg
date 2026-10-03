@@ -72,7 +72,7 @@ const NATIVE_FIRST_CLASSES = {
     SOUTH_ASIAN: ['IND', 'BAN'],
     // SGP nicht nötig: malaiische/indische Vornamen dort geroutet → die Guard nimmt Geroutete aus
     EAST_ASIAN_PINYIN: ['CHN', 'KOR', 'HKG', 'MAC', 'TPE', 'SGP'],
-    HISPANIC: ['ESP', 'MEX', 'ARG', 'COL', 'VEN', 'CHI', 'PER', 'URU', 'BRA', 'POR']
+    HISPANIC: ['ESP', 'MEX', 'ARG', 'COL', 'VEN', 'CHI', 'PER', 'URU', 'BRA', 'POR', 'CRC', 'GUA', 'PAN', 'ECU', 'BOL', 'PUR', 'PHI']
 };
 // (ISR bewusst NICHT nativ-arabisch: arabisch-israelische Namen sind dort per
 // Bestandskonfiguration ausgeschlossen — die Guard bestätigt das nur.)
