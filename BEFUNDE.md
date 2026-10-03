@@ -2635,3 +2635,22 @@ Ergebnis: BUL 280 Vor-/400 Nachnamen, SRB 232/350. Gegenprobe: außer BUL/SRB ke
 - **Messfalle Vornamen-Abgleich:** `md_fore_agg.csv` ist nur männlich; Frauennamen (Tatiana, Svetlana, Viorica) liefen als
   Nachnamen durch → zusätzlich `md_fore_f_agg.csv`.
 - Ungarische Minderheit (Attila, Zsolt, Nagy, Szabo) gesperrt, gleiche Regel wie BUL/SRB. Ergebnis: 162 Vor-/350 Nachnamen.
+
+### 03.10.2026: Namens-Pools CRO/SLO/LTU aus dem lokalen BigQuery-Aggregat
+Vorher: CRO → INT (12 Platzhalternamen), SLO → CZE, LTU → EST. Quelle: `fore_agg.csv`/`sur_agg.csv` (HR/SI/LT lagen dort schon,
+600 Vor-/1500 Nachnamen je Land). Ergebnis: CRO 600/320, SLO 350/195 (Klasse `tiny`), LTU 551/320 Nach-/Vornamen in Pool + Schwanz.
+- **SI ist kosovo-albanisch verseucht:** Nachnamen Rang 1–19 alle albanisch (Gashi 4760, Krasniqi 3962 …), erst Rang 20 Novak 555.
+  Vornamen gemischt (Egzon Rang 5, Valon, Endrit in den Top 20). Getrennt über albanische Schreibung (`ALB_SPELLING`: xh/ë/ç/q/gj,
+  Anlaut sh/dh, rr/ll), Endungen -i/-aj/-u/-a und eine Liste (`SLO_FOREIGN_FIRST`, auch bosniakisch/türkisch). Danach Kopf
+  Novak/Horvat/Krajnc/Kovačič/Potočnik. Echt slowenische ASCII-Endungen -ic (Kastelic, Vidic, Jagodic) bleiben, nur -ovic/-evic gesperrt.
+- **LT-Müll:** Silben als Nachnamen (Nesvarbu = „egal" Rang 1, As, Ka, Ma, St), weibliche Formen (-ienė/-aitė/-ytė/-ūtė),
+  weibliche Vornamen (Laura, Greta, Aušra), Orte/Wörter (Lietuva, Klaipeda, Nuoma = Miete, Vardenis = Vorname, Ponas = Herr).
+  Litauische Männernamen enden auf -as/-is/-ys/-us → alles andere gesperrt (trifft die russischen Formen Aleksandr/Sergej/Igor; Anteil nicht gemessen).
+- **Neu `banGivenAsLast`:** sperrt Nachnamen, die im selben Land als Vorname belegt sind (LT: 27 Treffer, Saulius/Dainius/Mindaugas).
+  ⚠ Trifft auch echte Nachnamen — bei HR u. a. **Kralj (Rang 25)**, Bogdan, Lazar, Boban, Perica. Die stehen deshalb im
+  kuratierten Nachnamen-Kopf (filterimmun, behalten ihr Datengewicht). Vor dem Einschalten bei einer weiteren Nation die
+  Trefferliste ansehen.
+- **Neu `preferDiacritic`:** `key()` legte ASCII- und Diakritik-Schreibung schon immer zusammen, angezeigt wurde aber die häufigere —
+  bei LT oft die ASCII-Form (Arturas 723 vor Artūras 492). Falle dabei: SI Rozman ≠ Rožman (zwei echte Namen, Rozman häufiger),
+  daher `rename` Rožman → Rozman.
+- LAT-Fallback EST → LTU (baltisch statt finno-ugrisch; LV fehlt im Datensatz ganz).

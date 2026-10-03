@@ -28,3 +28,9 @@ Bekannte Daten-Macken (bei Nutzung filtern): weibliche Formen in `sur_agg` (PL -
 RU -ова), Akzent-Duplikate (ES/PT), RU/IL teils nicht-lateinische Schrift, CN nur englische
 Spitznamen, MA-Vornamen defekt kodiert, Expat-Rauschen (z.B. FI: Khan/Kumar). Datensatz ist
 gegenwartslastig — keine Ära-Information.
+**SI ist kosovo-albanisch verseucht** (03.10.2026): Nachnamen Rang 1–19 alle albanisch (Gashi 4760,
+Krasniqi 3962 …), erst Rang 20 Novak 555; Vornamen gemischt (Egzon, Valon, Endrit in den Top 20).
+Für SLO zwingend per Route/Ban trennen — der abgetrennte Teil taugt als Zusatzquelle für ALB.
+LT enthält Platzhalter-Müll als Nachnamen (Nesvarbu = „egal", As, Ka, Ma, St, Ra). LV fehlt ganz.
+Im Roh-Datensatz, aber noch NICHT aggregiert (fehlen in `WANTED`): AL, AZ, GE, TM, NG, GH.
+Nicht im Datensatz: KG, UZ, TJ, AM, BA, MK, ME, VN, LV.

@@ -138,7 +138,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB']);
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU']);
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -197,6 +197,21 @@ function fixName(nat, n) {
 const BG_TURKISH = /^(Mehmed|Ahmed|Ali|Mustaf|Hasan|Ismail|Osman|Ibr[iy]?ah?im|Ibryam|Yusein|H[yu]?useyin|Hyusein|Halil|Salih|Ramadan|Emin|Sali|Bayram|Rasim|Shaban|Sabri|Nazif|Fikri|Kemal|Erol|Orhan|Sevgin|Muharem|Musa|Isa|Redzheb|Rejep|Ferad|Feim|Myumyun|Mumun|Ahmet|Mehmet|Huseyin|Hüseyin|Recep|Ayhan|Ercan|Erkan|Ersin|Emre|Metin|Nevzat|Ilhan|Ilker|Gyunay|Gyuner|Shefket|Sezgin|Seyhan|Sevdzhan|Nedzhmi|Nurettin|Ramiz|Rafet|Raif|Bilyal|Bilal|Dzhem|Dzhevdet|Remzi|Zeki|Mustafa|Husein|Usein|Aydin|Sunay|Asan|Ismet|Amet|Samet|Oktay|Gunay|Beyhan|Reyhan|Memet|Shenol|Senol|Sami|Ridvan|Nihat|Eray|Yuksel|Ferdi|Nejdet|Basri|Nurhan|Arif|Ibram|Bilgin|Ibo|Suleyman|Erdinc|Rujdi|Bulent|Musi|Nuray|Gursel|Nazmi|Erdjan|Memo|Yasar|Ozcan|Saban|Hikmet|Redjeb|Akif|Sezer|Niyazi|Fahri|Bekir|Ertan|Guner|Berk|Birol|Bahri|Kadir|Salim|Adem|Yumer|Yusuf|Enis|Ergin|Nedret)(ov|ova|ev|eva)?$/;
 
 const SRB_FOREIGN_FIRST = /^(Edin|Haris|Senad|Admir|Jasmin|Almir|Sead|Mirsad|Enes|Elvis|Aldin|Safet|Semir|Adis|Esad|Suad|Amar|Armin|Amer|Nermin|Enis|Eldin|Elvir|Asmir|Mirza|Ermin|Amel|Edis|Nedzad|Nedžad|Bajram|Ismet|Emin|Enver|Demir|Muamer|Anes|Fatmir|Omer|Alija|Ferid|Dzevad|Džavad|Izet|Naser|Nihad|Fadil|Ramiz|Besim|Bekim|Ramo|Faruk|Dzenan|Dženan|Arben|Sanel|Baki|Anel|Mensur|Ernad|Amil|Resad|Rešad|Rifat|Mujo|Aladin|Rejhan|Belmin|Jusuf|Daris|Mehmed|Nusret|Elvedin|Almin|Zoltan|Attila|Kupujem|Prodajem|Marija|Mali)$/;
+// SLO (2026-10-03): das SI-Aggregat ist kosovo-albanisch verseucht — Nachnamen Rang 1–19 alle
+// albanisch (Gashi 4760 … erst Rang 20 Novak 555), Vornamen gemischt. Albanische Schreibung
+// (xh/ë/ç/q/gj, Anlaut sh/dh) per Muster, der Rest per Liste. Bosniakisch/türkisch mit gesperrt,
+// sonst "Senad Zupančič" im selben Pool.
+const ALB_SPELLING = /xh|ë|ç|q|gj|^sh|^dh|rr|ll/i;
+const SLO_FOREIGN_FIRST = /^(Egzon|Valon|Endrit|Alban|Liridon|Ilir|Ardit|Besnik|Dardan|Granit|Kushtrim|Arben|Armend|Burim|Bekim|Blerim|Fitim|Bujar|Ardian|Arlind|Besart|Agron|Driton|Faton|Jeton|Fatmir|Flamur|Rinor|Mentor|Astrit|Arber|Arbër|Bajram|Artan|Leotrim|Afrim|Visar|Besim|Agim|Labinot|Agon|Drilon|Kastriot|Altin|Arbnor|Naim|Kujtim|Valmir|Berat|Mergim|Albion|Lirim|Arian|Behar|Gzim|Florent|Jetmir|Gazmend|Arton|Bashkim|Fisnik|Arsim|Avni|Fidan|Edon|Enver|Lulzim|Muhamet|Arianit|Edison|Veton|Gentrit|Fatlum|Petrit|Meriton|Besmir|Ardi|Fadil|Andi|Ermal|Taulant|Durim|Kreshnik|Florim|Luan|Naser|Leutrim|Valdrin|Skender|Gent|Lavdim|Shpend|Ylli|Pajtim|Perparim|Lorik|Florian|Fatos|Urim|Dren|Leart|Besi|Festim|Edmond|Ramiz|Ylber|Meti|Gani|Blend|Betim|Isuf|Genc|Erion|Lindi|Doni|Beni|Blendi|Dion|Gezim|Valdet|Kadri|Hysen|Korab|Sokol|Yll|Fatlind|Azem|Erblin|Gashi|Bedri|Ekrem|Atdhe|Arjanit|Rilind|Esat|Fatjon|Krenar|Sali|Sadik|Vali|Milot|Nazmi|Idriz|Imer|Muharrem|Sadri|Leonit|Bleron|Faik|Genti|Nderim|Albi|Hamdi|Avdi|Islam|Fehmi|Haki|Nehat|Rifat|Diar|Rasim|Shkodran|Remzi|Besfort|Loni|Erjon|Hysni|Milaim|Tahir|Edonis|Mustaf|Vedat|Brahim|Riad|Zenel|Labi|Arti|Burhan|Beqir|Lum|Asllan|Arjan|Sherif|Elton|Bledar|Drin|Baki|Arif|Gentian|Halit|Lumi|Luli|Vigan|Suad|Ensar|Herolind|Fazli|Trim|Izet|Adhurim|Ari|Veli|Hekuran|Sabit|Emin|Adonis|Donat|Bardh|Limi|Adriatik|Edis|Krasniqi|Ruzhdi|Reshat|Elvir|Mustafa|Nermin|Berisha|Avdyl|Valton|Eron|Mehdi|Bahri|Sylejman|Shaip|Getoar|Sejdi|Dini|Flori|Elbasan|Isak|Niti|Amel|Ridvan|Gramos|Redon|Fati|Nuhi|Kosova|Butrint|Besjan|Orhan|Omer|Vullnet|Abedin|Mendim|Ajet|Bislim|Eris|Sinan|Jakup|Besar|Irfan|Selman|Dibran|Halim|Miftar|Fikret|Diamant|Sedat|Daut|Sabri|Lendrit|Ermir|Salih|Ideal|Dukagjin|Milazim|Aldin|Rafet|Hamit|Jusuf|Trimi|Shemsi|Hazir|Eroll|Shpat|Nezir|Morina|Argjent|Armir|Gazi|Basri|Sahit|Refki|Goni|Olti|Eduart|Ledion|Ismajl|Aziz|Ragip|Riza|Asmir|Ilmi|Blerton|Defrim|Ajdin|Arbenit|Latif|Gjon|Xeni|Feim|Hasan|Ibrahim|Ahmet|Mehmet|Halil|Osman|Selim|Isa|Musa|Ismail|Murat|Muhamed|Ali|Adnan|Samir|Sami|Ramadan|Adem|Kenan|Amir|Ismet|Elvis|Mirsad|Edin|Emir|Jasmin|Safet|Admir|Enes|Almir|Haris|Senad|Mensur|Faruk|Amar|Sead|Adis|Armin|Ermin|Muamer|Enis)$/;
+// LTU (2026-10-03): das LT-Aggregat führt Silben-Müll als Nachnamen (Nesvarbu = "egal", As, Ka, Ma,
+// St …), weibliche Formen (-ienė/-aitė/-ytė/-ūtė), Vornamen als Nachnamen und russische Einträge.
+// Litauische Männernamen enden praktisch immer auf -as/-is/-ys/-us, Nachnamen zusätzlich auf -a
+// (Noreika, Juška) — alles andere ist Fremdform oder Müll.
+const LTU_FEMALE = /(ienė|iene|aitė|aite|ytė|yte|ūtė|utė|ute)$/i;
+// Männliche Vornamen als Nachnamen sperrt banGivenAsLast datengetrieben (LT-Vornamen-Aggregat).
+// Weibliche fehlen dort (nur M) → Liste, dazu Orte/Wörter (Lietuva, Klaipeda, Nuoma = Miete).
+const LTU_NOT_SURNAME = /^(Viktorija|Aušra|Laura|Diana|Greta|Emilija|Renata|Edita|Karolina|Irena|Erika|Sandra|Vilma|Oksana|Jurga|Ingrida|Neringa|Raimonda|Elena|Loreta|Kotryna|Jolita|Evelina|Karina|Gabija|Justina|Virginija|Marina|Vaida|Lina|Kristina|Marija|Tina|Ieva|Jurgita|Rasa|Asta|Inga|Rita|Laima|Daiva|Vida|Jolanta|Agne|Egle|Ruta|Dalia|Simona|Monika|Lietuva|Lithuania|Klaipeda|Nuoma|Vardenis|Ponas|Vardas|Ausra)$/;
+
 const SRB_FOREIGN_LAST = /^(Murić|Kalač|Škrijelj|Hodžić|Muratović|Ramović|Nurković|Agović|Adrović|Dautović|Šabotić|Ćorović|Hasanović|Mujević|Omerović|Hadžić|Rastoder|Halilović|Mehović|Međedović|Kastratović|Radončić|Kurpejović|Begović|Ćatović|Musić|Husović|Osmanović|Avdić|Duraković|Sinanović|Sijarić|Redžović|Sabanović|Šabanović|Ibrahimović|Skenderović|Ahmetović|Muković|Sabović|Hamidović|Tahirović|Bećirović|Kurtagić|Spahić|Demirović|Turković|Adžović|Suljević|Seferović|Ljuca|Fetahović|Bihorac|Bajrović|Mahmutović|Mekić|Biševac|Redzović|Hajrović|Gutić|Rebronja|Kurtanović|Kadić|Mulić|Selimović|Kurtović|Musović|Mujović|Kasumović|Ličina|Kuč|Kurti|Camaj|Horvat|Montenegro|Podgorica|Budva|Tivat|Bar|Doo|Hott|Prodajem|Marko|Nikola|Ivan|Dragan|Aleksandar|Dejan|Milan|Miloš|Zoran|Saša|Luka|Vladimir|Goran|Nemanja|Petar|Štefan|Popov|Petrov|Ivanov|Jovanov)$/;
 
 // ── Nation-Konfiguration ────────────────────────────────────────────────────
@@ -278,7 +293,15 @@ const CFG = {
     // albanische Namen gesperrt wie die türkischen in BUL — sonst "Nikola Murić" im selben Pool.
     // ROU: fehlt im Kaggle-Datensatz. Pool kommt fertig gewichtet aus build-ro-names.js → Aggregat aus.
     ROU: { iso:'RO', cls:'small', foreCap0:true, surCap0:true },
-    SRB: { iso:'RS', cls:'tiny', diacritics:true, translitNat:'SR', banLast:[SRB_FOREIGN_LAST, /(a|i)$/], banFirst:[SRB_FOREIGN_FIRST] }
+    SRB: { iso:'RS', cls:'tiny', diacritics:true, translitNat:'SR', banLast:[SRB_FOREIGN_LAST, /(a|i)$/], banFirst:[SRB_FOREIGN_FIRST] },
+    // Neue Nationen 2026-10-03 (vorher CRO/SLO Fallback INT bzw. CZE, LTU Fallback EST).
+    // preferDiacritic: Aggregat führt ASCII- und Diakritik-Schreibung nebeneinander (Arturas 723 /
+    // Artūras 492) — key() legt sie zusammen, angezeigt wird die Diakritik-Form, auch wenn sie seltener ist.
+    // CRO: Aggregat sauber (Horvat/Marić/Kovačević-Kopf), nur Diakritik-Dubletten.
+    CRO: { iso:'HR', cls:'small', preferDiacritic:true, banGivenAsLast:true },
+    // SLO: albanischer Teil per Endung (-i/-aj/-u/-a) + Schreibung gesperrt, s. SLO_FOREIGN_FIRST.
+    SLO: { iso:'SI', cls:'tiny', preferDiacritic:true, banGivenAsLast:true, rename:{ 'Rožman':'Rozman' }, banLast:[ALB_SPELLING, /(i|aj|u|a)$/, SLO_FOREIGN_FIRST, /(ovic|evic)$/, /^(Hod[zž]i[cć]|Had[zž]i[cć]|Begi[cć]|Šabi[cć]|Sabi[cć]|Halilovi[cć]|Dizdarevi[cć]|Rami[cć]|Muji[cć]|Hasanovi[cć]|Mehmedovi[cć])$/], banFirst:[ALB_SPELLING, SLO_FOREIGN_FIRST] },
+    LTU: { iso:'LT', cls:'small', preferDiacritic:true, banGivenAsLast:true, banLast:[/^.{1,4}$/, LTU_FEMALE, LTU_NOT_SURNAME, /(skaja|ckaja|nina|tina)$/, /^(?!.*(as|is|ys|us|ius|a)$)/, /(ova|eva|ov|ev|in)$/], banFirst:[/^(?!.*(as|is|ys|us)$)/, LTU_NOT_SURNAME] }
 };
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
@@ -366,6 +389,8 @@ const OPS = {
     INA: { drop: { first: ['Mas','Abdul'], last: ['Sari','Dewi','Putri','Wati','Lestari'] } },
     EST: { drop: { first: ['Alex','Vova'], last: ['Aleksandrovna','Olga','Miller','Smith','Fox','Aleksandr','Andrei','Ivanova','Smirnova','Petrova','Kuznetsova','Vassiljeva','Pavlova','Olen','Kadri','Kristi'] },
            move: { first: { 'Denis':1,'Viktor':1 }, last: { 'Hein':0 } } },
+    CRO: { drop: { first: ['Ivana','Ana','Mali','Kiki'], last: ['Marina'] } },
+    SLO: { drop: { last: ['Leo','Jan','King','Doo','Love','Ime','Emer','Marc','Smith'] } },
     MAR: { drop: { last: ['Med','Raja','Malak','Fleur','Khadija','Fatima','Mks','Agadir','Widadi','Nour','Rajawi'] } }
 };
 
@@ -380,6 +405,17 @@ const NEW_POOLS = {
         last:  [] } ] },
     SRB: { regions: [ { w:1,
         first: [['Nikola',5],['Marko',5],['Aleksandar',4],['Dragan',4],['Milan',4],['Zoran',3],['Dejan',3],['Miloš',3],['Goran',3],['Stefan',3],['Nenad',2],['Nemanja',2]],
+        last:  [] } ] },
+    // CRO/SLO/LTU 2026-10-03: Kopf mit älteren Jahrgängen (Aggregat ist gegenwartslastig), Rest aus HR/SI/LT.
+    CRO: { regions: [ { w:1,
+        first: [['Ivan',5],['Josip',5],['Marko',4],['Ante',4],['Tomislav',4],['Stjepan',3],['Franjo',3],['Mato',3],['Zvonimir',3],['Krešimir',2],['Branimir',2],['Drago',2]],
+        // echte Nachnamen, die banGivenAsLast sonst träfe (Kralj = Rang 25) — kuratiert = filterimmun, Datengewicht
+        last:  [['Kralj',3],['Bogdan',2],['Boban',2],['Lazar',2],['Perica',2],['Marin',2],['Matijaš',1]] } ] },
+    SLO: { regions: [ { w:1,
+        first: [['Janez',5],['Marko',5],['Franc',4],['Jože',4],['Andrej',4],['Anton',3],['Matjaž',3],['Boštjan',3],['Rok',3],['Primož',2],['Miha',2],['Jure',2]],
+        last:  [] } ] },
+    LTU: { regions: [ { w:1,
+        first: [['Jonas',5],['Antanas',5],['Vytautas',4],['Juozas',4],['Petras',3],['Kazys',3],['Algirdas',3],['Tomas',3],['Mindaugas',3],['Darius',2],['Gediminas',2],['Kęstutis',2]],
         last:  [] } ] },
     // Norwegen (bisher Fallback DEN — eigene Namenswelt, Daten sauber: Hansen/Olsen-Kopf)
     NOR: { regions: [ { w: 1,
@@ -498,6 +534,8 @@ const TAILS = {}; // wird komplett neu erzeugt
 // Neue Pools einhängen, Fallback-Einträge der neuen Nationen entfernen
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
+// Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.
+FALLBACK.LAT = 'LTU';
 
 // ── Paket J: neue Regionen anhängen + Regionsgewichte (D2/D3) ───────────────
 // GER r1 türkisch-deutsch (w 0.04, minYear 1985) ersetzt das bisherige Unterdrücken
@@ -601,6 +639,13 @@ function srbDiacritics(name, kind) {
     return name.replace(/^Dj/, 'Đ').replace(/dj/g, 'đ');
 }
 
+// banGivenAsLast: Nachname, der im selben Land als Vorname belegt ist (LT: Saulius, Dainius, Mindaugas)
+const _givenKeys = new Map();
+function givenKeys(iso) {
+    if (!_givenKeys.has(iso)) _givenKeys.set(iso, new Set((foreBy.get(iso) || []).map(([n]) => key(n))));
+    return _givenKeys.get(iso);
+}
+
 function processNation(nat, cfg) {
     const cls = CLASSES[cfg.cls];
     const ops = OPS[nat] || {};
@@ -638,10 +683,15 @@ function processNation(nat, cfg) {
             // echtes Datengewicht bekommen — z.B. FRA Martin trotz -in-Endung)
             const curatedProtected = kind === 'last' && curatedLastKeys.has(key(name));
             if (kind === 'last' && GIVEN_AS_SURNAME.test(name) && !curatedProtected) continue;
+            if (kind === 'last' && cfg.banGivenAsLast && givenKeys(cfg.iso).has(key(name)) && !curatedProtected) continue;
             if (!curatedProtected && bans.some(b => b.test(name))) continue;
             for (const [re, f] of damps) if (re.test(name)) { count = Math.round(count * f); break; }
             const k = key(name);
-            if (merged.has(k)) merged.get(k).count += count;
+            if (merged.has(k)) {
+                const m = merged.get(k);
+                m.count += count;
+                if (cfg.preferDiacritic && !/[^\x00-\x7F]/.test(m.name) && /[^\x00-\x7F]/.test(name)) m.name = name;
+            }
             else merged.set(k, { name, count });
         }
         const list = [...merged.values()].sort((a, b) => b.count - a.count);
