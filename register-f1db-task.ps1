@@ -29,8 +29,8 @@ Write-Host "Verwende Node.js: $NodePath" -ForegroundColor Cyan
 
 $action = New-ScheduledTaskAction `
     -Execute $NodePath `
-    -Argument '"C:\Users\lyric\Documents\F1 RPG HTML\update-f1db.js"' `
-    -WorkingDirectory 'C:\Users\lyric\Documents\F1 RPG HTML'
+    -Argument '"C:\Projekte\F1 RPG HTML\update-f1db.js"' `
+    -WorkingDirectory 'C:\Projekte\F1 RPG HTML'
 
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At '08:00'
 
@@ -47,4 +47,4 @@ Register-ScheduledTask `
     -Force
 
 Write-Host 'Aufgabe F1DB Update registriert - laeuft jeden Montag um 08:00 Uhr.' -ForegroundColor Green
-Write-Host 'Logs: C:\Users\lyric\Documents\F1 RPG HTML\f1db-update.log' -ForegroundColor Yellow
+Write-Host 'Logs: C:\Projekte\F1 RPG HTML\f1db-update.log' -ForegroundColor Yellow
