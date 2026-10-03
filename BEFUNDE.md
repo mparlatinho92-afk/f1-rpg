@@ -2742,3 +2742,28 @@ männl., `cn_sur_agg.csv` 3.000; ersetzen im Build die CN-Zeilen aus fore_agg/su
   Faktor-Reihe EN/Einsilbig → Anteil: 0,10/0,25 → 21/13 % · 0,04/0,30 → 7/16 % · **0,05/0,28 → 10,1/15,2 %** (gewählt) · 0,055/0,27 → 12/15 %.
   Der Anteil reagiert nichtlinear (Gewichte normieren auf den häufigsten Namen) → nachmessen statt rechnen; `CN_EN_F`/`CN_ONE_F` als Env.
 - `fixName`-Akzente: CHN fehlte in `NO_ACCENT_NATIONS` (Leon → León) — nachgetragen.
+
+### 03.10.2026 (5): Namens-Pools TUN/ALG/LBA/IRQ/JOR/LBN/BRN/KUW (Welle 5, arabisch)
+Vorher alle acht auf MAR (30 Vor-/251 Nachnamen, marokkanisch-französische Schreibung). Aggregate `w5_*.csv`, Konfiguration
+`nations-w5.js`, Vorschau `namens-vorschau-w5.md`. Nutzer-Vorgabe: Gastarbeiter weglassen (zu arm für Motorsport).
+- **Kein Geschlecht im Datensatz** für TN, DZ, LY, LB, BH (Vornamen nur „leer"; TN 5,8 Mio. Träger ohne Angabe gegen 5 mit „M").
+  Abhilfe `gender-ref.js` → `w5_gender_ref.csv`: M/F je Name aus 16 Ländern MIT Angabe (arabisch + FR/BE/CA/CH für die französische
+  Maghreb-Schreibung). Regel M ≥ 2·F; ungeklärt nur 1–3 % des Gewichts. Anteil weiblich vorher: TN 38 %, LB 41 %, DZ 24 %.
+- **Arabische Schrift** stellt Irak 84 %, Libyen 79 %, Jordanien 63 % der Träger — ohne Vokalzeichen nicht umschreibbar, fällt weg.
+  Der lateinische Rest trägt die Gewichte (Irak ~2,5 Mio.); Libyen bleibt dadurch klein (79 Nachnamen).
+- **Golfstaaten = Gastarbeiter:** Bahrain/Kuwait nach Sperrlisten noch Alam, Rahman, Baloch, Patidar, Shaik, Raju im Kopf (Staatsbürger
+  KW ~30 %, BH ~45 % der Einwohner). Lösung wie SAU: Vornamen kuratiert (`foreCap0`), Nachnamen aus den Daten NUR in der Form „Al-…"
+  (Positiv-Regel; Gastarbeiter erfüllen sie fast nie). Ergebnis 32 Vor-/112 bzw. 134 Nachnamen, sauber. „Almutairi" → „Al-Mutairi".
+- ⚠ **Falle Akzente vor Sperren:** `fixName` akzentuiert VOR den Sperren → „López" verfehlt eine Sperrliste mit „Lopez". Sperrlisten
+  für spanische Gastarbeiter-Namen brauchen die Akzentform.
+- **Facebook-Nachnamenfeld (Maghreb):** Lieblingsverein, Marke, Stadt, Kosename statt Familienname — in Algerien unter den Top 25 mehr
+  als ein Drittel. Einzelsperren reichen nicht. Strukturregeln: (a) `givenElsewhere` — Nachname, der in der Referenz häufiger als
+  Vorname belegt ist als hier als Nachname, fliegt (fängt Kose-/Rufnamen); (b) `MAGHREB_NICK` — Endungen -cha/-ouna, Silbenverdopplung,
+  französische Artikel, ç/ñ. ALG auf Klasse `tiny`, weil der Schwanz ungeprüfbar ist. Libyen: Sahel-Durchreisende (Dembélé, Maïga) gesperrt.
+- ⚠ **Negativergebnis `givenElsewhere` im Irak:** frisst echte Familiennamen (Osman, Jalal, Mahmood — im Irak sind Vatersnamen
+  Familiennamen). Für IRQ zurückgenommen.
+- **Regionen:** LBN muslimisch 0,66 / christlich 0,34 (Georges, Charbel + Khoury, Gemayel; Drusen → r0). IRQ arabisch 0,82 / kurdisch
+  0,18; kurdische Schreibung (x = kh: Xoshnaw) und Herkunftsnamen (Hawleri = aus Erbil) → r1.
+- ⚠ **Globale Guard:** Ali/Mustafa/Hasan/Ibrahim stehen auch in der TURKISH-Klasse → arabische Länder dort als nativ eintragen, sonst
+  fallen sie weg. Salman/Yasir/Tahir (SOUTH_ASIAN-Klasse) über eine Route freigestellt.
+- `KSA` aus der Rückfall-Liste entfernt: IOC-Code Saudi-Arabiens, das Spiel nutzt `SAU` (eigener Pool) → toter Eintrag.
