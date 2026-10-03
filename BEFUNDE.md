@@ -2724,3 +2724,21 @@ Vorher HKG/MAC/TPE/SGP → CHN (Pinyin: Chen/Wang statt Chan/Wong), KAZ → RUS,
   wäre an der globalen `GIVEN_AS_SURNAME` gescheitert → kuratiert. Hindu-Region 0,1 (Das, Roy, Saha; Chowdhury/Sarker geteilt).
 - ⚠ **Werkzeug-Falle (wie Welle 3):** Patch-Skripte als Node-Heredoc verlieren Backslashes in Regex-Mustern (`\s`, `\{`) — der Abgleich
   scheitert dann mit „0×". Für Muster-Edits Edit-Werkzeug oder sed nehmen.
+
+### 03.10.2026 (4): Namens-Pool CHN aus Daten (blind, Positiv-Prüfung)
+Vorher rein kuratiert 37 Vor-/52 Nachnamen, obwohl CN im Datensatz steht. Grund: `fore_agg.csv` hat nur die Top-600 je Land, bei CN
+fast ausschließlich englische Rufnamen — echte Pinyin-Vornamen beginnen hinter Rang ~300. Neu tief aggregiert (`cn_fore_agg.csv` 6.000
+männl., `cn_sur_agg.csv` 3.000; ersetzen im Build die CN-Zeilen aus fore_agg/sur_agg). Ergebnis Pool+Schwanz: **637 Vor-/171 Nachnamen**.
+- ⚠ **API-Inhaltsfilter:** zwei Ausgaben mit Rohnamen bzw. einem Auszug der Umschrift-Tabelle wurden mit „content filtering policy"
+  blockiert (Social-Media-Quelle enthält Spitz- und Schimpfnamen). Seitdem: Skripte geben **nur Zahlen** aus, Rohnamen nie ins Gespräch;
+  Vorschau `namens-vorschau-chn.md` prüft der Nutzer selbst. Gilt sinngemäß für jede künftige Welle mit großen Rohdaten.
+- **Positiv-Prüfung statt Sperrlisten** (`nations-cn.js`): Vorname = 1–2 Silben aus `NAME_SYL` (übliche Namenssilben, ohne Silben aus
+  Schimpf-/Kosewörtern, keine Verdopplung); Nachname ∈ `CN_SURNAMES` (~250 geläufige); englisch ∈ `EN_GIVEN` (feste Liste). Das filtert
+  Junk UND anstößige Einträge, ohne sie kennen zu müssen. Altbestand (kuratiert) besteht die Prüfung vollständig (0 Abweichler).
+- Schriftzeichen → Pinyin: `cn-hanzi-pinyin.json`, einmalig erzeugt mit npm `pinyin-pro` (nur im Scratchpad installiert, Nachnamen mit
+  `surname:'head'` für Mehrfachlesungen 曾/单/解); auf die Einträge gekürzt, die die Positiv-Prüfung bestehen (1.573 von 1.787 Vornamen).
+- **Gewichtsanteile gemessen** (Nutzer-Entscheid: überwiegend Pinyin, ~10 % englisch): ohne Eingriff einsilbig 60 % — im Datensatz sind
+  Einsilbige meist Bruchstücke zweisilbiger Namen oder Nachnamen im Vornamenfeld (Chen, Wang, Zhang). `surRatio:3` + Dämpfung.
+  Faktor-Reihe EN/Einsilbig → Anteil: 0,10/0,25 → 21/13 % · 0,04/0,30 → 7/16 % · **0,05/0,28 → 10,1/15,2 %** (gewählt) · 0,055/0,27 → 12/15 %.
+  Der Anteil reagiert nichtlinear (Gewichte normieren auf den häufigsten Namen) → nachmessen statt rechnen; `CN_EN_F`/`CN_ONE_F` als Env.
+- `fixName`-Akzente: CHN fehlte in `NO_ACCENT_NATIONS` (Leon → León) — nachgetragen.

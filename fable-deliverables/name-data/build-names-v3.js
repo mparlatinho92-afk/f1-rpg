@@ -140,7 +140,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN']);
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN','CHN']);
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -311,6 +311,8 @@ const W3 = require('./nations-w3.js');   // Welle 3 (2026-10-03): ALB/GEO/AZE/TK
 Object.assign(CFG, W3.CFG);
 const W4 = require('./nations-w4.js');   // Welle 4 (2026-10-03): HKG/MAC/TPE/SGP/KAZ/BAN
 Object.assign(CFG, W4.CFG);
+const WCN = require('./nations-cn.js');  // CHN aus Daten (2026-10-03), Positiv-Prüfung
+Object.assign(CFG, WCN.CFG);
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
 // routeFirst wirkt NUR auf Vornamen, cfg.route NUR noch auf Nachnamen. Vorher lief
@@ -539,6 +541,9 @@ const surBy = readAgg('sur_agg.csv');
 // 2026-10-03: Länder, die erst nachträglich aggregiert wurden (aggregate-names.js … AL,AZ,GE,TM,NG,GH)
 for (const [by, file] of [[foreBy, 'w3_fore_agg.csv'], [surBy, 'w3_sur_agg.csv'], [foreBy, 'w4_fore_agg.csv'], [surBy, 'w4_sur_agg.csv']])
     for (const [iso, rows] of readAgg(file)) if (!by.has(iso)) by.set(iso, rows);
+// CHN: tiefes Aggregat ersetzt die Top-600 aus fore_agg/sur_agg (dort fast nur englische Rufnamen)
+for (const [by, file] of [[foreBy, 'cn_fore_agg.csv'], [surBy, 'cn_sur_agg.csv']])
+    for (const [iso, rows] of readAgg(file)) by.set(iso, rows);
 const foreFBy = readAgg('w3_fore_f_agg.csv');   // nur weibliche Vornamen, nur Welle-3/4-Länder
 for (const [iso, rows] of readAgg('w4_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 

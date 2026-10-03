@@ -19,6 +19,7 @@ Roh-CSVs: forenames.csv 226 MB / surnames.csv 381 MB — lokal unter `F1 RPG Nam
 | `country_codes.csv` | ISO-2 → Ländername (105 Länder; es fehlen u.a. AU, NZ, TH, MC, VE, ZW) |
 | `w3_*.csv` + `nations-w3.js` | Welle 3 (ALB/GEO/AZE/TKM/NGR/GHA): Aggregate und Nationen-Konfiguration |
 | `w4_*.csv` + `nations-w4.js` | Welle 4 (HKG/MAC/TPE/SGP/KAZ/BAN): Aggregate und Nationen-Konfiguration; Vorschau `namens-vorschau-w4.md` |
+| `cn_*.csv` + `nations-cn.js` + `cn-hanzi-pinyin.json` | CHN tief aggregiert (6.000/3.000), Positiv-Prüfung, Schriftzeichen→Pinyin; Vorschau `namens-vorschau-chn.md`. ⚠ Rohnamen nie ausgeben (API-Inhaltsfilter) |
 | `country-count.js` | Zeilen und Träger je Land in den Roh-CSVs — vor jeder neuen Welle prüfen, ob ein Land drin ist (`node country-count.js UA,BY,KZ`) |
 | `aggregate-names.js` | Streaming-Aggregator Roh-CSV → Aggregat (`node aggregate-names.js in.csv out.csv M|ALL topN`) |
 | `curation-view.js` | Kurations-Ansicht: Top-N je Land mit 1–5-Bucket (`node curation-view.js fore_agg.csv 30 DE,GB`) |
