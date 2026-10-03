@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.31</title>
+    <title>F1 RPG v0.9.18.32</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.31 (aktuell) - 03.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.32 (aktuell) - 03.10.2026</div>
+                            <div>&#8226; NEU: Eigene Namens-Pools fuer acht arabische Laender (vorher marokkanisch)</div>
+                            <div>&#8226; NEU: Libanon mit muslimischer und christlicher, Irak mit arabischer und kurdischer Namensregion</div>
+                            <div>&#8226; NEU: Golfstaaten nur mit einheimischen Familiennamen</div>
+                            <div class="font-bold text-slate-400">v0.9.18.31 - 03.10.2026</div>
                             <div>&#8226; NEU: Chinesische Fahrer mit eigenem Namens-Pool aus echten Haeufigkeiten (vorher 37 Vor-/52 Nachnamen)</div>
                             <div>&#8226; NEU: Ueberwiegend Pinyin-Vornamen, englische Rufnamen nur noch als Farbe</div>
                             <div class="font-bold text-slate-400">v0.9.18.30 - 03.10.2026</div>
@@ -12165,6 +12169,364 @@ const NAME_POOLS_BY_NATION = {
             ['Hawlader',2],['Basak',5],['Sutradhar',5]
           ] }
     ] },
+
+    // ── TUN ──
+    TUN: { regions: [
+        { w: 1,
+          first: [
+            ['Mohamed',100],['Ahmed',80],['Ali',58],['Mehdi',20],['Karim',38],['Sami',43],['Hichem',26],['Walid',43],['Nabil',28],['Aymen',53],['Bilel',35],
+            ['Yassine',34],['Youssef',40],['Hamza',39],['Adel',36],['Anis',36],['Mouhamed',36],['Aziz',36],['Kamel',35],['Omar',35],['Lotfi',34],['Khaled',34],
+            ['Amine',34],['Hamdi',32],['Malek',31],['Mourad',31],['Zied',30],['Ramzi',30],['Fathi',30],['Saber',30],['Samir',29],['Houssem',29],['Rayen',29],
+            ['Marwen',29],['Hassen',29],['Tarek',28],['Ridha',28],['Imed',28],['Ala',28],['Adem',28],['Oussama',27],['Saif',27],['Khalil',27],['Jamel',27],
+            ['Mahdi',26],['Salah',26],['Amir',26],['Nizar',26],['Habib',26],['Hama',26],['Hedi',25],['Mounir',25],['Hatem',25],['Achref',25],['Moez',25],
+            ['Maher',25],['Ayoub',24],['Wael',24],['Wissem',24],['Riadh',23],['Salem',23],['Bechir',23],['Chokri',23],['Wassim',23],['Amin',23],['Slim',23],
+            ['Bassem',22],['Kais',22],['Rami',22],['Firas',21],['Yassin',21],['Atef',21],['Weld',21],['Brahim',20],['Mohsen',20],['Wajdi',20],['Moncef',20],
+            ['Mahmoud',20],['Salim',20],['Issam',20],['Oussema',19],['Islem',19],['Sameh',19],['Iheb',19],['Sabri',18],['Taher',18],['Mohamed Ali',18],
+            ['Sofien',18],['Fawzi',17],['Haythem',17],['Nader',17],['Skander',17],['Abdallah',17],['Raouf',16],['Helmi',16],['Majdi',16],['Mondher',16],
+            ['Faouzi',16],['Fethi',16],['Hamma',16],['Amor',16],['Fares',16],['Jalel',16],['Said',16],['Midou',16],['Hamadi',15],['Achraf',15],['Makrem',15],
+            ['Rafik',15],['Seif',15],['Jihed',15],['Hosni',15],['Foued',14],['Haithem',14],['Ayari',14],['Sahbi',14],['Ammar',14],['Abdou',14],['Najeh',14],
+            ['Noureddine',14],['Slah',14],['Hazem',14],['Ghassen',14],['Najib',14],['Ibrahim',14],['Mabrouk',14],['Tawfik',14],['Montassar',14],['Ben',13],
+            ['Hafedh',13],['Yahya',13],['Dhia',13],['Iyed',13],['Taoufik',13],['Arbi',13],['Mongi',13],['Monji',13],['Abidi',13],['Zizou',13],['Anwer',13],
+            ['Ilyes',13],['Hakim',13],['Belgacem',12],['Faycel',12],['Lassaad',12],['Ismail',12],['Chiheb',12],['Akrem',12],['Yousef',12],['Louay',12],['Hamed',12],
+            ['Farid',12],['Anas',12],['Wahid',12],['Naceur',12],['Adam',12],['Ikram',12],['Abdelkader',12],['Chawki',12],['Bachir',12],['Mokhtar',12],['Mehrez',12]
+          ],
+          last: [
+            ['Mohamed',100],['Ali',91],['Ahmed',91],['Hassen',34],['Said',38],['Karim',37],['Aziz',40],['Kamal',12],['Hamdi',95],['Ayari',95],['Dridi',88],
+            ['Trabelsi',88],['Abidi',85],['Mejri',77],['Hammami',74],['Saidi',66],['Ben Ali',66],['Jlassi',66],['Riahi',66],['Gharbi',65],['Amri',64],['Aloui',59],
+            ['Arfaoui',55],['Selmi',54],['Nasri',54],['Salhi',53],['Tlili',53],['Sassi',52],['Ben Amor',51],['Barhoumi',50],['Cherif',49],['Ayadi',48],
+            ['Ferchichi',48],['Chebbi',46],['Ben Salem',46],['Ben Salah',45],['Ben Ahmed',45],['Hajji',45],['Mhamdi',44],['Mansouri',44],['Cherni',43],
+            ['Bejaoui',43],['Mabrouk',43],['Ouni',43],['Soltani',42],['Rezgui',42],['Saidani',42],['Jbeli',41],['Guesmi',41],['Hamrouni',41],['Khlifi',41],
+            ['Missaoui',41],['Yahyaoui',41],['Omri',41],['Ben Mohamed',40],['Bahri',40],['Kouki',40],['Ben Abdallah',40],['Jouini',40],['Nefzi',40],['Toumi',39],
+            ['Brahmi',39],['Bouzidi',39],['Amara',39],['Amoula',38],['Belhaj',37],['Manai',37],['Hosni',37],['Farhat',36],['Labidi',36],['Ferjani',36],
+            ['Oueslati',35],['Sahli',35],['Mbarki',35],['Gafsi',35],['Ayouta',34],['Mekni',34],['Hajri',34],['Souissi',34],['Mechergui',34],['Fatnassi',34],
+            ['Yousfi',34],['Hichri',33],['Amdouni',33],['Boughanmi',33],['Daloula',33],['Hamouda',33],['Romdhani',33],['Zarzis',33],['Abbassi',32],['Issaoui',32],
+            ['Ben Ammar',32],['Jerbi',32],['Mathlouthi',32],['Louati',31],['Mbarek',31],['Ben Said',31],['Ghanmi',31],['Triki',31],['Sghaier',31],['Weslati',31],
+            ['Nouri',31],['Ben Youssef',31],['Melki',30],['Jebali',30],['Slama',30],['Mahmoudi',30],['Touati',30],['Talbi',30],['Bouazizi',29],['Karoui',29],
+            ['Bouzid',29],['Boubaker',29],['Saadaoui',29],['Ayed',29],['Mahjoub',29],['Gabsi',29],['Mannai',28],['Zidi',28],['Jemai',28],['Dhahri',28],['Abbes',28],
+            ['Ayachi',28],['Ghribi',28],['Lassoued',28],['Gasmi',28],['Hannachi',28],['Ghazouani',27],['Hamami',27],['Zouari',27],['Harrabi',27],['Messaoudi',27],
+            ['Ben Brahim',27],['Essid',27],['Rhimi',27],['Mrabet',27],['Hasni',27],['Khemiri',27],['Briki',26],['Bouali',26],['Mzoughi',26],['Abdellaoui',26],
+            ['Bouaziz',26],['Fatouma',26],['Ben Mansour',26],['Saoudi',26],['Dhaouadi',26],['Zitouni',26],['Achour',26],['Benali',26],['Slimen',25],['Heni',25],
+            ['Khelifi',25],['Halouma',25],['Balti',25],['Beji',25],['Jridi',25],['Mhadhbi',25],['Hamzaoui',25],['Kammoun',25],['Othmani',25],['Chaabani',25],
+            ['Haddad',25],['Ben Romdhane',25],['Kefi',25],['Ben Hassine',25],['Belhadj',25],['Zaidi',25],['Ben Mahmoud',25],['Attia',25],['Khazri',25],
+            ['Maalaoui',25],['Aouini',24],['Malouka',24],['Taraji',24],['Omrani',24],['Hmidi',24],['Ayedi',24],['Marzouki',24],['Masmoudi',24],['Shili',24],
+            ['Zribi',24],['Rekik',24],['Rebai',24],['Jdidi',24],['Jendoubi',24],['Rebhi',24],['Jbali',24],['Mrad',24],['Hedhli',24],['Patron',24],['Amari',24],
+            ['Kacem',23],['Abassi',23],['Aydi',23],['Hammouda',23],['Kadri',23],['Laabidi',23],['Rhouma',23],['Yakoubi',23],['Mabrouki',23],['Thabet',23],
+            ['Ajmi',23],['Klai',23],['Rahmouni',23],['Rahali',23],['Sliti',23],['Farhani',23],['Ben Amara',23],['Sehli',23],['Badri',23],['Meddeb',23],
+            ['Marzougui',23],['Hammemi',23],['Tahri',23],['Mezni',23],['Jandoubi',23],['Capo',23],['Derbali',23],['Askri',23],['Guizani',23],['Slimi',22],
+            ['Trabelssi',22],['Sayari',22],['Zouaoui',22],['Sellami',22],['Louhichi',22],['Khadraoui',22],['Massoudi',22],['Smida',22],['Ben Ayed',22],['Azizi',22],
+            ['Saroura',22],['Asouma',22],['Abdelli',22],['Hmida',22],['Chaouch',22],['Ben Saad',22],['Ben Hmida',22],['Fraj',22],['Ben Othmen',22],['Rouissi',21],
+            ['Makni',21],['Slimani',21],['Bouraoui',21],['Chaieb',21],['Alaya',21],['Jaziri',21]
+          ] }
+    ] },
+
+    // ── ALG ──
+    ALG: { regions: [
+        { w: 1,
+          first: [
+            ['Mohamed',100],['Ahmed',58],['Karim',53],['Sofiane',31],['Yacine',34],['Amine',66],['Riad',18],['Djamel',37],['Nassim',21],['Rachid',36],['Mourad',38],
+            ['Fethi',18],['Ali',53],['Samir',50],['Hamza',49],['Abdou',44],['Walid',43],['Omar',41],['Kamel',41],['Khaled',41],['Youcef',41],['Moh',40],['Said',36],
+            ['Salim',36],['Brahim',36],['Adel',36],['Hakim',35],['Oussama',34],['Nabil',34],['Salah',34],['Bilal',34],['Farid',33],['Hamid',33],['Amin',31],
+            ['Kader',31],['Zaki',30],['Hicham',30],['Sami',30],['Amar',29],['Rabah',28],['Mohammed',27],['Aymen',27],['Toufik',27],['Anis',27],['Ayoub',26],
+            ['Abdo',26],['Imad',26],['Fares',26],['Hichem',25],['Aziz',25],['Hocine',25],['Mustapha',24],['Amir',24],['Fouad',24],['Mouhamed',23],['Aissa',23],
+            ['Mahdi',22],['Abdelkader',22],['Younes',22],['Rafik',22],['Ramzi',22],['Mounir',22],['Moussa',22],['Fateh',22],['Bachir',21],['Akram',21],['Halim',21],
+            ['Mohamad',21],['Kamal',21],['Mehdi',21],['Mina',20],['Nadir',20],['Smail',20],['Tarek',20],['Houari',20],['Nacer',20],['Ismail',19],['Farouk',19],
+            ['Morad',19],['Mouh',19],['Lotfi',19],['Raouf',19],['Reda',19],['Rida',19],['Moha',18],['Malek',18],['Mokhtar',18],['Adem',18],['Islam',18],
+            ['Khalil',18],['Tahar',18],['Miloud',18],['Nasro',18],['Yassine',18],['Faycal',17],['Zinou',17],['Yazid',17],['Habib',17],['Yahia',17],['Ahmad',17],
+            ['Adam',17],['Ibrahim',16],['Noureddine',16],['Issam',16],['Sam',16],['Madjid',16],['Lyes',16],['Mouloud',16],['Rahim',16],['Wassim',16],['Houssam',16],
+            ['Fathi',16],['Kada',16],['Houssem',16],['Tayeb',15],['Ilyes',15],['Sidali',15],['Djamal',15],['Ishak',15],['Lakhdar',15],['Yasser',15],['Midou',15],
+            ['Ayman',15],['Abdellah',15],['Zino',15],['Zizou',15],['Rayan',15],['Fatah',15],['Rami',14],['Lamine',14],['Wahid',14],['Cherif',14],['Ikram',14],
+            ['Fouzi',14],['Mostafa',14],['Ammar',14],['Zakaria',14],['Aek',14],['Slimane',14],['Abde',14],['Larbi',14],['Malik',14],['Hassan',14],['Mido',14],
+            ['Redouane',14],['Boualem',14],['Mahmoud',14],['Djilali',13],['Dadi',13],['Bilel',13],['Islem',13],['Ilyas',13],['Zohir',13],['Saber',13],['Saad',13],
+            ['Anes',13],['Abdallah',13],['You',13],['Hafid',13],['Abdelhak',13],['Yousef',13],['Sofian',13]
+          ],
+          last: [
+            ['Mohamed',100],['Ali',64],['Ahmed',65],['Said',40],['Rachid',33],['Karim',53],['Aziz',28],['Kamal',24],['Slimani',33],['Saidi',28],['Kadi',28],
+            ['Brahimi',28],['Salhi',25],['Haddad',24],['Dahmani',24],['Mansouri',24],['Touati',24],['Sahraoui',23],['Hadji',23],['Rahmani',23],['Yahiaoui',22],
+            ['Amara',22],['Moussaoui',22],['Kadri',21],['Belhadj',21],['Bouzid',21],['Messaoudi',21],['Saadi',21],['Nasri',21],['Salmi',20],['Madani',20],
+            ['Kara',20],['Ziani',20],['Zitouni',20],['Benali',20],['Taleb',19],['Amazigh',19],['Madride',19],['Toumi',19],['Tlemcen',19],['Bouzidi',19],
+            ['Hamidi',19],['Blanc',19],['Mokhtari',19],['Ait',19],['Arab',19],['Talbi',18],['Khaldi',18],['Lacost',18],['Amari',18],['Dib',18],['Skikda',18],
+            ['Hbibha',18],['Sghir',18],['Biskra',18],['Belaid',18],['Yousfi',18],['Tam',18],['Benaissa',18],['Mebarki',18],['Dor',17],['Nou',17],['Madi',17],
+            ['Ziane',17],['Zine',17],['Cherifi',17],['Zaidi',17],['Bouziane',17],['Japoni',17],['Aissaoui',17],['Amed',17],['Hamadi',17],['Maryol',17],
+            ['Maraval',17],['Bahri',17],['Blidi',17],['Bouras',17],['Lam',16],['Dali',16],['Mahbol',16],['Kaci',16],['Ma Vie',16],['Dine',16],['Taibi',16],
+            ['Antik',16],['Chaib',16],['Camara',16],['Chergui',16],['Yamaha',16],['Merabet',16],['Chikh',16],['Ramdani',16],['Annabi',16],['Amrani',16],
+            ['Benyahia',16],['Meziane',16],['Chaoui',16],['Zidane',16],['Chabane',16],['Gasmi',16],['Laib',16],['Badi',16],['Napoli',16],['Azzouz',16],['Omri',15],
+            ['Rouge',15],['Saidani',15],['Cristal',15],['Zouaoui',15],['Amoula',15],['Lamri',15],['Mer',15],['Zaoui',15],['Belarbi',15],['Daoud',15],['Soltani',15],
+            ['Brahmi',15],['Tipaza',15],['Hassani',15],['Gharbi',15],['Saoudi',15],['Daoudi',15],['Khelifa',15],['Mine',15],['Chou',15],['Vie',15],['Maryola',15],
+            ['Meziani',15],['Cef',15],['Rahal',15],['Ouali',15],['Him',14],['Chaba',14],['Mokrani',14],['Khelifi',14],['Makhlouf',14],['Mahmoudi',14],['Hayati',14],
+            ['Abdelli',14],['Hachemi',14],['Soufi',14],['Amrane',14],['Zerrouki',14],['Smati',14],['Adrar',14],['Solitar',14],['Ine',14],['Djoudi',14],
+            ['Harachi',14],['Sayah',14],['Lmaryoul',13],['Mekki',13],['Yahi',13],['Bey',13],['Bouaziz',13],['Malki',13],['Boukhalfa',13],['Rah',13],['Bouali',13],
+            ['Der',13],['Miloudi',13],['Mascara',13],['Ibiza',13],['Rahmouni',13],['Mob',13],['Rabhi',13],['Diga',13],['Guelma',13],['Boyka',13],['Kaddour',13],
+            ['Azizi',13],['Bensalem',13],['Wahrani',13],['Kati',13],['Zou',13],['Simou',13],['Benamara',13],['Moulay',13],['Sanfour',13],['Charmante',13],
+            ['Bonois',13],['Sahli',12],['Lid',12],['Bleu',12],['Zin',12],['Seddiki',12],['Cataloni',12],['Nia',12],['Gacem',12],['Mazouz',12],['Dif',12],
+            ['Boukhari',12],['Belkacemi',12],['Charef',12],['Saci',12],['Bah',12],['Berkane',12],['Mirou',12],['Makhloufi',12],['Bourahla',12],['Anouch',12],
+            ['Krim',12],['Led',12],['Diarra',12],['Djebbar',12],['Naili',12],['Dilmi',12],['Benamar',12],['Hammadi',12],['Belaidi',12],['Miringi',12],['Filali',12],
+            ['Bouazza',12],['Meryoul',12],['Gherbi',12],['Privé',12],['Mazouzi',12],['Mihoubi',12],['Sadi',12],['Boumaza',12],['Ber',12],['Barsa',12],
+            ['Aissani',12],['Ker',12],['Tadj',12],['Amri',11],['Mohammedi',11],['Nouar',11],['Hamani',11],['Ayadi',11],['Kataloni',11],['Belkhir',11],
+            ['Amrouche',11],['Mess',11],['Mazari',11],['Belkadi',11],['Nes',11],['Bylka',11],['Hamzaoui',11],['Otmani',11],['Lakehal',11],['Laribi',11],
+            ['Meftah',11],['Dziri',11],['Hanona',11],['Bensaid',11],['Merah',11],['Samsouma',11]
+          ] }
+    ] },
+
+    // ── LBA ──
+    LBA: { regions: [
+        { w: 1,
+          first: [
+            ['Mohammed',80],['Ahmed',100],['Ali',87],['Abdulrahman',7],['Omar',40],['Khaled',34],['Mustafa',25],['Salem',36],['Ibrahim',35],['Mahmoud',31],
+            ['Hamza',31],['Osama',35],['Mohamed',98],['Abdo',63],['Ahmad',34],['Salah',32],['Adel',29],['Hassan',28],['Emad',25],['Saleh',22],['Walid',21],
+            ['Anas',20],['Fathi',20],['Tarek',19],['Marwan',19],['Sami',19],['Moussa',19],['Jamal',19],['Taha',18],['Naser',18],['Adam',18],['Yousef',18],
+            ['Mohmed',18],['Ashraf',18],['Abdullah',18],['Saad',17],['Mostafa',17],['Mohmmed',17],['Akram',17],['Mohammad',17],['Khalid',17],['Morad',16],
+            ['Moad',16],['Malek',16],['Ayman',16],['Hatem',16],['Abdallah',16],['Hasan',16],['Ramadan',16],['Aymen',16],['Issa',16],['Nasser',15],['Faraj',15],
+            ['Hosam',15],['Medo',15],['Ayoub',15],['Said',15],['Kamal',15],['Mohaned',15],['Waled',14],['Hesham',14],['Mohamad',14],['Sanad',14],['Seraj',14],
+            ['Hamed',14],['Abdul',14],['Nader',14],['Muhammad',14],['Waleed',14],['Mahmod',14],['Esam',14],['Amer',13],['Essam',13],['Moftah',13],['Farag',13],
+            ['Bashir',13],['Reda',13],['Taher',13],['Wael',13],['Eslam',13],['Abdu',13],['Aziz',12],['Saif',12],['Abdoo',12],['Ehab',12],['Mahamed',12],['Ala',12],
+            ['Khalifa',12],['Nabil',12],['Zezo',12],['Kaled',12],['Abdalla',12],['Ebrahim',12],['Feras',12],['Ismail',12],['Hisham',12],['Anwar',11],['Adnan',11],
+            ['Zakaria',11],['Abdou',11],['Aimen',11],['Hussein',11],['Hossam',11],['Hani',11],['Omran',11],['Karim',11],['Mahamadou',11],['Muftah',11],['Hakim',11],
+            ['Yahya',11],['Rami',10],['Youssef',10],['Malik',10],['Ziad',10],['Jalal',10],['Mousa',10],['Ibrahem',10],['Samir',10],['Hamid',10],['Basher',10],
+            ['Oumar',10],['Rayan',10],['Sani',10],['Talal',10],['Faisal',10],['Samer',10],['Ramzi',10],['Serag',10],['Hamady',10],['Murad',9],['Mansour',9],
+            ['Mahmed',9],['Moner',9],['Fares',9],['Ail',9],['Rawad',9],['Salim',9],['Amir',9],['Mahmud',9],['Salh',9],['Nuri',9],['Naji',9],['Moataz',9],
+            ['Monder',9],['Aiman',9],['Radwan',9],['Mahmood',9],['Othman',9],['Hamad',9],['Moha',9],['Salm',9],['Sam',9],['Nezar',9],['Mohsen',9],['Omer',9],
+            ['Abubaker',9],['Gamal',9],['Yosef',9],['Abobaker',9],['Mohand',9],['Mohamd',8],['Motaz',8]
+          ],
+          last: [
+            ['Mohammed',53],['Ali',100],['Ahmed',62],['Hassan',22],['Ibrahim',26],['Omar',37],['Said',16],['Aziz',9],['Belhaj',9],['Oun',9],['Al-Werfaly',9],
+            ['Barka',8],['Al-Agory',8],['Daw',8],['Al-Hadi',8],['Al-Sharif',7],['Al-Shreef',7],['Al-Werfally',7],['Al-Osta',7],['Al-Zway',7],['Al-Fitory',7],
+            ['Al-Shref',7],['Al-Naas',7],['Al-Deeb',6],['Naas',6],['Al-Shrif',6],['Sassi',6],['Al-Arbi',6],['Al-Barasi',6],['Al-Hase',6],['Arebi',6],['Al-Aswed',6],
+            ['Al-Hasy',6],['Al-Mansory',6],['Al-Hasi',6],['Al-Hassi',6],['Al-Sharef',5],['Al-Awamy',5],['Al-Taher',5],['Al-Saity',5],['Al-Trhone',5],
+            ['Al-Sherif',5],['Al-Hdad',5],['Meftah',5],['Al-Hoda',5],['Al-Gadi',5],['Oumarou',5],['Al-Hade',5],['Al-Awami',5],['Al-Tarhoni',5],['Rhoma',5],
+            ['Tamort',5],['Al-Hadad',5],['Issaka',5],['Ben Ali',5],['Al-Aswad',5],['Al-Obidy',5],['Zeglam',5],['Mftah',5],['Al-Tarhony',5],['Grada',5],
+            ['Al-Wafi',5],['Al-Amari',5],['Haman',5],['Al-Gmaty',5],['Arhoma',5],['Mahaman',5],['Al-Arabi',5],['Al-Tarhuni',5],['Nalut',5],['Al-Trhony',5],
+            ['Shebani',5],['Al-Lafi',5],['Al-Amary',5],['Trabelsi',5],['Al-Werfali',5],['Musbah',5],['Al-Mahdi',5],['Kalefa',5],['Idi',5]
+          ] }
+    ] },
+
+    // ── JOR ──
+    JOR: { regions: [
+        { w: 1,
+          first: [
+            ['Mohammad',89],['Ahmad',100],['Omar',51],['Khaled',36],['Ali',49],['Yazan',29],['Hamza',28],['Mahmoud',42],['Laith',23],['Odai',15],['Zaid',29],
+            ['Rami',23],['Mohammed',52],['Ahmed',34],['Mohamad',32],['Anas',32],['Osama',31],['Alaa',30],['Abood',29],['Yousef',29],['Ibrahim',28],['Abdullah',27],
+            ['Mohamed',25],['Abdallah',25],['Amer',25],['Emad',23],['Ayman',22],['Ammar',22],['Samer',22],['Saif',21],['Raed',21],['Fadi',20],['Mohmmad',20],
+            ['Tareq',20],['Mustafa',19],['Hassan',19],['Waleed',18],['Hasan',18],['Ashraf',18],['Saleh',18],['Jamal',18],['Amjad',17],['Sami',17],['Hamzeh',17],
+            ['Maher',17],['Malek',17],['Bashar',17],['Mahmood',16],['Khalid',16],['Ibrahem',15],['Adnan',15],['Eyad',15],['Abed',15],['Salah',15],['Belal',15],
+            ['Marwan',15],['Adel',15],['Hani',15],['Moath',15],['Qusai',15],['Wael',14],['Feras',14],['Mostafa',14],['Hussam',14],['Hussein',14],['Ehab',14],
+            ['Firas',14],['Shadi',14],['Rashed',13],['Murad',13],['Faisal',13],['Fares',13],['Bassam',13],['Sameer',13],['Tamer',13],['Mohanad',13],['Haitham',13],
+            ['Hazem',13],['Tariq',13],['Ziad',13],['Rakan',13],['Naser',13],['Mohmad',13],['Majed',12],['Khalil',12],['Jehad',12],['Bahaa',12],['Mohannad',12],
+            ['Hashem',12],['Ibraheem',12],['Saad',12],['Qais',12],['Yahya',12],['Issa',12],['Basel',12],['Yazeed',12],['Bilal',12],['Mahmod',11],['Salem',11],
+            ['Wesam',11],['Yaser',11],['Mazen',11],['Muhammad',11],['Majd',11],['Akram',11],['Saeed',11],['Mousa',11],['Thaer',11],['Husam',11],['Morad',11],
+            ['Hamzah',11],['Ayham',11],['Nader',11],['Oday',11],['Malik',11],['Hisham',11],['Kamal',11],['Hosam',10],['Talal',10],['Sultan',10],['Karam',10],
+            ['Nedal',10],['Suhaib',10],['Adam',10],['Motaz',10],['Nasser',10],['Hamada',10],['Saed',10],['Rafat',10],['Raad',10],['Ameer',9],['Bader',9],
+            ['Mhamad',9],['Sanad',9],['Momen',9],['Moayad',9],['Motasem',9],['Ghassan',9],['Ameen',9],['Mohammd',9],['Othman',9],['Mosa',9],['Abdalla',9],
+            ['Hatem',9],['Ismail',9],['Basem',9],['Loay',9],['Nabeel',9],['Ghaith',9],['Saleem',9],['Mutaz',9],['Faris',9],['Mohamd',9],['Waseem',9],['Obada',9],
+            ['Mhmad',8],['Monther',8],['Hossam',8],['Kareem',8],['Loai',8],['Amr',8],['Abdallh',8]
+          ],
+          last: [
+            ['Ahmad',100],['Ali',75],['Hassan',32],['Ibrahim',28],['Omar',45],['Said',12],['Karim',12],['Aziz',8],['Al-Zoubi',50],['Obeidat',40],['Al-Omari',39],
+            ['Saleh',38],['Al-Momani',37],['Hamdan',37],['Al-Masri',35],['Jaber',34],['Malkawi',34],['Al-Khateeb',33],['Haddad',33],['Hammad',31],['Odeh',31],
+            ['Jaradat',30],['Awad',29],['Smadi',29],['Al-Qudah',29],['Ababneh',28],['Momani',27],['Al-Adwan',27],['Tarawneh',26],['Al-Awneh',26],['Bataineh',26],
+            ['Salem',25],['Rawashdeh',24],['Salameh',24],['Al-Qaisi',24],['Issa',23],['Aktar',23],['Awwad',23],['Al-Najjar',23],['Naser',23],['Khalil',23],
+            ['Nassar',22],['Mansour',22],['Omari',22],['Al-Abbadi',22],['Shaheen',22],['Hamad',22],['Othman',21],['Ramadan',21],['Al-Khatib',21],['Al-Abadi',21],
+            ['Yaseen',21],['Majali',20],['Taha',20],['Qudah',20],['Khader',20],['Rababah',20],['Hijazi',20],['Assaf',20],['Barakat',19],['Sawalha',19],['Nofal',19],
+            ['Qasem',19],['Bader',18],['Salman',18],['Samara',18],['Nasser',18],['Melhem',18],['Shatnawi',18],['Khasawneh',17],['Eid',17],['Al-Azzam',17],
+            ['Jarrar',17],['Harb',17],['Daoud',17],['Azzam',17],['Kanaan',17],['Abbadi',17],['Ghanem',16],['Gharaibeh',16],['Al-Tamimi',16],['Shehadeh',16],
+            ['Al-Majali',16],['Hamed',16],['Najjar',16],['Al-Rawashdeh',16],['Tamimi',16],['Saadeh',16],['Al-Zaben',16],['Badran',16],['Otoom',16],['Abuzaid',16],
+            ['Al-Kurdi',16],['Amro',16],['Al-Manaseer',16],['Ayasrah',16],['Khalaf',16],['Zghoul',15],['Tawalbeh',15],['Abdo',15],['Shaban',15],['Safi',15],
+            ['Zoubi',15],['Ashour',15],['Alali',15],['Alhaj',14],['Ayoub',14],['Rose',14],['Al-Qadi',14],['Banihani',14],['Al-Jarrah',14],['Darwish',14],
+            ['Frehat',14],['Nsour',14],['Al-Khaldi',14],['Taani',14],['Haddadin',14],['Obaid',14],['Banat',14],['Al-Jamal',14],['Masri',14],['Hatamleh',14],
+            ['Al-Shorman',14],['Ayyad',14],['Diab',14],['Al-Refai',13],['Al-Smadi',13],['Nazzal',13],['Abu Zaid',13],['Al-Asmar',13],['Awamleh',13],['Abbas',13],
+            ['Bani Hani',13],['Asfour',13],['Hijazeen',13],['Al-Fayez',13],['Sarhan',13],['Allan',13],['Abadi',13],['Aqel',13],['Al-Quraan',13],['Al-Zyoud',13],
+            ['Nawafleh',13],['Radwan',13],['Zayed',13],['Khoury',13],['Hawamdeh',12],['Olimat',12],['Al-Ahmad',12],['Khawaldeh',12],['Kharabsheh',12],
+            ['Habashneh',12],['Suliman',12],['Khateeb',12],['Matar',12],['Manaseer',12],['Abdeen',12],['Al-Khawaldeh',12],['Shahin',12],['Kilani',12],
+            ['Hayajneh',12],['Khattab',12],['Odat',12],['Dmour',12],['Al-Rousan',12],['Sabbah',12],['Masoud',12],['Al-Kateeb',12],['Al-Tarawneh',12],['Dabbas',12],
+            ['Homs',12],['Al-Ali',11],['Akther',11],['Saqer',11],['Afaneh',11],['Arar',11],['Al-Zubi',11],['Dababneh',11],['Hourani',11],['Khatib',11],
+            ['Zahran',11],['Deeb',11],['Younis',11],['Magableh',11],['Musleh',11],['Jarrah',11],['Al-Assaf',11],['Yassin',11],['Asad',11],['Hammouri',11],
+            ['Adwan',11],['Masadeh',11],['Kurdi',11],['Yasin',11],['Zyoud',11],['Athamneh',11],['Quraan',11],['Hussain',11],['Al-Zghoul',11],['Mansi',11],
+            ['Asaad',11],['Rabadi',11],['Madi',11],['Al-Abade',11],['Awawdeh',11],['Aqrabawi',11],['Rahahleh',11],['Ghannam',11],['Maaitah',10],['Al-Zboon',10],
+            ['Hiary',10],['Ayyash',10],['Jadallah',10],['Jad',10],['Barham',10],['Al-Hasan',10],['Lafi',10],['Dawood',10],['Shawabkeh',10],['Shboul',10],
+            ['Faraj',10],['Al-Masre',10],['Khater',10],['Horani',10],['Naimat',10],['Al-Abed',10],['Rahhal',10],['Younes',10],['Shalabi',10],['Damra',10],
+            ['Ayesh',10],['Qawasmi',10],['Al-Ajarma',10],['Bakeer',10],['Khazaleh',10],['Al-Saleh',10],['Shdefat',10],['Asha',10],['Hassouneh',10],['Al-Jbour',10],
+            ['Al-Azzeh',10],['Al-Shareef',10],['Khatatbeh',10],['Obiedat',10],['Qawasmeh',10],['Arabiat',10],['Al-Jboor',10],['Mahadeen',10]
+          ] }
+    ] },
+
+    // ── BRN ──
+    BRN: { regions: [
+        { w: 1,
+          first: [
+            ['Mohammed',5],['Ahmed',4],['Ali',4],['Hussain',3],['Hasan',3],['Abdulla',3],['Salman',3],['Khalid',3],['Yousif',3],['Jasim',2],['Isa',2],['Hamad',2],
+            ['Ebrahim',3],['Mahmood',3],['Sayed',3],['Jaffar',2],['Abbas',2],['Rashid',2],['Nasser',2],['Faisal',2],['Mohamed',3],['Fawaz',2],['Adel',2],
+            ['Saleh',2],['Waleed',2],['Hamza',2],['Majed',2],['Mubarak',2],['Sultan',2],['Fahad',2],['Hesham',2],['Redha',1]
+          ],
+          last: [
+            ['Al-Khalifa',9],['Al-Dosari',4],['Al-Mannai',5],['Al-Zayani',5],['Al-Sayed',10],['Ali',100],['Ahmed',86],['Hassan',37],['Ibrahim',19],['Omar',11],
+            ['Said',7],['Aziz',17],['Al-Doseri',14],['Al-Alawi',13],['Al-Aali',12],['Al-Shaikh',12],['Al-Balushi',11],['Al-Thawadi',11],['Al-Asfoor',10],
+            ['Al-Baloshi',10],['Al-Aradi',9],['Al-Ansari',9],['Al-Majed',9],['Al-Mulla',8],['Al-Mosawi',8],['Al-Kaabi',8],['Al-Noaimi',8],['Al-Haddad',7],
+            ['Al-Balooshi',7],['Al-Fardan',7],['Al-Awadhi',7],['Al-Kooheji',7],['Al-Mutawa',7],['Al-Hayki',6],['Al-Saffar',6],['Al-Banna',6],['Al-Qassab',6],
+            ['Al-Omgir',6],['Al-Saeed',6],['Al-Jowder',6],['Al-Binali',6],['Al-Malki',5],['Al-Hassan',5],['Al-Sada',5],['Al-Marzooq',5],['Al-Kuwari',5],
+            ['Al-Tamimi',5],['Al-Jamri',5],['Al-Saleh',5],['Al-Saegh',5],['Al-Khaldi',5],['Al-Dosseri',5],['Al-Nasser',5],['Al-Basri',5],['Al-Hamad',5],
+            ['Al-Aswad',5],['Al-Omari',5],['Al-Buainain',5],['Al-Sayegh',4],['Al-Sari',4],['Al-Khaja',4],['Al-Oraibi',4],['Al-Blushi',4],['Al-Mahmeed',4],
+            ['Al-Rayes',4],['Al-Haiki',4],['Al-Ahmed',4],['Al-Durazi',4],['Al-Abbasi',4],['Al-Qallaf',4],['Al-Hammadi',4],['Al-Hawaj',4],['Al-Bahrain',4],
+            ['Al-Zayed',4],['Al-Mahmood',4],['Al-Saad',4],['Al-Khabbaz',4],['Al-Shehabi',4],['Al-Hasan',4],['Al-Khan',4],['Al-Malood',4],['Al-Bastaki',4],
+            ['Al-Mubarak',4],['Al-Ali',4],['Al-Ajmi',4],['Al-Ghatam',4],['Al-Haddar',4],['Al-Mansoori',4],['Al-Haiky',4],['Al-Shaer',4],['Al-Dosri',4],
+            ['Al-Meer',4],['Al-Najjar',4],['Al-Hashimi',4],['Al-Bahrani',4],['Al-Mansoor',4],['Al-Amer',4],['Al-Hamar',4],['Al-Hadi',4],['Al-Bader',4],
+            ['Al-Khayat',3],['Al-Zain',3],['Al-Hussaini',3],['Al-Rumaihi',3],['Al-Murbati',3],['Al-Subaie',3],['Al-Amiri',3],['Al-Romaihi',3],['Al-Junaid',3],
+            ['Al-Halwachi',3],['Al-Faraj',3],['Al-Jaber',3]
+          ] }
+    ] },
+
+    // ── KUW ──
+    KUW: { regions: [
+        { w: 1,
+          first: [
+            ['Mohammad',5],['Ahmad',4],['Abdullah',4],['Ali',3],['Fahad',3],['Khaled',3],['Saud',3],['Nasser',3],['Faisal',3],['Bader',3],['Talal',2],['Mishal',2],
+            ['Abdulaziz',3],['Abdulrahman',3],['Yousef',3],['Hamad',2],['Sultan',2],['Salem',2],['Saad',2],['Mubarak',2],['Nawaf',2],['Turki',2],['Meshari',2],
+            ['Hamoud',2],['Fawaz',2],['Jassim',2],['Bandar',2],['Hussain',2],['Omar',2],['Waleed',2],['Majed',2],['Dhari',1]
+          ],
+          last: [
+            ['Al-Mutairi',25],['Al-Ajmi',29],['Al-Enezi',20],['Al-Rashidi',9],['Al-Azmi',23],['Al-Shammari',12],['Al-Otaibi',17],['Al-Kandari',11],['Ali',100],
+            ['Ahmad',52],['Hassan',29],['Ibrahim',24],['Omar',18],['Aziz',18],['Al-Enzi',16],['Al-Anzi',14],['Al-Hajri',13],['Al-Harbi',10],['Al-Shatti',10],
+            ['Al-Qallaf',9],['Al-Khaldi',9],['Al-Mutiri',8],['Al-Saleh',8],['Al-Rashed',8],['Al-Adwani',8],['Al-Ali',8],['Al-Awadhi',7],['Al-Fahad',7],
+            ['Al-Kanderi',7],['Al-Otibi',7],['Al-Bloushi',7],['Al-Salem',7],['Al-Saeed',7],['Al-Mulla',6],['Al-Ajme',6],['Al-Kandri',6],['Al-Azme',6],
+            ['Al-Ansari',6],['Al-Bader',6],['Al-Marri',6],['Al-Fadhli',6],['Al-Azemi',6],['Al-Anze',6],['Al-Haddad',6],['Al-Shammri',6],['Al-Hamad',6],
+            ['Al-Anezi',6],['Al-Ahmad',6],['Al-Sayed',6],['Al-Anzy',6],['Al-Sarraf',6],['Al-Ghanim',6],['Al-Shammeri',6],['Al-Mutawa',6],['Al-Varez',6],
+            ['Al-Abdullah',5],['Al-Obaid',5],['Al-Masry',5],['Al-Hajeri',5],['Al-Saad',5],['Al-Nasser',5],['Al-Shamri',5],['Al-Subaie',5],['Al-Enzii',5],
+            ['Al-Ajmii',5],['Al-Attar',5],['Al-Ajmy',5],['Al-Dousari',5],['Al-Enzy',5],['Al-Omar',5],['Al-Hassan',5],['Al-Hamdan',5],['Al-Saffar',5],
+            ['Al-Sayegh',5],['Al-Naser',5],['Al-Qahtani',4],['Al-Anzii',4],['Al-Essa',4],['Al-Sabah',4],['Al-Faraj',4],['Al-Shmri',4],['Al-Fadli',4],
+            ['Al-Othman',4],['Al-Dosari',4],['Al-Fares',4],['Al-Shmry',4],['Al-Mansour',4],['Al-Failakawi',4],['Al-Farhan',4],['Al-Refai',4],['Al-Hajre',4],
+            ['Al-Tamimi',4],['Al-Fadly',4],['Al-Asfour',4],['Al-Zaid',4],['Al-Wazzan',4],['Al-Nassar',4],['Al-Masri',4],['Al-Azmii',4],['Al-Yousef',4],
+            ['Al-Najjar',4],['Al-Sultan',4],['Al-Majed',4],['Al-Enizi',4],['Al-Daihani',4],['Al-Khalaf',4],['Al-Mousawi',4],['Al-Ghareeb',4],['Al-Mutairy',4],
+            ['Al-Awadi',4],['Al-Osaimi',4],['Al-Mutari',4],['Al-Enazi',4],['Al-Azmy',4],['Al-Shamry',4],['Al-Cantara',4],['Al-Enezy',4],['Al-Hajry',4],
+            ['Al-Rshidi',4],['Al-Rasheedi',4],['Al-Kandry',4],['Al-Amer',4],['Al-Dehani',4],['Al-Shameri',4],['Al-Sahli',4],['Al-Rshedi',4],['Al-Hariri',4],
+            ['Al-Qabandi',4],['Al-Kandery',3],['Al-Saqer',3],['Al-Ahmed',3],['Al-Hasan',3],['Al-Enze',3],['Al-Mutaire',3]
+          ] }
+    ] },
+
+    // ── IRQ ──
+    IRQ: { regions: [
+        { w: 0.82,
+          first: [
+            ['Mohammed',50],['Ahmed',70],['Ali',100],['Hussein',30],['Mustafa',43],['Haider',24],['Abbas',23],['Omar',30],['Hassan',29],['Muntadher',12],
+            ['Karrar',14],['Zaid',15],['Ahmad',42],['Saif',29],['Mohamed',26],['Hama',24],['Mhamad',23],['Karar',22],['Mohammad',21],['Alaa',20],['Muhamad',19],
+            ['Ameer',19],['Saad',19],['Abdullah',18],['Sajad',18],['Muslim',18],['Mohamad',18],['Hasan',17],['Ibrahim',17],['Ammar',17],['Hussain',17],
+            ['Muhammad',16],['Falah',15],['Amer',15],['Omer',15],['Yousif',14],['Salam',14],['Hamza',14],['Salah',14],['Taha',14],['Mostafa',14],['Mahamad',13],
+            ['Mahmood',13],['Alan',13],['Adnan',13],['Emad',13],['Abdulla',12],['Marwan',12],['Ayad',12],['Ail',12],['Laith',12],['Waleed',12],['Khalid',12],
+            ['Shex',12],['Anas',12],['Raad',11],['Mahdi',11],['Osama',11],['Abas',11],['Aso',11],['Hussam',11],['Yasser',11],['Kwra',11],['Hayder',11],['Jamal',11],
+            ['Muhammed',11],['Amar',10],['Arkan',10],['Haidar',10],['Kamal',10],['Akram',10],['Amir',10],['Samer',10],['Firas',10],['Hussen',10],['Bilal',10],
+            ['Aland',10],['Saef',10],['Aras',9],['Krar',9],['Ayman',9],['Hussien',9],['Maher',9],['Rzgar',9],['Adel',9],['Khaled',9],['Harem',9],['Sami',8],
+            ['Haval',8],['Yaser',8],['Anwar',8],['Osman',8],['Mohanad',8],['Ibrahem',8],['Hadi',8],['Zain',8],['Sarmad',8],['Rasool',8],['Yahya',8],['Fahad',8],
+            ['Amanj',8],['Awat',8],['Samir',8],['Adam',8],['Mahmoud',8],['Yousef',8],['Kareem',8],['Murtada',8],['Aziz',8],['Wesam',8],['Wasta',8],['Adil',8],
+            ['Akam',7],['Bashar',7],['Ismail',7],['Hamed',7],['Majid',7],['Hussin',7],['Amjad',7],['Farman',7],['Rayan',7],['Malik',7],['Rasol',7],['Raed',7],
+            ['Mohmmed',7],['Aryan',7],['Islam',7],['Wissam',7],['Aqeel',7],['Sarkawt',7],['Anmar',7],['Brwa',7],['Salim',7],['Salih',7],['Abdallah',7],['Hazhar',7],
+            ['Jafar',7],['Othman',7],['Balen',7],['Salman',7],['Baxtyar',7],['Yasir',7],['Dyar',7],['Sarbast',7],['Bakr',7],['Karam',7],['Asaad',7],['Wisam',7],
+            ['Murad',7],['Hewa',7],['Hamid',7],['Tariq',7],['Rami',7],['Abass',7],['Serwan',6],['Mazin',6],['Haitham',6],['Qasim',6],['Ehab',6],['Younis',6],
+            ['Haydar',6],['Sangar',6],['Jasim',6],['Bahaa',6],['Abdulrahman',6],['Shamal',6],['Nazar',6],['Hameed',6],['Basim',6],['Araz',6],['Jassim',6],
+            ['Husam',6],['Bassam',6],['Ahmd',6],['Aws',6],['Sahand',6],['Hisham',6]
+          ],
+          last: [
+            ['Ali',100],['Ahmed',50],['Hassan',30],['Ibrahim',18],['Omar',23],['Said',6],['Karim',15],['Aziz',18],['Ahmad',45],['Mhamad',25],['Hasan',23],
+            ['Muhamad',22],['Saad',20],['Abdulla',19],['Jamal',18],['Omer',18],['Osman',18],['Adnan',17],['Kareem',17],['Salah',17],['Jalal',16],['Sabah',15],
+            ['Mahmood',15],['Salih',14],['Taha',14],['Khalid',14],['Hadi',13],['Qadr',13],['Karem',13],['Mahdi',13],['Azad',13],['Hamed',13],['Hameed',12],
+            ['Raad',12],['Jabar',12],['Mahmud',12],['Salim',12],['Saeed',11],['Abas',11],['Salman',11],['Al-Taee',11],['Alani',11],['Sami',11],['Bakr',11],
+            ['Majid',11],['Gul',11],['Hamid',11],['Adel',10],['Anwar',10],['Akram',10],['Hussen',10],['Majed',10],['Ismail',10],['Al-Khafaji',10],['Amin',10],
+            ['Rasul',10],['Khalil',10],['Jawad',10],['Adil',10],['Rashid',9],['Saleh',9],['Jasim',9],['Khaled',9],['Al-Rawi',9],['Al-Obaidy',9],['Majeed',9],
+            ['Qasim',9],['Al-Rubaie',9],['Jassim',9],['Shaker',9],['Al-Musawi',9],['Husen',9],['Hamad',9],['Haji',9],['Al-Tamimi',9],['Jabbar',8],['Al-Azzawi',8],
+            ['Sad',8],['Gean',8],['Al-Zubaidi',8],['Talib',8],['Barware',8],['Kocher',8],['Barwary',8],['Othman',8],['Al-Bayati',8],['Nawzad',8],['Al-Janabi',8],
+            ['Bahar',8],['Kamil',8],['Hashim',8],['Al-Dulaimi',8],['Halabjay',8],['Rashed',8],['Al-Azawi',8],['Fatah',8],['Kam',8],['Kadhim',8],['Mziri',7],
+            ['Sherwani',7],['Al-Shammari',7],['Chawrash',7],['Namo',7],['Latif',7],['Mahmod',7],['Rekani',7],['Kurde',7],['Rahim',7],['Al-Asady',7],['Tariq',7],
+            ['Murad',7],['Al-Shamary',7],['Salem',7],['Fadel',7],['Alali',7],['Al-Zubaidy',7],['Abdula',7],['Al-Saady',7],['Mstafa',7],['Abass',7],['Qadir',7],
+            ['Saed',7],['Thamer',7],['Agha',7],['Kamel',7],['Kalary',7],['Slimany',7],['Hawramy',7],['Raheem',7],['Khalaf',7],['Najm',7],['Taher',7],['Kirkuk',7],
+            ['Pasha',7],['Yasin',6],['Rasheed',6],['Fadhil',6],['Azez',6],['Surchy',6],['Abdulrahman',6],['Sabir',6],['Yaseen',6],['Al-Jbory',6],['Noori',6],
+            ['Al-Obaidi',6],['Mzere',6],['Abed',6],['Faris',6],['Al-Mosawi',6],['Al-Tmeme',6],['Tofiq',6],['Sleman',6],['Al-Azawy',6],['Aliraqe',6],['Gold',6],
+            ['Al-King',6],['Nerway',6],['Faraj',6],['Basim',6],['Blbas',6],['Tahir',6],['Naser',6],['Akre',6],['Sdiq',6],['Ameen',6],['Lawyer',6],['Jwan',6],
+            ['Hawler',6],['Saber',6],['Paiz',6],['Sultan',6],['Sndi',6],['Darya',6],['Burhan',6],['Ismael',6],['Dawood',6],['Luqman',6],['Jaza',6],['Mohsen',6],
+            ['Ebrahim',6],['Shazaka',6],['Barznji',6],['Jwanaka',6],['Jasem',6],['Naji',6],['Hsen',6],['Farhan',6],['Kazem',6],['Muhamed',6],['Faisal',6],
+            ['Nasser',6],['Asad',5],['Qader',5],['Kochar',5],['Rauf',5],['Al-Taie',5],['Al-Shmary',5],['Dara',5],['Garde',5],['Jameel',5],['Sattar',5],['Shwany',5],
+            ['Fars',5],['Hassn',5],['Haje',5],['Jalil',5],['Al-Mosawy',5],['Jaber',5],['Hatem',5],['Al-Hanen',5],['Hashem',5],['Gulli',5],['Shakir',5],
+            ['Al-Basrawi',5],['Kalare',5],['Mahde',5],['Shetaka',5],['Man',5],['Dosky',5],['Sameer',5],['Abubakr',5],['Qassim',5],['Messi',5],['Kurdstan',5],
+            ['Rahem',5],['Duhok',5],['Jamil',5],['Sharif',5],['Ibraheem',5],['Mohmed',5],['Doske',5],['Sherzad',5],['Satar',5],['Aljaf',5],['Mzuri',5],['Latef',5],
+            ['Al-Qaisi',5],['Kirkuky',5],['Abood',5],['Saleem',5],['Najat',5],['Fayaq',5],['Al-Hamdany',5],['Abaas',5],['Ghazi',5],['Koya',5],['Yassin',5],
+            ['Aliraq',5],['Hassen',5],['Huseen',5],['Ramazan',5],['Najem',5],['Karkuky',5],['Al-Jubouri',5],['Altai',5],['Al-Kaabi',5],['Slemane',5],['Bekas',5],
+            ['Kaya',5],['Law',5],['Husain',5],['Hazem',5],['Karkuke',5],['Amen',5],['Najim',5],['Zebare',5],['Al-Dulaimy',5],['Al-Basha',5],['Qais',5],['Aii',5],
+            ['Muhsin',5],['Heart',5],['Hazim',5],['Al-Baghdady',5],['Fuad',5],['Rafiq',5],['Salm',5],['Al-Maliki',5],['Alwan',5],['Wahab',5],['Al-Amery',5],
+            ['Penjweny',5],['Nabeel',5],['Ronaldo',5],['Gardy',5],['Lak',5],['Qasm',5],['Sam',5],['Talal',5],['Fadhel',5],['Tanea',5],['Esmail',5],['Mhmad',5],
+            ['Al-Ali',5],['Taman',5],['Al-Obeidi',5],['Al-Baghdadi',5],['Habib',5],['Ata',5],['Al-Jubory',5],['Hani',5],['Al-Janaby',4],['Jawhar',4],['Yasen',4],
+            ['Al-Saad',4],['Mohmad',4],['Sky',4],['Jasm',4],['Fadil',4],['Al-Ameer',4],['Kurdy',4],['Mahmwd',4],['Musa',4],['Taleb',4]
+          ] },
+        { w: 0.18,
+          first: [
+            ['Karwan',16],['Rebwar',10],['Hawre',9],['Shwan',8],['Hemin',26],['Zana',12],['Aram',17],['Soran',12],['Hiwa',9],['Azad',13],['Goran',11],['Bryar',7],
+            ['Hama',14],['Mohammad',13],['Abdullah',11],['Ibrahim',10],['Muhammad',10],['Yousif',8],['Hamza',8],['Saman',14],['Hemn',14],['Mahmood',8],['Dana',12],
+            ['Khalid',7],['Sabah',12],['Karzan',12],['Hawkar',11],['Rebaz',11],['Jamal',7],['Kamal',6],['Barzan',10],['Bilal',6],['Sardar',9],['Omed',9],
+            ['Farhad',9],['Ako',9],['Rawand',9],['Jalal',9],['Sami',5],['Osman',5],['Barham',8],['Salar',8],['Dlshad',8],['Twana',8],['Kawa',8],['Kareem',5],
+            ['Ismail',4],['Baran',7],['Nawzad',7],['Kamaran',7],['Shvan',7],['Sirwan',7],['Sarwar',7],['Hersh',7],['Rebin',7],['Salih',4],['Othman',4],['Ari',7],
+            ['Hunar',7],['Dler',7],['Diyar',7],['Sherwan',7],['Rawa',6],['Halo',6],['Shaho',6]
+          ],
+          last: [
+            ['Barzani',13],['Talabani',12],['Zebari',9],['Doski',13],['Kurdi',20],['Hawrami',6],['Jaff',10],['Mamand',2],['Osman',11],['Kareem',10],['Jalal',10],
+            ['Mahmood',9],['Hawlery',14],['Salih',8],['Duhoki',14],['Khalid',8],['Xoshnaw',14],['Duski',13],['Slemani',12],['Zangana',11],['Hawlere',11],
+            ['Slemany',11],['Jaf',11],['Barwari',10],['Ismail',6],['Rasul',6],['Rashid',5],['Harki',9],['Saleh',5],['Majeed',5],['Hamad',5],['Gardi',9],
+            ['Karkuki',8],['Zaxoy',8],['Kirkuki',8],['Othman',5],['Hawleri',8],['Xalid',7],['Qadir',4],['Baban',7],['Abdulrahman',4],['Surchi',6],['Berwari',6],
+            ['Amedi',6],['Sindi',5],['Kaka',5],['Xalil',5],['Xambar',5],['Shwani',5]
+          ] }
+    ] },
+
+    // ── LBN ──
+    LBN: { regions: [
+        { w: 0.66,
+          first: [
+            ['Mohamad',57],['Ahmad',80],['Ali',100],['Hussein',39],['Hassan',49],['Omar',38],['Khaled',32],['Bilal',26],['Mahmoud',37],['Mustafa',9],['Abbas',20],
+            ['Hadi',28],['Mohammad',47],['Mhamad',33],['Ibrahim',29],['Hasan',28],['Fadi',27],['Youssef',26],['Rami',25],['Mostafa',24],['Samer',23],['Abed',23],
+            ['Tarek',21],['Walid',21],['Rayan',20],['Mohamed',20],['Mouhamad',19],['Khalil',19],['Karim',19],['Mahdi',19],['Wael',19],['Wissam',19],['Imad',19],
+            ['Ziad',18],['Samir',18],['Jamal',18],['Mohammed',18],['Amir',18],['Abdallah',18],['Ayman',17],['Houssein',17],['Maher',16],['Jihad',16],['Sami',16],
+            ['Kassem',16],['Salam',16],['Adam',16],['Bob',16],['Bassam',16],['Amer',16],['Nabil',15],['Jawad',15],['Ahmed',15],['Abdo',15],['Adnan',15],
+            ['Marwan',15],['Fouad',15],['Mazen',14],['Ghassan',14],['Wassim',14],['Abbass',14],['Amar',14],['Moustafa',14],['Issa',13],['Kamal',13],['Firas',13],
+            ['Hani',13],['Salim',13],['Nader',13],['Hamza',13],['Rawad',13],['Moussa',12],['Yousef',12],['Shadi',12],['Hussien',12],['Mhmad',12],['Khodor',12],
+            ['Majd',12],['Adel',12],['Sam',12],['Hamoudi',11],['Houssam',11],['Chadi',11],['Jamil',11],['Bahaa',11],['Issam',11],['Saad',11],['Malek',11],
+            ['Dani',11],['Talal',11],['Mhammad',11],['Anas',11],['Saleh',10],['Alex',10],['Ammar',10],['Haidar',10],['Habib',10],['Fadel',10],['Raed',10],
+            ['Salah',10],['Hisham',10],['Majed',10],['Mohmad',10],['Daniel',10],['Jaafar',10],['Bassel',10],['Osama',10],['Yehya',10],['Abo Ali',10],['Taha',10],
+            ['Said',9],['Jalal',9],['Hamada',9],['Jack',9],['Nadim',9],['Aboudi',9],['Yahya',9],['Ihab',9],['Oussama',9],['Amin',9],['Brahim',9],['Yasser',9],
+            ['Naji',9],['Zein',9],['Fares',9],['Nizar',9],['Bashar',9],['Nasser',9],['Rida',9],['Mike',9],['Haydar',9],['Khalid',9],['Mido',9],['Ismail',9],
+            ['Ramy',9],['Zizo',9],['Moe',9],['Zakaria',8],['Khoder',8],['Nidal',8],['Akram',8],['Hsein',8],['Bassem',8],['Adham',8],['Samo',8],['Mohamd',8]
+          ],
+          last: [
+            ['Ali',100],['Hassan',52],['Ibrahim',52],['Omar',34],['Said',22],['Karim',16],['Khalil',56],['Issa',48],['Saleh',47],['Saad',46],['Abdallah',45],
+            ['Hammoud',44],['Jaber',42],['Haidar',41],['Moussa',41],['Mansour',41],['Daher',41],['Farhat',39],['Ayoub',39],['Masri',39],['Harb',37],['Awad',36],
+            ['Jaafar',36],['Hajj',36],['Kassem',35],['Ismail',35],['Assaf',35],['Diab',33],['Nasser',33],['Fares',33],['Fakih',33],['Hijazi',32],['Obeid',32],
+            ['Matar',31],['Younes',31],['Zaiter',31],['Hamdan',31],['Wehbe',31],['Taleb',31],['Zein',30],['Dib',30],['Haydar',29],['Abdo',29],['Awada',28],
+            ['Mrad',28],['Nassar',27],['Salloum',27],['Nasr',27],['Saab',27],['Fawaz',27],['Sayed',27],['Taha',26],['Yassine',26],['Hachem',26],['Itani',26],
+            ['Ramadan',26],['Khatib',26],['Ghanem',26],['Halabi',25],['Fayad',25],['Barakat',25],['Asmar',25],['Darwish',25],['Hamoud',24],['Osman',24],
+            ['Habib',24],['Raad',24],['Mokdad',24],['Kanaan',23],['Nader',23],['Najem',23],['Fadel',23],['Ammar',22],['Deeb',22],['Hassoun',22],['Yassin',22],
+            ['Merhi',22],['Assi',22],['Amhaz',22],['Salman',22],['Daou',21],['Wehbi',21],['Najjar',21],['Sakr',21],['Srour',21],['Hamze',21],['Hamad',21],
+            ['Khalaf',21],['Melhem',21],['Salem',21],['Mortada',21],['Assaad',21],['Atwi',21],['Khoder',20],['Hashem',20],['Hamieh',20],['Alali',20],['Sabra',20],
+            ['Helou',19],['Jabbour',19],['Al Ali',19],['Hajjar',19],['Chami',19],['Daoud',19],['Azzam',19],['Baydoun',19],['Atallah',19],['Ghandour',19],
+            ['Darwich',19],['Mazloum',19],['Rifai',19],['Ayoubi',18],['Yehya',18],['Kassab',18],['Othman',18],['Mhanna',18],['Maatouk',18],['Faraj',18],
+            ['Hariri',18],['Rahal',18],['Mattar',18],['Jomaa',18],['Moussawi',18],['Mousa',18],['Yaghi',18],['Azzi',18],['Hakim',18],['Kanso',17],['Zeidan',17],
+            ['Mouawad',17],['Rida',17],['Makhoul',17],['Naser',17],['El Hajj',17],['Shamas',17],['Hamzeh',17],['Rammal',17],['Rabah',17],['Alahmad',17],
+            ['Sayegh',17],['Tarhini',17],['Chehade',17],['Mezher',16],['Bazzi',16],['Hatoum',16],['Nasrallah',16],['Madi',16],['Youness',16],['Touma',16],
+            ['Saker',16],['Trad',16],['Hallak',16],['Saba',16],['Massri',16],['Achkar',16],['Shaaban',16],['Merheb',16],['Slim',16],['Homs',16],['Allaw',16],
+            ['Akl',16],['Chaaban',16],['Zaarour',16],['Makki',16],['Badran',16],['Mawla',16],['Mourad',16],['Chamas',16],['Bader',16],['Arab',15],['Yazbeck',15],
+            ['Aboud',15],['Tarabay',15],['Badawi',15],['Akil',15],['Ghaddar',15],['Safa',15],['Haj',15],['Yazbek',15],['Ghazal',15],['Fahed',15],['Berro',15],
+            ['Jammal',15],['Monzer',15],['Chehab',15],['Naim',15],['Samaha',15],['Shehab',15],['Mallah',15],['Awwad',15],['Karaki',15],['Sawan',15],['Boulos',15],
+            ['Sadek',15],['Ezzeddine',15],['Faour',15],['Dirani',14],['Konjo',14],['Mohsen',14],['Seif',14],['Yaacoub',14],['Ayash',14],['Serhan',14],['Nemer',14],
+            ['Mahfouz',14],['Ghosn',14],['Attieh',14],['Tawil',14],['Dia',14],['Gharib',14],['Cell',14],['Safi',14]
+          ] },
+        { w: 0.34,
+          first: [
+            ['Georges',29],['Elie',38],['Charbel',34],['Joseph',24],['Pierre',12],['Antoine',10],['Michel',17],['Tony',23],['Marc',11],['Rabih',20],['Jad',27],
+            ['Nicolas',10],['Fadi',14],['Youssef',13],['Rami',13],['Elias',21],['Tarek',11],['Walid',11],['Joe',21],['Khalil',10],['Karim',10],['Wael',10],
+            ['Wissam',10],['Imad',10],['Ziad',9],['Samir',9],['Anthony',18],['George',17],['Jihad',8],['Sami',8],['Bassam',8],['Nabil',8],['Marwan',8],['Jean',15],
+            ['Fouad',8],['Mazen',7],['Toni',14],['Ghassan',7],['Kamal',7],['Maroun',13],['Hani',7],['Salim',7],['Nader',7],['Shadi',6],['Roy',12],['Adel',6],
+            ['Chadi',6],['Paul',11],['Mario',11],['Elio',11],['Habib',5],['Raed',5],['Majed',5],['Johnny',10],['Ralph',10],['Peter',10],['Fady',9],['Nadim',5],
+            ['Simon',9],['Naji',5]
+          ],
+          last: [
+            ['El Khoury',19],['Haddad',46],['Gemayel',11],['Aoun',31],['Saade',25],['Karam',35],['Sfeir',19],['Hanna',34],['Boutros',15],['Rizk',28],['Maalouf',21],
+            ['Nakhle',13],['Khalil',34],['Khoury',55],['Saad',28],['Moussa',25],['Mansour',25],['Daher',25],['Harb',22],['Hajj',22],['Abboud',35],['Eid',35],
+            ['Fares',20],['Sleiman',32],['Saliba',28],['Nassar',16],['Nasr',16],['Hayek',27],['Ghanem',16],['Bitar',25],['Nehme',25],['Chahine',25],['Azar',24],
+            ['Raad',14],['Kanaan',14],['Nader',14],['Salameh',23],['Semaan',22],['Tannous',22],['Merhi',13],['Zgheib',22],['Dagher',22],['Akiki',21],['Khalife',21],
+            ['Khalifeh',21],['Nassif',19],['Chamoun',19],['Chalhoub',19],['Sarkis',19],['Antoun',17],['Matta',17],['Sabbagh',17],['El Hajj',10],['Rahme',16],
+            ['Yammine',16],['Gerges',16],['Geagea',16],['Bassil',16],['Tawk',15],['Tohme',15],['Lahoud',14],['Chidiac',14]
+          ] }
+    ] },
 };
 
 // ── Fallback-Map: pool-lose Nation → kulturell nächstverwandter Pool ──
@@ -12172,9 +12534,8 @@ const NAME_POOLS_BY_NATION = {
 const NATION_NAME_FALLBACK = {
     'ECU':'COL','BOL':'COL','PAR':'ARG','CRC':'MEX','GUA':'MEX','PAN':'COL','DOM':'COL','PUR':'MEX','CUB':'MEX','UKR':'RUS',
     'BLR':'RUS','LAT':'LTU','KGZ':'INT','UZB':'INT','TJK':'INT','ARM':'INT','SVK':'CZE','LUX':'BEL','LIE':'SUI','AND':'ESP',
-    'SMR':'ITA','MLT':'ITA','BIH':'INT','MKD':'INT','MNE':'INT','ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR','LBN':'MAR',
-    'TUN':'MAR','ALG':'MAR','JOR':'MAR','IRQ':'MAR','LBA':'MAR','PAK':'IND','SRI':'IND','NEP':'IND','PHI':'MEX','VIE':'INT',
-    'KEN':'RSA','SEN':'FRA','CIV':'FRA','ANG':'POR','MOZ':'POR'
+    'SMR':'ITA','MLT':'ITA','BIH':'INT','MKD':'INT','MNE':'INT','ISL':'SWE','PAK':'IND','SRI':'IND','NEP':'IND','PHI':'MEX',
+    'VIE':'INT','KEN':'RSA','SEN':'FRA','CIV':'FRA','ANG':'POR','MOZ':'POR'
 };
 
 // ── Raritäten-Schwänze (implizit Gewicht 1) ─────────────────────────────
@@ -15153,6 +15514,166 @@ const NAME_TAILS_BY_NATION = {
           ],
           last: [
             
+          ] },
+    ],
+    TUN: [
+        { r: 0,
+          first: [
+            'Fedi','Ghazi','Med Ali','Fahmi','Sadok','Dridi','Amen','Meher','Mohammed','Rached','Farouk','Nouri','Houcine','Lassad','Mohamed Amine','Chaker',
+            'Mustapha','Mansour','Neji','Hamouda','Jawher','Rachid','Mouldi','Med Amine','Nassim','Monta','Mejri','Mido','Zouhair','Trabelsi','Fadi','Nejib',
+            'Ghaith','Mou','Adnen','Bayrem','Akram','Ahmad','Marwan','Soufien','Jasser','Hbib','Amer','Taha','Saidi','Hassan','Haroun','Naim','Yosri','Sofiene',
+            'Hammami','Souhail','Gadour','Zouhaier','Bader','Jlassi','Makram','Riahi','Kaled','Farhat','Mahboul','Raed','Hsan','Amri','Hadi','Elyes','Baha','Majid',
+            'Abdelaziz','Saleh','Cherif','Haykel','Abdelhamid','Aloui','Hammadi','Fraj','Kalil','Nasri','Anwar','Nawfel','Anouar','Thamer','Sam','Younes','Lamjed',
+            'Lazhar','Sassi','Boubaker','Fadhel','Mahrez','Ameur','Kimo','Rochdi','Gharbi','Amar','Salhi','Selmi','Khalifa','Tlili','Ham','Momo','Lazher','Koussay',
+            'Montasar','Hani','Tahar','Naser','Chedli','Rzouga','Azer','Nacer','Djo','Morad','Moktar','Arfaoui','Moussa','Majhoul','Slouma','Mahjoub','Semi',
+            'Ayman','Fakhri','Ayadi','Barhoumi','Taieb','Anoir','Talel','Raslen','Houssine','Bessem','Afif','Yasser','You','Issa','Hayder','Naoufel','Abdo','Moha',
+            'Ezzeddine','Majed','Yahia','Yessine','Tarak','Ben Ali','Wajih','Feres','Saad','Selim','Hajji','Jamil','Rabii','Iskander','Abdessalem','Mahran','Kha',
+            'Mouez','Rayan','Bahri','Othmen','Abderrahmen','Jilani','Patron','Mohmed','Abdelmajid','Nourdine','Mhamed','Gaith','Bou','Faicel','Fakher'
+          ],
+          last: [
+            'Brahem','Kraiem','Sdiri','Chihi','Chouchene','Akermi','Chakroun','Ben Mouhamed','Troudi','Yaakoubi','Khmiri','Sahbani','Kaabi','Khiari','Ben Fraj',
+            'Majdoub','Dhibi','Sboui','Allagui','Chrif','Zarga','Zarrouk','Mnasri','Dziri','Kallel','Ben Moussa','Bouha','Jaballah','Saadi','Ghorbel','Zoghlami',
+            'Zayani','Agrebi','Ben Mabrouk','Boubakri','Ben Hassen','Hasnaoui','Mastouri','Kamoun','Soussi','Hassine','Najjar','Chouchen','Ben Hamouda','Azouzi',
+            'Dammak','Miled','Idoudi','Chaabane','Marzouk','Ajili','Ben Ameur','Wesleti','Marouma','Kilani','Chihaoui','Chatti','Jawadi','Fehri','Feki','Khalfaoui',
+            'Sallemi','Bedoui','Nasraoui','Khadhraoui','Rine','Mnassri','Sahraoui','Othmen','Nousa','Baklouti','Jaouadi','Ltifi','Baccouche','Mokni','Jmal',
+            'Ben Rhouma','Snoussi','Tayari','Derbel','Lahmer','Mouelhi','Romdhane','Tarhouni','Hamemi','Chaaben','Ouertani','Chaari','Jelassi','Charfi',
+            'Ben Slimen','Aouadi','Bouguerra','Yazidi','Mahjoubi','Chaibi','Ammari','Jarray','Mhiri','Mahfoudhi','Hlel','Amiri','Saafi','Lahmar','Ezzine',
+            'Benzarti','Rtibi','Hidri','Benamor','Fourati','Zairi','Chtioui','Belaid','Hafsi','Akkari','Khalfallah','Daly','Kahlaoui','Nadou','Ben Khalifa',
+            'Samaali','Gharsalli','Achouri','Rajhi','Hobi','Nouira','Hkiri','Rahal','Gammoudi','Jabri','Melliti','Youssfi','Khalfi','Khaldi','Harbaoui','Afli',
+            'Omha','Naffeti','Douzi','Frikha','Bensalem','Rouge','Rejeb','Ben Sassi','Haddaji','Krimi','Daoud','Taboubi','Timoumi','Aboura','Guedri','Bjaoui',
+            'Bouhlel','Mezrigui','Souidi','Ouerghi','Akrout','Souid','Hedfi','Fathallah','Chalbi','Manoula','Ben Amar','Boukhris','Nafti','Fersi','Ferjeni',
+            'Bensalah','Mefteh','Felhi','Nawara','Nabli','Ghali','Hermi','Ben Younes','Ahmadi','Dalloula','Maaroufi','Arfa','Bahloul','Ben Nasr','Majri','Hadded',
+            'Jlasi','Dhaoui','Lem','Wen','Lajmi','Pas Plus','Chikhaoui','Chebi','Rabhi','Grami','Baccar','Makhlouf','Sfar','Ben Alaya','Assouma','Laribi','Aloulou',
+            'Zaghdoudi','Gafsa','Salouma','Bani','Ochi','Naili','Garbi','Rachdi','Rihani','Ben Saleh','Mariouma','Dhifallah','Khlifa','Kthiri','Jlidi','Jallouli',
+            'Bizertino','Dhouib','Mekki','Fridhi','Kahla','Hajoura','Zouaghi','Djebbi','Dardouri','Besbes','Rahmani','Mestiri','Faidi','Brini','Chargui',
+            'Chaouachi','Bel Haj','Miladi','Nahdi','Souli','Ben Slama','Fezai','Mili','Bannour','Akrimi','Mimouni','Touil','Dhib','Gargouri','Laouini','Jrad',
+            'Haggui','Fekih','Bennour','Torkhani','Baccari','Lamouchi','Jlali','Ben Hamed','Salmi','Kalifa','Ziadi','Bahrouni','Hleli','Najar','Samoura','Ltaief',
+            'Sakouhi','Wertani','Ghozzi','Yem','Rjab','Ramrouma','Maatoug','Sallami','Ben Mbarek','Abdaoui','Chtourou','Dhouibi','Baazaoui','Bensaid','Kimou',
+            'Aoun','Mensi','Gharsallah','Massoud','Lachheb','Ben Othman','Mahfoudh','Abessi','Zarai','Ben Yahia','Mriwa','Jerba','Hbibi','Karwi','Jabnouni',
+            'Bousselmi','Jebri','Daboussi','Chermiti','Dalhoumi','Dkhili','Belguith','Boukadida','Jmili','Dhieb','Horchani','Ben Aissa','Limem','Suissi','Hajlaoui',
+            'Awadi','Hamdaoui','Belghith','Elloumi','Smiri','Mosbahi','Hmissi','Farouha','Drissi','Mliki','Elhouda','Messaoud','Gassoumi','Sebri','Chebil','Trigui',
+            'Mighri','Adouma','Harabi','Boussetta','Benabdallah','Ben Khlifa','Khammassi','Sayhi','Ben Hamida','Jemli','Ksouri','Mechi','Bettaieb','Azzouz','Stiti',
+            'Mechri','Jellali','Ben Aziza','Ben Jemaa','Neffati','Korbi','Lafi','War','Mezlini','Kharrat','Farjallah','Sarroura','Aissaoui','Marweni','Moumni',
+            'Chelly','Bouallagui','Manaa','Ranouma','Ghabri','Beldi'
+          ] },
+    ],
+    ALG: [
+        { r: 0,
+          first: [
+            'Hadj','Laid','Momo','Belkacem','Amer','Yassin','Billel','Krimo','Hani','Rayane','Achraf','Madrid','Mou','Ben','Rabeh','Sidahmed','Billal','Yanis',
+            'Iyad','Bob','Nadjib','Houcine','Zizo','Messaoud','Abderrahmane','Samy','Massi','Yahya','Sid','Salem','Mhamed','Youssef','Soufiane','Wail','Abdenour',
+            'Marwan','Didou','Zoubir','Ghani','Azzedine','Kadar','Abed','Sidou','Mahfoud','Nouri','Badro','Yasin','Abdel','Jamal','Maamar','Yacin','Chakib','Rabie',
+            'Riyad','Abdelghani','Hacene','Wahab','Saleh','Nazim','Mansour','Djalal','Achour','Redha','Abdelkrim','Ahcene','Anwar','Kami','Sido','Sid Ahmed',
+            'Monir'
+          ],
+          last: [
+            'Maouche','Kouba','Boudiaf','Milanou','Ammari','Senouci','Derradji','Latreche','Chlef','Lartiste','Tahri','Roi','Bouchareb','Morsli','Berkani','Touil',
+            'Hamdani','Doudi','Rad','Rine','Barika','Bens','Fellah','Lakhal','Hammoudi','Halimi','Chikhi','Allal','Tipo','Boudraa','Hadjadj','Dahou','Bouguerra',
+            'Mili','Ikhlef','Loucif','Khodja','Zargo','Laclas','Doudou','Hamel','Ammour','Fik','Kaya','Achouri','Mesbah','Boussaid','Ima','Mez','Kasmi','Collo',
+            'Meddah','Benahmed','Bonoise','Brunette','Mahboulista','Bahloul','Mouloudia','Lakhdari','Kahla','Allali','Bilo','Soliter','Kimou','Sellami','Zawali',
+            'Noire','Haddadi','Mimouni','Souf','Hamlaoui','Bila','Azzi','Brune','Mammeri','Barchalona','Seghir','Henni','Bouafia','Khelil','Korichi','Bouchama',
+            'Guendouz','Ben Ali','Ayache','Sidibe','Merad','Abdellaoui','Lim','Mahbolista','Chibane','Bouabdallah','Sahnoun','Skikdi','Tabet','Benyoucef','Ouadah',
+            'Paris','El Houda','Cine','Meryoula','Patchika','Bouk','Amraoui','Hamdaoui','Younsi','Derbal','Benaouda','Gti','Chinwiya'
+          ] },
+    ],
+    LBA: [
+        { r: 0,
+          first: [
+            'Amadou','Mohmad','Rajab','Mosab','Mamadou','Khalil','Akrm','Ebrahem','Bader','Basem','Muhammed','Nizar','Suliman','Milad','Fathe','Musa','Awad',
+            'Fadel','Fouad','Momo','Anis','Amin','Anwer','Ezoo','Fawzi','Abdoulaye','Moh','Harouna','Islam','Mosa','Mahdi','Salam','Tariq','Majdi','Nedal','Amar',
+            'Adama','Ousmane','Abdulsalam','Tareq','Atef','Maher','Ayob','Essa','Lawali','Saber','Ahmd','Siraj','Rabea','Moaid','Habib','Haitham','Mahamat','Ben',
+            'Masoud','Hamade','Ammar','Amjed','Hamada','Mido','Mahmmed','Rachid','Hakem','Azoo','Baset','Mazen','Melad','Younis','Youssouf','Riad','Absi','Shaban',
+            'Mahammed','Aboubacar','Haitem','Abdallh','Ashrf','Sofian','Moaad','Bofa','Hazem','Saed','Mokhtar','Mohanad','Monir','Ayad','Souleymane','Hussam',
+            'Yahaya','Soliman','Amjad','Hamadi'
+          ],
+          last: [
+            
+          ] },
+    ],
+    JOR: [
+        { r: 0,
+          first: [
+            'Majdi','Asem','Taha','Essam','Fayez','Nidal','Jawad','Maen','Nabil','Mosab','Mhammad','Jalal','Hesham','Yosef','Anwar','Jafar','Ramzi','Hamoda',
+            'Yasser','Islam','Abod','Adham','Walid','Tarek','Esam','Fuad','Hamodeh','Kaled','Sameh','Mohmmed','Aws','Essa','Fahed','Muath','Atef','Zeyad','Awad',
+            'Sohaib','Yanal','Ahmmad','Amro','Sadam','Muhannad','Samir','Mahdi','Basil','Mamoun','Yaseen','Qusay','Zakaria','Khaleel','Baha','Abdo','Saddam',
+            'Rayan','Suliman','Qasem','Shaker','Ana','Reda','Jamil','Said','Abdalrhman','Fawaz','Musab','Issam','Abdulrahman','Fade','Sleman','Eslam','Haytham',
+            'Moh','Yahia','Amar','Yamen','Jameel','Fouad','Sam','Baraa','Ghazi','Hamed','Mamoon','Hadi','Imad','Kamel','Nael','Diaa','Hussain','Musa','Emran',
+            'Nizar','Omran','Khader','Rame','Iyad','Abdulla','Hamad','Ala','Medo','Fathi','Jihad','Hussien','Thamer','Mohand','Montaser','Amin','Nayef','Jad',
+            'Nezar','Mansour','Radwan','Abdalrahman','Moad','Taher','Zead','Mutasem','Khaldoun','Tayseer','Waled','Omer','Hashim','Suleiman','Jaber','Shade',
+            'Basheer','Ramadan','Salman','Eng','Saef','Abdelrahman','Zuhair','Saqer','Gaith','Fawzi','Mahmmod','Abrahem','Asad','Amir','Riyad','Shaher','Mhmood',
+            'Ramez','Hamzh','Ahmd','Hammam','Zain','Eid','Naeem','Salim','Muneer','Awni','Nawras','Ward','Elias','Mhmoud','Ismael','Moataz','Falah','Aiman','Fahad',
+            'Hakam','Ebrahim','Aboud','Hamooda','Khaldoon','Ahed','Mahmmoud','Rashad','Rasheed','Shareef'
+          ],
+          last: [
+            'Al-Shami','Rasheed','Tahat','Joudeh','Ghazal','Obaidat','Nabulsi','Mahasneh','Salim','Jawarneh','Shlool','Zreqat','Salahat','Aburumman','Habash',
+            'Shorman','Radaideh','Ananzeh','Al-Taweel','Al-Naimat','Assi','Daradkeh','Hijjawi','Al-Ramahi','Hadad','Faouri','Obeid','Zboon','Kanan','Otoum',
+            'Qandeel','Hindi','Al-Shobaki','Ennab','Jaafreh','Yaghi','Al-Amro','Alqam','Al-Soud','Arafat','Al-Masry','Al-Sharif','Asmar','Al-Sarhan','Alfar',
+            'Al-Sayed','Abu Ali','Al-Daja','Bitar','Al-Faouri','Al-Hourani','Ata','Qatawneh','Hyari','Migdadi','Manasra','Musallam','Al-Nadi','Al-Horani','Kiswani',
+            'Al-Turk','Okour','Hyasat','Fakhoury','Arabiyat','Atieh','Jamous','Al-Shaer','Ramahi','Talafha','Abubaker','Darabseh','Kasasbeh','Amayreh','Shehab',
+            'Qasrawi','Sammour','Al-Khawaja','Salama','Hajeer','Naji','Bani Yaseen','Khresat','Hazaimeh','Al-Naser','Khraisat','Migdady','Badarneh','Hasanat',
+            'Al-Hayek','Qaisi','Srour','Al-Sheikh','Ammari','Dweik','Al-Kharabsheh','Jallad','Al-Nsour','Khalifa','Sabri','Telfah','Al-Banna','Kreshan','Sharaf',
+            'Daraghmeh','Hattar','Manasrah','Nimer','Al-Absi','Khalifeh','Maabreh','Al-Qasem','Habahbeh','Al-Hindi','Nimri','Badawi','Nasrallah','Freihat','Daas',
+            'Al-Rashdan','Fahmawi','Sar','Hammoudeh','Fayyad','Al-Shboul','Arab','Al-Kiswani','Al-Ajarmah','Shammout','Sallam','Al-Jammal','Al-Kouz','Al-Hariri',
+            'Samhan','Yacoub','Rabah','Qasim','Hanandeh','Kloub','Tayeh','Syr','Al-Hassan','Abu Rumman','Barqawi','Atoom','Al-Atrash','Al-Shawabkeh','Zaben',
+            'Abu Baker','Al-Jabali','Al-Natsheh','Amawi','Dagamseh','Attar','Hamam','Al-Sayyed','Ibdah','Khlifat','Abdallat','Hindawi','Al-Dabbas','Al-Shaikh',
+            'Al-Louzi','Sahawneh','Zedan','Al-Bdour','Amaireh','Al-Dajah','Farhan','Khair','Diabat','Safadi','Abuali','Farraj','Al-Ameer','Hawari','Al-Omary',
+            'Madanat','Bdour','Darweesh','Soub','Al-Awamleh','Turk','Agha','Maayah','Saber','Shraideh','Btoush','Ryalat','Titi','Hattab','Nemer','Jarwan','Rajab',
+            'Rousan','Orabi','Refai','Zakarneh','Batarseh','Al-Omoush','Khrisat','Khrais','Karadsheh','Hayek','Shami','Al-Ward','Battah','Wahdan','Nawaiseh',
+            'Al-Khateb','Badwan','Shishani','Fakhouri','Al-Sham','Darawsheh','Al-Quran','Zeidan','Al-Soudi','Al-Srhan','Rashdan','Herzallah','Akhter','Al-Natour',
+            'Alawi','Bawaneh','Omoush','Twal','Dwairi','Kayyali','Al-Amer','Al-Hawamdeh','Marji','Samawi','Sulaiman','Al-Shalabi','Weshah','Nasr','Azar',
+            'Harahsheh','Zalloum','Atallah','Sabha','Khamis','Al-Bakri','Bani Issa','Batayneh','Habib','Al-Khteeb','Dajani','Aslan','Salh','Radi','Jabr',
+            'Al-Zubaidi','Matarneh','Ayash','Sabbagh','Al-Hmoud','Thaher','Hamadneh','Al-Jabari','Kakish','Shatat','Al-Aqrabawi','Al-Salhi','Zidan','Khashan',
+            'Alani','Njadat','Mansor','Tayyem','Heart','Saraireh','Bakri','Obidat','Mohsen','Abdelhadi','Kassab','Al-Akhras','Al-Khalili','Daher','Khawaja',
+            'Sartawi','Al-Hadidi','Hariri','Ajlouni','Al-Deen','Al-Maani','Sweidan','Al-Rawi','Irshaid','Yassen','Darwesh','Fraihat','Bani Amer','Al-Najar','Atari',
+            'Al-Serhan','Madadha','Black','Adaileh','Taleb','Hlalat','Al-Faqeeh','Al-Odat','Bashabsheh','Al-Mahsere','Alissa','Siam','Al-Araj','Thabet','Natsheh',
+            'Mubarak','Khalel'
+          ] },
+    ],
+    LBN: [
+        { r: 0,
+          first: [
+            'Zaher','Emad','Mahmod','Riad','Abass','Mounir','Amjad','Hilal','Alain','Mark','Toufic','Anwar','Abdullah','Ahmd','Karam','Boudi','Hsen','Asmar',
+            'Hicham','Ramzi','Nazih','Kamel','Bachir','Miled','Basel','Claude','Salem','Chris','Fawaz','Mousa','Aly','Mhamd','Ashraf','Najib','Kaled','Bader',
+            'Tamer','Eddy','Georgio','Louay','Radwan','Hady','Rayane','Omran','Sayed','Jimmy','Micha','Yaser','Farid','Antonio','Mansour','Serge','Naser','Aboud',
+            'Sleiman','Kevin','Yazan','Abou Ali','Fayez','Fida','Muhammad','Milad','Hamze','Husein','Osman','Richard','Ghazi','Jason','Chady','Saeed','Fahed',
+            'Hossam','Kamil','Andrew','Ousama','Mouhammad','Hatem','Reda','Feras','Abdalla','Haitham','Kareem','Bachar','Ramez','Mahmad','Farouk','Fawzi','Eyad',
+            'Joey','Ehab','Iyad','Housein','Haytham','Bou','Mohmmad','Sarkis','Julien','Ray','Tiger','Faysal','Andre','Micho','Hussam','Ayham','Aziz','Afif',
+            'Shady','Rachid','Carl','Mahamad','Sako','Ameer','Hosam','Yamen','Asaad','Ryan','Kasem','Hssein','Mohanad','Amine','Ayoub','Harout','Hagop','Atef',
+            'Hazem','Hayssam','Hamad','Salman','Naim','Roland','Dib','Raafat','Makram','Lilian','Hamed','Ibrahem','Sadek','Taleb','Sajed','Housam','Mohsen',
+            'Christopher','Sayde','Aboude','Rabie','Mhamed','Nabih','Assem','Nassim','Fade','Yorgo','Nemer','Hashem','Rafic','Rashad'
+          ],
+          last: [
+            'Noun','Asaad','Saadeh','Hamed','Francis','Baalbaki','Ajami','Agha','Daccache','Makhlouf','Malaeb','Halawi','Bechara','Aktar','Kabalan','Alhaj','Zreik',
+            'Keyrouz','Sassine','Joumaa','Reda','Allam','Younis','Shami','Hadad','Antar','Zaidan','Fakhry','Kanj','Chaar','Iskandar','Hage','Kheir','Radwan',
+            'Majzoub','Aridi','Sleem','Hallal','Khairallah','Hamadeh','Kataya','Boustany','Haber','Homsi','Massoud','Ghannam','Hareb','Ajaj','Al Ahmad','Attar',
+            'Almasri','Ossman','Berjawi','Samad','Hamade','Samra','Nohra','Zeaiter','Alsayed','Jouni','Khattar','Salhab','Joud','Arnaout','Moubarak','Mcheik',
+            'Tlais','El Zein','Shouman','Dbouk','Habchy','Fahes','Reslan','Alameddine','Jaffal','Hadchity','Chaaya','Najdi','Krayem','Rached','Bakri','Nahle',
+            'Alameh','Dhaybi','Tahan','Khazaal','Nazha','Kassar','Al Masri','Alwan','Salame','Hodroj','Zohbi','Jalloul','Kadi','Kazan','Tarraf','Sayah','Sultan',
+            'Fouani','Beainy','Kaddour','Msheik','Noureddine','Alkhatib','Bejjani','Abdalla','Assad','Hamadi','Solh','Hourani','Kiwan','Harmouch','Hamie',
+            'Tannoury','Bazzal','Ashkar','Rizkallah','Khadra','Bourji','Rifaii','Fakhoury','Sabbah','Ghalayini','Serhal','Kasem','Idriss','Rahhal','Hajj Hassan',
+            'Zeineddine','Kerdi','Balhas','Allouch','Damaj','Sharaf','Karout','Hellani','Saber','Akoum','Awar','Naboulsi','Jradi','Wafa','Elhajj','Baba','Jawhar',
+            'Baghdadi','Awde','Hamwi','Challita','Feghaly','Alhajj','Kurdi','Sweid','Kassir','Ishak','Atieh','Fahs','Safwan','Alhassan','Habchi','Abdou','Salha',
+            'Al Sayed','Ziade','Daaboul','Hmede','Masry','Arabi','Elzein','Waked','Aad','Slayman','Ayach','Ftouni','Najm','Syr','Man','Hoteit','Abebe','Hamzi',
+            'El Ali','Massaad','Nassour','Cheikh','Skaff','Ayad','Kamar','Shreif','Turk','Shoker','Askar','Baz','Sbeity','Medlej','Shaheen','Choucair','Shaar',
+            'Alhasan','Estephan','Al Hajj','Douaihy','Mroueh','Rajab','Mahfoud','Khater','Charaf','Kaddoura','Ezzedine','Nawfal','Sweidan','Bakkour','Badr','Kdouh',
+            'Shahrour','Kourani','Rouhana','Shehade','Ghadban','Traboulsi','Baroud','Farran','Aouad','Sobh','Salami','Araji','Dika','Chahoud','Dannawi','Mazeh',
+            'Njeim','Dergham','Kahil','Assaker','Kenaan','Chouman','Zbib','Siblini','Alawieh','Alzein','Hawi','Ozeir','Husseini','Girma','Saoud','Akar','Osta',
+            'Ghraizi','Kawtharani','Dirany','Taher','Houmani','Succar','Rashid','Zayat','Houjairy','Hamdar','Chaker','Choker','Chammas','Chreif','Tabaja','Sadaka',
+            'Tanios','Koussa','Richa','Khansa','Dahdah','Kassouf','Kadri','Safadi','Akkari','Kobeissi','Nakad','Audi','Mehdi','Alloush','Termos','Zeid','Khayat',
+            'Kallas','Barbar','Sham','Haddara','El Sayed','Sinno','Al Khatib','Nachar','Sawma','Akel','Faddoul','Nazzal','Mneimneh','Sader','Fakhreddine','Habli',
+            'Haykal','Merhej','Skaf','Mitri','Sebaaly','Hawa','Boustani','Nakhoul','Nahas','Chamaa','Amro','Haj Hassan','Sabeh','Swaidan','Lakkis','Zorkot',
+            'Hazimeh','Shokor','Chamma','Jurdi','Sidani','Mar','Andraos','Alsham','Moussallem','Bacha','Akoury','Nabhan','Shahine','Mardini','Morad','Raya',
+            'Harkous','Eter','Khamis','Darwiche','Kabbara','Saghir','Lakiss','Yamout','Bekele','Kahwaji','Fadlallah','Badra','Al Hassan','Soufan','Ali Ahmad',
+            'Banna'
+          ] },
+        { r: 1,
+          first: [
+            'John','Patrick','David','Riad','Mounir','Roger','Christian','Ramzi','Robert','Bachir','Raymond','Michael','Assaad','Karl','Ramez','Emile','Charles',
+            'Gilbert','William','Wadih','Amine'
+          ],
+          last: [
+            'Kfoury','Tabet','Chedid','Massoud','Sawaya','Kassis','Khoueiry','Wakim','Feghali','Frangieh','Abou Jaoude','Mikhael','Abou Khalil','Abou Hamdan',
+            'Abou Zeid','Abi Khalil','Zoghbi'
           ] },
     ],
     AUS: [
@@ -19434,7 +19955,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.31';
+        const VERSION = '0.9.18.32';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
