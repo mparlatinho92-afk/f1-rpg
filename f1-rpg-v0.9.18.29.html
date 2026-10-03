@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.28</title>
+    <title>F1 RPG v0.9.18.29</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.28 (aktuell) - 03.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.29 (aktuell) - 03.10.2026</div>
+                            <div>&#8226; NEU: Eigene Namens-Pools fuer Albanien, Georgien, Aserbaidschan, Turkmenistan, Nigeria und Ghana (vorher Platzhalter)</div>
+                            <div>&#8226; NEU: Aserbaidschan in offizieller Schreibung, Georgien ohne Kosenamen</div>
+                            <div>&#8226; NEU: Nigeria mit vier, Ghana mit zwei Namensregionen</div>
+                            <div class="font-bold text-slate-400">v0.9.18.28 - 03.10.2026</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer Kroatien, Slowenien und Litauen (vorher Platzhalter bzw. geliehen)</div>
                             <div>&#8226; FIX: Lettische Fahrer erhalten litauische statt estnische Namen</div>
                             <div class="font-bold text-slate-400">v0.9.18.27 - 02.10.2026</div>
@@ -11438,17 +11442,363 @@ const NAME_POOLS_BY_NATION = {
             ['Al-Naimi',2],['Al-Hajri',2],['Al-Dosari',1],['Al-Ibrahim',1],['Al-Kubaisi',1],['Al-Malki',1]
           ] }
     ] },
+
+    // ── ALB ──
+    ALB: { regions: [
+        { w: 1,
+          first: [
+            ['Ilir',100],['Arben',93],['Agim',74],['Gëzim',82],['Fatmir',73],['Bujar',57],['Sokol',69],['Artan',67],['Besnik',67],['Agron',67],['Edmond',59],
+            ['Petrit',63],['Kujtim',63],['Dritan',69],['Andi',87],['Altin',86],['Denis',77],['Klajdi',77],['Ervin',76],['Ardit',72],['Alban',71],['Elton',71],
+            ['Endri',69],['Fatjon',67],['Ervis',67],['Arjan',65],['Ermal',65],['Mario',65],['Artur',65],['Astrit',65],['Erjon',63],['Luan',61],['Genti',59],
+            ['Albert',59],['Ylli',58],['Leonard',58],['Eduart',57],['Alfred',57],['Aldo',56],['Armando',56],['Shpetim',54],['Flori',54],['Bashkim',54],['Erion',53],
+            ['Saimir',53],['Toni',53],['Bledar',53],['Amarildo',53],['Ardian',52],['Indrit',51],['Erald',51],['Elvis',51],['Klevis',51],['Enea',50],['Gentian',49],
+            ['Shkelqim',49],['Edison',49],['Jurgen',49],['Renato',48],['Roland',48],['Daniel',48],['Aurel',48],['Olsi',48],['Mariglen',48],['Leo',47],['Armand',47],
+            ['Flamur',46],['Arber',46],['Klodian',46],['Fatos',46],['Emiljano',45],['Klodi',45],['Andrea',45],['Igli',45],['Skender',45],['Fredi',44],['Landi',44],
+            ['Geri',44],['Aleksander',44],['Redi',44],['Kastriot',44],['Aleks',44],['Gerti',44],['Mateo',43],['Afrim',43],['Julian',43],['Lulzim',42],['Mondi',42],
+            ['Genci',42],['Pellumb',42],['Florian',42],['Blerim',42],['Gjergji',41],['Lorenc',41],['Marsel',41],['Viktor',40],['Mikel',40],['Arlind',40],
+            ['Sajmir',40],['Besmir',40],['Taulant',39],['Martin',39],['Perparim',39],['Ergys',39],['Robert',39],['Niko',39],['Vladimir',38],['Adrian',38],
+            ['Kevin',37],['Donald',37],['Naim',36],['Ledio',36],['Aldi',36],['Ergi',36],['Ermir',36],['Adriatik',36],['Gjergj',35],['Olti',35],['Mark',35],
+            ['Gentjan',35],['Marjo',34],['Sami',34],['Berti',34],['Dorian',34],['Zef',34],['Jetmir',34],['Gerald',34],['Fabio',34],['Vasil',34],['Nardi',33],
+            ['Besim',33],['Xhulio',33],['Behar',33],['Avni',33],['Endrit',33],['Klaudio',33],['Nazmi',33],['Enver',33],['Antonio',32],['Arsen',32],['Klevi',32],
+            ['Mandi',32],['Ilirjan',32],['Ndue',32],['Qemal',32],['Romeo',32],['Emanuel',32],['Durim',32],['Shkelzen',31],['Nikolin',31],['Bajram',31],
+            ['Kristian',31],['Ronaldo',31],['Xhevahir',31],['Hysen',30],['Elis',30],['Florenc',30],['Festim',30],['Arian',30],['Eduard',30],['Dorjan',29],
+            ['Klejdi',29],['Fadil',29],['Dashamir',29]
+          ],
+          last: [
+            ['Hoxha',100],['Shehu',52],['Çela',51],['Marku',49],['Muça',48],['Kola',45],['Dervishi',44],['Kurti',43],['Gjoka',41],['Lleshi',41],['Koçi',39],
+            ['Sula',39],['Hysa',38],['Gjoni',37],['Balla',37],['Elezi',36],['Meta',35],['Lika',35],['Leka',35],['Mema',34],['Hasa',34],['Rama',32],['Cani',32],
+            ['Gjini',31],['Halili',31],['Sinani',31],['Prifti',30],['Duka',30],['Murati',29],['Hoxhaj',29],['Lala',29],['Toska',29],['Spahiu',28],['Karaj',28],
+            ['Gega',28],['Deda',28],['Aliaj',28],['Bardhi',27],['Doda',27],['Hasani',27],['Bushi',27],['Zeneli',27],['Malaj',27],['Doçi',27],['Sina',26],
+            ['Tafa',26],['Alla',26],['Domi',26],['Prenga',26],['Bregu',26],['Kodra',25],['Beqiri',25],['Basha',25],['Osmani',25],['Xhafa',25],['Arapi',24],
+            ['Sulaj',24],['Hyka',23],['Nikolli',23],['Prendi',23],['Balliu',23],['Mehmeti',23],['Shehi',22],['Kasa',22],['Pjetri',22],['Ndoj',22],['Agolli',22],
+            ['Tabaku',22],['Isufi',22],['Muçaj',22],['Shabani',22],['Gjergji',22],['Shahini',22],['Bajrami',22],['Stafa',22],['Ismaili',22],['Daçi',22],
+            ['Gjata',21],['Ruçi',21],['Hyseni',21],['Pepa',21],['Çuni',21],['Koka',21],['Guri',21],['Laçi',21],['Dema',21],['Kuka',21],['Hidri',21],['Bala',21],
+            ['Ndreu',20],['Plaku',20],['Dani',20],['Lami',20],['Gashi',20],['Zefi',20],['Muka',20],['Shehaj',20],['Abazi',20],['Dauti',19],['Krasniqi',19],
+            ['Lamaj',19],['Hajdari',19],['Disha',19],['Nika',19],['Hasanaj',19],['Demiri',19],['Vrapi',19],['Cara',19],['Kamberi',19],['Dedja',19],['Reçi',18],
+            ['Shima',18],['Berisha',18],['Haka',18],['Ahmetaj',18],['Haxhiu',18],['Vata',18],['Tusha',18],['Gjika',18],['Metaj',18],['Qosja',18],['Caushi',18],
+            ['Shkembi',18],['Halilaj',18],['Bici',18],['Topi',18],['Bajraktari',18],['Agalliu',18],['Kuçi',18],['Kastrati',18],['Gjonaj',17],['Kulla',17],
+            ['Goga',17],['Seferi',17],['Ahmeti',17],['Rexha',17],['Çollaku',17],['Hila',17],['Selimi',17],['Tahiri',17],['Myftari',17],['Qose',17],['Sadiku',17],
+            ['Caka',17],['Kaja',17],['Bega',17],['Hysenaj',17],['Daja',17],['Mata',17],['Topalli',17],['Nela',17],['Ibrahimi',17],['Dushku',17],['Molla',17],
+            ['Hida',16],['Kapllani',16],['Sulejmani',16],['Hoti',16],['Rexhepi',16],['Ceka',16],['Sala',16],['Brahimi',16],['Doko',16],['Saraçi',16],['Duro',16],
+            ['Zaimi',16],['Berberi',16],['Kraja',16],['Isufaj',16],['Hysaj',16],['Selmani',16],['Ndreca',16],['Beqiraj',16],['Lici',16],['Spaho',16],['Begaj',16],
+            ['Gjeçi',16],['Gjana',16],['Islami',16],['Ndoci',16],['Veliu',16],['Troka',16],['Sallaku',16],['Tola',16],['Saliaj',16],['Aliu',16],['Mustafa',16],
+            ['Lusha',16],['Ademi',16],['Shyti',16],['Kadiu',15],['Braho',15],['Mici',15],['Deliu',15],['Pashaj',15],['Luka',15],['Hysi',15],['Kaci',15],
+            ['Lleshaj',15],['Ramaj',15],['Murataj',15],['Likaj',15],['Cami',15],['Skenderi',15],['Biçaku',15],['Kaca',15],['Dashi',15],['Tota',15],['Bani',15],
+            ['Paja',15],['Sefa',15],['Xhani',15],['Jaku',15],['Çupi',15],['Lena',15],['Canaj',15],['Asllani',15],['Bosi',15],['Xhepa',15],['Noka',15],['Ajazi',15],
+            ['Pali',15],['Kalemi',14],['Allushi',14],['Kovaci',14],['Kullolli',14],['Mezini',14],['Vogli',14],['Alia',14],['Bogdani',14],['Buci',14],['Muja',14],
+            ['Neziri',14],['Cullhaj',14],['Dervishaj',14],['Buzi',14],['Shuli',14],['Muco',14],['Boci',14],['Papa',14]
+          ] }
+    ] },
+
+    // ── GEO ──
+    GEO: { regions: [
+        { w: 1,
+          first: [
+            ['Giorgi',100],['Davit',62],['Levan',38],['Irakli',37],['Zurab',35],['Nika',43],['Lasha',32],['Mamuka',25],['Gocha',23],['Zaza',25],['Shota',18],
+            ['Merab',18],['Tengiz',17],['Vakhtang',19],['Luka',28],['Temur',28],['Aleksandre',27],['Beka',26],['Mikheil',25],['Kakha',25],['Tornike',21],['Gia',21],
+            ['Gela',21],['Saba',20],['Tamaz',19],['Roman',19],['Avtandil',18],['Besarion',18],['Ioseb',18],['Zviad',17],['Nodar',17],['Ramaz',17],['Koba',16],
+            ['Bachana',16],['Badri',16],['Archil',16],['Sandro',15],['Nikoloz',15],['Ilia',14],['Paata',14],['Jaba',14],['Nugzar',14],['Guram',13],['Valeri',13],
+            ['Ivane',12],['Nukri',12],['Khvicha',12],['Amiran',12],['Vasil',12],['Vladimer',12],['Aleko',12],['Oto',12],['Malkhaz',12],['Rezo',11],['Shalva',11],
+            ['Givi',11],['Sergo',11],['Jondo',11],['Akaki',11],['Jemal',10],['Otar',10],['Vaja',10],['Emzar',10],['Konstantine',10],['Roin',10],['Manuchar',9],
+            ['Gogita',9],['Mindia',9],['Tariel',9],['Rati',9],['Anzor',8],['Imeda',8],['Sulkhan',8],['Revaz',8],['Ucha',8],['Tsotne',8],['Anri',7],['Andro',7],
+            ['Dimitri',7],['Iuri',7],['Vazha',7],['Andria',7],['Guja',7],['Elguja',6],['Erekle',6],['Besik',6],['Sergi',6],['Genadi',6],['Murman',6],['Kakhaber',6],
+            ['Mirian',5],['Fridon',5],['Teimuraz',5],['Jumber',5],['Murtaz',5],['Daniel',5],['Shmagi',5],['Toma',5],['Zaal',5],['Onise',4],['Papuna',4],['Bondo',4],
+            ['Demetre',4],['Tedo',4],['Arkadi',4],['Elizbar',4],['Suliko',4],['Gabriel',4],['Iakob',3],['Rostom',3],['Iveri',3],['Goderdzi',3],['Noe',3],
+            ['Lazare',3],['Vito',3],['Petre',3],['Bidzina',3],['Beglar',3],['Guri',3]
+          ],
+          last: [
+            ['Beridze',100],['Bolkvadze',59],['Maisuradze',52],['Dumbadze',51],['Mikeladze',50],['Giorgadze',49],['Gelashvili',49],['Diasamidze',49],
+            ['Kapanadze',49],['Makharadze',48],['Abashidze',48],['Davitadze',47],['Abuladze',45],['Lomidze',44],['Tsiklauri',44],['Surmanidze',43],
+            ['Tsetskhladze',42],['Katamadze',41],['Zoidze',41],['Dolidze',40],['Kvaratskhelia',39],['Shengelia',38],['Turmanidze',38],['Kakhidze',37],
+            ['Meladze',35],['Gogitidze',35],['Shainidze',35],['Shavadze',34],['Devadze',33],['Tsintsadze',33],['Nozadze',32],['Gogoladze',31],['Kavtaradze',31],
+            ['Khutsishvili',31],['Javakhishvili',31],['Mchedlishvili',31],['Gorgadze',31],['Metreveli',29],['Tabatadze',29],['Danelia',29],['Kobakhidze',29],
+            ['Todua',29],['Samkharadze',29],['Mgeladze',28],['Iremadze',28],['Nakashidze',28],['Chelidze',28],['Jincharadze',28],['Kontselidze',28],
+            ['Varshanidze',28],['Tsertsvadze',27],['Chkhaidze',27],['Sikharulidze',27],['Baramidze',27],['Futkaradze',26],['Kakabadze',26],['Mumladze',26],
+            ['Macharashvili',25],['Gurgenidze',25],['Jikia',25],['Kiknadze',25],['Kalandadze',25],['Tavartkiladze',25],['Nadiradze',24],['Chanturia',24],
+            ['Tsereteli',24],['Kiladze',24],['Gabunia',24],['Utsnobi',24],['Gaukmebulia',24],['Barbakadze',24],['Shonia',24],['Sharashidze',24],['Mamuladze',24],
+            ['Japaridze',24],['Oniani',23],['Meskhi',23],['Gorgiladze',23],['Takidze',23],['Tavdgiridze',23],['Tevzadze',23],['Akhvlediani',23],['Shubitidze',23],
+            ['Gigauri',23],['Sichinava',22],['Modebadze',22],['Putkaradze',22],['Mjavanadze',22],['Davitashvili',22],['Chubinidze',21],['Pipia',21],
+            ['Khachidze',21],['Bakhtadze',21],['Antadze',21],['Chikovani',21],['Svanidze',21],['Asatiani',21],['Razmadze',21],['Labadze',21],['Kurtanidze',21],
+            ['Janelidze',21],['Bochorishvili',21],['Mikadze',21],['Robakidze',21],['Khurtsidze',21],['Tedoradze',21],['Grigalashvili',21],['Abramishvili',21],
+            ['Khozrevanidze',21],['Dadiani',20],['Bregvadze',20],['Arabuli',20],['Bekauri',20],['Chagalidze',20],['Abesadze',20],['Gachechiladze',20],
+            ['Kobalia',20],['Gagua',20],['Beruashvili',20],['Khalvashi',20],['Sanikidze',20],['Khvedelidze',20],['Akhalaia',20],['Megrelishvili',19],
+            ['Mchedlidze',19],['Sharadze',19],['Lobjanidze',19],['Kartvelishvili',19],['Vasadze',19],['Dvalishvili',19],['Goguadze',19],['Kandelaki',19],
+            ['Kardava',19],['Makharashvili',19],['Geladze',19],['Tsulukidze',19],['Chkheidze',19],['Gagnidze',19],['Kupatadze',19],['Aptsiauri',19],
+            ['Okropiridze',19],['Chaduneli',18],['Beradze',18],['Rukhadze',18],['Talakhadze',18],['Dzneladze',18],['Kopaliani',18],['Jaiani',18],['Siradze',18],
+            ['Basiladze',18],['Kiria',18],['Natsvlishvili',18],['Tsulaia',18],['Shalamberidze',18],['Shanidze',18],['Ananidze',18],['Khmaladze',18],
+            ['Kokoladze',18],['Saralidze',18],['Bakuridze',18],['Mamulashvili',18],['Berishvili',18],['Tavadze',18],['Kvinikadze',18],['Gogia',18],['Kajaia',18],
+            ['Mikava',18],['Khurtsilava',18],['Tskhadadze',18],['Khimshiashvili',18],['Gogokhia',18],['Kartsivadze',17],['Papava',17],['Jojua',17],['Chachua',17],
+            ['Liparteliani',17],['Petriashvili',17],['Lomtadze',17],['Chikhladze',17],['Papidze',17],['Bakuradze',17],['Gabaidze',17],['Kobuladze',17],
+            ['Kutateladze',17],['Saginadze',17],['Fartenadze',17],['Adamia',17],['Ramishvili',17],['Pataridze',17],['Mgebrishvili',17],['Chkadua',17],
+            ['Nikolaishvili',17],['Kamadadze',17],['Zakaradze',17],['Karchava',17],['Gogichaishvili',16],['Kmda',16],['Vashakidze',16],['Asanidze',16],
+            ['Kakulia',16],['Kereselidze',16],['Kurashvili',16],['Jafaridze',16],['Kheladze',16],['Chkhartishvili',16],['Natroshvili',16],['Magradze',16],
+            ['Managadze',16],['Gogishvili',16],['Dvali',16],['Kokhreidze',16],['Demetrashvili',16],['Bendeliani',16],['Mindiashvili',16],['Gogiashvili',16],
+            ['Gvasalia',16],['Zurabashvili',16],['Grigolia',16],['Kakhadze',16],['Verulidze',15],['Bukia',15],['Bliadze',15],['Lagvilava',15],['Mamaladze',15],
+            ['Bulia',15],['Nadirashvili',15],['Nemsadze',15],['Machavariani',15],['Berdzenishvili',15],['Glonti',15],['Devdariani',15],['Kamashidze',15],
+            ['Makhatadze',15],['Chkhikvadze',15],['Kharabadze',15],['Beraia',15],['Bejanidze',15],['Shvelidze',15],['Lomadze',15],['Jibladze',15]
+          ] }
+    ] },
+
+    // ── AZE ──
+    AZE: { regions: [
+        { w: 1,
+          first: [
+            ['Əli',100],['Elnur',88],['Orxan',89],['Tural',83],['Vüqar',81],['Rəşad',81],['Elçin',82],['Kənan',64],['Fərid',78],['Murad',71],['Ramin',66],
+            ['Cavid',60],['İlham',49],['Rövşən',54],['Anar',95],['Samir',88],['Elvin',86],['Vüsal',86],['Emin',83],['Ruslan',76],['Emil',74],['Zaur',71],
+            ['Elşən',69],['Nicat',67],['Azər',64],['Ramil',62],['Ceyhun',61],['Hüseyn',61],['Fuad',61],['İlkin',59],['İlqar',57],['Şahin',53],['Pərviz',52],
+            ['Rauf',52],['Natiq',52],['Seymur',51],['Nurlan',51],['Yusif',51],['Namiq',50],['Elşad',49],['Rüfət',49],['İsmayıl',48],['Xəyal',46],['İbrahim',46],
+            ['Sənan',45],['Həsən',43],['Rasim',42],['Taleh',42],['Bəhruz',40],['Səbuhi',39],['Elxan',39],['Elmir',39],['Elmar',39],['Mahir',39],['Kamil',39],
+            ['Vasif',39],['Ülvi',38],['Rüstəm',38],['Mehman',37],['Məhəmməd',37],['Faiq',36],['Ayxan',36],['Arif',36],['Aydın',36],['Elgün',36],['Sadıq',35],
+            ['Eldar',35],['Vaqif',35],['Adil',34],['Ramiz',34],['Rəsul',34],['Tərlan',34],['Elman',33],['Sahib',33],['Fərhad',33],['Sərxan',33],['Toğrul',33],
+            ['Rəhim',33],['Aqil',32],['Azad',32],['Nazim',32],['Teymur',32],['Məmməd',31],['Fariz',31],['Araz',30],['Tofiq',30],['Nizami',30],['Hikmət',30],
+            ['Kamal',30],['Mehdi',29],['Bəxtiyar',29],['Etibar',29],['Asim',29],['Revan',29],['Ayaz',29],['Röyal',28],['Yaşar',28],['Ömər',28],['Mübariz',28],
+            ['Pərvin',28],['Nihad',28],['Rafiq',28],['Əhməd',28],['Elməddin',28],['Nadir',27],['Habil',27],['Ramal',27],['Akif',27],['Valeh',27],['Turan',27],
+            ['Vahid',26],['Nihat',26],['Babək',26],['Cəlal',26],['Zakir',26],['Musa',25],['Famil',25],['Çingiz',25],['Abbas',25],['Qurban',24],['Sabir',24],
+            ['İslam',24],['Həmid',24],['Telman',23],['Süleyman',23],['Aslan',23],['İsa',23],['Eldeniz',23],['Ziya',23],['Elcan',23],['Nahid',23],['Saleh',23],
+            ['Vidadi',23],['Elsevər',23],['Əfqan',23],['Şamil',23],['Rəhman',22],['İntiqam',22],['Oktay',22],['Said',22],['Hacı',22],['Zamiq',21],['Rəşid',21],
+            ['Elmin',21],['Əziz',21],['Novruz',21],['Xaqani',21],['Təbriz',21],['Məlik',21],['Xalid',21],['Nail',21],['Zamin',21],['Səxavət',20],['Ümid',20],
+            ['Gündüz',20],['Xəyyam',20],['Rahib',20],['Hafiz',20],['Tamerlan',20],['Coşqun',20],['Fazil',19],['Cavad',19],['Rza',19],['Bayram',19]
+          ],
+          last: [
+            ['Məmmədov',100],['Əliyev',98],['Hüseynov',62],['Həsənov',53],['Quliyev',52],['İsmayılov',45],['Abbasov',44],['Əhmədov',43],['Abdullayev',40],
+            ['Babayev',38],['Qasımov',38],['Ağayev',36],['Kərimov',35],['Cəfərov',33],['İbrahimov',32],['Hacıyev',32],['Bayramov',31],['Qurbanov',30],
+            ['Vəliyev',30],['Məmmədli',29],['Mustafayev',28],['Musayev',28],['Əsgərov',27],['Süleymanov',27],['Əlizadə',26],['Rzayev',26],['Zeynalov',25],
+            ['Bağırov',25],['Mirzəyev',24],['Rəhimov',24],['Xəlilov',24],['Rüstəmov',23],['Səfərov',23],['Tağıyev',22],['Sadıqov',22],['Mehdiyev',21],
+            ['Məhərrəmov',21],['Əsədov',21],['Orucov',20],['Həsənli',20],['Allahverdiyev',20],['Muradov',20],['Mahmudov',20],['Aslanov',19],['Hüseynli',19],
+            ['Novruzov',19],['Əzizov',18],['Yusifov',18],['Kazımov',18],['Qarayev',18],['İsayev',18],['Ələkbərov',18],['Səmədov',18],['İsgenderov',17],
+            ['Nəbiyev',17],['Kərimli',16],['Nağıyev',16],['Məmmədzadə',15],['Nəsirov',15],['Rəsulov',15],['İmanov',15],['Nəcəfov',15],['Seyidov',15],['Cavadov',15],
+            ['Heydərov',15],['Əkbərov',14],['Şirinov',14],['Həmidov',14],['Ələsgərov',14],['Dadaşov',14],['Məlikov',14],['Səlimov',14],['Əmirov',13],
+            ['Salmanov',13],['Nuriyev',13],['Şükürov',13],['Qafarov',13],['Cabbarov',13],['Cəfərli',13],['Quluzadə',12],['Sultanov',12],['Nəsibov',12],
+            ['Qəhrəmanov',12],['Namazov',12],['Paşayev',12],['Mikayılov',12],['Ağazadə',12],['Ramazanov',12],['İbrahimli',12],['Hüseynzadə',12],['Osmanov',12],
+            ['Əzimov',12],['Axundov',11],['Bədəlov',11],['Əhmədli',11],['Cəlilov',11],['Həsənzadə',11],['Qədirov',11],['Eyvazov',11],['Quluyev',11],['Qocayev',11],
+            ['Hümbətov',11],['Talıbov',10],['Verdiyev',10],['Fərəcov',10],['Şahbazov',10],['Rəhimli',10],['Nəzərov',10],['Babazadə',9],['Səfərli',9],['İbadov',9],
+            ['Piriyev',9],['Fərzəliyev',9],['İsmayılzadə',9],['Vəlizadə',9],['Yusubov',9],['Soltanov',9],['Cebrayilov',9],['Yusifli',9],['Salahov',9],['Manafov',9],
+            ['Dəmirov',9],['Abbaszadə',9],['Süleymanlı',8],['Zamanov',8],['Yaqubov',8],['Haqverdiyev',8],['Bayramlı',8],['İsrafilov',8],['Zeynallı',8],['Eminov',8],
+            ['Adıgözəlov',8],['Ehmedzadə',8],['Abbaslı',8],['Ağalarov',8],['Məcidov',8],['Ömerov',8],['Fətullayev',8],['Muxtarov',8],['Tahirov',8],['Məhərrəmli',8],
+            ['Camalov',7],['İslamov',7],['Mirzoyev',7],['Şərifov',7],['Nadirov',7],['Qasımlı',7],['Mürsəlov',7],['Əzizli',7],['Hacizadə',7],['Eyyubov',7],
+            ['Niftəliyev',7],['Abilov',7],['Qəniyev',7],['Mustafazadə',7],['Əfəndiyev',7],['Rəcəbov',7],['Yusibov',7],['Mehdizadə',7],['Zülfüqarov',7],
+            ['Məsimov',7],['Mehtiyev',7],['Qurbanlı',7],['Qədimov',7],['Abışov',7],['Xudiyev',7],['Teymurov',7],['Həmzəyev',7],['İlyasov',7],['Qəribov',7],
+            ['İsgenderli',7],['Mansurov',6],['Qenberov',6],['Tagizadə',6],['Novruzlu',6],['Cəbiyev',6],['Amiraslanov',6],['Beşirov',6],['Rüstəmli',6],['Abiyev',6],
+            ['Salamov',6],['Tehmezov',6],['Nəsirli',6],['Feteliyev',6],['Kazımli',6],['Nəcəfli',6],['Muradlı',6],['Abdurahmanov',6],['Atayev',6],['Cabbarlı',6],
+            ['Mehraliyev',6],['Abdulov',6],['Həbibov',6],['Tarverdiyev',6],['Refiyev',6],['Heziyev',6],['Sariyev',6],['Ceferzadə',6],['Qemberov',6],['Əsədli',6],
+            ['Balayev',6],['Mirzəzadə',6],['Nərimanov',6],['Səfiyev',6],['Adilov',6],['Behbudov',5],['Yunusov',5],['Musazadə',5],['Abdullazadə',5],['Emrahov',5],
+            ['Xudaverdiyev',5],['Rzazadə',5],['Atakişiyev',5],['Mirzəliyev',5],['Əhədov',5],['Mərdanov',5],['Hacılı',5],['Qasimzadə',5],['Osmanli',5],
+            ['Xankişiyev',5],['Alışov',5],['Şirəliyev',5],['Əsgərli',5],['Feyzullayev',5],['Ümidov',5],['Ələkbərli',5],['Budaqov',5],['Baxışov',5],
+            ['Şahverdiyev',5],['Agamaliyev',5],['Abdiyev',5],['Salayev',5],['Baxşəliyev',5],['Cahangirov',5],['Davudov',5],['Pənahov',5],['Oruclu',5],['Mayilov',5],
+            ['Mənsimov',5],['Gülməmmədov',5]
+          ] }
+    ] },
+
+    // ── TKM ──
+    TKM: { regions: [
+        { w: 1,
+          first: [
+            ['Serdar',92],['Merdan',80],['Arslan',75],['Maksat',72],['Batyr',72],['Myrat',100],['Azat',66],['Mekan',61],['Eziz',46],['Bayram',52],['Döwran',56],
+            ['Begenç',55],['Meýlis',41],['Döwlet',56],['Ruslan',69],['Rustam',58],['Muhammet',52],['Ahmet',51],['Guwanç',51],['Aziz',47],['Şohrat',46],['Wepa',43],
+            ['Nazar',40],['Kerim',40],['Rowşen',40],['Gurban',40],['Aman',39],['Atajan',39],['Ali',38],['Çary',37],['Timur',37],['Parahat',35],['Mergen',33],
+            ['Bahtiýar',33],['Yusup',33],['Suleýman',32],['Didar',31],['Azamat',31],['Islam',31],['Kakajan',30],['Ata',29],['Rasul',29],['Kemal',29],['Bega',28],
+            ['Yunus',28],['Berdi',28],['Oraz',27],['Şatlyk',27],['Alişer',25],['Erkin',25],['Bahram',25],['Mansur',25],['Ahmed',25],['Yhlas',24],['Azim',24],
+            ['Ilýas',23],['Dayanç',23],['Ataş',23],['Muhammed',23],['Resul',22],['Atabek',22],['Rahman',22],['Yazgeldi',22],['Rowşan',22],['Anwar',22],
+            ['Ibrahim',22],['Agajan',21],['Babajan',21],['Nury',21],['Mamed',21],['Dawlet',21],['Perman',20],['Hemra',20],['Begli',19]
+          ],
+          last: [
+            ['Atayew',100],['Gurbanow',100],['Mamedow',83],['Çaryyew',73],['Amanow',62],['Saparow',59],['Durdyýew',58],['Meredow',57],['Muradow',57],
+            ['Baýramow',56],['Nazarow',54],['Berdiyew',54],['Rejepow',54],['Babayew',51],['Orazow',51],['Ahmedow',50],['Jumayew',48],['Jorayew',46],['Aliyew',43],
+            ['Abdullayew',43],['Myradow',43],['Aşyrow',43],['Yusupow',43],['Muhammedow',43],['Owezow',42],['Annayew',40],['Bazarow',39],['Geldiýew',38],
+            ['Ibrahimow',38],['Kerimow',38],['Atajanow',37],['Guliyew',37],['Nuryyew',37],['Agayew',37],['Hasanow',36],['Rozyyew',36],['Kadyrow',36],['Batyrow',35],
+            ['Rahmanow',35],['Başimow',33],['Hojayew',31],['Hamrayew',31],['Açilow',30],['Aşirow',30],['Esenow',30],['Hallyýew',30],['Garayew',29],['Niýazow',28],
+            ['Hüseýnow',28],['Yakubow',28],['Nepesow',27],['Hanow',27],['Artykow',27],['Hydyrow',27],['Jumaniýazow',27],['Gurbanmyradow',27],['Kakabayew',26],
+            ['Annamuhammedow',26],['Allaberdiyew',26],['Babajanow',26],['Döwletow',26],['Çariyew',25],['Klyçew',25],['Akyyew',25],['Hudayberdiyew',25],
+            ['Haýdarow',25],['Sahatow',24],['Saryyew',24],['Kasymow',24],['Ismailow',24],['Durdiyew',22],['Taganow',22],['Azizow',22],['Karimow',22],['Şukurow',22],
+            ['Matýakubow',22],['Annamuradow',22],['Sadykow',22],['Amandurdyyew',22],['Garajayew',22]
+          ] }
+    ] },
+
+    // ── NGR ──
+    NGR: { regions: [
+        { w: 0.36,
+          first: [
+            ['Oluwaseun',20],['Babatunde',32],['Olumide',18],['Adewale',30],['Segun',32],['Femi',32],['Emmanuel',100],['Muhammad',16],['John',76],['Samuel',74],
+            ['Michael',71],['Sunday',70],['Umar',14],['Prince',68],['David',64],['Yusuf',13],['Joseph',62],['Victor',61],['Daniel',60],['Mohammed',12],['Peter',58],
+            ['James',54],['Mustapha',10],['Paul',48],['Hassan',10],['Ahmad',9],['Godwin',45],['Henry',43],['Moses',43],['Charles',43],['Anthony',43],['Ahmed',8],
+            ['Solomon',42],['Muhammed',8],['Francis',40],['Stephen',39],['Idris',8],['Joshua',38],['Adebayo',38],['Isaac',37],['Taiwo',37],['Abiodun',36],
+            ['Abdul',7],['Matthew',36],['Ali',7],['Samson',35],['Ismail',7],['Gabriel',35],['Suleiman',7],['Felix',35],['Frank',34],['Patrick',34],['Austin',34],
+            ['Christian',33],['Friday',33],['Johnson',32],['Tunde',32],['Sulaiman',6],['Benjamin',32],['Stanley',32],['Kenneth',31],['Christopher',31],
+            ['Kayode',31],['Richard',31],['Innocent',30],['Monday',30],['Adekunle',30],['George',29],['Kelvin',29],['Adam',29],['Jude',28],['Kehinde',28],
+            ['Adeyemi',28],['Lucky',27],['Azeez',27],['Gbenga',27],['Collins',27],['Vincent',27],['Philip',26],['Augustine',26],['Bright',26],['Idowu',26],
+            ['Mark',26],['Abraham',26],['Ojo',26],['Ezekiel',26],['Ademola',26],['Olawale',25],['Saheed',25],['Adeniyi',25],['Ajayi',25],['Timothy',25],
+            ['Lawrence',25],['Simon',25],['Andrew',25],['Hamza',5],['Ola',24],['Afolabi',24],['Dauda',24],['Jimoh',24],['Akeem',24],['Amos',24],['Wisdom',24],
+            ['Olanrewaju',24],['Jerry',24],['Ayodele',24],['Olalekan',24],['Jonathan',23],['Kazeem',23],['Clement',23],['Julius',23],['Kolawole',23],['Wasiu',22],
+            ['Festus',22],['Israel',22],['Jacob',22],['Nelson',21],['Joel',21],['Olusegun',21],['Gideon',21],['Martins',21],['Olatunji',21],['Opeyemi',21],
+            ['Thomas',21],['Adams',20],['Ayo',20],['Lukman',20],['Oluwafemi',20],['Ernest',20],['Olayinka',20],['Elijah',19],['Adeleke',19],['Eric',19],
+            ['Abayomi',19],['Temitope',19],['Raphael',19],['Rasheed',19],['Ayodeji',19],['Jamiu',19],['Raymond',19],['Olajide',19],['Kunle',19],['Lateef',19],
+            ['Hammed',19],['Alabi',19],['Owolabi',19],['Nurudeen',18],['Sylvester',18],['Dennis',18],['Olufemi',18],['Abdulazeez',18],['Bamidele',18],
+            ['Olamilekan',18]
+          ],
+          last: [
+            ['Adebayo',46],['Ajayi',38],['Adeyemi',37],['Babatunde',35],['Idowu',35],['Adekunle',33],['Opeyemi',33],['Adewale',32],['Adeniyi',29],['Afolabi',29],
+            ['Olanrewaju',28],['Alabi',28],['Olawale',28],['Kolawole',26],['Olatunji',26],['Ademola',25],['Owolabi',24],['Adeleke',24],['Onuoha',22],['Salami',22],
+            ['Oluwafemi',22],['Bamidele',22],['Olajide',21],['Babalola',21],['Dada',20],['Bakare',20],['Adedeji',20],['Ayodeji',20],['Adeoye',20],['Oladimeji',20],
+            ['Akinola',20],['Sanni',20],['Ishola',20],['Oladele',19],['Tijani',19],['Adeyemo',19],['Akande',19],['Olaniyi',19],['Popoola',18],['Raji',18],
+            ['Adegoke',18],['Obasi',18],['Olayemi',18],['Abayomi',18],['Ajibola',18],['Shittu',18],['Adesina',18],['Jamiu',18],['Ayobami',17],['Olayiwola',17],
+            ['Tijjani',17],['Danladi',17],['Ayoola',17],['Agboola',17],['Olatunde',17],['Akinyemi',16],['Adedayo',16],['Ayeni',16],['Adeleye',16],['Adeshina',16],
+            ['Bankole',16],['Oladipupo',16],['Adebowale',16],['Adetunji',16],['Oluwole',16],['White',16],['Adesanya',16],['Eniola',16],['Aina',16],['Ayinde',16],
+            ['Ajoke',16],['Aremu',16],['Adewumi',15],['Muazu',15],['Oyewole',15],['Ogunleye',15],['Olaleye',15],['Adeniji',15],['Ganiyu',15],['Olasunkanmi',15],
+            ['Olaide',15],['Shaibu',15],['Zakari',15],['Olabode',15],['Adepoju',15],['Adekoya',15],['Alao',14],['Alade',14],['Adisa',14],['Ajibade',14],
+            ['Amaechi',14],['Akanbi',14],['Olarewaju',14],['Zubairu',14],['Dare',14],['Aliu',14],['Oseni',14],['Oladapo',14],['Adebiyi',14],['Praise',14],
+            ['Abidemi',14],['Mayowa',14],['Odunayo',14],['Ajiboye',14],['Oladipo',13],['Iliyasu',13],['Daramola',13],['Omoniyi',13],['Tolulope',13],['Iliya',13],
+            ['Oloyede',13],['Olakunle',13],['Quadri',13],['Omotosho',13],['Yahya',13],['Adebola',13],['Ifeoluwa',13],['Rufai',13],['Giwa',13],['Ishaku',13],
+            ['Omowumi',13],['Adewole',13],['Kanu',13],['Adesola',13],['Makinde',12],['Akindele',12],['Umaru',12],['Osuji',12],['Tobi',12],['Akintunde',12],
+            ['Damilare',12],['Adewunmi',12],['Olaoluwa',12],['Folorunsho',12],['Adeboye',12],['Olushola',12],['Adebanjo',12],['Olaoye',12],['Akanni',12],
+            ['Oladejo',12],['Oluwatobi',12],['Ajala',11],['Alaba',11],['Aderemi',11],['Olaiya',11],['Saliu',11],['Saka',11],['Oyedele',11],['Oladeji',11],
+            ['Kadiri',11],['Adekola',11],['Ajao',11],['Adeyeye',11],['Busayo',11],['Adejumo',11],['Ariyo',11],['Lasisi',11],['Egbe',11],['Adegboyega',11],
+            ['Aderibigbe',11],['Busari',11],['Akorede',11],['Ogundele',11],['Adegbite',11],['Elisha',11],['Atanda',11]
+          ] },
+        { w: 0.3,
+          first: [
+            ['Abubakar',92],['Ibrahim',100],['Musa',64],['Aliyu',58],['Abdullahi',70],['Usman',64],['Muhammad',80],['Umar',69],['Yusuf',63],['Mohammed',59],
+            ['Aminu',52],['Mustapha',49],['Sani',49],['Adamu',49],['Hassan',48],['Ahmad',47],['Ahmed',42],['Muhammed',41],['Bello',40],['Idris',38],['Lawal',38],
+            ['Bashir',37],['Auwal',36],['Abdul',36],['Haruna',36],['Kabiru',36],['Ali',35],['Abba',35],['Ismail',35],['Yahaya',35],['Suleiman',35],['Salisu',35],
+            ['Nura',34],['Yakubu',33],['Isah',33],['Sulaiman',32],['Rabiu',30],['Shehu',28],['Nasiru',27],['Jamilu',27],['Sadiq',27],['Murtala',26],['Mubarak',25],
+            ['Hamza',25],['Anas',24],['Abdulrahman',24],['Bala',23],['Kabir',23],['Hussaini',22],['Sanusi',22],['Isa',22],['Ibraheem',22],['Shuaibu',21],
+            ['Abbas',20],['Babangida',20],['Ayuba',20],['Salihu',20],['Nasir',20],['Saidu',20],['Nuhu',20],['Buhari',20],['Abdulkadir',19],['Auwalu',19],
+            ['Mukhtar',19],['Dahiru',18]
+          ],
+          last: [
+            ['Ibrahim',100],['Abubakar',86],['Abdullahi',82],['Musa',78],['Umar',72],['Usman',69],['Yusuf',67],['Bello',56],['Adamu',56],['Aliyu',55],['Lawal',55],
+            ['Sani',55],['Haruna',42],['Yakubu',40],['Garba',40],['Idris',44],['Mustapha',38],['Suleiman',37],['Shehu',34],['Yahaya',38],['Isah',39],['Hassan',51],
+            ['Aminu',31],['Mohammed',62],['Muhammad',87],['Ahmed',43],['Danjuma',20],['Dauda',28],['Ahmad',49],['Muhammed',47],['Sulaiman',33],['Bala',30],
+            ['Baba',26],['Lawan',25],['Audu',24],['Shuaibu',24],['Salihu',24],['Saidu',23],['Saleh',22],['Ayuba',22],['Nuhu',21],['Alhassan',21],['Sule',21],
+            ['Yunusa',20],['Jibrin',20],['Abdulkadir',20],['Bukar',20],['Gambo',19],['Dahiru',19],['Abdulsalam',18],['Ishaq',18],['Magaji',18],['Abdullah',18],
+            ['Mohammad',17],['Jibril',16],['Sabo',15],['Inuwa',15],['Tanko',15],['Bako',15],['Sambo',15],['Bawa',15],['Imam',14],['Yaro',13],['Sale',13],
+            ['Galadima',13],['Waziri',13],['Abdulkareem',13],['Mamman',13],['Saeed',13],['Sarki',13],['Buba',12],['Yunus',12],['Ladan',12],['Hussain',12],
+            ['Yakub',12],['Shuaib',12],['Saad',12],['Abdulhamid',11],['Liman',11],['Bature',11],['Tahir',11],['Abdulkarim',11],['Ahmadu',11],['Alkali',11],
+            ['Madaki',11],['Abdu',11],['Isyaku',11],['Maina',11],['Balarabe',11]
+          ] },
+        { w: 0.24,
+          first: [
+            ['Chinedu',38],['Emeka',46],['Obinna',31],['Ikechukwu',32],['Nnamdi',23],['Chukwuemeka',19],['Emmanuel',100],['John',76],['Samuel',74],['Michael',71],
+            ['Sunday',70],['Prince',68],['David',64],['Joseph',62],['Victor',61],['Daniel',60],['Peter',58],['James',54],['Paul',48],['Kingsley',47],['Godwin',45],
+            ['Ifeanyi',44],['Henry',43],['Moses',43],['Charles',43],['Anthony',43],['Solomon',42],['Francis',40],['Stephen',39],['Joshua',38],['Isaac',37],
+            ['Matthew',36],['Samson',35],['Gabriel',35],['Felix',35],['Uche',35],['Frank',34],['Patrick',34],['Austin',34],['Christian',33],['Friday',33],
+            ['Johnson',32],['Benjamin',32],['Stanley',32],['Kenneth',31],['Christopher',31],['Richard',31],['Innocent',30],['Monday',30],['George',29],
+            ['Kelvin',29],['Adam',29],['Jude',28],['Lucky',27],['Collins',27],['Vincent',27],['Philip',26],['Augustine',26],['Bright',26],['Mark',26],
+            ['Abraham',26],['Ojo',26],['Ezekiel',26],['Ajayi',25],['Timothy',25],['Uchenna',25],['Lawrence',25],['Simon',25],['Andrew',25],['Chidi',25],
+            ['Ugochukwu',25],['Ola',24],['Dauda',24],['Amos',24],['Wisdom',24],['Jerry',24],['Okechukwu',24],['Jonathan',23],['Chukwudi',23],['Clement',23],
+            ['Julius',23],['Festus',22],['Israel',22],['Jacob',22],['Nelson',21],['Joel',21],['Chijioke',21],['Gideon',21],['Martins',21],['Thomas',21],
+            ['Kelechi',21],['Chima',21],['Adams',20],['Ernest',20],['Chigozie',20],['Ebuka',20],['Elijah',19],['Eric',19],['Ikenna',19],['Ndubuisi',19],
+            ['Onyeka',19],['Raphael',19],['Chibuike',19],['Raymond',19],['Sylvester',18],['Tochukwu',18],['Dennis',18],['Chukwuma',18],['Chinonso',18]
+          ],
+          last: [
+            ['Okafor',44],['Okeke',39],['Chukwu',35],['Nwachukwu',33],['Okoro',33],['Okoye',31],['Okonkwo',31],['Nwankwo',29],['Ogbonna',29],['Kalu',28],
+            ['Ugwu',28],['Igwe',28],['Amadi',27],['Okechukwu',25],['Nwosu',25],['Orji',24],['Njoku',24],['Okorie',23],['Anyanwu',23],['Nwafor',21],['Ezeh',21],
+            ['Okoli',21],['Chukwuemeka',20],['Chukwuma',20],['Chima',20],['Umeh',20],['Nweke',20],['Opara',20],['Ndubuisi',19],['Madu',19],['Okoh',18],['Agbo',18],
+            ['Dike',18],['Uzoma',18],['Duru',17],['Nnaji',17],['Udeh',17],['Onyebuchi',16],['Okereke',16],['Edeh',16],['Ameh',16],['Ogbu',16],['Okpara',16],
+            ['Onah',15],['Ibeh',15],['Okolo',15],['Okolie',14],['Azubuike',14],['Nnamani',14],['Ndukwe',14],['Nnadi',14],['Onyekachi',14],['Okere',13],['Idoko',13],
+            ['Okpala',13],['Attah',13],['Nwabueze',13],['Abah',13],['Onoja',13],['Ogbonnaya',13],['Obiora',13],['Onyema',12],['Ekeh',12],['Chukwuka',12],
+            ['Onwuka',12],['Ejiofor',12],['Mbah',12],['Nduka',12],['Odoh',12],['Uchechukwu',12],['Ezenwa',12],['Offor',11],['Ibekwe',11],['Onyia',11],['Maduka',11],
+            ['Ogbodo',11],['Agada',11],['Chidera',11],['Emenike',11],['Uzor',11],['Ubah',11],['Ojukwu',11],['Nwogu',11],['Igbokwe',11],['Okoronkwo',11],['Egwu',11],
+            ['Odeh',11],['Iheanacho',11]
+          ] },
+        { w: 0.1,
+          first: [
+            ['Effiong',12],['Etim',12],['Ubong',15],['Osagie',12],['Emmanuel',100],['John',76],['Samuel',74],['Michael',71],['Sunday',70],['Prince',68],
+            ['David',64],['Joseph',62],['Victor',61],['Daniel',60],['Peter',58],['James',54],['Paul',48],['Godwin',45],['Henry',43],['Moses',43],['Charles',43],
+            ['Anthony',43],['Solomon',42],['Francis',40],['Stephen',39],['Joshua',38],['Isaac',37],['Matthew',36],['Samson',35],['Gabriel',35],['Felix',35],
+            ['Frank',34],['Patrick',34],['Austin',34],['Christian',33],['Friday',33],['Johnson',32],['Benjamin',32],['Stanley',32],['Kenneth',31],
+            ['Christopher',31],['Richard',31],['Innocent',30],['Monday',30],['George',29],['Kelvin',29],['Adam',29],['Jude',28],['Lucky',27],['Collins',27],
+            ['Vincent',27],['Philip',26],['Augustine',26],['Bright',26],['Mark',26],['Abraham',26],['Ojo',26],['Ezekiel',26],['Ajayi',25],['Timothy',25],
+            ['Lawrence',25],['Simon',25],['Andrew',25],['Ola',24],['Dauda',24],['Amos',24],['Wisdom',24],['Jerry',24],['Jonathan',23],['Clement',23],['Julius',23],
+            ['Festus',22],['Israel',22],['Jacob',22],['Nelson',21],['Joel',21],['Gideon',21],['Martins',21],['Thomas',21],['Adams',20],['Ernest',20],['Elijah',19],
+            ['Eric',19],['Raphael',19],['Raymond',19],['Sylvester',18],['Dennis',18]
+          ],
+          last: [
+            ['Akpan',35],['Bassey',34],['Okon',28],['Udoh',25],['Edet',22],['Essien',22],['Effiong',21],['Etim',21],['Umoh',19],['Inyang',18],['Asuquo',17],
+            ['Ekanem',15],['Ekpo',15],['Edem',13],['Udofia',13],['Archibong',13],['Osagie',12],['Odey',12],['Ossai',12],['Ogar',12],['Ekong',12],['Etuk',11],
+            ['Ekpenyong',11],['Ukpong',11],['Obot',11]
+          ] }
+    ] },
+
+    // ── GHA ──
+    GHA: { regions: [
+        { w: 0.8,
+          first: [
+            ['Kofi',62],['Kwame',55],['Kwabena',41],['Kwaku',42],['Yaw',44],['Kwadwo',28],['Kwasi',28],['Kojo',34],['Emmanuel',100],['Nana',98],['Samuel',84],
+            ['Isaac',77],['Daniel',66],['Michael',64],['Francis',64],['Joseph',62],['Richard',61],['Eric',60],['John',60],['Prince',56],['Stephen',54],['David',50],
+            ['Ebenezer',46],['Frank',46],['George',46],['James',46],['Charles',42],['Benjamin',42],['Peter',38],['Ernest',38],['Paul',37],['Evans',36],
+            ['Solomon',36],['Patrick',35],['Bright',35],['Felix',34],['Philip',33],['Enoch',33],['Robert',32],['Seth',32],['Thomas',31],['Anthony',31],
+            ['Edward',31],['Bismark',30],['Albert',30],['Frederick',29],['Bernard',29],['Maxwell',29],['Joshua',29],['William',29],['Abraham',28],['Moses',28],
+            ['Gideon',28],['Justice',28],['Akwasi',27],['Collins',26],['Alfred',26],['Godwin',25],['Nicholas',25],['Simon',25],['Kwesi',25],['Henry',25],
+            ['Godfred',24],['Nii',24],['Richmond',24],['Gabriel',24],['Adam',24],['Augustine',23],['Jonathan',23],['Christian',23],['Wisdom',23],['Kingsley',23],
+            ['Mark',23],['Jacob',23],['Dennis',22],['Martin',22],['Kelvin',22],['Victor',22],['Kweku',21],['Christopher',21],['Sampson',21],['Clement',20],
+            ['Andrews',20],['Prosper',20],['Dominic',20],['Alexander',20],['Theophilus',20],['Desmond',20],['Matthew',19],['Vincent',19],['Amos',19],['Raymond',19],
+            ['Obed',18],['Atta',18],['Lawrence',18],['Kenneth',17],['Derrick',17],['Jerry',17],['Nana Yaw',17],['Elvis',17],['Ishmael',17],['Foster',16],
+            ['Eugene',16],['Raphael',15],['Kennedy',15],['Nathaniel',15],['Oheneba',15],['Sylvester',15],['Gilbert',14],['Julius',14],['Joel',14],['Edem',14],
+            ['Edmund',14],['Jonas',14],['Douglas',14],['Ekow',13],['Ransford',13],['Louis',13],['Elijah',13],['Shadrack',13],['Aaron',13],['Steven',13],['Eben',13],
+            ['Mawuli',12],['Manuel',12],['Andrew',12],['Ike',12],['Edwin',12],['Ohene',12],['Timothy',12],['Oscar',12],['Nana Kwame',12],['Ato',12],['Noah',11],
+            ['Roland',11],['Stanley',11],['Franklin',11],['Divine',11],['Fiifi',11],['Kingsford',11],['Omar',11],['Jeff',10],['Israel',10],['Kobina',10],
+            ['Ezekiel',10],['Festus',10],['Caleb',10],['Cephas',10],['Aminu',10],['Edmond',10],['Innocent',10],['Reuben',9],['Mathias',9],['Lsaac',9],['Harry',9],
+            ['Saviour',9],['Godsway',9],['Clifford',9],['Cosmos',9],['Jude',9],['Selorm',9],['Randy',9],['Faisal',9],['Ken',9],['Quame',9],['Nhyiraba',9],
+            ['Benedict',9],['Eddie',9],['Jeffrey',9],['Harrison',9],['Evangelist',8],['Benard',8],['Isaiah',8],['Dada',8],['Derick',8],['Star',8],['Agya',8],
+            ['Godson',8],['Pius',8],['Sulley',8],['Qwame',8],['Wofa',8],['Nharnhar',8],['Ayam',8],['Roger',8],['Issac',8],['Rexford',8],['Oliver',8],['Nanaba',8],
+            ['Qweku',8],['Shatta',8],['Champion',8],['Romeo',8],['Hajj',8],['Silas',8],['Eddy',8],['Wonder',8],['Imoro',8]
+          ],
+          last: [
+            ['Mensah',100],['Owusu',76],['Boateng',65],['Yeboah',61],['Appiah',59],['Osei',55],['Tetteh',55],['Asare',53],['Arthur',51],['Adjei',47],['Asante',46],
+            ['Opoku',45],['Amoah',44],['Frimpong',43],['Ofori',43],['Addo',41],['Antwi',41],['Boakye',40],['Nyarko',38],['Asamoah',38],['Obeng',37],['Amponsah',37],
+            ['Acquah',36],['Ansah',35],['Oppong',35],['Donkor',34],['Acheampong',33],['Sarpong',33],['Agyemang',33],['Agyei',32],['Darko',30],['Aidoo',30],
+            ['Okyere',30],['Adams',30],['Amoako',29],['Gyamfi',29],['Danso',29],['Asiedu',28],['Baidoo',28],['Eshun',28],['Nkrumah',27],['Nartey',27],['Baah',27],
+            ['Annan',26],['Quaye',26],['Oduro',26],['Quansah',26],['Aboagye',26],['Otoo',26],['Dadzie',25],['Konadu',25],['Tawiah',25],['Sackey',25],['Afriyie',25],
+            ['Lamptey',23],['Afful',23],['Cudjoe',23],['Koomson',23],['Andoh',23],['Lartey',23],['Arhin',23],['Manu',23],['Agyapong',22],['Essel',22],['Larbi',22],
+            ['Sarfo',22],['Bonsu',21],['Amankwah',21],['Gyan',20],['Adepa',20],['Teye',20],['Kwarteng',20],['Addai',20],['Armah',20],['Fosu',20],['Boadi',20],
+            ['Boadu',20],['Badu',19],['Kumi',19],['Nkansah',19],['Kwofie',19],['Forson',19],['Kyei',19],['Duah',19],['Kwakye',19],['Boamah',19],['Ofosu',19],
+            ['Quarshie',19],['Marfo',19],['Narh',19],['Kusi',18],['Gyasi',18],['Nyamekye',18],['Agyeman',18],['Awuah',18],['Agyekum',18],['Amissah',18],
+            ['Danquah',18],['Takyi',18],['Laryea',18],['Nyame',18],['Hammond',18],['Ankrah',18],['Nelson',18],['Cobbinah',18],['Kumah',17],['Akoto',17],
+            ['Quartey',17],['Coffie',17],['Gyimah',17],['Koranteng',17],['Anane',17],['Addae',17],['Ampofo',16],['Quayson',16],['Tettey',16],['Ackah',16],
+            ['Sowah',16],['Hayford',16],['Ankomah',16],['Donkoh',16],['Poku',16],['Blay',16],['Anim',16],['Annor',16],['Mills',16],['Aryee',15],['Twumasi',15],
+            ['Boafo',15],['Abbey',15],['Abban',15],['Debrah',15],['Blessing',15],['Nortey',15],['Odoom',15],['Twum',15],['Essien',15],['Aggrey',15],['Dickson',15],
+            ['Quainoo',15],['Martey',15],['Tagoe',15],['Peprah',15],['Asiamah',15],['Okai',15],['Nsiah',14],['Bediako',14],['Mintah',14],['Allotey',14],
+            ['Awuku',14],['Botchway',14],['Offei',14],['Opare',14],['Adusei',14],['Adomako',14],['Yankey',14],['Jones',14],['Biney',14],['Sakyi',14],['Baffoe',14],
+            ['Anokye',14],['Baffour',14],['Bawa',14],['Amuzu',14],['Adom',14],['Essuman',14],['Nuhu',13],['Ocran',13],['Okine',13],['Addy',13],['Baiden',13],
+            ['Sarkodie',13],['Adjetey',13],['Quaicoe',13],['Blankson',13],['Ackon',13],['Bless',13],['Aikins',13],['Prempeh',13],['Oteng',12],['Atsu',12],
+            ['Effah',12],['Bruce',12],['Mawuli',12],['Ababio',12],['Saeed',12],['Hagan',12],['Ampong',12],['Yawson',12],['Bonney',12],['Turkson',12],['Wiafe',12],
+            ['Ameyaw',12],['Nyarkoh',12],['Ohene',12],['Buabeng',12],['Boye',12],['Doku',12],['Ntiamoah',12],['Beauty',12],['Boahen',12],['Yamoah',12],
+            ['Amankwaa',12],['Bentil',11],['Kotey',11],['Ampomah',11],['Kyeremeh',11],['Attah',11],['Odoi',11],['Duodu',11],['Afari',11],['Arkoh',11],['Dede',11],
+            ['Bentum',11],['Akakpo',11],['Tandoh',11],['Dodoo',11],['Amoh',11],['Odame',11],['Hamidu',11],['Nunoo',11],['Dankwah',11],['Siaw',11],['Ocansey',11],
+            ['Tamakloe',11],['Prah',11],['Dankwa',11],['Otchere',11],['Sagoe',11],['Bekoe',11],['Ampah',11],['Karikari',11],['Ansong',11],['Akuffo',11],
+            ['Nketia',10],['Botwe',10],['Kwao',10],['Issifu',10],['Fynn',10],['Nuamah',10],['Paintsil',10],['Abakah',10],['Acquaye',10],['Ntim',10],['Otabil',10],
+            ['Assan',10],['Afrifa',10],['Tweneboah',10],['Kyere',10],['Agbo',10],['Ayitey',10],['Fordjour',10],['Agyare',10],['Inkoom',10],['Kpodo',10],
+            ['Brobbey',10],['Ampadu',10],['Dapaah',10],['Egyir',10],['Yankson',10],['Kissi',10],['Yiadom',10],['Kelly',9],['Dogbey',9],['Larry',9],['Ntow',9],
+            ['Kassim',9],['Odonkor',9],['Darkwah',9],['Amartey',9],['Ashong',9],['Duku',9],['Tanko',9],['Amanor',9],['Amidu',9],['Frempong',9],['Mireku',9],
+            ['Korankye',9],['Odei',9],['Essilfie',9],['Asmah',9],['Neequaye',9],['Mantey',9],['Mansah',9],['Wiredu',9],['Agbeko',9],['Fatawu',9],['Baafi',9],
+            ['Tuffour',9],['Ayisi',9],['Dwomoh',9],['Sekyere',9],['Ennin',9],['Commey',9],['Darkwa',9],['Sulley',9],['Kwaw',9],['Aryeetey',9],['Boahene',9]
+          ] },
+        { w: 0.2,
+          first: [
+            ['Alhassan',36],['Abdul',35],['Iddrisu',26],['Fuseini',17],['Mohammed',26],['Ibrahim',26],['Abdulai',24],['Ahmed',19],['Abubakari',16],['Mustapha',16],
+            ['Sulemana',14],['Abass',13],['Awudu',13],['Aziz',12],['Abukari',11],['Hassan',11],['Awal',11],['Hamza',11],['Rashid',11],['Issahaku',11],['Malik',10],
+            ['Dauda',10],['Bashiru',10],['Alidu',8],['Muhammad',8],['Mohamed',8]
+          ],
+          last: [
+            ['Mohammed',63],['Ibrahim',46],['Alhassan',39],['Musah',32],['Yakubu',31],['Seidu',29],['Issah',29],['Salifu',25],['Iddrisu',24],['Fuseini',19],
+            ['Abubakari',17],['Mahama',16],['Abdulai',25],['Sulemana',16],['Haruna',21],['Osman',24],['Mumuni',16],['Yahaya',17],['Amadu',17],['Abubakar',25],
+            ['Yussif',23],['Issaka',18],['Razak',17],['Mustapha',16],['Zakaria',15],['Moro',15],['Umar',15],['Awudu',15],['Zakari',14],['Adamu',14],['Shaibu',14],
+            ['Sumaila',14],['Abdullah',13],['Abdallah',13],['Abass',13],['Suleman',12],['Tahiru',12],['Inusah',12],['Yusif',12],['Rashid',12],['Bukari',12],
+            ['Rahman',11],['Sule',11],['Issahaku',11],['Awal',11],['Malik',11],['Muhammed',11],['Gariba',11],['Dauda',11],['Latif',11],['Awuni',10],['Azumah',10],
+            ['Maiga',10],['Salam',10],['Hamza',10],['Musa',10],['Dery',10],['Wahab',9],['Adongo',9],['Bashiru',9]
+          ] }
+    ] },
 };
 
 // ── Fallback-Map: pool-lose Nation → kulturell nächstverwandter Pool ──
 // (v3: NOR/GRE/TUR/KOR haben jetzt eigene Pools und sind hier raus)
 const NATION_NAME_FALLBACK = {
     'ECU':'COL','BOL':'COL','PAR':'ARG','CRC':'MEX','GUA':'MEX','PAN':'COL','DOM':'COL','PUR':'MEX','CUB':'MEX','UKR':'RUS',
-    'BLR':'RUS','KAZ':'RUS','LAT':'LTU','KGZ':'INT','UZB':'INT','TJK':'INT','TKM':'INT','AZE':'INT','ARM':'INT','GEO':'INT',
-    'SVK':'CZE','LUX':'BEL','LIE':'SUI','AND':'ESP','SMR':'ITA','MLT':'ITA','BIH':'INT','MKD':'INT','MNE':'INT','ALB':'INT',
-    'ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR','LBN':'MAR','TUN':'MAR','ALG':'MAR','JOR':'MAR','IRQ':'MAR','LBA':'MAR',
-    'PAK':'IND','BAN':'IND','SRI':'IND','NEP':'IND','SGP':'CHN','HKG':'CHN','TPE':'CHN','MAC':'CHN','PHI':'MEX','VIE':'INT',
-    'KEN':'RSA','NGR':'INT','GHA':'INT','SEN':'FRA','CIV':'FRA','ANG':'POR','MOZ':'POR'
+    'BLR':'RUS','KAZ':'RUS','LAT':'LTU','KGZ':'INT','UZB':'INT','TJK':'INT','ARM':'INT','SVK':'CZE','LUX':'BEL','LIE':'SUI',
+    'AND':'ESP','SMR':'ITA','MLT':'ITA','BIH':'INT','MKD':'INT','MNE':'INT','ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR',
+    'LBN':'MAR','TUN':'MAR','ALG':'MAR','JOR':'MAR','IRQ':'MAR','LBA':'MAR','PAK':'IND','BAN':'IND','SRI':'IND','NEP':'IND',
+    'SGP':'CHN','HKG':'CHN','TPE':'CHN','MAC':'CHN','PHI':'MEX','VIE':'INT','KEN':'RSA','SEN':'FRA','CIV':'FRA','ANG':'POR',
+    'MOZ':'POR'
 };
 
 // ── Raritäten-Schwänze (implizit Gewicht 1) ─────────────────────────────
@@ -13923,6 +14273,272 @@ const NAME_TAILS_BY_NATION = {
             'Česnauskas','Jurkonis','Brazas','Zaleckis','Stirbys','Staskevicius','Valys','Vilčinskas','Šatas','Urbelis','Dvarionas','Zinkevičius','Katauskas',
             'Motuzas','Verseckas','Katilius','Gurskas','Kaubrys','Smirnovas','Černauskas','Šaulys','Banionis','Gataveckas','Gaidys','Mockaitis','Rukas','Vencius',
             'Budginas','Bitinas','Girdenis','Daunoras','Stulpinas','Degutis','Maciulevičius','Kungys'
+          ] },
+    ],
+    ALB: [
+        { r: 0,
+          first: [
+            'Gazmir','Haxhi','Vilson','Bruno','Sali','Alket','Florjan','Kledi','Flavio','Anxhelo','Klodjan','Admir','Mentor','Urim','Krenar','Elio','Ismet',
+            'Rexhep','Elidon','Ardjan','Henri','Kristjan','Kadri','Tonin','Kreshnik','Ylber','Gjon','Marko','Shaban','Fation','Gjovalin','Anton','Marjus','David',
+            'Gazmend','Noel','Ajet','Hysni','Gani','Hekuran','Zamir','Serxho','Bekim','Gersi','Bardhi','Asllan','Egli','Eris','Ledion','Bedri','Dionis','Ernest',
+            'Fitim','Bardhyl','Emiljan','Islam','Ndricim','Bilbil','Xhemal','Skerdi','Bushi','Orgest','Isuf','Elson','Xhevdet','Samuel','Qazim','Gent','Aqif',
+            'Sabri','Lefter','Eraldo','Riza','Spartak','Lenci','Nertil','Albion','Kristo','Pjeter','Ilia','Erind','Sulejman','Sandri','Danjel','Orges','Paulin',
+            'Spiro','Alesio','Valter','Ramiz','Gzim','Shefqet','Drilon','Ersi','Zenel','Qamil','Rigers','Fran','Muharrem','Pajtim','Sadik','Arbri','Valentin',
+            'Haki','Genc','Rigels','Juljan','Isa','Vangjel','Drini','Franko','Faik','Xhuljo','Petro','Fabian','Ferit','Renis','Enis','Albano','Mirjan','Orgito',
+            'Eldi','Defrim','Kosta','Marjan','Engjell','Emiliano','Rezart','Selman','Kejdi','Hamit','Edmir','Erlind','Vullnet','Benard','Ilmi','Musa','Xhimi',
+            'Goni','Maksim','Lutfi','Ramadan','Redon','Geraldo','Arnold','Blendi','Jorgo','Nikoll','Halit','Dhimiter','Agustín','Kristaq','Muhamet','Albania',
+            'Azem','Beqir','Gramoz','Pashk','Enes','Franci','Algert','Eljo','Marin','Bardhok','Jetnor','Gabriel','Edvin','Arif','Dashi','Esat'
+          ],
+          last: [
+            'Sinanaj','Alushi','Sokoli','Mani','Gjuzi','Mara','Frroku','Islamaj','Celaj','Çuka','Peposhi','Dedej','Ymeri','Kapaj','Doku','Doka','Idrizi','Cenaj',
+            'Bali','Tanushi','Musaj','Mali','Zela','Kuqi','Tirona','Lazri','Dyrmishi','Duraku','Gjinaj','Lama','Lushi','Koni','Alliu','Koleci','Hima','Demaj',
+            'Xhelili','Shkurti','Xhaferaj','Gjeta','Nezha','Pasha','Selimaj','Xhaferi','Dodaj','Baci','Luzi','Hoxhallari','Zani','Lame','Nikolla','Subashi','Memaj',
+            'Cekrezi','Bitri','Bejko','Xheka','Myrtaj','Shahu','Morina','Dedaj','Rusi','Simoni','Bushati','Keta','Ismailaj','Metani','Zeqo','Fusha','Zoto',
+            'Zenelaj','Daka','Hajdini','Salla','Keci','Velaj','Dhima','Haxhiaj','Ferati','Mustafaj','Lekaj','Latifi','Xhaferri','Mataj','Musta','Zeka','Toci',
+            'Llanaj','Tahiraj','Saliu','Nako','Allaraj','Sinaj','Suli','Visha','Laska','Dalipi','Shaba','Veizi','Mera','Rrushi','Xhaja','Elezaj','Toma','Palushi',
+            'Maloku','Dida','Curri','Mehmetaj','Imeraj','Isaku','Caca','Cala','Tufa','Sulo','Kazazi','Coku','Kasmi','Golemi','Kosta','Sela','Manaj','Caushaj',
+            'Sharka','Driza','Loka','Jaupaj','Mecaj','Preci','Sadikaj','Bilali','Bakalli','Hodaj','Merkaj','Bulku','Malo','Shala','Kasemi','Lalaj','Nushi','Tare',
+            'Jaupi','Mane','Gjura','Alija','Imeri','Jaho','Zotaj','Neli','Sejdini','Lazaj','Goxhaj','Rrapaj','Ymeraj','Demiraj','Reka','Bisha','Vlor','Yzeiraj',
+            'Peci','Dosti','Pisha','Martini','Hodo','Xhika','Danaj','Kanani','Tafani','Zogu','Skura','Vladi','Miraka','Brahimaj','Ndreka','Meco','Dardha','Omeri',
+            'Shera','Belba','Skenderaj','Hoda','Vathi','Rustemi','Sollaku','Tiran','Meci','Brahja','Kaso','Veseli','Ndoja','Istrefi','Kalaja','Love','Qoku',
+            'Metushi','Kolaj','Nasufi','Gurra','Plaka','Mullaj','Marra','Cepele','Bregasi','Zyka','Xhafaj','Ferhati','Shira','Paloka','Mile','Beqo','Kajo','Fejzo',
+            'Nano','Xhixha','Terziu','Dine','Harizi','Kapo','Roci','Rroshi','Cota','Muho','Bossi','Jote','Uruci','Kaziu','Lico','Voci','Muzhaqi','Myftaraj',
+            'Kadriu','Brahaj','Hoxhalli','Zeqiri','Kaloshi','Preka','Duraj','Cena','Mahmutaj','Hazizi','Gjoshi','Picari','Meli','Kotorri','Dushi','Kryemadhi',
+            'Muhametaj','Boja','Pellumbi','Zhupa','Shpata','Troci','Dule','Mucollari','Grembi','Vila','Jonuzi','Milan','Bobi','Tresa','Loci','Shkoza','Kruja',
+            'Begu','Abazaj','Gremi','Luca','Lulaj','Hasaj','Masha','Kasaj','Saliasi','Lamce','Tafaj','Merko','Kala','Mulla','Hazizaj','Dalipaj','Cako','Laze',
+            'Ahmati','Myrta','Sheshi','Paci','Shkalla','Beshiri','Veliaj','Sota','Lita','Farruku','Bica','Pashollari','Haxhia','Veizaj','Xhelo','Dautaj','Ajdini',
+            'Billa','Licaj','Greca','Bendo','Peqini','Dragoti','Pasho','Alikaj','Kondi','Mesi','Cengu','Cuko','Smith','Selami','Borici','Kamberaj','Xhemali','Ibro',
+            'Konomi','Koldashi','Qerimi','Marashi','Mena','Sema','Qorri','Gjoci','Cobo','Vukaj','Rakipi','Gjeka','Mulaj','Alushaj','Miftari','Velo','Tuci','Braka',
+            'Musaku','Aliko','Dulla','Nelaj','Ndou','Oshafi','Elmazi','Markaj','Jakupi','Bufi','Qato','Bezati','Thaci','Bardhoshi','Tafili','Koxha','Jashari',
+            'Beka','Haxhillari','Mhilli','Tarja','Hilaj','Braha','Ferra','Qarri','Bleta'
+          ] },
+    ],
+    GEO: [
+        { r: 0,
+          first: [
+            
+          ],
+          last: [
+            'Gabelia','Lomsadze','Gogoberidze','Kacharava','Margvelashvili','Merabishvili','Komakhidze','Tsaava','Chokheli','Phutkaradze','Nebieridze',
+            'Giorgobiani','Jijavadze','Mzhavanadze','Jokhadze','Akhaladze','Bakradze','Gongadze','Nachkebia','Burjanadze','Janashia','Bedinadze','Tugushi','Gulua',
+            'Shervashidze','Kublashvili','Janiashvili','Gobejishvili','Kikvadze','Gogua','Peradze','Koridze','Tebidze','Burduli','Tkeshelashvili','Papiashvili',
+            'Jabnidze','Vekua','Zarkua','Katsadze','Latsabidze','Kharaishvili','Mamedovi','Zhvania','Odisharia','Romanadze','Jorbenadze','Zhorzholiani',
+            'Kirkitadze','Gegeshidze','Adeishvili','Kekelidze','Matiashvili','Kochalidze','Bagrationi','Miminoshvili','Malania','Chichinadze','Kuchava','Bokuchava',
+            'Pavliashvili','Gvaramia','Chikvaidze','Zarandia','Beriashvili','Shamugia','Imerlishvili','Gvelesiani','Daraselia','Chitanava','Dalakishvili',
+            'Sirbiladze','Gegechkori','Margoshvili','Arabidze','Chumburidze','Ioseliani','Chitadze','Jalagonia','Janjgava','Aladashvili','Iakobadze',
+            'Lursmanashvili','Artmeladze','Jishkariani','Grdzelishvili','Chakvetadze','Otiashvili','Jgenti','Sanadze','Gabrichidze','Mosiashvili','Khizanishvili',
+            'Kharebava','Paksadze','Samadashvili','Baladze','Papashvili','Cheishvili','Topuria','Surguladze','Bigvava','Devidze','Goradze','Mgaloblishvili',
+            'Dzadzamia','Iluridze','Iremashvili','Otarashvili','Gumberidze','Shavishvili','Maglakelidze','Ninidze','Yurashvili','Alania','Darchia','Gvianidze',
+            'Kvirikashvili','Pirveli','Merebashvili','Tsikarishvili','Khorava','Melikidze','Gigolashvili','Urushadze','Kobaladze','Malakmadze','Chachanidze',
+            'Bregadze','Tevdoradze','Benidze','Gogiberidze','Inasaridze','Kvirkvelia','Didmanidze','Kuprashvili','Arveladze','Tordia','Ugrekhelidze','Jikidze',
+            'Salukvadze','Skhirtladze','Tsirekidze','Gundadze','Rostiashvili','Rekhviashvili','Nagervadze','Tabagari','Sajaia','Lortkipanidze','Shamatava',
+            'Archvadze','Basilashvili','Shatirishvili','Laliashvili','Koberidze','Lobzhanidze','Gabedava','Dgebuadze','Gulbani','Tetradze','Kvachadze','Shelia',
+            'Tsutskiridze','Butskhrikidze','Enukidze','Lataria','Ardzenadze','Verdzadze','Silagadze','Chogovadze','Chinchaladze','Tutberidze','Gvenetadze',
+            'Gogaladze','Akhobadze','Sharashenidze','Kirvalidze','Jimsheleishvili','Malaymadze','Turashvili','Tvauri','Iashvili','Mebonia','Antia','Gvazava',
+            'Abeslamidze','Muzashvili','Tarieladze','Ebralidze','Gogichashvili','Sulaberidze','Ugulava','Kukava','Gaprindashvili','Gureshidze','Gogolashvili',
+            'Gogadze','Kevlishvili','Sturua','Jgarkava','Makaradze','Bibilashvili','Nikoladze','Berianidze','Narsia','Jashi','Manjavidze','Samushia','Gviniashvili',
+            'Nijaradze','Pataraia','Sarishvili','Kokaia','Pagava','Chichua','Asambadze','Tevdorashvili','Zaridze','Loladze','Tsurtsumia','Mushkudiani','Guruli',
+            'Sabashvili','Gatenadze','Goginashvili','Bairamovi','Togonidze','Loria','Lezhava','Kikalishvili','Kikabidze','Alavidze','Kipiani','Vardosanidze',
+            'Goderdzishvili','Basilaia','Soselia','Gergedava','Dzirkvadze','Shermadini','Kordzadze','Elizbarashvili','Vadachkoria','Revazishvili','Suladze',
+            'Simonishvili','Kalandia','Todadze','Lominadze','Ubilava','Kopadze','Andguladze','Mazmishvili','Bagdavadze','Vashaymadze','Narimanidze','Begiashvili',
+            'Shotadze','Gelovani','Bedoshvili','Nanava','Baramia','Lortkifanidze','Kukhianidze','Oboladze','Okruashvili','Kupreishvili','Shantadze','Kopaleishvili',
+            'Guliashvili','Gujabidze','Lejava','Bitsadze','Statusebi','Gogsadze','Antidze','Barnovi','Gugeshashvili','Avaliani','Feradze','Tamazashvili',
+            'Mirianashvili','Dekanadze','Ninua','Vashakmadze','Kalandarishvili','Nikuradze','Maghlakelidze','Gabelaia','Lemonjava','Natsnobi','Ivanidze','Imnadze',
+            'Gorgodze','Chincharauli','Kvantaliani','Arjevanidze','Revishvili','Dekanoidze','Chkonia','Gorjeladze','Gulordava','Chanturidze','Kvirikadze',
+            'Lomtatidze','Buchukuri','Iobidze','Chitishvili','Meparishvili','Trapaidze','Davitaia','Gobadze','Begashvili','Shanava','Kakauridze','Nishnianidze',
+            'Kvernadze','Megrelidze','Gambashidze','Chigladze','Nadareishvili','Nadaraia','Bezhanidze','Fifia','Gadelia','Darjania','Darbaidze','Samqaro','Makho',
+            'Barabadze','Mezvrishvili','Gorgoshadze','Vanadze','Toradze','Amiranashvili','Kurasbediani','Kvashilava','Kostava','Leladze','Menabdishvili',
+            'Bibileishvili','Parulava','Mutidze','Kaladze','Nachyebia','Gabisonia','Chikviladze','Gvinjilia','Charkviani','Gvaramadze','Moseshvili','Morgoshia',
+            'Sopromadze','Dundua','Kobiashvili','Kirtadze','Papuashvili','Papunashvili','Chankvetadze'
+          ] },
+    ],
+    AZE: [
+        { r: 0,
+          first: [
+            'Səməd','Aksin','Füzuli','Cemil','Emrah','Oruc','Qalib','Əkbər','Camal','Xaliq','Əliyev','Mahmud','Cavidan','Fikret','Kərim','Nəriman','Heydər','Tunar',
+            'İlyas','Abdulla','Subhan','Amid','Mustafa','Asef','Alim','Müşviq','Şəhriyar','Tariyel','Polad','Rizvan','Cahid','Qədir','Veli','Məhərrəm','Uğur',
+            'Osman','Elbrus','Yunis','Cəfər','Niyazi','Məzahir','Mansur','Feqan','Davud','Yasin','Allahverdi','Zohrab','Nəbi','Yaqub','Nəsimi','Sakit','Cahangir',
+            'Elik','Arzuman','Mirzə','Zeynal','Asiman','Rahil','Yalçın','Enver','Tuncay','Timur','Ehtiram','Cabir','Kazım','Firudin','Ferman','Mətləb','Eltun',
+            'Ismet','Cavanşir','Eyvaz','Nofel','Firuz','Həbib','Serdar','Ataş','Fəxri','Pünhan','Dəyanət','Muhammed','Əsgər','Ramazan','Fərrux','Tənha','Mais',
+            'Xəlil','Cəlil','Nemət','Hilal','Mikayıl','Əvəz','Firdovsi','Nureddin','Metin','Rafet','Ələsgər','Müşfiq','Elgiz','Niyameddin','Tehran','Ədalət',
+            'Rufan','Muxtar','Səlim','Ariz','Məmmədov','Xanlar','Rəcəb','Seyran','Behram','Afiq','Naib','Adem','Abdul','Renat','Yadigar','Əşqin','Qosqar','Nəcəf',
+            'Teyyub','Ələkbər','Soltan','Pənah','İsrafil','İsgender','Hamlet','Lətif','Ziyad','Raqif','Qüdrət','Murat','Səfər','Tağı','Salam','Samxal','Rabil',
+            'Kərəm','Sultan','Qismət','Ikram','Xəzər','Şahmar','Ruhin','Mayil','Sabit','Nəsib','Elyar','Eltac','Qorxmaz','Eyyub','Elburus','Nusret','Elnar','Iqbal',
+            'Eliş','Cabbar','Abbasov','Razi','İman','Totu','Bahadur','Abdullah','Bilal','Maga','Zaman','Uzeyir','Qiyas','Nuru','İmran'
+          ],
+          last: [
+            'Sabanov','Rəhmanov','Baxsiyev','Zerbeliyev','Allahyarov','Tahirli','Mahmudlu','Cavadzadə','Şamilov','Səfəreliyev','Xaliqov','Qubadov','Miriyev',
+            'Poladov','Nağızadə','Rəsulzadə','Balakişiyev','Zahidov','Gözəlov','Bağırzadə','Sultanli','Lətifov','Heydərli','Əkbərli','Xəlilli','Yolcuyev',
+            'Movsumov','Ramazanli','Mədətov','Yahyayev','İsmayılli','Vahabov','Seyfullayev','Yusifzadə','Heybetov','Eminli','Nuruyev','Islamzadə','Qədirli',
+            'Ezimzadə','Qəhrəmanli','Fərhadov','Alməmmədov','Bagiyev','Mutellimov','Isazadə','Zamanli','Aslanli','Səmədli','Nezirov','Şükürlu','Əsədullayev',
+            'Eldarov','Semedzadə','Genceli','Həmidli','Nəsibli','Səlimli','Sadiqzadə','Kerimzadə','Azayev','Murtuzayev','Niyazov','Tanriverdiyev','Xasiyev',
+            'Namazli','Ağabalayev','Surxayev','Bağırli','Əmirli','Aliyarov','Alıli','Amanov','Rəşidov','Nurullayev','Kamilov','Talıbli','Xelilzadə','Vahidov',
+            'Nebizadə','Melikzadə','Bakili','Muslumov','Eynullayev','Hidayetov','Zakirov','Dunyamaliyev','Hummetov','Maqsudov','Xuduyev','Beylerov','Nuraliyev',
+            'Qafarli','Seyidli','Muradzadə','Usubov','Hetemov','Adgozelov','Sixaliyev','Babasov','İmranov','Ağasiyev','Nəzərli','Nadirli','Rustemzadə','Bilalov',
+            'Ibayev','Agakisiyev','Cumayev','Imamverdiyev','Mahmudzadə','Eyvazli','Isakov','Feyziyev','Xidirov','Hadiyev','Zalov','Xelefov','Məlikli','Ələsgərli',
+            'Məhəmmədov','Umarov','Aydınov','Kamalov','Bedirov','Mürsəliyev','Alxasov','Museyibov','Necefzadə','Kazimzadə','Fərəcli','Sadıqli','Qurbanzadə',
+            'Məcidli','Bayramzadə','Manafli','Axundzadə','Qulamov','Mazanov','Yadigarov','Xanlarov','Memiyev','Abusov','Vekilov','Mirzəli','Seydayev','Salahli',
+            'Rusdemov','Sabirli','Xanməmmədov','Məmmədeliyev','Suleymanzadə','Oruczadə','Bunyatov','Esgerzadə','Nurlu','Nermanov','Azadov','Dasdemirov','Zekiyev',
+            'Abuzerov','Rufullayev','İslamli','Bebirov','Akperov','Memisov','Idrisov','Ismiyev','Agamirov','Rəcəbli','Almasov','Sediyev','Salmanli','Qədimli',
+            'Mustafali','Esedzadə','Nehmetov','Mollayev','Menmedov','Rzali','Abdinov','Baloglanov','Gülmaliyev','Celebiyev','İbrahimxelilov','Zaidov','Calalov',
+            'Şıxıyev','Dadaşzadə','Ağaverdiyev','Ağaliyev','Abdulzadə','Xancanov','Ibrahimzadə','Seyidzadə','Selimzadə','Rehimzadə','Cavadli','Nezirli','Mikayılli',
+            'Memmedhəsənov','Murtuzov','Zohrabov','Xanaliyev','Zulfiqarov','Aydınli','Mursudov','Sahməmmədov','Ziyadov','Qelenderov','Imameliyev','Avazov',
+            'Sofiyev','Qaslmov','Teyyubov','Sattarov','Behremov','Ibisov','Babaxanov','Niftiyev','Qacayev','Dagli','Bennayev','Kosayev','Mikayilzadə','Qemberli',
+            'Nadjafov','Emrahli','Qenberli','Serdarov','Pasazadə','Arazov','Xammedov','Djafarov','Rizayev','Mehbaliyev','Bunyadov','Xeyrullayev','Qayibov',
+            'Bendeliyev','Salmanzadə','Imamquliyev','Eliquliyev','İmanli','Həbibli','Ağabeyov','Sayilov','Esrefov','Movlayev','Alixanov','Allahverenov','Allazov',
+            'Zaliyev','Beydullayev','Ferziyev','Baratov','Qurbaneliyev','Aydinoglu','Aydemirov'
+          ] },
+    ],
+    TKM: [
+        { r: 0,
+          first: [
+            'Farhat','Perhat','Rustem','Zakir','Toýly','Rahim','Ulugbek','Ikram','Şakir','Umid','Ismail','Batýa','Ramis','Faruh','Sapar','Emir','Hangeldi','Han',
+            'Rahym','Juma','Umit','Gaygysyz','Musa','Meret','Nowruz','Aýbek','Owez','Kuwwat','Seýran','Allamyrat','Arif','Allanur','Mustafa','Atamyrat','Sohbet',
+            'Abdulla','Nurgeldi','Omar','Peña','Ylham'
+          ],
+          last: [
+            'Byaşimow','Akmyradow','Gurdow','Allanazarow','Altyyew','Yoldaşow','Maşaripow','Gulamow','Abdyyew','Hojaniyazow','Akmammedow','Hemrayew','Serdarow',
+            'Orunow','Weliyew','Beşimow','Kalandarow','Jumabayew','Ereşow','Hudaykuliyew','Akmuradow','Orazmuhammedow','Kakajanow','Amangeldiyew','Abayew',
+            'Hudaynazarow','Hudaybergenow','Dowranow','Annamyradow','Nurmyradow','Çerkezow','Begjanow','Berdyew','Annageldiyew','Komekow','Abasow','Rozmetow',
+            'Umarow','Agabayew','Hajyyew','Nowruzow','Nuriyew','Begenjow','Orazgeldiyew','Hojiyew','Atabayew','Ilýasow','Kasimow','Seidow','Jumageldiyew',
+            'Rustamow','Karyagdyyew','Baltayew','Gylyjow','Italmazow','Jepbarow','Jumadurdyyew','Atamuradow','Taşliyew','Narbayew','Tairow','Babaniýazow','Sapayew',
+            'Jumanazarow','Mamiyew','Saidow','Baba','Sultanow','Bagdasarow','Torayew'
+          ] },
+    ],
+    NGR: [
+        { r: 0,
+          first: [
+            'Tajudeen','Wale','Fatai','Pius','Ade','William','Fidelis','Abiola','Seun','Abel','Suleman','Akinola','Olamide','Desmond','Jeremiah','Bolaji','Oladele',
+            'Valentine','Ayomide','Mohammad','Robert','Edwin','Franklin','Rotimi','Justice','Maxwell','Tijani','Ismaila','Muktar','Olaniyi','Thankgod','Alexander',
+            'Isaiah','Mansur','Emmy','Shamsu','Oladimeji','Olusola','Adedeji','Shafiu','Edward','Shola','Okey','Chimezie','Kamal','Wilson','Alfred','Godswill',
+            'Lanre','Tosin','Olatunde','Dominic','Audu','Donald','Sulaimon','Oluwole','Ebenezer','Ganiyu','Simeon','Babalola','Adebisi','Dare','Steven','Adeoye',
+            'Oliver','Saleh','Celestine','Oluwasegun','Shamsuddeen','Nicholas','Sodiq','Jibril','Mohd','Basiru','Smart','Ajibola','Tope','Nathaniel','Salami',
+            'Afeez','Olayiwola','Ken','Akin','Moshood','Adesina','Cyril','Chibueze','Adegoke','Kennedy','Isiaka','Sule','Gambo','Caleb','Ashiru','Adeyemo','Elvis',
+            'Adedayo','Benedict','Martin','Benson','Dele','Kareem','Harrison','Bashar','Sanni','Godfrey','Kelly','Ayoola','Dickson','Linus','Ridwan','Lekan',
+            'Taofeek','Olabode','Olasunkanmi','Seyi','Dada','Yemi','Sabiu','Adeshina','Olakunle','Bashiru','Dayo','Omotayo','Ayobami','Oke','Raji','Sagir','Albert',
+            'Abbakar','Jackson','Saminu','Etz','Adebowale','Danladi','Babagana','Akinyemi','Bayo','Adetunji','Darlington','Yusif','Sadeeq','Akande','Tobi','Reuben',
+            'Kola','Ado','Adeyinka','Prosper','Theophilus','Tayo','Habeeb','Hakeem','Magaji','Tasiu','Ishola','Yinka','Mayowa','Osita','Agboola','Alh','Oluwaseyi',
+            'Saifullahi','Abdurrahman','Shittu','Evans','Oladipupo','Miracle','Habib','Khalid','Silas','Louis','Waheed','Bukar','Otunba','Popoola','Cletus','Ugo',
+            'Oni','Aliu','Harry','Olayemi','Iliyasu','Larry','Ephraim','Jonah','Titus','Ike','Roland','Rasaq','Jide','Sola','Yahya','Kevin','Musbahu','Olugbenga',
+            'Adeniran','Tukur','Bernard','Ajibade','Bankole','Abbey','Naziru'
+          ],
+          last: [
+            'Aluko','Olagunju','Komolafe','Moore','Oyeniyi','Ogundipe','Ajani','Ilesanmi','Adeyanju','Temitayo','Jegede','Salawu','Kolade','Salako','Gbadamosi',
+            'Akintola','Cole','Adewuyi','Salau','Ayinla','Adenuga','Jumbo','Ekundayo','Ogunyemi','Ololade','Oluwadamilare','Abioye','Omale','Agbaje','Temidayo',
+            'Oriyomi','Adetola','Umoru','Amodu','Alli','Alfa','Egbo','Issa','Onifade','Ayoade','Morenikeji','Adegbola','Oche','Adetayo','Ogundare','Olorunfemi',
+            'Akinpelu','Amoo','Odeyemi','Adio','Kolo','Arowolo','Olawumi','Alimi','Oyeyemi','Owoeye','Omolade','Olalere','Okpe','Gbadebo','Ilori','Osho','Dolapo',
+            'Babajide','Boniface','Folorunso','Endurance','Mutiu','Umukoro','Inusa','Ogunsola','Akinsanya','Momodu','Shettima','Tiamiyu','Jaja','Odinaka','Daura',
+            'Dogo','Banjo','Abolaji','Alonge','Olawunmi','Ganiu','Anuoluwapo','Akanji','Muyiwa','Halilu','Adelaja','Oluyemi','Gidado','Richie','Oluwadamilola',
+            'Akinsola','Ayorinde','Ubani','Anosike','Ogwuche','Olisa','Ibitoye','Pelumi','Okunola','Ogbe','Yerima','Boluwatife','Adeoti','Gimba','Wali','Gentle',
+            'Yahuza','Akintayo','Dalhatu','Oluwadare','Oladosu','Oyedeji','Duke','Omoregie','Falade','Agunbiade','Hamidu','Omole','Bidemi','Anike','Sanda',
+            'Obafemi','Adeolu','Yarima','Ogunbiyi','Jatau','Ogbeide','Ibikunle','Omotoso','Godstime','Makanjuola','Dikko','Okeowo','Adegboye','Oladayo','Okojie',
+            'Oludare','Olowu','Mshelia','Olawuyi','Pepple','Zango','Ngwu','Osondu','Ofoegbu','Tochi','Noble','Nifemi','Olusanya','Agba','Ogwu','Ebube','Osuagwu',
+            'Jerome','Koko','Habu','Idemudia','Lamidi','Habila','Ogunsanya','Odili','Arike','Olasupo','Zakariya','Oyewale','Ikpe','Onuigbo','Fagge','Stone',
+            'Wakili','Saadu','Ihuoma','Olukayode','Oyibo','Akerele','Badejo','Oyekunle','Olagoke','Ajewole','Tela','Ajadi','Ogunlade','Omolayo','Taye','Olowo',
+            'Anifowose','Akinleye','Tunji','Korede','Taiye'
+          ] },
+        { r: 1,
+          first: [
+            'Lawan','Ishaq','Mahmud','Hamisu','Yunusa','Jibrin','Nafiu','Abdulsalam','Alhassan','Danjuma','Sunusi','Mohammad','Samaila','Tijjani','Abdulmalik',
+            'Habibu','Abdullah','Abdulrasheed','Abdulaziz','Abdulkareem','Zakari','Abdulhamid','Muazu'
+          ],
+          last: [
+            'Kano','Gana','Auta','Modu','Goni','Bulama','Wada','Badamasi','Abdulahi','Danlami','Tanimu','Zubair','Hashim','Abdulraheem','Abdulmumin','Makama',
+            'Khalifa','Sidi','Yakasai','Kawu','Amadu','Chiroma','Abdullateef','Abdulganiyu','Abdulrahaman','Malami','Kaka','Barde','Babayo','Shitu','Mukaila',
+            'Jega'
+          ] },
+        { r: 2,
+          first: [
+            'Pius','Ade','William','Fidelis','Ekene','Ejike','Abel','Suleman','Desmond','Jeremiah','Valentine','Robert','Edwin','Arinze','Franklin','Chidiebere',
+            'Rotimi','Justice','Maxwell','Tijani','Muktar','Nonso','Thankgod','Alexander','Isaiah','Mansur','Emmy','Shamsu','Chika','Shafiu','Edward','Shola',
+            'Okey','Chimezie','Kamal','Wilson','Alfred','Godswill','Lanre','Tosin','Dominic','Audu','Donald','Sulaimon','Chibuzor','Ebenezer','Simeon','Babalola',
+            'Dare','Steven','Onyebuchi','Oliver','Saleh','Celestine','Shamsuddeen','Nicholas','Jibril','Mohd','Basiru','Smart','Ajibola','Nathaniel','Salami',
+            'Afeez','Ken','Akin','Moshood','Cyril','Chibueze','Kennedy','Onyekachi','Isiaka','Sule','Gambo','Caleb','Ashiru','Elvis','Benedict','Martin','Benson',
+            'Dele','Kareem','Harrison','Bashar','Sanni','Godfrey','Kelly','Dickson','Linus','Ridwan','Taofeek','Seyi','Dada','Sabiu','Bashiru','Omotayo','Oke',
+            'Raji','Sagir','Albert','Abbakar','Jackson','Saminu','Etz','Danladi','Babagana','Izuchukwu','Darlington','Yusif','Sadeeq','Akande','Reuben','Kola',
+            'Ado','Uzoma','Prosper','Theophilus','Tayo','Habeeb','Hakeem','Magaji','Tasiu','Ishola','Yinka','Nnaemeka','Mayowa','Osita','Agboola','Alh',
+            'Saifullahi','Abdurrahman','Shittu','Evans','Miracle','Habib','Khalid','Silas','Louis','Waheed','Bukar','Otunba','Popoola','Cletus','Ugo','Oni','Aliu',
+            'Harry','Iliyasu','Larry','Ephraim','Jonah','Titus','Ike','Roland','Rasaq','Jide','Yahya','Kevin','Musbahu','Obiora','Tukur','Bernard','Ajibade',
+            'Chisom','Bankole','Abbey','Naziru','Uchechukwu'
+          ],
+          last: [
+            'Alozie','Akinwale','Onyekwere','Chikezie','Obioma','Nwoye','Agwu','Nwobodo','Udoka','Nnanna','Ozor','Chibuzo','Nwoke','Okezie','Aneke','Ukaegbu',
+            'Eneh','Uchendu','Onuh','Uzochukwu','Ogah','Bolarinwa','Ugwuanyi','Nwodo','Anene','Chidozie','Anozie','Nwadike','Asogwa','Chime','Nwaeze','Ugorji',
+            'Okocha','Okenwa','Ifeanyichukwu','Onwe','Obioha','Nwokocha','Anya','Ezeani','Ekwueme','Akinwande','Uwakwe','Nweze','Ezike','Okwara','Osakwe','Chike',
+            'Nwokolo','Nkwocha','Nwoko','Akinwumi','Ezugwu','Ezema','Oluchukwu','Azuka','Onyedikachi','Nnadozie','Ozoemena','Akpa','Okwudili','Adiele','Onyemaechi',
+            'Omeje','Ngene','Ukachukwu','Iwuchukwu'
+          ] },
+        { r: 3,
+          first: [
+            'Pius','Ade','William','Fidelis','Abel','Suleman','Desmond','Jeremiah','Valentine','Robert','Edwin','Franklin','Rotimi','Justice','Maxwell','Tijani',
+            'Muktar','Thankgod','Alexander','Isaiah','Mansur','Emmy','Shamsu','Shafiu','Edward','Shola','Okey','Chimezie','Kamal','Wilson','Alfred','Godswill',
+            'Lanre','Tosin','Dominic','Audu','Donald','Sulaimon','Ebenezer','Simeon','Babalola','Dare','Steven','Oliver','Saleh','Celestine','Shamsuddeen',
+            'Nicholas','Jibril','Mohd','Basiru','Smart','Ajibola','Nathaniel','Salami','Afeez','Ken','Akin','Moshood','Cyril','Chibueze','Kennedy','Isiaka','Sule',
+            'Gambo','Caleb','Ashiru','Elvis','Benedict','Martin','Benson','Dele','Kareem','Harrison','Bashar','Sanni','Godfrey','Kelly','Dickson','Linus','Ridwan',
+            'Taofeek','Seyi','Dada','Sabiu','Bashiru','Omotayo','Oke','Raji','Sagir','Albert','Abbakar','Jackson','Saminu','Etz','Danladi','Babagana','Darlington',
+            'Yusif','Sadeeq','Akande','Reuben','Kola','Ado','Prosper','Theophilus','Tayo','Habeeb','Hakeem','Magaji','Tasiu','Ishola','Yinka','Mayowa','Osita',
+            'Agboola','Alh','Saifullahi','Abdurrahman','Shittu','Evans','Miracle','Habib','Khalid','Silas','Louis','Waheed','Bukar','Otunba','Popoola','Cletus',
+            'Ugo','Oni','Aliu','Harry','Iliyasu','Larry','Ephraim','Jonah','Titus','Ike','Roland','Rasaq','Jide','Yahya','Kevin','Musbahu','Tukur','Bernard',
+            'Ajibade','Bankole','Abbey','Naziru'
+          ],
+          last: [
+            'Umoren','Omoruyi','Udom','Odion','Ekpe','Akpabio','Ibanga'
+          ] },
+    ],
+    GHA: [
+        { r: 0,
+          first: [
+            'Hope','Courage','Ebo','Pascal','Abdul Razak','Qwesi','Jack','Kevin','Cyril','Gordon','Nurudeen','Jesse','Abel','Abdul Rahman','Abudu','Akwesi',
+            'Gershon','Samson','Malam','Humble','Ayuba','Quophi','Bhra','Oboy','Jeffery','Nanayaw','Jeremiah','Eli','Efo','Theo','Immanuel','Owura','Sky','Jason',
+            'Senior','Nathan','Nana Kofi','Yung','Johnny','Max','Leonard','Odeneho','Jah','Rockson','Lord','Sadat','Bob','Dela','Bishop','Noble','Philemon','Yao',
+            'Abdul Aziz','Senyo','Arnold','Gerald','Mac','Nhana','Derek','Reginald','Shadrach','Mubarak','Abdul Rahaman','Nat','Habib','Nhanha','Bill','Jake',
+            'Unruly','Lukman','Clinton','Lucas','Koffi','Nene','Abugri','Elias','Gabby','Josh','Hudu','Holy','Awini','Farouk','Elisha','Cobby','Winfred','Baron',
+            'Marcus','Perry','Herbert','Alvin','Jerome','Cletus','Austin','Qwabena','Ansu','Cornelius','Nasiru','Lucky','Billy','Leslie','Jamal','Ignatius',
+            'Citizen','Marvin','Sebastian','Dave','Augustus','Abeiku','Sly','Kamal','Humphrey','Nana Osei'
+          ],
+          last: [
+            'Dogbe','Hussein','Quarcoo','Freeman','Kankam','Kesse','Korsah','Sadia','Dotse','Adama','Abekah','Saah','Davis','Latifa','Nurudeen','Godsway','Sani',
+            'Ghartey','Newton','Tutu','Amofa','Brew','Osafo','Harrison','Boampong','Ayensu','Nketiah','Wise','Bortey','Safo','Cobbina','Djan','Berko','Koduah',
+            'Annang','Promise','Dramani','Anku','Bamfo','Majeed','Tijani','Sasu','Abdul Rahman','Bondzie','Anang','Ackom','Amoateng','Dwamena','Bansah','Enyonam',
+            'Sekyi','Ocloo','Nyantakyi','Gyebi','Adade','Banks','Ayim','Diamond','Mingle','Ismail','Foli','Ankamah','Akos','Attipoe','Cole','Amakye','Amankwa',
+            'Affum','Braimah','Abotsi','Awortwe','Anaba','Bello','Quarm','Appau','Anum','Eghan','Somuah','Lomotey','Dawuda','Destiny','Woode','Anaman','Nimo',
+            'Adobea','Gyamfua','Iddris','Korley','Botchwey','Cofie','Sikapa','Rauf','Amin','Mawusi','Okrah','Wonder','Rockson','Muniru','Abaidoo','Korang','Mumin',
+            'Ewusi','Boah','Klutse','Ayeh','Akorli','Nimako','Adomah','Mohammad','Abudu','Obiri','Arhinful','Essoun','Osae','Kubi','Dadson','Korkor','Nation',
+            'Amevor','Deku','Quist','Duncan','Essandoh','Gaisie','Guy Guy','Kuffour','Azure','Attoh','Hero','Gyekye','Amihere','Dacosta','Dzifa','Blinkz','Tackie',
+            'Yaro','Adofo','Owusu-Ansah','Kodua','Yalley','Gyapong','Oware','Awotwe','Whyte','Hafiz','Owiredu','Damoah','Lukman','Abdul Karim','Nettey','Tenkorang',
+            'Akrofi','Kuma','Fosua','Asabea','Senyo','Favour','Akowuah','Amarh','Yeboaa','Ofosua','Animah','Ayuba','Agbesi','Sena','Sosu','Buckman','Nyaaba',
+            'Omari','Ashitey','Clinton','Khalifa','Hamid','Abugri','Yorke','Clottey','Lawer','Mensa','Amoo','Nketsiah','Kafui','Hackman','Darling','Legacy','Kasim',
+            'Adu-Gyamfi','Yirenkyi','Perry','Quashie','Mamudu','Mends','Darlington','Sadick','Senior','Abrafi','Solo','Entsie','Glover','Nyarkoa','Sunday','Lord',
+            'Iddi','Crentsil','Bowy','Akwetey','Agyiri','Adubea','Yahya','Baako','Atanga','Suleiman','Power','Apraku','Brako','Halidu','Issa','Obuobi','Agyepong',
+            'Kwateng','Ahenkorah','Kyeraa','Habib','Anani','Jibril','Sefa','Amenyo','Abeka','Ninson','Ohemeng','Birago','Bill','Budu','Pablo','Perfect','Saani',
+            'Newman','Yartey','Savage','Brefo','Obour','Osei Tutu','Sadik','Hudu','Tabi','Ashley','Enchill','Sadat','Messi','Powers','Banahene','Quao','Sefah',
+            'Grant','Maccarthy','Nice','Tuga','Baron','Dodzi','Miller','Iddriss','Odai','Adotey','Seyram','Ghansah','Asiedua','Kwashie','Kyeremateng','Abrokwah',
+            'Bimpong','Ranking','Appiagyei','Amanfo','Simpson','Brago','Ashie','Aseidu','Asomaning','Guyguy','Appiah Kubi','Yaya','Gyau','Anning','Darkoh',
+            'Atuahene','Sadiq','Tieku','Graham','Bossman','Agbozo','Mawutor','Dartey','Bawah','Asumadu','Akpalu','Anima','Amaning','Yayra','Ayamga','Archer','Rock',
+            'Pinto','Osabutey','Afram','Boakye Yiadom','Aning','Mante','Davies','West','Fuseni','Ofosuhene','Akuoko','Ampiah','Akomeah','Basit','Garba','Lion',
+            'Yakub','Incoom','Eyram','Ansu','Salia','Broni','Ayivor','Ayiku','Lumor','Ayertey','Akrong','Mansa','Wayo','Best','Sayibu','Nasiru','Moussa','Gyesi',
+            'Ahiable','Bilson','Tabiri','Ventures','Awudi','Boachie','Afrane','Apenteng','Welbeck','Queenzy','Eliasu','Bempong','Boasiako','Deen','Sarkcess',
+            'Bosompem','Pappoe','Kiss','Osei Owusu','Arkorful','Botwey','Bannerman','Nsoh','Brain','Faith','Awini','Annobil','Nkum','Bongo','Gafaru','Vibes',
+            'Appah','Asirifi','Agbenyo','Mole','Osuman','Darkoa','Nanor','Krampah','Plange','Pokuah','Salisu','Abanga','Kofie','Gyedu','Mccarthy','Larbie','López',
+            'Serwah','Moni','Apau','Agbanyo','Bamba','Suraj','Kodjo','Ephraim','Dzikunu','Rahaman','Rahim','Osumanu','Kobi','Amoasi','Armoo','Swanzy','Amoakoh',
+            'Jamal','Samed','Mawuena','Dagadu','Amonoo','Kwapong','Asenso','Buah','Toure','Sackitey','Asomani','Galley','Koffie','Rafia','Kamil','Pounds','Dompreh',
+            'Obodai','Dansoa','Mubarik','Alpha','Lamar','Mawuko','Ofoe','Eduful','Mahmud','Muntari','Dankyi','Padi','Eduah','Amegah','Quaynor','Ganyo','Selasi',
+            'Nimoh','Mawunyo','Ametepe','Zion','Jonah','Adamou','Khalid','Amofah','Hazard','Jordan','Gambo','Sumani','Fataw','Wayne','Smart','Essah','Agyarko',
+            'Zigah','Appoh','Ablorh','Pobee','Bioh','Bassaw','Alhasan','Sala','Golden','Etornam','Lbrahim','Fofie','Tsikata','Osie','Sark','Walter','Bhim',
+            'Confidence','Boison','Enyan','Ainoo','Ayesu','Khid','Komla','Issahak','Bullet','Matey','Good','Kaku','Lokko','Husein','Wusu','Faruk','Saaka','Mutala',
+            'Bempah','Ferguson','Maclean','Dziwornu','Ayine','Bayor','Amoafo','Gyamfuah','Frema','Fosuah','Hakim','Gyabaah','Kabore','Asumah','Abdul Mumin','Yunus',
+            'Odum','Adarkwah','Krah','Ayivi','Flex','Jesús','Ntsiful','Akosah','Narteh','Arko','Ahenkan','Kwafo','Akwaboah','Sallah','Bemah','Fremah','Murphy',
+            'Adutwum','Morris','Anas','Ahadzi','Tsatsu','Barnor','Agbenyegah','Fianu','Lincoln','Banda','Aheto','Conduah','Asempa','Robertson','Gómez','Bliss',
+            'Haizel','Sarbah','Akpabli','Amoabeng','Manso','Blaq','Fianko','Dzakpasu','Amegashie','Nani','Asem','Idrisu','Bannor','Asamani','Tawia','Rahama',
+            'Jallo','Davidson','Wireko','Denteh','Amon','Wellington','Munkaila','Lawal','Laar','Ofei','Nyanzu','Kunadu','Dawson','Wasty','Omane','Dowuona',
+            'Enninful','Bawuah','Kotei','Mettle','Brenya','Elikem','Akuamoah','Seshie'
+          ] },
+        { r: 1,
+          first: [
+            
+          ],
+          last: [
+            'Alidu','Muhammad','Usman','Abdullai','Abdullahi','Abdulrahman','Hamdia','Hardi','Salim','Majid','Rufai','Ishaq'
           ] },
     ],
     AUS: [
@@ -18204,7 +18820,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.28';
+        const VERSION = '0.9.18.29';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
