@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.29</title>
+    <title>F1 RPG v0.9.18.30</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.29 (aktuell) - 03.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.18.30 (aktuell) - 03.10.2026</div>
+                            <div>&#8226; NEU: Eigene Namens-Pools fuer Hongkong, Macau, Taiwan, Singapur, Kasachstan und Bangladesch (vorher chinesisch, russisch bzw. indisch)</div>
+                            <div>&#8226; NEU: Chinesische Laender mit Mischung aus englischen und chinesischen Vornamen</div>
+                            <div>&#8226; NEU: Singapur mit drei, Kasachstan und Bangladesch mit je zwei Namensregionen</div>
+                            <div class="font-bold text-slate-400">v0.9.18.29 - 03.10.2026</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer Albanien, Georgien, Aserbaidschan, Turkmenistan, Nigeria und Ghana (vorher Platzhalter)</div>
                             <div>&#8226; NEU: Aserbaidschan in offizieller Schreibung, Georgien ohne Kosenamen</div>
                             <div>&#8226; NEU: Nigeria mit vier, Ghana mit zwei Namensregionen</div>
@@ -11788,17 +11792,351 @@ const NAME_POOLS_BY_NATION = {
             ['Maiga',10],['Salam',10],['Hamza',10],['Musa',10],['Dery',10],['Wahab',9],['Adongo',9],['Bashiru',9]
           ] }
     ] },
+
+    // ── HKG ──
+    HKG: { regions: [
+        { w: 1,
+          first: [
+            ['Ka-chun',68],['Chi-wai',76],['Wai-man',65],['Chi-keung',77],['Kwok-wai',45],['Ka-ho',62],['Chun-kit',62],['Ho-yin',60],['Tai-man',37],['Kam-hung',38],
+            ['Ken',100],['Andy',98],['Eric',96],['Sam',93],['Tony',91],['Alex',91],['Michael',85],['Jason',84],['Peter',83],['Raymond',82],['David',79],
+            ['Simon',79],['Jacky',78],['Alan',77],['Kelvin',75],['Joe',75],['Ricky',73],['Gary',71],['Ben',70],['Ivan',68],['John',68],['Chris',67],['Kenny',66],
+            ['Henry',66],['Chi-ming',66],['Leo',65],['Paul',64],['Vincent',64],['Thomas',64],['William',64],['Kevin',63],['Patrick',63],['Tommy',63],
+            ['Wai-hung',62],['Ray',61],['Jack',60],['Wai-keung',60],['James',60],['Daniel',60],['Kenneth',60],['Wai-ming',59],['Chi-hung',58],['Stephen',58],
+            ['Jimmy',57],['Billy',57],['Danny',56],['Matthew',55],['Ka-wai',54],['Sunny',54],['Marco',53],['Chi-ho',53],['Wilson',52],['Andrew',52],['Anthony',51],
+            ['Kwok-keung',51],['Brian',51],['Johnny',51],['Steven',50],['Anson',49],['Eddie',49],['Roy',49],['Samuel',49],['Tim',48],['Chi-man',48],['Terry',47],
+            ['Wai-kit',47],['Victor',47],['Keith',46],['Chi-kin',46],['Louis',45],['Man-kit',45],['Edward',45],['Benny',44],['Chun-yin',44],['Tom',44],
+            ['Frankie',44],['Chi-fai',44],['Ka-ming',44],['Chi-shing',43],['Ka-fai',43],['Dennis',43],['Ka-lok',43],['Calvin',43],['Stanley',42],['Mark',42],
+            ['Mike',42],['Jeff',42],['Jerry',41],['Chun-wai',41],['Philip',40],['Kwok-hung',40],['Martin',40],['Alvin',40],['Albert',40],['Chi-wah',40],
+            ['Kwok-leung',39],['Joseph',39],['Oscar',39],['Chun-ho',38],['Derek',38],['Ka-wing',38],['Chi-chung',38],['Chi-wing',38],['Nelson',37],['Edmond',37],
+            ['Charles',37],['Steve',36],['Chi-kwong',36],['Wai-kin',36],['Nick',36],['Kam-wah',35],['Siu-ming',35],['Man-fai',35],['Dick',35],['Felix',35],
+            ['Lawrence',35],['Ka-kit',35],['Kwok-fai',35],['Hugo',35],['Chi-hang',34],['Kin-man',34],['Wing-hong',34],['Man-ho',34],['Wai-lun',34],['Max',34],
+            ['Wai-ho',34],['Dicky',34],['Wai-chung',34],['Kam-fai',34],['Jeffrey',33],['Jonathan',33],['Kwok-wah',33],['Angus',33],['Ronald',33],['Justin',33],
+            ['Wai-leung',33],['Wai-kwong',33],['Harry',33],['Wai-shing',33],['Terence',32],['Edwin',32],['Wing-keung',32],['Chun-man',32],['Francis',31],
+            ['Richard',31],['Ka-hei',31],['Alfred',31],['Man-chun',31],['Kam-wing',31],['Chun-hei',31]
+          ],
+          last: [
+            ['Chan',100],['Wong',92],['Lee',59],['Leung',58],['Lam',57],['Cheung',55],['Lau',49],['Cheng',37],['Lai',35],['Yeung',35],['Tang',33],['Tsang',31],
+            ['Chow',30],['Kwok',30],['Fung',29],['Chung',29],['Tam',28],['Law',26],['Yip',26],['Tse',26],['Chu',25],['Liu',24],['Mak',23],['Choi',23],['Hui',23],
+            ['Yuen',22],['Chiu',21],['Kwan',20],['Chau',20],['Poon',19],['Yau',19],['Wan',19],['Hung',19],['Lui',19],['Siu',19],['Man',18],['Chen',18],['Tong',18],
+            ['Tsui',18],['Pang',18],['Fong',17],['Mok',16],['Kong',16],['Kwong',15],['Lin',15],['Yan',15],['Chong',14],['Yiu',14],['Wang',14],['Luk',14],['Fan',14],
+            ['Chui',13],['Yung',13],['Sin',13],['Zhang',12],['Ching',12],['Tsoi',12],['Tai',12],['Yim',11],['Shum',11],['Huang',11],['Ngai',11],['Kam',11],
+            ['Kan',10],['Yang',10],['Chang',10],['Choy',10],['Lok',10],['Suen',10],['Shek',9],['Woo',9],['Tung',9],['Sun',9],['Fok',9],['Ngan',9],['Pun',9],
+            ['Ting',9],['Hon',8],['Keung',8],['Hong',8],['Tan',8],['Yee',8],['Cho',7],['Lung',7],['Yam',7],['Chin',7],['Liang',7],['Cheuk',7],['Mui',7],['Khan',7],
+            ['Sung',7],['Kung',6],['Zhou',6],['Sit',6],['Koo',6],['Sum',6],['Tso',6],['Hau',6],['Tin',6],['Zhu',6],['Lim',6],['Yue',6],['Luo',6],['Lun',5],
+            ['Shiu',5],['Rai',5],['Sham',5],['Zheng',5],['Pan',5],['Chiang',5],['Lei',5],['Zhao',5],['Leong',5],['Young',5],['Pak',5],['Cai',5],['Wei',5],
+            ['Chak',5],['Jiang',5],['Heung',5],['Zeng',5],['Pong',5],['Cheong',5],['Chim',5],['Shi',5],['Deng',4],['Xie',4],['Feng',4],['Guo',4],['Han',4],
+            ['Zhong',4],['Hang',4],['Chik',4],['Wen',4],['Xiao',4],['Yao',4],['Long',4],['Peng',4],['Tao',4],['Chou',4],['Hsu',4],['Yuan',4],['Liao',4],['Nam',4],
+            ['Ayu',4],['Fang',4],['Tsai',4],['Kok',4],['Gao',4],['Dai',4],['Ding',4],['Shen',3],['Song',3],['Huen',3],['Wat',3],['Chai',3],['Lou',3],['Qiu',3],
+            ['Nip',3],['Loo',3],['Pau',3],['See',3],['Kee',3],['Yik',3],['Mai',3],['Cao',3],['Dong',3],['You',3],['Che',3],['Hou',3],['Lao',3],['Cham',3],
+            ['Chao',3],['Yun',3],['Foo',3],['Lie',3],['Jin',3],['Shah',3],['Shih',3],['Koon',3],['Jai',3],['Guan',3],['Low',3],['Ong',3],['Wun',3],['Ning',3],
+            ['Chua',3],['Chum',3],['Lum',3],['Shu',3],['Soo',3],['Kiu',3],['Qin',3],['Zou',2],['Tseung',2],['But',2],['Chuk',2],['Mau',2],['Yong',2],['Tseng',2],
+            ['Lia',2],['Sheung',2],['Ren',2],['Gong',2],['She',2],['Zhuang',2],['Xia',2],['Kuang',2],['Kang',2],['Shin',2],['Mao',2],['Kwai',2],['Chuang',2],
+            ['Bao',2],['Cha',2],['Chee',2],['Tian',2],['Yap',2],['Yum',2],['Bong',2],['Shea',2],['Hiu',2],['Kao',2],['Sha',2],['Meng',2],['Kuo',2],['Loi',2],
+            ['Cui',2],['Ang',2],['Xiong',2],['Mung',2],['Sim',2],['Xue',2],['Mang',2],['Teng',2],['Loh',2],['Bae',2],['Son',2],['Mong',2],['Kui',2]
+          ] }
+    ] },
+
+    // ── MAC ──
+    MAC: { regions: [
+        { w: 1,
+          first: [
+            ['Ka-hou',100],['Ka-chon',85],['Chi-hou',80],['Chi-kin',72],['Chon-kit',67],['Chi-keong',59],['Wai-hong',58],['Ka-seng',55],['Chi-meng',58],
+            ['Wai-kit',55],['Sam',95],['Ken',92],['Alex',80],['Eric',78],['Andy',78],['Jason',74],['Michael',71],['Ka-wai',70],['Chi-wai',69],['John',67],
+            ['Ben',66],['David',66],['Jacky',66],['Leo',63],['Jack',63],['Tony',63],['Kevin',62],['Kelvin',62],['Kenny',60],['Ivan',60],['Joe',60],['Chris',59],
+            ['Daniel',59],['Mark',59],['Simon',59],['Peter',59],['Chi-fong',58],['Alan',57],['Ray',55],['Gary',55],['Marco',54],['James',52],['Ka-meng',52],
+            ['Raymond',52],['Chi-hang',51],['Chi-chong',51],['Vincent',50],['Steven',50],['Chi-hong',50],['Man-kit',49],['Henry',49],['Roy',49],['Paul',48],
+            ['Ricky',48],['Wai-meng',48],['Wai-man',48],['Jimmy',47],['William',46],['Tim',46],['Terry',45],['Jay',43],['Billy',43],['Thomas',43],['Jerry',43],
+            ['Oscar',43],['Hugo',42],['Tommy',42],['Tom',42],['Victor',41],['Wilson',41],['Patrick',41],['Matthew',40],['Johnny',40],['Kenneth',40],['Sunny',40],
+            ['Louis',40],['Mike',40],['Nick',39],['Anthony',39],['Brian',38],['Danny',38],['Dennis',38],['Andrew',38],['Antonio',37],['Jeff',37],['Anson',37],
+            ['Nelson',36],['Benny',36],['Richard',35],['Calvin',35],['Sky',35],['Edward',35],['Rex',34],['Eddie',34],['Joseph',34],['Samuel',33],['Felix',33],
+            ['Keith',33],['Stephen',33],['Edwin',33],['Alvin',33],['Max',33],['Stanley',32],['Ronald',32],['Frankie',32],['Jeffrey',31],['Martin',30],['Albert',30],
+            ['Ian',29],['Harry',29],['George',29],['Justin',29],['Paulo',28],['Charles',28],['Angus',28],['Manuel',28],['Allen',28],['Steve',27],['Dicky',27],
+            ['Jim',27],['Frank',27],['Lawrence',26],['Bill',26],['Jonathan',26],['Philip',26],['Kyle',26],['Francis',26],['Derek',26],['Bosco',25],['Robert',25],
+            ['Johnson',25],['Don',25],['Mario',25],['Dick',25],['Aaron',25],['Bryan',24],['Fernando',24],['Joel',24],['Arnold',24],['Donald',23],['Christopher',23],
+            ['Roger',23],['Kent',23],['Terence',22],['Lucas',22],['Marcus',22],['Randy',22],['Marvin',22],['Allan',22],['Edmond',21],['Minh',21],['Cyrus',21],
+            ['Adam',21],['Kahou',21],['Gordon',21],['Edgar',21],['Jayson',21],['Noel',21],['Benson',21],['Joey',21]
+          ],
+          last: [
+            ['Chan',100],['Wong',90],['Leong',71],['Lei',66],['Lam',65],['Cheong',46],['Lee',42],['Lao',39],['Choi',37],['Fong',36],['Cheang',34],['Tam',34],
+            ['Lai',33],['Ieong',31],['Chao',31],['Tang',30],['Lou',28],['Chong',28],['Chen',28],['Hong',25],['Kuok',24],['Mak',24],['Chu',24],['Hoi',24],
+            ['Chio',24],['Leung',24],['Lau',23],['Chang',23],['Tong',22],['Sou',22],['Huang',21],['Liu',21],['Pun',21],['Lin',20],['Zhang',20],['Che',20],
+            ['Kuan',20],['Loi',20],['Cheng',20],['Kou',20],['Wang',19],['Kong',19],['Kam',18],['Sio',18],['Lok',18],['Cheung',17],['Yang',16],['Wan',16],['Lio',16],
+            ['Pang',15],['Sun',15],['Sin',15],['Tai',14],['Liang',14],['Tou',14],['Chou',13],['Iong',13],['Chow',13],['Fan',13],['Mok',13],['Chau',13],['Mai',13],
+            ['Long',13],['Tan',13],['Kuong',13],['Iao',12],['Kwok',12],['Chiang',12],['Yeung',11],['Fung',11],['Zhou',11],['Fok',11],['Zhao',10],['Zheng',10],
+            ['Chiu',10],['Chung',10],['Siu',10],['Ung',10],['Yip',10],['Luo',9],['Law',9],['Cheok',9],['Pan',9],['Kwan',9],['Ngai',9],['Zhu',9],['Yuen',9],
+            ['Kan',9],['Tse',8],['Song',8],['Jiang',8],['Hung',8],['Cai',8],['Zeng',8],['Hao',8],['Sit',8],['Kok',8],['Mui',8],['Xie',8],['Guo',8],['Hui',8],
+            ['Feng',8],['Ngan',7],['Shi',7],['Lim',7],['Deng',7],['Teng',7],['Cao',7],['Xiao',7],['Mou',7],['Zhong',7],['Tsang',7],['Luong',7],['Poon',7],
+            ['Liao',7],['Wei',7],['Lay',7],['Yuan',7],['Wen',7],['Chin',6],['Gao',6],['Guan',6],['Hon',6],['Luu',6],['Dao',6],['Fang',6],['Yao',6],['Chim',6],
+            ['Lui',6],['Yin',6],['Phung',5],['Tsui',5],['Rai',5],['Pou',5],['Chui',5],['Iun',5],['Son',5],['Win',5],['Han',5],['Dong',5],['Qiu',5],['Pong',5],
+            ['Doan',5],['Kuang',5],['Kwong',5],['Yau',5],['Iam',5],['Pao',5],['Bao',5],['Dai',5],['Ayu',5],['Shen',5],['Tin',5],['Mio',5],['Cho',5],['Min',5],
+            ['You',5],['Lon',5],['Koo',5],['Pak',4],['Young',4],['Qin',4],['Aung',4],['Ching',4],['Luk',4],['Nip',4],['Chek',4],['Giang',4],['Ding',4],['Tien',4],
+            ['Bee',4],['Chai',4],['Jin',4],['Ong',4],['Woo',4],['Yung',4],['Hun',4],['Thai',4],['Hsu',4],['Quang',4],['Yiu',4],['Yee',4],['Ren',4],['Iek',4],
+            ['Ruan',4],['Zhuang',4],['Lieu',4],['Cham',4],['Huy',4],['Chua',4],['Tao',4],['Tian',4],['Khan',4],['Gan',4],['Lian',4],['Pat',4],['Yong',4],['Xue',3],
+            ['Lang',3],['Gong',3],['Seak',3],['Zhen',3],['Thuong',3],['Hoai',3],['Hau',3],['Cui',3],['Yap',3],['Xin',3],['Zou',3],['Rong',3],['Mao',3],['Choy',3],
+            ['Tuyen',3],['Lie',3],['Yim',3],['Kieu',3],['Chak',3],['Quan',3],['Thang',3],['Wat',3],['Suen',3],['Hua',3],['Yeong',3],['Xing',3],['Pui',3],['Pau',3],
+            ['Mae',3],['Phong',3],['Tung',3],['Tsai',3],['Diep',3],['Jai',3],['Sung',3],['Xia',3],['Iau',3],['Que',3],['Moe',3],['Shum',3],['Miu',3],['Sau',3]
+          ] }
+    ] },
+
+    // ── TPE ──
+    TPE: { regions: [
+        { w: 1,
+          first: [
+            ['Chia-hao',68],['Chun-chieh',68],['Chien-hung',59],['Chih-hao',58],['Chih-ming',70],['Chih-wei',68],['Kuan-ting',49],['Kuan-yu',48],['Tsung-han',46],
+            ['Cheng-han',45],['Kevin',100],['David',99],['Eric',98],['Jason',98],['James',88],['Andy',87],['Alex',82],['Jerry',79],['Jack',78],['Michael',73],
+            ['Tony',71],['Steven',71],['Sam',71],['Peter',68],['Daniel',68],['Vincent',67],['Chih-hung',67],['Allen',66],['Jimmy',66],['Chia-wei',65],['Ken',63],
+            ['John',60],['Leo',59],['Frank',59],['Chris',58],['Jeff',58],['Alan',58],['William',57],['Chih-cheng',56],['Chun-hung',56],['Paul',56],['Mark',54],
+            ['Brian',54],['Sean',53],['Ray',53],['Jacky',52],['Johnny',52],['Nick',52],['Joe',52],['Henry',51],['Shih-chieh',50],['Mike',50],['Wen-pin',50],
+            ['Gary',50],['Chia-hung',50],['Joseph',49],['Ben',49],['Che-wei',48],['Richard',47],['Chien-chung',47],['Simon',47],['Max',47],['Edward',46],
+            ['Andrew',46],['Tim',46],['Chun-ming',45],['Stanley',45],['Chih-chiang',45],['Charles',45],['Jay',45],['Eason',44],['Howard',43],['Roger',43],
+            ['Justin',43],['Yen-ting',43],['Kenny',42],['Wayne',42],['Ian',42],['Chun-yu',42],['Yu-hsiang',42],['Danny',41],['Hank',41],['Chih-chieh',41],
+            ['Wen-cheng',41],['Chih-hsiang',40],['Eddie',40],['Po-han',40],['Robert',40],['Aaron',40],['Dennis',39],['Hsin-hung',39],['George',39],['Steve',39],
+            ['Albert',39],['Chun-liang',39],['Ivan',38],['Johnson',38],['Bruce',38],['Louis',38],['Tom',38],['Patrick',38],['Chun-hsien',37],['Kuo-hua',37],
+            ['Thomas',37],['Jim',37],['Chien-cheng',37],['Che-yu',37],['Ricky',37],['Chia-ming',37],['Jen-chieh',36],['Jeffrey',36],['Chien-hua',36],
+            ['Kai-hsiang',36],['Terry',36],['Wen-lung',36],['Ming-che',36],['Tommy',36],['Tzu-hao',36],['Ming-te',36],['Victor',35],['Chien-chih',35],
+            ['Chih-chung',35],['Ming-hui',35],['Chun-ting',35],['Ethan',35],['Scott',34],['Chih-wen',34],['Arthur',34],['Roy',34],['Chih-yuan',34],['Chia-jung',34],
+            ['Tsung-hsien',34],['Po-wen',33],['Cheng-en',33],['Chien-hsing',33],['Wen-chieh',33],['Kuan-hung',33],['Rick',33],['Wen-hsiang',32],['Shih-chang',32],
+            ['Adam',32],['Chun-hao',32],['Tsung-lin',32],['Benson',31],['Wei-chieh',31],['Chien-liang',31],['Alvin',31],['Chun-te',31],['Po-hao',31],
+            ['Chih-hsiung',31],['Po-hung',31],['Kuan-lin',31],['Jeremy',31],['Wei-lun',30],['Shawn',30],['Cheng-hsiung',30],['Chin-lung',30],['Wen-hao',30],
+            ['Wen-chung',30],['Wen-hsiung',30]
+          ],
+          last: [
+            ['Chen',100],['Lin',85],['Huang',66],['Chang',63],['Wang',60],['Lee',59],['Liu',48],['Hsu',46],['Yang',42],['Tsai',40],['Cheng',34],['Hsieh',29],
+            ['Chou',28],['Kuo',28],['Lai',28],['Liao',27],['Chiu',25],['Hung',24],['Tseng',24],['Yeh',24],['Chiang',23],['Kao',21],['Chan',21],['Chu',21],
+            ['Chuang',19],['Chung',19],['Shih',19],['Hsiao',18],['Wei',17],['Chien',17],['Pan',17],['Shen',17],['Peng',16],['Sun',16],['Yen',16],['Liang',16],
+            ['Chao',15],['Tang',14],['Fang',13],['Wong',13],['Fan',13],['Wen',13],['Hong',12],['Weng',12],['Chi',11],['Zhang',11],['Sung',11],['Ting',11],
+            ['Ayu',10],['Tsao',10],['Tai',10],['Tan',10],['Tung',10],['Lan',9],['Teng',9],['Hou',9],['Han',9],['Jiang',9],['Yao',9],['Chin',9],['Feng',9],
+            ['Lien',9],['Yuan',9],['Bae',8],['Zheng',8],['Ling',8],['Lim',8],['Hsueh',8],['Luo',8],['Kang',8],['Yan',7],['Cho',7],['Guo',7],['Kung',7],['Wan',7],
+            ['Liou',7],['Shu',7],['Pai',7],['Dai',7],['Yin',6],['Tien',6],['Chiou',6],['Kuan',6],['Zeng',6],['Xie',6],['Young',6],['Shi',6],['You',6],['Cai',6],
+            ['Xiao',6],['Song',6],['Tsou',6],['Jian',6],['Lam',6],['Lau',6],['Hua',5],['Lie',5],['Jen',5],['Shao',5],['Chia',5],['Deng',5],['Chai',5],['Hsia',5],
+            ['Kan',5],['Zhu',5],['Ding',5],['Tzeng',5],['Hui',5],['Lei',5],['Mao',5],['Chow',5],['Leung',4],['Chong',4],['Tao',4],['Tong',4],['Cheung',4],
+            ['Hsiung',4],['Jaya',4],['Mai',4],['Ong',4],['Shan',4],['Syu',4],['Fong',4],['Hsin',4],['Tsui',4],['Chih',4],['Gao',4],['Zhou',4],['Meng',4],['Zhan',4],
+            ['Sheng',4],['Jin',4],['Cha',4],['Lian',4],['Qiu',4],['Shieh',4],['Pang',4],['Lou',4],['Jia',4],['Hsiang',4],['Dong',4],['Chueh',4],['Chiao',4],
+            ['San',4],['Zhao',4],['Woo',4],['Lung',3],['Zhong',3],['Zhuang',3],['Tsang',3],['Jung',3],['Shiu',3],['Jeng',3],['Pao',3],['Tian',3],['Jang',3],
+            ['Sin',3],['Xin',3],['Kong',3],['Yong',3],['Tin',3],['Sue',3],['Yung',3],['Caem',3],['Law',3],['Bai',3],['Chua',3],['Tam',3],['Fung',3],['Tok',3],
+            ['Khan',3],['Nien',3],['Liaw',3],['She',3],['Miao',3],['Ang',3],['Sie',3],['Leong',3],['Win',3],['Kwok',3],['Bee',3],['Haung',3],['Yap',3],['Syah',3],
+            ['Jou',3],['Yah',3],['Zee',3],['Man',3],['Zhen',3],['Choi',3],['Che',3],['Sheu',3],['Juang',3],['Sha',3],['Shiao',3],['Leu',3],['Shiau',3],['Ciou',3],
+            ['Lyu',3],['Nie',3],['Hsing',3],['Lay',3],['Tso',3],['Cao',3],['Shaw',3],['Bong',3],['Niu',3],['Bao',3],['Ruan',3],['Low',2],['Shyu',2],['Chuan',2],
+            ['Jao',2],['Yueh',2],['Thea',2],['Yip',2],['Ren',2],['Sui',2],['Yee',2],['Guan',2],['Liew',2],['Yeung',2],['Tse',2],['Chau',2],['Liau',2],['Chieh',2],
+            ['Fei',2],['Goh',2],['Shie',2],['Zou',2],['Kou',2],['Cie',2],['Tzu',2],['Xue',2],['Phang',2],['Lah',2],['Shang',2],['Mak',2],['Keng',2],['Siao',2]
+          ] }
+    ] },
+
+    // ── SGP ──
+    SGP: { regions: [
+        { w: 0.74,
+          first: [
+            ['Wei-ming',90],['Jun-jie',90],['Wei-jie',90],['Zhi-hao',90],['Kok-leong',90],['Chee-keong',90],['Boon-huat',90],['Teck-seng',90],['Wee-kiat',90],
+            ['Kian-wee',90],['Guo-liang',90],['Jian-hong',90],['Yong-sheng',90],['Kah-wai',90],['Choon-hock',90],['Beng-hock',90],['Kim-seng',90],['Swee-heng',90],
+            ['Hong-wei',90],['Jia-hao',90],['Zhi-wei',45],['Kai-xiang',45],['Jun-wei',45],['Wen-jie',45],['Chee-meng',45],['Kok-wah',45],['Ah-seng',45],
+            ['Boon-keng',45],['Eng-soon',45],['Chin-wee',45],['David',95],['John',91],['Jason',83],['James',79],['Alex',77],['Michael',76],['Daniel',74],
+            ['Steven',74],['Kelvin',72],['Peter',72],['Eric',72],['Andy',70],['Vincent',70],['Alvin',69],['William',68],['Sam',67],['Richard',67],['Alan',66],
+            ['Andrew',63],['Raymond',59],['Jack',59],['Jimmy',57],['Joseph',57],['Simon',57],['Ken',55],['Thomas',54],['Jonathan',53],['Nicholas',53],
+            ['Desmond',52],['Bryan',52],['Patrick',51],['Ben',51],['Mark',51],['Francis',50],['Kevin',50],['Tony',50],['Henry',50],['Ivan',49],['Paul',49],
+            ['Kenneth',48],['Darren',47],['Marcus',47],['Anthony',47],['Kenny',47],['Justin',46],['Chris',46],['Benjamin',46],['Sean',46],['Jeffrey',46],
+            ['Mike',46],['Jeremy',45],['Joe',45],['Eugene',45],['Joshua',44],['Roy',44],['Gary',43],['Victor',43],['Samuel',43],['Edwin',42],['Dennis',42],
+            ['Aaron',41],['Shawn',41],['Albert',40],['Danny',40],['Adrian',40],['Johnny',40],['Joel',39],['Lawrence',39],['Jeff',39],['Wilson',39],['Abu',37],
+            ['Christopher',37],['Philip',37],['Jay',37],['Bernard',37],['Edmund',36],['Ricky',36],['Terence',35],['Brandon',35],['Eddie',35],['Matthew',35],
+            ['Melvin',35],['Nick',35],['Ian',35],['Edward',35],['Robert',35],['Robin',35],['Louis',35],['George',34],['Sunny',34],['Calvin',33],['Derrick',33],
+            ['Max',33],['Gabriel',33],['Ray',33],['Keith',33],['Jacky',33],['Charles',33],['Jerry',33],['Sky',33],['Stephen',32],['Roger',32],['Steve',31],
+            ['Dave',31],['Brian',31],['Stanley',30],['Xavier',30],['Timothy',30],['Leo',29],['Isaac',29],['Don',29],['Martin',29],['Lucas',29],['Jackson',28],
+            ['Ethan',28],['Tommy',28],['Allan',28],['Gerald',28],['Durai',28],['Faruk',27],['Benny',27],['Johnson',27],['Arumugam',27],['Daryl',27],
+            ['Sebastian',27],['Nelson',27],['Ronald',27],['Derek',26],['Dylan',26],['Alfred',26],['Dan',26],['Tom',26],['Manikandan',26],['Guna',26],['Wayne',25],
+            ['Prabu',25],['Bob',25],['Jordan',25],['Terry',25],['Harry',25],['Nazrul',25],['Leonard',25],['Nigel',25],['Colin',25],['Jon',25],['Sara',24],
+            ['Prince',24],['Eddy',24],['Sri',24],['Aloysius',24],['Clement',24],['Jerome',23],['Dominic',23]
+          ],
+          last: [
+            ['Tan',100],['Lim',80],['Lee',70],['Wong',48],['Ong',46],['Goh',41],['Chan',40],['Chua',39],['Koh',36],['Teo',36],['Ang',34],['Tay',31],['Chen',31],
+            ['Yeo',31],['Wang',30],['Low',29],['Chong',29],['Lin',25],['Sim',24],['Toh',24],['Loh',24],['Leong',24],['Zhang',24],['Chia',23],['Chew',23],['Yap',22],
+            ['Liu',22],['Tang',21],['Yong',21],['Soh',21],['Lau',20],['Yang',20],['Chin',20],['Neo',20],['Foo',19],['Cheng',19],['Lai',18],['Heng',18],['Ling',18],
+            ['Huang',18],['Choo',18],['Wee',17],['Cheong',17],['Liew',17],['Poh',16],['Hong',16],['Pang',16],['Seah',16],['Quek',16],['Chang',16],['Lam',15],
+            ['Wei',15],['Khoo',15],['Han',15],['Gan',14],['Yee',13],['Chow',13],['Fong',13],['Sun',13],['Loo',13],['Kong',13],['Chee',13],['Chai',13],['See',13],
+            ['Ting',13],['Hui',12],['Min',12],['Teng',12],['Kang',12],['Tham',12],['Liang',12],['Tee',12],['Seng',11],['Phua',11],['Song',11],['Leow',11],
+            ['Zhou',11],['Tong',11],['Zhao',11],['Soon',11],['Zheng',10],['Wan',10],['Teh',10],['Kok',10],['Seow',10],['Law',10],['Peh',10],['Eng',10],['Woo',10],
+            ['Shah',10],['Yip',10],['Chung',10],['Ying',10],['Peng',10],['Jie',9],['Zhu',9],['Kee',9],['Ooi',9],['Wen',9],['Guo',9],['Jiang',9],['Meng',9],
+            ['Ming',9],['Hao',9],['Ching',9],['Yin',9],['Long',9],['Fang',9],['Leng',8],['Soo',8],['Cai',8],['Man',8],['Yuan',8],['Chiang',8],['Teoh',8],['Yew',8],
+            ['Pan',8],['Kwek',8],['Feng',8],['Chu',8],['Rai',8],['Shi',8],['Tai',8],['Lian',8],['Sin',8],['Lum',8],['Cheah',8],['Mok',8],['Xie',8],['Ping',8],
+            ['Shen',8],['Poon',8],['Lew',8],['Kwan',8],['Jin',7],['Gao',7],['Mon',7],['Kwok',7],['Koo',7],['Boon',7],['Leo',7],['Siew',7],['Choong',7],['Ding',7],
+            ['How',7],['Hua',7],['Sia',7],['Xin',7],['Choy',7],['Shan',7],['Cho',7],['Phang',7],['Yao',7],['Foong',7],['Xuan',7],['Woon',7],['Lan',7],['Guan',7],
+            ['Xiang',7],['Yeoh',7],['Tian',7],['Luo',7],['Mak',7],['Hoe',7],['Sheng',7],['Huat',7],['Wah',6],['Yeow',6],['Hoo',6],['Mah',6],['Tey',6],['Kho',6],
+            ['Lye',6],['Aye',6],['Yuen',6],['Yen',6],['Bee',6],['Seet',6],['Sing',6],['Yun',6],['Keong',6],['Hoon',6],['Dong',6],['Choi',6],['Quah',6],['Yeong',6],
+            ['Kuan',6],['Chuan',6],['Tok',6],['Sha',6],['Kiat',6],['You',6],['Tam',6],['Fan',6],['Kan',6],['Cao',6],['Chiam',6],['Ayu',5],['Siow',5],['Zeng',5],
+            ['Yue',5],['Bai',5],['Thong',5],['Zhong',5],['Weng',5],['Loy',5],['Saw',5],['Rong',5],['Chye',5],['Ren',5],['Bong',5],['Boo',5],['Tiong',5],['Lok',5],
+            ['Qin',5],['Bin',5],['Lui',5],['Kam',5],['Beh',5],['Xue',5],['Pek',5],['Siang',5],['Mun',5],['Siong',5],['Din',5],['Moon',5],['Young',5],['Deng',5],
+            ['Gyi',5],['Phyu',5],['Chun',5],['Hee',5],['Qiu',5],['Liao',5],['Chuah',5],['Khaing',5],['Lek',5],['Than',5],['Xian',5],['Jain',5],['Xia',5],['Qian',5],
+            ['Leung',5],['Ning',5],['Dai',5],['Xiong',5],['Boey',5],['Nah',5],['Liow',5],['Qing',5],['Chiew',5],['Yam',4],['Hou',4],['Gwee',4],['Fung',4],
+            ['Zhen',4],['Loong',4],['Keng',4],['Chiu',4],['Fei',4],['Kay',4],['Hon',4],['Loi',4],['Shin',4],['Quan',4],['Chi',4],['Beng',4],['Gong',4],['Liau',4],
+            ['Lia',4],['Bay',4],['Too',4],['Kit',4],['Sen',4],['Kwang',4],['Choon',4],['Sum',4],['Hew',4],['Cheung',4],['Lie',4]
+          ] },
+        { w: 0.14,
+          first: [
+            ['Muhammad',100],['Ahmad',43],['Hafiz',21],['Firdaus',18],['Faizal',18],['Azman',21],['Rizal',12],['Iskandar',12],['Syafiq',17],['Haziq',17],
+            ['Khairul',28],['Zulkifli',12],['Kamal',37],['Adam',37],['Mohamed',35],['Mohammad',34],['Arif',34],['Ismail',33],['Imran',28],['Amir',28],
+            ['Ibrahim',26],['Nasir',25],['Jamal',25],['Danial',24],['Irfan',23],['Zul',23]
+          ],
+          last: [
+            ['Ismail',13],['Ahmad',16],['Abdullah',12],['Ibrahim',10],['Osman',8],['Rahim',9],['Salleh',8],['Yusof',6],['Hassan',11],['Hamid',7],['Jaafar',4],
+            ['Rahman',21],['Amin',10],['Salim',8],['Rashid',7],['Mahmud',7],['Hussain',7],['Sulaiman',6],['Rahmat',6],['Othman',6],['Yusoff',6],['Hashim',6],
+            ['Hakim',6],['Zainal',5],['Halim',5],['Sharif',5],['Azman',5],['Hamzah',5],['Kassim',5],['Razak',5],['Sani',5],['Harun',4],['Johari',4],['Rosli',4],
+            ['Ramli',4],['Selamat',4],['Bakar',4],['Abdul Rahman',4],['Ishak',4],['Samad',4],['Idris',4],['Jamil',4]
+          ] },
+        { w: 0.12,
+          first: [
+            ['Suresh',65],['Ramesh',59],['Rajesh',41],['Kumar',26],['Arun',43],['Vijay',47],['Ravi',49],['Senthil',55],['Saravanan',47],['Ganesh',32],
+            ['Prakash',33],['Karthik',44],['David',14],['John',14],['Jason',12],['Raja',80],['James',12],['Alex',12],['Michael',11],['Mani',76],['Daniel',11],
+            ['Steven',11],['Kelvin',11],['Peter',11],['Eric',11],['Andy',11],['Vincent',11],['Alvin',10],['William',10],['Sam',10],['Richard',10],['Alan',10],
+            ['Siva',66],['Andrew',9],['Bala',61],['Muthu',59],['Raymond',9],['Raj',59],['Jack',9],['Jimmy',9],['Joseph',9],['Simon',9],['Ken',8],['Thomas',8],
+            ['Jonathan',8],['Nicholas',8],['Desmond',8],['Bryan',8],['Patrick',8],['Ben',8],['Mark',8],['Francis',8],['Kevin',8],['Tony',8],['Henry',8],['Ivan',7],
+            ['Paul',7],['Kenneth',7],['Darren',7],['Marcus',7],['Anthony',7],['Kenny',7],['Justin',7],['Chris',7],['Benjamin',7],['Sean',7],['Jeffrey',7],
+            ['Mike',7],['Jeremy',7],['Joe',7],['Eugene',7],['Selva',44],['Joshua',7],['Roy',7],['Kannan',43],['Gary',6],['Victor',6],['Samuel',6],['Murugan',42],
+            ['Edwin',6],['Dennis',6],['Aaron',6],['Shawn',6],['Albert',6],['Danny',6],['Adrian',6],['Johnny',6],['Joel',6],['Palani',39],['Raju',39],['Lawrence',6],
+            ['Jeff',6],['Wilson',6],['Selvam',38],['Sathish',38],['Abu',6],['Christopher',6],['Philip',6],['Jay',6],['Bernard',6],['Edmund',5],['Ricky',5],
+            ['Terence',5],['Brandon',5],['Eddie',5],['Matthew',5],['Melvin',5],['Nick',5],['Ian',5],['Tamil',35],['Edward',5],['Sakthi',35],['Robert',5],
+            ['Mohan',35],['Robin',5],['Louis',5],['George',5],['Pandi',34],['Arul',34],['Sunny',5],['Calvin',5],['Derrick',5],['Max',5],['Gabriel',5],['Samy',33],
+            ['Ray',5],['Keith',5],['Jacky',5],['Veera',33],['Anbu',33],['Charles',5],['Jerry',5],['Sky',5],['Stephen',5],['Vinoth',32],['Roger',5],['Rama',31],
+            ['Steve',5],['Sankar',31],['Dave',5],['Brian',5],['Thiru',31],['Ganesan',31],['Stanley',5],['Anand',30],['Xavier',5],['Timothy',5],['Krishna',30],
+            ['Dinesh',30],['Leo',4],['Babu',29],['Murugesan',29],['Isaac',4],['Don',4],['Martin',4],['Lucas',4],['Karthi',29],['Jackson',4],['Ethan',4],['Tommy',4],
+            ['Allan',4],['Gerald',4],['Kalai',28],['Durai',4],['Faruk',4],['Benny',4],['Johnson',4],['Sekar',27],['Arumugam',4],['Venkat',27],['Daryl',4],
+            ['Sebastian',4],['Nelson',4],['Ronald',4],['Derek',4],['Dylan',4],['Alfred',4],['Dan',4],['Tom',4],['Manikandan',4],['Guna',4],['Nathan',26],
+            ['Hari',25],['Wayne',4],['Prabu',4],['Bob',4],['Rajan',25],['Ramu',25],['Jordan',4],['Terry',4],['Harry',4],['Nazrul',4],['Leonard',4],['Nigel',4],
+            ['Colin',4],['Jon',4],['Sara',4],['Prince',4],['Eddy',4],['Sri',4],['Aloysius',4],['Clement',4],['Sasi',24],['Muru',24],['Velu',23],['Jerome',3],
+            ['Shanmugam',23],['Dominic',3]
+          ],
+          last: [
+            ['Kumar',40],['Raj',24],['Krishnan',10],['Pillai',5],['Nair',7],['Singh',20],['Subramaniam',5],['Rajendran',6],['Chandran',7],['Ramasamy',6],
+            ['Raja',19],['Murugan',13],['Samy',13],['Kannan',11],['Nathan',11],['Vel',10],['Rajan',10],['Selvam',10],['Babu',10],['Raju',10],['Sekar',9],
+            ['Pandi',8],['Mohan',8],['Prakash',8],['Moorthy',7],['Ganesan',7],['Rao',7],['Arumugam',7],['Gill',6],['Velu',6],['Perumal',6],['Sandhu',6],['Gopal',5],
+            ['Naidu',5],['Subramanian',5],['Shanmugam',5],['Kumaran',5],['Pandian',5],['Pandiyan',5],['Selvaraj',4]
+          ] }
+    ] },
+
+    // ── KAZ ──
+    KAZ: { regions: [
+        { w: 0.72,
+          first: [
+            ['Nurlan',72],['Yerlan',71],['Azamat',75],['Serik',71],['Kairat',62],['Talgat',62],['Yerzhan',57],['Bauyrzhan',65],['Kanat',60],['Daniyar',59],
+            ['Nursultan',46],['Askar',51],['Ruslan',86],['Marat',66],['Arman',64],['Murat',57],['Nurzhan',54],['Timur',51],['Yerbol',51],['Kuanysh',51],
+            ['Berik',50],['Dauren',48],['Samat',46],['Maksat',45],['Askhat',44],['Aibek',44],['Daulet',44],['Bolat',42],['Almas',42],['Rustam',41],['Aslan',41],
+            ['Zhandos',41],['Aidos',40],['Ali',40],['Damir',40],['Rinat',39],['Olzhas',39],['Darkhan',39],['Alisher',38],['Alibek',36],['Zhasulan',36],
+            ['Nurbol',36],['Adil',36],['Dias',35],['Yermek',35],['Yerkebulan',35],['Sultan',35],['Rustem',35],['Asylbek',34],['Dastan',34],['Yerbolat',34],
+            ['Medet',33],['Aset',33],['Aidar',33],['Bekzat',32],['Nurbek',32],['Maks',32],['Abai',32],['Aman',32],['Islam',31],['Artur',31],['Aidyn',31],
+            ['Abzal',31],['Nurbolat',30],['Madi',30],['Saken',30],['Bakytzhan',29],['Miras',29],['Zhanibek',29],['Yerkin',29],['Anuar',29],['Azat',29],
+            ['Zhanat',28],['Vlad',28],['Madiyar',28],['Amir',28],['Bakhtiyar',28],['Almat',28],['Nurdaulet',28],['Dulat',27],['Bagdat',27],['Ilyas',27],
+            ['Yernar',27],['Yerik',26],['Sabit',26],['Eldar',26],['Ayan',26],['Altynbek',25],['Sayat',25],['Nurlybek',25],['Almaz',25],['Beka',25],['Didar',25],
+            ['Alikhan',24],['Yerasyl',24],['Temirlan',24],['Mukhtar',24],['Aziz',24],['Adilet',24],['Duman',24],['Ramazan',24],['Sanzhar',24],['Rauan',24],
+            ['Rasul',24],['Galymzhan',24],['Ulan',23],['Gabit',23],['Zhanbolat',23],['Bekzhan',23],['Abylai',23],['Roma',23],['Yeldos',23],['Adilbek',23],
+            ['Galym',22],['Ardak',22],['Baglan',22],['Bek',22],['Asan',22],['Gani',22],['Arsen',22],['Zhenis',21],['Yelaman',21],['Rashid',21],['Salamat',21],
+            ['Kuat',20],['Nariman',20],['Yernur',20],['Meirambek',20],['Alex',20],['Renat',20],['Mansur',20],['Malik',20],['Tima',20],['Nur',19],['Nurken',19],
+            ['Asylkhan',19],['Zhomart',19],['Zhan',18],['Adlet',18],['Bakhytzhan',18]
+          ],
+          last: [
+            ['Akhmetov',100],['Omarov',80],['Aliyev',76],['Ospanov',74],['Iskakov',64],['Suleimenov',62],['Kaliyev',61],['Sadykov',56],['Smagulov',55],
+            ['Ibragimov',55],['Sultanov',54],['Karimov',52],['Ismailov',52],['Abdrakhmanov',52],['Ibrayev',50],['Nurgaliyev',48],['Kasymov',48],['Kusainov',48],
+            ['Asanov',47],['Kadyrov',45],['Askarov',45],['Abishev',45],['Tulegenov',44],['Muratov',44],['Aubakirov',44],['Isayev',43],['Mukanov',42],
+            ['Sharipov',42],['Yusupov',41],['Mukashev',40],['Zhumabayev',40],['Serikov',39],['Utegenov',39],['Zhunusov',39],['Abdullayev',39],['Ramazanov',39],
+            ['Syzdykov',38],['Musayev',38],['Amirov',38],['Saparov',37],['Kasenov',37],['Nazarov',36],['Serikbayev',36],['Kudaibergenov',36],['Umarov',35],
+            ['Sarsenbayev',35],['Nurzhanov',35],['Sarsenov',35],['Smailov',35],['Mamedov',35],['Rakhimov',34],['Zhakupov',34],['Musin',34],['Zhumabekov',34],
+            ['Kurbanov',34],['Amanov',33],['Mustafin',33],['Abenov',33],['Ilyasov',33],['Abilov',33],['Rakhmetov',32],['Zhusupov',32],['Yerzhanov',32],
+            ['Zhumagaliyev',31],['Khasenov',30],['Adilov',30],['Amanzholov',30],['Khasanov',30],['Alimov',30],['Kenzhebayev',30],['Bazarbayev',30],['Orazbayev',29],
+            ['Kozhakhmetov',29],['Bolatov',29],['Dauletov',29],['Ismagulov',28],['Usenov',28],['Sabirov',28],['Aitzhanov',28],['Akhmedov',28],['Maratov',28],
+            ['Zhumagulov',28],['Akhmetzhanov',27],['Ahmetov',27],['Usmanov',27],['Seitov',27],['Alibekov',26],['Yergaliyev',26],['Aitbayev',26],['Khamitov',26],
+            ['Tazhibayev',26],['Sariyev',26],['Sabitov',25],['Zhaksylykov',25],['Tolegenov',25],['Mukhamedzhanov',25],['Makhanov',25],['Idrisov',25],
+            ['Boranbayev',24],['Sadvakasov',24],['Alzhanov',24],['Amanbayev',24],['Abuov',24],['Khamzin',24],['Yuldashev',24],['Orynbayev',23],['Zhumanov',23],
+            ['Kurmangaliyev',23],['Kurmanov',23],['Niyazov',23],['Beisenov',23],['Rakhimzhanov',23],['Baltabayev',23],['Duisenov',23],['Bekenov',23],
+            ['Mukhanov',23],['Makhambetov',23],['Yesenov',23],['Nurpeisov',23],['Baizhanov',23],['Bisenov',23],['Zholdasov',23],['Ashimov',23],['Bizhanov',23],
+            ['Asylbekov',23],['Isabekov',22],['Zhanabayev',22],['Alimbayev',22],['Sydykov',22],['Amangeldi',22],['Altynbekov',22],['Imanbayev',22],['Zhumashev',22],
+            ['Kuandykov',22],['Aldabergenov',22],['Malikov',22],['Karibayev',22],['Shakirov',22],['Imangaliyev',22],['Alpysbayev',22],['Mukhtarov',22],
+            ['Kamalov',21],['Nauryzbayev',21],['Ibraimov',21],['Duisenbayev',21],['Kaldybayev',21],['Isakov',21],['Beisembayev',21],['Kurmanbayev',21],
+            ['Umbetov',21],['Mambetov',21],['Karabayev',21],['Nurmanov',21],['Izbasarov',21],['Orazov',21],['Tolegen',21],['Abdullaev',20],['Altayev',20],
+            ['Kaziyev',20],['Yermekov',20],['Akhmet',20],['Zhaksybayev',20],['Bekzhanov',20],['Sagyndykov',20],['Valiyev',20],['Galiyev',20],['Utepov',20],
+            ['Musabekov',20],['Kasymbekov',20],['Saduakasov',20],['Beisenbayev',20],['Kuanyshev',20],['Bakirov',20],['Tulebayev',20],['Suleimanov',20],
+            ['Nabiyev',20],['Dautov',20],['Nurbayev',20],['Utebayev',20],['Satybaldiyev',20],['Karatayev',20],['Nugmanov',20],['Abildayev',20],['Tleubayev',20],
+            ['Nurmagambetov',19],['Zholdybayev',19],['Zhumadilov',19],['Orynbasarov',19],['Isabayev',19],['Urazbayev',19],['Gabdullin',19],['Rakhmanov',19],
+            ['Moldabekov',19],['Shayakhmetov',19],['Kenzhebekov',19],['Temirov',19],['Mustafayev',19],['Orazbekov',19],['Ualiyev',19],['Imashev',19],
+            ['Amantayev',19],['Imankulov',19],['Sarsembayev',19],['Alimzhanov',19],['Dosanov',19],['Yermekbayev',19],['Akimov',19],['Aidarov',19],['Abdiyev',19],
+            ['Doszhanov',19],['Dyusembayev',18],['Moldabayev',18],['Tursunov',18],['Islamov',18],['Alibayev',18]
+          ] },
+        { w: 0.28,
+          first: [
+            ['Alexander',100],['Sergei',92],['Andrei',74],['Vladimir',66],['Evgeni',57],['Dmitri',57],['Alexei',57],['Nikolai',47],['Viktor',48],['Igor',47],
+            ['Ruslan',30],['Marat',23],['Timur',18],['Ivan',48],['Oleg',46],['Maxim',46],['Denis',44],['Rustam',14],['Vitali',40],['Damir',14],['Roman',39],
+            ['Yuri',39],['Rinat',14],['Artem',39],['Pavel',37],['Danil',34],['Mikhail',33],['Nikita',32],['Vadim',31],['Artur',11],['Anatoli',31],['Anton',30],
+            ['Ilya',30],['Konstantin',29],['Vyacheslav',29],['Kirill',28],['Vasili',27],['Ilyas',9],['Eldar',9],['Valeri',25],['Vladislav',23],['Arsen',8],
+            ['Renat',7]
+          ],
+          last: [
+            ['Kim',89],['Li',26],['Pak',40],['Tsoi',37],['Ten',25],['Kan',23],['Tyan',12],['Shin',11],['Nam',9],['Ivanov',69],['Petrov',35],['Popov',35],
+            ['Kuznetsov',33],['Vasilev',28],['Smirnov',27],['Volkov',25],['Andreyev',23],['Romanov',22],['Sokolov',22],['Morozov',21],['Novikov',21],['Makarov',21],
+            ['Shevchenko',21],['Sergeyev',21],['Pavlov',21],['Kolesnikov',20],['Lee',20],['Mikhailov',20],['Alekseyev',19],['Orlov',19],['Stepanov',19],
+            ['Kozlov',19],['Zaitsev',18],['Zakharov',18]
+          ] }
+    ] },
+
+    // ── BAN ──
+    BAN: { regions: [
+        { w: 0.9,
+          first: [
+            ['Tamim',32],['Shakib',28],['Mushfiqur',26],['Mahmudullah',12],['Mominul',17],['Taskin',12],['Mustafizur',18],['Mehedi',73],['Nazmul',71],['Saiful',90],
+            ['Ariful',53],['Rafiqul',42],['Sumon',100],['Hasan',86],['Arif',81],['Masud',81],['Rasel',80],['Sohel',79],['Rubel',79],['Imran',78],['Mamun',78],
+            ['Shamim',75],['Abdullah',73],['Tanvir',69],['Rakib',69],['Kamrul',69],['Monir',68],['Ali',67],['Jahangir',67],['Nurul',66],['Kamal',64],['Shahin',62],
+            ['Ripon',62],['Raju',60],['Sabbir',60],['Masum',60],['Faruk',59],['Mohammad',58],['Shakil',57],['Nasir',56],['Alamin',56],['Mizanur',56],['Nur',55],
+            ['Nazrul',55],['Akash',55],['Fahim',55],['Joy',54],['Salim',52],['Hridoy',52],['Abir',52],['Asif',52],['Jahid',50],['Emon',50],['Jakir',50],
+            ['Anwar',49],['Jamal',49],['Ismail',49],['Omar',48],['Ariyan',48],['Nahid',47],['Habib',46],['Aminul',46],['Rony',46],['Ibrahim',46],['Iqbal',46],
+            ['Sujon',46],['Alamgir',46],['Rana',46],['Golam',46],['Shuvo',46],['Farhan',45],['Mahbub',44],['Sharif',44],['Sagor',44],['Ashraful',44],['Anik',44],
+            ['Rayhan',44],['Sakib',43],['Adnan',43],['Rashed',43],['Arafat',43],['Maruf',43],['Amir',42],['Mahmud',42],['Shahadat',42],['Arman',42],['Mahmudul',42],
+            ['Ruhul',42],['Salman',42],['Jewel',41],['Raj',41],['Habibur',41],['Sajib',41],['Shahidul',41],['Shahriar',40],['Rezaul',40],['Sayed',40],['Rifat',40],
+            ['Raihan',40],['Kawsar',40],['Manik',39],['Al-Amin',39],['Milon',39],['Rakibul',39],['Faisal',39],['Robiul',39],['Babul',38],['Ashik',38],['Zahid',37],
+            ['Harun',37],['Ahsan',37],['Helal',36],['Zakir',36],['Kabir',36],['Shohel',36],['Saif',35],['Emran',35],['Humayun',35],['Robin',35],['Babu',35],
+            ['Tuhin',35],['Nirob',35],['Mizan',34],['Anamul',34],['Forhad',34],['Belal',34],['Rahat',34],['Shariful',33],['Saddam',33],['Sultan',33],['Shohag',33],
+            ['Ashraf',33],['Mahabub',33],['Sazzad',33],['Yousuf',33],['Tarek',33],['Shahed',32],['Sohag',32],['Parvez',32],['Noor',32],['Jashim',32],['Faysal',32],
+            ['Shafiqul',31],['Shawon',31],['Foysal',31],['Fahad',31],['Niloy',31],['Rafi',31],['Azad',31],['Monirul',31],['Sojib',31],['Shimul',31],['Khaled',30]
+          ],
+          last: [
+            ['Ahmed',100],['Ali',37],['Hassan',19],['Karim',17],['Kamal',14],['Islam',96],['Hossain',87],['Khan',86],['Rahman',71],['Hasan',53],['Chowdhury',48],
+            ['Alam',46],['Uddin',46],['Miah',39],['Rana',32],['Mahmud',27],['Haque',24],['Mamun',23],['Sarker',22],['Sarkar',21],['Amin',21],['Kabir',19],
+            ['Hussain',19],['Bhuiyan',17],['Hoque',16],['Zaman',16],['Faruk',16],['Ullah',15],['Ahmad',15],['Habib',15],['Rashid',14],['Talukder',14],['Azad',13],
+            ['Mondal',13],['Reza',13],['Molla',13],['Sikder',12],['Rahim',11],['Rafi',11],['Afrin',11],['Pori',11],['Manik',11],['Mondol',11],['Jibon',11],
+            ['Sharif',11],['Iqbal',10],['Talukdar',10],['Arafat',10],['Parvez',10],['Gazi',10],['Deb',10],['Kalam',10],['Noor',9],['Rashed',9],['Ray',9],
+            ['Mizan',9],['Arman',9],['Mahi',9],['Salam',9],['Hosain',9],['Ahsan',8],['Hamid',8],['Niloy',8],['Sayed',8],['Howlader',8],['Ahmmed',8],['Mannan',8],
+            ['Tabassum',8],['Noman',8],['Hanif',8],['Yousuf',8],['Nirob',8],['Ferdous',8],['Siddique',8],['Jaman',8],['Tasnim',8],['Abedin',8],['Miya',8],
+            ['Moon',8],['Rahat',8],['Tara',7],['Shikder',7],['Sobuj',7],['Sultan',7],['Shakib',7],['Taher',7],['Mollah',7],['Morshed',7],['Dewan',7],['Kobir',7],
+            ['Sharma',7],['Alim',7],['Rohman',7],['Patwary',7],['Sorkar',7],['Sami',7],['Murad',7],['Kader',7],['Cox',7],['Man',7],['Dev',7],['Ahad',7],['Roni',7],
+            ['Hannan',7],['Bashar',7],['Khokon',7],['Mou',7],['Billah',7],['Tushar',7],['Sunny',7],['Khanom',7],['Bablu',7],['Mridha',7],['Shimul',7],['Asad',6],
+            ['Hakim',6],['Akhi',6],['Fahad',6],['Tipu',6],['Shahid',6],['Robi',6],['Halim',6],['Dash',6],['Badsha',6],['Mostafa',6],['Momin',6],['Azam',6],
+            ['Kashem',6],['Razzak',6],['Mithu',6],['Alauddin',6],['Mahin',6],['Osman',6],['Mojumder',6],['Ami',6],['Bijoy',6],['Opu',6],['Alo',6],['Nayem',6],
+            ['Limon',6],['Mirza',6],['Alif',6],['Mollik',6],['Wahid',6],['Sayem',6],['Siddik',6],['Huda',6],['Shihab',6],['Raja',6],['Chowdury',6],['Prodhan',6],
+            ['Nayeem',6],['Nila',6],['Azim',6],['Mozumder',6],['Haq',6],['Samad',6],['Mukta',6],['Ratul',6],['Apon',6],['Yeasmin',6],['Hussen',6],['Rose',6],
+            ['Jahed',6],['Sardar',6],['Bhowmik',6],['Gomes',6],['Titu',6],['Haider',6],['Saju',6],['Himel',6],['Choudhury',5],['Feni',5],['Rohan',5],['Eva',5],
+            ['Munni',5],['Rimon',5],['Nipa',5],['Sarwar',5],['Akram',5],['Sarder',5],['Khalil',5],['Musa',5],['Roman',5],['Munshi',5],['Salauddin',5],['Riaz',5],
+            ['Hasib',5],['Anam',5],['Malek',5],['Goni',5],['Anis',5],['Rhaman',5],['Sikdar',5],['Barman',5],['Pranto',5],['Husain',5],['Rupa',5],['Hossian',5],
+            ['Mijan',5],['Sinha',5],['Santo',5],['Husen',5],['Hawlader',5],['Yesmin',5],['Himu',5],['Sakil',5],['Shagor',5],['Kibria',5],['Riad',5],['Kadir',5],
+            ['Robel',5],['Aslam',5],['Hosan',5],['Rima',5],['Bari',5],['Rafiq',5],['Aman',5],['Malik',5],['Naim',5],['Shishir',5],['Akbar',5],['Balok',5],
+            ['Mostofa',5],['Razu',5],['Balika',5],['Mintu',5],['Rahi',5]
+          ] },
+        { w: 0.1,
+          first: [
+            ['Sanjoy',28],['Subrata',23],['Dipankar',12],['Prosenjit',12],['Partha',16],['Sourav',25],['Liton',50],['Bikash',24],['Tapan',19],['Uttam',27],
+            ['Sumon',40],['Ripon',25],['Raju',24],['Akash',22],['Joy',22],['Rajib',53],['Rony',18],['Rana',18],['Shuvo',18],['Sagor',18],['Anik',18],['Jewel',16],
+            ['Manik',16],['Milon',16],['Biplob',39],['Palash',36],['Robin',14],['Babu',14],['Tuhin',14],['Rahul',34],['Amit',33],['Shohag',13],['Jibon',33],
+            ['Uzzal',32],['Sohag',13],['Mithun',32],['Shimul',12],['Sujan',30]
+          ],
+          last: [
+            ['Das',36],['Roy',29],['Saha',24],['Biswas',24],['Paul',17],['Dey',15],['Ghosh',13],['Barua',14],['Chakraborty',10],['Dutta',7],['Sen',8],['Debnath',9],
+            ['Chowdhury',19],['Sarker',9],['Sarkar',8],['Kumar',14],['Talukder',6],['Mondal',5],['Nath',11],['Chakma',10],['Datta',9],['Dhar',9],['Halder',9],
+            ['Howlader',3],['Banik',8],['Shil',7],['Majumder',7],['Mazumder',7],['Kundu',6],['Pal',6],['Bhattacharjee',6],['Munshi',2],['Marma',5],['Karmakar',5],
+            ['Hawlader',2],['Basak',5],['Sutradhar',5]
+          ] }
+    ] },
 };
 
 // ── Fallback-Map: pool-lose Nation → kulturell nächstverwandter Pool ──
 // (v3: NOR/GRE/TUR/KOR haben jetzt eigene Pools und sind hier raus)
 const NATION_NAME_FALLBACK = {
     'ECU':'COL','BOL':'COL','PAR':'ARG','CRC':'MEX','GUA':'MEX','PAN':'COL','DOM':'COL','PUR':'MEX','CUB':'MEX','UKR':'RUS',
-    'BLR':'RUS','KAZ':'RUS','LAT':'LTU','KGZ':'INT','UZB':'INT','TJK':'INT','ARM':'INT','SVK':'CZE','LUX':'BEL','LIE':'SUI',
-    'AND':'ESP','SMR':'ITA','MLT':'ITA','BIH':'INT','MKD':'INT','MNE':'INT','ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR',
-    'LBN':'MAR','TUN':'MAR','ALG':'MAR','JOR':'MAR','IRQ':'MAR','LBA':'MAR','PAK':'IND','BAN':'IND','SRI':'IND','NEP':'IND',
-    'SGP':'CHN','HKG':'CHN','TPE':'CHN','MAC':'CHN','PHI':'MEX','VIE':'INT','KEN':'RSA','SEN':'FRA','CIV':'FRA','ANG':'POR',
-    'MOZ':'POR'
+    'BLR':'RUS','LAT':'LTU','KGZ':'INT','UZB':'INT','TJK':'INT','ARM':'INT','SVK':'CZE','LUX':'BEL','LIE':'SUI','AND':'ESP',
+    'SMR':'ITA','MLT':'ITA','BIH':'INT','MKD':'INT','MNE':'INT','ISL':'SWE','KSA':'MAR','BRN':'MAR','KUW':'MAR','LBN':'MAR',
+    'TUN':'MAR','ALG':'MAR','JOR':'MAR','IRQ':'MAR','LBA':'MAR','PAK':'IND','SRI':'IND','NEP':'IND','PHI':'MEX','VIE':'INT',
+    'KEN':'RSA','SEN':'FRA','CIV':'FRA','ANG':'POR','MOZ':'POR'
 };
 
 // ── Raritäten-Schwänze (implizit Gewicht 1) ─────────────────────────────
@@ -14539,6 +14877,214 @@ const NAME_TAILS_BY_NATION = {
           ],
           last: [
             'Alidu','Muhammad','Usman','Abdullai','Abdullahi','Abdulrahman','Hamdia','Hardi','Salim','Majid','Rufai','Ishaq'
+          ] },
+    ],
+    HKG: [
+        { r: 0,
+          first: [
+            'Kam-chuen','Wai-yin','Jay','Gordon','George','Cyrus','Man-wai','Kwok-wing','Marcus','Chi-kit','Chun-ming','Kin-wai','Rex','Ho-man','Bill','Kam-ming',
+            'Timothy','Isaac','Chun-fai','Adrian','Kin-ming','Chun-hung','Chi-kong','Tak-ming','Ringo','Wing-fai','Sky','Chung-yin','Sammy','Kin-chung','Chun-sing',
+            'Chun-hin','Yiu-fai','Cheuk-yin','Kent','Ka-man','Frank','Samson','Barry','Kin-wah','Ka-shing','Siu-hung','Wing-kin','Chi-fung','Wai-kuen','Wai-yip',
+            'Arthur','Ian','Kam-shing','Aaron','Jim','Eddy','Roger','Johnson','Dickson','Robert','Donald','Jackson','Allen','Bryan','Wayne','Bosco','Herman',
+            'Jackie','Howard','Don','Adam','Nicholas','Larry','Matt','Bruce','Sean','Bobby','Jeremy','Christopher','Benson','Benjamin','Issac','Winson','Kyle',
+            'Kaho','Tiger','Fred','Teddy','Edmund','Carson','Rocky','Dave','Dominic','Desmond','Owen','Wallace','Nathan','Ernest','Clement','Will','Ethan','Elvis',
+            'Toby','Walter','Charlie','Joshua','Lucas','Franky','Joey','Dan','Rick','Perry','Gavin','Gabriel','Lewis','Allan','Rico','Chiwai','Darren','Timmy',
+            'Kay','Ron','Colin','Boris','Bernard','Bob','Karl','Waiman','Kenji','Jayden','Evan','Tsz Kin','Kawai','Jan','Jacob','Norman','Horace','Oliver',
+            'Alexander','Happy','Nicky','Franco','Wesley','Eugene','Tsz Hin','Antony','Carl','Tsz Ho','Gilbert','Tsz Fung','Kachun','Jasper','Chiming','Julian',
+            'Hayden','Penny','Leslie','Luke','Chikeung','Waiming','Moses','Ronnie','Ted','Mic','Robin','Jordan','Cliff','Kobe','Louie','Momo','Frederick',
+            'Clarence','Woody','Terrence'
+          ],
+          last: [
+            'Gan','Yeh','Xiang','Lian','Miao','Nie','Shao','Lit','Zhan','Zhen','Weng','Hua','Yui','Sui','Kot','Jia','Qian','Loong','Tiu','Hao','Bai','Tsim','Kuk',
+            'Kun','Kum','Chew','Hsieh','Zee','Mou','Lang','Tsun','Kou','Koh','Kuan','Kau','Kiang','Lay','Nia','Cheang','Tsao','Cow','Xian','Ieong','Jung','Duan',
+            'Tze','Kho','Xing','Ruan','Jain','Too','Lip','Hoo','Goh','Look','Yueng','Chueng','Sek','Hai','Tuen','Pok','Shuen','Rong','Tik','The','Shui','Chien',
+            'Chia','Can','Pao','Sheng','Iam','Jian','Mun','Tham','Xin','Jong','Sou','Leng','Cen','Soong','Laam','Pin','Kwun','Mae','Nga','Day','Nok','Diu','Thai',
+            'Tsung','Phang','Pei','Kon','Lueng','Lyu','Choo','Sen','Key','Gee','Jie','Shang','Luen','Ria','Hay','Rao','Shaw','Bon','Liew','Luu','Mah','Bin','Kuok',
+            'Jam','Pon','Lew','Ngok','Muk','Zhai','Qing','Quan','Tee','Tia','Sia','Yoon','Huo','Dao','Mum','Zhuo','Chio','Yeong','Fuk','Khoo','Nan','Jang','Boo',
+            'Dian','Pik','Heng','Zuo','Tou','Kwon','Soon','Eng','Hey','Niu','Shop','Yeah','Mey','Zhi','Ton','Sea','Tsin','Yah','Bean','Meow','Puk','Liem','Ran',
+            'Tok','Dou','Hsiao','Que','Zen','Tay','Yeo','Luong','Ban','Teo','Chok','Cong','Dung','Doo','Caem','Qiao','Moe','Bow','Yew','Mee','Way','Pow','Woon',
+            'How','Chue','Moy','Rin','Yoo'
+          ] },
+    ],
+    MAC: [
+        { r: 0,
+          first: [
+            'Elvis','Carson','Jackson','Isaac','Alfred','Tiger','Will','Samson','Bobby','Sean','Bruce','Winson','Larry','Rico','Joshua','Jake','Dave','Ronnie',
+            'Jackie','Roberto','Benjamin','Adrian','Marlon','Gabriel','Jojo','Kawai','Wayne','Barry','Dan','Rocky','Nathan','Christian','Karl','Alexander','Owen',
+            'Raju','Nuno','Andre','Aries','Oliver','Nicholas','Rafael','Prince','Arthur','Ron','Charlie','Alberto','Jayden','Jeremy','Mac','Gavin','Jordan',
+            'Edison','Vicky','Dickson','Eason','Eduardo','Chihou','Rodel','Ethan','Issac','Kachon','Ariel','Ringo','Filipe','Jerome','Kris','Matt','Carl','Rommel'
+          ],
+          last: [
+            'Loo','Sui','Kung','Xian','Kang','Lun','Chien','Nie','Kouk','Kho','Yue','Kuo','Jia','Bai','Zhuo','Tun','Than','Shan','Sing','Jie','Low','Hieu','Thuan',
+            'Heong','Cheuk','Jung','Zhan','Neng','Tseng','Sim','Len','Koh','Bien','Soe','Kao','Sheng','Yam','Toan','Duy','Sen','Cen','Cha','Jian','Luyen','Cam',
+            'Lyu','Fun','Shao','Bang','Shin','Lung','Yun','Cow','Gia','Cong','Sum','Mayo','The','Qian','Duyen','Bay','Boih','Rio','Duan','Nong','Shop','She','Bon',
+            'Xiang','Kot','Maung','Thom','Phi','Phu','Aye','Miao','Yeu','Chit','Chueng','Shu','Nan','Maya','Mong','Mun','Thien','Hsieh','Phyo','Zhi','Naing',
+            'Khaing','Hio','Iok','Ning','Yeh','See','Chok','Khin','Buon','Sao','Gai','Quy','Giap','Zaw','Thin','Bae','Qing','Xiong','Ban','Koi','Hoo'
+          ] },
+    ],
+    TPE: [
+        { r: 0,
+          first: [
+            'Chia-ching','Chun-yi','Jonathan','Wilson','Josh','Chun-hsiung','Chun-nan','Yu-hsuan','Chih-hsien','Wei-che','Ming-hung','Marco','Calvin','Rex',
+            'Tzu-chieh','Charlie','Chih-kai','Yu-cheng','Kuo-hsiung','Cheng-hung','Chien-ming','Po-yu','Tzu-hsiang','Stephen','Ted','Matt','Tzu-hsuan','Evan',
+            'Po-hsiang','Wei-ting','Martin','Samuel','Shih-wei','Wen-te','Vic','Will','Bill','Ying-chieh','Shih-hao','Wen-hua','Anthony','Harry','Lawrence',
+            'Chun-kai','Chun-yen','Chien-lin','Adi','Wei-hsiang','Po-hsun','Chien-kuo','Chun-wei','Chen-yu','Chien-jung','Oscar','Raymond','Benny','Derek',
+            'Wen-hsien','Cheng-hsun','Chien-an','Chih-lung','Cheng-yi','Sky','Nelson','Willy','Austin','Yung-chang','Po-lin','Chi-wen','Ming-hsien','Kai-chieh',
+            'Edison','Lucas','Bryan','Cheng-hsien','Ming-ta','Yao-tsung','Chih-jen','Chien-yu','Ming-tsung','Po-yi','Chun-lin','Jackie','Darren','Kelvin',
+            'Ping-hung','Wen-chin','Chien-hsun','Shih-ming','Wen-kai','Kuo-jung','Kuo-wei','Owen','Chih-hua','Wen-hung','Li-wei','Chien-wen','Kuo-hao','Po-ting',
+            'Ming-hsun','Chi-ming','Ming-feng','Chih-jung','Po-kai','Ming-han','Luke','Eddy','Kyle','Angus','Fred','Mars','Joey','Paijo','Jesse','Agung','Hans',
+            'Andre','Philip','Neil','Robin','Oliver','Benjamin','Kent','Felix','Larry','Kenneth','Sunny','Gavin','Barry','Joshua','Billy','Wesley','Bob','Hugo',
+            'Jacob','Tiger','Elvis','Stan','Imam','Jackson','Gordon','Ayahe','Randy','Morris','Anderson','Edi','Allan','Jasper','Anson','Arif','Dan','Iwan','Arya',
+            'Indra','Anton','Denny','Aris','Satria','Angga','Edwin','Maz','Eugene','Jordan','Jeffery','Dwi','Dylan','Isaac','Matthew','Dimas','Duncan'
+          ],
+          last: [
+            'Yue','Yau','Gan','Kwan','Sim','Zen','Mou','Pin','Koh','Nieh','Yuen','Poon','Koo','Tay','Loh','Layu','Tsung','Siu','Zhi','Jong','Sih','Tsay','Laut',
+            'Sen','Teh','Din','Liya','Lyn','Lui','Hon','Day','Gong','Xia','Kuang','Duan','Rong','Tya','Key','Suen','Lang','Hsien','Lao','Chew','Rin','Tee','Nan',
+            'Kin','Then','Lun','Shiue','Rao','Soong','Mok','Fen','Son','Show','Zhuo','Way','Naya','Cen','Moe','Sia','Nai','Iyan','Moon','Pong','Tiya','Cung','Nah',
+            'Rey','Foo','Say','Cheong','Tio','Xing','Hau','Dung','Pon','Yiu','Hsiu','Kwong','Fun','Hang','Soo','Kho','Tsen','Lii','Shou','Rain','Shia','Jui','Yem',
+            'Diyah','Thu','Nong','Sing','Luan','Yeah','Doang','Thai','Gau','Riyah','Loo','Mah','Nam','Pien','Mon','Wun','Hsi','Luu','Ten','Lok','Mae','Heng','Pen',
+            'Rian'
+          ] },
+    ],
+    SGP: [
+        { r: 0,
+          first: [
+            'Ronnie','Kent','Frankie','Roland','Bobby','Clarence','Jayden','Benson','Ron','Zack','Ernest','Winston','Randy','Jasper','Lionel','Benedict','Tim',
+            'Charlie','Leslie','Frank','Masum','Vignesh','Felix','Gavin','Glenn','Rafiqul','Chandra','Mari','Amos','Danish','Damien','Marc','Rajendran','Jim',
+            'Alexander','Larry','Arthur','Luke','Julian','Milon','Jahid','Perumal','Kazi','Gopi','Balaji','Jakir','Allen','Andre','Jacob','Saddam','Billy','Manik',
+            'Billal','Rakib','Vicky','Alagu','Aminul','Saravana','Ragu','Vivek','Selvaraj','Ariful','Rick','Josh','Matt','Farid','Sakthivel','Kavi','Mahabub',
+            'Uzzal','Jackie','Mano','Ananth','Anowar','Baskar','Gordon','Nurul','Ramasamy','Lester','Christian','Darryl','Ranjith','Sunil','Shahidul','Pandiyan',
+            'Joey','Winson','Caleb','Antony','Mizan','Fabian','Willy','Gilbert','Noel','Evan','Jake','Sohag','Ajay','Aman','Shafiqul','Mehedi','Tiger','Anson',
+            'Vino','Sathya','Zachary'
+          ],
+          last: [
+            'Oon','Tung','Hung','Kuah','Bao','Kua','Khong','Tao','Liaw','Xing','Yau','Lua','Cheang','Kwa','Mao','Zai','Yeap','Siah','Chay','Cui','Zhuang','Cheok',
+            'Phoon','Son','Yoong','Looi','Pua','Nam','Kwong','Hang','Yow','Koon','Dee','Lou','Jong','Zou','Lun','Rui','Hai','Hsu','Chau','Sui','Hoong','Buang',
+            'Khim','Soong','Kiong','Myat','Zhuo','Liong','Kuek','Chao','Bae','Cha','Kek','Gui','Deen','Kheng','Qiang','Cong','Kin','Kow','Yoon','Say','Ain','Nge',
+            'Moh','Joo','Ngoh','Fun','Kum','Gee','Chou','Sung','Shao','Fen','Kyi','Then','Thia','Yim','Mee','Jee','Kiang','Ngiam','Chaw','Mui','Pong','Loon','Hau',
+            'Puah','Jung','Chui','Thian','Pin','Moo','Chuang','Kun','Giam','Lang','Bing','Teow','Kian','Zee','Keyan','Hing','Zhan','Khaw','Thai','Huan','Ten','Ban',
+            'Gay','Tio','Miao','Hoh','Thin','Maw','Pun','Tsai','Rain','Keat','Hin','Zain','Tiang','Fam','Miya','Thang','Tew','Ngan','Cheow','Cham','Koay','Paw',
+            'Che','Kiew','Lah','Theng','Boh','Pay','Kuang','Tien','Shaik','Kwee','Deep','Yeung','Hoi','Nai','Nie','Suan','Jang','Shak','Tat','Hooi','Tia','Chien',
+            'Fai','Yeh','Shang','Duan','Chiong'
+          ] },
+        { r: 1,
+          first: [
+            'Sharif','Amirul','Rahim','Norman','Noor','Iqbal','Mohammed','Rashid','Rahmat','Rosli','Afiq','Sulaiman'
+          ],
+          last: [
+            'Firdaus','Haron','Yahya','Jalil','Abu Bakar','Shariff','Azhar','Musa','Wahab','Suhaimi','Ariffin','Majid','Daud','Hussein','Zakaria','Mahmood','Latif',
+            'Zulkifli','Ghani','Rizal','Taib','Tahir','Saad','Talib','Yunos','Mansor','Arifin'
+          ] },
+        { r: 2,
+          first: [
+            'Ronnie','Kent','Frankie','Roland','Sundar','Naga','Raman','Bobby','Clarence','Jayden','Benson','Ron','Zack','Ernest','Winston','Chinna','Randy',
+            'Gopal','Jasper','Lionel','Praba','Benedict','Tim','Mahesh','Santhosh','Balu','Moorthy','Charlie','Karthick','Leslie','Frank','Prem','Mathi','Deva',
+            'Masum','Vignesh','Felix','Gavin','Rajkumar','Glenn','Rafiqul','Chandra','Mari','Amos','Saran','Prabhu','Danish','Damien','Marc','Rajendran','Jim',
+            'Alexander','Larry','Arthur','Luke','Julian','Praveen','Milon','Jahid','Perumal','Kazi','Gopi','Balaji','Jakir','Allen','Andre','Jacob','Saddam',
+            'Billy','Manik','Billal','Rakib','Sivakumar','Vicky','Alagu','Aminul','Saravana','Ragu','Vivek','Selvaraj','Ariful','Rick','Sanjay','Josh','Matt',
+            'Farid','Sakthivel','Kavi','Mahabub','Uzzal','Jackie','Mano','Ananth','Anowar','Baskar','Gordon','Nurul','Ramasamy','Lester','Christian','Darryl',
+            'Ranjith','Surya','Sunil','Manoj','Shahidul','Pandiyan','Joey','Winson','Caleb','Antony','Mizan','Fabian','Willy','Gilbert','Noel','Venkatesh',
+            'Sathiya','Evan','Jake','Venkatesan','Subramanian','Sohag','Ajay','Naveen','Subra','Aman','Shafiqul','Mehedi','Tiger','Anson','Vino','Sathya','Zachary'
+          ],
+          last: [
+            'Dhillon','Menon','Sami','Rajoo','Govindasamy'
+          ] },
+    ],
+    KAZ: [
+        { r: 0,
+          first: [
+            'Bekbolat','Kazbek','Rakhat','Zhalgas','Beksultan','Kuandyk','Amanzhol','Bakyt','Akylbek','Yersultan','Bakhyt','Serzhan','Kaisar','Yergali','Batyr',
+            'Zhaksylyk','Farkhat','Anvar','Bolatbek','Nurgali','Mukhit','Bauka','Meiram','Kostya','Adilkhan','Shyngys','Magzhan','Tolegen','Birzhan','Aleks','Aza',
+            'Syrym','Aldiyar','Zharas','Akhmet','Bulat','Alimzhan','Akzhol','Ramil','Shukhrat','Muratbek','Ravil','Beibit','Bakdaulet','Vasya','Batyrkhan','Nuraly',
+            'Aibol','Zhaslan','Sanat','Ibragim','Merei','Gaziz','Amantai','Darhan','Altai','Mereke','Takhir','Orynbasar','Chingiz','Kenzhebek','Manas','Manarbek',
+            'Max','Yesen','Raiymbek','Sayan','Amangeldy','Zhambyl','Asyl','Aibolat','Vitalya','Batyrbek','Asylzhan','Meirzhan','Aibar','Sabyrzhan','Sapar','Make',
+            'Zhumabek','Marlen','Karim','Abylaikhan','Nurkhan','Volodya','Erjan','Doszhan','Bakytbek','Nauryz','Shamil','Farkhad','Turar','Khamit','Daryn','Muslim',
+            'Kasym','Yerdaulet','Makhambet','Abdulla','Maksut','Khasan','Vanya','Sabyr','Yernat','Alim','Arystan','Isa','Bekarys','Nurjan','Jandos','Yerken',
+            'Yesbol','Rakhymzhan','Meirbek','Yeraly','Musa','Maulen','Bake','Baktiyar','Yerdos','Nurasyl','Ansar','Omar','Ualikhan','Kuanyshbek','Ildar','Nurtas',
+            'Yerkanat','Amirkhan','Yertai','Arnur','Zharkyn','Sherkhan','Pasha','Zhanserik','David','Ulugbek','Ashat','Rishat','Alihan','Shalkar','Ismail','Radik',
+            'Sagyndyk','Alibi','Oraz','Tamerlan','Yereke','Tanat','Rakhim','Rysbek','Margulan','Tulegen','Sake','Dos','Usen','Said'
+          ],
+          last: [
+            'Yeszhanov','Turganbayev','Ashirov','Sembayev','Zhaksylyk','Zhumatayev','Mazhitov','Ibraev','Yelemesov','Zakirov','Zhunisov','Kudaibergen','Yeraliyev',
+            'Kanatov','Sakenov','Isaev','Mukhambetov','Kenzhegaliyev','Rustemov','Dyusenov','Alimbekov','Tursynbayev','Umirzakov','Nasyrov','Grigoriev','Yunusov',
+            'Urazov','Begaliyev','Makhmetov','Daribayev','Uzakbayev','Murzagaliyev','Kazbekov','Temirbayev','Musabayev','Omarbekov','Makhmudov','Yesenbayev',
+            'Osmanov','Kabiyev','Ashirbekov','Salimov','Nurmaganbetov','Khusainov','Abdullin','Dzhumabayev','Myrzabekov','Myrzakhmetov','Zhiyenbayev','Bazarov',
+            'Nuraliyev','Khairullin','Yelubayev','Zhaparov','Shakenov','Yesimov','Temirgaliyev','Zhalgasbayev','Temirbekov','Abdikarimov','Gumarov','Ospan',
+            'Tusupov','Abdurakhmanov','Uteshov','Nurlanov','Mansurov','Madiyev','Rysbayev','Seidakhmetov','Amangaliyev','Baizakov','Musaev','Makhmutov','Kuspanov',
+            'Nurbekov','Yerezhepov','Maksutov','Nurakhmetov','Ayupov','Dauletbayev','Arystanov','Nurtayev','Shaimerdenov','Yeleusizov','Kozhanov','Batyrbekov',
+            'Baratov','Abiyev','Tuleuov','Saparbayev','Baimuratov','Nurtazin','Abdrahmanov','Kambarov','Abzhanov','Rysbekov','Bekov','Myrzabayev','Sultanbekov',
+            'Zhakenov','Dos','Sarbasov','Bisengaliyev','Mukhametzhanov','Mukushev','Yeskaliyev','Rakhimbayev','Makhanbetov','Azizov','Amankulov','Abdukarimov',
+            'Tazhiyev','Otarbayev','Orazaliyev','Gabbasov','Aidarbekov','Gasanov','Abdramanov','Akhanov','Shalabayev','Turlybekov','Yernazarov','Bekbayev',
+            'Kydyrbayev','Nurgali','Kudabayev','Orynbasar','Yesengaliyev','Atyrau','Kuzembayev','Alimkulov','Baktybayev','Amirkhanov','Serikbaev','Kumarov',
+            'Tlegenov','Kurmashev','Imanov','Kenesov','Moldakhmetov','Abdirov','Satayev','Bekturganov','Dzhumagaliyev','Moldashev','Kozhabekov','Mynbayev',
+            'Baimenov','Saktaganov','Daniyarov','Kuatov','Nurmukhanov','Adilbekov','Alimbetov','Moldagaliyev','Duisebayev','Davletov','Yerimbetov','Abdraimov',
+            'Akylbekov','Tanatarov','Abubakirov','Kulbayev','Turdiyev','Serikbai','Sarybayev','Sansyzbayev','Abayev','Sarsenbaev','Talipov','Bakiyev','Amantai',
+            'Medetov','Nurseitov','Zhanibekov','Zhumabek','Kuanyshbayev','Arynov','Turganov','Amanzhol','Amangeldiyev','Tulepov','Bakyt','Park','Musa','Zhumabai',
+            'Jan','Bakytzhan','Kasym','Kali','Kuandyk','Isa','Madin','Abdulla','Suleimen','Abdrakhman','Ibragim','Baimagambetov','Aaa','Sapar','Saduov','Make',
+            'Muslim','Satybaldy','Baimukhanov','Ayazbayev','Akishev','Zhakipov','Mukhtar','Ikhsanov','Tursyn','Kenes','Zhetpisbayev','Beketov','Makashev',
+            'Kerimbekov','Aitkulov','Bazarbai','Amrenov','Uspanov','Kusherbayev','Kalinin','Zhusipov','Temirkhanov','Alin','Ryskulov','Rakishev','Mukhamadiyev',
+            'Sailau','Seitzhanov','Isin','Han','Baltabai','Sarsengaliyev','Zholdas','Kuanov','Sabyr','Kenzhebek','Kaparov','Yesetov','Yermagambetov','Bisembayev',
+            'Yeleuov','Sagimbayev','Kerimbayev','Bolatbek','Sagyndyk','Muratbekov','Bakhyt','Gazizov','Sundetov','Skakov','Bazarbaev','Bektasov','Bisenbayev','Abu',
+            'Bekbolat','Aitkaliyev','Kaldybekov','Orazalin','Kakimov','Umirbekov','Vagner','Amirbekov','Sarsenbai','Oraz','Muslimov','Omirzak','Makhatov',
+            'Kadyrbayev','Batyrkhanov','Adai'
+          ] },
+        { r: 1,
+          first: [
+            'Egor','Gennadi','Boris','Stanislav','Petr','Eduard','Leonid','Ravil','Grigori','Valentin','Yaroslav','Bogdan','Georgi','Gleb'
+          ],
+          last: [
+            'Bondarenko','Yegorov','Melnikov','Semenov','Nikitin','Medvedev','Yakovlev','Fedorov','Maksimov','Kovalenko','Nikolayev','Borisov','Kuzmin','Goncharov',
+            'Belov','Aleksandrov','Dmitriyev','Mironov','Kovalev','Zhukov','Chernov','Litvinov','Kravchenko','Frolov','Tkachenko','Danilov','Osipov','Sorokin',
+            'Babayev','Antonov','Ilin','Bogdanov','Matveyev','Shcherbakov','Davydov','Boiko','Kotov','Sidorov','Mamayev','Kalashnikov','Fomin','Savchenko','Irin',
+            'Marchenko','Lebedev','Marin','Rudenko','Klimenko','Khvan','Mayer','Pavlenko','Yugai','Petrenko','Bulatov','Lysenko','Kot','Melnik','Nevazhno',
+            'Vasilenko','Korolev','Vlasov','Sidorenko','Vorobev','Tarasov','Polyakov','Kulikov','Karpov','Belousov','Kharchenko','Afanasev','Klimov','Khegai',
+            'Solovev','Bely','Filippov','Kazantsev','Kiselev','Yun','Levchenko','Karpenko','Ponomarev','Kuzmenko','Nazarenko','Denisov','Yurchenko','Romanenko',
+            'Konovalov'
+          ] },
+    ],
+    BAN: [
+        { r: 0,
+          first: [
+            'Saidul','Asad','Shahid','Farhad','Abid','Selim','Jabed','Khairul','Rabiul','Suman','Jahidul','Samir','Nazim','Anowar','Anisur','Munna','Joynal',
+            'Ridoy','Jony','Mohammed','Mahadi','Shihab','Osman','Siam','Jamil','Yeasin','Juwel','Shamsul','Delwar','Mahfuz','Jasim','Nayeem','Tareq','Mohiuddin',
+            'Murad','Azizul','Nayem','Jahed','Farid','Mostafa','Najmul','Jalal','Sajjad','Atik','Billal','Yasin','Sabuj','Akram','Alauddin','Rahim','Suhel',
+            'Asaduzzaman','Jubayer','Bappy','Abrar','Sadman','Amin','Imtiaz','Morshed','Sarwar','Ovi','Shipon','Enamul','Mamunur','Rashedul','Nadim','Mohsin',
+            'Noyon','Sayem','Riaz','Saidur','Ami','Tipu','Riyad','Apu','Alomgir','Imam','Nizam','Mostafizur','Salauddin','Bablu','Ataur','Rajon','Anis','Mahbubur',
+            'Arifur','Hasib','Firoz','Hanif','Noman','Mahin','Roni','Jahirul','Mirza','Muhammad','Kamruzzaman','Alex','Khalid','Alif','Wahid','Ratul','Saifur',
+            'Naim','Hussain','Ahmad','Asraful','Delowar','Amirul','Mintu','Samiul','Rohan','Khokon','Arfin','Zahidul','Mijanur','Nasim','Rafsan','Mahedi','Sirajul',
+            'Apon','Bipul','Amran','Limon','Atikur','Sajid','Himel','Hafiz','Tajul','Kobir','Jakaria','Sohan','Hasibul','Sha','Aziz','Saleh','Shakhawat','Samim',
+            'Ziaur','Ferdous','Nill','Tahmid','Samsul','Hafizur','Moniruzzaman','Shishir','Sakil','Moshiur','Mostofa','Monjur','Moin','Hassan','Aminur','Irfan',
+            'Mon','Sifat'
+          ],
+          last: [
+            'Zia','Shovon','Tutul','Chanda','Mimi','Akas','Raz','Didar','Sayeed','Hoq','Dip','Korim','Sattar','Hira','Lucky','Younus','Shaikh','Hafiz','Badhon',
+            'Huq','Mallick','Ahammad','Singha','Shekh','Sahin','Mahmood','Tanim','Elias','Shimu','Shohan','Maya','Jan','Hasnat','Pavel','Shikdar','Jisan','Awal',
+            'Sha','Mishu','Khandaker','Rabbani','Sadik','Zara','Alli','Faruque','Bahar','Akthar','Farabi','Mohin','Sadi','Uzzaman','Meye','Dhali','Chandra','Arfat',
+            'Kotha','Nabi','Asha','Mandal','Evan','Shak','Bala','Popy','Parves','Rohoman','Mukul','Bappi','Begom','Rozario','Kan','Rehman','Nishi','Absar','Rohim',
+            'Pappu','Baidya','Adhikary','Jalil','Amar','Nayon','Arefin','Miraj','Toma','Topu','Keya','Nobi','Ritu','Sufian','Khondokar','Queen','Shorif','Roshid',
+            'Kona','Shopon','Rashel','Siddika','Urmi','Konna','Sani','Bepari','Pathan','Mahim','Saad','Koli','Arnob','Mone','Akib','Bulbul','Gupta','Karmokar',
+            'Akon','Mony','Sadek','Shafi','Shill','Anjum','Shaha','Parvej','Nabil','Srabon','Ruhi','Naeem','Job','Mollick','Raza','Antor','Saimon','Motin','Tumi',
+            'Miraz','Jihad','Siraj','Rajkonna','Nupur','Sara','Sany','Singh','Don','Tusher','Jafor','Rouf','Sam','Latif','Akbor','Redoy','Alvi','Ayon','Hossein',
+            'Rimi','Shek','Poly','Solaiman','Araf','Faruq','Nandi','Barmon','Emu','Bhuyan','Matin','Anu','Khokan','Bangla','Mallik','Manus','Kaium','Safa',
+            'Chowdhory','Tonni','Patowary','Day','Mohon','Hussin','Omi','Lipi','Bithi','Tuli','Barai','Zahan','Sony','Durjoy','Mustafa','Karmaker','Kuddus',
+            'Hashem','Monju','Rumon','Hussan','Rokon','Shovo','Shohid','Numan','Suvo','Jara','Talha','Afridi','Neha','Mojumdar','Sordar','Badal','Shobuj','Reja',
+            'Shajahan','Rat','Null','Taj','Esha','Kayes','Bhuiya','Hamza','Siyam','Newaz','Naher','Shojib','Panna','Ripa','Patti','Bagum','Abbas','Trisha','Saba',
+            'Pinky','Sharkar','Hamim','Samrat','Bhowmick','Khandakar','Mona','Ema','Adil','Rajkumar','Ratri','Labib','Niha','Rob','Forid','Ahasan','Kumer','Jowel',
+            'Sorker','Bokul','Manna','Siddiqui','Nipu','Ador','Anas','Muntaha','Imon','Hena','Pothik','Manush','Rone','Yusuf','Hawladar','Ikbal','Tithi','Joni',
+            'Momo','Gain','Rahoman','Naser','Arkani','Orin','Kiron','Sourov','Jerin','Setu','Forkan','Adi','Khair','Tasin','Muna','Nilanjona','Sana','Piash','Fuad',
+            'Shake','Nisha','Pasha','Lslam','Kabbo','Gani','Zzaman','Somrat','Fakir','Arju','Shuvro','Shams','Payel','Mun','Chele','Bristi','Ansari','Sojol',
+            'Elahi','Pabel','Pervin','Murshed','Khalifa','Khondoker','Dalim','Meem','Jishan','Badol','Mili','Gold','Afsar','Sanju','Dipto','Likhon','Salahuddin',
+            'Sawon','Kasem','Valobasa','Kaisar','Rahad','Sajeeb','Sun','Raha','Milton','Bormon','Basar','Mizi','Borsha','Sharker','Antu','Mumu','Zakaria','Sheik',
+            'Toha','Mahdi','Mulla','Afnan','Pintu','Mina','Nishu','Khalek','Remon','Miazi','Balal','Projapoti','Shipu','Bakkar','Taleb','Jaber','Zihad','Karmoker',
+            'Sume','Chad','Ayat','Tarin','Bird','Monna'
+          ] },
+        { r: 1,
+          first: [
+            'Bijoy','Suman','Tushar','Dulal','Munna','Jony','Sobuj','Tonmoy','Nayan','Shanto','Prodip','Ratan','Polash','Bappy','Noyon','Sajal','Dipu','Ratul',
+            'Sagar','Swapan','Sujit'
+          ],
+          last: [
+            'Mallick','Acharjee','Mitra','Mandal','Kar','Bepari','Mollick','Podder','Pramanik','Malakar','Tripura','Chakrabarty'
           ] },
     ],
     AUS: [
@@ -18820,7 +19366,7 @@ const F1DB_CONSTRUCTOR_NATIONS = {"adams":"USA","afm":"GER","ags":"FRA","alfa-ro
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.29';
+        const VERSION = '0.9.18.30';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
