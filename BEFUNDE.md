@@ -2778,3 +2778,18 @@ Vorher MEX (CRC/GUA/PUR/PHI) bzw. COL (PAN/ECU/BOL). Aggregate `w6_*.csv`, Konfi
 - ⚠ **Falle Akzente (dritte Variante):** `NO_ACCENT_NATIONS` verhindert Akzente nur für die ES_ONLY-Liste — García/López/Pérez bekamen
   sie auch in PHI. Lösung per `finalize` (Akzent weg, ñ bleibt: Ibañez). Merke: wer akzentfreie spanische Namen braucht, muss nach fixName ansetzen.
 - PUR klein (Klasse `tiny`): nur ~100.000 Träger im Datensatz.
+
+### 04.10.2026: Namens-Pools MLT/LUX/ISL/ANG (Welle 7)
+Vorher ITA, BEL, SWE bzw. POR. Aggregate `w7_*.csv`, Konfiguration `nations-w7.js`, Vorschau `namens-vorschau-w7.md`.
+Alle vier mit Geschlechtsangabe, 100 % lateinisch, Köpfe nach Sperren sauber.
+- **LUX: 25 % der Nachnamen portugiesisch** (Silva, Santos, Ferreira). Nutzer-Entscheid: kleine eigene Region r1 mit 10 % (unter dem
+  Bevölkerungsanteil von ~15 %), Vor- UND Nachname portugiesisch. Kapverdische/brasilianische Formen (Lima, Morais, Cruz, Delgado) standen
+  zunächst in r0 → auf die PT-Liste. LUX in `FR_NATIONS` (Éric, Frédéric) und `PT_NATIONS` (Gonçalves).
+- **ISL:** Vatersnamen; Datensatz führt ASCII und isländische Schreibung nebeneinander (Gudmundsson/Guðmundsson). `key()` legt ð/þ/æ
+  NICHT zusammen (zerfallen nicht per NFD) → eigener Schlüssel ð=d, þ=th, æ=ae, ö=o, Anzeige isländisch. Positiv-Regel: Nachname auf
+  -son oder einer der wenigen Familiennamen — hält polnische/litauische Zuwanderer fern; Vornamen zusätzlich `foreignFirstIso: PL, LT`.
+  Nur ~25.000 Träger → Klasse `tiny`.
+- ⚠ **Eigene Falle:** eine gemeinsame Sperrliste mit Santos/Garcia/Ramos (für Filipinos in Malta) hätte Angolas und Luxemburgs
+  portugiesische Namen gesperrt — Sperren je Nation prüfen, nicht pauschal teilen.
+- **ANG:** portugiesische Namen sind einheimisch → `HISPANIC`-Klasse dort nativ (José, Pedro, Carlos wären sonst gefallen), `PT_NATIONS`.
+  Westafrikanische Namen (Diallo, Traoré) gesperrt.

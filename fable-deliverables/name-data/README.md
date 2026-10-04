@@ -22,6 +22,7 @@ Roh-CSVs: forenames.csv 226 MB / surnames.csv 381 MB — lokal unter `F1 RPG Nam
 | `cn_*.csv` + `nations-cn.js` + `cn-hanzi-pinyin.json` | CHN tief aggregiert (6.000/3.000), Positiv-Prüfung, Schriftzeichen→Pinyin; Vorschau `namens-vorschau-chn.md`. ⚠ Rohnamen nie ausgeben (API-Inhaltsfilter) |
 | `w5_*.csv` + `nations-w5.js` | Welle 5 (TUN/ALG/LBA/IRQ/JOR/LBN/BRN/KUW); `w5_fore_u_agg.csv` = Länder ohne Geschlechtsangabe; Vorschau `namens-vorschau-w5.md` |
 | `w6_*.csv` + `nations-w6.js` | Welle 6 (CRC/GUA/PAN/ECU/BOL/PUR/PHI); Vorschau `namens-vorschau-w6.md` |
+| `w7_*.csv` + `nations-w7.js` | Welle 7 (MLT/LUX/ISL/ANG); Vorschau `namens-vorschau-w7.md` |
 | `gender-ref.js` → `w5_gender_ref.csv` | M/F je Vorname aus Ländern MIT Geschlechtsangabe — Filter für Länder, deren Rohdaten keins haben (`node gender-ref.js`) |
 | `country-count.js` | Zeilen und Träger je Land in den Roh-CSVs — vor jeder neuen Welle prüfen, ob ein Land drin ist (`node country-count.js UA,BY,KZ`) |
 | `aggregate-names.js` | Streaming-Aggregator Roh-CSV → Aggregat (`node aggregate-names.js in.csv out.csv M|ALL topN`) |
