@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.2</title>
+    <title>F1 RPG v0.9.20.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.2 (aktuell) - 04.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.3 (aktuell) - 04.10.2026</div>
+                            <div>&#8226; NEU: Eigene Namens-Pools fuer Ukraine, Weissrussland, Kenia, Senegal, Elfenbeinkueste, Pakistan, Lettland, Slowakei, San Marino, Sri Lanka, Paraguay, Dominikanische Republik, Kuba, Mosambik, Liechtenstein</div>
+                            <div>&#8226; NEU: Ukrainische Namen in ukrainischer statt russischer Schreibweise</div>
+                            <div>&#8226; FIX: Vor- und Nachname sind nie mehr identisch (z. B. Javed Javed)</div>
+                            <div class="font-bold text-slate-400">v0.9.20.2 - 04.10.2026</div>
                             <div>&#8226; FIX: Deutsche Fahrer bekommen keinen tuerkischen Vornamen mit deutschem Nachnamen mehr (Kerem)</div>
                             <div class="font-bold text-slate-400">v0.9.20.1 - 04.10.2026</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer Iran, Oman, Jamaika, Zypern, El Salvador, Barbados, Seychellen und Ruanda</div>
@@ -4184,7 +4188,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.2';
+        const VERSION = '0.9.20.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7452,6 +7456,11 @@
                 if (filtered.length) lastArr = filtered;
             }
             let lastName = weightedPick(lastArr);
+            // Vatersnamen-Länder (PAK, IRQ, JOR …) führen dieselben Namen als Vor- UND Nachname → nie „Javed Javed"
+            if (lastName === firstName) {
+                const others = lastArr.filter(e => e[0] !== firstName);
+                if (others.length) lastName = weightedPick(others);
+            }
             // Bindestrich-Doppelname: zweiter Zug aus DERSELBEN Regionsliste, damit
             // beide Teile aus einem Kulturraum stammen („Müller-Schmidt", nie
             // „Müller-Dogan"). Nur Region 0 — die Diaspora-Regionen kennen die Form

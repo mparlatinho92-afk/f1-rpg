@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.2</title>
+    <title>F1 RPG v0.9.20.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.2 (aktuell) - 04.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.3 (aktuell) - 04.10.2026</div>
+                            <div>&#8226; NEU: Eigene Namens-Pools fuer Ukraine, Weissrussland, Kenia, Senegal, Elfenbeinkueste, Pakistan, Lettland, Slowakei, San Marino, Sri Lanka, Paraguay, Dominikanische Republik, Kuba, Mosambik, Liechtenstein</div>
+                            <div>&#8226; NEU: Ukrainische Namen in ukrainischer statt russischer Schreibweise</div>
+                            <div>&#8226; FIX: Vor- und Nachname sind nie mehr identisch (z. B. Javed Javed)</div>
+                            <div class="font-bold text-slate-400">v0.9.20.2 - 04.10.2026</div>
                             <div>&#8226; FIX: Deutsche Fahrer bekommen keinen tuerkischen Vornamen mit deutschem Nachnamen mehr (Kerem)</div>
                             <div class="font-bold text-slate-400">v0.9.20.1 - 04.10.2026</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer Iran, Oman, Jamaika, Zypern, El Salvador, Barbados, Seychellen und Ruanda</div>
@@ -14069,14 +14073,630 @@ const NAME_POOLS_BY_NATION = {
             ['Havugimana',41],['Mahoro',41],['Muhirwa',40],['Twagirayezu',40],['Niyonsenga',40],['Hitimana',40],['Mugiraneza',40],['Mutoni',40],['Rurangwa',39]
           ] }
     ] },
+
+    // ── UKR ──
+    UKR: { regions: [
+        { w: 1,
+          first: [
+            ['Oleksandr',100],['Serhii',91],['Volodymyr',84],['Andrii',66],['Yurii',62],['Ihor',61],['Viktor',55],['Oleh',55],['Mykola',54],['Vitalii',47],
+            ['Dmytro',45],['Anatolii',44],['Vasyl',41],['Roman',40],['Valerii',40],['Oleksii',39],['Mykhailo',38],['Ivan',35],['Yevhen',31],['Vadym',30],
+            ['Pavlo',30],['Ruslan',29],['Viacheslav',28],['Petro',26],['Hennadii',25],['Maksym',24],['Kostiantyn',23],['Vladyslav',22],['Taras',21],['Yaroslav',21],
+            ['Leonid',21],['Yevhenii',19],['Valentyn',19],['Denys',19],['Stanislav',17],['Bohdan',17],['Hryhorii',16],['Borys',16],['Eduard',15],['Artem',15],
+            ['Stepan',13],['Anton',12],['Heorhii',11],['Fedir',10],['Nazarii',10],['Artur',10],['Rostyslav',9],['Illia',8],['Myroslav',7],['Liubomyr',6],
+            ['Orest',5],['Kyrylo',5],['Van',5],['Sviatoslav',5],['Tkhi',5],['Arkadii',5],['Yosyp',5],['Nazar',4],['Semen',4],['Robert',4],['Albert',4],['Myron',4],
+            ['Yakiv',4],['Yehor',4],['Marian',4],['Zinovii',4],['Yan',3],['Danylo',3],['Mykyta',3],['Armen',3],['Vsevolod',3],['Yulii',3],['Rustam',3],
+            ['Tymofii',3],['Arsen',3],['Lev',3],['Tymur',3],['Mark',3],['Ostap',2],['Hlib',2],['Vladlen',2],['Herman',2],['Davyd',2],['Pylyp',2],['Henadii',2],
+            ['Leontii',2],['Karen',2],['Ernest',2],['Zoltan',2],['Feliks',2],['Zenovii',2],['Rodion',2],['Yosyf',2],['Marat',2],['Yulian',2],['Ishtvan',2],
+            ['Bronislav',2],['Veniamin',2],['Adam',2],['Omelian',2],['Suan',2],['Kyryl',2],['Dyk',2],['Stefan',2],['Tyberii',2],['Zakhar',2],['Demian',2],
+            ['Samvel',2],['Rudolf',2],['Frants',2],['Vladislav',2],['Denis',2],['Nhok',1],['Arsenii',1],['Yukhym',1],['Ashot',1],['Andrian',1],['Rafael',1],
+            ['Henrikh',1],['Din',1],['Attila',1],['Renat',1],['Levon',1],['Yanosh',1],['Erik',1],['Daniil',1],['Kuanh',1],['Ruben',1],['Alim',1],['Tomash',1],
+            ['Rinat',1],['Karl',1],['Timur',1],['Dmytrii',1],['Vadim',1],['Min',1],['Rustem',1],['David',1],['Tkhan',1],['Zenon',1],['Kuok',1],['Hahik',1],
+            ['Kazymyr',1],['Oles',1],['Alik',1],['Otto',1],['Marko',1],['Vakhtanh',1],['Radion',1],['Matvii',1],['Tihran',1],['Osyp',1],['Arutiun',1],['Rafik',1],
+            ['Olena',1],['Dymytrii',1],['Emil',1],['Mykolai',1],['Spartak',1],['Laslo',1],['Alisher',1],['Eldar',1],['Edvard',1],['Valerian',1],['Suren',1],
+            ['Zurab',1],['Andranik',1],['Andriian',1],['Teodor',1],['Vardan',1],['Liudvyh',1],['Ilarion',1],['Milan',1],['Tibor',1],['Ohanes',1],['Afanasii',1],
+            ['Akop',1],['Ali',1],['Adalbert',1],['Aram',1],['Ararat',1],['Boleslav',1],['Enver',1],['Tiberii',1],['Man',1],['Ara',1],['Konstiantyn',1],['Ananii',1],
+            ['Mokhammad',1],['Hevorh',1],['Zhan',1],['Vasylii',1],['Damir',1],['Alfred',1],['Shamil',1],['Harik',1],['Havrylo',1],['Antonii',1],['Nataliia',1],
+            ['Seiran',1],['Yeduard',1],['Vikentii',1],['Artak',1],['Olesandr',1],['Arpad',1],['Markiian',1],['Manvel',1],['Roland',1],['Vilhelm',1],['Ba',1],
+            ['Fedor',1],['Rostislav',1],['Kim',1],['Haik',1],['Zorian',1],['Araik',1],['Yevstakhii',1],['Valentyna',1],['Aron',1],['Avtandil',1],['Volodymr',1],
+            ['Tkhy',1],['Edhar',1],['Karlen',1],['Zhorzh',1],['Khyu',1],['Danyil',1],['Viorel',1],['Alan',1],['Tahir',1],['Nariman',1],['Hamlet',1],['Tetiana',1],
+            ['Vilen',1],['Hryhor',1],['Askold',1],['Leon',1],['Khonh',1],['Kristian',1],['Nikita',1],['Tkhie',1],['Abdul',1],['Kamo',1],['Alen',1],['Hnat',1],
+            ['Levan',1],['Harri',1],['Shandor',1],['Arman',1],['Oleksa',1],['Server',1],['Zui',1],['Chonh',1],['Rynat',1],['Mukhammad',1],['Khoanh',1],['Olha',1],
+            ['Dementii',1],['Anzor',1],['Martin',1],['Naum',1],['Murad',1],['Sarkis',1],['Vatslav',1],['Mekhman',1],['Boryslav',1],['Mustafa',1],['Tyhran',1],
+            ['Sabir',1],['Liubov',1],['Richard',1],['Akhmed',1],['Nestor',1],['Savelii',1],['Arnold',1],['Tiien',1],['Zynovii',1],['Yarema',1],['Pavel',1],
+            ['Ibrahim',1],['Edik',1],['Liudvih',1],['Rasim',1],['Evhenii',1],['Dzhumber',1],['Refat',1],['Yanush',1],['Edem',1],['Vartan',1],['Varuzhan',1],
+            ['Stanyslav',1],['Rashyd',1],['Yakov',1],['Mariia',1],['Liudmyla',1]
+          ],
+          last: [
+            ['Melnyk',100],['Shevchenko',99],['Kovalenko',89],['Bondarenko',89],['Boiko',86],['Ivanov',85],['Tkachenko',85],['Kravchenko',81],['Kovalchuk',77],
+            ['Koval',72],['Oliinyk',70],['Shevchuk',67],['Popov',66],['Polishchuk',65],['Tkachuk',59],['Savchenko',59],['Bondar',59],['Marchenko',59],
+            ['Rudenko',58],['Moroz',58],['Lysenko',58],['Petrenko',57],['Kovalov',55],['Klymenko',54],['Pavlenko',54],['Kravchuk',53],['Kuzmenko',51],
+            ['Ponomarenko',51],['Savchuk',51],['Vasylenko',50],['Levchenko',50],['Kharchenko',50],['Petrov',49],['Sydorenko',49],['Chorna',49],['Karpenko',48],
+            ['Havryliuk',47],['Shvets',47],['Honcharov',47],['Volkov',47],['Melnychuk',47],['Romaniuk',46],['Panchenko',46],['Yurchenko',46],['Mazur',46],
+            ['Khomenko',46],['Popovych',45],['Pavliuk',45],['Vasyliev',45],['Kushnir',44],['Lytvynenko',44],['Kozlov',44],['Novikov',44],['Martyniuk',44],
+            ['Honcharenko',44],['Prykhodko',44],['Kostenko',43],['Kulyk',43],['Romanenko',43],['Kostiuk',43],['Semeniuk',43],['Nazarenko',42],['Zaitsev',42],
+            ['Tkach',42],['Fedorov',42],['Kravets',42],['Kolomiiets',42],['Kozak',42],['Yakovenko',41],['Fedorenko',41],['Kovtun',41],['Bilous',41],
+            ['Nesterenko',41],['Pavlov',41],['Tereshchenko',41],['Kolesnyk',41],['Mykhailov',41],['Morozov',41],['Sokolov',41],['Zinchenko',40],['Tarasenko',40],
+            ['Mishchenko',40],['Vovk',40],['Demchenko',40],['Diachenko',40],['Pylypenko',40],['Ishchenko',40],['Makarenko',40],['Babenko',39],['Kyrychenko',39],
+            ['Tyshchenko',39],['Poliakov',38],['Tymoshenko',38],['Zhuk',38],['Moskalenko',38],['Marchuk',38],['Kuznetsov',38],['Shapovalov',38],['Vlasenko',38],
+            ['Humeniuk',38]
+          ] }
+    ] },
+
+    // ── BLR ──
+    BLR: { regions: [
+        { w: 1,
+          first: [
+            ['Alexander',100],['Sergei',97],['Andrei',91],['Dmitri',74],['Alexei',64],['Maxim',58],['Artem',55],['Evgeni',55],['Denis',54],['Igor',51],['Pavel',47],
+            ['Nikita',45],['Oleg',44],['Vladimir',44],['Ilya',43],['Vadim',41],['Anton',41],['Kirill',41],['Nikolai',40],['Vitali',40],['Viktor',38],['Ivan',37],
+            ['Yuri',34],['Mikhail',34],['Egor',31],['Roman',30],['Vladislav',28],['Ruslan',27],['Artur',26],['Roma',25],['Vitalik',21],['Konstantin',19],
+            ['Vyacheslav',18],['Maks',18],['Vasily',16],['Daniil',16],['Vasya',15],['Anatoly',15],['Vasili',15],['Leonid',15],['Valentin',14],['Stanislav',14],
+            ['Gleb',14],['Petr',13],['Anatoli',13],['Seryoga',12],['Yan',12],['Yaroslav',12],['Valeri',12],['Eduard',12],['Danik',12],['Zheka',12],['Boris',11],
+            ['Vitalya',11],['Matvey',10],['Gennady',10],['Bogdan',10],['Serega',9],['Sanyok',9],['Mark',9],['Timur',9],['Gennadi',8],['Timofey',8],['Dimka',8],
+            ['Vladik',8],['Stepan',8],['Aleks',8],['Pashka',7],['Zakhar',7],['Kolyan',7],['Den',7],['German',7],['Volodya',7],['Tolya',6],['Yurik',6],['Grigory',6],
+            ['Slavik',6],['Arseniy',6],['Danil',6],['Valik',6],['Vovan',6],['Fedor',6],['Fyodor',6],['Lyonya',6],['Arseny',6],['Kiril',6],['Sanek',5],['Pyotr',5],
+            ['Vityok',5],['Grigori',5],['Nazar',5],['David',5],['Ignat',5],['Georgi',5],['Dyonya',5],['Marat',5],['Georgy',5],['Rodion',5],['Antokha',5],
+            ['Mishanya',5],['Semyon',5],['Fedya',5],['Tima',5],['Shurik',5],['Evgen',5],['Svyatoslav',5],['Mikha',5],['Rustam',5],['Nik',4],['Alexandr',4],
+            ['Rostislav',4],['Serzh',4],['Vovka',4],['Igoryok',4],['Pavlik',4],['Yarik',4],['Albert',4],['Gosha',4],['Mishka',4],['Styopa',4],['Sergej',4],
+            ['Vovchik',4],['Semen',4],['Vanka',4],['Lyoshka',4],['Alyosha',4],['Taras',4],['Zhenyok',3],['Philip',3],['Miroslav',3],['Robert',3],['Vano',3],
+            ['Ales',3],['Romka',3],['Prosto',3],['Renat',3],['Filipp',3],['Kostik',3],['Mitya',3],['Edgar',3],['Serezha',3],['Arkady',3],['Lev',3],['Andrew',3],
+            ['Vitek',3],['Sanka',3],['Vital',3],['Erik',3],['Alik',3],['Kostyan',3],['Yakov',3],['Andrej',3],['Arkadiy',3],['Tolyan',3],['Senya',3],['Makar',3],
+            ['Alexandar',3],['Vanyok',3],['Aleksander',3],['Aleksandar',3],['Vovik',3],['Yurka',3],['Tokha',3],['Radion',3],['Vasyok',3],['Kalyan',3],['Klim',3],
+            ['Borya',3],['Adam',2],['Stasik',2],['Victor',2],['Edvard',2],['Valodya',2],['Egorka',2],['Seva',2],['Deniska',2],['Ali',2],['Daniel',2],['Vsevolod',2],
+            ['Lenya',2],['Vadya',2],['Dimas',2],['Yasha',2],['Artemiy',2],['Denchik',2],['Arsen',2],['Dinis',2],['Martin',2],['Leshka',2],['Zhenik',2],['Artemy',2],
+            ['Vavan',2],['Aleksei',2],['Iosif',2],['Emil',2],['Tikhon',2],['Mihail',2],['Sashok',2],['Stepa',2],['Elisey',2],['Seryy',2],['Serg',2],['Diman',2],
+            ['Olezhka',2],['Michael',2],['Garik',2],['Mikola',2],['Eldar',2],['Artyomka',2],['Pakha',2],['Maksimka',2],['Efim',2],['Leon',2],['Kot',2],['Arnold',2],
+            ['Ernest',2],['Antosha',2],['Vetal',2],['Antoshka',2],['Kazimir',2],['Vasil',2],['Tyomka',2],['Dan',2],['Lexa',2],['Zhorik',2],['Murat',2],['Pashok',2],
+            ['Syoma',2],['Seryozhka',2],['Nick',2],['Veniamin',2],['Genadiy',2],['Genrikh',2],['Igar',2],['Tim',2],['Antonio',2],['Vladimer',2],['Romik',2]
+          ],
+          last: [
+            ['Ivanov',100],['Petrov',59],['Novikov',56],['Kozlov',48],['Volkov',48],['Kotov',47],['Morozov',46],['Smirnov',46],['Zaytsev',42],['Kovalyov',39],
+            ['Melnikov',36],['Romanov',36],['Kozlovsky',36],['Kuznetsov',35],['Sokolov',34],['Kovalev',34],['Baranov',32],['Vasilevsky',32],['Frolov',32],
+            ['Goncharov',31],['Popov',31],['Mironov',31],['Orlov',31],['Pavlov',31],['Andreev',31],['Makarov',30],['Kravtsov',30],['Nikitinа',29],['Zhukov',29],
+            ['Mikhaylov',29],['Bely',29],['Zhukovsky',28],['Belov',28],['Sergeev',28],['Kovalevsky',28],['Medvedev',27],['Stepanov',27],['Bondarenko',27],
+            ['Lebedev',27],['Baranovsky',27],['Titov',27],['Stankevich',27],['Tarasevich',26],['Marchenko',26],['Nikolaev',26],['Sokolovsky',26],['Savitsky',26],
+            ['Lukashevich',26],['Egorov',26],['Kot',26],['Savchenko',26],['Chernyavsky',25],['Drozdov',25],['Bogdanovich',25],['Antonov',25],['Romanovsky',25],
+            ['Vasilyev',25],['Vasilev',25],['Pinchuk',25],['Bondarev',24],['Semyonov',24],['Malinovsky',24],['Boyko',24],['Bogdanov',24],['Petrovsky',24],
+            ['Yakovlev',24],['Polyakov',24],['Pavlovsky',24],['Shevtsov',24],['Kuzmich',24],['Sadovsky',23],['Melnik',23],['Golubev',23],['Korol',23],['Karpov',23],
+            ['Zakharov',23],['Matskevich',23],['Sinkevich',23],['Bondar',23],['Pavlovich',23],['Starovoytov',23],['Petrovich',23],['Kazak',22],['Markevich',22],
+            ['Borisov',22],['Borisevich',22],['Sidorov',22],['Sidorenko',22],['Yushkevich',22],['Tarasov',22],['Solovyov',22],['Kovalevich',22],['Korolyov',22],
+            ['Zayats',22],['Bykov',22],['Abramovich',21],['Romanenko',21],['Dashkevich',21],['Yankovsky',21],['Yurchenko',21]
+          ] }
+    ] },
+
+    // ── KEN ──
+    KEN: { regions: [
+        { w: 0.89,
+          first: [
+            ['John',100],['Joseph',96],['Peter',91],['Brian',87],['David',83],['James',79],['Samuel',70],['Daniel',69],['Stephen',69],['Kelvin',66],['Dennis',62],
+            ['Emmanuel',60],['Paul',60],['Victor',59],['Moses',58],['Kevin',57],['Michael',55],['Francis',55],['Charles',52],['Vincent',52],['Alex',50],
+            ['Simon',50],['George',50],['Otieno',49],['Patrick',49],['Evans',47],['Collins',47],['Kennedy',45],['Mwangi',45],['Isaac',44],['Edwin',44],['Erick',43],
+            ['Felix',43],['Joshua',42],['Martin',42],['Robert',41],['Amos',41],['Denis',40],['Julius',40],['Benson',39],['Benard',39],['Nicholas',38],
+            ['Jackson',38],['Samwel',38],['Ian',38],['Eric',38],['Odhiambo',37],['Richard',37],['Ochieng',37],['Antony',37],['William',36],['Philip',34],
+            ['Samson',34],['Shadrack',33],['Joel',32],['Wilson',32],['Thomas',32],['Omondi',31],['Kamau',31],['Onyango',31],['Geoffrey',31],['Bonface',31],
+            ['Jacob',30],['Andrew',30],['Gideon',30],['Benjamin',30],['Mark',30],['Timothy',30],['Sammy',30],['Dominic',30],['Wafula',29],['Titus',28],['Henry',28],
+            ['Elijah',28],['Anthony',28],['Edward',28],['Josphat',27],['Allan',27],['Stanley',27],['Njoroge',27],['Kyalo',27],['Kariuki',27],['Christopher',27],
+            ['Mutua',26],['Nelson',26],['Alfred',26],['Clinton',26],['Enock',26],['Kenneth',26],['Elvis',26],['Duncan',25],['Suleiman',25],['Dickson',25],
+            ['Lawrence',24],['Wanjala',24],['Solomon',24],['Meshack',24],['Caleb',24],['Wambua',24],['Simiyu',24],['Abraham',24],['Jeremiah',24],['Boniface',24],
+            ['Kibet',23],['Gabriel',23],['Kimani',23],['Raphael',23],['Justus',22],['Mutuku',22],['Reuben',22],['Derrick',22],['Ezekiel',22],['Njuguna',22],
+            ['Ronald',22],['Wekesa',21],['Bernard',21],['Lewis',21],['Leonard',21],['Festus',21],['Jonathan',21],['Godfrey',21],['Geofrey',21],['Musyoka',20],
+            ['Dancan',20],['Eliud',20],['Pius',20],['Morris',20],['Elias',20],['Macharia',19],['Mathew',19],['Barasa',19],['Fred',19],['Frankline',19],
+            ['Isaiah',19],['Harrison',19],['Mutinda',19],['Newton',19],['Wycliffe',18],['Karanja',18],['Owino',18],['Albert',18],['Okoth',18],['Jared',18],
+            ['Rodgers',18],['Derick',18],['Johnson',17],['Oduor',17],['Oscar',17],['Nickson',17],['Wilfred',17],['Kiprotich',17],['Wanyonyi',17],['Nyongesa',17],
+            ['Kinyua',17],['Cyrus',17],['Aron',17],['Kipkoech',16],['Gitonga',16],['Walter',16],['Kiptoo',16],['Mbugua',16],['Mohamud',16],['Tonny',16],
+            ['Waweru',16],['Onesmus',16],['Zakaria',16],['Wesley',16],['Ramadhan',16],['Chege',16],['Daud',16],['Ngugi',16],['Tom',16],['Mwendwa',16],['Mike',16],
+            ['Cosmas',16],['Alvin',16],['Steven',16],['Kiprono',16],['Ezra',16],['Muriithi',15],['Abel',15],['Davis',15],['Maurice',15],['Mburu',15],['Gerald',15],
+            ['Kiprop',15],['Musyoki',15],['Irungu',15],['Noah',15],['Maxwell',15],['Mwaura',15],['Cheruiyot',15],['Austine',15],['Kimutai',15],['Gitau',15],
+            ['Kiplagat',15],['Laban',15],['Kipkorir',15],['Muli',14],['Oliver',14],['Steve',14],['Issack',14],['Ndungu',14],['Nathan',14],['Harun',14],
+            ['Augustine',14],['Mutisya',14],['Alexander',14],['Eugene',14],['Wachira',14],['Ayub',14],['Tony',14],['Cornelius',14],['Boaz',14],['Mutunga',14],
+            ['Aden',14],['Mwaniki',14],['Dan',14],['Chris',14],['Japheth',13],['Ng\'ang\'a',13],['Benedict',13],['Maxwel',13],['Eugine',13],['Raymond',13],
+            ['Lucas',13],['Njenga',13],['Japhet',13],['Ernest',13],['Ndung\'u',13],['Munene',13],['Murithi',13],['Baraka',13],['Humphrey',13],['Mwanzia',13],
+            ['Hosea',13],['Nicholus',13],['Calvin',13],['Munyao',12],['Kipruto',12],['Linus',12],['Danson',12],['Arnold',12],['Robinson',12],['Evance',12],
+            ['Ismael',12],['Sylvester',12],['Musembi',12],['Muriuki',12],['Muema',12],['Willy',12],['Kinyanjui',12],['Mugo',12],['Teddy',12],['Clement',12],
+            ['Kiplangat',12],['Kipngetich',12],['Mumo',12],['Rotich',12],['Feisal',12],['Kuria',12],['Wamalwa',12],['Ambrose',12],['Alphonce',11],['Jeff',11],
+            ['Mulwa',11],['Kipkemoi',11]
+          ],
+          last: [
+            ['Otieno',100],['Mwangi',92],['Odhiambo',77],['Maina',76],['Ochieng',75],['Kamau',64],['Omondi',64],['Onyango',64],['Njoroge',57],['Kariuki',55],
+            ['Wafula',52],['Ouma',51],['Kimani',47],['Mutua',46],['Cheruiyot',45],['Njuguna',44],['Kibet',44],['Simiyu',44],['Macharia',43],['Wanjala',42],
+            ['Barasa',41],['Wambua',41],['Koech',40],['Rotich',39],['Karanja',39],['Wekesa',38],['Okoth',37],['Langat',37],['Chepkemoi',37],['Mutuku',37],
+            ['Owino',36],['Awuor',35],['Musyoka',35],['Nyongesa',35],['Cherotich',35],['Wanyonyi',35],['Chepkoech',35],['Korir',34],['Chelangat',34],['Kiptoo',34],
+            ['Mwendwa',34],['Mbugua',34],['Chege',33],['Waweru',33],['Kinyua',33],['Ngugi',33],['Kiprotich',33],['Kipkoech',33],['Oduor',32],['Mburu',32],
+            ['Kirui',32],['Kioko',32],['Gitonga',32],['Rono',31],['Mwaura',31],['Muriithi',31],['Gitau',31],['Munene',31],['Wachira',30],['Irungu',30],['Njeru',30],
+            ['Kemboi',30],['Mutai',30],['Cherono',30],['Kimutai',29],['Ndungu',29],['Nyaga',29],['Mutinda',29],['Ndung\'u',29],['Chepkorir',29],['Ng\'ang\'a',29]
+          ] },
+        { w: 0.11,
+          first: [
+            ['Ibrahim',100],['Mohamed',98],['Ali',68],['Abdi',66],['Hassan',63],['Juma',57],['Ahmed',51],['Hussein',50],['Adan',47],['Salim',45],['Ismail',42],
+            ['Omar',41],['Rashid',39],['Hamisi',36],['Said',32],['Musa',30],['Osman',29],['Mohammed',29],['Yusuf',29],['Issa',28],['Yussuf',28],['Abdalla',21],
+            ['Bakari',21],['Idris',19]
+          ],
+          last: [
+            ['Mohamed',100],['Ali',69],['Juma',65],['Hassan',64],['Abdi',63],['Ahmed',52],['Hussein',50],['Adan',49],['Abdullahi',48],['Ibrahim',42],['Omar',42]
+          ] }
+    ] },
+
+    // ── SEN ──
+    SEN: { regions: [
+        { w: 1,
+          first: [
+            ['Mamadou',100],['Ibrahima',69],['Cheikh',63],['Abdoulaye',61],['Amadou',60],['Moussa',54],['Ousmane',54],['Modou',53],['Abdou',52],['Aliou',46],
+            ['Samba',46],['Mbaye',41],['Oumar',40],['Babacar',38],['Moustapha',38],['Assane',32],['Demba',31],['Malick',31],['Saliou',29],['Omar',29],['Daouda',29],
+            ['Alassane',28],['Mouhamadou',28],['Lamine',27],['Souleymane',27],['Thierno',27],['Alioune',27],['Boubacar',27],['Bassirou',25],['Ousseynou',24],
+            ['Djiby',24],['Djibril',24],['Abdoul',23],['Abou',23],['Dame',23],['Ibra',21],['Issa',21],['Khadim',20],['Gora',19],['Ablaye',19],['Sidy',19],
+            ['Idrissa',18],['Ndiaga',18],['Jean',18],['Matar',17],['Fallou',17],['Baba',17],['Yaya',16],['Abdourahmane',16],['Amath',16],['Ismaila',16],
+            ['Alpha',16],['Talla',16],['Mamoudou',16],['Seydou',15],['Ibou',15],['Birame',15],['Keba',14],['Mouhamed',14],['Bara',14],['Birane',14],['Cherif',14],
+            ['Mohamed',14],['Salif',14],['Malang',14],['Baye',13],['Harouna',13],['Hamady',13],['Balla',13],['Mohamadou',13],['Saidou',13],['Pathe',13],['Yoro',13],
+            ['Massamba',13],['Mansour',12],['Waly',12],['Cheikhou',12],['Ahmadou',12],['Bacary',12],['Doudou',12],['Ngagne',12],['Hamidou',12],['Babou',12],
+            ['Bocar',12],['Momath',12],['Arona',12],['Momar',12],['Yero',12],['Bathie',11],['Ngor',11],['Gorgui',11],['Mamour',11],['Kalidou',11],['Youssoupha',11],
+            ['Fode',11],['Badara',10],['Seny',10],['Moth',10],['Mbacke',10],['Elimane',10],['Souleye',10],['Bakary',10],['Ndongo',10],['Tidiane',10],
+            ['Mahamadou',10],['Aladji',10],['Youssou',10],['Pierre',10],['Ababacar',10],['Mody',9],['Ameth',9],['Khalifa',9],['Youssouph',9],['Abibou',9],
+            ['Joseph',9],['Seydina',9],['Makhtar',9],['Latyr',9],['Bourama',9],['Moctar',9],['Ndiogou',8],['Seyni',8],['Malamine',8],['Gallo',8],['Aldiouma',8],
+            ['Medoune',8],['Lassana',8],['Idy',8],['Paul',8],['Amar',8],['Maodo',8],['Boubou',8],['Francois',8],['Hamadou',7],['Amady',7],['Tamsir',7],['Dethie',7],
+            ['Adiouma',7],['Sekou',7],['Famara',7],['Michel',7],['Saer',7],['Diegane',7],['Ansoumana',7],['Antoine',7],['Landing',7],['Sadibou',7],['Mandiaye',7],
+            ['Baboucar',7],['Cire',6],['Amdy',6],['Lansana',6],['Louis',6],['Mamady',6],['Vieux',6],['Mactar',6],['Seckou',6],['Alle',6],['Al',6],['Sileymane',6],
+            ['Djily',6],['Ahmed',6],['Macoumba',6],['Aboubacar',6],['Birama',6],['Sada',6],['Iba',6],['Sette',6],['Ndiouga',6],['Arfang',6],['Aboubacry',6],
+            ['Sileye',6],['Ndiasse',6],['Hamath',6],['Cheikhouna',6],['Bouba',6],['Mansor',6],['Massaer',6],['Bada',6],['Mory',6],['Magueye',6],['Madiop',5],
+            ['Masse',5],['Mbagnick',5],['Ansou',5],['Saloum',5],['Baidy',5],['Bamba',5],['Diaga',5],['Elhadj',5],['Birahim',5],['Libasse',5],['Mademba',5],
+            ['Arouna',5],['Edouard',5],['Ndiack',5],['Biram',5],['Andre',5],['Charles',5],['Boucar',5],['Mamath',5],['Madicke',5],['Aboubakry',5],['Diame',5],
+            ['Ngouda',5],['Albert',5],['Alphousseyni',5],['Daour',5],['Niokhor',5],['Mbissane',5],['Habibou',5],['Gana',5],['Abasse',5],['Djim',5],['Touba',5],
+            ['Barra',5],['Katim',5],['Bernard',5],['Khadime',5],['Becaye',5],['Emmanuel',5],['Lamarana',5],['Etienne',5],['Khaly',5],['Alphonse',5],['Isma',4],
+            ['Dembo',4],['Ndene',4],['Jacques',4],['Bounama',4],['Semou',4],['Boure',4],['Diabel',4],['Marcel',4],['Pascal',4],['Simon',4],['Gabriel',4],
+            ['Falilou',4],['Issaga',4],['Diomaye',4],['Yancouba',4],['Youssouf',4],['Ndiame',4],['Issakha',4],['Seydi',4],['Kemo',4],['Mayoro',4],['Bouna',4],
+            ['Alhousseynou',4],['Almamy',4],['Augustin',4],['Mountaga',4],['Georges',4],['Mass',4],['Karamo',4],['Maurice',4],['Sambou',4],['Yankhoba',4],
+            ['Hamet',4],['Coly',4],['Magaye',4],['Robert',4],['Younoussa',4],['Amidou',4],['Abo',4],['Falou',4],['Karamba',4],['Gilbert',4],['Mousse',4],
+            ['Racine',4],['Sega',4],['Abib',4],['Cheikhna',4],['Yatma',4],['Ass',4],['Code',4],['Massar',4],['Malal',4]
+          ],
+          last: [
+            ['Ndiaye',100],['Diop',87],['Ba',83],['Diallo',83],['Sow',74],['Diouf',66],['Gueye',65],['Fall',63],['Faye',59],['Sarr',50],['Cisse',48],['Seck',47],
+            ['Niang',46],['Thiam',45],['Mbaye',45],['Sene',45],['Ka',41],['Dieng',40],['Diagne',38],['Balde',38],['Toure',37],['Dia',37],['Sy',37],['Sall',35],
+            ['Ngom',34],['Camara',34],['Ndao',33],['Gaye',31],['Kane',30],['Drame',26],['Diatta',26],['Sane',25],['Lo',25],['Mbengue',25],['Diaw',25],['Dione',24],
+            ['Sylla',24],['Samb',23],['Ndour',23],['Mane',22],['Diedhiou',22],['Ndoye',22],['Diao',22],['Badji',21],['Seye',20],['Wade',20],['Ly',19],['Kebe',19],
+            ['Dieye',18],['Barry',18],['Mendy',18],['Sagna',18],['Tine',18],['Coly',18],['Keita',17],['Tall',17],['Thiaw',17],['Ndong',17],['Mballo',17],
+            ['Diakhate',16],['Gning',16],['Badiane',16],['Deme',16],['Dieme',16],['Kande',16],['Seydi',15],['Traore',15],['Ciss',15],['Sakho',15],['Cissokho',15],
+            ['Beye',14],['Coulibaly',14],['Mboup',14],['Sambou',14],['Mbodji',14],['Pouye',14],['Diene',13],['Mbow',13],['Gomis',13],['Leye',13],['Loum',12],
+            ['Thioune',12],['Kante',12],['Sadio',12],['Sonko',12],['Niane',12],['Senghor',12],['Dabo',12],['Top',12],['Mbacke',12],['Sidibe',11],['Manga',11],
+            ['Ndione',11],['Boye',11],['Diarra',11],['Gassama',11],['Sabaly',10],['Goudiaby',10],['Faty',10],['Soumare',10]
+          ] }
+    ] },
+
+    // ── CIV ──
+    CIV: { regions: [
+        { w: 0.55,
+          first: [
+            ['Koffi',100],['Kouassi',100],['Yao',97],['Kouame',96],['Kouadio',95],['N\'Guessan',93],['Kouakou',93],['Konan',84],['N\'Goran',49],['N\'Dri',49],
+            ['Jean',33],['Aka',23],['Youssouf',21],['Kobenan',20],['Bah',20],['Kanga',20],['Yapi',19],['Yapo',19],['N\'Golo',18],['Tanoh',17],['Adou',17],
+            ['Guy',16],['Gueu',16],['Serge',16],['Djakaridja',16],['Komenan',16],['Aboubacar',16],['Siriki',16],['Oi',16],['Kolo',15],['N\'Cho',15],['Kacou',14],
+            ['Franck',14],['Doh',14],['Ladji',14],['Oulai',14],['Ble',14],['Lancine',14],['Tano',14],['Ollo',13],['Koua',13],['Guei',13],['Alain',13],['Kouman',13],
+            ['Madou',13],['Dago',12],['Salifou',12],['Paul',12],['Pierre',12],['Atse',12],['Tape',12],['Eric',12],['Michel',12],['Sindou',12],['Arouna',11],
+            ['Bazoumana',11],['Dje',11],['Ehouman',11],['Issiaka',11],['Ake',11],['Kouao',11],['Atta',11],['Lacine',11],['Aboulaye',11],['Charles',11],
+            ['Alassane',11],['Kadjo',11],['Gnamien',10],['Abdoul',10],['Gaoussou',10],['Diarra',10],['Joseph',10],['Zadi',10],['Hamed',10],['Beugre',10],
+            ['Kakou',10],['Lassana',10],['Namory',10],['Gondo',10],['Olivier',10],['Amidou',10],['Herve',10],['Emmanuel',10],['Achi',10],['Bernard',10],['Yves',10],
+            ['Baba',10],['Robert',10],['Boni',10],['Zanga',10],['Francois',10],['Antoine',9],['Andre',9],['Kablan',9],['Patrice',9],['Djedje',9],['Niangoran',9],
+            ['Guehi',9],['N\'Drin',9],['Kpan',9],['Felix',9],['Yoboue',9],['Stephane',9],['Bamory',9],['N',9],['Denis',9],['N\'Guetta',9],['Aime',8],['Kouacou',8],
+            ['Diby',8],['Jacques',8],['Vincent',8],['Daniel',8],['Allou',8],['Sahi',8],['Alphonse',8],['Roger',8],['Georges',8],['Henri',8],['Tokpa',8],['Gue',8],
+            ['Anoh',8],['Victor',8],['Foungnigue',8],['Pascal',8],['Lago',8],['Sylvain',8],['Yoro',8],['Guede',8],['Mahamadou',8],['Sea',8],['Marcel',8],
+            ['Alexis',8],['Soualiho',8],['Hermann',8],['Kore',8],['Digbeu',8],['Etienne',8],['Toh',8],['Armand',8],['Emile',8],['Dongo',8],['Marius',8],
+            ['Kouadjo',8],['Lassine',8],['Koudou',8],['Dion',8],['Vamara',8],['Vazoumana',8],['Harouna',8],['Arsene',7],['Fatogoma',7],['Adje',7],['Gnagne',7],
+            ['Noel',7],['Koutoua',7],['Bile',7],['Gnahore',7],['Didier',7],['Soualio',7],['Christian',7],['Issoufou',7],['Oumarou',7],['Niamien',7],['Kambou',7],
+            ['Kesse',7],['Pale',7],['Nguessan',7],['Dan',7],['Boua',7],['Joel',7],['Attoungbre',7],['Marc',7],['Albert',7],['Vassiriki',7],['Laurent',7],
+            ['Bangaly',7],['Fabrice',7],['Sibiri',7],['Kouabenan',7],['Honore',7],['Allassane',7],['Thierry',7],['Philippe',7],['Maurice',7],['Claude',7],
+            ['Logbo',7],['Droh',7],['Richard',7],['Bahi',7],['Assamoi',7],['Nouho',7],['Guillaume',7]
+          ],
+          last: [
+            ['Kouassi',100],['Koffi',98],['Kouadio',93],['Kouame',92],['Yao',91],['Kouakou',87],['Konan',81],['N\'Guessan',70],['Brou',36],['N\'Dri',36],
+            ['N\'Goran',30],['Aka',29],['Amani',26],['Kra',26],['Kambou',26],['Dah',25],['Oulai',24],['Dje',23],['Adou',21],['Sekongo',21],['Irie',21],['Yapo',21],
+            ['Pale',21],['Kanga',21],['Yapi',21],['Kambire',21],['Guei',20],['N\'Da',20],['Diarra',19],['Gueu',19],['Tra',19],['Tanoh',18],['Tano',18],['Assi',17],
+            ['Bah',16],['Yoboue',16],['Mamadou',16],['N\'Zi',16],['Seri',16],['Ble',16],['Kacou',16],['Tape',16],['Dagnogo',15],['Koua',15],['Tia',15],
+            ['Komenan',15],['Kassi',15],['Loukou',15],['Diby',15],['N\'Cho',15],['Fanny',15],['Zamble',14],['Kobenan',14],['Dao',14],['Seka',14],['Kakou',14],
+            ['Sery',13],['Dago',13],['Beugre',13],['Kouman',13],['Diabagate',13],['Djaha',13],['Diarassouba',13],['Alla',13],['Adama',13]
+          ] },
+        { w: 0.45,
+          first: [
+            ['Mamadou',100],['Adama',87],['Moussa',78],['Souleymane',58],['Abdoulaye',57],['Brahima',54],['Daouda',54],['Siaka',54],['Yacouba',53],['Bakary',51],
+            ['Yaya',50],['Seydou',50],['Drissa',49],['Abou',45],['Sie',44],['Amadou',44],['Ibrahima',40],['Zie',40],['Mohamed',36],['Issouf',35],['Sekou',35],
+            ['Dramane',35],['Lassina',35],['Lacina',34],['Oumar',34],['Ibrahim',34],['Issa',33],['Ali',33],['Inza',33],['Karim',32],['Zoumana',31],['Ousmane',30],
+            ['Soumaila',30],['Tiemoko',29],['Mory',28],['Lamine',28],['Kassoum',25],['Aboubakar',25],['Losseni',24],['Idrissa',21],['Moustapha',18],['Fousseni',17],
+            ['Soungalo',15],['Salif',15],['Ismael',14],['Bakari',14],['Sidiki',13],['Ahmed',13],['Aboudramane',12],['Zakaria',12]
+          ],
+          last: [
+            ['Kone',100],['Ouattara',94],['Coulibaly',82],['Traore',61],['Soro',56],['Bamba',53],['Toure',48],['Fofana',46],['Yeo',43],['Diomande',41],
+            ['Konate',40],['Silue',36],['Doumbia',36],['Sanogo',32],['Cisse',30],['Hien',29],['Diarrassouba',28],['Dosso',28],['Sangare',27],['Soumahoro',27],
+            ['Bakayoko',27],['Sylla',24],['Diabate',23],['Tuo',23],['Kamagate',22],['Camara',22],['Sidibe',21],['Keita',18],['Diakite',18],['Diallo',17],
+            ['Karamoko',15],['Diaby',15],['Dembele',14],['Meite',14],['Ballo',13]
+          ] }
+    ] },
+
+    // ── PAK ──
+    PAK: { regions: [
+        { w: 1,
+          first: [
+            ['Muhammad',100],['Mohammad',46],['Ali',75],['Khalid',48],['Fazal',46],['Ahmad',46],['Manzoor',45],['Shahid',45],['Imran',43],['Nasir',43],
+            ['Arshad',41],['Bashir',41],['Riaz',41],['Sher',40],['Zafar',40],['Tariq',39],['Asif',38],['Zahid',37],['Abid',37],['Saeed',37],['Anwar',37],
+            ['Javed',36],['Khan',36],['Nazir',35],['Sajjad',35],['Bakht',35],['Lal',35],['Habib',35],['Zulfiqar',34],['Akhtar',34],['Nazeer',34],['Hassan',33],
+            ['Amir',33],['Mushtaq',33],['Ameer',32],['Irfan',31],['Amjad',31],['Nadeem',31],['Iqbal',31],['Tahir',31],['Sultan',31],['Aziz',30],['Shaukat',30],
+            ['Rashid',30],['Naveed',30],['Maqsood',30],['Sajid',30],['Rehmat',30],['Shahzad',30],['Shams',29],['Abdullah',29],['Imtiaz',28],['Munawar',28],
+            ['Asad',28],['Mukhtar',28],['Atta',27],['Ijaz',27],['Umer',27],['Iftikhar',27],['Asghar',27],['Niaz',27],['Aamir',27],['Liaqat',27],['Naeem',27],
+            ['Basheer',27],['Nazar',26],['Saif',26],['Faisal',26],['Akbar',26],['Gulzar',26],['Munir',26],['Saleem',26],['Usman',25],['Mazhar',25],['Qamar',25],
+            ['Liaquat',25],['Faiz',25],['Adnan',24],['Waseem',24],['Tanveer',24],['Sabir',24],['Kashif',24],['Nisar',24],['Shakeel',24],['Farooq',24],['Ahmed',24],
+            ['Kamran',23],['Wali',23],['Hussain',23],['Naseer',23],['Altaf',23],['Rizwan',23],['Nawab',22],['Bilal',22],['Maqbool',22],['Khalil',22],['Rasool',22],
+            ['Fayaz',22],['Arif',22],['Mehboob',22],['Sohail',22],['Waqas',22],['Rahmat',22],['Shabbir',22],['Mehmood',22],['Rahim',21],['Azhar',21],['Zahir',21],
+            ['Yasir',21],['Zaheer',21],['Khadim',21],['Ihsan',21],['Safdar',21],['Muneer',21],['Khair',21],['Shafqat',21],['Mirza',20],['Waqar',20],['Jaan',20],
+            ['Rasheed',20],['Zahoor',20],['Hameed',20],['Abdulsatar',20],['Imam',20],['Zeeshan',20],['Ejaz',20],['Hafeez',20],['Sarfraz',20],['Mohsin',19],
+            ['Fida',19],['Karim',19],['Babar',19],['Hazrat',19],['Zubair',19],['Mukhtiar',19],['Alam',19],['Waheed',19],['Ashraf',19],['Fateh',19],['Aftab',18],
+            ['Wahid',18],['Murad',18],['Qasim',18],['Talib',18],['Shabir',18],['Khurram',18],['Barkat',18],['Salman',18],['Inayat',18],['Hakim',17],['Umar',17],
+            ['Fiz',17],['Ashiq',17],['Sikandar',17],['Khuda',17],['Wazir',17],['Sadiq',17],['Meer',17],['Shahbaz',17],['Qadir',17],['Siraj',17],['Karam',17],
+            ['Mahmood',16],['Naseeb',16],['Hamid',16],['Jan',16],['Nabi',16],['Haq',16],['Jameel',16],['Aman',16],['Majid',16],['Ahsan',16],['Muhammed',16],
+            ['Wajid',16],['Qaisar',16],['Ibrahim',16],['Amar',16],['Jamal',16],['Shair',16],['Shoaib',15],['Anayat',15],['Aslam',15],['Safi',15],['Ramzan',15],
+            ['Peer',15],['Raza',15],['Jamil',15],['Yousaf',15],['Rehman',15],['Masood',15],['Afzal',15],['Ishfaq',15],['Shehbaz',15],['Faqeer',15],['Shafi',15],
+            ['Shoukat',15],['Adil',15],['Asim',15],['Farhan',15],['Qurban',14],['Basharat',14],['Akram',14],['Farman',14],['Abbas',14],['Imdad',14],['Saqib',14],
+            ['Pervez',14],['Mujahid',14],['Shahnawaz',14],['Azeem',14],['Arbab',14],['Sahab',14],['Zain',14],['Atif',14],['Abdul Rahman',14],['Ayaz',14],
+            ['Abdul Majid',14],['Ismail',14],['Ashok',14],['Haider',14],['Dil',13],['Hidayat',13],['Pervaiz',13],['Qaiser',13],['Nadir',13],['Dost',13],
+            ['Jahangir',13],['Gulam',13],['Naik',13],['Mansoor',13],['Javaid',13],['Haroon',13],['Muzaffar',13],['Nauman',13],['Ehsan',13],['Faqir',13],
+            ['Saddam',13],['Kamal',13],['Suleman',13],['Bacha',13],['Dilawar',13],['Bahadur',13],['Sameeh',13],['Ashfaq',13],['Islam',13],['Ansar',13],['Adeel',13],
+            ['Mudassar',13],['Umair',12],['Israr',12],['Nawaz',12],['Azam',12],['Ibrar',12],['Mohammed',12],['Choudry',12],['Amanat',12],['Shafiq',12],['Rafiq',12],
+            ['Abdul Ghafoor',12],['Abdul Hameed',12],['Fareed',12],['Sikander',12],['Rab',12],['Ajmal',12],['Muhama',12],['Abdul Satar',12],['Nehmat',12],
+            ['Junaid',12],['Abdul Rashid',12],['Faheem',12],['Shakir',12],['Kaleem',12],['Rabbani',12],['Inam',12],['Nasrullah',12],['Ameen',12],['Jumma',12],
+            ['Fatah',12]
+          ],
+          last: [
+            ['Khan',100],['Ali',85],['Hussain',66],['Ahmad',65],['Shah',41],['Ahmed',35],['Iqbal',32],['Nawaz',25],['Akhtar',23],['Abbas',22],['Mehmood',22],
+            ['Aslam',22],['Gul',20],['Rehman',19],['Ashraf',18],['Hassan',18],['Uddin',18],['Bi',17],['Saleem',17],['Akram',17],['Rasool',16],['Ramzan',16],
+            ['Imran',15],['Bux',15],['Akbar',15],['Siddique',15],['Zaman',15],['Anwar',15],['Hayat',15],['Afzal',15],['Javed',14],['Maseeh',14],['Arshad',14],
+            ['Raza',14],['Asif',14],['Riaz',13],['Haider',13],['Shahzad',13],['Rasheed',13],['Jaan',13],['Yousaf',13],['Sharif',13],['Sadiq',13],['Farooq',13],
+            ['Qadir',13],['Saeed',13],['Arif',12],['Mustafa',12],['Ibrahim',12],['Nadeem',12],['Nabi',12],['Alam',12],['Ramadan',12],['Malik',12],['Rafeeq',11],
+            ['Majeed',11],['Dad',11],['Asghar',11],['Yar',11],['Hameed',11],['Latif',11],['Yaqoob',11],['Jan',11],['Aziz',11],['Shafi',11],['Dutt',11],
+            ['Alrehman',11],['Usman',11],['Ishaq',11],['Irfan',11],['Sultan',10],['Ur Rehman',10],['Mahmood',10],['Yaseen',10],['Sarwar',10],['Bano',10],
+            ['Ismail',10],['Ameen',10],['Razzaq',10],['Naeem',10],['Ahammad',10],['Younis',10],['Qasim',10],['Hanif',10],['Bilal',10]
+          ] }
+    ] },
+
+    // ── LAT ──
+    LAT: { regions: [
+        { w: 0.75,
+          first: [
+            ['Juris',100],['Andris',87],['Pēteris',85],['Aivars',72],['Edgars',67],['Gunārs',62],['Valdis',61],['Imants',58],['Artūrs',56],['Ivars',53],
+            ['Uldis',51],['Arvids',49],['Roberts',43],['Jazeps',43],['Eriks',43],['Voldemars',42],['Guntis',42],['Alberts',42],['Mārtiņš',41],['Dainis',40],
+            ['Vilnis',40],['Arnis',38],['Raimonds',38],['Aigars',37],['Ilmars',35],['Aldis',35],['Arnolds',34],['Laimonis',33],['Modris',33],['Alfreds',33],
+            ['Normunds',33],['Oskars',31],['Vilis',29],['Dzintars',29],['Harijs',29],['Ainars',29],['Elmars',27],['Agris',27],['Leons',27],['Edvins',27],
+            ['Artur',26],['Guntars',26],['Edmunds',26],['Kaspars',26],['Ojars',25],['Evalds',24],['Armands',24],['Viesturs',24],['Rudolfs',23],['Andis',23],
+            ['Kristaps',23],['Ernests',23],['Rolands',23],['Bronislavs',23],['Visvaldis',22],['Gints',22],['Rihards',22],['Egils',22],['Josifs',22],['Zigurds',21],
+            ['Adolfs',21],['Raitis',21],['Osvalds',20],['Gatis',19],['Vitolds',19],['Ziedonis',19],['Stepans',18],['Mareks',18],['Artis',18],['Girts',18],
+            ['Olgerts',18],['Egons',18],['Indulis',18],['Augusts',17],['Bruno',17],['Zanis',17],['Levs',17],['Leonards',17],['Kazimirs',17],['Ilgvars',17],
+            ['Edgar',16],['Alfons',16],['Haralds',16],['Romualds',16],['Francis',16],['Ceslavs',16],['Ansis',16],['Donats',16],['Zigfrids',16],['Raivis',15],
+            ['Atis',15],['Zigmunds',15],['Miervaldis',15],['Reinis',15],['Talivaldis',15],['Gundars',14],['Jekabs',14],['Fricis',14],['Vilhelms',14],['Viktor',13],
+            ['Ugis',13],['Denis',13],['Vitauts',13],['Ervins',12],['Sergey',12],['Sandis',12],['Ilgonis',12],['Ingus',12],['Pauls',12],['Aloizs',12],['Rinalds',12],
+            ['Didzis',12],['Boleslavs',12],['Teodors',12],['Felikss',12],['Georgs',12],['Daniel',12],['Alvis',12],['Igor',12],['Henrihs',11],['Emils',11],
+            ['Dima',11],['Julijs',11],['Vladimir',11],['Ivo',11],['Oleg',11],['Timofejs',11],['Herberts',11],['Linards',11],['Helmuts',11],['Ludvigs',11],
+            ['Andrej',11],['Valters',10],['Marks',10],['Toms',10],['Raivo',10],['Ainis',10],['Verners',10],['Mikelis',10]
+          ],
+          last: [
+            ['Bērziņš',100],['Ozols',95],['Kalniņš',90],['Ozoliņš',82],['Jansons',71],['Liepiņš',66],['Krūmiņš',61],['Balodis',60],['Eglītis',58],['Pētersons',54],
+            ['Karklins',53],['Zariņš',52],['Andersons',52],['Vītols',48],['Arpa',46],['Kļaviņš',44],['Siliņš',44],['Krastins',42],['Dreimanis',40],['Rudzītis',39],
+            ['Abolins',39],['Vanaga',37],['Smitis',35],['Liepa',34],['Grinberga',32],['Priede',31],['Vanags',31],['Briede',30],['Freimans',30],['Zvirbulis',29],
+            ['Kudo',29],['Kravale',28],['Cirule',27],['Grīnbergs',27],['Lace',27],['Bergs',26],['Gulbe',26],['Riekstins',26],['Dzene',26],['Strodis',26],
+            ['Lapiņš',26],['Auzins',26],['Jekabsons',25],['Lācis',25],['Mikelsons',25],['Popovica',25],['Upeniece',24],['Freimanis',24],['Caune',24],['Paegle',23],
+            ['Abele',23],['Li',23],['Baumans',23],['Strods',23]
+          ] },
+        { w: 0.25,
+          first: [
+            ['Aleksandrs',100],['Vladimirs',95],['Nikolajs',81],['Viktors',77],['Ivans',66],['Sergejs',64],['Anatolijs',61],['Jurijs',56],['Andrejs',56],
+            ['Mihails',55],['Valerijs',51],['Vasilijs',51],['Igors',47],['Jevgenijs',45],['Aleksejs',44],['Antons',41],['Stanislavs',40],['Leonids',38],
+            ['Pjotrs',38],['Olegs',38],['Eduards',37],['Boriss',37],['Genadijs',36],['Pavels',35],['Vitalijs',35],['Vladislavs',35],['Dmitrijs',31],
+            ['Vjaceslavs',28],['Grigorijs',28],['Georgijs',27],['Konstantins',25],['Fjodors',24],['Vadims',18],['Arkadijs',17],['Romans',17],['Aleksandr',15],
+            ['Semjons',13],['Jakovs',13],['Ilja',12],['Nikita',11],['Maksims',9],['Sergej',8],['Ruslans',8]
+          ],
+          last: [
+            ['Ivanovs',100],['Vasiljevs',65],['Petrovs',60],['Smirnovs',60],['Fjodorovs',50],['Mihailovs',50],['Bogdanovs',48],['Grigorjevs',48],['Kuznecovs',45],
+            ['Semjonovs',32],['Aleksejevs',30],['Pavlovs',30],['Stepanovs',29],['Andrejevs',29],['Jakovlevs',29],['Jevstignejevs',28],['Jegorovs',26],
+            ['Sokolovs',26],['Nikolajevs',25]
+          ] }
+    ] },
+
+    // ── SVK ──
+    SVK: { regions: [
+        { w: 1,
+          first: [
+            ['Ján',100],['Jozef',96],['Štefan',63],['Peter',63],['Michal',50],['Milan',48],['Pavol',47],['František',46],['Ladislav',43],['Juraj',42],
+            ['Miroslav',42],['Vladimír',38],['Martin',36],['Ondrej',33],['Jaroslav',33],['Anton',32],['Andrej',30],['Dušan',29],['Ivan',28],['Pavel',28],
+            ['Stanislav',28],['Ľubomír',25],['Rudolf',25],['Imrich',22],['Július',22],['Tibor',22],['Ľudovít',22],['Tomáš',21],['Jan',21],['Alexander',20],
+            ['Marek',20],['Vojtech',19],['Emil',19],['Viliam',18],['Roman',18],['Róbert',18],['Igor',17],['Vincent',16],['Daniel',16],['Gabriel',15],['Mikuláš',15],
+            ['Zoltán',15],['Miloš',15],['Rastislav',14],['Matej',14],['Ľuboš',13],['Alojz',13],['Stefan',13],['Branislav',13],['Viktor',13],['Eduard',12],
+            ['Frantisek',11],['Slavomír',10],['Richard',10],['Gejza',10],['Robert',10],['Matúš',10],['Marcel',10],['Radoslav',10],['Adam',9],['Ferdinand',9],
+            ['Ernest',9],['Patrik',9],['Dezider',9],['Cyril',8],['Eugen',8],['Lukáš',8],['Koloman',8],['Augustín',8],['Vladimir',8],['Jakub',8],['Ignác',8],
+            ['Kamil',8],['Zdenko',8],['Dominik',7],['Attila',7],['Bartolomej',7],['Miloslav',7],['Radovan',7],['Norbert',7],['Maroš',7],['Filip',7],['Boris',7],
+            ['Arpád',7],['Samuel',6],['Vendelín',6],['Gustáv',6],['Erik',6],['Vladislav',6],['Oto',6],['Julius',6],['Vasiľ',6],['Valent',6],['Mário',6],
+            ['Silvester',6],['Albert',6],['Václav',6],['Bohumil',6],['Šimon',6],['Ludovit',5],['Dusan',5],['Bohuslav',5],['Otto',5],['Blažej',5],['Zsolt',5],
+            ['Lubomir',5],['Csaba',5],['Gašpar',5],['Albín',5],['Roland',4],['Dávid',4],['Vasil',4],['Zdeno',4],['Adrián',4],['Tomas',4],['Jaromír',4],['Libor',4],
+            ['Dalibor',4],['Valentín',4],['Florián',4],['Teodor',4],['Ľuboslav',4],['Barnabáš',4],['Vlastimil',4],['Jiří',4],['Oliver',4],['Zdenek',4],['Bohuš',4],
+            ['Fedor',4],['Henrich',4],['Gregor',3],['Adolf',3],['Alfonz',3],['Aladár',3],['Lukáč',3],['Zoltan',3],['Antonín',3],['Kristián',3],['Bernard',3],
+            ['Ervín',3],['Emanuel',3],['Mikulas',3],['Dionýz',3],['Petr',3],['Justín',3],['Ľudovit',3],['Leopold',3],['Ľudevít',3],['Zdeněk',3],['Elemír',3],
+            ['Fridrich',3],['Ľubor',3],['Florian',3],['Klement',3],['Alfréd',3],['Vít',3],['Žigmund',3],['Demeter',3],['Erich',3],['Marko',3],['Drahomír',3],
+            ['Adrian',3],['Milos',3],['Ambróz',3],['Izidor',3],['Leonard',3],['Štát',3],['Vavrinec',3],['Árpád',3],['Benedikt',2],['Gustav',2],['Baltazár',2],
+            ['David',2],['Lubos',2],['Jarolím',2],['Benjamín',2],['Kornel',2],['Radomír',2],['Arnold',2],['István',2],['Ervin',2],['Oskar',2],['Urban',2],
+            ['Gábor',2],['László',2],['Josef',2],['Augustin',2],['Alexej',2],['Edmund',2],['Bohumír',2],['Rafael',2],['Ivo',2],['Karel',2],['Felix',2],['Eliáš',2],
+            ['Metod',2],['Atila',2],['Luboš',2],['Oskár',2],['Arpad',2],['Teofil',2],['Tamás',2],['Lukas',2],['Slavko',2],['Vendel',2],['Konštantín',2],
+            ['Timotej',2],['János',2],['Cyprián',2],['Slavomir',2],['Denis',2],['Drahoslav',2],['Mirko',2],['Kazimír',2],['Miron',2],['Kvetoslav',2],['Matus',2],
+            ['Mario',2],['Ĺubomír',2],['Ignac',2],['Lubomír',2],['Benjamin',2],['Michael',2],['Ferenc',2],['Antal',2],['Aurel',2],['Bystrík',2],['Svetozár',2],
+            ['Vaclav',2],['Radko',2],['Szabolcs',2],['Ctibor',1],['Serafín',1],['Simon',1],['Ambroz',1],['Johann',1],['Mojmír',1],['Szilárd',1],['Valter',1],
+            ['Ludovít',1],['Branko',1],['Tichomír',1],['Hubert',1],['Severín',1],['Tivadar',1],['Hrehor',1],['Móric',1],['Valér',1],['Ĺudovít',1],['Titus',1],
+            ['Kristian',1],['Ludevít',1],['Úrad',1],['Maros',1],['Vendelin',1],['Maximilián',1],['Béla',1],['Bálint',1],['Albin',1],['Melichar',1],['Lajos',1],
+            ['Ludevit',1],['Elemér',1],['Belo',1],['Otakar',1],['Oldřich',1],['Herman',1],['András',1],['Ludvik',1],['Arnošt',1],['Vidor',1],['Laurinec',1],
+            ['Ronald',1],['Bohdan',1],['Antón',1],['József',1],['Vlado',1],['Melicher',1],['Elek',1],['Sergej',1],['Vratislav',1],['Balázs',1],['Bedrich',1],
+            ['Miro',1],['Walter',1],['Sebastián',1],['Félix',1],['Blazej',1],['Víťazoslav',1],['Ludvík',1],['Artúr',1],['Adalbert',1],['Zigmund',1],['Radek',1],
+            ['Valerián',1],['Cyprian',1],['Gergely',1],['Pál',1],['Bruno',1],['Gaspar',1]
+          ],
+          last: [
+            ['Varga',100],['Kováč',93],['Tóth',93],['Nagy',88],['Horváth',76],['Molnár',63],['Szabó',62],['Baláž',56],['Lukáč',51],['Kollár',49],['Kovács',48],
+            ['Oravec',47],['Polák',47],['Gajdoš',46],['Németh',43],['Kováčik',43],['Urban',42],['Hudec',40],['Ondruš',40],['Pavlík',40],['Mikula',39],['Kiss',38],
+            ['Fekete',38],['Sabol',37],['Sedlák',37],['Takáč',36],['Zeman',36],['Ševčík',36],['Marek',34],['Balog',34],['Ďuriš',34],['Švec',34],['Mészáros',34],
+            ['Rusnák',34],['Farkaš',34],['Králik',33],['Kučera',33],['Hudák',33],['Hric',33],['Chovan',32],['Adam',32],['Petrík',32],['Straka',32],['Bartoš',32],
+            ['Tkáč',32],['Lipták',32],['Sýkora',32],['Baran',32],['Novák',32],['Bartek',31],['Lengyel',31],['Takács',31],['Veselovský',31],['Bednár',31],
+            ['Nemec',31],['Horňák',31],['Šimek',31],['Bodnár',31],['Kolesár',31],['Ivan',31],['Kmeť',30],['Mráz',30],['Balogh',30],['Rybár',30],['Wolf',30],
+            ['Matúš',30],['Michal',29],['Vrábel',29],['Dudáš',29],['Mikuš',29],['Novotný',29],['Vida',28],['Klein',28],['Kohút',28],['Marcin',28],['Fedor',28],
+            ['Jakab',28],['Poliak',28],['Lupták',27],['Masár',27],['Moravčík',27],['Štefan',27],['Jánoš',27],['Jesenský',27],['Antal',27],['Seman',27],['Šimko',27],
+            ['Majer',27],['Bezák',27],['Valach',27],['Kočiš',27],['Sokol',27],['Krajčovič',27],['Jurík',26],['Križan',26],['Gál',26],['Janík',26],['Homola',25],
+            ['Vojtek',25]
+          ] }
+    ] },
+
+    // ── SMR ──
+    SMR: { regions: [
+        { w: 1,
+          first: [
+            ['Marino',100],['Giuseppe',78],['Marco',67],['Stefano',65],['Roberto',61],['Antonio',61],['Giovanni',59],['Luigi',57],['Massimo',56],['Paolo',53],
+            ['Mario',49],['Giorgio',49],['Maurizio',49],['Luca',49],['Davide',47],['Fabio',47],['Francesco',43],['Alessandro',42],['Domenico',41],['Bruno',40],
+            ['Daniele',39],['Sergio',38],['Pietro',38],['Luciano',37],['Giancarlo',37],['Gabriele',36],['Alberto',35],['Carlo',35],['Angelo',31],['Federico',31],
+            ['Michele',31],['Mauro',30],['Gino',30],['Enrico',29],['Fabrizio',29],['Aldo',29],['Claudio',29],['Matteo',28],['Enzo',28],['Leo',28],['Lorenzo',28],
+            ['Giuliano',27],['Corrado',27],['Lino',27],['Nicola',27],['Gilberto',27],['Vittorio',26],['Agostino',26],['Guido',26],['Loris',26],['Silvano',26],
+            ['Massimiliano',26],['Primo',25],['Secondo',24],['Riccardo',24],['Ivan',23],['Vincenzo',23],['Filippo',23],['Elio',22],['Fernando',22],['Danilo',22],
+            ['Manuel',22],['Walter',22],['Lazzaro',22],['Cesare',22],['Alfredo',22],['Arch',22],['Christian',21],['Mirco',21],['Mirko',21],['Renzo',21],
+            ['Armando',21],['Leonardo',20],['Gianluca',20],['Gianfranco',20],['Renato',20],['Augusto',19],['Emanuele',19],['Fausto',19],['Sante',19],['Franco',19],
+            ['Tiziano',19],['Graziano',19],['Marcello',19],['Salvatore',19],['Guerrino',18],['Giacomo',18],['Pierino',18],['Romano',18],['Nazzareno',17],
+            ['Umberto',17],['Piero',17],['Cristian',17],['Ezio',17],['Gianluigi',17],['Denis',16],['Adriano',16],['Raffaele',16],['Tonino',16],['Italo',16],
+            ['Alvaro',16],['Flavio',16],['William',16],['Oscar',15],['Valerio',15],['Sandro',15],['Gianni',14],['Amedeo',14],['Giulio',14],['Alfio',14],
+            ['Nello',14],['Samuele',13],['Sebastiano',13],['Pasquale',13],['Sauro',13],['Silvio',13],['Edoardo',13],['Diego',12],['Eugenio',12],['John',12],
+            ['Dario',12],['Emilio',12],['Attilio',12],['Virgilio',12],['Rossano',12],['Aurelio',12],['Dino',12],['Raimondo',11],['Rino',11],['Ferdinando',11],
+            ['Remo',10],['Fiorenzo',10],['Eraldo',10],['Floriano',10],['Ugo',10],['Orazio',10],['Livio',10],['Giordano',10],['Eros',10],['Daniel',10],
+            ['Tarcisio',9],['Germano',9],['David',9],['Alex',9],['Juan',9],['Ilario',9],['Enea',9],['Egidio',9],['Pio',9],['Natalino',9],['Emanuel',9],['Ivo',9],
+            ['Robert',8],['Pierangelo',8],['Natale',8],['Alfonso',8],['Aldino',8],['Manlio',8],['Moris',8],['Mattia',8],['Michael',8],['Quinto',8],['Teodoro',8],
+            ['Libero',8],['Rodolfo',8],['Cristiano',8],['Ivano',8],['Dennis',8],['Felice',8],['Filiberto',8],['Giampaolo',8],['Valter',7],['Ruggero',7],
+            ['Orlando',7],['Nelson',7],['Joseph',7],['Rolando',7],['Oliviero',7],['Ennio',7],['Adamo',7],['Tino',7],['Savio',7],['Palmiro',7],['Sanzio',7],
+            ['Gerardo',7],['Arnaldo',7],['Gloriano',7],['Tito',6],['Thomas',6],['Settimio',6],['Leandro',6],['Lamberto',6],['Igino',6],['Gualtiero',6],
+            ['Damiano',6],['Devis',6],['Abb',6],['Ferruccio',6],['Fulvio',6],['Glauco',6],['Luis',6],['Romolo',6],['Pierluigi',6],['Patrizio',6],['Olimpio',6],
+            ['Valeriano',6],['Gildo',6],['Fortunato',6],['Duilio',6],['Anthony',6],['Anselmo',6],['Alan',6],['Adolfo',6],['Jader',5],['Paul',5],['Romeo',5],
+            ['Terzo',5],['Valentini',5],['Giampiero',5],['Guglielmo',5],['Philippe',5],['Ciro',5],['Fabiano',5],['Dante',5],['Donato',5],['Edgardo',5],['Ettore',5],
+            ['Roger',5],['Loriano',5],['Louis',5],['Omar',5],['Otello',5],['Quarto',5],['Leardo',5],['Tabacco',5],['Serravalle',5],['Severo',5],['Stephane',5],
+            ['Sylvain',5],['Vincent',5],['Vitelio',5],['Yonggang',5],['Leonello',5],['Ido',5],['Abele',5],['Antonello',5],['Battista',5],['Blue',5],['Eddy',5],
+            ['Colombo',5],['Enio',5],['Gianmaria',5],['Goffredo',5],['Gaetano',5],['Ermenegildo',5],['Ottaviano',4],['Tommaso',4],['Paride',4],['Ottavio',4],
+            ['Nico',4],['Carlos',4],['Ernesto',4],['Jean',4],['Lucio',3],['Manuele',3],['Olmar',3],['Peppino',3],['Serafino',3],['Silvan',3],['Sisto',3],
+            ['Valdes',3],['Victor',3],['Vladimiro',3],['Innocenzo',3],['Richard',3],['Ariosto',3],['Benito',3],['Doriano',3],['Eligio',3],['Emidio',3],
+            ['Ermanno',3],['Mimmo',3],['Nicolò',3],['Palmiero',3],['Olinto',3],['Oreste',3],['Osvaldo',3],['Michelino',3],['Luigino',3],['Martino',3],
+            ['Piergiorgio',3],['Werther',3],['Werter',3],['Waldes',3],['Verter',3],['Rocco',3]
+          ],
+          last: [
+            ['Gasperoni',100],['Guidi',90],['Casadei',72],['Giardi',66],['Zanotti',66],['Ceccoli',60],['Zonzini',60],['Bollini',60],['Fabbri',59],['Mularoni',59],
+            ['Berardi',56],['Zafferani',56],['Rossi',56],['Casali',53],['Mazza',52],['Pelliccioni',52],['Valentini',52],['Conti',51],['Forcellini',51],
+            ['Tamagnini',51],['Selva',50],['Muccioli',49],['Terenzi',49],['Ugolini',48],['Stefanelli',47],['Ercolani',47],['Biordi',46],['Toccaceli',46],
+            ['Guerra',45],['Cecchetti',45],['Francioni',44],['Benedettini',44],['Bernardi',44],['Felici',44],['Mancini',44],['Bacciocchi',43],['Santi',43],
+            ['Raschi',42],['Beccari',41],['Chiaruzzi',41],['Righi',40],['Morri',40],['Stacchini',39],['Carattoni',38],['Giancecchi',38],['Berti',37],['Bianchi',37],
+            ['Gatti',37],['Giovagnoli',37],['Podeschi',36],['Zavoli',36],['Ghiotti',36],['Taddei',36],['Capicchioni',35],['Ciavatta',35],['Bugli',34],['Sarti',34],
+            ['Cervellini',34],['Maiani',34],['Venturini',34],['Ciacci',34],['Gennari',34],['Vannucci',34],['Albani',34],['Grassi',34],['Macina',33],['Moretti',33],
+            ['Riccardi',33],['Amici',33],['Marani',32],['Menicucci',32],['Volpinari',32],['Frisoni',32],['della Valle',31],['Battistini',31],['Bologna',31],
+            ['Michelotti',31],['Giannini',30],['Bartolini',30],['Canini',29],['Moroni',29],['Pazzini',29],['Tura',29],['Montanari',29],['Grandoni',29],
+            ['Giacobbi',28],['Corbelli',28],['Mina',28],['Bernardini',28],['Bucci',28],['Angelini',27],['Costa',27],['Colombini',27],['Manzaroli',27],
+            ['Cesarini',27],['Pasolini',27],['Tomassini',27],['Fiorini',26],['Giorgetti',26],['Simoncini',26]
+          ] }
+    ] },
+
+    // ── SRI ──
+    SRI: { regions: [
+        { w: 0.9,
+          first: [
+            ['Kasun',100],['Indika',95],['Gayan',93],['Nuwan',91],['Amila',90],['Chaminda',86],['Janaka',84],['Roshan',83],['Ruwan',82],['Sampath',82],
+            ['Dinesh',76],['Asanka',76],['Saman',74],['Pradeep',73],['Ajith',71],['Tharindu',71],['Sanjeewa',71],['Mahesh',70],['Lahiru',69],['Buddhika',67],
+            ['Isuru',66],['Sarath',66],['Prasanna',65],['Priyantha',64],['Fernando',64],['Nishantha',63],['Nalin',63],['Thilina',62],['Upul',61],['Thushara',61],
+            ['Manoj',60],['Dhanushka',59],['Anura',59],['Chamara',59],['Ranjith',59],['Chanaka',58],['Chinthaka',58],['Rohan',57],['Sanjaya',57],['Lalith',56],
+            ['Chathura',56],['Wasantha',56],['Jagath',56],['Sunil',55],['Suranga',55],['Tharanga',54],['Prasad',54],['Suresh',53],['Jayantha',52],['Nimal',52],
+            ['Ravi',51],['Hasitha',50],['Lasantha',50],['Supun',50],['Kamal',49],['Thusitha',49],['Prabath',49],['Duminda',49],['Nalaka',48],['Tharaka',48],
+            ['Dhammika',47],['Damith',47],['Ananda',47],['Kapila',47],['Shehan',47],['Udaya',46],['Sajith',45],['Ranga',44],['Udara',44],['Upali',44],['Sumith',43],
+            ['Pubudu',43],['Eranga',43],['Nihal',43],['Mahinda',43],['Susantha',42],['Sanath',42],['Sumudu',41],['Sandun',41],['Sujeewa',41],['Kanishka',40],
+            ['Danushka',40],['Lakmal',40],['Ashan',40],['Viraj',39],['Dimuthu',39],['Kosala',39],['Ravindra',39],['Athula',39],['Niroshan',39],['Asoka',39],
+            ['Palitha',38],['Shanaka',38],['Hemantha',38],['Chathuranga',38],['Bandula',38],['Uditha',38],['Jude',37],['Sisira',37],['Namal',37],['Waruna',36],
+            ['Ishan',36],['Lakshman',36],['Kushan',36],['Sudath',36],['Sujith',36],['Nilantha',35],['Rukshan',35],['Nishan',35],['Hiran',35],['Dilan',34],
+            ['Sahan',34],['Anil',34],['Thilak',34],['Ramesh',34],['Yohan',34],['Rohana',34],['Mohan',33],['Ranil',33],['Dilshan',33],['Shan',33],['Vajira',33],
+            ['Anton',33],['Muditha',33],['Buddika',33]
+          ],
+          last: [
+            ['Perera',100],['Fernando',74],['de Silva',53],['Bandara',45],['Kumara',42],['Dissanayake',38],['Gamage',35],['Liyanage',34],['Jayasinghe',34],
+            ['Ranasinghe',34],['Herath',31],['Weerasinghe',31],['Peiris',30],['Rathnayake',28],['Wickramasinghe',27],['Wijesinghe',27],['Hettiarachchi',25],
+            ['Nanayakkara',24],['Rajapaksha',22],['Mendis',22],['Pathirana',22],['Ekanayake',22],['Gunasekara',22],['Dias',22],['Sampath',22],['Amarasinghe',21],
+            ['Ratnayake',20],['Chathuranga',20],['Senanayake',19],['Samarasinghe',19],['Lakmal',19],['Munasinghe',19],['Rodrigo',18],['Seneviratne',18],
+            ['Rathnayaka',18],['Edirisinghe',18],['Jayawardena',18],['Fonseka',18],['Sanjeewa',17],['Gunawardana',17],['Prasad',17],['Gunawardena',17],
+            ['Karunaratne',17],['Jayaweera',17],['Jayasekara',17],['Ranaweera',16],['Jayawardana',16],['Jayasuriya',16],['Madusanka',16],['Alwis',16],
+            ['Rajapakse',16],['Karunarathna',16],['Dissanayaka',16],['Jayakody',16],['Samarakoon',15],['Kariyawasam',15],['Cooray',15],['Karunarathne',15],
+            ['Kumari',15],['Abeysinghe',15],['Rupasinghe',14],['Sandaruwan',14],['Weerakoon',14],['Jayalath',14],['Gunasekera',14],['de Alwis',13],
+            ['Madushanka',13],['Jayasundara',13],['Tennakoon',13],['Vithanage',13],['Weerasekara',13],['Subasinghe',13],['Kumarasinghe',13],['Hewage',13],
+            ['Gunarathna',12],['Gunaratne',12],['Prasanna',12],['Samaraweera',12],['Athukorala',12],['Maduranga',12],['Wijeratne',12],['Wijekoon',12],
+            ['Gunathilaka',12],['Pushpakumara',12],['Priyadarshana',12],['Samaranayake',12],['Jayathilaka',12],['Lanka',12],['Siriwardana',12],['Gunathilake',12],
+            ['Dassanayake',12],['Senevirathne',12],['Pradeep',11],['Yapa',11],['Priyankara',11],['Wijesekara',11]
+          ] },
+        { w: 0.1,
+          first: [
+            ['Mohamed',100],['Mohammed',30],['Abdul',27],['Rizwan',45],['Fazil',45],['Riyas',45],['Nawas',30],['Imran',45],['Irfan',30],['Ismail',30],
+            ['Ibrahim',30],['Rafeek',30],['Rasheed',30],['Najeeb',30],['Fairooz',30],['Rimzan',30],['Rishard',30],['Ashraff',30],['Ansar',30],['Azam',30],
+            ['Hilmy',30],['Nizam',30],['Fawzan',15]
+          ],
+          last: [
+            ['Mohamed',100],['Ahamed',65],['Hussain',34],['Mohammed',32],['Cader',45],['Marikar',45],['Lebbe',45],['Rahuman',45],['Hameed',45],['Haniffa',30],
+            ['Careem',30],['Rasheed',30],['Jaleel',30],['Mohideen',30],['Sheriff',30],['Abdeen',30],['Cassim',30],['Saleem',30],['Faleel',30],['Ismail',30],
+            ['Ibrahim',30],['Hassan',30]
+          ] }
+    ] },
+
+    // ── PAR ──
+    PAR: { regions: [
+        { w: 1,
+          first: [
+            ['Juan',100],['Carlos',94],['José',82],['Roberto',56],['Jorge',83],['Oscar',54],['Alberto',50],['Ricardo',52],['Alejandro',68],['Miguel',61],
+            ['Raúl',47],['Néstor',34],['Rodolfo',23],['Onofre',2],['Froilán',2],['Clemar',2],['Pablo',76],['Diego',71],['Marcelo',71],['Gustavo',68],
+            ['Cristian',68],['Daniel',87],['Sebastián',51],['Matías',68],['Nicolás',59],['Martín',68],['Lucas',66],['Sergio',63],['Javier',58],['Fernando',58],
+            ['Ariel',58],['Agustín',53],['Esteban',37],['Federico',38],['Gonzalo',39],['Facundo',39],['Franco',52],['Gastón',40],['Mateo',26],['Santiago',45],
+            ['Tomás',37],['Benjamín',23],['Joaquín',33],['Bautista',15],['Lautaro',38],['Thiago',28],['Felipe',19],['Juan Manuel',20],['Valentino',11],['Bruno',24],
+            ['Máximo',18],['Ciro',9],['Luis',74],['Gabriel',59],['Mario',56],['Eduardo',54],['Walter',50],['Rubén',49],['Ezequiel',49],['Hugo',49],['Claudio',48],
+            ['Marcos',47],['David',46],['Héctor',46],['Juan Carlos',46],['Andrés',45],['Julio',45],['Fabián',44],['Rodrigo',43],['Víctor',43],['Adrián',43],
+            ['Dario',43],['Pedro',42],['Mariano',41],['Ramón',41],['Ángel',41],['Guillermo',40],['Francisco',40],['César',38],['Leandro',38],['Damian',37],
+            ['Hernan',37],['Antonio',37],['Maxi',37],['Nico',36],['Nahuel',36],['Luciano',36],['Leonardo',35],['Iván',35],['José Luis',35],['Leo',35],['Manuel',34],
+            ['Mauro',33],['Alfredo',32],['Miguel Ángel',32],['German',31],['Emanuel',31],['Horacio',31],['Maximiliano',30],['Mauricio',30],['Ale',30],['Alan',30],
+            ['Julián',30],['Alexis',30],['Ignacio',28],['Kevin',28],['Enrique',28],['Osvaldo',27],['Jesús',27],['Brian',27],['Ramiro',26],['Fede',26],['Axel',25],
+            ['Alex',25],['Emiliano',25],['Enzo',25],['Elias',24],['Braian',24],['Facu',24],['Jonathan',24],['Nacho',23],['Gerardo',23],['Leonel',23],
+            ['Carlos Alberto',23],['Nelson',22],['Rafael',22],['Ernesto',21],['Seba',21],['Santi',21],['Juan Jose',21],['Juan Pablo',20],['Christian',20],
+            ['Valentin',20],['Joel',20],['Edgardo',20],['Emilio',19],['Luis Alberto',19],['Orlando',19],['Armando',19],['Norberto',19],['Abel',19],['Patricio',18],
+            ['Dylan',18],['Agus',18],['Dani',18],['Fran',18],['Anibal',18],['Aldo',18],['Alejo',18],['Jonatan',18],['Mati',17],['Dante',17],['Roman',17],
+            ['Beto',17],['Exequiel',17],['Santino',17],['Fabio',17],['Marco',16],['Tobias',16],['Lucho',16],['Rolando',16],['Fer',15],['Julio Cesar',15],
+            ['Samuel',15],['Gonza',15],['Tito',15],['Uriel',15],['Fabricio',15],['Edgar',15],['Manu',15],['Adolfo',15],['Javi',15],['Benja',14],['Guille',14],
+            ['Vicente',14],['Silvio',14],['Emmanuel',14],['Alexander',14],['Felix',14],['Lucio',14],['Ema',14],['Ulises',14],['Victor Hugo',14],['Roque',14],
+            ['Pepe',14],['Augusto',14],['Carlitos',14],['Luca',14],['Lorenzo',14],['Guido',13],['Edu',13],['Rene',13],['Jorge Luis',13],['Lisandro',13],
+            ['Jeremias',13],['Richard',13],['Gaby',13],['Alvaro',12],['Charly',12],['Humberto',12],['Ian',12],['Juan Cruz',12],['Lauty',12],['Arturo',12],
+            ['Domingo',12],['Tiago',12],['José María',12],['Santy',12],['Paulo',12],['Brandon',12],['Dany',11],['Jorge Alberto',11],['Milton',11],['Tiziano',11],
+            ['Thomas',11],['Sebas',11],['Gabi',11],['Tony',11],['Maty',11],['Tomi',11],['Lionel',11],['Rodri',11],['Mauri',11],['Renzo',11],['Emi',11],['Marce',11],
+            ['Jose Antonio',11],['Isaias',11],['Cacho',10],['Arnaldo',10],['Eric',10],['Juan Ignacio',10],['Simón',10],['Yoni',10],['Elio',10],['Salvador',10],
+            ['Maxii',10],['Bernardo',10],['Sandro',10],['Lauti',10],['Nazareno',10],['Max',10],['Jaime',10],['Lukas',10],['Elvio',10],['Alcides',10],['Joni',10],
+            ['Juani',10],['Eze',10],['Eugenio',10],['Juan Alberto',9],['Robert',9],['Jony',9],['Tomy',9],['Lean',9],['Octavio',9],['Joaco',9],['Camilo',9],
+            ['Aaron',9],['Fredy',9],['Wilson',9],['Lalo',9]
+          ],
+          last: [
+            ['Gonzalez',100],['Benitez',83],['Martinez',75],['Lopez',64],['Gimenez',53],['Vera',50],['Duarte',49],['Ramirez',49],['Villalba',49],['Fernandez',48],
+            ['Gomez',46],['Rojas',45],['Acosta',45],['Ortiz',44],['Caceres',43],['Rodriguez',42],['Ruiz',42],['Nuñez',41],['Ayala',40],['Baez',40],['Cabrera',38],
+            ['Galeano',38],['Ferreira',38],['Romero',37],['Franco',37],['Sosa',37],['Torres',36],['Espinola',36],['Cardozo',36],['Britez',36],['Caballero',36],
+            ['Medina',36],['Sanchez',35],['Diaz',34],['Aquino',34],['Pereira',33],['Bogado',33],['Amarilla',32],['Jara',32],['Garcia',31],['Escobar',31],
+            ['Vazquez',30],['Paredes',30],['Sanabria',30],['Velazquez',29],['Mendoza',29],['Barrios',29],['Coronel',28],['Ojeda',28],['Portillo',28],['Colman',27],
+            ['Rolon',27],['Dominguez',27],['Riveros',27],['Centurion',26],['Aguero',26],['Silva',26],['Perez',25],['Peralta',25],['Rios',25],['Figueredo',25],
+            ['Fleitas',25],['Lezcano',24],['Meza',24],['Godoy',24],['Alvarez',24],['Avalos',24],['Valdez',24],['Melgarejo',24],['Salinas',23],['Gamarra',23],
+            ['Barreto',23],['Morel',23],['Cantero',23],['Candia',22],['Florentin',22],['Estigarribia',22],['Recalde',22],['Aguilera',22],['Arce',22],
+            ['Cristaldo',22],['Olmedo',21],['Cañete',21],['Garcete',21],['Insfran',21],['Chavez',21],['Rivas',21],['Mendez',21],['Ortega',21],['Alvarenga',21],
+            ['Santacruz',21],['Vargas',21],['Morinigo',20],['Leguizamon',20],['Acuña',20],['Segovia',20],['Fariña',20],['Zarate',20],['Ocampos',20],['Roman',20]
+          ] }
+    ] },
+
+    // ── DOM ──
+    DOM: { regions: [
+        { w: 1,
+          first: [
+            ['Jose',100],['Juan',80],['Luis',62],['Rafael',60],['Ramon',53],['Francisco',50],['Carlos',49],['Manuel',48],['Miguel',43],['Pedro',43],['Julio',35],
+            ['Angel',33],['Felix',32],['Victor',32],['Antonio',29],['Hector',29],['Jorge',28],['Roberto',26],['Domingo',26],['Jesus',25],['Andres',24],
+            ['Daniel',23],['Nelson',23],['Fernando',23],['Cesar',23],['Pablo',21],['Alejandro',20],['Mario',20],['Ricardo',20],['Eduardo',20],['Alberto',20],
+            ['Franklin',19],['David',19],['Maximo',17],['Vda',17],['Jean',17],['Santo',17],['Francis',16],['Martin',16],['Tomas',16],['de Jesus',16],['Marcos',16],
+            ['Andrea',16],['Guillermo',16],['Robert',16],['Leonardo',16],['Eddy',16],['Bienvenido',16],['Wilson',16],['Felipe',16],['Ruben',15],['Henry',15],
+            ['Javier',15],['Edwin',15],['Freddy',15],['Richard',15],['Cristian',14],['Alfredo',14],['Lorenzo',14],['Joel',14],['William',14],['Enrique',14],
+            ['Raul',14],['Fausto',14],['Marino',14],['Nicolas',14],['Edward',13],['Alexander',13],['Oscar',13],['Ernesto',13],['Vicente',13],['German',13],
+            ['Sergio',13],['Samuel',13],['Víctor',12],['Gregorio',12],['Julian',12],['Gabriel',12],['Federico',12],['Jaime',12],['Alexis',12],['Salvador',12],
+            ['Agustin',12],['Joaquin',12],['Gustavo',12],['Omar',12],['Danilo',12],['Frank',12],['Michael',12],['Orlando',11],['Emilio',11],['Santiago',11],
+            ['Julião',11],['Bernardo',11],['Claudio',11],['Jonathan',11],['Paulino',11],['Dario',11],['Ivan',10],['Kelvin',10],['Luciano',10],['Edgar',10],
+            ['Gilberto',10],['John',10],['Joseph',10],['Junior',10],['Esteban',10],['Reynaldo',10],['Eugenio',10],['Porfirio',10],['Rolando',10],['Elvis',10],
+            ['Rodolfo',9],['Virgilio',9],['Fabio',9],['Elias',9],['Modesto',9],['Melvin',9],['Joan',9],['Leonidas',9],['Mariano',9],['César',9],['Alfonso',9],
+            ['Isidro',9],['Fermin',9],['Elvin',9],['Wilfredo',9],['Radhames',9],['Johnny',9],['Ariel',9],['Pierre',9],['Armando',9],['Ignacio',9],['Arturo',9],
+            ['Osvaldo',9],['Rene',9],['Simon',8],['Teofilo',8],['Leonel',8],['Moises',8],['Hugo',8],['Diogenes',8],['Geraldo',8],['Emmanuel',8],['Marcelino',8],
+            ['Gerardo',8],['Michel',8],['Eladio',8],['José',8],['Augusto',8],['Apolinar',8],['Benito',8],['Anibal',8]
+          ],
+          last: [
+            ['Rodriguez',100],['Perez',92],['Martinez',79],['Garcia',77],['Sanchez',71],['Ramirez',67],['Diaz',66],['Gonzalez',65],['Reyes',64],['Hernandez',62],
+            ['Jimenez',61],['Castillo',60],['Santana',57],['de La Cruz',54],['Peña',53],['Gomez',52],['Feliz',51],['Guzman',49],['Mejia',48],['Fernandez',48],
+            ['Lopez',48],['Cruz',47],['de Los Santos',46],['Baez',44],['Arias',44],['Abreu',43],['Nuñez',42],['Matos',42],['Vasquez',41],['Mendez',41],
+            ['Medina',41],['Polanco',41],['Valdez',41],['Vargas',41],['Santos',39],['Mateo',39],['Ortiz',38],['de La Rosa',38],['Almonte',38],['Cabrera',37],
+            ['Alcantara',37],['Marte',37],['Montero',37],['Batista',37],['Guerrero',36],['Soto',36],['Tejeda',35],['Acosta',35],['Peralta',34],['de Leon',34],
+            ['Pimentel',34],['Taveras',33],['Cuevas',33],['Herrera',32],['Brito',32],['Torres',31],['Alvarez',31],['Espinal',31],['Bautista',31],['Castro',31],
+            ['Tejada',30],['Peguero',30],['Aquino',29],['Rivera',29],['Ruiz',28],['Duran',28],['Ramos',28],['Pena',28],['Reynoso',27],['Pichardo',27],['Romero',27],
+            ['Contreras',27],['Sosa',27],['Rojas',26],['Frias',26],['Tavarez',26],['Lara',26],['Nunez',25],['Ventura',25],['Dominguez',25],['Beltre',25],
+            ['Suero',25],['Lora',24],['Melo',23],['Cordero',23],['Moreno',23],['Henriquez',23],['Morel',22],['Santiago',22],['Morillo',22],['Ureña',22],
+            ['Paulino',22],['Ogando',22],['Estevez',22],['Morales',22],['Rosário',22],['Soriano',22],['Acevedo',21],['Quezada',21],['Grullon',21]
+          ] }
+    ] },
+
+    // ── CUB ──
+    CUB: { regions: [
+        { w: 1,
+          first: [
+            ['José',5],['Carlos',4],['Luis',4],['Jorge',4],['Juan',4],['Alejandro',3],['Yoandy',3],['Yasmany',3],['Yoel',3],['Yunior',3],['Yordanis',3],
+            ['Osmany',3],['Lázaro',3],['Raúl',3],['Ernesto',3],['Pedro',3],['Roberto',3],['Ángel',3],['Yosvany',2],['Yuniel',2],['Reinier',2],['Dairon',2],
+            ['Leonel',2],['Orlando',2],['Rafael',2],['Miguel',2],['Alberto',2],['Manuel',2],['Alexei',2],['Yanier',2],['Frank',2],['Yoandri',2],['Yusniel',2],
+            ['Arián',2],['Adrián',2],['Rolando',2]
+          ],
+          last: [
+            ['Rodriguez',100],['Gonzalez',88],['Perez',87],['Hernandez',80],['Garcia',70],['Martinez',60],['Diaz',58],['Lopez',52],['Fernandez',51],['Sanchez',50],
+            ['Alvarez',46],['Gomez',39],['Torres',38],['Reyes',36],['Ramirez',35],['Cruz',34],['Suarez',34],['Morales',32],['Cabrera',31],['Ramos',31],
+            ['Castillo',30],['Acosta',29],['Valdes',28],['Guerra',27],['Delgado',27],['Jimenez',27],['Vazquez',27],['Peña',26],['Rivero',26],['Ruiz',26],
+            ['Herrera',26],['Gutierrez',26],['Leon',26],['Dominguez',25],['Alfonso',24],['Rojas',23],['Alonso',23],['Blanco',23],['Castro',23],['Espinosa',23],
+            ['Leyva',22],['Romero',22],['Medina',22],['Moreno',21],['Nuñez',21],['Santana',21],['Vega',21],['Batista',20],['Tamayo',20],['Martin',20],
+            ['Marrero',20],['Molina',20],['Fuentes',19],['Machado',18],['Matos',18],['Mendez',18],['Ptrez',18],['Mendoza',18],['Fonseca',18],['Mesa',18],
+            ['Miranda',17],['Estrada',17],['Arias',17],['Rodrfguez',17],['Sosa',17],['Ortega',17],['Quintana',17],['Montero',17],['Caballero',17],['Ortiz',17],
+            ['Benitez',17],['Zamora',17],['Santos',16],['Aguilar',16],['Betancourt',16],['Figueredo',16],['Rivera',16],['Ferrer',16],['Oliva',16],['Aguilera',16],
+            ['Avila',16],['Hidalgo',15],['Lorenzo',15],['Abreu',15],['Padron',15],['Mora',15],['Muñoz',15],['Cardenas',15],['Castellanos',15],['Naranjo',15],
+            ['Navarro',14],['Silva',14],['Velazquez',14],['Pino',14],['Rosales',14],['Quintero',14],['Soto',14],['Brito',13],['Quesada',13],['Guerrero',13]
+          ] }
+    ] },
+
+    // ── MOZ ──
+    MOZ: { regions: [
+        { w: 1,
+          first: [
+            ['Jose',100],['António',83],['João',78],['Carlos',75],['Manuel',69],['Paulo',66],['Pedro',63],['Luis',62],['Francisco',61],['Sérgio',60],
+            ['Fernando',60],['Jorge',55],['Alberto',52],['Nelson',50],['Rui',49],['Joaquim',48],['Hélder',44],['Edson',43],['Mario',43],['Eduardo',42],
+            ['Armando',42],['Julião',41],['Samuel',41],['David',40],['Miguel',39],['Abdul',38],['Ernesto',38],['Celso',38],['Jaime',38],['Daniel',37],['Víctor',37],
+            ['Alfredo',36],['Domingos',35],['Augusto',34],['Orlando',32],['Osvaldo',32],['Filipe',32],['Alexandre',31],['Tomas',31],['Ricardo',31],['Arlindo',31],
+            ['Nuno',31],['Mauro',30],['Dercio',30],['Cláudio',29],['Hélio',29],['Moisés',29],['Gabriel',29],['Ivanú',29],['Elias',29],['Leonel',28],['Lucas',28],
+            ['Angelo',28],['Bernardo',28],['Abel',28],['Andre',28],['Bruno',28],['Rafael',28],['Vasco',27],['Artur',27],['Mateus',26],['Adelino',26],['Roberto',26],
+            ['Américo',26],['Felix',25],['Rogério',25],['John',25],['Marcos',25],['Eugênio',24],['Agostinho',24],['Arnaldo',24],['Jeremias',24],['Milton',24],
+            ['Edgar',24],['Armindo',23],['Arsenio',23],['Geraldo',23],['Stelio',23],['Hermenegildo',23],['Leonardo',23],['Xavier',23],['Horácio',22],['Danilo',22],
+            ['Zacarias',22],['Adérito',22],['Gilberto',22],['Salvador',22],['Vicente',21],['Ismael',21],['César',21],['Paulino',21],['Adriano',21],['Cremildo',21],
+            ['Elisio',21]
+          ],
+          last: [
+            ['Langa',100],['Cossa',99],['Tembe',85],['Sitoe',79],['Manjate',77],['Mondlane',67],['Santos',66],['Machava',64],['Nhantumbo',63],['Macuacua',60],
+            ['Macamo',58],['Muchanga',58],['Matsinhe',57],['Pereira',56],['Muianga',53],['Munguambe',53],['Fernandes',52],['Banze',52],['Ferreira',51],['Bila',51],
+            ['Rodrigues',50],['Manhique',50],['Mussa',50],['Simbine',49],['Francisco',49],['Guambe',48],['Dias',48],['Fernando',48],['Martins',48],['Cumbe',47],
+            ['Manhica',47],['João',47],['Fumo',46],['Mandlate',45],['Almeida',45],['Cumbane',45],['Lopes',45],['Magaia',44],['Zandamela',44],['Gomes',42],
+            ['Vilanculos',42],['Zacarias',42],['Pinto',42],['Oliveira',42],['Monteiro',41],['Amade',41],['Cardoso',41],['Ibraimo',40]
+          ] }
+    ] },
+
+    // ── LIE ──
+    LIE: { regions: [
+        { w: 1,
+          first: [
+            ['Peter',100],['Markus',86],['Thomas',82],['Martin',77],['Josef',75],['Walter',74],['Werner',72],['Michael',69],['Franz',65],['Daniel',63],['Hans',63],
+            ['Andreas',60],['Herbert',60],['Christian',59],['Roland',58],['Kurt',56],['Bruno',56],['Karl',56],['Norbert',55],['Stefan',54],['Heinz',53],
+            ['Anton',52],['Wolfgang',50],['Manfred',49],['Paul',49],['Mario',47],['René',46],['Robert',46],['Rudolf',46],['Gerhard',45],['Rainer',45],['Marco',44],
+            ['Georg',44],['Alois',43],['Urs',41],['Patrick',41],['Günther',40],['Ernst',40],['Klaus',38],['Alfred',37],['Helmut',37],['Jürgen',37],['Alexander',37],
+            ['Erich',37],['Marcel',37],['Alex',36],['Christoph',35],['Hanspeter',35],['Antonio',35],['Simone',35],['Philipp',34],['Arthur',34],['Hermann',34],
+            ['Hansjörg',34],['Max',33],['Eugen',33],['Harald',32],['Helmuth',32],['Fritz',32],['Elmar',31],['Albert',31],['Otto',31],['Emil',30],['Wilfried',30],
+            ['Bernhard',30],['Siegfried',30],['Richard',29],['Gabriele',29],['Egon',29],['Dietmar',29],['Erwin',29],['Roger',29],['Willi',29],['Hubert',28],
+            ['Norman',28],['Jürg',28],['Reto',28],['Adolf',27],['Johann',27],['Rolf',27],['Roman',27],['Silvio',27],['Gustav',26],['Arnold',26],['Johannes',26],
+            ['Ewald',25],['Stephan',25],['Remo',25],['Beat',25],['Nicola',24],['David',24],['Hugo',24],['Jakob',24],['Pascal',24],['Fredy',23],['Horst',23],
+            ['Ludwig',23],['Patrik',23],['Dieter',23],['Dominik',23],['Leo',22],['Oliver',22],['Marc',22],['Ivo',22],['Gebhard',22],['Ferdinand',21],['Othmar',21],
+            ['Heinrich',21],['Matthias',21],['Giuseppe',21],['Ulrich',21],['Uwe',21],['Adrian',20],['Armin',20],['Lorenz',20],['Joachim',20],['Guido',20],
+            ['Frank',19],['Reinhard',19],['Salvatore',19],['Viktor',19],['Manuel',19],['Arno',18],['Benno',18],['Christof',18],['Florian',18],['Heini',18],
+            ['Karl-Heinz',18],['Mathias',18],['Günter',18],['Toni',18],['Friedrich',18],['Maria-Theres',18],['Fredi',18],['André',17],['Gabriel',17],['Oskar',17],
+            ['Xaver',17],['Lothar',17]
+          ],
+          last: [
+            ['Büchel',100],['Marxer',90],['Beck',89],['Frick',85],['Vogt',79],['Schädler',68],['Hasler',66],['Meier',63],['Ospelt',60],['Gassner',58],['Ritter',57],
+            ['Oehri',57],['Kindle',54],['Frommelt',53],['Gstöhl',53],['Eberle',50],['Matt',46],['Wohlwend',45],['Risch',45],['Kaiser',44],['Biedermann',43],
+            ['Batliner',43],['Walser',41],['Hilti',41],['Sele',41],['Hoop',40],['Lampert',39],['Kaufmann',39],['Bühler',39],['Heeb',38],['Nigg',38],['Kieber',37],
+            ['Wachter',35],['Banzer',34],['Jehle',33],['Negele',33],['Sprenger',33],['Näscher',32],['Gerner',32],['Wanger',31],['Nipp',29],['Bargetze',29],
+            ['Wolfinger',29],['Seger',29],['Kind',28],['Konrad',28],['Hoch',28],['Foser',28],['Kranz',27],['Fehr',27],['Müller',27],['Wille',26],['Quaderer',26],
+            ['Thöny',25],['Wenaweser',24],['Brunhart',24],['Hassler',24],['Verling',24],['Amann',23],['Bürzle',23],['Jäger',23],['Nutt',23],['Goop',23],
+            ['Nägele',23],['Schreiber',22],['Hermann',22],['Senti',22],['Oehry',21],['Malin',21],['Huber',21],['Wolf',21],['Erne',20],['Hemmerle',20],
+            ['Schlegel',20],['Rheinberger',19],['Gantner',19],['Walch',19],['Elkuch',18],['Schächle',18],['Haas',18],['Mayer',18],['Schurte',18],['Fischer',17],
+            ['Ott',17],['Marock',17],['Schierscher',17],['Feger',17],['Ender',17],['Falk',16],['Roth',16],['Moser',16],['Real',16],['Noser',16],['Schneider',16],
+            ['Schurti',15],['Allgäuer',15],['Schmid',15],['Berger',14],['Lenherr',14],['Gerster',14]
+          ] }
+    ] },
 };
 
 // ── Fallback-Map: pool-lose Nation → kulturell nächstverwandter Pool ──
 // (v3: NOR/GRE/TUR/KOR haben jetzt eigene Pools und sind hier raus)
 const NATION_NAME_FALLBACK = {
-    'PAR':'ARG','DOM':'COL','CUB':'MEX','UKR':'RUS','BLR':'RUS','LAT':'LTU','SVK':'CZE','LIE':'SUI','AND':'ESP','SMR':'ITA',
-    'PAK':'IND','SRI':'IND','NEP':'IND','KEN':'RSA','SEN':'FRA','CIV':'FRA','MOZ':'POR','DDR':'GER','GDR':'GER','FRG':'GER',
-    'RHO':'ZIM','URS':'RUS','TCH':'CZE','YUG':'SRB','CEY':'IND'
+    'AND':'ESP','NEP':'IND','DDR':'GER','GDR':'GER','FRG':'GER','RHO':'ZIM','URS':'RUS','TCH':'CZE','YUG':'SRB','CEY':'IND'
 };
 
 // ── Raritäten-Schwänze (implizit Gewicht 1) ─────────────────────────────
@@ -22176,7 +22796,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.2';
+        const VERSION = '0.9.20.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -25444,6 +26064,11 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                 if (filtered.length) lastArr = filtered;
             }
             let lastName = weightedPick(lastArr);
+            // Vatersnamen-Länder (PAK, IRQ, JOR …) führen dieselben Namen als Vor- UND Nachname → nie „Javed Javed"
+            if (lastName === firstName) {
+                const others = lastArr.filter(e => e[0] !== firstName);
+                if (others.length) lastName = weightedPick(others);
+            }
             // Bindestrich-Doppelname: zweiter Zug aus DERSELBEN Regionsliste, damit
             // beide Teile aus einem Kulturraum stammen („Müller-Schmidt", nie
             // „Müller-Dogan"). Nur Region 0 — die Diaspora-Regionen kennen die Form
