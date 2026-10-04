@@ -595,10 +595,13 @@ Object.assign(NEW_POOLS, W7.POOLS);
 const W8 = require('./nations-w8.js');
 Object.assign(NEW_POOLS, W8.POOLS);
 Object.assign(NEW_POOLS, W9.POOLS);
+// Welle 10 (2026-10-04): 15 Nationen mit bisher geborgtem Pool — fertige Pools aus worldnames.xyz
+const W10 = require('./nations-w10.js');
+Object.assign(NEW_POOLS, W10.POOLS);
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.
-FALLBACK.LAT = 'LTU';
+if (!NEW_POOLS.LAT) FALLBACK.LAT = 'LTU';   // seit Welle 10 eigener Pool
 // KSA = IOC-Code Saudi-Arabiens; das Spiel nutzt SAU (eigener Pool) → toter Eintrag (2026-10-03)
 delete FALLBACK.KSA;
 // Historische Staaten erben vom passenden heutigen Pool (2026-10-04, Nutzer-Regel) — vorher still auf INT
@@ -1022,7 +1025,7 @@ for (const [nat, ri] of W8.RUS_COPY) {
     const e0 = POOLS.ESA.regions[0], idx = new Map(e0.last.map((e, i) => [key(e[0]), i]));
     for (const [n, w] of W9.ESA_WN_LAST) { const i = idx.get(key(n)); if (i == null) { e0.last.push([n, w]); idx.set(key(n), e0.last.length - 1); } else if (e0.last[i][1] < w) e0.last[i][1] = w; }
 }
-for (const c of W9.COPY) {
+for (const c of [...W9.COPY, ...W10.COPY]) {
     const src = POOLS[c.donor[0]].regions[c.donor[1]];
     POOLS[c.nat].regions[c.ri][c.kind] = deepCopy(c.kind === 'last' ? src.last : (Array.isArray(src.first) ? src.first : [...src.first.early, ...src.first.mid, ...src.first.modern]));
 }

@@ -2903,3 +2903,19 @@ Konfiguration `nations-w9.js`, Aggregate `w9_*.csv`, worldnames `w9-quellen/`, V
 - Gegenprobe sim-core (GER, geb. 2003, 40.000 Züge): kein türkischer Vorname mit deutschem Nachnamen. ⚠ Messfalle: der erste
   Test zählte 123 „Mischfälle" — er kannte nur den TUR-Pool, nicht den TUR-Schwanz (Özgen, Keçeci …); alle waren rein türkisch.
 - Nebenfund TUR-Schwanz: vereinzelt Vornamen als Nachnamen (Zeynep, Yusuf) — kleiner Datenmangel, nicht behoben.
+
+### 04.10.2026 (8): Namens-Pools für 15 Nationen mit bisher geborgtem Pool (Welle 10)
+UKR, BLR (vorher RUS), KEN (RSA), SEN, CIV (FRA), PAK, SRI (IND), LAT (LTU), SVK (CZE), SMR (ITA), PAR (ARG), DOM (COL),
+CUB (MEX), MOZ (POR), LIE (SUI) — alle werden erzeugt (Paket-H-Tabellen bzw. nation-extra). Keines im Kaggle-Datensatz →
+worldnames.xyz (`w10-quellen/`), Aufbereitung `nations-w10.js`, Vorschau `namens-vorschau-w10.md`. Übrig: nur AND, NEP
+(werden nicht erzeugt) und die historischen Codes.
+- **Mengen kleiner als die geborgten Pools** (worldnames: ~100 Nachnamen; Kuba nur Nachnamen, Mosambik 48): Tausch Volumen
+  gegen Echtheit. Paraguay-Vornamenliste unbrauchbar (seltene/weibliche) → Vornamen aus ARG; Kuba-Vornamen kuratiert (Y-Namen).
+- **Gemischte Listen** (`most-common-names-in-<land>/` ohne /male/ für SRI/PAR/DOM/CUB/MOZ/LIE) → `w10_gender_ref.csv` + Listen.
+- **UKR:** kyrillisch → amtliche Pass-Umschrift KMU 2010 (Oleksandr, Serhii, Dmytro; Melnyk) — vorher russische Formen.
+- **Regionen:** KEN christlich 0,89 / muslimisch-Küste 0,11 (Frauennamen Wanjiku/Akinyi raus); CIV Süden/Akan 0,55 / Norden/Mande
+  0,45; LAT lettisch 0,75 / russischstämmig in lettischer Form 0,25 (Aleksandrs Ivanovs); SRI singhalesisch 0,9 / Moors 0,1 (kuratiert
+  ergänzt). ⚠ CIV zuerst falsch herum geroutet (nur Südliste → r0, Rest Norden: Serge/Didier im Norden) → Norden = muslimisch/Mande.
+- **LAT:** Quelle ohne Diakritika und weiblich → gefaltet (Berzina → Bērziņš) und häufige Namen amtlich zurückgeführt.
+- **Allgemeiner Fix in pickPooledName:** Vatersnamen-Länder führen dieselben Namen als Vor- und Nachname (PAK: Javed, Imran) —
+  „Javed Javed" kam vor. Nachname wird neu gezogen, wenn er dem Vornamen gleicht. Gemessen: 0 in 120.000 Zügen (PAK/IRQ/JOR/KEN/UKR/CIV).
