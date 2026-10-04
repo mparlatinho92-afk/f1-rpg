@@ -32,3 +32,11 @@ dann `node build-nation-freq.js`.
 - **2020er dünn** (n=793): Wikidata hinkt bei Geburtsjahrgängen 2000+ nach —
   ggf. mit 2010ern mischen.
 - Debüt-Dekade = Geburtsdekade + 20 (Näherung Formel-Einstieg mit 18–25).
+
+## Ergänzung 2026-10-04: Junior-Welt-Nationen ohne Rallye
+| Datei | Inhalt |
+|---|---|
+| `wikidata-cardrivers-norally-raw.json` | wie oben, aber OHNE Rallye (Berufe/Sportarten); Abfrage im Kopf von build-nation-extra.js |
+| `build-nation-extra.js` | → `data/nation-extra.js`: Nationen mit Namens-Pool außerhalb der 59 Paket-H-Nationen, Anteil relativ zu den Stamm-Nationen ohne USA |
+
+Junior-Welt und F1 nutzen das über `_mergeNationExtra` (alle drei pickNation*); die Paket-H-Tabellen bleiben unverändert. Befund: BEFUNDE.md 04.10.2026 (5).

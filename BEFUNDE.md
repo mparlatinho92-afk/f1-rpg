@@ -2850,3 +2850,28 @@ Vorher alle acht auf INT (12 Vor-/12 Nachnamen). Keines im Kaggle-Datensatz → 
   persische Stämme; BIH-bosniakisch aus der gepflegten Namensliste (kein Geber-Pool). ⚠ **Messfalle fester Faktor:** mit Geber-Gewicht
   × 0,5 fiel der Anteil der eigenen Landesnamen auf 27–33 % (MKD-albanisch: 16 eigene gegen 235 albanische — Hoxha statt Ramadani).
   Jetzt Zielanteil: eigene ≥ 65 % des Gewichts, Faktor = min(f, Ziel/Geber). Gemessen: 65–92 %.
+
+### 04.10.2026 (5): 41 Namens-Pools ohne Weg in den Generator → Junior-Welt um 36 Nationen erweitert
+- ⚠ **Befund:** Erzeugte Fahrer ziehen ihre Nation aus DECADE_NATION_POOLS / MOTORSPORT_NATION_BLEND (F1) bzw.
+  INTAKE_NATION_SHARES (Junior-Welt) — alle drei kennen nur dieselben **59 Nationen** (Paket H filtert die Wikidata-Zählung
+  auf diese Liste). Die Namens-Pools der Wellen 3–8 und CRO/SLO/LTU (41 Länder) wurden dadurch NIE gezogen. Lehre: vor einer
+  Namenswelle prüfen, ob die Nation überhaupt erzeugt wird (`pickNation*` + Tabellen in index.html).
+- **Nutzer-Entscheide:** Junior→F1-Brücke (Phase 5) weiter zurückgestellt — die F1 hat eigene Baustellen (Fahrertransfer).
+  Die Junior-Welt (viele Serien) ist die Testplattform für die Masse an Fahrern. Die F1 bekommt dieselben Prozente je Nation
+  und Ära; F1-Ergebnisse allein wären als Datenbasis zu dünn.
+- **Datenbasis neu, ohne Rallye:** Wikidata-Abfrage wie Paket A v3, zusätzlich MINUS Rallye-Berufe/-Sportarten (Nutzer: Rallye
+  skandinavien-, Motorrad südeuropa-, US-Motorsport USA-lastig; Motorrad war schon raus). 10.636 statt 12.207 Fahrer.
+  Uganda, Sambia, Madagaskar, Namibia waren reine Rallye-Länder und fallen weg. US-Motorsport lässt sich über Wikidata NICHT
+  trennen (NASCAR-Fahrer sind schlicht „racing automobile driver", P641 stock car nur 15×) → Bezugsgröße ohne USA.
+- `data/nation-extra.js` (generiert von `nation-data/build-nation-extra.js`): 36 Nationen mit Namens-Pool/Rückfall, Anteil je
+  Debüt-Dekade relativ zu den Stamm-Nationen ohne USA. `_mergeNationExtra` mischt sie in alle drei pickNation* ein; die
+  Paket-H-Tabellen bleiben unverändert (große Nationen aus Wiki-Daten, Thailand-Glättung gegen den Albon-Effekt).
+  ⚠ `pickNationByDecade` zog mit `Math.random()` gegen eine auf 1 normierte Tabelle — Zusatz-Nationen wären nie gezogen
+  worden → auf echte Summe umgestellt.
+- **Glättung über fünf Dekaden (1–2–3–2–1)** statt drei (¼–½–¼), Nutzer-Entscheid: ein prominenter Einzelfahrer soll kein
+  Jahrzehnt aufblähen. Taiwan-Spitze 3,4 → 2,4 ‰, Lettland ohne Sprung (vorher 3,2 → 0,3 → 3,3 ‰).
+- Messung sim-core (60.000 Züge je Funktion, Decade / Motorsport / Intake): Ergänzungsländer 1955 0,83 / 0,79 / 0,71 % ·
+  1985 1,65 / 1,53 / 1,45 % · 2025 2,86 / 2,55 / 2,28 %. Stamm-Nationen untereinander unverändert (GBR/FRA 1955 1,90 gegen
+  Soll 1,92). Aufstiegsfaktor PYRAMID_NATION_LADDER für neue Nationen neutral 1,0.
+- Länder OHNE Namen bleiben draußen (sonst INT-Platzhalter): Iran 6, El Salvador 3, Oman 3, Jamaika 3, Barbados 2, Seychellen 2,
+  Zypern 1, Ruanda 1 Fahrer (ohne Rallye) — Kandidaten für eine spätere Namenswelle.
