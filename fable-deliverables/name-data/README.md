@@ -24,6 +24,7 @@ Roh-CSVs: forenames.csv 226 MB / surnames.csv 381 MB — lokal unter `F1 RPG Nam
 | `w6_*.csv` + `nations-w6.js` | Welle 6 (CRC/GUA/PAN/ECU/BOL/PUR/PHI); Vorschau `namens-vorschau-w6.md` |
 | `w7_*.csv` + `nations-w7.js` | Welle 7 (MLT/LUX/ISL/ANG); Vorschau `namens-vorschau-w7.md` |
 | `w8-quellen/` + `nations-w8.js` | Welle 8 (KGZ/UZB/TJK/ARM/BIH/MKD/MNE/VIE) aus worldnames.xyz (`worldnames-scrape2.js`, nur ohne www); Vorschau `namens-vorschau-w8.md` |
+| `w9_*.csv` + `w9-quellen/` + `nations-w9.js` | Welle 9 (IRI/OMA/JAM/CYP/ESA aus Kaggle, BAR/SEY/RWA aus worldnames); Vorschau `namens-vorschau-w9.md` |
 | `gender-ref.js` → `w5_/w8_gender_ref.csv` | M/F je Vorname aus Ländern MIT Geschlechtsangabe — `node gender-ref.js <out> <REF-Länder> <Dateien…>`, ohne Parameter Welle 5 |
 | `country-count.js` | Zeilen und Träger je Land in den Roh-CSVs — vor jeder neuen Welle prüfen, ob ein Land drin ist (`node country-count.js UA,BY,KZ`) |
 | `aggregate-names.js` | Streaming-Aggregator Roh-CSV → Aggregat (`node aggregate-names.js in.csv out.csv M|ALL topN`) |

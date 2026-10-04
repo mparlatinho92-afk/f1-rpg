@@ -140,7 +140,7 @@ const ACCENT = {
     'Goncalves':'Gonçalves','Araujo':'Araújo','Conceicao':'Conceição','Simoes':'Simões','Goncalo':'Gonçalo','Joao':'João','Antonio':'Antônio'
 };
 // Kontext-Regeln: wo Akzent-Reparatur NICHT greifen darf (portiert)
-const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN','CHN','TUN','ALG','LBA','IRQ','JOR','LBN','BRN','KUW','PHI','MLT','LUX','ISL']);   // PHI: Gonzales ohne Akzent
+const NO_ACCENT_NATIONS = new Set(['GER','AUT','SUI','NED','DEN','SWE','GBR','IRL','CZE','POL','HUN','EST','FIN','JPN','RUS','ISR','IND','MAS','INA','MAR','CAN','AUS','NZL','NOR','GRE','TUR','KOR','USA','BUL','SRB','CRO','SLO','LTU','ALB','GEO','AZE','TKM','NGR','GHA','HKG','MAC','TPE','SGP','KAZ','BAN','CHN','TUN','ALG','LBA','IRQ','JOR','LBN','BRN','KUW','PHI','MLT','LUX','ISL','IRI','OMA','JAM','CYP']);   // PHI: Gonzales ohne Akzent
 const ES_ONLY = new Set(['Martin','Ruben','Sebastian','Leon','Duran','Victor','Oscar','Angel','Ivan','Fabian','Simon','Adrian','Julian','Jose','Tomas','Nicolas','Cesar','Ramon']);
 const FR_NATIONS = new Set(['FRA','BEL','SUI','CAN','MON','LUX']);
 const FR_ONLY = new Set(['Frederic','Jerome','Mickael','Gerard','Francois','Clement','Noel','Benoit','Andre','Rene','Eric','Stephane','Cedric','Lefevre','Sebastien','Jeremy','Theo','Leo']);
@@ -319,6 +319,8 @@ const W6 = require('./nations-w6.js');   // Welle 6 (2026-10-03): CRC/GUA/PAN/EC
 Object.assign(CFG, W6.CFG);
 const W7 = require('./nations-w7.js');   // Welle 7 (2026-10-04): MLT/LUX/ISL/ANG
 Object.assign(CFG, W7.CFG);
+const W9 = require('./nations-w9.js');   // Welle 9 (2026-10-04): IRI/OMA/JAM/CYP/ESA + BAR/SEY/RWA
+Object.assign(CFG, W9.CFG);
 
 // ── Paket-J-Wiring (2026-07-17): Ethno-Regionen ─────────────────────────────
 // routeFirst wirkt NUR auf Vornamen, cfg.route NUR noch auf Nachnamen. Vorher lief
@@ -415,6 +417,7 @@ Object.assign(OPS, W4.OPS);
 Object.assign(OPS, W5.OPS);
 Object.assign(OPS, W6.OPS);
 Object.assign(OPS, W7.OPS);
+Object.assign(OPS, W9.OPS);
 
 // ── Neue Pool-Skelette (Bonus-Nationen mit Datenbasis) ──────────────────────
 // Vornamen-Fenster kuratiert (Ära-Wissen), Nachnamen kommen komplett aus den Daten.
@@ -555,13 +558,14 @@ for (const [by, file] of [[foreBy, 'cn_fore_agg.csv'], [surBy, 'cn_sur_agg.csv']
     for (const [iso, rows] of readAgg(file)) by.set(iso, rows);
 // Welle 5: tiefe Aggregate ersetzen die Top-400-Zeilen (TN/SA/AE … stehen dort schon, aber flach).
 // w5_fore_u_agg = Länder OHNE Geschlecht im Datensatz (TN/DZ/LY/LB/BH) → Filter über w5_gender_ref.csv.
-for (const [by, file] of [[foreBy, 'w5_fore_agg.csv'], [foreBy, 'w5_fore_u_agg.csv'], [surBy, 'w5_sur_agg.csv'], [foreBy, 'w6_fore_agg.csv'], [surBy, 'w6_sur_agg.csv'], [foreBy, 'w7_fore_agg.csv'], [surBy, 'w7_sur_agg.csv']])
+for (const [by, file] of [[foreBy, 'w5_fore_agg.csv'], [foreBy, 'w5_fore_u_agg.csv'], [surBy, 'w5_sur_agg.csv'], [foreBy, 'w6_fore_agg.csv'], [surBy, 'w6_sur_agg.csv'], [foreBy, 'w7_fore_agg.csv'], [surBy, 'w7_sur_agg.csv'], [foreBy, 'w9_fore_agg.csv'], [surBy, 'w9_sur_agg.csv']])
     for (const [iso, rows] of readAgg(file)) if (rows.length > 5) by.set(iso, rows);
 const foreFBy = readAgg('w3_fore_f_agg.csv');   // nur weibliche Vornamen, nur Welle-3/4-Länder
 for (const [iso, rows] of readAgg('w4_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 for (const [iso, rows] of readAgg('w5_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 for (const [iso, rows] of readAgg('w6_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 for (const [iso, rows] of readAgg('w7_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
+for (const [iso, rows] of readAgg('w9_fore_f_agg.csv')) if (!foreFBy.has(iso)) foreFBy.set(iso, rows);
 
 // givenRatio: Nachname sperren, wenn derselbe Schlüssel als Vorname (m+w) häufiger belegt ist als
 // r × als Nachname. Trennt "Emmanuel"/"Ana" (Vorname) von "Adebayo"/"Kola" (beides, Nachname überwiegt).
@@ -590,6 +594,7 @@ Object.assign(NEW_POOLS, W7.POOLS);
 // Welle 8 (2026-10-04): KGZ/UZB/TJK/ARM/BIH/MKD/MNE/VIE — fertige Pools aus worldnames.xyz (kein CFG, kein Daten-Merge, wie ROU)
 const W8 = require('./nations-w8.js');
 Object.assign(NEW_POOLS, W8.POOLS);
+Object.assign(NEW_POOLS, W9.POOLS);
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.
@@ -1011,7 +1016,17 @@ for (const [nat, ri] of W8.RUS_COPY) {
 }
 
 // Welle 8: kleine Regionen aus Nachbar-Pools auffüllen (Gewicht × f, Dubletten übersprungen)
-for (const s of W8.SUPPLEMENT) {
+// Welle 9: ESA-Nachnamen aus worldnames einmischen (zweite Quelle, gleiche Skala, höheres Gewicht gewinnt), dann
+// Vornamen-Kopien (BAR ← JAM), dann Auffüllen wie Welle 8
+{
+    const e0 = POOLS.ESA.regions[0], idx = new Map(e0.last.map((e, i) => [key(e[0]), i]));
+    for (const [n, w] of W9.ESA_WN_LAST) { const i = idx.get(key(n)); if (i == null) { e0.last.push([n, w]); idx.set(key(n), e0.last.length - 1); } else if (e0.last[i][1] < w) e0.last[i][1] = w; }
+}
+for (const c of W9.COPY) {
+    const src = POOLS[c.donor[0]].regions[c.donor[1]];
+    POOLS[c.nat].regions[c.ri][c.kind] = deepCopy(c.kind === 'last' ? src.last : (Array.isArray(src.first) ? src.first : [...src.first.early, ...src.first.mid, ...src.first.modern]));
+}
+for (const s of [...W8.SUPPLEMENT, ...W9.SUPPLEMENT]) {
     const dst = POOLS[s.nat].regions[s.ri], src = POOLS[s.donor[0]].regions[s.donor[1]];
     const srcArr = s.kind === 'last' ? src.last : (Array.isArray(src.first) ? src.first : [...src.first.early, ...src.first.mid, ...src.first.modern]);
     const have = new Set(dst[s.kind].map(e => key(e[0])));

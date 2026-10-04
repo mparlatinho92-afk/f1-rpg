@@ -2875,3 +2875,20 @@ Vorher alle acht auf INT (12 Vor-/12 Nachnamen). Keines im Kaggle-Datensatz → 
   Soll 1,92). Aufstiegsfaktor PYRAMID_NATION_LADDER für neue Nationen neutral 1,0.
 - Länder OHNE Namen bleiben draußen (sonst INT-Platzhalter): Iran 6, El Salvador 3, Oman 3, Jamaika 3, Barbados 2, Seychellen 2,
   Zypern 1, Ruanda 1 Fahrer (ohne Rallye) — Kandidaten für eine spätere Namenswelle.
+
+### 04.10.2026 (6): Namens-Pools IRI/OMA/JAM/CYP/ESA/BAR/SEY/RWA (Welle 9) — Länder aus der Rundstreckenzählung
+Länder, die in der Wikidata-Zählung ohne Rallye vorkommen, aber keine Namen hatten (Iran 6, Oman/Jamaika/El Salvador je 3,
+Barbados/Seychellen je 2, Zypern/Ruanda je 1 Fahrer). Mit Namen nimmt build-nation-extra.js sie in die Auswahl auf (jetzt 44).
+Konfiguration `nations-w9.js`, Aggregate `w9_*.csv`, worldnames `w9-quellen/`, Vorschau `namens-vorschau-w9.md`.
+- ⚠ **IR-Aggregat mit tschechischem Block:** Petr/Jan/Pavel/Jiří unter den Vornamen, Novák/Nováková unter den Nachnamen —
+  vermutlich ein Länderkürzel-Fehler im Rohdatensatz. `foreignFirstIso: CZ/SK` griff NICHT (der Block ist im IR-Aggregat größer
+  als die CZ-Belege). Harte Sperre: alles, was im CZ-/SK-Aggregat vorkommt, plus tschechische Endungen. Danach rein persisch.
+- **OMA** wie BRN/KUW: Kopf voller Gastarbeiter (Kumar, Islam, Singh, Rajesh) → Vornamen kuratiert, Nachnamen nur „Al-…"
+  (Al-Balushi, Al-Harthy, Al-Busaidi). Golf-Bausteine aus nations-w5.js exportiert (`GULF`).
+- **CYP:** griechisch-zypriotisch (Georgiou, Ioannou; Schreibung Nicos/Costas); Singh/Kaur und Briten gesperrt.
+- **ESA:** Kaggle dünn (1.360 Träger) → Kaggle + worldnames-Nachnamen (höheres Gewicht gewinnt) + Auffüllen aus GUA (eigene ≥ 65 %).
+- **BAR:** worldnames nur Nachnamen (Alleyne, Brathwaite, Forde) → Vornamen = Kopie des JAM-Pools (anglo-karibisch).
+- **RWA:** Kinyarwanda-Namen sind persönlich; Uw-/Umu-/Ing- überwiegend weiblich → gesperrt. **SEY** klein (28/21).
+- ⚠ **Randeffekt Glättung (2020er):** fehlende Zukunftsdekaden wurden durch Renormierung „hochgerechnet" — Barbados kam allein
+  durch Zane Maloney auf 2,1 ‰ (wie Litauen). Jetzt zählt fehlende Zukunft als 0: Barbados 1,4 ‰, Summe der Ergänzungsländer
+  2020er 2,4 % statt 3,7 %.

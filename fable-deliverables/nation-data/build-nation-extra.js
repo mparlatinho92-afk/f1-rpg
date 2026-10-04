@@ -74,7 +74,9 @@ const out = {}, total = {};
 for (const d of DEC) {
     out[d] = {};
     const parts = KERNEL.filter(([o]) => rawShare[d + o]);
-    const wsum = parts.reduce((s, [, w]) => s + w, 0);
+    // Rand 2020: fehlende Zukunft (2030/2040) zählt als 0, nicht als „unbekannt" — sonst blähte die Renormierung
+    // Einzelfahrer auf (Barbados 2020er: 2,1 ‰ wie Litauen, nur durch Zane Maloney). Nur nach hinten (1930/1940 sind da).
+    const wsum = KERNEL.filter(([o]) => d + o <= 2020 || rawShare[d + o]).reduce((s, [, w]) => s + w, 0) + KERNEL.filter(([o]) => d + o > 2020).reduce((s, [, w]) => s + w, 0);
     const keys = new Set(parts.flatMap(([o]) => Object.keys(rawShare[d + o])));
     for (const k of keys) {
         const s = parts.reduce((t, [o, w]) => t + w * (rawShare[d + o][k] || 0), 0) / wsum;

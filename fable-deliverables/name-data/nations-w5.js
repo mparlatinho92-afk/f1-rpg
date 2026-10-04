@@ -164,4 +164,5 @@ const POOLS = {
 
 const OPS = {};
 
-module.exports = { CFG, POOLS, OPS };
+// Bausteine für spätere Golf-Nationen (Welle 9: OMA)
+module.exports = { CFG, POOLS, OPS, GULF: { gulfNorm, notAlForm, baseLast, baseFirst } };

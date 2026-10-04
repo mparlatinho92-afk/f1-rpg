@@ -66,13 +66,13 @@ const FIRST_CLASSES = {
 
 // Nationen, für die eine Klasse NATIV ist (kein Ban — der eigene Namensstock):
 const NATIVE_FIRST_CLASSES = {
-    ARABIC: ['EGY', 'MAR', 'SAU', 'UAE', 'QAT', 'INA', 'MAS', 'TUR', 'AZE', 'ALB', 'TKM', 'NGR', 'GHA', 'KAZ', 'BAN', 'TUN', 'ALG', 'LBA', 'IRQ', 'JOR', 'LBN', 'BRN', 'KUW'],
+    ARABIC: ['EGY', 'MAR', 'SAU', 'UAE', 'QAT', 'INA', 'MAS', 'TUR', 'AZE', 'ALB', 'TKM', 'NGR', 'GHA', 'KAZ', 'BAN', 'TUN', 'ALG', 'LBA', 'IRQ', 'JOR', 'LBN', 'BRN', 'KUW', 'IRI', 'OMA'],
     // Ali/Mustafa/Hasan/Ibrahim stehen auch in der TURKISH-Klasse — ohne Eintrag fielen sie in arabischen Ländern weg
-    TURKISH: ['TUR', 'AZE', 'TKM', 'KAZ', 'BAN', 'TUN', 'ALG', 'LBA', 'IRQ', 'JOR', 'LBN', 'BRN', 'KUW'],
+    TURKISH: ['TUR', 'AZE', 'TKM', 'KAZ', 'BAN', 'TUN', 'ALG', 'LBA', 'IRQ', 'JOR', 'LBN', 'BRN', 'KUW', 'IRI', 'OMA'],
     SOUTH_ASIAN: ['IND', 'BAN'],
     // SGP nicht nötig: malaiische/indische Vornamen dort geroutet → die Guard nimmt Geroutete aus
     EAST_ASIAN_PINYIN: ['CHN', 'KOR', 'HKG', 'MAC', 'TPE', 'SGP'],
-    HISPANIC: ['ESP', 'MEX', 'ARG', 'COL', 'VEN', 'CHI', 'PER', 'URU', 'BRA', 'POR', 'CRC', 'GUA', 'PAN', 'ECU', 'BOL', 'PUR', 'PHI', 'ANG']   // ANG: José/Pedro/Carlos sind dort portugiesisch-einheimisch
+    HISPANIC: ['ESP', 'MEX', 'ARG', 'COL', 'VEN', 'CHI', 'PER', 'URU', 'BRA', 'POR', 'CRC', 'GUA', 'PAN', 'ECU', 'BOL', 'PUR', 'PHI', 'ANG', 'ESA']   // ANG: José/Pedro/Carlos sind dort portugiesisch-einheimisch
 };
 // (ISR bewusst NICHT nativ-arabisch: arabisch-israelische Namen sind dort per
 // Bestandskonfiguration ausgeschlossen — die Guard bestätigt das nur.)
