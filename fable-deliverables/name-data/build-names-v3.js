@@ -593,6 +593,10 @@ for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 FALLBACK.LAT = 'LTU';
 // KSA = IOC-Code Saudi-Arabiens; das Spiel nutzt SAU (eigener Pool) → toter Eintrag (2026-10-03)
 delete FALLBACK.KSA;
+// Historische Staaten erben vom passenden heutigen Pool (2026-10-04, Nutzer-Regel) — vorher still auf INT
+// (12 Namen). DDR/GDR/RHO erzeugt der Generator wirklich (NATIONALITY_ONLY_CONSTRUCTORS: EMW, LDS, Alfa Special).
+// pickPooledName reicht seit v0.9.18.35 auch die Ära-Kurven des Gebers durch (GER, und ZIM über den GBR-Alias).
+Object.assign(FALLBACK, { DDR:'GER', GDR:'GER', FRG:'GER', RHO:'ZIM', URS:'RUS', TCH:'CZE', YUG:'SRB', CEY:'IND' });
 
 // ── Paket J: neue Regionen anhängen + Regionsgewichte (D2/D3) ───────────────
 // GER r1 türkisch-deutsch (w 0.04, minYear 1985) ersetzt das bisherige Unterdrücken
@@ -614,6 +618,48 @@ for (const [nat, p] of Object.entries(JDEFS.WEIGHT_PROPOSALS)) {
     if (POOLS[nat].regions.length !== p.w.length) throw new Error(`${nat}: Gewichts-Vorschlag hat ${p.w.length} Regionen, Pool hat ${POOLS[nat].regions.length}`);
     p.w.forEach((w, i) => { POOLS[nat].regions[i].w = w; });
 }
+
+// ── Zeitsperre am GEBURTSJAHR statt Debütjahr (2026-10-04, Nutzer-Regel) ────
+// region-defs.js begründet jedes minYear über den Geburtsjahrgang + Debütalter ~22 („Jahrgänge ~1963+
+// debütieren ab ~1985"). Hier zurückgerechnet auf minBirth; das Spiel prüft das Geburtsjahr des Fahrers.
+// Das Debütalter selbst ist ära-abhängig (ERA_ROOKIE_AGE) — die Kopplung ans Geburtsjahr erfasst das von selbst.
+const DEBUT_AGE = 22;
+for (const pool of Object.values(POOLS)) for (const r of pool.regions) {
+    if (r.minYear) { r.minBirth = r.minYear - DEBUT_AGE; delete r.minYear; }
+}
+
+// ── USA r2 asiatisch-amerikanisch (2026-10-04) ──────────────────────────────
+// Vorher in r0: 12 Pool- + 14 Schwanz-Namen, 4,4 % des Gewichts (Nguyen, Patel, Kim, Chen) — ohne Zeitsperre.
+// Einwanderungsreform 1965, vietnamesische Zuwanderung ab 1975 → minBirth 1960. Vornamen der 2. Generation
+// westlich; ohne Herkunfts-Vornamen, weil die Region süd- und ostasiatisch gemischt ist („Raj Nguyen" vermeiden).
+// Gewicht vorläufig fest 0.04 — Schritt B ersetzt es durch eine Kurve je Geburtsjahr.
+const US_JAPANESE = /^(Tanaka|Yamamoto|Nakamura|Kobayashi|Watanabe|Ito|Sato|Suzuki|Takahashi|Yamada|Sasaki|Kato|Yoshida|Matsumoto|Inoue|Kimura|Hayashi|Shimizu|Yamaguchi|Mori|Ikeda|Hashimoto|Ishikawa|Ogawa|Okada|Fujita|Goto|Hasegawa|Murakami|Kondo|Sakamoto|Aoki|Fujii|Nishimura|Fukuda|Miura|Fujiwara|Okamoto|Matsuda|Nakagawa|Harada|Tamura|Takeuchi|Nakayama|Ueda|Morita|Miyamoto|Takeda|Murata|Sugiyama|Matsui|Nomura|Kikuchi)$/;
+const US_ASIAN_LAST = { test: n => (EAST_ASIAN.test(n) && n !== 'Lee') || US_JAPANESE.test(n) || (SOUTH_ASIAN.test(n) && !/^(Gill|Mann|Das|Raja|Islam|Ali|Malik|Khan|Shah|Mohammed|Mohamed|Mohammad|Muhammad|Ahmed|Ahmad|Hussain|Hussein|Rahman|Rehman|Begum|Bibi|Hamid|Karim|Rashid|Amin|Aziz|Abbas|Raza|Syed|Sheikh|Sultan|Tariq|Zaman)$/.test(n)) };
+POOLS.USA.regions.push({ w: 0.04, minBirth: 1960,
+    first: [['Kevin',5],['Brian',4],['Jason',4],['Eric',4],['Andrew',4],['Daniel',4],['David',4],['Michael',4],['Ryan',4],['Justin',3],['Steven',3],['Jonathan',3],
+            ['Alex',3],['Brandon',3],['Matthew',3],['Christopher',3],['Anthony',3],['Peter',3],['Victor',2],['Vincent',2],['Kenneth',2],['Raymond',2],['Dennis',2],['Sean',2],
+            ['Nathan',3],['Ethan',3],['Aaron',2],['Jeffrey',2],['Calvin',2],['Derek',2]],
+    last: [] });
+CFG.USA.route = [...(CFG.USA.route || []), [US_ASIAN_LAST, 2]];
+
+// ── Regionsgewicht als Kurve je GEBURTSjahr (wBy, 2026-10-04) ──────────────
+// Das Spiel interpoliert linear zwischen den Stützstellen und hält die Randwerte; ohne wBy gilt w.
+// USA r1 hispanisch: hispanischer Geburtenanteil (Pew-Bevölkerungsanteil 1960 3,5 · 1970 4,7 · 1980 6,5 · 1990 8,8 ·
+// 2000 12,5 % × 1,6 = Verhältnis Geburten/Bevölkerung laut CDC 1990: 595.073 und 2000: 815.868 hispanische Geburten
+// = 14,3 bzw. 20,1 %) × 0,6 Motorsport-Faktor — so ergibt Jahrgang 2000 wieder das bisherige feste w 0.12.
+// Vor 1960 hochgerechnet (Pew nennt keine Werte). Befund: BEFUNDE.md 04.10.2026 (3).
+POOLS.USA.regions[1].wBy = [[1940, 0.013], [1960, 0.034], [1970, 0.045], [1980, 0.062], [1990, 0.085], [2000, 0.12], [2010, 0.15]];
+// USA r2 asiatisch: Pew-Bevölkerungsanteil 1960 0,6 · 1980 1,5 · 2000 3,6 · 2010 4,7 % (Faktor 1, ohne Geburtenkorrektur)
+POOLS.USA.regions[2].wBy = [[1960, 0.006], [1980, 0.015], [2000, 0.036], [2010, 0.047]];
+
+// ── Lecks in einheimischen Hauptregionen (2026-10-04) ──────────────────────
+// Nachnamen hatten keine globale Sperre wie Vornamen (Paket J): albanische Namen im deutschen/österreichischen/
+// schwedischen Schwanz („Paul Osmani", auch in der DDR 1955), rumänische (Popa) in ITA/ESP. Keine passende Region →
+// raus aus r0. (SWE r1 ex-jugoslawisch ist bosnisch, nicht albanisch — bleibt unberührt.)
+const ALB_LAST = /^(Osmani|Hasani|Rexhepi|Shabani|Ademi|Selimi|Ismaili|Jashari|Bajrami|Ramadani|Sejdiu|Hyseni|Zeqiri|Aliu|Musliu|Avdiu|Beqiri|Halili|Krasniqi|Gashi|Berisha|Shala|Hoxha|Kelmendi|Morina|Bytyqi|Zeka|Rama|Dervishi|Marku|Gjoka|Leka|Prela|Hoti|Sinani|Kurti|Ahmeti|Mehmeti|Asani|Idrizi|Iseni|Jakupi|Memeti|Mustafi|Rushiti|Salihu|Sadiku|Ibrahimi|Fazliu|Haxhiu|Kastrati|Bislimi|Emini|Veseli|Xhaferi|Zekiri)$/;
+const RO_LAST = /^(Popa|Pop|Popescu|Ionescu|Rusu|Lungu|Ciobanu|Munteanu|Moldovan|Dumitrescu|Stoica|Gheorghiu|Nistor|Dobre)$|(escu|eanu)$/;
+for (const nat of ['GER','AUT','SUI','SWE','DEN','NOR','NED','BEL','FIN','ITA','ESP','FRA','GBR','IRL'])
+    if (CFG[nat]) CFG[nat].banLast = [...(CFG[nat].banLast || []), ALB_LAST, RO_LAST];
 
 // Wissens-Erweiterungen anhängen (Dedup gegen Bestand)
 function appendKnowledge(nat, spec) {
@@ -916,6 +962,59 @@ for (const b of BORROW) {
     }
 }
 
+// ── GER r1 türkisch-deutsch = Türkei-Pool (2026-10-04, Nutzer-Regel) ────────
+// Vor- und Nachname kommen aus dem TUR-Pool (türkische Schreibung Yılmaz/Şahin), strikt getrennt von den deutschen
+// Namen. Vorher eigene Region aus DEUTSCHEN Daten (deutsch-tastaturiert „Yilmaz", eigene Vornamen-Kuration).
+// Gewicht und minBirth bleiben die von GER r1. Daten-Namen, die die GER-Route nach r1 schickte, entfallen damit.
+{
+    const g1 = POOLS.GER.regions[1], t0 = POOLS.TUR.regions[0];
+    if (!g1 || !t0) throw new Error('GER r1 / TUR r0 fehlt');
+    g1.first = deepCopy(Array.isArray(t0.first) ? t0.first : [...t0.first.early, ...t0.first.mid, ...t0.first.modern]);
+    g1.last = deepCopy(t0.last);
+    const tt = (TAILS.TUR || []).find(x => x.r === 0);
+    TAILS.GER = (TAILS.GER || []).filter(x => x.r !== 1);
+    if (tt) TAILS.GER.push({ r: 1, first: [...tt.first], last: [...tt.last] });
+}
+
+// Türkische Nachnamen in einheimischen Hauptregionen (Deniz, Çakır, Ceylan, Köse …): die Route GER_TURKISH_LAST war
+// unvollständig. Datengetrieben: was im TUR-Pool steht, verlässt r0 dieser Länder (strikte Trennung, Nutzer-Regel).
+// Nicht ESP/ITA/FRA (Aras, Can sind dort auch einheimisch).
+{
+    // Gleichlautende einheimische Namen (gemessen 04.10.2026): Kok/Bal/Top (NL), Isler (CH), Erdal (NO), Kaplan (aschkenasisch)
+    const NATIVE_HOMOGRAPH = new Set(['kok','bal','top','isler','erdal','kaplan']);
+    const tr = new Set(POOLS.TUR.regions[0].last.map(e => key(e[0])));
+    for (const t of (TAILS.TUR || [])) for (const n of t.last) tr.add(key(n));
+    for (const h of NATIVE_HOMOGRAPH) tr.delete(h);
+    let removed = 0;
+    for (const nat of ['GER','AUT','SUI','NED','BEL','DEN','SWE','NOR','FIN']) {
+        const r0 = POOLS[nat] && POOLS[nat].regions[0];
+        if (!r0) continue;
+        const before = r0.last.length;
+        r0.last = r0.last.filter(e => !tr.has(key(e[0])));
+        removed += before - r0.last.length;
+        for (const t of (TAILS[nat] || []).filter(x => x.r === 0)) { const b = t.last.length; t.last = t.last.filter(n => !tr.has(key(n))); removed += b - t.last.length; }
+    }
+    console.log(`Türkische Nachnamen aus einheimischen Hauptregionen entfernt: ${removed}`);
+}
+
+// USA: kuratierte asiatische Nachnamen aus curated-base (Nguyen, Patel) umgehen die Daten-Route → hier nach r2
+{
+    const u = POOLS.USA.regions, keep = [], move = [];
+    for (const e of u[0].last) (US_ASIAN_LAST.test(e[0]) ? move : keep).push(e);
+    u[0].last = keep;
+    const have = new Set(u[2].last.map(e => key(e[0])));
+    for (const e of move) if (!have.has(key(e[0]))) u[2].last.push(e);
+    for (const t of (TAILS.USA || []).filter(x => x.r === 0)) {
+        const mv = t.last.filter(n => US_ASIAN_LAST.test(n));
+        t.last = t.last.filter(n => !US_ASIAN_LAST.test(n));
+        if (mv.length) {
+            let t2 = TAILS.USA.find(x => x.r === 2);
+            if (!t2) { t2 = { r: 2, first: [], last: [] }; TAILS.USA.push(t2); }
+            for (const n of mv) if (!have.has(key(n))) { t2.last.push(n); have.add(key(n)); }
+        }
+    }
+}
+
 // ── Paket I §7.5: Region-0-Vornamen der 5 Kurven-Nationen eindampfen ─────────
 // era-first-names.js (Gauß-Kurven, eraFirstArr in pickPooledName) besitzt zur
 // Laufzeit die Region-0-Vornamen von GER/GBR/USA/FRA/ITA. Die vollen Kaggle-/
@@ -1010,7 +1109,8 @@ let out = `// ==================================================================
 //
 // Schema pro Nation (IOC-Code) — UNVERÄNDERT ggü. v2:
 //   { regions: [ { w: <Regionsgewicht, Summe ~1>,
-//                  minYear: <optional: Region existiert erst ab diesem Debütjahr>,
+//                  minBirth: <optional: Region nur für Fahrer ab diesem GEBURTSjahr>,
+//                  wBy: <optional: [[Geburtsjahr, w], …] — Gewicht als Kurve, ersetzt w>,
 //                  first: [[name,gewicht],...]                      // ära-stabil, ODER
 //                  first: { early:[...], mid:[...], modern:[...] }, // ära-sensibel
 //                  last:  [[name,gewicht],...] } ] }
@@ -1031,6 +1131,8 @@ for (const [nat, pool] of Object.entries(POOLS)) {
     const regionStrs = pool.regions.map(r => {
         let s = `        { w: ${r.w}`;
         if (r.minYear) s += `, minYear: ${r.minYear}`;
+        if (r.minBirth) s += `, minBirth: ${r.minBirth}`;
+        if (r.wBy) s += `, wBy: ${JSON.stringify(r.wBy)}`;
         s += ',\n';
         if (Array.isArray(r.first)) {
             s += `          first: [\n${serPairs(r.first, '            ')}\n          ],\n`;

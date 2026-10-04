@@ -2793,3 +2793,36 @@ Alle vier mit Geschlechtsangabe, 100 % lateinisch, Köpfe nach Sperren sauber.
   portugiesische Namen gesperrt — Sperren je Nation prüfen, nicht pauschal teilen.
 - **ANG:** portugiesische Namen sind einheimisch → `HISPANIC`-Klasse dort nativ (José, Pedro, Carlos wären sonst gefallen), `PT_NATIONS`.
   Westafrikanische Namen (Diallo, Traoré) gesperrt.
+
+### 04.10.2026 (2): Historische Staaten und Rückfall-Nationen erben Ära-Kurven
+- **DDR, GDR, RHO landeten still auf INT** (12 Vor-/12 Nachnamen): kein Pool, kein Rückfall-Eintrag → `pickPooledName` fiel auf INT.
+  Der Generator erzeugt sie wirklich: `NATIONALITY_ONLY_CONSTRUCTORS` (data/hist.js) lässt EMW aus GER/GDR/DDR ziehen (2 von 3 Fahrern
+  betroffen), LDS/Alfa Special aus RSA/ZIM/RHO (jeder Dritte). Neu im Build: DDR/GDR/FRG → GER, RHO → ZIM, URS → RUS, TCH → CZE,
+  YUG → SRB, CEY → IND (Nutzer-Regel: historische Staaten erben vom passenden Pool, Ära mitnehmen).
+- ⚠ **Mechanik-Lücke (alle Rückfall-Nationen):** `pickPooledName` nahm den Pool des Gebers, suchte Ära-Kurven und Doppelnamen-Rate aber
+  unter dem EIGENEN Code → nur die gekürzte Notliste der Region 0 (bei GER/FRA/ITA auf 16–40 Namen getrimmt, Paket I §7.5). Betraf
+  schon SMR → ITA, SEN/CIV → FRA. Fix: `nameNat` = tatsächlich genutzter Pool, für Kurven und Rate (v0.9.18.35).
+- Messung in sim-core (400 Ziehungen): DDR 1955 → 78 verschiedene Vornamen (Hans, Werner, Heinz, Klaus), INT-Anteil 0 %;
+  RHO 1965 → 77 (Brian, Neville, Ronald), SMR 1990 → 111, SEN 2015 → 149. Restbefund: GER-Schwanz liefert einzelne Zuwanderernamen
+  auch für die DDR der 1950er (Osmani) — von der Nutzer-Regel gedeckt („lokal andere Nachnamen, sonst passt es").
+
+### 04.10.2026 (3): Zuwanderer-Regionen am GEBURTSjahr, strikte Trennung, Gewichtskurven
+Nutzer-Regeln: heutige Pools müssen für die 1950er sauber sein; die Ära hängt am Geburtsjahr (das Aktivitätsjahr folgt daraus,
+inkl. älterer Debütanten der 50er via ERA_ROOKIE_AGE); Deutsch-Türken = Türkei-Pool, strikt getrennt; Mischung wie in der Realität.
+- **minYear (Debütjahr) → minBirth (Geburtsjahr)**, zurückgerechnet mit Debütalter 22 aus den Begründungen in region-defs.js
+  (GER r1 1963, GBR/FRA/RSA/ZIM 1973, SUI r3 1978, SWE r1 1993, CAN 1968). `pickNameRegion` prüft das Geburtsjahr.
+- **GER r1 = TUR-Pool** (türkische Schreibung, 44 Vor-/340 Nachnamen + Schwanz). Vorher aus deutschen Daten (deutsch-tastaturiert).
+- ⚠ **Lecks in einheimischen Hauptregionen** (Nachnamen haben keine globale Sperre wie Vornamen): türkische Namen in GER/AUT/SUI/NED/
+  BEL/DEN/SWE/NOR/FIN r0 — **180 entfernt** (datengetrieben: alles, was im TUR-Pool steht; GER allein 32, DEN 48, AUT 55). Albanische
+  (Osmani …) und rumänische (Popa) Nachnamen gesperrt. ⚠ Falsch-Treffer des TUR-Abgleichs: Kok/Bal/Top (NL), Isler (CH), Erdal (NO),
+  Kaplan (aschkenasisch) — Ausnahmeliste `NATIVE_HOMOGRAPH`.
+- **USA r2 asiatisch-amerikanisch** (neu): vorher 4,4 % des r0-Gewichts ohne Zeitsperre (Nguyen, Patel, Kim). Kuratierte Asiaten aus
+  curated-base umgingen die Daten-Route → nachträglich verschoben. minBirth 1960.
+- **Regionsgewicht als Kurve `wBy`** je Geburtsjahr. USA r1: hispanischer Geburtenanteil × 0,6 (Pew-Bevölkerungsanteil × 1,6 laut CDC
+  1990/2000) → 0,013 (1940) … 0,12 (2000) … 0,15 (2010); USA r2: Pew-Bevölkerungsanteil asiatisch. Engine-Messung (4.000 Ziehungen):
+  Latino-Nachnamen 1,5 % (geb. 1940) → 4,3 % (1960) → 10,7 % (2000); asiatisch 0 % vor 1960 → 4,3 % (2010). Vorher konstant 12 %.
+- ⚠ **Negativergebnis Mischquote je Jahrgang** („Brad Benavides" vs. „José Benavides"): SSA-Babynamen (Spiegel hadley/data-baby-names,
+  ssa.gov sperrt Abrufe mit 403) × Tzioumis-Hispanoanteil je Vorname scheitert — Tzioumis ist NICHT jahrgangsaufgelöst (heutige
+  Erwachsene). Gegenprobe Σ geschätzte / tatsächliche hispanische Geburten: 2,08 (1930) … 1,0 (1950) … 0,43 (2005). Scheinergebnis
+  „70 % Mischung bei Alten" ist ein Artefakt. Keine Quelle mit Zahlen je Jahrgang gefunden (Pew bestätigt nur die Richtung).
+  → Mischfaktor bleibt fest (Anglo-Vornamen in USA r1 ×0,2). Nicht erneut mit Tzioumis versuchen.
