@@ -2826,3 +2826,27 @@ inkl. älterer Debütanten der 50er via ERA_ROOKIE_AGE); Deutsch-Türken = Türk
   Erwachsene). Gegenprobe Σ geschätzte / tatsächliche hispanische Geburten: 2,08 (1930) … 1,0 (1950) … 0,43 (2005). Scheinergebnis
   „70 % Mischung bei Alten" ist ein Artefakt. Keine Quelle mit Zahlen je Jahrgang gefunden (Pew bestätigt nur die Richtung).
   → Mischfaktor bleibt fest (Anglo-Vornamen in USA r1 ×0,2). Nicht erneut mit Tzioumis versuchen.
+
+### 04.10.2026 (4): Namens-Pools KGZ/UZB/TJK/ARM/BIH/MKD/MNE/VIE (Welle 8) — keine Nation mehr auf INT
+Vorher alle acht auf INT (12 Vor-/12 Nachnamen). Keines im Kaggle-Datensatz → worldnames.xyz wie ROU (Rohdaten + Skript
+`w8-quellen/`, Aufbereitung `nations-w8.js`, Vorschau `namens-vorschau-w8.md`). Fertige Pools ohne Daten-Merge im Build.
+- ⚠ **Abruf-Fallen:** `www.worldnames.xyz` antwortet nicht (Timeout, HTTP 000), nur ohne www. Bosnien heißt dort `bosnia`.
+  Zentralasiatische Nachnamen stehen zweiformig („Name / Zweitform") — das ROU-Skript erwartet die Zahl direkt nach dem Namen und
+  fand 0 Zeilen → `worldnames-scrape2.js` sucht die Zahl bis 8 Tokens weiter.
+- **Mengen:** Vornamen 109 (TJK) bis 300, Nachnamen 100, für KGZ/UZB/TJK nur 48–50. Spitzen: Nguyen 23,9 Mio., Ismailov 34.900.
+- **KGZ/UZB/TJK-Nachnamen nur in WEIBLICHER Form** (Ismailova) — Zweitform ist die männliche. UZB-Liste mit verballhornter Umschrift
+  (Alyeksandr, Syergyei, Akhmyedov) → ye-Artefakt nach Konsonant bereinigt. „Uulu"/„Kyzy" (Sohn/Tochter des) als Vorname gesperrt.
+- **Russische Minderheiten** KGZ (6 %) und UZB (3 %) = RUS-Pool (Nutzer-Regel wie GER r1 = TUR); russische Vornamen aus r0 entfernt.
+- **Regionen nach Zensus:** BIH bosniakisch 52 / serbisch 32 / kroatisch 16 % (Serbisch-kroatisch geteilte Familiennamen wie
+  Kovačević in beiden); MKD mazedonisch 70 / albanisch-muslimisch 30 % (-ska/-ova auf männlich gefaltet); MNE 86 / 14 %.
+  MNE r1 hatte nur 5 eigene Familiennamen → um die bosniakischen aus BIH ergänzt (Sandžak, halbes Gewicht).
+- ⚠ **Eigene Falle:** albanische Nachnamen über „endet auf -i" erkannt traf auch mazedonisch -ski (Stojanovski landete albanisch).
+- **VIE:** ASCII-Form wie in der Quelle (Nguyen). Zwischennamen (Van, Huu, Ba, Xuan) und Familiennamen aus der Vornamenliste,
+  Rufnamen und Abgeschnittenes (Nguye, Inh) aus der Nachnamenliste. Westliche Reihenfolge (Tuan Nguyen).
+- Frauennamen in den „male"-Listen (ARM: Alvard, Nune) über `w8_gender_ref.csv` (gender-ref.js jetzt parametrisiert) + Liste.
+- Rest-Rückfälle: 25 Nationen auf geborgten Pools (UKR/BLR → RUS, PAK/SRI/NEP → IND u. a.), keine mehr auf INT.
+- **Nachtrag Auffüllen (Nutzer-Entscheid):** kleine Regionen aus Nachbar-Pools ergänzt (`SUPPLEMENT` in nations-w8.js, ausgeführt im
+  Build nach processNation): MKD-albanisch ← ALB, BIH-kroatisch ← CRO, BIH-serbisch ← SRB, KGZ ← KAZ, UZB/TJK ← KAZ nur arabisch-
+  persische Stämme; BIH-bosniakisch aus der gepflegten Namensliste (kein Geber-Pool). ⚠ **Messfalle fester Faktor:** mit Geber-Gewicht
+  × 0,5 fiel der Anteil der eigenen Landesnamen auf 27–33 % (MKD-albanisch: 16 eigene gegen 235 albanische — Hoxha statt Ramadani).
+  Jetzt Zielanteil: eigene ≥ 65 % des Gewichts, Faktor = min(f, Ziel/Geber). Gemessen: 65–92 %.

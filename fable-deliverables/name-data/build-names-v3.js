@@ -587,6 +587,9 @@ Object.assign(NEW_POOLS, W4.POOLS);
 Object.assign(NEW_POOLS, W5.POOLS);
 Object.assign(NEW_POOLS, W6.POOLS);
 Object.assign(NEW_POOLS, W7.POOLS);
+// Welle 8 (2026-10-04): KGZ/UZB/TJK/ARM/BIH/MKD/MNE/VIE — fertige Pools aus worldnames.xyz (kein CFG, kein Daten-Merge, wie ROU)
+const W8 = require('./nations-w8.js');
+Object.assign(NEW_POOLS, W8.POOLS);
 for (const [nat, pool] of Object.entries(NEW_POOLS)) POOLS[nat] = deepCopy(pool);
 for (const nat of Object.keys(NEW_POOLS)) delete FALLBACK[nat];
 // Lettland (kein LV im Datensatz): baltisch wie Litauen, nicht finno-ugrisch wie Estland.
@@ -995,6 +998,32 @@ for (const b of BORROW) {
         for (const t of (TAILS[nat] || []).filter(x => x.r === 0)) { const b = t.last.length; t.last = t.last.filter(n => !tr.has(key(n))); removed += b - t.last.length; }
     }
     console.log(`Türkische Nachnamen aus einheimischen Hauptregionen entfernt: ${removed}`);
+}
+
+// Welle 8: russische Minderheiten (KGZ r1, UZB r1) = RUS-Pool, wie GER r1 = TUR (Nutzer-Regel strikte Trennung)
+for (const [nat, ri] of W8.RUS_COPY) {
+    const dst = POOLS[nat].regions[ri], src = POOLS.RUS.regions[0];
+    dst.first = deepCopy(Array.isArray(src.first) ? src.first : [...src.first.early, ...src.first.mid, ...src.first.modern]);
+    dst.last = deepCopy(src.last);
+    const st = (TAILS.RUS || []).find(x => x.r === 0);
+    TAILS[nat] = (TAILS[nat] || []).filter(x => x.r !== ri);
+    if (st) TAILS[nat].push({ r: ri, first: [...st.first], last: [...st.last] });
+}
+
+// Welle 8: kleine Regionen aus Nachbar-Pools auffüllen (Gewicht × f, Dubletten übersprungen)
+for (const s of W8.SUPPLEMENT) {
+    const dst = POOLS[s.nat].regions[s.ri], src = POOLS[s.donor[0]].regions[s.donor[1]];
+    const srcArr = s.kind === 'last' ? src.last : (Array.isArray(src.first) ? src.first : [...src.first.early, ...src.first.mid, ...src.first.modern]);
+    const have = new Set(dst[s.kind].map(e => key(e[0])));
+    const cand = srcArr.filter(([n]) => !have.has(key(n)) && !(s.filter && !s.filter.test(n)));
+    // Zielanteil: die eigenen Landesnamen behalten mindestens OWN_SHARE des Gewichts (gemessen: mit festem f = 0,5
+    // fielen sie bei MKD-albanisch/BIH-kroatisch auf 27–33 % — Hoxha statt Ramadani). Faktor = min(f, Ziel/Geber).
+    const OWN_SHARE = 0.65;
+    const ownSum = dst[s.kind].reduce((t, e) => t + e[1], 0), donorRaw = cand.reduce((t, e) => t + e[1], 0);
+    const fac = Math.min(s.f, donorRaw ? ownSum * (1 - OWN_SHARE) / OWN_SHARE / donorRaw : 0);
+    let added = 0;
+    for (const [n, w] of cand) { dst[s.kind].push([n, Math.max(1, Math.round(w * fac))]); have.add(key(n)); added++; }
+    console.log(`Welle 8 aufgefüllt: ${s.nat} r${s.ri} ${s.kind} + ${added} aus ${s.donor[0]}`);
 }
 
 // USA: kuratierte asiatische Nachnamen aus curated-base (Nguyen, Patel) umgehen die Daten-Route → hier nach r2

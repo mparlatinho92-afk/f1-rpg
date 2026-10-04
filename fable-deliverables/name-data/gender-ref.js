@@ -2,7 +2,12 @@
 // Summiert M/F je Namensschlüssel über Länder MIT Angabe (arabisch + französisch für Maghreb-Schreibungen).
 // Aufruf: node gender-ref.js   → w5_gender_ref.csv (key,M,F; nur Schlüssel mit M+F >= 20, die in w5_fore_u_agg/w5_sur_agg vorkommen). Gibt nur Zahlen aus.
 const fs = require('fs'), rl = require('readline');
-const REF = new Set(['EG','SA','AE','QA','OM','JO','IQ','KW','SY','PS','YE','MA','FR','BE','CA','CH']);
+// Welle 8 (2026-10-04): Parameter  node gender-ref.js <out.csv> <REF-Länder,kommagetrennt> <need-Datei …>
+//   (need = Dateien, deren Namen geprüft werden; Aggregat-CSV oder worldnames-TSV). Ohne Parameter wie Welle 5.
+const ARGS = process.argv.slice(2);
+const OUT = ARGS[0] || 'w5_gender_ref.csv';
+const REF = new Set(ARGS[1] ? ARGS[1].split(',') : ['EG','SA','AE','QA','OM','JO','IQ','KW','SY','PS','YE','MA','FR','BE','CA','CH']);
+const NEED = ARGS.length > 2 ? ARGS.slice(2) : ['w5_fore_u_agg.csv', 'w5_sur_agg.csv'];
 const key = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const m = new Map(); let n = 0;
 const r = rl.createInterface({ input: fs.createReadStream(__dirname + '/F1 RPG Namenslisten & Namensgeneratoren/forenames.csv') });
@@ -17,11 +22,11 @@ r.on('line', l => {
 r.on('close', () => {
     // nur Schlüssel, die in den Welle-5-Aggregaten vorkommen (sonst ~4 MB fürs Repo)
     const need = new Set();
-    for (const f of ['w5_fore_u_agg.csv', 'w5_sur_agg.csv']) {
+    for (const f of NEED) {
         if (!fs.existsSync(__dirname + '/' + f)) continue;
-        for (const l of fs.readFileSync(__dirname + '/' + f, 'utf8').split('\n')) { const x = l.match(/^[A-Z]{2},"(.*)",\d+$/); if (x) need.add(key(x[1].trim())); }
+        for (const l of fs.readFileSync(__dirname + '/' + f, 'utf8').split('\n')) { const x = l.match(/^[A-Z]{2},"(.*)",\d+$/) || l.match(/^\d+\t([^\t]+)\t/); if (x) need.add(key(x[1].trim())); }
     }
     const rows = [...m.entries()].filter(([k, e]) => e.M + e.F >= 20 && (!need.size || need.has(k)));
-    fs.writeFileSync(__dirname + '/w5_gender_ref.csv', 'key,M,F\n' + rows.map(([k, e]) => `"${k}",${e.M},${e.F}`).join('\n'));
+    fs.writeFileSync(__dirname + '/' + OUT, 'key,M,F\n' + rows.map(([k, e]) => `"${k}",${e.M},${e.F}`).join('\n'));
     console.log('Referenz-Schlüssel', rows.length, 'davon überwiegend weiblich', rows.filter(([, e]) => e.F > e.M).length);
 });
