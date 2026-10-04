@@ -2892,3 +2892,14 @@ Konfiguration `nations-w9.js`, Aggregate `w9_*.csv`, worldnames `w9-quellen/`, V
 - ⚠ **Randeffekt Glättung (2020er):** fehlende Zukunftsdekaden wurden durch Renormierung „hochgerechnet" — Barbados kam allein
   durch Zane Maloney auf 2,1 ‰ (wie Litauen). Jetzt zählt fehlende Zukunft als 0: Barbados 1,4 ‰, Summe der Ergänzungsländer
   2020er 2,4 % statt 3,7 %.
+
+### 04.10.2026 (7): ERA_FIRST_EXCLUDE nach den Regionsumbauten geprüft
+- Generator `paketJ-ethno-regionen/gen-era-curve-excludes.js` erzeugt heute exakt die Konstante im Spiel (GBR 45, GER 45,
+  ITA 34, FRA 56, USA 32) — die neuen Wellen haben die Kurven-Nationen nicht berührt.
+- ⚠ **Lücke durch GER r1 = TUR-Pool:** der Generator kannte nur Routen/Sperren aus region-routes.js; Vornamen einer KOPIERTEN
+  Herkunfts-Region stehen dort nicht. Fund: „Kerem" (TUR-Pool) in der GER-Kurve, nicht ausgeschlossen → „Kerem Schneider"
+  möglich. Neue Regel (c) `COPY_POOL_FIRST` (GER ← TUR-Pool samt Schwanz); GER jetzt 46. Bei jeder weiteren Pool-Kopie
+  (KGZ/UZB r1 = RUS betrifft keine Kurven-Nation) dort eintragen.
+- Gegenprobe sim-core (GER, geb. 2003, 40.000 Züge): kein türkischer Vorname mit deutschem Nachnamen. ⚠ Messfalle: der erste
+  Test zählte 123 „Mischfälle" — er kannte nur den TUR-Pool, nicht den TUR-Schwanz (Özgen, Keçeci …); alle waren rein türkisch.
+- Nebenfund TUR-Schwanz: vereinzelt Vornamen als Nachnamen (Zeynep, Yusuf) — kleiner Datenmangel, nicht behoben.

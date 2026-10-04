@@ -38,6 +38,17 @@ const BANS = {
     ITA: []
 };
 
+// Kurven-Nation → Vornamen der kopierten Herkunfts-Pools (Pool + Schwanz aus data/names.js). Muss zu den Kopien im
+// Build passen: GER r1 = TUR r0 (build-names-v3.js, Block „GER r1 türkisch-deutsch = Türkei-Pool").
+const NAMES = require(path.join(__dirname, '..', '..', 'data', 'names.js'));
+const poolFirst = nat => {
+    const s = new Set(), r0 = NAMES.NAME_POOLS_BY_NATION[nat].regions[0];
+    for (const [n] of (Array.isArray(r0.first) ? r0.first : [...r0.first.early, ...r0.first.mid, ...r0.first.modern])) s.add(n);
+    for (const t of (NAMES.NAME_TAILS_BY_NATION[nat] || [])) if (t.r === 0) t.first.forEach(n => s.add(n));
+    return s;
+};
+const COPY_POOL_FIRST = { GER: poolFirst('TUR') };
+
 const out = {};
 for (const nat of Object.keys(ERA)) {
     const routes = RR.ROUTE_FIRST[nat] || [];
@@ -54,7 +65,11 @@ for (const nat of Object.keys(ERA)) {
         }
         // (b) effektiv gebannt?
         const banned = bans.some(b => b.test(name));
-        if (routedAway || banned) excl.push(name);
+        // (c) 2026-10-04: Zuwanderer-Region als KOPIE eines Herkunfts-Pools (GER r1 = TUR-Pool, Nutzer-Regel strikte
+        //     Trennung, build-names-v3.js). Deren Vornamen stehen in keiner Route — ohne diese Regel blieb z. B. „Kerem"
+        //     in der GER-Kurve ziehbar („Kerem Schneider").
+        const copied = (COPY_POOL_FIRST[nat] || new Set()).has(name);
+        if (routedAway || banned || copied) excl.push(name);
     }
     out[nat] = excl.sort();
 }
