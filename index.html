@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.18.34</title>
+    <title>F1 RPG v0.9.19.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.18.34 (aktuell) - 04.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.19.0 (aktuell) - 04.10.2026</div>
+                            <div>&#8226; NEU: Zuwanderer-Namen richten sich nach dem Geburtsjahrgang - keine Deutsch-Tuerken oder Asiatisch-Amerikaner in den 1950ern</div>
+                            <div>&#8226; NEU: Deutsch-tuerkische Fahrer mit Namen aus dem tuerkischen Pool</div>
+                            <div>&#8226; NEU: Latino-Anteil in den USA waechst mit dem Jahrgang statt fester 12 Prozent</div>
+                            <div>&#8226; FIX: DDR- und Rhodesien-Fahrer bekamen Platzhalternamen</div>
+                            <div>&#8226; FIX: Laender ohne eigenen Pool erben die jahrgangsgenauen Vornamen des Geberlandes</div>
+                            <div class="font-bold text-slate-400">v0.9.18.34 - 04.10.2026</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer Malta, Luxemburg, Island und Angola (vorher italienisch, belgisch, schwedisch bzw. portugiesisch)</div>
                             <div>&#8226; NEU: Island mit echten Vatersnamen (Gudmundsson, Thorsteinsson)</div>
                             <div>&#8226; NEU: Luxemburg mit kleiner portugiesischer Namensregion</div>
@@ -4163,7 +4169,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.18.34';
+        const VERSION = '0.9.19.0';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7258,12 +7264,23 @@
 
         // Region gewichtet ziehen: erst nach minYear filtern (Diaspora-Regionen),
         // dann Kumulativ-Pick über die gefilterte Gewichts-Summe (implizite Renormierung).
-        function pickNameRegion(regions, year) {
-            const avail = regions.filter(r => !r.minYear || year >= r.minYear);
+        // v0.9.18.35: Zeitsperre am GEBURTSjahr (minBirth) statt am Aktivitätsjahr — das Geburtsjahr bestimmt
+        // die Generation; minYear bleibt nur für Altdaten lesbar.
+        function pickNameRegion(regions, year, birthYear) {
+            const by = birthYear != null ? birthYear : year - 24;
+            const avail = regions.filter(r => (!r.minBirth || by >= r.minBirth) && (!r.minYear || year >= r.minYear));
             const list = avail.length ? avail : regions;
-            const total = list.reduce((s, r) => s + (r.w || 0), 0);
+            // wBy = Gewicht als Kurve je Geburtsjahr (USA r1: hispanischer Geburtenanteil), linear, Randwerte gehalten
+            const wOf = r => {
+                const k = r.wBy;
+                if (!k || !k.length) return r.w || 0;
+                if (by <= k[0][0]) return k[0][1];
+                for (let i = 1; i < k.length; i++) if (by <= k[i][0]) return k[i - 1][1] + (k[i][1] - k[i - 1][1]) * (by - k[i - 1][0]) / (k[i][0] - k[i - 1][0]);
+                return k[k.length - 1][1];
+            };
+            const total = list.reduce((s, r) => s + wOf(r), 0);
             let x = Math.random() * total;
-            for (const r of list) { x -= (r.w || 0); if (x <= 0) return r; }
+            for (const r of list) { x -= wOf(r); if (x <= 0) return r; }
             return list[list.length - 1];
         }
 
@@ -7377,15 +7394,18 @@
             ensureNamePoolsMerged();
             if (typeof NAME_POOLS_BY_NATION === 'undefined') return null;
             const fb = (typeof NATION_NAME_FALLBACK !== 'undefined' && NATION_NAME_FALLBACK[nation]) || 'INT';
-            const pool = NAME_POOLS_BY_NATION[nation] || NAME_POOLS_BY_NATION[fb] || NAME_POOLS_BY_NATION['INT'];
+            // Rückfall-Nationen (DDR → GER, SMR → ITA, SEN → FRA) erben ALLES vom Geber, auch die Ära-Kurven
+            // und die Doppelnamen-Rate — sonst zogen sie nur die gekürzte Notliste der Region 0 (v0.9.18.35).
+            const nameNat = NAME_POOLS_BY_NATION[nation] ? nation : (NAME_POOLS_BY_NATION[fb] ? fb : 'INT');
+            const pool = NAME_POOLS_BY_NATION[nameNat];
             if (!pool || !pool.regions || !pool.regions.length) return null;
-            const region = pickNameRegion(pool.regions, year);
+            const region = pickNameRegion(pool.regions, year, birthYear);
             let firstName = null;
             // Paket I: nationale Region 0 der 5 Kurven-Nationen → Kurven statt Ära-Fenster.
             // Diaspora-Regionen (GBR r1, FRA r1 …) behalten ihre kuratierten Listen.
             if (region === pool.regions[0] && typeof ERA_FIRST_NAMES !== 'undefined'
-                && (ERA_FIRST_NAMES[nation] || ERA_FIRST_ALIAS[nation])) {   // Alias: Kurven-Leihe
-                const arr = eraFirstArr(nation, birthYear != null ? birthYear : year - 24);
+                && (ERA_FIRST_NAMES[nameNat] || ERA_FIRST_ALIAS[nameNat])) {   // Alias: Kurven-Leihe
+                const arr = eraFirstArr(nameNat, birthYear != null ? birthYear : year - 24);
                 if (arr && arr.length) firstName = weightedPick(arr);
             }
             if (firstName === null) {
@@ -7405,7 +7425,7 @@
             // „Müller-Dogan"). Nur Region 0 — die Diaspora-Regionen kennen die Form
             // nicht („Khan-Iqbal" gibt es nicht).
             if (region === pool.regions[0]) {
-                const rate = hyphenNameRate(nation, year);
+                const rate = hyphenNameRate(nameNat, year);
                 if (rate > 0 && Math.random() < rate) {
                     // Zweiter Teil nur aus dem gewichteten Kern (w > 1), nie aus dem
                     // Gewicht-1-Tail: dort liegen Raritäten und Einwanderer-Namen, die
