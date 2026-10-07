@@ -387,3 +387,12 @@ unter Windows die Tabellenlinien kaputt.
 | Befehl | Prüft |
 |---|---|
 | `node tests/nav-verlauf.js` | Zurück/Vor-Verlauf im echten Browser: Wertung → 2023 → Red Bull → Verstappen → Rennen, dann `page.goBack()`/`goForward()` (= Alt+←/→, Maustasten 4/5) und die Knöpfe ◀ ▶. Zeigt je Schritt Tab, Jahr, Fensterstapel und obersten Titel, plus `pageerror` |
+
+## Statistiken: Indy-Filter (v0.9.20.5)
+
+| Befehl | Prüft |
+|---|---|
+| `node tests/indy-filter.js` | Indy-Filter der All-Time-Fahrer im Browser: „Nur Indy" = nur die 11 Indy-500-Starts 1950–1960 (nie der US-GP 2000–2007), „Nur F1" = Karriere minus diese Starts. A) Start 2024 (F1DB): Ward 10 Indy + 2 andere, Ruttman 7 + 1, Fangio unverändert, Vukovich nur Indy. B) Start 1950, Saison gefahren: Indy-Summe = Starter, `Alles = Indy + F1`. C) dieselbe Saison archiviert: gleiche Zahlen |
+
+⚠ **Befund (07.10.2026):** `simulateRace` liefert **kein** `isIndy500` im Rennergebnis. `applyRaceResults` erkannte das Indy 500 deshalb nur am Namen „Indianapolis 500" — im Spiel gefahrene Indy-Rennen zählten als F1, „Nur Indy" blieb leer. Jetzt wird am Kalenderrennen (`GAME_STATE.races[raceIndex]`) geprüft. Gemessen: Start 1950, eine Saison → `hasIndy` bei 31 von 31 Indy-Startern.
+⚠ **Messfalle:** Indy-Melder sind oft **Gastfahrer aus dem Reserve-Pool** (`reserve-ANDYLI-…`), nicht im Kader. Wer Ergebnis-IDs nur über `GAME_STATE.drivers`/Saison-Snapshot auflöst, verliert sie (gemessen: 27 statt 31). Kette wie `applyRaceResults`: Reserve-Pool → Kader → Snapshot.
