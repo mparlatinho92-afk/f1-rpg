@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.4</title>
+    <title>F1 RPG v0.9.20.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.4 (aktuell) - 07.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.5 (aktuell) - 07.10.2026</div>
+                            <div>&#8226; NEU: Nationenflagge je Eintrag in Fahrer-, Team- und Weltmeister-Tabelle</div>
+                            <div>&#8226; NEU: Aktive Fahrer/Teams farbig statt Legenden/Ehemalige-Symbole</div>
+                            <div>&#8226; NEU: Indy-Filter zeigt den Indy-500-Anteil bzw. die Karriere ohne Indy 500</div>
+                            <div>&#8226; FIX: Im Spiel gefahrene Indy-500-Rennen zählten als F1-Rennen</div>
+                            <div class="font-bold text-slate-400">v0.9.20.4 - 07.10.2026</div>
                             <div>&#8226; NEU: Zurück/Vor-Verlauf über Tabs, Jahre und Fenster (Knöpfe unten links)</div>
                             <div>&#8226; NEU: Browser-Zurück, Alt+←/→, Maustasten 4/5 und Wisch-Geste blättern durch den Verlauf</div>
                             <div>&#8226; NEU: Fensterstapel (z.B. Team > Fahrer > Rennen) wird beim Zurückgehen wiederhergestellt</div>
@@ -22800,7 +22805,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.4';
+        const VERSION = '0.9.20.5';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -33811,8 +33816,10 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                 if (r.qualiPos === 1) ad.poles++;
                 ad.isLegend = false; // Aktive Fahrer sind keine Legenden
                 // v0.8.2.4: Indy/F1 Tracking
-                const raceIsIndy = istIndy500({ isIndy500: raceResult.isIndy500, isIndy500: raceResult.isIndy500,
-                    name: raceResult.raceName }, GAME_STATE.currentYear);
+                // simulateRace liefert kein isIndy500 – am Kalenderrennen nachsehen, sonst
+                // entschied allein der Name und jedes Indy 500 zählte als F1-Rennen
+                const raceIsIndy = istIndy500(GAME_STATE.races[raceResult.raceIndex]
+                    || { name: raceResult.raceName }, GAME_STATE.currentYear);
                 if (raceIsIndy) ad.hasIndy = true; else ad.hasF1 = true;
                 
                 // Finde das Team um seine historische ID zu bekommen
@@ -33830,6 +33837,9 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                 }
                 const at = GAME_STATE.allTimeStATS.teams[teamStATSId];
                 at.name = r.teamName; // Aktualisiere Namen
+                // Nation dauerhaft sichern wie bei Fahrern – generierte Rennställe stehen nicht in
+                // F1DB, und die Saison-Teams liegen nach dem Archivieren im Detail-Store
+                if (!at.nation && teamObj?.nation) at.nation = nationCodeOf(teamObj.nation) || null;
                 at.races++;
                 at.points += r.points;
                 if (r.position === 1 && !r.dnf) at.wins++;
@@ -51915,6 +51925,86 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                       + 'daher nicht auf die Allzeit-Zahl.</div>'));
         }
 
+        // Statistik-Tabellen: aktive Fahrer/Teams nur über die Schriftfarbe hervorheben
+        function _activeName(name, active) {
+            return active ? '<span class="accent-green" title="Aktiv">' + name + '</span>' : name;
+        }
+
+        // ── Indy-500-Anteil je Fahrer (Filter „Nur Indy" / „Nur F1") ─────────────
+        // Nur die elf Indy-500-Rennen 1950–1960, NICHT der US-GP 2000–2007 auf demselben
+        // Gelände (isIndy500 trennt beides an der Quelle). Real vor Spielstart aus F1DB,
+        // im Spiel gefahren aus Archiv bzw. laufender Saison – dieselben Normalisierer wie
+        // die Rekorde. Async, weil archivierte Saisons im Detail-Store liegen; Ergebnis
+        // gecacht, bis sich der Stand ändert.
+        let _indyStats = { sig: null, map: null, building: false };
+        function _indySig() {
+            return [GAME_STATE.templateUsed, GAME_STATE.currentYear, (GAME_STATE.history || []).length,
+                    (GAME_STATE.results || []).length].join('|');
+        }
+        async function _buildIndyStats() {
+            const map = new Map();
+            const add = (key, e) => {
+                if (!key || !_STARTED.has(e.status)) return;
+                const a = map.get(key) || { races: 0, wins: 0, podiums: 0, poles: 0, points: 0 };
+                a.races++;
+                if (e.pos === 1) a.wins++;
+                if (e.pos != null && e.pos <= 3) a.podiums++;
+                if (e.pole) a.poles++;
+                a.points += e.points || 0;
+                map.set(key, a);
+            };
+            const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
+            for (let y = 1950; y <= 1960 && y < startYear; y++) {
+                for (const race of (getF1DBYear(y) || [])) {
+                    if (!race.isIndy500) continue;
+                    for (const e of _normalizeRealRace(y, race).entries) add(e.driverKey, e);
+                }
+            }
+            const seasons = (GAME_STATE.history || []).filter(h => h && h.year <= 1960).map(h => ({ h, year: h.year }));
+            if (GAME_STATE.currentYear <= 1960 && (GAME_STATE.results || []).length) seasons.push({ live: true, year: GAME_STATE.currentYear });
+            for (const s of seasons) {
+                const d = s.live
+                    ? { results: GAME_STATE.results, qualifyingResults: GAME_STATE.qualifyingResults, races: GAME_STATE.races, drivers: GAME_STATE.drivers }
+                    : (s.h.results ? s.h : (await getHistoryDetail(s.year)) || {});
+                // Gastfahrer (Indy-Melder!) stehen nicht im Kader, sondern im Reserve-Pool –
+                // applyRaceResults bucht sie unter deren histId, also hier dieselbe Kette
+                const idToKey = {};
+                for (const dr of [...(GAME_STATE.reservePool || []), ...GAME_STATE.drivers, ...(d.drivers || [])]) {
+                    if (dr?.id) idToKey[dr.id] = dr.histId || dr.id;
+                }
+                const idMap = id => idToKey[id] || id;
+                const qByRi = {};
+                for (const q of (d.qualifyingResults || [])) qByRi[q.ri ?? q.raceIndex] = q;
+                for (const race of (d.results || [])) {
+                    const evt = _normalizeSimRace(s.year, race, qByRi[race.ri ?? race.raceIndex], d.races || [], idMap);
+                    if (!evt.isIndy500) continue;
+                    for (const e of evt.entries) add(e.driverKey, e);
+                }
+            }
+            return map;
+        }
+        // Liefert die Karte oder null, solange sie (neu) berechnet wird – danach wird neu gerendert
+        function _indyStatsMap() {
+            const sig = _indySig();
+            if (_indyStats.sig === sig && _indyStats.map) return _indyStats.map;
+            if (!_indyStats.building) {
+                _indyStats.building = true;
+                _buildIndyStats().then(map => { _indyStats = { sig, map, building: false }; })
+                    .catch(e => { _indyStats.building = false; logWarning('STATS', 'Indy-Anteil: ' + e.message); })
+                    .finally(() => { if (currentTab === 'stATS' && stATSSubTab === 'drivers') renderContent(); });
+            }
+            return null;
+        }
+        // Team-Nation nach Anzeigename. Spielstand zuerst (generierte Rennställe gibt es in
+        // F1DB nicht), sonst F1DB über den Slug – dieselbe Kette wie die Nationen-Statistik.
+        function _teamNationLookup() {
+            const snap = new Map();
+            const add = t => { if (t?.nation && t.name && !snap.has(t.name)) snap.set(t.name, t.nation); };
+            GAME_STATE.teams.forEach(add);
+            Object.values(GAME_STATE.allTimeStATS?.teams || {}).forEach(add);
+            return name => nationOfTeamKey(teamSlug(name), name, snap.get(name));
+        }
+
         function renderAllTimeDrivers() {
             const stATS = GAME_STATE.allTimeStATS;
             
@@ -51922,10 +52012,28 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             let drivers = Object.entries(stATS.drivers || {})
                 .map(([id, s]) => ({ id, ...s }));
             
-            // v0.8.2.4: Indy-Filter
-            if (stATSIndyFilter === 'only') drivers = drivers.filter(d => d.hasIndy && !d.hasF1);
-            else if (stATSIndyFilter === 'none') drivers = drivers.filter(d => !d.hasIndy);
-            
+            // Indy-Filter: zeigt den ANTEIL der Karriere, nicht ganze Fahrer. „Nur Indy" =
+            // Werte aus den Indy-500-Starts, „Nur F1" = Karriere minus dieser Starts (Fangio
+            // bleibt komplett, Rodger Ward behält seine zwei Nicht-Indy-Starts). Die alten
+            // Flags hasIndy/hasF1 taugen dafür nicht: sie markieren ganze Fahrer und waren
+            // für im Spiel gefahrene Indy-Rennen nie gesetzt.
+            const indyMap = stATSIndyFilter === 'all' ? null : _indyStatsMap();
+            const indyPending = stATSIndyFilter !== 'all' && !indyMap;
+            if (indyMap && stATSIndyFilter === 'only') {
+                drivers = drivers.filter(d => indyMap.has(d.id))
+                    .map(d => ({ ...d, ...indyMap.get(d.id), championships: 0 }));
+            } else if (indyMap && stATSIndyFilter === 'none') {
+                const minus = (a, b) => Math.max(0, Math.round(((a || 0) - (b || 0)) * 10) / 10);
+                drivers = drivers.map(d => {
+                    const i = indyMap.get(d.id);
+                    if (!i) return d;
+                    return { ...d, races: minus(d.races, i.races), wins: minus(d.wins, i.wins), podiums: minus(d.podiums, i.podiums),
+                             poles: minus(d.poles, i.poles), points: minus(d.points, i.points), _indyOnly: d.races <= i.races };
+                }).filter(d => !d._indyOnly);
+            } else if (indyPending) {
+                drivers = [];
+            }
+
             if (stATSSearch) {
                 const search = stATSSearch.toLowerCase();
                 drivers = drivers.filter(d => (d.name || d.id).toLowerCase().includes(search));
@@ -51947,8 +52055,12 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             
             const sortIcon = (col) => stATSSortBy === col ? (stATSSortDir === 'desc' ? ' ▼' : ' ▲') : ' ↕';
             const worldChampions = stATS.worldChampions || [];
-            const legendCount = drivers.filter(d => d.isLegend).length;
-            const activeCount = drivers.filter(d => !d.isLegend).length;
+            // Aktiv = in der laufenden Saison am Start, farbig hervorgehoben. Eine zweite
+            // Klasse gibt es nicht mehr: isLegend hieß nur „vor Spielstart beendet" und
+            // machte jeden 50er-Hinterbänkler zur Legende.
+            const _activeIds = new Set();
+            GAME_STATE.drivers.forEach(gd => { _activeIds.add(gd.id); if (gd.histId) _activeIds.add(gd.histId); });
+            const activeCount = drivers.filter(d => _activeIds.has(d.id)).length;
             
             return `
                 <!-- Historie-Zusammenfassung -->
@@ -51959,8 +52071,8 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                     </div>
                     <div class="grid grid-cols-3 gap-4 text-center text-sm">
                         <div><div class="text-2xl font-bold accent-gold">${(() => { const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear; let count = worldChampions.length; if (typeof HIST_CHAMPIONS !== 'undefined') { for (const yr of Object.keys(HIST_CHAMPIONS)) { if (parseInt(yr) < startYear) count++; } } return count; })()}</div><div class="text-tertiary">WM vergeben</div></div>
-                        <div><div class="text-2xl font-bold">${legendCount}</div><div class="text-tertiary">Legenden</div></div>
-                        <div><div class="text-2xl font-bold accent-green">${activeCount}</div><div class="text-tertiary">Aktive/Ehemalige</div></div>
+                        <div><div class="text-2xl font-bold accent-green">${activeCount}</div><div class="text-tertiary">Aktiv</div></div>
+                        <div><div class="text-2xl font-bold">${drivers.length}</div><div class="text-tertiary">Fahrer</div></div>
                     </div>
                 </div>
                 
@@ -51973,7 +52085,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                     <input type="text" placeholder="🔍 Fahrer suchen..." value="${stATSSearch}" onkeyup="filterStATSSearch(this.value)" class="w-full p-3 rounded-lg bg-secondary border border-custom">
                 </div>
                 
-                <div class="text-sm text-tertiary mb-2">${drivers.length} Fahrer gesamt</div>
+                <div class="text-sm text-tertiary mb-2">${indyPending ? '⏳ Indy-500-Anteil wird berechnet …' : drivers.length + ' Fahrer gesamt' + (stATSIndyFilter === 'only' ? ' · nur Indy-500-Starts 1950–1960' : stATSIndyFilter === 'none' ? ' · Karriere ohne Indy-500-Starts' : '')}</div>
                 
                 <div class="card rounded-xl overflow-x-auto">
                     <table class="text-sm" style="min-width:540px;width:100%">
@@ -51993,13 +52105,13 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                             ${(() => {
                                 const pageStart = stATSPage * STATS_PAGE_SIZE;
                                 return drivers.slice(pageStart, pageStart + STATS_PAGE_SIZE).map((d, i) => {
-                                    const isLegend = d.isLegend;
-                                    const isCurrentlyActive = GAME_STATE.drivers.some(gd => gd.id === d.id || gd.histId === d.id);
+                                    const isCurrentlyActive = _activeIds.has(d.id);
                                     const rank = pageStart + i + 1;
-                                    return '<tr class="border-t border-custom card-hover' + (isLegend && !isCurrentlyActive ? ' opacity-75' : '') + '">' +
+                                    const flag = renderFlag(nationOfDriverKey(d.id, d.name, d.nation), d.name, d.lastYear || GAME_STATE.currentYear);
+                                    return '<tr class="border-t border-custom card-hover">' +
                                         '<td class="p-3 text-tertiary">' + rank + '</td>' +
                                         '<td class="p-3 font-bold driver-link" style="white-space:nowrap" onclick="openDriverProfile(\'' + d.id + '\')">' +
-                                            (isCurrentlyActive ? '🏎️' : (isLegend ? '👴' : '📜')) + ' ' + (d.name || d.id) +
+                                            flag + ' ' + _activeName(d.name || d.id, isCurrentlyActive) +
                                             ((d.championships || 0) > 0 ? ' <span class="text-xs accent-gold">' + d.championships + '× WM</span>' : '') +
                                         '</td>' +
                                         '<td class="p-3 text-center font-bold">' + (d.championships || 0) + '</td>' +
@@ -52042,6 +52154,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                 teams = teams.filter(t => (t.name || t.id).toLowerCase().includes(search));
             }
             
+            const _teamNat = _teamNationLookup();
             teams.sort((a, b) => {
                 // v0.8.4: Multi-key sort
                 const aVal = a[stATSSortBy] || 0;
@@ -52080,11 +52193,11 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                             ${teams.map((t, i) => {
                                 // Prüfe ob Team aktuell im Spiel aktiv ist (per id ODER histId)
                                 const isCurrentlyActive = GAME_STATE.teams.some(gt => gt.id === t.id || gt.histId === t.id);
-                                const isHistorical = t.isHistorical && !isCurrentlyActive;
-                                return '<tr class="border-t border-custom card-hover' + (isHistorical ? ' opacity-75' : '') + '">' +
+                                const flag = renderFlag(_teamNat(t.name || t.id), t.name, t.lastYear || GAME_STATE.currentYear);
+                                return '<tr class="border-t border-custom card-hover">' +
                                     '<td class="p-3 text-tertiary">' + (i + 1) + '</td>' +
                                     '<td class="p-3 font-bold team-link" style="white-space:nowrap" onclick="openTeamProfile(\'' + t.id.replace(/'/g, "\\'") + '\')">' +
-                                        (isCurrentlyActive ? '🏎️' : '📜') + ' ' + (t.name || t.id) +
+                                        flag + ' ' + _activeName(t.name || t.id, isCurrentlyActive) +
                                     '</td>' +
                                     '<td class="p-3 text-center accent-gold font-bold">' + (t.wins || 0) + '</td>' +
                                     '<td class="p-3 text-center">' + (t.poles || 0) + '</td>' +
@@ -52126,6 +52239,12 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             }
             
             allChampions.sort((a, b) => b.year - a.year);
+            const _teamNat = _teamNationLookup();
+            const _ats = GAME_STATE.allTimeStATS?.drivers || {};
+            const _champFlag = h => {
+                const id = h.championId || h.driverId;
+                return renderFlag(nationOfDriverKey(id, h.champion, _ats[id]?.nation), h.champion, h.year) + ' ';
+            };
             
             return `
                 <div class="card rounded-xl overflow-hidden">
@@ -52141,15 +52260,15 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                         </thead>
                         <tbody>
                             ${allChampions.map(h => `
-                                <tr class="border-t border-custom card-hover ${h.isHistorical ? 'opacity-75' : ''}">
-                                    <td class="p-3 font-bold race-link" onclick="switchToYear(${h.year})">${h.year}${h.isHistorical ? ' <span class="text-xs text-tertiary">📜</span>' : ''}</td>
-                                    <td class="p-3 accent-gold">
+                                <tr class="border-t border-custom card-hover">
+                                    <td class="p-3 font-bold race-link" onclick="switchToYear(${h.year})">${h.year}</td>
+                                    <td class="p-3 accent-gold" style="white-space:nowrap">${_champFlag(h)}
                                         ${h.driverId && !h.isHistorical
                                             ? `<span class="driver-link" onclick="event.stopPropagation(); openDriverProfile('${h.championId || h.driverId}')">${h.champion}</span>`
                                             : `<span class="driver-link" onclick="event.stopPropagation(); openDriverProfile('${h.driverId || h.championId || h.champion || ''}')">${h.champion}</span>`}
                                     </td>
                                     <td class="p-3 text-center">${h.championPoints || '-'}</td>
-                                    <td class="p-3 accent-blue">
+                                    <td class="p-3 accent-blue" style="white-space:nowrap">${h.teamChampion && h.teamChampion !== '-' ? renderFlag(_teamNat(h.teamChampion), h.teamChampion, h.year) + ' ' : ''}
                                         ${!h.isHistorical && h.teamChampionId
                                             ? `<span class="team-link" onclick="event.stopPropagation(); openTeamProfile('${h.teamChampionId}')">${h.teamChampion}</span>`
                                             : (h.teamChampion || '-')}
@@ -54486,9 +54605,8 @@ Empfohlene Wertebereiche:
             }
             
             // Titel je nach Status
-            let titleSuffix = '';
-            if (isLegend) titleSuffix = ' (Legende)';
-            else if (isFromPastSeason) titleSuffix = ' (Ehemaliger)';
+            // Kein Status-Zusatz mehr („Legende"/„Ehemaliger" hatten kein klares Konzept)
+            const titleSuffix = '';
             
             // Angeklicktes Jahr schlaegt alles; sonst friert das Karriereende den Staat ein
             const profileFlagYear = viewingHistoricalYear || getDriverFlagYear(driver, GAME_STATE.currentYear);
