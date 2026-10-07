@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.3</title>
+    <title>F1 RPG v0.9.20.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.3 (aktuell) - 04.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.4 (aktuell) - 07.10.2026</div>
+                            <div>&#8226; NEU: Zurück/Vor-Verlauf über Tabs, Jahre und Fenster (Knöpfe unten links)</div>
+                            <div>&#8226; NEU: Browser-Zurück, Alt+←/→, Maustasten 4/5 und Wisch-Geste blättern durch den Verlauf</div>
+                            <div>&#8226; NEU: Fensterstapel (z.B. Team > Fahrer > Rennen) wird beim Zurückgehen wiederhergestellt</div>
+                            <div class="font-bold text-slate-400">v0.9.20.3 - 04.10.2026</div>
                             <div>&#8226; NEU: Eigene Namens-Pools fuer Ukraine, Weissrussland, Kenia, Senegal, Elfenbeinkueste, Pakistan, Lettland, Slowakei, San Marino, Sri Lanka, Paraguay, Dominikanische Republik, Kuba, Mosambik, Liechtenstein</div>
                             <div>&#8226; NEU: Ukrainische Namen in ukrainischer statt russischer Schreibweise</div>
                             <div>&#8226; FIX: Vor- und Nachname sind nie mehr identisch (z. B. Javed Javed)</div>
@@ -22796,7 +22800,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.3';
+        const VERSION = '0.9.20.4';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -47161,6 +47165,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             initLazyImages(content);
             lockSlidersMobile(content);
             _initCircuitMapNow();
+            _navNoteView();
         }
 
         // ═══ Junior-Welt-Tab (Schritt 4a/4b): Saison / All-Time / Strecken ═══
@@ -59968,6 +59973,153 @@ Empfohlene Wertebereiche:
             modal.style.display = 'flex';
         };
 
+        // === NAVIGATIONS-VERLAUF (Zurück/Vor wie im Browser) ===
+        // Ein Eintrag = Hauptansicht (Tab, Unter-Tab, Jahr) + Stapel der offenen Fenster
+        // (Öffner + Argumente je Modal). Hängt an der Browser-History → Zurück-Taste,
+        // Alt+←/→, Maustasten 4/5 und Wisch-Geste laufen über popstate. Nur im Speicher:
+        // nach einem Neuladen beginnt der Verlauf neu (fremde Einträge werden ignoriert).
+        const NAV_OPENERS = {
+            openDriverProfile: 'driverProfileModal', openJuniorDriver: 'driverProfileModal',
+            openTeamProfile: 'teamProfileModal',
+            openRaceDetails: 'raceDetailModal', openHistoricalRaceModal: 'raceDetailModal',
+            showRuleDetail: 'ruleDetailModal',
+            openGameCircuitProfile: 'circuitGPProfileModal', openGameGPProfile: 'circuitGPProfileModal'
+        };
+        const NAV_MODALS = [...new Set(Object.values(NAV_OPENERS))];
+        const _nav = { ready: false, replaying: false, native: true, sid: Date.now().toString(36),
+                       entries: [], idx: -1, orig: {}, lastCall: {}, timer: null, pending: null };
+
+        function _navViewSnap() {
+            return { tab: currentTab, std: standingsSubTab, sts: stATSSubTab, year: viewingHistoricalYear,
+                     race: selectedRaceId, jy: _juniorViewYear, jt: _juniorSubTab };
+        }
+        function _navSnap() {
+            const modals = NAV_MODALS.map(id => document.getElementById(id))
+                .filter(el => el && el.style.display !== 'none' && _nav.lastCall[el.id])
+                .sort((a, b) => (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0))
+                .map(el => ({ el: el.id, ...(_nav.lastCall[el.id]) }));
+            const view = _navViewSnap();
+            return { view, modals, key: JSON.stringify(view) + '|' + modals.map(m => m.key).join('>') };
+        }
+        function _navRecord() {
+            _nav.timer = null;
+            if (!_nav.ready || _nav.replaying) return;
+            const s = _navSnap();
+            if (_nav.entries[_nav.idx]?.key === s.key) return;
+            _nav.entries = _nav.entries.slice(0, _nav.idx + 1);
+            _nav.entries.push(s);
+            _nav.idx = _nav.entries.length - 1;
+            if (_nav.native) {
+                try { history.pushState({ f1nav: _nav.idx, sid: _nav.sid }, ''); }
+                catch (e) { _nav.native = false; }
+            }
+            _navUpdateButtons();
+        }
+        // Gebündelt: openNationsTab rendert zweimal, switchToYear erst nach await → ein Eintrag
+        function _navNoteView() {
+            if (!_nav.ready || _nav.replaying) return;
+            clearTimeout(_nav.timer);
+            _nav.timer = setTimeout(_navRecord, 30);
+        }
+
+        async function _navRestore(entry) {
+            _nav.replaying = true;
+            try {
+                const v = entry.view, cur = _navViewSnap();
+                if (JSON.stringify(v) !== JSON.stringify(cur)) {
+                    if ((v.year || null) !== (viewingHistoricalYear || null)) await switchToYear(v.year || GAME_STATE.currentYear);
+                    currentTab = v.tab; standingsSubTab = v.std; stATSSubTab = v.sts;
+                    selectedRaceId = v.race; _juniorViewYear = v.jy; _juniorSubTab = v.jt;
+                    localStorage.setItem('f1rpg_tab', currentTab);
+                    renderNav();
+                    renderContent();
+                }
+                const want = new Set(entry.modals.map(m => m.el));
+                NAV_MODALS.forEach(id => { const el = document.getElementById(id); if (el && !want.has(id)) el.style.display = 'none'; });
+                for (const m of entry.modals) {
+                    const el = document.getElementById(m.el);
+                    if (el && el.style.display !== 'none' && _nav.lastCall[m.el]?.key === m.key) { bringModalToFront(el); continue; }
+                    _nav.lastCall[m.el] = { fn: m.fn, args: m.args, key: m.key };
+                    await _nav.orig[m.fn](...m.args);
+                }
+            } catch (e) { logWarning('NAV', 'Wiederherstellen fehlgeschlagen: ' + e.message); }
+            finally { _nav.replaying = false; }
+        }
+        // Läuft ein Wiederherstellen noch, gewinnt das zuletzt angeforderte Ziel
+        async function _navGo(idx) {
+            if (idx < 0 || idx >= _nav.entries.length) return;
+            _nav.pending = idx;
+            if (_nav.busy) return;
+            _nav.busy = true;
+            try {
+                while (_nav.pending !== null) {
+                    const target = _nav.pending; _nav.pending = null;
+                    _nav.idx = target;
+                    await _navRestore(_nav.entries[target]);
+                }
+            } finally { _nav.busy = false; _navUpdateButtons(); }
+        }
+        window.navBack = function() {
+            if (_nav.idx <= 0) return;
+            if (_nav.native) history.back(); else _navGo(_nav.idx - 1);
+        };
+        window.navForward = function() {
+            if (_nav.idx >= _nav.entries.length - 1) return;
+            if (_nav.native) history.forward(); else _navGo(_nav.idx + 1);
+        };
+        function _navUpdateButtons() {
+            const b = document.getElementById('navBackBtn'), f = document.getElementById('navFwdBtn');
+            if (b) b.disabled = _nav.idx <= 0;
+            if (f) f.disabled = _nav.idx >= _nav.entries.length - 1;
+        }
+
+        function initNavHistory() {
+            for (const [fn, elId] of Object.entries(NAV_OPENERS)) {
+                const orig = window[fn];
+                if (typeof orig !== 'function') continue;
+                _nav.orig[fn] = orig;
+                window[fn] = async function(...args) {
+                    if (_nav.replaying) return orig.apply(this, args);
+                    const el = document.getElementById(elId);
+                    const prev = _nav.lastCall[elId], zBefore = el?.style.zIndex;
+                    _nav.lastCall[elId] = { fn, args, key: fn + JSON.stringify(args) };
+                    const r = await orig.apply(this, args);
+                    // Öffner ist ohne Treffer abgebrochen → altes Fenster bleibt, wie es war
+                    if (el && el.style.zIndex === zBefore) _nav.lastCall[elId] = prev;
+                    _navNoteView();
+                    return r;
+                };
+            }
+            const bar = document.createElement('div');
+            bar.id = 'navHistoryBar';
+            bar.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:2147483000;display:flex;gap:4px;' +
+                'background:var(--bg-secondary,#1e293b);border:1px solid var(--border-color,#334155);border-radius:999px;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+            const btn = 'width:34px;height:30px;border-radius:999px;border:none;cursor:pointer;font-size:15px;background:transparent;color:var(--text-primary,#e2e8f0)';
+            bar.innerHTML = `<button id="navBackBtn" onclick="navBack()" title="Zurück (Alt+←)" style="${btn}">◀</button>` +
+                            `<button id="navFwdBtn" onclick="navForward()" title="Vor (Alt+→)" style="${btn}">▶</button>`;
+            document.body.appendChild(bar);
+            const st = document.createElement('style');
+            st.textContent = '#navHistoryBar button:disabled{opacity:.3;cursor:default}#navHistoryBar button:not(:disabled):hover{background:var(--bg-tertiary,#334155)}';
+            document.head.appendChild(st);
+
+            _nav.ready = true;
+            const s = _navSnap();
+            _nav.entries = [s]; _nav.idx = 0;
+            try { history.replaceState({ f1nav: 0, sid: _nav.sid }, ''); } catch (e) { _nav.native = false; }
+            window.addEventListener('popstate', e => {
+                const st = e.state;
+                if (!st || st.sid !== _nav.sid || typeof st.f1nav !== 'number') return;
+                _navGo(st.f1nav);
+            });
+            // Ohne Browser-History (z.B. gesperrt) die Tastenkürzel selbst übernehmen
+            document.addEventListener('keydown', e => {
+                if (_nav.native || !e.altKey) return;
+                if (e.key === 'ArrowLeft') { e.preventDefault(); navBack(); }
+                if (e.key === 'ArrowRight') { e.preventDefault(); navForward(); }
+            });
+            _navUpdateButtons();
+        }
+
         // === MODAL HANDLING (Schließen per Hintergrund/Escape) ===
         let _modalTopZ = 10000;
         window.bringModalToFront = function(el) { if (el) el.style.zIndex = ++_modalTopZ; };
@@ -60054,6 +60206,7 @@ Empfohlene Wertebereiche:
             if (_savedSubStats && ['drivers','teams','champions','circuits','gps','transfers','necrology'].includes(_savedSubStats)) stATSSubTab = _savedSubStats;
 
             renderAll();
+            initNavHistory();
             updateStorageMeter();
             updateSaveStatus('✅ Bereit');
             logSuccess('INIT', `Geladen: Jahr ${GAME_STATE.currentYear}, Rennen ${GAME_STATE.currentRace}/${GAME_STATE.races.length}`);
