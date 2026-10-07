@@ -381,3 +381,9 @@ unter Windows die Tabellenlinien kaputt.
 - Qualifying: ±8s vs. historische Referenz
 - Race: ±12s vs. historische Referenz
 - Validiert für: 1950, 1962, 1967, 1975, 1984
+
+## Navigation (Zurück/Vor, v0.9.20.4)
+
+| Befehl | Prüft |
+|---|---|
+| `node tests/nav-verlauf.js` | Zurück/Vor-Verlauf im echten Browser: Wertung → 2023 → Red Bull → Verstappen → Rennen, dann `page.goBack()`/`goForward()` (= Alt+←/→, Maustasten 4/5) und die Knöpfe ◀ ▶. Zeigt je Schritt Tab, Jahr, Fensterstapel und obersten Titel, plus `pageerror` |
