@@ -6,7 +6,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0register-f1db-task
 
 echo.
 if %errorlevel% == 0 (
-    echo ERFOLGREICH! Aufgabe laeuft jeden Montag um 08:00 Uhr.
+    echo ERFOLGREICH! Aufgabe laeuft jeden Dienstag um 08:00 Uhr.
 ) else (
     echo FEHLER beim Einrichten - siehe rote Meldung oben.
 )

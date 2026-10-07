@@ -72,12 +72,34 @@ function download(url, dest) {
   });
 }
 
-// --- Zielordner sauber leeren (verhindert Lock-/Reste-Probleme beim Entpacken) ---
+// --- Zwischenordner leeren: hier wird entpackt, nicht direkt ins Ziel ---
 function cleanDir(dir) {
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
   fs.mkdirSync(dir, { recursive: true });
+}
+
+// --- Neuen Stand ins Ziel uebernehmen, OHNE fremde Dateien anzufassen ---
+// Frueher wurde der Zielordner komplett geloescht – dabei ging am 05.10.2026
+// f1db-json-splitted/wiki_staubsauger_test.py verloren. F1DB liefert ausschliesslich
+// Dateien mit dem Praefix "f1db"; nur die werden ersetzt bzw. entfernt, wenn sie im
+// neuen Release fehlen. Alles andere im Ordner bleibt, wie es ist.
+const IST_F1DB = name => /^f1db/i.test(name);
+function syncDir(stagingDir, targetDir) {
+  fs.mkdirSync(targetDir, { recursive: true });
+  const neu = new Set(fs.readdirSync(stagingDir));
+  let ersetzt = 0, entfernt = 0, behalten = 0;
+  for (const name of fs.readdirSync(targetDir)) {
+    if (!IST_F1DB(name)) { behalten++; continue; }
+    if (!neu.has(name)) { fs.rmSync(path.join(targetDir, name), { recursive: true, force: true }); entfernt++; }
+  }
+  for (const name of neu) {
+    fs.cpSync(path.join(stagingDir, name), path.join(targetDir, name), { recursive: true, force: true });
+    ersetzt++;
+  }
+  fs.rmSync(stagingDir, { recursive: true, force: true });
+  return { ersetzt, entfernt, behalten };
 }
 
 // --- ZIP entpacken via PowerShell, mit stderr-Logging ---
@@ -154,21 +176,23 @@ function unzip(zipPath, targetDir) {
       continue;
     }
 
-    // Zielordner leeren (verhindert Locks/Reste)
+    // Zwischenordner leeren (verhindert Locks/Reste) – das Ziel selbst bleibt unberuehrt
+    const stagingDir = targetDir + '.neu';
     try {
-      cleanDir(targetDir);
+      cleanDir(stagingDir);
     } catch (err) {
-      log(`FEHLER beim Leeren von ${targetDir}: ${err.message}`);
+      log(`FEHLER beim Leeren von ${stagingDir}: ${err.message}`);
       log('  Tipp: Ist eine Datei in dem Ordner gerade in Benutzung (Editor, DB-Tool, Browser)?');
       alleErfolgreich = false;
       continue;
     }
 
-    // Entpacken
-    log(`Entpacke nach ${targetDir}...`);
+    // Entpacken in den Zwischenordner, dann nur F1DB-Dateien ins Ziel uebernehmen
+    log(`Entpacke nach ${stagingDir}...`);
     try {
-      unzip(zipPath, targetDir);
-      log(`Entpackt: ${asset.dir}`);
+      unzip(zipPath, stagingDir);
+      const s = syncDir(stagingDir, targetDir);
+      log(`Entpackt: ${asset.dir} (${s.ersetzt} F1DB-Dateien uebernommen, ${s.entfernt} entfallene entfernt, ${s.behalten} fremde behalten)`);
       try { fs.unlinkSync(zipPath); log(`ZIP gelöscht: ${asset.name}`); }
       catch (e) { log(`WARNUNG: ZIP konnte nicht gelöscht werden: ${e.message}`); }
     } catch (err) {

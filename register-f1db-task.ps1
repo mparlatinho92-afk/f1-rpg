@@ -32,7 +32,7 @@ $action = New-ScheduledTaskAction `
     -Argument '"C:\Projekte\F1 RPG HTML\update-f1db.js"' `
     -WorkingDirectory 'C:\Projekte\F1 RPG HTML'
 
-$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At '08:00'
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday -At '08:00'
 
 $settings = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 10) `
@@ -46,5 +46,5 @@ Register-ScheduledTask `
     -Description 'Laedt woechentlich die neueste f1db-Daten von GitHub (JSON + MySQL)' `
     -Force
 
-Write-Host 'Aufgabe F1DB Update registriert - laeuft jeden Montag um 08:00 Uhr.' -ForegroundColor Green
+Write-Host 'Aufgabe F1DB Update registriert - laeuft jeden Dienstag um 08:00 Uhr (Sonntagsrennen ist dann in F1DB).' -ForegroundColor Green
 Write-Host 'Logs: C:\Projekte\F1 RPG HTML\f1db-update.log' -ForegroundColor Yellow
