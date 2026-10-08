@@ -16,11 +16,11 @@
       "file": "data/hist.js"
     },
     "getHistoricalFlagCode": {
-      "line": 3829,
+      "line": 3834,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getCountryDisplayName": {
-      "line": 3869,
+      "line": 3874,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getNationalityOnlyNations": {
@@ -29,11 +29,11 @@
       "file": "data/hist.js"
     },
     "getEmojiFlag": {
-      "line": 3929,
+      "line": 3934,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "convertEmojiToIOC": {
-      "line": 3962,
+      "line": 3967,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "isIndyOnlyConstructor": {
@@ -47,15 +47,15 @@
       "file": "data/hist.js"
     },
     "lookupNationByName": {
-      "line": 4011,
+      "line": 4016,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_repairMojibakeFlag": {
-      "line": 4034,
+      "line": 4039,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "renderFlag": {
-      "line": 4048,
+      "line": 4053,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getHistoricalStATS": {
@@ -64,7 +64,7 @@
       "file": "data/hist.js"
     },
     "getGPFlagHtml": {
-      "line": 4188,
+      "line": 4193,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getDriverSeasons": {
@@ -73,191 +73,191 @@
       "file": "data/hist.js"
     },
     "logInfo": {
-      "line": 4325,
+      "line": 4330,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "logSuccess": {
-      "line": 4326,
+      "line": 4331,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "logWarning": {
-      "line": 4327,
+      "line": 4332,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "logError": {
-      "line": 4328,
+      "line": 4333,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "formatBytes": {
-      "line": 4350,
+      "line": 4355,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getStorageUsage": {
-      "line": 4357,
+      "line": 4362,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_storageColor": {
-      "line": 4374,
+      "line": 4379,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "safeSetItem": {
-      "line": 4381,
+      "line": 4386,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "idbOpen": {
-      "line": 4415,
+      "line": 4420,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "idbGet": {
-      "line": 4435,
+      "line": 4440,
       "desc": "Liest Key aus IndexedDB-kv, Promise<value|null>"
     },
     "idbSet": {
-      "line": 4445,
+      "line": 4450,
       "desc": "Schreibt Key/Value in IndexedDB-kv, Promise<true>"
     },
     "idbDel": {
-      "line": 4457,
+      "line": 4462,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "idbHistPut": {
-      "line": 4508,
+      "line": 4513,
       "desc": "Persistenz v2: eine Saison (Key=Jahr) in den history-Store schreiben (write-once)"
     },
     "idbHistDelete": {
-      "line": 4519,
+      "line": 4524,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_GZIP_OK": {
-      "line": 4536,
+      "line": 4541,
       "desc": "Phase 4 gzip: Feature-Flag, ob CompressionStream/DecompressionStream verfuegbar sind"
     },
     "_gzipEncode": {
-      "line": 4537,
+      "line": 4542,
       "desc": "Phase 4 gzip: schweren Detail-Record async gzip-komprimieren -> Wrapper {__gz:1,b:Uint8Array} (ohne CompressionStream: obj unveraendert) (async, manuell im Schema)"
     },
     "_gzipDecode": {
-      "line": 4543,
+      "line": 4548,
       "desc": "Phase 4 gzip: gzip-Wrapper async entpacken (rec.__gz) -> Objekt; null/alt/unkomprimiert unveraendert zurueck (async, manuell im Schema)"
     },
     "idbHistDetailPut": {
-      "line": 4548,
+      "line": 4553,
       "desc": "Persistenz v3: schweren History-Detail-Record (Key=Jahr) in Store history_detail schreiben"
     },
     "idbHistDetailDelete": {
-      "line": 4560,
+      "line": 4565,
       "desc": "Persistenz v3: Detail-Record eines Jahres aus history_detail loeschen"
     },
     "idbHistDetailMap": {
-      "line": 4571,
+      "line": 4576,
       "desc": "Persistenz v3: alle Detail-Records als Map(Jahr -> schwererObj), Key fuers Merge in loadHistoryMerged"
     },
     "idbHistDetailGet": {
-      "line": 4596,
+      "line": 4601,
       "desc": "Phase 3 Lazy Loading: EINEN Detail-Record (schwere Felder) eines Jahres on-demand aus history_detail laden (null bei Fehler/fehlend)"
     },
     "getHistoryDetail": {
-      "line": 4614,
+      "line": 4619,
       "desc": "Phase 3 Lazy Loading: async Detail-Record eines Jahres mit LRU-Cache (max 8 Jahre) ueber idbHistDetailGet (async, manuell im Schema)"
     },
     "_histDetailCacheInvalidate": {
-      "line": 4633,
+      "line": 4638,
       "desc": "Phase 3: invalidiert einen Jahr-Eintrag im Detail-LRU-Cache (Stale-Schutz bei Detail-Write/Delete in persistHistory)"
     },
     "_histDetailCacheClear": {
-      "line": 4634,
+      "line": 4639,
       "desc": "Phase 3: leert den kompletten Detail-LRU-Cache (idbHistClear / Import / stripDummyJuniors)"
     },
     "migrateHistoryDetail": {
-      "line": 4651,
+      "line": 4656,
       "desc": "Phase 3 Schritt 2+3: lazy Detail-Migrationen (Team-Namen/gapSec/tmn/Quali-Zeit) fuer alte History-Saves, idempotent, aus getHistoryDetail + loadHistoryMerged statt eager in sanitizeGameState"
     },
     "idbHistGetAll": {
-      "line": 4708,
+      "line": 4713,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "idbHistClear": {
-      "line": 4735,
+      "line": 4740,
       "desc": "Voll-Reset aller vier History-Stores (F1 leicht+Detail, Junior leicht+Detail)"
     },
     "resetHistoryStoresForNewGame": {
-      "line": 4760,
+      "line": 4765,
       "desc": "Leert History-Stores + _persistedHistoryYears vor jedem neuen Spiel; ohne das ueberleben Saisons des Vorgaengerspiels"
     },
     "_emptyJuniorWorld": {
-      "line": 4778,
+      "line": 4783,
       "desc": "Junior-Welt Schritt 1: leere Welt-Struktur {drivers,series,history,allTimeStats,circuitIndex,worldSeed}; worldSeed = Stufe-1-Seed-Regen-Wurzel"
     },
     "idbJHistPut": {
-      "line": 4785,
+      "line": 4790,
       "desc": "Junior-Welt Schritt 1: leichten Junior-Saison-Record (Key=Jahr) in Store junior_history schreiben"
     },
     "idbJHistGetAll": {
-      "line": 4795,
+      "line": 4800,
       "desc": "Junior-Welt Schritt 1: alle leichten Junior-Records nach Jahr sortiert laden (junior_history)"
     },
     "idbJDetailPut": {
-      "line": 4813,
+      "line": 4818,
       "desc": "Junior-Welt Schritt 1: schweren Junior-Detail-Record gzip-komprimiert in junior_detail schreiben (async, manuell im Schema)"
     },
     "idbJDetailGet": {
-      "line": 4824,
+      "line": 4829,
       "desc": "Junior-Welt Schritt 1: einen Junior-Detail-Record on-demand laden + entpacken (async, manuell im Schema)"
     },
     "idbJDelete": {
-      "line": 4840,
+      "line": 4845,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_reconcileJuniorStores": {
-      "line": 4861,
+      "line": 4866,
       "desc": "Ballast-Abgleich: loescht Junior-Saisons, deren Jahr ueber der letzten ARCHIVIERTEN F1-Saison liegt (Waisen aus zurueckgerollten Staenden). Aufgerufen in _hydrateJuniorCore (Laden) und deleteSelectedSeasons (async, manuell im Schema)"
     },
     "idbJClear": {
-      "line": 4875,
+      "line": 4880,
       "desc": "Junior-Welt Schritt 1: Voll-Reset beider Junior-Stores (junior_history + junior_detail)"
     },
     "_splitHistoryRecord": {
-      "line": 4890,
+      "line": 4895,
       "desc": "Persistenz v3: trennt vollen History-Record in {light, heavy} anhand HISTORY_HEAVY_FIELDS"
     },
     "persistHistory": {
-      "line": 4902,
+      "line": 4907,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "loadHistoryMerged": {
-      "line": 4942,
+      "line": 4947,
       "desc": "Persistenz v3: laedt leichte (history) + schwere (history_detail) Records, merged pro Jahr zu voller GAME_STATE.history (loadGame/restoreAutoSave)"
     },
     "_backfillLightHistFields": {
-      "line": 4957,
+      "line": 4962,
       "desc": "Phase 3: Einmal-Backfill alter LEICHTER History-Records ohne championHistId/driverHistIds/teamHistIds (1 Detail-Read pro Record, leicht zurueckschreiben); laeuft in loadGame/restoreAutoSave vor sanitize (async, manuell im Schema)"
     },
     "_hydrateProfileYears": {
-      "line": 5007,
+      "line": 5012,
       "desc": "Phase 3 Option A: leitet Teilnahme-Jahre eines Fahrers/Teams aus driverHistIds/teamHistIds ab und hydriert NUR diese transient; gibt hydrierte Records fuer Dehydrierung zurueck (async, manuell im Schema)"
     },
     "safeIdbSet": {
-      "line": 5065,
+      "line": 5070,
       "desc": "Async-Pendant zu safeSetItem: IndexedDB-Write + Quota/Fehler-Handling, Fallback localStorage"
     },
     "idbGetSafe": {
-      "line": 5090,
+      "line": 5095,
       "desc": "Lesen mit Fallback: IndexedDB, sonst/oder bei Fehler localStorage"
     },
     "migrateStorageToIdb": {
-      "line": 5102,
+      "line": 5107,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getStorageEstimate": {
-      "line": 5162,
+      "line": 5167,
       "desc": "Echte Origin-Belegung inkl. IndexedDB via navigator.storage.estimate(), Fallback localStorage-Summe"
     },
     "pushStorageHistory": {
-      "line": 5176,
+      "line": 5181,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "updateStorageMeter": {
-      "line": 5211,
+      "line": 5216,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "storageReport": {
@@ -265,159 +265,159 @@
       "desc": "Bodenprobe: zaehlt die IndexedDB-Speicherbereiche wirklich durch (Cursor je Store) und stellt sie navigator.storage.estimate() gegenueber. Ausgabe ins Debug-Log, Knopf im Speicher-Detailbereich. Bytes ohne *2 (UTF-8), nicht RAM (window, async, manuell im Schema)"
     },
     "renderStorageDetails": {
-      "line": 5335,
+      "line": 5340,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getGridSize": {
-      "line": 5615,
+      "line": 5620,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getEraDNFRate": {
-      "line": 5702,
+      "line": 5707,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getEraValue": {
-      "line": 5952,
+      "line": 5957,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getDriverSortFn": {
-      "line": 5962,
+      "line": 5967,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTeamTier": {
-      "line": 5984,
+      "line": 5989,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getBadgeSettings": {
-      "line": 6021,
+      "line": 6026,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "setTierEmoji": {
-      "line": 6036,
+      "line": 6041,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "setBadgeSetting": {
-      "line": 6044,
+      "line": 6049,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderTVBadge": {
-      "line": 6052,
+      "line": 6057,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderBadgeEditor": {
-      "line": 6063,
+      "line": 6068,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "ensureReadable": {
-      "line": 6155,
+      "line": 6160,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getConstructorColor": {
-      "line": 6181,
+      "line": 6186,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "calculateTierFromRank": {
-      "line": 6198,
+      "line": 6203,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getAllTeamTiers": {
-      "line": 6219,
+      "line": 6224,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "calculatePaceGap": {
-      "line": 6233,
+      "line": 6238,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "initializeDriverPace": {
-      "line": 6246,
+      "line": 6251,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "developDriverPace": {
-      "line": 6303,
+      "line": 6308,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "ageDeclineRate": {
-      "line": 6486,
+      "line": 6491,
       "desc": "HOCH#3: aera-relative Altersbremse (Pace-Verfall/Jahr, 0 unter Zenit=ERA_RETIREMENT_AGE+3). EINE Formel fuer extrapolierte Reale + generierte Fahrer (+ spaeter Pool). Konstanten AGE_DECLINE_OFFSET/SLOPE/CAP, MC-getunt via paketD-h3-age-decline.js"
     },
     "ageCeiling": {
-      "line": 6501,
+      "line": 6506,
       "desc": "HOCH#3 Teil A: Extrem-Alter-Pace-Deckel (onset=ERA_RETIREMENT_AGE+8, ~40+) kappt auch REALE Comeback-Artefakte (Schumi 2010 Elo 93 fuer P9-Saison). Hoeherer Onset als ageDeclineRate, damit echte starke 37er frei bleiben. Konstanten AGE_CEILING_OFFSET/SLOPE"
     },
     "poolAgeGateOk": {
-      "line": 6524,
+      "line": 6560,
       "desc": "Reserve-Drain-Fix Item 4: Alters-Gate fuer Pool-Auswahl (fillEmptyTeamSeats + processTeamChanges). Blockt vergreiste Pool-Talente (Alter > ERA_ROOKIE_AGE+POOL_TALENT_AGE_MARGIN) -> System generiert frischen Rookie. Ausnahme: reale PACE_RATINGS fuers Jahr (echtes Debuetjahr)"
     },
     "_eloDisplayPace": {
-      "line": 6639,
+      "line": 6675,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_eloDisplayCS": {
-      "line": 6644,
+      "line": 6680,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getPaceDevelopmentInfo": {
-      "line": 6695,
+      "line": 6731,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "pickNationByDecade": {
-      "line": 7072,
+      "line": 7108,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "pickNationMotorsport": {
-      "line": 7118,
+      "line": 7154,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "pickNationIntake": {
-      "line": 7189,
+      "line": 7225,
       "desc": "Paket H: Nationen-Ziehung fuer FRISCHE Einsteiger an der Basis der Pyramide (INTAKE_NATION_SHARES = Kultur-Breite x Pro-Kopf-Deckel). NUR fuer Junior-Neuzugaenge - nicht F1-Grid (pickNationByDecade), nicht F1-naher Trichter (pickNationMotorsport). Abfluss in eigene Welten wirkt separat via PYRAMID_NATION_LADDER in _promoteJuniors."
     },
     "weightedPick": {
-      "line": 7216,
+      "line": 7252,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getCarNumberEra": {
-      "line": 7224,
+      "line": 7260,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "assignSeasonNumbers": {
-      "line": 7231,
+      "line": 7267,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getUniqueCarNumber": {
-      "line": 7269,
+      "line": 7305,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "ensureNamePoolsMerged": {
-      "line": 7285,
+      "line": 7321,
       "desc": "Paket A: merged NAME_TAILS_BY_NATION einmalig (Gewicht 1) in NAME_POOLS_BY_NATION (first nur mid+modern)"
     },
     "pickNameRegion": {
-      "line": 7314,
+      "line": 7350,
       "desc": "Paket A: zieht gewichtet eine Namens-Region (nach minYear gefiltert) aus pool.regions"
     },
     "_r0FirstNames": {
-      "line": 7382,
+      "line": 7418,
       "desc": "Vornamen-Set der Region 0 einer Nation (inkl. gemergter Tails), gecacht - Basis fuer die ERA_FIRST_ALIAS-Kurvenleihe."
     },
     "eraFirstArr": {
-      "line": 7393,
+      "line": 7429,
       "desc": "Paket I: wertet die Gauss-Vornamen-Kurven (ERA_FIRST_NAMES) je (Nation, Geburtsjahr) zu einem [name,gewicht]-Array aus, gecacht; ersetzt die 3 Aera-Fenster fuer GER/GBR/USA/FRA/ITA (nur Region 0)"
     },
     "pickPooledName": {
-      "line": 7438,
+      "line": 7474,
       "desc": "Paket A: nationskohärenter Name (Vor+Nachname aus selber Region, ära-sensibel); null → Flat-Fallback"
     },
     "exportNameStats": {
-      "line": 7535,
+      "line": 7571,
       "desc": "Dev-Auswertung: sampelt N Fahrer (Nation+Name, ohne Dedup) → pro-Nation Namens-Häufigkeit als JSON; optional Datei-Download (Konsole)"
     },
     "_iocOf": {
-      "line": 7570,
+      "line": 7606,
       "desc": "Normalisiert Nation (Emoji ODER Code-String) → IOC; mappt defunkte (DDR/FRG→GER, RHO→ZIM)"
     },
     "exportNationStats": {
-      "line": 7629,
+      "line": 7665,
       "desc": "All-Time-Fahrerstatistik je Nation (Siege/Podien/Poles/Titel/Punkte/Starts). F1+Junior, Nation-Backfill (live+NAME_TO_IOC+SEASON_DATA). filter real|generated|total, optional JSON-Download"
     },
     "openNationStatsModal": {
@@ -429,347 +429,347 @@
       "desc": "Rendert Nationen-Statistik-Tabelle im Modal (real/generiert/gesamt-Umschaltung + JSON-Export je Sicht)"
     },
     "_homeOnlyEraRate": {
-      "line": 7740,
+      "line": 7776,
       "desc": "Grundwahrscheinlichkeit (Ära-Kurve) dass ein Privateer reiner Heimrennen-Melder ist; 0 ab 1983."
     },
     "assignGenericHomeOnly": {
-      "line": 7753,
+      "line": 7789,
       "desc": "Weist Privateers ohne kuratierten HOME_ONLY_ENTRIES-Eintrag probabilistisch homeOnly+homeCircuits zu (Heimstrecken aus dem Saisonkalender abgeleitet). Idempotent."
     },
     "_privGuestShare": {
-      "line": 7887,
+      "line": 7923,
       "desc": "Anteil Gaststarter (1-2 Rennen) an den Privateers je Aera; Rest = Teilsaison-Fahrer."
     },
     "_drawPrivateerCount": {
-      "line": 7893,
+      "line": 7929,
       "desc": "Zieht die Startzahl eines Privateers fuer die Saison (Zwei-Komponenten-Mischung Gaststarter/Teilsaison)."
     },
     "_privClusterWindow": {
-      "line": 7912,
+      "line": 7948,
       "desc": "Fensterbreite fuer die Ballung der Startrunden je Aera; 0 = verstreut (vor 1962)."
     },
     "_pickPrivateerRaces": {
-      "line": 7974,
+      "line": 8010,
       "desc": "Waehlt n Rennen aus dem Kalender - verstreut in den 1950ern, geballt ab den 1970ern."
     },
     "_smallConstructorShare": {
-      "line": 8107,
+      "line": 8143,
       "desc": "Anteil der Teams, die als Kleinstkonstrukteur gelten (0 vor 1970 - dort deckt der Privateer-Mechanismus es ab)."
     },
     "markPrivateers": {
-      "line": 8672,
+      "line": 8708,
       "desc": "Markiert je Team die 2 Schnellsten als Werksfahrer, Rest als Privateer. MUSS jede Saison laufen (startNewSeason) - vorher nur in expandSeasonData, dadurch wurden in Langlaeufen alle zu Werksfahrern."
     },
     "markSmallConstructors": {
-      "line": 8719,
+      "line": 8755,
       "desc": "Markiert die schwaechsten Teams mit <=2 Fahrern als t._smallCtor - vierte Klasse unter dem Dreier-System, Teilsaison-Kalender + hoeherer Landsmann-Bonus."
     },
     "assignPrivateerSchedules": {
-      "line": 8982,
+      "line": 9018,
       "desc": "Setzt d.scheduledRaces (circuitIds) fuer alle Privateers ohne homeOnly. Muss NACH assignGenericHomeOnly laufen."
     },
     "_isCustomerMarque": {
-      "line": 9153,
+      "line": 9189,
       "desc": "Verkaufte diese Marke Kundenwagen (Maserati/Cooper/Lotus/BRM/March/Brabham...)? Grid-Fueller haengen sich an solche Teams."
     },
     "fillGridEntries": {
-      "line": 9210,
+      "line": 9246,
       "desc": "Fuellt das Feld auf die reale Grid-Groesse mit Reservepool-Fahrern als Privateers an Kunden-Marken. Nur in fortgesetzten Saisons noetig; Indy-Fahrer aus der Defizit-Zaehlung ausgeschlossen."
     },
     "releaseGridFillers": {
-      "line": 9498,
+      "line": 9534,
       "desc": "Gibt Grid-Fueller nach der Saison in den Reservepool zurueck - Gaeste, keine festen Cockpits."
     },
     "_findZeroEntryDrivers": {
-      "line": 9522,
+      "line": 9558,
       "desc": "Findet Fahrer mit Meldeplan aber 0 Meldungen (arbeitet auf beliebigen Arrays). Werksfahrer ohne Plan = jedes Rennen, nie betroffen."
     },
     "pruneZeroEntryDrivers": {
-      "line": 9604,
+      "line": 9640,
       "desc": "GAME_STATE-Variante: Fahrer ohne Meldung raus aus der F1 -> Reserve-Pool. Grundphilosophie jeder geplante Fahrer meldet >=1 Rennen."
     },
     "_maxCarsPerConstructor": {
-      "line": 9644,
+      "line": 9680,
       "desc": "Aera-Obergrenze der Autos je Konstrukteur und Rennen. Ab 1986 hart 2 (letztes Drittauto real 1985), davor bis 16."
     },
     "applyConstructorCarCap": {
-      "line": 9892,
+      "line": 9928,
       "desc": "[SYNC simulateRace] Kappt Meldungen je Team auf die Aera-Grenze und t._carsThisSeason. Haelt moderne Ersatzfahrer aus dem Feld; pro RENNEN, damit Mid-Season-Wechsel funktionieren."
     },
     "privateerEntersRace": {
-      "line": 9995,
+      "line": 10031,
       "desc": "[SYNC simulateRace] Einziger Melde-Entscheider: homeOnly -> Startplan -> activityRate-Fallback fuer Alt-Saves."
     },
     "driverIOC": {
-      "line": 10043,
+      "line": 10079,
       "desc": "Fahrer-Nation als IOC-Code. GAME_STATE.drivers mischt Emoji (historisch) und IOC (generiert) - ungefilterter Vergleich trifft nie."
     },
     "generateDriver": {
-      "line": 10049,
+      "line": 10085,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTopTeamCount": {
-      "line": 10169,
+      "line": 10205,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_seatRookieChance": {
-      "line": 10175,
+      "line": 10211,
       "desc": "v0.9.15.17 Tier eines Teams -> Rookie-Chance beim Nachbesetzen (Standings-Rang): Top=0, Mittelfeld 0.25, Backmarker/Kleinst 0.75"
     },
     "acquireSeatDriver": {
-      "line": 10209,
+      "line": 10245,
       "desc": "v0.9.15.17 GETEILTE Ersatzfahrer-Quelle fuer Tod + Entlassung (+ Live-Ticker-Tod, SYNC). Achsen: _seatRookieChance (Debuetant vs Erfahren, Top=0) + simRules.realPreference (echt vs generiert, Auto-Fallback) + poachPreference (Free Agent vs Abwerben). Quellen: Free Agent/Reserve-Pool, Abwerben (Ziel-Team backfill), Generieren. Rueckgabe {driver,source,poachedFromTeamId}"
     },
     "_teamTierLabel": {
-      "line": 10396,
+      "line": 10432,
       "desc": "v0.9.15.19 Team-Tier aus Standings-Rang (Topteam/Mittelfeld/Backmarker) fuer Herkunfts-Anzeige"
     },
     "_seatOriginInfo": {
-      "line": 10413,
+      "line": 10449,
       "desc": "v0.9.15.19 baut aus acquireSeatDriver-Rueckgabe eine speicherbare Herkunfts-Info {kind,source,fromTeam,fromTier,poolGroup}; in Tod-/Entlassungs-Records als replacementOrigin abgelegt"
     },
     "_findDriverAny": {
-      "line": 10431,
+      "line": 10467,
       "desc": "v0.9.15.20 Fahrer per id in drivers ODER reservePool finden (Herkunfts-Fallback)"
     },
     "_isGeneratedId": {
-      "line": 10437,
+      "line": 10473,
       "desc": "v0.9.15.20 generierten Fahrer an id-Praefix gen-/exp- erkennen (auch in Alt-Staenden, ohne Fahrer-Objekt)"
     },
     "_signIndyDriver": {
-      "line": 10443,
+      "line": 10479,
       "desc": "v0.9.15.23 besetzt Indy-Cockpit mit echtem Indy-Fahrer (INDY_500_ONLY_DRIVERS via Reserve-Pool/Free-Agent, era-passend) VOR Generierung; realPreference-gesteuert; geteilt von processTeamChanges + startNewSeason"
     },
     "_findRealSeatCandidate": {
-      "line": 10575,
+      "line": 10611,
       "desc": "v0.9.15.24 reiner Finder: bester verfuegbarer ECHTER/Feeder-Fahrer fuer ein Team (Free Agent -> Reserve-Pool, ohne Tier/Pace-Gate, nur Indy/Nation-Kompat), keine Seiteneffekte"
     },
     "_realDriverAvailable": {
-      "line": 10595,
+      "line": 10631,
       "desc": "v0.9.15.24 bool: existiert ueberhaupt ein echter Fahrer fuer dieses Team (fuer Pool-leer-Hinweis)"
     },
     "_lastResortRealDriver": {
-      "line": 10599,
+      "line": 10635,
       "desc": "v0.9.15.24 realPreference-gesteuerter echt-Rueckfall vor Generierung (SNetz + processTeamChanges-Fallback); setzt Fahrer ins Team+Standings"
     },
     "_originBadge": {
-      "line": 10621,
+      "line": 10657,
       "desc": "v0.9.15.19 Herkunfts-Info -> Emoji+Label (intern Team+Tier / generiert Rookie-erfahren / echt Free-Agent-Reserve); genutzt in beiden Chronik-Listen"
     },
     "findReplacementDriver": {
-      "line": 10675,
+      "line": 10711,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "migrateIndySeedStats": {
-      "line": 10940,
+      "line": 10976,
       "desc": "Einmal-Migration Alt-Saves: Indy-only Voll-Karriere-Seed aus allTimeStATS herausrechnen (aktuell - AltSeed + NeuSeed<Startjahr), leere Huellen loeschen, obitStats in History-deaths/retirements mitkorrigieren; Marker _indySeedFixed; Aufruf in sanitizeGameState"
     },
     "sanitizeGameState": {
-      "line": 11183,
+      "line": 11219,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_stringifyCore": {
-      "line": 11823,
+      "line": 11859,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "persistJuniorStats": {
-      "line": 11837,
+      "line": 11873,
       "desc": "P2: schreibt juniorWorld.allTimeStats in den kv-Store (Key f1rpg_junior_alltime). BEWUSST nicht in saveGame - nur an den Mutationspunkten Saisonende/Prune/Rebuild, sonst liefe es bei jedem Speichern (async, manuell im Schema)"
     },
     "_hydrateJuniorCore": {
-      "line": 11848,
+      "line": 11884,
       "desc": "P2: zieht juniorWorld.history + allTimeStats aus ihren Stores nach. Wird auf das ROHE geladene Objekt angewandt BEVOR es GAME_STATE wird (Reihenfolge-Regel wie bei der F1-Historie). Alt-Saves mit den Feldern im Core werden nicht ueberschrieben (async, manuell im Schema)"
     },
     "saveGame": {
-      "line": 11872,
+      "line": 11908,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "loadGame": {
-      "line": 11905,
+      "line": 11941,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "autoSaveGame": {
-      "line": 11937,
+      "line": 11973,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getHistDebutYear": {
-      "line": 12002,
+      "line": 12038,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "feederSlug": {
-      "line": 12383,
+      "line": 12421,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "makeFeederDriver": {
-      "line": 12402,
+      "line": 12440,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "injectFeederDrivers": {
-      "line": 12440,
+      "line": 12478,
       "desc": "Speist echte F2/F3-Aufsteiger (FEEDER_DRIVERS) in den Pool. Altersfenster 19-26, Dedup gegen aktive/Pool/SEASON_DATA-Namen. In initReservePool VOR proaktiver Generierung."
     },
     "initReservePool": {
-      "line": 12514,
+      "line": 12552,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "sanitizeReservePool": {
-      "line": 12767,
+      "line": 12819,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "sanitizeDriverDuplicates": {
-      "line": 12836,
+      "line": 12888,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "setPoolGroupFilter": {
-      "line": 12894,
+      "line": 12946,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "addDismissedToPool": {
-      "line": 12905,
+      "line": 12957,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "isPoolTalent": {
-      "line": 12933,
+      "line": 12985,
       "desc": "Reserve-Tab-Split Item 5: Talent (nie in F1 gestartet = kein lastRacedYear/dismissedFromSim) vs. Free Agent (Ex-F1-Fahrer ohne Cockpit, generiert ODER real - egal). Merkmal ist SCHLICHT hat-gestartet, nicht generated. Nutzt renderReservePool (Tab/Badge) + initReservePool (junge-Talente-Mindestzahl)"
     },
     "renderReservePool": {
-      "line": 12940,
+      "line": 12992,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "exportReservePool": {
-      "line": 13069,
+      "line": 13121,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "exportOffseason": {
-      "line": 13105,
+      "line": 13157,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "showOffSeasonModal": {
-      "line": 13128,
+      "line": 13180,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "openPoolAssignModal": {
-      "line": 13317,
+      "line": 13369,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "pamUpdateReplace": {
-      "line": 13368,
+      "line": 13420,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "assignSofortFromPool": {
-      "line": 13383,
+      "line": 13435,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "assignNextSeasonFromPool": {
-      "line": 13406,
+      "line": 13458,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "cancelPendingAssignment": {
-      "line": 13421,
+      "line": 13473,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "assignFromPool": {
-      "line": 13429,
+      "line": 13481,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "removeFromPool": {
-      "line": 13490,
+      "line": 13542,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "openNewDriverModal": {
-      "line": 13508,
+      "line": 13560,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "createCustomDriver": {
-      "line": 13548,
+      "line": 13600,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "autoAddNewDrivers": {
-      "line": 13595,
+      "line": 13647,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "showNewDriversModal": {
-      "line": 13659,
+      "line": 13711,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "confirmAddToPool": {
-      "line": 13713,
+      "line": 13765,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "initFromTemplate": {
-      "line": 13767,
+      "line": 13819,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "initFromYear": {
-      "line": 13838,
+      "line": 13890,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "prePopulateDriverCareerScores": {
-      "line": 14090,
+      "line": 14142,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "initStandings": {
-      "line": 14126,
+      "line": 14178,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "simulateRace": {
-      "line": 14377,
+      "line": 14429,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_ensureH2H": {
-      "line": 14929,
+      "line": 14981,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_h2hPairKey": {
-      "line": 14940,
+      "line": 14992,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_h2hPairRec": {
-      "line": 14941,
+      "line": 14993,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getH2HHistory": {
-      "line": 14953,
+      "line": 15005,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "trackTeammateDuels": {
-      "line": 14971,
+      "line": 15023,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "applyRaceResults": {
-      "line": 15127,
+      "line": 15179,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_rollWeekendDeath": {
-      "line": 15302,
+      "line": 15354,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "simulateTraining": {
-      "line": 15338,
+      "line": 15390,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "simulateQualifying": {
-      "line": 15473,
+      "line": 15525,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_editorGetEffective": {
-      "line": 15923,
+      "line": 15975,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderGridEditorUI": {
-      "line": 15938,
+      "line": 15990,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderAddTeamForm": {
-      "line": 16071,
+      "line": 16123,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_teamEraKey": {
-      "line": 16312,
+      "line": 16364,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "composeTeamName": {
-      "line": 16350,
+      "line": 16402,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "stripDummyJuniors": {
@@ -781,39 +781,39 @@
       "desc": "TODO: Beschreibung ergänzen"
     },
     "syncCustomCircuitDims": {
-      "line": 16788,
+      "line": 16840,
       "desc": "Spiegelt GAME_STATE.customCircuits ins Laufzeit-Registry CUSTOM_CIRCUIT_DIMS (f1db.js) fuer getCircuitLength/-SpeedFactor-Fallback"
     },
     "_slugifyCircuit": {
-      "line": 16793,
+      "line": 16845,
       "desc": "Streckenname -> normalisierter circuitId-Slug (NFD, a-z0-9-)"
     },
     "_expectedPoleSec": {
-      "line": 16797,
+      "line": 16849,
       "desc": "Erwartete Pole-Zeit (s) aus Laenge x Faktor x AeraSpeed - Live-Vorschau im Streckeneditor"
     },
     "_fmtLap": {
-      "line": 16801,
+      "line": 16853,
       "desc": "Sekunden -> m:ss.s Rundenzeit-Format"
     },
     "_circuitSponsor": {
-      "line": 16806,
+      "line": 16858,
       "desc": "Fiktiver Sponsor je Aera (e76/e94/e10) fuer Rennnamen-Praefix"
     },
     "_pickCircuitNation": {
-      "line": 16822,
+      "line": 16874,
       "desc": "Rennland ziehen (pickNationMotorsport), Mikrostaaten/poollose/schon-genutzte aus (Streckeneditor-Zufall)"
     },
     "_scv": {
-      "line": 16847,
+      "line": 16899,
       "desc": "Helper: Formularfeld-Wert setzen (Streckeneditor)"
     },
     "editorAddCircuitToCalendar": {
-      "line": 16955,
+      "line": 17007,
       "desc": "Custom-Strecke live in laufenden Kalender einsortieren (Monat, nie vor currentRace)"
     },
     "renderAddCircuitForm": {
-      "line": 17055,
+      "line": 17107,
       "desc": "Formular Neue Strecke (Name/Nation/Laenge/Charakter/Monat + Live-Pole-Vorschau)"
     },
     "setJuniorMode": {
@@ -821,15 +821,15 @@
       "desc": "Junior-Welt Schritt 0: setzt GAME_STATE.juniorMode (off/dummy/world), schliesst Overlay, speichert, syncDummyJuniorUI (window, manuell im Schema)"
     },
     "renderCalendarEditorControls": {
-      "line": 17105,
+      "line": 17157,
       "desc": "Toolbar Kalender-Editor (Bearbeiten-Toggle, +Strecke, Zufall)"
     },
     "renderCalendarEditorList": {
-      "line": 17120,
+      "line": 17172,
       "desc": "Editierbare Kalenderliste mit Drag&Drop-Umsortierung + Loeschen"
     },
     "stopLiveRace": {
-      "line": 17186,
+      "line": 17238,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "rebuildJuniorAggregates": {
@@ -837,119 +837,119 @@
       "desc": "Junior-Welt Schritt 3: Streaming-Rebuild der Aggregate aus junior_detail (je Saison laden→falten→verwerfen, RAM bounded), schreibt jw.allTimeStats/circuitIndex; für Alt-Saves/Import (window, async, manuell im Schema)"
     },
     "_LIVE_ERA_KEY": {
-      "line": 18419,
+      "line": 18471,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_liveResetBags": {
-      "line": 18427,
+      "line": 18479,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_liveShuffle": {
-      "line": 18428,
+      "line": 18480,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_liveDraw": {
-      "line": 18435,
+      "line": 18487,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "liveLine": {
-      "line": 18460,
+      "line": 18512,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "addLiveEvent": {
-      "line": 18475,
+      "line": 18527,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "updateLivePositionsTable": {
-      "line": 18493,
+      "line": 18545,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderLiveQualiTab": {
-      "line": 18566,
+      "line": 18618,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "simulateLap": {
-      "line": 18689,
+      "line": 18741,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "finishLiveRace": {
-      "line": 18792,
+      "line": 18844,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "rollSeasonNonWMDeaths": {
-      "line": 19080,
+      "line": 19132,
       "desc": "HOCH#4 Teil 2: wuerfelt beim Saison-START (initFromYear + startNewSeason, geteilt=mode-sicher) pro Fahrer Tode AUSSERHALB WM/Indy500 (ERA_NONWM_F1/INDY_DEATH_RATE) + terminiert sie auf pendingNonWMDeaths.afterRace (0=vor Saison .. nRaces=Off-Season). Wendet Vor-Saison-Tode sofort an"
     },
     "applyPendingNonWMDeaths": {
-      "line": 19158,
+      "line": 19210,
       "desc": "HOCH#4 Teil 2: feuert terminierte Non-WM-Tode mit afterRace===completedCount (aus applyRaceResults nach jedem Rennen + bei 0). Opfer status=deceased + seasonDeaths (fatalSession=nonwm, timing), Mid-Season-Tod generiert Ersatz wie WM-Tod. Kein sichtbares Rennen"
     },
     "simRule": {
-      "line": 19212,
+      "line": 19264,
       "desc": "v0.9.15.15 granulare KI-Sim-Regel abfragen (careerEnd/dismissalMid/transferSeasonEnd/deaths/nonWmDeaths); Fallback auf altes aiSimulation-Verhalten fuer Alt-Staende"
     },
     "anySimRuleOn": {
-      "line": 19217,
+      "line": 19269,
       "desc": "v0.9.15.15 true wenn irgendeine Sim-Regel aktiv ist (sonst voller historischer Modus = alles eingefroren); Master-Gate in processSeasonEndEvents"
     },
     "processSeasonEndEvents": {
-      "line": 19223,
+      "line": 19275,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "prepareSeasonEndSnapshot": {
-      "line": 19291,
+      "line": 19343,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_recapHash": {
-      "line": 19591,
+      "line": 19643,
       "desc": "Paket B Saison-Rueckblick: String-Hash fuer deterministischen RNG-Seed"
     },
     "_recapRng": {
-      "line": 19600,
+      "line": 19652,
       "desc": "Paket B: mulberry32-PRNG, geseedet -> Re-Render-stabile Phrasenwahl"
     },
     "_recapPick": {
-      "line": 19609,
+      "line": 19661,
       "desc": "Paket B: zufaelliges Array-Element via uebergebenem RNG"
     },
     "_recapNum": {
-      "line": 19611,
+      "line": 19663,
       "desc": "Paket B: Zahl als de-DE-String (Dezimalkomma), Fallback '0'"
     },
     "_recapSiege": {
-      "line": 19616,
+      "line": 19668,
       "desc": "Paket B: Nominalphrase fuer Siegzahl (0/1/n, Nominativ/Dativ)"
     },
     "_recapGap": {
-      "line": 19622,
+      "line": 19674,
       "desc": "Paket B: Nominalphrase fuer Punkte-Vorsprung (Kasus nom/dat/akk)"
     },
     "_recapFill": {
-      "line": 19647,
+      "line": 19699,
       "desc": "Paket B: fuellt {token}-Platzhalter eines Templates aus Token-Map"
     },
     "_recapNameList": {
-      "line": 19652,
+      "line": 19704,
       "desc": "Paket B: Namensliste 'A, B und C' (max 3, dann 'und N weitere')"
     },
     "seasonPreviewText": {
-      "line": 19778,
+      "line": 19830,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "buildSeasonPreview": {
-      "line": 19818,
+      "line": 19870,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "seasonRecapText": {
-      "line": 19878,
+      "line": 19930,
       "desc": "Paket B Assembler: erzaehlter Saison-Rueckblick (3-6 Saetze) aus Standings/Deaths/Jahr; deterministisch (Seed year|name|points|wins); Aufrufer: showSeasonEndModal (live) + showOffSeasonModal (aus leichten History-Feldern regeneriert, nie gespeichert)"
     },
     "isRookieChampionCheck": {
-      "line": 19991,
+      "line": 20043,
       "desc": "Paket B: Rookie-Check (keine careerScores vor Jahr + Guard Saison>Spielstart); eine Quelle fuer showSeasonEndModal + championRookie-Flag im History-Push (startNewSeason)"
     },
     "_obitNameKey": {
-      "line": 20504,
+      "line": 20556,
       "desc": "Paket C: Namens-Normalisierung fuer DRIVER_LORE-Lookup (lowercase, Akzente weg, Nicht-Alnum -> '-')"
     },
     "juniorSelectYear": {
@@ -969,15 +969,15 @@
       "desc": "Junior-Welt 5f: schaltet GAME_STATE.juniorDeaths (seltene tödliche Unfälle) an/aus (window, manuell im Schema)"
     },
     "_bioArchetype": {
-      "line": 21088,
+      "line": 21140,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "generatedDriverBio": {
-      "line": 21107,
+      "line": 21159,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "driverBioFor": {
-      "line": 21124,
+      "line": 21176,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "openJuniorDriver": {
@@ -985,283 +985,283 @@
       "desc": "Junior-Welt: anklickbarer Fahrer-Steckbrief (Overlay) – Karriere je Serie/Saison (F2/F3) aus junior_detail gestreamt + All-Time-Totals (window, async, manuell im Schema)"
     },
     "rivalryText": {
-      "line": 21349,
+      "line": 21401,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "driverRivalryLine": {
-      "line": 21367,
+      "line": 21419,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_obitIsReal": {
-      "line": 21414,
+      "line": 21466,
       "desc": "Paket C: real vs. generiert (histId vorhanden + kein gen-/jw/reserve-Praefix); Lore nur bei real"
     },
     "_obitBilanz": {
-      "line": 21421,
+      "line": 21473,
       "desc": "Paket C: Karriere-Bilanz-Aufzaehlung in Ziffern (Starts/Siege|Podien/WM-Titel, kasus-invariant)"
     },
     "obituaryText": {
-      "line": 21618,
+      "line": 21670,
       "desc": "Paket C Assembler: Nachruf (death) / Abschied (retire), 2-3 Saetze, deterministisch (Seed mode|name|year); Kategorien champion/talent/star/backmarker/gaveup/generic; Lore-Epitheta (DRIVER_LORE) nur reale Fahrer; Aufruf in showSeasonEndModal (Todesfaelle + Karriereenden)"
     },
     "showSeasonEndModal": {
-      "line": 21690,
+      "line": 21742,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "checkCareerEnds": {
-      "line": 22084,
+      "line": 22136,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "checkRetirements": {
-      "line": 22369,
+      "line": 22421,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "processMidSeasonDismissals": {
-      "line": 22376,
+      "line": 22428,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "fillEmptyTeamSeats": {
-      "line": 22469,
+      "line": 22521,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_getAvgDnfPenalty": {
-      "line": 22582,
+      "line": 22634,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_ageCappedContractLen": {
-      "line": 22614,
+      "line": 22666,
       "desc": "Deckelt die Vertragslaenge nach Alter (max ~bis zum Aera-Ruecktrittsalter). Verhindert Mehrjahresvertraege fuer 40-Jaehrige, die sie gegen den Alters-Ruecktritt immunisieren wuerden."
     },
     "_isLockedOwner": {
-      "line": 22623,
+      "line": 22675,
       "desc": "Treuer Besitzer-Fahrer im eigenen Team? Dann immun gegen Entlassung, Abwerbung, Buyout und Zufallswechsel (alle 4 Transferphasen)."
     },
     "_computeDriverSeasonScore": {
-      "line": 22722,
+      "line": 22774,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "evaluateDriverPerformance": {
-      "line": 22764,
+      "line": 22816,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "weightedCareerAverage": {
-      "line": 22834,
+      "line": 22886,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "updateDriverCareerScores": {
-      "line": 22851,
+      "line": 22903,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "seedReputationFromPace": {
-      "line": 22906,
+      "line": 22958,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "updateDriverReputations": {
-      "line": 22956,
+      "line": 23008,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "processDriverPaceDevelopment": {
-      "line": 23036,
+      "line": 23088,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "processTeamChanges": {
-      "line": 23102,
+      "line": 23154,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "findTeamWithSpace": {
-      "line": 23867,
+      "line": 23919,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "executeTransfer": {
-      "line": 23898,
+      "line": 23950,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "applyTeamSuccessions": {
-      "line": 24015,
+      "line": 24067,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "applyTeamExits": {
-      "line": 24062,
+      "line": 24114,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "applyTeamEntryExit": {
-      "line": 24110,
+      "line": 24162,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "placeLoyalOwnerDrivers": {
-      "line": 24205,
+      "line": 24257,
       "desc": "Setzt Besitzer-Fahrer in ihr Team. Muss NACH fillEmptyTeamSeats und AUSSERHALB von applyTeamEntryExit laufen (dessen SEASON_DATA-Guard steigt jenseits des Horizonts frueh aus)."
     },
     "getLastPaceYear": {
-      "line": 24237,
+      "line": 24289,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "generateDummySeriesSeason": {
-      "line": 24252,
+      "line": 24304,
       "desc": "Stresstest: erzeugt eine uniforme Junior-Saison (idx, gridSize, rounds, year) mit Fahrern/Rennen/Ergebnissen/Standings als Datenballast"
     },
     "_dummyJuniorParams": {
-      "line": 24283,
+      "line": 24335,
       "desc": "Stresstest: liest die 3 Parameter (series/drivers/races) aus GAME_STATE mit Defaults"
     },
     "attachDummyJuniors": {
-      "line": 24292,
+      "line": 24344,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "syncDummyJuniorUI": {
-      "line": 24343,
+      "line": 24395,
       "desc": "Stresstest: spiegelt 3 Parameter + Vorschau + Ballast-Status ins Debug-Panel (von updateStorageMeter aufgerufen)"
     },
     "syncJuniorWorldUI": {
-      "line": 24362,
+      "line": 24414,
       "desc": "Junior-Welt 2d: Status-Zeile im Debug-Panel (nur Modus 'world') – Serien/aktive Fahrer/Saisons + letzte Champions; aus syncDummyJuniorUI aufgerufen"
     },
     "promptJuniorMode": {
-      "line": 24384,
+      "line": 24436,
       "desc": "Junior-Welt Schritt 0: Overlay zur einmaligen Junior-Modus-Wahl (off/dummy/world) beim Neuspiel, danach gesperrt"
     },
     "promptJuniorLadder": {
-      "line": 24416,
+      "line": 24468,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_juniorScale": {
-      "line": 24509,
+      "line": 24561,
       "desc": "Junior-Welt Schritt 2: Fahrer/Serie + Rennen/Serie (GAME_STATE-Override oder Defaults 22/10)"
     },
     "_juniorSeriesScale": {
-      "line": 24516,
+      "line": 24568,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_juniorLevels": {
-      "line": 24524,
+      "line": 24576,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_jwRand": {
-      "line": 24527,
+      "line": 24579,
       "desc": "Junior-Welt Schritt 2: Zufallselement aus Array (Namen/Nation-Pools)"
     },
     "_assignJuniorNumber": {
-      "line": 24530,
+      "line": 24582,
       "desc": "Junior-Welt 5d: eindeutige Startnummer 2–99 für einen Fahrer (unter den aktiven Fahrern seiner Serie)"
     },
     "_makeJuniorDriver": {
-      "line": 24539,
+      "line": 24591,
       "desc": "Junior-Welt Schritt 2: stabiler Junior-Fahrer mit eindeutiger histId (jw<seq>), Name/Nation/Pace"
     },
     "_developJuniorDriver": {
-      "line": 24577,
+      "line": 24629,
       "desc": "Junior-Welt Schritt 2b: ein Karrierejahr eines Fahrers – age++ + Pace-Drift (vor Peak wachsen, danach abbauen, clamp 40–99)"
     },
     "_jwExperience": {
-      "line": 24588,
+      "line": 24640,
       "desc": "Junior-Welt 3.5F: Erfahrungswert eines Fahrers aus Alter abgeleitet (0–60), fließt in Renn-Performance ein"
     },
     "_ageAndRetireJuniors": {
-      "line": 24590,
+      "line": 24642,
       "desc": "Junior-Welt Schritt 2b: alle Returner altern lassen + Karriere-Enden (age>=_retireAge) aus jw.drivers aussortieren"
     },
     "_ensureJuniorTeams": {
-      "line": 24607,
+      "line": 24659,
       "desc": "Junior-Welt 2c: Teams je Serie anlegen (JUNIOR_TEAM_NAMES, 2 Sitze) + teamlose Fahrer auf offene Sitze setzen"
     },
     "_openJuniorSeat": {
-      "line": 24628,
+      "line": 24680,
       "desc": "Junior-Welt 2c: erstes Team einer Serie mit freiem Sitz (<2 Fahrer), sonst erstes Team (Fallback)"
     },
     "_promoteJuniors": {
-      "line": 24645,
+      "line": 24697,
       "desc": "Junior-Welt 2c: beste F3-Fahrer (Vorsaison-Punkte _lastPoints) füllen durch Rücktritte offene F2-Sitze auf (Aufstieg)"
     },
     "_juniorContractMoves": {
-      "line": 24679,
+      "line": 24731,
       "desc": "Junior-Welt 5c: vertragsgetriebene Transfers – Auslaufverträge (contractEnd<=year) steigen merit-basiert in stärkere Teams auf (Sitztausch), danach Vertrag verlängern; ersetzt _juniorTransfers"
     },
     "_ensureJuniorSeriesRegister": {
-      "line": 24700,
+      "line": 24752,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_ensureJuniorRoster": {
-      "line": 24718,
+      "line": 24770,
       "desc": "Junior-Welt Schritt 2: Serien + Fahrer-Roster auffüllen falls leer (JUNIOR_SERIES_DEFS + _makeJuniorDriver)"
     },
     "_juniorRacesDoneBy": {
-      "line": 24739,
+      "line": 24791,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_simulateJuniorSeriesSeason": {
-      "line": 24749,
+      "line": 24801,
       "desc": "Junior-Welt Schritt 2: eine Saison einer Serie simulieren (pace-gewichtet + Rauschen) -> {light Summary, heavy volle Daten}; Stufe-1-Seed-Regen: 5. Param seed -> deterministisch (rng aus _recapRng), heavy.seed/spine, Kalender salted-isoliert; Stufe 2: 6. Param deathsFlag (Regen-Kontext, sonst Live-Toggle) + heavy.racesCount/deathsOn/teams/calendar/seriesName eingefroren fuer _regenJuniorRaces"
     },
     "_foldJuniorAggregates": {
-      "line": 24855,
+      "line": 24907,
       "desc": "Junior-Welt Schritt 3: faltet EINE Serien-Saison (heavy) in target.allTimeStats (starts/wins/podiums/poles/points/titles/seasons je histId) + circuitIndex (Siege je Strecke); target=jw inkrementell ODER fresh beim Rebuild"
     },
     "_juniorSeasonSpine": {
-      "line": 24915,
+      "line": 24967,
       "desc": "Junior-Welt Stufe-4-Prep: Anker-Identitaeten (notable histIds) einer Saison -> heavy.spine (in advanceJuniorWorld-Persist gesetzt). Fundament fuer Voll-Replay (Spine behaelt Identitaet, Rest = Filler) + Crossover-Welt. Aktuell nur geschrieben, noch nicht gelesen."
     },
     "_pruneJuniorAllTime": {
-      "line": 24919,
+      "line": 24971,
       "desc": "Junior-Welt Stufe 3: allTimeStats prunen (Aktiv-oder-notable-Retention) – nur wenn jw.pruneAllTime; loescht Ruhestands-Filler ohne notable-Flag (in _foldJuniorAggregates serien-abh. gesetzt: F3 Titel/Sieg, F2 +Podest/Pole); Legacy-Migration notable=(titles>0||wins>0); aufgerufen in advanceJuniorWorld/rebuildJuniorAggregates + Toggle juniorTogglePrune/juniorOptimizeNow"
     },
     "_regenJuniorRaces": {
-      "line": 24937,
+      "line": 24989,
       "desc": "Junior-Welt Stufe-2-Seed-Regen: races (nicht mehr persistiert) deterministisch aus heavy-Snapshot (seed/drivers/teams/calendar/racesCount/deathsOn) neu erzeugen via _simulateJuniorSeriesSeason; Session-Cache _jRegenRacesCache, Champion-Anker-Drift-Warnung, Alt-Save mit races = Fallback"
     },
     "bootstrapJuniorWorld": {
-      "line": 24981,
+      "line": 25033,
       "desc": "Junior-Welt ab Saison 1: Register sicherstellen + Junior-Saison des laufenden Jahres fahren. Aufgerufen aus setJuniorMode(world) und juniorBootstrapNow; vorher entstand die Welt erst beim ersten startNewSeason (async, manuell im Schema)"
     },
     "startJuniorSeason": {
-      "line": 24992,
+      "line": 25044,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "deriveJuniorLiveSeason": {
-      "line": 25011,
+      "line": 25063,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_juniorLiveAggregates": {
-      "line": 25041,
+      "line": 25093,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_leanJuniorHeavy": {
-      "line": 25073,
+      "line": 25125,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_hydrateJuniorHeavy": {
-      "line": 25084,
+      "line": 25136,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "juniorDetailGet": {
-      "line": 25103,
+      "line": 25155,
       "desc": "P1: einziger Lesepfad fuer persistierte Junior-Saisons – idbJDetailGet + _hydrateJuniorHeavy (async, manuell im Schema)"
     },
     "advanceJuniorWorld": {
-      "line": 25110,
+      "line": 25162,
       "desc": "Junior-Welt Schritt 2: orchestriert eine Junior-Saison (Roster, je Serie simulieren, leicht in juniorWorld.history + schwer gzip in junior_detail); Hook in startNewSeason bei mode='world' (async, manuell im Schema)"
     },
     "startNewSeason": {
-      "line": 25180,
+      "line": 25232,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "buildRacesForYear": {
-      "line": 26155,
+      "line": 26217,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "customCircuitToRace": {
-      "line": 26192,
+      "line": 26254,
       "desc": "customCircuits-Def -> Renn-Objekt fuer den Kalender"
     },
     "injectCustomCircuitsIntoCalendar": {
-      "line": 26200,
+      "line": 26262,
       "desc": "Custom-Strecken chronologisch nach Monat in frischen Saison-Kalender einsortieren"
     },
     "generateRacesForYear": {
-      "line": 26500,
+      "line": 26562,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "recalculateStandingsFromResults": {
-      "line": 26956,
+      "line": 27018,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "toggleAllSimRules": {
@@ -1273,51 +1273,51 @@
       "desc": "v0.9.15.15 UI: Kind-Checkbox aendert -> Master-Checkbox spiegelt 'irgendeine an' (window, manuell im Schema)"
     },
     "updateYearPreview": {
-      "line": 27174,
+      "line": 27236,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_applyImportedState": {
-      "line": 27305,
+      "line": 27367,
       "desc": "Gemeinsamer Import-Abschluss (NDJSON & Alt-Format): validiert, normalisiert, sanitisiert, schreibt History-Store + core, renderAll"
     },
     "_detectNdjson": {
-      "line": 27348,
+      "line": 27410,
       "desc": "Erkennt NDJSON-Export am Meta-Header der ersten 512 Bytes (_format=f1rpg-ndjson)"
     },
     "_importNdjson": {
-      "line": 27359,
+      "line": 27421,
       "desc": "Streaming-Import: file.stream()+TextDecoderStream, zeilenweise parsen (core + 1 Saison/Zeile), nie ganze Datei als ein String"
     },
     "_importLegacyJson": {
-      "line": 27423,
+      "line": 27485,
       "desc": "Alt-Pfad-Import via FileReader (kleine Einzel-JSON-Staende, abwaertskompatibel) -> _applyImportedState"
     },
     "simulateSeasonRaces": {
-      "line": 27464,
+      "line": 27526,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "megaSimSanityCheck": {
-      "line": 27508,
+      "line": 27570,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "runSeasonHeadless": {
-      "line": 27528,
+      "line": 27590,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "showSeasonStartModal": {
-      "line": 27747,
+      "line": 27809,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_readSimRulesFromDom": {
-      "line": 27990,
+      "line": 28052,
       "desc": "v0.9.15.16 liest die 5 granularen KI-Sim-Checkboxen aus dem DOM -> simRules-Objekt; geteilt von confirmSeasonStart (Saison-Start-Dialog) + startSelectedYear (Neuspiel-Screen)"
     },
     "_recordSimSettingsChange": {
-      "line": 28011,
+      "line": 28073,
       "desc": "v0.9.15.18 haengt bei tatsaechlicher Aenderung einen Eintrag an GAME_STATE.simSettingsLog (ts, year, context, Snapshot simRules+deathRealism, Diff). Aufruf in confirmSeasonStart + startSelectedYear; landet automatisch im Export"
     },
     "switchToYear": {
-      "line": 28089,
+      "line": 28151,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "juniorBootstrapNow": {
@@ -1325,15 +1325,15 @@
       "desc": "Junior-Welt nachtraeglich aufbauen – Knopf fuer Spielstaende, die im Welt-Modus starteten bevor es den Bootstrap gab (window, async, manuell im Schema)"
     },
     "getViewData": {
-      "line": 28126,
+      "line": 28188,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "updateSeasonSelector": {
-      "line": 28133,
+      "line": 28195,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getYearData": {
-      "line": 28170,
+      "line": 28232,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "juniorEditorDragStart": {
@@ -1373,407 +1373,407 @@
       "desc": "Junior-Serien-Editor: Serie entfernen (letzte gesperrt); Fahrer wandern in die unterste verbleibende Serie, Historie bleibt (window, manuell im Schema)"
     },
     "buildHistoricalYearData": {
-      "line": 28236,
+      "line": 28298,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getPointsForPosition": {
-      "line": 28488,
+      "line": 28550,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderNav": {
-      "line": 28526,
+      "line": 28588,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderContent": {
-      "line": 28553,
+      "line": 28615,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_juniorSeriesLevel": {
-      "line": 28577,
+      "line": 28639,
       "desc": "Junior-Welt 4b: level einer Serie (für Sortierung F2 level2 vor F3 level3)"
     },
     "_juniorWorldStartYear": {
-      "line": 28597,
+      "line": 28659,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "deriveJuniorPrehistory": {
-      "line": 28604,
+      "line": 28666,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_juniorSeriesRank": {
-      "line": 28636,
+      "line": 28698,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "renderJuniorWorld": {
-      "line": 28640,
+      "line": 28702,
       "desc": "Junior-Welt 4a: Junior-Tab-Inhalt – Kopf (Status + Saison-Selector) + Shell; lädt Saison-Detail async via _renderJuniorSeason (nur mode='world')"
     },
     "_jwSave": {
-      "line": 28738,
+      "line": 28800,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_jwEsc": {
-      "line": 28742,
+      "line": 28804,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_juniorNormalizeLevels": {
-      "line": 28745,
+      "line": 28807,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "renderJuniorEditor": {
-      "line": 28756,
+      "line": 28818,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_jwDropped": {
-      "line": 28820,
+      "line": 28882,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_renderJuniorSeason": {
-      "line": 28886,
+      "line": 28948,
       "desc": "Junior-Welt 4a: lädt junior_detail eines Jahres (idbJDetailGet) und füllt #junior-season-tables mit den Serien-Tabellen (async, manuell im Schema)"
     },
     "renderJuniorAllTime": {
-      "line": 29039,
+      "line": 29101,
       "desc": "Junior-Welt 4b: All-Time-Bestenliste aus jw.allTimeStats (Top 100, sortiert Titel→Siege→Punkte)"
     },
     "renderJuniorCircuits": {
-      "line": 29060,
+      "line": 29122,
       "desc": "Junior-Welt 4b: Strecken-Tabelle aus jw.circuitIndex (Rennen + Rekordsieger je Strecke)"
     },
     "_renderJuniorSeriesTable": {
-      "line": 29078,
+      "line": 29140,
       "desc": "Junior-Welt 4a: HTML-Tabelle einer Serie (Fahrerwertung: Pkt/Siege/Podien/Poles/DNF + Team) aus heavy-Saison-Record"
     },
     "renderOverview": {
-      "line": 29100,
+      "line": 29162,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderHistoricalRace": {
-      "line": 29292,
+      "line": 29354,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderHistoricalOverview": {
-      "line": 29382,
+      "line": 29444,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "buildEntryList": {
-      "line": 29551,
+      "line": 29613,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "unpackEnteredTeamId": {
-      "line": 30091,
+      "line": 30153,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "seasonDataTeamName": {
-      "line": 30097,
+      "line": 30159,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "teamSlug": {
-      "line": 30168,
+      "line": 30230,
       "desc": "Einheitlicher Team-Slug (Leerzeichen zu Bindestrich, Satzzeichen weg: 'O.S.C.A.' zu 'osca')"
     },
     "formatConstructorName": {
-      "line": 30177,
+      "line": 30239,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "makeTeamMatcher": {
-      "line": 30194,
+      "line": 30256,
       "desc": "Alias-Matcher Team zu F1DB-Konstrukteur-ID: loest SEASON_DATA-Kurzkeys ('MA1' zu March) auf und laesst die Enthaelt-Heuristik nur zu, wenn kein Alias exakt trifft; genutzt von renderTeamHistory + renderTeamRaceGrid"
     },
     "getTeamColors": {
-      "line": 30227,
+      "line": 30289,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTeamHeaderGradient": {
-      "line": 30269,
+      "line": 30331,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTeamStripGradient": {
-      "line": 30276,
+      "line": 30338,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderTeamNameColored": {
-      "line": 30285,
+      "line": 30347,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTeamHeaderTextStyle": {
-      "line": 30307,
+      "line": 30369,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderEntryListCards": {
-      "line": 30319,
+      "line": 30381,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderLastRace": {
-      "line": 30419,
+      "line": 30481,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderStandings": {
-      "line": 30442,
+      "line": 30504,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderDriverStandings": {
-      "line": 30493,
+      "line": 30555,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderTeamStandings": {
-      "line": 30653,
+      "line": 30715,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderResultsMatrix": {
-      "line": 30776,
+      "line": 30838,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderRaces": {
-      "line": 31022,
+      "line": 31084,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderUnifiedRaceList": {
-      "line": 31049,
+      "line": 31111,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderCalendar": {
-      "line": 31351,
+      "line": 31413,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderF1DBRaceListCompact": {
-      "line": 31426,
+      "line": 31488,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderF1DBRaceList": {
-      "line": 31477,
+      "line": 31539,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderRaceResults": {
-      "line": 31516,
+      "line": 31578,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderQualifyingResults": {
-      "line": 31614,
+      "line": 31676,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderStATS": {
-      "line": 31793,
+      "line": 31855,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_allChronSeasons": {
-      "line": 31870,
+      "line": 31932,
       "desc": "v0.9.15.19 alle Saisons chronologisch (history[] + laufende Saison) mit transfers/deaths/retirements fuer Transfer-Chronik + Nekrolog"
     },
     "_endTransferOrigin": {
-      "line": 31897,
+      "line": 31959,
       "desc": "v0.9.15.19 rekonstruiert Herkunft aus einem Saisonende-Transfer-Eintrag (type/fromTeam/fromTier) - liegt auch in Alt-Staenden vor"
     },
     "renderTransferChronicle": {
-      "line": 31918,
+      "line": 31980,
       "desc": "v0.9.15.19 Stats-Sub-Tab Transfers: nur Bewegungen+Ersaetze (keine Verlaengerung), mid-season+Saisonende, neueste Saison oben, Herkunfts-Badge"
     },
     "renderNecrology": {
-      "line": 32054,
+      "line": 32116,
       "desc": "v0.9.15.19 Stats-Sub-Tab Nekrolog: alle toedlichen Unfaelle chronologisch mit Session/Runde/Ersatzfahrer+Herkunft"
     },
     "renderAllTimeDrivers": {
-      "line": 33400,
+      "line": 33462,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderAllTimeTeams": {
-      "line": 33535,
+      "line": 33597,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderChampions": {
-      "line": 33607,
+      "line": 33669,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getFormerTeamIndex": {
-      "line": 33699,
+      "line": 33761,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_gsRenderDD": {
-      "line": 33805,
+      "line": 33867,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_assembleGPIndex": {
-      "line": 33914,
+      "line": 33976,
       "desc": "Phase 3 Group 4: Kern-Assembler fuer Strecken-/GP-Index (cIdx/gpIdx) aus F1DB-Historie + uebergebenen Sim-Saison-Daten + aktueller Saison; von buildGameCircuitGPIndex (sync) und _ensureGameCircuitGPIndex (async) geteilt"
     },
     "buildGameCircuitGPIndex": {
-      "line": 33983,
+      "line": 34045,
       "desc": "Phase 3 Group 4: SYNC Strecken-/GP-Index (gecacht) aus F1DB + aktueller Saison + in-RAM-Heavy-Saisons; bei leichten Saisons EINMAL async _ensureGameCircuitGPIndex anstossen (Streaming-Nachbau + Rerender)"
     },
     "_ensureGameCircuitGPIndex": {
-      "line": 34001,
+      "line": 34063,
       "desc": "Phase 3 Group 4: async Voll-Build des Strecken-/GP-Index per Streaming (jede leichte Saison einzeln laden->verarbeiten->verwerfen, RAM bounded), ersetzt Cache + rendert Strecken/GP-Tab neu (async, manuell im Schema)"
     },
     "renderAllCircuits": {
-      "line": 34019,
+      "line": 34081,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderAllGPs": {
-      "line": 34057,
+      "line": 34119,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderCircuitWorldMap": {
-      "line": 34102,
+      "line": 34164,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_initCircuitMapNow": {
-      "line": 34116,
+      "line": 34178,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderSettings": {
-      "line": 34187,
+      "line": 34249,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderHandbook": {
-      "line": 35184,
+      "line": 35246,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderRoadmap": {
-      "line": 35367,
+      "line": 35429,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_openDriverProfileBody": {
-      "line": 35689,
+      "line": 35751,
       "desc": "Phase 3 Option A: synchroner Body von openDriverProfile (Fahrer-Steckbrief + Karriere-Grid); wird vom async Wrapper openDriverProfile zwischen Hydration/Dehydration aufgerufen"
     },
     "initLazyImages": {
-      "line": 37546,
+      "line": 37608,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getDriverPhotoUrl": {
-      "line": 37599,
+      "line": 37661,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getDriverPhotoUrlFallback": {
-      "line": 37988,
+      "line": 38051,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getDriverAvatarSvg": {
-      "line": 38006,
+      "line": 38069,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderDriverPhotoHtml": {
-      "line": 38062,
+      "line": 38125,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTeamLogoUrl": {
-      "line": 38749,
+      "line": 38812,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getTeamLogoSvg": {
-      "line": 38787,
+      "line": 38850,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderTeamLogoHtml": {
-      "line": 38820,
+      "line": 38883,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getReadableTeamColor": {
-      "line": 38839,
+      "line": 38902,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderTeamLogoInline": {
-      "line": 38858,
+      "line": 38921,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_openTeamProfileBody": {
-      "line": 38880,
+      "line": 38943,
       "desc": "Phase 3 Option A: synchroner Body von openTeamProfile (Team-Steckbrief + Karriere/Race-Grid); wird vom async Wrapper openTeamProfile zwischen Hydration/Dehydration aufgerufen"
     },
     "getF1DBConstructorStandings": {
-      "line": 39254,
+      "line": 39317,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "getF1DBConstructorYearIndex": {
-      "line": 39278,
+      "line": 39341,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "collectTeamIdAliases": {
-      "line": 39301,
+      "line": 39364,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "renderTeamHistory": {
-      "line": 39315,
+      "line": 39378,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderTeamRaceGrid": {
-      "line": 39782,
+      "line": 39845,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "renderContractStatus": {
-      "line": 40222,
+      "line": 40285,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_buildWinRanking": {
-      "line": 40328,
+      "line": 40391,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_buildConstrRanking": {
-      "line": 40336,
+      "line": 40399,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_buildStreaks": {
-      "line": 40341,
+      "line": 40404,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_buildPoleRanking": {
-      "line": 40352,
+      "line": 40415,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_buildFLRanking": {
-      "line": 40357,
+      "line": 40420,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_rankingBlock": {
-      "line": 40362,
+      "line": 40425,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_buildModalRows": {
-      "line": 40392,
+      "line": 40455,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "_venueCard": {
-      "line": 40560,
+      "line": 40623,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "applyFont": {
-      "line": 40648,
+      "line": 40711,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "applyTypography": {
-      "line": 40662,
+      "line": 40725,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "updateDnfPreview": {
-      "line": 40723,
-      "desc": "TODO: Beschreibung ergänzen"
-    },
-    "updateSaveStatus": {
       "line": 40786,
       "desc": "TODO: Beschreibung ergänzen"
     },
+    "updateSaveStatus": {
+      "line": 40849,
+      "desc": "TODO: Beschreibung ergänzen"
+    },
     "renderAll": {
-      "line": 40791,
+      "line": 40854,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "setupModalHandling": {
-      "line": 41636,
+      "line": 41699,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "initialize": {
-      "line": 41660,
+      "line": 41723,
       "desc": "TODO: Beschreibung ergänzen"
     },
     "canonicalCircuitId": {
-      "line": 33904,
+      "line": 33966,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getDriverFlagYear": {
-      "line": 3902,
+      "line": 3907,
       "desc": "Bezugsjahr fuer die Flagge eines Fahrers: aktiv = betrachtetes Jahr; nach Karriereende (status retired/dead) eingefroren auf retiredYear/deathYear/lastRacedYear"
     },
     "_layoutSeasonMatch": {
-      "line": 40449,
+      "line": 40512,
       "desc": "prueft ob ein Streckenlayout im Bezugsjahr gefahren wurde (Saisons-String '1958,1960' / '1985-1995')"
     },
     "getCircuitLayout": {
@@ -1797,63 +1797,63 @@
       "desc": "window-Funktion: wechselt im Strecken-Steckbrief die Ausbaustufe (tauscht nur Pfad+Label+Chip-Styles, kein Modal-Rerender) (manuell im Schema)"
     },
     "_layoutSvg": {
-      "line": 40466,
+      "line": 40529,
       "desc": "rendert einen Layout-Pfad als inline-SVG (viewBox 0 0 500 500, stroke=currentColor → themefest)"
     },
     "_layoutCard": {
-      "line": 40506,
+      "line": 40569,
       "desc": "Strecken-Steckbrief: Layout-Karte mit Streckenfuehrung + Gueltigkeitsjahren"
     },
     "_gpVenueGallery": {
-      "line": 40532,
+      "line": 40595,
       "desc": "GP-Steckbrief: Galerie aller Austragungsorte eines Grand Prix (chronologisch, klickbar, Fallback 'kein Layout')"
     },
     "poolMinAgeOk": {
-      "line": 6518,
+      "line": 6523,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_decadeOf": {
-      "line": 32138,
+      "line": 32200,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "invalidateRecordsCache": {
-      "line": 32142,
+      "line": 32204,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_normalizeSimRace": {
-      "line": 32148,
+      "line": 32210,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_mkCount": {
-      "line": 32254,
+      "line": 32316,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_mkStreak": {
-      "line": 32270,
+      "line": 32332,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_mkFirstTime": {
-      "line": 32296,
+      "line": 32358,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_mkTeamPair": {
-      "line": 32357,
+      "line": 32419,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_mkRatio": {
-      "line": 32386,
+      "line": 32448,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_recordDefs": {
-      "line": 32582,
+      "line": 32644,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_renderRecordCard": {
-      "line": 32956,
+      "line": 33018,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_scanAllRaces": {
-      "line": 32702,
+      "line": 32764,
       "desc": "Rekorde v0.9.15.76: EIN chronologischer Scan ueber alle Saisons; fuettert alle Akkumulatoren und verteilt jedes Ereignis in Dekaden- UND Allzeit-Toepfe. Sequenziell (LRU-Cache von getHistoryDetail), abbrechbar (async, manuell im Schema)"
     },
     "startRecordScan": {
@@ -1873,231 +1873,231 @@
       "desc": "Rekorde: Mindestschwelle einer Karte ignorieren/anwenden (window, manuell im Schema)"
     },
     "renderRecords": {
-      "line": 33076,
+      "line": 33138,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_normalizeRealRace": {
-      "line": 32215,
+      "line": 32277,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_synthRaceDates": {
-      "line": 26136,
+      "line": 26198,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_dobLookup": {
-      "line": 6586,
+      "line": 6622,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_synthBirthDate": {
-      "line": 6611,
+      "line": 6647,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getDriverBirthDate": {
-      "line": 6619,
+      "line": 6655,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "checkTitleClinch": {
-      "line": 15025,
+      "line": 15077,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "titleClinchLine": {
-      "line": 15054,
+      "line": 15106,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_escHtml": {
-      "line": 15068,
+      "line": 15120,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "showTitleClinchModal": {
-      "line": 15076,
+      "line": 15128,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "maybeShowTitleClinch": {
-      "line": 15109,
+      "line": 15161,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_ageParts": {
-      "line": 32415,
+      "line": 32477,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_mkAge": {
-      "line": 32428,
+      "line": 32490,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_computeTeamSpans": {
-      "line": 10375,
+      "line": 10411,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getTeamPresence": {
-      "line": 8222,
+      "line": 8258,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_homePullWeight": {
-      "line": 7954,
+      "line": 7990,
       "desc": "L3-Heimrennen-Sog: Gewicht fuer Rennen im eigenen Land bei der Streckenwahl des Privatiers. <1970 = 4, sonst 1 (ab 1970 ist gemessen nichts zu holen)"
     },
     "_homePullNation": {
-      "line": 7959,
+      "line": 7995,
       "desc": "Nationalitaet eines Fahrers als IOC-Code inkl. HOME_RACE_PROXY - gleiche Regel wie assignGenericHomeOnly"
     },
     "_weightedDraw": {
-      "line": 7964,
+      "line": 8000,
       "desc": "Zieht n Elemente ohne Zuruecklegen mit Gewichten (Helfer fuer _pickPrivateerRaces)"
     },
     "teamDisplayName": {
-      "line": 30147,
+      "line": 30209,
       "desc": "Anzeigename fuer einen Team-Wert, der eine ID sein kann: loest `ent_<SD-Key>_<Jahr>` (mid-season eingestiegene Teams) ueber GAME_STATE.teams bzw. SEASON_DATA auf den echten Namen auf. Klartext laeuft unveraendert durch."
     },
     "repairMojibake": {
-      "line": 11020,
+      "line": 11056,
       "desc": "Repariert falsch dekodierte Namen ('Pedro RodrA-guez' -> 'Pedro Rodriguez'). Dekodiert UTF-8 von Hand statt per TextDecoder (der fehlt in tests/sim-core.js). Fasst nur Strings mit A~/A, an und laesst bei ungueltiger Bytefolge das Original stehen."
     },
     "rebuiltStandingsIfBroken": {
-      "line": 11057,
+      "line": 11093,
       "desc": "Rechnet die WM-Tabelle einer archivierten Saison aus ihren Rennergebnissen NEU, wenn Ergebnis-IDs und Tabellen-IDs null Ueberschneidung haben (Folge neu erzeugter Fahrerobjekte). Intakte Saisons kommen unveraendert zurueck."
     },
     "repairNamesInPlace": {
-      "line": 11167,
+      "line": 11203,
       "desc": "Wendet repairMojibake auf die Namensfelder eines Saison- oder Spielstand-Ausschnitts an: drivers, reservePool, teams, driverStandings, champion, teamChampion."
     },
     "_guestTeamIdFor": {
-      "line": 8251,
+      "line": 8287,
       "desc": "F1DB-constructorId -> Team-Id im aktuellen Kader (beide Normalisierungsformen, wie getTeamPresence). Helfer fuer applyGuestMoves."
     },
     "applyGuestMoves": {
-      "line": 8488,
+      "line": 8524,
       "desc": "Setzt vor jedem Rennen driver.team auf den Rennstall, fuer den der Fahrer laut GUEST_ENTRIES an DIESER Strecke antrat, und nimmt die Strecke in seinen Startplan auf. Nach dem Gastauftritt zurueck zur Basis. Setzt NUR zurueck, was es selbst gesetzt hat (_guestFrom). MUSS in allen drei Modi vor simulateTraining stehen [SYNC Rennwochenende]."
     },
     "_moveTargetFor": {
-      "line": 8270,
+      "line": 8306,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_poissonDraw": {
-      "line": 8276,
+      "line": 8312,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_rangAnteil": {
-      "line": 8285,
+      "line": 8321,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_dataMoveSupply": {
-      "line": 8293,
+      "line": 8329,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_restCircuits": {
-      "line": 8318,
+      "line": 8354,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_addModelStints": {
-      "line": 8328,
+      "line": 8364,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_istBewegung": {
-      "line": 8410,
+      "line": 8446,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_modelMovesFor": {
-      "line": 8429,
+      "line": 8465,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_raceGridEntry": {
-      "line": 5577,
+      "line": 5582,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "fillMissingTailEntries": {
-      "line": 9300,
+      "line": 9336,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_istTot": {
-      "line": 15275,
+      "line": 15327,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_necroArt": {
-      "line": 32032,
+      "line": 32094,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_teamNationOk": {
-      "line": 10488,
+      "line": 10524,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "enforceNationalityOnlySeats": {
-      "line": 10548,
+      "line": 10584,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "enforceMinCarsPerConstructor": {
-      "line": 9182,
+      "line": 9218,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_minCarsPerConstructor": {
-      "line": 9663,
+      "line": 9699,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_futureCalSeed": {
-      "line": 26335,
+      "line": 26397,
       "desc": "Kalender-Seed des Spielstands (GAME_STATE.calendarSeed, faellt auf juniorWorld.worldSeed zurueck); 1. Param override fuer Tests/Vorschau"
     },
     "futureCalendarInfo": {
-      "line": 26346,
+      "line": 26408,
       "desc": "Lesezugriff auf Streckenpool, Fixstrecken, Basisjahr und Laendermap des rotierenden Zukunfts-Kalenders"
     },
     "_futureCalCountry": {
-      "line": 26355,
+      "line": 26417,
       "desc": "IOC-Land einer Poolstrecke (Pool-Feld vor CIRCUIT_COUNTRY)"
     },
     "_futureCalPick": {
-      "line": 26362,
+      "line": 26424,
       "desc": "gewichtete Ziehung eines Eintrags aus einer Kandidatenliste"
     },
     "_futureCalCountryOk": {
-      "line": 26373,
+      "line": 26435,
       "desc": "Laenderregel: max 2 Rennen pro Land, genau EIN Land darf 3 haben"
     },
     "_futureCalGpOk": {
-      "line": 26384,
+      "line": 26446,
       "desc": "derselbe Grand-Prix-Name darf nie zweimal im selben Jahr vorkommen"
     },
     "_futureCalRotate": {
-      "line": 26390,
+      "line": 26452,
       "desc": "ein Rotationsschritt Vorjahr -> Folgejahr: Zielgroesse 22-26 (an Vorjahr +/-1 gekoppelt), 0-2 Abgaenge invers zum Gewicht, Zugaenge gewichtet, schon vertretene Laender nur mit halbem Gewicht"
     },
     "_futureCalendarIds": {
-      "line": 26432,
+      "line": 26494,
       "desc": "Streckenliste eines Jahres, iterativ ab Basisjahr 2026 aufgebaut und je Seed gecacht"
     },
     "_futureCalMonths": {
-      "line": 26447,
+      "line": 26509,
       "desc": "Monat je Strecke aus ihrem Fenster (enge Fenster zuerst, Hauptmonat bevorzugt, Ausweichen bei Haeufung); Basisjahr nutzt die realen 2026er Monate"
     },
     "buildFutureCalendar": {
-      "line": 26479,
+      "line": 26541,
       "desc": "rotierender Zukunfts-Kalender ab 2026 im Format von generateRacesForYear; 2. Param seedOverride"
     },
     "applyCuratedHomeOnly": {
-      "line": 7828,
+      "line": 7864,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "isSingleSeatConstructor": {
-      "line": 9690,
+      "line": 9726,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "lockSlidersMobile": {
-      "line": 37569,
+      "line": 37631,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "homeOnlyConstructorNations": {
-      "line": 9681,
+      "line": 9717,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "hasEarnedFullSeat": {
-      "line": 8666,
+      "line": 8702,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_isPhotoSlugId": {
-      "line": 37636,
+      "line": 37698,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "championRacedIn": {
-      "line": 11156,
+      "line": 11192,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_careerRaceChip": {
@@ -2105,191 +2105,191 @@
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "fillIndyEntryList": {
-      "line": 9836,
+      "line": 9872,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_dnsRateFor": {
-      "line": 9710,
+      "line": 9746,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "fillGridFromPool": {
-      "line": 9726,
+      "line": 9762,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_newGameId": {
-      "line": 4488,
+      "line": 4493,
       "desc": "Erzeugt eine neue Spiel-Kennung (gid) fuer den Riegel gegen fremde History-Records"
     },
     "_gidStamp": {
-      "line": 4493,
+      "line": 4498,
       "desc": "Stempelt die aktive Spiel-Kennung auf einen zu speichernden Record (beim Detail-Store auf den gzip-Mantel)"
     },
     "_gidOk": {
-      "line": 4497,
+      "line": 4502,
       "desc": "Gehoert ein gelesener Record zum laufenden Spiel? Ohne aktive Kennung (Alt-Stand) immer true"
     },
     "_gidDrop": {
-      "line": 4502,
+      "line": 4507,
       "desc": "Protokolliert einen verworfenen Fremd-Record mit Store, Jahr und fremder Kennung"
     },
     "_indyEntryTarget": {
-      "line": 9832,
+      "line": 9868,
       "desc": "Zielzahl der Indy-500-MELDER je Jahr (43-48, deterministisch) - Startplaetze bleiben 33, der Rest wird DNQ"
     },
     "_standingsZeile": {
-      "line": 15115,
+      "line": 15167,
       "desc": "Legt bei Bedarf eine WM-Tabellenzeile an - jeder Teilnehmer eines Rennwochenendes braucht eine, sonst verliert er Punkte und faellt aus der Ergebnis-Matrix"
     },
     "enforceIndyOnlySeats": {
-      "line": 10518,
+      "line": 10554,
       "desc": "Nachkontrolle am Saisonwechsel: raeumt Indy-Fahrer aus Grand-Prix-Teams und umgekehrt, analog enforceNationalityOnlySeats"
     },
     "_meldeTeamNamen": {
-      "line": 9981,
+      "line": 10017,
       "desc": "Haelt den Rennstall je DNQ-/DNS-/DNPQ-Melder im Moment des Rennens fest (Feld tms im Rennergebnis). dnq/dns/dnpq sind blosse ID-Listen - ohne diese Karte faellt die Anzeige auf den Kader vom Saisonende zurueck und zeigt eine leere Team-Spalte, sobald der Fahrer seinen Sitz spaeter verliert."
     },
     "_bereinigteWertung": {
-      "line": 9929,
+      "line": 9965,
       "desc": "Gegenstueck zu _standingsZeile: entfernt beim Archivieren Wertungszeilen ohne jede Teilnahme (0 Starts, 0 DNQ/DNS/DNPQ, 0 Punkte, 0 Rennen) und ergaenzt fehlende Namen aus dem Kader. Zeilen entstehen schon bei der Sitzvergabe - wer danach aus dem Feld faellt, liess bisher ein Phantom zurueck (513 von 2969 Zeilen im Spielstand des Nutzers)."
     },
     "stabilizeConstructorPresence": {
-      "line": 9553,
+      "line": 9589,
       "desc": "Schuetzt Konstrukteure vor dem Absturz: wer im Feld steht meldet mindestens EIN Rennen, und der Sturz vom Vollprogramm (>=80 % des Kalenders) auf <=50 % wird zu zwei Dritteln zurueckgenommen. Real (F1DB TEAM_PRESENCE) stuerzen 1,5 % der Teams so ab, im Spiel waren es 4,8 %. Laeuft VOR pruneZeroEntryDrivers."
     },
     "_bereinigteTeamWertung": {
-      "line": 9952,
+      "line": 9988,
       "desc": "Wie _bereinigteWertung, aber fuer teamStandings: ein Konstrukteur ohne eine einzige Meldung belegt keinen WM-Rang mehr. Abgleich ueber den Klarnamen, weil res[].tmn und tms Namen fuehren, die Wertung aber nach Team-ID schluesselt."
     },
     "enforceRegularDriverPerTeam": {
-      "line": 8831,
+      "line": 8867,
       "desc": "Sorgt dafuer dass jedes Team einen Stammfahrer hat (>=80 % der Rennen SEINES Teams) - meistens. Laeuft als letzter Schritt in assignPrivateerSchedules NACH dem L1-Nachlauf und vergibt die Deckung innerhalb der realen Streckenliste. Ein Wurf je Team und Saison entscheidet, ob das Team ohne fahren darf; die Kaskade befoerdert dann nach bewaehrt (hasEarnedFullSeat), frischer Form, Pace."
     },
     "_stammfahrerSchwelle": {
-      "line": 8891,
+      "line": 8927,
       "desc": "Schwelle, unterhalb derer ein Team ohne Stammfahrer fahren darf. Ab 1990 null (real durchgehend gedeckt), sonst 0,50 fuer CONSTRUCTOR_TINY/SMALL und 0,15 fuer alle uebrigen. Real gemessen (F1DB, tests/works-driver-reality.js): gross 2,8 %, uebrige 10-20 %."
     },
     "applyTeamPresenceToPlans": {
-      "line": 8912,
+      "line": 8948,
       "desc": "Beschneidet die Meldeplaene auf die Strecken, die ein Konstrukteur laut TEAM_PRESENCE real bestritten hat (frueher L1-Nachlauf, seit v0.9.17.30 eigene Funktion). Laeuft ZWEIMAL: in assignPrivateerSchedules voll, und am Ende von startNewSeason mit nurOhnePlan=true fuer Fahrer, die spaetere Stufen ohne Meldeplan ins Team gesetzt haben - kein Plan heisst sonst jedes Rennen. Gibt das Programm je Team-ID zurueck."
     },
     "_necroObit": {
-      "line": 32042,
+      "line": 32104,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "raceAbbrLabel": {
-      "line": 8181,
+      "line": 8217,
       "desc": "Kuerzel eines Rennens in der Saison-Matrix. Reihenfolge: Nation als IOC-Code (Emoji oder Code) -> CIRCUIT_COUNTRY ueber die Strecke -> GP_COUNTRY_MAP ueber den kanonischen GP-Namen -> eigene Streckenkarte -> Veranstaltungsname ohne Jahreszahl und Gattungswort. Vorher stand hier substring(0,3) auf dem RENN-Namen, was GRA fuer jeden Grand Prix und 198 fuer jedes Rennen mit fuehrender Jahreszahl ergab."
     },
     "constructorTitleFromSlug": {
-      "line": 30135,
+      "line": 30197,
       "desc": "Baut aus einem Konstrukteurs-Slug den Anzeigenamen. Stumpfes Grossschreiben des ersten Buchstabens machte aus mclaren ein Mclaren - im Renn-Raster sichtbar, weil die F1DB-Zeilen dort keinen Klartextnamen mitliefern (teamLabel null) und auf den Slug zurueckfallen. Ausnahmen fuer McLaren, O.S.C.A., AlphaTauri, Kuerzel und Namenspartikel. Werte mit Grossbuchstaben oder Leerzeichen bleiben unangetastet."
     },
     "_recapRaceBei": {
-      "line": 19638,
+      "line": 19690,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "hyphenNameRate": {
-      "line": 7514,
+      "line": 7550,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "fitLongNames": {
-      "line": 40804,
+      "line": 40867,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_teamPickWeighted": {
-      "line": 16321,
+      "line": 16373,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_teamInitials": {
-      "line": 16337,
+      "line": 16389,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_circuitPick": {
-      "line": 16862,
+      "line": 16914,
       "desc": "Zieht ein Strecken-/Rennnamen-Muster gewichtet und aera-gefiltert (String = Gewicht 5, [muster,gewicht|{aera:gewicht}] = Fenster)"
     },
     "_circuitNationWeight": {
-      "line": 16815,
+      "line": 16867,
       "desc": "Kalender-Gewicht einer Nation: Summe ihrer MOTORSPORT_NATION_BLEND-Gewichte ueber alle Dekaden"
     },
     "_pickPlace": {
-      "line": 16884,
+      "line": 16936,
       "desc": "Zieht einen Ortsnamen aus data/places.js (CIRCUIT_PLACES); gross=Stadt fuer Strassenkurse, sonst Kleinort, leerer Eimer faellt auf den anderen zurueck"
     },
     "pickTeamNation": {
-      "line": 16298,
+      "line": 16350,
       "desc": "Nation fuer ein NEUES TEAM ziehen (TEAM_NATION_BLEND je Dekade, Rennstall-Realitaet) — NICHT pickNationMotorsport, das ist die Fahrer-Verteilung"
     },
     "_teamRegisterKey": {
-      "line": 16279,
+      "line": 16331,
       "desc": "Sprachregister fuer einen Teamnamen; mehrsprachige Laender (SUI, BEL) wuerfeln die Region je Team nach TEAM_NATION_REGIONS"
     },
     "getF1LogoKey": {
-      "line": 4120,
+      "line": 4125,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getF1LogoHtml": {
-      "line": 4132,
+      "line": 4137,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "refreshF1LogoSlots": {
-      "line": 4144,
+      "line": 4149,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "nationCodeOf": {
-      "line": 7583,
+      "line": 7619,
       "desc": "Nation -> IOC normalisieren, ABER DDR und RHO bleiben erhalten (anders als _iocOf)"
     },
     "nationOfDriverKey": {
-      "line": 7599,
+      "line": 7635,
       "desc": "Fahrer-Schluessel -> IOC: Spielstand, dann NAME_TO_IOC exakt, dann F1DB-Slug, zuletzt Namensraten"
     },
     "nationOfTeamKey": {
-      "line": 7613,
+      "line": 7649,
       "desc": "Konstrukteur-Slug -> IOC: CONSTRUCTOR_NATIONS (DDR-Faelle), dann F1DB_CONSTRUCTOR_NATIONS, dann Snapshot"
     },
     "_mkNationAgg": {
-      "line": 32477,
+      "line": 32539,
       "desc": "Versteckter Akkumulator im Rekord-Scan: Fahrer/Konstrukteure/Rennen je Nation, Datenbasis des Sub-Tabs Nationen"
     },
     "_scanSourceBar": {
-      "line": 33019,
+      "line": 33081,
       "desc": "Quelle-Umschaltung (Alles/Simuliert/Real) - geteilt von Rekorden und Nationen"
     },
     "_scanDecadeChips": {
-      "line": 33040,
+      "line": 33102,
       "desc": "Dekaden-Chips zum Scan-Ergebnis - geteilt von Rekorden und Nationen"
     },
     "_scanGate": {
-      "line": 33056,
+      "line": 33118,
       "desc": "Liefert Berechnen-Aufforderung bzw. Fortschritt, solange kein Scan-Ergebnis vorliegt; sonst null"
     },
     "nationDisplayName": {
-      "line": 33123,
+      "line": 33185,
       "desc": "IOC -> deutscher Landesname mit Bezugsjahr (historische Staaten via getCountryDisplayName)"
     },
     "renderNations": {
-      "line": 33164,
+      "line": 33226,
       "desc": "Sub-Tab Nationen: drei Sichten (Fahrer/Konstrukteure/Austragungslaender) auf das Scan-Aggregat"
     },
     "_teamKeyForms": {
-      "line": 4998,
+      "line": 5003,
       "desc": "Vergleichsformen eines Team-Schluessels (Name/Slug/entslugt) - Bruecke zwischen teamHistIds und Slug-Links"
     },
     "_scanScopeChips": {
-      "line": 33031,
+      "line": 33093,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "istIndy500": {
-      "line": 5598,
+      "line": 5603,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "istIndyGP": {
-      "line": 5606,
+      "line": 5611,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "rennenErgebnisFuer": {
-      "line": 14171,
+      "line": 14223,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "clamp": {
@@ -2433,7 +2433,7 @@
       "file": "zielflagge/index.html"
     },
     "addTeam": {
-      "line": 33755,
+      "line": 33817,
       "desc": "TODO: Beschreibung ergaenzen",
       "file": "zielflagge/index.html"
     },
@@ -2443,7 +2443,7 @@
       "file": "zielflagge/index.html"
     },
     "addDriver": {
-      "line": 33748,
+      "line": 33810,
       "desc": "TODO: Beschreibung ergaenzen",
       "file": "zielflagge/index.html"
     },
@@ -2578,7 +2578,7 @@
       "file": "zielflagge/index.html"
     },
     "rows": {
-      "line": 33191,
+      "line": 33253,
       "desc": "TODO: Beschreibung ergaenzen",
       "file": "zielflagge/index.html"
     },
@@ -3088,176 +3088,184 @@
       "file": "zielflagge/index.html"
     },
     "getF1DebutYear": {
-      "line": 6553,
+      "line": 6589,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getCareerYears": {
-      "line": 6572,
+      "line": 6608,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "getEraAccidentShare": {
-      "line": 5931,
+      "line": 5936,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_bucheGastTod": {
-      "line": 15283,
+      "line": 15335,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "dnfTeamFaktor": {
-      "line": 5761,
+      "line": 5766,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "teamPyramidCarSpeed": {
-      "line": 6407,
+      "line": 6412,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "eraChangesBis": {
-      "line": 5729,
+      "line": 5734,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "eraReliabilityFactor": {
-      "line": 5745,
+      "line": 5750,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_klimaRegen": {
-      "line": 5881,
+      "line": 5886,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "wochenendWetter": {
-      "line": 5888,
+      "line": 5893,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "markiereOhneZeit": {
-      "line": 5874,
+      "line": 5879,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "dnfWahrscheinlichkeit": {
-      "line": 5772,
+      "line": 5777,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "roteFlaggeWahrscheinlichkeit": {
-      "line": 5846,
+      "line": 5851,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "istRohdiamant": {
-      "line": 21075,
+      "line": 21127,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "bewertungsBand": {
-      "line": 22644,
+      "line": 22696,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "leistungRelativZumAuto": {
-      "line": 22654,
+      "line": 22706,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "teamEntscheidungsWert": {
-      "line": 22710,
+      "line": 22762,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "skalierteBeurteilung": {
-      "line": 22715,
+      "line": 22767,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "letztesTitelJahr": {
-      "line": 22929,
+      "line": 22981,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "teamNiveau": {
-      "line": 22946,
+      "line": 22998,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "cockpitBindung": {
-      "line": 22074,
+      "line": 22126,
       "desc": "Daempfer 0,2 (bestes Auto) bis 1 (schlechtestes) nach Auto-Rang fuer career_end, Alters-Ruecktritt und Nicht-Verlaengerung ab Ruecktrittsalter (COCKPIT_BINDUNG_TOP). Seit 27.09.2026"
     },
     "erfahrungsVorrang": {
-      "line": 23084,
+      "line": 23136,
       "desc": "Aera-Wert aus ERA_ERFAHRUNG_VORRANG (1 = F1-Erfahrung zaehlt voll bei der Cockpit-Vergabe, 0 = gar nicht; ab 1990 0)"
     },
     "erfahrungsGewicht": {
-      "line": 23086,
+      "line": 23138,
       "desc": "Los-Multiplikator eines Free Agents nach Starts in der abgelaufenen Saison (Phase 3 + Sicherheitsnetz startNewSeason)"
     },
     "poolLoseSkalieren": {
-      "line": 23094,
+      "line": 23146,
       "desc": "Skaliert die Pool-Lose in der Cockpit-Lotterie, damit der Pool hoechstens wie POOL_LOSE Kandidaten zaehlt (aera-abhaengig)"
     },
     "_istKompositum": {
-      "line": 16899,
+      "line": 16951,
       "desc": "Streckeneditor: Kompositum-Muster ({loc}ringen) mit mehrteiligem Ort? Dann neu ziehen (Paket 8b)"
     },
     "_composeCircuitNames": {
-      "line": 16903,
+      "line": 16955,
       "desc": "Streckeneditor: Strecke + Rennen aus EINEM Ort, ohne Sponsor; Stadtkurs-Erkennung, frz. Elision, span. del (Paket 8b). Pure, auch von tests/circuit-namegen.js genutzt"
     },
     "_tickerWetterPlan": {
-      "line": 18633,
+      "line": 18685,
       "desc": "Ticker: wuerfelt nur die RUNDEN der Regen-/Rotflaggen-Meldungen aus plannedResult.regenArt/roteFlagge (Paket 1b, reine Darstellung)"
     },
     "_tickerFahrerSlot": {
-      "line": 18658,
+      "line": 18710,
       "desc": "Ticker: Name fuer {driver} - Fuehrender >=50 %, Rest Vorjahres-Weltmeister/WM-Fuehrender/Pole/naechste zwei, nur wer im Rennen faehrt"
     },
     "_tickerWetterMeldungen": {
-      "line": 18676,
+      "line": 18728,
       "desc": "Ticker: feuert rain_arrives/track_drying/red_flag(_wet)/restart_new|resume in der geplanten Runde (aus simulateLap)"
     },
     "_mergeNationExtra": {
-      "line": 7063,
+      "line": 7099,
       "desc": "TODO: Beschreibung ergaenzen"
     },
     "_navViewSnap": {
-      "line": 41502,
+      "line": 41565,
       "desc": "Navigations-Verlauf: Hauptansicht (Tab, Unter-Tabs, Jahr, Rennen, Junior) als Schnappschuss"
     },
     "_navSnap": {
-      "line": 41506,
+      "line": 41569,
       "desc": "Navigations-Verlauf: Ansicht + Stapel der offenen Fenster (Oeffner+Argumente, z-Reihenfolge) mit Vergleichsschluessel"
     },
     "_navRecord": {
-      "line": 41514,
+      "line": 41577,
       "desc": "Navigations-Verlauf: neuen Eintrag anlegen (Vor-Zweig kappen, history.pushState), wenn sich der Zustand geaendert hat"
     },
     "_navNoteView": {
-      "line": 41529,
+      "line": 41592,
       "desc": "Navigations-Verlauf: Aufzeichnung gebuendelt anstossen (aus renderContent und Fenster-Oeffnern)"
     },
     "_navUpdateButtons": {
-      "line": 41580,
+      "line": 41643,
       "desc": "Navigations-Verlauf: Zurueck/Vor-Knoepfe (de)aktivieren"
     },
     "initNavHistory": {
-      "line": 41586,
+      "line": 41649,
       "desc": "Navigations-Verlauf: Fenster-Oeffner (NAV_OPENERS) umwickeln, Knopfleiste unten links, popstate/Alt+Pfeil anbinden"
     },
     "_navRestore": {
-      "line": 41535,
+      "line": 41598,
       "desc": "Navigations-Verlauf (async): Eintrag wiederherstellen - Jahr/Tab setzen, fremde Fenster schliessen, fehlende neu oeffnen"
     },
     "_navGo": {
-      "line": 41559,
+      "line": 41622,
       "desc": "Navigations-Verlauf (async): zu Index springen; laeuft schon eine Wiederherstellung, gewinnt das letzte Ziel"
     },
     "_teamNationLookup": {
-      "line": 33392,
+      "line": 33454,
       "desc": "Statistik-Tabellen: Team-Nation nach Anzeigename (Spielstand/allTimeStATS.nation, sonst nationOfTeamKey/F1DB)"
     },
     "_activeName": {
-      "line": 33321,
+      "line": 33383,
       "desc": "Statistik-Tabellen: aktiven Fahrer/Team-Namen per Schriftfarbe (accent-green) hervorheben"
     },
     "_indySig": {
-      "line": 33332,
+      "line": 33394,
       "desc": "Indy-Filter: Cache-Signatur (Startjahr, Jahr, History-Laenge, Ergebnisse)"
     },
     "_indyStatsMap": {
-      "line": 33379,
+      "line": 33441,
       "desc": "Indy-Filter: Karte histId->Indy-500-Anteil aus Cache, sonst async Neuberechnung + renderContent; null solange sie laeuft"
     },
     "_buildIndyStats": {
-      "line": 33336,
+      "line": 33398,
       "desc": "Indy-Filter (async): Starts/Siege/Podien/Poles/Punkte der 11 Indy-500-Rennen 1950-1960 je Fahrer - real aus F1DB vor Spielstart, simuliert aus Archiv/laufender Saison (inkl. Reserve-Pool-Gaeste)"
+    },
+    "preDebutPace": {
+      "line": 6537,
+      "desc": "TODO: Beschreibung ergaenzen"
+    },
+    "applyPreDebut": {
+      "line": 6547,
+      "desc": "TODO: Beschreibung ergaenzen"
     }
   }
 }

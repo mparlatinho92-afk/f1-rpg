@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.5</title>
+    <title>F1 RPG v0.9.20.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.5 (aktuell) - 07.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.6 (aktuell) - 08.10.2026</div>
+                            <div>&#8226; FIX: Echte Fahrer werden nicht mehr Jahre vor ihrem Debuet verpflichtet (Pace und Potenzial vor dem Debuet gedaempft)</div>
+                            <div>&#8226; FIX: Frueh verpflichtete Fahrer verloren Pace statt zu reifen</div>
+                            <div>&#8226; FIX: Franco Rol 1950/52 stand als Francois Mazet in den Daten</div>
+                            <div>&#8226; FIX: Gerard Larrousse zeigte das Foto von Louis Gerard</div>
+                            <div class="font-bold text-slate-400">v0.9.20.5 - 07.10.2026</div>
                             <div>&#8226; NEU: Nationenflagge je Eintrag in Fahrer-, Team- und Weltmeister-Tabelle</div>
                             <div>&#8226; NEU: Aktive Fahrer/Teams farbig statt Legenden/Ehemalige-Symbole</div>
                             <div>&#8226; NEU: Indy-Filter zeigt den Indy-500-Anteil bzw. die Karriere ohne Indy 500</div>
@@ -4197,7 +4202,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.5';
+        const VERSION = '0.9.20.6';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6518,6 +6523,37 @@
         function poolMinAgeOk(driver, year) {
             if (!driver || !driver.birthYear) return true;      // Alter unbekannt → durchlassen
             return (year - driver.birthYear) >= JUNIOR_MIN_AGE;
+        }
+
+        // ── Pace VOR dem echten Debüt ───────────────────────────────────────────
+        // Der Pool laedt echte Fahrer bis 5 Jahre vor ihrem realen Debuet (Gruppe C).
+        // Ohne Daempfung trugen sie schon die Pace ihrer Debuetsaison — Prost stand
+        // 1975 mit 77/98 an der Spitze des Pools und wurde staendig verpflichtet.
+        // Real liegt ein Fahrer beim Debuet bei 88,5 % seines Peaks und waechst
+        // danach ~2,6 Punkte pro Jahr (BEFUNDE.md, Karriere-Bogen); diese Kurve
+        // wird rueckwaerts verlaengert. Massstab sind die Jahre bis zum Debuet,
+        // nicht das Alter (Spaetstarter wie Hill, de Vries). Potenzial bleibt.
+        const PRE_DEBUT_PACE_STEP = 3;
+        function preDebutPace(debutPace, debutYear, year) {
+            const vorher = (debutYear || 0) - year;
+            return vorher > 0 ? Math.max(45, Math.round(debutPace - PRE_DEBUT_PACE_STEP * vorher)) : debutPace;
+        }
+        // Setzt Pace UND Potenzial eines Fahrers mit `preDebut` fuer `year` — im Pool wie im
+        // Cockpit (wer frueh verpflichtet wird, reift auf derselben Kurve; vorher fiel er in den
+        // Inaktivitaets-Abbau, weil PACE_RATINGS fuer die Jahre vor dem Debuet fehlt).
+        // Das Potenzial faellt mit: der Abstand bleibt, aber vor dem Debuet sieht kein Team
+        // ueber ihn hinaus (Prost 1975: Marktwert 73 → 68). Ab dem Debuet gelten die Elo-Werte.
+        // Rueckgabe true = Fahrer behandelt, weitere Pace-Logik fuer dieses Jahr ueberspringen.
+        function applyPreDebut(d, year) {
+            if (!d || !d.preDebut) return false;
+            const pd = d.preDebut;
+            const pr = (typeof PACE_RATINGS !== 'undefined' && d.histId) ? PACE_RATINGS[d.histId]?.[String(year)] : null;
+            const potZiel = pd.pot != null ? pd.pot : (d.potentialPace || pd.pace);
+            d.pace = pr ? pr[0] : preDebutPace(pd.pace, pd.year, year);
+            d.potentialPace = pr ? pr[1] : Math.max(d.pace, preDebutPace(potZiel, pd.year, year));
+            d.currentPace = d.pace;
+            if (pr || year >= pd.year) d.preDebut = null;
+            return true;
         }
 
         const POOL_TALENT_AGE_MARGIN = 5;
@@ -12299,6 +12335,8 @@
         // Nennung des Urhebers — ohne diese Tabelle duerften die Bilder nicht gezeigt werden.
         // Ausgabe unter dem Foto im Fahrer-Steckbrief (renderDriverPhotoHtml).
         const FEEDER_PHOTO_CREDITS = {
+            // Kein Feeder, aber dieselbe Pflicht: F1-Fahrer mit Commons-Foto statt statsf1
+            'gerard-larrousse': 'Eddi Laumanns · CC BY-SA 3.0',
 
             'feeder-ayrton-simmons': 'Cs-wolves · CC BY-SA 4.0',
             'feeder-brando-badoer': 'Lukas Raich · CC BY-SA 4.0',
@@ -12658,9 +12696,22 @@
                 const _prPool = (typeof PACE_RATINGS !== 'undefined')
                     ? (PACE_RATINGS[resolvedHistId]?.[String(year)] ?? null)
                     : null;
-                const p   = _prPool ? _prPool[0] : (pace || 70);
-                const con = (_prPool && _prPool[2] > 0) ? _prPool[2] : (consistency || 70);
-                const pot = _prPool ? _prPool[1] : Math.min(99, (pace || 70) + Math.floor(Math.random() * 12));
+                // Vor dem echten Debuet: Elo-Werte des Debuetjahres als Ziel, Pace gedaempft
+                // Debuetjahr ueber den Slug, NICHT ueber die Kurz-ID: 'FRANCO' steht fuer sieben
+                // Fahrer (Comotti 1950 … Colapinto 2024) — getHistDebutYear gaebe Cevert 1950.
+                const _prJahre = (typeof PACE_RATINGS !== 'undefined' && PACE_RATINGS[resolvedHistId])
+                    ? Object.keys(PACE_RATINGS[resolvedHistId]).map(Number) : [];
+                const _histDebut = (_prJahre.length ? Math.min(..._prJahre) : null)
+                    || (nextCockpit && nextCockpit.year) || null;
+                const _vorDebut  = !_prPool && _histDebut && _histDebut > year;
+                const _prDebut   = (_vorDebut && typeof PACE_RATINGS !== 'undefined')
+                    ? (PACE_RATINGS[resolvedHistId]?.[String(_histDebut)] ?? null) : null;
+                const _prSrc     = _prPool || _prDebut;
+                const _debutPace = _prSrc ? _prSrc[0] : (pace || 70);
+                const p   = _vorDebut ? preDebutPace(_debutPace, _histDebut, year) : _debutPace;
+                const con = (_prSrc && _prSrc[2] > 0) ? _prSrc[2] : (consistency || 70);
+                const _debutPot = _prSrc ? _prSrc[1] : Math.min(99, (pace || 70) + Math.floor(Math.random() * 12));
+                const pot = _vorDebut ? Math.max(p, preDebutPace(_debutPot, _histDebut, year)) : _debutPot;
                 return {
                     id: 'reserve-' + shortId + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
                     histId: resolvedHistId, name, team: null,
@@ -12673,6 +12724,7 @@
                     experience: experience || 70, starts: starts || 0,
                     birthYear: birthYear || null,
                     debutYear: null, histDebutYear: getHistDebutYear(resolvedHistId) || null, contractEnd: null,
+                    preDebut: _vorDebut ? { year: _histDebut, pace: _debutPace, pot: _debutPot } : null,
                     status: 'active', isReserve: true,
                     poolGroup, nextCockpit: nextCockpit || null,
                     lastRacedYear: lastRacedYear || null
@@ -25634,6 +25686,8 @@
 
             GAME_STATE.drivers.forEach(driver => {
                 const newYearStr = String(newYear);
+                // Vor dem echten Debuet verpflichtet: Reifekurve statt Inaktivitaets-Abbau
+                if (applyPreDebut(driver, newYear)) return;
                 if (driver.histId && typeof PACE_RATINGS !== 'undefined') {
                     const pr = PACE_RATINGS[driver.histId]?.[newYearStr];
                     if (pr) {
@@ -25731,6 +25785,14 @@
             // Reale Fahrer mit Elo fürs Jahr bleiben unberührt (echtes Debütjahr zählt;
             // Pace wird bei der Verpflichtung ohnehin aus PACE_RATINGS refresht).
             (GAME_STATE.reservePool || []).forEach(d => {
+                // Vor dem echten Debuet: jaehrlich PRE_DEBUT_PACE_STEP naeher an die
+                // Debuet-Pace; ab dem Debuetjahr gilt die Elo-Pace des Jahres.
+                // Aeltere Staende: „Kommend"-Eintraege tragen dort noch die volle Debuet-Pace.
+                if (!d.preDebut && d.poolGroup === 'C' && d.nextCockpit && d.nextCockpit.year > newYear
+                    && d.preDebut !== null) {
+                    d.preDebut = { year: d.nextCockpit.year, pace: d.currentPace || d.pace || 70, pot: d.potentialPace || null };
+                }
+                if (applyPreDebut(d, newYear)) return;
                 if (!d.birthYear) return;
                 if (d.histId && typeof PACE_RATINGS !== 'undefined'
                     && PACE_RATINGS[d.histId]?.[String(newYear)]) return;
@@ -37749,7 +37811,8 @@ Empfohlene Wertebereiche:
             'george-amick': 'amickg',
             'george-constantine': 'constant',
             'george-russell': 'russellg',
-            'gerard-larrousse': 'gerardl',
+            // gerard-larrousse: KEIN statsf1-Bild. 'gerardl' ist Gérard, L(ouis) — statsf1
+            // haengt die Initiale des VORnamens an. Foto jetzt eingebettet (Commons, 1975).
             'giancarlo-fisichella': 'fisiche',
             'gianfranco-brancatelli': 'brancate',
             'gianni-morbidelli': 'morbidel',
