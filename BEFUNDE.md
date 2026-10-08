@@ -2976,3 +2976,38 @@ Kurve wie echte Fahrer vor dem Debüt (−3 Pace/Potenzial je Jahr). Wertevertei
 - ⚠ **Die 2030er sind schon VORHER +4,6 Jahre zu alt — nicht vom Reifejahr verursacht.** Feeder stellen 159 von 201 Junior-Debüts;
   die Liste endet mit Jahrgang 2008, in den 2030ern ist die Kohorte 25+ und wird wegen `realPreference` (echt vor generiert)
   weiter bevorzugt. Ursache ist die Kohorte, nicht die Kurve — nicht über das Reifejahr lösen.
+
+### 08.10.2026 (3): Junior-Elo für die Feeder (Schritt B) — `tools/junior-elo.js`
+Feeder würfelten Pace/Potenzial pro Spielstand. Jetzt: Elo aus echten Rennergebnissen F2 2017–26, F3 2019–26, FRECA 2019–26
+(26 Wikipedia-Saisonartikel, `tools/fetch-junior-results.js` → `tools/quellen/junior-results.json`, 840 Fahrer-Saisons).
+Mechanik 1:1 wie `tests/calculate-elo.js` (alle Finisher gegen alle, K 16, nach Erwartung; Ausfälle neutral — Wikipedia nennt
+keine Ursache). Die F1-Elo bleibt unberührt. Ergebnis `data/feeder-elo.js` (136 von 144 Feedern; 8 ohne Daten würfeln weiter).
+
+| Prüfung | Wert |
+|---|---|
+| **F1-Aufstieg: trennt die Elo, wen echte Teams holten?** (letzte Junior-Saison ≤ 2023, n 150) | **AUC 0,91** — oberstes Viertel 34 % in der F1, Rest 3 % |
+| Rang Junior-Elo ↔ Rang späteres F1-Potenzial (21 Anker) | Spearman 0,21 (Pearson 0,44, von Piastri/Russell getragen) |
+| Debüt-Pace direkt vorhersagbar? | r 0,12 — nein |
+
+- **NEGATIVERGEBNIS Teamkorrektur:** relativ zum Team (wie `normalize-elo.js`) verschlechtert die Vorhersage: Gewicht 0 / ½ / 1 →
+  r 0,44 / 0,16 / −0,18. F2/F3/FRECA sind Einheitsautos — Gewicht 0.
+- **NEGATIVERGEBNIS direkte Regression auf die F1-Skala:** bei r 0,44 landen alle Feeder auf 68–83 — unter den generierten Rookies
+  (75–94). Vesti wäre schwächer gewesen als ein erfundener Durchschnitts-Rookie. Deshalb: **Elo = Reihenfolge, Skala = bisherige
+  Feeder-Spanne 74–92** (Rang linear), Debüt-Pace = 88,5 % des Potenzials (reale Kurve). Reife-Verschiebung: 1 Standardabweichung
+  besser = 1 Jahr früher reif, ±2.
+- Serienabstand aus Fahrern in Folgejahren in beiden Serien: F3 → F2 −62 Elo (n 62), FRECA → F3 weitere −131 (n 52).
+- ⚠ Die 21 Anker sind ein schwacher Prüfstein: viele F1-Potenziale stammen aus 1–2 Jahren (Bortoleto 66, Sargeant 58, Zhou 60).
+  Maßstab ist der F1-Aufstieg.
+- ⚠ **Messfallen beim Abruf:** Wikipedia drosselt nach ~10 schnellen Abrufen mit Klartext statt JSON (Werkzeug wartet jetzt);
+  F2 2018–21 schreiben `{|class=` ohne Leerzeichen; F3 2020 holt die Zellen aus `Template:F3R2020`; FRECA heißt „Drivers'
+  standings"; Vorlagen mit CRLF gespeichert → Zeilen tolerant trennen. Namen: „Andrea Kimi Antonelli" ↔ F1 „Kimi Antonelli".
+- **Spielmessung** (`gen-debut-age.js 4 2020 20`, vorher = v0.9.20.7 mit gewürfelten Feedern): Feeder-Debütanten aus dem oberen
+  Elo-Drittel 29 % → **44 %**, aus dem unteren 36 % → **26 %**, Ø Elo-Potenzial 82,6 → 84,3 (alle 83,0); zu jung 6,0 → 2,8 %;
+  Vergreisung 63 → 60 %. **Realität: 16 von 16 F1-Aufsteigern aus dem oberen Drittel** (`junior-elo.js`, Zeile „je Elo-Drittel").
+- ⚠ **Der Rest liegt an der Marktregel, nicht an den Werten:** `realPreference` (echt vor generiert) lässt einen schwachen echten
+  Feeder jeden generierten Rookie schlagen — über 20 Jahre kommt fast jeder der 136 Feeder dran. Dieselbe Regel erklärt die
+  zu alten 2030er-Debüts (Abschnitt Reifejahr).
+- **Schalter „echt vor generiert" (`simRules.realFirst`, v0.9.20.8):** Standard an = Verhalten wie bisher. Aus: der beste echte
+  Kandidat tritt in `acquireSeatDriver` und im Saisonende-Sitzfüller gegen EINEN generierten Bewerber an, höherer Marktwert
+  (70 % Pace + 30 % Potenzial) gewinnt; Chronik-Grund `outvalued-real`. ▶ Noch nicht gemessen:
+  `node tests/gen-debut-age.js 4 2020 20 --wert` gegen dasselbe ohne `--wert`.

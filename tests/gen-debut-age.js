@@ -11,7 +11,8 @@
  *   1. Realisiertes Debütalter generierter Fahrer (gen-/exp-) je Ära vs. ERA_ROOKIE_AGE
  *   2. Vergreisung: Alter generierter, NIE-gefahrener Wartender (Free Agents team=null + reservePool)
  *
- * Verwendung: node tests/gen-debut-age.js [sims] [startYear] [seasons] [--vorher]
+ * Verwendung: node tests/gen-debut-age.js [sims] [startYear] [seasons] [--vorher] [--wert]
+ *   --wert   = Schalter „echt vor generiert" AUS (simRules.realFirst = false, Wert entscheidet)
  *   --vorher = letzter Monolith statt index.html (A/B). Seit 08.10.2026 auch Feeder (feeder-) und
  *   der Anteil zu junger Debüts (≥ 3 Jahre unter ERA_ROOKIE_AGE) — Maßstab für das Reifejahr.
  *   default: 6 Sims, Start 2010, 30 Saisons (läuft bis 2040 – weit hinter Template-Horizont 2025,
@@ -26,7 +27,8 @@ const N       = parseInt(_args[0]) || 6;
 const START   = parseInt(_args[1]) || 2010;
 const SEASONS = parseInt(_args[2]) || 30;
 const END     = START + SEASONS - 1;
-console.log(`\n═══ Generierte-Debütalter-Tracker | ${START}–${END} | ${N} Sims ═══\n`);
+const WERT = process.argv.includes('--wert');
+console.log(`\n═══ Generierte-Debütalter-Tracker | ${START}–${END} | ${N} Sims${WERT ? ' | echt vor generiert AUS' : ''} ═══\n`);
 
 // Spiegelt index.html L3777 (ERA_ROOKIE_AGE) – Referenzanker, read-only.
 const ERA_ROOKIE_AGE = {
@@ -48,6 +50,9 @@ function eraVal(table, year) {
 }
 
 const ctx = getContext();
+// Junior-Elo-Potenzial je Feeder-Name (data/feeder-elo.js, als const nicht auf dem Kontext) — auch für --vorher,
+// dort zeigt es, ob die Auswahl schon ohne Elo-Werte den Stärkeren folgte.
+const FEEDER_ELO = (() => { try { return require('vm').runInNewContext(require('fs').readFileSync(require('path').join(__dirname, '..', 'data', 'feeder-elo.js'), 'utf8') + ';FEEDER_ELO'); } catch (e) { return {}; } })();
 
 function simulateSeason(c) {
     const races = c.GAME_STATE.races;
@@ -72,6 +77,7 @@ let okSims = 0, errSims = 0;
 for (let sim = 0; sim < N; sim++) {
     try {
         ctx.initFromYear(START);
+        if (WERT) ctx.GAME_STATE.simRules = { ...(ctx.GAME_STATE.simRules || {}), realFirst: false };
         const seenRaced = new Set();   // gen-ids die schon gefahren sind
         for (let year = START; year <= END; year++) {
             simulateSeason(ctx);
@@ -83,7 +89,7 @@ for (let sim = 0; sim < N; sim++) {
                 if (!isGen(d) || !d.birthYear) continue;
                 if (seenRaced.has(d.id)) continue;
                 seenRaced.add(d.id);
-                debuts.push({ year, age: year - d.birthYear, kind: /^exp-/.test(d.id) ? 'exp' : /^feeder-/.test(d.id) ? 'feeder' : 'gen' });
+                debuts.push({ year, age: year - d.birthYear, name: d.name, kind: /^exp-/.test(d.id) ? 'exp' : /^feeder-/.test(d.id) ? 'feeder' : 'gen' });
             }
 
             if (year >= END) {
@@ -124,6 +130,11 @@ console.log(`  Gesamt:   ${fmt(stat(debuts.map(d => d.age)))}`);
 console.log(`  Rookies (gen-): ${fmt(stat(debuts.filter(d => d.kind === 'gen').map(d => d.age)))}`);
 console.log(`  Erfahren (exp-):${fmt(stat(debuts.filter(d => d.kind === 'exp').map(d => d.age)))}`);
 console.log(`  Feeder:         ${fmt(stat(debuts.filter(d => d.kind === 'feeder').map(d => d.age)))}`);
+{ // Wen holen die Teams? Elo-Potenzial der debütierenden Feeder gegen alle Feeder
+    const alle = Object.values(FEEDER_ELO).map(v => v[0]), fd = debuts.filter(d => d.kind === 'feeder' && FEEDER_ELO[d.name]).map(d => FEEDER_ELO[d.name][0]);
+    const m = a => a.reduce((x, y) => x + y, 0) / a.length;
+    if (alle.length && fd.length) console.log(`  Feeder-Debütanten: Ø Elo-Potenzial ${m(fd).toFixed(1)} (alle Feeder ${m(alle).toFixed(1)}) · aus dem oberen Drittel ${(100 * fd.filter(p => p >= 86).length / fd.length).toFixed(0)} %, unteren ${(100 * fd.filter(p => p <= 80).length / fd.length).toFixed(0)} % (n ${fd.length})`);
+}
 { // Zu junge Debüts: ≥ 3 Jahre unter dem Ära-Debütalter (Rookies + Feeder, ohne exp-)
     const jung = debuts.filter(d => d.kind !== 'exp');
     const zuJung = jung.filter(d => d.age <= eraVal(ERA_ROOKIE_AGE, d.year) - 3).length;
