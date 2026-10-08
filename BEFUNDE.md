@@ -2958,3 +2958,21 @@ Piquet 19 → 8, Mansell 20 → 12 Fahrer-Saisons. Zwischen 3 und 4 Läufen schw
   Halb-Fiktion, s. CLAUDE.md). Nicht über die Pace-Dämpfung zu lösen.
 - ⚠ „1 Jahr zu früh" (~6 je Saison in den 50ern, unverändert) enthält Fahrer, die SEASON_DATA ein Jahr vor ihrem ersten
   Elo-Jahr führt — kein Versagen der Dämpfung. Aussagekräftig sind 2–5 Jahre.
+
+### 08.10.2026 (2): Reifejahr für Junioren (`assignJuniorMaturity`, Schritt A)
+Feeder und generierter Nachwuchs bekommen ein Reifejahr = Jahrgang + `ERA_ROOKIE_AGE` ± 3 (glockenförmig); davor dieselbe
+Kurve wie echte Fahrer vor dem Debüt (−3 Pace/Potenzial je Jahr). Werteverteilung unverändert (Feeder würfeln noch — Schritt B).
+`node tests/gen-debut-age.js 4 2020 20` mit/ohne `--vorher` (Monolith v0.9.20.6):
+
+| | vorher | nachher |
+|---|---|---|
+| zu jung (≥ 3 J. unter Ära-Debütalter) | 11,1 % | **7,0 %** |
+| 2020er Debütalter Δ zu Ref 22,3 | −2,2 | **−0,7** |
+| 2030er / 2035er Δ zu Ref 21,5 | +4,6 / +3,3 | +4,7 / +4,0 |
+| Streuung Debütalter | 3,12 J. | 3,08 J. |
+| Vergreisung (Wartende über Ära-Rentenalter) | 61 % | 59 % |
+
+- Wirkt, wo es soll: die 2020er rücken ans reale Debütalter, zu junge Debüts −37 %. Vergreisung unverändert → Junioren warten nicht zu lange.
+- ⚠ **Die 2030er sind schon VORHER +4,6 Jahre zu alt — nicht vom Reifejahr verursacht.** Feeder stellen 159 von 201 Junior-Debüts;
+  die Liste endet mit Jahrgang 2008, in den 2030ern ist die Kohorte 25+ und wird wegen `realPreference` (echt vor generiert)
+  weiter bevorzugt. Ursache ist die Kohorte, nicht die Kurve — nicht über das Reifejahr lösen.

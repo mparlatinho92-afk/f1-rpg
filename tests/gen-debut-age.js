@@ -11,17 +11,20 @@
  *   1. Realisiertes Debütalter generierter Fahrer (gen-/exp-) je Ära vs. ERA_ROOKIE_AGE
  *   2. Vergreisung: Alter generierter, NIE-gefahrener Wartender (Free Agents team=null + reservePool)
  *
- * Verwendung: node tests/gen-debut-age.js [sims] [startYear] [seasons]
+ * Verwendung: node tests/gen-debut-age.js [sims] [startYear] [seasons] [--vorher]
+ *   --vorher = letzter Monolith statt index.html (A/B). Seit 08.10.2026 auch Feeder (feeder-) und
+ *   der Anteil zu junger Debüts (≥ 3 Jahre unter ERA_ROOKIE_AGE) — Maßstab für das Reifejahr.
  *   default: 6 Sims, Start 2010, 30 Saisons (läuft bis 2040 – weit hinter Template-Horizont 2025,
  *   also generierten-dominiert)
  */
 'use strict';
-process.env.SIMCORE_FROM_INDEX = '1';
+if (!process.argv.includes('--vorher')) process.env.SIMCORE_FROM_INDEX = '1';
 const { getContext } = require('./sim-core');
 
-const N       = parseInt(process.argv[2]) || 6;
-const START   = parseInt(process.argv[3]) || 2010;
-const SEASONS = parseInt(process.argv[4]) || 30;
+const _args  = process.argv.slice(2).filter(a => !a.startsWith('--'));
+const N       = parseInt(_args[0]) || 6;
+const START   = parseInt(_args[1]) || 2010;
+const SEASONS = parseInt(_args[2]) || 30;
 const END     = START + SEASONS - 1;
 console.log(`\n═══ Generierte-Debütalter-Tracker | ${START}–${END} | ${N} Sims ═══\n`);
 
@@ -58,7 +61,7 @@ function simulateSeason(c) {
         } catch (_) {}
     }
 }
-const isGen = d => d && /^(gen-|exp-)/.test(String(d.id));
+const isGen = d => d && /^(gen-|exp-|feeder-)/.test(String(d.id));
 
 // Debüts: { year, age, kind ('gen'|'exp') }
 const debuts = [];
@@ -80,7 +83,7 @@ for (let sim = 0; sim < N; sim++) {
                 if (!isGen(d) || !d.birthYear) continue;
                 if (seenRaced.has(d.id)) continue;
                 seenRaced.add(d.id);
-                debuts.push({ year, age: year - d.birthYear, kind: /^exp-/.test(d.id) ? 'exp' : 'gen' });
+                debuts.push({ year, age: year - d.birthYear, kind: /^exp-/.test(d.id) ? 'exp' : /^feeder-/.test(d.id) ? 'feeder' : 'gen' });
             }
 
             if (year >= END) {
@@ -120,6 +123,13 @@ console.log('── REALISIERTES DEBÜTALTER (generiert) vs. ERA_ROOKIE_AGE ─�
 console.log(`  Gesamt:   ${fmt(stat(debuts.map(d => d.age)))}`);
 console.log(`  Rookies (gen-): ${fmt(stat(debuts.filter(d => d.kind === 'gen').map(d => d.age)))}`);
 console.log(`  Erfahren (exp-):${fmt(stat(debuts.filter(d => d.kind === 'exp').map(d => d.age)))}`);
+console.log(`  Feeder:         ${fmt(stat(debuts.filter(d => d.kind === 'feeder').map(d => d.age)))}`);
+{ // Zu junge Debüts: ≥ 3 Jahre unter dem Ära-Debütalter (Rookies + Feeder, ohne exp-)
+    const jung = debuts.filter(d => d.kind !== 'exp');
+    const zuJung = jung.filter(d => d.age <= eraVal(ERA_ROOKIE_AGE, d.year) - 3).length;
+    const sd = (a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); })(jung.map(d => d.age));
+    console.log(`  Zu jung (≥3 J. unter Ära-Debütalter): ${jung.length ? (100 * zuJung / jung.length).toFixed(1) : '–'} %  · Streuung ${jung.length ? sd.toFixed(2) : '–'} J.  (n ${jung.length})`);
+}
 
 // Je Ära-Fünfjahresblock: realisiertes Debütalter vs. Referenz
 console.log('\n── DEBÜTALTER JE ÄRA (Ist Ø  vs  ERA_ROOKIE_AGE  → Δ) ──');
