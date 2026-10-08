@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.7</title>
+    <title>F1 RPG v0.9.20.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.7 (aktuell) - 08.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.8 (aktuell) - 08.10.2026</div>
+                            <div>&#8226; NEU: Feeder-Fahrer haben feste Werte aus ihrer Junior-Elo (echte F2/F3/FRECA-Ergebnisse) statt pro Spielstand gewuerfelt</div>
+                            <div>&#8226; NEU: Starke Junioren sind frueher F1-reif, schwache spaeter</div>
+                            <div>&#8226; NEU: Schalter Echt vor generiert in den KI-Sim-Regeln (aus = Marktwert entscheidet)</div>
+                            <div class="font-bold text-slate-400">v0.9.20.7 - 08.10.2026</div>
                             <div>&#8226; NEU: Junioren (Feeder und Nachwuchs) haben ein eigenes Reifejahr und bauen bis dahin auf</div>
                             <div>&#8226; FIX: Weniger zu junge Debuets (11 auf 7 Prozent)</div>
                             <div class="font-bold text-slate-400">v0.9.20.6 - 08.10.2026</div>
@@ -22415,6 +22419,14 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
 
     </script>
     <script>
+// FEEDER_ELO — GENERIERT von tools/junior-elo.js (2026-10-08) — NICHT von Hand editieren.
+// Junior-Elo aus F2/F3/FRECA-Rennergebnissen (Wikipedia). Elo = Reihenfolge, Skala = Feeder-Spanne 74–92,
+// Debuet-Pace = 88.5 % des Potenzials. Geprueft: trennt den spaeteren F1-Aufstieg mit AUC 0.91.
+// Format: Name → [Potenzial, Debuet-Pace, Reife-Verschiebung in Jahren].
+const FEEDER_ELO = {"Roy Nissany":[80,71,0],"Ralph Boschung":[85,75,-1],"Jehan Daruvala":[91,81,-1],"Grégoire Saucy":[85,75,0],"Juan Manuel Correa":[80,71,0],"Ritomo Miyata":[83,73,0],"Arthur Leclerc":[87,77,-1],"Clément Novalak":[92,81,-1],"Colton Herta":[78,69,1],"Kush Maini":[82,73,0],"Nico Varrone":[80,71,0],"Richard Verschoor":[89,79,-1],"Sophia Flörsch":[79,70,1],"Ayumu Iwasa":[88,78,-1],"Brad Benavides":[80,71,0],"Enzo Fittipaldi":[84,74,0],"Ido Cohen":[79,70,1],"Niels Koolen":[74,65,2],"Rafael Villagómez":[83,73,0],"Victor Martins":[89,79,-1],"Amaury Cordeel":[84,74,0],"Caio Collet":[91,81,-1],"Frederik Vesti":[92,81,-2],"Kaylen Frederick":[79,70,1],"Luke Browning":[81,72,0],"Max Esterson":[81,72,0],"Tommy Smith":[76,67,1],"Alex García":[77,68,1],"Dennis Hauger":[90,80,-1],"Franco Colapinto":[89,79,-1],"Jack Doohan":[91,81,-1],"James Hedley":[77,68,1],"John Bennett":[85,75,0],"Joshua Dürksen":[91,81,-1],"Matías Zagazeta":[80,71,0],"Nicola Marinangeli":[75,66,2],"Piotr Wiśnicki":[75,66,2],"Théo Pourchaire":[92,81,-2],"Zane Maloney":[90,80,-1],"Dino Beganovic":[90,80,-1],"Gabriel Bortoleto":[92,81,-2],"Isack Hadjar":[86,76,-1],"Jonny Edgar":[85,75,-1],"José Garfias":[75,66,1],"Joshua Dufek":[85,75,-1],"Leonardo Fornaroli":[89,79,-1],"Mari Boya":[86,76,-1],"Michael Shin":[74,65,2],"Noel León":[87,77,-1],"Oliver Goethe":[86,76,-1],"Paul Aron":[87,77,-1],"Roberto Faria":[75,66,2],"Roman Bilinski":[84,74,0],"Roman Staněk":[86,76,-1],"Sami Meguetounif":[85,75,0],"Santiago Ramos":[82,73,0],"Taylor Barnard":[88,78,-1],"Tim Tramnitz":[91,81,-1],"Alex Dunne":[91,81,-1],"Charlie Wurz":[86,76,-1],"Christian Mansell":[84,74,0],"Cian Shields":[76,67,1],"Fernando Barrichello":[76,67,1],"Gabriele Minì":[91,81,-1],"Hugh Barter":[79,70,1],"Hunter Yeany":[77,68,1],"Jak Crawford":[89,79,-1],"Jin Nakamura":[82,73,0],"Joseph Loake":[76,67,1],"Laurens van Hoepen":[87,77,-1],"Oliver Bearman":[88,78,-1],"Oliver Gray":[76,67,1],"Pepe Martí":[85,75,-1],"Rafael Câmara":[88,78,-1],"Sebastián Montoya":[84,74,0],"Tasanapol Inthraphuvasak":[86,76,-1],"Zak O'Sullivan":[83,73,0],"Alessandro Giusti":[87,77,-1],"Brando Badoer":[81,72,0],"Bruno del Pino":[81,72,0],"Callum Voisin":[81,72,0],"Christian Ho":[78,69,1],"Gerrard Xie":[79,70,1],"Hiyu Yamakoshi":[80,71,0],"Ivan Domingues":[77,68,1],"James Wharton":[90,80,-1],"Kacper Sztuka":[78,69,1],"Martinius Stenshorne":[90,80,-1],"Nandhavud Bhirombhakdi":[74,65,2],"Nikita Bedrin":[81,72,0],"Nikola Tsolov":[88,78,-1],"Tuukka Taponen":[89,79,-1],"Arvid Lindblad":[87,77,-1],"Emerson Fittipaldi Jr.":[77,68,1],"Fionn McLaughlin":[79,70,1],"Jesse Carrasquedo Jr.":[74,65,2],"Kanato Le":[78,69,1],"Louis Sharp":[82,73,0],"Matteo De Palo":[86,76,-1],"Nicola Lacorte":[77,68,1],"Noah Strømsted":[83,73,0],"Pedro Clerot":[85,75,-1],"Taito Kato":[89,79,-1],"Théophile Naël":[83,73,0],"Ugo Ugochukwu":[87,77,-1],"Yevan David":[82,73,0],"Enzo Deligny":[83,73,0],"Ernesto Rivera":[84,74,0],"Freddie Slater":[90,80,-1],"Maciej Gładysz":[78,69,1],"Mattia Colnaghi":[83,73,0],"Nikita Johnson":[77,68,1],"Tatiana Calderón":[76,67,1],"Jake Hughes":[89,79,-1],"Luca Ghiotto":[91,81,-1],"Cem Bölükbaşı":[78,69,1],"Lirim Zendeli":[88,78,-1],"Marino Sato":[79,70,1],"Niko Kari":[84,74,0],"Calan Williams":[79,70,1],"David Beckmann":[90,80,-1],"Federico Malvestiti":[77,68,1],"Jüri Vips":[87,77,-1],"Marcus Armstrong":[88,78,-1],"Oliver Rasmussen":[81,72,0],"Alexander Smolyar":[83,73,0],"Nazim Azman":[75,66,2],"David Vidales":[81,72,0],"Filip Ugran":[75,66,2],"Olli Caldwell":[82,73,0],"William Alatalo":[82,73,0],"Alessandro Famularo":[75,66,2],"Reece Ushijima":[80,71,1],"Francesco Pizzi":[78,69,1],"Zdeněk Chovanec":[76,67,1],"Enzo Trulli":[75,66,1]};
+
+    </script>
+    <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
         var CUSTOM_SVG_FLAGS = {
@@ -22813,7 +22825,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.7';
+        const VERSION = '0.9.20.8';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -25176,7 +25188,8 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
         function assignJuniorMaturity(d, year) {
             if (!d || !d.birthYear || d.preDebut) return d;
             const w = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;   // −1..1, Mitte gehäuft
-            const reife = Math.round(d.birthYear + (getEraValue(ERA_ROOKIE_AGE, year) || 23) + w * JUNIOR_MATURITY_SPREAD);
+            const reife = Math.round(d.birthYear + (getEraValue(ERA_ROOKIE_AGE, year) || 23) + w * JUNIOR_MATURITY_SPREAD)
+                + (d.reifeVerschiebung || 0);   // Feeder: aus der Junior-Elo (±2)
             if (reife <= year) return d;
             d.preDebut = { year: reife, pace: d.currentPace || d.pace || 70, pot: d.potentialPace || null };
             applyPreDebut(d, year);
@@ -28897,6 +28910,7 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             const _mark = d => { if (replacedVictim) { d.replacedDriver = replacedVictim.id; d.replacedDriverName = replacedVictim.name; d.replacedInYear = year; } };
 
             let picked = null, source = null, poachedFromTeamId = null;
+            let _bewerber = null;   // generierter Gegenkandidat, wenn „echt vor generiert" aus ist
 
             if (useReal) {
                 // Echte Fahrer OHNE Cockpit: aktive Free Agents + Reserve-Pool (Außenwelt).
@@ -28951,7 +28965,17 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                 const preferPoach = Math.random() < poachPref;
                 const order = (preferPoach && poachReal.length) ? ['poach', 'free'] : ['free', 'poach'];
                 for (const src of order) {
-                    if (src === 'free'  && freeReal.length)  { picked = freeReal[0];  source = 'freeagent'; break; }
+                    if (src === 'free'  && freeReal.length)  {
+                        // simRules.realFirst === false: der beste echte Kandidat tritt gegen EINEN
+                        // generierten Bewerber an, der hoehere Marktwert gewinnt (v0.9.20.8). Sonst
+                        // schlug ein schwacher echter Feeder jeden erfundenen Rookie — ueber 20 Jahre
+                        // kam fast jeder der 136 Feeder dran (BEFUNDE.md 08.10.2026 (3)).
+                        if (rules.realFirst === false) {
+                            const bew = generateDriver(teamId, year, wantRookie);
+                            if (_effPace(bew) > _effPace(freeReal[0])) { _bewerber = bew; break; }
+                        }
+                        picked = freeReal[0];  source = 'freeagent'; break;
+                    }
                     if (src === 'poach' && poachReal.length) {
                         // Mid-season nicht stur den Schnellsten greifen – sonst ist es immer
                         // derselbe Name. Zwischen den Saisons bleibt es beim Bestenzugriff.
@@ -29018,8 +29042,9 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             }
 
             // Generieren (echt nicht gewählt ODER keiner verfügbar = Auto-Fallback)
-            const gen = generateDriver(teamId, year, wantRookie);
-            if (useReal) gen._genReason = 'pool-empty';   // echt versucht, keiner verfügbar → unvermeidbar
+            const gen = _bewerber || generateDriver(teamId, year, wantRookie);
+            if (_bewerber) gen._genReason = 'outvalued-real';   // stärker als der beste echte Kandidat
+            else if (useReal) gen._genReason = 'pool-empty';   // echt versucht, keiner verfügbar → unvermeidbar
             _mark(gen);
             GAME_STATE.drivers.push(gen);
             _ensureStanding(gen, teamId);
@@ -31063,12 +31088,14 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
         };
 
         // Baut einen Reserve-Pool-Fahrer aus einem FEEDER_DRIVERS-Eintrag.
-        // pace/potential werden ZUFÄLLIG gewürfelt → pro Spielstand andere Werte (Identität bleibt real).
+        // Pace/Potenzial aus der Junior-Elo (data/feeder-elo.js, echte F2/F3/FRECA-Ergebnisse) —
+        // in jedem Spielstand gleich. Nur wer dort fehlt (8 von 144), wuerfelt wie bisher.
         function makeFeederDriver(entry, year) {
             const [name, nat, birthYear, series, lastSeason] = entry;
-            const potentialPace = 74 + Math.floor(Math.random() * 19);          // 74–92
+            const _elo = (typeof FEEDER_ELO !== 'undefined') ? FEEDER_ELO[name] : null;
+            const potentialPace = _elo ? _elo[0] : 74 + Math.floor(Math.random() * 19);          // 74–92
             const gap = 9 + Math.floor(Math.random() * 8);                      // 9–16
-            const currentPace = Math.max(60, potentialPace - gap);
+            const currentPace = _elo ? _elo[1] : Math.max(60, potentialPace - gap);
             const con = Math.min(95, Math.max(45, currentPace + (Math.floor(Math.random() * 21) - 12)));
             return {
                 id: feederSlug(name),
@@ -31087,6 +31114,8 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                 status: 'active', isReserve: true,
                 poolGroup: 'F',
                 feederFictionalSkills: true,
+                feederElo: !!_elo,
+                reifeVerschiebung: _elo ? _elo[2] : 0,   // starke Junioren frueher reif (assignJuniorMaturity)
                 feederInfo: { series, lastSeason }
             };
         }
@@ -41224,7 +41253,14 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                         !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) &&
                         _teamNationOk(t, p) &&
                         (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year)) : null;
-                    if (cand) {
+                    // „Echt vor generiert" aus: wie in acquireSeatDriver gegen einen generierten Bewerber
+                    let _bew = null;
+                    if (cand && GAME_STATE.simRules?.realFirst === false) {
+                        const _eff = d => { const c = d.currentPace || d.pace || 0; return c * 0.7 + (d.potentialPace || c) * 0.3; };
+                        const b = generateDriver(t.id, year, isTopTeam ? false : Math.random() < 0.7);
+                        if (_eff(b) > _eff(cand)) _bew = b;
+                    }
+                    if (cand && !_bew) {
                         GAME_STATE.reservePool = GAME_STATE.reservePool.filter(x => x !== cand);
                         const nd = { ...cand, team: t.id, isReserve: false, contractEnd: year + 1 };
                         if (nd.histId && typeof PACE_RATINGS !== 'undefined') {
@@ -41240,14 +41276,14 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                     }
                     // 3. Letzter Ausweg: generierter Fahrer (Top-Team nie Rookie).
                     // Wird nur erreicht, wenn Free Agents UND Reserve-Pool leer sind → Pool-leer-Fall.
-                    const _genRookie = isTopTeam ? false : Math.random() < 0.7;
-                    const gd = generateDriver(t.id, year, _genRookie);
-                    gd._genReason = 'pool-empty';   // v0.9.15.24
+                    const _genRookie = _bew ? !/^exp-/.test(String(_bew.id)) : (isTopTeam ? false : Math.random() < 0.7);
+                    const gd = _bew || generateDriver(t.id, year, _genRookie);
+                    gd._genReason = _bew ? 'outvalued-real' : 'pool-empty';   // v0.9.15.24
                     gd.contractEnd = year + 1;
                     GAME_STATE.drivers.push(gd);
                     GAME_STATE.driverStandings[gd.id] = { points: 0, wins: 0, podiums: 0, races: 0, dnfs: 0, fastestLaps: 0, team: t.id };
                     logInfo('TRANSFER', `➡️ ${gd.name} (neu) → ${t.name} (Sitz aufgefüllt)`);
-                    _recFill(gd, t.name, 'seatfill-gen', '🔧', 'Sitz aufgefüllt (generiert – letzter Ausweg)', { isRookie: _genRookie });
+                    _recFill(gd, t.name, 'seatfill-gen', '🔧', _bew ? 'Sitz aufgefüllt (generiert – stärker als der beste echte Kandidat)' : 'Sitz aufgefüllt (generiert – letzter Ausweg)', { isRookie: _genRookie });
                     filled++;
                 }
             });
@@ -45827,6 +45863,10 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                             <div class="mt-3">
                                 <label class="text-sm flex justify-between"><span>🎭 Echt-Anteil (Free Agent/Reserve vs. generiert)</span><span id="simRealPrefVal">${GAME_STATE.simRules?.realPreference ?? 100}%</span></label>
                                 <input type="range" id="simRealPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.realPreference ?? 100}" class="w-full" oninput="document.getElementById('simRealPrefVal').textContent=this.value+'%'">
+                                <label class="flex items-center gap-2 cursor-pointer mt-1" title="Aus: der beste echte Kandidat tritt gegen einen generierten Bewerber an, der hoehere Marktwert gewinnt. An: echt schlaegt generiert immer.">
+                                    <input type="checkbox" id="simRealFirst" ${GAME_STATE.simRules?.realFirst !== false ? 'checked' : ''} class="w-4 h-4">
+                                    <span class="text-sm">🥇 Echt vor generiert (aus = Wert entscheidet)</span>
+                                </label>
                             </div>
                             <div class="mt-2">
                                 <label class="text-sm flex justify-between"><span>🤝 Abwerben statt Free Agent</span><span id="simPoachPrefVal">${GAME_STATE.simRules?.poachPreference ?? 50}%</span></label>
@@ -46621,6 +46661,10 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
                     <div class="mt-3">
                         <label class="text-sm flex justify-between"><span>🎭 Echt-Anteil (Free Agent/Reserve vs. generiert)</span><span id="simRealPrefVal">${GAME_STATE.simRules?.realPreference ?? 100}%</span></label>
                         <input type="range" id="simRealPref" min="0" max="100" step="5" value="${GAME_STATE.simRules?.realPreference ?? 100}" class="w-full" oninput="document.getElementById('simRealPrefVal').textContent=this.value+'%'">
+                        <label class="flex items-center gap-2 cursor-pointer mt-1" title="Aus: der beste echte Kandidat tritt gegen einen generierten Bewerber an, der hoehere Marktwert gewinnt. An: echt schlaegt generiert immer.">
+                            <input type="checkbox" id="simRealFirst" ${GAME_STATE.simRules?.realFirst !== false ? 'checked' : ''} class="w-4 h-4">
+                            <span class="text-sm">🥇 Echt vor generiert (aus = Wert entscheidet)</span>
+                        </label>
                     </div>
                     <div class="mt-2">
                         <label class="text-sm flex justify-between"><span>🤝 Abwerben statt Free Agent</span><span id="simPoachPrefVal">${GAME_STATE.simRules?.poachPreference ?? 50}%</span></label>
@@ -46687,6 +46731,8 @@ if (typeof module !== 'undefined') module.exports = { INTAKE_NATION_EXTRA };
             const pp = document.getElementById('simPoachPref');
             sr.realPreference  = rp ? parseInt(rp.value) : 100;
             sr.poachPreference = pp ? parseInt(pp.value) : 50;
+            const rf = document.getElementById('simRealFirst');
+            sr.realFirst = rf ? rf.checked : true;
             const et = document.getElementById('simExternalTransfers');
             sr.externalTransfers = et ? et.checked : true;
             return sr;
@@ -54742,7 +54788,7 @@ Empfohlene Wertebereiche:
                 ` : ''}
                 ${driver.feederFictionalSkills ? `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #2A2438; border: 1px solid #7C3AED;">
-                        🏎️ Echter ${driver.feederInfo?.series || 'F2/F3'}-Aufsteiger${driver.feederInfo?.lastSeason ? ` (zuletzt ${driver.feederInfo.lastSeason})` : ''} – Name, Nation &amp; Alter sind real, die <b>Fahrwerte (Pace/Potenzial) sind fiktiv</b> und pro Spielstand zufällig.
+                        🏎️ Echter ${driver.feederInfo?.series || 'F2/F3'}-Aufsteiger${driver.feederInfo?.lastSeason ? ` (zuletzt ${driver.feederInfo.lastSeason})` : ''} – Name, Nation &amp; Alter sind real${driver.feederElo ? ', die <b>Fahrwerte (Pace/Potenzial) stammen aus der Junior-Elo</b> seiner echten F2/F3/FRECA-Rennergebnisse.' : ', die <b>Fahrwerte (Pace/Potenzial) sind fiktiv</b> und pro Spielstand zufällig.'}
                     </div>
                 ` : ''}
 
