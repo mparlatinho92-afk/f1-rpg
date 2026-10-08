@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.6</title>
+    <title>F1 RPG v0.9.20.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.6 (aktuell) - 08.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.7 (aktuell) - 08.10.2026</div>
+                            <div>&#8226; NEU: Junioren (Feeder und Nachwuchs) haben ein eigenes Reifejahr und bauen bis dahin auf</div>
+                            <div>&#8226; FIX: Weniger zu junge Debuets (11 auf 7 Prozent)</div>
+                            <div class="font-bold text-slate-400">v0.9.20.6 - 08.10.2026</div>
                             <div>&#8226; FIX: Echte Fahrer werden nicht mehr Jahre vor ihrem Debuet verpflichtet (Pace und Potenzial vor dem Debuet gedaempft)</div>
                             <div>&#8226; FIX: Frueh verpflichtete Fahrer verloren Pace statt zu reifen</div>
                             <div>&#8226; FIX: Franco Rol 1950/52 stand als Francois Mazet in den Daten</div>
@@ -4202,7 +4205,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.6';
+        const VERSION = '0.9.20.7';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6554,6 +6557,22 @@
             d.currentPace = d.pace;
             if (pr || year >= pd.year) d.preDebut = null;
             return true;
+        }
+        // Junioren ohne echtes F1-Debuet (Feeder, generierter Nachwuchs) bekommen ein eigenes
+        // REIFEJAHR: Jahrgang + Aera-Debuetalter + Streuung (±3, glockenfoermig). Bis dahin
+        // laufen sie auf derselben Kurve wie echte Fahrer vor dem Debuet (applyPreDebut).
+        // Die erzeugten Werte gelten als Debuet-Werte — an ihrer Verteilung aendert sich nichts.
+        // Bewusst nicht das Alter allein: Spaetzuender (Hill, de Vries) und Fruehstarter entstehen
+        // aus der Streuung, nicht aus einer Grenze.
+        const JUNIOR_MATURITY_SPREAD = 3;
+        function assignJuniorMaturity(d, year) {
+            if (!d || !d.birthYear || d.preDebut) return d;
+            const w = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;   // −1..1, Mitte gehäuft
+            const reife = Math.round(d.birthYear + (getEraValue(ERA_ROOKIE_AGE, year) || 23) + w * JUNIOR_MATURITY_SPREAD);
+            if (reife <= year) return d;
+            d.preDebut = { year: reife, pace: d.currentPace || d.pace || 70, pot: d.potentialPace || null };
+            applyPreDebut(d, year);
+            return d;
         }
 
         const POOL_TALENT_AGE_MARGIN = 5;
@@ -12530,7 +12549,7 @@
                 // seinem F1-Namen im Grid, darf der Junior nicht zusaetzlich entstehen.
                 const hid = FEEDER_HIST_IDS[name];
                 if (hid && GAME_STATE.drivers.some(d => d.histId === hid)) continue;
-                const fd = makeFeederDriver(entry, year);
+                const fd = assignJuniorMaturity(makeFeederDriver(entry, year), year);
                 if (age < JUNIOR_MIN_AGE) fd.poolGroup = 'J';             // noch zu jung → eigener Tab
                 GAME_STATE.reservePool.push(fd);
                 knownNames.add(key);
@@ -12809,6 +12828,7 @@
                     gd.generated = true;  // fiktiver Nachwuchs (kein hist. Vorbild)
                     gd.histId = null;
                     gd.contractEnd = null;
+                    assignJuniorMaturity(gd, year);
                     GAME_STATE.reservePool.push(gd);
                     _genCount++;
                 }
