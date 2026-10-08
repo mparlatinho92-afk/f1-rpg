@@ -11,7 +11,8 @@
  *   nachname auf 8 Zeichen        deangeli   (de Angelis), perezsal (Perez-Sala)
  *   7 Zeichen + Initiale          fittipac   (Christian Fittipaldi), hilld, mossb
  *   nachname + vorname            hermanal   (Al Herman)
- *   vorname + Initiale Nachname   gerardl    (Gerard Larrousse)
+ *   ⚠ NICHT vorname + Initiale: 'gerardl' ist Gérard, L(ouis), nicht Gérard Larrousse —
+ *     der Kandidat lieferte Larrousse das Gesicht von Louis Gérard (08.10.2026, entfernt)
  *   nachname + Ziffer             jones2     (Tom Jones), andrett2
  * Deshalb wird ein Kandidatenfaecher durchprobiert statt einer Formel.
  *
@@ -59,7 +60,6 @@ function candidates(d) {
     add(last.slice(0, 8));                       // Doppelname: nur der letzte Teil
     add(last.slice(0, 7) + fi);
     if (parts.length > 1) { add(parts[0].slice(0, 8)); add(parts.join('').slice(0, 8)); }
-    add((fn + full[0]).slice(0, 8));             // gerardl
     add(full.slice(0, 7) + '2');                 // jones2, andrett2
     add((fn + full).slice(0, 8));
     return out;

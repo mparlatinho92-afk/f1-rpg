@@ -18,6 +18,7 @@ versehentlich zurück.
 
 | Thema | Nachschlagen vor Arbeit an … |
 |---|---|
+| **Pace vor dem echten Debüt gedämpft (08.10.2026)** | Pool-Gruppe C, Junioren, Marktwert vor dem Debüt, `vorzeitige-debuets.js` |
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
@@ -2919,3 +2920,41 @@ worldnames.xyz (`w10-quellen/`), Aufbereitung `nations-w10.js`, Vorschau `namens
 - **LAT:** Quelle ohne Diakritika und weiblich → gefaltet (Berzina → Bērziņš) und häufige Namen amtlich zurückgeführt.
 - **Allgemeiner Fix in pickPooledName:** Vatersnamen-Länder führen dieselben Namen als Vor- und Nachname (PAK: Javed, Imran) —
   „Javed Javed" kam vor. Nachname wird neu gezogen, wenn er dem Vornamen gleicht. Gemessen: 0 in 120.000 Zügen (PAK/IRQ/JOR/KEN/UKR/CIV).
+
+### 08.10.2026: Pace vor dem echten Debüt gedämpft (`PRE_DEBUT_PACE_STEP` = 3)
+Anlass: Brabham Anfang der 50er, Prost Mitte der 70er ständig unter Vertrag. Ursache: Pool-Gruppe C lädt echte Fahrer bis
+5 Jahre vor dem Debüt und gab ihnen die SEASON_DATA-Pace der **Debütsaison** — Prost stand 1975 mit 77/98 (Marktwert 83)
+an der Spitze des Pools. Jetzt: Elo-Werte des echten Debütjahres als Ziel, −3 Pace je Jahr davor, Potenzial bleibt
+(Kurve aus dem Karriere-Bogen rückwärts verlängert, real ~2,6/Jahr Zuwachs nach dem Debüt). Maßstab Jahre bis Debüt, nicht Alter.
+Werkzeug `tests/vorzeitige-debuets.js`, 8 Saisons × 3 Läufe, vorher = Monolith v0.9.20.5:
+
+| | vor Debüt je Saison | davon Stammfahrer | 4–5 Jahre zu früh |
+|---|---|---|---|
+| 1950 vorher | 16,2 | 1,83 | 2,58 |
+| 1950 nachher | 14,3 | 1,67 | 1,79 |
+| 1973 vorher | 5,5 | 2,96 | 1,46 |
+| 1973 nachher | 4,7 | **2,00** | **0,59** |
+
+Gegenlauf mit **4 Läufen** bestätigt die Richtung (vorher → nachher): 1950 17,1 → 14,2 je Saison, Stammfahrer 2,00 → **1,31**,
+4–5 Jahre zu früh 2,41 → 1,78; 1973 6,2 → 5,3, Stammfahrer 3,25 → **2,13**, 4–5 Jahre 1,69 → **0,69**. Prost 20 → 15,
+Piquet 19 → 8, Mansell 20 → 12 Fahrer-Saisons. Zwischen 3 und 4 Läufen schwanken die Stammfahrer um ~0,3–0,4 → Einzelwerte nicht überlesen.
+- Wirkt deutlich in den 70ern (Stammfahrer −32 %, 4–5 Jahre zu früh −60 %; Piquet fällt aus der Liste), schwach in den 50ern:
+  dort sind fast alle vorzeitigen Starts **Einzelrennen** (Indy-Melder Al Herman, Johnny Boyd, Bob Christie; Heim-Einzelmelder),
+  die nicht über den Markt laufen. Brabham fällt aus den Top 10 (12 → ≤ 5).
+- **Prost bleibt häufig** (15 → 11 Fahrer-Saisons): Potenzial 98 zählt in jeder Marktbewertung mit 30 % — gedämpft auf 62
+  hat er 1975 noch Marktwert 73. Härter dämpfen hieße −4 oder Potenzial-Gewicht für Pool-Fahrer senken (nicht gemacht, Nutzer: −3 nach Gefühl).
+- ⚠ **Messfalle Namensgleichheit:** „François Mazet" 10–13× in den 50ern war ein **Datenfehler in `data/seasons.js`**:
+  Kurz-ID `FRANC1` trug 1950 und 1952 den Namen Mazet (geb. 1908, 🇮🇹, Maserati) — das ist **Franco Rol** (F1DB: 1950–52,
+  Maserati/OSCA, geb. 05.06.1908). Behoben (08.10.2026): beide Einträge `FRANCR` / Franco Rol. Der echte Mazet fuhr nur 1971.
+- ⚠ **Kurz-IDs sind KEIN Schlüssel:** `FRANCO` steht für sieben Fahrer (Comotti 1950 … Colapinto 2024). `getHistDebutYear(kurzId)`
+  liefert deshalb für Cevert 1950. Debütjahr immer über den Slug aus `PACE_RATINGS` bestimmen.
+- **Nachtrag Potenzial-Hebel:** vor dem Debüt fällt auch das Potenzial um 3/Jahr (`applyPreDebut`), der Abstand bleibt. Dazu
+  behoben: wer vor dem Debüt verpflichtet wurde, hatte keine Elo-Werte und fiel in den **Inaktivitäts-Abbau (−2,5/Jahr), obwohl er
+  fuhr** — jetzt dieselbe Reifekurve wie im Pool.
+  Gemessen (4 Läufe): **1950 Stammfahrer 1,31 → 1,09** (Ausgang 2,00), 6+ Jahre 0,47 → 0,03; **1973 Stammfahrer 2,13 → 1,75**
+  (Ausgang 3,25), Prost 15 → 11, Mansell 12 → 8, Piquet 8 → raus. Brabham, Graham Hill, Mazet nicht mehr in den Top 10.
+  Gesamt also −45 % (50er) / −46 % (70er) vorzeitige Stammfahrer. ⚠ 1950 „4–5 Jahre zu früh" stieg 1,78 → 2,41: dort führen
+  Indy-Melder (Crockett, Christie, Jerry Unser Jr.) — der Indy-Kandidatenpool zieht DB-Fahrer unabhängig vom Marktwert (gewollte
+  Halb-Fiktion, s. CLAUDE.md). Nicht über die Pace-Dämpfung zu lösen.
+- ⚠ „1 Jahr zu früh" (~6 je Saison in den 50ern, unverändert) enthält Fahrer, die SEASON_DATA ein Jahr vor ihrem ersten
+  Elo-Jahr führt — kein Versagen der Dämpfung. Aussagekräftig sind 2–5 Jahre.

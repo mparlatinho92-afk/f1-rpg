@@ -54,6 +54,12 @@ Bilanz ueber alle 917 Fahrer-IDs (F1DB + Override-Tabellen), Stand v0.9.15.61:
 
 915 Dateien, 915 verschiedene Bilder — kein Fahrer traegt das Gesicht eines anderen.
 
+⚠ **08.10.2026: Larrousse trug das Gesicht von Louis Gérard.** `gerardl` bei statsf1 = Gérard, L(ouis) — statsf1 hängt die
+Initiale des **Vor**namens an den Nachnamen, nie umgekehrt. Der Kandidat „Vorname + Initiale Nachname" in
+`find-missing-photos.js` ist entfernt (einziger Treffer dieses Musters). Larrousse hat kein statsf1-Foto; jetzt
+`drivers/larrousse-commons.png` aus Commons (`GerardLarrousse1975.jpg`, Eddi Laumanns, CC BY-SA 3.0, Nachweis in
+`FEEDER_PHOTO_CREDITS`).
+
 ### Warum Raten nicht reichte
 
 Die Quelle folgt keiner Regel, sondern mehreren, und ist stellenweise fehlerhaft:
