@@ -2,6 +2,7 @@
 /**
  * junior-elo.js — Elo der Nachwuchsserien (F2, F3, FRECA) und Umrechnung auf die F1-Skala (08.10.2026)
  *
+ * Serien: F2, F3, FRECA + seit 09.10.2026 Euroformula Open (EFO), GB3, Eurocup-3 (EC3).
  * Mechanik wie tests/calculate-elo.js (unverändert übernommen, die F1-Elo selbst bleibt unberührt):
  * jeder Finisher duelliert sich mit jedem anderen Finisher, K = 16, Gewinn nach Erwartung — wer den
  * Besten schlägt, gewinnt viel. Ausfälle sind neutral (Wikipedia nennt nur „Ret", keine Ursache;
@@ -29,7 +30,7 @@ const WRITE = process.argv.includes('--write');
 const K_RACE = 16, START_ELO = 1500;
 const MIN_RENNEN = 8;              // eine Saison zählt erst ab so vielen gewerteten Rennen
 const SHRINK_RENNEN = 10;          // Zuverlässigkeit: Wert × n/(n+10) Richtung Serienmitte (wie normalize-elo)
-const SERIEN_RANG = { FRECA: 0, F3: 1, F2: 2 };
+const SERIEN_RANG = { EC3: 0, GB3: 0, EFO: 0, FRECA: 0, F3: 1, F2: 2 };   // nur Reihenfolge innerhalb eines Jahres
 
 const lade = (f, n) => vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'data', f), 'utf8') + ';' + n, { window: {} });
 const HIST_NAMES = lade('hist.js', 'HIST_NAMES');
@@ -94,9 +95,28 @@ function fahrerWerte(teamGewicht) {
         off[unten] = off[oben] + (d.length ? d.reduce((a, b) => a + b, 0) / d.length : 0);
         off['_n' + unten] = d.length;
     }
+    // Weitere Serien (EFO, GB3, Eurocup-3, seit 09.10.2026): Abstand über Fahrer, die im Folgejahr
+    // in eine schon geeichte Serie wechselten (F2, F3, FRECA) — gemittelt über alle Ziele.
+    for (const serie of ['EFO', 'GB3', 'EC3']) {
+        const d = [];
+        for (const x of saisons) if (x.serie === serie && x.n >= MIN_RENNEN) {
+            for (const ziel of ['F2', 'F3', 'FRECA']) {
+                const y = saisons.find(z => z.serie === ziel && z.name === x.name && z.jahr === x.jahr + 1 && z.n >= MIN_RENNEN);
+                if (y) d.push(rel(y) + off[ziel] - rel(x));
+            }
+        }
+        off[serie] = d.length ? d.reduce((a, b) => a + b, 0) / d.length : off.FRECA;
+        off['_n' + serie] = d.length;
+    }
     const wert = {};
     for (const [k, v] of Object.entries(bester)) { const [name, serie] = k.split('|'); const w = v + off[serie]; if (wert[name] == null || w > wert[name].w) wert[name] = { w, serie }; }
-    return { wert, off };
+    // Rückfall NUR für Feeder ohne eine volle Saison (Escotto: Indy NXT, Bennett: Langstrecke):
+    // beste Teilsaison. Der Zuverlässigkeitsfaktor n/(n+10) zieht sie ohnehin stark zur Serienmitte.
+    // Fließt nicht in die Prüfgrößen (Anker, AUC) — dort zählt nur `wert`.
+    const teil = {};
+    for (const x of saisons) { if (wert[x.name]) continue; const w = rel(x) + off[x.serie];
+        if (teil[x.name] == null || w > teil[x.name].w) teil[x.name] = { w, serie: x.serie, teil: x.n }; }
+    return { wert, off, teil };
 }
 
 // ── 3. Anker und Regression ────────────────────────────────────────────────
@@ -119,12 +139,12 @@ function anker(wert) {
 console.log('JUNIOR-ELO — ' + daten.length + ' Saisons, ' + saisons.length + ' Fahrer-Saisons');
 let wahl = null;
 for (const tg of [0, 0.5, 1]) {
-    const { wert, off } = fahrerWerte(tg), a = anker(wert);
+    const { wert, off, teil } = fahrerWerte(tg), a = anker(wert);
     const rp = regression(a.map(x => [x.w, x.pot])), rd = regression(a.map(x => [x.w, x.debut]));
-    console.log(`  Teamkorrektur ${tg}: Anker ${a.length} · r(Potenzial) ${rp.r.toFixed(2)} · r(Debüt-Pace) ${rd.r.toFixed(2)} · Serienabstand F3 ${off.F3.toFixed(0)} (n ${off._nF3}), FRECA ${off.FRECA.toFixed(0)} (n ${off._nFRECA})`);
-    if (!wahl || rp.r > wahl.rp.r) wahl = { tg, wert, off, a, rp, rd };
+    console.log(`  Teamkorrektur ${tg}: Anker ${a.length} · r(Potenzial) ${rp.r.toFixed(2)} · r(Debüt-Pace) ${rd.r.toFixed(2)} · Serienabstand F3 ${off.F3.toFixed(0)} (n ${off._nF3}), FRECA ${off.FRECA.toFixed(0)} (n ${off._nFRECA}), EFO ${off.EFO.toFixed(0)} (n ${off._nEFO}), GB3 ${off.GB3.toFixed(0)} (n ${off._nGB3}), EC3 ${off.EC3.toFixed(0)} (n ${off._nEC3})`);
+    if (!wahl || rp.r > wahl.rp.r) wahl = { tg, wert, off, teil, a, rp, rd };
 }
-const { wert, a, rp, rd } = wahl;
+const { wert, teil, a, rp, rd } = wahl;
 console.log(`→ gewählt: Teamkorrektur ${wahl.tg}`);
 console.log(`  Potenzial = ${rp.a.toFixed(1)} + ${rp.b.toFixed(4)} × Wert   ·   Debüt-Pace = ${rd.a.toFixed(1)} + ${rd.b.toFixed(4)} × Wert`);
 console.log('  Anker (Wert → Potenzial echt / geschätzt · Debüt echt / geschätzt):');
@@ -155,8 +175,8 @@ let AUC = NaN;
 }
 const feederWerte = [];
 for (const f of FEEDER) {
-    const name = f[0], wx = wert[name] || wert[Object.keys(wert).find(k => norm(k) === norm(name))];
-    feederWerte.push([name, wx ? { w: wx.w, serie: wx.serie } : null]);
+    const name = f[0], wx = wert[name] || wert[Object.keys(wert).find(k => norm(k) === norm(name))] || teil[name];
+    feederWerte.push([name, wx ? { w: wx.w, serie: wx.serie + (wx.teil ? ` (Teilsaison, ${wx.teil} R.)` : '') } : null]);
 }
 const mit = feederWerte.filter(x => x[1]);
 // Rang → Spanne (bester = POT_MAX, schwächster = POT_MIN)
@@ -172,7 +192,7 @@ const zeig = mit.slice().sort((p, q) => q[1].w - p[1].w);
 const fmt = ([n, v]) => `    ${n.padEnd(24)} ${v.serie.padEnd(5)} Wert ${v.w.toFixed(0)} → Potenzial ${v.pot}, Debüt ${v.deb}, Reife ${v.reife >= 0 ? '+' : ''}${v.reife}`;
 console.log('  Spitze:'); zeig.slice(0, 8).forEach(x => console.log(fmt(x)));
 console.log('  Ende:'); zeig.slice(-5).forEach(x => console.log(fmt(x)));
-for (const n of ['Frederik Vesti', 'Théo Pourchaire']) { const x = mit.find(y => y[0] === n); if (x) console.log('  ' + fmt(x).trim()); }
+for (const n of ['Frederik Vesti', 'Théo Pourchaire', 'Ricardo Escotto', 'Carl Bennett']) { const x = mit.find(y => y[0] === n); if (x) console.log('  ' + fmt(x).trim()); }
 
 if (WRITE) {
     const ziel = path.join(ROOT, 'data', 'feeder-elo.js');

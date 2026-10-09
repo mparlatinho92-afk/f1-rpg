@@ -3011,3 +3011,27 @@ keine Ursache). Die F1-Elo bleibt unberührt. Ergebnis `data/feeder-elo.js` (136
   Kandidat tritt in `acquireSeatDriver` und im Saisonende-Sitzfüller gegen EINEN generierten Bewerber an, höherer Marktwert
   (70 % Pace + 30 % Potenzial) gewinnt; Chronik-Grund `outvalued-real`. ▶ Noch nicht gemessen:
   `node tests/gen-debut-age.js 4 2020 20 --wert` gegen dasselbe ohne `--wert`.
+
+### 09.10.2026: Junior-Elo deckt alle 144 Feeder ab (Euroformula Open, GB3, Eurocup-3)
+8 Feeder hatten keine Elo: in F2/F3/FRECA nur Ersatz mit 2–8 Rennen (unter `MIN_RENNEN` 8). Ihre Karrieren liefen in
+Euroformula Open (Simonazzi, Mason, Simmons), GB3 (Heuzenroeder, Sagrera, Cresswell) und Eurocup-3 (Sagrera). Neu im Abruf:
+EFO + GB3 2019–26, Eurocup-3 2023–26 → 46 Saisons, 1268 Fahrer-Saisons.
+- Serienabstand über Wechsler ins Folgejahr nach F2/F3/FRECA: **EFO −151 (n 29), GB3 −218 (n 25), Eurocup-3 −216 (n 12)**
+  (zum Vergleich FRECA −193). F2/F3/FRECA-Werte und Feeder-Rangfolge an der Spitze unverändert.
+- Prüfgröße F1-Aufstieg steigt mit der größeren Stichprobe: **AUC 0,91 → 0,93** (n 187), alle 16 Aufsteiger im oberen Drittel.
+- **Zwei ohne volle Saison irgendwo:** Escotto (Hauptjahre Indy NXT — keine Wechsler nach F3/F2, Abstand nicht messbar) und
+  Carl Bennett (Langstrecke, 3 Eurocup-3-Rennen). Rückfall NUR für sie: beste Teilsaison, Zuverlässigkeit n/(n+10) zieht zur
+  Serienmitte → Potenzial 76 bzw. 74. Fließt nicht in die Prüfgrößen.
+- ⚠ **Carl Bennett ≠ John Bennett:** Nachnamen-Suche warf den Thai-Briten (Jg. 2004) mit dem F2-Briten John Bennett zusammen.
+- ⚠ **Messfallen beim Parser:** GB3 färbt Zellen mit `bgcolor=` statt `style=` (Attribut jetzt allgemein: alles mit „=" vor dem
+  ersten „|"); EFO/GB3 stellen eine Punkte-Tabelle vor die Wertung → Tabelle mit „Driver" VOR ihrem eigenen `|}` wählen (ein
+  festes Zeichenfenster griff in die Folgetabelle, der Kopf bis `|-` ist bei F2 2017–21 nur eine Zeile). Nach jeder Parser-
+  Änderung Gegenprobe: Pourchaire F2 2023 = 5 1 Ret 13 18, Rennzahl je F2/F3/FRECA-Saison unverändert.
+- **Schalter „echt vor generiert" gemessen** (`gen-debut-age.js 4 2020 20` mit/ohne `--wert`, Stand alle 144 Feeder):
+  generierte Rookie-Debüts 37 → 51, erfahrene 1 → 5, Feeder 170 → 155 — aber die **Auswahl unter den Feedern bleibt gleich**
+  (oberes Drittel 46 → 47 %, unteres 25 → 26 %). **NEGATIVERGEBNIS:** der Schalter ersetzt Feeder durch Generierte, nicht gezielt
+  die schwachen. Grund: er greift nur am besten echten Kandidaten (`freeReal[0]`, schon nach Wert sortiert). Die schwachen
+  Feeder kommen über Pfade, die gar nicht nach Wert wählen — der Saisonende-Sitzfüller nimmt den ERSTEN passenden Pool-Eintrag
+  (`reservePool.find`), nicht den besten. ▶ Hebel dort, nicht am Schalter.
+- ⚠ Rauschen: „zu jung" lag bei Schritt B (136 Feeder) bei 2,8 %, jetzt in beiden Läufen 5,8 % — bei n ≈ 200 sind das 6 gegen
+  12 Fahrer. Einzelwerte dieser Kennzahl unter ~3 Pp nicht deuten.

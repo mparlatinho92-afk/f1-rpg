@@ -10,7 +10,8 @@
  * und Feature getrennt) plus Abschnitt "Entries" fuer die Teamzuordnung. Kein Karriere-Scraping:
  * die Saisontabellen sind einheitlich aufgebaut, die Karriereseiten nicht.
  *
- * Serien: F2 2017–2026, F3 2019–2026, FRECA 2019–2026 (Vorgeschichte der Pool-Fahrer).
+ * Serien: F2 2017–2026, F3 2019–2026, FRECA 2019–2026 (Vorgeschichte der Pool-Fahrer),
+ *         Euroformula Open + GB3 2019–2026, Eurocup-3 2023–2026 (Feeder ohne volle F2/F3/FRECA-Saison).
  * Rohtexte werden in tools/quellen/junior-wiki/ zwischengespeichert — ein zweiter Lauf fragt
  * Wikipedia nicht erneut ab (--neu erzwingt den Abruf).
  *
@@ -31,6 +32,10 @@ const SERIEN = [
     { serie: 'F2', von: 2017, bis: 2026, titel: y => [`${y} Formula 2 Championship`, `${y} FIA Formula 2 Championship`] },
     { serie: 'F3', von: 2019, bis: 2026, titel: y => [`${y} FIA Formula 3 Championship`, `${y} Formula 3 Championship`] },
     { serie: 'FRECA', von: 2019, bis: 2026, titel: y => [`${y} Formula Regional European Championship`, `${y} Formula Regional European Championship by Alpine`] },
+    // 09.10.2026: 8 Feeder waren in F2/F3/FRECA nur Ersatz (2–8 Rennen). Ihre Karrieren liefen hier.
+    { serie: 'EFO', von: 2019, bis: 2026, titel: y => [`${y} Euroformula Open Championship`] },
+    { serie: 'GB3', von: 2019, bis: 2026, titel: y => [`${y} GB3 Championship`, `${y} BRDC British Formula 3 Championship`] },
+    { serie: 'EC3', von: 2023, bis: 2026, titel: y => [`${y} Eurocup-3 season`, `${y} Eurocup-3`] },
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -109,10 +114,19 @@ function zelle(roh) {
 function ergebnisseAus(wt) {
     const blk = abschnitt(wt, /^==+\s*Drivers'?\s*([Cc]hampionship(\s+standings)?|[Ss]tandings)\s*==+/m);
     if (!blk) return null;
-    const ende = blk.search(/^\|\}/m);
-    const iTab = blk.search(/\{\|\s*class="wikitable/);   // 2018–2021: „{|class=" ohne Leerzeichen
+    // Erste Tabelle MIT Fahrerspalte — Euroformula/GB3 stellen eine Punkte-Tabelle davor.
+    // „{|class=" ohne Leerzeichen gibt es 2018–2021.
+    let iTab = -1;
+    for (const m of blk.matchAll(/\{\|\s*class="wikitable/g)) {
+        // „Driver" muss VOR dem eigenen Tabellenende „|}" stehen — ein festes Fenster reichte bei
+        // EFO 2020/21 über die kurze Punkte-Tabelle hinaus in die nächste; der Kopf bis „|-" ist
+        // bei F2 2017–21 nur eine Zeile lang („{|class=…" direkt gefolgt von „|-style=…").
+        const zu = blk.slice(m.index).search(/^\|\}/m);
+        if (/^!.*\bDriver\b/m.test(blk.slice(m.index, zu > 0 ? m.index + zu : blk.length))) { iTab = m.index; break; }
+    }
     if (iTab < 0) return null;
-    const tab = blk.slice(iTab, ende > iTab ? ende : blk.length);
+    const rest = blk.slice(iTab), ende = rest.search(/^\|\}/m);
+    const tab = ende > 0 ? rest.slice(0, ende) : rest;
     const reihen = tab.split(/^\|-.*$/m).slice(1);
     const zeilenJeFahrer = [];
     let nRennen = 0;
@@ -127,7 +141,9 @@ function ergebnisseAus(wt) {
             if (!/^\|/.test(l)) continue;
             for (const teil of l.slice(1).split('||')) {
                 const cs = /colspan\s*=\s*"?(\d+)/.exec(teil);
-                const roh = teil.includes('|') && /style|colspan|rowspan|align/.test(teil.split('|')[0]) ? teil.slice(teil.indexOf('|') + 1) : teil;
+                // Attribut vor dem ersten „|": style=, bgcolor= (GB3), colspan= … — alles mit „=" ohne Link/Vorlage
+                const kopf = teil.split('|')[0];
+                const roh = teil.includes('|') && /=/.test(kopf) && !/\[\[|\{\{/.test(kopf) ? teil.slice(teil.indexOf('|') + 1) : teil;
                 const w = zelle(roh);
                 for (let k = 0; k < (cs ? +cs[1] : 1); k++) werte.push(w);
             }
