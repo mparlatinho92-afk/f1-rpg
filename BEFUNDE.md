@@ -3035,3 +3035,27 @@ EFO + GB3 2019–26, Eurocup-3 2023–26 → 46 Saisons, 1268 Fahrer-Saisons.
   (`reservePool.find`), nicht den besten. ▶ Hebel dort, nicht am Schalter.
 - ⚠ Rauschen: „zu jung" lag bei Schritt B (136 Feeder) bei 2,8 %, jetzt in beiden Läufen 5,8 % — bei n ≈ 200 sind das 6 gegen
   12 Fahrer. Einzelwerte dieser Kennzahl unter ~3 Pp nicht deuten.
+
+### 09.10.2026 (2): Saisonende-Sitzfüller wählt nach Marktwert — kaum Wirkung
+Schritt 2 des Sitzfüllers (`processSeasonEndEvents`, Reserve-Pool) nahm den ersten passenden Eintrag (`reservePool.find`, also
+Einfüge-Reihenfolge), jetzt den besten nach Marktwert (70 % Pace + 30 % Potenzial, wie `acquireSeatDriver`).
+`node tests/gen-debut-age.js 4 2010 30` gegen `--vorher` (Monolith v0.9.20.9):
+
+| | vorher | nachher |
+|---|---|---|
+| Feeder-Debütanten aus oberem / unterem Elo-Drittel | 50 % / 23 % | 53 % / 18 % |
+| Ø Elo-Potenzial der Feeder-Debütanten (alle 83,0) | 85,1 | 85,5 |
+| zu jung (≥ 3 J. unter Ära-Debütalter) | 13,5 % | 16,9 % |
+| Vergreisung | 57 % | 58 % |
+
+- **NEGATIVERGEBNIS zur Vermutung vom 09.10.2026 (1):** der Sitzfüller war NICHT der Haupthebel. Oberes Drittel +3 Pp bei n ≈ 180
+  (Standardfehler ~3,7 Pp) — im Rauschen; unteres Drittel −5 Pp knapp darüber. Beide Besetzungswege wählen jetzt nach Wert,
+  trotzdem 53 % statt real 100 %.
+- Vermutete Ursache (nicht gemessen): **die Reife-Dämpfung überdeckt die Elo-Spanne.** Oberes gegen unteres Drittel trennen ~7
+  Marktwert-Punkte; das Reifejahr streut ±3 Jahre × 3 Pace = bis ±9 Punkte. Ein reifer schwacher Feeder schlägt einen starken,
+  der noch 2 Jahre vor seinem Reifejahr steht. Die Elo verschiebt das Reifejahr nur um ±2.
+- **Alte Ära unberührt:** `markt-abgang.js` 1975+8×4, vorher gegen zwei Läufe nachher — „weg" schwaches Drittel 27,0 gegen
+  24,5 / 29,5 %, Wechselquote 38,6 gegen 37,0 / 39,5 %, Zugang „kein Start" schwach 22,6 gegen 12,0 / 16,5 %. Abgänge und
+  Wechsel unverändert (vorher liegt zwischen den Nachher-Läufen). Einzige mögliche Wirkung: schwache Teams holen etwas seltener
+  Neulinge ohne Vorjahresstart (−6 bis −10 Pp, knapp über Rauschen) — plausibel, der Wert bevorzugt Ex-F1-Fahrer; zwei Läufe OHNE Änderung trennen 3–5 Pp, kleine Altersbänder bis 11 Pp.
+- ⚠ Gegenlauf aus dem Nutzer-Terminal: `!` startet bash, nicht PowerShell → `SIMCORE_FROM_INDEX=0 node …`, nicht `$env:…`.
