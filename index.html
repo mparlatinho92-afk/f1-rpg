@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.9</title>
+    <title>F1 RPG v0.9.20.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.9 (aktuell) - 09.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.10 (aktuell) - 09.10.2026</div>
+                            <div>&#8226; FIX: Saisonende-Sitzfüller nimmt den stärksten Pool-Fahrer (Marktwert) statt den ersten</div>
+                            <div class="font-bold text-slate-400">v0.9.20.9 - 09.10.2026</div>
                             <div>&#8226; FIX: Alle Feeder-Fahrer haben jetzt Werte aus echten Ergebnissen (Euroformula Open, GB3, Eurocup-3 ergaenzt)</div>
                             <div class="font-bold text-slate-400">v0.9.20.8 - 08.10.2026</div>
                             <div>&#8226; NEU: Feeder-Fahrer haben feste Werte aus ihrer Junior-Elo (echte F2/F3/FRECA-Ergebnisse) statt pro Spielstand gewuerfelt</div>
@@ -4212,7 +4214,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.9';
+        const VERSION = '0.9.20.10';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22637,14 +22639,17 @@
                     // 2. Reserve-Pool (echte Ex-Fahrer / Nachwuchs) – Alters-Gate: vergreiste
                     //    Pool-Talente überspringen → Schritt 3 generiert einen frischen Rookie.
                     //    Außenwelt nur wenn externalTransfers an (v0.9.15.18): sonst direkt zu Schritt 3 (generieren als letzter Ausweg).
-                    const cand = simRule('externalTransfers') ? (GAME_STATE.reservePool || []).find(p =>
+                    //    Bester nach Marktwert (70 % Pace + 30 % Potenzial, wie acquireSeatDriver) statt
+                    //    erster Treffer: die Pool-Reihenfolge ist nur die Einfüge-Reihenfolge (09.10.2026).
+                    const _eff = d => { const c = d.currentPace || d.pace || 0; return c * 0.7 + (d.potentialPace || c) * 0.3; };
+                    const cand = simRule('externalTransfers') ? (GAME_STATE.reservePool || []).filter(p =>
                         !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) &&
                         _teamNationOk(t, p) &&
-                        (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year)) : null;
+                        (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year))
+                        .sort((a, b) => _eff(b) - _eff(a))[0] || null : null;
                     // „Echt vor generiert" aus: wie in acquireSeatDriver gegen einen generierten Bewerber
                     let _bew = null;
                     if (cand && GAME_STATE.simRules?.realFirst === false) {
-                        const _eff = d => { const c = d.currentPace || d.pace || 0; return c * 0.7 + (d.potentialPace || c) * 0.3; };
                         const b = generateDriver(t.id, year, isTopTeam ? false : Math.random() < 0.7);
                         if (_eff(b) > _eff(cand)) _bew = b;
                     }
