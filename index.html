@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.8</title>
+    <title>F1 RPG v0.9.20.9</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.8 (aktuell) - 08.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.9 (aktuell) - 09.10.2026</div>
+                            <div>&#8226; FIX: Alle Feeder-Fahrer haben jetzt Werte aus echten Ergebnissen (Euroformula Open, GB3, Eurocup-3 ergaenzt)</div>
+                            <div class="font-bold text-slate-400">v0.9.20.8 - 08.10.2026</div>
                             <div>&#8226; NEU: Feeder-Fahrer haben feste Werte aus ihrer Junior-Elo (echte F2/F3/FRECA-Ergebnisse) statt pro Spielstand gewuerfelt</div>
                             <div>&#8226; NEU: Starke Junioren sind frueher F1-reif, schwache spaeter</div>
                             <div>&#8226; NEU: Schalter Echt vor generiert in den KI-Sim-Regeln (aus = Marktwert entscheidet)</div>
@@ -4210,7 +4212,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.8';
+        const VERSION = '0.9.20.9';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -12474,7 +12476,8 @@
 
         // Baut einen Reserve-Pool-Fahrer aus einem FEEDER_DRIVERS-Eintrag.
         // Pace/Potenzial aus der Junior-Elo (data/feeder-elo.js, echte F2/F3/FRECA-Ergebnisse) —
-        // in jedem Spielstand gleich. Nur wer dort fehlt (8 von 144), wuerfelt wie bisher.
+        // in jedem Spielstand gleich. Seit 09.10.2026 alle 144 erfasst (auch EFO/GB3/Eurocup-3);
+        // der Wuerfel bleibt nur als Rueckfall fuer kuenftige Kadereintraege ohne Daten.
         function makeFeederDriver(entry, year) {
             const [name, nat, birthYear, series, lastSeason] = entry;
             const _elo = (typeof FEEDER_ELO !== 'undefined') ? FEEDER_ELO[name] : null;
