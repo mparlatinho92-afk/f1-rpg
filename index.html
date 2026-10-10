@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.12</title>
+    <title>F1 RPG v0.9.20.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.12 (aktuell) - 10.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.13 (aktuell) - 10.10.2026</div>
+                            <div>&#8226; FIX: Feeder verdrängten 2019–2025 die Hälfte der echten Fahrer – Junior-Werte jetzt an echten Rookies geeicht, real übergangene Feeder darunter</div>
+                            <div>&#8226; FIX: echte Rookies mit schwachem Auto (Russell, Tsunoda, Stroll) scheitern nicht mehr an der Pace-Untergrenze</div>
+                            <div>&#8226; FIX: Mindestalter 19 auch im Sicherheitsnetz zum Saisonstart</div>
+                            <div class="font-bold text-slate-400">v0.9.20.12 - 10.10.2026</div>
                             <div>&#8226; FIX: Feeder unterschrieben mit 17 und fuhren mit 18 (Hughes, Ghiotto, Daruvala) - Mindestalter 19 gilt jetzt auf allen Besetzungswegen</div>
                             <div class="font-bold text-slate-400">v0.9.20.11 - 10.10.2026</div>
                             <div>&#8226; FIX: Teams holen beim Saisonwechsel die stärksten Junioren statt einer Lotterie über den ganzen Pool</div>
@@ -4219,7 +4223,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.12';
+        const VERSION = '0.9.20.13';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -12488,9 +12492,10 @@
         function makeFeederDriver(entry, year) {
             const [name, nat, birthYear, series, lastSeason] = entry;
             const _elo = (typeof FEEDER_ELO !== 'undefined') ? FEEDER_ELO[name] : null;
-            const potentialPace = _elo ? _elo[0] : 74 + Math.floor(Math.random() * 19);          // 74–92
-            const gap = 9 + Math.floor(Math.random() * 8);                      // 9–16
-            const currentPace = _elo ? _elo[1] : Math.max(60, potentialPace - gap);
+            // Skala seit 10.10.2026 an den echten Rookies (tools/junior-elo.js); Rueckfall ohne Daten = Band unter
+            // der Rookie-Skala wie die Feeder, die real nicht aufstiegen (vorher 74–92 — darueber lagen alle Feeder).
+            const currentPace = _elo ? _elo[1] : 50 + Math.floor(Math.random() * 8);            // 50–57
+            const potentialPace = _elo ? _elo[0] : currentPace + 4 + Math.floor(Math.random() * 5);
             const con = Math.min(95, Math.max(45, currentPace + (Math.floor(Math.random() * 21) - 12)));
             return {
                 id: feederSlug(name),
@@ -23197,6 +23202,12 @@
         const POOL_LOSE = 4;          // der Pool zaehlt bei vollem Vorrang hoechstens wie 4 Kandidaten
         function erfahrungsVorrang() { return getEraValue(ERA_ERFAHRUNG_VORRANG, GAME_STATE.currentYear); }
         function _poolWert(d) { const c = d.currentPace || d.pace || 0; return c * 0.7 + (d.potentialPace || c) * 0.3; }
+        // Echter Fahrer mit PACE_RATINGS-Eintrag fuer das Fahrjahr (10.10.2026): faellt durch keine Pace-Untergrenze
+        // und lost immer mit. PACE_RATINGS enthaelt das schwache Auto — Russell 2019 58, Tsunoda 58, Stroll 58 kamen
+        // in keinem Lauf ins Cockpit (BEFUNDE 10.10.2026 (3)/(4)).
+        function _echtImFahrjahr(d, year) {
+            return !!(d && d.histId && typeof PACE_RATINGS !== 'undefined' && PACE_RATINGS[d.histId]?.[String(year)]);
+        }
         // Multiplikator nach Starts in der abgelaufenen Saison: 1 ohne Start, voll ab halber Saison
         function erfahrungsGewicht(driver) {
             const v = erfahrungsVorrang();
@@ -23799,14 +23810,16 @@
                     if (!isTopTeam && simRule('externalTransfers')) {
                         (GAME_STATE.reservePool || [])
                             .filter(d => (!d.status || d.status === 'active') &&
-                                        (d.currentPace || d.pace || 0) >= 60 && _indyOk(d) && _nationOk(d) &&
+                                        ((d.currentPace || d.pace || 0) >= 60 || _echtImFahrjahr(d, currentYear + 1)) && _indyOk(d) && _nationOk(d) &&
                                         poolAgeGateOk(d, currentYear) &&
                                         poolMinAgeOk(d, currentYear + 1) &&   // fährt kommende Saison; vorher mit 17 verpflichtet (10.10.2026)
                                         !GAME_STATE.drivers.some(x => x.id === d.id && x.team))
                             // Nur die POOL_LOSE Wertbesten (70 % Pace + 30 % Potenzial) losen mit (10.10.2026).
                             // Vorher loste der ganze Pool (~70 Feeder) — die Masse schwacher Lose schlug die
                             // Starken: Feeder-Debütanten aus dem oberen Elo-Drittel 49 % → 83 % (BEFUNDE 09.10. (3)).
-                            .sort((a, b) => _poolWert(b) - _poolWert(a)).slice(0, POOL_LOSE)
+                            // Echte Fahrer im eigenen Fahrjahr losen zusaetzlich mit (10.10.2026).
+                            .sort((a, b) => _poolWert(b) - _poolWert(a))
+                            .filter((d, i) => i < POOL_LOSE || _echtImFahrjahr(d, currentYear + 1))
                             .forEach(d => _cands.push({ driver: d, type: 'pool', fromTeam: null }));
                     }
 
@@ -26063,8 +26076,9 @@
                         if (!isTopTeam_) {
                             (GAME_STATE.reservePool || []).forEach(rp => {
                                 const rpPace = rp.currentPace || rp.pace || 0;
-                                if (rpPace < 55) return;
+                                if (rpPace < 55 && !_echtImFahrjahr(rp, newYear)) return;   // 10.10.2026, s. _echtImFahrjahr
                                 if (!_indyOk_(rp)) return;
+                                if (!poolMinAgeOk(rp, newYear)) return;   // 10.10.2026: hier fuhren 17-Jaehrige (Gruppe J) ins Cockpit
                                 // Nicht bereits aktiv im Grid (histId-Check nur wenn vorhanden, id-Check immer)
                                 if (rp.histId && GAME_STATE.drivers.some(d => d.histId === rp.histId && d.team)) return;
                                 if (GAME_STATE.drivers.some(d => d.id === rp.id && d.team)) return;
