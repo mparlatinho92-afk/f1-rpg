@@ -3113,3 +3113,22 @@ Variante „nur die `POOL_LOSE` Wertbesten losen mit" aus (3) eingebaut (`_poolW
   52 → 67, erfahrene generierte 1 → 30, Feeder 234 → 224; Feeder-Auswahl unverändert (oberes Drittel 84 / 83 %). Der Schalter
   wirkt nur in `acquireSeatDriver` und im Saisonende-Sitzfüller. In `processTeamChanges` (Hauptweg) losen Feeder und generierte
   Pool-Junioren ohnehin gemeinsam nach Wert (Top 4) — dort gibt es kein „echt vor generiert", das man abschalten könnte.
+
+### 10.10.2026 (2): Nutzer-Spielstand 1950–2017 (v0.9.20.11) — Frühstarter und Junioren
+Stammfahrer (≥ halbe Saison) VOR ihrem realen Debütjahr, je Saison (Anteil an allen Stammfahrern) · Jahre zu früh 1/2/3/4/5+:
+1950er 1,4 (11,6 %) 0,8/0,4/0,1/0,1/0 · 1960er 1,2 (8,2 %) · **1970er 3,0 (13,2 %) 1,0/1,0/0,8/0,2/0** · 1980er 1,8 (6,8 %) ·
+1990er 2,4 (10,0 %) · 2000er 1,1 (5,3 %) · 2010er 1,1 (5,1 %). Rund die Hälfte ist nur 1 Jahr zu früh.
+- Nutzer-Fälle: Prost 1979 als Ersatz ab Runde 9 (Pace 74, 1 Jahr zu früh), Titel 1986 statt 1985. Brabham 1954 ohne Start
+  bei Gordini, Debüt 1955 wie real. **Hill 1988 (4 Jahre zu früh, Pace 62 / Potenzial 86 gedämpft) bei Dallara** — Hinterbänkler-
+  Ziel der Glockenkurve ist 68, die Dämpfung macht ihn dort zum guten Treffer; Potenzial 98 hält seinen Marktwert hoch.
+- **BUG Mindestalter:** Feeder fahren mit 18 (Hughes 2012, Ghiotto 2013, Daruvala 2016 — Reifejahr erst 2015/2016/2020).
+  `poolMinAgeOk` (19) prüft nur `acquireSeatDriver` und `_findRealSeatCandidate`. `processTeamChanges` (Pool-Kandidaten),
+  Saisonende-Sitzfüller und `_besserAmMarkt` prüfen nur `poolAgeGateOk` = Höchstalter.
+- Auswertung: Spielstand-NDJSON, Zeile `_t:"season"` → `d.driverStandings[id].races` + `d.drivers[].histId`, Debüt = erstes Jahr
+  in `PACE_RATINGS`. ⚠ Erst-Verpflichtungen haben oft KEINEN `transfers`-Eintrag (23 von 44) — Herkunft nur über
+  `retirements[].replacementId` (Ersatz mitten in der Saison) oder `teamSpans` eindeutig.
+- **Fix Mindestalter (10.10.2026):** `poolMinAgeOk` an den drei Stellen ergänzt, beim Saisonwechsel auf das Fahrjahr
+  (`currentYear + 1`). `gen-debut-age.js 3 2010 30` (neue Zeile „Unter 19"): **12 → 1** Debüts unter 19 (Rest: Varrone 2018,
+  Weg offen, 1 in 90 Saisons). Feeder-Auswahl unverändert (oberes Drittel 82–84 %), Markt 2015+8×4 im Rauschen (Wechselquote
+  26,1 gegen 24,5 %). ⚠ **Widerlegt:** der Mindestalter-Fehler erklärt den Anteil „zu jung" NICHT — 14,7 → 15,5 %. „Zu jung"
+  heißt ≥ 3 Jahre unter `ERA_ROOKIE_AGE` (2010er: ≤ 20), das sind überwiegend 19- und 20-Jährige.

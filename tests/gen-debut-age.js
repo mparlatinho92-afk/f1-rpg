@@ -139,6 +139,8 @@ console.log(`  Feeder:         ${fmt(stat(debuts.filter(d => d.kind === 'feeder'
     const jung = debuts.filter(d => d.kind !== 'exp');
     const zuJung = jung.filter(d => d.age <= eraVal(ERA_ROOKIE_AGE, d.year) - 3).length;
     const sd = (a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); })(jung.map(d => d.age));
+    const u19 = jung.filter(d => d.age < 19);
+    console.log(`  Unter 19 (Mindestalter JUNIOR_MIN_AGE): ${u19.length}` + (u19.length ? ' — ' + u19.slice(0, 8).map(d => `${d.name} ${d.year} (${d.kind})`).join(', ') : ''));
     console.log(`  Zu jung (≥3 J. unter Ära-Debütalter): ${jung.length ? (100 * zuJung / jung.length).toFixed(1) : '–'} %  · Streuung ${jung.length ? sd.toFixed(2) : '–'} J.  (n ${jung.length})`);
 }
 

@@ -36,7 +36,7 @@ function vergleiche(vor, phase) {
         const d = ctx.GAME_STATE.drivers.find(x => x.id === p.id) || {};
         const tr = [...(ctx.GAME_STATE.seasonTransfers || []), ...((ctx.GAME_STATE.history || []).slice(-1)[0]?.transfers || [])].filter(t => t.driverId === p.id).pop();
         const weg = d._gridFiller ? 'Startfeld-Füller' : tr ? tr.type : d.isPrivateer ? 'Privatier ohne Eintrag' : 'ohne Eintrag';
-        picks.push({ phase, weg, eloP: p.elo, wert: p.wert, gedaempft: p.gedaempft, alter: p.alter, poolN: kandidaten.length,
+        picks.push({ phase, weg, name: p.name, jahr: ctx.GAME_STATE.currentYear, info: JSON.stringify({ g: d.poolGroup, pr: d.isPrivateer, gf: d._gridFiller, gr: d._genReason, res: d.isReserve, sched: (d.scheduledRaces || []).length, tm: d.team }), eloP: p.elo, wert: p.wert, gedaempft: p.gedaempft, alter: p.alter, poolN: kandidaten.length,
             rangWert: nachWert.findIndex(k => k.id === p.id) + 1, rangElo: nachElo.findIndex(k => k.id === p.id) + 1,
             obenImPool: kandidaten.filter(k => k.elo >= 86).length,
             obenUngedaempft: kandidaten.filter(k => k.elo >= 86 && !k.gedaempft).length,
@@ -77,4 +77,10 @@ for (const ph of ['Wechsel', 'Saison']) {
         console.log(`  Wahl aus unterem Drittel (n ${unten.length}): obere im Pool Ø ${m(unten.map(x => x.obenImPool)).toFixed(1)}, davon ungedämpft ${m(unten.map(x => x.obenUngedaempft)).toFixed(1)}; keiner oben im Pool: ${pct(unten.filter(x => !x.obenImPool).length, unten.length)}`);
         console.log(`    Wert Gewählter Ø ${m(unten.map(x => x.wert)).toFixed(1)} gegen bester Oberer Ø ${m(unten.filter(x => x.obenImPool).map(x => x.obenWertMax)).toFixed(1)}`);
     }
+}
+// Zu junge Verpflichtungen: Alter in der Saison, in der gefahren wird (beim Wechsel = Folgejahr)
+const jung = picks.filter(x => x.alter + (x.phase === 'Wechsel' ? 1 : 0) < 19);
+if (jung.length) {
+    const w = {}; for (const x of jung) { const k = x.phase + ':' + x.weg; w[k] = (w[k] || 0) + 1; }
+    console.log(`\nUnter 19 im Fahrjahr: ${jung.length} — ` + Object.entries(w).map(([k, n]) => `${k} ${n}`).join(' · '));
 }
