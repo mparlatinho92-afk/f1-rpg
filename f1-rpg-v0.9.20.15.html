@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.14</title>
+    <title>F1 RPG v0.9.20.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.14 (aktuell) - 10.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.15 (aktuell) - 10.10.2026</div>
+                            <div>&#8226; FIX: Verstappen, Norris, Piastri und Co. traten ab 2026 per historischem Karriereende zurück – das Datenende 2025 gilt nicht mehr als Karriereende</div>
+                            <div class="font-bold text-slate-400">v0.9.20.14 - 10.10.2026</div>
                             <div>&#8226; FIX: Steckbrief echter Fahrer ohne Spielkarriere zeigte 'Karriere beendet', falsches Alter und Debüt – jetzt Hinweis 'nie in der F1 gestartet' bzw. 'noch nicht in der F1' mit echtem Debütjahr</div>
                             <div class="font-bold text-slate-400">v0.9.20.13 - 10.10.2026</div>
                             <div>&#8226; FIX: Feeder verdrängten 2019–2025 die Hälfte der echten Fahrer – Junior-Werte jetzt an echten Rookies geeicht, real übergangene Feeder darunter</div>
@@ -22840,7 +22842,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.14';
+        const VERSION = '0.9.20.15';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -40838,7 +40840,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     const _histLastYear = (_f1LastYear !== null && _paceLastYear !== null)
                         ? Math.min(_f1LastYear, _paceLastYear)
                         : (_f1LastYear ?? _paceLastYear);
-                    if (_histLastYear !== null) {
+                    // Karriere reicht bis ans Datenende → offen, nur die Alterskurve darunter entscheidet
+                    const _karriereOffen = Math.max(_f1LastYear ?? 0, _paceLastYear ?? 0) >= _echteDatenBis();
+                    if (_histLastYear !== null && !_karriereOffen) {
                         // Pyramiden-Kurve: sanfter Anstieg VOR echtem letzten Jahr,
                         // steiler Abfall danach. Kein Dampening – emergente Verteilung.
                         // Tod und Rücktritt identisch (offseason-Abgang). Jim Clark
@@ -41824,6 +41828,18 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // in keinem Lauf ins Cockpit (BEFUNDE 10.10.2026 (3)/(4)).
         function _echtImFahrjahr(d, year) {
             return !!(d && d.histId && typeof PACE_RATINGS !== 'undefined' && PACE_RATINGS[d.histId]?.[String(year)]);
+        }
+        // Letztes Jahr mit echten Daten (hoechstes PACE_RATINGS-Jahr, derzeit 2025). Wer bis dorthin faehrt, hat
+        // kein bekanntes Karriereende — das Datenende ist keins (Spielstand 2041: Verstappen, Norris, Piastri,
+        // Antonelli 2026 per „Historisches Karriereende (Elo bis 2025)" weg).
+        let _datenBisCache = null;
+        function _echteDatenBis() {
+            if (_datenBisCache === null) {
+                let m = 0;
+                if (typeof PACE_RATINGS !== 'undefined') for (const v of Object.values(PACE_RATINGS)) for (const y in v) if (+y > m) m = +y;
+                _datenBisCache = m || 9999;
+            }
+            return _datenBisCache;
         }
         // Multiplikator nach Starts in der abgelaufenen Saison: 1 ohne Start, voll ab halber Saison
         function erfahrungsGewicht(driver) {
