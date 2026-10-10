@@ -3109,3 +3109,7 @@ Variante „nur die `POOL_LOSE` Wertbesten losen mit" aus (3) eingebaut (`_poolW
 
   Fast alles rückt an die Realität; nur „weg" bei den Schwachen sinkt weiter unter real. Grund vermutlich: weniger Neulinge
   verdrängen Stammfahrer schwacher Teams. 1975 und 2005 unverändert (Patch-Messung in (3)).
+- **Schalter „echt vor generiert" nach dem Fix** (`gen-debut-age.js 6 2010 30` mit/ohne `--wert`): generierte Rookie-Debüts
+  52 → 67, erfahrene generierte 1 → 30, Feeder 234 → 224; Feeder-Auswahl unverändert (oberes Drittel 84 / 83 %). Der Schalter
+  wirkt nur in `acquireSeatDriver` und im Saisonende-Sitzfüller. In `processTeamChanges` (Hauptweg) losen Feeder und generierte
+  Pool-Junioren ohnehin gemeinsam nach Wert (Top 4) — dort gibt es kein „echt vor generiert", das man abschalten könnte.
