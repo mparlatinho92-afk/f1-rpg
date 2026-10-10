@@ -3221,3 +3221,27 @@ Startfelder 2005–2021, Anteil der Fahrer, die X Jahre später noch einen Eintr
 ⚠ Der reale Vergleich zählt alle Fahrer mit Eintrag, das Spiel nur Stammfahrer. Für die Größenordnung reicht das.
 Beobachtung ohne Analyse: Im Spielstand steigt das Medianalter der Stammfahrer 2027–2036 von 24 auf 29 (Feeder-Kohorte
 altert als Block), generierte Stammfahrer gibt es erst ab 2035.
+
+### 10.10.2026 (7): Moderne Alterskurve setzt zu früh ein (+4 ab 2015 eingebaut)
+Nutzer: Das Rücktrittsalter der Moderne ist zu niedrig, real gibt es kaum noch Karriereenden. Im Spielstand 1950–2030 trat
+Russell 2029 mit 31 per Alters-Rücktritt zurück („Ø 28“), Gasly mit 31.
+**Real** (SEASON_DATA-Stammfahrer, Abgang = im Folgejahr nicht mehr im Feld; scratchpad `alter-real.js`): 2018–2024 nur
+1–7 Abgänge pro Jahr (2019 und 2023 je einer). „Weg“ nach Altersband, 2013–2024: ≤27 19 % · 28–31 20 % · 32–35 24 % ·
+36+ 25 %, also fast flach. 2000–2012: 25 / 27 / 19 / 48 %. Medianalter im Feld 2015–2025: 26–28.
+**Messfalle:** `ERA_RETIREMENT_AGE` 2015/2020/2025 = 26,6 / 27,3 / 28,0 ist rechtszensiert. Es enthält nur Karrieren, die
+schon zu Ende sind. Lange Karrieren (Alonso, Hamilton, Hülkenberg) fehlen, kurze Hinterbänkler-Karrieren bleiben drin.
+Alters-Rücktritt **und** `_noRenew` (bis 30 %) setzen genau an diesem Wert an.
+`markt-abgang.js 2018 8 4`, „weg“ über alle Drittel (≤27 / 28–31 / 32–35 / 36+ · gesamt):
+- Stand: 14 / 26 / 33 / 28 · 20 %
+- Kurve und `_noRenew` +4 Jahre: 14 / 20 / 28 / 26 · 18 %; Alters-Rücktritte 0–0,5 %
+- dasselbe +6 Jahre: 15 / 22 / 21 / 23 · 18 %
+- real 2013–2024: 19 / 20 / 24 / 25 · ~19 %
+**Gegenprobe Zukunft** (`markt-abgang.js 2026 10 3`, hier gibt es kein historisches Karriereende), „weg“ gesamt:
+Stand 13,3 %, +4 11,4 %, +6 10,1 %. Median-Alter der Verschwundenen 31 → 33 → 33. Die Zukunft hat schon heute zu
+wenig Abgänge: ≤27 nur 4–5 % (real 19). Dort fehlen die jungen, unfreiwilligen Abgänge. Die Verschiebung nach hinten
+verringert die Fluktuation noch etwas.
+**Eingebaut: `ERA_ALTERSKURVE_SPAETER` { 1950: 0, 2015: 4 } und `alterskurveStart(year)`**, gilt für den Alters-Rücktritt
+und `_noRenew`. Ären vor 2015 bleiben unverändert. Nachmessung mit dem eingebauten Stand, „weg“ gesamt je Band:
+2018+8×4 10 / 22 / 20 / 23 · 15,5 % (Testpatch-Lauf 18 %, ≤27 schwankt zwischen den Läufen um etwa 4 Pp);
+2026+10×3 9,9 %, Median-Alter der Verschwundenen 33. ▶ Die Fluktuation ist insgesamt zu niedrig (real ~19 %).
+In der Zukunft fehlen die jungen, unfreiwilligen Abgänge (≤27: 0 / 1 / 12 %). Das ist ein eigenes Thema, nicht die Alterskurve.
