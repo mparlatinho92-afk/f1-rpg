@@ -152,9 +152,9 @@ function getContext() {
     let m;
     while ((m = re.exec(html)) !== null) scriptBlocks.push(m[1]);
     let script = scriptBlocks.join('\n');
-    // Gegenversuch ohne Code-Eingriff: SIMCORE_PATCH="alt~>neu;;alt2~>neu2" ersetzt wörtlich im Quelltext (09.10.2026).
+    // Gegenversuch ohne Code-Eingriff: SIMCORE_PATCH="alt~>neu@@alt2~>neu2" ersetzt wörtlich im Quelltext (09.10.2026).
     // Trifft ein Muster nicht, bricht der Lauf ab — sonst misst man stillschweigend den unveränderten Stand.
-    for (const p of (process.env.SIMCORE_PATCH || '').split(';;').filter(Boolean)) {
+    for (const p of (process.env.SIMCORE_PATCH || '').split('@@').filter(Boolean)) {
         const [alt, neu] = p.split("~>");
         if (!script.includes(alt)) throw new Error(`SIMCORE_PATCH trifft nicht: "${alt}"`);
         script = script.split(alt).join(neu);

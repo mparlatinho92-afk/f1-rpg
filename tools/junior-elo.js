@@ -13,7 +13,8 @@
  *   2. Team-Anteil: F2/F3 sind Einheitsautos — Teamkorrektur 0 / ½ / 1 wird gegen die Anker getestet.
  *   3. Prüfung an den Ankern (Fahrer mit späterem PACE_RATINGS-Jahr): trägt die Reihenfolge Signal?
  *
- * Umrechnung: die Elo bestimmt die REIHENFOLGE, die Skala bleibt die bisherige Feeder-Spanne 74–92.
+ * Umrechnung: die Elo bestimmt die REIHENFOLGE; die Skala seit 10.10.2026 je Gruppe (F1 / oben / unten, s. Abschnitt 4).
+ * Bis dahin Rang → 74–92 — ueber der echten Rookie-Skala, Feeder verdraengten die echten Fahrer.
  * Eine direkte Regression (r ≈ 0,44) drückte alle Feeder auf 68–83 zusammen — unter die generierten
  * Rookies (75–94), Vesti wäre schwächer gewesen als ein erfundener Durchschnitts-Rookie.
  * Debüt-Pace = 88,5 % des Potenzials (reale Kurve, BEFUNDE.md); direkt vorhersagbar ist sie nicht (r ≈ 0,12).
@@ -152,11 +153,21 @@ for (const x of a.sort((p, q) => q.w - p.w))
     console.log(`    ${x.name.padEnd(22)} ${x.w.toFixed(0).padStart(5)}   ${String(x.pot).padStart(3)} / ${(rp.a + rp.b * x.w).toFixed(0).padStart(3)}   ${String(x.debut).padStart(3)} / ${(rd.a + rd.b * x.w).toFixed(0).padStart(3)}`);
 
 // ── 4. Werte für die Feeder ────────────────────────────────────────────────
-const POT_MIN = 74, POT_MAX = 92, DEBUT_ANTEIL = 0.885;
+// Skala (10.10.2026): bisher Rang → 74–92, also ueber der echten Rookie-Skala (Marktwert-Median 76 gegen 67) —
+// Feeder verdraengten 2019–2025 die Haelfte der echten Fahrer (BEFUNDE.md 10.10.2026 (3)). Die Elo vergleicht
+// Junioren nur untereinander; wer in die F1 kam, entscheidet die Lage des Fahrers, nicht die Elo allein:
+//   F1    — Feeder mit PACE_RATINGS-Eintrag: seine echten Debuetwerte.
+//   oben  — Junior-Laufbahn nicht beendet (letzte Saison ab 2025) UND Wert im obersten Viertel aller Junioren
+//           (dort kamen real 34 % in die F1, darunter 0 %): Rang → Verteilung der echten Rookies (PACE_RATINGS,
+//           Debuet 2010–2025).
+//   unten — alle anderen, auch wer die Leiter bis 2024 ohne F1-Platz verliess: es gab einen Grund, dass Teams
+//           andere nahmen. Rang → Band UNTER der Rookie-Skala.
+const REAL_VON = 2010, REAL_BIS = 2025, LEITER_OFFEN_AB = 2025;
+const UNTEN_PACE = [50, 57], UNTEN_POT = [54, 62];
 const spearman = pt => { const rang = v => { const s = v.map((x, i) => [x, i]).sort((p, q) => p[0] - q[0]), r = []; s.forEach(([, i], k) => r[i] = k); return r; };
     const rx = rang(pt.map(p => p[0])), ry = rang(pt.map(p => p[1])); return regression(rx.map((x, i) => [x, ry[i]])).r; };
 console.log(`  Spearman Rang Junior-Elo ↔ Rang F1-Potenzial: ${spearman(a.map(x => [x.w, x.pot])).toFixed(2)} (n ${a.length})`);
-let AUC = NaN;
+let AUC = NaN, q1 = NaN;
 // Zweite Prüfung mit großer Stichprobe: trennt die Elo, wer in die F1 kam? (Auswahl echter Teams)
 // Gezählt nur, wer seine letzte Junior-Saison bis 2023 fuhr — Jüngere hatten noch keine Chance.
 {
@@ -169,7 +180,7 @@ let AUC = NaN;
     const sortiert = pool.slice().sort((p, q) => q[0] - p[0]), d3 = Math.ceil(sortiert.length / 3);
     const drittel = [sortiert.slice(0, d3), sortiert.slice(d3, 2 * d3), sortiert.slice(2 * d3)].map(t => t.filter(p => p[1]).length);
     console.log(`  Reale F1-Aufsteiger je Elo-Drittel (oben/Mitte/unten): ${drittel.join(' / ')} von ${ja.length} → oben ${(100 * drittel[0] / ja.length).toFixed(0)} %, unten ${(100 * drittel[2] / ja.length).toFixed(0)} %`);
-    const quart = pool.map(p => p[0]).sort((p, q) => q - p), q1 = quart[Math.floor(quart.length / 4)];
+    const quart = pool.map(p => p[0]).sort((p, q) => q - p); q1 = quart[Math.floor(quart.length / 4)];
     const obenF1 = pool.filter(p => p[0] >= q1), untenF1 = pool.filter(p => p[0] < q1);
     console.log(`  F1-Aufstieg: AUC ${auc.toFixed(2)} (0,5 = Zufall) · oberstes Viertel ${(100 * obenF1.filter(p => p[1]).length / obenF1.length).toFixed(0)} % in der F1, Rest ${(100 * untenF1.filter(p => p[1]).length / untenF1.length).toFixed(0)} % (n ${ja.length} von ${pool.length})`);
 }
@@ -179,28 +190,45 @@ for (const f of FEEDER) {
     feederWerte.push([name, wx ? { w: wx.w, serie: wx.serie + (wx.teil ? ` (Teilsaison, ${wx.teil} R.)` : '') } : null]);
 }
 const mit = feederWerte.filter(x => x[1]);
-// Rang → Spanne (bester = POT_MAX, schwächster = POT_MIN)
-mit.slice().sort((p, q) => p[1].w - q[1].w).forEach(([, v], i, arr) => {
-    v.pot = Math.round(POT_MIN + (POT_MAX - POT_MIN) * (arr.length > 1 ? i / (arr.length - 1) : 0.5));
-    v.deb = Math.round(v.pot * DEBUT_ANTEIL);
-});
+const realC = [], realP = [];
+for (const y of Object.values(PR)) { const js = Object.keys(y).map(Number), d = Math.min(...js);
+    if (d >= REAL_VON && d <= REAL_BIS) { realC.push(y[d][0]); realP.push(y[d][1]); } }
+realC.sort((p, q) => p - q); realP.sort((p, q) => p - q);
+const quant = (arr, q) => arr[Math.round(Math.max(0, Math.min(1, q)) * (arr.length - 1))];
+const letzteFeeder = Object.fromEntries(FEEDER.map(f => [f[0], f[4]]));
+for (const [name, v] of mit) {
+    const sl = f1Slug(name);
+    v.gruppe = sl && PR[sl] ? 'F1' : (letzteFeeder[name] >= LEITER_OFFEN_AB && v.w >= q1) ? 'oben' : 'unten';
+    if (v.gruppe === 'F1') { const d = Math.min(...Object.keys(PR[sl]).map(Number)); v.deb = PR[sl][d][0]; v.pot = PR[sl][d][1]; }
+}
+for (const g of ['oben', 'unten']) {
+    const arr = mit.filter(([, v]) => v.gruppe === g).sort((p, q) => p[1].w - q[1].w);
+    arr.forEach(([, v], i) => {
+        const q = arr.length > 1 ? i / (arr.length - 1) : 0.5;
+        v.deb = g === 'oben' ? quant(realC, q) : Math.round(UNTEN_PACE[0] + (UNTEN_PACE[1] - UNTEN_PACE[0]) * q);
+        v.pot = Math.max(v.deb, g === 'oben' ? quant(realP, q) : Math.round(UNTEN_POT[0] + (UNTEN_POT[1] - UNTEN_POT[0]) * q));
+    });
+}
+const _g = g => mit.filter(([, v]) => v.gruppe === g).length;
+console.log(`  Skala: F1 ${_g('F1')} · oben ${_g('oben')} (Wert ≥ ${q1.toFixed(0)}, Leiter offen) · unten ${_g('unten')} · echte Rookies ${REAL_VON}–${REAL_BIS} n ${realC.length}, Pace ${realC[0]}–${realC[realC.length - 1]}`);
 const ws = mit.map(x => x[1].w), mw = ws.reduce((p, q) => p + q, 0) / ws.length, sd = Math.sqrt(ws.reduce((p, q) => p + (q - mw) ** 2, 0) / ws.length);
 // Reife-Verschiebung: eine Standardabweichung besser = ein Jahr früher reif, gedeckelt ±2
 for (const [, v] of mit) v.reife = Math.max(-2, Math.min(2, -Math.round((v.w - mw) / sd)));
 console.log(`\nFEEDER: ${mit.length} von ${FEEDER.length} mit Junior-Elo (ohne: ${feederWerte.filter(x => !x[1]).map(x => x[0]).join(', ') || '–'})`);
 const zeig = mit.slice().sort((p, q) => q[1].w - p[1].w);
-const fmt = ([n, v]) => `    ${n.padEnd(24)} ${v.serie.padEnd(5)} Wert ${v.w.toFixed(0)} → Potenzial ${v.pot}, Debüt ${v.deb}, Reife ${v.reife >= 0 ? '+' : ''}${v.reife}`;
+const fmt = ([n, v]) => `    ${n.padEnd(24)} ${v.serie.padEnd(5)} Wert ${v.w.toFixed(0)} ${v.gruppe.padEnd(5)} → Potenzial ${v.pot}, Debüt ${v.deb}, Reife ${v.reife >= 0 ? '+' : ''}${v.reife}`;
 console.log('  Spitze:'); zeig.slice(0, 8).forEach(x => console.log(fmt(x)));
 console.log('  Ende:'); zeig.slice(-5).forEach(x => console.log(fmt(x)));
 for (const n of ['Frederik Vesti', 'Théo Pourchaire', 'Ricardo Escotto', 'Carl Bennett']) { const x = mit.find(y => y[0] === n); if (x) console.log('  ' + fmt(x).trim()); }
 
 if (WRITE) {
     const ziel = path.join(ROOT, 'data', 'feeder-elo.js');
-    const obj = {}; for (const [n, v] of mit) obj[n] = [v.pot, v.deb, v.reife];
+    const rangW = mit.map(([, v]) => v.w).sort((p, q) => p - q), perz = w => Math.round(100 * rangW.filter(x => x < w).length / Math.max(1, rangW.length - 1));
+    const obj = {}; for (const [n, v] of mit) obj[n] = [v.pot, v.deb, v.reife, perz(v.w)];
     fs.writeFileSync(ziel, `// FEEDER_ELO — GENERIERT von tools/junior-elo.js (${new Date().toISOString().slice(0, 10)}) — NICHT von Hand editieren.\n`
-        + `// Junior-Elo aus F2/F3/FRECA-Rennergebnissen (Wikipedia). Elo = Reihenfolge, Skala = Feeder-Spanne ${POT_MIN}–${POT_MAX},\n`
-        + `// Debuet-Pace = ${(DEBUT_ANTEIL * 100).toFixed(1)} % des Potenzials. Geprueft: trennt den spaeteren F1-Aufstieg mit AUC ${AUC.toFixed(2)}.\n`
-        + `// Format: Name → [Potenzial, Debuet-Pace, Reife-Verschiebung in Jahren].\n`
+        + `// Junior-Elo aus F2/F3/FRECA-Rennergebnissen (Wikipedia). Elo = Reihenfolge. Skala: F1-Aufsteiger echte Debuetwerte,\n`
+        + `// offene Leiter + oberstes Viertel → echte Rookies ${REAL_VON}–${REAL_BIS}, Rest darunter (Pace ${UNTEN_PACE.join('–')}). Geprueft: trennt den spaeteren F1-Aufstieg mit AUC ${AUC.toFixed(2)}.\n`
+        + `// Format: Name → [Potenzial, Debuet-Pace, Reife-Verschiebung in Jahren, Elo-Perzentil unter den Feedern 0–100 (fuer Messwerkzeuge)].\n`
         + `const FEEDER_ELO = ${JSON.stringify(obj)};\n`);
     console.log('→ ' + path.relative(ROOT, ziel) + ' geschrieben (' + mit.length + ' Fahrer)');
 }

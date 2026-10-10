@@ -19,11 +19,11 @@ const ELO = vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'data'
 const ctx = getContext();
 const eff = d => { const c = d.currentPace || d.pace || 0; return c * 0.7 + (d.potentialPace || c) * 0.3; };
 const isF = d => /^feeder-/.test(String(d.id));
-const drittel = p => p >= 86 ? 'oben' : p <= 80 ? 'unten' : 'mitte';
+const drittel = p => p >= 67 ? 'oben' : p <= 33 ? 'unten' : 'mitte';   // Elo-Perzentil (FEEDER_ELO[3]); bis 10.10.2026 Potenzial 74–92 mit 86/80
 
 const picks = [];   // { phase, eloP, wert, rangWert, rangElo, poolN, gedaempft, bestEloWert }
 function schnapp() {
-    const pool = (ctx.GAME_STATE.reservePool || []).filter(isF).map(d => ({ id: d.id, name: d.name, wert: eff(d), elo: ELO[d.name]?.[0], gedaempft: !!d.preDebut, alter: ctx.GAME_STATE.currentYear - d.birthYear }));
+    const pool = (ctx.GAME_STATE.reservePool || []).filter(isF).map(d => ({ id: d.id, name: d.name, wert: eff(d), elo: ELO[d.name]?.[3], gedaempft: !!d.preDebut, alter: ctx.GAME_STATE.currentYear - d.birthYear }));
     const imKader = new Set(ctx.GAME_STATE.drivers.filter(d => d.team).map(d => d.id));
     return { pool, imKader };
 }
@@ -36,11 +36,11 @@ function vergleiche(vor, phase) {
         const d = ctx.GAME_STATE.drivers.find(x => x.id === p.id) || {};
         const tr = [...(ctx.GAME_STATE.seasonTransfers || []), ...((ctx.GAME_STATE.history || []).slice(-1)[0]?.transfers || [])].filter(t => t.driverId === p.id).pop();
         const weg = d._gridFiller ? 'Startfeld-Füller' : tr ? tr.type : d.isPrivateer ? 'Privatier ohne Eintrag' : 'ohne Eintrag';
-        picks.push({ phase, weg, name: p.name, jahr: ctx.GAME_STATE.currentYear, info: JSON.stringify({ g: d.poolGroup, pr: d.isPrivateer, gf: d._gridFiller, gr: d._genReason, res: d.isReserve, sched: (d.scheduledRaces || []).length, tm: d.team }), eloP: p.elo, wert: p.wert, gedaempft: p.gedaempft, alter: p.alter, poolN: kandidaten.length,
+        picks.push({ phase, weg, id: p.id, name: p.name, jahr: ctx.GAME_STATE.currentYear, info: JSON.stringify({ g: d.poolGroup, pr: d.isPrivateer, gf: d._gridFiller, gr: d._genReason, res: d.isReserve, sched: (d.scheduledRaces || []).length, tm: d.team }), eloP: p.elo, wert: p.wert, gedaempft: p.gedaempft, alter: p.alter, poolN: kandidaten.length,
             rangWert: nachWert.findIndex(k => k.id === p.id) + 1, rangElo: nachElo.findIndex(k => k.id === p.id) + 1,
-            obenImPool: kandidaten.filter(k => k.elo >= 86).length,
-            obenUngedaempft: kandidaten.filter(k => k.elo >= 86 && !k.gedaempft).length,
-            obenWertMax: Math.max(0, ...kandidaten.filter(k => k.elo >= 86).map(k => k.wert)) });
+            obenImPool: kandidaten.filter(k => k.elo >= 67).length,
+            obenUngedaempft: kandidaten.filter(k => k.elo >= 67 && !k.gedaempft).length,
+            obenWertMax: Math.max(0, ...kandidaten.filter(k => k.elo >= 67).map(k => k.wert)) });
     }
 }
 
@@ -54,8 +54,12 @@ for (let s = 0; s < N; s++) {
             vergleiche(vor, 'Saison');
         }
         const vor = schnapp();
-        ctx.processSeasonEndEvents(); ctx.startNewSeason();
+        ctx.processSeasonEndEvents();
+        const imPoolNachEnde = new Set((ctx.GAME_STATE.reservePool || []).map(d => d.id));
+        ctx.startNewSeason();
+        const n0 = picks.length;
         vergleiche(vor, 'Wechsel');
+        for (const x of picks.slice(n0)) x.schritt = imPoolNachEnde.has(x.id) ? 'startNewSeason' : 'processSeasonEndEvents';
     }
 }
 
@@ -65,14 +69,14 @@ console.log(`FEEDER-AUSWAHL ${START}+${SAISONS} × ${N} — ${picks.length} Verp
 for (const ph of ['Wechsel', 'Saison']) {
     const p = picks.filter(x => x.phase === ph); if (!p.length) continue;
     console.log(`\n── ${ph} (n ${p.length}) ──`);
-    console.log(`  aus oberem / unterem Elo-Drittel: ${pct(p.filter(x => x.eloP >= 86).length, p.length)} / ${pct(p.filter(x => x.eloP <= 80).length, p.length)}`);
+    console.log(`  aus oberem / unterem Elo-Drittel: ${pct(p.filter(x => x.eloP >= 67).length, p.length)} / ${pct(p.filter(x => x.eloP <= 33).length, p.length)}`);
     console.log(`  Rang des Gewählten im Pool nach SPIELWERT: Ø ${m(p.map(x => x.rangWert)).toFixed(1)} · Platz 1 in ${pct(p.filter(x => x.rangWert === 1).length, p.length)}`);
     console.log(`  Rang nach ELO: Ø ${m(p.map(x => x.rangElo)).toFixed(1)} · Pool-Feeder ab 19 im Schnitt ${m(p.map(x => x.poolN)).toFixed(1)}`);
     console.log(`  Gewählter gedämpft (vor Reifejahr): ${pct(p.filter(x => x.gedaempft).length, p.length)} · Ø Alter ${m(p.map(x => x.alter)).toFixed(1)}`);
     const wege = {};
-    for (const x of p) { const w = wege[x.weg] = wege[x.weg] || { n: 0, unten: 0, rang: 0 }; w.n++; w.rang += x.rangWert; if (x.eloP <= 80) w.unten++; }
+    for (const x of p) { const w = wege[x.weg] = wege[x.weg] || { n: 0, unten: 0, rang: 0 }; w.n++; w.rang += x.rangWert; if (x.eloP <= 33) w.unten++; }
     console.log('  Weg: ' + Object.entries(wege).sort((x, y) => y[1].n - x[1].n).map(([k, w]) => `${k} ${w.n} (unteres Drittel ${w.unten}, Ø Wertrang ${(w.rang / w.n).toFixed(0)})`).join(' · '));
-    const unten = p.filter(x => x.eloP <= 80);
+    const unten = p.filter(x => x.eloP <= 33);
     if (unten.length) {
         console.log(`  Wahl aus unterem Drittel (n ${unten.length}): obere im Pool Ø ${m(unten.map(x => x.obenImPool)).toFixed(1)}, davon ungedämpft ${m(unten.map(x => x.obenUngedaempft)).toFixed(1)}; keiner oben im Pool: ${pct(unten.filter(x => !x.obenImPool).length, unten.length)}`);
         console.log(`    Wert Gewählter Ø ${m(unten.map(x => x.wert)).toFixed(1)} gegen bester Oberer Ø ${m(unten.filter(x => x.obenImPool).map(x => x.obenWertMax)).toFixed(1)}`);
@@ -83,4 +87,5 @@ const jung = picks.filter(x => x.alter + (x.phase === 'Wechsel' ? 1 : 0) < 19);
 if (jung.length) {
     const w = {}; for (const x of jung) { const k = x.phase + ':' + x.weg; w[k] = (w[k] || 0) + 1; }
     console.log(`\nUnter 19 im Fahrjahr: ${jung.length} — ` + Object.entries(w).map(([k, n]) => `${k} ${n}`).join(' · '));
+    for (const x of jung) console.log(`  ${x.name} ${x.jahr} Alter ${x.alter} · ${x.schritt || x.phase} · ${x.info}`);
 }

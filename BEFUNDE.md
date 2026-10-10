@@ -3132,3 +3132,75 @@ Stammfahrer (≥ halbe Saison) VOR ihrem realen Debütjahr, je Saison (Anteil an
   Weg offen, 1 in 90 Saisons). Feeder-Auswahl unverändert (oberes Drittel 82–84 %), Markt 2015+8×4 im Rauschen (Wechselquote
   26,1 gegen 24,5 %). ⚠ **Widerlegt:** der Mindestalter-Fehler erklärt den Anteil „zu jung" NICHT — 14,7 → 15,5 %. „Zu jung"
   heißt ≥ 3 Jahre unter `ERA_ROOKIE_AGE` (2010er: ≤ 20), das sind überwiegend 19- und 20-Jährige.
+
+### 10.10.2026 (3): Zwei Zweige ab 2018 (v0.9.20.11 bis 2032, v0.9.20.12 bis 2033) — Feeder verdrängen die echten Fahrer
+**Nutzer-Spielstände:** reale Stammfahrer des Jahres (Eintrag in `PACE_RATINGS`) 2018–2025 im Cockpit: **45 % (v.11) / 39 % (v.12)**,
+2025 nur 7 bzw. 3 von 21. Feeder stellen 2025 13 bzw. 17 von 20 Stammfahrern. Generierte: 0 (realPreference 100).
+⚠ Zuordnung über den NAMEN — Feeder und manche Pool-Fahrer haben keine `histId`; über `histId` fehlten scheinbar auch Norris u. a.
+
+**Neues Werkzeug `tests/echt-anteil.js 2018 8 3`** (Simulation statt Spielstand): v.12 **52 %**, 2018 100 % → 2024 29 %, 2025 32 %.
+Am häufigsten ohne Cockpit: Russell (in allen 21 möglichen Saisons!), Albon, Tsunoda, Stroll, Hülkenberg, Bottas, Latifi, Zhou.
+
+Ursachen, gemessen:
+1. **Feeder-Skala liegt über der echten Rookie-Skala.** Marktwert (70/30) im Debütjahr: 26 echte Rookies 2017–2025 Median **67**
+   (Piastri 82,7 … Sargeant 58); Feeder Median **76**, oberes Zehntel 83. Bortoleto als Feeder 84,3, real im Debütjahr 62,5.
+   Die Skala 74–92 wurde am Würfelbereich der Feeder bzw. an generierten Rookies ausgerichtet, nicht an `PACE_RATINGS`.
+   Gegenversuch Feeder −9 (`SIMCORE_PATCH` in `makeFeederDriver`): 52 → **57 %**, 2024/25 35/40 %.
+2. **Echte Rookies mit niedriger Debüt-Pace fallen durch die Pace-Untergrenzen.** `processTeamChanges` nimmt Pool-Fahrer erst ab
+   Pace 60, das Sicherheitsnetz ab 55. Russell 2019 58 (Williams), Tsunoda 58, Stroll 58, Zhou 59, Latifi 60, Schumacher 58,
+   Sargeant 58 — genau die Namen der Fehlliste. PACE_RATINGS-Werte enthalten das schwache Auto.
+3. Etablierte Fahrer verschwinden früh (Spielstand v.12: Hamilton und Vettel 2019 entlassen) — Marktthema, nicht untersucht.
+- **NEGATIVERGEBNIS Top-4 im Sicherheitsnetz** (`startNewSeason`, gleiches Los wie Phase 3): Echt-Anteil 50 % — unverändert.
+  Mit Feeder −9 zusammen 59 %.
+- **Sicherheitsnetz = vierter Weg ohne Mindestalter:** alle 7 Unter-19-Debüts (`feeder-auswahl.js 6 2012 18`) kamen dort
+  (Gruppe J, `isReserve` bleibt true). Mindestalter dort ergänzt.
+
+### 10.10.2026 (4): Gegenversuch A + B gegen die Verdrängung (Testpatch, noch nicht eingebaut)
+- **A** Feeder-Skala per Quantil: Rang des Feeders (Marktwert aus `FEEDER_ELO`) unter allen 144 → derselbe Rang in der Verteilung der
+  echten Debüt-Werte aus `PACE_RATINGS` (Debüt 2010–2025, n 58: Pace Median 64, Spanne 58–77; Potenzial Median 72, Spanne 58–98).
+  Vorher Elo-Pace Median 73, Potenzial 83.
+- **B** echter Fahrer mit `PACE_RATINGS`-Eintrag für das Fahrjahr: keine Pace-Untergrenze (60 in Phase 3, 55 im Sicherheitsnetz),
+  lost in Phase 3 zusätzlich zu den Top-4 mit.
+
+`echt-anteil.js 2018 8 4`, reale Stammfahrer 2018–2025 im Cockpit:
+
+| Variante | gesamt | 2023 | 2025 | Russell ohne Cockpit (von 28) |
+|---|---|---|---|---|
+| ohne (Stand index.html, inkl. Mindestalter im Netz) | 51 % | 36 % | 29 % | 28 |
+| A | 54 % | 44 % | 29 % | 28 |
+| B | 55 % | 48 % | 35 % | 11 |
+| **A + B** | **63 %** | 57 % | 54 % | 8 |
+
+`2018 16 3`: ohne 48 % / A+B 63 %; ab 2026 stellen Feeder in beiden Fällen 13–20 von ~20 Stammfahrern (es bleibt keiner sonst übrig).
+- A allein hilft kaum, weil die echten Rookies dann immer noch an den Untergrenzen scheitern; B allein nicht, weil die Feeder sie im
+  Los übertrumpfen. Erst beides zusammen trägt.
+- **Der Rest ist kein Feeder-Problem:** schon 2019 fehlen 5,9 von 6 realen Neuzugängen (Kubica, Albon, Norris, Russell, Kvyat,
+  Giovinazzi; `2018 2 8`) — ihre Plätze sind von 2018er-Fahrern belegt, die real gingen. Danach fehlen vor allem Etablierte
+  (Stroll, Hülkenberg, Magnussen, Gasly, Hamilton) — Markt, nicht Junioren.
+- Nebenwirkungen A + B: Feeder-Auswahl (`feeder-auswahl.js 3 2010 30`) oberes/unteres Elo-Drittel 78/2 % (vorher 84/4 %, im Rauschen).
+  Markt `markt-abgang.js 2015 8 4` ohne → A+B: Wechselquote 26,1 → 29,2 % (real 22,5/16,9 — schlechter), „weg" schwach 26,5 → 30,8 %
+  (real 36–38, besser), Zugang „kein Start" mittel/schwach 12,5/23 → 13,1/32 % (real 2010er 18,9/32,9 — besser).
+
+### 10.10.2026 (5): A + B eingebaut — Feeder-Skala nach Gruppen statt pauschal
+Nutzer-Einwand zu A: die Junior-Elo vergleicht Junioren nur untereinander, und wer real nicht aufstieg, hatte einen Grund —
+aber junge Feeder können ab 2026 noch aufsteigen. Deshalb in `tools/junior-elo.js` drei Gruppen statt einer Quantil-Abbildung:
+- **F1** (5: Bortoleto, Doohan, Colapinto, Bearman, Hadjar): echte Debütwerte aus `PACE_RATINGS` (Bortoleto 84,3 → 62,5 Marktwert).
+- **oben** (36): Leiter offen (letzte Junior-Saison ≥ 2025) UND Wert im obersten Viertel aller Junioren (Schwelle 1561 — dort
+  kamen real 34 % in die F1, darunter 0 %): Rang → echte Rookie-Verteilung 2010–2025 (Pace 58–77, Potenzial bis 98).
+- **unten** (103): alle anderen, auch Vesti, Pourchaire, Daruvala, Ghiotto (Leiter bis 2024 ohne F1 verlassen): Pace 50–57, Pot. 54–62.
+- `FEEDER_ELO[3]` = Elo-Perzentil für die Messwerkzeuge. Rückfall ohne Daten in `makeFeederDriver`: Band unten statt 74–92.
+- B: `_echtImFahrjahr` — keine Pace-Untergrenze (60/55) und immer im Los für echte Fahrer mit Eintrag im Fahrjahr.
+
+| Messung | vorher (Stand nach .12 + Netz-Mindestalter) | nachher | real |
+|---|---|---|---|
+| `echt-anteil.js 2018 8 4` gesamt / 2025 | 51 % / 29 % | **70 % / 58 %** | – |
+| `echt-anteil.js 2018 16 3` gesamt | 48 % | 70 % | – |
+| Feeder-Stamm 2025 / 2030 / 2033 | 15,7 / 17,7 / 19,3 | 6,3 / 15,3 / 18,7 | – |
+| Feeder-Debütanten oberes / unteres Elo-Drittel (`feeder-auswahl 3 2010 30`, Wechsel) | 84 / 4 % | 96 / 0 % | reale Aufsteiger je Junioren-Drittel 100 / 0 % |
+| Unter 19 (`gen-debut-age 3 2010 30`) | 1 | 0 | – |
+| Wechselquote (`markt-abgang 2015 8 4`) | 26,1 % | 30,1 % (mittel 39 %) | 22,5 / 16,9 % |
+| „weg“ schwach | 26,5 % | 33,5 % | 36–38 % |
+| Zugang „kein Start“ mittel / schwach | 12,5 / 23 % | 19,7 / 34 % | 2010er 18,9 / 32,9 % |
+
+- Rest der Fehlliste sind Etablierte (Tsunoda, Hülkenberg, Alonso, Stroll, Ricciardo, Hamilton) — Markt, nicht Junioren.
+- Beobachtung: Wechselquote der Mittelfeld-Teams steigt (26 → 39 %), nicht untersucht.

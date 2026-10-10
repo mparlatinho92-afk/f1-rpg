@@ -131,9 +131,9 @@ console.log(`  Rookies (gen-): ${fmt(stat(debuts.filter(d => d.kind === 'gen').m
 console.log(`  Erfahren (exp-):${fmt(stat(debuts.filter(d => d.kind === 'exp').map(d => d.age)))}`);
 console.log(`  Feeder:         ${fmt(stat(debuts.filter(d => d.kind === 'feeder').map(d => d.age)))}`);
 { // Wen holen die Teams? Elo-Potenzial der debütierenden Feeder gegen alle Feeder
-    const alle = Object.values(FEEDER_ELO).map(v => v[0]), fd = debuts.filter(d => d.kind === 'feeder' && FEEDER_ELO[d.name]).map(d => FEEDER_ELO[d.name][0]);
+    const alle = Object.values(FEEDER_ELO).map(v => v[3]), fd = debuts.filter(d => d.kind === 'feeder' && FEEDER_ELO[d.name]).map(d => FEEDER_ELO[d.name][3]);
     const m = a => a.reduce((x, y) => x + y, 0) / a.length;
-    if (alle.length && fd.length) console.log(`  Feeder-Debütanten: Ø Elo-Potenzial ${m(fd).toFixed(1)} (alle Feeder ${m(alle).toFixed(1)}) · aus dem oberen Drittel ${(100 * fd.filter(p => p >= 86).length / fd.length).toFixed(0)} %, unteren ${(100 * fd.filter(p => p <= 80).length / fd.length).toFixed(0)} % (n ${fd.length})`);
+    if (alle.length && fd.length) console.log(`  Feeder-Debütanten: Ø Elo-Perzentil ${m(fd).toFixed(1)} (alle Feeder ${m(alle).toFixed(1)}) · aus dem oberen Drittel ${(100 * fd.filter(p => p >= 67).length / fd.length).toFixed(0)} %, unteren ${(100 * fd.filter(p => p <= 33).length / fd.length).toFixed(0)} % (n ${fd.length})`);
 }
 { // Zu junge Debüts: ≥ 3 Jahre unter dem Ära-Debütalter (Rookies + Feeder, ohne exp-)
     const jung = debuts.filter(d => d.kind !== 'exp');
