@@ -3204,3 +3204,20 @@ aber junge Feeder können ab 2026 noch aufsteigen. Deshalb in `tools/junior-elo.
 
 - Rest der Fehlliste sind Etablierte (Tsunoda, Hülkenberg, Alonso, Stroll, Ricciardo, Hamilton) — Markt, nicht Junioren.
 - Beobachtung: Wechselquote der Mittelfeld-Teams steigt (26 → 39 %), nicht untersucht.
+
+### 10.10.2026 (6): Datenende 2025 wirkte wie ein Karriereende (Spielstand 1950–2041, v0.9.20.14; eingebaut)
+Nutzer-Spielstand, 2018–2025: echte Stammfahrer 118 von 173 (68 %), also so wie in (5) gemessen. Danach bricht das Feld
+in einem Jahr weg: 14 echte Stammfahrer 2026, 7 im Jahr 2027, 3 im Jahr 2029, keiner ab 2037. Der Grund steht in der
+Rücktrittsliste: „Historisches Karriereende (Elo bis 2025)“ für Verstappen 29, Norris 27, Piastri 25, Antonelli 20, Lawson,
+Tsunoda und Ocon (alle 2026), Russell 2027 und Bearman 2029. Die Kurve in `processSeasonEndEvents` (Abschnitt 0) liest das
+letzte PACE_RATINGS-Jahr als reales Karriereende. Beim Datenende 2025 trifft das jeden aktiven Fahrer, mit 35 % im Jahr
+2025, 62 % im Jahr 2026 und 83 % im Jahr 2027.
+**Fix:** `_echteDatenBis()` gibt das höchste PACE_RATINGS-Jahr zurück. Reicht die Karriere (max. aus F1DB-lastYear und Elo)
+bis dorthin, gilt sie als offen und wird nur von der Alterskurve beendet.
+Messung `echt-anteil.js 2022 8 3`, Spalte „echt (histId)“ (Stammfahrer mit histId), vorher → nachher:
+2025 15,3 → 16,7 · 2026 12,7 → 14,7 · 2027 9,3 → 12,0 · 2028 7,0 → 10,3 · 2029 5,7 → 8,3.
+Verbleib ab 2025 nach 1 / 2 / 3 / 4 Jahren: vorher 83 / 61 / 46 / 37 %, nachher 88 / 72 / 62 / 50 %. **Real** (F1DB,
+Startfelder 2005–2021, Anteil der Fahrer, die X Jahre später noch einen Eintrag haben): 76 / 63 / 55 / 50 %.
+⚠ Der reale Vergleich zählt alle Fahrer mit Eintrag, das Spiel nur Stammfahrer. Für die Größenordnung reicht das.
+Beobachtung ohne Analyse: Im Spielstand steigt das Medianalter der Stammfahrer 2027–2036 von 24 auf 29 (Feeder-Kohorte
+altert als Block), generierte Stammfahrer gibt es erst ab 2035.
