@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.11</title>
+    <title>F1 RPG v0.9.20.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.11 (aktuell) - 10.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.12 (aktuell) - 10.10.2026</div>
+                            <div>&#8226; FIX: Feeder unterschrieben mit 17 und fuhren mit 18 (Hughes, Ghiotto, Daruvala) - Mindestalter 19 gilt jetzt auf allen Besetzungswegen</div>
+                            <div class="font-bold text-slate-400">v0.9.20.11 - 10.10.2026</div>
                             <div>&#8226; FIX: Teams holen beim Saisonwechsel die stärksten Junioren statt einer Lotterie über den ganzen Pool</div>
                             <div>&#8226; NEU: Feeder-Debütanten zu 84 % aus dem oberen Elo-Drittel (vorher 49 %)</div>
                             <div class="font-bold text-slate-400">v0.9.20.10 - 09.10.2026</div>
@@ -22832,7 +22834,7 @@ const FEEDER_ELO = {"Roy Nissany":[80,71,0],"Ralph Boschung":[85,75,-1],"Jehan D
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.11';
+        const VERSION = '0.9.20.12';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -41263,7 +41265,7 @@ const FEEDER_ELO = {"Roy Nissany":[80,71,0],"Ralph Boschung":[85,75,-1],"Jehan D
                     const cand = simRule('externalTransfers') ? (GAME_STATE.reservePool || []).filter(p =>
                         !GAME_STATE.drivers.some(d => d.histId && d.histId === p.histId) && _compat(p) &&
                         _teamNationOk(t, p) &&
-                        (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year))
+                        (!isTopTeam || !_isBeginner(p)) && poolAgeGateOk(p, year) && poolMinAgeOk(p, year))
                         .sort((a, b) => _eff(b) - _eff(a))[0] || null : null;
                     // „Echt vor generiert" aus: wie in acquireSeatDriver gegen einen generierten Bewerber
                     let _bew = null;
@@ -42050,7 +42052,7 @@ const FEEDER_ELO = {"Roy Nissany":[80,71,0],"Ralph Boschung":[85,75,-1],"Jehan D
                 const kand = GAME_STATE.drivers.filter(d => (!d.status || d.status === 'active') && !d.team)
                     .concat(simRule('externalTransfers')
                         ? (GAME_STATE.reservePool || []).filter(d => (!d.status || d.status === 'active') &&
-                              poolAgeGateOk(d, currentYear) && !GAME_STATE.drivers.some(x => x.id === d.id && x.team))
+                              poolAgeGateOk(d, currentYear) && poolMinAgeOk(d, currentYear + 1) && !GAME_STATE.drivers.some(x => x.id === d.id && x.team))
                         : [])
                     .filter(c => c !== drv && !_marktVergeben.has(c.id) && (c.currentPace || c.pace || 0) >= 60 && indyOk(c));
                 let best = null;
@@ -42414,6 +42416,7 @@ const FEEDER_ELO = {"Roy Nissany":[80,71,0],"Ralph Boschung":[85,75,-1],"Jehan D
                             .filter(d => (!d.status || d.status === 'active') &&
                                         (d.currentPace || d.pace || 0) >= 60 && _indyOk(d) && _nationOk(d) &&
                                         poolAgeGateOk(d, currentYear) &&
+                                        poolMinAgeOk(d, currentYear + 1) &&   // fährt kommende Saison; vorher mit 17 verpflichtet (10.10.2026)
                                         !GAME_STATE.drivers.some(x => x.id === d.id && x.team))
                             // Nur die POOL_LOSE Wertbesten (70 % Pace + 30 % Potenzial) losen mit (10.10.2026).
                             // Vorher loste der ganze Pool (~70 Feeder) — die Masse schwacher Lose schlug die
