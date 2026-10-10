@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.13</title>
+    <title>F1 RPG v0.9.20.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.13 (aktuell) - 10.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.14 (aktuell) - 10.10.2026</div>
+                            <div>&#8226; FIX: Steckbrief echter Fahrer ohne Spielkarriere zeigte 'Karriere beendet', falsches Alter und Debüt – jetzt Hinweis 'nie in der F1 gestartet' bzw. 'noch nicht in der F1' mit echtem Debütjahr</div>
+                            <div class="font-bold text-slate-400">v0.9.20.13 - 10.10.2026</div>
                             <div>&#8226; FIX: Feeder verdrängten 2019–2025 die Hälfte der echten Fahrer – Junior-Werte jetzt an echten Rookies geeicht, real übergangene Feeder darunter</div>
                             <div>&#8226; FIX: echte Rookies mit schwachem Auto (Russell, Tsunoda, Stroll) scheitern nicht mehr an der Pace-Untergrenze</div>
                             <div>&#8226; FIX: Mindestalter 19 auch im Sicherheitsnetz zum Saisonstart</div>
@@ -22838,7 +22840,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.13';
+        const VERSION = '0.9.20.14';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -54528,6 +54530,21 @@ Empfohlene Wertebereiche:
                     if (_hName || _hd) {
                         const _races = _hd ? _hd[4] : 0;
                         const _first = _hd ? _hd[6] : null;
+                        // Hier landet nur, wer im Spiel keine Spur hat: nicht im Kader, nicht im Pool, in keiner
+                        // Saison, und real erst ab Spielbeginn (sonst stuende er in allTimeStATS). Er ist in DIESEM
+                        // Spiel also nie in der F1 gefahren (10.10.2026, Nutzer-Meldung Russell: „Karriere beendet",
+                        // Alter 42, Debuet 2017). Echtes Debuet aus PACE_RATINGS — HIST_DRIVERS zaehlt Trainings-
+                        // Einsaetze mit (Russell 2017) —, Geburtsjahr aus SEASON_DATA statt Debuet − 25.
+                        const _prJ = (typeof PACE_RATINGS !== 'undefined' && PACE_RATINGS[driverId])
+                            ? Object.keys(PACE_RATINGS[driverId]).map(Number) : [];
+                        const _realDebut = _prJ.length ? Math.min(..._prJ) : _first;
+                        let _geb = null;
+                        if (typeof SEASON_DATA !== 'undefined' && _hName && _realDebut) {
+                            for (let y = _realDebut; y <= (_hd ? _hd[7] : _realDebut) && !_geb; y++) {
+                                const e = (SEASON_DATA[y]?.d || []).find(x => repairMojibake(x[1]) === _hName);
+                                if (e && e[4]) _geb = e[4];
+                            }
+                        }
                         driver = {
                             id: driverId,
                             histId: driverId,
@@ -54537,8 +54554,9 @@ Empfohlene Wertebereiche:
                             team: null,
                             pace: 0, rain: 0, consistency: 0, experience: 0,
                             starts: _races || 0,
-                            birthYear: _first ? _first - 25 : null,
-                            debutYear: _first
+                            birthYear: _geb || (_first ? _first - 25 : null),
+                            debutYear: null,
+                            _nieImSpiel: { realDebut: _realDebut, kommtNoch: !!_realDebut && GAME_STATE.currentYear < _realDebut }
                         };
                     } else {
                         console.warn('Fahrer nicht gefunden:', driverId);
@@ -54814,6 +54832,13 @@ Empfohlene Wertebereiche:
                         📜 Ehemaliger Fahrer (zuletzt aktiv: ${_letzteSaison})
                     </div>
                 ` : ''}
+                ${driver._nieImSpiel ? `
+                    <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #1F2937; border: 1px solid #6B7280;">
+                        ${driver._nieImSpiel.kommtNoch
+                            ? `⏳ Noch nicht in der F1${driver._nieImSpiel.realDebut ? ` – real ab ${driver._nieImSpiel.realDebut}` : ''}`
+                            : `🚫 In diesem Spiel nie in der F1 gestartet${driver._nieImSpiel.realDebut ? ` – real ab ${driver._nieImSpiel.realDebut}` : ''}`}
+                    </div>
+                ` : ''}
                 ${_todesAkte.tot ? `
                     <div class="mb-4 p-3 rounded-lg text-sm" style="background-color: #2B1B1B; border: 1px solid #7F1D1D;">
                         🕯️ Tödlich verunglückt${_todesAkte.jahr ? ` ${_todesAkte.jahr}` : ''}${_todesAkte.ort ? ` – ${_todesAkte.ort}` : ''}${driver.birthYear && _todesAkte.jahr ? ` · ${_todesAkte.jahr - driver.birthYear} Jahre alt` : ''}
@@ -54836,7 +54861,8 @@ Empfohlene Wertebereiche:
                                 <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="background-color: ${team.color}20; color: ${team.color}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
                                     ${team.name}
                                 </span>
-                            ` : (!isCurrentlyActive ? '<span class="text-tertiary">Karriere beendet</span>' : '')}
+                            ` : (driver._nieImSpiel ? `<span class="text-tertiary">${driver._nieImSpiel.kommtNoch ? 'noch nicht in der F1' : 'nie in der F1'}</span>`
+                               : !isCurrentlyActive ? '<span class="text-tertiary">Karriere beendet</span>' : '')}
                             ${driver.number ? `<span class="text-2xl font-bold text-tertiary">#${driver.number}</span>` : ''}
                         </div>
                         ${isCurrentlyActive ? `
