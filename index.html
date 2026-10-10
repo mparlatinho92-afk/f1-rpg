@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.15</title>
+    <title>F1 RPG v0.9.20.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.15 (aktuell) - 10.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.20.16 (aktuell) - 10.10.2026</div>
+                            <div>&#8226; FIX: Ab 2015 beginnen Alters-Rücktritt und Nicht-Verlängerung erst mit etwa 32 statt 28 – keine Rücktritte von Spitzenfahrern mit 31 mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.20.15 - 10.10.2026</div>
                             <div>&#8226; FIX: Verstappen, Norris, Piastri und Co. traten ab 2026 per historischem Karriereende zurück – das Datenende 2025 gilt nicht mehr als Karriereende</div>
                             <div class="font-bold text-slate-400">v0.9.20.14 - 10.10.2026</div>
                             <div>&#8226; FIX: Steckbrief echter Fahrer ohne Spielkarriere zeigte 'Karriere beendet', falsches Alter und Debüt – jetzt Hinweis 'nie in der F1 gestartet' bzw. 'noch nicht in der F1' mit echtem Debütjahr</div>
@@ -4227,7 +4229,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.15';
+        const VERSION = '0.9.20.16';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -22184,6 +22186,14 @@
         const COCKPIT_BINDUNG_TOP = 0.2;
         // Jahre VOR dem Ära-Median, ab denen der Alters-Rücktritt einsetzt (bis 27.09.2026: 6)
         const ALTERSKURVE_VORLAUF = 0;
+        // Jahre NACH dem Ära-Median, ab denen Alters-Rücktritt und Nicht-Verlängerung einsetzen (10.10.2026).
+        // ERA_RETIREMENT_AGE ab 2015 ist rechtszensiert: nur beendete Karrieren, Alonso/Hamilton/Hülkenberg fehlen.
+        // Real 2013–2024 „weg" je Alter fast flach (19/20/24/25 %), Spiel mit Kurve ab 28: 14/26/33/28 %;
+        // mit +4: 14/20/28/26 % (BEFUNDE.md 10.10.2026 (7)).
+        const ERA_ALTERSKURVE_SPAETER = { 1950: 0, 2015: 4 };
+        function alterskurveStart(year) {
+            return (getEraValue(ERA_RETIREMENT_AGE, year) || 32) + getEraValue(ERA_ALTERSKURVE_SPAETER, year) - ALTERSKURVE_VORLAUF;
+        }
         function cockpitBindung(driver) {
             const team = driver.team && GAME_STATE.teams.find(t => t.id === driver.team);
             if (!team || !(team.carSpeed > 0)) return 1;
@@ -22299,8 +22309,9 @@
                 // (relative Entlassung, Nicht-Verlaengerung). Mit sechs Jahren Vorlauf traten
                 // Topteam-Fahrer mit 28–35 zurueck (Spiel 12–15 %, real 4–5 %). Das Median-Alter
                 // der Verschwundenen bleibt trotzdem real (BEFUNDE.md 27.09.2026 (6)).
-                if (age && age > eraRetirementAge - ALTERSKURVE_VORLAUF) {
-                    const yearsOver = age - (eraRetirementAge - ALTERSKURVE_VORLAUF);
+                const _kurveAb = alterskurveStart(GAME_STATE.currentYear);
+                if (age && age > _kurveAb) {
+                    const yearsOver = age - _kurveAb;
                     let retireChance = 0;
                     // Deckel 0.40 GEPRUEFT (v0.9.15.1): eine Absenkung auf 0.26 wurde
                     // getestet und brachte nichts — der Schwanz der Oldies wird nicht von
@@ -23555,7 +23566,7 @@
                 // Greift erst ab dem Ära-Rücktrittsalter und steigt langsam; Sieger und
                 // Podestfahrer bekommen weiter ihren Vertrag.
                 {
-                    const _retAge = getEraValue(ERA_RETIREMENT_AGE, currentYear) || 32;
+                    const _retAge = alterskurveStart(currentYear);
                     const _age = driver.birthYear ? currentYear - driver.birthYear : null;
                     if (_age !== null && _age >= _retAge && !_isLockedOwner(driver)) {
                         const _st = GAME_STATE.driverStandings[driver.id] || {};
