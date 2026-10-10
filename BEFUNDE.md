@@ -3051,7 +3051,7 @@ Einfüge-Reihenfolge), jetzt den besten nach Marktwert (70 % Pace + 30 % Potenzi
 - **NEGATIVERGEBNIS zur Vermutung vom 09.10.2026 (1):** der Sitzfüller war NICHT der Haupthebel. Oberes Drittel +3 Pp bei n ≈ 180
   (Standardfehler ~3,7 Pp) — im Rauschen; unteres Drittel −5 Pp knapp darüber. Beide Besetzungswege wählen jetzt nach Wert,
   trotzdem 53 % statt real 100 %.
-- Vermutete Ursache (nicht gemessen): **die Reife-Dämpfung überdeckt die Elo-Spanne.** Oberes gegen unteres Drittel trennen ~7
+- ~~Vermutete Ursache: die Reife-Dämpfung überdeckt die Elo-Spanne.~~ **WIDERLEGT, s. (3).** Oberes gegen unteres Drittel trennen ~7
   Marktwert-Punkte; das Reifejahr streut ±3 Jahre × 3 Pace = bis ±9 Punkte. Ein reifer schwacher Feeder schlägt einen starken,
   der noch 2 Jahre vor seinem Reifejahr steht. Die Elo verschiebt das Reifejahr nur um ±2.
 - **Alte Ära unberührt:** `markt-abgang.js` 1975+8×4, vorher gegen zwei Läufe nachher — „weg" schwaches Drittel 27,0 gegen
@@ -3059,3 +3059,53 @@ Einfüge-Reihenfolge), jetzt den besten nach Marktwert (70 % Pace + 30 % Potenzi
   Wechsel unverändert (vorher liegt zwischen den Nachher-Läufen). Einzige mögliche Wirkung: schwache Teams holen etwas seltener
   Neulinge ohne Vorjahresstart (−6 bis −10 Pp, knapp über Rauschen) — plausibel, der Wert bevorzugt Ex-F1-Fahrer; zwei Läufe OHNE Änderung trennen 3–5 Pp, kleine Altersbänder bis 11 Pp.
 - ⚠ Gegenlauf aus dem Nutzer-Terminal: `!` startet bash, nicht PowerShell → `SIMCORE_FROM_INDEX=0 node …`, nicht `$env:…`.
+
+### 09.10.2026 (3): Ursache gefunden — die Tier-Glockenkurve in `processTeamChanges`
+**NEGATIVERGEBNIS Reife-Dämpfung:** Gegenversuch `gen-debut-age.js 6 2010 30` per `SIMCORE_PATCH` (neu in sim-core):
+oberes / unteres Elo-Drittel der Feeder-Debütanten — Stand 49 / 24 %, Reifejahr ohne Streuung 50 / 23 %, ganz ohne Dämpfung
+(`PRE_DEBUT_PACE_STEP = 0`) **43 / 31 %**. Die Dämpfung hilft sogar ein wenig; nicht an ihr drehen.
+
+**Verfolgung jeder Feeder-Verpflichtung** (`node tests/feeder-auswahl.js 3 2010 30`, Pool-Schnappschuss davor):
+
+| | während der Saison | Saisonwechsel |
+|---|---|---|
+| n | 27 | 139 |
+| oberes / unteres Elo-Drittel | **93 / 7 %** | 41 / 29 % |
+| Rang des Gewählten nach Spielwert unter ~70 Pool-Feedern | Ø 1,1 | **Ø 28** |
+| Weg | `acquireSeatDriver` | **`pool-debut` 128**, Rest ohne Eintrag 11 |
+
+- Mitten in der Saison wählt `acquireSeatDriver` fast perfekt (nach Marktwert sortiert). Die schwachen Feeder kommen alle beim
+  Saisonwechsel über `processTeamChanges` → Kandidaten-Scoring → **gewichtete Zufallsauswahl**.
+- Dort gilt für Mittelfeld/Hinterbänkler eine **Glockenkurve um das Tier-Ziel** (Mitte 78, hinten 68): `100 − 3·|Wert − Ziel|`
+  („Senna geht nicht zu einem Hinterbänkler"). Ein Feeder mit Elo-Potenzial 74 hat Marktwert ≈ 68 = **Idealtreffer für hinten**;
+  einer mit 92 hat ≈ 85 → Score 50. Top-Teams nehmen nie aus dem Pool. Wahl aus dem unteren Drittel: Wert Ø 69,0, obwohl im Pool
+  im Schnitt 25 Obere standen (bester Ø 83,0). Die Kurve sortiert schwache Junioren also gezielt zu den schwachen Teams.
+- Real holten gerade Hinterbänkler die besten Junioren (Bortoleto/Sauber, Hadjar/RB, Colapinto/Williams).
+- Sitzfüller-Umstellung (2) traf nur den Restweg — erklärt die kleine Wirkung.
+- **Gegenversuche zur Behebung** (`SIMCORE_PATCH`, `gen-debut-age.js 6 2010 30`, Stand 49 / 24 %):
+  - Glockenkurve für Pool-Neulinge einseitig (Überqualifikation kostet nichts): **55 / 18 %** — kaum. Die Kurve ist nicht
+    der Haupthebel, sondern die **Lotterie**: ~70 Pool-Feeder losen mit, viele schwache mit vollem Los, die Masse gewinnt.
+    `POOL_LOSE` (Pool wiegt höchstens 4 Lose) greift ab 1990 gar nicht, weil `ERA_ERFAHRUNG_VORRANG` dort 0 ist.
+  - **Nur die 4 Wertbesten des Pools ins Los** (`.sort(Marktwert).slice(0, POOL_LOSE)` vor `_cands.push`): **83 / 7 %**,
+    Ø Elo-Potenzial der Feeder-Debütanten 84,8 → 88,2. Markt unverändert im Rauschen: `markt-abgang.js` 1975 „weg" schwach
+    30,5 % (vorher 24,5–29,5), Zugang „kein Start" schwach 13,2 % (12,0–22,6); 2005+8×4 mit/ohne: Wechselquote 32,3 / 29,9 %,
+    „kein Start" schwach 36,4 / 35,5 %, „weg" schwach 36,4 / 35,9 %.
+  - ⚠ Nebenwirkung: Junior-Debüts gesamt 362 → 297 (Feeder 292 → 241, generierte Rookies 70 → 55) über 6 × 30 Saisons — die
+    Sitze gehen an Fahrer mit F1-Erfahrung. Vor einem Einbau gegen `markt-real.js --zugang` (Anteil „kein Start") prüfen.
+
+### 10.10.2026: Pool-Los auf die 4 Wertbesten begrenzt (`processTeamChanges`, eingebaut)
+Variante „nur die `POOL_LOSE` Wertbesten losen mit" aus (3) eingebaut (`_poolWert` = 70 % Pace + 30 % Potenzial).
+- Junioren `gen-debut-age.js 6 2010 30`: Feeder-Debütanten oberes / unteres Elo-Drittel **49 / 24 % → 84 / 4 %**, Ø Elo-Potenzial
+  84,8 → 88,4; Junior-Debüts 362 → 287; zu jung 17,7 → 14,7 %; Vergreisung 59 → 58 %.
+- **Markt 2015+8×4** (`markt-abgang.js 2015 8 4`, vorher = Monolith v0.9.20.10) gegen real (`markt-real.js`, 2010er / 2020er):
+
+| | vorher | nachher | real 2010er / 2020er |
+|---|---|---|---|
+| Wechselquote | 31,3 % | **24,5 %** | 22,5 / 16,9 % |
+| bleibt, starkes Drittel | 68,0 % | **76,0 %** | 84,7 / 83,3 % |
+| bleibt, mittleres Drittel | 51,6 % | 62,9 % | 54,1 / 70,0 % |
+| „weg", schwaches Drittel | 31,0 % | 26,0 % | 36,1 / 37,9 % ← entfernt sich |
+| Zugang „kein Start", schwach | 35,5 % | 23,5 % | 32,9 / 20,7 % |
+
+  Fast alles rückt an die Realität; nur „weg" bei den Schwachen sinkt weiter unter real. Grund vermutlich: weniger Neulinge
+  verdrängen Stammfahrer schwacher Teams. 1975 und 2005 unverändert (Patch-Messung in (3)).
