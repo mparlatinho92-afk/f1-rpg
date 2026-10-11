@@ -6,10 +6,10 @@ Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 **Abgeglichen gegen:** v0.9.21.2, Prüfdatum **2026-10-11** (vorher 2026-07-29 @ v0.9.15.53).
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
-**Diese Datei ist die Quelle.** Sie wird bei jeder Änderung als Google-Doc nach Drive gespiegelt
-(Ordner „F1 RPG HTML", Titel „F1 RPG Fixes – Ist-Stand"). Jede Spiegelung legt ein neues Doc an und
-legt das alte in den Papierkorb — **der Link ändert sich also**, den aktuellen nennt
-`node tools/spiegel-fixes.js`. Änderungen im Google-Doc gehen bei der nächsten Spiegelung verloren.
+**Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
+(Ordner „F1 RPG HTML", Titel „F1 RPG Fixes – Ist-Stand", Blätter „Fixes" und „Konzepte").
+Das Sheet wird in place überschrieben, **der Link bleibt gleich**; ihn nennt
+`node tools/spiegel-fixes.js`. Änderungen im Sheet gehen bei der nächsten Spiegelung verloren.
 
 Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel prüfbar)
 
@@ -131,9 +131,8 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   dass Kurtis Kraft nicht mehr existiert, ungeprüft
 
 ### Fahrer-Stats
-Aktuell: Pace (Current + Potential), Regen, Konstanz, Erfahrung.
-Alle Fahrer mit Zufalls-Stats (generierte + F2/F3 aus dem **Reserve-Pool**, nicht Junior-Welt) sollen mehr Stats
-bekommen, um Dominanzen zu verringern:
+Mehr Stats für Fahrer mit Zufalls-Stats (generierte + F2/F3 aus dem **Reserve-Pool**, nicht Junior-Welt),
+um Dominanzen zu verringern. Aktuell: Pace (Current + Potential), Regen, Konstanz, Erfahrung. Neu:
 
 Starts · Überholen · Verteidigen · Aggressivität · Konzentration · Reifenmanagement ·
 Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
