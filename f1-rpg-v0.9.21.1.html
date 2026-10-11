@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.0</title>
+    <title>F1 RPG v0.9.21.1</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.0 (aktuell) - 11.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.1 (aktuell) - 11.10.2026</div>
+                            <div>&#8226; NEU: Ab 2026 wechseln Fahrer ohne Perspektive in WEC, IndyCar oder Formel E – Platz für ca. 3–4 Debütanten pro Saison</div>
+                            <div>&#8226; FIX: Topteams ließen durchschnittliche Fahrer zu oft ziehen – Wechselquote jetzt nahe der Realität</div>
+                            <div>&#8226; FIX: Saisonbilanz zeigte das historische Karriereende als ❓</div>
+                            <div class="font-bold text-slate-400">v0.9.21.0 - 11.10.2026</div>
                             <div>&#8226; NEU: Ab 2026 vergeben Mittelfeld- und Hinterbänkler-Teams Cockpits auch an langsamere Junioren oder Fahrer mit Mitgift (ca. 20 % der Debütanten)</div>
                             <div>&#8226; FIX: Zukunftsjahre hatten fast keinen Fahrerwechsel mehr</div>
                             <div class="font-bold text-slate-400">v0.9.20.16 - 10.10.2026</div>
@@ -22847,7 +22851,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.0';
+        const VERSION = '0.9.21.1';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -42113,6 +42117,14 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             // ueber pendingAssignments in Phase 3 besetzt. Juniorprogramm waehlt nach Potenzial, Mitgift zufaellig.
             const SONDERDEBUT_CHANCE = 0.09;   // 0,15 ergab 32 % langsame Debütanten, 0,09 ergibt 22 % (BEFUNDE 11.10.2026)
             const _sonderDebutAktiv = currentYear >= _echteDatenBis();
+            // === ABWANDERUNG IN ANDERE SERIEN (11.10.2026) ===
+            // Die Sitze sind fest: debuetieren kann nur, wer einen Platz findet, den jemand AUS der F1 hinaus
+            // geraeumt hat. Real ~19 % der Stammfahrer je Saison, ab 2026 im Spiel ~11 %. Bis 2025 traegt das
+            // historische Karriereende diesen Ausgang (darin auch Wechsel zu WEC/IndyCar/Formel E), danach fehlte er;
+            // ein Verteiler im Feld (Marktvergleich im Mittelfeld) aenderte die Summe nicht (BEFUNDE.md 11.10.2026 (2)).
+            const ABWANDERUNG_CHANCE = 0.5;          // Mittelfeld. 0,25: weg gesamt 11,5 %; 0,5: 15,7 %, 3,4 Debütanten
+            const ABWANDERUNG_CHANCE_HINTEN = 0.85;  // Hinterbänkler: schwaches Drittel weg 26 → 37 % (real 36), BEFUNDE 11.10.2026 (4)
+            const ABWANDERUNG_ZIELE = ['die Langstrecke (WEC)', 'die IndyCar', 'die Formel E'];
             const _sonderKandidat = () => {
                 const youngMax = (getEraValue(ERA_ROOKIE_AGE, currentYear + 1) || 22) + 4;
                 const kand = (GAME_STATE.reservePool || []).filter(d => (!d.status || d.status === 'active') &&
@@ -42265,6 +42277,29 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         return;
                     }
                 }
+                // Abwanderung (s. ABWANDERUNG_CHANCE): ohne Perspektive in eine andere Serie — verlaesst die F1 ganz
+                {
+                    const _st = GAME_STATE.driverStandings[driver.id] || {};
+                    if (_sonderDebutAktiv && !isTopTeam && !driverIsIndy && driverTeam && !_isLockedOwner(driver) &&
+                        (eval_.rating === 'average' || eval_.rating === 'poor') && !(_st.wins > 0) && !(_st.podiums > 0) &&
+                        !istRohdiamant(driver, currentYear) && Math.random() < (isBackmarker ? ABWANDERUNG_CHANCE_HINTEN : ABWANDERUNG_CHANCE)) {
+                        const _ziel = ABWANDERUNG_ZIELE[Math.floor(Math.random() * ABWANDERUNG_ZIELE.length)];
+                        const _alter = driver.birthYear ? currentYear - driver.birthYear : null;
+                        driver.team = null;
+                        driver.contractEnd = currentYear;
+                        driver.status = 'retired';
+                        driver.retirementYear = currentYear;
+                        driver.retirementReason = 'other_series';
+                        driver._movedThisSeason = true;
+                        changes.push({ driverId: driver.id, driverName: driver.name, type: 'released', typeEmoji: '🛫',
+                            typeText: `Wechsel in ${_ziel}`, contractSource: 'expired',
+                            fromTeam: driverTeam.name || '–', toTeam: '–', score: eval_.score });
+                        GAME_STATE.seasonRetirements.push({ driver: driver.id, name: driver.name, type: 'other_series', age: _alter,
+                            reason: `Wechsel in ${_ziel}` });
+                        logInfo('TRANSFER', `🛫 ${driver.name} verlässt die F1 — Wechsel in ${_ziel}`);
+                        return;
+                    }
+                }
 
                 if (eval_.rating === 'excellent') {
                     const _verl = _verlaengern(2 + Math.floor(Math.random() * 2), '⭐');
@@ -42318,7 +42353,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         // Cap erreicht → Verlängerung statt Entlassung
                     }
                     const _verl = _verlaengern(1, '➖');
-                    const lateralChance = 0.50 + longtimeBonus;
+                    // Topteam 0,15 statt 0,50 (11.10.2026): starkes Drittel „bleibt“ 64–69 % gegen real 75–85 %, Wechselquote 2012
+                    // 27,7 → 25,2 % (real 22,5), 2005 33,3 → 26,9 % (real 27,4) — BEFUNDE.md 11.10.2026 (4)
+                    const lateralChance = (isTopTeam ? 0.15 : 0.50) + longtimeBonus;
                     if (Math.random() < lateralChance) {
                         return _wechselOderWarten(driver, teamRank, downgradeMax, driverIsIndy, isMidTeam ? 'lateral' : 'downgrade', _verl);
                     }
@@ -46651,8 +46688,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     movementsHtml += '<div class="mb-3">';
                     movementsHtml += '<div class="text-sm font-bold accent-gold mb-1">👋 Karriereende (' + movements.retirements.length + ')</div>';
                     movements.retirements.forEach(r => {
-                        const typeEmoji = r.type === 'age' ? '👴' : r.type === 'dismissed' ? '🚫' : r.type === 'gaveup' ? '😔' : '❓';
-                        const typeText = r.type === 'age' ? 'Alter' : r.type === 'dismissed' ? 'Entlassen' : r.type === 'gaveup' ? 'Aufgegeben' : '';
+                        const typeEmoji = r.type === 'age' ? '👴' : r.type === 'dismissed' ? '🚫' : r.type === 'gaveup' ? '😔' : r.type === 'career_end' ? '🏁' : r.type === 'other_series' ? '🛫' : '❓';
+                        const typeText = r.type === 'age' ? 'Alter' : r.type === 'dismissed' ? 'Entlassen' : r.type === 'gaveup' ? 'Aufgegeben' : r.type === 'career_end' ? 'Karriereende' : r.type === 'other_series' ? (r.reason || 'andere Serie') : '';
                         const rLink = r.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>` : r.name;
                         movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + rLink + ' ' + typeEmoji + ' (' + typeText + ')</div>';
                     });
