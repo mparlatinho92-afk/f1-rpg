@@ -9,9 +9,19 @@ Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
 (Ordner „F1 RPG HTML", Titel „F1 RPG Fixes – Ist-Stand", Blätter „Fixes" und „Konzepte").
 Das Sheet wird in place überschrieben, **der Link bleibt gleich**; ihn nennt
-`node tools/spiegel-fixes.js`. Änderungen im Sheet gehen bei der nächsten Spiegelung verloren.
+`node tools/spiegel-fixes.js`. Zeilen, die im Sheet von Hand angelegt oder geändert werden, markiert
+Spalte „Prüfen"; sie landen vor dem nächsten Überschreiben im Abschnitt „✚ Aus dem Sheet – ungeprüft".
 
 Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel prüfbar)
+
+---
+
+## ✚ Aus dem Sheet – ungeprüft
+
+Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
+
+- ✚ Jetlag-Kalender siehe wohl Google Gemini
+- ✚ Generierte Teams zu bunt: realistisch Wahrscheinlichkeiten für Farben bestimmen
 
 ---
 

@@ -16,8 +16,21 @@
  *
  *   node tools/spiegel-fixes.js            Status: ist das Sheet aktuell? Link
  *   node tools/spiegel-fixes.js --zeilen   Werte fuer batch_clear_values + update_values erzeugen, Pfad ausgeben
+ *   node tools/spiegel-fixes.js --uebernehmen <datei.json>   Zeilen aus dem Sheet in FIXES_OFFEN.md uebernehmen
  *   node tools/spiegel-fixes.js --fertig [sheetId]   gespiegelten Stand eintragen
  *   node tools/spiegel-fixes.js --hook     Stop-Hook (.claude/settings.json)
+ *
+ * Eigene Zeilen im Sheet (Nutzer-Wunsch 11.10.2026: „mich weiter im Sheet eintragen
+ * lassen, nichts darf verloren gehen"): Spalte E traegt je gespiegelter Zeile eine
+ * Kennung (Status + Anfang des Punkts), Spalte F prueft per ARRAYFORMULA in F2
+ * „neu" (keine Kennung) bzw. „geändert" (Kennung passt nicht mehr). VOR jedem
+ * Schreiben liest Claude Fixes!F:F; markierte Zeilen kommen per --uebernehmen in den
+ * Abschnitt „✚ Aus dem Sheet – ungeprüft" der Markdown-Datei. Erst dann wird
+ * ueberschrieben. Eine Aenderung nur hinten im Punkt-Text (nach Zeichen 30) oder
+ * nur am Bereich erkennt die Formel nicht.
+ * ⚠ Das Sheet steht auf de_DE: Formeln brauchen „;" als Trenner, auch ueber die API.
+ *   Mit „," und Array-Literal {…} kam #ERROR! (gemessen 12.10.2026). F1/F2 schreibt
+ *   die Spiegelung nie (sie leert nur A2:E).
  *
  * ⚠ Der Connector kennt kein valueInputOption=RAW: update_values parst wie die
  *   Oberflaeche („0.9.21.3" → Datum). Deshalb jede Zelle mit fuehrendem Apostroph.
@@ -33,16 +46,16 @@ const ROOT = path.join(__dirname, '..');
 const QUELLE = path.join(ROOT, 'FIXES_OFFEN.md');
 const STAND = path.join(__dirname, 'fixes-spiegel.json');
 const ZIEL = path.join(os.tmpdir(), 'fixes-offen-werte.json');
-const BLATT = { fixes: 0, konzepte: 1 };
-const LEER_BIS = 1000;                       // so weit wird vor dem Schreiben geleert
+const SHEET_ABSCHNITT = '## ✚ Aus dem Sheet – ungeprüft';
+const KENNUNG_LAENGE = 30;                   // muss zur Formel in Fixes!F2 passen: LEFT(C2:C;30)
 
 const hashVon = text => crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
 const leseStand = () => { try { return JSON.parse(fs.readFileSync(STAND, 'utf8')); } catch (e) { return {}; } };
 const sheetLink = id => `https://docs.google.com/spreadsheets/d/${id}/edit`;
 
 // ---------------------------------------------------------------- Markdown → Zeilen
-const STATUS = /^([✅◐❌❔❓])\s*/;
-const STATUS_FOLGE = ['❌', '◐', '❔', '–', '✅'];
+const STATUS = /^([✅◐❌❔❓✚])\s*/;
+const STATUS_FOLGE = ['✚', '❌', '◐', '❔', '–', '✅'];
 const VERSION = /v\d+\.\d+\.\d+(?:\.\d+)?/g;
 // Kurzname eines Punkts fuer die Thema-Spalte: bis zum ersten Doppelpunkt/Klammer, an Wortgrenze gekuerzt
 const kurzVon = punkt => {
@@ -136,12 +149,53 @@ function zuZeilen(md) {
 // Fuehrender Apostroph: Sheets speichert den Rest als Text, ohne ihn als Zahl/Datum/Formel zu lesen.
 const alsText = rows => rows.map(r => r.map(t => t === '' ? '' : "'" + t));
 
+// Kennung in Spalte E: dieselbe Rechnung wie die Formel in Fixes!F2 (A & LEFT(C;30))
+const kennungVon = (status, punkt) => status + punkt.slice(0, KENNUNG_LAENGE);
+
 function werte({ fixes, konzepte }) {
     return {
-        leeren: ['Fixes!A2:D' + LEER_BIS, 'Konzepte!A2:B' + LEER_BIS],
-        fixes: { range: 'Fixes!A1', values: alsText([['Status', 'Bereich', 'Punkt', 'Beleg / Version'], ...fixes]) },
+        // offene Bereiche: auch Zeilen, die der Nutzer unterhalb von Zeile 1000 angelegt hat
+        leeren: ['Fixes!A2:E', 'Konzepte!A2:B'],
+        fixes: {
+            range: 'Fixes!A1',
+            values: alsText([['Status', 'Bereich', 'Punkt', 'Beleg / Version', 'Kennung'],
+                ...fixes.map(f => [...f, kennungVon(f[0], f[2])])])
+        },
         konzepte: { range: 'Konzepte!A1', values: alsText([['Thema', 'Text'], ...konzepte]) }
     };
+}
+
+// Zeilen aus dem Sheet in den Abschnitt „✚ Aus dem Sheet – ungeprüft" schreiben.
+// Erwartet ein JSON-Array aus [status, bereich, punkt, beleg, pruefen] (wie get_values A:F liefert).
+function uebernehmen(datei) {
+    const zeilen = JSON.parse(fs.readFileSync(datei, 'utf8'))
+        .filter(z => z && (z[2] || '').trim());
+    if (!zeilen.length) { console.log('Nichts zu übernehmen.'); return; }
+    const punkte = zeilen.map(([status = '', bereich = '', punkt = '', beleg = '', pruefen = '']) => {
+        const teile = [];
+        if (bereich.trim()) teile.push('Bereich: ' + bereich.trim());
+        if (status.trim() && status.trim() !== '✚') teile.push('Status im Sheet: ' + status.trim());
+        if (beleg.trim()) teile.push('Beleg: ' + beleg.trim());
+        if (pruefen.trim() === 'geändert') teile.push('im Sheet geändert, Original steht weiter in der Liste');
+        return '- ✚ ' + punkt.trim() + (teile.length ? ' (' + teile.join('; ') + ')' : '');
+    });
+    let md = fs.readFileSync(QUELLE, 'utf8');
+    const nl = md.includes('\r\n') ? '\r\n' : '\n';
+    if (md.includes(SHEET_ABSCHNITT)) {
+        // ans Ende des bestehenden Abschnitts haengen (vor der naechsten Trennlinie)
+        const start = md.indexOf(SHEET_ABSCHNITT);
+        const ende = md.indexOf(nl + '---', start);
+        const vor = md.slice(0, ende).replace(/\s+$/, '');
+        md = vor + nl + punkte.join(nl) + nl + nl + md.slice(ende).replace(/^\s+/, '');
+    } else {
+        // neuer Abschnitt direkt nach der ersten Trennlinie, also vor allen anderen Gruppen
+        const erste = md.indexOf(nl + '---' + nl) + (nl + '---' + nl).length;
+        md = md.slice(0, erste) + nl + SHEET_ABSCHNITT + nl + nl
+            + 'Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.'
+            + nl + nl + punkte.join(nl) + nl + nl + '---' + nl + md.slice(erste);
+    }
+    fs.writeFileSync(QUELLE, md, 'utf8');
+    console.log('Übernommen: ' + punkte.length + ' Zeile(n) → „' + SHEET_ABSCHNITT.slice(3) + '"');
 }
 
 // ---------------------------------------------------------------- Modi
@@ -161,7 +215,10 @@ if (arg === '--hook') {
             console.log(JSON.stringify({
                 decision: 'block',
                 reason: 'FIXES_OFFEN.md wurde geaendert und ist noch nicht ins Google Sheet gespiegelt. '
-                    + 'Ablauf: (1) `node tools/spiegel-fixes.js --zeilen` ausfuehren, (2) im Sheet '
+                    + 'Ablauf: (0) ZUERST mit get_values Fixes!F:F lesen; stehen dort „neu" oder „geändert", '
+                    + 'genau diese Zeilen (A:F) als JSON-Array in eine Datei schreiben und '
+                    + '`node tools/spiegel-fixes.js --uebernehmen <datei>` ausfuehren — sonst gehen Eintraege des Nutzers verloren. '
+                    + '(1) `node tools/spiegel-fixes.js --zeilen` ausfuehren, (2) im Sheet '
                     + `${stand.sheetId || '<sheetId>'} mit Google Sheets batch_clear_values die Bereiche "leeren" leeren, `
                     + 'dann update_values mit "fixes" und "konzepte" aus der erzeugten Datei, '
                     + '(3) mit get_values Fixes!A1:D5 und Konzepte!A1:B3 kurz pruefen, '
@@ -182,6 +239,9 @@ if (arg === '--hook') {
         for (const k of daten.konzepte) console.log(k.join(' | '));
     }
     if (rest) console.log('⚠ 4-Byte-Zeichen: ' + [...new Set(rest)].join(' '));
+} else if (arg === '--uebernehmen') {
+    if (!process.argv[3]) { console.error('Aufruf: --uebernehmen <datei.json>'); process.exit(1); }
+    uebernehmen(process.argv[3]);
 } else if (arg === '--fertig') {
     const alt = leseStand();
     const id = process.argv[3] || alt.sheetId;
