@@ -42,6 +42,7 @@ const sheetLink = id => `https://docs.google.com/spreadsheets/d/${id}/edit`;
 
 // ---------------------------------------------------------------- Markdown → Zeilen
 const STATUS = /^([✅◐❌❔❓])\s*/;
+const STATUS_FOLGE = ['❌', '◐', '❔', '–', '✅'];
 const VERSION = /v\d+\.\d+\.\d+(?:\.\d+)?/g;
 // Kurzname eines Punkts fuer die Thema-Spalte: bis zum ersten Doppelpunkt/Klammer, an Wortgrenze gekuerzt
 const kurzVon = punkt => {
@@ -124,6 +125,10 @@ function zuZeilen(md) {
     for (const f of fixes) {
         if (mitKonzept.has(f[1] + ' – ' + kurzVon(f[2]))) f[2] += '  → Details: Blatt Konzepte';
     }
+    // Default-Sortierung nach Status (Nutzer-Wunsch 11.10.2026): Sortieren im Sheet ist einmalig und
+    // geht bei jeder Spiegelung verloren, deshalb hier. Stabil: innerhalb eines Status bleibt die Listenfolge.
+    const rang = s => { const i = STATUS_FOLGE.indexOf(s); return i < 0 ? STATUS_FOLGE.length : i; };
+    fixes.sort((a, b) => rang(a[0]) - rang(b[0]));
     return { fixes, konzepte };
 }
 
