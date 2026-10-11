@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.2</title>
+    <title>F1 RPG v0.9.21.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.2 (aktuell) - 11.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.3 (aktuell) - 11.10.2026</div>
+                            <div>&#8226; FIX: Ersatzfahrer nach Todesfall ist jetzt anklickbar (Nicht-WM-Unfaelle und Saisonende)</div>
+                            <div>&#8226; FIX: Weltmeister-Tab zeigt fuer Jahre vor dem Spielstart die offiziellen Punkte und Konstrukteursweltmeister</div>
+                            <div>&#8226; NEU: Reserve-Pool zeigt die Potenzial-Pace neben der Pace</div>
+                            <div>&#8226; FIX: Leistungskarte erscheint auch fuer aktive Fahrer ohne Bewertung (mit ?)</div>
+                            <div class="font-bold text-slate-400">v0.9.21.2 - 11.10.2026</div>
                             <div>&#8226; FIX: Hamilton, Alonso, Button und Co. verschwanden nach einem verlorenen Cockpit ab Anfang 30 für immer – echte Fahrer bleiben jetzt im Pool, solange sie real fuhren</div>
                             <div>&#8226; FIX: Ältere Fahrer bekamen nur noch Einjahresverträge</div>
                             <div class="font-bold text-slate-400">v0.9.21.1 - 11.10.2026</div>
@@ -7998,6 +8003,80 @@ const HIST_CHAMPIONS = {
 2023:"max-verstappen",
 2024:"max-verstappen",
 2025:"lando-norris",
+};
+
+// Konstrukteursweltmeister je Jahr: [F1DB-Konstrukteur, Punkte]. Offizielle Wertung aus
+// f1db-seasons-constructor-standings.json — NICHT aus Rennpunkten summieren: bis 1978 zaehlte
+// nur das beste Auto je Rennen, dazu Streichresultate. Die WM gibt es erst seit 1958.
+const HIST_CONSTRUCTOR_CHAMPIONS = {
+1958:["vanwall",48],
+1959:["cooper",40],
+1960:["cooper",48],
+1961:["ferrari",40],
+1962:["brm",42],
+1963:["lotus",54],
+1964:["ferrari",45],
+1965:["lotus",54],
+1966:["brabham",42],
+1967:["brabham",63],
+1968:["lotus",62],
+1969:["matra",66],
+1970:["lotus",59],
+1971:["tyrrell",73],
+1972:["lotus",61],
+1973:["lotus",92],
+1974:["mclaren",73],
+1975:["ferrari",72.5],
+1976:["ferrari",83],
+1977:["ferrari",95],
+1978:["lotus",86],
+1979:["ferrari",113],
+1980:["williams",120],
+1981:["williams",95],
+1982:["ferrari",74],
+1983:["ferrari",89],
+1984:["mclaren",143.5],
+1985:["mclaren",90],
+1986:["williams",141],
+1987:["williams",137],
+1988:["mclaren",199],
+1989:["mclaren",141],
+1990:["mclaren",121],
+1991:["mclaren",139],
+1992:["williams",164],
+1993:["williams",168],
+1994:["williams",118],
+1995:["benetton",137],
+1996:["williams",175],
+1997:["williams",123],
+1998:["mclaren",156],
+1999:["ferrari",128],
+2000:["ferrari",170],
+2001:["ferrari",179],
+2002:["ferrari",221],
+2003:["ferrari",158],
+2004:["ferrari",262],
+2005:["renault",191],
+2006:["renault",206],
+2007:["ferrari",204],
+2008:["ferrari",172],
+2009:["brawn",172],
+2010:["red-bull",498],
+2011:["red-bull",650],
+2012:["red-bull",460],
+2013:["red-bull",596],
+2014:["mercedes",701],
+2015:["mercedes",703],
+2016:["mercedes",765],
+2017:["mercedes",668],
+2018:["mercedes",655],
+2019:["mercedes",739],
+2020:["mercedes",573],
+2021:["mercedes",613.5],
+2022:["red-bull",759],
+2023:["red-bull",860],
+2024:["mclaren",666],
+2025:["mclaren",833],
 };
 
 // Funktion: Lade historische StATS für ein Startjahr
@@ -22854,7 +22933,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.2';
+        const VERSION = '0.9.21.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31777,6 +31856,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                                 const age = driver.birthYear ? GAME_STATE.currentYear - driver.birthYear : null;
                                 const _eloPR = _eloDisplayPace(driver, GAME_STATE.currentYear);
                                 const _dPace = _eloPR ? _eloPR[0] : (driver.pace || 70);
+                                const _dPot = _eloPR ? _eloPR[1] : (driver.potentialPace || null);
                                 const paceWidth = Math.max(5, _dPace);
                                 const pending = (GAME_STATE.pendingAssignments || []).find(p => p.driverId === driver.id);
                                 return `
@@ -31790,6 +31870,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                                                 <div style="width:${paceWidth}%;height:100%;background:#3B82F6"></div>
                                             </div>
                                             <span class="text-xs font-mono">${_dPace}</span>
+                                            ${_dPot ? `<span class="text-xs text-tertiary" title="Potenzial-Pace">· Pot.</span><span class="text-xs font-mono">${Math.round(_dPot)}</span>` : ''}
                                         </div>
                                         ${groupBadge(driver)}
                                         ${driver.lastRacedYear ? `<span class="text-xs text-tertiary">zuletzt ${driver.lastRacedYear}</span>` : ''}
@@ -40505,7 +40586,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                                             <span class="text-tertiary">${d.raceName}</span>
                                         </div>
                                         ${d.replacement ? `<div class="text-xs text-tertiary mt-1">
-                                            → Ersetzt durch: ${d.replacement} (${replacementTeam?.name || d.team || '?'})
+                                            → Ersetzt durch: ${d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement} (${replacementTeam?.name || d.team || '?'})
                                         </div>` : ''}
                                         ${obit ? `<div class="text-xs italic mt-1.5" style="opacity:0.85">${obit}</div>` : ''}
                                     </div>
@@ -48054,7 +48135,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 <div class="card p-4 rounded-xl mb-4" style="border:1px solid rgba(239,68,68,0.4)">
                     <div class="text-sm font-bold text-red-400 mb-2">💀 Tödliche Unfälle außerhalb der WM (${_nonWMDeaths.length})</div>
                     ${_nonWMDeaths.map(d => `
-                        <div class="text-sm text-secondary pl-2 mb-1">• ${d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name} <span class="text-tertiary">(${d.raceName})</span>${d.timing ? ` <span class="text-tertiary text-xs">— ${d.timing}</span>` : ''}${d.replacement ? ` <span class="text-tertiary text-xs">→ ersetzt durch ${d.replacement}</span>` : ''}</div>
+                        <div class="text-sm text-secondary pl-2 mb-1">• ${d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name} <span class="text-tertiary">(${d.raceName})</span>${d.timing ? ` <span class="text-tertiary text-xs">— ${d.timing}</span>` : ''}${d.replacement ? ` <span class="text-tertiary text-xs">→ ersetzt durch ${d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement}</span>` : ''}</div>
                     `).join('')}
                 </div>`;
 
@@ -52503,7 +52584,15 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     const y = parseInt(yr);
                     if (y < startYear) {
                         const name = HIST_NAMES?.[driverId] || driverId.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-                        allChampions.push({ year: y, champion: name, driverId, championPoints: '-', teamChampion: '-', teamChampionPoints: '-', isHistorical: true });
+                        // Offizielle Punkte (mit Streichresultaten) statt '-': Fahrer aus
+                        // F1DB_STANDINGS, Konstrukteur aus HIST_CONSTRUCTOR_CHAMPIONS (erst ab 1958).
+                        const _dSt = (typeof F1DB_STANDINGS !== 'undefined') && (F1DB_STANDINGS[yr] || []).find(e => e[0] === driverId);
+                        const _cCh = (typeof HIST_CONSTRUCTOR_CHAMPIONS !== 'undefined') && HIST_CONSTRUCTOR_CHAMPIONS[y];
+                        allChampions.push({ year: y, champion: name, driverId,
+                            championPoints: _dSt ? _dSt[2] : '-',
+                            teamChampion: _cCh ? formatConstructorName(_cCh[0]) : '-',
+                            teamChampionPoints: _cCh ? _cCh[1] : '-',
+                            isHistorical: true });
                     }
                 }
             }
@@ -55300,7 +55389,9 @@ Empfohlene Wertebereiche:
                     const _simCount = _liveScores.filter(s => !s.preSim).length;
                     const _preSimCount = _liveScores.filter(s => s.preSim).length;
 
-                    if (!seasonScore && careerScores.length === 0) return '';
+                    // Aktive Fahrer ohne Bewertung (noch kein Wochenende) bekommen die Karte mit „?"
+                    // statt gar keiner — sonst sieht es aus, als fehle die Funktion.
+                    if (!seasonScore && careerScores.length === 0 && !isCurrentlyActive) return '';
 
                     // Ampelsystem statt Gold/Grün/BLAU/Rot: Blau (40–54) las sich wie „gut",
                     // obwohl es die zweitschlechteste Stufe ist, und Gold ist seit v0.9.15.27
@@ -55329,7 +55420,7 @@ Empfohlene Wertebereiche:
                                         ${getScoreEmoji(seasonScore)} ${seasonScore}
                                     </div>
                                     <div class="text-xs text-tertiary">${perfEval?.ratingText || (seasonScore >= 75 ? 'Hervorragend' : seasonScore >= 55 ? 'Gut' : seasonScore >= 40 ? 'Durchschnitt' : 'Schwach')}</div>
-                                ` : `<div class="text-2xl text-tertiary">-</div>`}
+                                ` : `<div class="text-2xl text-tertiary" title="Noch keine Bewertung in dieser Saison">?</div>`}
                             </div>
                             <div class="p-4 bg-secondary rounded-lg text-center">
                                 <div class="text-sm text-tertiary mb-1">${_careerLabel}</div>

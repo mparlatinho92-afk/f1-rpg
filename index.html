@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.2</title>
+    <title>F1 RPG v0.9.21.3</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.2 (aktuell) - 11.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.3 (aktuell) - 11.10.2026</div>
+                            <div>&#8226; FIX: Ersatzfahrer nach Todesfall ist jetzt anklickbar (Nicht-WM-Unfaelle und Saisonende)</div>
+                            <div>&#8226; FIX: Weltmeister-Tab zeigt fuer Jahre vor dem Spielstart die offiziellen Punkte und Konstrukteursweltmeister</div>
+                            <div>&#8226; NEU: Reserve-Pool zeigt die Potenzial-Pace neben der Pace</div>
+                            <div>&#8226; FIX: Leistungskarte erscheint auch fuer aktive Fahrer ohne Bewertung (mit ?)</div>
+                            <div class="font-bold text-slate-400">v0.9.21.2 - 11.10.2026</div>
                             <div>&#8226; FIX: Hamilton, Alonso, Button und Co. verschwanden nach einem verlorenen Cockpit ab Anfang 30 für immer – echte Fahrer bleiben jetzt im Pool, solange sie real fuhren</div>
                             <div>&#8226; FIX: Ältere Fahrer bekamen nur noch Einjahresverträge</div>
                             <div class="font-bold text-slate-400">v0.9.21.1 - 11.10.2026</div>
@@ -4239,7 +4244,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.2';
+        const VERSION = '0.9.21.3';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -13162,6 +13167,7 @@
                                 const age = driver.birthYear ? GAME_STATE.currentYear - driver.birthYear : null;
                                 const _eloPR = _eloDisplayPace(driver, GAME_STATE.currentYear);
                                 const _dPace = _eloPR ? _eloPR[0] : (driver.pace || 70);
+                                const _dPot = _eloPR ? _eloPR[1] : (driver.potentialPace || null);
                                 const paceWidth = Math.max(5, _dPace);
                                 const pending = (GAME_STATE.pendingAssignments || []).find(p => p.driverId === driver.id);
                                 return `
@@ -13175,6 +13181,7 @@
                                                 <div style="width:${paceWidth}%;height:100%;background:#3B82F6"></div>
                                             </div>
                                             <span class="text-xs font-mono">${_dPace}</span>
+                                            ${_dPot ? `<span class="text-xs text-tertiary" title="Potenzial-Pace">· Pot.</span><span class="text-xs font-mono">${Math.round(_dPot)}</span>` : ''}
                                         </div>
                                         ${groupBadge(driver)}
                                         ${driver.lastRacedYear ? `<span class="text-xs text-tertiary">zuletzt ${driver.lastRacedYear}</span>` : ''}
@@ -21890,7 +21897,7 @@
                                             <span class="text-tertiary">${d.raceName}</span>
                                         </div>
                                         ${d.replacement ? `<div class="text-xs text-tertiary mt-1">
-                                            → Ersetzt durch: ${d.replacement} (${replacementTeam?.name || d.team || '?'})
+                                            → Ersetzt durch: ${d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement} (${replacementTeam?.name || d.team || '?'})
                                         </div>` : ''}
                                         ${obit ? `<div class="text-xs italic mt-1.5" style="opacity:0.85">${obit}</div>` : ''}
                                     </div>
@@ -29439,7 +29446,7 @@
                 <div class="card p-4 rounded-xl mb-4" style="border:1px solid rgba(239,68,68,0.4)">
                     <div class="text-sm font-bold text-red-400 mb-2">💀 Tödliche Unfälle außerhalb der WM (${_nonWMDeaths.length})</div>
                     ${_nonWMDeaths.map(d => `
-                        <div class="text-sm text-secondary pl-2 mb-1">• ${d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name} <span class="text-tertiary">(${d.raceName})</span>${d.timing ? ` <span class="text-tertiary text-xs">— ${d.timing}</span>` : ''}${d.replacement ? ` <span class="text-tertiary text-xs">→ ersetzt durch ${d.replacement}</span>` : ''}</div>
+                        <div class="text-sm text-secondary pl-2 mb-1">• ${d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name} <span class="text-tertiary">(${d.raceName})</span>${d.timing ? ` <span class="text-tertiary text-xs">— ${d.timing}</span>` : ''}${d.replacement ? ` <span class="text-tertiary text-xs">→ ersetzt durch ${d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement}</span>` : ''}</div>
                     `).join('')}
                 </div>`;
 
@@ -33888,7 +33895,15 @@
                     const y = parseInt(yr);
                     if (y < startYear) {
                         const name = HIST_NAMES?.[driverId] || driverId.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-                        allChampions.push({ year: y, champion: name, driverId, championPoints: '-', teamChampion: '-', teamChampionPoints: '-', isHistorical: true });
+                        // Offizielle Punkte (mit Streichresultaten) statt '-': Fahrer aus
+                        // F1DB_STANDINGS, Konstrukteur aus HIST_CONSTRUCTOR_CHAMPIONS (erst ab 1958).
+                        const _dSt = (typeof F1DB_STANDINGS !== 'undefined') && (F1DB_STANDINGS[yr] || []).find(e => e[0] === driverId);
+                        const _cCh = (typeof HIST_CONSTRUCTOR_CHAMPIONS !== 'undefined') && HIST_CONSTRUCTOR_CHAMPIONS[y];
+                        allChampions.push({ year: y, champion: name, driverId,
+                            championPoints: _dSt ? _dSt[2] : '-',
+                            teamChampion: _cCh ? formatConstructorName(_cCh[0]) : '-',
+                            teamChampionPoints: _cCh ? _cCh[1] : '-',
+                            isHistorical: true });
                     }
                 }
             }
@@ -36685,7 +36700,9 @@ Empfohlene Wertebereiche:
                     const _simCount = _liveScores.filter(s => !s.preSim).length;
                     const _preSimCount = _liveScores.filter(s => s.preSim).length;
 
-                    if (!seasonScore && careerScores.length === 0) return '';
+                    // Aktive Fahrer ohne Bewertung (noch kein Wochenende) bekommen die Karte mit „?"
+                    // statt gar keiner — sonst sieht es aus, als fehle die Funktion.
+                    if (!seasonScore && careerScores.length === 0 && !isCurrentlyActive) return '';
 
                     // Ampelsystem statt Gold/Grün/BLAU/Rot: Blau (40–54) las sich wie „gut",
                     // obwohl es die zweitschlechteste Stufe ist, und Gold ist seit v0.9.15.27
@@ -36714,7 +36731,7 @@ Empfohlene Wertebereiche:
                                         ${getScoreEmoji(seasonScore)} ${seasonScore}
                                     </div>
                                     <div class="text-xs text-tertiary">${perfEval?.ratingText || (seasonScore >= 75 ? 'Hervorragend' : seasonScore >= 55 ? 'Gut' : seasonScore >= 40 ? 'Durchschnitt' : 'Schwach')}</div>
-                                ` : `<div class="text-2xl text-tertiary">-</div>`}
+                                ` : `<div class="text-2xl text-tertiary" title="Noch keine Bewertung in dieser Saison">?</div>`}
                             </div>
                             <div class="p-4 bg-secondary rounded-lg text-center">
                                 <div class="text-sm text-tertiary mb-1">${_careerLabel}</div>
