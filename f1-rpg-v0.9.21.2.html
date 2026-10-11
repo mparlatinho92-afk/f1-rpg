@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.1</title>
+    <title>F1 RPG v0.9.21.2</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.1 (aktuell) - 11.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.2 (aktuell) - 11.10.2026</div>
+                            <div>&#8226; FIX: Hamilton, Alonso, Button und Co. verschwanden nach einem verlorenen Cockpit ab Anfang 30 für immer – echte Fahrer bleiben jetzt im Pool, solange sie real fuhren</div>
+                            <div>&#8226; FIX: Ältere Fahrer bekamen nur noch Einjahresverträge</div>
+                            <div class="font-bold text-slate-400">v0.9.21.1 - 11.10.2026</div>
                             <div>&#8226; NEU: Ab 2026 wechseln Fahrer ohne Perspektive in WEC, IndyCar oder Formel E – Platz für ca. 3–4 Debütanten pro Saison</div>
                             <div>&#8226; FIX: Topteams ließen durchschnittliche Fahrer zu oft ziehen – Wechselquote jetzt nahe der Realität</div>
                             <div>&#8226; FIX: Saisonbilanz zeigte das historische Karriereende als ❓</div>
@@ -22851,7 +22854,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.1';
+        const VERSION = '0.9.21.2';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31503,12 +31506,15 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
 
         function sanitizeReservePool(year) {
             if (!GAME_STATE.reservePool) return;
-            const eraMaxAge = getEraValue(ERA_RETIREMENT_AGE, year) + 5;
+            const eraMaxAge = alterskurveStart(year) + 5;
             const before = GAME_STATE.reservePool.length;
 
-            // 1. Zu alte Fahrer entfernen (selbe Schwelle wie Grid: ERA_RETIREMENT_AGE + 5J)
+            // 1. Zu alte Fahrer entfernen (Kurvenstart + 5 J). Bis 11.10.2026 ERA_RETIREMENT_AGE + 5 = 31,6 ab 2015 —
+            //    der zensierte Median (s. ERA_ALTERSKURVE_SPAETER). Echte Fahrer mit Eintrag im Jahr oder Folgejahr
+            //    bleiben immer: 2008+12×3 flogen 53-mal reale Fahrer raus (Alonso, Button, Webber, Schumacher, Massa);
+            //    im Nutzer-Spielstand fehlte Hamilton nach einer Nicht-Verlängerung 2016 für immer (BEFUNDE 11.10.2026 (5)).
             GAME_STATE.reservePool = GAME_STATE.reservePool.filter(d =>
-                !(d.birthYear && (year - d.birthYear) > eraMaxAge)
+                !(d.birthYear && (year - d.birthYear) > eraMaxAge) || _echtImFahrjahr(d, year) || _echtImFahrjahr(d, year + 1)
             );
 
             // 2. Veraltete C-Einträge: nextCockpit.year liegt in der Vergangenheit
@@ -41373,7 +41379,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             const age = driver && driver.birthYear ? year - driver.birthYear : null;
             if (age === null) return wantedLen;
             const retAge = (typeof getEraValue === 'function' && typeof ERA_RETIREMENT_AGE !== 'undefined')
-                ? (getEraValue(ERA_RETIREMENT_AGE, year) || 32) : 32;
+                ? alterskurveStart(year) : 32;   // 11.10.2026: Kurvenstart statt zensiertem Median
             const maxLen = Math.max(1, Math.round(retAge - age));
             return Math.min(wantedLen, maxLen);
         }
