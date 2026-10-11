@@ -28,7 +28,7 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 
 ### Reserve-Pool
 - ✅ Talente (nie in F1 gestartet) getrennt von Free Agents (Ex-Fahrer ohne Cockpit) — v0.9.14.56
-- ❌ **kein Potential-Pace-Wert** in der Zeile — nur ein Pace-Balken (`renderReservePool`)
+- ✅ **Potenzial-Pace** steht jetzt neben der Pace in jeder Zeile (v0.9.21.3)
 - ❌ **keine freie Sortierung**; fest `lastRacedYear` → `pace`, absteigend
 - ◐ realistisches Durchschnittsalter für Talente: Pool hält ≥ 15 junge Talente frisch (Alters-Peak 32 → 30),
   aber kein FP1-Freitagsfahrer-Kriterium
@@ -78,8 +78,8 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
 ### Weitere Teil-Erledigungen
 - ◐ **Letzte 5–10 Saisons im Steckbrief direkt sichtbar:** 5-Saisons-Verlauf der Bewertung, Rennergebnisse
   aufklappbar je Team/Jahr; eine feste Saison-Übersicht dieser Art fehlt
-- ◐ **Mobil-Responsivität** (Querschnittsregel): Regler mobil gesperrt (v0.9.16.12); offen: Checkbox-Zeile im
-  Datensatz-Manager bei 390 px rechts abgeschnitten
+- ◐ **Mobil-Responsivität** (Querschnittsregel): Regler mobil gesperrt (v0.9.16.12); Checkbox-Zeilen im
+  Datensatz-Manager bei 390 px am 11.10.2026 gemessen: keine läuft mehr über, sie brechen um
 - ◐ **F2/F3-Fotos:** 144 Feeder-Fahrer, 77 mit Foto (Abgleich gegen Wikidata/DriverDB); fehlende Fahrer ab 2022 ergänzen
 - ◐ **Surtees 1975:** „galt als Kleinstkonstrukteur, Watson fuhr nur sporadisch" behoben; ❔ Dave Morgan steht
   inzwischen in den Daten (f1db.js, hist.js) — ob er 1975 meldet, im Spiel prüfen
@@ -98,8 +98,9 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
 ## ❌ Offen
 
 ### Weltmeister-Tab (`renderChampions`)
-- Jahre **vor** Spielstart liefern hart `championPoints: '-'`, `teamChampion: '-'`, `teamChampionPoints: '-'`
-  → das ist der gemeldete „Felder sind leer"-Bug, kein Render-Fehler
+- ✅ Jahre **vor** Spielstart zeigen jetzt Fahrer-WM-Punkte (`F1DB_STANDINGS`), Konstrukteursweltmeister und
+  -Punkte (`HIST_CONSTRUCTOR_CHAMPIONS` in `data/hist.js`, offizielle Wertung ab 1958) — v0.9.21.3.
+  Vor 1958 bleibt „-": da gab es keine Konstrukteurs-WM. Der historische Konstrukteur ist nicht verlinkt.
 - zusätzliche Tab-Auswahl mit Detail-Tabellen nach Wikipedia-Vorbild, **Vorlage auf Deutsch**
   - <https://en.wikipedia.org/wiki/List_of_Formula_One_World_Drivers%27_Champions>
   - <https://en.wikipedia.org/wiki/List_of_Formula_One_World_Constructors%27_Champions>
@@ -112,9 +113,10 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   Klassisch / Live-Ticker / Selbst fahren
 
 ### UI
-- **Nicht-WM-Tod: Ersatzfahrer unverlinkt** — „ersetzt durch John Russell" wird als reiner Text ausgegeben
-- **Zufriedenheitskarte:** bei einem Fahrer ganz ohne Score verschwindet die **komplette** Karte
-  (`if (!seasonScore && careerScores.length === 0) return ''`) statt „?" anzuzeigen; Verlauf zeigt nur 5 Saisons
+- ✅ **Ersatzfahrer nach Todesfall verlinkt** (Beispiel im Doc: Jock Russell für Graham Hill) — in der Übersicht
+  bei „Tödliche Unfälle außerhalb der WM" und im Saisonende-Fenster; der Nekrolog hatte den Link schon — v0.9.21.3
+- ✅ **Zufriedenheitskarte:** aktive Fahrer ohne Bewertung sehen die Karte mit „?" statt gar keiner — v0.9.21.3.
+  Offen bleibt: der Verlauf zeigt nur die letzten 5 Saisons
 - ❔ **Team-Historie-Layout (S / P / Pkt. / WM)** auf Karriere-Historie von F1- und Junior-Welt-Fahrern übertragen,
   Designänderungen künftig synchron halten — Übertragung nicht belegt
 
@@ -184,7 +186,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 | Langzeit-Inaktive: Geburtsjahr statt Alter | Steckbrief zeigt Lebensdaten, ab dem 10. Jahr ohne Cockpit das Geburtsjahr |
 | All-Time: Flaggen neben Aktiv-Status | Nationenflagge je Eintrag in Fahrer-, Team- und Weltmeister-Tabelle |
 | Grid-/DNQ-Projekt | abgeschlossen, Bauplan `DNQ_MELDEPLAN.md` |
-| Tödliche Unfälle außerhalb der WM | Rubrik + Nekrolog-Trennung; NaN-Rundennummer und falscher Renn-Link behoben (Ersatzfahrer-Link siehe Offen) |
+| Tödliche Unfälle außerhalb der WM | Rubrik + Nekrolog-Trennung; NaN-Rundennummer und falscher Renn-Link behoben (Ersatzfahrer-Link seit v0.9.21.3) |
 
 ---
 
