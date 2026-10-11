@@ -3326,6 +3326,23 @@ Ergebnis `2018 18 3 --ab=2026` (real 2010er in Klammern):
 - Wechselquote 25,2 % (22,5), je Drittel 23 / 30 / 20 % (13 / 30 / 28) · Median-Alter Abgang 27
 - Debütanten 3,97 je Saison (~3,3), davon Pace < 60 **30 %** (Nutzerziel ~20 %; real PR-Debüts 2010–2025 31 %).
   Nur 0,47 der 3,97 sind Sonderdebüts. Die übrigen langsamen Debüts kommen über die normalen Pool-Wege, weil mehr Plätze frei werden.
+  **Nutzerentscheid 11.10.2026: 30 % bleiben** (nicht auf 20 % zurücknehmen). Begründung: Ein sehr langsamer Debütant im
+  schwächsten Team zeigt, wie schwach jemand sein kann – und wird bald entlassen. Das ist erwünschtes Erzählmaterial.
 Gegenprobe der `lateralChance`-Änderung in echten Jahren (`markt-abgang.js`, 8 × 4), vorher → nachher:
 2012 stark „bleibt“ 68,8 → 80,8 %, Wechselquote 27,7 → 25,2 % (real 22,5); 2005 Wechselquote 33,3 → 26,9 % (real 2000er 27,4),
 stark „bleibt“ 63,7 → 72,7 % (real 75). „weg“ bleibt im Rauschen (2012 schwach 33,9 → 37,2; real 36).
+
+### 11.10.2026 (5): Echte Fahrer flogen wegen ihres Alters aus dem Reserve-Pool (Nutzer-Spielstand 1950–2024, eingebaut)
+Im Spielstand fehlt Hamilton 2017–2024. 2016 hatte er bei Sauber Pace 98 und 197 Punkte. Dann kam „Vertrag nicht verlängert“
+(`_noRenew`), und er verschwand für immer, auch aus dem Pool. Alonso fehlt dort 2012–2024 ganz.
+**Ursache:** `sanitizeReservePool` entfernt Pool-Fahrer über `ERA_RETIREMENT_AGE + 5`. Ab 2015 sind das 31,6 Jahre, wegen des
+zensierten Medians, siehe (7) vom 10.10. `_echtImFahrjahr` garantiert das Los nur, solange der Fahrer noch im Pool ist.
+Zählung (Patch-Zähler, scratchpad `poolalt.js`, 2008+12×3): 563 Alters-Entfernungen, davon 53 echte Fahrer mit Eintrag im
+Jahr oder Folgejahr: Badoer, de la Rosa, Trulli, Button, Grosjean, Webber, Alonso (3×), Schumacher 40–42, Massa, Kubica.
+Dazu deckelte `_ageCappedContractLen` die Vertragslänge am selben Median. Ältere Fahrer bekamen deshalb nur Einjahresverträge,
+und jede Verlängerung war ein neuer Wurf für `_noRenew`.
+**Fix:** Pool-Grenze `alterskurveStart(year) + 5`. Echte Fahrer mit Eintrag im Jahr oder Folgejahr bleiben immer im Pool.
+`_ageCappedContractLen` verwendet `alterskurveStart`.
+Messung `echt-anteil.js 2010 15 3`, vorher → nachher: gesamt 70 → 71 % (im Rauschen). Am häufigsten ohne Cockpit:
+Alonso 19 → 12, Grosjean 18 → 7, Hamilton 12 → nicht mehr unter den ersten 12.
+Gegenprobe `markt-abgang.js 2012 8 4`: Wechselquote 27,1 %, „weg“ 7 / 20 / 37 %. Beides unverändert gegenüber (4).
