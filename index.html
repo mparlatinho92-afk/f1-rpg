@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.20.16</title>
+    <title>F1 RPG v0.9.21.0</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.20.16 (aktuell) - 10.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.0 (aktuell) - 11.10.2026</div>
+                            <div>&#8226; NEU: Ab 2026 vergeben Mittelfeld- und Hinterbänkler-Teams Cockpits auch an langsamere Junioren oder Fahrer mit Mitgift (ca. 20 % der Debütanten)</div>
+                            <div>&#8226; FIX: Zukunftsjahre hatten fast keinen Fahrerwechsel mehr</div>
+                            <div class="font-bold text-slate-400">v0.9.20.16 - 10.10.2026</div>
                             <div>&#8226; FIX: Ab 2015 beginnen Alters-Rücktritt und Nicht-Verlängerung erst mit etwa 32 statt 28 – keine Rücktritte von Spitzenfahrern mit 31 mehr</div>
                             <div class="font-bold text-slate-400">v0.9.20.15 - 10.10.2026</div>
                             <div>&#8226; FIX: Verstappen, Norris, Piastri und Co. traten ab 2026 per historischem Karriereende zurück – das Datenende 2025 gilt nicht mehr als Karriereende</div>
@@ -4229,7 +4232,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.20.16';
+        const VERSION = '0.9.21.0';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -23485,6 +23488,30 @@
                 if (best) _marktVergeben.add(best.id);
                 return best ? { kandidat: best, hoffnungslos } : null;
             };
+            // === SONDERDEBUET: JUNIORPROGRAMM ODER MITGIFT (11.10.2026) ===
+            // Real kommt jeder dritte bis fuenfte Debuetant mit zu wenig Pace ins Cockpit (PR-Debuets 2010–2025:
+            // 31 % unter 60) — weil er aus dem eigenen Juniorprogramm kommt oder Geld mitbringt. Bis zum Datenende
+            // setzt das Drehbuch die echten Rookies; danach verlangte jeder Weg ins Cockpit Pace 60 und einen
+            // Vorsprung auf den Amtsinhaber. Folge: Stammfahrer „weg" 2026+ 10 % statt ~19 %, unter 28 nur
+            // 0 / 1 / 12 % (BEFUNDE.md 10.10.2026 (8)). Ein Nicht-Topteam laesst deshalb einen „average"/„poor"-
+            // Fahrer mit SONDERDEBUT_CHANCE fuer einen jungen, zu langsamen Pool-Fahrer gehen; der Platz wird
+            // ueber pendingAssignments in Phase 3 besetzt. Juniorprogramm waehlt nach Potenzial, Mitgift zufaellig.
+            const SONDERDEBUT_CHANCE = 0.09;   // 0,15 ergab 32 % langsame Debütanten, 0,09 ergibt 22 % (BEFUNDE 11.10.2026)
+            const _sonderDebutAktiv = currentYear >= _echteDatenBis();
+            const _sonderKandidat = () => {
+                const youngMax = (getEraValue(ERA_ROOKIE_AGE, currentYear + 1) || 22) + 4;
+                const kand = (GAME_STATE.reservePool || []).filter(d => (!d.status || d.status === 'active') &&
+                    isPoolTalent(d) && poolAgeGateOk(d, currentYear) && poolMinAgeOk(d, currentYear + 1) &&
+                    d.birthYear && (currentYear + 1 - d.birthYear) <= youngMax &&
+                    (d.currentPace || d.pace || 0) >= 50 && (d.currentPace || d.pace || 0) < 60 &&
+                    !(GAME_STATE.pendingAssignments || []).some(p => p.driverId === d.id));
+                if (!kand.length) return null;
+                const junior = Math.random() < 0.6;
+                const w = kand.map(d => junior ? Math.pow(Math.max(1, (d.potentialPace || 0) - 55), 2) : 1);
+                let r = Math.random() * w.reduce((s, x) => s + x, 0), i = 0;
+                for (; i < w.length - 1; i++) { r -= w[i]; if (r <= 0) break; }
+                return { driver: kand[i], grund: junior ? 'Juniorprogramm' : 'Mitgift' };
+            };
             // Beste Teams zuerst: wen sie fallen lassen, der steht danach den kleineren Teams zur Wahl
             const _rangVon = d => { const i = teamRanking.findIndex(t => t.id === d.team); return i < 0 ? 999 : i; };
             expiredContracts.sort((a, b) => _rangVon(a) - _rangVon(b));
@@ -23604,6 +23631,25 @@
                     changes.push({ driverId: driver.id, driverName: driver.name, type: 'renewal', contractSource: 'expired', fromTeam: driverTeam?.name || '–', newContractEnd: driver.contractEnd, score: eval_.score});
                     if (zeichen) logInfo('TRANSFER', `📝 ${driver.name} verlängert bis ${driver.contractEnd} (${zeichen})`);
                 };
+
+                // Sonderdebuet (s. SONDERDEBUT_CHANCE): Platz geht an einen Junior oder Geldgeber
+                if (_sonderDebutAktiv && !isTopTeam && !driverIsIndy && driverTeam &&
+                    (eval_.rating === 'average' || eval_.rating === 'poor') && !istRohdiamant(driver, currentYear) &&
+                    Math.random() < SONDERDEBUT_CHANCE) {
+                    const _s = _sonderKandidat();
+                    if (_s) {
+                        (GAME_STATE.pendingAssignments = GAME_STATE.pendingAssignments || [])
+                            .push({ teamId: driverTeam.id, driverId: _s.driver.id, fromYear: currentYear + 1, grund: _s.grund });
+                        driver.team = null;
+                        driver.contractEnd = currentYear;
+                        driver._movedThisSeason = true;
+                        changes.push({ driverId: driver.id, driverName: driver.name, type: 'released', typeEmoji: '💼',
+                            typeText: `Nicht verlängert (${_s.grund})`, contractSource: 'expired',
+                            fromTeam: driverTeam.name || '–', toTeam: 'Free Agent', score: eval_.score });
+                        logInfo('TRANSFER', `💼 ${driver.name} nicht verlängert bei ${driverTeam.name} — ${_s.driver.name} (${_s.grund})`);
+                        return;
+                    }
+                }
 
                 if (eval_.rating === 'excellent') {
                     const _verl = _verlaengern(2 + Math.floor(Math.random() * 2), '⭐');
@@ -23754,7 +23800,7 @@
                         }
                         GAME_STATE.reservePool.splice(GAME_STATE.reservePool.indexOf(poolDriver), 1);
                         GAME_STATE.pendingAssignments = GAME_STATE.pendingAssignments.filter(p => p !== pendingForTeam);
-                        changes.push({ driverId: poolDriver.id, driverName: poolDriver.name, type: 'pool-assign', typeEmoji: '📅', typeText: 'Pool eingeplant', fromTeam: '-', toTeam: team.name });
+                        changes.push({ driverId: poolDriver.id, driverName: poolDriver.name, type: 'pool-assign', typeEmoji: pendingForTeam.grund ? '💼' : '📅', typeText: pendingForTeam.grund ? `Debüt (${pendingForTeam.grund})` : 'Pool eingeplant', fromTeam: '-', toTeam: team.name });
                         teamDrivers.push(poolDriver);
                         logSuccess('TRANSFER', `📅 Pending: ${poolDriver.name} → ${team.name}`);
                     } else {
