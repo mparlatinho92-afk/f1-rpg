@@ -29,7 +29,7 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 ### Reserve-Pool
 - ✅ Talente (nie in F1 gestartet) getrennt von Free Agents (Ex-Fahrer ohne Cockpit) — v0.9.14.56
 - ✅ **Potenzial-Pace** steht jetzt neben der Pace in jeder Zeile (v0.9.21.3)
-- ❌ **keine freie Sortierung**; fest `lastRacedYear` → `pace`, absteigend
+- ✅ **Sortierung umschaltbar:** Zuletzt gefahren / Pace / Potenzial, erneuter Klick dreht die Richtung (v0.9.21.4)
 - ◐ realistisches Durchschnittsalter für Talente: Pool hält ≥ 15 junge Talente frisch (Alters-Peak 32 → 30),
   aber kein FP1-Freitagsfahrer-Kriterium
 
