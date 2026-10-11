@@ -3286,3 +3286,46 @@ Messung `2018 18 3 --ab=2026` (nur 2026–2035), Chance 0 / 0,15 / **0,09**:
 - „weg“ stark / mittel / schwach: 1,1 / 6,3 / 22,3 → 3,9 / 12,1 / 17,2 → 2,8 / 7,0 / 24,4 % (real 2010er 3 / 23 / 36)
 - schwaches Drittel ≤27 „weg“: 11 → 14 → 23 % (real ab 1990 36 %)
 ▶ Weiter zu niedrig: die Zahl der Debütanten (2,1 statt ~3,3) und „weg“ im Mittelfeld (7 statt 23 %).
+
+### 11.10.2026 (2): Marktvergleich auch im Mittelfeld nach dem Datenende (Testpatch, nicht übernommen)
+Offen aus (11.10.): Mittelfeld „weg“ 7 % statt 23 %, 2,1 statt ~3,3 Debütanten. Test: `_besserAmMarkt` gilt ab
+`_echteDatenBis()` auch für Mittelfeldteams. Messung `2018 18 3 --ab=2026`, gegen den Stand v0.9.21.0:
+- „weg“ stark / mittel / schwach 2,8 / 7,0 / 24,4 → 3,3 / 10,4 / 18,0 %; gesamt 11,0 → 10,5 %
+- Debütanten 2,13 → 2,53 je Saison; „Besserer am Markt“ 1,37 je Saison; Mittelfeld „aktiv ohne Team“ 7,1 %
+**Folgerung:** Die Verdrängten rutschen ins schwache Drittel oder bleiben ohne Team. Die Gesamtzahl der Abgänge aus der F1
+bleibt gleich, denn die Sitze sind fest: Abgänge = Zugänge. Real verlassen ~19 % der Stammfahrer pro Saison die F1, also
+~3,8 von 20, im Spiel ab 2026 ~2,1. Was fehlt, ist ein Weg **aus der F1 hinaus**. Real ist das bis 2025 das historische
+Karriereende, unter anderem Wechsel in WEC, IndyCar oder Formel E. Ein Verteiler im Feld hilft nicht.
+
+### 11.10.2026 (3): Abwanderung in andere Serien nach dem Datenende (eingebaut, `ABWANDERUNG_CHANCE` = 0,5)
+Mechanik, Phase 2 von `processTeamChanges`, ab `_echteDatenBis()`: Läuft bei einem Nicht-Topteam der Vertrag eines Fahrers
+mit „average“ oder „poor“ aus, ohne Sieg und ohne Podium (kein Rohdiamant, kein Besitzer-Fahrer), verlässt er mit
+ABWANDERUNG_CHANCE die F1 ganz. Er bekommt `status 'retired'` und `retirementReason 'other_series'` und wird in der
+Transferliste als „Wechsel in die Langstrecke (WEC) / IndyCar / Formel E“ geführt.
+Messung `2018 18 3 --ab=2026`, Stand v0.9.21.0 / 0,25 / **0,5** / real:
+- „weg“ stark / mittel / schwach: 2,8 / 7,0 / 24,4 → 2,8 / 11,7 / 20,0 → **2,8 / 17,6 / 26,0** % · real 2010er 3 / 23 / 36
+- gesamt 11,0 → 11,5 → **15,7 %** (real ~19) · Debütanten je Saison 2,13 → 2,77 → **3,40** (real ~3,3)
+- Debütanten Pace < 60: 22 → 19 → **20 %** · Wechselquote 23,4 → 28,7 → 29,4 % (real 23) · Median-Alter Abgang 28 → 27 → 27
+**Messfalle:** Bei 0,25 kam die Abwanderung zu großen Teilen aus „aktiv ohne Team“ (schwach 12,8 → 8,3 %). Die Fahrer wären
+also ohnehin gegangen, die Summe bewegte sich kaum. Erst bei 0,5 steigt die Gesamtzahl.
+Anzeige: Die Saisonbilanz kannte nur age/dismissed/gaveup; `career_end` und `other_series` erschienen dort als „❓“
+ohne Text. Jetzt 🏁 Karriereende und 🛫 mit Zielserie.
+▶ Weiter zu niedrig: „weg“ im schwachen Drittel (26 statt 36 %). Die Wechselquote liegt 6 Punkte zu hoch.
+
+### 11.10.2026 (4): Schwaches Drittel und Wechselquote (eingebaut)
+Offen aus (3): ab 2026 schwaches Drittel „weg“ 26 % statt 36 %, Wechselquote 29 % statt 23 %.
+**Abwanderung nur bei Hinterbänklern höher** (`2018 18 3 --ab=2026`): Mit 0,75 ist schwach „weg“ 27 %, mit 0,9 39 %.
+Die Wechselquote stieg dabei auf 33 / 32 %, denn jeder frei gewordene Platz löst eine Kette von Aufrückern aus.
+**Die überschüssige Wechselquote sitzt im STARKEN Drittel.** Spiel: „bleibt“ 64–70 %, „gleich“ 12–16 %, „nach unten“ 14–21 %,
+Wechselquote dort 31–34 %. Real 2010er: 85 / 6 / 7 %, Wechselquote 13 %; 2000er: 75 / 10 / 11 %, 22 %.
+Ursache: Ein „average“-Fahrer im Topteam versucht mit `lateralChance` 0,50 einen Seitenwechsel oder Abstieg.
+**Eingebaut:** `lateralChance` im Topteam 0,15, Abwanderung bei Hinterbänklern 0,85 (`ABWANDERUNG_CHANCE_HINTEN`).
+Ergebnis `2018 18 3 --ab=2026` (real 2010er in Klammern):
+- stark 75,0 / 0 / 8,9 / 13,3 / 2,8 % (84,7 / 0 / 5,6 / 6,9 / 2,8)
+- mittel „weg“ 17,5 % (23,0) · schwach „weg“ 37,4 % (36,1)
+- Wechselquote 25,2 % (22,5), je Drittel 23 / 30 / 20 % (13 / 30 / 28) · Median-Alter Abgang 27
+- Debütanten 3,97 je Saison (~3,3), davon Pace < 60 **30 %** (Nutzerziel ~20 %; real PR-Debüts 2010–2025 31 %).
+  Nur 0,47 der 3,97 sind Sonderdebüts. Die übrigen langsamen Debüts kommen über die normalen Pool-Wege, weil mehr Plätze frei werden.
+Gegenprobe der `lateralChance`-Änderung in echten Jahren (`markt-abgang.js`, 8 × 4), vorher → nachher:
+2012 stark „bleibt“ 68,8 → 80,8 %, Wechselquote 27,7 → 25,2 % (real 22,5); 2005 Wechselquote 33,3 → 26,9 % (real 2000er 27,4),
+stark „bleibt“ 63,7 → 72,7 % (real 75). „weg“ bleibt im Rauschen (2012 schwach 33,9 → 37,2; real 36).
