@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.3</title>
+    <title>F1 RPG v0.9.21.4</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1033,7 +1033,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.3 (aktuell) - 11.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.4 (aktuell) - 11.10.2026</div>
+                            <div>&#8226; NEU: Reserve-Pool sortierbar nach Zuletzt gefahren, Pace oder Potenzial - erneuter Klick dreht die Richtung</div>
+                            <div>&#8226; NEU: bei Zuletzt gefahren trennt eine Linie Ex-Fahrer von denen, die noch nie gefahren sind</div>
+                            <div class="font-bold text-slate-400">v0.9.21.3 - 11.10.2026</div>
                             <div>&#8226; FIX: Ersatzfahrer nach Todesfall ist jetzt anklickbar (Nicht-WM-Unfaelle und Saisonende)</div>
                             <div>&#8226; FIX: Weltmeister-Tab zeigt fuer Jahre vor dem Spielstart die offiziellen Punkte und Konstrukteursweltmeister</div>
                             <div>&#8226; NEU: Reserve-Pool zeigt die Potenzial-Pace neben der Pace</div>
@@ -22933,7 +22936,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.3';
+        const VERSION = '0.9.21.4';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31718,6 +31721,19 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             renderContent();
         }
 
+        // Sortierung der Reserve-Liste, wie der Filter-Tab nur für die Sitzung gemerkt.
+        // Erneuter Klick auf dieselbe Spalte dreht die Richtung um.
+        let _poolSort = { key: 'zuletzt', dir: -1 };
+        window.setPoolSort = function(key) {
+            _poolSort = _poolSort.key === key ? { key, dir: -_poolSort.dir } : { key, dir: -1 };
+            renderContent();
+        };
+        // Dieselben Werte, die die Zeile anzeigt (PACE_RATINGS vor Fahrer-Feld)
+        function _poolPaceWerte(d) {
+            const pr = _eloDisplayPace(d, GAME_STATE.currentYear);
+            return { pace: pr ? pr[0] : (d.pace || 70), pot: pr ? pr[1] : (d.potentialPace || 0) };
+        }
+
         window.toggleReservePool = function() {
             GAME_STATE.reservePoolCollapsed = !(GAME_STATE.reservePoolCollapsed ?? true);
             renderContent();
@@ -31776,8 +31792,20 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             else if (_poolGroupFilter === 'C') filtered = pool.filter(d => d.poolGroup === 'C');
             else if (_poolGroupFilter === 'J') filtered = pool.filter(d => d.poolGroup === 'J');
             else if (_poolGroupFilter === 'indy') filtered = indyPool;
-            const sorted = [...filtered].sort((a, b) =>
-                (b.lastRacedYear || 0) - (a.lastRacedYear || 0) || (b.pace || 0) - (a.pace || 0));
+            const _sk = _poolSort.key, _sd = _poolSort.dir;
+            const sorted = [...filtered].sort((a, b) => {
+                const wa = _poolPaceWerte(a), wb = _poolPaceWerte(b);
+                // Gleichstand im Jahr: nach der ANGEZEIGTEN Pace, nicht nach driver.pace —
+                // bei echten Fahrern weicht das Rohfeld von PACE_RATINGS ab (Trulli 58 vor Barrichello 92)
+                if (_sk === 'zuletzt')
+                    return _sd * ((a.lastRacedYear || 0) - (b.lastRacedYear || 0)) || wb.pace - wa.pace || wb.pot - wa.pot;
+                return _sd * (wa[_sk] - wb[_sk]) || _sd * (wa[_sk === 'pace' ? 'pot' : 'pace'] - wb[_sk === 'pace' ? 'pot' : 'pace']);
+            });
+            const _sortBtn = (key, label) => {
+                const aktiv = _sk === key;
+                return `<button onclick="setPoolSort('${key}')" class="px-2 py-0.5 rounded text-xs transition"
+                    style="background:${aktiv ? 'var(--accent-main)' : 'var(--bg-tertiary)'}; color:${aktiv ? 'var(--accent-on)' : 'var(--text-muted)'}">${label}${aktiv ? (_sd < 0 ? ' ↓' : ' ↑') : ''}</button>`;
+            };
 
             // Tab-Reihenfolge zeitlich: Free Agents (Vergangenheit) → Testfahrer (Gegenwart)
             // → Kommend (nahe Zukunft) → Talente (unklare Zukunft, ganz rechts).
@@ -31830,6 +31858,10 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                             </button>
                         `).join('')}
                     </div>
+                    <div class="flex gap-2 mb-4 flex-wrap items-center">
+                        <span class="text-xs text-tertiary">Sortieren:</span>
+                        ${_sortBtn('zuletzt', 'Zuletzt gefahren')}${_sortBtn('pace', 'Pace')}${_sortBtn('pot', 'Potenzial')}
+                    </div>
                     ${(() => {
                         // === POOL-TICKER (v0.9.16.0) ===
                         // Wer aus dem Pool toedlich verunglueckt, verschwindet daraus
@@ -31852,14 +31884,23 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         </p>
                     ` : `
                         <div class="space-y-2">
-                            ${sorted.map(driver => {
+                            ${sorted.map((driver, i) => {
+                                // Nur bei „Zuletzt gefahren": sanfte Linie zwischen Ex-Fahrern und denen,
+                                // die noch nie gefahren sind (Kommend/Talente) — sonst wirkt der Sprung wie ein Sortierfehler
+                                const _trenner = (_sk === 'zuletzt' && i > 0 && !!sorted[i - 1].lastRacedYear !== !!driver.lastRacedYear)
+                                    ? `<div class="flex items-center gap-2 pt-2 pb-1 text-xs text-tertiary" style="opacity:0.7">
+                                           <div style="flex:1;height:1px;background:var(--border-color)"></div>
+                                           <span>${driver.lastRacedYear ? 'schon gefahren' : 'noch nie gefahren'}</span>
+                                           <div style="flex:1;height:1px;background:var(--border-color)"></div>
+                                       </div>`
+                                    : '';
                                 const age = driver.birthYear ? GAME_STATE.currentYear - driver.birthYear : null;
                                 const _eloPR = _eloDisplayPace(driver, GAME_STATE.currentYear);
                                 const _dPace = _eloPR ? _eloPR[0] : (driver.pace || 70);
                                 const _dPot = _eloPR ? _eloPR[1] : (driver.potentialPace || null);
                                 const paceWidth = Math.max(5, _dPace);
                                 const pending = (GAME_STATE.pendingAssignments || []).find(p => p.driverId === driver.id);
-                                return `
+                                return `${_trenner}
                                     <div class="flex items-center gap-3 p-3 bg-secondary rounded-lg flex-wrap">
                                         <span>${renderFlag(driver.nation, driver.name, getDriverFlagYear(driver, GAME_STATE.currentYear))}</span>
                                         <span class="driver-link font-medium" onclick="openDriverProfile('${driver.id}')">${driver.name}</span>
