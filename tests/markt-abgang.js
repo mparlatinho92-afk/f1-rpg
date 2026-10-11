@@ -10,7 +10,9 @@
  * Saisonbeginn" als weg — beides weicht von der realen Messung ab.
  * Zusätzlich: der Zustand der Verschwundenen direkt nach dem Saisonwechsel (Abgangsweg).
  *
- * Aufruf: node tests/markt-abgang.js [startjahr] [saisons] [laeufe]   (misst index.html)
+ * Aufruf: node tests/markt-abgang.js [startjahr] [saisons] [laeufe] [--ab=JAHR]   (misst index.html)
+ *   --ab  zählt nur Übergänge ab diesem Jahr. Für Zukunftsjahre in einem echten Jahr starten (2018 18 3 --ab=2026):
+ *         initFromYear(2026) setzt NICHTS zurück, weil SEASON_DATA bei 2025 endet (11.10.2026)
  *         node tests/markt-abgang.js 1975 8 4
  * Zugang (28.09.2026): Herkunft der Stammfahrer je Drittel — Gegenstück zu markt-real.js --zugang.
  * Dazu „weg" je Altersband (≤27 / 28–31 / 32–35 / 36+) — Gegenstück zu markt-real.js --alter.
@@ -19,6 +21,7 @@
 process.env.SIMCORE_FROM_INDEX = process.env.SIMCORE_FROM_INDEX || '1';
 const { getContext } = require('./sim-core');
 const START = Number(process.argv[2] || 1975), SAISONS = Number(process.argv[3] || 8), LAEUFE = Number(process.argv[4] || 4);
+const AB = Number((process.argv.find(a => a.startsWith('--ab=')) || '').slice(5)) || 0;   // nur Saisons ab diesem Jahr zählen (11.10.2026)
 const ctx = getContext();
 
 // Eine Saison auswerten: Hauptteam und Starts je Fahrer (über den NAMEN — IDs sind nicht stabil),
@@ -54,12 +57,13 @@ const wege = {}, ALT = {}, WEGALTER = [];   // ALT: drittel|band → [n, weg]
 const BAND = a => a <= 27 ? '≤27' : a <= 31 ? '28–31' : a <= 35 ? '32–35' : '36+';
 for (let l = 0; l < LAEUFE; l++) {
     ctx.initFromYear(START);
-    let vorher = null, zustandNachWechsel = null, alterVorher = null;
+    let vorher = null, zustandNachWechsel = null, alterVorher = null, vorherJahr = 0;
     for (let s = 0; s <= SAISONS; s++) {
         const gs = ctx.GAME_STATE;
         ctx.simulateSeasonRaces();
         const jetzt = saisonAuswerten(gs);
-        if (vorher) for (const [name, a] of Object.entries(vorher.haupt)) {
+        const zaehlt = vorher && vorherJahr >= AB;
+        if (zaehlt) for (const [name, a] of Object.entries(vorher.haupt)) {
             if (a.n < vorher.rennen / 2) continue;
             const td = vorher.drittel[a.t]; if (td === undefined) continue;
             const b = jetzt.haupt[name], z = Z[td]; z.n++;
@@ -68,13 +72,14 @@ for (let l = 0; l < LAEUFE; l++) {
             else if (b.t === a.t) z.bleibt++;
             else { const nd = jetzt.drittel[b.t]; if (nd === undefined || nd > td) z.unten++; else if (nd < td) z.oben++; else z.gleich++; }
         }
-        if (vorher) for (const [name, b] of Object.entries(jetzt.haupt)) {
+        if (zaehlt) for (const [name, b] of Object.entries(jetzt.haupt)) {
             if (b.n < jetzt.rennen / 2) continue;
             const td = jetzt.drittel[b.t]; if (td === undefined) continue;
             const a = vorher.haupt[name], z = ZU[td]; z.n++;
             z[!a ? 'ohne' : a.t === b.t ? 'eigen' : a.n >= vorher.rennen / 2 ? 'stamm' : 'teilzeit']++;
         }
         if (s === SAISONS) break;
+        vorherJahr = gs.currentYear;
         const alterJetzt = new Map(gs.drivers.filter(d => d.birthYear).map(d => [d.name, gs.currentYear - d.birthYear]));
         ctx.processSeasonEndEvents();
         const g = ctx.GAME_STATE;
@@ -85,7 +90,7 @@ for (let l = 0; l < LAEUFE; l++) {
 }
 const N = ['stark', 'mittel', 'schwach'];
 const p = (z, k) => (z[k] / z.n * 100).toFixed(1).padStart(5) + ' %';
-console.log('SPIEL ' + START + '+' + SAISONS + ' × ' + LAEUFE + ' · bleibt / nach oben / gleich / nach unten / weg (Vergleich: node tests/markt-real.js)');
+console.log('SPIEL ' + START + '+' + SAISONS + ' × ' + LAEUFE + (AB ? ' (gezählt ab ' + AB + ')' : '') + ' · bleibt / nach oben / gleich / nach unten / weg (Vergleich: node tests/markt-real.js)');
 for (let t = 0; t < 3; t++) console.log('  Team ' + N[t].padEnd(8), p(Z[t], 'bleibt'), '/', p(Z[t], 'oben'), '/', p(Z[t], 'gleich'), '/', p(Z[t], 'unten'), '/', p(Z[t], 'weg'), '  n ' + Z[t].n);
 { // Wechselquote wie markt-real.js: Teamwechsel unter denen, die im Folgejahr noch fahren (28.09.2026)
     const w = Z.reduce((s, z) => s + z.oben + z.gleich + z.unten, 0), b = Z.reduce((s, z) => s + z.bleibt, 0);

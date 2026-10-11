@@ -3245,3 +3245,44 @@ und `_noRenew`. Ären vor 2015 bleiben unverändert. Nachmessung mit dem eingeba
 2018+8×4 10 / 22 / 20 / 23 · 15,5 % (Testpatch-Lauf 18 %, ≤27 schwankt zwischen den Läufen um etwa 4 Pp);
 2026+10×3 9,9 %, Median-Alter der Verschwundenen 33. ▶ Die Fluktuation ist insgesamt zu niedrig (real ~19 %).
 In der Zukunft fehlen die jungen, unfreiwilligen Abgänge (≤27: 0 / 1 / 12 %). Das ist ein eigenes Thema, nicht die Alterskurve.
+
+### 10.10.2026 (8): Zu wenig Abgänge nach dem Datenende — Ursache ist der fehlende Rookie-Zugang (zwei Negativergebnisse)
+Offener Punkt aus (7): Ab 2026 gehen 10 % der Stammfahrer pro Saison (real ~19 %), bei den unter 28-Jährigen 0 / 1 / 12 %.
+**Ursache:** Auch in den echten Jahren schafft der Markt allein nur wenig. 2018+8×4 ohne `career_end` sind es etwa 4 / 10 / 18 %
+„weg“ (real 2010er 3 / 23 / 36). Den Rest liefert das historische Karriereende, also das Drehbuch. Nach 2025 fehlt es.
+Dazu kommen die Wechsel je Saison aus `markt-diagnose.js`, 2012 → 2026: Pool-Debüts 3,1 → 1,4, Verlängerungen 6,6 → 9,0.
+Real kamen 2015–2025 im Schnitt etwa 3,3 neue Fahrer pro Saison (erstes PACE_RATINGS-Jahr; Ersatzfahrer mitgezählt).
+**Pool ab 2025** (scratchpad `pool.js`, ein Lauf): Er besteht zu fast 100 % aus der festen Feeder-Kohorte (2025: 132 von 133).
+Fahrer, die die Altersgrenze erfüllen: 127 (2025) → 70 (2030) → 15 (2033). Davon haben nur 20 → 12 → 1 Pace ≥ 60 (Marktuntergrenze).
+Die Pace liegt im Median bei 53–55. Generierter Nachwuchs kommt erst ab etwa 2030–2035 dazu.
+Die Generierung in `initReservePool` greift nur ohne SEASON_DATA im Fenster year−2..year+5 (also ab 2028) und nur, wenn
+weniger als 15 junge Talente im Pool sind. Die jungen Feeder zählen dabei mit.
+**Negativergebnis 1 — Marktvergleich nach dem Datenende mit Effektiv-Pace** (70 % Pace / 30 % Potenzial):
+`markt-abgang.js 2026 10 3` „weg“ 1,8 / 9,1 / 21,4 % (Stand 1,7 / 7,9 / 20,7), Pool-Debüts 1,33 je Saison. Keine Wirkung.
+**Negativergebnis 2 — Nachwuchs ab 2026 generieren, nur junge Talente mit max(Pot, Pace) ≥ 64 zählen:**
+„weg“ 2,3 / 7,4 / 22,4 %, Pool-Debüts 1,71, Verlängerungen 7,5. Die Generierung setzt trotzdem erst 2030 ein (2 Fahrer):
+Die obere Feeder-Gruppe (Potenzial bis 98) erfüllt die Talent-Schwelle bis dahin.
+**Folgerung:** Kandidaten mit Potenzial sind da. Der Markt nimmt aber nur Fahrer, die SOFORT ≥ 60 und schneller als der
+Amtsinhaber sind. Real kommen Rookies mit 58–77 (PR-Debüts) über Juniorprogramme und Geld. Diese Rolle übernimmt bis 2025
+das Drehbuch, danach nichts. Die Junior→F1-Brücke (Phase 5) ist bewusst zurückgestellt.
+
+### 11.10.2026: Sonderdebüts über Juniorprogramm oder Mitgift nach dem Datenende (eingebaut)
+**Messfalle (betrifft (7) und (8)):** `initFromYear(2026)` setzt NICHTS zurück, weil SEASON_DATA bei 2025 endet. Der Stand
+bleibt, wie er war (im frischen Kontext 2024 mit 0 Fahrern). „2026 10 3“ war also eine einzige Kette ab 2024 und keine drei
+unabhängigen Läufe. Die Vergleiche Stand gegen Patch sind weiter brauchbar, die absoluten Zahlen dort sind unsauber.
+Seit heute haben `markt-abgang.js` und `markt-diagnose.js` die Option **`--ab=JAHR`**: in einem echten Jahr starten, erst ab JAHR
+zählen, z. B. `node tests/markt-abgang.js 2018 18 3 --ab=2026`.
+**Nutzervorgabe:** Etwa 20 % der Debütanten pro Saison haben zu wenig Pace und kommen über das eigene Juniorprogramm oder Geld.
+Real (PR-Debüts 2010–2025, n 58) liegen 31 % unter 60 (Auto eingerechnet), 1990–2009 sind 36 % im unteren Viertel des Feldes.
+Die Brücke Junior-Welt→F1 bleibt bewusst weg (Nutzer).
+**Mechanik:** Ab dem Datenende (`currentYear >= _echteDatenBis()`) gilt in Phase 2 von `processTeamChanges`: Läuft bei einem
+Nicht-Topteam der Vertrag eines „average“- oder „poor“-Fahrers aus (kein Rohdiamant), lässt das Team ihn mit `SONDERDEBUT_CHANCE`
+gehen. An seine Stelle kommt ein junger Pool-Fahrer (Alter ≤ ERA_ROOKIE_AGE+4, Pace 50–59), eingeplant über `pendingAssignments`,
+und Phase 3 setzt ihn als „Debüt (Juniorprogramm)“ oder „Debüt (Mitgift)“ ein. Juniorprogramm (60 %) wählt nach (Pot−55)²,
+Mitgift (40 %) zufällig.
+Messung `2018 18 3 --ab=2026` (nur 2026–2035), Chance 0 / 0,15 / **0,09**:
+- Debütanten je Saison 1,57 / 2,17 / 2,13 (real ~3,3, Ersatzfahrer mitgezählt); davon Pace < 60: 4 / 32 / **22 %**
+- Verlängerungen je Saison 10,7 / 8,9 / 9,8 · Wechselquote 20,1 / 27,6 / 23,4 % (real 2010er 23 %)
+- „weg“ stark / mittel / schwach: 1,1 / 6,3 / 22,3 → 3,9 / 12,1 / 17,2 → 2,8 / 7,0 / 24,4 % (real 2010er 3 / 23 / 36)
+- schwaches Drittel ≤27 „weg“: 11 → 14 → 23 % (real ab 1990 36 %)
+▶ Weiter zu niedrig: die Zahl der Debütanten (2,1 statt ~3,3) und „weg“ im Mittelfeld (7 statt 23 %).
