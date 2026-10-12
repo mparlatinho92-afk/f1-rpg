@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.7</title>
+    <title>F1 RPG v0.9.21.8</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.7 (aktuell) - 12.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.8 (aktuell) - 12.10.2026</div>
+                            <div>&#8226; FIX: Junior-Welt-Export erklärt Aufstiege innerhalb der Leiter vs. F1-Aufstieg</div>
+                            <div class="font-bold text-slate-400">v0.9.21.7 - 12.10.2026</div>
                             <div>&#8226; FIX: Fahrermarkt-Export – Verlängerungen mit Ziel-Team, Pool statt Platzhalter</div>
                             <div>&#8226; FIX: Entlassungen nicht mehr doppelt zählbar (auchAlsAbgang)</div>
                             <div>&#8226; NEU: letztes Team bei Karriereende, Drittel des Ziel-Teams im Folgejahr</div>
@@ -23007,7 +23009,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.7';
+        const VERSION = '0.9.21.8';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -32439,7 +32441,10 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             rekorde: ['sim = nur simulierte Saisons, all = reale Historie + Simulation. Top 10 je Rekord, Zeitraum gesamt.'],
             fahrerSteckbrief: ['Nur simulierte Saisons (inkl. laufender). Reale Jahre vor Spielstart stehen in F1DB, nicht im Spielstand.'],
             teamSteckbrief: ['carSpeed/zuverlaessigkeit/strategie = Stand des Saison-Snapshots.'],
-            allTimeFahrer: ['indy500 = Anteil der 11 Indy-500-Starts 1950–1960 (nie der US-GP 2000–2007).']
+            allTimeFahrer: ['indy500 = Anteil der 11 Indy-500-Starts 1950–1960 (nie der US-GP 2000–2007).'],
+            junior: ['historie[].events.promoted = Aufstieg INNERHALB der Junior-Leiter (z. B. F3 → F2), nicht in die F1.',
+                     'aufsteigerInF1 bleibt leer, solange es den Übergang Junior-Welt → F1 (Phase-5-Brücke) nicht gibt – das ist kein Datenverlust.',
+                     'fahrer = aktueller Kader der Junior-Serien; allTime = alle je gefahrenen Junior-Fahrer (titles = Meistertitel).']
         };
 
         async function _reviewTeil(teil, saisons) {
