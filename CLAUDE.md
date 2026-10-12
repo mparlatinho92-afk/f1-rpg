@@ -191,6 +191,9 @@ Das Indy 500 bekommt **40–48 Melder auf 33 Startplätze**, also 12–15 DNQ. D
 
 Der Kandidatenpool sollen **Datenbank-Fahrer** sein (halb-fiktional), generierte Fahrer nur als Rückfall.
 
+## Lesbarkeit (Schriftfarben)
+Schriftfarbe nur über Theme-Variable (`--text-*`, `--accent-main-text`) oder `lesbareTextfarbe(hex)` — nie feste Grautöne, nie `--accent-main`/`--accent-blue` als Schrift, keine `opacity` auf Text. Prüfen: `node tests/kontrast-audit.js --themes dark,slate`. Zahlen, Ursachen, Messfallen: `BEFUNDE.md` (12.10.2026).
+
 ## Testen vor Einbauen
 **Workflow:** Nutzer sagt „teste Feature X" → Claude nennt Befehl → Nutzer führt aus → Nutzer schickt Output → Claude interpretiert.
 Claude simuliert NIEMALS selbst (Token-Verschwendung).

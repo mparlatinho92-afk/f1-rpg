@@ -403,3 +403,13 @@ unter Windows die Tabellenlinien kaputt.
 
 ⚠ **Befund (07.10.2026):** `simulateRace` liefert **kein** `isIndy500` im Rennergebnis. `applyRaceResults` erkannte das Indy 500 deshalb nur am Namen „Indianapolis 500" — im Spiel gefahrene Indy-Rennen zählten als F1, „Nur Indy" blieb leer. Jetzt wird am Kalenderrennen (`GAME_STATE.races[raceIndex]`) geprüft. Gemessen: Start 1950, eine Saison → `hasIndy` bei 31 von 31 Indy-Startern.
 ⚠ **Messfalle:** Indy-Melder sind oft **Gastfahrer aus dem Reserve-Pool** (`reserve-ANDYLI-…`), nicht im Kader. Wer Ergebnis-IDs nur über `GAME_STATE.drivers`/Saison-Snapshot auflöst, verliert sie (gemessen: 27 statt 31). Kette wie `applyRaceResults`: Reserve-Pool → Kader → Snapshot.
+
+## Lesbarkeit — `kontrast-audit.js` (12.10.2026)
+
+| Befehl | Prüft |
+|---|---|
+| `node tests/kontrast-audit.js --alle` | Jeder sichtbare Text im echten Browser gegen seinen tatsächlichen Hintergrund (Opacity-Kette, Alpha-Schichten), 7 Themes × Desktop/Handy × alle Tabs, Unter-Tabs, Modals, Editoren. Gruppiert nach Farbpaar + Herkunft (Inline-Style oder Klasse). ~6 Min. |
+| `… --themes dark,slate` | nur diese Themes (schneller) |
+| `… --datei alt.html` | anderen Stand im Projektordner messen — Vorher/Nachher: `git show HEAD:index.html > _alt.html` |
+
+⚠ Transitions werden abgeschaltet, sonst misst man beim Theme-Wechsel Zwischenfarben. Verläufe zählen mit der schlechtesten Farbe, `text-shadow` wird ignoriert. Zahlen und Ursachen: `BEFUNDE.md` (12.10.2026).

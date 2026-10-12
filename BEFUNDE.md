@@ -18,6 +18,7 @@ versehentlich zurück.
 
 | Thema | Nachschlagen vor Arbeit an … |
 |---|---|
+| **Lesbarkeit: Schriftkontrast in allen Themes (12.10.2026)** | jede neue Schriftfarbe, Theme-Variablen, Teamfarben als Text, `tests/kontrast-audit.js` |
 | **Pace vor dem echten Debüt gedämpft (08.10.2026)** | Pool-Gruppe C, Junioren, Marktwert vor dem Debüt, `vorzeitige-debuets.js` |
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
@@ -34,6 +35,49 @@ versehentlich zurück.
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
+
+---
+
+## Lesbarkeit: Schriftkontrast in allen Themes (12.10.2026)
+
+Gemessen mit `node tests/kontrast-audit.js --alle`: jeder sichtbare Text in 7 Themes ×
+Desktop 1366 / Handy 390 × allen Tabs, Unter-Tabs, 10 Modals, Reserve-Pool, Grid-,
+Kalender-Editor, Debug-Log, Junior-Welt. Schwelle WCAG AA 4,5:1 (große Schrift 3:1).
+
+| Dunkle Themes (ohne Weiß auf hellen Buttons) | < 3:1 | 3–4:1 | 4–4,5:1 |
+|---|---|---|---|
+| vorher (v0.9.21.4) | 8.579 | 17.029 | 5.053 |
+| nachher | 152 | 290 | 1.179 |
+
+**Die Ursachen, nach Gewicht:**
+1. `--text-tertiary` lag in 5 von 7 Themes unter 4,5 (slate 2,6) → angehoben, in dark/slate
+   auch `--text-secondary`, damit die Abstufung bleibt.
+2. **Buttons erben die Schriftfarbe nicht** (Browser: `buttontext` = schwarz). Alle Tab- und
+   Unter-Tab-Buttons mit `.bg-secondary` standen schwarz auf dunkel (1,15:1) → `button { color: inherit }`.
+3. Ergebnisraster im Profil: ~7-px-Kürzel mit `opacity:0.7` auf Positionsfarben.
+4. Teamfarben als Schrift (Lotus `#111`, Tyrrell `#00008B`: 1,0–1,3:1) → `lesbareTextfarbe()`
+   mischt Richtung Weiß/Schwarz bis 5:1 gegen `--bg-card` (Reserve, weil getönte Zeilen heller liegen).
+5. **12 Farbklassen benutzt, aber nie definiert** (`text-black/70`, `text-green-400`, …) → erbten
+   die Theme-Farbe. Weltmeister-Kasten im Saisonende: helle Schrift auf `#ffd700`, 1,01:1.
+6. Feste Rot/Grün/Blau/Grau inline → `--text-neg`, `--text-pos`, `--text-info`, `--accent-main-text`.
+
+**Regel:** Schriftfarbe nur über Theme-Variable oder `lesbareTextfarbe()`. `--accent-main` und
+`--accent-blue` sind auch Button-Hintergrund für weiße Schrift — als Schrift zu dunkel,
+als Grund zu hell. Deshalb eigene Textvarianten statt die Akzentfarbe zu verschieben.
+
+⚠ **Messfallen:**
+- `body` hat `transition: color 0.3s`. Wer direkt nach dem Theme-Wechsel misst, liest
+  **Zwischenfarben** (`#1a1a1a` im Dark-Theme). Das Audit schaltet Transitions ab.
+- Modals über dem Inhalt: ohne Wurzel-Element misst man die Seite dahinter mit.
+- Verläufe wertet das Audit mit der *schlechtesten* Farbe. Bei den Teamköpfen der Meldeliste
+  (135°-Diagonale, Name links auf `colors[0]`, Gegenfarben-Schatten) ist das zu streng —
+  der Großteil der übrigen 152 Stellen unter 3:1 ist dieser Fall.
+- Das Audit ignoriert `text-shadow`. Der frühere 1-px-Umriss um Teamnamen zählte deshalb nicht.
+
+**Bewusst offen:** Weiß auf hellen Buttons (Exportieren grün 2,5, Komplette Saison blau 3,7,
+Hauptbutton rot 3,8; ~3.100 Stellen) und das helle Theme „modern" (~2.200, v. a. `--accent-gold`
+als Schrift 3,0). `--text-muted` ist 80× ohne Fallback benutzt und nirgends definiert — erbt
+damit die Elternfarbe und ist lesbar; nicht „reparieren", ohne nachzumessen.
 
 ---
 
