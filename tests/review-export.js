@@ -93,6 +93,17 @@ const SAISONS = parseInt(process.argv[3]) || 2;
         ok('Markt: Namen gesetzt', markt.every(m => m.name));
         ok('Markt: Drittel meist gesetzt', markt.filter(m => m.drittelVon || m.drittelNach).length / Math.max(1, markt.length) > 0.5,
             markt.filter(m => m.drittelVon || m.drittelNach).length + '/' + markt.length);
+        // Drei Fehler aus dem ersten echten Export (1950–2013, 12.10.2026):
+        const ren_ = markt.filter(m => m.typ === 'renewal');
+        ok('Markt: Verlängerung bleibt im Team (nachTeam = vonTeam)', ren_.every(m => m.nachTeam && m.nachTeam === m.vonTeam), ren_.length + ' renewal');
+        ok('Markt: keine Platzhalter "-"/"Free Agent" als Team', markt.every(m => !['-', 'Free Agent'].includes(m.vonTeam) && !['-', 'Free Agent'].includes(m.nachTeam)));
+        const dopp = markt.filter(m => m.art === 'transfer' && m.typ === 'dismissed');
+        const abg = new Set(markt.filter(m => m.art === 'abgang' && m.typ === 'dismissed').map(m => m.jahr + '|' + m.name));
+        ok('Markt: Entlassung doppelt → auchAlsAbgang gesetzt', dopp.every(m => m.auchAlsAbgang === abg.has(m.jahr + '|' + m.name)),
+            dopp.filter(m => m.auchAlsAbgang).length + ' von ' + dopp.length + ' markiert');
+        const ab = markt.filter(m => m.art === 'abgang');
+        ok('Markt: Abgänge meist mit letztem Team', ab.filter(m => m.vonTeam).length / Math.max(1, ab.length) > 0.8,
+            ab.filter(m => m.vonTeam).length + '/' + ab.length);
         // Bewertung
         ok('Bewertung: alle Kader-Fahrer drin', GAME_STATE.drivers.filter(d => d.careerScores).every(d =>
             T.bewertung.daten.some(b => (b.histId || b.name) === (d.histId || d.name))));
