@@ -153,25 +153,20 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 ### Exporte
 - **Alle Namenslisten leserlich exportieren:** mehrere Dateien, inkl. Ära- und Ethno-Listen, Index aller Listen,
   Weltkarten-Übersicht (bisher nur `exportNameStats` als Entwickler-Auswertung)
-- **Separate JSON-Exports** (für Agenten-Review): Fahrersteckbrief-Historie, Teamsteckbrief-Historie,
-  All-Time Fahrer, All-Time Teams (bisher nur Reserve-Pool und Nationenstatistik)
-- **JSON-Export Saison-Endstände je Jahr:** Fahrer- und Teamwertung mit Punkten, Siegen, DNF, DNQ —
-  Balancing am echten Spielstand statt nur über `vakuum-batch` in Node
-- **JSON-Export Rennergebnisse je Rennen:** Startplatz, Ziel, DNF-Grund, Wetter, rote Flagge, DNQ
-  (res-Format kennt KEINE DNQ → eigens beilegen). Für Ausfall-Spreizung, Chaos-Rennen, „Startplatz 8 fällt zu oft aus"
-- **JSON-Export Fahrermarkt-Chronik über alle Jahre:** Wechsel, Entlassungen, Rücktritte, Debüts mit Grund
-  und Team-Drittel (`exportOffseason` kann nur ein Jahr)
-- **JSON-Export Bewertungs-Verlauf:** Zufriedenheit, Ansehen, Moral je Fahrer und Saison (UI zeigt es nur einzeln im Profil)
-- **JSON-Export Todesfälle:** mit `fatalSession`, Ebene, Jahr — Filter `fatalSession==='race'` als eigenes Feld,
-  sonst sieht die Liste nach Doppelverbuchung aus
-- **JSON-Export Rekorde + Weltmeister-Liste:** die 33 Rekord-Karten als Zahlen, damit Zählfehler auffallen
-  (Messfalle Ergebniseinträge statt Rennstarts, Fangio 58 statt 51)
-- **JSON-Export Junior-Welt getrennt:** Serien, Tabellen, Aufsteiger (71 % des Kerns, geht im Gesamtexport unter)
-- **Exporte einheitlich:** gemeinsamer Kopf in jeder Datei (Version, Startjahr, aktuelles Jahr, Zahl simulierter
-  Saisons, Exportzeit); Verknüpfung nur über `histId`/Name, nie über die Fahrer-ID (Zeitstempel, nicht stabil);
-  Indy 500 und Indy GP getrennt markieren (`isIndy500`/`isIndyGP`)
-- **Sammel-Export „Review-Paket":** alle JSON-Exporte als EIN konsistenter Schnappschuss (eine Datei mit Abschnitten
-  oder ZIP) statt einzelner Dateien aus verschiedenen Momenten
+- ✅ **Separate JSON-Exports** (für Agenten-Review): Fahrersteckbrief-Historie, Teamsteckbrief-Historie,
+  All-Time Fahrer, All-Time Teams — Button „Review-Export" (v0.9.21.6)
+- ✅ **JSON-Export Saison-Endstände je Jahr:** Fahrer- und Teamwertung mit Punkten, Siegen, DNF, DNQ, DNPQ, Team-Drittel
+  nach Quali-Platz (v0.9.21.6; am Export 1950–2015 geprüft: Siege 921 = All-Time Fahrer = All-Time Teams)
+- ◐ **JSON-Export Rennergebnisse je Rennen:** Quali-Platz, Ziel, Wetter, DNQ/DNPQ/DNS, Indy-Flags (v0.9.21.6). ❌ DNF-Grund,
+  rote Flagge und Regenart nur für die laufende Saison — das Archiv speichert sie nicht (`tests/README.md`)
+- ✅ **JSON-Export Fahrermarkt-Chronik über alle Jahre** mit Drittel von/nach/Folgejahr (v0.9.21.6, Korrekturen v0.9.21.7:
+  Verlängerungen mit Ziel-Team, Pool statt Platzhalter, Doppel-Entlassungen markiert)
+- ✅ **JSON-Export Bewertungs-Verlauf:** Zufriedenheit und Ansehen je Fahrer und Saison (v0.9.21.6)
+- ✅ **JSON-Export Todesfälle** mit Ebene und `wmRennTod` (v0.9.21.6)
+- ✅ **JSON-Export Rekorde + Weltmeister-Liste:** Top 10 je Rekord, Quellen sim/all (v0.9.21.6)
+- ✅ **JSON-Export Junior-Welt getrennt** (v0.9.21.6, Hinweise v0.9.21.8). `aufsteigerInF1` bleibt leer bis zur Phase-5-Brücke
+- ✅ **Exporte einheitlich:** gemeinsamer Kopf, Verknüpfung über `histId`/Name, Indy 500/Indy GP getrennt (v0.9.21.6)
+- ✅ **Sammel-Export „Review-Paket":** alles in einer Datei inkl. Reserve-Pool und Nationen (v0.9.21.6)
 
 ---
 
