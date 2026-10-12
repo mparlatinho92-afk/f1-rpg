@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.4</title>
+    <title>F1 RPG v0.9.21.5</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -36,6 +36,11 @@
         button, input, select {
             font: inherit;
         }
+        /* Buttons erben die Schriftfarbe NICHT (Browser setzt buttontext = schwarz):
+           Tab-Buttons mit .bg-secondary standen schwarz auf dunklem Grund (1,15:1). */
+        button {
+            color: inherit;
+        }
         
         table {
             border-collapse: collapse;
@@ -48,8 +53,12 @@
             --bg-card: #f7f9fc;
             --text-primary: #1A1A1A;
             --text-secondary: #4a5568;
-            --text-tertiary: #718096;
+            --text-tertiary: #586475;
             --accent-main: #E10600;
+            --accent-main-text: #E10600;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #b63434;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #147237;
+            --text-info: #2c60b6;
             --accent-gold: #D97706;
             --accent-green: #059669;
             --accent-blue: #2563EB;
@@ -64,9 +73,13 @@
             --bg-secondary: #1A1F2E;
             --bg-card: #232936;
             --text-primary: #FFFFFF;
-            --text-secondary: #94A3B8;
-            --text-tertiary: #64748B;
+            --text-secondary: #B3BECD;
+            --text-tertiary: #99A3B2;
             --accent-main: #EF4444;
+            --accent-main-text: #F48080;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #f48080;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #22c55e;
+            --text-info: #72a5f9;
             --accent-gold: #FBBF24;
             --accent-green: #10B981;
             --accent-blue: #3B82F6;
@@ -80,9 +93,13 @@
             --bg-secondary: #22304a;
             --bg-card: #263548;
             --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --text-tertiary: #64748b;
+            --text-secondary: #c2cbd7;
+            --text-tertiary: #a7b0bd;
             --accent-main: #3b82f6;
+            --accent-main-text: #84b0f9;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #f69393;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #2bc764;
+            --text-info: #85b2f9;
             --accent-gold: #FBBF24;
             --accent-green: #10B981;
             --accent-blue: #3B82F6;
@@ -97,8 +114,12 @@
             --bg-card: #231a0b;
             --text-primary: #f0d99a;
             --text-secondary: #c4a85a;
-            --text-tertiary: #8a7240;
+            --text-tertiary: #a4916a;
             --accent-main: #d97706;
+            --accent-main-text: #e08a2a;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #f26666;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #22c55e;
+            --text-info: #5694f7;
             --accent-gold: #f59e0b;
             --accent-green: #65a30d;
             --accent-blue: #0ea5e9;
@@ -115,6 +136,10 @@
             --text-secondary: #6ee7b7;
             --text-tertiary: #34d399;
             --accent-main: #16a34a;
+            --accent-main-text: #40b46b;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #f47c7c;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #22c55e;
+            --text-info: #6ea3f8;
             --accent-gold: #fbbf24;
             --accent-green: #10b981;
             --accent-blue: #38bdf8;
@@ -129,8 +154,12 @@
             --bg-card: #1b1834;
             --text-primary: #e0def4;
             --text-secondary: #a09ccc;
-            --text-tertiary: #6c6899;
+            --text-tertiary: #8f8cb1;
             --accent-main: #6366f1;
+            --accent-main-text: #8285f4;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #f15e5e;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #22c55e;
+            --text-info: #5391f7;
             --accent-gold: #fbbf24;
             --accent-green: #10b981;
             --accent-blue: #818cf8;
@@ -147,6 +176,10 @@
             --text-secondary: #fca5a5;
             --text-tertiary: #ef9090;
             --accent-main: #ef4444;
+            --accent-main-text: #f05a5a;   /* Akzent als SCHRIFT: auf bg-card >= 4,5:1 */
+            --text-neg: #f04f4f;   /* Rot/Grün als SCHRIFT (Verlust/Gewinn, Löschen) */
+            --text-pos: #22c55e;
+            --text-info: #478af7;
             --accent-gold: #fbbf24;
             --accent-green: #10b981;
             --accent-blue: #60a5fa;
@@ -208,7 +241,29 @@
         .accent-green { color: var(--accent-green); }
         .accent-blue { color: var(--accent-blue); }
         .accent-purple { color: var(--accent-purple); }
-        .text-red-500 { color: #ef4444; }
+        .text-red-500 { color:var(--text-neg); }
+        /* Dunkle Themes: Blau/Rot als SCHRIFT aufhellen (auf bg-card 3,4–3,9:1). --accent-blue
+           selbst bleibt, weil es auch Button-Hintergrund für weiße Schrift ist. */
+        :root:not([data-theme="modern"]) .accent-blue { color: color-mix(in srgb, var(--accent-blue) 70%, white); }
+        :root:not([data-theme="modern"]) .text-red-500 { color: #f87171; }
+        /* Diese Klassen wurden benutzt, waren aber NIRGENDS definiert -> Text erbte die Theme-Farbe.
+           Auf dem goldenen Weltmeister-Kasten (Saisonende) stand dadurch helle Schrift auf #ffd700 (1,0:1). */
+        .text-black { color: #000; }
+        .text-black\/70 { color: rgba(0,0,0,0.75); }
+        .text-black\/80 { color: rgba(0,0,0,0.85); }
+        .text-gray-500, .text-slate-400 { color: var(--text-tertiary); }
+        .text-green-400 { color: #4ade80; }
+        .text-red-400 { color: #f87171; }
+        .text-orange-400 { color: #fb923c; }
+        .text-purple-400 { color: #c084fc; }
+        .text-blue-300 { color: #93c5fd; }
+        :root[data-theme="modern"] .text-green-400 { color: #15803d; }
+        :root[data-theme="modern"] .text-red-400 { color: #b91c1c; }
+        :root[data-theme="modern"] .text-orange-400 { color: #c2410c; }
+        :root[data-theme="modern"] .text-purple-400 { color: #7e22ce; }
+        :root[data-theme="modern"] .text-blue-300 { color: #1d4ed8; }
+        .bg-black\/30 { background-color: rgba(0,0,0,0.3); }
+        .bg-yellow-900\/10 { background-color: rgba(113,63,18,0.1); }
         
         /* === TYPOGRAPHY === */
         .text-xs { font-size: 0.75rem; }
@@ -715,7 +770,7 @@
         .matrix-drv-team { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .driver-link:hover, .team-link:hover, .race-link:hover {
-            color: var(--accent-main);
+            color:var(--accent-main-text);
             text-decoration-style: solid;
         }
         
@@ -882,7 +937,7 @@
             min-width: 80px;
         }
         
-        .log-error { color: #ef4444; }
+        .log-error { color:var(--text-neg); }
         .log-warning { color: #f59e0b; }
         .log-success { color: #10b981; }
         .log-info { color: var(--accent-blue); }
@@ -937,7 +992,7 @@
 </head>
 <body>
 
-<div style="font-size: 0.8em; color: gray; padding: 10px; border-bottom: 1px solid #ccc;">
+<div style="font-size: 0.8em; color: var(--text-tertiary); padding: 10px; border-bottom: 1px solid var(--border-color);">
     Version: <span id="version-display">–</span>
 </div>
 
@@ -964,7 +1019,7 @@
     <!-- Foto-Status Button -->
     <button id="foto-status-btn" onclick="document.getElementById('foto-modal').style.display='flex'; if(typeof renderFotoStatus==='function')renderFotoStatus();"
             style="position:fixed;top:45px;left:10px;z-index:9997;background:#ffc0cb;border:1px solid #334155;
-                   color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;
+                   color:#4a1d2e;padding:5px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;
                    font-family:monospace;font-weight:bold;">📷 Foto-Status</button>
 
     <div id="foto-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.8);
@@ -1033,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.4 (aktuell) - 11.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.5 (aktuell) - 12.10.2026</div>
+                            <div>&#8226; FIX: Tab-Buttons waren schwarz auf dunklem Grund</div>
+                            <div>&#8226; FIX: Graue Nebentexte und Teamnamen in allen Themes lesbar</div>
+                            <div>&#8226; FIX: Weltmeister-Text im Saisonende war unsichtbar</div>
+                            <div>&#8226; NEU: Kontrast-Messwerkzeug tests/kontrast-audit.js</div>
+                            <div class="font-bold text-slate-400">v0.9.21.4 - 11.10.2026</div>
                             <div>&#8226; NEU: Reserve-Pool sortierbar nach Zuletzt gefahren, Pace oder Potenzial - erneuter Klick dreht die Richtung</div>
                             <div>&#8226; NEU: bei Zuletzt gefahren trennt eine Linie Ex-Fahrer von denen, die noch nie gefahren sind</div>
                             <div class="font-bold text-slate-400">v0.9.21.3 - 11.10.2026</div>
@@ -3392,7 +3452,7 @@
 
     <!-- Header -->
         <div class="text-center mb-6">
-            <h1 class="text-5xl font-bold mb-2" style="color: var(--accent-main)">
+            <h1 class="text-5xl font-bold mb-2" style="color:var(--accent-main-text)">
                 <!-- Startwert ist bewusst KEINE Versionsnummer (v0.9.17.6). Hier stand fest
                      „v0.6.8"; das Skript ueberschreibt es beim Start aus der VERSION-Konstante.
                      Bricht das Laden ab — bei 16,5 MB Monolith trennt der Server den Stream
@@ -3400,7 +3460,7 @@
                      dann eine uralte Version, statt den Abbruch zu zeigen. Genau daran hat der
                      Nutzer es erkannt: leere Oberflaeche plus „v0.6.8".
                      Jetzt bleibt sichtbar stehen, was wirklich los ist: nichts wurde geladen. -->
-                🏎️ F1 RPG <span class="text-lg text-secondary" id="versionDisplay" onclick="openChangelog()" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" title="Changelog öffnen"><span style="color:#ef4444" title="Das Skript wurde nicht ausgefuehrt – Seite neu laden">⚠ nicht geladen</span></span>
+                🏎️ F1 RPG <span class="text-lg text-secondary" id="versionDisplay" onclick="openChangelog()" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" title="Changelog öffnen"><span style="color:var(--text-neg)" title="Das Skript wurde nicht ausgefuehrt – Seite neu laden">⚠ nicht geladen</span></span>
             </h1>
             
             <!-- Saison-Navigation -->
@@ -4247,7 +4307,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.4';
+        const VERSION = '0.9.21.5';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6169,8 +6229,8 @@
                                 <span style="padding:1px 7px;border-radius:4px;background:rgba(255,215,0,0.15);color:#FFD700">${te.top1} #1</span>
                                 <span style="padding:1px 7px;border-radius:4px;background:rgba(255,215,0,0.15);color:#FFD700">${te.top2} #2</span>
                                 <span style="padding:1px 7px;border-radius:4px;background:rgba(255,215,0,0.15);color:#FFD700">${te.top3} #3</span>
-                                <span style="padding:1px 7px;border-radius:4px;background:rgba(59,130,246,0.15);color:#3B82F6">${te.mid} Mittelfeld</span>
-                                <span style="padding:1px 7px;border-radius:4px;background:rgba(136,136,136,0.15);color:#888">${te.back} Backmarker</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(59,130,246,0.15);color:var(--text-info)">${te.mid} Mittelfeld</span>
+                                <span style="padding:1px 7px;border-radius:4px;background:rgba(136,136,136,0.15);color:var(--text-tertiary)">${te.back} Backmarker</span>
                             </div>
                         </div>
 
@@ -13135,7 +13195,7 @@
             const groupBadge = d => {
                 if (isPoolTalent(d)) return d.poolGroup === 'F'
                     ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(124,58,237,0.15);color:#A78BFA">Nachwuchs F2/F3</span>`
-                    : `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E">🌱 Talent</span>`;
+                    : `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:var(--text-pos)">🌱 Talent</span>`;
                 const g = d.poolGroup;
                 // v0.9.15.67: „kommend" zeigt das Jahr, ab dem der Fahrer verpflichtet werden darf
                 if (g === 'J') {
@@ -13143,11 +13203,11 @@
                     return `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(168,85,247,0.15);color:#C084FC">🌱 kommend${frei ? ` · ab ${frei}` : ''}</span>`;
                 }
                 return (g === 'A' || !g)
-                    ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(239,68,68,0.15);color:#EF4444">Free Agent</span>`
+                    ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(239,68,68,0.15);color:var(--text-neg)">Free Agent</span>`
                     : g === 'B'
                     ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(234,179,8,0.15);color:#EAB308">Testfahrer</span>`
                     : g === 'C'
-                    ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(59,130,246,0.15);color:#3B82F6">Kommend</span>`
+                    ? `<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(59,130,246,0.15);color:var(--text-info)">Kommend</span>`
                     : '';
             };
 
@@ -13184,7 +13244,7 @@
                         return `<div class="mb-3 p-3 rounded-lg" style="background:#2B1B1B;border:1px solid #7F1D1D">
                             <div class="text-sm font-bold" style="color:#fca5a5">🕯️ Aus dem Pool verstorben (${tote.length})</div>
                             <div class="mt-1 text-xs" style="display:flex;flex-direction:column;gap:2px">
-                                ${tote.map(d => `<div><span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:#ef4444">${d.name}</span>
+                                ${tote.map(d => `<div><span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:var(--text-neg)">${d.name}</span>
                                     <span class="text-tertiary">${[d.raceName, d.timing].filter(Boolean).join(' · ')}</span></div>`).join('')}
                             </div>
                         </div>`;
@@ -13229,8 +13289,8 @@
                                         ${driver.poolGroup === 'C' && driver.nextCockpit ? `<span class="text-xs text-tertiary">→ ${driver.nextCockpit.teamName} ${driver.nextCockpit.year}</span>` : ''}
                                         ${pending ? `<span class="text-xs text-tertiary italic">📅 ${pending.teamName} ${pending.fromYear}</span>` : ''}
                                         <div class="flex gap-2 ml-auto flex-shrink-0">
-                                            <button onclick="openPoolAssignModal('${driver.id}')" class="text-xs px-3 py-1 rounded transition" style="background:rgba(59,130,246,0.15);color:#3B82F6">Zuweisen</button>
-                                            <button onclick="removeFromPool('${driver.id}')" class="text-xs px-2 py-1 rounded transition" style="background:rgba(239,68,68,0.15);color:#EF4444" title="Aus Pool entfernen">✕</button>
+                                            <button onclick="openPoolAssignModal('${driver.id}')" class="text-xs px-3 py-1 rounded transition" style="background:rgba(59,130,246,0.15);color:var(--text-info)">Zuweisen</button>
+                                            <button onclick="removeFromPool('${driver.id}')" class="text-xs px-2 py-1 rounded transition" style="background:rgba(239,68,68,0.15);color:var(--text-neg)" title="Aus Pool entfernen">✕</button>
                                         </div>
                                     </div>
                                 `;
@@ -13532,7 +13592,7 @@
                             ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
                         </select>
                         <button onclick="assignNextSeasonFromPool('${driverId}', ${nextYear})" class="btn-secondary w-full py-2 rounded text-sm">Für ${nextYear} einplanen</button>
-                        ${existing ? `<button onclick="cancelPendingAssignment('${driverId}')" class="mt-1 w-full py-1.5 rounded text-xs" style="background:rgba(239,68,68,0.1);color:#EF4444">Einplanung stornieren</button>` : ''}
+                        ${existing ? `<button onclick="cancelPendingAssignment('${driverId}')" class="mt-1 w-full py-1.5 rounded text-xs" style="background:rgba(239,68,68,0.1);color:var(--text-neg)">Einplanung stornieren</button>` : ''}
                     </div>
 
                     <button onclick="document.getElementById('poolAssignModal').remove()" class="mt-4 w-full py-2 rounded text-sm text-secondary" style="background:var(--bg-tertiary)">Abbrechen</button>
@@ -13548,7 +13608,7 @@
             if (!teamId) { hint.innerHTML = ''; return; }
             const teamDrivers = GAME_STATE.drivers.filter(d => d.team === teamId && (!d.status || d.status === 'active'));
             if (teamDrivers.length < 2) {
-                hint.innerHTML = '<span style="color:#22C55E">✓ Freier Platz vorhanden</span>';
+                hint.innerHTML = '<span style="color:var(--text-pos)">✓ Freier Platz vorhanden</span>';
             } else {
                 hint.innerHTML = `Team voll – ersetzt: <select id="pam-replace-who" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:4px;padding:2px 6px;font-size:12px">
                     ${teamDrivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
@@ -16130,7 +16190,7 @@
                         <span class="text-sm truncate">${d.name}</span>
                     </div>
                     <button class="text-xs px-1.5 py-0.5 rounded flex-shrink-0 cursor-pointer"
-                            style="background:${d.isPrivateer?'rgba(156,163,175,0.15)':'rgba(74,222,128,0.12)'};color:${d.isPrivateer?'#9CA3AF':'#4ade80'}"
+                            style="background:${d.isPrivateer?'rgba(156,163,175,0.15)':'rgba(74,222,128,0.12)'};color:${lesbareTextfarbe(d.isPrivateer?'#9CA3AF':'#4ade80')}"
                             onclick="event.stopPropagation();editorTogglePrivateer('${d.id}')"
                             title="${d.isPrivateer?'→ Werksfahrer':'→ Privateer'}">${d.isPrivateer?'P':'W'}</button>
                 </div>`;
@@ -16142,9 +16202,9 @@
                     </span>
                     <div class="flex gap-2">
                         <button onclick="resetPendingEdits()" class="px-3 py-1 rounded text-sm font-medium"
-                                style="background:#2D2D2D;color:#aaa">Zurücksetzen</button>
+                                style="background:#2D2D2D;color:var(--text-secondary)">Zurücksetzen</button>
                         <button onclick="applyPendingEdits()" class="px-3 py-1 rounded text-sm font-medium"
-                                style="background:${pendingCount>0?'#22C55E':'#2D2D2D'};color:${pendingCount>0?'#111':'#666'}"
+                                style="background:${pendingCount>0?'#22C55E':'#2D2D2D'};color:${pendingCount>0?'#111':'#9CA3AF'}"
                                 ${pendingCount===0?'disabled':''}>Speichern</button>
                     </div>
                 </div>
@@ -16164,7 +16224,7 @@
                                 <span class="font-semibold text-sm">${team.name}</span>
                                 ${removing
                                     ? `<button onclick="editorUndoRemoveTeam('${team.id}')" class="text-xs px-2 py-0.5 rounded" style="background:rgba(74,222,128,0.15);color:#4ade80">Behalten</button>`
-                                    : `<button onclick="editorRemoveTeam('${team.id}')" class="text-xs px-2 py-0.5 rounded" style="background:rgba(239,68,68,0.12);color:#EF4444">✕</button>`}
+                                    : `<button onclick="editorRemoveTeam('${team.id}')" class="text-xs px-2 py-0.5 rounded" style="background:rgba(239,68,68,0.12);color:var(--text-neg)">✕</button>`}
                             </div>
                             <div class="p-2 space-y-1 min-h-10">
                                 ${td.length ? td.map(d => dCard(d, team.id)).join('') : '<div class="text-xs text-center py-3" style="color:var(--text-muted)">— leer —</div>'}
@@ -16180,7 +16240,7 @@
                     </button>
                     <button onclick="editorFillGrid()" class="flex-1 py-2 rounded-lg text-sm"
                             title="Fiktives Privatier-Team generieren (bis 10 Teams)"
-                            style="border:2px dashed rgba(255,255,255,0.12);color:${teams.length>=10?'#555':'var(--text-muted)'};background:none"
+                            style="border:2px dashed rgba(255,255,255,0.12);color:${teams.length>=10?'var(--text-tertiary)':'var(--text-muted)'};background:none"
                             ${teams.length>=10?'disabled':''}>
                         🏁 Feld auffüllen (${teams.length}/10)
                     </button>
@@ -16205,10 +16265,10 @@
                         ${totalPages > 1 ? `
                         <div class="flex items-center gap-1.5">
                             <button onclick="editorPoolPage(-1)" ${_editorPoolPage===0?'disabled':''} class="text-xs px-2 py-0.5 rounded"
-                                    style="background:rgba(255,255,255,0.06);color:${_editorPoolPage===0?'rgba(255,255,255,0.2)':'#ccc'};cursor:${_editorPoolPage===0?'default':'pointer'}">‹</button>
+                                    style="background:rgba(255,255,255,0.06);color:${_editorPoolPage===0?'var(--text-tertiary)':'#ccc'};cursor:${_editorPoolPage===0?'default':'pointer'}">‹</button>
                             <span class="text-xs" style="color:var(--text-muted)">${from}–${to} / ${poolDrivers.length}</span>
                             <button onclick="editorPoolPage(1)" ${_editorPoolPage===totalPages-1?'disabled':''} class="text-xs px-2 py-0.5 rounded"
-                                    style="background:rgba(255,255,255,0.06);color:${_editorPoolPage===totalPages-1?'rgba(255,255,255,0.2)':'#ccc'};cursor:${_editorPoolPage===totalPages-1?'default':'pointer'}">›</button>
+                                    style="background:rgba(255,255,255,0.06);color:${_editorPoolPage===totalPages-1?'var(--text-tertiary)':'#ccc'};cursor:${_editorPoolPage===totalPages-1?'default':'pointer'}">›</button>
                         </div>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-1">
@@ -16306,7 +16366,7 @@
                                 title="Zufälliges Team generieren"
                                 style="background:#2D2D2D;color:#ddd">🎲 Zufall</button>
                         <button onclick="editorHideAddTeamForm()" class="px-3 py-1.5 rounded text-sm"
-                                style="background:#2D2D2D;color:#aaa">Abbrechen</button>
+                                style="background:#2D2D2D;color:var(--text-secondary)">Abbrechen</button>
                         <button onclick="editorConfirmAddTeam()" class="px-3 py-1.5 rounded text-sm font-medium"
                                 style="background:#3B82F6;color:white">Hinzufügen</button>
                     </div>
@@ -17272,7 +17332,7 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <span id="editor-circuit-preview" class="text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,0.05);color:var(--text-muted)">${previewTxt}</span>
                         <button onclick="editorRandomizeCircuit()" class="px-3 py-1.5 rounded text-sm mr-auto" title="Zufällige Strecke generieren" style="background:#2D2D2D;color:#ddd">🎲 Zufall</button>
-                        <button onclick="editorHideAddCircuit()" class="px-3 py-1.5 rounded text-sm" style="background:#2D2D2D;color:#aaa">Abbrechen</button>
+                        <button onclick="editorHideAddCircuit()" class="px-3 py-1.5 rounded text-sm" style="background:#2D2D2D;color:var(--text-secondary)">Abbrechen</button>
                         <button onclick="editorConfirmAddCircuit()" class="px-3 py-1.5 rounded text-sm font-medium" style="background:#3B82F6;color:white">Hinzufügen</button>
                     </div>
                 </div>`;
@@ -17300,7 +17360,7 @@
                 const flag = typeof getGPFlagHtml === 'function' ? getGPFlagHtml(race.name, race.country, GAME_STATE.currentYear) : '';
                 const mon = race.month ? _MONTH_ABBR[race.month] : '';
                 const dnd = locked ? '' : `draggable="true" ondragstart="calEditDragStart(${idx})" ondragover="event.preventDefault()" ondrop="calEditDrop(${idx})" ontouchstart="calEditTouchStart(event,${idx})" ontouchmove="calEditTouchMove(event)" ontouchend="calEditTouchEnd(event)"`;
-                return `<tr class="border-t border-custom" data-cal-idx="${idx}" ${dnd} style="${locked ? 'opacity:0.45' : 'cursor:grab'}">
+                return `<tr class="border-t border-custom" data-cal-idx="${idx}" ${dnd} style="${locked ? 'opacity:0.8' : 'cursor:grab'}">
                     <td class="p-2 text-center text-tertiary">${locked ? '✓' : '⠿'}</td>
                     <td class="p-2 text-center font-bold text-tertiary">${idx + 1}</td>
                     <td class="p-2"><div class="flex items-center gap-2"><span class="text-lg">${flag}</span>
@@ -17308,7 +17368,7 @@
                         <div class="text-xs text-tertiary">${race.circuit || ''}</div></div></div></td>
                     <td class="p-2 text-center text-xs text-tertiary">${mon}</td>
                     <td class="p-2 text-center text-xs text-tertiary">${race.laps || ''}</td>
-                    <td class="p-2 text-center">${locked ? '' : `<button onclick="editorDeleteCircuitRace(${idx})" class="text-xs px-2 py-0.5 rounded" style="background:rgba(239,68,68,0.15);color:#EF4444" title="Rennen löschen">✕</button>`}</td>
+                    <td class="p-2 text-center">${locked ? '' : `<button onclick="editorDeleteCircuitRace(${idx})" class="text-xs px-2 py-0.5 rounded" style="background:rgba(239,68,68,0.15);color:var(--text-neg)" title="Rennen löschen">✕</button>`}</td>
                 </tr>`;
             }).join('');
             return `<div class="card rounded-xl overflow-hidden"><div class="table-responsive"><table class="w-full text-sm">
@@ -28998,7 +29058,7 @@
             return `
                 <div class="card p-4 rounded-lg mb-4">
                     <h2 class="text-xl font-bold">🌍 Junior-Welt</h2>
-                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien auf ${_juniorLevels(jw).length} Ebenen · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(agg.allTimeStats).length} All-Time-Fahrer · ${Object.keys(agg.circuitIndex).length} Strecken${agg.memoriam.length ? ` · ✝ ${agg.memoriam.length}` : ''}${agg.live ? ' · <span style="color:var(--accent-main)">laufende Saison eingerechnet</span>' : ''}</div>
+                    <div class="text-sm text-tertiary mt-1 mb-3">${(jw.series || []).length} Serien auf ${_juniorLevels(jw).length} Ebenen · ${(jw.drivers || []).length} aktive Fahrer · ${years.length} Saisons · ${Object.keys(agg.allTimeStats).length} All-Time-Fahrer · ${Object.keys(agg.circuitIndex).length} Strecken${agg.memoriam.length ? ` · ✝ ${agg.memoriam.length}` : ''}${agg.live ? ' · <span style="color:var(--accent-main-text)">laufende Saison eingerechnet</span>' : ''}</div>
                     <div style="display:flex;gap:0.7rem;flex-wrap:wrap;align-items:center;margin-bottom:0.6rem;">
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;"><input type="checkbox" ${GAME_STATE.juniorDeaths ? 'checked' : ''} onchange="juniorToggleDeaths(this.checked)"> Todesfälle (selten)</label>
                         <label class="text-xs text-tertiary" style="display:flex;align-items:center;gap:4px;" title="All-Time-Statistik schlank halten: Fahrer im Ruhestand ohne Titel/Sieg (F2 auch ohne Podest/Pole) werden entfernt – ihr Profil bleibt aus den Saison-Daten abrufbar."><input type="checkbox" ${jw.pruneAllTime ? 'checked' : ''} onchange="juniorTogglePrune(this.checked)"> Speicher optimieren</label>
@@ -29313,9 +29373,9 @@
                     continue;
                 }
                 career += `<tr class="border-t border-custom">`
-                    + `<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:var(--accent-main)" onclick="closeDriverProfile();_juniorSubTab='season';_juniorViewYear=${r.year};renderContent()">${r.year}</span></td>`
+                    + `<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:var(--accent-main-text)" onclick="closeDriverProfile();_juniorSubTab='season';_juniorViewYear=${r.year};renderContent()">${r.year}</span></td>`
                     + `<td class="p-1">${seriesBadge(r.seriesId, r.seriesName)}</td>`
-                    + `<td class="p-1"><span style="color:${r.teamColor};font-weight:600">${r.teamName}</span></td>`
+                    + `<td class="p-1"><span style="color:${lesbareTextfarbe(r.teamColor)};font-weight:600">${r.teamName}</span></td>`
                     + `<td class="p-1 text-center jw-hide-mobile ${r.wins > 0 ? 'accent-gold font-bold' : ''}">${r.wins || 0}</td>`
                     + `<td class="p-1 text-center jw-hide-mobile">${r.podiums || 0}</td>`
                     + `<td class="p-1 text-center">${r.points}</td>`
@@ -29332,7 +29392,7 @@
                         <div class="text-3xl font-bold mb-1">${name}${crown}</div>
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
                             <span class="text-2xl">${flag}</span>
-                            ${curTeam && curTeam.name ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:${curTeam.color}22;color:${curTeam.color}">${curTeam.name}</span>`
+                            ${curTeam && curTeam.name ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:${curTeam.color}22;color:${lesbareTextfarbe(curTeam.color)}">${curTeam.name}</span>`
                                 : (dead ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:#e6194b22;color:#e6194b">✝ verunglückt ${dead.year}</span>` : '<span class="text-tertiary">Karriere beendet</span>')}
                             ${active && active.number ? `<span class="text-2xl font-bold text-tertiary">#${active.number}</span>` : ''}
                             ${active ? seriesBadge(active.seriesId) : ''}
@@ -29537,13 +29597,13 @@
                                             if (_ausserhalb) {
                                                 const _wo = d.fromPool ? 'ohne Cockpit' : (d.team || '');
                                                 return `<div style="line-height:1.5">
-                                                    <span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:#ef4444">${d.name}</span>
+                                                    <span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:var(--text-neg)">${d.name}</span>
                                                     <span class="text-tertiary"> (${[d.raceName, d.timing, _wo].filter(Boolean).join(', ')})</span>
                                                 </div>`;
                                             }
                                             const _sess = d.fatalSession === 'training' ? 'Training' : d.fatalSession === 'qualifying' ? 'Qualifying' : 'Rennen';
                                             return `<div style="line-height:1.5">
-                                                <span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:#ef4444">${d.name}</span>
+                                                <span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')" style="color:var(--text-neg)">${d.name}</span>
                                                 <span class="text-tertiary cursor-pointer hover:opacity-80" onclick="showRaceDetail(${d.race})" title="Zum Rennen springen"> (${d.race + 1} von ${_total}, ${_flag} ${d.raceName}, ${_sess})</span>
                                             </div>`;
                                         }).join('')}
@@ -30600,39 +30660,56 @@
         }
 
         // Teamnamen farbig rendern: immer Teamfarbe als Schriftfarbe
-        // Sehr helle Primärfarbe (wäre unsichtbar auf hellem BG) → Akzentfarbe (letzter Array-Eintrag) als Fallback
-        // text-shadow Rand: schwarz bei hellen Farben, weiß bei dunklen – Opacity moderat damit kein Box-Effekt
+        // Farbe wird über lesbareTextfarbe() auf Mindestkontrast zur Kartenfläche gebracht.
         function renderTeamNameColored(name, teamId, year, baseColor, onclickAttr) {
             // EINE zentrale Auflösung statt drei Pflaster: mehrere Aufrufer übergeben als
             // `name` eine Team-ID, weil die Wertungen nur die ID führen —
             // Fahrerwertung, Saisonverlauf-Matrix und Karriere-Historie (v0.9.15.85).
             // Klartextnamen laufen unverändert durch.
             name = teamDisplayName(name);
-            const _lum = c => { if (!c||c.length<7) return 0.5; const r=parseInt(c.slice(1,3),16)/255,g=parseInt(c.slice(3,5),16)/255,b=parseInt(c.slice(5,7),16)/255; return 0.299*r+0.587*g+0.114*b; };
             const colors = getTeamColors(teamId || '', year, baseColor) || [baseColor];
             const primary = colors[0] || '#888';
-            const lum = _lum(primary);
             const cls = `text-xs${teamId ? ' team-link cursor-pointer' : ''}`;
             const click = onclickAttr !== undefined ? onclickAttr : (teamId ? ` onclick="openTeamProfile('${teamId}')"` : '');
             if (primary === '#888888' || primary === '#888') {
                 return `<span class="${cls}" style="color:var(--text-muted);font-weight:bold"${click}>${name}</span>`;
             }
-            const shadow = (lum < 0.35 || lum > 0.65)
-                ? (() => { const c = lum < 0.5 ? '255,255,255' : '0,0,0'; return `;font-weight:bold;text-shadow:-1px -1px 0 rgba(${c},0.85),1px -1px 0 rgba(${c},0.85),-1px 1px 0 rgba(${c},0.85),1px 1px 0 rgba(${c},0.85)`; })()
-                : ';font-weight:bold';
-            return `<span class="${cls}" style="color:${primary}${shadow}"${click}>${name}</span>`;
+            // Statt Umriss: Teamfarbe so weit aufhellen (dunkles Theme) bzw. abdunkeln, bis sie
+            // auf der Kartenfläche lesbar ist. Lotus #111 / Tyrrell #00008B lagen bei 1,0–1,3:1.
+            return `<span class="${cls}" style="color:${lesbareTextfarbe(primary)};font-weight:bold"${click}>${name}</span>`;
         }
 
-        // Weiß + schwarzer Shadow auf dunklen Farben; dunkel auf sehr hellem Hintergrund
+        // WCAG-Kontrast einer Schriftfarbe gegen die Kartenfläche des aktiven Themes auf >= 5:1 bringen
+        // (Reserve über 4,5, weil getönte Zeilen etwas heller liegen als bg-card): Farbton bleibt, nur Richtung Weiß/Schwarz gemischt. Cache je Theme.
+        const _lesbarCache = {};
+        function lesbareTextfarbe(hex, mindest = 5) {
+            if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return hex;
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const key = theme + hex + mindest;
+            if (_lesbarCache[key]) return _lesbarCache[key];
+            const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+            const lum = c => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+                return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+            const kontrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+            const bgHex = (getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '#232936').trim();
+            const bg = /^#[0-9a-f]{6}$/i.test(bgHex) ? rgb(bgHex) : [35, 41, 54];
+            const ziel = lum(bg) < 0.2 ? [255, 255, 255] : [0, 0, 0];
+            const c = rgb(hex);
+            let out = hex;
+            for (let s = 0; s <= 1.0001 && kontrast(rgb(out), bg) < mindest; s += 0.05) {
+                out = '#' + c.map((v, i) => Math.round(v + (ziel[i] - v) * s).toString(16).padStart(2, '0')).join('');
+            }
+            return (_lesbarCache[key] = out);
+        }
+
+        // Weiß oder Fast-Schwarz nach WCAG-Kontrast zur ERSTEN Livery-Farbe: der Name steht links,
+        // im 135°-Verlauf also fast ganz auf colors[0]. Den Rest der Diagonale trägt der Schatten
+        // in der Gegenfarbe. Früher Schwelle auf grober Helligkeit: Weiß auf Gelb lag bei 1,4:1.
         function getTeamHeaderTextStyle(colors) {
-            const avgLum = colors.reduce((s, c) => {
-                if (!c || c.length < 7) return s + 0.5;
-                const r = parseInt(c.slice(1,3),16)/255;
-                const g = parseInt(c.slice(3,5),16)/255;
-                const b = parseInt(c.slice(5,7),16)/255;
-                return s + 0.299*r + 0.587*g + 0.114*b;
-            }, 0) / colors.length;
-            if (avgLum > 0.65) return 'color:#111111;';
+            const lum = c => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+                return 0.2126 * f(parseInt(c.slice(1, 3), 16)) + 0.7152 * f(parseInt(c.slice(3, 5), 16)) + 0.0722 * f(parseInt(c.slice(5, 7), 16)); };
+            const l = /^#[0-9a-f]{6}$/i.test(colors[0] || '') ? lum(colors[0]) : 0.2;
+            if ((l + 0.05) / (lum('#111111') + 0.05) > 1.05 / (l + 0.05)) return 'color:#111111;text-shadow:0 0 3px rgba(255,255,255,0.8),0 0 6px rgba(255,255,255,0.4);';
             return 'color:#ffffff;text-shadow:0 0 3px rgba(0,0,0,0.9),0 0 6px rgba(0,0,0,0.5);';
         }
 
@@ -30684,14 +30761,14 @@
                                     <span class="driver-link truncate ${driver.isChampion ? 'font-bold accent-gold' : ''}" onclick="openDriverProfile('${driver.id || driver.name.toLowerCase().replace(/\s+/g, '-')}')">${driver.name}</span>
                                     ${getBadgeSettings().showHistChampion && driver.isChampion ? '<span class="text-xs">🏆</span>' : ''}
                                     ${renderTVBadge(prevYearChampId && (driver.id === prevYearChampId || driver.histId === prevYearChampId), year - 1)}
-                                    ${driver.isDebut ? '<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:#22C55E;white-space:nowrap">Debüt</span>' : ''}
-                                    ${driver.isPrivateer ? '<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(156,163,175,0.15);color:#9CA3AF;white-space:nowrap">P</span>' : ''}
+                                    ${driver.isDebut ? '<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,0.15);color:' + lesbareTextfarbe('#22C55E') + ';white-space:nowrap">Debüt</span>' : ''}
+                                    ${driver.isPrivateer ? '<span class="text-xs px-1.5 py-0.5 rounded" style="background:rgba(156,163,175,0.15);color:' + lesbareTextfarbe('#9CA3AF') + ';white-space:nowrap">P</span>' : ''}
                                     ${driver.replacedDriverName && driver.replacedInYear === year ? `<span class="text-xs text-tertiary">(ersetzt ${driver.replacedDriver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${driver.replacedDriver}')">${driver.replacedDriverName}</span>` : driver.replacedDriverName})</span>` : ''}
                                 </div>
                                 <div class="flex items-center gap-2 flex-shrink-0 text-xs text-tertiary">
                                     ${driver.wins > 0 ? `<span class="accent-gold">${driver.wins}S</span>` : ''}
                                     ${o.showPoints ? `<span>${driver.points||0}P</span>` : ''}
-                                    ${o.showSatisfaction && driver.satisfaction != null ? (() => { const s=driver.satisfaction; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="color:${c};font-weight:bold">${s}</span></div>`; })() : ''}
+                                    ${o.showSatisfaction && driver.satisfaction != null ? (() => { const s=driver.satisfaction; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="color:${lesbareTextfarbe(c)};font-weight:bold">${s}</span></div>`; })() : ''}
                                     ${o.showContractEnd && driver.contractEnd ? `<span title="Vertragsende">📝${driver.contractEnd}</span>` : ''}
                                     ${o.showBirthYear && driver.birthYear ? `<span>${year - driver.birthYear}J</span>` : ''}
                                 </div>
@@ -30949,7 +31026,7 @@
                                             <td class="p-3">
                                                 <div class="flex items-center gap-2 flex-wrap">
                                                     <span>${renderFlag(driver?.nation, d.name, flagYear)}</span>
-                                                    <span class="font-bold driver-link" onclick="openDriverProfile('${d.id}')" style="${_isDead ? 'text-decoration:line-through;opacity:0.45' : _isDismissed ? 'text-decoration:line-through;color:#ef4444' : _isMidRetired ? 'text-decoration:line-through;opacity:0.6' : ''}">${!_isBadName(d.name) ? d.name : (!_isBadName(driver?.name) ? driver.name : (d.name || '?'))}</span>
+                                                    <span class="font-bold driver-link" onclick="openDriverProfile('${d.id}')" style="${_isDead ? 'text-decoration:line-through;opacity:0.45' : _isDismissed ? 'text-decoration:line-through;color:var(--text-neg)' : _isMidRetired ? 'text-decoration:line-through;opacity:0.6' : ''}">${!_isBadName(d.name) ? d.name : (!_isBadName(driver?.name) ? driver.name : (d.name || '?'))}</span>
                                                     ${_isDead ? '<span class="text-xs opacity-50">(✝)</span>' : _isDismissed ? '<span class="text-xs text-red-400 opacity-75">(entlassen)</span>' : _isMidRetired ? '<span class="text-xs opacity-60">(Rücktritt)</span>' : ''}
                                                 </div>
                                             </td>
@@ -31188,7 +31265,7 @@
                 if (pt === 'DNPQ') return 'background-color: #701A75; color: #F5D0FE;';
                 if (pt === 'DNQ')  return 'background-color: #5C1517; color: #C49494;';
                 if (pt === 'DSQ')  return 'background-color: #78350F; color: #FCD34D;';
-                if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return 'background-color: #1C1C1C; color: #6B7280;';
+                if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return 'background-color: #1C1C1C; color:var(--text-tertiary);';
                 if (dnf)           return 'background-color: #2D1B69; color: #A78BFA;'; // lila = DNF
                 if (pos === 1) return 'background-color: #FFD700; color: #000;';
                 if (pos === 2) return 'background-color: #C0C0C0; color: #000;';
@@ -31296,7 +31373,7 @@
                                                 const isDNS  = (race.dns  || []).includes(d.id);
                                                 if (isDNPQ) return '<td class="p-2 text-center font-bold" style="background-color: #701A75; color: #F5D0FE;">DNPQ</td>';
                                                 if (isDNQ)  return '<td class="p-2 text-center font-bold" style="background-color: #5C1517; color: #C49494;">DNQ</td>';
-                                                if (isDNS)  return '<td class="p-2 text-center font-bold" style="background-color: #1C1C1C; color: #9CA3AF;">DNS</td>';
+                                                if (isDNS)  return '<td class="p-2 text-center font-bold" style="background-color: #1C1C1C; color:var(--text-tertiary);">DNS</td>';
                                                 // v0.9.15.25: nicht gemeldet (vor Verpflichtung / nach Ausscheiden) → leere Zelle statt „-"
                                                 return '<td class="p-2 text-center"></td>';
                                             }
@@ -31334,7 +31411,7 @@
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #78350F; color: #FCD34D;">DSQ</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #5C1517; color: #C49494;">DNQ</span>
                     <span class="px-2 py-1 rounded font-bold" style="background-color: #701A75; color: #F5D0FE;">DNPQ</span>
-                    <span class="px-2 py-1 rounded font-bold" style="background-color: #1C1C1C; color: #9CA3AF;">DNS</span>
+                    <span class="px-2 py-1 rounded font-bold" style="background-color: #1C1C1C; color:var(--text-tertiary);">DNS</span>
                 </div>
             `;
         }
@@ -31945,7 +32022,7 @@
                 if (r.fatal) {
                     const _sessLabel = r.fatalSession === 'training' ? 'Training' : 'Qualifying';
                     const _timeStr = rawT ? ` · ${idx === 0 ? fmtMs(rawT * 1000) : fmtGapMs((rawT - _lqPoleTime) * 1000)}` : '';
-                    return `<span style="color:#ef4444">💀 ${_sessLabel}${_timeStr}</span>`;
+                    return `<span style="color:var(--text-neg)">💀 ${_sessLabel}${_timeStr}</span>`;
                 }
                 return !rawT ? '–' : idx === 0 ? fmtMs(rawT * 1000) : fmtGapMs((rawT - _lqPoleTime) * 1000);
             };
@@ -32001,7 +32078,7 @@
                 <tr class="border-b border-custom"${bg ? ` style="background:${bg}"` : ''}>
                     <td class="p-2 font-bold ${idx === 0 && !r.fatal ? 'accent-gold' : 'text-tertiary'}" style="width:2.5rem">${idx + 1}</td>
                     <td class="p-2">
-                        <span class="driver-link" onclick="openDriverProfile('${r.driver}')" style="${r.fatal ? 'text-decoration:line-through;color:#ef4444' : (st === 'dnq' ? 'opacity:0.75' : '')}">${r.name}</span>${marke}${rueck}
+                        <span class="driver-link" onclick="openDriverProfile('${r.driver}')" style="${r.fatal ? 'text-decoration:line-through;color:var(--text-neg)' : (st === 'dnq' ? 'opacity:0.75' : '')}">${r.name}</span>${marke}${rueck}
                     </td>
                     <td class="p-2 text-xs" style="width:1%;white-space:nowrap">${_lqTeam(r)}</td>
                     <td class="p-2 text-right" style="width:1%;white-space:nowrap">${_lqFmt(r, idx)}</td>
@@ -32027,7 +32104,7 @@
                             + `${_lqRegular.length} Melder · Rennen noch nicht gefahren</div>`;
                         return `<div class="text-xs text-tertiary mb-3">`
                             + `${_lqRegular.length + _lqDnpq.length} Melder · `
-                            + `<span style="color:#22c55e">${q} qualifiziert</span>`
+                            + `<span style="color:var(--text-pos)">${q} qualifiziert</span>`
                             + (d ? ` · <span style="color:#a855f7">${d} DNQ</span>` : '')
                             + (_lqDnpq.length ? ` · <span style="color:#a855f7">${_lqDnpq.length} in der Vor-Quali gescheitert</span>` : '')
                             + (f ? ` · <span style="color:#eab308">⚠ ${f} ohne Erklaerung nicht im Rennen</span>` : '')
@@ -32328,7 +32405,7 @@
                 totalRows += rows.length;
                 return `
                     <div class="mb-4">
-                        <div class="font-bold text-sm mb-1" style="color:var(--accent-main);">${s.year} <span class="text-xs text-tertiary">(${rows.length})</span></div>
+                        <div class="font-bold text-sm mb-1" style="color:var(--accent-main-text);">${s.year} <span class="text-xs text-tertiary">(${rows.length})</span></div>
                         ${rows.map(r => r.html).join('')}
                     </div>`;
             }).filter(Boolean).join('');
@@ -34373,7 +34450,7 @@
                      onclick="openGameCircuitProfile('${c.cid}')">
                     <div>
                         <span class="font-medium">${renderFlag(CIRCUIT_COUNTRY[c.cid] || null, c.name, c.last)} ${c.name}</span>
-                        ${c.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main)" title="Im aktuellen Kalender">📅</span>' : ''}
+                        ${c.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main-text)" title="Im aktuellen Kalender">📅</span>' : ''}
                         <span class="text-tertiary text-xs ml-2">${c.first}–${c.last}</span>
                         ${c.topWins > 1 ? `<span class="text-tertiary text-xs ml-3">🏆 ${c.topWinner} (${c.topWins}×)</span>` : ''}
                         ${c.lastWinner ? `<span class="text-tertiary text-xs ml-3">→ ${c.last}: ${c.lastWinner}</span>` : ''}
@@ -34418,7 +34495,7 @@
                      onclick="openGameGPProfile('${safe}')">
                     <div>
                         <span class="font-medium">${_gpFlag(g.gpKey)} ${g.gpKey}</span>${hint}
-                        ${g.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main)" title="Im aktuellen Kalender">📅</span>' : ''}
+                        ${g.isActive ? '<span class="text-xs ml-1" style="color:var(--accent-main-text)" title="Im aktuellen Kalender">📅</span>' : ''}
                         <span class="text-tertiary text-xs ml-2">${g.first}–${g.last}</span>${topHint}
                         ${g.lastWinner ? `<span class="text-tertiary text-xs ml-3">→ ${g.last}: ${g.lastWinner}</span>` : ''}
                     </div>
@@ -34436,7 +34513,7 @@
                 <div class="flex gap-2 items-center mb-2">
                     <span class="text-sm" style="color:var(--text-secondary)">Saison aktiv:</span>
                     <select class="rounded px-2 py-1 text-sm" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color)" onchange="setMapFilterYear(+this.value)">${yOpts.join('')}</select>
-                    <span class="text-xs ml-2" style="color:var(--text-tertiary)"><span style="color:#22c55e">●</span> aktiv ${yr} &nbsp; <span style="color:#6b7280">●</span> nicht aktiv</span>
+                    <span class="text-xs ml-2" style="color:var(--text-tertiary)"><span style="color:var(--text-pos)">●</span> aktiv ${yr} &nbsp; <span style="color:var(--text-tertiary)">●</span> nicht aktiv</span>
                 </div>
                 <div id="circuit-world-map" data-mode="${mode}" data-year="${yr}" style="height:430px;border-radius:8px;overflow:hidden;border:1px solid var(--border-color)"></div>`;
         }
@@ -34494,9 +34571,9 @@
                         const gps = gpByCid[cid] || {};
                         const links = Object.entries(gps).sort((a,b)=>b[1]-a[1]).slice(0,6)
                             .map(([gk])=>`<a href="#" onclick="openGameGPProfile('${gk.replace(/'/g,'')}');return false" style="display:block">${getGPFlagHtml(gk,GP_COUNTRY_MAP[gk]||null)} ${gk}</a>`).join('');
-                        popup = `<b>${flagHtml} ${name}</b>${isActive?` <span style="color:#22c55e">● ${yr}</span>`:''}<br>${links||'—'}`;
+                        popup = `<b>${flagHtml} ${name}</b>${isActive?` <span style="color:var(--text-pos)">● ${yr}</span>`:''}<br>${links||'—'}`;
                     } else {
-                        popup = `<b>${flagHtml} ${name}</b>${isActive?` <span style="color:#22c55e">● ${yr}</span>`:''}<br><a href="#" onclick="openGameCircuitProfile('${cid}');return false">Profil öffnen →</a>`;
+                        popup = `<b>${flagHtml} ${name}</b>${isActive?` <span style="color:var(--text-pos)">● ${yr}</span>`:''}<br><a href="#" onclick="openGameCircuitProfile('${cid}');return false">Profil öffnen →</a>`;
                     }
                     L.marker(coords, { icon }).addTo(map).bindPopup(popup);
                 }
@@ -34656,7 +34733,7 @@
                         <h3 class="text-xl font-bold mb-4">💥 DNF-Häufigkeit</h3>
                         <div class="flex items-center justify-between mb-4 p-3 rounded-lg" style="background-color: rgba(239,68,68,0.1);">
                             <span class="text-sm font-bold">📊 Historische Rate ${GAME_STATE.currentYear}:</span>
-                            <span class="text-2xl font-bold" style="color:#ef4444">${getEraDNFRate(GAME_STATE.currentYear)}%</span>
+                            <span class="text-2xl font-bold" style="color:var(--text-neg)">${getEraDNFRate(GAME_STATE.currentYear)}%</span>
                         </div>
                         <p class="text-sm text-tertiary mb-4">
                             <strong>Multiplikator auf die jahresgenaue historische Ausfallrate.</strong><br>
@@ -36415,7 +36492,7 @@ Empfohlene Wertebereiche:
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
                             <span class="text-2xl">${renderFlag(driver.nation, driver.name, profileFlagYear)}</span>
                             ${team ? `
-                                <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="background-color: ${team.color}20; color: ${team.color}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
+                                <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="background-color: ${team.color}20; color: ${lesbareTextfarbe(team.color)}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
                                     ${team.name}
                                 </span>
                             ` : (driver._nieImSpiel ? `<span class="text-tertiary">${driver._nieImSpiel.kommtNoch ? 'noch nicht in der F1' : 'nie in der F1'}</span>`
@@ -36498,7 +36575,7 @@ Empfohlene Wertebereiche:
                             const _avgLabel = _eraAvg ? `Ø ${Math.round(_eraAvg)} diese Ära` : 'Alter';
                             return `<div class="p-2 rounded-lg" style="background:${_ageBg};display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem">
                                 <div class="text-xl md:text-2xl font-bold" style="color:${_ageColor}">${age}</div>
-                                <div class="text-xs md:text-sm" style="color:${_ageColor};opacity:0.75">${_avgLabel}</div>
+                                <div class="text-xs md:text-sm" style="color:${_ageColor}">${_avgLabel}</div>
                             </div>`;
                         })() : ''}
                         <div class="p-2 bg-secondary rounded-lg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:4rem">
@@ -36579,10 +36656,10 @@ Empfohlene Wertebereiche:
                         const _careerDelta = (_prDisp && _careerFirstPR && Math.min(..._careerKeys) < parseInt(_prDispYear))
                             ? Math.round(_prDisp[0] - _careerFirstPR[0]) : null;
                         const _trendHtml = _trendDelta !== null && _trendDelta !== 0
-                            ? `<span style="color:${_trendDelta > 0 ? '#22C55E' : '#EF4444'};font-size:0.75rem;font-weight:600;margin-left:4px">${_trendDelta > 0 ? '+' : ''}${_trendDelta}</span>`
+                            ? `<span style="color:${lesbareTextfarbe(_trendDelta > 0 ? '#22C55E' : '#EF4444')};font-size:0.75rem;font-weight:600;margin-left:4px">${_trendDelta > 0 ? '+' : ''}${_trendDelta}</span>`
                             : '';
                         const _careerHtml = _careerDelta !== null && _careerDelta !== 0
-                            ? `<span style="color:${_careerDelta > 0 ? '#22C55E' : '#EF4444'};font-size:0.65rem;font-weight:500;margin-left:3px;opacity:0.6">Σ${_careerDelta > 0 ? '+' : ''}${_careerDelta}</span>`
+                            ? `<span style="color:${lesbareTextfarbe(_careerDelta > 0 ? '#22C55E' : '#EF4444')};font-size:0.65rem;font-weight:500;margin-left:3px;opacity:0.85">Σ${_careerDelta > 0 ? '+' : ''}${_careerDelta}</span>`
                             : '';
                         const _deltaHtml = _trendHtml + _careerHtml;
                         // v0.9.15.26: Aktiver Fahrer in der laufenden Saison → LIVE-Werte (driver.currentPace/
@@ -36631,7 +36708,7 @@ Empfohlene Wertebereiche:
                                     <div class="absolute h-full rounded-lg" style="width: ${paceInfo.current}%; background: linear-gradient(90deg, #22C55E, #3B82F6);"></div>
                                 </div>
                                 <div class="flex justify-between mt-2 text-sm">
-                                    <div><span class="text-tertiary">Aktuell:</span> <span class="font-bold" style="color: #22C55E">${paceInfo.current}</span>${_deltaHtml}</div>
+                                    <div><span class="text-tertiary">Aktuell:</span> <span class="font-bold" style="color:var(--text-pos)">${paceInfo.current}</span>${_deltaHtml}</div>
                                     <div><span class="text-tertiary">Potenzial:</span> <span class="font-bold" style="color: #8B5CF6">${paceInfo.potential}</span>${paceInfo.gap > 0 ? `<span class="text-xs text-tertiary">(+${paceInfo.gap})</span>` : ''}</div>
                                 </div>
                                 `}
@@ -36683,15 +36760,15 @@ Empfohlene Wertebereiche:
                     <h4 class="font-bold mb-3 cursor-pointer driver-link" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">🏎️ Team: ${team.name}</h4>
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
-                            <div class="text-2xl font-bold" style="color: ${team.color}">${_eloDisplayCS(team.id, viewingYear) ?? team.carSpeed}</div>
+                            <div class="text-2xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${_eloDisplayCS(team.id, viewingYear) ?? team.carSpeed}</div>
                             <div class="text-xs text-tertiary">Auto-Speed</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold" style="color: ${team.color}">${team.reliability}</div>
+                            <div class="text-2xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.reliability}</div>
                             <div class="text-xs text-tertiary">Zuverlässigkeit</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold" style="color: ${team.color}">${team.strategy}</div>
+                            <div class="text-2xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.strategy}</div>
                             <div class="text-xs text-tertiary">Strategie</div>
                         </div>
                     </div>
@@ -37158,7 +37235,7 @@ Empfohlene Wertebereiche:
                                         ${fullCareer.map(h => {
                                             return `
                                             <tr class="border-t border-custom${h.isHistorical ? ' opacity-75' : ''}">
-                                                <td class="p-1 font-bold"><span class="cursor-pointer ${h.isCurrent ? '' : 'hover:underline'}" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main)'};${h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : ''}" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
+                                                <td class="p-1 font-bold"><span class="cursor-pointer ${h.isCurrent ? '' : 'hover:underline'}" style="color:${h.isCurrent ? '#f59e0b' : 'var(--accent-main-text)'};${h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : ''}" title="${h.isCurrent ? 'Laufende Saison' : ''}" onclick="closeDriverProfile();openYearStandings(${h.year},'drivers')">${h.year}${h.isCurrent ? '*' : ''}</span></td>
                                                 <td class="p-1">
                                                     ${(h.teams && h.teams.length)
                                                         ? h.teams.map(t => renderTeamNameColored(t.name, t.id, h.year, t.color)).join('<span class="text-tertiary text-xs"> / </span>')
@@ -37249,7 +37326,7 @@ Empfohlene Wertebereiche:
                             })();
                             return { year: _currentY, cells, teamName: _curTeamDisplay,
                                 teamId: _curTeam?.id||null, teamColor: _curFarbe || ensureReadable(_curTeam?.color||'#888'),
-                                teamColorStyle: _curFarbe ? `color:${_curFarbe};font-weight:bold`
+                                teamColorStyle: _curFarbe ? `color:${lesbareTextfarbe(_curFarbe)};font-weight:bold`
                                                           : 'color:var(--text-muted);font-weight:bold',
                                 wmPos, wmPts: standing?.points||0, simulated: true, isCurrent: true };
                         }
@@ -37315,7 +37392,7 @@ Empfohlene Wertebereiche:
                             })();
                             return { year, cells, teamName: _simTeamDisplay, teamId: team?.id||null,
                                      teamColor: _simFarbe || ensureReadable(team?.color||'#888'),
-                                     teamColorStyle: _simFarbe ? `color:${_simFarbe};font-weight:bold`
+                                     teamColorStyle: _simFarbe ? `color:${lesbareTextfarbe(_simFarbe)};font-weight:bold`
                                                               : 'color:var(--text-muted);font-weight:bold',
                                      wmPos, wmPts: standing.points||0, simulated: true };
                         }
@@ -37371,14 +37448,9 @@ Empfohlene Wertebereiche:
                                 if (teamColor === '#888') teamColor = getConstructorColor(yearCons[0], year);
                             }
                         }
-                        const _lum2 = c => { if (!c||c.length<7) return 0.5; const r=parseInt(c.slice(1,3),16)/255,g=parseInt(c.slice(3,5),16)/255,b=parseInt(c.slice(5,7),16)/255; return 0.299*r+0.587*g+0.114*b; };
                         const _tcColors = getTeamColors(teamIdGrid || '', year, teamColor) || [teamColor];
                         const _tcFinal = _tcColors[0] || teamColor;
-                        const _tcL2 = _lum2(_tcFinal);
-                        const _tcShadow = (_tcL2 < 0.35 || _tcL2 > 0.65)
-                            ? (() => { const c = _tcL2 < 0.5 ? '255,255,255' : '0,0,0'; return `;font-weight:bold;text-shadow:-1px -1px 0 rgba(${c},0.85),1px -1px 0 rgba(${c},0.85),-1px 1px 0 rgba(${c},0.85),1px 1px 0 rgba(${c},0.85)`; })()
-                            : ';font-weight:bold';
-                        const teamColorStyle = (_tcFinal === '#888888' || _tcFinal === '#888') ? 'color:var(--text-muted);font-weight:bold' : `color:${_tcFinal}${_tcShadow}`;
+                        const teamColorStyle = (_tcFinal === '#888888' || _tcFinal === '#888') ? 'color:var(--text-muted);font-weight:bold' : `color:${lesbareTextfarbe(_tcFinal)};font-weight:bold`;
                         return { year, cells, teamName, teamId: teamIdGrid, teamColor: _tcFinal, teamColorStyle, wmPos, wmPts, simulated: false };
                     }).filter(Boolean);
 
@@ -37429,7 +37501,7 @@ Empfohlene Wertebereiche:
                         if (!pos) return '#2D1B69';
                         if (pos === 1) return '#b8942a';
                         if (pos === 2) return '#7a8e9e';
-                        if (pos === 3) return '#9a6a3a';
+                        if (pos === 3) return '#a87a48';
                         if (points > 0) return '#1f6b30';
                         return '#1a3f5e';
                     };
@@ -37438,7 +37510,7 @@ Empfohlene Wertebereiche:
                         if (pt === 'DNPQ') return '#F5D0FE';
                         if (pt === 'DNQ')  return '#C49494';
                         if (pt === 'DSQ')  return '#FCD34D';
-                        if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return '#6B7280';
+                        if (pt === 'DNS' || pt === 'WD' || pt === 'EX') return '#9CA3AF';
                         if (!pos) return '#A78BFA';
                         if (pos <= 3) return '#000';
                         return '#fff';
@@ -37524,7 +37596,7 @@ Empfohlene Wertebereiche:
                                         displayRows.push({
                                             ...row, _gruppe: i, _kopf: false, _erste: ti === 0,
                                             teamName: t.label, teamId: t.key,
-                                            teamColorStyle: _cc ? `color:${_cc};font-weight:bold` : 'color:var(--text-muted)',
+                                            teamColorStyle: _cc ? `color:${lesbareTextfarbe(_cc)};font-weight:bold` : 'color:var(--text-muted)',
                                             // Fremde Rennen werden LEER dargestellt, nicht entfernt —
                                             // sonst verrutschen die Spalten gegen die Kopfzeile.
                                             cells: row.cells.map(c => (!c.absent && c.teamKey === t.key)
@@ -37542,10 +37614,10 @@ Empfohlene Wertebereiche:
                                     ${displayRows.map((row, _i, _a) => `
                                         <div class="mxRow mxG${row._gruppe}${row._kopf ? '' : ' mxSub'}" style="height:${ROW_H}px; display:flex; align-items:center; gap:4px; margin-bottom:3px;${row._kopf ? '' : 'display:none;'}">
                                             ${(row._kopf || row._erste)
-                                                ? `<span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent ? '#f59e0b' : 'var(--accent-main)'}; cursor:pointer; text-decoration:underline; flex-shrink:0;" title="${row.isCurrent ? 'Laufende Saison' : ''}" onclick="event.stopPropagation();closeDriverProfile();openYearStandings(${row.year},'drivers')">${row.year}${row.isCurrent ? '*' : ''}</span>`
+                                                ? `<span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent ? '#f59e0b' : 'var(--accent-main-text)'}; cursor:pointer; text-decoration:underline; flex-shrink:0;" title="${row.isCurrent ? 'Laufende Saison' : ''}" onclick="event.stopPropagation();closeDriverProfile();openYearStandings(${row.year},'drivers')">${row.year}${row.isCurrent ? '*' : ''}</span>`
                                                 : `<span style="width:34px;flex-shrink:0"></span>`}
                                             ${(row._aufklappbar || row._erste)
-                                                ? `<span class="mxArrow${row._gruppe}" style="font-size:0.78rem;line-height:1;cursor:pointer;flex-shrink:0;color:var(--accent-main)" title="Teams dieser Saison einzeln zeigen" onclick="event.stopPropagation();toggleMatrixYear(${row._gruppe},this)">${row._kopf ? '▸' : '▾'}</span>` : ''}
+                                                ? `<span class="mxArrow${row._gruppe}" style="font-size:0.78rem;line-height:1;cursor:pointer;flex-shrink:0;color:var(--accent-main-text)" title="Teams dieser Saison einzeln zeigen" onclick="event.stopPropagation();toggleMatrixYear(${row._gruppe},this)">${row._kopf ? '▸' : '▾'}</span>` : ''}
                                             <span style="flex:1; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
                                         </div>
                                     ` + (mxTakt(row, _i, _a) ? mxLuecke() : '')).join('')}
@@ -37565,7 +37637,7 @@ Empfohlene Wertebereiche:
                                             ${row.cells.map(cell => cell.absent
                                                 ? `<div style="width:26px; height:32px; flex-shrink:0;"></div>`
                                                 : `<div style="width:26px; height:32px; background:${cellBg(cell.pos, cell.posText, cell.points)}; border-radius:3px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; ${cell.fastestLap ? 'outline:1px solid #a855f7;' : ''}${cell.pole ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);' : ''}" title="${cell.circuit || ''}: ${cell.posText || ''}" onclick="event.stopPropagation();${row.simulated ? `openRaceDetails(${cell.raceId},${row.year})` : `openHistoricalRaceModal(${cell.raceId})`}">
-                                                    <span style="font-size:0.42rem; color:${cellFg(cell.posText, cell.pos)}; opacity:0.7; line-height:1;">${raceAbbrLabel(cell.land, cell.circuit, cell.circuit)}</span>
+                                                    <span style="font-size:0.42rem; color:${cellFg(cell.posText, cell.pos)}; line-height:1;">${raceAbbrLabel(cell.land, cell.circuit, cell.circuit)}</span>
                                                     <span style="font-size:0.6rem; color:${cellFg(cell.posText, cell.pos)}; font-weight:bold; line-height:1.2;">${cellLabel(cell.pos, cell.posText)}</span>
                                                 </div>`
                                             ).join('')}
@@ -37588,7 +37660,7 @@ Empfohlene Wertebereiche:
                             <div style="font-size:0.55rem; color:var(--text-muted); margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#b8942a;border-radius:2px;vertical-align:middle;"></span> Sieg</span>
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#7a8e9e;border-radius:2px;vertical-align:middle;"></span> 2.</span>
-                                <span><span style="display:inline-block;width:10px;height:10px;background:#9a6a3a;border-radius:2px;vertical-align:middle;"></span> 3.</span>
+                                <span><span style="display:inline-block;width:10px;height:10px;background:#a87a48;border-radius:2px;vertical-align:middle;"></span> 3.</span>
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#1f6b30;border-radius:2px;vertical-align:middle;"></span> Punkte</span>
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#1a3f5e;border-radius:2px;vertical-align:middle;"></span> Klassiert</span>
                                 <span><span style="display:inline-block;width:10px;height:10px;background:#4a4a4a;border-radius:2px;vertical-align:middle;"></span> Ret</span>
@@ -37748,15 +37820,15 @@ Empfohlene Wertebereiche:
                             ' <span style="display:inline-flex;flex-wrap:wrap;gap:2px;vertical-align:middle">' + badges + '</span>' +
                             '</td>' +
                             '<td class="p-1 text-center text-tertiary">' + e.seasons.length + '</td>' +
-                            '<td class="p-1 text-center font-bold" style="color:#22C55E">' + w + '</td>' +
-                            '<td class="p-1 text-center font-bold" style="color:#EF4444">' + l + '</td>' +
+                            '<td class="p-1 text-center font-bold" style="color:var(--text-pos)">' + w + '</td>' +
+                            '<td class="p-1 text-center font-bold" style="color:var(--text-neg)">' + l + '</td>' +
                             '<td class="p-1 text-right font-mono" style="color:' + c + '">' + (avgDiff >= 0 ? '+' : '') + avgDiff.toFixed(0) + '</td>' +
                             '</tr>';
                     }).join('');
                     const _adrv = GAME_STATE.drivers.find(d => d.id === driverId);
                     const _hs = _adrv && _adrv.h2hSeason;
                     const _sessionLine = (_hs && _hs.tmName && (_hs.qW + _hs.qL + _hs.rW + _hs.rL) > 0)
-                        ? '<div class="text-xs mb-3" style="color:var(--text-secondary,#94a3b8)">Aktuelle Saison vs <b>' + _hs.tmName + '</b> — Quali <span style="color:#22C55E">' + _hs.qW + '</span>:<span style="color:#EF4444">' + _hs.qL + '</span> &middot; Rennen <span style="color:#22C55E">' + _hs.rW + '</span>:<span style="color:#EF4444">' + _hs.rL + '</span></div>'
+                        ? '<div class="text-xs mb-3" style="color:var(--text-secondary,#94a3b8)">Aktuelle Saison vs <b>' + _hs.tmName + '</b> — Quali <span style="color:var(--text-pos)">' + _hs.qW + '</span>:<span style="color:var(--text-neg)">' + _hs.qL + '</span> &middot; Rennen <span style="color:var(--text-pos)">' + _hs.rW + '</span>:<span style="color:var(--text-neg)">' + _hs.rL + '</span></div>'
                         : '';
                     return `<div class="card p-4 rounded-lg mb-4">
                         <h4 class="font-bold mb-3">⚔️ Head-to-Head Teamkollegen</h4>
@@ -37766,8 +37838,8 @@ Empfohlene Wertebereiche:
                             <thead><tr class="text-tertiary text-xs">
                                 <th class="text-left p-1">Teamkollege</th>
                                 <th class="text-center p-1">Sais.</th>
-                                <th class="text-center p-1" style="color:#22C55E">Gew.</th>
-                                <th class="text-center p-1" style="color:#EF4444">Verl.</th>
+                                <th class="text-center p-1" style="color:var(--text-pos)">Gew.</th>
+                                <th class="text-center p-1" style="color:var(--text-neg)">Verl.</th>
                                 <th class="text-right p-1">Ø Pkt-Diff</th>
                             </tr></thead>
                             <tbody>${rows}</tbody>
@@ -37812,10 +37884,10 @@ Empfohlene Wertebereiche:
                         const trend = prev ? Math.round(e.pace - prev.pace) : 0;
                         const total = i > 0 ? Math.round(e.pace - paceHist[0].pace) : 0;
                         const trendStr = trend !== 0
-                            ? '<span style="color:' + (trend > 0 ? '#16A34A' : '#DC2626') + '"> ' + (trend > 0 ? '+' : '') + trend + '</span>'
+                            ? '<span style="color:' + lesbareTextfarbe(trend > 0 ? '#16A34A' : '#DC2626') + '"> ' + (trend > 0 ? '+' : '') + trend + '</span>'
                             : '';
                         const totalStr = (i > 0 && total !== trend)
-                            ? '<span style="color:' + (total > 0 ? '#16A34A' : total < 0 ? '#DC2626' : '#888888') + ';opacity:0.75"> Σ' + (total > 0 ? '+' : '') + total + '</span>'
+                            ? '<span style="color:' + lesbareTextfarbe(total > 0 ? '#16A34A' : total < 0 ? '#DC2626' : '#888888') + '"> Σ' + (total > 0 ? '+' : '') + total + '</span>'
                             : '';
                         const pw   = Math.round(e.pace / maxP * 100);
                         const potw = rpot ? Math.round(e.pot / maxP * 100) : pw;
@@ -39442,7 +39514,7 @@ Empfohlene Wertebereiche:
                         <div class="flex items-start justify-between gap-2 mb-1">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-2xl">${renderFlag(team.nation, team.name, teamFlagYear)}</span>
-                                <div class="text-3xl font-bold" style="color: ${team.color}">${team.name}</div>
+                                <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.name}</div>
                             </div>
                             ${(() => {
                                 const tHistCheck = (GAME_STATE.history || []).some(s => (s.teams || []).some(t => t.id === team.id || (stATSId && t.histId === stATSId)));
@@ -39496,15 +39568,15 @@ Empfohlene Wertebereiche:
                     <h4 class="font-bold mb-3">📊 Team-Werte</h4>
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div class="p-4 bg-secondary rounded-lg">
-                            <div class="text-3xl font-bold" style="color: ${team.color}">${_eloDisplayCS(team.id, GAME_STATE.currentYear) ?? team.carSpeed}</div>
+                            <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${_eloDisplayCS(team.id, GAME_STATE.currentYear) ?? team.carSpeed}</div>
                             <div class="text-sm text-tertiary">Auto-Speed</div>
                         </div>
                         <div class="p-4 bg-secondary rounded-lg">
-                            <div class="text-3xl font-bold" style="color: ${team.color}">${team.reliability}</div>
+                            <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.reliability}</div>
                             <div class="text-sm text-tertiary">Zuverlässigkeit</div>
                         </div>
                         <div class="p-4 bg-secondary rounded-lg">
-                            <div class="text-3xl font-bold" style="color: ${team.color}">${team.strategy}</div>
+                            <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.strategy}</div>
                             <div class="text-sm text-tertiary">Strategie</div>
                         </div>
                     </div>
@@ -39524,7 +39596,7 @@ Empfohlene Wertebereiche:
                                             <span class="font-bold">${driver.name}</span>
                                             ${driver.number ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
                                         </div>
-                                        ${(() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${c};font-weight:bold">${s}</span></div>`; })()}
+                                        ${(() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${lesbareTextfarbe(c)};font-weight:bold">${s}</span></div>`; })()}
                                     </div>
                                     <div class="grid grid-cols-3 gap-2 text-center text-xs">
                                         <div>
@@ -40030,7 +40102,7 @@ Empfohlene Wertebereiche:
             // aus dem Kontrast, nicht aus Farbe. Gold bleibt allein dem WM-Titel vorbehalten.
             const numCell = (v) => {
                 const n = typeof v === 'number' ? v : NaN;
-                const dim = (n === 0 || isNaN(n)) ? 'opacity:.45' : 'font-weight:700';
+                const dim = (n === 0 || isNaN(n)) ? 'opacity:.65' : 'font-weight:700';
                 const txt = isNaN(n) ? v : Math.round(n);
                 return '<td style="' + NUMTD + ';' + dim + '">' + txt + '</td>';
             };
@@ -40047,10 +40119,10 @@ Empfohlene Wertebereiche:
                 } else if (wmNum >= 2 && wmNum <= 3) {
                     wmCell = '<td class="accent-blue" style="' + NUMTD + ';font-weight:700">' + wmRaw + '</td>';
                 } else {
-                    wmCell = '<td style="' + NUMTD + (isNaN(wmNum) ? ';opacity:.45' : '') + '">' + wmRaw + '</td>';
+                    wmCell = '<td style="' + NUMTD + (isNaN(wmNum) ? ';opacity:.65' : '') + '">' + wmRaw + '</td>';
                 }
                 html += '<tr class="border-t border-custom' + rowClass + '">';
-                html += '<td class="p-1 font-bold"><span class="cursor-pointer ' + (h.isCurrent ? '' : 'hover:underline') + '" style="color:' + (h.isCurrent ? '#f59e0b' : 'var(--accent-main)') + ';' + (h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : '') + '" title="' + (h.isCurrent ? 'Laufende Saison' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + h.year + (h.isCurrent ? '*' : '') + '</span></td>';
+                html += '<td class="p-1 font-bold"><span class="cursor-pointer ' + (h.isCurrent ? '' : 'hover:underline') + '" style="color:' + (h.isCurrent ? '#f59e0b' : 'var(--accent-main-text)') + ';' + (h.isCurrent ? 'text-decoration:underline;text-underline-offset:2px;' : '') + '" title="' + (h.isCurrent ? 'Laufende Saison' : '') + '" onclick="closeTeamProfile();openYearStandings(' + h.year + ',\'teams\')">' + h.year + (h.isCurrent ? '*' : '') + '</span></td>';
                 const dObjs = h.driverObjs || [];
                 let driversHtml;
                 if (dObjs.length === 0) {
@@ -40261,13 +40333,13 @@ Empfohlene Wertebereiche:
                 if (pt==='DNPQ') return '#701A75'; if (pt==='DNQ') return '#5C1517';
                 if (pt==='DSQ')  return '#78350F'; if (['DNS','WD','EX'].includes(pt)) return '#1C1C1C';
                 if (!pos) return '#2D1B69'; if (pos===1) return '#b8942a';
-                if (pos===2) return '#7a8e9e'; if (pos===3) return '#9a6a3a';
+                if (pos===2) return '#7a8e9e'; if (pos===3) return '#a87a48';
                 if (pts>0) return '#1f6b30'; return '#1a3f5e';
             };
             const cellFg = (posText,pos) => {
                 const pt=(posText||'').toUpperCase();
                 if (pt==='DNPQ') return '#F5D0FE'; if (pt==='DNQ') return '#C49494';
-                if (pt==='DSQ')  return '#FCD34D'; if (['DNS','WD','EX'].includes(pt)) return '#6B7280';
+                if (pt==='DSQ')  return '#FCD34D'; if (['DNS','WD','EX'].includes(pt)) return '#9CA3AF';
                 if (!pos) return '#A78BFA'; if (pos<=3) return '#000'; return '#fff';
             };
             const cellLabel = (pos,posText) => {
@@ -40465,11 +40537,11 @@ Empfohlene Wertebereiche:
                             ${allRows.map((row,_i,_a)=>(row.type==='toggle'
                                 ?`<div style="height:${TGL_H}px; display:flex; align-items:center; margin-bottom:3px;">
                                     <span data-tgg-btn="${row.groupId}" data-n="${row.hiddenCount}"
-                                        style="font-size:0.6rem;color:var(--accent-main);cursor:pointer;text-decoration:underline;padding-left:38px;"
+                                        style="font-size:0.6rem;color:var(--accent-main-text);cursor:pointer;text-decoration:underline;padding-left:38px;"
                                         onclick="event.stopPropagation();toggleTeamGridGroup('${row.groupId}')">▸ +${row.hiddenCount} weitere anzeigen</span>
                                   </div>`
                                 :`<div ${row.hidden?`data-tgg="${row.groupId}" style="height:${ROW_H}px;display:none;align-items:center;gap:4px;margin-bottom:3px;"`:`style="height:${ROW_H}px;display:flex;align-items:center;gap:4px;margin-bottom:3px;"`}>
-                                    <span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent?'#f59e0b':'var(--accent-main)'}; flex-shrink:0; ${row.showYear?'cursor:pointer;text-decoration:underline;':''}"
+                                    <span style="width:34px; font-size:0.7rem; font-weight:bold; color:${row.isCurrent?'#f59e0b':'var(--accent-main-text)'}; flex-shrink:0; ${row.showYear?'cursor:pointer;text-decoration:underline;':''}"
                                         ${row.showYear?`onclick="event.stopPropagation();openYearStandings(${row.year},'constructors')" title="${row.isCurrent?'Laufende Saison':''}"`:''}>
                                         ${row.showYear?row.year+(row.isCurrent?'*':''):''}
                                     </span>
@@ -40488,7 +40560,7 @@ Empfohlene Wertebereiche:
                                     ${(row.cells||[]).map(cell=>cell.absent
                                         ?`<div style="width:26px;height:32px;flex-shrink:0;"></div>`
                                         :`<div style="width:26px;height:32px;background:${cellBg(cell.pos,cell.posText,cell.points)};border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;${cell.fastestLap?'outline:1px solid #a855f7;':''}" title="${cell.circuit||''}: ${cell.posText||cell.pos||''}" onclick="event.stopPropagation();${row.simulated?`openRaceDetails(${cell.raceId},${row.year})`:`openHistoricalRaceModal(${cell.raceId})`}">
-                                            <span style="font-size:0.42rem;color:${cellFg(cell.posText,cell.pos)};opacity:0.7;line-height:1;">${raceAbbrLabel(cell.land, cell.circuit, cell.circuit)}</span>
+                                            <span style="font-size:0.42rem;color:${cellFg(cell.posText,cell.pos)};line-height:1;">${raceAbbrLabel(cell.land, cell.circuit, cell.circuit)}</span>
                                             <span style="font-size:0.6rem;color:${cellFg(cell.posText,cell.pos)};font-weight:bold;line-height:1.2;">${cellLabel(cell.pos,cell.posText)}</span>
                                         </div>`
                                     ).join('')}
@@ -40509,7 +40581,7 @@ Empfohlene Wertebereiche:
                     <div style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
                         <span><span style="display:inline-block;width:10px;height:10px;background:#b8942a;border-radius:2px;vertical-align:middle;"></span> Sieg</span>
                         <span><span style="display:inline-block;width:10px;height:10px;background:#7a8e9e;border-radius:2px;vertical-align:middle;"></span> 2.</span>
-                        <span><span style="display:inline-block;width:10px;height:10px;background:#9a6a3a;border-radius:2px;vertical-align:middle;"></span> 3.</span>
+                        <span><span style="display:inline-block;width:10px;height:10px;background:#a87a48;border-radius:2px;vertical-align:middle;"></span> 3.</span>
                         <span><span style="display:inline-block;width:10px;height:10px;background:#1f6b30;border-radius:2px;vertical-align:middle;"></span> Punkte</span>
                         <span><span style="display:inline-block;width:10px;height:10px;background:#1a3f5e;border-radius:2px;vertical-align:middle;"></span> Klassiert</span>
                         <span><span style="display:inline-block;width:10px;height:10px;background:#4a4a4a;border-radius:2px;vertical-align:middle;"></span> Ret</span>
@@ -40722,24 +40794,24 @@ Empfohlene Wertebereiche:
             const dBlock = driverRanked.length >= 2 ? `
                 <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">🏆 Fahrer</div>
                 <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
-                    ${driverRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
+                    ${driverRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main-text)">${c}×</span></span>`).join('')}
                 </div>` : '';
             const cBlock = constrRanked.length >= 2 ? `
                 <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">🏗️ Konstrukteure</div>
                 <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
-                    ${constrRanked.slice(0,6).map(([id,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${_tn(id)} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
+                    ${constrRanked.slice(0,6).map(([id,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${_tn(id)} <span style="color:var(--accent-main-text)">${c}×</span></span>`).join('')}
                 </div>` : '';
             const pBlock = poleRanked && poleRanked.length >= 2 ? `
                 <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">🔵 Pole Position</div>
                 <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
-                    ${poleRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
+                    ${poleRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main-text)">${c}×</span></span>`).join('')}
                 </div>` : '';
             const fBlock = flRanked && flRanked.length >= 2 ? `
                 <div class="text-xs font-bold uppercase mb-1" style="color:var(--text-muted)">⚡ Schnellste Runde</div>
                 <div class="flex flex-wrap gap-x-5 gap-y-1">
-                    ${flRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main)">${c}×</span></span>`).join('')}
+                    ${flRanked.slice(0,8).map(([n,c],i)=>`<span class="text-sm ${i===0?'font-bold':''}">${medals[i]||(i+1)+'.'} ${n} <span style="color:var(--accent-main-text)">${c}×</span></span>`).join('')}
                 </div>` : '';
-            const streakHtml = streak ? `<div class="text-xs mb-3" style="color:var(--text-muted)">🔥 Längste Serie: <strong style="color:var(--text-primary)">${streak.driver}</strong> <span style="color:var(--accent-main)">${streak.count}×</span> in Folge${streak.from === streak.to ? ` (${streak.from})` : ` (${streak.from}–${streak.to})`}</div>` : '';
+            const streakHtml = streak ? `<div class="text-xs mb-3" style="color:var(--text-muted)">🔥 Längste Serie: <strong style="color:var(--text-primary)">${streak.driver}</strong> <span style="color:var(--accent-main-text)">${streak.count}×</span> in Folge${streak.from === streak.to ? ` (${streak.from})` : ` (${streak.from}–${streak.to})`}</div>` : '';
             if (!streakHtml && !dBlock && !cBlock && !pBlock && !fBlock) return `<div class="mb-2" style="overflow:hidden">${filterBtn}</div>`;
             return `<div class="mb-4 p-3 rounded-lg" style="background:var(--bg-tertiary);overflow:hidden">${filterBtn}${streakHtml}${dBlock}${cBlock}${pBlock}${fBlock}</div>`;
         }
@@ -40779,18 +40851,18 @@ Empfohlene Wertebereiche:
                     const tClick = e.constrId ? `class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${e.constrId}')"` : '';
                     const pClick = e.poleId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.poleId}')"` : '';
                     const fClick = e.flId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.flId}')"` : '';
-                    const nth = _nth[i] > 1 ? ` <sup style="color:var(--accent-main)">${_nth[i]}×</sup>` : '';
+                    const nth = _nth[i] > 1 ? ` <sup style="color:var(--accent-main-text)">${_nth[i]}×</sup>` : '';
                     const col2 = type === 'circuit'
                         ? `<td class="p-2 text-sm cursor-pointer" style="color:var(--text-secondary)" onclick="closeCircuitGPProfile();openGameGPProfile('${e.gpKey.replace(/'/g,'')}')">${e.gpKey}</td>`
                         : `<td class="p-2 text-sm cursor-pointer" style="color:var(--text-secondary)" onclick="closeCircuitGPProfile();openGameCircuitProfile('${e.cid}')">${getCircuitDisplayName(e.cid)}</td>`;
-                    html += `<tr class="${gid}" style="border-bottom:1px solid var(--border-color);${e.isHistorical?'opacity:0.7':''};${isOpen?'':'display:none'}">
+                    html += `<tr class="${gid}" style="border-bottom:1px solid var(--border-color);${e.isHistorical?'opacity:0.8':''};${isOpen?'':'display:none'}">
                         <td class="p-2 text-xs" style="color:var(--text-muted)">${i+1}</td>
-                        <td class="p-2 text-sm font-bold" style="color:var(--accent-main)">${e.year}</td>
+                        <td class="p-2 text-sm font-bold" style="color:var(--accent-main-text)">${e.year}</td>
                         ${col2}
                         <td class="p-2 text-sm" ${dClick}>${e.driverName || '—'}${nth}</td>
                         <td class="p-2 text-sm" ${tClick}>${_tn(e.constrId)}</td>
                         <td class="p-2 text-sm" style="color:var(--text-secondary)" ${pClick}>${e.poleName || '—'}</td>
-                        <td class="p-2 text-sm" style="color:var(--text-secondary)" ${fClick}>${e.flName ? `<span style="color:var(--accent-main)">⚡</span> ${e.flName}` : '—'}</td>
+                        <td class="p-2 text-sm" style="color:var(--text-secondary)" ${fClick}>${e.flName ? `<span style="color:var(--accent-main-text)">⚡</span> ${e.flName}` : '—'}</td>
                     </tr>`;
                 }
             }
@@ -40820,7 +40892,7 @@ Empfohlene Wertebereiche:
 
         function _layoutSvg(layout, h, pathId) {
             return `<svg viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet" role="img"
-                style="width:100%;height:${h}px;display:block;color:var(--accent-main)">
+                style="width:100%;height:${h}px;display:block;color:var(--accent-main-text)">
                 <path ${pathId ? `id="${pathId}" ` : ''}d="${layout.d}" fill="none" stroke="currentColor" stroke-width="22"
                       stroke-linejoin="round" stroke-linecap="round"/></svg>`;
         }
@@ -41349,8 +41421,8 @@ Empfohlene Wertebereiche:
                     } else if (isFatal) {
                         const fatalDisp = zeit ? `💀 Qualifying · ${zeit}` : '💀 Qualifying';
                         zeitCell = simDetailed
-                            ? `<td class="p-2 text-right font-mono text-xs" style="color:#ef4444">${fatalDisp}</td><td></td>`
-                            : `<td class="p-2 text-right font-mono text-xs" style="color:#ef4444">${fatalDisp}</td>`;
+                            ? `<td class="p-2 text-right font-mono text-xs" style="color:var(--text-neg)">${fatalDisp}</td><td></td>`
+                            : `<td class="p-2 text-right font-mono text-xs" style="color:var(--text-neg)">${fatalDisp}</td>`;
                     } else if (simDetailed) {
                         const dnqStyle = isDNQ ? ' style="color:#C49494"' : '';
                         zeitCell = `<td class="p-2 text-right font-mono text-xs ${isPole ? 'accent-gold font-bold' : isDNQ ? '' : 'text-secondary'}"${dnqStyle}>${zeit || ''}</td>` +
@@ -41362,7 +41434,7 @@ Empfohlene Wertebereiche:
                     }
                     const guestBadge = r.isGuest ? ' <span style="font-size:0.65em;padding:1px 4px;border-radius:3px;background:rgba(168,85,247,0.2);color:#a855f7;vertical-align:middle">G</span>' : '';
                     const rowStyle = isFatal ? ' style="background:rgba(239,68,68,0.08)"' : isDNQ ? ' style="opacity:0.6"' : isDNPQ ? ' style="opacity:0.85"' : '';
-                    const nameStyle = isFatal ? 'text-decoration:line-through;color:#ef4444' : '';
+                    const nameStyle = isFatal ? 'text-decoration:line-through;color:var(--text-neg)' : '';
                     // POSITION BLEIBT POSITION (v0.9.17.6). Nutzer: „bei quali sollte die
                     // startaufstellungsplatzierung nicht durch dnq oder dnpq ersetzt werden.
                     // dnq/dnpq stehen hinten." Vorher stand in der Pos-Spalte „DNQ" bzw. ein
@@ -41389,14 +41461,14 @@ Empfohlene Wertebereiche:
                     const isBest = r.position === 1 && !isFatal;
                     let zeitCell;
                     if (isFatal) {
-                        zeitCell = `<td class="p-2 text-right font-mono text-xs" style="color:#ef4444" colspan="2">💀 Training</td>`;
+                        zeitCell = `<td class="p-2 text-right font-mono text-xs" style="color:var(--text-neg)" colspan="2">💀 Training</td>`;
                     } else {
                         const zeitStr = rawT ? fmtMs(rawT * 1000) : '–';
                         const deltaStr = isBest ? '–' : (rawT && _trBestTime ? fmtGapMs((rawT - _trBestTime) * 1000) : '–');
                         zeitCell = `<td class="p-2 text-right font-mono text-xs ${isBest ? 'accent-gold font-bold' : 'text-secondary'}">${zeitStr}</td>` +
                                    `<td class="p-2 text-right font-mono text-xs text-tertiary">${deltaStr}</td>`;
                     }
-                    const nameStyle = isFatal ? 'text-decoration:line-through;color:#ef4444' : '';
+                    const nameStyle = isFatal ? 'text-decoration:line-through;color:var(--text-neg)' : '';
                     return `<tr class="border-t border-custom${isFatal ? '" style="background:rgba(239,68,68,0.08)' : ''}">
                         <td class="p-2 font-bold ${isBest ? 'accent-gold' : 'text-tertiary'}">${r.position ?? ''}</td>
                         <td class="p-2 driver-link cursor-pointer" onclick="closeRaceDetail();openDriverProfile('${r.driver}')" style="${nameStyle}">${getDriverName(r.driver)}</td>
@@ -41547,13 +41619,13 @@ Empfohlene Wertebereiche:
                     // andere Farbe als DNQ — es sind zwei verschiedene Vorgaenge.
                     const rdDnsIds = raceResult?.dns || [];
                     if (rdDnsIds.length > 0) {
-                        rdDnqRows += '<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#9CA3AF;background:#1C1C1C;border-top:2px solid #1C1C1C;letter-spacing:0.05em">NICHT ANGETRETEN</td></tr>';
+                        rdDnqRows += '<tr><td colspan="4" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:var(--text-tertiary);background:#1C1C1C;border-top:2px solid #1C1C1C;letter-spacing:0.05em">NICHT ANGETRETEN</td></tr>';
                         rdDnsIds.forEach(id => {
                             rdDnqRows += '<tr class="border-t border-custom" style="opacity:0.6">' +
                                 '<td class="p-2 text-center text-tertiary">–</td>' +
                                 '<td class="p-2 driver-link" onclick="closeRaceDetail(); openDriverProfile(\'' + id + '\')">' + getDriverName(id) + '</td>' +
                                 '<td class="p-2 text-tertiary">' + getTeamName(id) + '</td>' +
-                                '<td class="p-2 text-right" style="color:#9CA3AF;font-size:0.7em;font-weight:bold">DNS</td>' +
+                                '<td class="p-2 text-right" style="color:var(--text-tertiary);font-size:0.7em;font-weight:bold">DNS</td>' +
                                 '</tr>';
                         });
                     }
@@ -41669,7 +41741,7 @@ Empfohlene Wertebereiche:
                     : status === 'DNQ'
                     ? ' <span style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:#5C1517;color:#C49494;letter-spacing:0.04em;vertical-align:middle">DNQ</span>'
                     : '';
-                return '<tr class="border-t border-custom"' + (istDnq ? ' style="opacity:0.7"' : '') + '>' +
+                return '<tr class="border-t border-custom"' + (istDnq ? ' style="opacity:0.8"' : '') + '>' +
                     '<td class="p-2 font-bold ' + (isPole ? 'accent-gold' : 'text-tertiary') + '">' + pos + '</td>' +
                     '<td class="p-2">' + poleIcon + '<span class="driver-link" onclick="openDriverProfile(\'' + driverId + '\')">' + dn(driverId) + '</span>' + dnqBadge + '</td>' +
                     '<td class="p-2 text-secondary hidden md:table-cell team-link cursor-pointer" onclick="openTeamProfile(\'' + constrId + '\')">' + tn(constrId) + '</td>' +
