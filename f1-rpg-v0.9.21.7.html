@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.6</title>
+    <title>F1 RPG v0.9.21.7</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.6 (aktuell) - 12.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.7 (aktuell) - 12.10.2026</div>
+                            <div>&#8226; FIX: Fahrermarkt-Export – Verlängerungen mit Ziel-Team, Pool statt Platzhalter</div>
+                            <div>&#8226; FIX: Entlassungen nicht mehr doppelt zählbar (auchAlsAbgang)</div>
+                            <div>&#8226; NEU: letztes Team bei Karriereende, Drittel des Ziel-Teams im Folgejahr</div>
+                            <div class="font-bold text-slate-400">v0.9.21.6 - 12.10.2026</div>
                             <div>&#8226; NEU: Review-Export – Paket oder 11 Einzelteile als JSON</div>
                             <div>&#8226; NEU: Endstände, Rennergebnisse, Fahrermarkt, Bewertung, Todesfälle, Rekorde, Junior-Welt</div>
                             <div>&#8226; FIX: Button Datensätze wieder lesbar</div>
@@ -23003,7 +23007,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.6';
+        const VERSION = '0.9.21.7';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -32231,19 +32235,42 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         }
 
         // ── Teil: Fahrermarkt-Chronik über alle Jahre ──
+        // Gemessen am Export 1950–2013 (12.10.2026): renewal hat KEIN toTeam (bleibt im Team),
+        // "-" und "Free Agent" sind Platzhalter statt Teams, und Entlassungen stehen in den
+        // Transfers UND in den Abgängen. Ohne die Korrekturen hier war nachTeam bei über der Hälfte
+        // leer und ein Agent zählte 61 Entlassungen doppelt.
+        const _rvKeinTeam = t => (!t || t === '-' || t === 'Free Agent') ? null : t;
         async function _reviewMarkt(saisons) {
             const drittelJe = new Map(saisons.map(s => [s.jahr, _reviewDrittel(s)]));
             const identJe = new Map(saisons.map(s => [s.jahr, _reviewIdent(s)]));
+            // Letztes Team je Fahrer und Saison – Karriereenden tragen kein fromTeam
+            const teamJe = new Map(saisons.map(s => [s.jahr, id => s.dStand[id] ? _reviewTeamName(s, s.dStand[id].team) : null]));
             const out = [];
             for (const c of _allChronSeasons()) {
-                const dr = drittelJe.get(c.year);
+                const dr = drittelJe.get(c.year), drFolge = drittelJe.get(c.year + 1);
                 const ident = identJe.get(c.year) || (id => ({ name: id, histId: null }));
+                const letztesTeam = teamJe.get(c.year) || (() => null);
+                const entlassen = new Set((c.retirements || []).filter(e => e.type === 'dismissed').map(e => e.name));
                 const plus = (e, art) => {
                     const id = e.driverId || e.driver || e.id || null;
-                    const von = e.fromTeam || e.from || null, nach = e.toTeam || e.to || e.team || null;
-                    return { jahr: c.year, art, name: e.driverName || e.name || ident(id).name, histId: e.histId || ident(id).histId,
-                        id, vonTeam: von, nachTeam: nach,
-                        drittelVon: dr ? dr.von(von) : null, drittelNach: dr ? dr.von(nach) : null, roh: e };
+                    const name = e.driverName || e.name || ident(id).name;
+                    const von = _rvKeinTeam(e.fromTeam || e.from) || (art === 'abgang' ? letztesTeam(id) : null);
+                    const nach = art === 'abgang' ? null
+                        : e.type === 'renewal' ? von                       // Verlängerung: bleibt im Team
+                        : _rvKeinTeam(e.toTeam || e.to);
+                    const zurSaisonmitte = !!e.midSeason;
+                    return { jahr: c.year, art, typ: e.type || null, name, histId: e.histId || ident(id).histId, id,
+                        vonTeam: von, nachTeam: nach,
+                        ausPool: art === 'transfer' && (e.fromTeam === '-' || e.type === 'pool-debut' || e.type === 'freeagent'),
+                        inPool: art === 'transfer' && !nach,
+                        zurSaisonmitte,
+                        drittelVon: dr ? dr.von(von) : null,
+                        drittelNach: dr ? dr.von(nach) : null,
+                        // Wechsel zum Saisonende: Stärke des Ziels in der Saison, in der er dort fährt
+                        drittelNachFolgejahr: (!zurSaisonmitte && drFolge && nach) ? drFolge.von(nach) : null,
+                        // Dieselbe Entlassung steht auch unter art 'abgang' – beim Zählen überspringen
+                        auchAlsAbgang: art === 'transfer' && e.type === 'dismissed' && entlassen.has(name),
+                        roh: e };
                 };
                 (c.transfers || []).forEach(e => out.push(plus(e, 'transfer')));
                 (c.retirements || []).forEach(e => out.push(plus(e, 'abgang')));
@@ -32402,8 +32429,12 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                      'qualiPlatz ist der Quali-Rang, nicht zwingend der Startplatz (Strafen/Nachrücker).',
                      'DNQ-Listen erst ab v0.9.15.25, DNPQ ab v0.9.17.8 archiviert – ältere Saisons zeigen leere Listen.'],
             endstaende: ['teamDrittel nach mittlerem Quali-Platz (drittelBasis), Rückfall Punkte ohne Quali-Daten.'],
-            markt: ['roh = unveränderter Eintrag aus der Chronik (Feldnamen je Version verschieden). Drittel aus derselben Saison.'],
-            bewertung: ['Spätere Quelle gewinnt: Archiv-Snapshot < Reserve-Pool < aktueller Kader.', 'vorSimulation = aus realen Ergebnissen vorbelegt (preSim).'],
+            markt: ['Zählen: Einträge mit auchAlsAbgang überspringen – dieselbe Entlassung steht auch unter art abgang.',
+                    'renewal = Verlängerung, nachTeam = eigenes Team. ausPool/inPool statt Platzhaltern wie "-" oder "Free Agent".',
+                    'drittelVon/drittelNach aus der Saison des Eintrags, drittelNachFolgejahr = Ziel-Team in der Saison, in der der Fahrer dort fährt.',
+                    'roh = unveränderter Eintrag aus der Chronik (Feldnamen je Version verschieden).'],
+            bewertung: ['Spätere Quelle gewinnt: Archiv-Snapshot < Reserve-Pool < aktueller Kader.', 'vorSimulation = aus realen Ergebnissen vorbelegt (preSim).',
+                        'Ansehen (repHistory) gibt es erst seit v0.9.18.20 – Fahrer, die davor zuletzt gefahren sind, haben einen leeren Ansehens-Verlauf.'],
             tode: ['wmRennTod = fatalSession race. Nur diese Zahl mit F1DB-Renntoten vergleichen.'],
             rekorde: ['sim = nur simulierte Saisons, all = reale Historie + Simulation. Top 10 je Rekord, Zeitraum gesamt.'],
             fahrerSteckbrief: ['Nur simulierte Saisons (inkl. laufender). Reale Jahre vor Spielstart stehen in F1DB, nicht im Spielstand.'],
