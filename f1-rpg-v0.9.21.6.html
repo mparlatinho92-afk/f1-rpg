@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.5</title>
+    <title>F1 RPG v0.9.21.6</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.5 (aktuell) - 12.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.6 (aktuell) - 12.10.2026</div>
+                            <div>&#8226; NEU: Review-Export – Paket oder 11 Einzelteile als JSON</div>
+                            <div>&#8226; NEU: Endstände, Rennergebnisse, Fahrermarkt, Bewertung, Todesfälle, Rekorde, Junior-Welt</div>
+                            <div>&#8226; FIX: Button Datensätze wieder lesbar</div>
+                            <div class="font-bold text-slate-400">v0.9.21.5 - 12.10.2026</div>
                             <div>&#8226; FIX: Tab-Buttons waren schwarz auf dunklem Grund</div>
                             <div>&#8226; FIX: Graue Nebentexte und Teamnamen in allen Themes lesbar</div>
                             <div>&#8226; FIX: Weltmeister-Text im Saisonende war unsichtbar</div>
@@ -3508,7 +3512,7 @@
         <div id="content" class="card rounded-xl p-6 mb-6"></div>
 
         <!-- Weitere Action Buttons (unten) -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <button onclick="exportSave()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--accent-green); color: white;">
                 💾 Exportieren
             </button>
@@ -3524,8 +3528,11 @@
             <button onclick="openResetCenter()" class="p-3 rounded-lg font-bold transition" style="background-color: #dc2626; color: white;">
                 🔧 Reset-Center
             </button>
-            <button onclick="openDatasetManager()" class="p-3 rounded-lg font-bold transition" style="background-color: var(--text-tertiary); color: white;">
+            <button onclick="openDatasetManager()" class="p-3 rounded-lg font-bold transition" style="background-color: #475569; color: white;">
                 📂 Datensätze
+            </button>
+            <button onclick="openReviewExport()" class="p-3 rounded-lg font-bold transition" style="background-color: #0f766e; color: white;" title="JSON-Dateien für ein Agenten-Review: Endstände, Rennen, Markt, Bewertung, Tode, Rekorde, Junior-Welt">
+                🧾 Review-Export
             </button>
         </div>
         
@@ -22996,7 +23003,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.5';
+        const VERSION = '0.9.21.6';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31991,7 +31998,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             `;
         }
 
-        function exportReservePool() {
+        // Daten getrennt vom Download: das Review-Paket nutzt dieselbe Aufbereitung.
+        function _reservePoolDaten() {
             const pool = GAME_STATE.reservePool || [];
             const year = GAME_STATE.currentYear;
             const mapDriver = d => {
@@ -32019,10 +32027,14 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 B_Testfahrer: pool.filter(d => d.poolGroup === 'B').map(mapDriver),
                 C_Kommend:    pool.filter(d => d.poolGroup === 'C').map(mapDriver)
             };
+            return out;
+        }
+        function exportReservePool() {
+            const out = _reservePoolDaten();
             const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `reserve-pool-${year}.json`;
+            a.download = `reserve-pool-${out.exportedYear}.json`;
             a.click();
             URL.revokeObjectURL(a.href);
         }
@@ -32049,6 +32061,441 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             URL.revokeObjectURL(a.href);
         }
         window.exportOffseason = exportOffseason;
+
+        // ═══ Review-Exporte (v0.9.21.6) ═══════════════════════════════════════════════════
+        // JSON-Dateien fuer ein Agenten-Review. Jede Datei: { kopf, hinweise, daten }.
+        // Regeln (FIXES_OFFEN „Exporte einheitlich"):
+        //  - gemeinsamer Kopf: Version, Startjahr, aktuelles Jahr, simulierte Saisons, Exportzeit
+        //  - Verknuepfung ueber histId bzw. Namen. Laufzeit-IDs tragen einen Zeitstempel und sind
+        //    nicht stabil – sie stehen nur als Zusatzfeld `id` drin.
+        //  - Indy 500 und Indy GP getrennt (istIndy500/istIndyGP, auch fuer Alt-Staende mit isIndy)
+        //  - Was das Archiv NICHT aufbewahrt, steht in `hinweise` statt still zu fehlen.
+        // Datenquellen sind dieselben wie in der Oberflaeche (_allChronSeasons, _championList,
+        // _scanAllRaces, allTimeStATS, _reservePoolDaten, exportNationStats) – keine Zweitrechnung.
+        const REVIEW_TEILE = {
+            endstaende:       { label: '🏆 Saison-Endstände',      datei: 'endstaende' },
+            rennen:           { label: '🏁 Rennergebnisse',         datei: 'rennergebnisse' },
+            markt:            { label: '🔄 Fahrermarkt-Chronik',    datei: 'fahrermarkt' },
+            bewertung:        { label: '📊 Bewertungs-Verlauf',     datei: 'bewertung' },
+            tode:             { label: '💀 Todesfälle',             datei: 'todesfaelle' },
+            rekorde:          { label: '🏅 Rekorde + Weltmeister',  datei: 'rekorde-weltmeister' },
+            junior:           { label: '🌍 Junior-Welt',            datei: 'junior-welt' },
+            fahrerSteckbrief: { label: '👤 Fahrer-Steckbriefe',     datei: 'fahrer-steckbriefe' },
+            teamSteckbrief:   { label: '🏎️ Team-Steckbriefe',       datei: 'team-steckbriefe' },
+            allTimeFahrer:    { label: '📈 All-Time Fahrer',        datei: 'alltime-fahrer' },
+            allTimeTeams:     { label: '📈 All-Time Teams',         datei: 'alltime-teams' }
+        };
+
+        function _reviewKopf(teil) {
+            return {
+                teil,
+                spielVersion: VERSION,
+                startjahr: parseInt(GAME_STATE.templateUsed) || null,
+                aktuellesJahr: GAME_STATE.currentYear,
+                laufendeSaison: { gefahren: GAME_STATE.currentRace || 0, rennen: (GAME_STATE.races || []).length },
+                simulierteSaisons: (GAME_STATE.history || []).length,
+                juniorModus: GAME_STATE.juniorMode || 'off',
+                exportZeit: new Date().toISOString(),
+                schluessel: 'Fahrer über histId (sonst Name), Teams über Anzeigenamen. Feld id = Laufzeit-ID, nicht stabil.'
+            };
+        }
+
+        // Alle Saisons VOLL: archivierte (leicht + Detail aus IndexedDB) und die laufende.
+        async function _reviewSaisons() {
+            const out = [];
+            for (const h of (GAME_STATE.history || [])) {
+                const voll = h.results ? h : { ...h, ...((await getHistoryDetail(h.year)) || {}) };
+                out.push({ jahr: h.year, laufend: false, roh: voll,
+                    results: voll.results || [], quali: voll.qualifyingResults || [], races: voll.races || [],
+                    drivers: voll.drivers || [], teams: voll.teams || [],
+                    dStand: voll.driverStandings || {}, tStand: voll.teamStandings || {} });
+            }
+            out.push({ jahr: GAME_STATE.currentYear, laufend: true, roh: GAME_STATE,
+                results: GAME_STATE.results || [], quali: GAME_STATE.qualifyingResults || [], races: GAME_STATE.races || [],
+                drivers: GAME_STATE.drivers || [], teams: GAME_STATE.teams || [],
+                dStand: GAME_STATE.driverStandings || {}, tStand: GAME_STATE.teamStandings || {} });
+            return out;
+        }
+
+        // Archiv (kompakt: ri/res/d/p/pt/tmn) und laufende Saison (raceIndex/results/driver/...) lesen
+        const _rvRi  = r => r.ri ?? r.raceIndex;
+        const _rvRes = r => r.res || r.results || [];
+        const _rvD   = e => e.d ?? e.driver;
+        const _rvP   = e => e.p ?? e.position;
+
+        // Laufzeit-ID → { name, histId } für eine Saison (Snapshot, dann Kader/Pool, dann Wertung)
+        function _reviewIdent(saison) {
+            const m = new Map();
+            const add = d => { if (d && d.id && !m.has(d.id)) m.set(d.id, { name: d.name, histId: d.histId || null }); };
+            saison.drivers.forEach(add);
+            (GAME_STATE.drivers || []).forEach(add);
+            (GAME_STATE.reservePool || []).forEach(add);
+            for (const [id, st] of Object.entries(saison.dStand)) if (!m.has(id)) m.set(id, { name: st.name || id, histId: null });
+            return id => m.get(id) || { name: id, histId: null };
+        }
+        function _reviewTeamName(saison, id) {
+            const t = saison.teams.find(x => x.id === id);
+            return t ? t.name : teamDisplayName(id);
+        }
+
+        // Team-Drittel einer Saison nach MITTLEREM QUALI-PLATZ (wie markt-abgang/markt-real –
+        // nie nach Punkten, die hängen selbst an den Ausfällen). Rückfall Punkte ohne Quali-Daten.
+        function _reviewDrittel(saison) {
+            const summe = new Map();
+            for (const q of saison.quali) {
+                const r = saison.results.find(x => _rvRi(x) === _rvRi(q));
+                if (!r) continue;
+                const tm = new Map(_rvRes(r).map(x => [_rvD(x), x.tmn || x.teamName || _reviewTeamName(saison, x.team)]));
+                // Nicht-Starter (DNQ/DNPQ/DNS) stehen nicht im Ergebnis, nur in tms – sonst fiele ein
+                // Team, das nur DNQ hatte, aus der Einstufung heraus (Lyncar 1975).
+                for (const [id, t] of Object.entries(r.tms || {})) if (!tm.has(id)) tm.set(id, t);
+                for (const e of _rvRes(q)) {
+                    const t = tm.get(_rvD(e)), p = _rvP(e);
+                    if (!t || !p) continue;
+                    const a = summe.get(t) || [0, 0]; a[0] += p; a[1]++; summe.set(t, a);
+                }
+            }
+            let basis = 'qualiPlatz', reihe;
+            if (summe.size) reihe = [...summe].map(([t, [s, n]]) => [t, s / n]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+            else {
+                basis = 'punkte';
+                reihe = Object.values(saison.tStand).sort((a, b) => (b.points || 0) - (a.points || 0)).map(t => t.name);
+            }
+            const m = new Map(), n = reihe.length;
+            reihe.forEach((t, i) => m.set(t, i < n / 3 ? 'stark' : i < 2 * n / 3 ? 'mittel' : 'schwach'));
+            return { von: name => (name && m.get(name)) || null, basis };
+        }
+
+        function _reviewIndy(saison, ri) {
+            const race = saison.races[ri];
+            if (!race) return { indy500: false, indyGP: false };
+            return { indy500: !!istIndy500(race, saison.jahr), indyGP: !!istIndyGP(race, saison.jahr) };
+        }
+
+        const _rvStandSort = (a, b) => (b[1].points || 0) - (a[1].points || 0) || (b[1].wins || 0) - (a[1].wins || 0);
+
+        // ── Teil: Saison-Endstände ──
+        async function _reviewEndstaende(saisons) {
+            return saisons.map(s => {
+                const ident = _reviewIdent(s);
+                const dnq = new Map(), dnpq = new Map();
+                for (const r of s.results) {
+                    (r.dnq || []).forEach(id => dnq.set(id, (dnq.get(id) || 0) + 1));
+                    (r.dnpq || []).forEach(id => dnpq.set(id, (dnpq.get(id) || 0) + 1));
+                }
+                const drittel = _reviewDrittel(s);
+                const fahrer = Object.entries(s.dStand).sort(_rvStandSort).map(([id, st], i) => {
+                    const team = _reviewTeamName(s, st.team);
+                    return { rang: i + 1, name: ident(id).name, histId: ident(id).histId, id, team, teamDrittel: drittel.von(team),
+                        punkte: st.points || 0, siege: st.wins || 0, podien: st.podiums || 0, poles: st.poles || 0,
+                        schnellsteRunden: st.fastestLaps || 0, rennen: st.races || 0, zieleinfahrten: st.finishes ?? null,
+                        dnf: st.dnfs || 0, dnq: dnq.get(id) || 0, dnpq: dnpq.get(id) || 0, bestesErgebnis: st.bestFinish ?? null };
+                });
+                const teams = Object.values(s.tStand)
+                    .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0))
+                    .map((t, i) => ({ rang: i + 1, name: t.name, drittel: drittel.von(t.name), punkte: t.points || 0, siege: t.wins || 0, podien: t.podiums || 0 }));
+                return { jahr: s.jahr, laufend: s.laufend, drittelBasis: drittel.basis, fahrer, teams };
+            });
+        }
+
+        // ── Teil: Rennergebnisse je Rennen ──
+        async function _reviewRennen(saisons) {
+            const out = [];
+            for (const s of saisons) {
+                const ident = _reviewIdent(s);
+                const namen = ids => (ids || []).map(id => ({ name: ident(id).name, histId: ident(id).histId }));
+                for (const r of s.results) {
+                    const ri = _rvRi(r);
+                    const race = s.races[ri] || {};
+                    const q = s.quali.find(x => _rvRi(x) === ri);
+                    const qPos = new Map(q ? _rvRes(q).map(e => [_rvD(e), _rvP(e)]) : []);
+                    out.push({
+                        jahr: s.jahr, laufend: s.laufend, runde: ri + 1,
+                        name: r.rn || r.raceName || race.name || null, land: r.rc || r.raceCountry || race.country || null,
+                        strecke: race.circuitId || null, ..._reviewIndy(s, ri),
+                        regen: !!(r.rain ?? r.isRain), regenArt: r.regenArt ?? null, roteFlagge: r.roteFlagge ?? null,
+                        ergebnisse: _rvRes(r).map(e => {
+                            const id = _rvD(e);
+                            return { pos: _rvP(e) ?? null, name: ident(id).name, histId: ident(id).histId, id,
+                                team: e.tmn || e.teamName || _reviewTeamName(s, e.team),
+                                qualiPlatz: e.qualiPos ?? qPos.get(id) ?? null,
+                                punkte: e.pt ?? e.points ?? 0, dnf: !!e.dnf,
+                                dnfArt: e.dnfType ?? null, dnfGrund: e.reasonRetired ?? null,
+                                schnellsteRunde: !!(e.fl ?? e.fastestLap), toedlich: !!(e.fat ?? e.fatal) };
+                        }),
+                        dnq: namen(r.dnq), dnpq: namen(r.dnpq), dns: namen(r.dns)
+                    });
+                }
+            }
+            return out;
+        }
+
+        // ── Teil: Fahrermarkt-Chronik über alle Jahre ──
+        async function _reviewMarkt(saisons) {
+            const drittelJe = new Map(saisons.map(s => [s.jahr, _reviewDrittel(s)]));
+            const identJe = new Map(saisons.map(s => [s.jahr, _reviewIdent(s)]));
+            const out = [];
+            for (const c of _allChronSeasons()) {
+                const dr = drittelJe.get(c.year);
+                const ident = identJe.get(c.year) || (id => ({ name: id, histId: null }));
+                const plus = (e, art) => {
+                    const id = e.driverId || e.driver || e.id || null;
+                    const von = e.fromTeam || e.from || null, nach = e.toTeam || e.to || e.team || null;
+                    return { jahr: c.year, art, name: e.driverName || e.name || ident(id).name, histId: e.histId || ident(id).histId,
+                        id, vonTeam: von, nachTeam: nach,
+                        drittelVon: dr ? dr.von(von) : null, drittelNach: dr ? dr.von(nach) : null, roh: e };
+                };
+                (c.transfers || []).forEach(e => out.push(plus(e, 'transfer')));
+                (c.retirements || []).forEach(e => out.push(plus(e, 'abgang')));
+            }
+            return out;
+        }
+
+        // ── Teil: Bewertungs-Verlauf (Zufriedenheit = careerScores, Ansehen = repHistory) ──
+        async function _reviewBewertung(saisons) {
+            const m = new Map();
+            const add = (d, quelle) => {
+                if (!d || (!d.careerScores && !d.repHistory)) return;
+                // spätere Quelle (neuere Saison, dann Pool, dann aktueller Kader) überschreibt
+                m.set(d.histId || d.name, {
+                    name: d.name, histId: d.histId || null, quelle,
+                    zufriedenheit: (d.careerScores || []).map(c => ({ jahr: c.year, wert: c.score, vorSimulation: !!c.preSim })),
+                    ansehen: (d.repHistory || []).map(r => ({ jahr: r.year, wert: r.rep, roh: r.raw ?? null })),
+                    aktuell: { zufriedenheit: d.seasonScore ?? null, ansehen: d.reputation ?? null, teamZufriedenheit: d.satisfaction ?? null }
+                });
+            };
+            saisons.filter(s => !s.laufend).forEach(s => s.drivers.forEach(d => add(d, 'archiv ' + s.jahr)));
+            (GAME_STATE.reservePool || []).forEach(d => add(d, 'reserve-pool'));
+            (GAME_STATE.drivers || []).forEach(d => add(d, 'kader'));
+            return [...m.values()];
+        }
+
+        // ── Teil: Todesfälle ──
+        async function _reviewTode() {
+            const liste = [];
+            for (const c of _allChronSeasons()) for (const d of (c.deaths || [])) {
+                liste.push({ jahr: c.year, name: d.name, histId: d.histId || null, team: d.team || null,
+                    session: d.fatalSession || null,
+                    ebene: _necroArt(d),   // wm | nonwm | pool – dieselbe Einteilung wie der Nekrolog
+                    // Messfalle CLAUDE.md: seasonDeaths enthält auch Nicht-WM-Tode – WM-Renntod nur so zählen
+                    wmRennTod: d.fatalSession === 'race',
+                    rennen: d.raceName || null, runde: typeof d.race === 'number' ? d.race + 1 : null,
+                    ersatz: d.replacement || d.replacementName || null });
+            }
+            const zaehl = f => liste.filter(f).length;
+            return { summe: { alle: liste.length, wmRennTode: zaehl(x => x.wmRennTod), wmWochenende: zaehl(x => x.ebene === 'wm'),
+                nichtWM: zaehl(x => x.ebene === 'nonwm'), ohneCockpit: zaehl(x => x.ebene === 'pool') }, liste };
+        }
+
+        // ── Teil: Rekorde + Weltmeister ──
+        async function _reviewRekorde() {
+            const quellen = {};
+            for (const src of ['sim', 'all']) {
+                let scan = _recordsCache.get(src);
+                if (!scan) { scan = await _scanAllRaces(src, () => {}); if (scan) _recordsCache.set(src, scan); }
+                if (!scan) { quellen[src] = null; continue; }
+                const alle = scan.results.all || {};
+                // Aggregate mit eigener Zeilenform (Nationen, .data) gehören nicht in die Top-10-Liste
+                quellen[src] = (scan.defs || []).filter(d => Array.isArray(alle[d.id]) && !(alle[d.id][0] && alle[d.id][0].data))
+                    .map(d => ({ id: d.id, titel: d.label, bezug: d.scope, definition: d.def || null, warnung: d.warn || null,
+                        top10: alle[d.id].slice(0, 10).map(r => {
+                            const z = {};
+                            for (const [k, v] of Object.entries(r)) if (!k.startsWith('_') && (v === null || typeof v !== 'object')) z[k] = v;
+                            return z;
+                        }) }));
+            }
+            const weltmeister = _championList().map(h => ({ jahr: h.year, fahrer: h.champion,
+                fahrerHistId: h.championHistId || h.driverId || null,
+                punkte: h.championPoints ?? null, konstrukteur: h.teamChampion ?? null, konstrukteurPunkte: h.teamChampionPoints ?? null,
+                historisch: !!h.isHistorical, championGefahren: h.championRaced ?? null }));
+            return { rekorde: quellen, weltmeister };
+        }
+
+        // ── Teil: Junior-Welt (getrennt, sonst geht sie im Gesamtstand unter) ──
+        async function _reviewJunior() {
+            if (GAME_STATE.juniorMode !== 'world' || !GAME_STATE.juniorWorld) return null;
+            const jw = GAME_STATE.juniorWorld;
+            const imF1 = [...(GAME_STATE.drivers || []), ...(GAME_STATE.reservePool || [])].filter(d => /^jw/.test(d.histId || ''));
+            return {
+                serien: (jw.series || []).map(s => ({ id: s.id, name: s.name, ebene: s.level, grid: s.grid, rennen: s.races,
+                    von: s.startYear, bis: s.endYear,
+                    teams: (s.teams || []).map(t => ({ name: t.name, staerke: t.strength, zuverlaessigkeit: t.reliability })) })),
+                fahrer: (jw.drivers || []).map(d => ({ name: d.name, histId: d.histId, nation: d.nation, alter: d.age, pace: d.pace,
+                    potenzial: d.potential, konstanz: d.consistency, regen: d.rain, serie: d.seriesId, team: d.team, debuet: d.debutYear })),
+                historie: jw.history || [],
+                allTime: Object.entries(jw.allTimeStats || {}).map(([histId, st]) => ({ histId, ...st })),
+                aufsteigerInF1: imF1.map(d => ({ name: d.name, histId: d.histId, team: d.team ? teamDisplayName(d.team) : null,
+                    reservePool: !!d.isReserve, f1Debuet: d.f1DebutYear ?? d.debutYear ?? null }))
+            };
+        }
+
+        // ── Teil: Fahrer-Steckbrief-Historie (simulierte Saisons je Fahrer) ──
+        async function _reviewFahrerSteckbriefe(saisons) {
+            const m = new Map();
+            for (const s of saisons) {
+                const ident = _reviewIdent(s);
+                const spans = s.laufend ? null : (s.roh.teamSpans || null);
+                Object.entries(s.dStand).sort(_rvStandSort).forEach(([id, st], i) => {
+                    const { name, histId } = ident(id);
+                    const key = histId || name;
+                    const snap = s.drivers.find(d => d.id === id) || {};
+                    if (!m.has(key)) m.set(key, { name, histId, nation: snap.nation || null, geburtsjahr: snap.birthYear || null, saisons: [] });
+                    m.get(key).saisons.push({ jahr: s.jahr, laufend: s.laufend, rang: i + 1, team: _reviewTeamName(s, st.team),
+                        teamwechsel: spans && spans[id] && spans[id].length > 1
+                            ? spans[id].map(([t, v, b]) => ({ team: t, vonRunde: v, bisRunde: b })) : null,
+                        punkte: st.points || 0, siege: st.wins || 0, podien: st.podiums || 0, poles: st.poles || 0,
+                        rennen: st.races || 0, dnf: st.dnfs || 0,
+                        pace: snap.pace ?? null, zufriedenheit: snap.seasonScore ?? null, ansehen: snap.reputation ?? null,
+                        vertragBis: snap.contractEnd ?? null });
+                });
+            }
+            // Teamkollegen-Duelle (h2hHistory, paarweise über Jahre)
+            const h2h = Object.values(GAME_STATE.h2hHistory || {});
+            for (const f of m.values()) {
+                f.duelle = h2h.filter(p => p.aName === f.name || p.bName === f.name).map(p => {
+                    const a = p.aName === f.name;
+                    return { gegen: a ? p.bName : p.aName, rennenSiege: a ? p.rW : p.rL, rennenNiederlagen: a ? p.rL : p.rW,
+                        qualiSiege: a ? p.qW : p.qL, qualiNiederlagen: a ? p.qL : p.qW, jahre: Object.keys(p.years || {}).map(Number) };
+                });
+            }
+            return [...m.values()];
+        }
+
+        // ── Teil: Team-Steckbrief-Historie ──
+        async function _reviewTeamSteckbriefe(saisons) {
+            const m = new Map();
+            for (const s of saisons) {
+                const ident = _reviewIdent(s);
+                const drittel = _reviewDrittel(s);
+                const fahrerJe = new Map();
+                for (const [id, st] of Object.entries(s.dStand)) {
+                    const t = _reviewTeamName(s, st.team);
+                    if (!fahrerJe.has(t)) fahrerJe.set(t, []);
+                    fahrerJe.get(t).push(ident(id).name);
+                }
+                Object.values(s.tStand).sort((a, b) => (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0)).forEach((t, i) => {
+                    const snap = s.teams.find(x => x.name === t.name) || {};
+                    if (!m.has(t.name)) m.set(t.name, { name: t.name, nation: snap.nation || null, saisons: [] });
+                    m.get(t.name).saisons.push({ jahr: s.jahr, laufend: s.laufend, rang: i + 1, drittel: drittel.von(t.name),
+                        punkte: t.points || 0, siege: t.wins || 0, podien: t.podiums || 0, fahrer: fahrerJe.get(t.name) || [],
+                        carSpeed: snap.carSpeed ?? null, zuverlaessigkeit: snap.reliability ?? null, strategie: snap.strategy ?? null });
+                });
+            }
+            return [...m.values()];
+        }
+
+        // ── Teil: All-Time (dieselbe Tabelle wie Statistiken → Fahrer/Teams) ──
+        async function _reviewAllTimeFahrer() {
+            let indy = null;
+            try { indy = await _buildIndyStats(); } catch (e) { indy = null; }
+            return Object.entries(GAME_STATE.allTimeStATS?.drivers || {}).map(([key, st]) => {
+                const i = indy && indy.get(key);
+                return { key, ...st, indy500: i ? { ...i } : null };
+            });
+        }
+        async function _reviewAllTimeTeams() {
+            return Object.entries(GAME_STATE.allTimeStATS?.teams || {}).map(([key, st]) => ({ key, ...st }));
+        }
+
+        const _REVIEW_HINWEISE = {
+            rennen: ['Archivierte Saisons speichern KEINEN DNF-Grund und KEINE rote Flagge – nur die laufende Saison hat dnfArt/dnfGrund/roteFlagge/regenArt.',
+                     'qualiPlatz ist der Quali-Rang, nicht zwingend der Startplatz (Strafen/Nachrücker).',
+                     'DNQ-Listen erst ab v0.9.15.25, DNPQ ab v0.9.17.8 archiviert – ältere Saisons zeigen leere Listen.'],
+            endstaende: ['teamDrittel nach mittlerem Quali-Platz (drittelBasis), Rückfall Punkte ohne Quali-Daten.'],
+            markt: ['roh = unveränderter Eintrag aus der Chronik (Feldnamen je Version verschieden). Drittel aus derselben Saison.'],
+            bewertung: ['Spätere Quelle gewinnt: Archiv-Snapshot < Reserve-Pool < aktueller Kader.', 'vorSimulation = aus realen Ergebnissen vorbelegt (preSim).'],
+            tode: ['wmRennTod = fatalSession race. Nur diese Zahl mit F1DB-Renntoten vergleichen.'],
+            rekorde: ['sim = nur simulierte Saisons, all = reale Historie + Simulation. Top 10 je Rekord, Zeitraum gesamt.'],
+            fahrerSteckbrief: ['Nur simulierte Saisons (inkl. laufender). Reale Jahre vor Spielstart stehen in F1DB, nicht im Spielstand.'],
+            teamSteckbrief: ['carSpeed/zuverlaessigkeit/strategie = Stand des Saison-Snapshots.'],
+            allTimeFahrer: ['indy500 = Anteil der 11 Indy-500-Starts 1950–1960 (nie der US-GP 2000–2007).']
+        };
+
+        async function _reviewTeil(teil, saisons) {
+            switch (teil) {
+                case 'endstaende':       return _reviewEndstaende(saisons);
+                case 'rennen':           return _reviewRennen(saisons);
+                case 'markt':            return _reviewMarkt(saisons);
+                case 'bewertung':        return _reviewBewertung(saisons);
+                case 'tode':             return _reviewTode();
+                case 'rekorde':          return _reviewRekorde();
+                case 'junior':           return _reviewJunior();
+                case 'fahrerSteckbrief': return _reviewFahrerSteckbriefe(saisons);
+                case 'teamSteckbrief':   return _reviewTeamSteckbriefe(saisons);
+                case 'allTimeFahrer':    return _reviewAllTimeFahrer();
+                case 'allTimeTeams':     return _reviewAllTimeTeams();
+            }
+            return null;
+        }
+
+        function _reviewDownload(name, obj) {
+            const blob = new Blob([JSON.stringify(obj, null, 1)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+
+        // Einzelner Teil oder 'paket' (alles in EINER Datei, ein konsistenter Schnappschuss).
+        // download=false gibt das Objekt zurück (Tests/Konsole).
+        async function reviewExport(teil, download = true) {
+            const saisons = await _reviewSaisons();
+            const jahr = GAME_STATE.currentYear;
+            if (teil === 'paket') {
+                const teile = {};
+                for (const t of Object.keys(REVIEW_TEILE)) teile[t] = { hinweise: _REVIEW_HINWEISE[t] || [], daten: await _reviewTeil(t, saisons) };
+                teile.reservePool = { hinweise: [], daten: _reservePoolDaten() };
+                teile.nationen = { hinweise: ['Wie exportNationStats total.'], daten: exportNationStats('total', false) };
+                const out = { kopf: _reviewKopf('paket'), teile };
+                if (download) _reviewDownload(`f1rpg-review-paket-${jahr}.json`, out);
+                return out;
+            }
+            if (!REVIEW_TEILE[teil]) throw new Error('Unbekannter Review-Teil: ' + teil);
+            const daten = await _reviewTeil(teil, saisons);
+            const hinweise = [...(_REVIEW_HINWEISE[teil] || [])];
+            if (daten === null && teil === 'junior') hinweise.push('Junior-Welt ist in diesem Spielstand nicht aktiv (juniorMode ist nicht world).');
+            const out = { kopf: _reviewKopf(teil), hinweise, daten };
+            if (download) _reviewDownload(`f1rpg-review-${REVIEW_TEILE[teil].datei}-${jahr}.json`, out);
+            return out;
+        }
+        window.reviewExport = reviewExport;
+
+        window.openReviewExport = function() {
+            const alt = document.getElementById('reviewExportModal');
+            if (alt) alt.remove();
+            const ov = document.createElement('div');
+            ov.id = 'reviewExportModal';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+            ov.onclick = e => { if (e.target === ov) ov.remove(); };
+            const knopf = (teil, label) => `<button onclick="_reviewKlick('${teil}', this)" class="p-2 rounded-lg text-sm text-left bg-secondary">${label}</button>`;
+            ov.innerHTML = `
+                <div class="card rounded-xl p-5" style="max-width:560px;width:100%;max-height:90vh;overflow:auto;">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-lg font-bold">🧾 Review-Export</h3>
+                        <button onclick="document.getElementById('reviewExportModal').remove()" class="px-3 py-1 rounded-lg bg-secondary">✕</button>
+                    </div>
+                    <p class="text-sm text-secondary mb-3">JSON-Dateien für ein Agenten-Review. Jede Datei hat denselben Kopf (Version, Startjahr, aktuelles Jahr) und verknüpft Fahrer über histId bzw. Namen.</p>
+                    <button onclick="_reviewKlick('paket', this)" class="btn-primary w-full p-3 rounded-lg font-bold mb-3">📦 Review-Paket – alles in einer Datei</button>
+                    <div class="grid grid-cols-2 gap-2">
+                        ${Object.entries(REVIEW_TEILE).map(([t, v]) => knopf(t, v.label)).join('')}
+                    </div>
+                    <div id="reviewExportStatus" class="text-xs text-tertiary mt-3"></div>
+                </div>`;
+            document.body.appendChild(ov);
+        };
+        window._reviewKlick = async function(teil, btn) {
+            const st = document.getElementById('reviewExportStatus');
+            if (btn) btn.disabled = true;
+            if (st) st.textContent = '⏳ Sammle ' + (teil === 'paket' ? 'alle Teile' : REVIEW_TEILE[teil].label) + ' … (Rekorde scannen alle Rennen, das dauert)';
+            try {
+                await reviewExport(teil);
+                if (st) st.textContent = '✅ Heruntergeladen.';
+            } catch (e) {
+                logError('EXPORT', 'Review-Export ' + teil + ': ' + (e.message || e));
+                if (st) st.textContent = '❌ ' + (e.message || e);
+            } finally { if (btn) btn.disabled = false; }
+        };
 
         function showOffSeasonModal(year) {
             const hist = GAME_STATE.history || [];
@@ -52690,7 +53137,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             `;
         }
         
-        function renderChampions() {
+        // Weltmeister-Liste: historisch (vor Spielstart, HIST_CHAMPIONS/F1DB) + simuliert, neueste zuerst.
+        // Eine Quelle fuer renderChampions UND den Review-Export.
+        function _championList() {
             const startYear = parseInt(GAME_STATE.templateUsed) || GAME_STATE.currentYear;
             
             // Sammle alle Einträge: historisch + simuliert
@@ -52719,12 +53168,16 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             GAME_STATE.history.forEach(h => {
                 allChampions.push({ ...h, isHistorical: false });
             });
-            
+            allChampions.sort((a, b) => b.year - a.year);
+            return allChampions;
+        }
+
+        function renderChampions() {
+            const allChampions = _championList();
             if (allChampions.length === 0) {
                 return '<p class="text-center text-tertiary p-8">Noch keine abgeschlossenen Saisons.</p>';
             }
             
-            allChampions.sort((a, b) => b.year - a.year);
             const _teamNat = _teamNationLookup();
             const _ats = GAME_STATE.allTimeStATS?.drivers || {};
             const _champFlag = h => {
