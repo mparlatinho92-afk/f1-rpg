@@ -73,6 +73,10 @@ als Grund zu hell. Deshalb eigene Textvarianten statt die Akzentfarbe zu verschi
   (135°-Diagonale, Name links auf `colors[0]`, Gegenfarben-Schatten) ist das zu streng —
   der Großteil der übrigen 152 Stellen unter 3:1 ist dieser Fall.
 - Das Audit ignoriert `text-shadow`. Der frühere 1-px-Umriss um Teamnamen zählte deshalb nicht.
+- **Gefilterte Kategorie verdeckt Regressionen:** Die Auswertung „dunkle Themes ohne Weiß auf hellen
+  Buttons" übersah, dass der Button „Datensätze" `--text-tertiary` als HINTERGRUND nutzte — durch das
+  Aufhellen fiel Weiß darauf von 4,8 auf ~2,5. Vor dem Verschieben einer Text-Variable prüfen, ob sie
+  irgendwo als `background` steht (`grep "background.*var(--text-"`); jetzt fester Wert `#475569`.
 
 **Bewusst offen:** Weiß auf hellen Buttons (Exportieren grün 2,5, Komplette Saison blau 3,7,
 Hauptbutton rot 3,8; ~3.100 Stellen) und das helle Theme „modern" (~2.200, v. a. `--accent-gold`

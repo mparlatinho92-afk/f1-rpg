@@ -413,3 +413,13 @@ unter Windows die Tabellenlinien kaputt.
 | `… --datei alt.html` | anderen Stand im Projektordner messen — Vorher/Nachher: `git show HEAD:index.html > _alt.html` |
 
 ⚠ Transitions werden abgeschaltet, sonst misst man beim Theme-Wechsel Zwischenfarben. Verläufe zählen mit der schlechtesten Farbe, `text-shadow` wird ignoriert. Zahlen und Ursachen: `BEFUNDE.md` (12.10.2026).
+
+## Review-Exporte — `review-export.js` (v0.9.21.6)
+
+| Befehl | Prüft |
+|---|---|
+| `node tests/review-export.js 1975 2` | Alle 11 Review-Teile + Paket im Browser, Gegenproben gegen den Spielstand: Punktesumme je Saison = `driverStandings`, Rang 1 = Weltmeister, Rennen = Archiv + laufend, Markt = Transfers + Abgänge, Tode = alle `deaths`, Weltmeister = `_championList`, All-Time = `allTimeStATS`, Download über den Button, `pageerror` |
+| `node tests/review-export.js 1950 3` | dasselbe mit Indy 500 und Todesfällen; zusätzlich: je Archivjahr 1950–60 genau ein Indy 500, kein Indy GP |
+
+⚠ **Archiv-Lücke (gemessen 12.10.2026):** archivierte Rennen sind kompakt (`d/p/pt/dnf/fl/fat/dnpq/tmn`) und tragen **keinen DNF-Grund, keine rote Flagge, keine Regenart** — nur die laufende Saison hat sie. Der Export schreibt das in `hinweise`, statt Felder zu erfinden. Wer DNF-Gründe über mehrere Jahre braucht, muss sie erst ins Archiv aufnehmen.
+⚠ Team-Drittel nach mittlerem **Quali-Platz** inkl. Nicht-Startern aus `tms` (sonst fällt ein Team mit nur DNQ heraus, Lyncar 1975). Teams der laufenden Saison ohne Meldung bleiben `null`.
