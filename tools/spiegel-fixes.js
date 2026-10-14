@@ -33,14 +33,16 @@
  * Eigene Zeilen im Sheet (Nutzer-Wunsch 11.10.2026: „mich weiter im Sheet eintragen
  * lassen, nichts darf verloren gehen"): Spalte E traegt je gespiegelter Zeile eine
  * Kennung (Status + Anfang des Punkts), Spalte F prueft per ARRAYFORMULA in F2
- * „neu" (keine Kennung) bzw. „geändert" (Kennung passt nicht mehr). VOR jedem
+ * „neu" (keine Kennung) bzw. „geändert" (Kennung passt nicht mehr) — seit 14.10.2026 in F1, nicht F2
+ * (siehe markierungVon). VOR jedem
  * Schreiben liest Claude Fixes!F:F; markierte Zeilen kommen per --uebernehmen in den
  * Abschnitt „✚ Aus dem Sheet – ungeprüft" der Markdown-Datei. Erst dann wird
  * ueberschrieben. Eine Aenderung nur hinten im Punkt-Text (nach Zeichen 30) oder
  * nur am Bereich erkennt die Formel nicht.
  * ⚠ Das Sheet steht auf de_DE: Formeln brauchen „;" als Trenner, auch ueber die API.
  *   Mit „," und Array-Literal {…} kam #ERROR! (gemessen 12.10.2026). F1/F2 schreibt
- *   die Spiegelung nie (sie leert nur A2:E).
+ *   Die Spiegelung schreibt F nie (sie leert nur A2:E). Formel in F1:
+ *   =ARRAYFORMULA(IF(ROW(C1:C)=1;"Prüfen";IF(C1:C="";"";IF(E1:E="";"neu";IF(E1:E=A1:A&LEFT(C1:C;30);"";"geändert")))))
  *
  * ⚠ Der Connector kennt kein valueInputOption=RAW: update_values parst wie die
  *   Oberflaeche („0.9.21.3" → Datum). Deshalb jede Zelle mit fuehrendem Apostroph.
@@ -211,9 +213,27 @@ function werte({ fixes, konzepte }) {
 
 // Zeilen aus dem Sheet in den Abschnitt „✚ Aus dem Sheet – ungeprüft" schreiben.
 // Erwartet ein JSON-Array aus [status, bereich, punkt, beleg, pruefen] (wie get_values A:F liefert).
+// Ist die Datei der komplette Abzug Fixes!A:F (Kopfzeile „Status"), rechnet das Skript die Markierung
+// selbst nach, statt Spalte F zu glauben. Anlass 14.10.2026: Die Formel stand in F2, der Nutzer fuegte
+// darueber Zeilen ein, sie rutschte nach F8 — die neuen Zeilen 2–7 waren unmarkiert, F sah „sauber" aus.
+// Seit dann steht sie in F1 (ROW()=1 → Kopf), das verschiebt sich nicht mehr; die Gegenrechnung bleibt.
+function markierungVon(z) {
+    const [status = '', , punkt = '', , kennung = ''] = z;
+    if (!punkt.trim()) return '';
+    if (!kennung) return 'neu';
+    return kennung === status + punkt.slice(0, KENNUNG_LAENGE) ? '' : 'geändert';
+}
+
 function uebernehmen(datei) {
-    const zeilen = JSON.parse(fs.readFileSync(datei, 'utf8'))
-        .filter(z => z && (z[2] || '').trim());
+    let zeilen = JSON.parse(fs.readFileSync(datei, 'utf8'));
+    if (zeilen.length && zeilen[0] && zeilen[0][0] === 'Status') {
+        const daten = zeilen.slice(1);
+        const abweichend = daten.filter(z => z && markierungVon(z) !== (z[5] || ''));
+        if (abweichend.length) console.log('⚠ Spalte F weicht bei ' + abweichend.length
+            + ' Zeile(n) von der Nachrechnung ab — Formel in Fixes!F1 pruefen. Uebernommen wird nach der Nachrechnung.');
+        zeilen = daten.filter(z => z && markierungVon(z)).map(z => [0, 1, 2, 3].map(i => z[i] || '').concat(markierungVon(z)));
+    }
+    zeilen = zeilen.filter(z => z && (z[2] || '').trim());
     if (!zeilen.length) { console.log('Nichts zu übernehmen.'); return; }
     const punkte = zeilen.map(([status = '', bereich = '', punkt = '', beleg = '', pruefen = '']) => {
         const teile = [];
@@ -262,8 +282,8 @@ if (arg === '--hook') {
                     decision: 'block',
                     reason: `Neue Version v${version}, FIXES_OFFEN.md ist zuletzt gegen v${ab.version} abgeglichen. `
                         + 'Pruefung je Version: (0) FIXES_OFFEN.md lesen. (1) Im Sheet '
-                        + `${stand.sheetId || '<sheetId>'} mit get_values Fixes!A:F lesen; Zeilen mit „neu"/„geändert" in Spalte F `
-                        + 'als JSON-Array in eine Datei schreiben und `node tools/spiegel-fixes.js --uebernehmen <datei>` — '
+                        + `${stand.sheetId || '<sheetId>'} mit get_values Fixes!A:F lesen, den kompletten Abzug (mit Kopfzeile) `
+                        + 'als JSON-Array in eine Datei schreiben und `node tools/spiegel-fixes.js --uebernehmen <datei>` (rechnet neu/geändert selbst nach) — '
                         + 'auch wenn die Markdown-Datei sonst unveraendert ist. '
                         + '(2) `node tools/spiegel-fixes.js --seit` zeigt die Changelog-Punkte der neuen Versionen: '
                         + 'jeden gegen die offenen Punkte (❌ ◐ ❔ ✚) halten; nur mit Beleg im Code auf ✅ setzen und die Version dazuschreiben. '
@@ -277,8 +297,8 @@ if (arg === '--hook') {
             console.log(JSON.stringify({
                 decision: 'block',
                 reason: 'FIXES_OFFEN.md wurde geaendert und ist noch nicht ins Google Sheet gespiegelt. '
-                    + 'Ablauf: (0) ZUERST mit get_values Fixes!F:F lesen; stehen dort „neu" oder „geändert", '
-                    + 'genau diese Zeilen (A:F) als JSON-Array in eine Datei schreiben und '
+                    + 'Ablauf: (0) ZUERST mit get_values Fixes!A:F lesen, den kompletten Abzug (mit Kopfzeile) als JSON-Array '
+                    + 'in eine Datei schreiben und '
                     + '`node tools/spiegel-fixes.js --uebernehmen <datei>` ausfuehren — sonst gehen Eintraege des Nutzers verloren. '
                     + '(1) `node tools/spiegel-fixes.js --zeilen` ausfuehren, (2) im Sheet '
                     + `${stand.sheetId || '<sheetId>'} mit Google Sheets batch_clear_values die Bereiche "leeren" leeren, `

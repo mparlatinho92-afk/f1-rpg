@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.8</title>
+    <title>F1 RPG v0.9.21.9</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.8 (aktuell) - 12.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.9 (aktuell) - 14.10.2026</div>
+                            <div>&#8226; NEU: Head-to-Head mit Renn- und Quali-Duellen, Prozent und Zeile Gegen alle – Spalten sortierbar</div>
+                            <div>&#8226; NEU: Teamkollegen ohne gemeinsames Wochenende separat</div>
+                            <div>&#8226; FIX: Teams mit 3+ Fahrern zeigen alle Duelle</div>
+                            <div>&#8226; FIX: Fahrer erscheint nicht mehr als eigener Teamkollege</div>
+                            <div class="font-bold text-slate-400">v0.9.21.8 - 12.10.2026</div>
                             <div>&#8226; FIX: Junior-Welt-Export erklärt Aufstiege innerhalb der Leiter vs. F1-Aufstieg</div>
                             <div class="font-bold text-slate-400">v0.9.21.7 - 12.10.2026</div>
                             <div>&#8226; FIX: Fahrermarkt-Export – Verlängerungen mit Ziel-Team, Pool statt Platzhalter</div>
@@ -4320,7 +4325,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.8';
+        const VERSION = '0.9.21.9';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -15681,6 +15686,93 @@
                 otherName: selfIsA ? rec.bName : rec.aName,
                 years, seasons: years.length
             };
+        }
+
+        // Teamkollegen-Bilanz fuer den Steckbrief, NUR aus den gespeicherten Rennergebnissen (v0.9.21.9).
+        // Bewusst getrennt von trackTeammateDuels: der Zaehler speist das Ansehen und kennt nur
+        // Zweier-Teams (Nutzer-Entscheid 14.10.2026: Balancing bleibt unberuehrt). Hier zaehlt jedes
+        // Paar, auch in Teams mit 3+ Autos, und auch rueckwirkend fuer jede archivierte Saison.
+        //   Rennen: beide gestartet (in res), wer vorne liegt gewinnt — DNF steht hinten (wie im Zaehler).
+        //   Quali:  beide mit Quali-Platz am selben Wochenende im selben Team.
+        //   wochenenden: gemeinsam gemeldet (res oder tms) — 0 heisst „nie am selben Wochenende".
+        // Teamkollege = selbes Team zur RENNZEIT (tmn/tms), nicht der Kader am Saisonende.
+        // Selbst-Ausschluss ueber IDs UND histId/Namen: Fahrer-IDs tragen einen Zeitstempel, derselbe
+        // Fahrer kann in einer Saison unter zwei IDs stehen (Graham-Hill-Fall: Fahrer gegen sich, 0:0).
+        // seasons: [{ year, results, qualifyingResults, drivers }] — results im Archiv- (res/d/p/tmn)
+        // oder Live-Format (results/driver/position/teamName).
+        function teamkollegenDuelle(seasons, selfIds, selfKey, selfName) {
+            const paare = {};
+            const norm = v => String(v || '').trim().toLowerCase();
+            for (const s of seasons) {
+                const kader = {};
+                for (const d of (s.drivers || [])) kader[d.id] = d;
+                const person = id => {
+                    const d = kader[id] || (GAME_STATE.drivers || []).find(x => x.id === id)
+                        || (GAME_STATE.reservePool || []).find(x => x.id === id);
+                    const at = GAME_STATE.allTimeStATS?.drivers?.[id];
+                    return { key: (d && (d.histId || d.id)) || id, name: (d && d.name) || (at && at.name) || id };
+                };
+                const istSelbst = id => {
+                    if (selfIds.has(id)) return true;
+                    const p = person(id);
+                    return p.key === selfKey || (selfName && norm(p.name) === norm(selfName));
+                };
+                const qualiJeRennen = {};
+                for (const q of (s.qualifyingResults || [])) {
+                    const m = qualiJeRennen[q.ri ?? q.raceIndex] = {};
+                    for (const r of (q.res || q.results || [])) {
+                        const id = r.d ?? r.driver, p = r.p ?? r.position;
+                        if (id != null && p != null && !r.dnpq) m[id] = p;
+                    }
+                }
+                for (const race of (s.results || [])) {
+                    const ri = race.ri ?? race.raceIndex;
+                    const start = (race.res || race.results || []).map(r => ({
+                        d: r.d ?? r.driver, p: r.p ?? r.position, tm: r.tmn || r.teamName || null }));
+                    // Team je Melder: Starter aus res, Nicht-Starter (DNQ/DNS) aus tms
+                    const teamVon = {};
+                    for (const [id, tm] of Object.entries(race.tms || {})) teamVon[id] = tm;
+                    for (const r of start) if (r.tm) teamVon[r.d] = r.tm;
+                    const selbstId = Object.keys(teamVon).find(istSelbst);
+                    if (!selbstId) continue;
+                    const team = teamVon[selbstId];
+                    const ich = start.find(r => r.d === selbstId);
+                    const quali = qualiJeRennen[ri] || {};
+                    for (const [id, tm] of Object.entries(teamVon)) {
+                        if (tm !== team || istSelbst(id)) continue;
+                        const p = person(id);
+                        const rec = paare[p.key] || (paare[p.key] = { key: p.key, name: p.name,
+                            rW: 0, rL: 0, qW: 0, qL: 0, wochenenden: 0, jahre: new Set() });
+                        rec.wochenenden++; rec.jahre.add(s.year);
+                        const er = start.find(r => r.d === id);
+                        if (ich && er && ich.p != null && er.p != null && ich.p !== er.p) {
+                            if (ich.p < er.p) rec.rW++; else rec.rL++;
+                        }
+                        const qi = quali[selbstId], qe = quali[id];
+                        if (qi != null && qe != null && qi !== qe) { if (qi < qe) rec.qW++; else rec.qL++; }
+                    }
+                }
+            }
+            return paare;
+        }
+
+        // Spaltenkopf-Klick in der H2H-Tabelle: sortiert die Zeilen nach data-<spalte>, zweiter Klick dreht.
+        // Die Gesamtzeile (data-fest) bleibt unten.
+        function sortiereH2H(th, spalte) {
+            const tbody = th.closest('table').querySelector('tbody');
+            // erster Klick: Zahlen absteigend, Namen aufsteigend
+            const ab = th.dataset.richtung ? th.dataset.richtung !== 'ab' : spalte !== 'name';
+            th.closest('tr').querySelectorAll('th').forEach(x => { delete x.dataset.richtung; });
+            th.dataset.richtung = ab ? 'ab' : 'auf';
+            const zeilen = [...tbody.querySelectorAll('tr:not([data-fest])')];
+            const wert = tr => { const v = tr.dataset[spalte]; return v === '' || v == null ? -Infinity : (isNaN(v) ? v : Number(v)); };
+            zeilen.sort((a, b) => {
+                const x = wert(a), y = wert(b);
+                const c = typeof x === 'string' || typeof y === 'string' ? String(x).localeCompare(String(y)) : x - y;
+                return ab ? -c : c;
+            });
+            const fest = tbody.querySelector('tr[data-fest]');
+            zeilen.forEach(z => tbody.insertBefore(z, fest));
         }
 
         // Teaminterne Duelle pro Rennen UND pro Quali (statt nur jährlich aus Saison-Punkten).
@@ -38272,12 +38364,20 @@ Empfohlene Wertebereiche:
                 ${(() => {
                     const h2hMap = {};
                     const searchIds = new Set([driverId, ...(stATSId && stATSId !== driverId ? [stATSId] : [])]);
+                    // Graham-Hill-Fall: derselbe Fahrer kann in einer Saison unter einer zweiten ID stehen
+                    // (Zeitstempel-IDs) — dann ist er nicht sein eigener Teamkollege.
+                    const _selbstName = String(driver.name || '').trim().toLowerCase();
+                    const _istSelbst = d => searchIds.has(d.id) || (stATSId && (d.histId || d.id) === stATSId)
+                        || (_selbstName && String(d.name || '').trim().toLowerCase() === _selbstName);
+                    const _saisonen = [];
                     for (const season of GAME_STATE.history || []) {
                         const hd = (season.drivers || []).find(d => searchIds.has(d.id) || (stATSId && d.histId === stATSId));
-                        if (!hd || !hd.team) continue;
+                        if (!hd) continue;
+                        _saisonen.push(season);
+                        if (!hd.team) continue;
                         const dPts = season.driverStandings?.[hd.id]?.points || 0;
                         const dW   = season.driverStandings?.[hd.id]?.wins   || 0;
-                        (season.drivers || []).filter(d => d.team === hd.team && !searchIds.has(d.id) && d.id !== hd.id).forEach(tm => {
+                        (season.drivers || []).filter(d => d.team === hd.team && !_istSelbst(d) && d.id !== hd.id).forEach(tm => {
                             const key = tm.histId || tm.id;
                             if (!h2hMap[key]) h2hMap[key] = { name: tm.name, id: key, seasons: [] };
                             const tmSt = season.driverStandings?.[tm.id] || {};
@@ -38286,34 +38386,64 @@ Empfohlene Wertebereiche:
                     }
                     if (isCurrentlyActive && team) {
                         const dPts = standing.points || 0, dW = standing.wins || 0;
-                        GAME_STATE.drivers.filter(d => d.team === team.id && !searchIds.has(d.id) && d.id !== driverId).forEach(tm => {
+                        GAME_STATE.drivers.filter(d => d.team === team.id && !_istSelbst(d) && d.id !== driverId).forEach(tm => {
                             const key = tm.histId || tm.id;
                             if (!h2hMap[key]) h2hMap[key] = { name: tm.name, id: key, seasons: [] };
                             const tmSt = GAME_STATE.driverStandings[tm.id] || {};
                             h2hMap[key].seasons.push({ year: GAME_STATE.currentYear, dPts, tmPts: tmSt.points || 0, dW, tmW: tmSt.wins || 0, isCurrent: true });
                         });
                     }
+                    // Renn- und Quali-Duelle aus den Ergebnissen (jedes Paar, auch 3+-Teams, Team zur Rennzeit)
+                    if (isCurrentlyActive) _saisonen.push({ year: GAME_STATE.currentYear, results: GAME_STATE.results,
+                        qualifyingResults: GAME_STATE.qualifyingResults, drivers: GAME_STATE.drivers });
+                    const _duelle = teamkollegenDuelle(_saisonen, searchIds, stATSId || driverId, driver.name);
+                    // Teamkollegen nur zur Rennzeit (Wechsel mitten in der Saison) bekommen auch eine Zeile
+                    for (const p of Object.values(_duelle)) if (!h2hMap[p.key]) h2hMap[p.key] = { name: p.name, id: p.key, seasons: [] };
                     const entries = Object.values(h2hMap).sort((a, b) => b.seasons.length - a.seasons.length);
                     if (entries.length === 0) return '';
-                    const rows = entries.map(e => {
-                        const w = e.seasons.filter(s => s.dPts > s.tmPts).length;
-                        const l = e.seasons.filter(s => s.dPts < s.tmPts).length;
-                        const avgDiff = e.seasons.reduce((sum, s) => sum + (s.dPts - s.tmPts), 0) / e.seasons.length;
-                        const c = w > l ? '#22C55E' : l > w ? '#EF4444' : '#888888';
+                    const _pct = (w, l) => (w + l) ? Math.round(w / (w + l) * 100) : null;
+                    const _farbe = (w, l) => w > l ? 'var(--text-pos)' : l > w ? 'var(--text-neg)' : 'var(--text-secondary)';
+                    const _bilanz = (w, l) => (w + l) ? '<span style="color:' + _farbe(w, l) + '">' + w + ':' + l + '</span>' : '<span class="text-tertiary">–</span>';
+                    const _zeile = e => {
+                        const du = _duelle[e.id] || { rW: 0, rL: 0, qW: 0, qL: 0, wochenenden: 0 };
+                        const avgDiff = e.seasons.length ? e.seasons.reduce((sum, s) => sum + (s.dPts - s.tmPts), 0) / e.seasons.length : null;
+                        const pct = _pct(du.rW, du.rL);
                         const badges = e.seasons.map(s => {
                             const bc = s.dPts > s.tmPts ? '#22C55E' : s.dPts < s.tmPts ? '#EF4444' : '#888888';
-                            return '<span style="font-size:0.65rem;padding:1px 4px;border-radius:3px;background:' + bc + '22;color:' + bc + ';border:1px solid ' + bc + '44">' + s.year + (s.isCurrent ? '★' : '') + '</span>';
+                            return '<span style="font-size:0.65rem;padding:1px 4px;border-radius:3px;background:' + bc + '22;color:' + lesbareTextfarbe(bc) + ';border:1px solid ' + bc + '44">' + s.year + (s.isCurrent ? '★' : '') + '</span>';
                         }).join(' ');
-                        return '<tr class="border-t border-custom">' +
+                        return '<tr class="border-t border-custom" data-name="' + String(e.name).replace(/"/g, '&quot;') + '" data-sais="' + e.seasons.length
+                            + '" data-rennen="' + (du.rW + du.rL) + '" data-quali="' + (du.qW + du.qL) + '" data-pct="' + (pct ?? '') + '" data-diff="' + (avgDiff ?? '') + '">' +
                             '<td class="p-1"><span class="driver-link cursor-pointer" onclick="closeDriverProfile();openDriverProfile(\'' + e.id + '\')">' + e.name + '</span>' +
                             ' <span style="display:inline-flex;flex-wrap:wrap;gap:2px;vertical-align:middle">' + badges + '</span>' +
                             '</td>' +
-                            '<td class="p-1 text-center text-tertiary">' + e.seasons.length + '</td>' +
-                            '<td class="p-1 text-center font-bold" style="color:var(--text-pos)">' + w + '</td>' +
-                            '<td class="p-1 text-center font-bold" style="color:var(--text-neg)">' + l + '</td>' +
-                            '<td class="p-1 text-right font-mono" style="color:' + c + '">' + (avgDiff >= 0 ? '+' : '') + avgDiff.toFixed(0) + '</td>' +
+                            '<td class="p-1 text-center font-mono">' + _bilanz(du.rW, du.rL) + '</td>' +
+                            '<td class="p-1 text-center font-mono">' + _bilanz(du.qW, du.qL) + '</td>' +
+                            '<td class="p-1 text-right font-mono font-bold whitespace-nowrap" style="color:' + _farbe(du.rW, du.rL) + '">' + (pct != null ? pct + '%' : '–') + '</td>' +
+                            '<td class="p-1 text-right font-mono whitespace-nowrap" style="color:' + (avgDiff == null ? 'var(--text-secondary)' : _farbe(avgDiff, -avgDiff)) + '">' + (avgDiff == null ? '–' : (avgDiff >= 0 ? '+' : '') + avgDiff.toFixed(0)) + '</td>' +
                             '</tr>';
-                    }).join('');
+                    };
+                    // „nie am selben Wochenende": im selben Team gemeldet, aber nie gemeinsam angetreten.
+                    // Nur wenn Ergebnisse vorliegen — ohne sie (Altstand) laesst sich das nicht entscheiden.
+                    const _hatErgebnisse = _saisonen.some(s => (s.results || []).length);
+                    const _nie = e => _hatErgebnisse && !(_duelle[e.id] && _duelle[e.id].wochenenden);
+                    const gemeinsam = entries.filter(e => !_nie(e)), getrennt = entries.filter(_nie);
+                    const sum = gemeinsam.reduce((a, e) => { const du = _duelle[e.id]; if (du) { a.rW += du.rW; a.rL += du.rL; a.qW += du.qW; a.qL += du.qL; } return a; }, { rW: 0, rL: 0, qW: 0, qL: 0 });
+                    const sumPct = _pct(sum.rW, sum.rL);
+                    const gesamt = gemeinsam.length > 1 && (sum.rW + sum.rL + sum.qW + sum.qL) > 0
+                        ? '<tr class="border-t border-custom font-bold" data-fest="1"><td class="p-1">Gegen alle</td>' +
+                          '<td class="p-1 text-center font-mono">' + _bilanz(sum.rW, sum.rL) + '</td>' +
+                          '<td class="p-1 text-center font-mono">' + _bilanz(sum.qW, sum.qL) + '</td>' +
+                          '<td class="p-1 text-right font-mono whitespace-nowrap" style="color:' + _farbe(sum.rW, sum.rL) + '">' + (sumPct != null ? sumPct + '%' : '–') + '</td><td></td></tr>'
+                        : '<tr data-fest="1"></tr>';
+                    const rows = gemeinsam.map(_zeile).join('') + gesamt;
+                    // Sortierbar = gepunktet unterstrichen (ein Pfeil-Zeichen rendert als farbiges Emoji); Koepfe duerfen umbrechen, sonst ist bei 390 px die letzte Spalte abgeschnitten
+                    const _th = (spalte, text, cls) => '<th class="' + cls + ' p-1 cursor-pointer select-none" title="Sortieren" style="text-decoration:underline dotted;text-underline-offset:3px" onclick="sortiereH2H(this,\'' + spalte + '\')">' + text + '</th>';
+                    const _getrenntBlock = getrennt.length
+                        ? '<div class="text-xs text-tertiary mt-3 mb-1">Im selben Team gemeldet, aber nie am selben Wochenende:</div>' +
+                          '<div class="text-sm" style="display:flex;flex-wrap:wrap;gap:4px 10px">' + getrennt.map(e =>
+                              '<span><span class="driver-link cursor-pointer" onclick="closeDriverProfile();openDriverProfile(\'' + e.id + '\')">' + e.name + '</span> <span class="text-xs text-tertiary">' + e.seasons.map(s => s.year).join(', ') + '</span></span>').join('') + '</div>'
+                        : '';
                     const _adrv = GAME_STATE.drivers.find(d => d.id === driverId);
                     const _hs = _adrv && _adrv.h2hSeason;
                     const _sessionLine = (_hs && _hs.tmName && (_hs.qW + _hs.qL + _hs.rW + _hs.rL) > 0)
@@ -38322,19 +38452,20 @@ Empfohlene Wertebereiche:
                     return `<div class="card p-4 rounded-lg mb-4">
                         <h4 class="font-bold mb-3">⚔️ Head-to-Head Teamkollegen</h4>
                         ${_sessionLine}
-                        <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        ${gemeinsam.length ? `<div class="overflow-x-auto">
+                        <table class="w-full text-xs">
                             <thead><tr class="text-tertiary text-xs">
-                                <th class="text-left p-1">Teamkollege</th>
-                                <th class="text-center p-1">Sais.</th>
-                                <th class="text-center p-1" style="color:var(--text-pos)">Gew.</th>
-                                <th class="text-center p-1" style="color:var(--text-neg)">Verl.</th>
-                                <th class="text-right p-1">Ø Pkt-Diff</th>
+                                ${_th('name', 'Teamkollege', 'text-left')}
+                                ${_th('rennen', 'Rennen', 'text-center')}
+                                ${_th('quali', 'Quali', 'text-center')}
+                                ${_th('pct', '%', 'text-right')}
+                                ${_th('diff', 'Ø Pkt', 'text-right')}
                             </tr></thead>
                             <tbody>${rows}</tbody>
                         </table>
-                        </div>
-                        <div class="text-xs text-tertiary mt-2">🟢 Saison gewonnen · 🔴 verloren · ★ laufende Saison</div>
+                        </div>` : ''}
+                        ${_getrenntBlock}
+                        <div class="text-xs text-tertiary mt-2">Rennen/Quali: Duelle gewonnen:verloren (DNF zählt hinten) · % = Anteil gewonnener Renn-Duelle · Jahres-Badge grün = mehr Punkte, rot = weniger · ★ laufende Saison · unterstrichene Spaltenköpfe sortieren</div>
                     </div>`;
                 })()}
 

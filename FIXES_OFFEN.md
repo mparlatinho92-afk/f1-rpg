@@ -29,11 +29,20 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 
 ### Head-to-Head
 - ✅ Duelle pro Rennen **und** Quali (`trackTeammateDuels`), Karriere-H2H paarweise über Jahre gespeichert (v0.9.14.62)
-- ❌ **Teams mit 3+ Fahrern erzeugen keine Duelle:** `trackTeammateDuels` bricht bei `pair.length !== 2` ab.
-  In der klassischen Ära mit 3+ Autos pro Konstrukteur entsteht **gar kein** Eintrag → erklärt
-  „nicht bei jedem Steckbrief, nicht mit jedem Teamkollegen".
-- ❌ historische Saisons/Duelle/Rennen/Quali **rückwirkend** ins Spiel bringen
-- ❔ Graham-Hill-Fall: Fahrer taucht im eigenen H2H auf (ausgegraut, 0:0) — neutral ist vertretbar
+- ✅ **Steckbrief-Tabelle zeigt Renn- und Quali-Duelle** je Teamkollege, aus den gespeicherten Ergebnissen
+  (`teamkollegenDuelle`) — vorher nur gewonnene Saisons nach Punkten (v0.9.21.9)
+- ✅ **Teams mit 3+ Fahrern:** in der Tabelle zählt jedes Paar (v0.9.21.9). Der Zähler fürs Ansehen
+  (`trackTeammateDuels`, bricht bei `pair.length !== 2` ab) bleibt **bewusst** so — Nutzer-Entscheid 14.10.2026,
+  sonst ändert sich das Balancing der Klassik-Ära
+- ◐ historische Saisons/Duelle/Rennen/Quali **rückwirkend:** alle simulierten Saisons ja (die Tabelle rechnet aus dem
+  Archiv, auch in alten Spielständen, v0.9.21.9). ❌ Echte Jahre vor dem Spielstart fehlen — F1DB nennt je Rennen
+  nur den Konstrukteur, nicht den Meldestall (1950er Maserati-Privatiers wären sonst alle „Teamkollegen")
+- ◐ Graham-Hill-Fall (Fahrer im eigenen H2H, grau, 0:0): Ursache — derselbe Fahrer stand in einer Saison unter
+  einer zweiten ID (Zeitstempel-IDs), ausgeschlossen wurde nur über die ID. Jetzt auch über `histId`/Name (v0.9.21.9).
+  Nutzer-Hinweis: am besten mit mehreren Spielständen prüfen — steht noch aus
+- ✅ **Übersichtlicher:** im selben Team gemeldet, aber nie am selben Wochenende → eigene Zeile unter der Tabelle (v0.9.21.9)
+- ✅ **Sortierbar nach Leistung in Prozent** (Anteil gewonnener Renn-Duelle), dazu Zeile „Gegen alle" (v0.9.21.9).
+  Spalte „Sais." entfallen (= Zahl der Jahres-Badges), sonst passt die Tabelle bei 390 px nicht
 - aktuelle Saison separat anzeigen ist gewünscht, nicht Bug
 
 ### Reserve-Pool
@@ -216,5 +225,6 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 - Bewertungssystem: <https://claude.ai/chat/bf5ab246-0dc5-4121-bbcc-7d708b1492ac>
 - Grid-/DNQ-Projekt: <https://claude.ai/chat/99b0bc20-316b-4f8a-aaab-ca48d308a3f8> → `DNQ_MELDEPLAN.md`
 - F2/F3-Fotos: <https://claude.ai/chat/67cf6bca-d074-44f5-a3ff-7a06a5274024>
+- Inspiration Statistik-Darstellung (aus dem Sheet, 14.10.2026): <https://www.bigdataf1.com/stats>
 
 *Hinweis aus dem Doc: „Achtung Liste ist an sich länger. Das hier ist nur ein Ausschnitt."*
