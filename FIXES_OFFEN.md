@@ -34,9 +34,10 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 - ✅ **Teams mit 3+ Fahrern:** in der Tabelle zählt jedes Paar (v0.9.21.9). Der Zähler fürs Ansehen
   (`trackTeammateDuels`, bricht bei `pair.length !== 2` ab) bleibt **bewusst** so — Nutzer-Entscheid 14.10.2026,
   sonst ändert sich das Balancing der Klassik-Ära
-- ◐ historische Saisons/Duelle/Rennen/Quali **rückwirkend:** alle simulierten Saisons ja (die Tabelle rechnet aus dem
-  Archiv, auch in alten Spielständen, v0.9.21.9). ❌ Echte Jahre vor dem Spielstart fehlen — F1DB nennt je Rennen
-  nur den Konstrukteur, nicht den Meldestall (1950er Maserati-Privatiers wären sonst alle „Teamkollegen")
+- ✅ historische Saisons/Duelle/Rennen/Quali **rückwirkend:** simulierte Saisons aus dem Archiv (v0.9.21.9), echte Jahre
+  vor dem Spielstart aus F1DB (v0.9.21.10). Teamkollege = selber **Konstrukteur** — so zählt auch das Spiel, dort ist
+  „Team" der Konstrukteur (1958: Maserati 18, Cooper 14 Fahrer). Quali aus `F1DB_QUALIFYING` (alle 1149 Rennen), Startplatz nur als Rückfall. DNQ = verlorenes Quali-Duell, zwei DNQ nach Zeit; DNPQ hinter allen Quali-Teilnehmern, untereinander nach Vorquali (`F1DB_PREQUALIFYING`, neu aus F1DB) — so auch in simulierten Saisons (Nutzer-Regel 14.10.2026; Zakspeed 1989 Schneider/Suzuki 0:0 → 13:3).
+  **Indy 500 zählt nicht** (Nutzer-Entscheid 14.10.2026), der Indy GP 2000–07 schon
 - ◐ Graham-Hill-Fall (Fahrer im eigenen H2H, grau, 0:0): Ursache — derselbe Fahrer stand in einer Saison unter
   einer zweiten ID (Zeitstempel-IDs), ausgeschlossen wurde nur über die ID. Jetzt auch über `histId`/Name (v0.9.21.9).
   Nutzer-Hinweis: am besten mit mehreren Spielständen prüfen — steht noch aus

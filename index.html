@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.9</title>
+    <title>F1 RPG v0.9.21.10</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.9 (aktuell) - 14.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.10 (aktuell) - 14.10.2026</div>
+                            <div>&#8226; NEU: Head-to-Head mit echten Saisons vor dem Spielstart (Konstrukteurskollegen, gestrichelte Jahres-Badges)</div>
+                            <div>&#8226; NEU: Quali-Duell zählt DNQ als verloren, DNPQ dahinter nach Vorquali</div>
+                            <div>&#8226; NEU: Indy 500 zählt im Head-to-Head nicht mehr</div>
+                            <div>&#8226; FIX: Indy-Fahrer und Kollegen der laufenden Saison nicht mehr fälschlich als nie gemeinsam gefahren</div>
+                            <div class="font-bold text-slate-400">v0.9.21.9 - 14.10.2026</div>
                             <div>&#8226; NEU: Head-to-Head mit Renn- und Quali-Duellen, Prozent und Zeile Gegen alle – Spalten sortierbar</div>
                             <div>&#8226; NEU: Teamkollegen ohne gemeinsames Wochenende separat</div>
                             <div>&#8226; FIX: Teams mit 3+ Fahrern zeigen alle Duelle</div>
@@ -4325,7 +4330,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.9';
+        const VERSION = '0.9.21.10';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -15693,15 +15698,19 @@
         // Zweier-Teams (Nutzer-Entscheid 14.10.2026: Balancing bleibt unberuehrt). Hier zaehlt jedes
         // Paar, auch in Teams mit 3+ Autos, und auch rueckwirkend fuer jede archivierte Saison.
         //   Rennen: beide gestartet (in res), wer vorne liegt gewinnt — DNF steht hinten (wie im Zaehler).
-        //   Quali:  beide mit Quali-Platz am selben Wochenende im selben Team.
+        //   Quali:  beide mit Quali-Platz am selben Wochenende im selben Team. DNQ und DNPQ haben einen Platz hinter
+        //           den Qualifizierten, ein DNQ verliert also sein Duell; zwei DNPQ nach Vorquali.
         //   wochenenden: gemeinsam gemeldet (res oder tms) — 0 heisst „nie am selben Wochenende".
         // Teamkollege = selbes Team zur RENNZEIT (tmn/tms), nicht der Kader am Saisonende.
         // Selbst-Ausschluss ueber IDs UND histId/Namen: Fahrer-IDs tragen einen Zeitstempel, derselbe
         // Fahrer kann in einer Saison unter zwei IDs stehen (Graham-Hill-Fall: Fahrer gegen sich, 0:0).
-        // seasons: [{ year, results, qualifyingResults, drivers }] — results im Archiv- (res/d/p/tmn)
-        // oder Live-Format (results/driver/position/teamName).
+        // seasons: [{ year, results, qualifyingResults, drivers, races }] — results im Archiv- (res/d/p/tmn)
+        // oder Live-Format (results/driver/position/teamName); echte Jahre liefert f1dbSaisonFuerH2H.
+        // Indy 500 zaehlt NICHT (Nutzer-Entscheid 14.10.2026): eigenes Rennen mit eigenem Feld, 16 Kurtis-Kraft-
+        // Autos machten jeden Indy-Fahrer zum „Kollegen" von einem Dutzend. Der Indy GP 2000–07 zaehlt normal.
+        // Rueckgabe: { paare, nurIndy } — nurIndy = Schluessel, die man NUR beim Indy 500 im selben Team traf.
         function teamkollegenDuelle(seasons, selfIds, selfKey, selfName) {
-            const paare = {};
+            const paare = {}, indyKontakt = new Set();
             const norm = v => String(v || '').trim().toLowerCase();
             for (const s of seasons) {
                 const kader = {};
@@ -15722,11 +15731,14 @@
                     const m = qualiJeRennen[q.ri ?? q.raceIndex] = {};
                     for (const r of (q.res || q.results || [])) {
                         const id = r.d ?? r.driver, p = r.p ?? r.position;
-                        if (id != null && p != null && !r.dnpq) m[id] = p;
+                        // DNPQ zaehlt mit: das Spiel haengt sie hinter alle Quali-Teilnehmer, in Vorquali-Reihenfolge
+                        if (id != null && p != null) m[id] = p;
                     }
                 }
                 for (const race of (s.results || [])) {
                     const ri = race.ri ?? race.raceIndex;
+                    const meta = (s.races || [])[ri];
+                    const indy = race.isIndy500 || (meta && (meta.isIndy500 === true || (typeof istIndy500 === 'function' && istIndy500(meta, s.year))));
                     const start = (race.res || race.results || []).map(r => ({
                         d: r.d ?? r.driver, p: r.p ?? r.position, tm: r.tmn || r.teamName || null }));
                     // Team je Melder: Starter aus res, Nicht-Starter (DNQ/DNS) aus tms
@@ -15741,6 +15753,7 @@
                     for (const [id, tm] of Object.entries(teamVon)) {
                         if (tm !== team || istSelbst(id)) continue;
                         const p = person(id);
+                        if (indy) { indyKontakt.add(p.key); continue; }
                         const rec = paare[p.key] || (paare[p.key] = { key: p.key, name: p.name,
                             rW: 0, rL: 0, qW: 0, qL: 0, wochenenden: 0, jahre: new Set() });
                         rec.wochenenden++; rec.jahre.add(s.year);
@@ -15753,7 +15766,72 @@
                     }
                 }
             }
-            return paare;
+            return { paare, nurIndy: new Set([...indyKontakt].filter(k => !paare[k])) };
+        }
+
+        // Echtes Jahr aus F1DB im Format fuer teamkollegenDuelle (v0.9.21.10). Teamkollege = selber KONSTRUKTEUR,
+        // genau wie im Spiel: dort ist „Team" der Konstrukteur (1958: Maserati 18 Fahrer, Cooper 14), eine
+        // Meldestall-Ebene gibt es nicht — Privatiers auf Maserati sind also auch in simulierten Saisons Kollegen.
+        //   gestartet:      Platz, NC, DNF, DSQ → Klassifizierte nach Platz, dann Rest nach Runden (gleich = kein Duell)
+        //   nicht gestartet: DNQ, DNPQ, DNS, DNP, EX → nur das gemeinsame Wochenende (tms), kein Duell
+        //   Quali:          F1DB_QUALIFYING (alle 1149 Rennen) nach Platz, dann ohne Platz nach Zeit, dann DNQ ohne Eintrag,
+        //                   dann DNPQ nach Vorquali-Platz (F1DB_PREQUALIFYING). Startplatz nur als Rueckfall: Strafen verfaelschen ihn
+        //   geteiltes Auto: 95 Faelle, ein Fahrer zweimal im selben Rennen → der bessere Eintrag zaehlt, auch fuer das
+        //                   Team: Moss fuhr Aintree 1961 Lotus (DNF) und uebernahm Fairmans Ferguson (DSQ) → kein Kollege
+        // punkte: Summe je Fahrer im Jahr (fuer die Jahres-Badges, wie driverStandings in Spielsaisons).
+        const _H2H_NICHT_GESTARTET = new Set(['DNQ', 'DNPQ', 'DNS', 'DNP', 'EX']);
+        function f1dbSaisonFuerH2H(year) {
+            const rennen = typeof getF1DBYear === 'function' ? getF1DBYear(year) : null;
+            if (!rennen) return null;
+            const s = { year, races: [], results: [], qualifyingResults: [], drivers: [], punkte: {}, echt: true };
+            const namen = {};
+            rennen.forEach((r, ri) => {
+                s.races.push({ isIndy500: r.isIndy500 });
+                const besteJe = {};
+                for (const e of r.entries) {
+                    namen[e.driverId] = 1;
+                    s.punkte[e.driverId] = (s.punkte[e.driverId] || 0) + (e.points || 0);
+                    const alt = besteJe[e.driverId];
+                    const rang = x => (x.posNum != null ? x.posNum : 1000 - (x.laps || 0));
+                    if (!alt || rang(e) < rang(alt)) besteJe[e.driverId] = e;
+                }
+                const alle = Object.values(besteJe);
+                const gestartet = alle.filter(e => !_H2H_NICHT_GESTARTET.has(e.posText));
+                const tms = {};
+                for (const e of alle) if (_H2H_NICHT_GESTARTET.has(e.posText)) tms[e.driverId] = e.constrId;
+                s.results.push({ ri, isIndy500: r.isIndy500, tms,
+                    // Klassifizierte mit ihrem Platz, der Rest dahinter nach Runden. Gleiche Runden = gleicher Wert =
+                    // kein Duell (zwei Ausfaelle in derselben Runde), ebenso ein geteiltes Auto mit gleichem Platz.
+                    res: gestartet.map(e => ({ d: e.driverId, p: e.posNum != null ? e.posNum : 10000 - (e.laps || 0), tmn: e.constrId })) });
+                const quali = typeof getF1DBQualifying === 'function' ? getF1DBQualifying(r.raceId) : null;
+                if (!quali) {
+                    s.qualifyingResults.push({ ri, res: alle.filter(e => e.gridPos != null).map(e => ({ d: e.driverId, p: e.gridPos })) });
+                    return;
+                }
+                // Rangfolge (Nutzer-Regel 14.10.2026): DNQ = verlorenes Quali-Duell, zwei DNQ nach Zeit,
+                // DNPQ hinter allen Quali-Teilnehmern (der beste DNPQ ist virtuell Nr. 27 bei 26), untereinander nach Vorquali
+                const qRang = {};
+                for (const e of quali) if (e[0] != null) qRang[e[1]] = e[0];
+                // ohne Platz, aber mit Zeit (107-%-Regel, Rosset 1998): dahinter nach Zeit. EX = Zeit gestrichen
+                const status = {};
+                for (const e of alle) status[e.driverId] = e.posText;
+                quali.filter(e => e[0] == null && status[e[1]] !== 'EX' && (e[6] || e[5] || e[4] || e[2]))
+                    .sort((a, b) => (a[6] || a[5] || a[4] || a[2]) - (b[6] || b[5] || b[4] || b[2]))
+                    .forEach((e, i) => { if (qRang[e[1]] == null) qRang[e[1]] = 1000 + i; });
+                const vorquali = typeof getF1DBPreQualifying === 'function' ? getF1DBPreQualifying(r.raceId) || [] : [];
+                const vqRang = {};
+                for (const e of vorquali) if (e[0] != null && vqRang[e[1]] == null) vqRang[e[1]] = e[0];
+                for (const e of alle) {
+                    if (qRang[e.driverId] != null) continue;
+                    // DNQ ohne Eintrag in der Liste: hinter allen mit Zeit, untereinander gleich (kein Duell)
+                    if (e.posText === 'DNQ') qRang[e.driverId] = 1500;
+                    else if (e.posText === 'DNPQ') qRang[e.driverId] = 2000 + (vqRang[e.driverId] ?? 999);
+                }
+                s.qualifyingResults.push({ ri, res: Object.entries(qRang).map(([d, p]) => ({ d, p })) });
+            });
+            const hn = typeof HIST_NAMES !== 'undefined' ? HIST_NAMES : {};
+            s.drivers = Object.keys(namen).map(id => ({ id, histId: id, name: hn[id] || id }));
+            return s;
         }
 
         // Spaltenkopf-Klick in der H2H-Tabelle: sortiert die Zeilen nach data-<spalte>, zweiter Klick dreht.
@@ -38369,24 +38447,44 @@ Empfohlene Wertebereiche:
                     const _selbstName = String(driver.name || '').trim().toLowerCase();
                     const _istSelbst = d => searchIds.has(d.id) || (stATSId && (d.histId || d.id) === stATSId)
                         || (_selbstName && String(d.name || '').trim().toLowerCase() === _selbstName);
+                    // Wer in der Saison ausserhalb des Indy 500 gemeldet war (null = keine Ergebnisse, Altstand → alle).
+                    // Der Kader am Saisonende kennt das Indy 500 nicht: ohne diesen Filter standen reine Indy-Fahrer
+                    // desselben Konstrukteurs als „nie am selben Wochenende" im Steckbrief (Len Sutton / Gene Hartley).
+                    const _ohneIndy = (results, races, year) => {
+                        if (!results || !results.length) return null;
+                        const ids = new Set();
+                        for (const x of results) {
+                            const meta = (races || [])[x.ri ?? x.raceIndex];
+                            if (meta && istIndy500(meta, year)) continue;
+                            for (const e of (x.res || x.results || [])) ids.add(e.d ?? e.driver);
+                            for (const id of Object.keys(x.tms || {})) ids.add(id);
+                            for (const id of (x.dnq || [])) ids.add(id);
+                        }
+                        return ids;
+                    };
                     const _saisonen = [];
                     for (const season of GAME_STATE.history || []) {
                         const hd = (season.drivers || []).find(d => searchIds.has(d.id) || (stATSId && d.histId === stATSId));
                         if (!hd) continue;
                         _saisonen.push(season);
                         if (!hd.team) continue;
+                        const _gemeldet = _ohneIndy(season.results, season.races, season.year);
+                        if (_gemeldet && !_gemeldet.has(hd.id)) continue;
                         const dPts = season.driverStandings?.[hd.id]?.points || 0;
                         const dW   = season.driverStandings?.[hd.id]?.wins   || 0;
-                        (season.drivers || []).filter(d => d.team === hd.team && !_istSelbst(d) && d.id !== hd.id).forEach(tm => {
+                        (season.drivers || []).filter(d => d.team === hd.team && !_istSelbst(d) && d.id !== hd.id
+                            && (!_gemeldet || _gemeldet.has(d.id))).forEach(tm => {
                             const key = tm.histId || tm.id;
                             if (!h2hMap[key]) h2hMap[key] = { name: tm.name, id: key, seasons: [] };
                             const tmSt = season.driverStandings?.[tm.id] || {};
                             h2hMap[key].seasons.push({ year: season.year, dPts, tmPts: tmSt.points || 0, dW, tmW: tmSt.wins || 0 });
                         });
                     }
-                    if (isCurrentlyActive && team) {
+                    const _gemeldetJetzt = _ohneIndy(GAME_STATE.results, GAME_STATE.races, GAME_STATE.currentYear);
+                    if (isCurrentlyActive && team && (!_gemeldetJetzt || _gemeldetJetzt.has(driverId))) {
                         const dPts = standing.points || 0, dW = standing.wins || 0;
-                        GAME_STATE.drivers.filter(d => d.team === team.id && !_istSelbst(d) && d.id !== driverId).forEach(tm => {
+                        GAME_STATE.drivers.filter(d => d.team === team.id && !_istSelbst(d) && d.id !== driverId
+                            && (!_gemeldetJetzt || _gemeldetJetzt.has(d.id))).forEach(tm => {
                             const key = tm.histId || tm.id;
                             if (!h2hMap[key]) h2hMap[key] = { name: tm.name, id: key, seasons: [] };
                             const tmSt = GAME_STATE.driverStandings[tm.id] || {};
@@ -38395,10 +38493,28 @@ Empfohlene Wertebereiche:
                     }
                     // Renn- und Quali-Duelle aus den Ergebnissen (jedes Paar, auch 3+-Teams, Team zur Rennzeit)
                     if (isCurrentlyActive) _saisonen.push({ year: GAME_STATE.currentYear, results: GAME_STATE.results,
-                        qualifyingResults: GAME_STATE.qualifyingResults, drivers: GAME_STATE.drivers });
-                    const _duelle = teamkollegenDuelle(_saisonen, searchIds, stATSId || driverId, driver.name);
+                        qualifyingResults: GAME_STATE.qualifyingResults, drivers: GAME_STATE.drivers, races: GAME_STATE.races });
+                    // Echte Jahre vor dem Spielstart aus F1DB (v0.9.21.10), Teamkollege = selber Konstrukteur
+                    const _echt = {};
+                    const _hd = (typeof HIST_DRIVERS !== 'undefined' && stATSId) ? HIST_DRIVERS[stATSId] : null;
+                    if (_hd && typeof f1dbSaisonFuerH2H === 'function') {
+                        for (let y = _hd[6]; y && y <= Math.min(_hd[7], startYear - 1); y++) {
+                            const es = f1dbSaisonFuerH2H(y);
+                            if (es) { _echt[y] = es; _saisonen.push(es); }
+                        }
+                    }
+                    const { paare: _duelle, nurIndy: _nurIndy } = teamkollegenDuelle(_saisonen, searchIds, stATSId || driverId, driver.name);
                     // Teamkollegen nur zur Rennzeit (Wechsel mitten in der Saison) bekommen auch eine Zeile
                     for (const p of Object.values(_duelle)) if (!h2hMap[p.key]) h2hMap[p.key] = { name: p.name, id: p.key, seasons: [] };
+                    // Jahres-Badges der echten Saisons: Punkte des Jahres aus F1DB, gestrichelt markiert
+                    for (const p of Object.values(_duelle)) for (const y of p.jahre) {
+                        const es = _echt[y];
+                        if (!es || h2hMap[p.key].seasons.some(x => x.year === y)) continue;
+                        h2hMap[p.key].seasons.push({ year: y, dPts: es.punkte[stATSId] || 0, tmPts: es.punkte[p.key] || 0, echt: true });
+                    }
+                    for (const e of Object.values(h2hMap)) e.seasons.sort((a, b) => a.year - b.year);
+                    // Nur beim Indy 500 im selben Team: kein Teamkollege im Sinne des H2H
+                    for (const k of _nurIndy) delete h2hMap[k];
                     const entries = Object.values(h2hMap).sort((a, b) => b.seasons.length - a.seasons.length);
                     if (entries.length === 0) return '';
                     const _pct = (w, l) => (w + l) ? Math.round(w / (w + l) * 100) : null;
@@ -38410,7 +38526,7 @@ Empfohlene Wertebereiche:
                         const pct = _pct(du.rW, du.rL);
                         const badges = e.seasons.map(s => {
                             const bc = s.dPts > s.tmPts ? '#22C55E' : s.dPts < s.tmPts ? '#EF4444' : '#888888';
-                            return '<span style="font-size:0.65rem;padding:1px 4px;border-radius:3px;background:' + bc + '22;color:' + lesbareTextfarbe(bc) + ';border:1px solid ' + bc + '44">' + s.year + (s.isCurrent ? '★' : '') + '</span>';
+                            return '<span' + (s.echt ? ' title="echte Saison vor dem Spielstart (F1DB)"' : '') + ' style="font-size:0.65rem;padding:1px 4px;border-radius:3px;background:' + bc + '22;color:' + lesbareTextfarbe(bc) + ';border:1px ' + (s.echt ? 'dashed ' + bc + 'aa' : 'solid ' + bc + '44') + '">' + s.year + (s.isCurrent ? '★' : '') + '</span>';
                         }).join(' ');
                         return '<tr class="border-t border-custom" data-name="' + String(e.name).replace(/"/g, '&quot;') + '" data-sais="' + e.seasons.length
                             + '" data-rennen="' + (du.rW + du.rL) + '" data-quali="' + (du.qW + du.qL) + '" data-pct="' + (pct ?? '') + '" data-diff="' + (avgDiff ?? '') + '">' +
@@ -38426,7 +38542,8 @@ Empfohlene Wertebereiche:
                     // „nie am selben Wochenende": im selben Team gemeldet, aber nie gemeinsam angetreten.
                     // Nur wenn Ergebnisse vorliegen — ohne sie (Altstand) laesst sich das nicht entscheiden.
                     const _hatErgebnisse = _saisonen.some(s => (s.results || []).length);
-                    const _nie = e => _hatErgebnisse && !(_duelle[e.id] && _duelle[e.id].wochenenden);
+                    // Laufende Saison zaehlt nicht als Beleg: vor dem ersten gemeinsamen Rennen ist „nie" noch nicht entschieden.
+                    const _nie = e => _hatErgebnisse && !(_duelle[e.id] && _duelle[e.id].wochenenden) && !e.seasons.some(x => x.isCurrent);
                     const gemeinsam = entries.filter(e => !_nie(e)), getrennt = entries.filter(_nie);
                     const sum = gemeinsam.reduce((a, e) => { const du = _duelle[e.id]; if (du) { a.rW += du.rW; a.rL += du.rL; a.qW += du.qW; a.qL += du.qL; } return a; }, { rW: 0, rL: 0, qW: 0, qL: 0 });
                     const sumPct = _pct(sum.rW, sum.rL);
@@ -38465,7 +38582,7 @@ Empfohlene Wertebereiche:
                         </table>
                         </div>` : ''}
                         ${_getrenntBlock}
-                        <div class="text-xs text-tertiary mt-2">Rennen/Quali: Duelle gewonnen:verloren (DNF zählt hinten) · % = Anteil gewonnener Renn-Duelle · Jahres-Badge grün = mehr Punkte, rot = weniger · ★ laufende Saison · unterstrichene Spaltenköpfe sortieren</div>
+                        <div class="text-xs text-tertiary mt-2">Rennen/Quali: Duelle gewonnen:verloren (DNF zählt hinten) · % = Anteil gewonnener Renn-Duelle · Jahres-Badge grün = mehr Punkte, rot = weniger, gestrichelt = echte Saison vor dem Spielstart · ★ laufende Saison · Teamkollege = selber Konstrukteur, ohne Indy 500 · unterstrichene Spaltenköpfe sortieren</div>
                     </div>`;
                 })()}
 
