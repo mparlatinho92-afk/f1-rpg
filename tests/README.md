@@ -420,8 +420,17 @@ unter Windows die Tabellenlinien kaputt.
 |---|---|
 | `node tests/review-export.js 1975 2` | Alle 11 Review-Teile + Paket im Browser, Gegenproben gegen den Spielstand: Punktesumme je Saison = `driverStandings`, Rang 1 = Weltmeister, Rennen = Archiv + laufend, Markt = Transfers + Abgänge, Tode = alle `deaths`, Weltmeister = `_championList`, All-Time = `allTimeStATS`, Download über den Button, `pageerror` |
 | `node tests/review-export.js 1950 3` | dasselbe mit Indy 500 und Todesfällen; zusätzlich: je Archivjahr 1950–60 genau ein Indy 500, kein Indy GP |
+| `node tests/h2h-steckbrief.js 1958 2` | H2H-Tabelle im Fahrer-Steckbrief im Browser: kein Fahrer als eigener Teamkollege, „Gegen alle“ = Summe, Sortieren nach %, `pageerror`. **Gegenprobe gegen eine unabhängige Quelle:** der Ansehen-Zähler `trackTeammateDuels` (`h2hHistory`) — Renn-Bilanz muss bei Zweier-Paaren exakt gleich sein, 3+-Paare kennt er bewusst nicht (dort Obermenge). 14.10.2026: 1958 6 + 23, 1985 82 Paare, 0 Abweichungen |
+| `node tests/h2h-steckbrief.js 1985 2` | dasselbe in der Zweier-Team-Ära — hier zählt fast jedes Paar exakt |
 
 ⚠ **Archiv-Lücke (gemessen 12.10.2026):** archivierte Rennen sind kompakt (`d/p/pt/dnf/fl/fat/dnpq/tmn`) und tragen **keinen DNF-Grund, keine rote Flagge, keine Regenart** — nur die laufende Saison hat sie. Der Export schreibt das in `hinweise`, statt Felder zu erfinden. Wer DNF-Gründe über mehrere Jahre braucht, muss sie erst ins Archiv aufnehmen.
 ⚠ **Erster echter Export (1950–2013, 63 Saisons, 13 MB Paket) — drei Fehler im Fahrermarkt, behoben v0.9.21.7:** (1) `renewal` hat kein `toTeam` → `nachTeam` war bei 675 von 1.934 Einträgen leer; jetzt = eigenes Team. (2) `"-"` und `"Free Agent"` sind Platzhalter, keine Teams → `ausPool`/`inPool`. (3) 61 Entlassungen stehen in den Transfers UND in den Abgängen → `auchAlsAbgang`, beim Zählen überspringen. Rest des Pakets geprüft und sauber: Punkte aller Rennen = Endstand in allen 64 Jahren, jedes Rennen genau ein Sieger, Indy 500 1950–60 und Indy GP 2000–07 je genau einmal, keine Fahrer nur als ID.
 ⚠ **Zweiter echter Export (1950–1973 mit Junior-Welt, v0.9.21.7, 12.10.2026):** Fahrermarkt-Korrekturen bestätigt (281/281 Verlängerungen mit Ziel, 0 Platzhalter, 17/17 Doppel-Entlassungen markiert). 77 von 326 Abgängen ohne Team sind richtig: 72 Reserve-Pool-Fahrer ohne Cockpit im Jahr, 5 schon im Vorjahr ausgeschieden. Junior-Welt stimmig (Feld = Grid je Serie, Titel All-Time 322 = Meister der Historie 322). ⚠ `events.promoted` (977) zählt Aufstiege INNERHALB der Junior-Leiter, nicht in die F1 — `aufsteigerInF1` bleibt leer, bis es die Phase-5-Brücke gibt.
 ⚠ Team-Drittel nach mittlerem **Quali-Platz** inkl. Nicht-Startern aus `tms` (sonst fällt ein Team mit nur DNQ heraus, Lyncar 1975). Teams der laufenden Saison ohne Meldung bleiben `null`.
+
+### H2H: Quali-Bilanz der Tabelle ist größer als im Zähler — gewollt (14.10.2026)
+Die Steckbrief-Tabelle (`teamkollegenDuelle`) wertet ein Quali-Duell, sobald beide am selben Wochenende im selben Team
+einen Quali-Platz haben. Der Zähler `trackTeammateDuels` wertet die Quali nur, wenn beide auch **starteten**.
+Gemessen: Behra vs Flockhart 1958 (BRM), Flockhart DNQ mit Quali-Platz 21/29 → Tabelle 2:0, Zähler 1:0 bzw. 0:0.
+Ausqualifizieren ist ein gewonnenes Quali-Duell; die Renn-Bilanz ist dagegen exakt gleich. Wer beide vergleicht:
+Rennen exakt, Quali nur als Obermenge.
