@@ -169,6 +169,9 @@ git add $NewFileName index.html data/ schemas/functions.schema.json schemas/game
 # Die Werkzeuge selbst mitversionieren: manage-v.ps1 stand nicht in seiner eigenen Add-Liste,
 # Aenderungen am Skript blieben dadurch lokal liegen und erreichten das Repo nie.
 git add manage-v.ps1 update-functions-index.ps1 manage-v
+# Fix-Liste und ihr Spiegel-Werkzeug: der Abgleich je Version (Schritt 8) aendert sie, ohne dieses
+# Add blieben sie bis zum naechsten Nachtrags-Commit liegen.
+git add FIXES_OFFEN.md tools/spiegel-fixes.js tools/fixes-spiegel.json 2>$null
 # Archivierte Monolithen abmelden: Schritt 6 verschiebt die alte Version nach archive/ (gitignored),
 # die Loeschung im Wurzelverzeichnis blieb aber ungestaged und sammelte sich Version fuer Version an
 # (zuletzt neun offene Loeschungen ueber .31 bis .39). -u wirkt nur auf BEREITS GETRACKTE Dateien und
@@ -178,3 +181,8 @@ git commit -m "v$NewVersion - $CommitMsg"
 git push origin master
 
 Write-Host "Fertig: v$NewVersion ist live!" -ForegroundColor Green
+
+# 8. Fix-Liste gegen die neue Version pruefen (nur Anzeige, bricht nie ab)
+# Listet die Changelog-Punkte seit dem letzten Abgleich. Den eigentlichen Abgleich (Sheet-Eintraege
+# abholen, offene Punkte abhaken) stoesst der Stop-Hook bei Claude an - nur Claude erreicht das Sheet.
+node tools/spiegel-fixes.js --seit

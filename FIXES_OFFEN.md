@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.2, Prüfdatum **2026-10-11** (vorher 2026-07-29 @ v0.9.15.53).
+**Abgeglichen gegen:** v0.9.21.8, Prüfdatum **2026-10-14** (vorher 2026-10-11 @ v0.9.21.2).
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt

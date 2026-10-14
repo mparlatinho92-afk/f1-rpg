@@ -18,7 +18,17 @@
  *   node tools/spiegel-fixes.js --zeilen   Werte fuer batch_clear_values + update_values erzeugen, Pfad ausgeben
  *   node tools/spiegel-fixes.js --uebernehmen <datei.json>   Zeilen aus dem Sheet in FIXES_OFFEN.md uebernehmen
  *   node tools/spiegel-fixes.js --fertig [sheetId]   gespiegelten Stand eintragen
+ *   node tools/spiegel-fixes.js --seit     Versionen seit dem letzten Abgleich mit Changelog-Punkten (manage-v Schritt 8)
+ *   node tools/spiegel-fixes.js --geprueft   Abgleich gegen die aktuelle VERSION in FIXES_OFFEN.md eintragen
  *   node tools/spiegel-fixes.js --hook     Stop-Hook (.claude/settings.json)
+ *
+ * Pruefung je Version (Nutzer-Wunsch 14.10.2026: „bei jeder neuen Version auf Aenderungen pruefen"):
+ * Merker ist die Kopfzeile „Abgeglichen gegen: vX" in FIXES_OFFEN.md selbst — kein zweiter Zustand,
+ * der auseinanderlaufen kann. Steht VERSION in index.html hoeher, blockt der Stop-Hook einmal und
+ * verlangt beide Richtungen: (a) Sheet-Eintraege des Nutzers abholen (Fixes!F:F), auch wenn die
+ * Markdown-Datei unveraendert ist, (b) die Changelog-Punkte der neuen Versionen gegen die offenen
+ * Punkte halten. --geprueft schreibt die Kopfzeile neu; das aendert den Hash, also spiegelt der
+ * naechste Hook-Lauf automatisch.
  *
  * Eigene Zeilen im Sheet (Nutzer-Wunsch 11.10.2026: „mich weiter im Sheet eintragen
  * lassen, nichts darf verloren gehen"): Spalte E traegt je gespiegelter Zeile eine
@@ -52,6 +62,40 @@ const KENNUNG_LAENGE = 30;                   // muss zur Formel in Fixes!F2 pass
 const hashVon = text => crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
 const leseStand = () => { try { return JSON.parse(fs.readFileSync(STAND, 'utf8')); } catch (e) { return {}; } };
 const sheetLink = id => `https://docs.google.com/spreadsheets/d/${id}/edit`;
+
+// ---------------------------------------------------------------- Versionsabgleich
+const INDEX = path.join(ROOT, 'index.html');
+const ABGLEICH = /\*\*Abgeglichen gegen:\*\* v([\d.]+), Prüfdatum \*\*([\d-]+)\*\*(?: \([^)]*\))?\./;
+const vergleiche = (a, b) => {
+    const x = a.split('.').map(Number), y = b.split('.').map(Number);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+    return 0;
+};
+const aktuelleVersion = () => {
+    const m = fs.readFileSync(INDEX, 'utf8').match(/const VERSION = ['"]([\d.]+)['"]/);
+    return m ? m[1] : null;
+};
+const abgeglichen = md => { const m = md.match(ABGLEICH); return m ? { version: m[1], datum: m[2] } : null; };
+
+// Changelog-Bloecke aus index.html, neueste zuerst, bis zur bereits abgeglichenen Version (exklusiv)
+function changelogSeit(seit) {
+    const html = fs.readFileSync(INDEX, 'utf8');
+    const start = html.indexOf('<!-- CHANGELOG -->');
+    if (start < 0) return [];
+    const bloecke = [];
+    for (const z of html.slice(start).split('\n').slice(1)) {
+        const kopf = z.match(/>v([\d.]+)(?: \(aktuell\))? - ([\d.]+)</);
+        if (kopf) {
+            if (seit && vergleiche(kopf[1], seit) <= 0) break;
+            bloecke.push({ version: kopf[1], datum: kopf[2], punkte: [] });
+            continue;
+        }
+        const punkt = z.match(/&#8226;\s*(.*?)<\/div>/);
+        if (punkt && bloecke.length) bloecke[bloecke.length - 1].punkte.push(punkt[1].trim());
+        else if (!punkt && !/^\s*<div/.test(z)) break;                  // Ende des Changelog-Blocks
+    }
+    return bloecke;
+}
 
 // ---------------------------------------------------------------- Markdown → Zeilen
 const STATUS = /^([✅◐❌❔❓✚])\s*/;
@@ -211,7 +255,25 @@ if (arg === '--hook') {
             const daten = ein ? JSON.parse(ein) : {};
             if (daten.stop_hook_active) return;               // keine Schleife
             const stand = leseStand();
-            if (hashVon(fs.readFileSync(QUELLE, 'utf8')) === stand.hash) return;
+            const md = fs.readFileSync(QUELLE, 'utf8');
+            const ab = abgeglichen(md), version = aktuelleVersion();
+            if (ab && version && vergleiche(version, ab.version) > 0) {
+                console.log(JSON.stringify({
+                    decision: 'block',
+                    reason: `Neue Version v${version}, FIXES_OFFEN.md ist zuletzt gegen v${ab.version} abgeglichen. `
+                        + 'Pruefung je Version: (0) FIXES_OFFEN.md lesen. (1) Im Sheet '
+                        + `${stand.sheetId || '<sheetId>'} mit get_values Fixes!A:F lesen; Zeilen mit „neu"/„geändert" in Spalte F `
+                        + 'als JSON-Array in eine Datei schreiben und `node tools/spiegel-fixes.js --uebernehmen <datei>` — '
+                        + 'auch wenn die Markdown-Datei sonst unveraendert ist. '
+                        + '(2) `node tools/spiegel-fixes.js --seit` zeigt die Changelog-Punkte der neuen Versionen: '
+                        + 'jeden gegen die offenen Punkte (❌ ◐ ❔ ✚) halten; nur mit Beleg im Code auf ✅ setzen und die Version dazuschreiben. '
+                        + 'Manuelle Notizen und ✚-Zeilen nie loeschen oder umformulieren. '
+                        + '(3) `node tools/spiegel-fixes.js --geprueft`. (4) Danach spiegeln (der Hook nennt die Schritte). '
+                        + '(5) Dem Nutzer knapp sagen: was aus dem Sheet kam, welche Punkte sich geaendert haben — oder dass nichts betroffen war.'
+                }));
+                return;
+            }
+            if (hashVon(md) === stand.hash) return;
             console.log(JSON.stringify({
                 decision: 'block',
                 reason: 'FIXES_OFFEN.md wurde geaendert und ist noch nicht ins Google Sheet gespiegelt. '
@@ -239,6 +301,30 @@ if (arg === '--hook') {
         for (const k of daten.konzepte) console.log(k.join(' | '));
     }
     if (rest) console.log('⚠ 4-Byte-Zeichen: ' + [...new Set(rest)].join(' '));
+} else if (arg === '--seit') {
+    // Nur lesen, scheitert nie laut: laeuft am Ende von manage-v, der Push ist da schon durch.
+    try {
+        const ab = abgeglichen(fs.readFileSync(QUELLE, 'utf8'));
+        const version = aktuelleVersion();
+        if (!ab) { console.log('Fix-Liste: Kopfzeile „Abgeglichen gegen" fehlt in FIXES_OFFEN.md.'); process.exit(0); }
+        const bloecke = changelogSeit(ab.version);
+        if (!bloecke.length) { console.log(`Fix-Liste: abgeglichen gegen v${ab.version} (${ab.datum}) — aktuell.`); process.exit(0); }
+        console.log(`Fix-Liste: abgeglichen gegen v${ab.version} (${ab.datum}), aktuell v${version} — ${bloecke.length} Version(en) ungeprüft:`);
+        for (const b of bloecke) {
+            console.log(`  v${b.version} (${b.datum})`);
+            for (const p of b.punkte) console.log('     • ' + p);
+        }
+        console.log('Claude gleicht das am Ende der nächsten Antwort mit der Liste und dem Sheet ab (Stop-Hook).');
+    } catch (e) { console.log('Fix-Liste: Prüfung übersprungen (' + e.message + ')'); }
+} else if (arg === '--geprueft') {
+    const md = fs.readFileSync(QUELLE, 'utf8');
+    const ab = abgeglichen(md), version = aktuelleVersion();
+    if (!ab || !version) { console.error('Kopfzeile „Abgeglichen gegen" oder VERSION nicht gefunden.'); process.exit(1); }
+    if (vergleiche(version, ab.version) <= 0) { console.log(`Schon abgeglichen gegen v${ab.version}.`); process.exit(0); }
+    const heute = new Date().toISOString().slice(0, 10);
+    const zeile = `**Abgeglichen gegen:** v${version}, Prüfdatum **${heute}** (vorher ${ab.datum} @ v${ab.version}).`;
+    fs.writeFileSync(QUELLE, md.replace(ABGLEICH, zeile), 'utf8');
+    console.log('Eingetragen: ' + zeile);
 } else if (arg === '--uebernehmen') {
     if (!process.argv[3]) { console.error('Aufruf: --uebernehmen <datei.json>'); process.exit(1); }
     uebernehmen(process.argv[3]);
