@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.9, Prüfdatum **2026-10-14** (vorher 2026-10-14 @ v0.9.21.8).
+**Abgeglichen gegen:** v0.9.21.10, Prüfdatum **2026-10-14** (vorher 2026-10-14 @ v0.9.21.9).
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -40,7 +40,7 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
   **Indy 500 zählt nicht** (Nutzer-Entscheid 14.10.2026), der Indy GP 2000–07 schon
 - ◐ Graham-Hill-Fall (Fahrer im eigenen H2H, grau, 0:0): Ursache — derselbe Fahrer stand in einer Saison unter
   einer zweiten ID (Zeitstempel-IDs), ausgeschlossen wurde nur über die ID. Jetzt auch über `histId`/Name (v0.9.21.9).
-  Nutzer-Hinweis: am besten mit mehreren Spielständen prüfen — steht noch aus
+  Nutzer-Hinweis: am besten mit mehreren Spielständen prüfen — 1 Stand geprüft (1950–2010, v0.9.21.8): 825 Steckbriefe, kein Selbst-Eintrag (`h2h-steckbrief.js --stand`); weitere Stände offen
 - ✅ **Übersichtlicher:** im selben Team gemeldet, aber nie am selben Wochenende → eigene Zeile unter der Tabelle (v0.9.21.9)
 - ✅ **Sortierbar nach Leistung in Prozent** (Anteil gewonnener Renn-Duelle), dazu Zeile „Gegen alle" (v0.9.21.9).
   Spalte „Sais." entfallen (= Zahl der Jahres-Badges), sonst passt die Tabelle bei 390 px nicht

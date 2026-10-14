@@ -422,6 +422,8 @@ unter Windows die Tabellenlinien kaputt.
 | `node tests/review-export.js 1950 3` | dasselbe mit Indy 500 und Todesfällen; zusätzlich: je Archivjahr 1950–60 genau ein Indy 500, kein Indy GP |
 | `node tests/h2h-steckbrief.js 1958 2` | H2H-Tabelle im Fahrer-Steckbrief im Browser: kein Fahrer als eigener Teamkollege, „Gegen alle“ = Summe, Sortieren nach %, `pageerror`. **Gegenprobe gegen eine unabhängige Quelle:** der Ansehen-Zähler `trackTeammateDuels` (`h2hHistory`) — Renn-Bilanz muss bei Zweier-Paaren exakt gleich sein, 3+-Paare kennt er bewusst nicht (dort Obermenge). 14.10.2026: 1958 6 + 23, 1985 82 Paare, 0 Abweichungen |
 | `node tests/h2h-steckbrief.js 1985 2` | dasselbe in der Zweier-Team-Ära — hier zählt fast jedes Paar exakt |
+| `node tests/h2h-steckbrief.js 1965 2` | zusätzlich (ab v0.9.21.10, in jedem Lauf): **echte Jahre** 1950 bis Startjahr−1 — `f1dbSaisonFuerH2H` + `teamkollegenDuelle` gegen eine getrennt geschriebene Zählung direkt aus `F1DB_RESULTS`, jedes Konstrukteurs-Paar. 14.10.2026: Start 1958/65/75/85 → 2280/4492/5952/6674 Paare, 0 Abweichungen. Dazu: wer keine Tabelle bekommt, hatte nie einen Kollegen außerhalb des Indy 500 |
+| `node tests/h2h-steckbrief.js --stand <export.json>` | dieselben Prüfungen an einem **echten Spielstand** (NDJSON-Export, über `_importNdjson` geladen), ohne 60er-Deckel: jeder Steckbrief. 14.10.2026, Stand 1950–2010 (v0.9.21.8): 825 Steckbriefe, 687 mit Tabelle, kein Selbst-Eintrag, 0 Abweichungen, 16 s |
 
 ⚠ **Archiv-Lücke (gemessen 12.10.2026):** archivierte Rennen sind kompakt (`d/p/pt/dnf/fl/fat/dnpq/tmn`) und tragen **keinen DNF-Grund, keine rote Flagge, keine Regenart** — nur die laufende Saison hat sie. Der Export schreibt das in `hinweise`, statt Felder zu erfinden. Wer DNF-Gründe über mehrere Jahre braucht, muss sie erst ins Archiv aufnehmen.
 ⚠ **Erster echter Export (1950–2013, 63 Saisons, 13 MB Paket) — drei Fehler im Fahrermarkt, behoben v0.9.21.7:** (1) `renewal` hat kein `toTeam` → `nachTeam` war bei 675 von 1.934 Einträgen leer; jetzt = eigenes Team. (2) `"-"` und `"Free Agent"` sind Platzhalter, keine Teams → `ausPool`/`inPool`. (3) 61 Entlassungen stehen in den Transfers UND in den Abgängen → `auchAlsAbgang`, beim Zählen überspringen. Rest des Pakets geprüft und sauber: Punkte aller Rennen = Endstand in allen 64 Jahren, jedes Rennen genau ein Sieger, Indy 500 1950–60 und Indy GP 2000–07 je genau einmal, keine Fahrer nur als ID.
@@ -434,3 +436,18 @@ einen Quali-Platz haben. Der Zähler `trackTeammateDuels` wertet die Quali nur, 
 Gemessen: Behra vs Flockhart 1958 (BRM), Flockhart DNQ mit Quali-Platz 21/29 → Tabelle 2:0, Zähler 1:0 bzw. 0:0.
 Ausqualifizieren ist ein gewonnenes Quali-Duell; die Renn-Bilanz ist dagegen exakt gleich. Wer beide vergleicht:
 Rennen exakt, Quali nur als Obermenge.
+
+### H2H echte Jahre: drei Fallen beim Nachzählen (14.10.2026)
+- **Geteiltes Auto:** Moss fuhr in Aintree 1961 seinen Lotus (DNF) und übernahm Fairmans Ferguson (DSQ). Erst je Fahrer
+  den besten Eintrag wählen, DANN den Konstrukteur vergleichen — sonst wird Moss zu Fairmans Kollegen (eine Testzählung
+  tat genau das, 1 Abweichung bei 4492 Paaren).
+- **Quali echter Jahre aus `F1DB_QUALIFYING`, nicht aus dem Startplatz:** die Liste liegt im Spiel für alle 1149 Rennen (Zugriff `getF1DBQualifying(raceId)`), sie kennt auch DNQ-Fahrer, der Startplatz nicht; Strafen verschieben ihn. Platz `null` (135 Einträge, ohne Zeit) = kein Duell. Die erste Fassung nahm den Startplatz in der falschen Annahme, es gebe keine Liste.
+- **DNQ und DNPQ zählen in der Quali** (Nutzer-Regel 14.10.2026): DNQ = verloren, zwei DNQ nach Zeit; DNPQ hinter allen Quali-Teilnehmern (der beste DNPQ ist virtuell Nr. 27 bei 26), untereinander nach Vorquali-Platz. Die Vorquali fehlte im Spiel — `tools/f1db-vorquali.js` schreibt `F1DB_PREQUALIFYING` (79 Rennen 1977–92, 647 Einträge) in `data/f1db.js`; sie deckt 329 von 338 DNPQ. Gemessen: 1023 von 1041 echten DNQ stehen mit Platz in der Quali-Liste, 336 von 338 DNPQ fehlen dort. Simulierte Saisons hängen DNPQ schon in Vorquali-Reihenfolge an — die Tabelle hatte sie nur weggefiltert. Zakspeed 1989 Schneider/Suzuki: vorher 0:0, jetzt 13:3. Start 1993: 6966 Paare, 0 Abweichungen.
+- **Gleiche Runden = kein Duell:** zwei Ausfälle in derselben Runde, ebenso ein geteiltes Auto mit gleichem Platz.
+  Eine Rangfolge nach Sortierindex erfindet dort einen Sieger.
+- **Gegenprobe gegen den Zähler:** die Tabelle enthält die echten Jahre, `h2hHistory` nur simulierte Rennen → echten
+  Anteil abziehen. Die `histId` dabei auch über `history[].drivers` auflösen: der Fahrer steht in den Ergebnissen oft unter
+  einer älteren Zeitstempel-ID (Tambay/Warwick 1984: Differenz genau der echte Anteil 7:7 / 7:9).
+- **Kaderliste am Saisonende kennt das Indy 500 nicht:** ohne Filter auf Meldungen außerhalb des Indy 500 standen reine
+  Indy-Fahrer als „nie am selben Wochenende" im Steckbrief (Len Sutton / Gene Hartley). Und die laufende Saison vor dem
+  ersten Rennen ist kein Beleg für „nie".
