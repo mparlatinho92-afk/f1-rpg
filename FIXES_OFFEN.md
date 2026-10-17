@@ -21,7 +21,6 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Jetlag-Kalender siehe wohl Google Gemini
-- ✚ Generierte Teams zu bunt: realistisch Wahrscheinlichkeiten für Farben bestimmen — **v0.9.21.16:** Farbe nach realer Verteilung je Dekade, bis 1967 zu 80 % nationale Rennfarbe (`realistischeTeamFarbe`, BEFUNDE.md 17.10.2026 (6)); Junior-Palette gedämpft; **v0.9.21.17:** sanfter Ausgleich zum Feld (vergebene Farben seltener, fehlende öfter), Moderne mit mehr Weiß/Gelb, weniger Blau/Neon; Bestätigung im Spiel offen
 
 ---
 
@@ -220,6 +219,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 | Tödliche Unfälle außerhalb der WM | Rubrik + Nekrolog-Trennung; NaN-Rundennummer und falscher Renn-Link behoben (Ersatzfahrer-Link seit v0.9.21.3) |
 | Owen im französischen Vornamen-Paket | kein Fehler: real französisch (INSEE Rang 85 in 2015–19, 4 085 Geburten), nur für Jahrgänge ab ~1995 — Nutzer bestätigt 17.10.2026 |
 | Schumacher Jordan 1991 als feste Regel; weitere fixe Teilnahmen | v0.9.21.14 alle 281 festen Gastauftritte entfernt (`GUEST_ENTRIES`), Raten je Ära (`BEWEGUNG_QUOTEN`); v0.9.21.15 Verdrängen nach Saisonleistung statt pace (neuer Fehler 1997 Jordan) — Nutzer bestätigt 17.10.2026 |
+| Generierte Teams zu bunt | v0.9.21.16 Farbe nach realer Verteilung je Dekade, bis 1967 nationale Rennfarbe (`realistischeTeamFarbe`), Junior-Palette gedämpft; v0.9.21.17 sanfter Ausgleich zum Feld — Nutzer bestätigt 17.10.2026 („gute mischung") |
 
 ---
 
