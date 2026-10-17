@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.11</title>
+    <title>F1 RPG v0.9.21.12</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.11 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.12 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; NEU: Kalender 2026 mit 23 Rennen – Bahrain GP in Sepang als Lauf 16</div>
+                            <div>&#8226; NEU: tools/f1db-abgleich.js gleicht die Renntabelle gegen F1DB ab</div>
+                            <div>&#8226; FIX: Kalender-Prüfung brach in der Testumgebung ab</div>
+                            <div class="font-bold text-slate-400">v0.9.21.11 - 17.10.2026</div>
                             <div>&#8226; NEU: Teamnamen als Feld in Lackierungsfarben (Hauptfarbe + Zweitfarbe)</div>
                             <div>&#8226; FIX: Teamfarben bleiben im Original (Ferrari nicht mehr lachsfarben)</div>
                             <div>&#8226; FIX: Weiß auf Weiß / Schwarz auf Schwarz bekommen einen Rand in der Zweitfarbe</div>
@@ -4334,7 +4338,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.11';
+        const VERSION = '0.9.21.12';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -27272,10 +27276,14 @@
             'melbourne': 3, 'shanghai': 3, 'suzuka': 3, 'miami': 5, 'montreal': 5,
             'monaco': 6, 'catalunya': 6, 'spielberg': 6, 'silverstone': 7,
             'spa-francorchamps': 7, 'hungaroring': 7, 'zandvoort': 8, 'monza': 9,
-            'madring': 9, 'baku': 9, 'marina-bay': 10, 'austin': 10, 'mexico-city': 11,
+            'madring': 9, 'baku': 9, 'sepang': 10, 'marina-bay': 10, 'austin': 10, 'mexico-city': 11,
             'interlagos': 11, 'las-vegas': 11, 'lusail': 11, 'yas-marina': 12
         };
+        // Reihenfolge der Schlüssel = reale Reihenfolge 2026, gilt im Basisjahr auch innerhalb
+        // eines Monats. Sepang ist der nach Malaysia verlegte Bahrain-GP (F1DB v2026.17.0,
+        // 04.10.2026); ab 2027 rotiert die Strecke wie jede andere, unter ihrem Pool-Namen.
         const FUTURE_CAL_BASE = Object.keys(FUTURE_CAL_BASE_MONTHS);
+        const FUTURE_CAL_BASE_GP = { 'sepang': 'Bahrain GP' };
 
         // months = erlaubte Monate, Hauptmonat zuerst (gemessen, Basis 2012+).
         // w = Gewicht 1-10 aus der Beständigkeit seit 1990: hoch = kommt eher rein und
@@ -27512,7 +27520,7 @@
                 .map(id => {
                     const p = _futureCalPool.get(id) || {};
                     return {
-                        name: p.gp || formatCircuitName(id),
+                        name: (year === FUTURE_CAL_BASE_YEAR && FUTURE_CAL_BASE_GP[id]) || p.gp || formatCircuitName(id),
                         country: _futureCalCountry(id),
                         circuit: formatCircuitName(id),
                         circuitId: id,
@@ -27520,7 +27528,9 @@
                         month: monate[id]
                     };
                 })
-                .sort((a, b) => (a.month - b.month) || (poolIdx(a.circuitId) - poolIdx(b.circuitId)))
+                .sort((a, b) => (a.month - b.month) || (year === FUTURE_CAL_BASE_YEAR
+                    ? FUTURE_CAL_BASE.indexOf(a.circuitId) - FUTURE_CAL_BASE.indexOf(b.circuitId)
+                    : poolIdx(a.circuitId) - poolIdx(b.circuitId)))
                 .map((r, i) => ({ ...r, id: i + 1 }));
         }
 
@@ -31352,7 +31362,7 @@
             const lum = h => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
                 return 0.2126 * f(parseInt(h.slice(1, 3), 16)) + 0.7152 * f(parseInt(h.slice(3, 5), 16)) + 0.0722 * f(parseInt(h.slice(5, 7), 16)); };
             const kr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-            const bgHex = (getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '').trim();
+            const bgHex = (typeof getComputedStyle === 'function' && getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '').trim();   // sim-core kennt kein getComputedStyle
             const karte = /^#[0-9a-f]{6}$/i.test(bgHex) ? bgHex : '#232936';
             const flaeche = cols[0];
             const schrift = cols.slice(1).find(c => kr(c, flaeche) >= 4.5)
@@ -31377,7 +31387,7 @@
             const lum = c => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
                 return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
             const kontrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-            const bgHex = (getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '#232936').trim();
+            const bgHex = (typeof getComputedStyle === 'function' && getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '#232936').trim();   // sim-core kennt kein getComputedStyle
             const bg = /^#[0-9a-f]{6}$/i.test(bgHex) ? rgb(bgHex) : [35, 41, 54];
             // Farbton bleibt IMMER original (Nutzerwunsch 15.10.2026: aufgehelltes Ferrari-Rot wirkte lachsfarben).
             // Fehlt Kontrast, trägt ein Schriftschatten in der Gegenfarbe die Lesbarkeit. Rückgabe ist deshalb
