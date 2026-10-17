@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.15, Prüfdatum **2026-10-17** (vorher 2026-10-17 @ v0.9.21.14).
+**Abgeglichen gegen:** v0.9.21.16, Prüfdatum **2026-10-17** (vorher 2026-10-17 @ v0.9.21.15).
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -21,7 +21,7 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Jetlag-Kalender siehe wohl Google Gemini
-- ✚ Generierte Teams zu bunt: realistisch Wahrscheinlichkeiten für Farben bestimmen
+- ✚ Generierte Teams zu bunt: realistisch Wahrscheinlichkeiten für Farben bestimmen — **v0.9.21.16:** Farbe nach realer Verteilung je Dekade, bis 1967 zu 80 % nationale Rennfarbe (`realistischeTeamFarbe`, BEFUNDE.md 17.10.2026 (6)); Junior-Palette gedämpft; Bestätigung im Spiel offen
 
 ---
 

@@ -3526,3 +3526,21 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
   90er 7,1/6,5 · 2000er 5,0/3,4 · 2010er 2,0/2,3 · 2020er 1,9/1,4 – Niveau wie v0.9.21.14. Einzelläufe streuen stark
   (70er 25,1 und 19,5; 2000er 5,6 und 4,3). `BEWEGUNG_QUOTEN` unverändert.
 - Wächter grün: `ticker-paritaet.js --alle 40`, `ticker-browser.js 1991`, `data-sync-check.js`, `indy-500-vs-gp.js`.
+
+### 17.10.2026 (6): Farben generierter Teams nach realer Verteilung
+- **Anlass:** Fix-Liste „Generierte Teams zu bunt". `generateTeam` und der Editor-🎲 würfelten einen beliebigen
+  RGB-Wert (Neongrün, Magenta, Violett), Junior-Teams nutzten eine Signal-Kontrastpalette.
+- **Messung:** Hauptfarbe (`getTeamColors(...)[0]`) aller Team-Saisons 1950–2025 aus `SEASON_DATA`, nach HSL in
+  Klassen. 224 Team-Saisons mit `#888888` (keine Farbe, meist kleine Privatiers) herausgerechnet. Anteile in %:
+  50er rot 37 · grün 39 · silber 9; 60er grün 50 · rot 28; 70er rot 24 · blau 22 · weiß 16 · schwarz 11;
+  80er blau 24 · weiß 20 · rot 18 · gelb 15; 90er blau 34 · weiß 22; 2000er blau 25 · rot 22 · silber 15 · gelb 14;
+  2010er blau 27 · rot 13 · weiß 11 · silber 10; 2020er blau 32 · grün 12 · rot/weiß 12 · orange 10. Violett: 0.
+  Vor 1968 hängt die Farbe an der Nation: GBR grün 72/82, ITA rot 42/43, GER silber/grau 14/18, FRA blau 4/6.
+- **Messfalle:** Ein Klassifizierer „Helligkeit ≤ 0,13 = schwarz" zählt Britisch-Grün als Schwarz (Cooper `#004225`,
+  17 Saisons) und dunkle Grüntöne (JBW, Gilby) als Türkis. Erste Messung ergab deshalb GBR „grün 48, schwarz 18".
+  Richtig: dunkel UND kräftig (Sättigung ≥ 0,5) bleibt Farbe; Türkis-Ton unter Helligkeit 0,35 zählt als Grün.
+- **Umsetzung:** `realistischeTeamFarbe(year, ioc)` – bis 1967 zu 80 % nationale Rennfarbe, sonst Klasse nach
+  `TEAMFARBE_ANTEILE` (gleitend zwischen Dekadenmitten, nach 2025 = 2020er), Ton aus `TEAMFARBE_TOENE` (echte
+  Liveries, nie `#888888`). Stichprobe 20 000 Züge trifft die Tabelle (z. B. 1955 GBR grün 88 %, 1990 blau 29 %).
+  Junior-Palette: dieselben 16 Farbtöne, Sättigung gedämpft (Nutzer: „die buntheit nur dämpfen").
+- Vergleichsbild: `screenshots/teamfarben-generiert-dark.png` / `-modern.png`.
