@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.14</title>
+    <title>F1 RPG v0.9.21.15</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.14 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.15 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; FIX: Ein Wechsler verdraengt im vollen Team nur noch einen Fahrer, der in dieser Saison schwach faehrt – nicht mehr den mit der kleinsten Pace</div>
+                            <div>&#8226; FIX: Wechsel ohne passendes Ziel ruecken aufs naechste Rennen statt zu verfallen</div>
+                            <div class="font-bold text-slate-400">v0.9.21.14 - 17.10.2026</div>
                             <div>&#8226; NEU: Teamwechsel mitten in der Saison nach realen Raten je Ära (Wechsel, hin und zurück, Debüt)</div>
                             <div>&#8226; NEU: Wer ein Team verlässt, wird ersetzt – Ringtausch entsteht von selbst</div>
                             <div>&#8226; FIX: Keine festen Gastauftritte mehr aus abweichenden Spielwelten (Schumacher/Williams 1991)</div>
@@ -4345,7 +4348,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.14';
+        const VERSION = '0.9.21.15';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -8576,12 +8579,14 @@
         // Wohin: ein Team, das hier antritt und nicht deutlich stärker ist als Fahrer oder
         // bisheriges Auto – die Bremse gegen „Ian Ashley bei McLaren". Und nicht weit darunter:
         // ohne die Grenze ging Johansson 1985 mitten in der Saison von Ferrari zu Arrows.
-        // Ähnlich starke Teams und solche mit freiem Platz bevorzugt.
-        function _bewegungsZiel(d, S, rang, jahr, cid, ausser) {
+        // Ähnlich starke Teams und solche mit freiem Platz bevorzugt. Ein volles Team nur, wenn dort
+        // jemand schwach fährt (_verdraengbar) – außer beim Gastspiel, das niemanden verdrängt.
+        function _bewegungsZiel(d, S, rang, jahr, cid, ausser, gastspiel) {
             const p = rang.p(d), eigen = d.team ? rang.t(d.team) : p;
             const kand = (GAME_STATE.teams || []).filter(t => t.id !== d.team && t.id !== ausser
                 && _keinIndyTeam(t) && _teamTrittAn(t, jahr, cid) && _teamNationOk(t, d)
-                && rang.t(t.id) <= Math.max(p, eigen) + 0.15 && rang.t(t.id) >= Math.min(p, eigen) - 0.35);
+                && rang.t(t.id) <= Math.max(p, eigen) + 0.15 && rang.t(t.id) >= Math.min(p, eigen) - 0.35
+                && (gastspiel || !_teamVoll(S, t.id, jahr) || !!_verdraengbar(S, t.id, d)));
             if (!kand.length) return null;
             return _weightedDraw(kand, kand.map(t =>
                 (1 + 2 * (1 - Math.abs(rang.t(t.id) - eigen))) * (_teamVoll(S, t.id, jahr) ? 1 : 2)), 1)[0] || null;
@@ -8591,13 +8596,24 @@
         function _hinterbaenkler(fahrer, rang) {
             return _weightedDraw(fahrer, fahrer.map(x => 1 - 0.7 * rang.p(x)), 1)[0] || null;
         }
-        // Volles Zielteam: sein langsamster Fahrer verliert den Platz und wird Free Agent.
+        // Wen ein Wechsler verdrängen darf: wer in DIESER Saison schwach fährt, nicht wer die
+        // kleinste pace hat. Nach pace warf 1997 ein 75er Schumacher (93, Sieg + drei Podien) bei
+        // Jordan hinaus. Schwelle wie die Mid-Season-Entlassung: Saisonwertung < 0,15 ab 3 Rennen.
+        function _verdraengbar(S, tid, ausser) {
+            let raus = null, tief = Infinity;
+            for (const x of (GAME_STATE.drivers || [])) {
+                if (x.team !== tid || !_aktiv(x) || x === ausser || x._homeOnlyCurated || x._guestFrom || S.eigen[x.id]) continue;
+                const ss = _computeDriverSeasonScore(x.id);
+                if (!ss || ss.raceCount < 3 || ss.seasonScore >= 0.15) continue;
+                if (ss.seasonScore < tief) { raus = x; tief = ss.seasonScore; }
+            }
+            return raus;
+        }
+        // Volles Zielteam: sein schwächster Fahrer der Saison verliert den Platz und wird Free Agent.
         // Bekommt danach das alte Team des Wechslers Ersatz, kann es genau ihn nehmen – der
         // Ringtausch Schumacher/Moreno entsteht so von selbst, ohne ihn vorzuschreiben.
         function _platzMachen(S, tid, ausser) {
-            const raus = (GAME_STATE.drivers || []).filter(x => x.team === tid && _aktiv(x) && x !== ausser
-                && !x._homeOnlyCurated && !x._guestFrom && !S.eigen[x.id])
-                .sort((a, b) => (a.pace || 0) - (b.pace || 0))[0] || null;
+            const raus = _verdraengbar(S, tid, ausser);
             if (raus) { raus.team = null; raus._dismissedFromTeam = tid; }
             return raus;
         }
@@ -8709,6 +8725,7 @@
             if (rep && rep.driver) S.eigen[rep.driver.id] = true;
             _endgueltigUmziehenAbschliessen(S, d, ziel.id, raus);
             if (raus && raus.team) _offenenWechselStreichen(S, 'Platztausch');
+            return true;
         }
         function _gastspielAusfuehren(S, ev, jahr, cid, rang) {
             // Nur wer davor UND danach daheim meldet – sonst ist es kein Hin und Zurück, sondern
@@ -8719,7 +8736,7 @@
                 alle.some(i => i < erstes && _meldetBei(d, i)) && alle.some(i => i > letztes && _meldetBei(d, i)));
             if (fahrer.length < 4) return;
             const d = _hinterbaenkler(fahrer, rang);
-            const ziel = d && _bewegungsZiel(d, S, rang, jahr, cid);
+            const ziel = d && _bewegungsZiel(d, S, rang, jahr, cid, null, true);
             if (!ziel) return;
             // Nur Rennen, an denen das Gastteam antritt. Sonst pendelt der Fahrer in jeder Lücke
             // heim und wieder hin, und aus einem Gastspiel werden zwei (1950er: 13,2 statt 7,0).
@@ -8815,7 +8832,13 @@
                     continue;
                 }
                 if (ev.ab > raceIndex) continue;
-                if (ev.typ === 'W') { ev.erledigt = true; _wechselAusfuehren(S, raceIndex, jahr, cid, rang); }
+                if (ev.typ === 'W') {
+                    // Kein Ziel (volle Teams, niemand fährt schwach genug): aufs nächste Rennen
+                    // verschieben statt verfallen lassen – sonst fehlte ab 1990 die halbe Quote.
+                    ev.erledigt = true;
+                    if (!_wechselAusfuehren(S, raceIndex, jahr, cid, rang)) { ev.erledigt = false; ev.ab = raceIndex + 1; }
+                    continue;
+                }
                 else if (ev.typ === 'H') _gastspielAusfuehren(S, ev, jahr, cid, rang);
                 else if (ev.typ === 'D' && _debuetAusfuehren(S, ev, jahr, cid, rang)) continue;
                 ev.erledigt = true;
