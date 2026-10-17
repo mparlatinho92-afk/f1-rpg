@@ -3544,3 +3544,13 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
   Liveries, nie `#888888`). Stichprobe 20 000 Züge trifft die Tabelle (z. B. 1955 GBR grün 88 %, 1990 blau 29 %).
   Junior-Palette: dieselben 16 Farbtöne, Sättigung gedämpft (Nutzer: „die buntheit nur dämpfen").
 - Vergleichsbild: `screenshots/teamfarben-generiert-dark.png` / `-modern.png`.
+- **Nachtrag (Nutzer nach Sichtung):** 1960 und 1989 gut; Moderne zu viel Blau, kein Gelb, einiges Türkis, Weiß zu
+  selten – „ein nachahmen der echten bestehenden teams. da fehlt ein versuchter ausgleich". Umgesetzt: ab 1968 zur
+  Hälfte das Mittel 1975–2025 beigemischt; jede im Feld schon k-mal vergebene Farbklasse zieht nur mit (1/(k+1))^0,6;
+  grelle Töne (Sättigung > 0,85, Helligkeit 0,45–0,88) innerhalb der Klasse ein Drittel so oft. Nationale Rennfarben
+  ausgenommen.
+- **Negativergebnis:** Ausgleich gegen den ERWARTETEN Anteil (soll+1)/(ist+1) änderte 2025 nichts an Blau (27 %) –
+  3 blaue von 10 Teams sind genau der Erwartungswert. Der Ausgleich muss an der Belegung hängen, nicht an der Erwartung.
+- **Ergebnis** (echtes Startfeld, je Lauf 4 Teams nacheinander generiert, 300 Läufe; vorher → nachher in %):
+  2025 blau 27 → 19 · weiß 19 → 18 · gelb 4 → 7 · türkis 1 → 2; 1989 blau 27 → 20 · silber 5 → 10; 1960 unverändert
+  (grün 50/49, rot 24/22). Bild: `screenshots/teamfarben-ausgleich-dark.png` / `-modern.png` (Feld + drei Versuche).
