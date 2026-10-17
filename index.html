@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.12</title>
+    <title>F1 RPG v0.9.21.13</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.12 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.13 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; NEU: Teamnamen in Fahrer-, Team- und Junior-Steckbrief als Livery-Feld</div>
+                            <div>&#8226; FIX: Steckbriefe zeigen die Teamfarben des Jahres statt der Grundfarbe (McLaren 1996 nicht mehr orange)</div>
+                            <div>&#8226; FIX: Serien-Plaketten der Junior-Welt in allen Themes lesbar</div>
+                            <div class="font-bold text-slate-400">v0.9.21.12 - 17.10.2026</div>
                             <div>&#8226; NEU: Kalender 2026 mit 23 Rennen – Bahrain GP in Sepang als Lauf 16</div>
                             <div>&#8226; NEU: tools/f1db-abgleich.js gleicht die Renntabelle gegen F1DB ab</div>
                             <div>&#8226; FIX: Kalender-Prüfung brach in der Testumgebung ab</div>
@@ -4338,7 +4342,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.12';
+        const VERSION = '0.9.21.13';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -29962,7 +29966,7 @@
                 const li = _juniorLevels(jw).indexOf(_juniorSeriesLevel(sid));
                 const c = JW_LEVEL_COLORS[(li < 0 ? 1 : li) % JW_LEVEL_COLORS.length];
                 const nm = (jw.series || []).find(s => s.id === sid)?.name || fallback || sid;
-                return `<span class="px-2 py-1 rounded text-xs font-bold" style="background-color:${c}22;color:${c}">${nm}</span>`;
+                return `<span class="px-2 py-1 rounded text-xs font-bold" style="background-color:${c}22;color:${farbeAufKontrast(c)}">${nm}</span>`;
             };
             // Karriere aus den Detail-Records streamen (eine Zeile je Serie/Saison)
             const rows = [];
@@ -30042,7 +30046,7 @@
                 career += `<tr class="border-t border-custom">`
                     + `<td class="p-1 font-bold"><span class="cursor-pointer hover:underline" style="color:var(--accent-main-text)" onclick="closeDriverProfile();_juniorSubTab='season';_juniorViewYear=${r.year};renderContent()">${r.year}</span></td>`
                     + `<td class="p-1">${seriesBadge(r.seriesId, r.seriesName)}</td>`
-                    + `<td class="p-1"><span style="color:${lesbareTextfarbe(r.teamColor)};font-weight:600">${r.teamName}</span></td>`
+                    + `<td class="p-1"><span style="${teamNamensFeld([r.teamColor]) || `color:${lesbareTextfarbe(r.teamColor)};font-weight:600`}">${r.teamName}</span></td>`
                     + `<td class="p-1 text-center jw-hide-mobile ${r.wins > 0 ? 'accent-gold font-bold' : ''}">${r.wins || 0}</td>`
                     + `<td class="p-1 text-center jw-hide-mobile">${r.podiums || 0}</td>`
                     + `<td class="p-1 text-center">${r.points}</td>`
@@ -30059,7 +30063,7 @@
                         <div class="text-3xl font-bold mb-1">${name}${crown}</div>
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
                             <span class="text-2xl">${flag}</span>
-                            ${curTeam && curTeam.name ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:${curTeam.color}22;color:${lesbareTextfarbe(curTeam.color)}">${curTeam.name}</span>`
+                            ${curTeam && curTeam.name ? `<span class="px-2 py-1 rounded text-sm font-bold" style="${teamNamensFeld([curTeam.color], true) || `background-color:${curTeam.color}22;color:${lesbareTextfarbe(curTeam.color)}`}">${curTeam.name}</span>`
                                 : (dead ? `<span class="px-2 py-1 rounded text-sm font-bold" style="background-color:#e6194b22;color:#e6194b">✝ verunglückt ${dead.year}</span>` : '<span class="text-tertiary">Karriere beendet</span>')}
                             ${active && active.number ? `<span class="text-2xl font-bold text-tertiary">#${active.number}</span>` : ''}
                             ${active ? seriesBadge(active.seriesId) : ''}
@@ -31352,12 +31356,13 @@
         // Verschwindet die Fläche in der Kartenfläche (Weiß auf Weiß, Schwarz auf Schwarz, < 1,5:1), erzwingt das
         // einen 1-px-Rand – in der ersten weiteren Teamfarbe, die sich von der Karte abhebt (McLaren 1996: Marlboro-Rot).
         // Rückgabe: Style-Fragment für ein style-Attribut, oder null ohne gültige Farbe. Cache je Theme.
+        // eigeneMasse = true: ohne padding/border-radius, für Elemente mit eigenen Maßen (Plaketten, Überschriften).
         const _feldCache = {};
-        function teamNamensFeld(colors) {
+        function teamNamensFeld(colors, eigeneMasse = false) {
             const cols = (colors || []).filter(c => /^#[0-9a-f]{6}$/i.test(c || '') && !/^#888888$/i.test(c));
             if (!cols.length) return null;
             const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-            const key = theme + cols.join('');
+            const key = theme + cols.join('') + (eigeneMasse ? '|m' : '');
             if (_feldCache[key]) return _feldCache[key];
             const lum = h => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
                 return 0.2126 * f(parseInt(h.slice(1, 3), 16)) + 0.7152 * f(parseInt(h.slice(3, 5), 16)) + 0.0722 * f(parseInt(h.slice(5, 7), 16)); };
@@ -31372,7 +31377,43 @@
                 const rc = cols.slice(1).find(c => kr(c, karte) >= 1.5) || (kr(schrift, karte) >= 1.5 ? schrift : 'var(--text-muted)');
                 rand = `border:1px solid ${rc};`;
             }
-            return (_feldCache[key] = `background:${flaeche};color:${schrift};${rand}padding:0 4px;border-radius:3px;font-weight:bold;-webkit-box-decoration-break:clone;box-decoration-break:clone`);
+            const masse = eigeneMasse ? '' : 'padding:0 4px;border-radius:3px;';
+            return (_feldCache[key] = `background:${flaeche};color:${schrift};${rand}${masse}font-weight:bold;-webkit-box-decoration-break:clone;box-decoration-break:clone`);
+        }
+
+        // Farbe ohne eigene Identität (Serien-Plaketten): Farbton bleibt, die Helligkeit wandert in Schritten zur
+        // lesbaren Seite, bis >= 5:1 gegen die Kartenfläche erreicht ist (Reserve für die getönte Plakette) – kein Halo (wirkt verwaschen).
+        // Nur für Unterscheidungsfarben; Teamfarben bleiben original (teamNamensFeld / lesbareTextfarbe).
+        const _serienFarbeCache = {};
+        function farbeAufKontrast(hex) {
+            if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return 'var(--text-primary)';
+            const bgHex = (typeof getComputedStyle === 'function' && getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '').trim();
+            const karte = /^#[0-9a-f]{6}$/i.test(bgHex) ? bgHex : '#232936';
+            const key = karte + hex;
+            if (_serienFarbeCache[key]) return _serienFarbeCache[key];
+            const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+            const lum = c => c.map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+            const kr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+            const bg = rgb(karte), dunkleKarte = lum(bg) < 0.2;
+            const [r, g, b] = rgb(hex), max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+            let l = (max + min) / 2;
+            const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+            const hue = !d ? 0 : max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+            const ausHsl = l => { const c = (1 - Math.abs(2 * l - 1)) * sat, x = c * (1 - Math.abs(hue % 2 - 1)), m = l - c / 2;
+                const [a, bb, cc] = hue < 1 ? [c, x, 0] : hue < 2 ? [x, c, 0] : hue < 3 ? [0, c, x] : hue < 4 ? [0, x, c] : hue < 5 ? [x, 0, c] : [c, 0, x];
+                return [a + m, bb + m, cc + m]; };
+            let farbe = rgb(hex);
+            for (let i = 0; i < 25 && kr(farbe, bg) < 5; i++) { l = Math.min(1, Math.max(0, l + (dunkleKarte ? 0.03 : -0.03))); farbe = ausHsl(l); }
+            return (_serienFarbeCache[key] = '#' + farbe.map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join(''));
+        }
+
+        // Zahlen in Teamfarbe (Steckbrief-Kacheln): erste Teamfarbe des Jahres, die ohne Halo lesbar ist, sonst die
+        // Hauptfarbe mit Halo. Zahlen bekommen bewusst kein Feld – ein Farbblock hinter einer Zahl wirkt wie ein Knopf.
+        function teamZahlFarbe(colors) {
+            const cols = (colors || []).filter(c => /^#[0-9a-f]{6}$/i.test(c || ''));
+            if (!cols.length) return 'var(--text-primary)';
+            for (const c of cols) { const st = lesbareTextfarbe(c); if (!st.includes('text-shadow')) return st; }
+            return lesbareTextfarbe(cols[0]);
         }
 
         // WCAG-Kontrast einer Schriftfarbe gegen die Kartenfläche des aktiven Themes prüfen (Ziel 5:1, Reserve über 4,5,
@@ -37195,7 +37236,7 @@ Empfohlene Wertebereiche:
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
                             <span class="text-2xl">${renderFlag(driver.nation, driver.name, profileFlagYear)}</span>
                             ${team ? `
-                                <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="background-color: ${team.color}20; color: ${lesbareTextfarbe(team.color)}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
+                                <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="${teamNamensFeld(getTeamColors(team.id, viewingYear, team.color), true) || `background-color: ${team.color}20; color: ${lesbareTextfarbe(team.color)}`}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
                                     ${team.name}
                                 </span>
                             ` : (driver._nieImSpiel ? `<span class="text-tertiary">${driver._nieImSpiel.kommtNoch ? 'noch nicht in der F1' : 'nie in der F1'}</span>`
@@ -37463,15 +37504,15 @@ Empfohlene Wertebereiche:
                     <h4 class="font-bold mb-3 cursor-pointer driver-link" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">🏎️ Team: ${team.name}</h4>
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
-                            <div class="text-2xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${_eloDisplayCS(team.id, viewingYear) ?? team.carSpeed}</div>
+                            <div class="text-2xl font-bold" style="color: ${teamZahlFarbe(getTeamColors(team.id, viewingYear, team.color))}">${_eloDisplayCS(team.id, viewingYear) ?? team.carSpeed}</div>
                             <div class="text-xs text-tertiary">Auto-Speed</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.reliability}</div>
+                            <div class="text-2xl font-bold" style="color: ${teamZahlFarbe(getTeamColors(team.id, viewingYear, team.color))}">${team.reliability}</div>
                             <div class="text-xs text-tertiary">Zuverlässigkeit</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.strategy}</div>
+                            <div class="text-2xl font-bold" style="color: ${teamZahlFarbe(getTeamColors(team.id, viewingYear, team.color))}">${team.strategy}</div>
                             <div class="text-xs text-tertiary">Strategie</div>
                         </div>
                     </div>
@@ -40300,7 +40341,7 @@ Empfohlene Wertebereiche:
                         <div class="flex items-start justify-between gap-2 mb-1">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-2xl">${renderFlag(team.nation, team.name, teamFlagYear)}</span>
-                                <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.name}</div>
+                                <div class="text-3xl font-bold" style="${(f => f ? f + ';display:inline-block;padding:2px 12px;border-radius:6px' : 'color: ' + lesbareTextfarbe(team.color))(teamNamensFeld(getTeamColors(team.id, teamFlagYear, team.color), true))}">${team.name}</div>
                             </div>
                             ${(() => {
                                 const tHistCheck = (GAME_STATE.history || []).some(s => (s.teams || []).some(t => t.id === team.id || (stATSId && t.histId === stATSId)));
@@ -40354,15 +40395,15 @@ Empfohlene Wertebereiche:
                     <h4 class="font-bold mb-3">📊 Team-Werte</h4>
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div class="p-4 bg-secondary rounded-lg">
-                            <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${_eloDisplayCS(team.id, GAME_STATE.currentYear) ?? team.carSpeed}</div>
+                            <div class="text-3xl font-bold" style="color: ${teamZahlFarbe(getTeamColors(team.id, teamFlagYear, team.color))}">${_eloDisplayCS(team.id, GAME_STATE.currentYear) ?? team.carSpeed}</div>
                             <div class="text-sm text-tertiary">Auto-Speed</div>
                         </div>
                         <div class="p-4 bg-secondary rounded-lg">
-                            <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.reliability}</div>
+                            <div class="text-3xl font-bold" style="color: ${teamZahlFarbe(getTeamColors(team.id, teamFlagYear, team.color))}">${team.reliability}</div>
                             <div class="text-sm text-tertiary">Zuverlässigkeit</div>
                         </div>
                         <div class="p-4 bg-secondary rounded-lg">
-                            <div class="text-3xl font-bold" style="color: ${lesbareTextfarbe(team.color)}">${team.strategy}</div>
+                            <div class="text-3xl font-bold" style="color: ${teamZahlFarbe(getTeamColors(team.id, teamFlagYear, team.color))}">${team.strategy}</div>
                             <div class="text-sm text-tertiary">Strategie</div>
                         </div>
                     </div>
