@@ -3414,3 +3414,28 @@ und jede Verlängerung war ein neuer Wurf für `_noRenew`.
 Messung `echt-anteil.js 2010 15 3`, vorher → nachher: gesamt 70 → 71 % (im Rauschen). Am häufigsten ohne Cockpit:
 Alonso 19 → 12, Grosjean 18 → 7, Hamilton 12 → nicht mehr unter den ersten 12.
 Gegenprobe `markt-abgang.js 2012 8 4`: Wechselquote 27,1 %, „weg“ 7 / 20 / 37 %. Beides unverändert gegenüber (4).
+
+### 17.10.2026: F1DB v2026.17.0 abgeglichen, kein Neubau von `data/f1db.js` (`tools/f1db-abgleich.js`)
+Ein Generator für `data/f1db.js` existiert nicht: letzter Komplettbau 01.06.2026, seitdem gezielte Teilskripte
+(`f1db-vorquali.js` u. a.). Die Datei trägt handgepflegte Tabellen und `PACE_RATINGS` aus der Elo-Rechnung –
+ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb nur `F1DB_RACES` an
+(ohne Schalter nur Bericht, `--schreiben` übernimmt).
+- **2026 übernommen:** 22 → 23 Rennen, Sepang („Bahrain GP in Malaysia“, 04.10.) als Lauf 16; Renn-IDs ab
+  Singapur verschieben sich um eins (1165 → 1166 … Abu Dhabi jetzt 1172).
+- **Spielkalender getrennt nachgezogen:** der 2026er Spielkalender kommt aus `FUTURE_CAL_BASE_MONTHS`
+  (index.html), nicht aus `F1DB_RACES` – `getF1DBYear` liest nur Jahre mit Ergebnissen. Sepang dort eingetragen
+  (Nutzer 17.10.2026), Name im Basisjahr „Bahrain GP“ (`FUTURE_CAL_BASE_GP`), Reihenfolge im Basisjahr nach
+  realer Folge statt Pool-Index. `calendar-rotation-check.js` (8 Welten × 21 Saisons): keine Regelverstöße,
+  Größe Ø 22,8 → 22,9. **Nebenwirkung:** Sepang-Einsatzquote 26 → 61 % – wer im Basisjahr steht, fällt bei
+  ~1 Abgang/Jahr nur langsam heraus (Beispielwelt: Sepang bis 2031 durchgehend).
+- **Nebenbefund:** `calendar-rotation-check.js` brach seit 12.10.2026 am Ende ab (`getComputedStyle is not
+  defined` in `lesbareTextfarbe`, sim-core hat kein CSSOM). Beide Aufrufe (auch `teamNamensFeld`) jetzt mit
+  `typeof`-Wache, Rückfall auf die Dark-Kartenfarbe.
+- **Nicht übernommen:** Ergebnisse 2026 (laufende Saison) und Nachträge 2025 (bräuchte neue Elo-Werte);
+  Nutzer-Entscheidung 17.10.2026.
+- **Messfalle Datum:** F1DB rechnet in UTC. Las Vegas 2023/2025 steht dort auf Sonntag, gefahren wurde
+  Samstagabend Ortszeit. Das Spiel behält das Ortsdatum, das Werkzeug meldet die Abweichung nur.
+- **Messfalle Strecken-ID:** F1DB hat `sochi` in `sirius` umbenannt (8 Rennen 2014–2021). Das Werkzeug führt
+  auf `sochi` zurück, weil Layout, Land, Klima und Länge an der alten ID hängen.
+- Bottas Australien 2023 Quali „NC“ → „DSQ“: im Spiel nicht gespeichert, keine Änderung nötig.
+- Wächter danach grün: `indy-500-vs-gp.js`, `data-sync-check.js`, `ticker-paritaet.js --alle 40` (40/40).
