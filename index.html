@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.17</title>
+    <title>F1 RPG v0.9.21.18</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.17 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.18 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; FIX: Top-Teams sehen frisch entlassene Fahrer (Prost blieb 1989 frei, Lotus nahm Weidler)</div>
+                            <div>&#8226; FIX: Top-Teams losen nur unter ihren vier besten Kandidaten statt unter allen</div>
+                            <div class="font-bold text-slate-400">v0.9.21.17 - 17.10.2026</div>
                             <div>&#8226; FIX: Generierte Teams meiden Farben, die im Feld schon vergeben sind, und bevorzugen fehlende</div>
                             <div>&#8226; FIX: Moderne Aera mit mehr Weiss und Gelb, weniger Blau und Neontoenen</div>
                             <div class="font-bold text-slate-400">v0.9.21.16 - 17.10.2026</div>
@@ -4354,7 +4357,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.17';
+        const VERSION = '0.9.21.18';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24935,6 +24938,19 @@
                                      (d.currentPace || d.pace || 0) >= 60 && _indyOk(d) && _nationOk(d) &&
                                      d._dismissedFromTeam !== team.id)
                         .forEach(d => _cands.push({ driver: d, type: 'freeagent', fromTeam: null }));
+                    // Frisch Entlassene sitzen schon im Reserve-Pool (addDismissedToPool), und den
+                    // sehen Top-Teams nicht. Ohne diese Zeile nahm Lotus 1989 Weidler (pace 65,
+                    // 5 Starts) als einzigen sichtbaren Free Agent, während Prost (95) frei war.
+                    if (isTopTeam) {
+                        (GAME_STATE.reservePool || [])
+                            .filter(d => d.dismissedFromSim && (d.poolGroup || 'A') === 'A' &&
+                                         (!d.status || d.status === 'active') &&
+                                         (d.lastRacedYear || 0) >= currentYear - 1 &&
+                                         (d.currentPace || d.pace || 0) >= 60 && _indyOk(d) && _nationOk(d) &&
+                                         d._dismissedFromTeam !== team.id &&
+                                         !GAME_STATE.drivers.some(x => x.id === d.id && x.team))
+                            .forEach(d => _cands.push({ driver: d, type: 'freeagent', fromTeam: null, ausPool: true }));
+                    }
 
                     // Abwerbbare: aus unterem Tier, Score ≥ 70, Vertrag läuft dieses/nächstes Jahr aus
                     GAME_STATE.drivers
@@ -25040,6 +25056,15 @@
                     });
 
                     poolLoseSkalieren(_cands);
+                    // Top-Teams losen nur unter ihren POOL_LOSE besten Kandidaten. Sonst bekam jeder
+                    // schwache Fahrer das Mindestlos 5 (pace 76 nur 14), und die Masse schlug den einen
+                    // Starken: 1982 nahmen McLaren und Renault Keegan (69) und Thackwell (66), während
+                    // Blondel (87, im Vorjahr gefahren) frei blieb. Dieselbe Falle wie beim Reserve-Pool
+                    // (BEFUNDE 09.10. (3)). Im Mittel ändert es wenig – der freie Markt ist meist dünn.
+                    if (isTopTeam && _cands.length > POOL_LOSE) {
+                        _cands.sort((a, b) => b.score - a.score);
+                        _cands.length = POOL_LOSE;
+                    }
 
                     // === GEWICHTETE ZUFALLSAUSWAHL ===
                     if (_cands.length > 0) {
@@ -25052,9 +25077,9 @@
                         const _map = { freeagent: ['🆓','Free Agent verpflichtet'], poached: ['🎯','Abgeworben'], buyout: ['💰','Rausgekauft'], pool: ['🌟','Debüt aus Reserve-Pool'] };
                         const [_emoji, _text] = _map[_ch.type] || ['➡️','Transfer'];
 
-                        if (_ch.type === 'pool') {
+                        if (_ch.type === 'pool' || _ch.ausPool) {
                             _d.isReserve = false;
-                            _d.debutYear = _d.debutYear || currentYear;
+                            if (_ch.type === 'pool') _d.debutYear = _d.debutYear || currentYear;
                             const _existIdx = GAME_STATE.drivers.findIndex(x => x.id === _d.id);
                             if (_existIdx >= 0) {
                                 GAME_STATE.drivers[_existIdx] = _d; // entlassenen Eintrag durch aktiven Pool-Fahrer ersetzen
