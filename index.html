@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.15</title>
+    <title>F1 RPG v0.9.21.16</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.15 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.16 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; FIX: Generierte Teams bekommen Farben nach realer Verteilung je Aera statt Zufalls-RGB, bis 1967 meist die nationale Rennfarbe</div>
+                            <div>&#8226; FIX: Junior-Teams mit gedaempfter Palette</div>
+                            <div class="font-bold text-slate-400">v0.9.21.15 - 17.10.2026</div>
                             <div>&#8226; FIX: Ein Wechsler verdraengt im vollen Team nur noch einen Fahrer, der in dieser Saison schwach faehrt – nicht mehr den mit der kleinsten Pace</div>
                             <div>&#8226; FIX: Wechsel ohne passendes Ziel ruecken aufs naechste Rennen statt zu verfallen</div>
                             <div class="font-bold text-slate-400">v0.9.21.14 - 17.10.2026</div>
@@ -4348,7 +4351,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.15';
+        const VERSION = '0.9.21.16';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -17485,6 +17488,60 @@
             }
             return pick(P.kunstwort[era]) + ' Racing';   // Not-Fallback nach 14 Kollisionen
         }
+        // Farbe eines generierten Teams: Farbklasse nach realer Verteilung je Dekade, Ton aus
+        // echten Liveries – statt eines beliebigen RGB-Werts (Neongrün, Magenta, Violett gibt
+        // es real fast nie). Anteile = Hauptfarbe aller Team-Saisons 1950–2025 (getTeamColors,
+        // ohne die 224 grauen #888888-Privatiers), BEFUNDE.md 17.10.2026 (6).
+        // Spalten: rot weiss schwarz silber grau blau gruen gelb orange tuerkis rosa braun
+        const TEAMFARBE_KLASSEN = ['rot','weiss','schwarz','silber','grau','blau','gruen','gelb','orange','tuerkis','rosa','braun'];
+        const TEAMFARBE_ANTEILE = {
+            1955: [37, 1,  0,  9, 7,  7, 39,  0,  0, 0, 0, 0],
+            1965: [28, 2,  1,  0, 2,  7, 50,  2,  6, 1, 1, 0],
+            1975: [24, 16, 11, 3, 2, 22,  7,  8,  5, 2, 0, 1],
+            1985: [18, 20, 13, 2, 0, 24,  5, 15,  2, 0, 0, 0],
+            1995: [12, 22,  9, 3, 1, 34,  9,  8,  2, 0, 0, 0],
+            2005: [22,  7,  5, 15, 0, 25, 7, 14,  3, 0, 2, 1],
+            2015: [13, 11,  8, 10, 4, 27, 5,  8,  3, 5, 7, 0],
+            2025: [12, 12,  8,  5, 0, 32, 12, 2, 10, 3, 5, 0],
+        };
+        // ⚠ Nie genau #888888 – das ist im Spiel die Markierung „keine Farbe".
+        const TEAMFARBE_TOENE = {
+            rot: ['#DC0000', '#C8102E', '#B71C1C', '#E10600', '#9B0000'],
+            weiss: ['#FFFFFF', '#F5F5F0', '#ECECEC'],
+            schwarz: ['#111111', '#1A1A1A', '#222222'],
+            silber: ['#C0C0C0', '#A8A8A8', '#B5B9BD', '#8F9AA3'],
+            grau: ['#6E6E6E', '#5A5F66', '#7A7A7A'],
+            blau: ['#005AFF', '#0044CC', '#1A3A8A', '#003399', '#00205B', '#3671C6'],
+            gruen: ['#1B5E20', '#004225', '#229971', '#006F62', '#2D8C4E'],
+            gelb: ['#FFD700', '#FFD100', '#F9A825', '#FFC72C'],
+            orange: ['#FF8000', '#FF6600', '#F58025'],
+            tuerkis: ['#00C5B0', '#00A19C', '#00D2BE'],
+            rosa: ['#FF87BC', '#F596C8', '#E8318A'],
+            braun: ['#6B3E26', '#8B5A2B'],
+        };
+        // Nationale Rennfarben vor den Sponsor-Liveries (bis 1967). Gemessen: GBR grün 72 von 82,
+        // ITA rot 42/43, GER silber/grau 14/18, FRA blau 4/6; übrige Nationen nach ihrer
+        // historischen Rennfarbe.
+        const TEAMFARBE_NATION = {
+            ITA: ['rot'], GBR: ['gruen'], GER: ['silber', 'silber', 'weiss'], FRA: ['blau'],
+            BEL: ['gelb'], NED: ['orange'], SUI: ['rot', 'weiss'], USA: ['weiss', 'blau'], JPN: ['weiss', 'rot'],
+            RSA: ['gelb', 'gruen'], AUS: ['gruen', 'gelb'], NZL: ['schwarz', 'silber'], ARG: ['blau', 'gelb'],
+            BRA: ['gelb', 'gruen'], ESP: ['rot', 'gelb'], SWE: ['blau', 'gelb'], CAN: ['weiss', 'rot'], AUT: ['weiss', 'rot'],
+        };
+        function realistischeTeamFarbe(year, ioc) {
+            const y = Math.max(1955, Math.min(2025, Number(year) || 1990));
+            const ton = k => { const l = TEAMFARBE_TOENE[k]; return l[Math.floor(Math.random() * l.length)]; };
+            if (y < 1968 && TEAMFARBE_NATION[ioc] && Math.random() < 0.8) {
+                const l = TEAMFARBE_NATION[ioc];
+                return ton(l[Math.floor(Math.random() * l.length)]);
+            }
+            // Zwischen den Dekadenmitten gleitend, nicht in Stufen.
+            const a = Math.min(2015, Math.floor((y - 1955) / 10) * 10 + 1955), t = (y - a) / 10;
+            const w = TEAMFARBE_ANTEILE[a].map((v, i) => v * (1 - t) + TEAMFARBE_ANTEILE[a + 10][i] * t);
+            let x = Math.random() * w.reduce((s, v) => s + v, 0);
+            for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return ton(TEAMFARBE_KLASSEN[i]); }
+            return ton('blau');
+        }
         // Erzeugt ein vollständiges, fiktives Privatier-Team-Objekt (eher Hinterfeld).
         // nation optional (IOC-3); ohne Angabe über den Motorsport-Frequenz-Trichter.
         window.generateTeam = function(year, nation) {
@@ -17508,7 +17565,7 @@
             return {
                 id: 'gen-team-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now(),
                 name,
-                color: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
+                color: realistischeTeamFarbe(year, ioc),
                 histId: null,
                 nation: ioc,
                 carSpeed:    clamp(backAvg('carSpeed')    - rnd(5)),
@@ -17528,7 +17585,7 @@
             setVal('editor-new-team-name', name);
             const natName = (NATION_OPTIONS.find(([c]) => c === ioc) || [])[1];
             setVal('editor-new-team-nation', natName ? `${natName} (${ioc})` : (ioc || ''));
-            setVal('editor-new-team-color', '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'));
+            setVal('editor-new-team-color', realistischeTeamFarbe(yr, ioc));
             // Tier gewichtet (Privatiers eher hinten); Stat-Overrides leeren → Tier-Schnitt greift
             const tier = ['back','back','back','mid','mid','top'][Math.floor(Math.random() * 6)];
             const radio = document.querySelector(`input[name="editor-tier"][value="${tier}"]`);
@@ -25784,7 +25841,9 @@
         }
         // ── 2c: Teams pro Serie, Transfers, Aufstieg F3→F2 ──
         const JUNIOR_TEAM_NAMES = ['Apex','Volt','Strada','Nordic','Falcon','Meridian','Pulsar','Crest','Vortex','Lumen','Granite','Zenith','Cobra','Helix','Orbit','Delta'];
-        const JUNIOR_TEAM_COLORS = ['#e6194b','#3cb44b','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45','#fabed4','#469990','#dcbeff','#9A6324','#ffe119','#800000','#000075','#a9a9a9'];
+        // Unterscheidbar, aber gedämpft (Nutzer 17.10.2026: „die buntheit nur dämpfen"): dieselben
+        // 16 Farbtöne wie die frühere Kontrastpalette, Sättigung und Signalhelligkeit zurückgenommen.
+        const JUNIOR_TEAM_COLORS = ['#C0283C','#2E8540','#2F4FA8','#E0782E','#6A3A86','#3AA6BF','#B04A9E','#9BB84A','#E6B3C3','#469990','#B9A6D6','#9A6324','#E8C33A','#800000','#1C2260','#A9A9A9'];
         const JUNIOR_CIRCUITS = ['Valanga','Montegro','Sankt Ring','Costa Brava','Hollowmoor','Eldenmoor','Brackley Park','Nordschleifchen','Lac Bleu','Avalon Bay','Redrock','Kaiserkurve','Porto Verde','Silberwald'];
         const JW_SEATS_PER_TEAM = 2;
         // Teams je Serie anlegen (falls fehlend) + teamlose Fahrer (Alt-Saves/Neuzugänge) auf offene Sitze.
