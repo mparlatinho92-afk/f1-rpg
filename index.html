@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.10</title>
+    <title>F1 RPG v0.9.21.11</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.10 (aktuell) - 14.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.11 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; NEU: Teamnamen als Feld in Lackierungsfarben (Hauptfarbe + Zweitfarbe)</div>
+                            <div>&#8226; FIX: Teamfarben bleiben im Original (Ferrari nicht mehr lachsfarben)</div>
+                            <div>&#8226; FIX: Weiß auf Weiß / Schwarz auf Schwarz bekommen einen Rand in der Zweitfarbe</div>
+                            <div class="font-bold text-slate-400">v0.9.21.10 - 14.10.2026</div>
                             <div>&#8226; NEU: Head-to-Head mit echten Saisons vor dem Spielstart (Konstrukteurskollegen, gestrichelte Jahres-Badges)</div>
                             <div>&#8226; NEU: Quali-Duell zählt DNQ als verloren, DNPQ dahinter nach Vorquali</div>
                             <div>&#8226; NEU: Indy 500 zählt im Head-to-Head nicht mehr</div>
@@ -4330,7 +4334,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.10';
+        const VERSION = '0.9.21.11';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31313,7 +31317,7 @@
         }
 
         // Teamnamen farbig rendern: immer Teamfarbe als Schriftfarbe
-        // Farbe wird über lesbareTextfarbe() auf Mindestkontrast zur Kartenfläche gebracht.
+        // Farbe bleibt original; lesbareTextfarbe() ergänzt bei Bedarf einen Halo-Schatten.
         function renderTeamNameColored(name, teamId, year, baseColor, onclickAttr) {
             // EINE zentrale Auflösung statt drei Pflaster: mehrere Aufrufer übergeben als
             // `name` eine Team-ID, weil die Wertungen nur die ID führen —
@@ -31327,13 +31331,42 @@
             if (primary === '#888888' || primary === '#888') {
                 return `<span class="${cls}" style="color:var(--text-muted);font-weight:bold"${click}>${name}</span>`;
             }
-            // Statt Umriss: Teamfarbe so weit aufhellen (dunkles Theme) bzw. abdunkeln, bis sie
-            // auf der Kartenfläche lesbar ist. Lotus #111 / Tyrrell #00008B lagen bei 1,0–1,3:1.
-            return `<span class="${cls}" style="color:${lesbareTextfarbe(primary)};font-weight:bold"${click}>${name}</span>`;
+            // Livery-Feld: Hauptfarbe als Fläche, Zweitfarbe als Schrift (siehe teamNamensFeld).
+            const feld = teamNamensFeld(colors);
+            if (!feld) return `<span class="${cls}" style="color:${lesbareTextfarbe(primary)};font-weight:bold"${click}>${name}</span>`;
+            return `<span class="${cls}" style="${feld}"${click}>${name}</span>`;
         }
 
-        // WCAG-Kontrast einer Schriftfarbe gegen die Kartenfläche des aktiven Themes auf >= 5:1 bringen
-        // (Reserve über 4,5, weil getönte Zeilen etwas heller liegen als bg-card): Farbton bleibt, nur Richtung Weiß/Schwarz gemischt. Cache je Theme.
+        // Teamname als Livery-Feld (Nutzerwunsch 17.10.2026, ersetzt Halo/Aufhellen bei Namen):
+        // Fläche = Hauptfarbe, Schrift = erste weitere Teamfarbe mit >= 4,5:1 gegen die Fläche, sonst Weiß/Fast-Schwarz.
+        // Verschwindet die Fläche in der Kartenfläche (Weiß auf Weiß, Schwarz auf Schwarz, < 1,5:1), erzwingt das
+        // einen 1-px-Rand – in der ersten weiteren Teamfarbe, die sich von der Karte abhebt (McLaren 1996: Marlboro-Rot).
+        // Rückgabe: Style-Fragment für ein style-Attribut, oder null ohne gültige Farbe. Cache je Theme.
+        const _feldCache = {};
+        function teamNamensFeld(colors) {
+            const cols = (colors || []).filter(c => /^#[0-9a-f]{6}$/i.test(c || '') && !/^#888888$/i.test(c));
+            if (!cols.length) return null;
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const key = theme + cols.join('');
+            if (_feldCache[key]) return _feldCache[key];
+            const lum = h => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+                return 0.2126 * f(parseInt(h.slice(1, 3), 16)) + 0.7152 * f(parseInt(h.slice(3, 5), 16)) + 0.0722 * f(parseInt(h.slice(5, 7), 16)); };
+            const kr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+            const bgHex = (getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '').trim();
+            const karte = /^#[0-9a-f]{6}$/i.test(bgHex) ? bgHex : '#232936';
+            const flaeche = cols[0];
+            const schrift = cols.slice(1).find(c => kr(c, flaeche) >= 4.5)
+                || (kr('#ffffff', flaeche) >= kr('#111111', flaeche) ? '#ffffff' : '#111111');
+            let rand = '';
+            if (kr(flaeche, karte) < 1.5) {
+                const rc = cols.slice(1).find(c => kr(c, karte) >= 1.5) || (kr(schrift, karte) >= 1.5 ? schrift : 'var(--text-muted)');
+                rand = `border:1px solid ${rc};`;
+            }
+            return (_feldCache[key] = `background:${flaeche};color:${schrift};${rand}padding:0 4px;border-radius:3px;font-weight:bold;-webkit-box-decoration-break:clone;box-decoration-break:clone`);
+        }
+
+        // WCAG-Kontrast einer Schriftfarbe gegen die Kartenfläche des aktiven Themes prüfen (Ziel 5:1, Reserve über 4,5,
+        // weil getönte Zeilen etwas heller liegen als bg-card). Unterschreitung → Halo-Schatten statt Farbänderung. Cache je Theme.
         const _lesbarCache = {};
         function lesbareTextfarbe(hex, mindest = 5) {
             if (!/^#[0-9a-f]{6}$/i.test(hex || '')) return hex;
@@ -31346,13 +31379,14 @@
             const kontrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
             const bgHex = (getComputedStyle(document.documentElement).getPropertyValue('--bg-card') || '#232936').trim();
             const bg = /^#[0-9a-f]{6}$/i.test(bgHex) ? rgb(bgHex) : [35, 41, 54];
-            const ziel = lum(bg) < 0.2 ? [255, 255, 255] : [0, 0, 0];
-            const c = rgb(hex);
-            let out = hex;
-            for (let s = 0; s <= 1.0001 && kontrast(rgb(out), bg) < mindest; s += 0.05) {
-                out = '#' + c.map((v, i) => Math.round(v + (ziel[i] - v) * s).toString(16).padStart(2, '0')).join('');
-            }
-            return (_lesbarCache[key] = out);
+            // Farbton bleibt IMMER original (Nutzerwunsch 15.10.2026: aufgehelltes Ferrari-Rot wirkte lachsfarben).
+            // Fehlt Kontrast, trägt ein Schriftschatten in der Gegenfarbe die Lesbarkeit. Rückgabe ist deshalb
+            // ein Style-Fragment "hex;text-shadow:…" – alle Aufrufer setzen es als `color:${…}` in ein style-Attribut.
+            const k = kontrast(rgb(hex), bg);
+            if (k >= mindest) return (_lesbarCache[key] = hex);
+            const halo = lum(bg) < 0.2 ? '255,255,255' : '0,0,0';
+            const a = Math.min(0.9, Math.max(0.35, (mindest - k) / (mindest - 1))).toFixed(2);
+            return (_lesbarCache[key] = `${hex};text-shadow:0 0 1px rgba(${halo},${a}),0 0 2px rgba(${halo},${a})`);
         }
 
         // Weiß oder Fast-Schwarz nach WCAG-Kontrast zur ERSTEN Livery-Farbe: der Name steht links,
@@ -37976,16 +38010,18 @@ Empfohlene Wertebereiche:
                                 .map(([id,s]) => ({id,...s})).sort(getDriverSortFn());
                             const wmPos = (sortedSt.findIndex(d => d.id === driver.id) + 1) || '-';
                             const standing = GAME_STATE.driverStandings?.[driver.id];
+                            let _curCols = null;
                             const _curFarbe = (() => {
                                 let c = null;
                                 try {
-                                    c = (getTeamColors(_curTeam?.id || '', _currentY, _curTeam?.color) || [])[0] || null;
+                                    _curCols = getTeamColors(_curTeam?.id || '', _currentY, _curTeam?.color) || [];
+                                    c = _curCols[0] || null;
                                 } catch (e) { c = null; }
                                 return (!c || c === '#888888' || c === '#888') ? null : ensureReadable(c);
                             })();
                             return { year: _currentY, cells, teamName: _curTeamDisplay,
                                 teamId: _curTeam?.id||null, teamColor: _curFarbe || ensureReadable(_curTeam?.color||'#888'),
-                                teamColorStyle: _curFarbe ? `color:${lesbareTextfarbe(_curFarbe)};font-weight:bold`
+                                teamColorStyle: _curFarbe ? (teamNamensFeld(_curCols) || `color:${lesbareTextfarbe(_curFarbe)};font-weight:bold`)
                                                           : 'color:var(--text-muted);font-weight:bold',
                                 wmPos, wmPts: standing?.points||0, simulated: true, isCurrent: true };
                         }
@@ -38040,18 +38076,20 @@ Empfohlene Wertebereiche:
                             // `teamColor` gesetzt, aber kein `teamColorStyle` - und genau das
                             // liest die Zeile. Alle simulierten Jahre standen deshalb in Weiss,
                             // waehrend die F1DB-Jahre farbig waren (Nutzer-Report).
+                            let _simCols = null;
                             const _simFarbe = (() => {
                                 let c = null;
                                 try {
-                                    c = (getTeamColors(team?.id || '', year, team?.color) || [])[0] || null;
+                                    _simCols = getTeamColors(team?.id || '', year, team?.color) || [];
+                                    c = _simCols[0] || null;
                                     if ((!c || c === '#888888' || c === '#888') && typeof getConstructorColor === 'function')
-                                        c = getConstructorColor(team?.histId || team?.id, year);
+                                        _simCols = [c = getConstructorColor(team?.histId || team?.id, year)];
                                 } catch (e) { c = null; }
                                 return (!c || c === '#888888' || c === '#888') ? null : ensureReadable(c);
                             })();
                             return { year, cells, teamName: _simTeamDisplay, teamId: team?.id||null,
                                      teamColor: _simFarbe || ensureReadable(team?.color||'#888'),
-                                     teamColorStyle: _simFarbe ? `color:${lesbareTextfarbe(_simFarbe)};font-weight:bold`
+                                     teamColorStyle: _simFarbe ? (teamNamensFeld(_simCols) || `color:${lesbareTextfarbe(_simFarbe)};font-weight:bold`)
                                                               : 'color:var(--text-muted);font-weight:bold',
                                      wmPos, wmPts: standing.points||0, simulated: true };
                         }
@@ -38109,7 +38147,7 @@ Empfohlene Wertebereiche:
                         }
                         const _tcColors = getTeamColors(teamIdGrid || '', year, teamColor) || [teamColor];
                         const _tcFinal = _tcColors[0] || teamColor;
-                        const teamColorStyle = (_tcFinal === '#888888' || _tcFinal === '#888') ? 'color:var(--text-muted);font-weight:bold' : `color:${lesbareTextfarbe(_tcFinal)};font-weight:bold`;
+                        const teamColorStyle = (_tcFinal === '#888888' || _tcFinal === '#888') ? 'color:var(--text-muted);font-weight:bold' : (teamNamensFeld(_tcColors) || `color:${lesbareTextfarbe(_tcFinal)};font-weight:bold`);
                         return { year, cells, teamName, teamId: teamIdGrid, teamColor: _tcFinal, teamColorStyle, wmPos, wmPts, simulated: false };
                     }).filter(Boolean);
 
@@ -38245,17 +38283,18 @@ Empfohlene Wertebereiche:
                                     teams.forEach((t, ti) => {
                                         // Teamfarbe der Aera je Unterzeile (Nutzer: „die ausgeklappten
                                         // teams haben keine damalige teamfarbe. nur weiß").
-                                        let _c = null;
+                                        let _c = null, _cols = null;
                                         try {
-                                            _c = (getTeamColors(t.key || '', row.year, null) || [])[0] || null;
+                                            _cols = getTeamColors(t.key || '', row.year, null) || [];
+                                            _c = _cols[0] || null;
                                             if ((!_c || _c === '#888888' || _c === '#888') && typeof getConstructorColor === 'function')
-                                                _c = getConstructorColor(t.key, row.year);
+                                                _cols = [_c = getConstructorColor(t.key, row.year)];
                                         } catch (e) { _c = null; }
                                         const _cc = (!_c || _c === '#888888') ? null : ensureReadable(_c);
                                         displayRows.push({
                                             ...row, _gruppe: i, _kopf: false, _erste: ti === 0,
                                             teamName: t.label, teamId: t.key,
-                                            teamColorStyle: _cc ? `color:${lesbareTextfarbe(_cc)};font-weight:bold` : 'color:var(--text-muted)',
+                                            teamColorStyle: _cc ? (teamNamensFeld(_cols) || `color:${lesbareTextfarbe(_cc)};font-weight:bold`) : 'color:var(--text-muted)',
                                             // Fremde Rennen werden LEER dargestellt, nicht entfernt —
                                             // sonst verrutschen die Spalten gegen die Kopfzeile.
                                             cells: row.cells.map(c => (!c.absent && c.teamKey === t.key)
@@ -38277,7 +38316,7 @@ Empfohlene Wertebereiche:
                                                 : `<span style="width:34px;flex-shrink:0"></span>`}
                                             ${(row._aufklappbar || row._erste)
                                                 ? `<span class="mxArrow${row._gruppe}" style="font-size:0.78rem;line-height:1;cursor:pointer;flex-shrink:0;color:var(--accent-main-text)" title="Teams dieser Saison einzeln zeigen" onclick="event.stopPropagation();toggleMatrixYear(${row._gruppe},this)">${row._kopf ? '▸' : '▾'}</span>` : ''}
-                                            <span style="flex:1; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
+                                            <span style="flex:0 1 auto; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
                                         </div>
                                     ` + (mxTakt(row, _i, _a) ? mxLuecke() : '')).join('')}
                                 </div>
