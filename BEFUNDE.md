@@ -3554,3 +3554,39 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
 - **Ergebnis** (echtes Startfeld, je Lauf 4 Teams nacheinander generiert, 300 Läufe; vorher → nachher in %):
   2025 blau 27 → 19 · weiß 19 → 18 · gelb 4 → 7 · türkis 1 → 2; 1989 blau 27 → 20 · silber 5 → 10; 1960 unverändert
   (grün 50/49, rot 24/22). Bild: `screenshots/teamfarben-ausgleich-dark.png` / `-modern.png` (Feld + drei Versuche).
+
+### 17.10.2026 (7): Top-Teams sahen frisch Entlassene nicht
+- **Anlass (Spielstand 1989, R0):** Lotus (viertschnellstes Auto) besetzte Mansells Platz mit Volker Weidler (pace 65,
+  5 Starts für Coloni, Bewertung 0), während Prost (95, von Osella nicht verlängert) frei war.
+- **Ursache:** Wer am Saisonende kein Team findet, wird `dismissed` und wandert sofort in den Reserve-Pool
+  (`executeTransfer` → `addDismissedToPool`). Free Agents sammelt Phase 3 nur aus `GAME_STATE.drivers` mit Status
+  `active`, und der Pool ist für Top-Teams gesperrt. Ein Top-Team sah Prost also gar nicht.
+- **Zweite Ursache:** Top-Teams losen gewichtet unter allen Kandidaten, jeder schwache bekommt das Mindestlos 5
+  (pace 76 nur 14). 1982 nahmen McLaren und Renault Keegan (69) und Thackwell (66), während Blondel (87, im Vorjahr
+  gefahren) sichtbar war, aber die Verlosung verlor. Dieselbe Falle wie beim Reserve-Pool (09.10. (3)).
+- **Umsetzung:** Top-Teams sehen Pool-Fahrer mit `dismissedFromSim`, Gruppe A, zuletzt gefahren im Vorjahr oder
+  diesem Jahr; verpflichtet als Free Agent (kein Debüt). Top-Teams losen nur unter den `POOL_LOSE` (4) Besten.
+- **Messung** (`topteam-fa`-Skript im Scratchpad: Free-Agent-/Pool-Verpflichtungen der 4 schnellsten Autos,
+  1975+15 × 4): vorher n 100, Ø pace 72,1, unter 75: 72; nur Sichtbarkeit: Ø 73,0, Fälle „Entlassener ≥ 85 frei,
+  Top-Team nimmt < 75": 2; mit Lose-Grenze: Ø 73,6, Fälle 0.
+- **Negativergebnis:** Die Lose-Grenze allein hebt den Mittelwert kaum (1985+6 × 4: Ø 71,9 → 70,9) – die meisten
+  schwachen Top-Verpflichtungen entstehen, weil auf dem freien Markt niemand Besseres übrig ist. Sie wirkt nur in
+  den Fällen, in denen ein Starker frei ist.
+- **Markt gesamt** (`markt-abgang.js 1975 8 4`, vorher → nachher): starkes Drittel bleibt 67,3 → 62,8 %, nach unten
+  13,9 → 16,9 %; Wechselquote 37,4 → 38,5 % – im Rauschen (±3–5 Pp bei 4 Läufen).
+- **Nicht angefasst:** Weidlers Teilzeitplan bei Lotus (10 von 16) kommt aus seiner realen Rennzahl 1989
+  (`DRIVER_STARTS`), nicht aus der Rial-Zeit. „Werkssitz = ganze Saison" ist v0.9.16.8 gebaut und zurückgenommen
+  (Kommentar bei `DRIVER_STARTS`).
+- **Debüt-Status (Nachtrag, gleicher Stand):** Weidler galt 1989 trotz Debüt 1987 bei Coloni als Debütant.
+  `getF1DebutYear` nahm zuerst das ECHTE Debüt (`HIST_DRIVERS[...][6]` = 1989), das Meldelisten-Abzeichen sogar nur
+  `HIST_SEASONS`. Jetzt: echtes Debüt nur, wenn es vor dem Spielstart (`templateUsed`) liegt, sonst das erste
+  Rennen im Spiel (`f1DebutYear`). Probe: Weidler/Start 1950 → 1987; Prost/Start 1990 → 1980; Schumacher/Start 1950,
+  nie gefahren → null (vorher 1991); Schumacher/Start 1995 → 1991. Die Meldeliste echter Jahre vor dem Spielstart
+  (`buildEntryList`, `dHistSeasons`) bleibt beim echten Debüt.
+- **Zweiter Anlauf (Nutzer: „jetzt hat 1989 null debütlabels"):** Vor dem ersten Rennen hat kein Neuling ein
+  `f1DebutYear` – das Abzeichen braucht in der laufenden Saison „gemeldet + nie gefahren = Debüt jetzt". Zusätzlich fiel
+  `getF1DebutYear` auf `debutYear` zurück, und der Pool-Weg setzte das aufs ABLAUFENDE Jahr (Bernard, Alboreto,
+  Donnelly, Gachot: 1988 statt 1989). Jetzt: kein Rückfall auf `debutYear` (geplant ≠ gefahren), Pool-Weg setzt
+  `currentYear + 1` wie generierte Fahrer. Probe mit dem Spielstand im Testbrowser: 1989 Debüt = Gachot, Bernard,
+  Donnelly, Alboreto, Cogan, van de Poele; Weidler nicht; 1988 = Alesi, Grouillard, Chaves, Schumacher, Schneider,
+  Wendlinger, Modena.
