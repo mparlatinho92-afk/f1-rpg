@@ -3509,3 +3509,20 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
   Benetton schon ab Hockenheim) – gewollt seit v0.9.16.15, kein Fehler.
 - Wächter grün: `ticker-paritaet.js --alle 40` (40/40), `data-sync-check.js`, `indy-500-vs-gp.js`,
   `ticker-browser.js 1991`.
+
+### 17.10.2026 (5): Verdrängen nach Saisonleistung statt pace
+- **Anlass (Spielstand 2045, Saison 1997):** José Dos Santos (pace 75) wechselt nach Rennen 5 von Sauber zu Jordan.
+  `_platzMachen` warf den Jordan-Fahrer mit der kleinsten pace hinaus – Schumacher (93, gleichauf mit Villeneuve,
+  Sieg + drei Podien in fünf Rennen). Er fuhr drei Rennen nicht und kam erst über die Brundle-Entlassung bei Arrows
+  (Brabham von Stewart abgeworben) ab Rennen 9 zu Stewart. Nutzer: „die pacezahl entscheidet darüber nicht
+  automatisch. wenn schumacher zu schlecht performt, dann ja".
+- **Regel jetzt:** verdrängt wird nur, wer in dieser Saison schwach fährt (`_verdraengbar`: `_computeDriverSeasonScore`
+  < 0,15 ab 3 Rennen, dieselbe Schwelle wie die Mid-Season-Entlassung). Ein volles Team ist nur dann Wechselziel;
+  Gastspiele verdrängen niemanden und sind ausgenommen.
+- **Messfalle / Negativergebnis:** allein diese Regel senkte die Wechsel ab 1990 deutlich (90er 3,6 statt 6,5,
+  2020er 0,3 statt 1,4; vor 1980 unverändert, dort sind Teams selten voll). Grund: früh gelosten Terminen fehlt noch
+  jede Saisonwertung → kein Ziel → Ereignis verfiel. **Abhilfe:** ein Wechsel ohne Ziel rückt aufs nächste Rennen.
+- **Ergebnis** (`midseason-moves.js`, 2 × 10 Sims × 3 Saisons gemittelt, Spiel / real): 70er 22,3/19,2 · 80er 9,6/8,3 ·
+  90er 7,1/6,5 · 2000er 5,0/3,4 · 2010er 2,0/2,3 · 2020er 1,9/1,4 – Niveau wie v0.9.21.14. Einzelläufe streuen stark
+  (70er 25,1 und 19,5; 2000er 5,6 und 4,3). `BEWEGUNG_QUOTEN` unverändert.
+- Wächter grün: `ticker-paritaet.js --alle 40`, `ticker-browser.js 1991`, `data-sync-check.js`, `indy-500-vs-gp.js`.
