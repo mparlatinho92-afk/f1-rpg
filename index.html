@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.16</title>
+    <title>F1 RPG v0.9.21.17</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.16 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.17 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; FIX: Generierte Teams meiden Farben, die im Feld schon vergeben sind, und bevorzugen fehlende</div>
+                            <div>&#8226; FIX: Moderne Aera mit mehr Weiss und Gelb, weniger Blau und Neontoenen</div>
+                            <div class="font-bold text-slate-400">v0.9.21.16 - 17.10.2026</div>
                             <div>&#8226; FIX: Generierte Teams bekommen Farben nach realer Verteilung je Aera statt Zufalls-RGB, bis 1967 meist die nationale Rennfarbe</div>
                             <div>&#8226; FIX: Junior-Teams mit gedaempfter Palette</div>
                             <div class="font-bold text-slate-400">v0.9.21.15 - 17.10.2026</div>
@@ -4351,7 +4354,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.16';
+        const VERSION = '0.9.21.17';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -17528,19 +17531,74 @@
             RSA: ['gelb', 'gruen'], AUS: ['gruen', 'gelb'], NZL: ['schwarz', 'silber'], ARG: ['blau', 'gelb'],
             BRA: ['gelb', 'gruen'], ESP: ['rot', 'gelb'], SWE: ['blau', 'gelb'], CAN: ['weiss', 'rot'], AUT: ['weiss', 'rot'],
         };
+        // Farbklasse eines Hex-Werts. Sehr dunkel UND kräftig bleibt Farbe: Cooper-BRG #004225 ist
+        // grün, nicht schwarz (diese Messfalle verfälschte die erste Auswertung, BEFUNDE.md (6)).
+        function _farbKlasse(hex) {
+            const [h, s, l] = _hexHsl(hex);
+            if (l >= 0.88) return 'weiss';
+            if (s < 0.18 || (l <= 0.13 && s < 0.5)) return l <= 0.15 ? 'schwarz' : l > 0.55 ? 'silber' : 'grau';
+            if (h < 15 || h >= 345) return l > 0.6 ? 'rosa' : 'rot';
+            if (h < 40) return l < 0.4 ? 'braun' : 'orange';
+            if (h < 70) return 'gelb';
+            if (h < 165) return 'gruen';
+            if (h < 200) return l < 0.35 ? 'gruen' : 'tuerkis';
+            if (h < 290) return 'blau';
+            return 'rosa';
+        }
+        function _hexHsl(hex) {
+            let x = String(hex || '').replace('#', '');
+            if (x.length === 3) x = x.split('').map(c => c + c).join('');
+            const r = parseInt(x.slice(0, 2), 16) / 255, g = parseInt(x.slice(2, 4), 16) / 255, b = parseInt(x.slice(4, 6), 16) / 255;
+            const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+            if (mx === mn) return [0, 0, l];
+            const d = mx - mn, s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+            const h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+            return [h * 60, s, l];
+        }
         function realistischeTeamFarbe(year, ioc) {
-            const y = Math.max(1955, Math.min(2025, Number(year) || 1990));
-            const ton = k => { const l = TEAMFARBE_TOENE[k]; return l[Math.floor(Math.random() * l.length)]; };
+            const jahr = Number(year) || 1990;
+            const y = Math.max(1955, Math.min(2025, jahr));
+            // Grelle Töne (Neon: sehr gesättigt, mittlere bis hohe Helligkeit) nur ein Drittel so oft.
+            const ton = k => {
+                const l = TEAMFARBE_TOENE[k];
+                const g = l.map(c => { const [, s, li] = _hexHsl(c); return (s > 0.85 && li > 0.45 && li < 0.88) ? 1 : 3; });
+                let x = Math.random() * g.reduce((a, b) => a + b, 0);
+                for (let i = 0; i < l.length; i++) { x -= g[i]; if (x <= 0) return l[i]; }
+                return l[0];
+            };
+            // Nationale Rennfarbe: vom Ausgleich unten ausgenommen.
             if (y < 1968 && TEAMFARBE_NATION[ioc] && Math.random() < 0.8) {
                 const l = TEAMFARBE_NATION[ioc];
                 return ton(l[Math.floor(Math.random() * l.length)]);
             }
             // Zwischen den Dekadenmitten gleitend, nicht in Stufen.
             const a = Math.min(2015, Math.floor((y - 1955) / 10) * 10 + 1955), t = (y - a) / 10;
-            const w = TEAMFARBE_ANTEILE[a].map((v, i) => v * (1 - t) + TEAMFARBE_ANTEILE[a + 10][i] * t);
+            let w = TEAMFARBE_ANTEILE[a].map((v, i) => v * (1 - t) + TEAMFARBE_ANTEILE[a + 10][i] * t);
+            // Ab 1968 nicht bloß die Mode der Dekade nachahmen: zur Hälfte das langjährige Mittel
+            // 1975–2025 (Nutzer: in der Moderne zu viel Blau, kein Gelb, Weiß zu selten).
+            if (y >= 1968) {
+                const reihen = [1975, 1985, 1995, 2005, 2015, 2025].map(j => TEAMFARBE_ANTEILE[j]);
+                w = w.map((v, i) => 0.5 * v + 0.5 * reihen.reduce((s, r) => s + r[i], 0) / reihen.length);
+            }
+            // Sanfter Ausgleich zum aktuellen Feld: eine Farbklasse, die dort schon k-mal vergeben ist,
+            // zieht nur mit (1/(k+1))^0,6 – ein Team ×0,66, drei ×0,44. Fehlende Farben behalten ihr
+            // volles Gewicht. Nicht gegen den ERWARTETEN Anteil: dann galten 3 von 10 blauen Teams
+            // 2025 als normal, und Blau blieb bei 27 %.
+            const feld = [...((typeof GAME_STATE !== 'undefined' && GAME_STATE.teams) || []),
+                ...(((typeof _pendingEdits !== 'undefined' && _pendingEdits && _pendingEdits.teamAdds) || []))];
+            const ist = {};
+            let n = 0;
+            for (const tm of feld) {
+                let c = tm.color;
+                try { c = (getTeamColors(tm.id, jahr, tm.color) || [])[0] || c; } catch (e) {}
+                if (!c || c === '#888888') continue;
+                const k = _farbKlasse(c);
+                ist[k] = (ist[k] || 0) + 1; n++;
+            }
+            if (n) w = w.map((v, i) => v * Math.pow(1 / ((ist[TEAMFARBE_KLASSEN[i]] || 0) + 1), 0.6));
             let x = Math.random() * w.reduce((s, v) => s + v, 0);
             for (let i = 0; i < w.length; i++) { x -= w[i]; if (x <= 0) return ton(TEAMFARBE_KLASSEN[i]); }
-            return ton('blau');
+            return ton('weiss');
         }
         // Erzeugt ein vollständiges, fiktives Privatier-Team-Objekt (eher Hinterfeld).
         // nation optional (IOC-3); ohne Angabe über den Motorsport-Frequenz-Trichter.
