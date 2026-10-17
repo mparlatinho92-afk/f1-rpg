@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.18</title>
+    <title>F1 RPG v0.9.21.19</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.18 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.19 (aktuell) - 18.10.2026</div>
+                            <div>&#8226; FIX: Debuet-Status nach dem ersten Rennen im Spiel – das echte Debuetjahr gilt nur fuer Karrieren vor dem Spielstart</div>
+                            <div>&#8226; FIX: Neulinge tragen das Debuet-Abzeichen schon vor ihrem ersten Rennen, Pool-Debuetanten bekamen das ablaufende Jahr</div>
+                            <div>&#8226; NEU: Fahrer-Steckbrief zeigt Debuet, Titelverteidiger und den vorzeitig feststehenden Weltmeister</div>
+                            <div class="font-bold text-slate-400">v0.9.21.18 - 17.10.2026</div>
                             <div>&#8226; FIX: Top-Teams sehen frisch entlassene Fahrer (Prost blieb 1989 frei, Lotus nahm Weidler)</div>
                             <div>&#8226; FIX: Top-Teams losen nur unter ihren vier besten Kandidaten statt unter allen</div>
                             <div class="font-bold text-slate-400">v0.9.21.17 - 17.10.2026</div>
@@ -22980,7 +22984,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.18';
+        const VERSION = '0.9.21.19';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -25383,9 +25387,12 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // und wird nur nicht mehr gelesen.
         function getF1DebutYear(driver) {
             if (!driver) return null;
-            if (driver.histId && typeof HIST_DRIVERS !== 'undefined' && HIST_DRIVERS[driver.histId]?.[6]) {
-                return HIST_DRIVERS[driver.histId][6];
-            }
+            // Das echte Debüt gilt nur, wenn es VOR dem Spielstart liegt – danach schreibt das Spiel
+            // seine eigene Geschichte. Weidler debütierte in einem Stand 1987 bei Coloni (real 1989)
+            // und galt 1989 trotz dritter Saison als Debütant.
+            const echt = (driver.histId && typeof HIST_DRIVERS !== 'undefined') ? HIST_DRIVERS[driver.histId]?.[6] : null;
+            const start = (typeof GAME_STATE !== 'undefined' && parseInt(GAME_STATE.templateUsed)) || null;
+            if (echt && (!start || echt < start)) return echt;
             if (typeof driver.f1DebutYear === 'number') return driver.f1DebutYear;
             const at = GAME_STATE?.allTimeStATS?.drivers?.[driver.histId || driver.id];
             if (at && typeof at.firstYear === 'number') return at.firstYear;
@@ -25393,7 +25400,10 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 const echt = driver.careerScores.filter(c => c && !c.preSim && typeof c.year === 'number');
                 if (echt.length) return Math.min(...echt.map(c => c.year));
             }
-            return driver.debutYear ?? null;
+            // Nicht `debutYear`: das ist ein GEPLANTES Jahr, kein gefahrenes – und der Pool-Weg setzte
+            // es bis 17.10.2026 aufs ablaufende Jahr (Bernard, Alboreto, Donnelly, Gachot 1988 statt
+            // 1989). Wer im Spiel noch nie gestartet ist, hat kein Debüt.
+            return null;
         }
 
         // Jahre im WM-Feld. Ersetzt `currentYear - debutYear` ueberall dort, wo
@@ -43702,7 +43712,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
 
                         if (_ch.type === 'pool' || _ch.ausPool) {
                             _d.isReserve = false;
-                            if (_ch.type === 'pool') _d.debutYear = _d.debutYear || currentYear;
+                            // Kommende Saison wie bei generierten Fahrern – currentYear ist hier das ablaufende Jahr.
+                            if (_ch.type === 'pool') _d.debutYear = _d.debutYear || currentYear + 1;
                             const _existIdx = GAME_STATE.drivers.findIndex(x => x.id === _d.id);
                             if (_existIdx >= 0) {
                                 GAME_STATE.drivers[_existIdx] = _d; // entlassenen Eintrag durch aktiven Pool-Fahrer ersetzen
@@ -49647,13 +49658,14 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         .filter(d => d.team === team.id || _gefahren.has(d.id))
                         .map(d => {
                             const standing = yearData.driverStandings?.[d.id] || {};
-                            const sHistSeasons = typeof HIST_SEASONS !== 'undefined' ? (HIST_SEASONS[d.histId || d.id] || []) : [];
-                            // Debüt = echtes erstes F1-Jahr. Historisch: min. HIST_SEASONS-Jahr; generiert:
-                            // debutYear. NICHT über h.drivers prüfen (heavy field, im Steady-State leer →
-                            // generierte Fahrer bekämen sonst in JEDER Saison ein "Debüt"-Badge).
-                            const _trueDebut = sHistSeasons.length
-                                ? Math.min(...sHistSeasons.map(s => s[0]))
-                                : (typeof d.debutYear === 'number' ? d.debutYear : null);
+                            // Debüt über getF1DebutYear (17.10.2026): vor dem Spielstart das echte, danach das
+                            // im Spiel erlebte. Vorher min. HIST_SEASONS-Jahr – das ist die ECHTE Karriere und
+                            // gab Weidler 1989 trotz Debüt 1987 bei Coloni das Abzeichen. NICHT über h.drivers
+                            // prüfen (heavy field, im Steady-State leer → Abzeichen in JEDER Saison).
+                            // Laufende Saison vor dem ersten Rennen: Neulinge haben noch kein f1DebutYear
+                            // (wird erst beim ersten Start gesetzt) – gemeldet + nie gefahren = Debüt jetzt.
+                            const _trueDebut = getF1DebutYear(d)
+                                ?? (yearData.year === GAME_STATE.currentYear ? yearData.year : null);
                             return {
                                 id: d.id,
                                 histId: d.histId,
@@ -56092,7 +56104,30 @@ Empfohlene Wertebereiche:
             
             // Angeklicktes Jahr schlaegt alles; sonst friert das Karriereende den Staat ein
             const profileFlagYear = viewingHistoricalYear || getDriverFlagYear(driver, GAME_STATE.currentYear);
-            document.getElementById('driverProfileTitle').innerHTML = `${renderFlag(driver.nation, driver.name, profileFlagYear)} ${driver.name}${titleSuffix}`;
+            // Abzeichen wie in der Meldeliste, bezogen auf das angesehene Jahr: Titelverteidiger
+            // (Vorjahres-Weltmeister), Weltmeister der laufenden Saison sobald vorzeitig entschieden
+            // (_titleClinch), Debüt (getF1DebutYear; Neuling vor dem ersten Rennen = Debüt jetzt).
+            const titelAbzeichen = (() => {
+                const jahr = viewingHistoricalYear || GAME_STATE.currentYear;
+                const istEr = id => !!id && (id === driver.id || id === driverId || (driver.histId && id === driver.histId));
+                const vorjahr = (() => {
+                    const h = (GAME_STATE.history || []).find(s => s.year === jahr - 1);
+                    if (h) return [h.championId, h.championHistId];
+                    const w = (GAME_STATE.allTimeStATS?.worldChampions || []).find(c => c.year === jahr - 1);
+                    if (w) return [w.driverId];
+                    return [typeof HIST_CHAMPIONS !== 'undefined' ? HIST_CHAMPIONS[jahr - 1] : null];
+                })();
+                const pille = (text, farbe, titel) => `<span class="text-xs px-1.5 py-0.5 rounded" title="${titel}" style="background:${farbe}26;color:${farbeAufKontrast(farbe)};white-space:nowrap;font-weight:600;vertical-align:middle">${text}</span>`;
+                const teile = [];
+                if (vorjahr.some(istEr)) teile.push(renderTVBadge(true, jahr - 1));
+                const tc = GAME_STATE._titleClinch;
+                if (jahr === GAME_STATE.currentYear && tc && tc.year === jahr && istEr(tc.driverId))
+                    teile.push(pille(`🏆 Weltmeister ${jahr}`, '#EAB308', tc.remaining > 0 ? `vorzeitig entschieden, ${tc.remaining} Rennen vor Schluss` : 'im Finale entschieden'));
+                const debut = getF1DebutYear(driver) ?? (jahr === GAME_STATE.currentYear && driver.team ? jahr : null);
+                if (debut === jahr) teile.push(pille('Debüt', '#22C55E', `Debütsaison ${jahr}`));
+                return teile.filter(Boolean).length ? ' ' + teile.filter(Boolean).join(' ') : '';
+            })();
+            document.getElementById('driverProfileTitle').innerHTML = `${renderFlag(driver.nation, driver.name, profileFlagYear)} ${driver.name}${titleSuffix}${titelAbzeichen}`;
 
             // === TODES-AKTE EINMAL ERMITTELN (v0.9.16.0) ===
             // Nur `driver.status` zu prüfen reichte nicht: wird der Steckbrief aus einer
