@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.13</title>
+    <title>F1 RPG v0.9.21.14</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.13 (aktuell) - 17.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.14 (aktuell) - 17.10.2026</div>
+                            <div>&#8226; NEU: Teamwechsel mitten in der Saison nach realen Raten je Ära (Wechsel, hin und zurück, Debüt)</div>
+                            <div>&#8226; NEU: Wer ein Team verlässt, wird ersetzt – Ringtausch entsteht von selbst</div>
+                            <div>&#8226; FIX: Keine festen Gastauftritte mehr aus abweichenden Spielwelten (Schumacher/Williams 1991)</div>
+                            <div class="font-bold text-slate-400">v0.9.21.13 - 17.10.2026</div>
                             <div>&#8226; NEU: Teamnamen in Fahrer-, Team- und Junior-Steckbrief als Livery-Feld</div>
                             <div>&#8226; FIX: Steckbriefe zeigen die Teamfarben des Jahres statt der Grundfarbe (McLaren 1996 nicht mehr orange)</div>
                             <div>&#8226; FIX: Serien-Plaketten der Junior-Welt in allen Themes lesbar</div>
@@ -21949,78 +21953,6 @@ const CIRCUIT_LAYOUTS = {
 
     </script>
     <script>
-        // GUEST_ENTRIES — Auftritte eines Fahrers bei einem ANDEREN als seinem
-        // Mehrheits-Rennstall derselben Saison.
-        // GENERIERT von tools/build-guest-entries.js — NICHT von Hand editieren.
-        //
-        // Hintergrund: SEASON_DATA kennt nur EIN Team je Fahrer und Saison. Stufe 1 des
-        // Deckungs-Fahrplans setzt das auf den Mehrheits-Rennstall; ohne diese Tabelle
-        // gingen alle uebrigen Auftritte verloren — samt der Konstrukteure, die dadurch
-        // ganz aus der Saison fielen (Trojan 1974 hing allein an Tim Schenken).
-        //
-        // Aufbau:  Jahr -> constructorId -> driverId -> [circuitId, ...]
-        // Strecken in Kalenderreihenfolge, lowercase, Indy ausgeschlossen.
-        // 282 Eintraege ueber 54 Saisons, 501 Meldungen.
-        const GUEST_ENTRIES = {
-            1950:{"alfa-romeo":{"reg-parnell":["silverstone"]},"cooper":{"harry-schell":["monaco"]},"ferrari":{"raymond-sommer":["monaco","bremgarten"]}},
-            1951:{"ferrari":{"reg-parnell":["reims"]},"maserati":{"emmanuel-de-graffenried":["reims","nurburgring"],"louis-chiron":["bremgarten"],"paul-pietsch":["nurburgring"]},"talbot-lago":{"jose-froilan-gonzalez":["bremgarten"]}},
-            1952:{"afm":{"hans-stuck":["bremgarten"]},"alta":{"peter-whitehead":["rouen"]},"connaught":{"stirling-moss":["monza"]},"cooper":{"ken-wharton":["monza"]},"ferrari":{"maurice-trintignant":["bremgarten"]},"gordini":{"johnny-claes":["spa-francorchamps"]},"hwm":{"johnny-claes":["nurburgring"],"roger-laurent":["spa-francorchamps"],"stirling-moss":["bremgarten"]},"simca-gordini":{"paul-frere":["zandvoort"]}},
-            1953:{"connaught":{"stirling-moss":["zandvoort"]},"hwm":{"jack-fairman":["silverstone"]},"maserati":{"birabongse-bhanudej":["monza"],"johnny-claes":["spa-francorchamps"]}},
-            1954:{"ferrari":{"alberto-ascari":["monza"]},"lancia":{"alberto-ascari":["pedralbes"],"luigi-villoresi":["pedralbes"]},"maserati":{"juan-manuel-fangio":["buenos-aires","spa-francorchamps"],"louis-rosier":["monza","pedralbes"]}},
-            1955:{"ferrari":{"harry-schell":["monaco","spa-francorchamps"],"piero-taruffi":["monaco","spa-francorchamps"]},"lancia":{"eugenio-castellotti":["buenos-aires","monaco","spa-francorchamps"],"nino-farina":["monza"]},"maserati":{"harry-schell":["buenos-aires"],"johnny-claes":["spa-francorchamps"],"peter-walker":["zandvoort"]},"mercedes":{"andre-simon":["monaco"]},"vanwall":{"mike-hawthorn":["monaco","spa-francorchamps"]}},
-            1956:{"brm":{"ron-flockhart":["silverstone"]},"bugatti":{"maurice-trintignant":["reims"]},"ferrari":{"andre-pilette":["spa-francorchamps"]},"maserati":{"andre-simon":["reims"],"harry-schell":["nurburgring"],"jose-froilan-gonzalez":["buenos-aires"],"mike-hawthorn":["buenos-aires","spa-francorchamps"],"piero-taruffi":["reims"]},"vanwall":{"mike-hawthorn":["reims"]}},
-            1957:{"brm":{"roy-salvadori":["monaco"]},"connaught":{"ivor-bueb":["monaco"],"stuart-lewis-evans":["monaco"]},"cooper":{"les-leston":["monaco"]},"maserati":{"stirling-moss":["buenos-aires"]},"vanwall":{"roy-salvadori":["rouen"]}},
-            1958:{"brm":{"jo-bonnier":["monza","ain-diab"],"maurice-trintignant":["reims"]},"connaught":{"ivor-bueb":["silverstone"],"jack-fairman":["silverstone"]},"cooper":{"ron-flockhart":["monaco"],"stirling-moss":["buenos-aires"],"wolfgang-seidel":["nurburgring"]},"maserati":{"cliff-allison":["porto"],"harry-schell":["buenos-aires"],"jean-behra":["buenos-aires"],"maurice-trintignant":["spa-francorchamps"],"phil-hill":["reims"]},"osca":{"giulio-cabianca":["monaco"]}},
-            1959:{"behra-porsche":{"jean-behra":["avus"]},"brm":{"stirling-moss":["reims","aintree"]},"cooper":{"giorgio-scarlatti":["monza"],"hans-herrmann":["aintree"],"harry-schell":["sebring"],"roy-salvadori":["monaco","reims","sebring"]},"ferrari":{"wolfgang-von-trips":["sebring"]},"porsche":{"carel-godin-de-beaufort":["zandvoort"]},"tec-mec":{"fritz-dorey":["sebring"]},"vanwall":{"tony-brooks":["aintree"]}},
-            1960:{"aston-martin":{"maurice-trintignant":["silverstone"],"roy-salvadori":["zandvoort","silverstone"]},"behra-porsche":{"masten-gregory":["buenos-aires"]},"cooper":{"chuck-daigh":["silverstone"],"lance-reventlow":["silverstone"],"phil-hill":["riverside"],"stirling-moss":["buenos-aires"],"wolfgang-von-trips":["riverside"]},"lotus":{"ron-flockhart":["reims"]},"maserati":{"gino-munaron":["buenos-aires"],"giorgio-scarlatti":["buenos-aires"]},"scarab":{"richie-ginther":["reims"]},"vanwall":{"tony-brooks":["reims"]}},
-            1961:{"cooper":{"ian-burgess":["nurburgring"]},"emeryson":{"lucien-bianchi":["monaco"],"olivier-gendebien":["monaco"]},"ferguson":{"jack-fairman":["aintree"],"stirling-moss":["aintree"]},"ferrari":{"olivier-gendebien":["spa-francorchamps"],"willy-mairesse":["nurburgring"]},"lotus":{"masten-gregory":["monza","watkins-glen"]}},
-            1962:{"brabham":{"jack-brabham":["nurburgring","watkins-glen","east-london"]},"brm":{"jackie-lewis":["monaco"]},"emeryson":{"wolfgang-seidel":["zandvoort"]},"lotus":{"dan-gurney":["spa-francorchamps"],"lucien-bianchi":["spa-francorchamps"]},"porsche":{"nino-vaccarella":["nurburgring"],"phil-hill":["watkins-glen"]}},
-            1963:{"brm":{"lorenzo-bandini":["reims","silverstone","nurburgring"]},"lola":{"masten-gregory":["watkins-glen","mexico-city"],"maurice-trintignant":["monaco"]},"lotus":{"chris-amon":["mexico-city"],"innes-ireland":["monaco","nurburgring"],"jack-brabham":["monaco"],"maurice-trintignant":["reims"],"mike-hailwood":["silverstone"],"phil-hill":["reims"]}},
-            1964:{"cooper":{"jo-bonnier":["monaco"]},"lotus":{"innes-ireland":["monaco"],"jo-siffert":["monaco"],"trevor-taylor":["brands-hatch"]}},
-            1965:{"brabham":{"chris-amon":["silverstone"],"paul-hawkins":["east-london"]},"ferrari":{"bob-bondurant":["watkins-glen"]}},
-            1966:{"brabham":{"jo-bonnier":["reims","brands-hatch"],"jo-siffert":["monaco"]},"cooper":{"chris-amon":["reims"],"richie-ginther":["monaco","spa-francorchamps"]},"eagle":{"bob-bondurant":["watkins-glen","mexico-city"]},"ferrari":{"john-surtees":["monaco","spa-francorchamps"]},"lotus":{"phil-hill":["monaco"]},"mclaren":{"phil-hill":["spa-francorchamps"]}},
-            1967:{"cooper":{"alan-rees":["silverstone"],"guy-ligier":["spa-francorchamps","bugatti"]},"eagle":{"bruce-mclaren":["bugatti","silverstone","nurburgring"],"ludovico-scarfiotti":["monza"]},"lola":{"david-hobbs":["nurburgring"]},"lotus":{"chris-irwin":["zandvoort"],"piers-courage":["kyalami"]},"matra":{"jacky-ickx":["nurburgring"]}},
-            1968:{"brabham":{"dan-gurney":["zandvoort"]},"cooper":{"jo-bonnier":["kyalami"],"jo-siffert":["kyalami"],"johnny-servoz-gavin":["rouen"]},"honda":{"jo-bonnier":["mexico-city"]},"mclaren":{"dan-gurney":["mont-tremblant","watkins-glen","mexico-city"]}},
-            1969:{"brm":{"pedro-rodriguez":["kyalami","montjuic","monaco"]},"cooper":{"vic-elford":["monaco"]},"lotus":{"richard-attwood":["monaco"]}},
-            1970:{"brabham":{"derek-bell":["spa-francorchamps"]},"mclaren":{"john-surtees":["kyalami","jarama","monaco","zandvoort"]},"tyrrell":{"jackie-stewart":["mont-tremblant","watkins-glen","mexico-city"]}},
-            1971:{"brabham":{"dave-charlton":["kyalami"]},"brm":{"peter-gethin":["spielberg","monza","mosport","watkins-glen"]},"mclaren":{"helmut-marko":["nurburgring"]}},
-            1972:{"brm":{"brian-redman":["watkins-glen"]},"ferrari":{"nanni-galli":["clermont-ferrand"]},"lotus":{"reine-wisell":["mosport","watkins-glen"]},"politoys":{"henri-pescarolo":["brands-hatch"]}},
-            1973:{"iso-marlboro":{"jacky-ickx":["watkins-glen"]},"march":{"henri-pescarolo":["montjuic"]},"mclaren":{"jacky-ickx":["nurburgring"]},"surtees":{"andrea-de-adamich":["kyalami"]},"tyrrell":{"chris-amon":["mosport","watkins-glen"]}},
-            1974:{"brabham":{"helmuth-koinigg":["spielberg"]},"brm":{"chris-amon":["mosport","watkins-glen"]},"ensign":{"rikky-von-opel":["buenos-aires"]},"iso-marlboro":{"jean-pierre-jabouille":["dijon"],"richard-robarts":["anderstorp"]},"lotus":{"ian-scheckter":["kyalami"],"tim-schenken":["watkins-glen"]},"march":{"howden-ganley":["buenos-aires","interlagos"],"james-hunt":["buenos-aires","interlagos"],"mike-wilds":["brands-hatch"]},"mclaren":{"jochen-mass":["mosport","watkins-glen"]},"surtees":{"carlos-pace":["buenos-aires","interlagos","kyalami","jarama","nivelles","monaco","anderstorp"]},"token":{"ian-ashley":["nurburgring","spielberg"],"tom-pryce":["nivelles"]}},
-            1975:{"fittipaldi":{"arturo-merzario":["monza"]},"frank-williams-racing-cars":{"francois-migault":["paul-ricard"],"lella-lombardi":["watkins-glen"],"tony-brise":["montjuic"]},"hesketh":{"alan-jones":["montjuic","monaco","zolder","anderstorp"]},"hill":{"graham-hill":["monaco"]},"lola":{"rolf-stommelen":["buenos-aires","interlagos","kyalami"]},"lotus":{"john-watson":["nurburgring"]},"march":{"mark-donohue":["silverstone","nurburgring","spielberg"]},"penske":{"john-watson":["watkins-glen"]},"tyrrell":{"ian-scheckter":["kyalami"]}},
-            1976:{"brabham":{"bob-evans":["brands-hatch"],"larry-perkins":["mosport","watkins-glen","fuji"],"patrick-neve":["zolder"]},"ensign":{"hans-binder":["spielberg"],"jacky-ickx":["zandvoort","monza","mosport","watkins-glen"]},"ferrari":{"carlos-reutemann":["monza"]},"hesketh":{"rolf-stommelen":["zandvoort"]},"lotus":{"ronnie-peterson":["interlagos"]},"march":{"arturo-merzario":["long-beach","jarama","zolder","monaco","anderstorp","paul-ricard","brands-hatch"],"lella-lombardi":["interlagos"]},"parnelli":{"mario-andretti":["kyalami","long-beach"]},"wolf-williams":{"chris-amon":["mosport"]}},
-            1977:{"boro":{"brian-henton":["zandvoort","monza"]},"brm":{"larry-perkins":["interlagos","kyalami"]},"ligier":{"jean-pierre-jarier":["fuji"]},"march":{"brett-lunger":["kyalami","long-beach","jarama"],"hans-joachim-stuck":["kyalami"]},"mclaren":{"gilles-villeneuve":["silverstone"]},"penske":{"hans-binder":["spielberg","zandvoort","monza"]},"shadow":{"arturo-merzario":["spielberg"],"jean-pierre-jarier":["watkins-glen"]},"surtees":{"patrick-tambay":["dijon"]}},
-            1978:{"ats-wheels":{"harald-ertl":["monza"]},"brabham":{"nelson-piquet":["montreal"]},"ensign":{"brett-lunger":["watkins-glen"],"danny-ongais":["buenos-aires","jacarepagua"],"nelson-piquet":["hockenheimring"]},"hesketh":{"derek-daly":["long-beach","monaco","zolder"],"eddie-cheever":["kyalami"]},"lotus":{"jean-pierre-jarier":["watkins-glen","montreal"]},"merzario":{"alberto-colombo":["monza"]},"surtees":{"rene-arnoux":["watkins-glen","montreal"]},"theodore":{"keke-rosberg":["kyalami","long-beach","monaco","zolder","jarama"]},"wolf":{"keke-rosberg":["hockenheimring","spielberg","zandvoort","monza"]}},
-            1979:{"merzario":{"gianfranco-brancatelli":["monaco"]},"rebaque":{"hector-rebaque":["monza","montreal","watkins-glen"]},"tyrrell":{"derek-daly":["spielberg","montreal","watkins-glen"]}},
-            1980:{"arrows":{"mike-thackwell":["zandvoort"]},"ats-wheels":{"jan-lammers":["buenos-aires","interlagos","kyalami","long-beach","zolder","monaco"]},"ensign":{"geoff-lees":["zandvoort","imola"]},"williams":{"geoff-lees":["watkins-glen"]}},
-            1981:{"ensign":{"marc-surer":["long-beach","jacarepagua","buenos-aires","imola","zolder","monaco"]},"ligier":{"jean-pierre-jarier":["long-beach","jacarepagua"]},"march":{"eliseo-salazar":["long-beach","jacarepagua","buenos-aires","imola","zolder","monaco"]},"theodore":{"patrick-tambay":["long-beach","jacarepagua","buenos-aires","imola","zolder","monaco","jarama"]}},
-            1982:{"arrows":{"brian-henton":["kyalami","jacarepagua","long-beach"]},"theodore":{"derek-daly":["kyalami","jacarepagua","long-beach"],"geoff-lees":["montreal"]},"williams":{"mario-andretti":["long-beach"]}},
-            1984:{"brabham":{"manfred-winkelhock":["estoril"]},"ram":{"mike-thackwell":["montreal"]},"toleman":{"stefan-johansson":["monza","nurburgring","estoril"]}},
-            1985:{"renault":{"francois-hesnault":["nurburgring"]},"toleman":{"piercarlo-ghinzani":["spielberg","zandvoort","monza","spa-francorchamps","brands-hatch","kyalami","adelaide"]},"tyrrell":{"philippe-streiff":["kyalami"],"stefan-johansson":["jacarepagua"]}},
-            1986:{"osella":{"christian-danner":["jacarepagua","jerez","imola","monaco","spa-francorchamps","montreal"]}},
-            1987:{"williams":{"riccardo-patrese":["adelaide"]}},
-            1989:{"lola":{"yannick-dalmas":["jacarepagua","imola","monaco","mexico-city","phoenix","montreal"]},"rial":{"bertrand-gachot":["suzuka","adelaide"],"gregor-foitek":["jerez"],"pierre-henri-raphanel":["spa-francorchamps","monza","estoril","jerez","suzuka","adelaide"]},"tyrrell":{"johnny-herbert":["spa-francorchamps","estoril"],"michele-alboreto":["jacarepagua","imola","monaco","mexico-city","phoenix","montreal"]}},
-            1990:{"benetton":{"roberto-moreno":["suzuka","adelaide"]},"brabham":{"gregor-foitek":["phoenix","interlagos"]},"dallara":{"gianni-morbidelli":["phoenix","interlagos"]}},
-            1991:{"ags":{"olivier-grouillard":["catalunya"],"stefan-johansson":["phoenix","interlagos"]},"ferrari":{"gianni-morbidelli":["adelaide"]},"fondmetal":{"gabriele-tarquini":["catalunya","suzuka","adelaide"]},"jordan":{"michael-schumacher":["spa-francorchamps"],"roberto-moreno":["monza","estoril"]},"lola":{"bertrand-gachot":["adelaide"]},"minardi":{"roberto-moreno":["adelaide"]}},
-            1992:{"fondmetal":{"eric-van-de-poele":["hungaroring","spa-francorchamps","monza"]}},
-            1994:{"benetton":{"johnny-herbert":["suzuka","adelaide"]},"jordan":{"andrea-de-cesaris":["imola","monaco"]},"ligier":{"johnny-herbert":["jerez"]},"lotus":{"eric-bernard":["jerez"]},"mclaren":{"philippe-alliot":["hungaroring"]},"sauber":{"jj-lehto":["suzuka","adelaide"]}},
-            1997:{"minardi":{"jarno-trulli":["melbourne","interlagos","buenos-aires","imola","monaco","catalunya","montreal"]}},
-            1999:{"bar":{"mika-salo":["imola","monaco","catalunya"]}},
-            2001:{"jaguar":{"luciano-burti":["melbourne","sepang","interlagos","imola"]},"jordan":{"jean-alesi":["hungaroring","spa-francorchamps","monza","indianapolis","suzuka"]},"prost":{"heinz-harald-frentzen":["hungaroring","spa-francorchamps","monza","indianapolis","suzuka"]}},
-            2002:{"sauber":{"heinz-harald-frentzen":["indianapolis"]}},
-            2003:{"jaguar":{"justin-wilson":["hockenheimring","hungaroring","monza","indianapolis","suzuka"]}},
-            2004:{"toyota":{"jarno-trulli":["suzuka","interlagos"]}},
-            2009:{"ferrari":{"giancarlo-fisichella":["monza","marina-bay","suzuka","interlagos","yas-marina"]}},
-            2016:{"red-bull":{"daniil-kvyat":["melbourne","bahrain","shanghai","sochi"]},"toro-rosso":{"max-verstappen":["melbourne","bahrain","shanghai","sochi"]}},
-            2017:{"renault":{"carlos-sainz-jr":["austin","mexico-city","interlagos","yas-marina"]}},
-            2019:{"red-bull":{"alexander-albon":["spa-francorchamps","monza","marina-bay","sochi","suzuka","mexico-city","austin","interlagos","yas-marina"]},"toro-rosso":{"pierre-gasly":["spa-francorchamps","monza","marina-bay","sochi","suzuka","mexico-city","austin","interlagos","yas-marina"]}},
-            2020:{"mercedes":{"george-russell":["bahrain"]}},
-            2025:{"racing-bulls":{"yuki-tsunoda":["melbourne","shanghai"]},"red-bull":{"liam-lawson":["melbourne","shanghai"]}}
-        };
-
-
-    </script>
-    <script>
         // DRIVER_STARTS — wie viele Rennen ein Fahrer in dieser Saison real MELDETE.
         // GENERIERT von tools/build-driver-starts.js — NICHT von Hand editieren.
         //
@@ -23036,7 +22968,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.13';
+        const VERSION = '0.9.21.14';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -27131,34 +27063,75 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // hätte eine Signatur durch genau diese drei Stellen fädeln müssen.
         //
         // Liegt der Gastauftritt mitten in der Saison, kehrt der Fahrer zurück; liegt er am
-        // Rand, bleibt es ein einmaliger Wechsel. Das ergibt sich aus den realen Strecken.
+        // Rand, bleibt es ein einmaliger Wechsel. Seit v0.9.21.14 gibt es dafür keine realen
+        // Strecken mehr, sondern Quoten je Ära (unten).
         //
         // ⚠ Es wird NUR zurückgesetzt, was diese Funktion selbst gesetzt hat (`_guestFrom`).
         // Sonst würde ein regulärer Mid-Season-Transfer der KI wieder rückgängig gemacht.
-        function _guestTeamIdFor(constructorId) {
-            const ziel = String(constructorId || '').toLowerCase();
-            return (GAME_STATE.teams || []).find(t => {
-                const raw = String(t.histId || t.name || t.id || '').toLowerCase();
-                return raw.replace(/[^a-z0-9]/g, '-') === ziel || raw.replace(/[^a-z0-9]/g, '') === ziel;
-            }) || null;
-        }
-        // === STUFE 3: BEWEGUNG AUCH OHNE DATEN (v0.9.15.92) ===
-        // GUEST_ENTRIES deckt nur Saisons ab, die es real gab — und dort nur Fahrer, die
-        // noch bei ihrem historischen Team sitzen. Sobald das Spiel von der Geschichte
-        // abweicht, verschwindet die Mid-Season-Bewegung. Gemessen mit
-        // tests/midseason-moves.js: exakt NULL in 2021–2027, und ab Saison 2 eines
-        // historischen Starts nur noch ~40 % des realen Niveaus (1974: 25,3 Minderheits-
-        // Rennen ✓, 1975–77 nur 9,0 / 7,3 / 5,3 gegen real 18 / 24 / 16).
         //
-        // ANSATZ wie bei DRIVER_STARTS: die ANZAHL kommt aus der Ära-Kurve, das ZIEL
-        // bleibt emergent. Was die Daten liefern, wird abgezogen — das Modell füllt nur
-        // den Rest. Konsum über denselben applyGuestMoves-Pfad, damit Rückkehr,
-        // Startplan-Ergänzung und Wagendeckel-Vertretung unverändert gelten.
-        function _moveTargetFor(year) {
-            // Reale Minderheits-Rennen je Saison (F1DB ohne Indy, Mittel je Dekade,
-            // gemessen mit `node tests/midseason-moves.js --real`).
-            return year < 1970 ? 8.8 : year < 1980 ? 13.9 : year < 1990 ? 8.4
-                 : year < 2000 ? 4.0 : year < 2010 ? 2.7 : year < 2020 ? 3.0 : 0.7;
+        // === BEWEGUNG MITTEN IN DER SAISON: QUOTEN JE ÄRA (v0.9.21.14) ===
+        // Ersetzt zwei Vorgänger: die festen realen Gastauftritte aus F1DB (GUEST_ENTRIES) und
+        // das Renn-Budget je Saison mit Regelkreis (Stufe 3, v0.9.15.92). Beides war ein
+        // Drehbuch – das erste wörtlich, das zweite in der Form: es kannte nur „kurz woanders
+        // fahren und zurück", ohne Ersatz daheim, und das in jeder Ära.
+        // Nutzer 17.10.2026: „sonderfälle keinem drehbuch überlassen, sondern einfach die
+        // prozentuale warscheinlichkeit aller varianten pro ära festlegen. prozentual auch
+        // deshalb weil es mal mehr als weniger teams und cockpits geben könnte".
+        //
+        // Gemessen an F1DB (Indy raus), je 100 Cockpit-Saisons (Cockpit = Fahrer je Rennen im
+        // Saisonmittel), dazu die Länge der Minderheitsseite in Rennen:
+        //   Dekade   Wechsel  hin+zurück  Debüt woanders  | Länge W / H / D | Ersatz bei H
+        //   1950er    23,7       7,0          4,6         |  1,1 / 1,1 / 1,3 |  2 von 15
+        //   1960er    23,1       8,7          1,9         |  1,3 / 1,2 / 1,0 | 10 von 18
+        //   1970er    19,2       3,4          6,0         |  1,9 / 1,7 / 1,6 |  6 von 9
+        //   1980er     8,3       0,3          0,7         |  3,2 / 1,0 / 3,5 |  0 von 1
+        //   1990er     6,5       0,0          1,1         |  1,8 /  –  / 3,3 |
+        //   2000er     3,4       0,0          0,0         |  3,9 /  –  /  –  |
+        //   2010er     2,3       0,0          0,0         |  6,0 /  –  /  –  |
+        //   2020er     1,4       1,4          0,0         |  2,0 / 2,0 /  –  |  1 von 2
+        // Hin und zurück eines Stammfahrers verschwindet also ab 1980; der Normalfall jeder Ära
+        // ist der Wechsel ohne Rückkehr (Moreno 1991: Benetton → Jordan, er kam nicht zurück).
+        //
+        // Gewürfelt wird nur die ANZAHL je Art (Rate × Cockpits der laufenden Saison) und ihr
+        // Zeitpunkt. WER geht und WOHIN, entscheidet die Spielwelt im Moment des Ereignisses.
+        // ⚠ Debüts mit nur EINEM Team (Ersatzmann bleibt, wo er einsteigt) gehören NICHT hierher:
+        // die entstehen über Tod, Entlassung und die Startpläne (50er: 85 mitten in der Saison
+        // je 100 Cockpit-Saisons, meist Einmal-Melder). „Debüt woanders" ist nur die kleine
+        // Gruppe, die danach bei einem zweiten Team weiterfährt (Schumacher 1991).
+        // === NETTO: WAS DIE SPIELWELT SCHON VON SELBST BEWEGT, ZIEHT AB ===
+        // Tod, Entlassung, Markt und die Besetzung leerer Teams erzeugen auch ohne dieses Modell
+        // Wechsel. Gemessen mit allen drei Quoten auf null (tests/midseason-moves.js, 10 Sims x 3
+        // Saisons), je 100 Cockpit-Saisons:
+        //   Wechsel     1950er 1,2 · 1960er 3,0 · 1970er 5,1 · 1980er 5,8 · 1990er 5,3
+        //               2000er 0,3 · 2010er 0,5 · 2020er 0,3
+        //   hin+zurück und Debüt woanders: überall 0,0–0,4
+        // Die Tabelle trägt deshalb real MINUS Grundrauschen. Versucht wurde zuerst, jeden fremden
+        // Wechsel ein offenes Ereignis streichen zu lassen: das verfehlte die 1980er trotzdem
+        // (13,8 statt 8,3), weil die fremden Wechsel oft erst kommen, wenn die geplanten schon
+        // gelaufen sind. ⚠ Ändert sich der Fahrermarkt, das Grundrauschen neu messen.
+        // Werte je Dekaden-Mitte: [Wechsel, hin+zurück, Debüt, Länge W, Länge H, Länge D,
+        // Ersatz-Anteil bei H]. Ohne Messwert (1 Fall oder keiner) steht beim Ersatz 0,5.
+        const BEWEGUNG_QUOTEN = {
+            1955: [22.5, 7.0, 4.6, 1.1, 1.1, 1.3, 0.13],   // real 23,7 − 1,2
+            1965: [20.1, 8.7, 1.6, 1.3, 1.2, 1.0, 0.56],   // real 23,1 − 3,0 · Debüt 1,9 − 0,3
+            1975: [14.1, 3.4, 5.8, 1.9, 1.7, 1.6, 0.67],   // real 19,2 − 5,1 · Debüt 6,0 − 0,2
+            1985: [ 2.5, 0.0, 0.3, 3.2, 1.0, 3.5, 0.5],    // real 8,3 − 5,8 · H 0,3 − 0,4 · D 0,7 − 0,4
+            1995: [ 1.2, 0.0, 1.0, 1.8, 1.0, 3.3, 0.5],    // real 6,5 − 5,3 · Debüt 1,1 − 0,1
+            2005: [ 3.1, 0.0, 0.0, 3.9, 1.0, 3.3, 0.5],    // real 3,4 − 0,3
+            2015: [ 1.8, 0.0, 0.0, 6.0, 1.0, 3.3, 0.5],    // real 2,3 − 0,5
+            2025: [ 1.1, 1.4, 0.0, 2.0, 2.0, 3.3, 0.5]     // real 1,4 − 0,3
+        };
+        // Fließend zwischen den Dekaden-Mitten, davor und danach der Randwert – keine harten
+        // Sprünge an Dekadengrenzen.
+        function _bewegungsQuoten(year) {
+            const k = Object.keys(BEWEGUNG_QUOTEN).map(Number);
+            const y = Math.max(k[0], Math.min(k[k.length - 1], year));
+            let i = 0;
+            while (i < k.length - 2 && y > k[i + 1]) i++;
+            const a = BEWEGUNG_QUOTEN[k[i]], b = BEWEGUNG_QUOTEN[k[i + 1]];
+            const t = (y - k[i]) / (k[i + 1] - k[i]);
+            const v = a.map((x, j) => x + (b[j] - x) * t);
+            return { W: v[0], H: v[1], D: v[2], lenW: v[3], lenH: v[4], lenD: v[5], ersatzH: v[6] };
         }
         function _poissonDraw(lambda) {
             // Ganzzahlige Ziehung um einen Erwartungswert. Die realen Jahreswerte
@@ -27174,235 +27147,330 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             const n = Math.max(1, sortiert.length - 1);
             return werte.map(v => sortiert.filter(x => x < v).length / n);
         }
-        // Wie viele Bewegungs-Rennen liefern die DATEN in den verbleibenden Rennen?
-        // Nur Fahrer zählen, die es im Kader auch gibt — sonst zöge das Modell einen
-        // Abzug für Gastauftritte, die längst niemand mehr fahren kann.
-        function _dataMoveSupply(jahr, restCids) {
-            if (typeof GUEST_ENTRIES === 'undefined' || !GUEST_ENTRIES[jahr]) return 0;
-            const aktiv = new Set((GAME_STATE.drivers || [])
-                .filter(d => !d.status || d.status === 'active')
-                .map(d => String(d.histId || '').toLowerCase()).filter(Boolean));
-            const teamVon = {};
-            (GAME_STATE.drivers || []).forEach(d => {
-                const h = String(d.histId || '').toLowerCase(); if (h) teamVon[h] = d.team;
-            });
-            let n = 0;
-            for (const ctor in GUEST_ENTRIES[jahr]) {
-                const team = _guestTeamIdFor(ctor);
-                if (!team) continue;
-                for (const drv in GUEST_ENTRIES[jahr][ctor]) {
-                    const h = drv.toLowerCase();
-                    if (!aktiv.has(h)) continue;
-                    // Sitzt er inzwischen selbst bei diesem Konstrukteur, ist der
-                    // Gastauftritt gar keine Bewegung mehr — sonst zieht das Modell
-                    // einen Abzug fuer etwas ab, das nie stattfindet.
-                    if (teamVon[h] === team.id) continue;
-                    n += (GUEST_ENTRIES[jahr][ctor][drv] || []).filter(c => restCids.has(c)).length;
-                }
-            }
-            return n;
-        }
-        function _restCircuits(abRennen) {
+        // Renn-INDIZES statt Strecken: manche Saisons fahren zweimal auf derselben Strecke
+        // (2020 Silverstone, Spielberg) – ein Termin über die circuitId träfe beide.
+        function _restRennen(ab) {
             const out = [];
-            for (let i = abRennen; i < (GAME_STATE.races || []).length; i++) {
+            for (let i = ab; i < (GAME_STATE.races || []).length; i++) {
                 const r = GAME_STATE.races[i];
-                if (!r || istIndy500(r) || !r.circuitId) continue;
-                out.push(String(r.circuitId).toLowerCase());
+                if (r && !istIndy500(r) && r.circuitId) out.push(i);
             }
             return out;
         }
-        // Fuegt dem Plan Gastspiele hinzu, bis `budget` Bewegungs-Rennen vergeben sind.
-        function _addModelStints(plan, jahr, rest, budget) {
-            const fahrer = (GAME_STATE.drivers || []).filter(d =>
-                d.team && (!d.status || d.status === 'active') && !d._homeOnlyCurated);
-            const teams = (GAME_STATE.teams || []);
-            if (rest.length < 2 || fahrer.length < 4 || teams.length < 3) return plan;
-
-            // Perzentile sind die BREMSE gegen „Ian Ashley bei McLaren": ein Fahrer darf
-            // nur zu einem Team, das nicht deutlich stärker ist als er selbst.
+        function _streckeVon(i) { return String(GAME_STATE.races[i].circuitId).toLowerCase(); }
+        function _aktiv(d) { return !d.status || d.status === 'active'; }
+        function _belegt(tid) { return (GAME_STATE.drivers || []).filter(d => d.team === tid && _aktiv(d)).length; }
+        // === VOLL ODER NICHT HÄNGT AM DECKEL DER ÄRA ===
+        // Mit festem Zwei-Wagen-Deckel (ab 1980) ist ein Team voll, sobald es seine Besetzung vom
+        // Saisonbeginn hat: wer kommt, verdrängt jemanden, und wer geht, wird ersetzt.
+        // Vor 1980 brachten Teams mal ein, mal fünf Autos – der Fahrer nahm seinen Wagen gewissermaßen
+        // mit. Dort verdrängt ein Wechsel niemanden, und Ersatz gibt es nur, wenn das alte Team
+        // sonst unter zwei Autos fiele. Mit der strengen Regel lagen die 1950er bei 37,9 statt 23,7
+        // Wechseln: jeder Verdrängte landete auf dem Markt und wechselte ein zweites Mal.
+        function _flexibleAera(jahr) { return _maxCarsPerConstructor(jahr) > 3; }
+        function _teamVoll(S, tid, jahr) {
+            const deckel = _maxCarsPerConstructor(jahr);
+            return _belegt(tid) >= (_flexibleAera(jahr) ? deckel : Math.min(deckel, Math.max(1, S.sitze[tid] || 0)));
+        }
+        function _brauchtErsatz(S, tid, jahr) {
+            const soll = S.sitze[tid] || 0;
+            return _belegt(tid) - 1 < (_flexibleAera(jahr) ? Math.min(2, soll) : soll);
+        }
+        function _teamTrittAn(t, jahr, cid) {
+            const p = (typeof getTeamPresence === 'function') ? getTeamPresence(t, jahr) : null;
+            return p == null || p === 1 || (Array.isArray(p) && p.includes(cid));
+        }
+        function _keinIndyTeam(t) { return !isIndyOnlyConstructor(t.id) && !isIndyOnlyConstructor(t.histId); }
+        // Wer überhaupt umziehen kann: aktive Stammfahrer, die gerade nicht schon unterwegs sind.
+        function _bewegungsFahrer(S) {
+            return (GAME_STATE.drivers || []).filter(d => d.team && _aktiv(d) && !d._homeOnlyCurated
+                && !d._guestFrom && !d._standInFor && !S.plan[d.id] && !S.debuetanten[d.id] && !S.eigen[d.id]
+                && !(d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id)));
+        }
+        function _bewegungsRang() {
+            const fahrer = (GAME_STATE.drivers || []).filter(d => d.team && _aktiv(d));
+            const teams = GAME_STATE.teams || [];
             const pP = _rangAnteil(fahrer.map(d => d.pace || 70));
             const tP = _rangAnteil(teams.map(t => t.carSpeed || 70));
-            const pIdx = new Map(fahrer.map((d, i) => [d.id, i]));
-            const tIdx = new Map(teams.map((t, i) => [t.id, i]));
-            const deckel = _maxCarsPerConstructor(jahr);
-            const belegt = {};
-            fahrer.forEach(d => { belegt[d.team] = (belegt[d.team] || 0) + 1; });
-
-            // ⚠ ABBRUCH VOR DER LETZTEN LUECKE (v0.9.17.11). Seit die Stint-Laenge nicht
-            // mehr auf `budget` gedeckelt ist (.17.9, noetig fuer realistische Vertretungen),
-            // kostet JEDER Stint im Schnitt drei Rennen. Mit `budget >= 1` entstand daraus
-            // bei Restbudget 1 noch ein voller Drei-Rennen-Stint — gemessen 1995: 8,0
-            // Minderheits-Rennen bei Ziel 4,0. Es wird deshalb nur begonnen, was noch
-            // ungefaehr hineinpasst; der Rest verfaellt.
-            const _erwartet = jahr >= 1980 ? 3.0 : 1.5;
-            let versuche = 0;
-            while (budget >= _erwartet * 0.5 && versuche++ < 60) {
-                // Wer umzieht: die hinteren Reihen deutlich häufiger als die Stars.
-                const frei = fahrer.filter(d => !plan[d.id]);
-                if (!frei.length) break;
-                const d = _weightedDraw(frei, frei.map(x => 1 - 0.7 * pP[pIdx.get(x.id)]), 1)[0];
-                if (!d) break;
-                const p = pP[pIdx.get(d.id)];
-                const eigen = tIdx.has(d.team) ? tP[tIdx.get(d.team)] : 0.5;
-
-                const kand = teams.filter((t, i) => t.id !== d.team && tP[i] <= Math.max(p, eigen) + 0.15);
-                if (!kand.length) continue;
-                const kw = kand.map(t => {
-                    const naehe = 1 + 2 * (1 - Math.abs(tP[tIdx.get(t.id)] - eigen));
-                    return naehe * ((belegt[t.id] || 0) < deckel ? 2 : 1);   // freier Platz braucht eher eine Aushilfe
-                });
-                const ziel = _weightedDraw(kand, kw, 1)[0];
-                if (!ziel) continue;
-
-                // === LÄNGE ÄRA-ABHÄNGIG (v0.9.17.9) ===
-                // Hier galt eine feste Verteilung mit 55 % Ein-Rennen-Einsätzen — richtig für
-                // die Frühzeit, falsch für die Moderne. An F1DB gemessen (mittlere Länge einer
-                // Episode ausserhalb des Stammteams):
-                //   1950er 1,3 · 1960er 1,3 · 1970er 1,4 | 1980er 3,9 · 1990er 2,0
-                //   2000er 2,5 · 2010er 4,0 · 2020er 1,5
-                // Der Grund ist der Anlass: frueher sprang jemand fuer EIN Rennen in ein
-                // zweites Auto, spaeter vertritt er einen verletzten Stammfahrer — und eine
-                // Verletzung dauert mehrere Rennen (Nutzer: „gründe fürs hin und her einbauen.
-                // so wie in echt").
-                // WARUM DAS DIE FALLZAHL KORRIGIERT: das Renn-Budget je Saison (_moveTargetFor)
-                // steht fest. Werden dieselben 8,4 Bewegungs-Rennen auf lauter Ein-Rennen-
-                // Einsaetze verteilt, sind acht Fahrer betroffen statt zwei. Gemessen am
-                // Spielstand: 2010er 25 Multi-Team-Faelle gegen real 5, 2000er 27 gegen 8.
-                // ⚠ Das BUDGET darf die Laenge NICHT deckeln (v0.9.17.9). Vorher stand
-                // `Math.min(budget, …)` — und weil das Renn-Budget in der Moderne klein ist
-                // (2,7 im ganzen Jahr), kam nie mehr als EIN Rennen heraus, egal was der Wurf
-                // sagte. Gemessen: 2005 und 2015 hatten Ø 1,0 Rennen je Episode statt 2,5/4,0.
-                // Ein Stint darf das Budget jetzt ueberziehen; dafuer gibt es entsprechend
-                // weniger Stints, und der Regelkreis in _modelMovesFor steuert ueber die
-                // restlichen Rennen ohnehin nach. Die Renn-Summe bleibt damit im Ziel, die
-                // Zahl der betroffenen FAHRER sinkt — genau das war der Fehler.
-                const r = Math.random();
-                const _lang = _erwartet >= 3;
-                const laenge = Math.max(1, Math.min(rest.length - 1, _lang
-                    // Ø ≈ 3,0 Rennen: 0,25·1 + 0,25·2 + 0,20·3 + 0,30·5,5
-                    ? (r < 0.25 ? 1 : r < 0.50 ? 2 : r < 0.70 ? 3 : 4 + Math.floor(Math.random() * 4))
-                    : (r < 0.55 ? 1 : r < 0.78 ? 2 : r < 0.90 ? 3 : 2 + Math.floor(Math.random() * 4))));
-                const start = Math.floor(Math.random() * (rest.length - laenge + 1));
-                plan[d.id] = { teamId: ziel.id, circuits: rest.slice(start, start + laenge) };
-                budget -= laenge;
-            }
-            return plan;
+            const pm = new Map(fahrer.map((d, i) => [d.id, pP[i]]));
+            const tm = new Map(teams.map((t, i) => [t.id, tP[i]]));
+            return { p: d => pm.has(d.id) ? pm.get(d.id) : 0.5, t: id => tm.has(id) ? tm.get(id) : 0.5 };
         }
-        // Minderheits-Rennen, laufend mitgezählt: je Fahrer die Rennen beim Stammteam
-        // gegen die bei anderen, und davon die KLEINERE Seite. Das ist exakt die
-        // Definition der Zielkurve — und es zählt AUCH die Bewegung, die gar nicht vom
-        // Gast-Mechanismus kommt (reguläre KI-Transfers). Nur mit dieser Zählung merkt
-        // das Modell, dass die Saison ohne sein Zutun schon genug Bewegung hat: in den
-        // 1980ern liefen ~5 Bewegungs-Rennen je Saison am Gast-Zähler vorbei.
-        function _istBewegung(st) {
-            let n = 0;
-            for (const id in (st.zaehler || {})) {
-                const z = st.zaehler[id];
-                n += Math.min(z.h || 0, z.w || 0);
-            }
-            return n;
+        // Wohin: ein Team, das hier antritt und nicht deutlich stärker ist als Fahrer oder
+        // bisheriges Auto – die Bremse gegen „Ian Ashley bei McLaren". Und nicht weit darunter:
+        // ohne die Grenze ging Johansson 1985 mitten in der Saison von Ferrari zu Arrows.
+        // Ähnlich starke Teams und solche mit freiem Platz bevorzugt.
+        function _bewegungsZiel(d, S, rang, jahr, cid, ausser) {
+            const p = rang.p(d), eigen = d.team ? rang.t(d.team) : p;
+            const kand = (GAME_STATE.teams || []).filter(t => t.id !== d.team && t.id !== ausser
+                && _keinIndyTeam(t) && _teamTrittAn(t, jahr, cid) && _teamNationOk(t, d)
+                && rang.t(t.id) <= Math.max(p, eigen) + 0.15 && rang.t(t.id) >= Math.min(p, eigen) - 0.35);
+            if (!kand.length) return null;
+            return _weightedDraw(kand, kand.map(t =>
+                (1 + 2 * (1 - Math.abs(rang.t(t.id) - eigen))) * (_teamVoll(S, t.id, jahr) ? 1 : 2)), 1)[0] || null;
         }
-        // === REGELKREIS statt festem Budget ===
-        // Ein einmal gezogenes Budget ging daneben: gemessen 1985 plante das Modell NULL
-        // und die Saison hatte trotzdem 14,3 Bewegungs-Rennen (Ziel 8,4) — die Daten
-        // allein lieferten mehr als die Ära-Kurve vorsieht. Umgekehrt blieb 1987/88 ein
-        // Modell-Budget stehen, obwohl schon genug lief.
-        //
-        // Deshalb wird JEDES RENNEN nachgesteuert: gezählt wird, was TATSÄCHLICH schon
-        // passiert ist (`ist`, hochgezählt in applyGuestMoves), dazu die Schätzung für
-        // die Daten-Gastspiele voraus. Bleibt eine Lücke, kommen Gastspiele dazu; ist
-        // das Soll überschritten, werden noch nicht gefahrene Gastspiele gestrichen.
-        // Der Plan selbst bleibt sonst stehen — sonst spränge der Fahrer wöchentlich.
-        function _modelMovesFor(jahr, raceIndex, cid) {
-            const S = GAME_STATE._modelMoves;
-            if (!S || S.year !== jahr) {
-                const rest = _restCircuits(raceIndex);
-                const gesamt = _restCircuits(0).length || 1;
-                // Beim Laden mitten in der Saison zählt nur der verbleibende Anteil.
-                GAME_STATE._modelMoves = {
-                    year: jahr, plan: {}, zaehler: {},
-                    ziel: _poissonDraw(_moveTargetFor(jahr) * (rest.length / gesamt))
-                };
-            }
-            const st = GAME_STATE._modelMoves;
-            const rest = _restCircuits(raceIndex);
-            const restSet = new Set(rest);
-            const plan = st.plan || (st.plan = {});
+        // Meldet der Fahrer an diesem Rennen? Werksfahrer (kein Plan) melden überall.
+        function _meldetBei(d, i) { return !Array.isArray(d.scheduledRaces) || d.scheduledRaces.includes(_streckeVon(i)); }
+        function _hinterbaenkler(fahrer, rang) {
+            return _weightedDraw(fahrer, fahrer.map(x => 1 - 0.7 * rang.p(x)), 1)[0] || null;
+        }
+        // Volles Zielteam: sein langsamster Fahrer verliert den Platz und wird Free Agent.
+        // Bekommt danach das alte Team des Wechslers Ersatz, kann es genau ihn nehmen – der
+        // Ringtausch Schumacher/Moreno entsteht so von selbst, ohne ihn vorzuschreiben.
+        function _platzMachen(S, tid, ausser) {
+            const raus = (GAME_STATE.drivers || []).filter(x => x.team === tid && _aktiv(x) && x !== ausser
+                && !x._homeOnlyCurated && !x._guestFrom && !S.eigen[x.id])
+                .sort((a, b) => (a.pace || 0) - (b.pace || 0))[0] || null;
+            if (raus) { raus.team = null; raus._dismissedFromTeam = tid; }
+            return raus;
+        }
+        function _bewegungsChronik(d, vonId, nachId, typ, emoji, text) {
+            const name = id => ((GAME_STATE.teams || []).find(t => t.id === id) || {}).name || null;
+            (GAME_STATE.seasonTransfers = GAME_STATE.seasonTransfers || []).push({
+                driverId: d.id, driverName: d.name, type: typ, typeEmoji: emoji, typeText: text,
+                midSeason: true, round: GAME_STATE.currentRace,
+                fromTeam: name(vonId) || '-', toTeam: nachId ? name(nachId) : 'Free Agent'
+            });
+        }
+        // Endgültiger Umzug von `d` zu Team `nach`, in zwei Schritten: erst Platz machen, dann
+        // umziehen. Dazwischen holt _wechselAusfuehren den Ersatz fürs alte Team – zu dem Zeitpunkt
+        // ist der Verdrängte schon frei und `d` trägt noch seinen alten Meldeplan.
+        function _endgueltigUmziehenVorbereiten(S, d, nach, jahr) {
+            return _teamVoll(S, nach, jahr) ? _platzMachen(S, nach, d) : null;
+        }
+        function _endgueltigUmziehenAbschliessen(S, d, nach, raus) {
+            const von = d.team;
+            S.eigen[d.id] = true;
+            if (raus) S.eigen[raus.id] = true;
+            // Der Verdrängte gibt seinen Meldeplan ab – sofern darin noch ein Rennen steht.
+            const ab = GAME_STATE.currentRace || 0;
+            if (raus && _restRennen(ab).some(i => _meldetBei(raus, i)))
+                d.scheduledRaces = Array.isArray(raus.scheduledRaces) ? raus.scheduledRaces.slice() : null;
+            d.team = nach;
+            if (GAME_STATE.driverStandings && GAME_STATE.driverStandings[d.id]) GAME_STATE.driverStandings[d.id].team = nach;
+            _bewegungsChronik(d, von, nach, 'midswitch', '🔀', 'Wechsel');
+            if (raus) _bewegungsChronik(raus, nach, raus.team, 'released', '💢', 'Cockpit verloren');
+        }
 
-            let vorausGeplant = 0;
-            for (const id in plan) vorausGeplant += (plan[id].circuits || []).filter(c => restSet.has(c)).length;
-            // NICHT das ganze Jahresbudget im ersten Rennen verplanen. Sonst legt das
-            // Modell los, bevor es sehen kann, wie viel Bewegung die Saison von selbst
-            // hervorbringt — gemessen in den 1980ern rund 10 Rennen je Saison, also mehr
-            // als die Ära-Kurve überhaupt vorsieht. Der Anteil wächst mit der Saison
-            // (mit etwas Vorlauf, damit auch Gastspiele am Saisonanfang möglich bleiben).
-            const gesamtR = _restCircuits(0).length || 1;
-            const anteil = Math.min(1, (gesamtR - rest.length + 1) / gesamtR + 0.25);
-            const luecke = st.ziel * anteil - _istBewegung(st) - _dataMoveSupply(jahr, restSet) - vorausGeplant;
-            if (luecke >= 1) {
-                _addModelStints(plan, jahr, rest, luecke);
-            } else if (luecke <= -1) {
-                // Zu viel unterwegs: künftige Gastspiele kürzen, laufende nicht abbrechen.
-                let weg = -luecke;
-                for (const id in plan) {
-                    if (weg <= 0) break;
-                    const c = plan[id].circuits || [];
-                    // ⚠ EINE BEGONNENE AUSHILFE WIRD NICHT ZERRISSEN (v0.9.17.9).
-                    // Der Kommentar oben sagte das schon, der Code hielt sich nicht daran:
-                    // behalten wurde nur das AKTUELLE Rennen, der Rest des laufenden Stints
-                    // fiel weg. Dadurch endete fast jede Vertretung nach ein bis zwei Rennen —
-                    // gemessen Ø 1,0 statt real 2,5 (2000er) bzw. 4,0 (2010er) —, und weil das
-                    // Renn-Budget gleich blieb, verteilte es sich auf immer neue Fahrer.
-                    // Wer schon eingesprungen ist, bleibt jetzt bis zum Ende seines Stints;
-                    // gekuerzt wird nur, was noch gar nicht angefangen hat.
-                    if (c.some(x => !restSet.has(x))) continue;
-                    const kuenftig = c.filter(x => restSet.has(x) && x !== cid);
-                    if (!kuenftig.length) continue;
-                    const behalten = new Set(kuenftig.slice(0, Math.max(0, kuenftig.length - weg)));
-                    weg -= kuenftig.length - behalten.size;
-                    plan[id].circuits = c.filter(x => !restSet.has(x) || x === cid || behalten.has(x));
+        function _bewegungsPlan(jahr, raceIndex) {
+            const S0 = GAME_STATE._modelMoves;
+            if (S0 && S0.year === jahr && S0.events) return S0;
+            // Neu je Saison – oder beim Laden eines Stands aus der Zeit vor den Quoten: dann
+            // gilt nur noch der Rest der Saison.
+            const rest = _restRennen(raceIndex), R = rest.length;
+            const gesamt = _restRennen(0).length || 1;
+            const q = _bewegungsQuoten(jahr);
+            // Cockpits wie in der Messung: Melder je Rennen im Saisonmittel. Ein Werksfahrer ohne
+            // eigenen Plan zählt nur so weit, wie sein TEAM antritt – in den 1950ern fuhren viele
+            // Teams nur einen Teil des Kalenders.
+            const alle = _restRennen(0);
+            const teamVon = {};
+            (GAME_STATE.teams || []).forEach(t => { teamVon[t.id] = t; });
+            let cockpits = 0;
+            const sitze = {};
+            for (const d of (GAME_STATE.drivers || [])) {
+                if (!d.team || !_aktiv(d)) continue;
+                sitze[d.team] = (sitze[d.team] || 0) + 1;
+                const t = teamVon[d.team];
+                // Indy-Fahrer melden nur zum Indy 500, das hier nicht zählt – ohne den Filter
+                // schätzte das Modell 1955 43 Cockpits bei real 22 Meldern je Rennen.
+                if ((d.isIndyOnly || isIndyOnlyDriver(d.histId || d.id)) || (t && !_keinIndyTeam(t))) continue;
+                cockpits += alle.filter(i => _meldetBei(d, i) && (!t || _teamTrittAn(t, jahr, _streckeVon(i)))).length / gesamt;
+            }
+            const lam = cockpits / 100 * (R / gesamt);
+            const laenge = m => 1 + _poissonDraw(Math.max(0, m - 1));
+            const events = [];
+            // Wechsel: die kürzere Seite liegt vorn (früher Abgang) oder hinten (später Zugang).
+            for (let n = _poissonDraw(q.W * lam); n > 0 && R >= 2; n--) {
+                const L = Math.min(R - 1, laenge(q.lenW));
+                events.push({ typ: 'W', ab: rest[Math.random() < 0.5 ? L : R - L] });
+            }
+            // Hin und zurück: davor und danach mindestens ein Rennen beim Stammteam.
+            for (let n = _poissonDraw(q.H * lam); n > 0 && R >= 3; n--) {
+                const L = Math.min(R - 2, laenge(q.lenH));
+                const s = 1 + Math.floor(Math.random() * (R - L - 1));
+                events.push({ typ: 'H', ab: rest[s], rennen: rest.slice(s, s + L), ersatz: Math.random() < q.ersatzH });
+            }
+            // Debüt woanders: mitten in der Saison, danach MEHR Rennen beim zweiten Team als beim
+            // ersten – so ist es in F1DB definiert (die Debüt-Seite ist die kürzere).
+            for (let n = _poissonDraw(q.D * lam); n > 0 && R >= 4; n--) {
+                const L = Math.max(1, Math.min(Math.floor((R - 2) / 2), laenge(q.lenD)));
+                const s = 1 + Math.floor(Math.random() * (R - 2 * L - 1));
+                events.push({ typ: 'D', ab: rest[s], rennen: rest.slice(s, s + L), dann: rest[s + L] });
+            }
+            GAME_STATE._modelMoves = { year: jahr, events, plan: {}, debuetanten: {}, sitze, zaehler: {}, eigen: {}, cockpits };
+            return GAME_STATE._modelMoves;
+        }
+
+        // Ein Platztausch sind ZWEI Wechsel (der Verdrängte findet beim alten Team des Wechslers
+        // Platz). Er streicht deshalb ein offenes Ereignis – gibt es keins mehr, darf das alte
+        // Team den Verdrängten nicht nehmen. Ohne die Regel lagen die 2010er bei 4,4 statt 2,3.
+        function _offenenWechselStreichen(S, grund) {
+            const ev = S.events.find(e => !e.erledigt && e.typ === 'W');
+            if (ev) ev.erledigt = grund;
+            return !!ev;
+        }
+        function _wechselAusfuehren(S, ab, jahr, cid, rang) {
+            // Nur wer vorher schon gemeldet hat und danach noch meldet – sonst wird ein Teilzeit-
+            // Privatier umgesetzt, der nie wieder fährt, und der Wechsel verpufft. In den 1950ern
+            // ging so ein Viertel der Quote verloren (17,8 statt 23,7).
+            const alle = _restRennen(0);
+            const fahrer = _bewegungsFahrer(S).filter(d =>
+                alle.some(i => i < ab && _meldetBei(d, i)) && alle.some(i => i >= ab && _meldetBei(d, i)));
+            if (fahrer.length < 4) return;
+            const d = _hinterbaenkler(fahrer, rang);
+            const ziel = d && _bewegungsZiel(d, S, rang, jahr, cid);
+            if (!ziel) return;
+            const von = d.team;
+            // Ersatz für das alte Team, solange es unter seiner Saisonstart-Besetzung liegt. Zuerst
+            // holen: der Nachrücker erbt über replacedVictim den Meldeplan des Wechslers.
+            const ersatz = _brauchtErsatz(S, von, jahr);
+            const raus = _endgueltigUmziehenVorbereiten(S, d, ziel.id, jahr);
+            const tausch = !!raus && ersatz && S.events.some(e => !e.erledigt && e.typ === 'W');
+            const rep = ersatz ? acquireSeatDriver(von, jahr, { allowPoach: false, replacedVictim: d,
+                excludeIds: (raus && !tausch) ? new Set([raus.id]) : null }) : null;
+            if (rep && rep.driver) S.eigen[rep.driver.id] = true;
+            _endgueltigUmziehenAbschliessen(S, d, ziel.id, raus);
+            if (raus && raus.team) _offenenWechselStreichen(S, 'Platztausch');
+        }
+        function _gastspielAusfuehren(S, ev, jahr, cid, rang) {
+            // Nur wer davor UND danach daheim meldet – sonst ist es kein Hin und Zurück, sondern
+            // ein Wechsel. In den 1950ern mit vielen Teilzeit-Privatiers kam so nur ein Drittel
+            // der Quote als Hin und Zurück an (2,2 statt 7,0).
+            const alle = _restRennen(0), erstes = ev.rennen[0], letztes = ev.rennen[ev.rennen.length - 1];
+            const fahrer = _bewegungsFahrer(S).filter(d =>
+                alle.some(i => i < erstes && _meldetBei(d, i)) && alle.some(i => i > letztes && _meldetBei(d, i)));
+            if (fahrer.length < 4) return;
+            const d = _hinterbaenkler(fahrer, rang);
+            const ziel = d && _bewegungsZiel(d, S, rang, jahr, cid);
+            if (!ziel) return;
+            // Nur Rennen, an denen das Gastteam antritt. Sonst pendelt der Fahrer in jeder Lücke
+            // heim und wieder hin, und aus einem Gastspiel werden zwei (1950er: 13,2 statt 7,0).
+            const rennen = ev.rennen.filter(i => _teamTrittAn(ziel, jahr, _streckeVon(i)));
+            if (!rennen.length) return;
+            S.plan[d.id] = { teamId: ziel.id, rennen };
+            if (!ev.ersatz) return;
+            // Vertreter daheim nur für die Dauer des Gastspiels; danach wieder ohne Cockpit.
+            const rep = acquireSeatDriver(d.team, jahr, { allowPoach: false, replacedVictim: d });
+            if (rep && rep.driver) {
+                rep.driver._standInFor = d.id;
+                S.eigen[rep.driver.id] = true;
+                rep.driver.scheduledRaces = rennen.map(_streckeVon);
+            }
+        }
+        function _debuetAusfuehren(S, ev, jahr, cid, rang) {
+            const teams = (GAME_STATE.teams || []).filter(t => _keinIndyTeam(t) && _teamTrittAn(t, jahr, cid) && _belegt(t.id) > 0);
+            if (!teams.length) return false;
+            // Neulinge steigen eher bei schwachen Teams ein.
+            const X = _weightedDraw(teams, teams.map(t => 1 + 2 * (1 - rang.t(t.id))), 1)[0];
+            const strecken = ev.rennen.map(_streckeVon);
+            let pause = null;
+            if (_teamVoll(S, X.id, jahr)) {
+                // Voll: ein Stammfahrer fällt für diese Rennen aus (Verletzung, Sperre, Haft).
+                const stamm = (GAME_STATE.drivers || []).filter(x => x.team === X.id && _aktiv(x)
+                    && !x._homeOnlyCurated && !x._guestFrom && !x._standInFor);
+                pause = stamm[Math.floor(Math.random() * stamm.length)] || null;
+                if (!pause) return false;
+            }
+            const rep = acquireSeatDriver(X.id, jahr, { allowPoach: false, rookie: true, replacedVictim: pause || null });
+            const neu = rep && rep.driver;
+            if (!neu) return false;
+            neu.scheduledRaces = strecken.slice();
+            S.debuetanten[neu.id] = X.id;
+            S.eigen[neu.id] = true;
+            ev.fahrerId = neu.id;
+            if (pause) {
+                const voll = _restRennen(0).map(_streckeVon);
+                pause.scheduledRaces = (Array.isArray(pause.scheduledRaces) ? pause.scheduledRaces : voll)
+                    .filter(c => !strecken.includes(c));
+            }
+            return true;
+        }
+        // Zweite Stufe des Debüts: weiter zu einem anderen Team. Findet sich keins, bleibt es
+        // beim Einsatz als Ersatzmann und er ist wieder ohne Cockpit.
+        function _debuetWeiter(S, ev, jahr, cid, rang) {
+            const neu = (GAME_STATE.drivers || []).find(x => x.id === ev.fahrerId);
+            delete S.debuetanten[ev.fahrerId];
+            if (!neu || !_aktiv(neu) || !neu.team) return;
+            const ziel = _bewegungsZiel(neu, S, rang, jahr, cid, neu.team);
+            if (!ziel) { neu.team = null; neu.scheduledRaces = null; return; }
+            neu.scheduledRaces = null;   // beim neuen Team: Werksfahrer, außer er übernimmt einen Plan
+            const raus = _endgueltigUmziehenVorbereiten(S, neu, ziel.id, jahr);
+            _endgueltigUmziehenAbschliessen(S, neu, ziel.id, raus);
+        }
+        // Teams, die laut TEAM_PRESENCE an dieser Strecke antreten, aber keinen Fahrer haben
+        // (Lancia 1954, Brabham 1962, Tyrrell 1970: 16 Team-Saisons, alle vor 1980). Früher
+        // setzte GUEST_ENTRIES den realen Fahrer hinein, jetzt kommt ein Fahrer aus dem Feld für
+        // die Rennen des Teams. Gehört zum Grundrauschen, das BEWEGUNG_QUOTEN schon abzieht.
+        function _leereTeamsBesetzen(S, jahr, raceIndex, cid, rang) {
+            for (const t of (GAME_STATE.teams || [])) {
+                if (_belegt(t.id) > 0 || !_keinIndyTeam(t)) continue;
+                if (Object.values(S.plan).some(p => p.teamId === t.id && p.rennen.includes(raceIndex))) continue;
+                const pres = (typeof getTeamPresence === 'function') ? getTeamPresence(t, jahr) : null;
+                if (!Array.isArray(pres) || !pres.includes(cid)) continue;
+                const rennen = _restRennen(raceIndex).filter(i => pres.includes(_streckeVon(i)));
+                // 4 der 16 realen Fälle kamen mit zwei Autos.
+                const anzahl = Math.random() < 0.25 ? 2 : 1;
+                for (let k = 0; k < anzahl; k++) {
+                    const fahrer = _bewegungsFahrer(S).filter(d => _teamNationOk(t, d));
+                    const d = _hinterbaenkler(fahrer, rang);
+                    if (!d) break;
+                    S.plan[d.id] = { teamId: t.id, rennen };
+                    S.eigen[d.id] = true;
                 }
             }
+        }
+        // Führt fällige Ereignisse aus und liefert die Gastspiele für dieses Rennen:
+        // Fahrer-Id -> Team-Id. Endgültige Wechsel sind dann schon geschehen.
+        function _modelMovesFor(jahr, raceIndex, cid) {
+            const S = _bewegungsPlan(jahr, raceIndex);
+            const rang = _bewegungsRang();
+            // Vertreter gehen zurück, sobald der Vertretene wieder daheim fährt.
+            for (const d of (GAME_STATE.drivers || [])) {
+                if (!d._standInFor) continue;
+                const p = S.plan[d._standInFor];
+                if (!p || !p.rennen.some(i => i >= raceIndex)) { d.team = null; d.scheduledRaces = null; d._standInFor = null; }
+            }
+            for (const ev of S.events) {
+                if (ev.erledigt) continue;
+                if (ev.fahrerId) {   // Debüt läuft: nach dem letzten Einsatz weiter
+                    if (ev.dann <= raceIndex) { _debuetWeiter(S, ev, jahr, cid, rang); ev.erledigt = true; }
+                    continue;
+                }
+                if (ev.ab > raceIndex) continue;
+                if (ev.typ === 'W') { ev.erledigt = true; _wechselAusfuehren(S, raceIndex, jahr, cid, rang); }
+                else if (ev.typ === 'H') _gastspielAusfuehren(S, ev, jahr, cid, rang);
+                else if (ev.typ === 'D' && _debuetAusfuehren(S, ev, jahr, cid, rang)) continue;
+                ev.erledigt = true;
+            }
+            _leereTeamsBesetzen(S, jahr, raceIndex, cid, rang);
             const out = {};
-            for (const id in plan) {
-                if (!(plan[id].circuits || []).includes(cid)) continue;
+            for (const id in S.plan) {
+                if (!(S.plan[id].rennen || []).includes(raceIndex)) continue;
                 // Team kann inzwischen ausgestiegen sein — dann fällt der Zug aus.
-                if ((GAME_STATE.teams || []).some(t => t.id === plan[id].teamId)) out[id] = plan[id].teamId;
+                if ((GAME_STATE.teams || []).some(t => t.id === S.plan[id].teamId)) out[id] = S.plan[id].teamId;
             }
             return out;
         }
 
         function applyGuestMoves(raceIndex) {
             const jahr = GAME_STATE.currentYear;
-            const zeile = (typeof GUEST_ENTRIES !== 'undefined') ? GUEST_ENTRIES[jahr] : null;
             const race = (GAME_STATE.races || [])[raceIndex];
             if (!race || !race.circuitId) return 0;
             const cid = String(race.circuitId).toLowerCase();
 
-            // histId -> Ziel-Team-Id für DIESE Strecke (nur was hier ansteht)
-            const sollTeam = {};
-            for (const ctor in (zeile || {})) {
-                const team = _guestTeamIdFor(ctor);
-                if (!team) continue;                       // Team gibt es in dieser Saison nicht
-                for (const drv in zeile[ctor]) {
-                    if ((zeile[ctor][drv] || []).includes(cid)) sollTeam[drv.toLowerCase()] = team.id;
-                }
-            }
-            // Modell-Züge dazu. Ab hier läuft ALLES über die Fahrer-Id, damit Daten- und
-            // Modell-Gäste denselben Weg nehmen (Rückkehr, Startplan, Vertretung).
+            // Fällige Wechsel und Debüts sind danach schon vollzogen; zurück kommen die
+            // Gastspiele für dieses Rennen (Fahrer-Id -> Team-Id).
             const modell = _modelMovesFor(jahr, raceIndex, cid);
             const zielVon = {};
             for (const d of (GAME_STATE.drivers || [])) {
-                const h = String(d.histId || '').toLowerCase();
-                const z = (h && sollTeam[h]) || modell[d.id] || null;
+                const z = modell[d.id] || null;
                 // LANDSMANN-REGEL AUCH FÜR GASTZÜGE (v0.9.16.6). Das war der achte Weg
                 // ins Cockpit, den .16.0 nicht erwischt hat: die sieben geprüften Pfade
                 // (Transfermarkt, Grid-/Schwanz-/Sitzfüller, acquireSeatDriver,
                 // _findRealSeatCandidate, Generator) sind sauber, hier fehlte der Test.
                 // Gemessen an einem 96-Saison-Stand: Lucien Bianchi (BEL) saß 1962 als
                 // Gast von Emeryson bei LDS, Mike Spence bei ENB, Brian McGuire bei LEC.
-                // Die kuratierten GUEST_ENTRIES sind reale Historie und können die Regel
-                // gar nicht verletzen — der Filter trifft praktisch nur Modell-Züge.
                 if (!z) continue;
                 if (!_teamNationOk((GAME_STATE.teams || []).find(t => t.id === z), d)) continue;
                 // === DAS GASTTEAM MUSS HIER UEBERHAUPT ANGETRETEN SEIN (v0.9.17.31) ===
@@ -27411,11 +27479,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 // Nachkontrollen — der Gastzug nicht. Ein Modell-Zug konnte einen Fahrer zu
                 // einem Rennstall setzen, der an dieser Strecke real gar nicht meldete, und
                 // schrieb die Strecke danach sogar in dessen Meldeplan.
-                // ⚠ NUR fuer Modell-Zuege. Die kuratierten GUEST_ENTRIES sind reale
-                //   Historie und koennen die Praesenz nicht verletzen — sie SIND sie.
-                //   Dieselbe Begruendung wie beim Nationalitaets-Filter zwei Zeilen ueber
-                //   dieser Stelle.
-                if (!(h && sollTeam[h])) {
+                {
                     const _gt = (GAME_STATE.teams || []).find(t => t.id === z);
                     const _gp = (_gt && typeof getTeamPresence === 'function')
                         ? getTeamPresence(_gt, jahr) : null;
@@ -29100,7 +29164,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             const poachPref = (typeof rules.poachPreference === 'number' ? rules.poachPreference :  50) / 100;
             const team = GAME_STATE.teams.find(t => t.id === teamId);
             const teamIsIndy = !!team && (isIndyOnlyConstructor(team.id) || isIndyOnlyConstructor(team.histId));
-            const wantRookie = Math.random() < _seatRookieChance(teamId);
+            // opts.rookie: Debüt mitten in der Saison (_debuetAusfuehren) verlangt einen Neuling.
+            const wantRookie = opts.rookie === true || Math.random() < _seatRookieChance(teamId);
             const useReal    = Math.random() < realPref;
 
             // Landsmann-Regel mit in die Vertraeglichkeit: LDS nimmt keinen Schweizer,
@@ -29140,7 +29205,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 // im gewünschten Profil (z.B. Rookie-Slot, aber im Pool nur erfahrene echte Fahrer),
                 // dann lieber IRGENDEINEN echten verpflichten statt zu generieren — sonst produzierte
                 // realPreference=100 („nur echte") trotzdem generierte Rookies, weil echte Rookies fehlen.
-                if (!freeReal.length) freeReal = noCockpit.slice().sort((a, b) => _effPace(b) - _effPace(a));
+                // Ausnahme opts.rookie: dort MUSS es ein Neuling sein, notfalls generiert.
+                if (!freeReal.length && !opts.rookie) freeReal = noCockpit.slice().sort((a, b) => _effPace(b) - _effPace(a));
 
                 // Abwerben (Top-Leistung zuerst) — nur echte Fahrer. Für Rookie-Slots erst als
                 // Rückfall, wenn kein echter Free Agent/Pool-Fahrer vorhanden ist (echt > generiert).
