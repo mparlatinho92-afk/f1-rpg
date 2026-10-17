@@ -127,6 +127,21 @@ Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
   und im Steady-State leer. Der Snapshot wird Saison für Saison selbst gezogen.
 - **Feldgröße kontrollieren**, bevor ein Streuungsbefund geglaubt wird.
 
+## Mid-Season-Bewegung — `midseason-moves.js` (Arten seit v0.9.21.14)
+
+| Befehl | Zweck |
+|---|---|
+| `node tests/midseason-moves.js --real` | Referenz: Minderheits-Rennen und **Arten je 100 Cockpit-Saisons** aus F1DB |
+| `SIMCORE_FROM_INDEX=1 node tests/midseason-moves.js 1974 10 --saisons=3` | Spiel gegen dieselben realen Jahre |
+
+- **Arten:** Wechsel (kein Zurück) · hin+zurück (davor und danach beim Stammteam) · Debüt woanders (Episode enthält
+  das erste Karriererennen). Spiel und F1DB laufen durch dieselbe Funktion `episoden()`.
+- **Ziel ist das Dekaden-Mittel** (`BEWEGUNG_QUOTEN` in index.html), nicht das einzelne Jahr – 10 Sims × 3 Saisons
+  streuen je Zelle ±15–25 %.
+- ⚠ `BEWEGUNG_QUOTEN` ist **netto** (real minus Grundrauschen). Grundrauschen messen: in einer Kopie die ersten drei
+  Spalten auf 0 setzen und dieselben Läufe wiederholen (Werte `BEFUNDE.md` 17.10.2026 (4)).
+- Debüt-Erkennung im Spiel: im Lauf noch nie gemeldet und `getF1DebutYear >= Jahr`.
+
 ## Feld-Spreizung — `feld-spreizung.js`
 
 Liegt das Feld so weit auseinander wie real? Vier Kennzahlen je Ära gegen F1DB:

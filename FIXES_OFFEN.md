@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.13, Prüfdatum **2026-10-17** (vorher 2026-10-17 @ v0.9.21.12).
+**Abgeglichen gegen:** v0.9.21.14, Prüfdatum **2026-10-17** (vorher 2026-10-17 @ v0.9.21.13).
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -22,8 +22,7 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 
 - ✚ Jetlag-Kalender siehe wohl Google Gemini
 - ✚ Generierte Teams zu bunt: realistisch Wahrscheinlichkeiten für Farben bestimmen
-- ✚ Schumacher Jordan 1991 Regel streichen . gibt es weitere fixe Teilnahmen dieser Art
-- ✚ Owen im französischen Vornamen-Paket!
+- ✚ Schumacher Jordan 1991 Regel streichen . gibt es weitere fixe Teilnahmen dieser Art — **v0.9.21.14: alle 281 festen Gastauftritte entfernt** (`GUEST_ENTRIES` gelöscht), stattdessen Raten je Ära für Wechsel / hin und zurück / Debüt (`BEWEGUNG_QUOTEN`, BEFUNDE.md 17.10.2026 (4)); Bestätigung im Spiel offen
 
 ---
 
@@ -220,6 +219,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 | All-Time: Flaggen neben Aktiv-Status | Nationenflagge je Eintrag in Fahrer-, Team- und Weltmeister-Tabelle |
 | Grid-/DNQ-Projekt | abgeschlossen, Bauplan `DNQ_MELDEPLAN.md` |
 | Tödliche Unfälle außerhalb der WM | Rubrik + Nekrolog-Trennung; NaN-Rundennummer und falscher Renn-Link behoben (Ersatzfahrer-Link seit v0.9.21.3) |
+| Owen im französischen Vornamen-Paket | kein Fehler: real französisch (INSEE Rang 85 in 2015–19, 4 085 Geburten), nur für Jahrgänge ab ~1995 — Nutzer bestätigt 17.10.2026 |
 
 ---
 

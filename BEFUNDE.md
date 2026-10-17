@@ -3455,3 +3455,57 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
   angelegt und eine Saison gespielt). `kontrast-audit.js --themes dark,slate`: 74 Gruppen (vorher 76–77, Rauschen
   der Testsaison). **Messfalle:** der Audit öffnet je einen Fahrer- und Team-Steckbrief (erster Eintrag), aber nie den
   Junior-Steckbrief – Plakette, Teamspalte und Serien-Plaketten der Junior-Welt prüft nur der Screenshot.
+
+### 17.10.2026 (4): Mid-Season-Bewegung als Quoten je Ära statt fester Fälle (`BEWEGUNG_QUOTEN`)
+- **Anlass:** Schumacher saß im Spielstand 1991 bei Williams, `GUEST_ENTRIES` holte ihn für Spa zu Jordan und
+  zurück – Williams startete mit einem Auto. Das alte Modell (Renn-Budget je Saison) kannte nur „kurz woanders
+  und zurück, ohne Ersatz", in jeder Ära. Nutzer: keine Sonderfälle per Drehbuch, sondern Wahrscheinlichkeiten je
+  Variante und Ära, **prozentual** (Feldgröße schwankt).
+- **Reale Episoden je 100 Cockpit-Saisons** (F1DB, Indy raus, Cockpit = Melder je Rennen im Saisonmittel; Episode =
+  Folge von Rennen außerhalb des Mehrheits-Teams):
+
+  | Dekade | Wechsel | hin+zurück | Debüt woanders | Länge W/H/D | Ersatz daheim bei H |
+  |---|---|---|---|---|---|
+  | 1950er | 23,7 | 7,0 | 4,6 | 1,1/1,1/1,3 | 2 von 15 |
+  | 1960er | 23,1 | 8,7 | 1,9 | 1,3/1,2/1,0 | 10 von 18 |
+  | 1970er | 19,2 | 3,4 | 6,0 | 1,9/1,7/1,6 | 6 von 9 |
+  | 1980er | 8,3 | 0,3 | 0,7 | 3,2/1,0/3,5 | 0 von 1 |
+  | 1990er | 6,5 | 0,0 | 1,1 | 1,8/–/3,3 | – |
+  | 2000er | 3,4 | 0,0 | 0,0 | 3,9/–/– | – |
+  | 2010er | 2,3 | 0,0 | 0,0 | 6,0/–/– | – |
+  | 2020er | 1,4 | 1,4 | 0,0 | 2,0/2,0/– | 1 von 2 |
+
+  Hin und zurück eines Stammfahrers verschwindet ab 1980; Normalfall jeder Ära ist der Wechsel ohne Rückkehr.
+- **Debüts mit nur EINEM Team gehören nicht ins Bewegungsmodell:** mitten in der Saison debütieren 1950er 84,9 ·
+  1960er 55,8 · 1970er 46,4 · 1980er 15,2 · 1990er 12,2 · 2000er 5,3 · 2010er 3,7 · 2020er 2,1 je 100
+  Cockpit-Saisons, in den 50ern zu zwei Dritteln Einmal-Melder. Das regeln Startpläne, Tod und Entlassung.
+- **Grundrauschen ohne Modell** (alle drei Raten auf 0, 10 Sims × 3 Saisons), Wechsel je 100 Cockpit-Saisons:
+  1950er 1,2 · 1960er 3,0 · 1970er 5,1 · 1980er 5,8 · 1990er 5,3 · 2000er 0,3 · 2010er 0,5 · 2020er 0,3;
+  hin+zurück und Debüt 0,0–0,4. `BEWEGUNG_QUOTEN` trägt **real minus Grundrauschen**. ⚠ Ändert sich der
+  Fahrermarkt, das Grundrauschen neu messen.
+- **Ergebnis** (`midseason-moves.js`, 10 Sims × 3 Saisons, Spiel / real): 50er W 18–20/23,7 · H 7–9/7,0 · D 4–5/4,6;
+  60er W 23–28/23,1; 70er W 20,6/19,2 · D 7,4/6,0; 80er W 9,2/8,3; 90er W 5,8/6,5 · D 1,2/1,1; 2000er W 4,6/3,4;
+  2010er W 2,0/2,3; 2020er W 2,2/1,4 · H 1,2/1,4. Melder je Rennen unverändert (`roster-drift.js` 1974: 30,0 gegen
+  29,8; 1995: 27,0 gegen 26,9).
+- **Negativergebnisse / Messfallen (in dieser Reihenfolge gefunden):**
+  1. Jeden fremden Wechsel ein offenes Ereignis streichen lassen: 1980er trotzdem 13,8 statt 8,3 – fremde Wechsel
+     kommen oft erst, wenn die geplanten gelaufen sind. Ersetzt durch Netto-Raten.
+  2. Platztausch (Verdrängter findet beim alten Team des Wechslers Platz) sind ZWEI Episoden – 2010er 4,4 statt 2,3,
+     bis der Tausch ein offenes Ereignis verbraucht und ohne Restbudget gesperrt ist.
+  3. Teilzeit-Privatiers umgesetzt, die danach nie mehr melden: Wechsel verpufft (50er 17,8 statt 23,7). Kandidat
+     muss vor UND nach dem Termin melden; bei hin+zurück ebenso.
+  4. Gastspiel auch an Rennen, an denen das Gastteam fehlt: Fahrer pendelt in jeder Lücke heim, aus einem Gastspiel
+     werden zwei (50er H 13,2 statt 7,0).
+  5. Strenge „voll = Besetzung vom Saisonstart"-Regel vor 1980: jeder Verdrängte landet auf dem Markt und wechselt
+     ein zweites Mal (50er 37,9). Vor 1980 verdrängt ein Wechsel niemanden (`_flexibleAera`).
+  6. **Cockpit-Schätzung mit Indy-Fahrern:** 1955 43 statt 22 Melder je Rennen, alle drei Arten 1,5–1,9× zu hoch.
+  7. Ohne Untergrenze ging Johansson 1985 mitten in der Saison von Ferrari zu Arrows: Zielteam höchstens 0,35
+     Rang-Anteile unter Fahrer/Auto.
+- **Leere Teams:** 16 Team-Saisons existierten real nur über Gastauftritte (Lancia 1954, Brabham 1962, Tyrrell 1970,
+  alle vor 1980). Sie stehen im Spiel ohne Fahrer, `TEAM_PRESENCE` kennt ihre Rennen → `_leereTeamsBesetzen` setzt
+  einen Fahrer aus dem Feld hinein. Gehört zum Grundrauschen.
+- **`GUEST_ENTRIES` ist entfernt** (`data/guest-entries.js` gelöscht, aus Script-Tag, `manage-v.ps1`,
+  `data-sync-check.js` und `check-encoding.js` genommen). Der Generator bleibt als Referenz, mit `sirius → sochi`-Fix. Startpläne verteilen weiter nur die realen ANZAHLEN emergent (Schumacher 1991 bei
+  Benetton schon ab Hockenheim) – gewollt seit v0.9.16.15, kein Fehler.
+- Wächter grün: `ticker-paritaet.js --alle 40` (40/40), `data-sync-check.js`, `indy-500-vs-gp.js`,
+  `ticker-browser.js 1991`.

@@ -1,5 +1,9 @@
 // build-guest-entries.js — erzeugt data/guest-entries.js (Deckungs-Fahrplan, Stufe 2)
 //
+// ⚠ SEIT v0.9.21.14 NICHT MEHR IM SPIEL. Mid-Season-Bewegung kommt aus Quoten je Ära
+// (BEWEGUNG_QUOTEN in index.html, BEFUNDE.md 17.10.2026 (4)); data/guest-entries.js wurde
+// entfernt. Das Werkzeug bleibt als Referenz für die realen Gastauftritte.
+//
 // PROBLEM: SEASON_DATA fuehrt pro Fahrer und Saison genau EIN Team (`d[2]`). Stufe 1
 // hat dieses eine Team auf den MEHRHEITS-Rennstall gesetzt — richtig, aber damit gehen
 // alle Auftritte beim jeweils anderen Team verloren. Nutzer-Vorgabe 2026-08-09:
@@ -35,7 +39,10 @@ const WRITE = process.argv.includes('--write');
 const roundCircuit = {}, calendarOf = {};
 for (const r of J('f1db-races.json')) {
     const indy = r.grandPrixId === 'indianapolis';
-    const cid = indy ? null : String(r.circuitId || '').toLowerCase();
+    // F1DB benennt Strecken gelegentlich um (v2026.17.0: sochi -> sirius); das Spiel bleibt bei der alten ID.
+    const STRECKE_ALT = { sirius: 'sochi' };
+    const roh = String(r.circuitId || '').toLowerCase();
+    const cid = indy ? null : (STRECKE_ALT[roh] || roh);
     roundCircuit[`${r.year}_${r.round}`] = cid;
     if (cid) (calendarOf[r.year] = calendarOf[r.year] || new Set()).add(cid);
 }

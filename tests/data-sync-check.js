@@ -50,7 +50,6 @@ const LEIT = {
     'data/era-first-names.js': ['ERA_FIRST_NAMES'],
     'data/circuit-layouts.js': ['CIRCUIT_LAYOUTS'],
     'data/presence.js':        ['TEAM_PRESENCE'],
-    'data/guest-entries.js':   ['GUEST_ENTRIES'],
     'data/driver-starts.js':   ['DRIVER_STARTS'],
     'data/venue-pull.js':      ['VENUE_PULL'],
     'data/race-grid.js':       ['RACE_GRID'],
