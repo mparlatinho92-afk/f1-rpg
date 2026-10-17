@@ -3439,3 +3439,19 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
   auf `sochi` zurück, weil Layout, Land, Klima und Länge an der alten ID hängen.
 - Bottas Australien 2023 Quali „NC“ → „DSQ“: im Spiel nicht gespeichert, keine Änderung nötig.
 - Wächter danach grün: `indy-500-vs-gp.js`, `data-sync-check.js`, `ticker-paritaet.js --alle 40` (40/40).
+
+### 17.10.2026 (3): Livery-Feld an den restlichen Teamnamen-Stellen, Serien-Plaketten ohne Halo
+- **Umgestellt auf `teamNamensFeld`:** Team-Plakette im Fahrer-Steckbrief, Überschrift im Team-Steckbrief,
+  Team-Plakette und Teamspalte im Junior-Steckbrief. Neuer Parameter `eigeneMasse` lässt padding/radius weg,
+  damit Plakette und Überschrift ihre Maße behalten.
+- **Nebenbefund (behoben):** Beide Steckbriefe färbten mit `team.color` (Grundfarbe), nicht mit der Lackierung
+  des Jahres – McLaren 1996 stand dort orange, in Matrix und Tabellen weiß/rot. Jetzt
+  `getTeamColors(id, viewingYear | teamFlagYear)`, auch für die Zahlen-Kacheln (`teamZahlFarbe`: erste
+  Jahresfarbe ohne Halo lesbar, sonst Hauptfarbe mit Halo; Zahlen bewusst ohne Feld).
+- **Serien-Plaketten (Junior):** Rohfarbe → Halo sah im hellen Theme verwaschen aus („Formula Regional“,
+  „Formula 4“). Serien haben keine Identitätsfarbe (Nutzer 17.10.2026), daher `farbeAufKontrast`: Farbton bleibt,
+  Helligkeit wandert bis 5:1 gegen die Karte (4,5 reichte nicht – die Plakette ist zusätzlich getönt).
+- Prüfung: echte Screenshots vorher/nachher `screenshots/teamfeld-eingebaut-*.png` (1996, Junior-Welt im Test
+  angelegt und eine Saison gespielt). `kontrast-audit.js --themes dark,slate`: 74 Gruppen (vorher 76–77, Rauschen
+  der Testsaison). **Messfalle:** der Audit öffnet je einen Fahrer- und Team-Steckbrief (erster Eintrag), aber nie den
+  Junior-Steckbrief – Plakette, Teamspalte und Serien-Plaketten der Junior-Welt prüft nur der Screenshot.
