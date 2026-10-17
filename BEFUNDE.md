@@ -55,8 +55,28 @@ Kalender-Editor, Debug-Log, Junior-Welt. Schwelle WCAG AA 4,5:1 (große Schrift 
 2. **Buttons erben die Schriftfarbe nicht** (Browser: `buttontext` = schwarz). Alle Tab- und
    Unter-Tab-Buttons mit `.bg-secondary` standen schwarz auf dunkel (1,15:1) → `button { color: inherit }`.
 3. Ergebnisraster im Profil: ~7-px-Kürzel mit `opacity:0.7` auf Positionsfarben.
-4. Teamfarben als Schrift (Lotus `#111`, Tyrrell `#00008B`: 1,0–1,3:1) → `lesbareTextfarbe()`
-   mischt Richtung Weiß/Schwarz bis 5:1 gegen `--bg-card` (Reserve, weil getönte Zeilen heller liegen).
+4. Teamfarben als Schrift (Lotus `#111`, Tyrrell `#00008B`: 1,0–1,3:1) → `lesbareTextfarbe()`.
+   **Seit 15.10.2026 geändert:** Das Mischen Richtung Weiß ist verworfen. Ferrari `#DC0000` wurde
+   dabei zu `#EC7373`, also lachsfarben, und der Nutzer will die Original-Hexcodes. Grund: Ein reines
+   Rot schafft auf `#232936` höchstens 3,65:1. Jedes Rot über 5:1 kippt zwangsläufig ins Rosa oder
+   ins Orange. Gerechnet und ebenfalls verworfen: erst Sättigung hochdrehen (`#FF6666`) und
+   Ausweichen Richtung Orange (`#FF6B25`, sieht aus wie McLaren). **Jetzt:** Die Farbe bleibt original.
+   Unter 5:1 hängt die Funktion `;text-shadow:` mit einem Halo in der Gegenfarbe an, die Alpha
+   steigt mit dem Defizit (0,35–0,9). Sie liefert also ein **Style-Fragment**, kein reines Hex,
+   und darf nur in `style="color:${…}"` stehen. Das Audit klammert Halo-Texte aus, weil WCAG
+   Schatten nicht misst.
+   **17.10.2026, für Teamnamen ebenfalls verworfen:** Der weiche Halo (1–2 px Unschärfe) wirkt bei
+   13–14-px-Schrift verwaschen (Williams-Blau dunkel, McLaren-Silber hell). Verglichen per Screenshot:
+   harte 1-px-Kontur (dunkel okay, hell klobig), Kontrastfeld nur für Problemteams (wirkt seltsam,
+   weil 11 von 12 Zeilen ein Feld bekommen und eine nicht). **Jetzt `teamNamensFeld(colors)`:** JEDER
+   Teamname ist ein Feld in der Hauptfarbe, Schrift = erste weitere Teamfarbe ab 4,5:1, sonst
+   Weiß/Fast-Schwarz. Fläche < 1,5:1 gegen `--bg-card` → Pflichtrand in der ersten Teamfarbe, die
+   sich abhebt (McLaren 1996 hell: Marlboro-Rot). Gilt in `renderTeamNameColored` und den vier
+   Matrix-Zeilen; Zahlen in Teamfarbe (Profil-Kacheln) behalten den Halo.
+   Messfallen: viele Teams haben nur EINE Farbe (Williams 1995 `#005AFF`, Red Bull) → Weiß-Ersatz.
+   Die Matrix rechnet mit `ensureReadable()` (hellt dunkle Farben auf) → für das Feld die ROHEN
+   `getTeamColors`-Werte nehmen. Matrix-Span hatte `flex:1` → Feld lief über die ganze Spaltenbreite.
+   Test: Sonderfall-Blatt mit 16 Fällen (`screenshots/teamfeld-karriere-*.png`).
 5. **12 Farbklassen benutzt, aber nie definiert** (`text-black/70`, `text-green-400`, …) → erbten
    die Theme-Farbe. Weltmeister-Kasten im Saisonende: helle Schrift auf `#ffd700`, 1,01:1.
 6. Feste Rot/Grün/Blau/Grau inline → `--text-neg`, `--text-pos`, `--text-info`, `--accent-main-text`.

@@ -77,6 +77,8 @@ function messe(wurzelId) {
         const cs = getComputedStyle(el);
         if (cs.visibility !== 'visible' || el.closest('[style*="display: none"],[style*="display:none"]')) continue;
         if (el.closest('svg')) continue;
+        // Halo aus lesbareTextfarbe(): Originalfarbe + Schatten in der Gegenfarbe - WCAG kann das nicht messen, also ausklammern
+        if (/rgba?\(255, 255, 255|rgba?\(0, 0, 0/.test(cs.textShadow) && (el.getAttribute('style') || '').includes('text-shadow')) continue;
         let fg = parse(cs.color); if (!fg) continue;
         // Opacity-Kette + Hintergrundschichten einsammeln
         let op = 1, layers = [], bild = false, verlauf = [];

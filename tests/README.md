@@ -411,6 +411,7 @@ unter Windows die Tabellenlinien kaputt.
 | `node tests/kontrast-audit.js --alle` | Jeder sichtbare Text im echten Browser gegen seinen tatsächlichen Hintergrund (Opacity-Kette, Alpha-Schichten), 7 Themes × Desktop/Handy × alle Tabs, Unter-Tabs, Modals, Editoren. Gruppiert nach Farbpaar + Herkunft (Inline-Style oder Klasse). ~6 Min. |
 | `… --themes dark,slate` | nur diese Themes (schneller) |
 | `… --datei alt.html` | anderen Stand im Projektordner messen — Vorher/Nachher: `git show HEAD:index.html > _alt.html` |
+| `node tests/teamfeld-sonderfaelle.js` | Teamnamen-Felder (`teamNamensFeld`): 16 Sonderfälle (Einfarbig, identische Farben, Weiß auf Weiß, Schwarz auf Schwarz, Gelb, Langname, #888, kaputter Wert) als Screenshot `screenshots/teamfeld-karriere-{dark,modern}.png`. WCAG kann Felder mit Rand nicht beurteilen — hier entscheidet das Auge. Achtung: Audit-Vergleiche Vorher/Nachher streuen um ±1 Gruppe, weil jede Testsaison anders verläuft |
 
 ⚠ Transitions werden abgeschaltet, sonst misst man beim Theme-Wechsel Zwischenfarben. Verläufe zählen mit der schlechtesten Farbe, `text-shadow` wird ignoriert. Zahlen und Ursachen: `BEFUNDE.md` (12.10.2026).
 

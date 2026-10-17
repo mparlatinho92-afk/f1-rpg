@@ -57,7 +57,7 @@ const crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
 const QUELLE = path.join(ROOT, 'FIXES_OFFEN.md');
 const STAND = path.join(__dirname, 'fixes-spiegel.json');
-const ZIEL = path.join(os.tmpdir(), 'fixes-offen-werte.json');
+const ZIEL = path.join(os.tmpdir(), 'f1rpg-fixes-offen-werte.json');   // projekteigener Name: ein anderes Projekt nutzt dasselbe Werkzeug und überschrieb die Datei (17.10.2026)
 const SHEET_ABSCHNITT = '## ✚ Aus dem Sheet – ungeprüft';
 const KENNUNG_LAENGE = 30;                   // muss zur Formel in Fixes!F2 passen: LEFT(C2:C;30)
 
