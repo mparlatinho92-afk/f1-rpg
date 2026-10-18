@@ -73,6 +73,8 @@ const talent = {};   // 'Auto-Drittel|Fahrer-Drittel' → [Starts, Siege, Podien
 const dominator = { spiel: new Array(13).fill(0), real: new Array(13).fill(0) };
 // Pace-Rang (Top 3 / 4–8 / Rest) × Startplatz (P1–3 / 4–9 / 10+), je Zelle [Starts, DNF, Sieg, Podium, Summe Zielplatz, Summe Plätze gewonnen]
 const paceStart = { spiel: new Array(54).fill(0), real: new Array(54).fill(0) };
+// Verteilung der Platzgewinne je Dekade: [spielAlle, realAlle, spielOhneDom, realOhneDom] je 10 Zähler
+const gewinnDek = {}, domTeams = {};
 const CHAOS_ARTEN = ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot'];   // 'rot' überlappt mit den Wetter-Gruppen
 const chaos = Object.fromEntries(CHAOS_ARTEN.map(a => [a, { n: 0, sp03: 0, p10: 0, schwach: 0, spsum: 0, ss: 0, sw: 0 }]));
 for (const jahr of JAHRE) {
@@ -117,6 +119,10 @@ for (const jahr of JAHRE) {
     const ps = out.match(/PaceStart spiel: ([-\d ]+) real: ([-\d ]+)/);
     if (ps) { const a = ps[1].trim().split(' ').map(Number), b = ps[2].trim().split(' ').map(Number);
         for (let i = 0; i < 54; i++) { paceStart.spiel[i] += a[i] || 0; paceStart.real[i] += b[i] || 0; } }
+    const gw = out.match(/Gewinn spiel: ([-\d ]+) real: ([-\d ]+) ohneDom spiel: ([-\d ]+) real: ([-\d ]+) dom: (\S+)/);
+    if (gw) { const dek = Math.floor(jahr / 10) * 10, z = gewinnDek[dek] = gewinnDek[dek] || [0, 1, 2, 3].map(() => new Array(10).fill(0));
+        for (let x = 0; x < 4; x++) gw[x + 1].trim().split(' ').map(Number).forEach((v, j) => z[x][j] += v);
+        (domTeams[dek] = domTeams[dek] || {})[gw[5]] = (domTeams[dek][gw[5]] || 0) + 1; }
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
@@ -194,6 +200,21 @@ if (paceStart.real.some(Boolean)) {
     console.log('  ' + ' '.repeat(23) + 'Spiel'.padEnd(51) + 'real');
     for (let p = 0; p < 3; p++) for (let st = 0; st < 3; st++) { const o = (p * 3 + st) * 6;
         console.log('    ' + P[p] + ' ' + S[st] + '  ' + z(paceStart.spiel, o) + '   ' + z(paceStart.real, o)); }
+}
+if (Object.keys(gewinnDek).length) {
+    // Anteil der Zielankünfte mit großem Sprung; Top 3 von P10+: ≥+8 und Sieg je Zielankunft
+    const q = (a, f) => { const n = a.slice(0, 7).reduce((x, y) => x + y, 0); return n ? (100 * f(a) / n).toFixed(1).padStart(5) : '    -'; };
+    const t = (a, i) => a[7] ? (100 * a[i] / a[7]).toFixed(1).padStart(5) : '    -';
+    const zeile = (a, b) => q(a, z => z[6]) + ' /' + q(b, z => z[6]) + '  ' + q(a, z => z[0]) + ' /' + q(b, z => z[0])
+        + '  ' + q(a, z => z[0] + z[1] + z[5] + z[6]) + ' /' + q(b, z => z[0] + z[1] + z[5] + z[6])
+        + '  ' + t(a, 8) + ' /' + t(b, 8) + '  ' + t(a, 9) + ' /' + t(b, 9) + '  n' + String(b[7]).padStart(4);
+    console.log('  Verteilung Plätze gewonnen (unter Zielankünften), Spiel / real, % der Zielankünfte:');
+    console.log('                 ≥+8 Plätze      ≤−8 Plätze     |Δ| ≥ 4         Top3 v. P10+: ≥+8 / Sieg     n real');
+    for (const [dek, z] of Object.entries(gewinnDek)) {
+        const dom = Object.entries(domTeams[dek]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => k + ' ' + n).join(', ');
+        console.log('    ' + dek + 'er alle  ' + zeile(z[0], z[1]));
+        console.log('           ohne Dom ' + zeile(z[2], z[3]) + '   (Dom: ' + dom + ')');
+    }
 }
 console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
     + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));

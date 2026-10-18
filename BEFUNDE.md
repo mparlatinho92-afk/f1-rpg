@@ -3810,3 +3810,71 @@ Ergast-ID ohne Zuordnung ist Sospiri 1997 (nur DNQ, nie gestartet).
   Strategie-Rennen. **2010–2016 am geordnetsten** (Mercedes-Jahre, Führender nach R1 siegt 63 %).
 - Für das Spiel heißt das: Ein Faktor für „Überholen nach Tempo" wäre ära-abhängig. Vor 1996 gibt es keine
   Rundendaten, dort bleibt nur Start → Ziel aus F1DB.
+
+⚠ **Messfalle Teamdominanz (Nutzer-Hinweis 18.10.2026):** Die Auffälligkeit 2010–2016 („Führender nach R1 siegt
+63 %") ist Mercedes/Red Bull, kein Ära-Merkmal. `start-runde1-real.js` gibt jede Ära deshalb zweimal aus: alle
+Fahrer und **ohne das Team mit den meisten Siegen der Saison**, mit allen Rängen (Start, R1, Ziel) unter den
+verbleibenden Fahrern neu vergeben. Ohne Neuvergabe des Startplatzes zählt P4 hinter zwei Dom-Autos als „von
+hinten" (Sieger von P4+ 2010–16 schien 47 % statt richtig 18 %).
+
+| Abschnitt ohne Dom | Sp. Start→Ziel | Sieger führte nach R1 | Sieger von P4+ | Top 3 von 10+ danach (n) |
+|---|---|---|---|---|
+| 1996–2002 | 0,708 | 47,4 % | 23,3 % | +1,7 (11) |
+| 2003–2009 | 0,694 | 58,5 % | 17,1 % | +2,8 (39) |
+| 2010–2016 | 0,756 | **45,6 %** (alle 63,2) | 18,4 % | +3,1 (33) |
+| 2017–2021 | 0,720 | 63,4 % | 11,9 % | +4,1 (22) |
+| 2022–2024 | 0,719 | 60,3 % | 13,2 % | +4,6 (18) |
+
+- Ohne Dom-Team sind die Abschnitte recht gleich geordnet (Start→Ziel 0,69–0,76). Der „Führende siegt"-Wert von
+  2010–16 verschwindet ganz. **Echt ära-abhängig bleiben nur zwei Trends:** die Startrunde wird geordneter
+  (Start→R1 0,831 → 0,885) und Spitzenfahrer holen nach R1 mehr auf (+1,7 → +4,6, kleine n).
+
+### 18.10.2026 (7): Verteilung der Platzgewinne – die großen Sprünge fehlen NICHT allgemein
+
+Messung `vakuum-batch.js --alle 1 4 --regen --quali` (v0.9.21.21), Zeile „Gewinn" in `vakuum-saison.js`, je
+Dekade alle und ohne das reale Dom-Team (auf beiden Seiten dieselben Autos). Anteil an den Zielankünften, Spiel / real:
+
+| Dekade | ≥ +8 Plätze | ≤ −8 Plätze | |Δ| ≥ 4 | Top 3 von P10+: ≥ +8 / Sieg (n real) |
+|---|---|---|---|---|
+| 1960er | 0,6 / 0,2 | 1,2 / 1,8 | 17,9 / 17,1 | 4,4 / 5,9 · 1,5 / 11,8 (17) |
+| 1970er | 1,0 / 0,7 | 1,6 / 3,0 | 22,6 / 25,5 | 5,6 / 0,0 · 3,7 / 2,2 (46) |
+| 1980er | 0,6 / 0,2 | 1,1 / 2,4 | 18,5 / 19,0 | 3,0 / 0,0 · 3,0 / 0,0 (27) |
+| 1990er | 0,5 / 0,3 | 0,6 / 1,9 | 17,1 / 13,8 | 6,5 / 0,0 · 2,8 / 0,0 (12) |
+| 2000er | 1,1 / 1,8 | 1,4 / 2,0 | 22,0 / 20,6 | **19,3 / 33,3 · 0,0 / 12,8** (39) |
+| 2010er | 2,3 / 2,5 | 2,2 / 2,6 | 27,1 / 23,0 | 40,3 / 45,5 · **0,0 / 4,5** (44) |
+| 2020er | 2,7 / 2,6 | 2,8 / 2,7 | 30,3 / 25,1 | 23,6 / 31,0 · **0,0 / 2,4** (42) |
+
+- **Widerlegt: „Das gleichverteilte Rauschen hat keine Ausreißer."** Große Sprünge nach vorn (≥ +8) sind im Spiel
+  so häufig wie real, in jeder Dekade. Große Stürze (≤ −8) sind vor 2000 etwas seltener, mittlere Bewegung
+  (|Δ| ≥ 4) eher häufiger.
+- **Der Fehler ist eng:** Spitzenfahrer von P10+ kommen ab 2000 seltener weit nach vorn und gewinnen von dort
+  **nie** (real 13 Siege 1950–2024, Spiel ≈ 3 je Lauf-Äquivalent). Vor 2000 gewinnt das Spiel dort eher zu oft.
+- **Warum stehen Spitzenfahrer real hinten?** Ab 1996 in 19 % wegen Strafversetzung oder ohne Quali-Zeit (Quali-
+  Platz ≤ 9, aber Startplatz ≥ 10). Diese Fälle stellen 3 der 10 Siege von hinten. Vor 1996 praktisch nie (1 von 192).
+  Im Spiel landet ein Spitzenfahrer fast nur durch schlechte Form hinten, und die Wochenendform bremst ihn dann
+  auch im Rennen. Vermutung, nicht gemessen: Es fehlen Gründe für einen schlechten Startplatz, die das Renntempo
+  nicht berühren (Strafe, Defekt oder Regen im Quali).
+
+### 18.10.2026 (8): Strafversetzung je Ära – ein modernes Phänomen
+
+`node tests/strafversetzung-real.js` (F1DB, je Start, Indy 500 ausgenommen). F1DB hat dafür eigene Felder:
+`gridPenalty` (ab 1996 erfasst, Zahl oder „SFB" = ans Ende), `positionText` „PL" (Boxengasse). Dazu Startplatz ≥ 3
+hinter Quali-Platz ohne Strafvermerk und Startplatz ohne Quali-Platz.
+
+| Ära | Strafe | Box | rück ≥ 3 | ohne Quali | **zusammen** | je Fahrer + Saison | Ø Plätze zurück | Top 3: Anteil / Starts / Siege |
+|---|---|---|---|---|---|---|---|---|
+| 1950–1995 | 0,0 | 0,0 | ≤ 0,3 | ≤ 0,1 | **≤ 0,3 %** | ≤ 0,01 | – | 0 / 1 / 0 |
+| 1996–2002 | 0,2 | 0,1 | 0,1 | 0,4 | **0,7 %** | 0,11 | 7,7 | 0,0 % / 0 / 0 |
+| 2003–2009 | 3,3 | 0,9 | 0,4 | 0,1 | **4,7 %** | 0,67 | 5,5 | 4,1 % / 15 / 1 |
+| 2010–2013 | 5,0 | 0,5 | 0,0 | 1,3 | **6,8 %** | 1,19 | 4,0 | 3,5 % / 8 / 0 |
+| 2014–2016 | 8,4 | 1,8 | 0,0 | 1,5 | **11,7 %** | 2,09 | 3,3 | 7,9 % / 14 / 0 |
+| 2017–2021 | 10,0 | 0,8 | 0,0 | 0,5 | **11,3 %** | 2,09 | 3,4 | 6,6 % / 20 / 1 |
+| 2022–2024 | 5,4 | 2,8 | 0,0 | 1,3 | **9,4 %** | 1,88 | 4,1 | 7,9 % / 16 / 3 |
+
+- **Vor 2003 gibt es praktisch keine Rückversetzungen** (auch nicht als Spur „rück ≥ 3"). Ab 2003 (Motor-Regel,
+  Getriebe ab 2008) steigt es, mit der Hybrid-Ära 2014 auf jeden neunten Start.
+- Spitzenfahrer trifft es so oft wie alle anderen. Von 74 Starts nach Strafe haben sie 5 gewonnen (6,8 %).
+- Die Zählung „Ø Plätze zurück" kennt nur Fälle mit Startplatz-Zahl. Ans Ende gestellte (SFB) und Boxengasse
+  fehlen dort, der wahre Mittelwert ist größer.
+- Damit erklärt die Strafversetzung nur die **modernen** Siege von hinten (ab 2003). Vor 2000 gewinnt das Spiel
+  dort ohnehin eher zu oft (18.10.2026 (7)).

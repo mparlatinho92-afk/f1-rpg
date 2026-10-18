@@ -72,7 +72,7 @@ for (let jahr = VON; jahr <= BIS; jahr++) {
     }
     for (const g of jg) {
         if (!g.positionNumber || !r1[g.round]) { if (!r1[g.round]) ohneRunde1++; continue; }
-        starts.push({ jahr, rd: g.round, f: g.driverId, g: g.positionNumber,
+        starts.push({ jahr, rd: g.round, f: g.driverId, k: g.constructorId, g: g.positionNumber,
             l: r1[g.round][g.driverId] || null, z: zielVon.get(g.round + '|' + g.driverId) ?? null, pace: pRang.get(g.driverId) });
     }
 }
@@ -140,20 +140,39 @@ console.log(`\n  Sieger nach Runde 1: führte ${anteil(s => s.l === 1)} % · P2�
 console.log(`  Sieger vom Start:    P1 ${anteil(s => s.g === 1)} % · P2–3 ${anteil(s => s.g >= 2 && s.g <= 3)} % · P4–9 ${anteil(s => s.g >= 4 && s.g <= 9)} % · P10+ ${anteil(s => s.g >= 10)} %`);
 
 // 5) Ära-Muster: Reglement-Abschnitte (Tankstopps bis 2009, DRS/Pirelli ab 2011, breite Autos ab 2017,
-//    Ground Effect ab 2022). Gleiche Kennzahlen je Abschnitt.
+//    Ground Effect ab 2022). Zweimal: alle Fahrer, und ohne das Team mit den meisten Siegen der Saison.
+//    ⚠ Teamdominanz (Mercedes 2014–20, Red Bull 2011–13/2023) ist kein Ära-Merkmal: der Führende nach
+//    Runde 1 siegt dann öfter, weil EIN Auto überlegen ist, nicht weil das Reglement Überholen erschwert.
+//    Erst die Zeile „ohne Dom" zeigt, was der Abschnitt selbst ausmacht. Ränge (R1, Ziel) werden dafür
+//    unter den verbleibenden Fahrern neu vergeben.
 const AEREN = [[1996, 2002], [2003, 2009], [2010, 2016], [2017, 2021], [2022, 2024]];
-console.log('\n  Ära        Rennen  Sp S→R1  R1→Z   S→Z   raus R1  Sieger führte nach R1  Sieger von P4+  Top3 von 10+: R1 / danach   Rest von P1–3 danach');
+const domVon = {};
+{ const sk = {}; for (const s of starts) if (s.z === 1) { const k = s.jahr + '|' + s.k; sk[k] = (sk[k] || 0) + 1; }
+  for (const [k, n] of Object.entries(sk)) { const [y, c] = k.split('|'); if (!domVon[y] || n > sk[y + '|' + domVon[y]]) domVon[y] = c; } }
+const aeraZeile = (l) => {
+    const r = {}; for (const s of l) (r[s.jahr + '|' + s.rd] = r[s.jahr + '|' + s.rd] || []).push(s);
+    const spx = { gl: [], lz: [], gz: [] }, rg = new Map(), rl = new Map(), rz = new Map(), dn = new Map();
+    for (const v of Object.values(r)) {
+        // Ränge unter den verbleibenden Fahrern: Start, Runde 1 und Ziel neu durchnummerieren
+        v.slice().sort((a, b) => a.g - b.g).forEach((s, j) => rg.set(s, j + 1));
+        v.filter(s => s.l).sort((a, b) => a.l - b.l).forEach((s, j) => rl.set(s, j + 1));
+        v.filter(s => s.z).sort((a, b) => a.z - b.z).forEach((s, j) => rz.set(s, j + 1));
+        const x = v.filter(s => s.l), y = v.filter(s => s.l && s.z);
+        y.slice().sort((a, b) => a.l - b.l).forEach((s, j) => dn.set(s, j + 1 - rz.get(s)));
+        if (x.length > 4) spx.gl.push(spearman(x.map(s => s.g), x.map(s => s.l)));
+        if (y.length > 4) { spx.lz.push(spearman(y.map(s => s.l), y.map(s => s.z))); spx.gz.push(spearman(y.map(s => s.g), y.map(s => s.z))); }
+    }
+    const sg = l.filter(s => rz.get(s) === 1), pz = (x, n) => n ? (100 * x / n).toFixed(1) : '-';
+    const t3 = l.filter(s => s.pace === 0 && s.g >= 10), rv = l.filter(s => s.pace === 2 && s.g <= 3 && dn.has(s));
+    return `${String(Object.keys(r).length).padStart(5)}   ${avg(spx.gl).toFixed(3)}  ${avg(spx.lz).toFixed(3)}  ${avg(spx.gz).toFixed(3)}  ${pz(l.filter(s => !s.l).length, l.length).padStart(5)} %`
+        + `        ${pz(sg.filter(s => rl.get(s) === 1).length, sg.length).padStart(5)} %           ${pz(sg.filter(s => rg.get(s) >= 4).length, sg.length).padStart(5)} %`
+        + `        ${avg(t3.filter(s => s.l).map(s => rg.get(s) - rl.get(s))).toFixed(2).padStart(5)} / ${avg(t3.filter(s => dn.has(s)).map(s => dn.get(s))).toFixed(2).padStart(5)} (n ${t3.length})`
+        + `     ${avg(rv.map(s => dn.get(s))).toFixed(2).padStart(5)} (n ${rv.length})`;
+};
+console.log('\n  Ära                 Rennen  Sp S→R1  R1→Z   S→Z   raus R1  Sieger führte nach R1  Sieger von P4+  Top3 von 10+: R1 / danach   Rest von P1–3 danach');
 for (const [a, b] of AEREN) {
     const l = starts.filter(s => s.jahr >= a && s.jahr <= b); if (!l.length) continue;
-    const r = Object.entries(je).filter(([k]) => { const y = Number(k.split('|')[0]); return y >= a && y <= b; }).map(([, v]) => v);
-    const spx = { gl: [], lz: [], gz: [] };
-    for (const v of r) { const x = v.filter(s => s.l), y = v.filter(s => s.l && s.z);
-        if (x.length > 4) spx.gl.push(spearman(x.map(s => s.g), x.map(s => s.l)));
-        if (y.length > 4) { spx.lz.push(spearman(y.map(s => s.l), y.map(s => s.z))); spx.gz.push(spearman(y.map(s => s.g), y.map(s => s.z))); } }
-    const sg = l.filter(s => s.z === 1), pz = (x, n) => n ? (100 * x / n).toFixed(1) : '-';
-    const t3 = l.filter(s => s.pace === 0 && s.g >= 10), rv = l.filter(s => s.pace === 2 && s.g <= 3 && s.danach !== undefined);
-    console.log(`  ${a}–${b}  ${String(r.length).padStart(5)}   ${avg(spx.gl).toFixed(3)}  ${avg(spx.lz).toFixed(3)}  ${avg(spx.gz).toFixed(3)}  ${pz(l.filter(s => !s.l).length, l.length).padStart(5)} %`
-        + `        ${pz(sg.filter(s => s.l === 1).length, sg.length).padStart(5)} %           ${pz(sg.filter(s => s.g >= 4).length, sg.length).padStart(5)} %`
-        + `        ${avg(t3.filter(s => s.l).map(s => s.g - s.l)).toFixed(2).padStart(5)} / ${avg(t3.filter(s => s.danach !== undefined).map(s => s.danach)).toFixed(2).padStart(5)} (n ${t3.length})`
-        + `     ${avg(rv.map(s => s.danach)).toFixed(2).padStart(5)} (n ${rv.length})`);
+    const doms = {}; for (let y = a; y <= b; y++) if (domVon[y]) doms[domVon[y]] = (doms[domVon[y]] || 0) + 1;
+    console.log(`  ${a}–${b} alle      ${aeraZeile(l)}`);
+    console.log(`            ohne Dom  ${aeraZeile(l.filter(s => s.k !== domVon[s.jahr]))}   (${Object.entries(doms).map(([k, n]) => k + ' ' + n).join(', ')})`);
 }

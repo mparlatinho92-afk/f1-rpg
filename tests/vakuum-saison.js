@@ -620,7 +620,7 @@ function gefahreneRunden(ctx, real) {
         const realGrid = new Map();
         for (const [rd, rund] of Object.entries(real.runden)) for (const st of rund.starter) realGrid.set(rd + '|' + st.driverId, st.platz);
         const realStarts = real.erg.filter(e => gefahren.has(e.round))
-            .map(e => ({ f: e.driverId, rd: e.round, pos: /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null,
+            .map(e => ({ f: e.driverId, k: e.constructorId, rd: e.round, pos: /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null,
                          start: realGrid.get(e.round + '|' + e.driverId) || null }));
         console.log('  Dominator spiel: ' + spiel.join(' ') + ' real: ' + profil(realStarts).join(' '));
 
@@ -652,6 +652,30 @@ function gefahreneRunden(ctx, real) {
         const ps = new Array(54).fill(0);
         for (const lauf of talentLaeufe) zellen(lauf).forEach((v, j) => ps[j] += v);
         console.log('  PaceStart spiel: ' + ps.join(' ') + ' real: ' + zellen(realStarts).join(' '));
+
+    // === VERTEILUNG DER PLATZGEWINNE (18.10.2026) ===
+    // Im Mittel holt das Spiel von hinten genug auf, gewinnt aber viermal seltener (BEFUNDE.md 18.10.2026 (6)).
+    // Frage: fehlen die seltenen großen Sprünge? Gewinn wie oben unter den Zielankünften.
+    // Klassen: ≤−8, −7..−4, −3..−1, 0, +1..+3, +4..+7, ≥+8; dann Top 3 von P10+: n, ≥+8, Sieg.
+    // Zweimal: alle Fahrer, und ohne das Team mit den meisten REALEN Siegen der Saison (beide Seiten
+    // dieselben Autos). Teamdominanz (Mercedes 2014–20) darf nicht als Ära-Merkmal gelesen werden.
+        const siegeK = {};
+        for (const s of realStarts) if (s.pos === 1) siegeK[s.k] = (siegeK[s.k] || 0) + 1;
+        const domK = Object.keys(siegeK).sort((a, b) => siegeK[b] - siegeK[a])[0];
+        const verteilung = (starts, ohneDom) => {
+            const z = new Array(10).fill(0), je = {};
+            for (const s of starts) if (s.pos && s.start && !(ohneDom && s.k === domK)) (je[s.rd] = je[s.rd] || []).push(s);
+            for (const l of Object.values(je)) l.sort((a, b) => a.start - b.start).forEach((s, j) => {
+                const g = j + 1 - s.pos;
+                z[g <= -8 ? 0 : g <= -4 ? 1 : g <= -1 ? 2 : g === 0 ? 3 : g <= 3 ? 4 : g <= 7 ? 5 : 6]++;
+                if (pRang.get(s.f) === 0 && s.start >= 10) { z[7]++; if (g >= 8) z[8]++; if (s.pos === 1) z[9]++; }
+            });
+            return z;
+        };
+        const vs = [new Array(10).fill(0), new Array(10).fill(0)];
+        for (const lauf of talentLaeufe) [false, true].forEach((o, x) => verteilung(lauf, o).forEach((v, j) => vs[x][j] += v));
+        console.log('  Gewinn spiel: ' + vs[0].join(' ') + ' real: ' + verteilung(realStarts, false).join(' ')
+            + ' ohneDom spiel: ' + vs[1].join(' ') + ' real: ' + verteilung(realStarts, true).join(' ') + ' dom: ' + domK);
     }
     if (biasPaare.length > 5) {
         const korr = liste => {
