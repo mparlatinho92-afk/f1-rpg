@@ -4021,3 +4021,31 @@ letzten Punkteplatz. Die Menge der Punktefahrer bleibt gleich, nur die Reihenfol
   Ticker-Parität 40/40 und 2018, `ticker-browser.js` 1965/2018 grün.
 - ▶ Offen bleibt: Ab 2010 bewegt sich das Feld zu viel (|Δ| ≥ 4 30,6 / 33,9 statt 23,0 / 25,1 %), langsame
   Fahrer von vorn fallen ab 2000 zu stark zurück, trocken siegt man von P10+ seltener als real (1,8 statt 2,8 %).
+
+### 18.10.2026 (14): Ausfallrunde – real früh bei Unfällen, Technik übers Rennen verteilt
+
+`node tests/ausfallrunde-real.js`: F1DB race-results `laps` (vollendete Runden) durch races `laps`, nur „DNF",
+Indy 500 ausgenommen. **Erfasst bei 96,7 % (1950er) bzw. 99,9–100 % (ab 1960) aller Ausfälle.**
+
+| Ära | Ausfall in Runde 1: Unfall / Technik | Median der Distanz: Unfall / Technik | nach 90 % |
+|---|---|---|---|
+| 1950er | 16,3 / 3,8 % | 23 / 29 % | 1,6 % |
+| 1970er | 18,8 / 2,5 % | 21 / 38 % | 0,0 % |
+| 1990er | 21,1 / 3,8 % | 25 / 44 % | 0,0 % |
+| 2010er | 33,8 / 1,2 % | 14 / 44 % | 0,0 % |
+| 2020er | 35,0 / 0,0 % | 8 / 47 % | 0,0 % |
+
+- **Unfälle passieren früh**, und immer früher: in den 2020ern jeder dritte in Runde 1. Technik fällt über das
+  Rennen verteilt aus, eher in der zweiten Hälfte. Nach 90 % der Distanz fällt praktisch niemand aus (wer 90 %
+  fährt, wird gewertet), deshalb ab 1970 0,0.
+- **Eingebaut im Ticker** (`ausfallRundeWuerfeln`, `AUSFALLRUNDE_VERTEILUNG`, Zehntel je Dekade aus der vollen
+  Tabelle des Werkzeugs). Vorher gleichverteilt zwischen Runde 1 und der vorletzten. Reine Darstellung: ob jemand
+  ausfällt, steht in `simulateRace` fest. Todesfall zählt als Unfall. Gezogene Verteilung gegen die Tabelle
+  geprüft (100 000 Züge, Abweichung ≤ 0,4 Pp), Ticker-Parität 40/40, `ticker-browser.js` 1965/2018 grün.
+
+**Darstellung der Strafversetzung (19.10.2026, Nutzer-Hinweis: „das Spiel kennt keine Darstellung der Grid-Strafe"):**
+Ticker meldet nach der Startmeldung jede Strafe (`LIVE_COMMENTARY.grid_penalty`, Grund aus `strafeGrund` passend zur
+Regel der Zeit), das Rennfenster zeigt in der Ergebnisliste „Start P18 · +10" bzw. „· Boxengasse" hinter dem Namen.
+Im Browser geprüft (2018, Rennen 1: Magnussen Quali P18 → Boxengasse P20, Meldung und Hinweis da, keine
+Skriptfehler). ⚠ Messfalle: der Ticker-Feed hält nur 20 Meldungen — wer die Startmeldungen am Rennende sucht,
+findet sie nicht mehr.
