@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.19</title>
+    <title>F1 RPG v0.9.21.20</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.19 (aktuell) - 18.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.20 (aktuell) - 18.10.2026</div>
+                            <div>&#8226; NEU: Wochenendform – wer schlecht qualifiziert, hat meist auch im Rennen ein schweres Wochenende</div>
+                            <div>&#8226; FIX: Favoriten gewinnen nicht mehr fast immer von weit hinten</div>
+                            <div class="font-bold text-slate-400">v0.9.21.19 - 18.10.2026</div>
                             <div>&#8226; FIX: Debuet-Status nach dem ersten Rennen im Spiel – das echte Debuetjahr gilt nur fuer Karrieren vor dem Spielstart</div>
                             <div>&#8226; FIX: Neulinge tragen das Debuet-Abzeichen schon vor ihrem ersten Rennen, Pool-Debuetanten bekamen das ablaufende Jahr</div>
                             <div>&#8226; NEU: Fahrer-Steckbrief zeigt Debuet, Titelverteidiger und den vorzeitig feststehenden Weltmeister</div>
@@ -22984,7 +22987,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.19';
+        const VERSION = '0.9.21.20';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24637,6 +24640,29 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         }
 
         const _weekendWetter = {};   // 'Jahr|raceIndex' → { training, quali, rennen }
+
+        // === WOCHENENDFORM (v0.9.21.20) ===
+        // Ein Teil des Zufalls gilt für das ganze Wochenende: liegt die Strecke dem Auto
+        // nicht oder findet der Fahrer die Abstimmung nicht, ist er im Qualifying UND im
+        // Rennen langsamer. Vorher würfelten beide Sessions unabhängig — ein schlechter
+        // Startplatz war reines Quali-Pech, das Rennen holte den Favoriten zurück.
+        // Gemessen (vakuum-batch --quali, BEFUNDE.md 18.10.2026 (2)): Spearman Start→Ziel
+        // trocken 0,624 statt real 0,733, Dominator von P4+ siegt 51 % statt 25 %.
+        // Werte = halbe Spannweite (±) in Leistungspunkten. Das übrige Rauschen jeder
+        // Session schrumpft so, dass ihre Gesamtstreuung gleich bleibt (s. formAnteilRauschen).
+        const WOCHENENDFORM = { quali: 8, rennen: 4 };
+        const _weekendForm = {};     // 'Jahr|raceIndex' → { driverId: −1..1 }
+        function wochenendForm(raceIndex, driverId) {
+            const key = GAME_STATE.currentYear + '|' + raceIndex;
+            const m = _weekendForm[key] || (_weekendForm[key] = {});
+            if (m[driverId] === undefined) m[driverId] = Math.random() * 2 - 1;
+            return m[driverId];
+        }
+        // Rest-Rauschen (halbe Spannweite), wenn der Formanteil aus der Gesamtstreuung herausgenommen
+        // wird. Beide gleichverteilt → Varianzen addieren sich: rest² + form² = gesamt².
+        function formAnteilRauschen(halbGesamt, halbForm) {
+            return Math.sqrt(Math.max(0, halbGesamt * halbGesamt - halbForm * halbForm));
+        }
 
         // === OHNE ZEIT IN QUALIFYING UND TRAINING (v0.9.18.17) ===
         // Wer im Qualifying/Training keine Zeit setzt (Unfall, Defekt), steht hinten. Real
@@ -33322,7 +33348,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             }
             
             // Wochenend-Todeseinträge löschen
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]);
             _liveRaceDeathFired = false;
 
             // Default deathRealism basierend auf Ära
@@ -33386,7 +33412,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             }
 
             // Wochenend-Todeseinträge löschen (damit Monte-Carlo-Sims frisch starten)
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]);
             _liveRaceDeathFired = false;
 
             const eraDeathRate = getEraValue(ERA_DEATH_RATES, year);
@@ -34208,7 +34234,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 // Startplatz-Vorteil (_GRID_K 12) abgewogen: der traf trocken genauer, machte aber
                 // auch nasse Rennen zu geordnet (BEFUNDE.md 26.09.2026).
                 const _halfVar = 4 + (100 - _consVal) * 0.07;
-                performance += (Math.random() - 0.5) * 2 * _halfVar;
+                // Teil davon ist Wochenendform (wirkt auch im Quali), Gesamtstreuung unverändert
+                performance += (Math.random() - 0.5) * 2 * formAnteilRauschen(_halfVar, WOCHENENDFORM.rennen)
+                             + wochenendForm(raceIndex, driver.id) * WOCHENENDFORM.rennen;
                 if (_lotterie && Math.random() < RAIN_PARTIAL_LOTTERY.anteil) performance += RAIN_PARTIAL_LOTTERY.bonus;
                 if (_roteFlaggeWirkt && Math.random() < RED_FLAG_LOTTERY.anteil) performance += RED_FLAG_LOTTERY.bonus;
 
@@ -35324,7 +35352,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 );
                 const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
                 const _qHalfVar = 8 + (100 - _qConsVal) * 0.08; // ±8..16 (Minimum erhöht für mehr Pole-Vielfalt)
-                qualiPerformance += (Math.random() - 0.5) * 2 * _qHalfVar;
+                // Teil davon ist Wochenendform (wirkt auch im Rennen), Gesamtstreuung unverändert
+                qualiPerformance += (Math.random() - 0.5) * 2 * formAnteilRauschen(_qHalfVar, WOCHENENDFORM.quali)
+                                  + wochenendForm(raceIndex, driver.id) * WOCHENENDFORM.quali;
                 // Sonderrunde: 6% Chance auf außergewöhnliche Runde (perfektes Reifenfenster, ideale Abstimmung)
                 if (Math.random() < 0.06) qualiPerformance += Math.random() * 12;
                 
@@ -45515,7 +45545,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             GAME_STATE.seasonDeaths = [];      // Reset für neue Saison
             GAME_STATE.seasonRetirements = []; // Reset für neue Saison
             delete GAME_STATE._titleClinch;    // v0.9.15.79: Titel-Meldung gilt pro Saison
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]);
             
             // === INDY-500 REGEL: Ab 1961 verschwinden alle Indy-only Teams und Fahrer ===
             // Das Indianapolis 500 zählte nur 1950-1960 zur F1-WM
