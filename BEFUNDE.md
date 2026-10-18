@@ -20,7 +20,7 @@ versehentlich zurück.
 |---|---|
 | **Lesbarkeit: Schriftkontrast in allen Themes (12.10.2026)** | jede neue Schriftfarbe, Theme-Variablen, Teamfarben als Text, `tests/kontrast-audit.js` |
 | **Pace vor dem echten Debüt gedämpft (08.10.2026)** | Pool-Gruppe C, Junioren, Marktwert vor dem Debüt, `vorzeitige-debuets.js` |
-| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen) |
+| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen), Pace-Rang × Startplatz |
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
@@ -3692,3 +3692,33 @@ hinzu, die Sessions hängen nur zusammen.
 - **▶ Offen:** Ein Dominator, der vorn startet, landet zu selten auf P4+ (4,7 statt 14,3 %), und von hinten wird er
   zu oft Zweiter oder Dritter statt Vierter oder schlechter (51 statt 31 %). Ein Zwischenfall ohne Ausfall hatte das
   verfehlt (18.10. (2)). Ausfälle des Dominators bleiben zu häufig (28 statt 18 %, Ausfall-Spreizung).
+
+### 18.10.2026 (4): Pace-Rang × Startplatz – das Verhältnis stimmt, die Ausfälle sind falsch verteilt
+
+**Frage:** Kann ein Spitzenfahrer von hinten gewinnen, fällt ein schwacher von vorn zurück, und wie oft im Spiel
+gegenüber real? Pace-Rang = Rang nach `PACE_RATINGS` der Saison unter den realen Startern (Top 3 / 4–8 / Rest),
+für Spiel und real dieselbe Einteilung. Messung `SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js --alle 1 4 --regen --quali`
+(v0.9.21.20, Wochenendform 8/4). Sieg / Podium / DNF in % je Start, Ø Zielplatz nur über Zielankünfte.
+
+| Pace | Start | Spiel S / Pod / DNF / ØZ | real S / Pod / DNF / ØZ | n real |
+|---|---|---|---|---|
+| Top 3 | P1–3 | 36,3 / 64,0 / **30,6** / 1,8 | 34,4 / 64,2 / **21,3** / 2,5 | 1698 |
+| Top 3 | 4–9 | 8,7 / 41,9 / 32,8 / 3,3 | 7,6 / 36,1 / 26,7 / 4,2 | 1251 |
+| Top 3 | 10+ | 2,3 / 19,0 / 32,1 / 5,0 | 3,1 / 15,8 / 35,6 / 5,9 | 354 |
+| 4–8 | P1–3 | 22,7 / 54,8 / 32,5 / 2,4 | 21,6 / 51,9 / 24,4 / 3,4 | 1203 |
+| 4–8 | 4–9 | 3,3 / 25,4 / 31,9 / 4,5 | 3,1 / 19,8 / 29,5 / 5,5 | 2481 |
+| 4–8 | 10+ | 0,5 / 6,7 / 35,7 / 7,0 | 1,2 / 7,0 / 37,7 / 7,8 | 1560 |
+| Rest | P1–3 | **2,3 / 17,0** / 37,5 / 5,7 | **7,5 / 29,9** / 37,9 / 4,8 | 428 |
+| Rest | 4–9 | 0,6 / 6,4 / 36,5 / 7,7 | 0,7 / 9,0 / 36,8 / 7,3 | 2905 |
+| Rest | 10+ | 0,0 / 0,8 / 37,9 / 11,1 | 0,1 / 0,9 / 42,7 / 11,1 | 12648 |
+
+- **Sieg und Podium je Zelle treffen fast überall** (±1–6 Pp). Der Spitzenfahrer von P10+ gewinnt 2,3 % (real 3,1 %)
+  und steht in 19 % auf dem Podium (real 15,8 %). Pace bestimmt also schon heute, wie weit jemand nach vorn oder
+  hinten wandert; dafür braucht es keine neue Mechanik.
+- **Ausfälle sind im Spiel flach (31–38 %), real steigen sie von vorn nach hinten (21 → 43 %).** Spitzenfahrer von
+  vorn fallen um 9 Pp zu oft aus, Hinterbänkler von hinten um 5 Pp zu selten. Das ist dieselbe Ausfall-Spreizung wie
+  beim Dominator (28 statt 18 %) und der größte Fehler der Tabelle.
+- **Ø Zielplatz** liegt für vordere Zellen im Spiel 0,7–1,0 Plätze besser. Wahrscheinlich zum Teil Folge der
+  falschen Ausfallverteilung (vorn fehlen mehr Konkurrenten im Ziel), nicht getrennt geprüft.
+- **Schwacher Fahrer von vorn** hält real deutlich besser (Sieg 7,5 statt 2,3 %, Podium 30 statt 17 %). Kleine
+  Gruppe (n 428); real stehen dort meist Fahrer in sehr starken Autos, nicht Quali-Glückstreffer.

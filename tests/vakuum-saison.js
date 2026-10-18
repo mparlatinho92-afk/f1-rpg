@@ -573,6 +573,11 @@ function gefahreneRunden(ctx, real) {
                 + ' siegstark ' + siegStark + ' siegschwach ' + siegSchwach);
         }
     }
+    // ⚠ PACE_RATINGS ist mit const deklariert und im sim-core-Kontext NICHT sichtbar
+    //   (wie liveRaceState) — deshalb direkt aus data/f1db.js laden.
+    const PR = (() => { const c = { window: {} }; require('vm').createContext(c);
+        require('vm').runInContext(fs.readFileSync(path.join(__dirname, '..', 'data', 'f1db.js'), 'utf8').replace(/\bconst (\w+)\s*=/g, 'var $1 ='), c);
+        return c.PACE_RATINGS || {}; })();
     // === TALENT IM SCHWACHEN AUTO (26.09.2026) — wie tests/talent-real.js ===
     // Team-Drittel nach realem Startplatz, Fahrer-Drittel nach PACE_RATINGS der Saison unter den
     // realen Startern. Zeile je Kombination: Starts, Siege, Podien, Top 10, Punkte, Ausfälle.
@@ -583,11 +588,6 @@ function gefahreneRunden(ctx, real) {
         const ks = Object.keys(kN).filter(k => kN[k] >= 3).sort((a, b) => kGrid[a] / kN[a] - kGrid[b] / kN[b]);
         const k3 = Math.round(ks.length / 3), tD = {};
         ks.forEach((k, i) => tD[k] = i < k3 ? 0 : i >= ks.length - k3 ? 2 : 1);
-        // ⚠ PACE_RATINGS ist mit const deklariert und im sim-core-Kontext NICHT sichtbar
-        //   (wie liveRaceState) — deshalb direkt aus data/f1db.js laden.
-        const PR = (() => { const c = { window: {} }; require('vm').createContext(c);
-            require('vm').runInContext(fs.readFileSync(path.join(__dirname, '..', 'data', 'f1db.js'), 'utf8').replace(/\bconst (\w+)\s*=/g, 'var $1 ='), c);
-            return c.PACE_RATINGS || {}; })();
         const fl = [...fahrer].map(d => [d, PR[d] && PR[d][JAHR] && PR[d][JAHR][0]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
         const f3 = Math.round(fl.length / 3), fD = {};
         fl.forEach(([d], i) => fD[d] = i < f3 ? 0 : i >= fl.length - f3 ? 2 : 1);
@@ -623,6 +623,30 @@ function gefahreneRunden(ctx, real) {
             .map(e => ({ f: e.driverId, pos: /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null,
                          start: realGrid.get(e.round + '|' + e.driverId) || null }));
         console.log('  Dominator spiel: ' + spiel.join(' ') + ' real: ' + profil(realStarts).join(' '));
+
+    // === PACE-RANG × STARTPLATZ (18.10.2026) ===
+    // Pace-Rang = Rang nach PACE_RATINGS der Saison unter den realen Startern (Top 3 / 4–8 / Rest),
+    // Startplatz P1–3 / 4–9 / 10+. Je Zelle: Starts, DNF, Sieg, Podium, Summe Zielplatz.
+    // Frage: Kann ein Spitzenfahrer von hinten gewinnen, fällt ein schwacher von vorn zurück?
+        const pl = [...new Set(real.erg.filter(e => gefahren.has(e.round)).map(e => e.driverId))]
+            .map(d => [d, PR[d] && PR[d][JAHR] && PR[d][JAHR][0]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+        const pRang = new Map(pl.map(([d], i) => [d, i < 3 ? 0 : i < 8 ? 1 : 2]));
+        const zellen = starts => {
+            const z = new Array(45).fill(0);
+            for (const s of starts) {
+                const p = pRang.get(s.f); if (p === undefined || !s.start) continue;
+                const o = (p * 3 + (s.start <= 3 ? 0 : s.start <= 9 ? 1 : 2)) * 5;
+                z[o]++;
+                if (!s.pos) { z[o + 1]++; continue; }
+                if (s.pos === 1) z[o + 2]++;
+                if (s.pos <= 3) z[o + 3]++;
+                z[o + 4] += s.pos;
+            }
+            return z;
+        };
+        const ps = new Array(45).fill(0);
+        for (const lauf of talentLaeufe) zellen(lauf).forEach((v, j) => ps[j] += v);
+        console.log('  PaceStart spiel: ' + ps.join(' ') + ' real: ' + zellen(realStarts).join(' '));
     }
     if (biasPaare.length > 5) {
         const korr = liste => {

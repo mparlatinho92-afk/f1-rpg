@@ -71,6 +71,8 @@ const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [], sp
 const talent = {};   // 'Auto-Drittel|Fahrer-Drittel' → [Starts, Siege, Podien, Top10, Punkte, Ausfaelle]
 // [Starts, DNF, Sieg, P2–3, P4+, dann je Start P1–3 und P4+: Zielankünfte, Sieg, P2–3, P4+]
 const dominator = { spiel: new Array(13).fill(0), real: new Array(13).fill(0) };
+// Pace-Rang (Top 3 / 4–8 / Rest) × Startplatz (P1–3 / 4–9 / 10+), je Zelle [Starts, DNF, Sieg, Podium, Summe Zielplatz]
+const paceStart = { spiel: new Array(45).fill(0), real: new Array(45).fill(0) };
 const CHAOS_ARTEN = ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot'];   // 'rot' überlappt mit den Wetter-Gruppen
 const chaos = Object.fromEntries(CHAOS_ARTEN.map(a => [a, { n: 0, sp03: 0, p10: 0, schwach: 0, spsum: 0, ss: 0, sw: 0 }]));
 for (const jahr of JAHRE) {
@@ -112,6 +114,9 @@ for (const jahr of JAHRE) {
     const dm = out.match(/Dominator spiel: ([\d ]+) real: ([\d ]+)/);
     if (dm) { const a = dm[1].trim().split(' ').map(Number), b = dm[2].trim().split(' ').map(Number);
         for (let i = 0; i < 13; i++) { dominator.spiel[i] += a[i] || 0; dominator.real[i] += b[i] || 0; } }
+    const ps = out.match(/PaceStart spiel: ([\d ]+) real: ([\d ]+)/);
+    if (ps) { const a = ps[1].trim().split(' ').map(Number), b = ps[2].trim().split(' ').map(Number);
+        for (let i = 0; i < 45; i++) { paceStart.spiel[i] += a[i] || 0; paceStart.real[i] += b[i] || 0; } }
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
@@ -178,6 +183,17 @@ if (dominator.spiel[0]) {
     }
     const anteil = a => (a[9] / (a[5] + a[9]) * 100).toFixed(1);
     console.log('    Anteil Zielankünfte von P4+  Spiel ' + anteil(dominator.spiel) + ' %   real ' + anteil(dominator.real) + ' %');
+}
+if (paceStart.real.some(Boolean)) {
+    // Sieg/Podium/DNF je Start, Ø Zielplatz je Zielankunft
+    const P = ['Pace Top 3', 'Pace 4–8  ', 'Pace Rest '], S = ['Start P1–3', 'Start 4–9 ', 'Start 10+ '];
+    const z = (a, o) => { const n = a[o], fin = n - a[o + 1]; if (!n) return '—'.padEnd(36);
+        const p = i => (a[o + i] / n * 100).toFixed(1).padStart(5);
+        return 'S' + p(2) + ' Pod' + p(3) + ' DNF' + p(1) + ' ØZ ' + (fin ? (a[o + 4] / fin).toFixed(1) : '-').padStart(4) + ' n' + String(n).padStart(5); };
+    console.log('  Pace-Rang × Startplatz (Sieg / Podium / DNF % je Start, Ø Zielplatz):');
+    console.log('  ' + ' '.repeat(23) + 'Spiel'.padEnd(40) + 'real');
+    for (let p = 0; p < 3; p++) for (let st = 0; st < 3; st++) { const o = (p * 3 + st) * 5;
+        console.log('    ' + P[p] + ' ' + S[st] + '  ' + z(paceStart.spiel, o) + '   ' + z(paceStart.real, o)); }
 }
 console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
     + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));
