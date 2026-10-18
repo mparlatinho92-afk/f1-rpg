@@ -3976,3 +3976,48 @@ das übrige Rauschen wächst entsprechend.
   schlechter Start oder Boxenstopp Plätze, unabhängig von seinem Vorsprung.
 - Nicht übernommen, `index.html` unverändert (Sweep-Skript stellt zurück). Rauschen der Laufwiederholung zum
   Vergleich: dieselbe Version maß Punktefahrer einmal 1,88, einmal 1,65, Siege von hinten 2000er 0,0 / 4,2 %.
+
+### 18.10.2026 (13): Zwischenfall mit PLATZVERLUST statt Leistungsverlust
+
+Nach der Sortierung in `simulateRace` (hinter dem Boxenstopp-Effekt) fällt jeder Zielankömmling mit
+Wahrscheinlichkeit p um 1 bis max Plätze zurück, gleichverteilt. Anders als der Zwischenfall aus (2) kostet das
+**Plätze**, nicht Leistungspunkte, und trifft damit auch den, der weit vorn liegt. Messung wie (11):
+
+| | Ausgang | p 0,10 / max 6 | p 0,20 / 6 | p 0,15 / 10 | **p 0,10 / 6 + `_GRID_K` trocken 11** | real |
+|---|---|---|---|---|---|---|
+| Spearman trocken | 0,722 | 0,696 | 0,663 | 0,644 | **0,725** | 0,733 |
+| Spearman teilw. / durchg. nass | 0,692 / 0,724 | 0,661 / 0,674 | 0,640 / 0,645 | 0,605 / 0,616 | **0,668 / 0,675** | 0,643 / 0,683 |
+| Top 3 von P1–3, 1970er / 2020er | −0,3 / −0,4 | −0,6 / −0,6 | −0,7 / −0,7 | −0,9 / −1,1 | −0,5 / −0,6 | −1,3 / −1,3 |
+| Top 3 von 10+, 2010er / 2020er | +9,0 / +7,1 | +8,3 / +7,1 | +8,7 / +7,4 | +8,1 / +7,3 | **+8,0 / +6,6** | +7,6 / +5,4 |
+| Dominator im Ziel P4+ | 9,6 % | 14,5 | 20,2 | 17,4 | 14,4 | 20,8 |
+| |Δ| ≥ 4, 2010er / 2020er | 29,5 / 32,3 | 32,0 / 33,2 | 33,6 / 36,0 | 33,8 / 36,0 | 30,3 / 32,4 | 23,0 / 25,1 |
+| Punktefahrer Ø|Diff| / ± | 1,65 / +0,48 | 1,96 / +1,01 | 1,98 / +1,14 | 2,14 / +1,72 | **2,09 / +1,04** | – |
+
+- **Wirkt, wo nichts anderes gewirkt hat:** Wer vorn startet, verliert mehr Plätze, der Dominator kommt öfter auf
+  P4+ (offen seit 18.10. (3)), nasse Rennen werden zum ersten Mal so gemischt wie real.
+- Allein macht er trockene Rennen zu unordentlich. Mit Startplatz-Bonus 11 nur trocken stimmt die Ordnung wieder
+  (0,725), nass bleibt beim Bonus 8.
+- **Preis in jeder Variante:** Es punkten zu viele Fahrer (± +0,48 → +1,0 bis +1,7, über dem Laufrauschen von
+  ±0,2). Wer zurückfällt, macht Platz für einen, der sonst keine Punkte holt.
+- Die zu große Bewegung ab 2010 (|Δ| ≥ 4) bleibt, der Zwischenfall erhöht sie leicht.
+
+**Variante „Punkte bleiben":** Wer in den Punkten liegt, fällt durch den Zwischenfall höchstens bis auf den
+letzten Punkteplatz. Die Menge der Punktefahrer bleibt gleich, nur die Reihenfolge darin ändert sich. Jeweils mit
+`_GRID_K` trocken 11:
+
+| | Ausgang | p 0,10 | p 0,20 | real |
+|---|---|---|---|---|
+| Punktefahrer Ø|Diff| / ± | 1,65 / +0,48 | **1,73 / +0,42** | 1,82 / +0,59 | – |
+| Spearman trocken | 0,722 | **0,731** | 0,711 | 0,733 |
+| Spearman teilw. / durchg. nass | 0,692 / 0,724 | 0,669 / 0,702 | **0,657 / 0,675** | 0,643 / 0,683 |
+| Top 3 von P1–3, 1970er / 2020er | −0,3 / −0,4 | −0,5 / −0,6 | −0,7 / −0,9 | −1,3 / −1,3 |
+| Top 3 von 10+, 2000er / 2010er / 2020er | +6,7 / +9,0 / +7,1 | +5,5 / +8,0 / +6,6 | +5,7 / +8,2 / +7,0 | +5,5 / +7,6 / +5,4 |
+| Dominator im Ziel P4+ | 9,6 % | 15,1 | **20,2** | 20,8 |
+| Sieg ab P10 trocken | 1,1 % | 0,9 | 1,8 | 2,8 |
+
+- **Die Punktefahrer bleiben jetzt im Laufrauschen** (±0,2), der Preis aus der ersten Variante ist weg.
+- p 0,10 trifft trocken genau, p 0,20 trifft nass und den Dominator, ist trocken etwas zu unordentlich.
+- **Gewählt (Nutzer 18.10.2026): p 0,20, max 6, `_GRID_K` trocken 11 / nass 8.** Konstante `PLATZVERLUST`.
+  Ticker-Parität 40/40 und 2018, `ticker-browser.js` 1965/2018 grün.
+- ▶ Offen bleibt: Ab 2010 bewegt sich das Feld zu viel (|Δ| ≥ 4 30,6 / 33,9 statt 23,0 / 25,1 %), langsame
+  Fahrer von vorn fallen ab 2000 zu stark zurück, trocken siegt man von P10+ seltener als real (1,8 statt 2,8 %).
