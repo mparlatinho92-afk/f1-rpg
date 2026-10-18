@@ -199,7 +199,7 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         const startVon = new Map(((_q && _q.results) || []).filter(e => !e.dnpq).map((e, j) => [e.driver, e.position || j + 1]));
         for (const e of (erg ? erg.results || [] : [])) {
             const k = teamZuKonstr.get(e.team), f = spielZuReal.get(e.driver);
-            if (k && f) talentStarts.push({ k, f, pos: e.dnf ? null : e.position, punkte: e.points || 0, start: startVon.get(e.driver) || null });
+            if (k && f) talentStarts.push({ k, f, rd: i, pos: e.dnf ? null : e.position, punkte: e.points || 0, start: startVon.get(e.driver) || null });
         }
         if (erg) {
             // ⚠ Mit --quali zählt der vom SPIEL gefahrene Startplatz (startVon), nicht der reale.
@@ -620,31 +620,36 @@ function gefahreneRunden(ctx, real) {
         const realGrid = new Map();
         for (const [rd, rund] of Object.entries(real.runden)) for (const st of rund.starter) realGrid.set(rd + '|' + st.driverId, st.platz);
         const realStarts = real.erg.filter(e => gefahren.has(e.round))
-            .map(e => ({ f: e.driverId, pos: /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null,
+            .map(e => ({ f: e.driverId, rd: e.round, pos: /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null,
                          start: realGrid.get(e.round + '|' + e.driverId) || null }));
         console.log('  Dominator spiel: ' + spiel.join(' ') + ' real: ' + profil(realStarts).join(' '));
 
     // === PACE-RANG × STARTPLATZ (18.10.2026) ===
     // Pace-Rang = Rang nach PACE_RATINGS der Saison unter den realen Startern (Top 3 / 4–8 / Rest),
-    // Startplatz P1–3 / 4–9 / 10+. Je Zelle: Starts, DNF, Sieg, Podium, Summe Zielplatz.
+    // Startplatz P1–3 / 4–9 / 10+. Je Zelle: Starts, DNF, Sieg, Podium, Summe Zielplatz,
+    // Summe Plätze gewonnen (Rang des Startplatzes UNTER DEN ZIELANKÜNFTEN minus Zielplatz — sonst
+    // zählt jeder Ausfall eines Vordermanns als Gewinn; real 1996–2024 mit Runde 1: tests/start-runde1-real.js).
     // Frage: Kann ein Spitzenfahrer von hinten gewinnen, fällt ein schwacher von vorn zurück?
         const pl = [...new Set(real.erg.filter(e => gefahren.has(e.round)).map(e => e.driverId))]
             .map(d => [d, PR[d] && PR[d][JAHR] && PR[d][JAHR][0]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
         const pRang = new Map(pl.map(([d], i) => [d, i < 3 ? 0 : i < 8 ? 1 : 2]));
         const zellen = starts => {
-            const z = new Array(45).fill(0);
+            const z = new Array(54).fill(0), gewinn = new Map(), je = {};
+            for (const s of starts) if (s.pos && s.start) (je[s.rd] = je[s.rd] || []).push(s);
+            for (const l of Object.values(je)) l.sort((a, b) => a.start - b.start).forEach((s, j) => gewinn.set(s, j + 1 - s.pos));
             for (const s of starts) {
                 const p = pRang.get(s.f); if (p === undefined || !s.start) continue;
-                const o = (p * 3 + (s.start <= 3 ? 0 : s.start <= 9 ? 1 : 2)) * 5;
+                const o = (p * 3 + (s.start <= 3 ? 0 : s.start <= 9 ? 1 : 2)) * 6;
                 z[o]++;
                 if (!s.pos) { z[o + 1]++; continue; }
                 if (s.pos === 1) z[o + 2]++;
                 if (s.pos <= 3) z[o + 3]++;
                 z[o + 4] += s.pos;
+                z[o + 5] += gewinn.get(s) || 0;
             }
             return z;
         };
-        const ps = new Array(45).fill(0);
+        const ps = new Array(54).fill(0);
         for (const lauf of talentLaeufe) zellen(lauf).forEach((v, j) => ps[j] += v);
         console.log('  PaceStart spiel: ' + ps.join(' ') + ' real: ' + zellen(realStarts).join(' '));
     }

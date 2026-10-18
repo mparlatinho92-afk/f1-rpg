@@ -231,7 +231,9 @@ mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
 
 **Dominator-Zeile (seit 18.10.2026)** — Zielprofil des Fahrers mit den meisten Siegen je Saison, Spiel gegen real: Ausfall je Start, im Ziel Sieg / P2–3 / P4+, dazu getrennt nach **Startplatz P1–3 / P4+** und der Anteil der Zielankünfte von hinten. Misst das „Sieg oder Ausfall"-Muster und die Kopplung Quali ↔ Rennen. Real (1950–2024): von P4+ nur 25 % Siege, 44 % P4+.
 
-**Pace-Rang × Startplatz (seit 18.10.2026)** — Tabelle Pace-Rang (`PACE_RATINGS` der Saison: Top 3 / 4–8 / Rest) × Startplatz (P1–3 / 4–9 / 10+), je Zelle Sieg / Podium / DNF je Start und Ø Zielplatz, Spiel gegen real. Nur mit `--quali` sinnvoll (sonst ist der Startplatz der reale). Ausgangswerte: `BEFUNDE.md` 18.10.2026 (4).
+**Pace-Rang × Startplatz (seit 18.10.2026)** — Tabelle Pace-Rang (`PACE_RATINGS` der Saison: Top 3 / 4–8 / Rest) × Startplatz (P1–3 / 4–9 / 10+), je Zelle Sieg / Podium / DNF je Start und Ø Zielplatz, Spiel gegen real. Nur mit `--quali` sinnvoll (sonst ist der Startplatz der reale). Ausgangswerte: `BEFUNDE.md` 18.10.2026 (4). Seit (6) zusätzlich **Pl** = Ø Plätze gewonnen unter den Zielankünften.
+
+**Startrunde real (seit 18.10.2026)** — `node tests/scrape-jolpica-runde1.js [von] [bis]` lädt die Position nach Runde 1 je Rennen 1996–2024 von jolpica (externer Dienst, 500 Abfragen/Stunde → ~1 Stunde, fortsetzbar) nach `tests/jolpica-data/runde1-YYYY.json`. `node tests/start-runde1-real.js [von] [bis]` wertet Start → Runde 1 → Ziel nach Pace × Startplatz aus. ⚠ jolpica nutzt Ergast-IDs (`villeneuve`), nicht F1DB-Slugs — Zuordnung über Geburtsdatum + Nachname.
 
 **`--quali` wird seit 18.10.2026 an `vakuum-saison.js` durchgereicht** — das Spiel fährt sein eigenes Qualifying, nur das Teilnehmerfeld ist fixiert. Das ist der Modus für alles, was Startplatz und Rennen ZUSAMMEN betrifft (Wochenendform). ⚠ **Messfalle:** Bis 18.10.2026 verglichen die Chaos-Zeilen auch mit `--quali` den REALEN Startplatz mit dem Spiel-Ergebnis — Spearman Start→Ziel war dort wertlos (0,61 gemessen, korrekt 0,659). Werte aus `--quali`-Läufen vor diesem Datum nicht verwenden.
 

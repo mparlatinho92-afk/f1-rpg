@@ -20,7 +20,7 @@ versehentlich zurück.
 |---|---|
 | **Lesbarkeit: Schriftkontrast in allen Themes (12.10.2026)** | jede neue Schriftfarbe, Theme-Variablen, Teamfarben als Text, `tests/kontrast-audit.js` |
 | **Pace vor dem echten Debüt gedämpft (08.10.2026)** | Pool-Gruppe C, Junioren, Marktwert vor dem Debüt, `vorzeitige-debuets.js` |
-| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen), Pace-Rang × Startplatz, `DNF_START_SPREAD` |
+| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen), Pace-Rang × Startplatz, `DNF_START_SPREAD`, Startrunde 1996–2024 |
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
@@ -3753,3 +3753,37 @@ das Feld 1, wirkt auf Technik und Unfall. Nur `simulateRace` übergibt ihn, die 
 - **Preis:** Siege von hinten werden seltener, weil vorn weniger Fahrer ausfallen und Platz machen. Real schaffen
   Spitzenfahrer das trotz seltener Ausfälle vorn, also über Tempo. Der Hebel dafür liegt im Renntempo, nicht im
   Ausfall.
+
+### 18.10.2026 (6): Startrunde und Überholen danach – real gegen Spiel
+
+**Daten:** Position nach Runde 1 für alle 544 Rennen 1996–2024 von jolpica (`tests/scrape-jolpica-runde1.js`
+→ `tests/jolpica-data/runde1-YYYY.json`, Zuordnung Ergast-ID → F1DB über Geburtsdatum + Nachname, 1 Fahrer ohne
+Treffer). Auswertung `node tests/start-runde1-real.js`. „Plätze gewonnen" immer **unter den Zielankünften**
+(Rang unter denen, die ins Ziel kommen, minus Zielplatz). Sonst zählt jeder Ausfall eines Vordermanns als Gewinn.
+
+**Real 1996–2024:**
+- Startrunde mischt wenig: Spearman Start → Runde 1 0,862, Runde 1 → Ziel 0,765, Start → Ziel 0,752. Ø Plätze in
+  Runde 1: P1–3 −0,8, 4–9 −0,5, 10+ +1,0 (Streuung ±3). Raus in Runde 1: 2,3 / 2,9 / 4,4 %.
+- Nach Runde 1 sortiert das Tempo: Top 3 von 10+ +4,2 Plätze, Rest von P1–3 −2,0, passend Startende ±0,4.
+- Sieger nach Runde 1: führte 55 %, P2–3 33 %, P4–9 10 %, P10+ 2,0 %. Vom Start: P10+ 2,9 %.
+
+**Spiel gegen real, Start → Ziel, alle Jahre** (`vakuum-batch.js --alle 1 4 --regen --quali`, v0.9.21.21):
+
+| Pace | Start | Pl. gewonnen Spiel / real | Sieg Spiel / real |
+|---|---|---|---|
+| Top 3 | P1–3 | −0,28 / −0,85 | 37,7 / 34,4 |
+| Top 3 | 4–9 | +1,03 / +0,33 | 7,9 / 7,6 |
+| Top 3 | 10+ | **+4,91 / +4,08** | **0,8 / 3,1** |
+| 4–8 | 10+ | +3,30 / +2,13 | 0,3 / 1,2 |
+| Rest | P1–3 | −3,70 / −2,81 | 2,6 / 7,5 |
+| Rest | 4–9 | −2,58 / −1,70 | 0,4 / 0,7 |
+
+- **Widerlegt: „Das Spiel lässt schnelle Fahrer von hinten zu wenig aufholen."** Im Mittel holen sie im Spiel
+  sogar mehr Plätze als real, und langsame Fahrer fallen stärker zurück. Das Spiel sortiert nach Tempo eher zu
+  stark als zu schwach.
+- Trotzdem gewinnen sie von hinten viermal seltener. Der Unterschied liegt also in der **Verteilung**, nicht im
+  Mittel: Real gibt es seltene große Sprünge (Safety-Car, Strategie, Wetter), im Spiel gleichmäßiges Aufrücken.
+  Das Rennrauschen ist gleichverteilt und begrenzt (±4..11), es hat keine Ausreißer. Vermutung, Verteilung der
+  Platzgewinne noch nicht gemessen.
+- Gesamtmischung trocken stimmt trotzdem (Spearman 0,737 / real 0,733): zu viel gerichtetes Sortieren und zu wenig
+  Zufall heben sich im Mittel auf.
