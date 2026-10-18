@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.21</title>
+    <title>F1 RPG v0.9.21.22</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.21 (aktuell) - 18.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.22 (aktuell) - 18.10.2026</div>
+                            <div>&#8226; NEU: Startplatz-Strafen ab 2003 nach realer Häufigkeit je Ära (Motor, Getriebe, Boxengasse) – Pole und Quali-Duell bleiben beim Quali-Platz</div>
+                            <div>&#8226; NEU: Hinweis in den Quali-Tabellen, warum ein Fahrer weiter hinten startet</div>
+                            <div>&#8226; NEU: Export Rennergebnisse mit Startplatz neben dem Quali-Platz</div>
+                            <div>&#8226; FIX: Spitzenfahrer gewannen ab 2010 nie von P10 oder dahinter</div>
+                            <div class="font-bold text-slate-400">v0.9.21.21 - 18.10.2026</div>
                             <div>&#8226; NEU: Ausfallrisiko nach Startplatz – wer hinten startet, fällt öfter aus (real 24 % von P1–3, 42 % ab P10)</div>
                             <div>&#8226; FIX: Spitzenfahrer fielen von vorn zu oft aus, Zahl der Punktefahrer jetzt näher an der Realität</div>
                             <div class="font-bold text-slate-400">v0.9.21.20 - 18.10.2026</div>
@@ -22990,7 +22995,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.21';
+        const VERSION = '0.9.21.22';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24703,6 +24708,61 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             for (const r of results) {
                 if (Math.random() < p) { r.keineZeit = true; r.time = null; r.score = -1e6; }
             }
+        }
+
+        // === STRAFVERSETZUNG: STARTPLATZ ≠ QUALI-PLATZ (18.10.2026) ===
+        // Real startet ein Fahrer oft weiter hinten, als sein Quali hergibt (Motor-/Getriebewechsel,
+        // Boxengasse), und das berührt sein Renntempo NICHT. Im Spiel stand ein Spitzenfahrer bis dahin
+        // nur durch schlechte Form hinten, die ihn auch im Rennen bremst: ab 2000 gewann er von P10+
+        // nie (real 2,4–12,8 %). F1DB (tests/strafversetzung-real.js), Strafe + Boxengasse je Start;
+        // „ohne Quali-Zeit" steckt schon in ERA_QUALI_NO_TIME:
+        //   vor 1996 ≈ 0 · 1996–2002 0,3 % · 2003–09 4,2 · 2010–13 5,5 · 2014–16 10,2 · 2017–21 10,8 · 2022–24 8,2
+        // Größe (gridPenalty / „PL"): 2003–13 3 Pl. 10 %, 5 Pl. 41, 10 Pl. 30, ans Ende 2, Boxengasse 17;
+        //   ab 2014 3 Pl. 17 %, 5 Pl. 24, 10 Pl. 8, ans Ende 27, Boxengasse 24 (BEFUNDE.md 18.10.2026 (8)).
+        // Pole, Quali-Duell und Fahrerbewertung bleiben beim Quali-Platz, wie real.
+        const ERA_STARTSTRAFE = {
+            1950: 0, 1996: 0.003, 2003: 0.042, 2010: 0.055, 2014: 0.102, 2017: 0.108, 2022: 0.082
+        };
+        const STARTSTRAFE_GROESSE = {
+            1996: [[3, 0.10], [5, 0.41], [10, 0.30], ['ende', 0.02], ['box', 0.17]],
+            2014: [[3, 0.17], [5, 0.24], [10, 0.08], ['ende', 0.27], ['box', 0.24]]
+        };
+
+        // Würfelt die Strafe je Quali-Teilnehmer: Plätze (Zahl), 'ende' oder 'box' in r.strafe.
+        function startStrafenWuerfeln(results, year) {
+            const p = getEraValue(ERA_STARTSTRAFE, year);
+            if (!(p > 0)) return;
+            const groessen = getEraValue(STARTSTRAFE_GROESSE, year);
+            for (const r of results) {
+                if (r.dnpq || r.fatal || Math.random() >= p) continue;
+                let w = Math.random();
+                for (const [g, anteil] of groessen) { if ((w -= anteil) < 0) { r.strafe = g; break; } }
+                if (r.strafe === undefined) r.strafe = groessen[groessen.length - 1][0];
+            }
+        }
+
+        // Hinweis hinter dem Namen in den Quali-Tabellen (Ticker, Rennfenster): warum der Startplatz abweicht
+        function strafeBadge(r) {
+            if (!r || !r.strafe) return '';
+            const t = r.strafe === 'box' ? 'Boxengasse' : r.strafe === 'ende' ? 'ans Ende' : '+' + r.strafe + ' Startplatz';
+            return ` <span title="Startplatz-Strafe – Quali-Platz bleibt" style="font-size:0.6em;font-weight:700;padding:1px 5px;border-radius:3px;background:var(--bg-secondary);color:var(--text-secondary);border:1px solid var(--border-color);letter-spacing:0.04em;vertical-align:middle">${t}</span>`;
+        }
+
+        // Startaufstellung aus dem Quali: Map driverId → Startplatz 1..n unter den Startern.
+        // Einzige Quelle für den Startplatz (simulateRace, Ticker, Export). Ohne Strafen = Quali-Reihenfolge,
+        // Altstände ohne r.strafe also unverändert. starterIds = wer wirklich startet (DNQ fällt heraus).
+        function startaufstellungVon(qualiResult, starterIds) {
+            const nur = starterIds ? new Set(starterIds) : null;
+            const l = ((qualiResult && qualiResult.results) || [])
+                .filter(q => !q.dnpq && q.position > 0 && (!nur || nur.has(q.driver)));
+            // Ohne Strafe bleibt der Quali-Platz selbst stehen (auch mit Lücken durch Nicht-Starter) —
+            // so ändert sich ohne Strafen nichts gegenüber dem Stand vor dem 18.10.2026.
+            if (!l.some(q => q.strafe)) return new Map(l.map(q => [q.driver, q.position]));
+            // N Plätze zurück = hinter den, der N Plätze dahinter qualifiziert war; Boxengasse hinter „ans Ende"
+            const schluessel = q => q.strafe === 'box' ? 2e6 + q.position : q.strafe === 'ende' ? 1e6 + q.position
+                                  : q.position + (q.strafe || 0) + (q.strafe ? 0.5 : 0);
+            l.sort((a, b) => schluessel(a) - schluessel(b));
+            return new Map(l.map((q, i) => [q.driver, i + 1]));
         }
 
         function _klimaRegen(race) {
@@ -32390,6 +32450,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     const race = s.races[ri] || {};
                     const q = s.quali.find(x => _rvRi(x) === ri);
                     const qPos = new Map(q ? _rvRes(q).map(e => [_rvD(e), _rvP(e)]) : []);
+                    // Startplatz nach Strafversetzung, Live- und Archivform (d/p) gleich behandelt
+                    const startPos = q ? startaufstellungVon({ results: _rvRes(q).map(e => ({ driver: _rvD(e), position: _rvP(e), strafe: e.strafe, dnpq: e.dnpq })) },
+                                                            _rvRes(r).map(_rvD)) : new Map();
                     out.push({
                         jahr: s.jahr, laufend: s.laufend, runde: ri + 1,
                         name: r.rn || r.raceName || race.name || null, land: r.rc || r.raceCountry || race.country || null,
@@ -32400,6 +32463,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                             return { pos: _rvP(e) ?? null, name: ident(id).name, histId: ident(id).histId, id,
                                 team: e.tmn || e.teamName || _reviewTeamName(s, e.team),
                                 qualiPlatz: e.qualiPos ?? qPos.get(id) ?? null,
+                                startPlatz: startPos.get(id) ?? null,
                                 punkte: e.pt ?? e.points ?? 0, dnf: !!e.dnf,
                                 dnfArt: e.dnfType ?? null, dnfGrund: e.reasonRetired ?? null,
                                 schnellsteRunde: !!(e.fl ?? e.fastestLap), toedlich: !!(e.fat ?? e.fatal) };
@@ -32603,7 +32667,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
 
         const _REVIEW_HINWEISE = {
             rennen: ['Archivierte Saisons speichern KEINEN DNF-Grund und KEINE rote Flagge – nur die laufende Saison hat dnfArt/dnfGrund/roteFlagge/regenArt.',
-                     'qualiPlatz ist der Quali-Rang, nicht zwingend der Startplatz (Strafen/Nachrücker).',
+                     'qualiPlatz ist der Quali-Rang, startPlatz der Platz in der Startaufstellung (nach Strafversetzung, ab 2003).',
                      'DNQ-Listen erst ab v0.9.15.25, DNPQ ab v0.9.17.8 archiviert – ältere Saisons zeigen leere Listen.'],
             endstaende: ['teamDrittel nach mittlerem Quali-Platz (drittelBasis), Rückfall Punkte ohne Quali-Daten.'],
             markt: ['Zählen: Einträge mit auchAlsAbgang überspringen – dieselbe Entlassung steht auch unter art abgang.',
@@ -34180,11 +34244,13 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
 
             // Grid-Bonus: Startposition aus Qualifying → P1 max. Vorteil, letzter Platz keiner
             const _qualiGrid = GAME_STATE.qualifyingResults.find(q => q.raceIndex === raceIndex);
+            // Startplatz = Quali-Platz nach Strafversetzung (startaufstellungVon); _nGrid zählt wie bisher
+            // alle Quali-Teilnehmer, damit der Startplatz-Bonus ohne Strafen unverändert bleibt.
             const _gridPosMap = {};
             if (_qualiGrid) {
-                _qualiGrid.results.forEach(r => { if (!r.dnpq && r.position > 0) _gridPosMap[r.driver] = r.position; });
+                startaufstellungVon(_qualiGrid, activeDrivers.map(d => d.id)).forEach((p, id) => { _gridPosMap[id] = p; });
             }
-            const _nGrid = Object.keys(_gridPosMap).length || activeDrivers.length;
+            const _nGrid = (_qualiGrid ? _qualiGrid.results.filter(r => !r.dnpq && r.position > 0).length : 0) || activeDrivers.length;
             const _GRID_K = 8;
             // Regenstärke dieses Rennens (s. ERA_RAIN_PARTIAL_SHARE), nur bei Regen
             const _regenArt = isRain ? (wochenendWetter(raceIndex).staerke || 'durchgehend') : null;
@@ -35401,6 +35467,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             results.forEach((r, idx) => {
                 r.position = idx + 1;
             });
+            startStrafenWuerfeln(results, GAME_STATE.currentYear);   // Startplatz ≠ Quali-Platz, s. ERA_STARTSTRAFE
 
             // firstRaceEntry: Privateer erscheint in der Matrix ab erstem Qualifying-Auftritt
             results.forEach(r => {
@@ -38472,7 +38539,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 const posColor = (isDNQ || isDNPQ) ? 'color:#8A8A8A' : 'color:var(--text-tertiary)';
                 return sep + `<tr class="border-t border-custom" ${rowStyle}>
                     <td class="p-2 font-bold ${istPole ? 'accent-gold' : ''}" style="${istPole ? '' : posColor}">${_qualiPos}</td>
-                    <td class="p-2"><span class="driver-link" onclick="document.getElementById('liveTickerModal').style.display='none'; openDriverProfile('${r.driver}')">${istPole ? '🏁 ' : ''}${r.name || r.driver}</span>${badge}</td>
+                    <td class="p-2"><span class="driver-link" onclick="document.getElementById('liveTickerModal').style.display='none'; openDriverProfile('${r.driver}')">${istPole ? '🏁 ' : ''}${r.name || r.driver}</span>${badge}${strafeBadge(r)}</td>
                     <td class="p-2 text-right font-mono text-xs ${istPole ? 'accent-gold font-bold' : 'text-secondary'}">${zeit}</td>
                     <td class="p-2 text-right font-mono text-xs text-tertiary">${gap}</td>
                 </tr>`;
@@ -38751,10 +38818,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             liveRaceState.plannedResult = geplant;
             liveRaceState.wetterPlan = _tickerWetterPlan(geplant, liveRaceState.totalLaps);   // nur Meldungsrunden
 
-            const _gridVon = new Map();
-            if (qualiResult) qualiResult.results.forEach(q => {
-                if (q.position) _gridVon.set(q.driver, q.position);
-            });
+            // Startaufstellung wie in simulateRace (Strafversetzung eingerechnet)
+            const _gridVon = qualiResult ? startaufstellungVon(qualiResult, geplant.results.map(r => r.driver)) : new Map();
 
             liveRaceState.positions = geplant.results.map(r => {
                 const grid = _gridVon.get(r.driver) || r.position;
@@ -45315,7 +45380,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         p: r.position,
                         t: r.time ?? r.lapTime,    // Lap Time (r.lapTime war falsch, Feldname ist r.time)
                         dnpq: r.dnpq ? 1 : undefined,
-                        fatal: r.fatal ? 1 : undefined
+                        fatal: r.fatal ? 1 : undefined,
+                        strafe: r.strafe   // Startplatz-Strafe (Plätze | 'ende' | 'box'), s. startaufstellungVon
                     }))
                 }));
                 
@@ -61280,7 +61346,7 @@ Empfohlene Wertebereiche:
                     const posColor = isDNQ || isDNPQ ? 'color:#8A8A8A' : isPole ? '' : 'color:var(--text-tertiary)';
                     return sepRow + `<tr class="border-t border-custom"${rowStyle}>
                         <td class="p-2 font-bold ${isPole ? 'accent-gold' : ''}" style="${posColor}">${_simQualiPos}</td>
-                        <td class="p-2 ${isPole ? 'font-bold' : ''}" style="${nameStyle}"><span class="driver-link" onclick="closeRaceDetail(); openDriverProfile('${driverId}')">${isPole ? '🏁 ' : ''}${getDriverName(driverId)}</span>${guestBadge}${statusBadge}</td>
+                        <td class="p-2 ${isPole ? 'font-bold' : ''}" style="${nameStyle}"><span class="driver-link" onclick="closeRaceDetail(); openDriverProfile('${driverId}')">${isPole ? '🏁 ' : ''}${getDriverName(driverId)}</span>${guestBadge}${statusBadge}${strafeBadge(r)}</td>
                         <td class="p-2 text-tertiary">${getTeamName(driverId)}</td>
                         ${zeitCell}
                     </tr>`;
