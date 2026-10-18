@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.20</title>
+    <title>F1 RPG v0.9.21.21</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.20 (aktuell) - 18.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.21 (aktuell) - 18.10.2026</div>
+                            <div>&#8226; NEU: Ausfallrisiko nach Startplatz – wer hinten startet, fällt öfter aus (real 24 % von P1–3, 42 % ab P10)</div>
+                            <div>&#8226; FIX: Spitzenfahrer fielen von vorn zu oft aus, Zahl der Punktefahrer jetzt näher an der Realität</div>
+                            <div class="font-bold text-slate-400">v0.9.21.20 - 18.10.2026</div>
                             <div>&#8226; NEU: Wochenendform – wer schlecht qualifiziert, hat meist auch im Rennen ein schweres Wochenende</div>
                             <div>&#8226; FIX: Favoriten gewinnen nicht mehr fast immer von weit hinten</div>
                             <div class="font-bold text-slate-400">v0.9.21.19 - 18.10.2026</div>
@@ -4364,7 +4367,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.20';
+        const VERSION = '0.9.21.21';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -5929,6 +5932,17 @@
             return 1 + DNF_REL_SPREAD * (avgRel - rel) / 100;
         }
 
+        // === AUSFALL NACH STARTPLATZ (18.10.2026) ===
+        // Real fallen Fahrer von hinten deutlich öfter aus, auch bei gleich starkem Team (F1DB,
+        // Teams im starken Drittel: P1–3 22,9 %, 4–9 31,3 %, 10+ 39,8 %; Technik und Unfall
+        // steigen beide). Im Spiel war die Quote über die Startplätze flach (BEFUNDE.md 18.10.2026 (4)).
+        // Linear im relativen Startplatz, Mittel über das Feld = 1: die Jahresrate bleibt.
+        const DNF_START_SPREAD = 0.6;
+        function dnfStartFaktor(gridPos, nGrid) {
+            if (!gridPos || !(nGrid > 1)) return 1;
+            return 1 + DNF_START_SPREAD * ((gridPos - 1) / (nGrid - 1) - 0.5);
+        }
+
         // === AUSFALL GETRENNT NACH ART (v0.9.18.18) ===
         // Technik hängt am Team, Unfälle treffen alle gleich (F1DB nach Team-Drittel: trocken
         // Technik 21/27/30 %, Unfall 7,6/10,0/9,5 %; nass Unfall 18,2/18,4/18,0 %). Vorher
@@ -5936,10 +5950,10 @@
         // dadurch die schwachen Teams, real trifft es dann die starken relativ mehr.
         // Liefert Prozent je Art; simulateRace, DNF-Vorschau und tests/dnf-spreizung.js
         // rufen alle diese Funktion.
-        function dnfWahrscheinlichkeit(eraBase, multiplier, avgRel, rel, year, regenArt) {
+        function dnfWahrscheinlichkeit(eraBase, multiplier, avgRel, rel, year, regenArt, startFaktor = 1) {
             const unfallAnteil = getEraAccidentShare(year) / 100;
-            let mech = eraBase * multiplier * (1 - unfallAnteil) * dnfTeamFaktor(avgRel, rel) * (regenArt ? RAIN_MECH_FACTOR[regenArt] : 1);
-            let unfall = eraBase * multiplier * unfallAnteil * (regenArt ? RAIN_ACC_FACTOR[regenArt] : 1);
+            let mech = eraBase * multiplier * (1 - unfallAnteil) * dnfTeamFaktor(avgRel, rel) * (regenArt ? RAIN_MECH_FACTOR[regenArt] : 1) * startFaktor;
+            let unfall = eraBase * multiplier * unfallAnteil * (regenArt ? RAIN_ACC_FACTOR[regenArt] : 1) * startFaktor;
             const ges = mech + unfall, grenze = Math.max(2, Math.min(99, ges));
             if (ges > 0) { mech *= grenze / ges; unfall *= grenze / ges; }
             return { mech, unfall, gesamt: mech + unfall };
@@ -15659,7 +15673,7 @@
                 const _eraBase = getEraDNFRate(GAME_STATE.currentYear);
                 const _multiplier = (GAME_STATE.dnfRate ?? 100) / 100;
                 const _avgRel = GAME_STATE.teams.reduce((s, t) => s + (t.reliability || 75), 0) / GAME_STATE.teams.length;
-                const _dnfW = dnfWahrscheinlichkeit(_eraBase, _multiplier, _avgRel, team.reliability || 75, GAME_STATE.currentYear, _regenArt);
+                const _dnfW = dnfWahrscheinlichkeit(_eraBase, _multiplier, _avgRel, team.reliability || 75, GAME_STATE.currentYear, _regenArt, dnfStartFaktor(_gp, _nGrid));
                 const dnfPercent = _dnfW.gesamt;
                 let isDNF = false;
                 let dnfType = null;
