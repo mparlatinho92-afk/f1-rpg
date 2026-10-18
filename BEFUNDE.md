@@ -20,7 +20,7 @@ versehentlich zurück.
 |---|---|
 | **Lesbarkeit: Schriftkontrast in allen Themes (12.10.2026)** | jede neue Schriftfarbe, Theme-Variablen, Teamfarben als Text, `tests/kontrast-audit.js` |
 | **Pace vor dem echten Debüt gedämpft (08.10.2026)** | Pool-Gruppe C, Junioren, Marktwert vor dem Debüt, `vorzeitige-debuets.js` |
-| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen), Pace-Rang × Startplatz |
+| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen), Pace-Rang × Startplatz, `DNF_START_SPREAD` |
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
@@ -3722,3 +3722,34 @@ für Spiel und real dieselbe Einteilung. Messung `SIMCORE_FROM_INDEX=1 node test
   falschen Ausfallverteilung (vorn fehlen mehr Konkurrenten im Ziel), nicht getrennt geprüft.
 - **Schwacher Fahrer von vorn** hält real deutlich besser (Sieg 7,5 statt 2,3 %, Podium 30 statt 17 %). Kleine
   Gruppe (n 428); real stehen dort meist Fahrer in sehr starken Autos, nicht Quali-Glückstreffer.
+
+### 18.10.2026 (5): Ausfall nach Startplatz (`DNF_START_SPREAD`)
+
+**Real (F1DB 1950–2024 ohne Indy 500, Unfall = accident/collision/spun off/spin):** Wer weiter hinten startet, fällt
+öfter aus, auch bei gleich starkem Team. Teams im starken Drittel: P1–3 22,9 %, 4–9 31,3 %, 10+ 39,8 %. Technik
+(16,3 / 22,1 / 28,0) und Unfall (6,6 / 9,2 / 11,8) steigen beide. Über alle Teams 24,0 / 31,5 / 41,5 %, in jeder Ära
+ähnlich steil. Das widerspricht nicht dem Befund 23.09. (2): Unfälle sind nach **Team**-Drittel flach, nach
+**Startplatz** nicht.
+
+**Mechanik:** `dnfStartFaktor(gridPos, nGrid)` = 1 + `DNF_START_SPREAD` × (relativer Startplatz − 0,5), Mittel über
+das Feld 1, wirkt auf Technik und Unfall. Nur `simulateRace` übergibt ihn, die DNF-Vorschau bleibt beim Feldmittel.
+
+**Messung** wie (4), A/B gegen den Lauf ohne Faktor:
+
+| | ohne | 0,4 | 0,6 | real |
+|---|---|---|---|---|
+| DNF Top 3 von P1–3 | 30,6 | 26,0 | 23,2 | 21,3 |
+| DNF Rest von 10+ | 37,9 | 41,3 | 42,9 | 42,7 |
+| DNF Dominator | 27,0 | 23,0 | 21,1 | 17,9 |
+| Punktefahrer Ø|Diff| / ± | 2,06 / +1,44 | 1,81 / +0,89 | **1,74 / +0,39** | – |
+| schwaches Drittel Spiel − real (Pp) | +0,91 | +0,38 | −0,23 | – |
+| Spearman Endstand | 0,809 | 0,810 | 0,814 | – |
+| Top 3 von 10+ siegt | 2,3 | 2,0 | **1,0** | 3,1 |
+| Sieg ab P10 trocken / durchg. nass | 1,9 / 4,4 | 1,2 / 2,6 | **0,9 / 1,2** | 2,8 / 4,8 |
+
+- Ausfälle treffen mit 0,6, die Punktefahrer-Abweichung wird deutlich kleiner (das ±-Vorzeichen war der Rest des
+  Wochenendform-Anstiegs, 18.10. (3)). Anders als `DNF_REL_SPREAD` = 2 (24.09.) verliert das schwache Drittel keine
+  Punkte.
+- **Preis:** Siege von hinten werden seltener, weil vorn weniger Fahrer ausfallen und Platz machen. Real schaffen
+  Spitzenfahrer das trotz seltener Ausfälle vorn, also über Tempo. Der Hebel dafür liegt im Renntempo, nicht im
+  Ausfall.
