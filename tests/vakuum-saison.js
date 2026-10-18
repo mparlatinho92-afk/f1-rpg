@@ -196,7 +196,10 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         const erg = ctx.simulateRace(i, nass);
         // Startplatz: real gesetzt oder (--quali) vom Spiel gefahren
         const _q = (gs.qualifyingResults || []).find(q => q.raceIndex === i);
-        const startVon = new Map(((_q && _q.results) || []).filter(e => !e.dnpq).map((e, j) => [e.driver, e.position || j + 1]));
+        // Startplatz nach Strafversetzung (seit 18.10.2026), wie simulateRace ihn liest
+        const startVon = (typeof ctx.startaufstellungVon === 'function' && _q && erg)
+            ? ctx.startaufstellungVon(_q, (erg.results || []).map(e => e.driver))
+            : new Map(((_q && _q.results) || []).filter(e => !e.dnpq).map((e, j) => [e.driver, e.position || j + 1]));
         for (const e of (erg ? erg.results || [] : [])) {
             const k = teamZuKonstr.get(e.team), f = spielZuReal.get(e.driver);
             if (k && f) talentStarts.push({ k, f, rd: i, pos: e.dnf ? null : e.position, punkte: e.points || 0, start: startVon.get(e.driver) || null });

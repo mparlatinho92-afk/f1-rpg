@@ -3878,3 +3878,30 @@ hinter Quali-Platz ohne Strafvermerk und Startplatz ohne Quali-Platz.
   fehlen dort, der wahre Mittelwert ist größer.
 - Damit erklärt die Strafversetzung nur die **modernen** Siege von hinten (ab 2003). Vor 2000 gewinnt das Spiel
   dort ohnehin eher zu oft (18.10.2026 (7)).
+
+### 18.10.2026 (9): Strafversetzung eingebaut (`ERA_STARTSTRAFE`, `startaufstellungVon`)
+
+**Mechanik:** `startStrafenWuerfeln` setzt nach dem Quali `r.strafe` (Plätze, `'ende'`, `'box'`) mit Rate und
+Größe je Ära aus (8). „Ohne Quali-Zeit" ist nicht eingerechnet, das macht `ERA_QUALI_NO_TIME` schon.
+`startaufstellungVon(quali, starterIds)` ist die einzige Quelle des Startplatzes (`simulateRace`, Ticker,
+Export `startPlatz`). Ohne Strafe gibt sie den Quali-Platz unverändert zurück, vor 2003 und für Altstände ändert
+sich also nichts. Pole, Quali-Duell und Fahrerbewertung lesen weiter den Quali-Platz. Geprüft im Spiel: 2005 3,4 %,
+2018 11,3 %, 2023 7,9 % der Starts mit Strafe (Ziel 4,2 / 10,8 / 8,2). Ticker-Parität 40/40 und 2005/2018/2023,
+`ticker-browser.js` grün.
+
+**A/B** `vakuum-batch.js --alle 1 4 --regen --quali` (vorher = Lauf aus (7)):
+
+| | vorher | mit Strafe | real |
+|---|---|---|---|
+| Top 3 von P10+ siegt, 2010er / 2020er | 0,0 / 0,0 | **3,7 / 1,6** | 4,5 / 2,4 |
+| Top 3 von P10+ siegt, 2000er | 0,0 | 0,0 | 12,8 (n 39) |
+| Top 3 von P10+ ≥ +8 Plätze, 2000er / 2010er / 2020er | 19 / 40 / 24 | 34 / 55 / 39 | 33 / 46 / 31 |
+| ≥ +8 Plätze alle, 2010er / 2020er | 2,3 / 2,7 | **3,6 / 4,0** | 2,5 / 2,6 |
+| |Δ| ≥ 4 alle, 2010er / 2020er | 27,1 / 30,3 | **29,8 / 34,4** | 23,0 / 25,1 |
+| Spearman Start→Ziel trocken (alle Jahre) | 0,741 | 0,722 | 0,733 |
+| Punktefahrer Ø|Diff| / ± | 1,92 / +0,52 | 1,88 / +0,45 | – |
+
+- **Siege von hinten in den 2010ern/2020ern jetzt fast real.** In den 2000ern bleibt es bei null (real 5 Siege).
+- **Neue Abweichung sichtbar:** Ab 2010 bewegt sich das Feld jetzt zu viel. Das Spiel sortiert nach Tempo strenger
+  als real (schon vorher: Top 3 von P10+ +4,9 statt +4,1 Plätze, (6)). Die Strafen geben dem mehr Gelegenheit:
+  ein bestrafter schneller Fahrer fährt im Spiel zuverlässig nach vorn, real nicht immer.
