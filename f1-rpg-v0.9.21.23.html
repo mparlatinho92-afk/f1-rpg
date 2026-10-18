@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.22</title>
+    <title>F1 RPG v0.9.21.23</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.22 (aktuell) - 18.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.23 (aktuell) - 18.10.2026</div>
+                            <div>&#8226; NEU: Zwischenfälle im Rennen kosten Plätze statt Tempo (schlechter Start, Boxenstopp, Strategie) – auch Spitzenfahrer verlieren von vorn Plätze</div>
+                            <div>&#8226; FIX: nasse Rennen mischen jetzt so stark wie real</div>
+                            <div>&#8226; FIX: der stärkste Fahrer der Saison kommt realistisch oft nur auf P4 oder dahinter ins Ziel</div>
+                            <div class="font-bold text-slate-400">v0.9.21.22 - 18.10.2026</div>
                             <div>&#8226; NEU: Startplatz-Strafen ab 2003 nach realer Häufigkeit je Ära (Motor, Getriebe, Boxengasse) – Pole und Quali-Duell bleiben beim Quali-Platz</div>
                             <div>&#8226; NEU: Hinweis in den Quali-Tabellen, warum ein Fahrer weiter hinten startet</div>
                             <div>&#8226; NEU: Export Rennergebnisse mit Startplatz neben dem Quali-Platz</div>
@@ -22995,7 +22999,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.22';
+        const VERSION = '0.9.21.23';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24566,6 +24570,14 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // steigen beide). Im Spiel war die Quote über die Startplätze flach (BEFUNDE.md 18.10.2026 (4)).
         // Linear im relativen Startplatz, Mittel über das Feld = 1: die Jahresrate bleibt.
         const DNF_START_SPREAD = 0.6;
+        // === ZWISCHENFALL MIT PLATZVERLUST (18.10.2026) ===
+        // Schlechter Start, langsamer Boxenstopp, falsche Strategie: kostet PLÄTZE, nicht Leistung. Ein
+        // Leistungsabzug traf den Schnellen vorn kaum, sein Vorsprung schluckte ihn (18.10. (2), (12)). Real
+        // verliert ein Spitzenfahrer von P1–3 im Mittel 0,6–1,3 Plätze, im Spiel waren es 0,3; der Dominator
+        // kam in 10 % seiner Zielankünfte auf P4+ (real 21 %), nasse Rennen waren zu geordnet.
+        // Je Zielankömmling Wahrscheinlichkeit p, 1..max Plätze zurück (BEFUNDE.md 18.10.2026 (13)).
+        const PLATZVERLUST = { p: 0.20, max: 6 };
+
         function dnfStartFaktor(gridPos, nGrid) {
             if (!gridPos || !(nGrid > 1)) return 1;
             return 1 + DNF_START_SPREAD * ((gridPos - 1) / (nGrid - 1) - 0.5);
@@ -34251,7 +34263,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 startaufstellungVon(_qualiGrid, activeDrivers.map(d => d.id)).forEach((p, id) => { _gridPosMap[id] = p; });
             }
             const _nGrid = (_qualiGrid ? _qualiGrid.results.filter(r => !r.dnpq && r.position > 0).length : 0) || activeDrivers.length;
-            const _GRID_K = 8;
+            // Trocken 11 statt 8 gleicht den Platzverlust-Zwischenfall aus (PLATZVERLUST): ohne ihn wären
+            // trockene Rennen zu unordentlich. Nass bleibt 8 — dort fehlte die Mischung (BEFUNDE.md 18.10.2026 (13)).
+            const _GRID_K = isRain ? 8 : 11;
             // Regenstärke dieses Rennens (s. ERA_RAIN_PARTIAL_SHARE), nur bei Regen
             const _regenArt = isRain ? (wochenendWetter(raceIndex).staerke || 'durchgehend') : null;
             // Lotterie-Rennen: einmal je Rennen gewürfelt, gilt für das ganze Feld
@@ -34459,6 +34473,16 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     if (_insertAt === -1) _insertAt = _pitFinishers.length;
                     _pitFinishers.splice(_insertAt, 0, _e);
                 }
+            }
+            // Zwischenfall mit Platzverlust (PLATZVERLUST). Wer in den Punkten liegt, fällt höchstens bis
+            // auf den letzten Punkteplatz: die Menge der Punktefahrer bleibt, nur die Reihenfolge ändert sich.
+            let _nPunkte = 0;
+            while (_nPunkte < _pitFinishers.length && getPointsForPosition(_nPunkte + 1, GAME_STATE.currentYear) > 0) _nPunkte++;
+            for (const _o of _pitFinishers.filter(() => Math.random() < PLATZVERLUST.p)) {
+                const _i = _pitFinishers.indexOf(_o), _d = 1 + Math.floor(Math.random() * PLATZVERLUST.max);
+                const _grenze = _i < _nPunkte ? _nPunkte - 1 : _pitFinishers.length - 1;
+                _pitFinishers.splice(_i, 1);
+                _pitFinishers.splice(Math.min(_grenze, _i + _d), 0, _o);
             }
             const _pitDnfs = results.filter(r => r.dnf);
             results.length = 0;
