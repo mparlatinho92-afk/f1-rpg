@@ -35,6 +35,9 @@ const PR = (() => { const c = { window: {} }; vm.createContext(c);
 
 const starts = [];   // { jahr, rd, f, g, l, z, pace }
 let ohneZuordnung = 0, ohneRunde1 = 0;
+// Prüfung gegen F1DB (Stand 18.10.2026: 544/544 Rennen, keine Lücke, 2 Fehlstellen bei jolpica:
+// Alesi 2001 R15, Alguersuari 2009 R13 — beide in F1DB mit gefahrenen Runden, in Runde 1 nicht gelistet)
+const pruef = { rennenOhne: [], luecken: [], nichtImGrid: [], fehltTrotzRunden: [], rausRunde1: 0 };
 for (let jahr = VON; jahr <= BIS; jahr++) {
     const datei = path.join(__dirname, 'jolpica-data', `runde1-${jahr}.json`);
     if (!fs.existsSync(datei)) continue;
@@ -47,6 +50,12 @@ for (let jahr = VON; jahr <= BIS; jahr++) {
         if (t) zuF1db[eid] = t.id; else ohneZuordnung++;
     }
     const r1 = {};
+    for (const rd of new Set(grid.filter(g => g.year === jahr).map(g => g.round)))
+        if (!j.races.some(r => r.round === rd)) pruef.rennenOhne.push(jahr + ' R' + rd);
+    for (const r of j.races) {
+        const p = Object.values(r.positions).sort((a, b) => a - b);
+        if (p.some((x, i) => x !== i + 1)) pruef.luecken.push(jahr + ' R' + r.round);
+    }
     for (const r of j.races) { const m = {}; for (const [eid, p] of Object.entries(r.positions)) if (zuF1db[eid]) m[zuF1db[eid]] = p; r1[r.round] = m; }
     // Pace-Rang unter den Startern der Saison: 0 = Top 3, 1 = 4–8, 2 = Rest
     const jg = grid.filter(g => g.year === jahr);
@@ -55,6 +64,12 @@ for (let jahr = VON; jahr <= BIS; jahr++) {
     const pRang = new Map(pl.map(([d], i) => [d, i < 3 ? 0 : i < 8 ? 1 : 2]));
     const zielVon = new Map(erg.filter(e => e.year === jahr).map(e => [e.round + '|' + e.driverId,
         /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null]));
+    const rundenVon = new Map(erg.filter(e => e.year === jahr).map(e => [e.round + '|' + e.driverId, e.laps || 0]));
+    for (const [rd, m] of Object.entries(r1)) {
+        const imGrid = new Set(jg.filter(g => g.round === Number(rd)).map(g => g.driverId));
+        for (const d of Object.keys(m)) if (!imGrid.has(d)) pruef.nichtImGrid.push(jahr + ' R' + rd + ' ' + d);
+        for (const d of imGrid) if (!m[d]) { if (rundenVon.get(rd + '|' + d) >= 1) pruef.fehltTrotzRunden.push(jahr + ' R' + rd + ' ' + d); else pruef.rausRunde1++; }
+    }
     for (const g of jg) {
         if (!g.positionNumber || !r1[g.round]) { if (!r1[g.round]) ohneRunde1++; continue; }
         starts.push({ jahr, rd: g.round, f: g.driverId, g: g.positionNumber,
@@ -65,6 +80,11 @@ if (!starts.length) { console.log('Keine Daten — erst node tests/scrape-jolpic
 const rennen = new Set(starts.map(s => s.jahr + '|' + s.rd)).size;
 console.log(`START → RUNDE 1 → ZIEL  real ${VON}–${BIS}: ${rennen} Rennen, ${starts.length} Starts`
     + (ohneZuordnung ? ` · ${ohneZuordnung} Ergast-IDs ohne F1DB-Fahrer` : ''));
+const liste = a => a.length + (a.length ? ' (' + a.slice(0, 5).join(', ') + (a.length > 5 ? ', …' : '') + ')' : '');
+console.log(`  Prüfung gegen F1DB: Rennen ohne Daten ${liste(pruef.rennenOhne)} · Positionslücken ${liste(pruef.luecken)}`
+    + ` · nicht im Startfeld ${liste(pruef.nichtImGrid)}
+                      fehlt trotz gefahrener Runden ${liste(pruef.fehltTrotzRunden)}`
+    + ` · raus in Runde 1 (F1DB 0 Runden) ${pruef.rausRunde1}`);
 
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
 const sd = a => { const m = avg(a); return Math.sqrt(avg(a.map(x => (x - m) ** 2))); };
@@ -118,3 +138,22 @@ const sieger = starts.filter(s => s.z === 1);
 const anteil = f => (100 * sieger.filter(f).length / sieger.length).toFixed(1);
 console.log(`\n  Sieger nach Runde 1: führte ${anteil(s => s.l === 1)} % · P2–3 ${anteil(s => s.l >= 2 && s.l <= 3)} % · P4–9 ${anteil(s => s.l >= 4 && s.l <= 9)} % · P10+ ${anteil(s => s.l >= 10)} %`);
 console.log(`  Sieger vom Start:    P1 ${anteil(s => s.g === 1)} % · P2–3 ${anteil(s => s.g >= 2 && s.g <= 3)} % · P4–9 ${anteil(s => s.g >= 4 && s.g <= 9)} % · P10+ ${anteil(s => s.g >= 10)} %`);
+
+// 5) Ära-Muster: Reglement-Abschnitte (Tankstopps bis 2009, DRS/Pirelli ab 2011, breite Autos ab 2017,
+//    Ground Effect ab 2022). Gleiche Kennzahlen je Abschnitt.
+const AEREN = [[1996, 2002], [2003, 2009], [2010, 2016], [2017, 2021], [2022, 2024]];
+console.log('\n  Ära        Rennen  Sp S→R1  R1→Z   S→Z   raus R1  Sieger führte nach R1  Sieger von P4+  Top3 von 10+: R1 / danach   Rest von P1–3 danach');
+for (const [a, b] of AEREN) {
+    const l = starts.filter(s => s.jahr >= a && s.jahr <= b); if (!l.length) continue;
+    const r = Object.entries(je).filter(([k]) => { const y = Number(k.split('|')[0]); return y >= a && y <= b; }).map(([, v]) => v);
+    const spx = { gl: [], lz: [], gz: [] };
+    for (const v of r) { const x = v.filter(s => s.l), y = v.filter(s => s.l && s.z);
+        if (x.length > 4) spx.gl.push(spearman(x.map(s => s.g), x.map(s => s.l)));
+        if (y.length > 4) { spx.lz.push(spearman(y.map(s => s.l), y.map(s => s.z))); spx.gz.push(spearman(y.map(s => s.g), y.map(s => s.z))); } }
+    const sg = l.filter(s => s.z === 1), pz = (x, n) => n ? (100 * x / n).toFixed(1) : '-';
+    const t3 = l.filter(s => s.pace === 0 && s.g >= 10), rv = l.filter(s => s.pace === 2 && s.g <= 3 && s.danach !== undefined);
+    console.log(`  ${a}–${b}  ${String(r.length).padStart(5)}   ${avg(spx.gl).toFixed(3)}  ${avg(spx.lz).toFixed(3)}  ${avg(spx.gz).toFixed(3)}  ${pz(l.filter(s => !s.l).length, l.length).padStart(5)} %`
+        + `        ${pz(sg.filter(s => s.l === 1).length, sg.length).padStart(5)} %           ${pz(sg.filter(s => s.g >= 4).length, sg.length).padStart(5)} %`
+        + `        ${avg(t3.filter(s => s.l).map(s => s.g - s.l)).toFixed(2).padStart(5)} / ${avg(t3.filter(s => s.danach !== undefined).map(s => s.danach)).toFixed(2).padStart(5)} (n ${t3.length})`
+        + `     ${avg(rv.map(s => s.danach)).toFixed(2).padStart(5)} (n ${rv.length})`);
+}

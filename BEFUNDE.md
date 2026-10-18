@@ -3787,3 +3787,26 @@ Treffer). Auswertung `node tests/start-runde1-real.js`. „Plätze gewonnen" imm
   Platzgewinne noch nicht gemessen.
 - Gesamtmischung trocken stimmt trotzdem (Spearman 0,737 / real 0,733): zu viel gerichtetes Sortieren und zu wenig
   Zufall heben sich im Mittel auf.
+
+**Datenprüfung gegen F1DB** (fest in `start-runde1-real.js`): 544/544 Rennen vorhanden, keine Positionslücke, kein
+Fahrer in Runde 1, der nicht im Startfeld steht. 412 Starter fehlen in Runde 1 und haben in F1DB 0 Runden, das sind
+echte Ausfälle in Runde 1. Nur 2 echte Fehlstellen bei jolpica: Alesi 2001 R15, Alguersuari 2009 R13. Die eine
+Ergast-ID ohne Zuordnung ist Sospiri 1997 (nur DNQ, nie gestartet).
+
+**Ära-Muster 1996–2024** (Reglement-Abschnitte):
+
+| Abschnitt | Rennen | Sp. Start→R1 / R1→Ziel / Start→Ziel | raus R1 | Sieger führte nach R1 | Sieger von P4+ | Top 3 von 10+: R1 / danach (n) | Rest von P1–3 danach (n) |
+|---|---|---|---|---|---|---|---|
+| 1996–2002 | 116 | 0,849 / 0,743 / 0,748 | 5,0 % | 47,4 % | 13,8 % | +2,0 / +2,4 (14) | −2,0 (18) |
+| 2003–2009 | 123 | 0,852 / 0,753 / **0,722** | 4,2 % | 52,0 % | **18,7 %** | +1,6 / +3,4 (58) | −1,7 (39) |
+| 2010–2016 | 136 | 0,862 / **0,793** / 0,790 | 3,0 % | **63,2 %** | 10,3 % | +1,7 / +4,4 (40) | −1,7 (24) |
+| 2017–2021 | 101 | 0,866 / 0,769 / 0,753 | 3,0 % | 57,4 % | 12,9 % | +2,4 / +5,4 (25) | −3,3 (15) |
+| 2022–2024 | 68 | **0,896** / 0,762 / 0,739 | 2,5 % | 54,4 % | 16,2 % | +2,2 / +5,2 (22) | −1,9 (16) |
+
+- **Die Startrunde wird geordneter** (Spearman 0,849 → 0,896) und sicherer (raus in R1 5,0 → 2,5 %).
+- **Aufholen nach Runde 1 wird leichter:** Ein Spitzenfahrer von hinten gewinnt danach +2,4 Plätze (1996–2002)
+  bis +5,4 (2017–21). Passt zeitlich zu DRS (2011) und den Autos ab 2017/2022. Gruppen klein (n 14–58).
+- **2003–2009 mischt am stärksten** (Start→Ziel 0,722, Sieger von P4+ 18,7 %), Zeit der Tankstopps und
+  Strategie-Rennen. **2010–2016 am geordnetsten** (Mercedes-Jahre, Führender nach R1 siegt 63 %).
+- Für das Spiel heißt das: Ein Faktor für „Überholen nach Tempo" wäre ära-abhängig. Vor 1996 gibt es keine
+  Rundendaten, dort bleibt nur Start → Ziel aus F1DB.
