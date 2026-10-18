@@ -229,6 +229,10 @@ mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
 
 **`--nur-nass`** — jedes Rennen nass (Stärke wie im Spiel gewürfelt), Chaos-Zeilen je Stärke. Für die Kalibrierung der Regenstärken. ⚠ Gegen die **Verhältnisse zu trocken** kalibrieren, nicht gegen absolute Werte: einzelne Jahre sind geordneter als der Schnitt aller Ären.
 
+**Dominator-Zeile (seit 18.10.2026)** — Zielprofil des Fahrers mit den meisten Siegen je Saison, Spiel gegen real: Ausfall je Start, im Ziel Sieg / P2–3 / P4+, dazu getrennt nach **Startplatz P1–3 / P4+** und der Anteil der Zielankünfte von hinten. Misst das „Sieg oder Ausfall"-Muster und die Kopplung Quali ↔ Rennen. Real (1950–2024): von P4+ nur 25 % Siege, 44 % P4+.
+
+**`--quali` wird seit 18.10.2026 an `vakuum-saison.js` durchgereicht** — das Spiel fährt sein eigenes Qualifying, nur das Teilnehmerfeld ist fixiert. Das ist der Modus für alles, was Startplatz und Rennen ZUSAMMEN betrifft (Wochenendform). ⚠ **Messfalle:** Bis 18.10.2026 verglichen die Chaos-Zeilen auch mit `--quali` den REALEN Startplatz mit dem Spiel-Ergebnis — Spearman Start→Ziel war dort wertlos (0,61 gemessen, korrekt 0,659). Werte aus `--quali`-Läufen vor diesem Datum nicht verwenden.
+
 **`--regen` (seit 26.09.2026)** — würfelt Regen wie im Spiel (`wochenendWetter`) statt alles trocken zu fahren, und gibt Chaos-Kennzahlen je Rennen aus (Spearman Start→Ziel, Sieg ab P10, schwaches Drittel punktet — getrennt trocken/nass, Vergleich: `tests/chaos-real.js`). ⚠ Alle Messungen vor dem 26.09.2026 liefen **ohne** Regen.
 
 **A/B:** denselben Aufruf zweimal — ohne `SIMCORE_FROM_INDEX` (letzter Monolith,

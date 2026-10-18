@@ -194,12 +194,18 @@ function einLauf(ctx, real, punkteFn, gefahren) {
         }
 
         const erg = ctx.simulateRace(i, nass);
+        // Startplatz: real gesetzt oder (--quali) vom Spiel gefahren
+        const _q = (gs.qualifyingResults || []).find(q => q.raceIndex === i);
+        const startVon = new Map(((_q && _q.results) || []).filter(e => !e.dnpq).map((e, j) => [e.driver, e.position || j + 1]));
         for (const e of (erg ? erg.results || [] : [])) {
             const k = teamZuKonstr.get(e.team), f = spielZuReal.get(e.driver);
-            if (k && f) talentStarts.push({ k, f, pos: e.dnf ? null : e.position, punkte: e.points || 0 });
+            if (k && f) talentStarts.push({ k, f, pos: e.dnf ? null : e.position, punkte: e.points || 0, start: startVon.get(e.driver) || null });
         }
         if (erg) {
-            const startPl = new Map(eintraege.map(e => [e.driver, e.position]));
+            // ⚠ Mit --quali zählt der vom SPIEL gefahrene Startplatz (startVon), nicht der reale.
+            //   Bis 18.10.2026 stand hier immer der reale: die Chaos-Zeilen im --quali-Modus
+            //   verglichen das Spiel-Ergebnis mit dem echten Grid und waren wertlos.
+            const startPl = FIKTIVE_QUALI ? startVon : new Map(eintraege.map(e => [e.driver, e.position]));
             const imZiel = (erg.results || []).filter(e => !e.dnf && startPl.has(e.driver));
             rennChaos.push({ nass, art: regenArt, rot: !!erg.roteFlagge, start: imZiel.map(e => startPl.get(e.driver)),
                 siegKonstr: imZiel.length ? teamZuKonstr.get(imZiel[0].team) : null,
@@ -336,7 +342,7 @@ function gefahreneRunden(ctx, real) {
     // und kalibrierter Streuung im Wesentlichen die FAHRERBEWERTUNG.
     const alleAbw = [], spearman = [], punktAbw = [], zuordenbar = [], rennDeck = [], teamsMitPunkten = [];
     const laufPunkte = [];   // je Lauf: Map Fahrer-Schluessel -> Punkte, fuer Spiel<->Spiel
-    const alleRennChaos = [], alleTalent = [];
+    const alleRennChaos = [], alleTalent = [], talentLaeufe = [];
     // === RAENGE MIT GLEICHSTAND (24.09.2026) ===
     // Raenge aus den PUNKTEN, Gleichstand = Durchschnittsrang; Spearman = Pearson
     // der Raenge. Vorher kamen die Raenge aus der Tabellenposition, Gleichstaende
@@ -364,6 +370,7 @@ function gefahreneRunden(ctx, real) {
         const { stand, teamPunkte, konstrPunkte, rennChaos, talentStarts, deckung, siegeChamp, rennDeckung } = einLauf(ctx, real, punkteFn, gefahren);
         alleRennChaos.push(...rennChaos);
         alleTalent.push(...talentStarts);
+        talentLaeufe.push(talentStarts);
         konstrLaeufe.push(konstrPunkte);
         rennDeck.push(rennDeckung);
         teamsMitPunkten.push(teamPunkte);
@@ -589,6 +596,33 @@ function gefahreneRunden(ctx, real) {
             const z = Z[t + '|' + f] = Z[t + '|' + f] || [0, 0, 0, 0, 0, 0];
             z[0]++; if (s.pos === 1) z[1]++; if (s.pos && s.pos <= 3) z[2]++; if (s.pos && s.pos <= 10) z[3]++; if (s.punkte > 0) z[4]++; if (!s.pos) z[5]++; }
         for (const [k, z] of Object.entries(Z)) console.log('  Talent ' + k + ': ' + z.join(' '));
+    }
+    // === ZIELPROFIL DES DOMINATORS (18.10.2026) ===
+    // Fahrer mit den meisten Siegen der Saison: Starts, Ausfälle, Sieg, P2–3, P4+.
+    // Real 1950–98 (F1DB): DNF 26 %, im Ziel 56/21/23 % — das Spiel kannte nur „Sieg oder
+    // Ausfall" (BEFUNDE.md 18.10.2026). Spiel je Lauf gezählt und summiert, real einmal.
+    {
+        // Zusätzlich getrennt nach Startplatz P1–3 / P4+: je [Zielankünfte, Sieg, P2–3, P4+].
+        // Real gewinnt der Dominator von P4+ nur 25 % seiner Zielankünfte (BEFUNDE.md 18.10.2026 (2)).
+        const profil = starts => {
+            const je = {};
+            for (const s of starts) (je[s.f] = je[s.f] || []).push(s);
+            const siege = l => l.filter(s => s.pos === 1).length;
+            const top = Object.values(je).sort((a, b) => siege(b) - siege(a))[0] || [];
+            const nachStart = vorn => { const l = top.filter(s => s.pos && s.start && (s.start <= 3) === vorn);
+                return [l.length, l.filter(s => s.pos === 1).length, l.filter(s => s.pos === 2 || s.pos === 3).length, l.filter(s => s.pos >= 4).length]; };
+            return [top.length, top.filter(s => !s.pos).length, siege(top),
+                    top.filter(s => s.pos === 2 || s.pos === 3).length, top.filter(s => s.pos >= 4).length,
+                    ...nachStart(true), ...nachStart(false)];
+        };
+        const spiel = new Array(13).fill(0);
+        for (const lauf of talentLaeufe) profil(lauf).forEach((v, j) => spiel[j] += v);
+        const realGrid = new Map();
+        for (const [rd, rund] of Object.entries(real.runden)) for (const st of rund.starter) realGrid.set(rd + '|' + st.driverId, st.platz);
+        const realStarts = real.erg.filter(e => gefahren.has(e.round))
+            .map(e => ({ f: e.driverId, pos: /^\d+$/.test(String(e.positionText || '')) ? Number(e.positionText) : null,
+                         start: realGrid.get(e.round + '|' + e.driverId) || null }));
+        console.log('  Dominator spiel: ' + spiel.join(' ') + ' real: ' + profil(realStarts).join(' '));
     }
     if (biasPaare.length > 5) {
         const korr = liste => {

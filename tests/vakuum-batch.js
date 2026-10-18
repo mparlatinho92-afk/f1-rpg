@@ -69,12 +69,14 @@ console.log('  ' + '─'.repeat(86));
 const diffs = [], spears = [], abws = [], schwachDiffs = [], starkDiffs = [], spSelbst = [], autoBias = [];
 // Chaos je Rennen, ueber alle Jahre gepoolt (Zaehler aus vakuum-saison.js)
 const talent = {};   // 'Auto-Drittel|Fahrer-Drittel' → [Starts, Siege, Podien, Top10, Punkte, Ausfaelle]
+// [Starts, DNF, Sieg, P2–3, P4+, dann je Start P1–3 und P4+: Zielankünfte, Sieg, P2–3, P4+]
+const dominator = { spiel: new Array(13).fill(0), real: new Array(13).fill(0) };
 const CHAOS_ARTEN = ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot'];   // 'rot' überlappt mit den Wetter-Gruppen
 const chaos = Object.fromEntries(CHAOS_ARTEN.map(a => [a, { n: 0, sp03: 0, p10: 0, schwach: 0, spsum: 0, ss: 0, sw: 0 }]));
 for (const jahr of JAHRE) {
     let out;
     try {
-        out = execFileSync(process.execPath, ['--max-old-space-size=4096', SKRIPT, String(jahr), String(LAEUFE)].concat(args.filter(a => a === '--regen' || a === '--nur-nass')),
+        out = execFileSync(process.execPath, ['--max-old-space-size=4096', SKRIPT, String(jahr), String(LAEUFE)].concat(args.filter(a => a === '--regen' || a === '--nur-nass' || a === '--quali')),
             { encoding: 'utf8', maxBuffer: 1 << 24, env: process.env });
     } catch (e) {
         console.log('  ' + jahr + '   — Lauf fehlgeschlagen: ' + String(e.message).slice(0, 40));
@@ -106,6 +108,10 @@ for (const jahr of JAHRE) {
         const z = talent[m[1] + '|' + m[2]] = talent[m[1] + '|' + m[2]] || [0, 0, 0, 0, 0, 0];
         for (let i = 0; i < 6; i++) z[i] += Number(m[3 + i]);
     }
+    // Zielprofil des Dominators: "Dominator spiel: n dnf p1 p23 p4 real: n dnf p1 p23 p4"
+    const dm = out.match(/Dominator spiel: ([\d ]+) real: ([\d ]+)/);
+    if (dm) { const a = dm[1].trim().split(' ').map(Number), b = dm[2].trim().split(' ').map(Number);
+        for (let i = 0; i < 13; i++) { dominator.spiel[i] += a[i] || 0; dominator.real[i] += b[i] || 0; } }
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
@@ -158,6 +164,20 @@ if (Object.keys(talent).length) {
         const p = i => (z[i] / z[0] * 100).toFixed(1) + ' %';
         console.log('    Auto ' + N[t].padEnd(8) + 'Fahrer ' + N[f].padEnd(8) + p(1) + ' / ' + p(2) + ' / ' + p(3) + ' / ' + p(4) + '  (' + p(5) + ')  n ' + z[0]);
     }
+}
+if (dominator.spiel[0]) {
+    // Fahrer mit den meisten Siegen je Saison: Ausfall je Start, Rest je Zielankunft
+    const z = (a, n) => { const fin = a[0] - a[1];
+        return n.padEnd(6) + 'DNF ' + (a[1] / a[0] * 100).toFixed(1) + ' %  · im Ziel Sieg ' + (a[2] / fin * 100).toFixed(1)
+            + ' / P2–3 ' + (a[3] / fin * 100).toFixed(1) + ' / P4+ ' + (a[4] / fin * 100).toFixed(1) + ' %  (Starts ' + a[0] + ')'; };
+    console.log('  Dominator (meiste Siege)         : ' + z(dominator.spiel, 'Spiel'));
+    console.log('                                     ' + z(dominator.real, 'real'));
+    const s = (a, o) => 'Sieg ' + (a[o + 1] / a[o] * 100).toFixed(1) + ' / P2–3 ' + (a[o + 2] / a[o] * 100).toFixed(1) + ' / P4+ ' + (a[o + 3] / a[o] * 100).toFixed(1) + ' %  (n ' + a[o] + ')';
+    for (const [o, t] of [[5, 'Start P1–3'], [9, 'Start P4+ ']]) {
+        console.log('    Dominator ' + t + '  Spiel ' + s(dominator.spiel, o) + '   real ' + s(dominator.real, o));
+    }
+    const anteil = a => (a[9] / (a[5] + a[9]) * 100).toFixed(1);
+    console.log('    Anteil Zielankünfte von P4+  Spiel ' + anteil(dominator.spiel) + ' %   real ' + anteil(dominator.real) + ' %');
 }
 console.log('  Punkteanteil schwaches Drittel   : Ø Spiel − real ' + (avg(schwachDiffs) >= 0 ? '+' : '') + avg(schwachDiffs).toFixed(2)
     + ' Prozentpunkte · Ø Betrag ' + avg(schwachDiffs.map(Math.abs)).toFixed(2));

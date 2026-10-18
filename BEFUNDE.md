@@ -20,6 +20,7 @@ versehentlich zurück.
 |---|---|
 | **Lesbarkeit: Schriftkontrast in allen Themes (12.10.2026)** | jede neue Schriftfarbe, Theme-Variablen, Teamfarben als Text, `tests/kontrast-audit.js` |
 | **Pace vor dem echten Debüt gedämpft (08.10.2026)** | Pool-Gruppe C, Junioren, Marktwert vor dem Debüt, `vorzeitige-debuets.js` |
+| **Wochenendform & „Sieg oder Ausfall“ (18.10.2026)** | Quali ↔ Rennen, Startplatz→Ziel, Dominator-Profil, `WOCHENENDFORM`, Zwischenfall (verworfen) |
 | Fahrer-Karrieren: Bogen und Pace-Entwicklung | `developDriverPace`, `checkCareerEnds`, Alterskurven, Renn-Balancing |
 | Live-Ticker: warum Balance-Fixes nicht ankamen | Ticker, `simulateRace`, Pace-Gewichtung |
 | Das Feld ist zu ausgeglichen: niemand geht leer aus | Punkteverteilung, carSpeed-Spanne, Startfeld, `simulateRace`, Power-to-Weight |
@@ -3590,3 +3591,104 @@ ein Neubau würde beides überschreiben. `tools/f1db-abgleich.js` fasst deshalb 
   `currentYear + 1` wie generierte Fahrer. Probe mit dem Spielstand im Testbrowser: 1989 Debüt = Gachot, Bernard,
   Donnelly, Alboreto, Cogan, van de Poele; Weidler nicht; 1988 = Alesi, Grouillard, Chaves, Schumacher, Schneider,
   Wendlinger, Modena.
+
+### 18.10.2026: „Sieg oder Ausfall" bei Schumacher 1997/98 – Zufall auf dominanter Basis, kein Fehler
+
+- **Anlass:** Spielstand Start 1950, Stand 1999 R0 (v0.9.21.18). Schumacher/Williams 1997: 9 Siege, 8 DNF, kein
+  anderes Ergebnis; 1998: 8 Siege, 8 DNF. Ab Ziel = Sieg in 17 von 17 Fällen.
+- **Keine Sonderlogik:** nach dem Sortieren greifen nur Boxenstopp-Effekte (Strategy 72 → kein Undercut). Kein Weg
+  bevorzugt den Spitzenreiter.
+- **Erwartete Leistung (Formel `simulateRace`, Werte aus dem Stand, ohne Startplatz-Bonus):** 1997 Schumacher 88,3,
+  Villeneuve 84,9, Rest ≤ 81,1; Rauschen ±5. Teamkollege Hill fährt mit der ECHTEN Pace 1997 (72, Arrows-Jahr in
+  `PACE_RATINGS`) und kommt nur auf 74,0 – deshalb 0 Siege im selben Auto.
+- **Nachrechnung P(Sieg | im Ziel)** bei 40 % Ausfall je Fahrer: 1997 ≈ 76 %, 1998 ≈ 61 % (Häkkinen/Tyrrell
+  89,1 ist dort sogar stärker). 9/9 ≈ 8 %, 8/8 ≈ 2 % – Glück, verstärkt dadurch, dass die direkten Gegner selten
+  mit ins Ziel kamen (1998 Häkkinen und Schumacher nur 2 von 16 Rennen gemeinsam).
+- **Gegen die Realität (F1DB 1950–1998, ohne Indy 500):** Fahrer-Saisons mit ≥ 4 Zielankünften und ≥ 80 % Siegen:
+  real 7 von 850 (Ascari 1952 6/6, Clark 1965 6/7, Schumacher 1994 8/10 …), Spielstand 12 von 850. Faktor ~1,7,
+  bei diesen Zahlen nicht signifikant (Poisson p ≈ 0,07). **Kein Anlass zum Umbau**; erst mit mehreren Ständen
+  neu prüfen.
+- **Ausfallquote ~50 %** liegt auf Feldniveau des Stands (1997 47,6 %, 1998 45,2 %; Tabelle 42/41 %). Williams
+  hat `reliability` 65 (Feldmittel 67). Dass starke Teams real seltener ausfallen, ist der bekannte Befund
+  „Ausfall-Spreizung: Formel liefert die Hälfte" (`DNF_REL_SPREAD`).
+- **Messfalle:** Der Pace-Sturz 95 → 87 zum Spielzug 1999 ist KEIN Alterungsfehler – `PACE_RATINGS` trägt
+  Schumachers echte 1999er-Wertung (Beinbruch-Saison). Vor „Pace fällt zu stark" immer zuerst dort nachsehen.
+- **Nachtrag – das eigentliche Muster ist messbar:** Fahrer mit den meisten Siegen je Saison, 1950–1998
+  (real ohne Indy 500, Spiel aus demselben Stand; Skript `l.js` im Scratchpad):
+
+  | | Starts | DNF | im Ziel: Sieg | P2–3 | P4+ |
+  |---|---|---|---|---|---|
+  | real | 610 | **26 %** | 56 % | 21 % | **23 %** |
+  | Spiel | 596 | **41 %** | 63 % | 24 % | **14 %** |
+
+  Der Dominator fällt im Spiel 15 Pp zu oft aus und landet im Ziel zu selten auf P4 oder schlechter. Real enden
+  viele Probleme (Dreher, Reifenschaden, Boxenpanne, angeschlagenes Auto) mit Platzverlust, im Spiel gibt es nur
+  „voll gefahren" oder „ausgefallen". Daher wirkt es wie „Sieg oder Ausfall", obwohl die Siegquote im Ziel fast stimmt.
+
+### 18.10.2026 (2): „Zwischenfall ohne Ausfall" – NEGATIVERGEBNIS, die Ursache sitzt in der Kopplung Quali ↔ Rennen
+
+**Werkzeug:** Zeile „Dominator (meiste Siege)" in `vakuum-batch.js` (neu, aus `vakuum-saison.js`). Alle Läufe
+`SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js --alle 1 4 --regen`, reales Feld mit realem Startplatz.
+
+| Variante (p, Verlust, Rauschen, `BAD_DAY`) | Dom. DNF | im Ziel Sieg / P2–3 / P4+ | trocken Spearman | Sieg ab P10 | starkes Drittel |
+|---|---|---|---|---|---|
+| **ohne (Ausgang)** | 28,1 | 64,0 / 27,5 / **8,5** | **0,723** | 3,5 | −1,20 |
+| 0,12 · 6–18 · 4/0,07 · 0,70 | 27,4 | 59,6 / 26,5 / 13,9 | 0,684 | 4,1 | −2,67 |
+| 0,18 · 8–20 · 3/0,05 · 0,70 | 27,6 | 61,1 / 23,7 / 15,2 | 0,668 | 4,1 | −3,32 |
+| 0,20 · 8–20 · 2,5/0,04 · 0,70 | 27,7 | 60,6 / 21,4 / 17,9 | 0,668 | 3,9 | −3,25 |
+| 0,14 · 15–30 · 4/0,07 · 0,70 | 28,0 | 59,1 / 24,3 / 16,7 | 0,623 | 4,6 | −4,38 |
+| 0,12 · 8–20 · 4/0,07 · 0,85 | 29,7 | 59,3 / 27,0 / 13,7 | 0,699 | 4,0 | −2,31 |
+| 0,15 · 8–20 · 4/0,07 · 0,90 | 27,3 | 60,0 / 26,0 / 14,0 | 0,690 | 4,4 | −2,45 |
+| 0,18 · 8–20 · 4/0,07 · 1,0 (kein schlechter Tag) | 27,3 | 59,2 / 25,7 / 15,1 | 0,679 | 5,0 | −3,03 |
+| **real** | 17,9 | 54,8 / 24,4 / **20,8** | **0,733** | 2,8 | 0 |
+
+- **Ein Zwischenfall, der jeden gleich trifft, erreicht das Ziel nicht.** Maximal 18 % P4+, und jede Variante
+  mischt trockene Rennen zu stark (Spearman 0,62–0,70 statt 0,733) und nimmt dem starken Drittel 1–3 Pp Punkte.
+  Weniger Grundrauschen oder ein milderer schlechter Tag gleichen das nicht aus.
+- ⚠ **Messfalle:** Laufrauschen zwischen zwei identischen Batches ≈ ±0,01 Spearman / ±1 Pp P4+. Eine erste
+  Variantenreihe lief mit einem Sed-Ersatz, der `BAD_DAY_PACE_FACTOR` nie traf — immer prüfen, ob der Patch greift.
+- **Die eigentliche Ursache:** Zielprofil des Dominators nach Startplatz (real F1DB 1950–2025, Spiel aus dem Stand
+  F1RPG_1999_R0):
+
+  | Start | real n | real Sieg / P2–3 / P4+ | Spiel n | Spiel Sieg / P2–3 / P4+ |
+  |---|---|---|---|---|
+  | P1–3 | 719 | 63 / 23 / 14 % | 189 | 70 / 20 / 11 % |
+  | P4+ | 202 | **25** / 30 / **46** % | 164 | **54** / 28 / **18** % |
+
+  Von vorn passt das Spiel fast. Startet der Dominator weiter hinten, gewinnt er im Spiel trotzdem in 54 % der
+  Zielankünfte, real nur in 25 %. Und er startet im Spiel viel öfter hinten (46 % statt 22 % seiner Zielankünfte):
+  das Quali würfelt ihn nach hinten, das Rennen würfelt unabhängig neu und holt ihn zurück. Real ist ein schlechter
+  Startplatz meist ein schlechtes Wochenende (Strecke liegt dem Auto nicht, Probleme), das im Rennen weiterwirkt.
+
+### 18.10.2026 (3): Wochenendform – Quali und Rennen teilen einen Teil des Zufalls (`WOCHENENDFORM`)
+
+**Mechanik:** `wochenendForm(raceIndex, driverId)` würfelt je Fahrer und Wochenende einen Wert −1..1. Er geht mit
+±8 ins Qualifying und mit ±4 ins Rennen ein. Das übrige Rauschen jeder Session schrumpft so, dass ihre
+Gesamtstreuung gleich bleibt (`formAnteilRauschen`: rest² + form² = gesamt²). Es kommt also keine Streuung
+hinzu, die Sessions hängen nur zusammen.
+
+**Messung** `SIMCORE_FROM_INDEX=1 node tests/vakuum-batch.js --alle 1 4 --regen --quali` (Spiel fährt sein Quali):
+
+| Form Quali/Rennen | trocken Sp. | teilw. / durchg. Sp. | Sieg ab P10 trocken | Dom. von P4+: Sieg / P2–3 / P4+ | Dom. von P1–3: P4+ | Punktefahrer Ø\|Diff\| / ± |
+|---|---|---|---|---|---|---|
+| ohne (Ausgang) | 0,659 | 0,644 / 0,641 | 3,0 % | 49,8 / 35,9 / 14,3 | 6,0 | 1,84 / +1,16 |
+| 6 / 3 | 0,697 | 0,682 / 0,673 | 2,1 % | 35,5 / 43,9 / 20,7 | 5,5 | 1,89 / +1,23 |
+| 7 / 3,5 | 0,719 | 0,702 / 0,706 | 1,8 % | 35,9 / 43,5 / 20,6 | 4,8 | 2,10 / +1,47 |
+| **8 / 4 (gewählt)** | **0,739** | 0,686 / 0,694 | 1,4 % | **25,4** / 51,0 / 23,6 | 4,7 | 2,18 / +1,56 |
+| 8 / 4 + Quali-Rauschen 5/0,06 | 0,771 | 0,759 / 0,757 | 1,4 % | 25,9 / 50,2 / 23,8 | 4,8 | 2,15 / +1,48 |
+| 8 / 4 + Quali mit `PACE_RATINGS` | 0,811 | 0,752 / 0,780 | 0,9 % | 30,2 / 48,2 / 21,6 | 3,8 | 1,83 / +1,09 |
+| **real** | **0,733** | 0,643 / 0,683 | 2,8 % | **24,5** / 31,1 / 44,4 | 14,3 | – |
+
+- **Gewählt 8/4:** trockene Rennen und der Dominator von hinten treffen. Nasse Rennen werden etwas zu geordnet
+  (teilweise 0,686 statt 0,643), Außenseitersiege seltener (1,4 statt 2,8 %). Punktefahrer-Abweichung 1,84 → 2,18
+  liegt nahe am Laufrauschen (±0,2), beobachten.
+- **Negativergebnis Quali-Rauschen senken:** macht alle Rennen zu geordnet (trocken 0,771), ohne beim Dominator
+  etwas zu bringen.
+- **Negativergebnis `PACE_RATINGS` im Quali** (wie im Rennen): der Dominator startet dann in 40 % seiner
+  Zielankünfte von P4+ (real 22 %) und alles wird zu geordnet. Nicht übernehmen.
+- **Kontrolle mit realem Startplatz** (ohne `--quali`, die Form ist dort reines Rauschen): trocken 0,720 (vorher
+  0,723), Punktefahrer 1,75 / +0,47 (vorher 1,58 / +0,25), teilweise nass 0,684 (vorher 0,661). Kaum Wirkung, wie
+  gewollt. Ticker-Parität 40/40, `ticker-browser.js` grün.
+- **▶ Offen:** Ein Dominator, der vorn startet, landet zu selten auf P4+ (4,7 statt 14,3 %), und von hinten wird er
+  zu oft Zweiter oder Dritter statt Vierter oder schlechter (51 statt 31 %). Ein Zwischenfall ohne Ausfall hatte das
+  verfehlt (18.10. (2)). Ausfälle des Dominators bleiben zu häufig (28 statt 18 %, Ausfall-Spreizung).
