@@ -73,6 +73,7 @@ const talent = {};   // 'Auto-Drittel|Fahrer-Drittel' → [Starts, Siege, Podien
 const dominator = { spiel: new Array(13).fill(0), real: new Array(13).fill(0) };
 // Pace-Rang (Top 3 / 4–8 / Rest) × Startplatz (P1–3 / 4–9 / 10+), je Zelle [Starts, DNF, Sieg, Podium, Summe Zielplatz, Summe Plätze gewonnen]
 const paceStart = { spiel: new Array(54).fill(0), real: new Array(54).fill(0) };
+const paceDek = {};   // Dekade → wie paceStart
 // Verteilung der Platzgewinne je Dekade: [spielAlle, realAlle, spielOhneDom, realOhneDom] je 10 Zähler
 const gewinnDek = {}, domTeams = {};
 const CHAOS_ARTEN = ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot'];   // 'rot' überlappt mit den Wetter-Gruppen
@@ -118,7 +119,10 @@ for (const jahr of JAHRE) {
         for (let i = 0; i < 13; i++) { dominator.spiel[i] += a[i] || 0; dominator.real[i] += b[i] || 0; } }
     const ps = out.match(/PaceStart spiel: ([-\d ]+) real: ([-\d ]+)/);
     if (ps) { const a = ps[1].trim().split(' ').map(Number), b = ps[2].trim().split(' ').map(Number);
-        for (let i = 0; i < 54; i++) { paceStart.spiel[i] += a[i] || 0; paceStart.real[i] += b[i] || 0; } }
+        for (let i = 0; i < 54; i++) { paceStart.spiel[i] += a[i] || 0; paceStart.real[i] += b[i] || 0; }
+        // zusätzlich je Dekade, für „Plätze gewonnen je Pace-Gruppe und Jahrzehnt"
+        const dk = Math.floor(jahr / 10) * 10, d = paceDek[dk] = paceDek[dk] || { spiel: new Array(54).fill(0), real: new Array(54).fill(0) };
+        for (let i = 0; i < 54; i++) { d.spiel[i] += a[i] || 0; d.real[i] += b[i] || 0; } }
     const gw = out.match(/Gewinn spiel: ([-\d ]+) real: ([-\d ]+) ohneDom spiel: ([-\d ]+) real: ([-\d ]+) dom: (\S+)/);
     if (gw) { const dek = Math.floor(jahr / 10) * 10, z = gewinnDek[dek] = gewinnDek[dek] || [0, 1, 2, 3].map(() => new Array(10).fill(0));
         for (let x = 0; x < 4; x++) gw[x + 1].trim().split(' ').map(Number).forEach((v, j) => z[x][j] += v);
@@ -200,6 +204,15 @@ if (paceStart.real.some(Boolean)) {
     console.log('  ' + ' '.repeat(23) + 'Spiel'.padEnd(51) + 'real');
     for (let p = 0; p < 3; p++) for (let st = 0; st < 3; st++) { const o = (p * 3 + st) * 6;
         console.log('    ' + P[p] + ' ' + S[st] + '  ' + z(paceStart.spiel, o) + '   ' + z(paceStart.real, o)); }
+}
+if (Object.keys(paceDek).length) {
+    // Ø Plätze gewonnen unter Zielankünften je Dekade: wo sitzt das Zuviel an Bewegung? (BEFUNDE.md 18.10.2026 (10))
+    const ZELLEN = [[0, 2, 'Top3 v.10+'], [0, 0, 'Top3 v.1–3'], [1, 2, '4–8 v.10+ '], [1, 0, '4–8 v.1–3 '], [2, 0, 'Rest v.1–3'], [2, 1, 'Rest v.4–9']];
+    const pl = (a, o) => { const fin = a[o] - a[o + 1]; return fin >= 5 ? ((a[o + 5] >= 0 ? '+' : '') + (a[o + 5] / fin).toFixed(2)).padStart(6) : '     -'; };
+    console.log('  Plätze gewonnen je Pace-Gruppe und Dekade, Spiel / real (Ø unter Zielankünften):');
+    console.log('           ' + ZELLEN.map(z => z[2].padEnd(15)).join(''));
+    for (const [dk, d] of Object.entries(paceDek))
+        console.log('    ' + dk + 'er ' + ZELLEN.map(([p, st]) => { const o = (p * 3 + st) * 6; return pl(d.spiel, o) + '/' + pl(d.real, o) + ' '; }).join(' '));
 }
 if (Object.keys(gewinnDek).length) {
     // Anteil der Zielankünfte mit großem Sprung; Top 3 von P10+: ≥+8 und Sieg je Zielankunft

@@ -3905,3 +3905,74 @@ sich also nichts. Pole, Quali-Duell und Fahrerbewertung lesen weiter den Quali-P
 - **Neue Abweichung sichtbar:** Ab 2010 bewegt sich das Feld jetzt zu viel. Das Spiel sortiert nach Tempo strenger
   als real (schon vorher: Top 3 von P10+ +4,9 statt +4,1 Plätze, (6)). Die Strafen geben dem mehr Gelegenheit:
   ein bestrafter schneller Fahrer fährt im Spiel zuverlässig nach vorn, real nicht immer.
+
+### 18.10.2026 (10): Größerer Startplatz-Bonus nur trocken – NEGATIVERGEBNIS
+
+Versuch gegen die zu starke Bewegung ab 2010 aus (9): `_GRID_K` trocken 10 bzw. 12, nass weiter 8.
+`vakuum-batch.js --alle 1 4 --regen --quali`, v0.9.21.22:
+
+| | `_GRID_K` 8 | trocken 10 | trocken 12 | real |
+|---|---|---|---|---|
+| Spearman Start→Ziel trocken | 0,722 | 0,749 | **0,765** | 0,733 |
+| |Δ| ≥ 4, 2010er / 2020er | 29,8 / 34,4 | 28,3 / 30,4 | 28,0 / 29,6 | 23,0 / 25,1 |
+| |Δ| ≥ 4, 1960er / 1970er | 17,0 / 22,3 | 15,5 / 20,8 | **13,4 / 18,3** | 17,1 / 25,5 |
+| Top 3 von P10+: Plätze gewonnen | +5,51 | +5,51 | +5,27 | +4,08 |
+| Top 3 von P10+ siegt, 2010er | 3,7 | 1,3 | 0,8 | 4,5 |
+| Punktefahrer Ø|Diff| | 1,88 | 1,79 | 1,73 | – |
+
+- **Der Startplatz-Bonus ist der falsche Hebel.** Er macht trockene Rennen insgesamt geordneter und nimmt die
+  gerade gewonnenen Siege von hinten wieder weg. Was ab 2010 zu viel ist, bleibt fast gleich (28 statt 23 %), und
+  Spitzenfahrer holen von hinten genauso viel auf (+5,5). Vor 2000 bewegt sich das Feld dann zu wenig.
+- Grund: Der Bonus verschiebt alle gleich. Das Zuviel ab 2010 sitzt aber in der Tempo-Sortierung (großer
+  Abstand zwischen den Autos, kleines Rauschen), nicht im Gewicht des Startplatzes.
+- Zurück auf 8. Nicht wieder versuchen, auch nicht nur trocken.
+
+### 18.10.2026 (11): Wo das Zuviel an Bewegung sitzt – Plätze gewonnen je Pace-Gruppe und Dekade
+
+`vakuum-batch.js --alle 1 4 --regen --quali` (v0.9.21.22, `_GRID_K` 8), neue Tabelle „Plätze gewonnen je
+Pace-Gruppe und Dekade". Ø Plätze unter den Zielankünften, Spiel / real:
+
+| Dekade | Top 3 von 10+ | Top 3 von P1–3 | 4–8 von 10+ | 4–8 von P1–3 | Rest von P1–3 | Rest von 4–9 |
+|---|---|---|---|---|---|---|
+| 1960er | +2,5 / +1,9 | −0,3 / −1,3 | +2,0 / +1,7 | −0,5 / −1,9 | −2,7 / −2,7 | −1,4 / −1,5 |
+| 1970er | +4,0 / +1,4 | −0,3 / −1,3 | +2,9 / +1,4 | −0,6 / −1,5 | −3,5 / −3,4 | −2,2 / −1,8 |
+| 1980er | +3,2 / +1,3 | −0,1 / −0,9 | +2,7 / +1,5 | −0,8 / −1,9 | −3,3 / −3,6 | −2,4 / −1,2 |
+| 1990er | +4,3 / +2,3 | −0,2 / −0,6 | +2,8 / +1,3 | −0,5 / −1,4 | −3,1 / −2,1 | −2,3 / −1,3 |
+| 2000er | +6,7 / +5,5 | −0,3 / −0,7 | +3,3 / +2,4 | −0,9 / −1,6 | −3,9 / −2,4 | −2,7 / −1,7 |
+| 2010er | +9,0 / +7,6 | −0,3 / −0,6 | +4,8 / +2,5 | −1,0 / −1,6 | −4,6 / −3,3 | −3,4 / −2,2 |
+| 2020er | +7,1 / +5,4 | −0,4 / −1,3 | +4,8 / +3,3 | −0,6 / −1,3 | −5,7 / −2,8 | −3,6 / −2,3 |
+
+- **Das Muster gilt in allen Dekaden, nicht nur ab 2010.** Ab 2010 fällt es nur stärker auf, weil die Strafen
+  mehr schnelle Fahrer nach hinten bringen.
+- **Schnelle Fahrer von hinten** holen im Spiel 1–2,6 Plätze zu viel auf.
+- **Wer vorn startet, verliert im Spiel zu wenig**, auch der Schnelle: Top 3 von vorn −0,3 statt −0,6 bis −1,3,
+  Pace 4–8 von vorn −0,5 bis −1,0 statt −1,3 bis −1,9. Real verliert man von vorn öfter Plätze (schlechter Start,
+  Strategie, Zwischenfall ohne Ausfall).
+- **Langsame von vorn** fallen ab 2000 zu stark zurück (2020er −5,7 statt −2,8). Vor 2000 passt es.
+- Deutung: Das Spiel sortiert zu verlässlich nach Leistung. Real ist das Rennergebnis um die Leistung herum
+  breiter gestreut, in beide Richtungen. Das spricht für mehr Rennrauschen, gegengehalten durch einen größeren
+  Startplatz-Bonus, damit die Gesamtordnung (Spearman) bleibt. Gemessen in (12): bringt wenig.
+
+### 18.10.2026 (12): Mehr Rennrauschen + größerer Startplatz-Bonus – NEGATIVERGEBNIS
+
+Rauschen `_halfVar` × 1,3 mit `_GRID_K` 11 und × 1,5 mit 13, sonst wie (11). Die Wochenendform bleibt ±4,
+das übrige Rauschen wächst entsprechend.
+
+| | Ausgang (×1, K 8) | ×1,3 / K 11 | ×1,5 / K 13 | real |
+|---|---|---|---|---|
+| Spearman trocken / teilw. / durchg. | 0,722 / 0,692 / 0,724 | 0,739 / 0,712 / 0,740 | 0,750 / 0,706 / 0,745 | 0,733 / 0,643 / 0,683 |
+| Punktefahrer Ø|Diff| / ± | 1,65 / +0,48 | 1,93 / **+0,86** | 1,73 / **+1,00** | – |
+| Top 3 von 10+, 2000er / 2010er / 2020er | +6,7 / +9,0 / +7,1 | +5,1 / +7,9 / +7,0 | +5,3 / +8,0 / +6,0 | +5,5 / +7,6 / +5,4 |
+| Top 3 von P1–3, 1970er / 2020er | −0,3 / −0,4 | −0,3 / −0,5 | −0,3 / −0,5 | −1,3 / −1,3 |
+| Pace 4–8 von P1–3, 1980er / 2010er | −0,8 / −1,0 | −0,8 / −1,0 | −0,8 / −0,9 | −1,9 / −1,6 |
+| Rest von P1–3, 2020er | −5,7 | −4,9 | −4,7 | −2,8 |
+| |Δ| ≥ 4, 2010er / 2020er | 29,5 / 32,3 | 28,9 / 31,8 | 28,8 / 30,9 | 23,0 / 25,1 |
+
+- Schnelle Fahrer von hinten kommen ab 2000 näher an real, sonst bewegt sich wenig. **Wer vorn startet, verliert
+  weiter zu wenig** (−0,3 statt −1,3), daran ändert keins der Paare etwas. Dafür werden nasse Rennen noch
+  geordneter und es punkten zu viele Fahrer (± +0,48 → +1,00).
+- Grund: Symmetrisches Rauschen und ein größerer Bonus heben sich für den Schnellen vorn auf. Sein Vorsprung aus
+  Leistung + Startplatz ist so groß, dass ihn gleichverteiltes Rauschen kaum Plätze kostet. Real kostet ihn ein
+  schlechter Start oder Boxenstopp Plätze, unabhängig von seinem Vorsprung.
+- Nicht übernommen, `index.html` unverändert (Sweep-Skript stellt zurück). Rauschen der Laufwiederholung zum
+  Vergleich: dieselbe Version maß Punktefahrer einmal 1,88, einmal 1,65, Siege von hinten 2000er 0,0 / 4,2 %.
