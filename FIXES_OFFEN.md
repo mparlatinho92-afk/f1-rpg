@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.24, Prüfdatum **2026-10-18** (vorher 2026-10-18 @ v0.9.21.23).
+**Abgeglichen gegen:** v0.9.21.25, Prüfdatum **2026-10-19** (vorher 2026-10-18 @ v0.9.21.24).
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -21,6 +21,8 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Jetlag-Kalender siehe wohl Google Gemini
+- ✚ Häufigkeit der Grid-Strafen pro Rennen + pro Saison + Anfang der Saison eher unwahrscheinlich, da ganz selten Teile gewechselt, manchmal abhängig von Unfall aus Rennen zuvor
+- ✚ Grid-Strafen-Startplatz-Malus darf nicht die Bewertung verschlechtern, weder Startplatz selbst, noch Ergebnis. Wichtig ist, was man draus macht
 
 ---
 
