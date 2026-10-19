@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.25</title>
+    <title>F1 RPG v0.9.21.26</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.25 (aktuell) - 19.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.26 (aktuell) - 19.10.2026</div>
+                            <div>&#8226; NEU: Startplatz-Strafen in drei Arten – sportliche Strafen über die ganze Saison, Teile-Strafen erst im Saisonverlauf (nie im Auftaktrennen), Boxengasse</div>
+                            <div>&#8226; NEU: nach einem Unfall im Rennen davor fast doppelt so oft eine Strafe</div>
+                            <div>&#8226; NEU: Ticker nennt den passenden Grund (Flagge, Behindern, Getriebe, Motor, Power Unit)</div>
+                            <div class="font-bold text-slate-400">v0.9.21.25 - 19.10.2026</div>
                             <div>&#8226; FIX: Qualifying ab 2000 streut weniger – die Startaufstellung spiegelt das Tempo genauer, das Feld wird im Rennen nicht mehr so stark umsortiert</div>
                             <div>&#8226; FIX: Zahl der Punktefahrer näher an der Realität</div>
                             <div class="font-bold text-slate-400">v0.9.21.24 - 19.10.2026</div>
@@ -23006,7 +23010,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.25';
+        const VERSION = '0.9.21.26';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24735,45 +24739,72 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             }
         }
 
-        // === STRAFVERSETZUNG: STARTPLATZ ≠ QUALI-PLATZ (18.10.2026) ===
-        // Real startet ein Fahrer oft weiter hinten, als sein Quali hergibt (Motor-/Getriebewechsel,
-        // Boxengasse), und das berührt sein Renntempo NICHT. Im Spiel stand ein Spitzenfahrer bis dahin
-        // nur durch schlechte Form hinten, die ihn auch im Rennen bremst: ab 2000 gewann er von P10+
-        // nie (real 2,4–12,8 %). F1DB (tests/strafversetzung-real.js), Strafe + Boxengasse je Start;
-        // „ohne Quali-Zeit" steckt schon in ERA_QUALI_NO_TIME:
-        //   vor 1996 ≈ 0 · 1996–2002 0,3 % · 2003–09 4,2 · 2010–13 5,5 · 2014–16 10,2 · 2017–21 10,8 · 2022–24 8,2
-        // Größe (gridPenalty / „PL"): 2003–13 3 Pl. 10 %, 5 Pl. 41, 10 Pl. 30, ans Ende 2, Boxengasse 17;
-        //   ab 2014 3 Pl. 17 %, 5 Pl. 24, 10 Pl. 8, ans Ende 27, Boxengasse 24 (BEFUNDE.md 18.10.2026 (8)).
+        // === STRAFVERSETZUNG: STARTPLATZ ≠ QUALI-PLATZ (18./19.10.2026) ===
+        // Real startet ein Fahrer oft weiter hinten, als sein Quali hergibt, und das berührt sein Renntempo
+        // NICHT. Im Spiel stand ein Spitzenfahrer bis dahin nur durch schlechte Form hinten, die ihn auch im
+        // Rennen bremst: ab 2000 gewann er von P10+ nie (real 2,4–12,8 %). „Ohne Quali-Zeit" steckt schon in
+        // ERA_QUALI_NO_TIME. F1DB (tests/strafversetzung-real.js), BEFUNDE.md 18.10.2026 (8), 19.10.2026 (4).
+        // DREI ARTEN mit eigenem Verlauf über die Rennnummer (Nutzer 19.10.2026: im Auftaktrennen wechselt
+        // niemand Teile wegen Abnutzung):
+        //   sport  3/5 Plätze (Flaggen, Behindern, Getriebe nach Quali-Unfall) — gleichmäßig, auch in Rennen 1
+        //   teile  10 Plätze / ans Ende (Motor-, Power-Unit-Kontingent) — Rennen 1 nie, ab 2014 steigend bis
+        //          Rennen 13–17 (8,6 % je Start), danach weniger
+        //   box    Start aus der Boxengasse (Umbau unter Parc fermé) — gleichmäßig, Rennen 1 fast nie
+        // Je Start, ab 2014: sport 4,4 % · teile R1 0 / R2–4 0,6 / R5–7 1,0 / R8–12 3,1 / R13–17 8,6 / R18+ 3,2 % ·
+        //   box R1 0,5 / sonst 2,1 %. 2003–13: sport 2,3 · teile R1 0 / sonst 1,5 · box 0,9 %. 1996–2002 0,3 %.
+        // Nach einem Unfall im Rennen davor real × 1,7–2,0 (STARTSTRAFE_NACH_UNFALL), sonst × 0,95.
+        // 2022–24 gesamt 8,2 statt 10,8 % → Faktor 0,76 (STARTSTRAFE_AERA_FAKTOR).
         // Pole, Quali-Duell und Fahrerbewertung bleiben beim Quali-Platz, wie real.
-        const ERA_STARTSTRAFE = {
-            1950: 0, 1996: 0.003, 2003: 0.042, 2010: 0.055, 2014: 0.102, 2017: 0.108, 2022: 0.082
+        // Rate je Art: [ab Rennen, Wahrscheinlichkeit je Start] — der letzte passende Eintrag gilt.
+        const STARTSTRAFE_ARTEN = {
+            1950: { sport: [], teile: [], box: [] },
+            1996: { sport: [[1, 0.003]], teile: [], box: [] },
+            2003: { sport: [[1, 0.023]], teile: [[2, 0.015]], box: [[1, 0.009]] },
+            2014: { sport: [[1, 0.044]], teile: [[2, 0.006], [5, 0.010], [8, 0.031], [13, 0.086], [18, 0.032]],
+                    box: [[1, 0.005], [2, 0.021]] }
         };
+        const STARTSTRAFE_AERA_FAKTOR = { 1950: 1, 2022: 0.76 };
+        const STARTSTRAFE_NACH_UNFALL = { ja: 1.8, nein: 0.95 };
+        // Größe je Art (F1DB gridPenalty): sport 2003–13 3 Pl. 17 % / 5 Pl. 83 %, ab 2014 40 / 60 %;
+        // teile 2003–13 10 Pl. 95 % / ans Ende 5 %, ab 2014 10 Pl. 23 % / 15+ oder ans Ende 77 %.
         const STARTSTRAFE_GROESSE = {
-            1996: [[3, 0.10], [5, 0.41], [10, 0.30], ['ende', 0.02], ['box', 0.17]],
-            2014: [[3, 0.17], [5, 0.24], [10, 0.08], ['ende', 0.27], ['box', 0.24]]
+            1996: { sport: [[3, 0.17], [5, 0.83]], teile: [[10, 0.95], ['ende', 0.05]] },
+            2014: { sport: [[3, 0.40], [5, 0.60]], teile: [[10, 0.23], ['ende', 0.77]] }
         };
 
         // Würfelt die Strafe je Quali-Teilnehmer: Plätze (Zahl), 'ende' oder 'box' in r.strafe.
-        function startStrafenWuerfeln(results, year) {
-            const p = getEraValue(ERA_STARTSTRAFE, year);
-            if (!(p > 0)) return;
+        function startStrafenWuerfeln(results, year, raceIndex) {
+            const arten = getEraValue(STARTSTRAFE_ARTEN, year), faktor = getEraValue(STARTSTRAFE_AERA_FAKTOR, year);
+            const rennen = (raceIndex || 0) + 1;
+            const rate = stufen => { let p = 0; for (const [ab, w] of stufen) if (rennen >= ab) p = w; return p * faktor; };
+            const p = { sport: rate(arten.sport), teile: rate(arten.teile), box: rate(arten.box) };
+            if (!(p.sport + p.teile + p.box > 0)) return;
+            // Unfall im Rennen davor (dnfType 'accident' im gespeicherten Ergebnis)
+            const vor = (GAME_STATE.results || []).find(rr => rr.raceIndex === raceIndex - 1);
+            const unfall = new Set(((vor && vor.results) || []).filter(e => e.dnf && e.dnfType === 'accident').map(e => e.driver));
             const groessen = getEraValue(STARTSTRAFE_GROESSE, year);
+            const ziehe = liste => { let w = Math.random(); for (const [g, a] of liste) if ((w -= a) < 0) return g; return liste[liste.length - 1][0]; };
             for (const r of results) {
-                if (r.dnpq || r.fatal || Math.random() >= p) continue;
+                if (r.dnpq || r.fatal) continue;
+                const m = unfall.has(r.driver) ? STARTSTRAFE_NACH_UNFALL.ja : STARTSTRAFE_NACH_UNFALL.nein;
                 let w = Math.random();
-                for (const [g, anteil] of groessen) { if ((w -= anteil) < 0) { r.strafe = g; break; } }
-                if (r.strafe === undefined) r.strafe = groessen[groessen.length - 1][0];
+                if ((w -= p.teile * m) < 0) r.strafe = ziehe(groessen.teile);
+                else if ((w -= p.sport * m) < 0) r.strafe = ziehe(groessen.sport);
+                else if ((w -= p.box * m) < 0) r.strafe = 'box';
             }
         }
 
-        // Grund einer Strafversetzung für Meldungen, passend zur Regel der Zeit (Motor-Regel ab 2004,
+        // Grund einer Strafversetzung für Meldungen, passend zu Art und Regel der Zeit (Motor-Regel ab 2004,
         // Getriebe ab 2008, Power Unit ab 2014). Reine Darstellung, nicht gespeichert.
         function strafeGrund(strafe, year) {
             if (strafe === 'box') return 'Änderungen am Auto unter Parc fermé, Start aus der Boxengasse';
             const z = a => a[Math.floor(Math.random() * a.length)];
-            if (year >= 2014) return strafe === 'ende' ? z(['eine komplett neue Power Unit', 'zu viele Power-Unit-Teile']) : z(['ein neues Power-Unit-Element', 'ein Getriebewechsel', 'ein neuer Turbolader']);
-            if (year >= 2008) return z(['ein Motorwechsel', 'ein Getriebewechsel']);
-            return z(['ein Motorwechsel', 'ein Verstoß im Qualifying']);
+            // 3/5 Plätze = sportliche Strafe (STARTSTRAFE_ARTEN.sport), 10 Plätze / ans Ende = Teile-Kontingent
+            if (strafe === 3 || strafe === 5) return z(['Behindern im Qualifying', 'eine missachtete gelbe Flagge',
+                year >= 2008 ? 'ein Getriebewechsel nach seinem Abflug im Qualifying' : 'ein Verstoß im Qualifying',
+                'eine Strafe aus dem letzten Rennen']);
+            if (year >= 2014) return strafe === 'ende' ? z(['eine komplett neue Power Unit', 'zu viele Power-Unit-Teile']) : z(['ein neues Power-Unit-Element', 'ein neuer Turbolader']);
+            return 'ein Motorwechsel';
         }
 
         // Hinweis hinter dem Namen in den Quali-Tabellen (Ticker, Rennfenster): warum der Startplatz abweicht.
@@ -35518,7 +35549,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             results.forEach((r, idx) => {
                 r.position = idx + 1;
             });
-            startStrafenWuerfeln(results, GAME_STATE.currentYear);   // Startplatz ≠ Quali-Platz, s. ERA_STARTSTRAFE
+            startStrafenWuerfeln(results, GAME_STATE.currentYear, raceIndex);   // Startplatz ≠ Quali-Platz, s. STARTSTRAFE_ARTEN
 
             // firstRaceEntry: Privateer erscheint in der Matrix ab erstem Qualifying-Auftritt
             results.forEach(r => {
