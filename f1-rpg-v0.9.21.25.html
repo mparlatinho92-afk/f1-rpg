@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.24</title>
+    <title>F1 RPG v0.9.21.25</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.24 (aktuell) - 19.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.25 (aktuell) - 19.10.2026</div>
+                            <div>&#8226; FIX: Qualifying ab 2000 streut weniger – die Startaufstellung spiegelt das Tempo genauer, das Feld wird im Rennen nicht mehr so stark umsortiert</div>
+                            <div>&#8226; FIX: Zahl der Punktefahrer näher an der Realität</div>
+                            <div class="font-bold text-slate-400">v0.9.21.24 - 19.10.2026</div>
                             <div>&#8226; NEU: Live-Ticker – Ausfälle passieren in realistischer Runde: Unfälle oft in der Startrunde, Defekte über das Rennen verteilt (F1DB je Jahrzehnt)</div>
                             <div>&#8226; NEU: Ticker meldet Strafversetzungen beim Start mit Grund (Motor, Getriebe, Power Unit, Boxengasse)</div>
                             <div>&#8226; NEU: Rennergebnis zeigt bei bestraften Fahrern den Startplatz und die Strafe</div>
@@ -23003,7 +23006,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.24';
+        const VERSION = '0.9.21.25';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24695,6 +24698,12 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         }
         // Rest-Rauschen (halbe Spannweite), wenn der Formanteil aus der Gesamtstreuung herausgenommen
         // wird. Beide gleichverteilt → Varianzen addieren sich: rest² + form² = gesamt².
+        // Faktor auf das gesamte Quali-Rauschen (Wochenendform + übriges) je Ära (19.10.2026). Ab 2000 misst eine
+        // Quali-Runde das Tempo real genauer, im Spiel streute die Startaufstellung wie in den 50ern und das Rennen
+        // korrigierte sie: zu viel Bewegung im Feld. × 0,6: Spearman trocken 0,710 → 0,724 (real 0,733),
+        // |Δ| ≥ 4 2000er 24,7 → 21,4 % (real 20,6), Punktefahrer ± +0,64 → +0,16 (BEFUNDE.md 19.10.2026 (3)).
+        const ERA_QUALI_STREUUNG = { 1950: 1, 2000: 0.6 };
+
         function formAnteilRauschen(halbGesamt, halbForm) {
             return Math.sqrt(Math.max(0, halbGesamt * halbGesamt - halbForm * halbForm));
         }
@@ -35473,8 +35482,10 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
                 const _qHalfVar = 8 + (100 - _qConsVal) * 0.08; // ±8..16 (Minimum erhöht für mehr Pole-Vielfalt)
                 // Teil davon ist Wochenendform (wirkt auch im Rennen), Gesamtstreuung unverändert
-                qualiPerformance += (Math.random() - 0.5) * 2 * formAnteilRauschen(_qHalfVar, WOCHENENDFORM.quali)
-                                  + wochenendForm(raceIndex, driver.id) * WOCHENENDFORM.quali;
+                // Ab 2000 streut das Quali insgesamt weniger (ERA_QUALI_STREUUNG), Form und Rest gleichermaßen
+                qualiPerformance += getEraValue(ERA_QUALI_STREUUNG, GAME_STATE.currentYear)
+                                  * ((Math.random() - 0.5) * 2 * formAnteilRauschen(_qHalfVar, WOCHENENDFORM.quali)
+                                     + wochenendForm(raceIndex, driver.id) * WOCHENENDFORM.quali);
                 // Sonderrunde: 6% Chance auf außergewöhnliche Runde (perfektes Reifenfenster, ideale Abstimmung)
                 if (Math.random() < 0.06) qualiPerformance += Math.random() * 12;
                 
