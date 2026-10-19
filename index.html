@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.26</title>
+    <title>F1 RPG v0.9.21.27</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.26 (aktuell) - 19.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.27 (aktuell) - 19.10.2026</div>
+                            <div>&#8226; FIX: Strafversetzung verschlechtert Zufriedenheit und Bewertung nicht mehr – der Zielplatz bekommt eine Gutschrift in Höhe dessen, was eine Strafe im Mittel kostet</div>
+                            <div>&#8226; NEU: wer nach einer Strafe stark aufholt, wird dafür belohnt</div>
+                            <div class="font-bold text-slate-400">v0.9.21.26 - 19.10.2026</div>
                             <div>&#8226; NEU: Startplatz-Strafen in drei Arten – sportliche Strafen über die ganze Saison, Teile-Strafen erst im Saisonverlauf (nie im Auftaktrennen), Boxengasse</div>
                             <div>&#8226; NEU: nach einem Unfall im Rennen davor fast doppelt so oft eine Strafe</div>
                             <div>&#8226; NEU: Ticker nennt den passenden Grund (Flagge, Behindern, Getriebe, Motor, Power Unit)</div>
@@ -4387,7 +4390,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.26';
+        const VERSION = '0.9.21.27';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24108,6 +24111,21 @@
         //   Fahrer, zwei schwache Fahrer ziehen ihr Team und damit ihre eigene Erwartung herunter.
         // basis 'wm': Teams nach Konstrukteurs-WM — die ÖFFENTLICHKEIT sieht nur Ergebnisse
         //   (Ansehen, Marktwert); die Team-Bremse in updateDriverReputations fängt das auf.
+        // === STRAFVERSETZUNG ZÄHLT NICHT GEGEN DIE BEWERTUNG (Nutzer 19.10.2026) ===
+        // „Wichtig ist, was man draus macht": der Startplatz zählt schon über den Quali-Platz. Den Zielplatz
+        // schreibt diese Gutschrift um den Teil zurück, den eine Strafe im Spiel im Mittel kostet: 0,21 Zielplätze
+        // je verlorenem Startplatz (2014–24 simuliert, 1034 Zielankünfte; real nur 0,05, BEFUNDE.md 19.10.2026 (5)).
+        // Wer nach einer Strafe mehr aufholt als üblich, steht damit besser da als ohne Strafe.
+        const STRAFE_ZIEL_GUTSCHRIFT = 0.21;
+        // Gutschrift in Zielplätzen für einen Fahrer in einem gespeicherten Rennen (0 ohne Strafe)
+        function strafeGutschrift(rr, driverId) {
+            const q = (GAME_STATE.qualifyingResults || []).find(x => x.raceIndex === rr.raceIndex);
+            const qe = q && q.results.find(x => x.driver === driverId);
+            if (!qe || !qe.strafe) return 0;
+            const start = startaufstellungVon(q, rr.results.map(e => e.driver)).get(driverId);
+            return start > qe.position ? STRAFE_ZIEL_GUTSCHRIFT * (start - qe.position) : 0;
+        }
+
         function leistungRelativZumAuto(driverId, basis = 'auto') {
             const results = GAME_STATE.results || [];
             if (!results.length) return null;
@@ -24134,7 +24152,7 @@
                 if (!e) { if ((rr.dnq || []).includes(driverId)) { ziel.push(1); start.push(1); } continue; }
                 const angekommen = rr.results.filter(x => !x.dnf && !x.fatal && x.position > 0).sort((a, b) => a.position - b.position);
                 const i = angekommen.findIndex(x => x.driver === driverId);
-                if (i >= 0) ziel.push((i + 0.5) / angekommen.length);
+                if (i >= 0) ziel.push((Math.max(0, i - strafeGutschrift(rr, driverId)) + 0.5) / angekommen.length);
                 const mitGrid = rr.results.filter(x => x.qualiPos > 0).length;
                 if (e.qualiPos > 0 && mitGrid) start.push((e.qualiPos - 0.5) / mitGrid);
             }
@@ -24192,7 +24210,8 @@
                     } else if (r.dnf || r.fatal) {
                         finishScores.push(-dnfPenalty);
                     } else if (r.position > 0 && finishers > 0) {
-                        let fs = finishers > 1 ? (finishers - r.position) / (finishers - 1) : 1.0;
+                        const _pos = Math.max(1, r.position - strafeGutschrift(rr, driverId));   // s. STRAFE_ZIEL_GUTSCHRIFT
+                        let fs = finishers > 1 ? (finishers - _pos) / (finishers - 1) : 1.0;
                         if (r.fastestLap) fs = Math.min(1.03, fs + 0.03);
                         finishScores.push(fs);
                     }
