@@ -237,6 +237,8 @@ mindestens 2 Läufe (ein Laufpaar je 2 Läufe).
 
 **Ära-Tabellen immer auch ohne Dom-Team lesen (seit 18.10.2026).** `start-runde1-real.js` und die Zeile „Verteilung Plätze gewonnen" in `vakuum-batch.js` geben je Ära/Dekade zusätzlich „ohne Dom" aus: ohne das Team mit den meisten realen Siegen der Saison, Ränge unter den übrigen Fahrern neu vergeben. Teamdominanz (Mercedes 2014–20) sieht sonst wie ein Ära-Merkmal aus.
 
+⚠ **Messfalle Pace-Gruppen (19.10.2026):** `PACE_RATINGS` ist im Vakuum-Lauf die WAHRE Pace der Spielfahrer, real nur eine Schätzung. Gruppen danach verdünnen real jeden Zusammenhang, das Spiel wirkt dann zu „sortiert". `vakuum-batch.js` gibt deshalb zusätzlich die **Gegenprobe** nach Ø Startplatz der Saison aus (je Seite eigene Startplätze, gleich ungenau). Nur Abweichungen, die dort bleiben, sind echt (`BEFUNDE.md` 19.10.2026).
+
 **Strafversetzung real (seit 18.10.2026)** — `node tests/strafversetzung-real.js`: je Ära der Anteil der Starts mit `gridPenalty`, Boxengasse („PL"), Rückversetzung ≥ 3 ohne Vermerk und ohne Quali-Platz, dazu Spitzenfahrer und ihre Siege. ⚠ `gridPenalty` ist in F1DB erst ab 1996 erfasst. Ergebnisse: `BEFUNDE.md` 18.10.2026 (8).
 
 **Ausfallrunde real (seit 18.10.2026)** — `node tests/ausfallrunde-real.js`: Verteilung der Ausfallrunde als Anteil der Renndistanz je Dekade, getrennt nach Unfall und Technik (F1DB `laps`). Quelle der Tabelle `AUSFALLRUNDE_VERTEILUNG` im Ticker. ⚠ Nur „DNF" — NC fuhr bis zum Ende, DSQ wurde gewertet.

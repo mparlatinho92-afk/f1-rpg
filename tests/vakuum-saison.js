@@ -636,12 +636,12 @@ function gefahreneRunden(ctx, real) {
         const pl = [...new Set(real.erg.filter(e => gefahren.has(e.round)).map(e => e.driverId))]
             .map(d => [d, PR[d] && PR[d][JAHR] && PR[d][JAHR][0]]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
         const pRang = new Map(pl.map(([d], i) => [d, i < 3 ? 0 : i < 8 ? 1 : 2]));
-        const zellen = starts => {
+        const zellen = (starts, rang = pRang) => {
             const z = new Array(54).fill(0), gewinn = new Map(), je = {};
             for (const s of starts) if (s.pos && s.start) (je[s.rd] = je[s.rd] || []).push(s);
             for (const l of Object.values(je)) l.sort((a, b) => a.start - b.start).forEach((s, j) => gewinn.set(s, j + 1 - s.pos));
             for (const s of starts) {
-                const p = pRang.get(s.f); if (p === undefined || !s.start) continue;
+                const p = rang.get(s.f); if (p === undefined || !s.start) continue;
                 const o = (p * 3 + (s.start <= 3 ? 0 : s.start <= 9 ? 1 : 2)) * 6;
                 z[o]++;
                 if (!s.pos) { z[o + 1]++; continue; }
@@ -655,6 +655,19 @@ function gefahreneRunden(ctx, real) {
         const ps = new Array(54).fill(0);
         for (const lauf of talentLaeufe) zellen(lauf).forEach((v, j) => ps[j] += v);
         console.log('  PaceStart spiel: ' + ps.join(' ') + ' real: ' + zellen(realStarts).join(' '));
+        // Gegenprobe Messfalle (19.10.2026): Gruppen nach Ø STARTPLATZ der Saison, je Seite aus den eigenen
+        // Startplätzen. PACE_RATINGS ist im Spiel die wahre Pace, real nur eine Schätzung — eine Gruppierung nach
+        // einer verrauschten Größe verdünnt real jeden Zusammenhang. Der Ø Startplatz ist auf beiden Seiten gleich
+        // ungenau. Mindestens 3 Starts, Rang unter diesen Fahrern: Top 3 / 4–8 / Rest.
+        const gridRang = starts => {
+            const su = {};
+            for (const x of starts) if (x.start) { const a = su[x.f] = su[x.f] || [0, 0]; a[0] += x.start; a[1]++; }
+            const l = Object.entries(su).filter(([, a]) => a[1] >= 3).sort((a, b) => a[1][0] / a[1][1] - b[1][0] / b[1][1]);
+            return new Map(l.map(([d], i) => [d, i < 3 ? 0 : i < 8 ? 1 : 2]));
+        };
+        const pg = new Array(54).fill(0);
+        for (const lauf of talentLaeufe) zellen(lauf, gridRang(lauf)).forEach((v, j) => pg[j] += v);
+        console.log('  GridStart spiel: ' + pg.join(' ') + ' real: ' + zellen(realStarts, gridRang(realStarts)).join(' '));
 
     // === VERTEILUNG DER PLATZGEWINNE (18.10.2026) ===
     // Im Mittel holt das Spiel von hinten genug auf, gewinnt aber viermal seltener (BEFUNDE.md 18.10.2026 (6)).

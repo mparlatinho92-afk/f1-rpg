@@ -74,6 +74,7 @@ const dominator = { spiel: new Array(13).fill(0), real: new Array(13).fill(0) };
 // Pace-Rang (Top 3 / 4–8 / Rest) × Startplatz (P1–3 / 4–9 / 10+), je Zelle [Starts, DNF, Sieg, Podium, Summe Zielplatz, Summe Plätze gewonnen]
 const paceStart = { spiel: new Array(54).fill(0), real: new Array(54).fill(0) };
 const paceDek = {};   // Dekade → wie paceStart
+const gridDek = {};   // Dekade → wie paceStart, aber Gruppen nach Ø Startplatz (Gegenprobe Messfalle)
 // Verteilung der Platzgewinne je Dekade: [spielAlle, realAlle, spielOhneDom, realOhneDom] je 10 Zähler
 const gewinnDek = {}, domTeams = {};
 const CHAOS_ARTEN = ['trocken', 'teilweise', 'durchgehend', 'nass', 'rot'];   // 'rot' überlappt mit den Wetter-Gruppen
@@ -127,6 +128,10 @@ for (const jahr of JAHRE) {
     if (gw) { const dek = Math.floor(jahr / 10) * 10, z = gewinnDek[dek] = gewinnDek[dek] || [0, 1, 2, 3].map(() => new Array(10).fill(0));
         for (let x = 0; x < 4; x++) gw[x + 1].trim().split(' ').map(Number).forEach((v, j) => z[x][j] += v);
         (domTeams[dek] = domTeams[dek] || {})[gw[5]] = (domTeams[dek][gw[5]] || 0) + 1; }
+    const gs = out.match(/GridStart spiel: ([-\d ]+) real: ([-\d ]+)/);
+    if (gs) { const a = gs[1].trim().split(' ').map(Number), b = gs[2].trim().split(' ').map(Number);
+        const dk = Math.floor(jahr / 10) * 10, d = gridDek[dk] = gridDek[dk] || { spiel: new Array(54).fill(0), real: new Array(54).fill(0) };
+        for (let i = 0; i < 54; i++) { d.spiel[i] += a[i] || 0; d.real[i] += b[i] || 0; } }
     const abw = zahl(out, /Rangabweichung, ALLE:\s+([\d.]+)/);
     const deck = zahl(out, /im RENNEN gestartet:\s+([\d.]+)/);
     const rennen = zahl(out, /\((\d+) von \d+ Rennen/);
@@ -212,6 +217,9 @@ if (Object.keys(paceDek).length) {
     console.log('  Plätze gewonnen je Pace-Gruppe und Dekade, Spiel / real (Ø unter Zielankünften):');
     console.log('           ' + ZELLEN.map(z => z[2].padEnd(15)).join(''));
     for (const [dk, d] of Object.entries(paceDek))
+        console.log('    ' + dk + 'er ' + ZELLEN.map(([p, st]) => { const o = (p * 3 + st) * 6; return pl(d.spiel, o) + '/' + pl(d.real, o) + ' '; }).join(' '));
+    console.log('  Gegenprobe: dieselben Zellen, Gruppen nach Ø Startplatz der Saison (je Seite eigene Startplätze):');
+    for (const [dk, d] of Object.entries(gridDek))
         console.log('    ' + dk + 'er ' + ZELLEN.map(([p, st]) => { const o = (p * 3 + st) * 6; return pl(d.spiel, o) + '/' + pl(d.real, o) + ' '; }).join(' '));
 }
 if (Object.keys(gewinnDek).length) {

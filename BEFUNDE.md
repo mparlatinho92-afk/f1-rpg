@@ -4049,3 +4049,66 @@ Regel der Zeit), das Rennfenster zeigt in der Ergebnisliste „Start P18 · +10"
 Im Browser geprüft (2018, Rennen 1: Magnussen Quali P18 → Boxengasse P20, Meldung und Hinweis da, keine
 Skriptfehler). ⚠ Messfalle: der Ticker-Feed hält nur 20 Meldungen — wer die Startmeldungen am Rennende sucht,
 findet sie nicht mehr.
+
+### 19.10.2026: Kleineres Quali-Rauschen – wirkt kaum, weil die Wochenendform das Quali bestimmt
+
+Vermutung: Das Quali streut zu stark, das Rennen korrigiert es → zu viel Bewegung, schnelle Fahrer holen von
+hinten zu viel auf, langsame fallen von vorn zu stark zurück. Test: das ÜBRIGE Quali-Rauschen (ohne Wochenendform)
+× 0,75 bzw. × 0,6, `_GRID_K` trocken zurück auf 8. Ausgang = v0.9.21.24 (Zwischenfall 20 %, `_GRID_K` trocken 11).
+
+| | Ausgang | × 0,75 | × 0,6 | real |
+|---|---|---|---|---|
+| Spearman trocken / teilw. / durchg. | 0,711 / 0,657 / 0,675 | 0,697 / 0,671 / 0,698 | 0,706 / 0,690 / 0,701 | 0,733 / 0,643 / 0,683 |
+| Top 3 von 10+, 1970er / 2010er | +3,8 / +8,2 | +3,9 / +8,8 | +3,9 / +8,8 | +1,4 / +7,6 |
+| Rest von P1–3, 2010er / 2020er | −4,1 / −4,9 | −5,1 / −4,8 | −4,3 / −5,2 | −3,3 / −2,8 |
+| |Δ| ≥ 4, 2010er / 2020er | 30,6 / 33,9 | 32,5 / 34,8 | 31,6 / 33,8 | 23,0 / 25,1 |
+| Punktefahrer Ø|Diff| / ± | 1,82 / +0,59 | 1,76 / +0,40 | 1,89 / +0,50 | – |
+
+- **Keine Wirkung auf die drei Abweichungen.** Grund: Das Quali-Rauschen ist zum größten Teil Wochenendform.
+  Bei `_qHalfVar` ≈ 9,6 (Konstanz 80) ist der Formanteil 8, das übrige nur 5,3 (rest² + form² = gesamt²).
+  × 0,6 senkt die Gesamtstreuung damit nur von 9,6 auf 8,6.
+- **Neue Vermutung:** Die Form geht mit ±8 ins Quali, aber nur mit ±4 ins Rennen. Ein Fahrer mit schlechter Form
+  steht also zu weit hinten für sein Renntempo und fährt im Rennen nach vorn, umgekehrt fällt einer mit guter
+  Form zurück. Dieses Verhältnis 2 : 1 erzeugt die Korrektur. Nicht gemessen.
+- Nicht übernommen, `index.html` unverändert.
+
+**Nachmessung Formverhältnis** (Rennen-Form fest ±4, Quali-Form 8 → 6 → 4; Rennen 6/8 ginge nicht, das
+Rennrauschen konstanter Fahrer ist nur ±4..6):
+
+| | Q 8 / R 4 (Ausgang) | Q 6 / R 4 | Q 4 / R 4 | real |
+|---|---|---|---|---|
+| Spearman trocken / teilw. / durchg. | 0,711 / 0,657 / 0,675 | 0,700 / 0,655 / 0,643 | 0,678 / 0,604 / 0,637 | 0,733 / 0,643 / 0,683 |
+| Top 3 von 10+, 1970er / 2010er | +3,8 / +8,2 | +3,7 / +8,5 | +4,5 / +8,4 | +1,4 / +7,6 |
+| Rest von P1–3, 2020er | −4,9 | −5,0 | −5,1 | −2,8 |
+| |Δ| ≥ 4, 2010er / 2020er | 30,6 / 33,9 | 32,8 / 33,9 | 34,1 / 35,9 | 23,0 / 25,1 |
+| Punktefahrer Ø|Diff| / ± | 1,82 / +0,59 | 1,81 / +0,46 | 1,69 / +0,49 | – |
+
+- **Auch das Formverhältnis bewegt die drei Abweichungen nicht.** Weniger geteilte Form macht nur alles
+  unordentlicher. Damit haben vier Hebel (Startplatz-Bonus, Rennrauschen, Quali-Rauschen, Formverhältnis) die
+  Pace-Gruppen-Zeilen kaum verändert.
+- **Verdacht Messfalle (nicht geprüft):** Die Pace-Gruppen kommen aus `PACE_RATINGS`. Im Vakuum-Lauf IST das die
+  Pace der Spielfahrer, real ist es nur eine Schätzung der wahren Pace mit Fehler. Eine Gruppierung nach einer
+  verrauschten Größe schwächt real jeden Zusammenhang ab (Regressionsverdünnung): „schnelle" Fahrer sind real zum
+  Teil gar nicht so schnell und holen deshalb weniger auf. Das Spiel kann diese Lücke durch keinen Hebel schließen.
+  Die Zeile |Δ| ≥ 4 (ohne Pace-Gruppen) wäre davon nicht betroffen, sie bleibt eine echte Abweichung ab 2010.
+
+**Gegenprobe (19.10.2026):** Gruppen nach **Ø Startplatz der Saison**, je Seite aus den eigenen Startplätzen (Spiel:
+eigenes Quali, real: echtes Grid), also auf beiden Seiten gleich ungenau. Zeile „Gegenprobe" in `vakuum-batch.js`.
+Plätze gewonnen, Spiel / real:
+
+| Dekade | Top 3 von P1–3 | 4–8 von 10+ | 4–8 von P1–3 | Rest von P1–3 | Rest von 4–9 |
+|---|---|---|---|---|---|
+| 1970er | −0,8 / −1,6 | +1,5 / +0,8 | −1,9 / −2,0 | −2,7 / −2,4 | −1,5 / −1,3 |
+| 1980er | −0,9 / −1,2 | +1,9 / +0,9 | −1,2 / −2,4 | −2,9 / −3,0 | −1,6 / −1,1 |
+| 2000er | −0,8 / −0,7 | +2,6 / +2,7 | −1,5 / −2,2 | **−3,7 / −1,5** | −2,2 / −1,8 |
+| 2010er | −0,8 / −0,9 | +4,1 / +3,2 | −1,5 / −1,1 | −3,7 / −3,4 | −2,7 / −2,0 |
+| 2020er | −1,2 / −1,1 | **+4,6 / +2,2** | −2,1 / −2,0 | **−4,8 / −2,1** | −2,7 / −1,9 |
+
+(„Top 3 von 10+" hat nach Startplatz-Gruppen kaum Fälle, nicht auswertbar.)
+
+- **Zum Teil Messfalle, bestätigt:** Mit gleich ungenauer Einteilung verschwindet ab 2000 die Abweichung „wer vorn
+  startet, verliert zu wenig" (Top 3 und 4–8 von vorn treffen). Vor 2000 bleibt sie kleiner bestehen.
+- **Echt bleiben:** Langsame von vorn fallen ab 2000 zu stark zurück (2020er −4,8 statt −2,1), Mittelfeld von
+  hinten holt zu viel auf (2020er +4,6 statt +2,2). Beides passt zu |Δ| ≥ 4 ab 2010 (30–34 statt 23–25 %).
+- **Regel:** Pace-Gruppen aus `PACE_RATINGS` taugen für Spiel-gegen-real-Vergleiche nur mit dieser Gegenprobe.
+  Das Spiel kennt die Pace exakt, real ist sie geschätzt.
