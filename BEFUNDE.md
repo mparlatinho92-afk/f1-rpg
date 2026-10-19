@@ -4195,3 +4195,22 @@ Teile wegen Abnutzung"). Strafe nach Größe getrennt, % je Start:
   Rennen 13–17 4,7 / 8,0 / 2,2 %; je Fahrer und Saison Ø 1,68 (real 1,84, mit 2022–24-Faktor); nach Unfall 14,7 / sonst
   8,9 % (real 16,4 / 9,7). 2005–12 Ø 0,71 (real 0,73). Vakuum-Vollauf unverändert im Rauschen (Spearman trocken 0,726,
   Punktefahrer 1,76 / +0,46). Ticker-Parität 40/40 und 2018, `ticker-browser.js` 1965/2018 grün.
+
+### 19.10.2026 (5): Was kostet eine Strafversetzung im Ziel? Spiel 0,21, real 0,05 Plätze je Startplatz
+
+Bestrafte gegen unbestrafte Fahrer mit gleichem Quali-Platz (Spiel: gleiches Jahr, 2014–24 × 3 Läufe; real: F1DB
+2014–24, Dreijahres-Gruppen), Mehrverlust im Ziel unter den Zielankünften:
+
+| | Fälle | Ø zurückversetzt | Ø Mehrverlust im Ziel | je Startplatz (k) |
+|---|---|---|---|---|
+| Spiel | 1034 | 6,0 | 1,24 | **0,21** (≤5: 0,29 · 6–10: 0,21 · > 10: 0,16) |
+| real | 301 | 4,6 | 0,25 | **0,05** |
+
+- Real holen bestrafte Fahrer fast alles wieder auf (neue Teile, freie Strategiewahl, Fahrer meist schnell). Im Spiel
+  bleibt ein Fünftel des Verlusts hängen. Passt zur Restabweichung „das Spiel sortiert zu verlässlich" in die
+  andere Richtung: hier sortiert es zu WENIG zurück. Kleine Fallzahl real, nicht weiter verfolgt.
+- **Eingebaut (Nutzer-Regel „Strafe darf die Bewertung nicht verschlechtern"):** `STRAFE_ZIEL_GUTSCHRIFT` = 0,21,
+  `strafeGutschrift(rr, driverId)`. In `_computeDriverSeasonScore` (Zufriedenheit) und `leistungRelativZumAuto`
+  zählt der Zielplatz eines bestraften Fahrers um 0,21 × verlorene Startplätze besser. Startplatz zählte schon
+  vorher nicht (Bewertung liest den Quali-Platz). Geprüft an 2018: 29 Starts mit Gutschrift, Ø 1,5 Plätze, keine
+  ungültigen Werte. ⚠ WM-Punkte (Teil von `leistungRelativZumAuto`) bleiben absolut — Punkte sind Punkte.
