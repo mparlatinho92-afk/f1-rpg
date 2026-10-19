@@ -4112,3 +4112,42 @@ Plätze gewonnen, Spiel / real:
   hinten holt zu viel auf (2020er +4,6 statt +2,2). Beides passt zu |Δ| ≥ 4 ab 2010 (30–34 statt 23–25 %).
 - **Regel:** Pace-Gruppen aus `PACE_RATINGS` taugen für Spiel-gegen-real-Vergleiche nur mit dieser Gegenprobe.
   Das Spiel kennt die Pace exakt, real ist sie geschätzt.
+
+### 19.10.2026 (2): Kleinere Auto-Abstände ab 2000 (`ERA_TEAM_SPREAD`) – NEGATIVERGEBNIS
+
+`ERA_TEAM_SPREAD` ab 2000 × 0,8 (18/21/18) und × 0,65 (14/17/14), sonst v0.9.21.24. Gegenprobe nach Ø Startplatz:
+
+| | Ausgang (22/26/22) | × 0,8 | × 0,65 | real |
+|---|---|---|---|---|
+| Rest von P1–3, 2000er / 2020er | −3,7 / −4,8 | −3,7 / −5,0 | **−4,8 / −6,1** | −1,5 / −2,1 |
+| 4–8 von 10+, 2020er | +4,6 | +4,3 | +4,4 | +2,2 |
+| |Δ| ≥ 4, 2010er / 2020er | 30,9 / 33,5 | 32,0 / 33,9 | 32,5 / 34,6 | 23,0 / 25,1 |
+| Punkteanteil starkes Drittel Spiel − real | −2,2 | −2,7 | −3,1 | – |
+| Punktefahrer Ø|Diff| | 1,82 | 1,85 | 1,97 | – |
+
+- Kleinere Abstände machen es eher schlechter: Langsame von vorn fallen noch stärker zurück, das Feld bewegt
+  sich mehr, das starke Drittel verliert Punkte. Bleibt bei 22/26/22.
+- **Fünf Hebel ohne Wirkung** auf die echte Restabweichung (Startplatz-Bonus, Rennrauschen, Quali-Rauschen ohne
+  Form, Formverhältnis, Auto-Abstände).
+
+### 19.10.2026 (3): Gesamtes Quali-Rauschen ab 2000 kleiner – kleine, gleichgerichtete Besserung
+
+Quali-Rauschen INSGESAMT (Wochenendform-Anteil + übriges) ab 2000 × f, vor 2000 unverändert, Rennen-Form ±4:
+
+| | Ausgang | f 0,75 | f 0,6 | real |
+|---|---|---|---|---|
+| Spearman trocken / teilw. / durchg. (alle Jahre) | 0,710 / 0,655 / 0,667 | 0,722 / 0,662 / 0,675 | 0,724 / 0,665 / 0,663 | 0,733 / 0,643 / 0,683 |
+| |Δ| ≥ 4, 2000er / 2010er / 2020er | 24,7 / 30,9 / 33,5 | 23,5 / 29,5 / 31,7 | **21,4 / 29,1 / 31,1** | 20,6 / 23,0 / 25,1 |
+| Gegenprobe Rest von P1–3, 2000er / 2010er | −3,7 / −3,7 | −4,3 / −4,3 | −3,3 / −4,5 | −1,5 / −3,4 |
+| Gegenprobe 4–8 von 10+, 2010er / 2020er | +4,1 / +4,6 | +4,2 / +4,8 | +5,1 / +5,2 | +3,2 / +2,2 |
+| Punktefahrer Ø|Diff| / ± | 1,82 / +0,64 | 1,71 / +0,47 | **1,73 / +0,16** | – |
+| Punkteanteil starkes Drittel Spiel − real | −2,2 | −1,9 | −2,0 | – |
+
+- Trocken etwas geordneter (Richtung real), die Bewegung ab 2000 sinkt um 1–3 Pp (2000er mit f 0,6 auf real),
+  die Punktefahrer-Abweichung wird kleiner. Nass unverändert.
+- Die zwei echten Restabweichungen (Langsame von vorn, Mittelfeld von hinten) bewegen sich kaum. Ab 2010 bleibt
+  das Feld zu beweglich (29–31 statt 23–25 %).
+- **Übernommen (Nutzer 19.10.2026): `ERA_QUALI_STREUUNG` = { 1950: 1, 2000: 0,6 }.** Ticker-Parität 40/40 und 2018,
+  `ticker-browser.js` 1965/2018 grün.
+- ▶ **Thema pausiert.** Offen und dokumentiert: ab 2010 zu viel Bewegung, Langsame von vorn fallen zu stark zurück,
+  Mittelfeld von hinten holt zu viel auf. Sechs Hebel geprüft, siehe 18.10.2026 (10)–(13) und 19.10.2026 (1)–(3).
