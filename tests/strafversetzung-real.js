@@ -68,3 +68,36 @@ for (const [a, b] of AEREN) {
         + `          ${(sum / fs_.size).toFixed(2).padStart(5)}               ${isNaN(avg) ? '   -' : avg.toFixed(1).padStart(4)}`
         + `          ${(100 * t3s / t3n).toFixed(1).padStart(5)} % / ${String(t3s).padStart(3)} / ${t3sieg}`);
 }
+
+// === VERTEILUNG IN DER SAISON (19.10.2026, Nutzer-Frage) ===
+// Strafe = gridPenalty gesetzt oder Boxengasse (wie ERA_STARTSTRAFE; „ohne Quali-Zeit" nicht).
+// 1) je Saisonfünftel (Rennen-Nr. / Rennen der Saison), 2) Strafen je Fahrer und Saison,
+// 3) nach Unfall im Rennen davor (DNF mit accident/collision/spun off/spin) gegen ohne.
+{
+    const UNFALL = /accident|collision|spun off|\bspin\b/i;
+    const strafe = g => !!g.gridPenalty || g.positionText === 'PL';
+    const rundenJe = {};
+    for (const r of races) rundenJe[r.year] = Math.max(rundenJe[r.year] || 0, r.round);
+    const ergVon = new Map(erg.map(e => [e.year + '|' + e.round + '|' + e.driverId, e]));
+    for (const [a, b] of [[2003, 2013], [2014, 2024]]) {
+        const l = grid.filter(g => g.year >= a && g.year <= b && !indy.has(g.raceId));
+        const f5 = [0, 1, 2, 3, 4].map(() => [0, 0]);
+        const je = {};
+        let mitU = [0, 0], ohneU = [0, 0];
+        for (const g of l) {
+            const k = Math.min(4, Math.floor(5 * (g.round - 1) / rundenJe[g.year]));
+            f5[k][0]++; if (strafe(g)) f5[k][1]++;
+            const fs = g.year + '|' + g.driverId; je[fs] = (je[fs] || 0) + (strafe(g) ? 1 : 0);
+            if (g.round > 1) {
+                const vor = ergVon.get(g.year + '|' + (g.round - 1) + '|' + g.driverId);
+                const u = vor && vor.positionText === 'DNF' && UNFALL.test(vor.reasonRetired || '');
+                const z = u ? mitU : ohneU; z[0]++; if (strafe(g)) z[1]++;
+            }
+        }
+        const p = ([n, s]) => (100 * s / n).toFixed(1) + ' %';
+        console.log(`\n  ${a}–${b}: Strafe je Start nach Saisonfünftel: ${f5.map(p).join(' · ')}`);
+        const anz = Object.values(je), n = anz.length, k = c => (100 * anz.filter(x => c(x)).length / n).toFixed(1) + ' %';
+        console.log(`  Strafen je Fahrer und Saison (${n} Fahrer-Saisons): 0 ${k(x => x === 0)} · 1 ${k(x => x === 1)} · 2 ${k(x => x === 2)} · 3+ ${k(x => x >= 3)} · Ø ${(anz.reduce((x, y) => x + y, 0) / n).toFixed(2)}`);
+        console.log(`  nach Unfall im Rennen davor: ${p(mitU)} (n ${mitU[0]}) · sonst ${p(ohneU)} (n ${ohneU[0]})`);
+    }
+}

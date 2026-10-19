@@ -4151,3 +4151,47 @@ Quali-Rauschen INSGESAMT (Wochenendform-Anteil + übriges) ab 2000 × f, vor 200
   `ticker-browser.js` 1965/2018 grün.
 - ▶ **Thema pausiert.** Offen und dokumentiert: ab 2010 zu viel Bewegung, Langsame von vorn fallen zu stark zurück,
   Mittelfeld von hinten holt zu viel auf. Sechs Hebel geprüft, siehe 18.10.2026 (10)–(13) und 19.10.2026 (1)–(3).
+
+### 19.10.2026 (4): Strafversetzung – Verteilung in der Saison (Nutzer-Frage)
+
+`node tests/strafversetzung-real.js` (Abschnitt „Verteilung in der Saison"), Strafe = `gridPenalty` oder Boxengasse:
+
+| | 1. Fünftel | 2. | 3. | 4. | 5. | nach Unfall im Rennen davor / sonst |
+|---|---|---|---|---|---|---|
+| 2003–2013 | 4,5 % | 4,6 | 4,0 | 5,3 | 5,3 | **8,7 / 4,4 %** |
+| 2014–2024 | **5,5 %** | 10,2 | 10,7 | **13,1** | 10,4 | **16,4 / 9,7 %** |
+
+Strafen je Fahrer und Saison: 2003–13 0 = 53 %, 1 = 28, 2 = 12, 3+ = 6 (Ø 0,73) · 2014–24 0 = 18 %, 1 = 29, 2 = 24,
+3+ = 30 (Ø 1,84).
+
+- **Nutzer-Vermutung bestätigt, ab 2014:** Im ersten Saisonfünftel halb so viele Strafen wie danach (Kontingent an
+  Power-Unit-Teilen ist erst aufgebraucht). Höhepunkt im vierten Fünftel. 2003–13 (Motor muss X Rennen halten)
+  über die Saison flach.
+- **Nach einem Unfall im Rennen davor knapp doppelt so oft** (2003–13 × 2,0, ab 2014 × 1,7).
+- Je Fahrer und Saison ab 2014 fast genau Poisson (Ø 1,84 → 16 / 29 / 27 / 28 %), 2003–13 etwas breiter (manche
+  Fahrer/Teams öfter betroffen).
+- Im Spiel war die Rate bis v0.9.21.25 in jedem Rennen gleich und ohne Unfall-Bezug.
+
+**Nachmessung je Rennnummer und Art** (Nutzer-Einwand: „erstes Fünftel zu grob, im Auftaktrennen wechselt niemand
+Teile wegen Abnutzung"). Strafe nach Größe getrennt, % je Start:
+
+| Rennen | 2003–13 sport (3/5) / teile (10+, Ende) / box | 2014–24 sport / teile / box |
+|---|---|---|
+| 1 | 0,8 / 0,8 / 2,1 | 4,5 / **0,0** / 0,5 |
+| 2 | 2,5 / 4,6 / 0,8 | 4,9 / 0,4 / 0,9 |
+| 3–4 | 1,9 / 0,4 / 0,8 | 2,7 / 0,7 / 2,2 |
+| 5–7 | 2,7 / 1,0 / 1,0 | 4,0 / 1,0 / 2,1 |
+| 8–12 | 2,2 / 1,3 / 0,8 | 4,9 / 3,1 / 2,4 |
+| 13–17 | 3,0 / 2,1 / 0,5 | 3,8 / **8,6** / 1,7 |
+| 18+ | 2,2 / 1,3 / 0,6 | 4,6 / 3,2 / 2,3 |
+
+- Auch im Auftaktrennen gibt es real Strafen, ab 2014 nur sportliche (Bottas 2014/2018 Getriebe nach Quali-Unfall,
+  Ricciardo 2018 rote Flagge, Hamilton 2020 und Vettel 2021 gelbe Flaggen). Teile-Strafen erst ab Rennen 2,
+  nennenswert ab Rennen 8, Höhepunkt Rennen 13–17.
+- **Eingebaut** (`STARTSTRAFE_ARTEN`, `STARTSTRAFE_GROESSE` je Art, `STARTSTRAFE_NACH_UNFALL` 1,8 / 0,95,
+  `STARTSTRAFE_AERA_FAKTOR` 2022: 0,76; ersetzt `ERA_STARTSTRAFE`). Ticker-Grund passend zur Art (3/5 Plätze =
+  Flagge, Behindern, Getriebe nach Abflug; 10/Ende = Motor/Power Unit).
+- **Im Spiel nachgemessen** (ganze Saisons, 2 Läufe je Jahr): 2015–24 Rennen 1 sport 3,0 / teile 0,0 / box 0,0 %,
+  Rennen 13–17 4,7 / 8,0 / 2,2 %; je Fahrer und Saison Ø 1,68 (real 1,84, mit 2022–24-Faktor); nach Unfall 14,7 / sonst
+  8,9 % (real 16,4 / 9,7). 2005–12 Ø 0,71 (real 0,73). Vakuum-Vollauf unverändert im Rauschen (Spearman trocken 0,726,
+  Punktefahrer 1,76 / +0,46). Ticker-Parität 40/40 und 2018, `ticker-browser.js` 1965/2018 grün.
