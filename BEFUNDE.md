@@ -4214,3 +4214,85 @@ Bestrafte gegen unbestrafte Fahrer mit gleichem Quali-Platz (Spiel: gleiches Jah
   zählt der Zielplatz eines bestraften Fahrers um 0,21 × verlorene Startplätze besser. Startplatz zählte schon
   vorher nicht (Bewertung liest den Quali-Platz). Geprüft an 2018: 29 Starts mit Gutschrift, Ø 1,5 Plätze, keine
   ungültigen Werte. ⚠ WM-Punkte (Teil von `leistungRelativZumAuto`) bleiben absolut — Punkte sind Punkte.
+
+### 22.10.2026: Rennverlauf Runde für Runde – real gegen Ticker
+
+**Daten:** Position jedes Fahrers nach jeder Runde, 543 Rennen 1996–2024 (`tests/jolpica-data/runden-YYYY.json`,
+1 Rennen unter 5 Runden ausgelassen). Auswertung `node tests/rennverlauf-real.js`, Ticker mit derselben Rechnung
+`node tests/rennverlauf-ticker.js 8` (232 Rennen, 8 je Jahr, v0.9.21.27). Gemessen ab Runde 1; die Startrunde steht
+in 18.10.2026 (6). „Platzwechsel" = vertauschte Paare zwischen zwei Runden, **inklusive Boxenstopp-Tausch**.
+
+| 1996–2024 | Wechsel/Runde | Führungswechsel | Rennen ohne FW | versch. Führende | Sieger führt endgültig ab | Spearman→Ziel 10 / 50 / 75 / 90 % |
+|---|---|---|---|---|---|---|
+| real alle | 2,55 | 2,97 | 18,0 % | 2,54 | 49,6 % der Distanz | 0,781 / 0,874 / 0,925 / 0,953 |
+| real ohne Dom | 2,22 | 2,96 | 17,9 % | 2,58 | 48,7 % | 0,757 / 0,856 / 0,916 / 0,950 |
+| **Ticker** | **1,84** | 3,85 | **40,5 %** | **1,80** | **27,0 %** | 0,760 / **0,907 / 0,976 / 0,997** |
+
+Real je Ära (alle): Wechsel/Runde 1,65 · 2,43 · **3,48** · 2,20 · 2,95 (1996–2002 · 03–09 · 10–16 · 17–21 · 22–24),
+ohne Dom 1,43 · 2,02 · 3,10 · 1,96 · 2,55. Ticker flach 1,66–2,08 in jeder Ära.
+
+- **Der Ticker legt das Ergebnis zu früh fest.** Nach drei Vierteln stimmt seine Reihenfolge fast schon (0,976),
+  real erst 0,925; real steht der Sieger erst nach der Hälfte fest, im Ticker nach gut einem Viertel. Grund: das
+  Rauschen läuft linear gegen null (`index.html` ~20165), die Zielposition wird gleichmäßig angesteuert.
+- **Führungswechsel im Ticker sind Flackern, keine Wechsel:** mehr Wechsel (3,85 / 2,97), aber doppelt so oft gar
+  keiner (40 / 18 %) und weniger verschiedene Führende (1,80 / 2,54). Das Rauschen tauscht zwei Nachbarn hin und
+  her. Real wechseln die Führenden v. a. über Boxenstopps durch.
+- **Zu wenig Bewegung insgesamt** (1,84 / 2,55) und kein Ära-Trend; real ist 2010–16 die bewegteste Ära
+  (Pirelli-Reifen, DRS, mehrere Stopps), auch ohne Dom.
+- **Das Profil über die Distanz passt dagegen schon** (Anteil Platzwechsel je Zehntel, alle Jahre):
+  real 9,6 · 12,9 · 16,7 · 17,5 · 12,2 · 10,9 · 9,9 · 5,8 · 2,6 · 1,8 — Ticker 10,3 · 16,4 · 16,8 · 15,8 · 13,6 ·
+  10,7 · 7,9 · 5,1 · 3,0 · 0,5. Real liegt der Gipfel etwas später (30–40 %, Boxenfenster), im letzten Zehntel
+  passiert real noch dreimal so viel.
+
+⚠ **Messfalle Fahrerliste:** `runden-2016.json` hatte nach dem Download eine leere Fahrerliste (Abfrage achtmal 530,
+leere Liste gespeichert und nie neu versucht). Ohne sie fand „ohne Dom" 2016 kein einziges Team (448
+Fahrer-Rennen ohne Zuordnung) und ließ Mercedes drin. Skript korrigiert, Liste nachgeladen; `rennverlauf-real.js`
+meldet „Fahrer-Rennen ohne Team" in der Kopfzeile — muss leer sein.
+
+### 22.10.2026 (2): Träger Versatz im Ticker statt Rauschen je Runde (eingebaut, `TICKER_VERSATZ`)
+
+Reine Darstellung, Schlussrunde zeigt weiter exakt `plannedResult` (`ticker-paritaet.js --alle 80`: 80/80, Browser
+ohne Skriptfehler). Jeder Fahrer trägt einen Versatz in Rängen zu seinem Weg Start → Ziel: AR(1) mit Gedächtnis
+`TICKER_VERSATZ_DAUER` = 0,5 der Distanz, ab `TICKER_VERSATZ_SAMMELN_AB` = 0,90 linear eingesammelt, auf P1 nur
+`TICKER_VERSATZ_SPITZE` = 0,55 davon (voll ab P8). Stärke je Ära `TICKER_VERSATZ` 1,15 · 1,45 · 1,75 · 1,2 · 1,5
+(bis 2002 · 03–09 · 10–16 · 17–21 · ab 22). Vor 1996 keine Rundendaten, erbt 1996–2002 — **Annahme, nicht gemessen.**
+
+Messung `rennverlauf-ticker.js 12` (348 Rennen) gegen real alle:
+
+| 1996–2024 | Wechsel/Rd | Führ.wechsel | ohne FW | Führende | Sieger führt ab | Spearman→Ziel 50 / 75 / 90 % |
+|---|---|---|---|---|---|---|
+| real | 2,55 | 2,97 | 18,0 % | 2,54 | 49,6 % | 0,874 / 0,925 / 0,953 |
+| Ticker vorher | 1,84 | 3,85 | 40,5 % | 1,80 | 27,0 % | 0,907 / 0,976 / 0,997 |
+| **Ticker jetzt** | **2,51** | 4,16 | **19,5 %** | 2,22 | 54,5 % | **0,880 / 0,939 / 0,963** |
+
+Wechsel/Runde je Ära jetzt / real: 1,70/1,65 · 2,30/2,43 · 3,61/3,48 · 2,15/2,20 · 2,95/2,95.
+
+**Verworfene Einstellungen (Gesamt 1996–2024, alle Ären gleich stark):**
+- Stärke 2,0, Gedächtnis 0,08, ohne Spitzenfaktor: 8,5 Wechsel/Rd, 15,8 Führungswechsel, nie ein Rennen ohne. Viel zu
+  unruhig — ein Rang Versatz reicht an der Spitze für dauernde Wechsel.
+- Gedächtnis 0,15–0,25 bei Stärke 0,8–1,2: Wechsel stimmt (1,95–3,2), aber 4,5–7,7 Führungswechsel. Kurzes
+  Gedächtnis = Flackern.
+- Spitzenfaktor 0,3–0,4: Spitze zu ruhig (29–36 % ohne Führungswechsel, 1,9–2,1 Führende).
+- **Offen:** Führungswechsel bleiben 1,2 zu hoch (Rest-Flackern an der Spitze). Das Profil über die Distanz ist
+  flacher als real (real Gipfel bei 20–40 % = Boxenfenster, Ticker gleichmäßig 11–12 %), und im letzten Zehntel
+  passieren 5,3 % statt 1,8 % der Wechsel, weil dort eingesammelt wird. Beides wäre Baustein B (Boxenstopp als
+  vorübergehender Platzverlust) — Nutzer-Entscheidung, berührt die Regel „Boxenstopps kosten keine Zeit".
+
+### 22.10.2026 (3): Startrunde im Ticker (eingebaut, `TICKER_STARTRUNDE`, `TICKER_STARTRUNDE_WEG`)
+
+Nach (2) stand im Ticker nach Runde 1 noch jeder auf seinem Startplatz: Spearman Start → R1 **0,996–0,998**
+in jeder Ära, real 0,849 · 0,852 · 0,862 · 0,866 · 0,896 (18.10.2026 (6)). Der Versatz begann bei null und wuchs
+langsam. Die Ausfälle in Runde 1 stimmten schon (Ausfallrunde .21.24): 5,5 · 4,4 · 3,1 · 2,9 · 2,4 % / real
+5,0 · 4,2 · 3,0 · 3,0 · 2,5 %.
+
+**Eingebaut:** in Runde 1 ein einmaliger Sprung im Versatz (`TICKER_STARTRUNDE` 3,3 · 3,3 · 3,4 · 3,2 · 2,6 Ränge)
+plus `TICKER_STARTRUNDE_WEG` = 0,25: ein Viertel des Wegs Start → Ziel passiert schon in der Startrunde.
+
+- **Negativergebnis reiner Sprung:** Sprung 3,0 ohne Wegvorschuss gab Start → R1 0,91, aber Spearman zum Ziel nach
+  10 % nur 0,728 (real 0,781). Ein ungerichteter Sprung entfernt die Reihenfolge vom Ziel; real ist die Startrunde
+  schon teils gerichtet (Top 3 von P10+ gewinnen dort +2,0 Plätze). Sprung 4,0 + Weg 0,35 überzog (0,744–0,809).
+- **Ergebnis** (`rennverlauf-ticker.js 12`, 2022–24 mit 20 je Jahr): Start → R1 0,857 · 0,854 · 0,868 · 0,858 · 0,900;
+  übrige Kennzahlen 1996–2024 Wechsel/Rd 2,59 (real 2,55), Führungswechsel 4,40 (2,97), ohne FW 18,1 % (18,0),
+  Führende 2,32 (2,54), Sieger führt ab 55,1 % (49,6), Spearman→Ziel 10/50/75/90 % 0,773/0,893/0,942/0,959
+  (real 0,781/0,874/0,925/0,953). Parität 80/80, Browser 1965 und 2010 ohne Skriptfehler.
+- ⚠ Startrunde vor 1996 erbt 1996–2002 — Annahme, keine Rundendaten.

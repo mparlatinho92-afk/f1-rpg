@@ -83,11 +83,14 @@ async function main() {
         const outPath = path.join(OUT_DIR, `runden-${jahr}.json`);
         const stand = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8'))
                                              : { year: jahr, source: 'jolpica/ergast', races: [] };
-        if (!stand.drivers) {
+        // Leere Liste = Abfrage war gescheitert (2016: achtmal 530) → beim nächsten Start neu holen
+        if (!stand.drivers || !Object.keys(stand.drivers).length) {
             const d = await fetchJSON(`${BASE}/${jahr}/drivers.json?limit=100`);
             stand.drivers = {};
             for (const x of ((d && d.MRData && d.MRData.DriverTable && d.MRData.DriverTable.Drivers) || []))
                 stand.drivers[x.driverId] = { given: x.givenName, family: x.familyName, dob: x.dateOfBirth };
+            if (!Object.keys(stand.drivers).length) console.log(`FEHLER ${zeit()} ${jahr}: keine Fahrerliste, wird beim nächsten Start erneut versucht`);
+            else if (stand.races.length) fs.writeFileSync(outPath, JSON.stringify(stand), 'utf8');   // sonst ginge sie verloren, wenn kein Rennen mehr fehlt
             await sleep(DELAY);
         }
         const fertig = new Set(stand.races.map(r => r.round));
