@@ -73,6 +73,10 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
      und am Sonntag dort)? Deine 7-Zeilen-Liste enthält Fahrer und Team, die Wikipedia-Liste nicht.
   2. Soll das Werkzeug zuerst eigenständig sein (rennkalender.html) und später eingebaut werden, oder gleich als
      Bereich in der Haupt-HTML entstehen?
+
+  **Entscheidung Nutzer 22.10.2026:** (1) beides — Kalender (welche Rennen kollidieren) UND Fahrer (wer fuhr wann
+  wo). (2) erst eigenständiges `rennkalender.html`; Einbau in die Haupt-HTML später, wenn das Spiel weitere
+  Rennserien kennt (bisher nur F1).
 - ✚ Claude MD Management Plugin nutzen bzw. Claude.md aufräumen/verschlanken. Konzepte und Themen raushalten. Gibt es weitere Plugins, die bei unserem Projekt hilfreich sind?
 - ✚ neu zu Unfall und natürlicher Teileabnutzung: Übersicht der Abnutzung der einzelnen Teile zwischen den Rennen: wo? im Fahrersteckbrief und im Teamsteckbrief bei den Fahrern. Läuft nach Ende der Saison ab/wird zurückgesetzt. Fahrer ohne Vertrag/tot haben die Teilabnutzungs-Info nicht. Teile sind Saisongenau der Stand der Technik. Da es einige Teile sind, könnte die Info aufblähen. Eine Teileübersicht hat niedrige Priorität. Die Frage ist, lohnt sich es vor Zeiten der Strafversetzung?
 - ✚ erst Konzept. Machbarkeits-Theorie. nur für den Spielstand generierte, komplette Kart-Welt eines Landes oder Region. Teilnahmen an mehreren Serien berücksichtigen. Realistische Teilnahmen. Global Pathway Kart-Konzept https://gemini.google.com/app/e56077b4a25061bd Gemini schon Teile der Auswertung
