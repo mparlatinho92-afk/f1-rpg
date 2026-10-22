@@ -21,62 +21,14 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Jetlag-Kalender siehe wohl Google Gemini
-- ✚ "C:\Users\lyric\OneDrive\Dokumente\F1 Simulator_ Termin- und Reiseplanung.pdf"
-
-● Ich lese die PDF aus deinem OneDrive-Ordner, außerhalb des Projekts, nur lesend.
-
-  Read 1 file (ctrl+o to expand)
-
-● Ich habe die PDF gelesen: 17 Seiten Gemini-Chat. Hier das Wesentliche und wie ich es mit dem Projekt verbinden
-  würde.
-
-  Was du dort festgelegt hast:
-  - Ein eigenes HTML-Werkzeug, das später Teil der Haupt-HTML wird. Es zeigt Rennkalender 1950–1985 mit Schwerpunkt
-    auf den 50ern und 60ern, als F1-Fahrer auch andere Serien fuhren.
-  - Drei Arten von Rennen, farblich getrennt: WM-Läufe, Rennen ohne WM-Status und alles andere (F2, Sportwagen,
-    Indy).
-  - Ein Importer für „Chaos“-Listen: Wikipedia-Tabellen ohne Jahreszahl („13 January“) und Blöcke aus 7 Zeilen mit
-    Daten im Format TT/MM/JJJJ.
-  - Er erkennt Terminkonflikte am selben Tag und zeigt die Reisebelastung: Tage dazwischen, Zeitverschiebung,
-    Entfernung. Das soll auch über den Jahreswechsel funktionieren (zum Beispiel Südafrika im Dezember, Argentinien
-    im Januar).
-  - Rennen ohne Startzeit bekommen 14 Uhr, die Daten bleiben im Browser gespeichert, und es gibt einen JSON-Export.
-
-  Was am Gemini-Code nicht trägt (beim Lesen aufgefallen, nicht ausgeführt):
-  - Die Zeitzonen sind eine feste Liste von etwa 15 Orten, ohne Sommerzeit. Jeder unbekannte Ort zählt als GMT+0.
-  - Der letzte Parser trennt Rennname und Ort bei Wikipedia-Tabellen nur über Tabulatoren. Bei normalem Kopieren
-    landet der ganze Text im Namen.
-  - Nach dem Neuladen liegen die Daten aus dem Speicher als Text vor. Die Sortierung ruft aber getTime() darauf auf
-    und bricht ab, sobald etwas gespeichert ist.
-  - „Cache leeren“ löscht den gesamten Browser-Speicher der Seite, nicht nur die Renndaten.
-
-  Was das Projekt schon hat und Gemini nicht kannte:
-  - F1DB: alle WM-Rennen 1950–1985 mit Datum und Strecke, und jede Strecke mit Koordinaten. Die WM-Kalender müssen
-    also nicht eingefügt werden.
-  - data/places.js: 15.420 echte Orte aus GeoNames. Daraus lassen sich Orte aus den Chaos-Listen, die nicht in F1DB
-    stehen, mit Koordinaten finden.
-  - Zeitzonen: Der Browser kennt die echten historischen Zeitzonen samt Sommerzeit, wenn man je Strecke den
-    Zeitzonennamen hinterlegt (zum Beispiel „Europe/London“). Eine handgepflegte Liste mit Abständen zu GMT ist
-    dann unnötig.
-
-  Mein Vorschlag:
-  1. Ein eigenes Werkzeug, zum Beispiel rennkalender.html im Projekt. Die WM-Läufe 1950–1985 kommen vorbefüllt aus
-     F1DB.
-  2. Ein Importer, der beide Formate aus der PDF erkennt und vor dem Übernehmen eine Vorschau zeigt. So landet kein
-     falsch zerlegter Datensatz in der Liste.
-  3. Für die Reisebelastung: Entfernung aus den Koordinaten, Zeitverschiebung mit echter Zeitzone, Tage dazwischen,
-     über den Jahreswechsel hinweg.
-  4. Gespeichert wird im Browser, dazu Export und Import als Datei. Das Leeren betrifft nur die Renndaten.
-
-  Zwei Dinge muss ich vorher von dir wissen:
-  1. Geht es um den Kalender (welche Rennen kollidieren überhaupt) oder um Fahrer (Jim Clark fuhr am Samstag hier
-     und am Sonntag dort)? Deine 7-Zeilen-Liste enthält Fahrer und Team, die Wikipedia-Liste nicht.
-  2. Soll das Werkzeug zuerst eigenständig sein (rennkalender.html) und später eingebaut werden, oder gleich als
-     Bereich in der Haupt-HTML entstehen?
-
-  **Entscheidung Nutzer 22.10.2026:** (1) beides — Kalender (welche Rennen kollidieren) UND Fahrer (wer fuhr wann
-  wo). (2) erst eigenständiges `rennkalender.html`; Einbau in die Haupt-HTML später, wenn das Spiel weitere
-  Rennserien kennt (bisher nur F1).
+- ✚ **Rennkalender / Reisebelastung 1950–1985** (Konzept aus Gemini-Chat, PDF `OneDrive/Dokumente/F1 Simulator_ Termin- und
+  Reiseplanung.pdf`; Dialog-Backup im Wortlaut in Git, Commit 35ad4f5). Kern: WM-Läufe, Nicht-WM-Rennen und andere Serien
+  farblich getrennt; Terminkonflikte; Reisebelastung (Tage, Zeitverschiebung, Entfernung, auch über den Jahreswechsel);
+  Importer für Wikipedia-Tabellen und 7-Zeilen-Blöcke mit Vorschau. Bausteine im Projekt: F1DB-Kalender + Streckenkoordinaten,
+  `data/places.js`, echte Zeitzonen (IANA) statt fester GMT-Liste. Mängel im Gemini-Code: feste Zeitzonenliste ohne
+  Sommerzeit, Parser nur über Tabulatoren, Sortierung bricht nach Neuladen, „Cache leeren" löscht den ganzen Speicher.
+  **Entscheidung Nutzer 22.10.2026:** (1) beides — Kalender (welche Rennen kollidieren) UND Fahrer (wer fuhr wann wo).
+  (2) erst eigenständiges `rennkalender.html`; Einbau in die Haupt-HTML später, wenn das Spiel weitere Rennserien kennt.
 - ✚ Claude MD Management Plugin nutzen bzw. Claude.md aufräumen/verschlanken. Konzepte und Themen raushalten. Gibt es weitere Plugins, die bei unserem Projekt hilfreich sind?
 - ✚ neu zu Unfall und natürlicher Teileabnutzung: Übersicht der Abnutzung der einzelnen Teile zwischen den Rennen: wo? im Fahrersteckbrief und im Teamsteckbrief bei den Fahrern. Läuft nach Ende der Saison ab/wird zurückgesetzt. Fahrer ohne Vertrag/tot haben die Teilabnutzungs-Info nicht. Teile sind Saisongenau der Stand der Technik. Da es einige Teile sind, könnte die Info aufblähen. Eine Teileübersicht hat niedrige Priorität. Die Frage ist, lohnt sich es vor Zeiten der Strafversetzung?
 - ✚ erst Konzept. Machbarkeits-Theorie. nur für den Spielstand generierte, komplette Kart-Welt eines Landes oder Region. Teilnahmen an mehreren Serien berücksichtigen. Realistische Teilnahmen. Global Pathway Kart-Konzept https://gemini.google.com/app/e56077b4a25061bd Gemini schon Teile der Auswertung
