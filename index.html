@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.27</title>
+    <title>F1 RPG v0.9.21.28</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.27 (aktuell) - 19.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.28 (aktuell) - 22.10.2026</div>
+                            <div>&#8226; NEU: Live-Ticker verläuft wie echte Rennen (Platzwechsel, Führungswechsel je Ära aus Rundendaten 1996–2024)</div>
+                            <div>&#8226; NEU: Startrunde mischt das Feld wie real, ab 2022 ruhiger</div>
+                            <div>&#8226; NEU: Sieger steht im Ticker erst ab Rennmitte fest statt nach einem Viertel</div>
+                            <div class="font-bold text-slate-400">v0.9.21.27 - 19.10.2026</div>
                             <div>&#8226; FIX: Strafversetzung verschlechtert Zufriedenheit und Bewertung nicht mehr – der Zielplatz bekommt eine Gutschrift in Höhe dessen, was eine Strafe im Mittel kostet</div>
                             <div>&#8226; NEU: wer nach einer Strafe stark aufholt, wird dafür belohnt</div>
                             <div class="font-bold text-slate-400">v0.9.21.26 - 19.10.2026</div>
@@ -4390,7 +4394,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.27';
+        const VERSION = '0.9.21.28';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -20056,6 +20060,31 @@
             return Math.min(n - 1, von + Math.floor(Math.random() * (bis - von + 1)) + 1);   // wie bisher nie in der Schlussrunde
         }
 
+        // === RENNVERLAUF IM TICKER (22.10.2026) — REINE DARSTELLUNG ===
+        // Jeder Fahrer trägt einen Versatz (in Rängen) zu seinem Weg Start → Ziel, der sich nur langsam ändert
+        // (Gedächtnis ~DAUER der Distanz) und erst ab SAMMELN_AB eingesammelt wird. Die Schlussrunde zeigt
+        // weiter exakt plannedResult. Vorher: unabhängiges Rauschen je Runde, linear gegen null — der Ticker
+        // legte das Ergebnis zu früh fest (Spearman zum Ziel nach 75 % 0,976, real 0,925) und Führungswechsel
+        // waren Flackern zweier Nachbarn. Real je Ära aus tests/rennverlauf-real.js, BEFUNDE.md 22.10.2026.
+        // staerke = Streuung des Versatzes in Rängen. Vor 1996 keine Rundendaten: erbt 1996–2002.
+        const TICKER_VERSATZ = { 1950: 1.15, 2003: 1.45, 2010: 1.75, 2017: 1.2, 2022: 1.5 };
+        const TICKER_VERSATZ_DAUER = 0.5, TICKER_VERSATZ_SAMMELN_AB = 0.90;
+        // Vorn liegen die Autos weiter auseinander: auf P1 wirkt nur SPITZE des Versatzes, ab P8 der volle.
+        const TICKER_VERSATZ_SPITZE = 0.65;
+
+        // Startrunde: einmaliger Sprung in Runde 1, klingt über das Gedächtnis ab. Real Start → Runde 1
+        // Spearman 0,849 · 0,852 · 0,862 · 0,866 · 0,896 (start-runde1-real.js, BEFUNDE 18.10.2026 (6));
+        // ohne Sprung zeigte der Ticker 0,997 — nach Runde 1 stand jeder noch auf seinem Startplatz.
+        const TICKER_STARTRUNDE = { 1950: 3.3, 2003: 3.3, 2010: 3.4, 2017: 3.2, 2022: 2.6 };
+        const TICKER_STARTRUNDE_WEG = 0.25;
+
+        function tickerVersatzSchritt(v, totalLaps, year, ersteRunde) {
+            const rho = Math.exp(-1 / (TICKER_VERSATZ_DAUER * Math.max(2, totalLaps)));
+            const normal = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+            return rho * v + Math.sqrt(1 - rho * rho) * getEraValue(TICKER_VERSATZ, year) * normal()
+                + (ersteRunde ? getEraValue(TICKER_STARTRUNDE, year) * normal() : 0);
+        }
+
         // Fable-Paket 1b (v0.9.18.25): Regen- und Rotflaggen-Meldungen im Ticker.
         // Reine Darstellung: OB es nass wird und OB rot kommt, steht in plannedResult
         // (regenArt, roteFlagge). Gewürfelt wird hier nur die Runde der Meldung – wie
@@ -20159,11 +20188,18 @@
                     return;
                 }
 
-                // Rang wandert vom Startplatz zur Zielposition. Das Rauschen macht die
-                // Fahrt lebendig und laeuft gegen Null, damit die Schlussrunde exakt
-                // die geplante Reihenfolge zeigt.
-                const _rausch = (Math.random() - 0.5) * 1.2 * (1 - _fortschritt);
-                const _rang = p._startRang + (p._zielRang - p._startRang) * _fortschritt + _rausch;
+                // Rang wandert vom Startplatz zur Zielposition, dazu der traege Versatz
+                // (TICKER_VERSATZ). Ab SAMMELN_AB wird er eingesammelt, damit die
+                // Schlussrunde exakt die geplante Reihenfolge zeigt.
+                p._versatz = tickerVersatzSchritt(p._versatz || 0, totalLaps, GAME_STATE.currentYear, lap === 1);
+                const _huelle = _fortschritt < TICKER_VERSATZ_SAMMELN_AB ? 1
+                    : Math.max(0, (1 - _fortschritt) / (1 - TICKER_VERSATZ_SAMMELN_AB));
+                // Ein Teil des Wegs passiert schon in der Startrunde (TICKER_STARTRUNDE_WEG): real holen
+                // schnelle Fahrer von hinten dort bereits auf, der Sprung allein waere reiner Zufall.
+                const _wegAnteil = TICKER_STARTRUNDE_WEG + (1 - TICKER_STARTRUNDE_WEG) * _fortschritt;
+                const _weg = p._startRang + (p._zielRang - p._startRang) * _wegAnteil;
+                const _vorn = TICKER_VERSATZ_SPITZE + (1 - TICKER_VERSATZ_SPITZE) * Math.min(1, Math.max(0, (_weg - 1) / 7));
+                const _rang = _weg + p._versatz * _huelle * _vorn;
                 p.totalTime = lap * _basisRunde + _rang * _abstandProRang;
                 p.tyreLaps++;
 
