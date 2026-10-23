@@ -4296,3 +4296,51 @@ plus `TICKER_STARTRUNDE_WEG` = 0,25: ein Viertel des Wegs Start → Ziel passier
   Führende 2,32 (2,54), Sieger führt ab 55,1 % (49,6), Spearman→Ziel 10/50/75/90 % 0,773/0,893/0,942/0,959
   (real 0,781/0,874/0,925/0,953). Parität 80/80, Browser 1965 und 2010 ohne Skriptfehler.
 - ⚠ Startrunde vor 1996 erbt 1996–2002 — Annahme, keine Rundendaten.
+
+### 22.10.2026 (4): Boxenstopps im Ticker als Erzählung (eingebaut, `TICKER_STOPPS`, `tickerStoppPlan`)
+
+Regel geändert (CLAUDE.md, Nutzer 22.10.2026): Ein Stopp darf im Verlauf Plätze kosten oder bringen und erzählen,
+warum ein Fahrer laut Plan verliert oder gewinnt. Vorher kosteten Stopps „bewusst keine Zeit" und kamen nur bei
+`team.strategy > 70`, höchstens einmal.
+
+**Echte Stopps aus F1DB** (`f1db-races-pit-stops.json`, 22 632 Stopps ab 1994):
+
+| Ära | Stopps je Fahrer mit Stopp | Anteil je Zehntel der Distanz, % | Standzeit Median / P90 |
+|---|---|---|---|
+| 1994–2002 | 1,77 | 3 · 4 · 11 · 20 · 13 · 14 · 24 · 9 · 2 · 0 | 30,3 / 41,6 s |
+| 2003–2009 | 2,12 | 4 · 5 · 14 · 17 · 13 · 10 · 16 · 17 · 3 · 1 | 26,3 / 33,8 s |
+| 2010–2016 | 2,18 | 6 · 13 · 17 · 13 · 12 · 13 · 13 · 9 · 3 · 1 | 23,3 / 30,3 s |
+| 2017–2021 | 1,76 | 15 · 9 · 12 · 14 · 15 · 12 · 11 · 7 · 3 · 3 | 23,9 / 33,9 s |
+| 2022–2025 | 1,90 | 9 · 11 · 15 · 13 · 11 · 12 · 13 · 10 · 4 · 3 | 23,7 / 34,5 s |
+
+Vor 1994 keine Daten — **Annahme**: bis 1981 keine geplanten Stopps (nur Reparaturhalt), ab 1982 knapp einer.
+
+**Mechanik:** Stopps je Fahrer nach dieser Tabelle; jeder kostet vorübergehend `TICKER_STOPP_VERLUST` = 2 Ränge,
+klingt in 6 % der Distanz ab; 30 % des Wegs Start → Ziel (`TICKER_STOPP_WEG`) passieren als Sprung an den Stopps →
+Meldung „langsamer Halt" / „starker Halt" ab 1,5 Plätzen; wer laut Plan ≥ 6 Plätze verliert, bekommt mit 30 % einen
+Reparaturhalt. Stoppverlust und Versatz vorn gedämpft (`TICKER_VERSATZ_SPITZE` 0,4), Versatz dafür ×0,9.
+UI: Spalte „Stopps" in der Ticker-Tabelle.
+
+| 1996–2024 (`rennverlauf-ticker.js 12`) | real | nur Versatz (3) | **mit Stopps** |
+|---|---|---|---|
+| Wechsel/Runde | 2,55 | 2,59 | 2,97 |
+| Führungswechsel | 2,97 | 4,40 | **3,52** |
+| ohne Führungswechsel | 18,0 % | 18,1 % | 24,7 % |
+| verschiedene Führende | 2,54 | 2,32 | 2,11 |
+| Sieger führt ab | 49,6 % | 55,1 % | **44,7 %** |
+| Spearman→Ziel 75 / 90 % | 0,925 / 0,953 | 0,942 / 0,959 | 0,953 / 0,968 |
+| Profil 20–30 / 30–40 % | 16,7 / 17,5 | 12,0 / 11,0 | 13,1 / 12,8 |
+| letztes Zehntel | 1,8 | 5,4 | **3,8** |
+
+Parität 80/80, Browser 2010 und 1985 ohne Skriptfehler.
+
+**Verworfen (alle mit Zahlen, Gesamt 1996–2024, 8 Rennen je Jahr):**
+- Stoppverlust 4 Ränge ungedämpft: 4,50 Wechsel/Rd, 6,45 Führungswechsel, 1,4 % ohne — der Führende verlor bei
+  jedem Stopp die Führung.
+- Verlust 2,0 + Versatz ×0,7: Wechsel 2,63 und Sieger 51 % gut, aber Spearman 75/90 % 0,961/0,978 (zu früh geordnet).
+- `TICKER_STOPP_WEG` 0,15 / 0,10 statt 0,3: ändert die späte Ordnung praktisch nicht (0,952–0,954) — die kommt
+  vom Versatz, nicht vom Stopp-Anteil.
+- Versatz ×0,8 bei Spitze 0,4: Spitze zu ruhig (30,7 % ohne Führungswechsel, 1,97 Führende).
+- **Zielkonflikt bleibt:** Versatz an der Spitze steuert Führungswechsel UND späte Unordnung gleichzeitig. Mehr
+  Versatz = späte Ordnung realistisch, aber Flackern vorn; weniger = ruhige Spitze, aber Ergebnis steht zu früh.
+  Gewählt: Mitte. Wechsel/Rd je Ära jetzt ~+0,4 über real.

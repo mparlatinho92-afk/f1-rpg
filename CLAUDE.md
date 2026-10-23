@@ -144,7 +144,8 @@ Neue Mechanik die nur in einem Modus wirkt = falsch platziert.
 
 - ⚠ **Keine Renn-Logik mehr in den Ticker einbauen.** Die frühere Anweisung „immer beide Pfade synchron bearbeiten" gilt **nicht mehr** – es gibt nur noch einen Pfad. Wer im Ticker würfelt, legt die Divergenz neu an.
 - **Feintuning der Simulation passiert ausschließlich in `simulateRace()`.** Der Ticker erbt es automatisch.
-- **Reine Darstellung im Ticker ist erlaubt und erwünscht:** Boxenstopps, Positionswechsel, Überholmeldungen, die Ausfall*runde*. Alles davon darf das Ergebnis **nicht** verändern – Boxenstopps kosten deshalb bewusst keine Zeit. Ob jemand ausfällt, steht in `simulateRace` fest; nur das Wann ist frei.
+- **Reine Darstellung im Ticker ist erlaubt und erwünscht:** Boxenstopps, Positionswechsel, Überholmeldungen, die Ausfall*runde*. Alles davon darf das Ergebnis **nicht** verändern. Ob jemand ausfällt, steht in `simulateRace` fest; nur das Wann ist frei.
+- **Boxenstopps (Nutzer 22.10.2026, nicht schwarz-weiß):** Ein Stopp darf im Verlauf Plätze kosten oder bringen – und darf **erzählen, warum** ein Fahrer laut Plan Plätze verliert oder gewinnt (langsamer Stopp, Strategie, Reifen, Reparatur). Was das geplante Ergebnis nicht hergibt, wird vor der Schlussrunde eingesammelt. Prüfstein bleibt `ticker-paritaet.js`.
 - Marker `// [SYNC simulateRace]` kennzeichnen weiterhin Stellen, die auf die Engine zeigen – aber als **Verweis**, nicht mehr als Pflicht zur Doppelpflege.
 - **Absicherung:** `node tests/ticker-paritaet.js --alle 40` vergleicht die Endreihenfolge des Tickers Fahrer für Fahrer mit `plannedResult`. Keine Toleranz. Bei jeder Änderung an Ticker oder `simulateRace` laufen lassen.
 
