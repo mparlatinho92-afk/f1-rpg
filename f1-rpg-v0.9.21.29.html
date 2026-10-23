@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.28</title>
+    <title>F1 RPG v0.9.21.29</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.28 (aktuell) - 22.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.29 (aktuell) - 23.10.2026</div>
+                            <div>&#8226; NEU: Boxenstopps im Live-Ticker je Ära nach echten F1DB-Daten (Anzahl, Zeitpunkt)</div>
+                            <div>&#8226; NEU: Stopps erzählen Gründe – langsamer Halt, starker Halt, Reparatur</div>
+                            <div>&#8226; NEU: Spalte Stopps in der Ticker-Tabelle</div>
+                            <div class="font-bold text-slate-400">v0.9.21.28 - 22.10.2026</div>
                             <div>&#8226; NEU: Live-Ticker verläuft wie echte Rennen (Platzwechsel, Führungswechsel je Ära aus Rundendaten 1996–2024)</div>
                             <div>&#8226; NEU: Startrunde mischt das Feld wie real, ab 2022 ruhiger</div>
                             <div>&#8226; NEU: Sieger steht im Ticker erst ab Rennmitte fest statt nach einem Viertel</div>
@@ -3952,6 +3956,7 @@
                                     <th class="text-left py-2 px-2">Fahrer</th>
                                     <th class="text-left py-2 px-2">Team</th>
                                     <th class="text-right py-2 px-2">Rückstand</th>
+                                    <th class="text-center py-2 px-2" title="Boxenstopps">Stopps</th>
                                     <th class="text-center py-2 px-2">Status</th>
                                 </tr>
                             </thead>
@@ -23017,7 +23022,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.28';
+        const VERSION = '0.9.21.29';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -37210,6 +37215,29 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // {reason} = fertiges dt. Nomen aus DNF_REASON_DE (Token-Miss → generische Zeile).
         // ══════════════════════════════════════════════════════════════════════
         const LIVE_COMMENTARY = {
+            // Boxenstopp mit Grund (22.10.2026): der Stopp erzählt, warum ein Fahrer laut Plan verliert oder
+            // gewinnt. Ära-neutral formuliert, darum dieselbe Liste für alle Ären. Kein Pronomen für {driver}.
+            pit_langsam: (z => ({ e50: z, e62: z, e76: z, e94: z, e10: z }))([
+                '🔧 Runde {lap}: Langer Halt für {driver} – bei {team} hakt es, wertvolle Sekunden gehen verloren.',
+                '🔧 Runde {lap}: {driver} steht zu lange an der Box – das kostet Plätze.',
+                '🔧 Runde {lap}: Probleme beim Boxenhalt von {driver}! Die {team}-Mannschaft braucht ungewöhnlich lange.',
+                '🔧 Runde {lap}: {driver} kommt herein – und verliert an der Box mehr Zeit als geplant.',
+                '🔧 Runde {lap}: Missglückter Halt für {driver}, Platz {pos} ist so kaum zu halten.',
+                '🔧 Runde {lap}: Die Strategie geht für {driver} nicht auf – der Halt kommt zur falschen Zeit.'
+            ]),
+            pit_gut: (z => ({ e50: z, e62: z, e76: z, e94: z, e10: z }))([
+                '🔧 Runde {lap}: Blitzsauberer Halt für {driver} – die {team}-Mannschaft arbeitet perfekt.',
+                '🔧 Runde {lap}: {driver} an der Box – kurz, präzise, das zahlt sich aus.',
+                '🔧 Runde {lap}: Der Zeitpunkt passt: {driver} hält genau richtig und macht Boden gut.',
+                '🔧 Runde {lap}: Starker Halt bei {team} – {driver} ist schnell wieder unterwegs.',
+                '🔧 Runde {lap}: Die Strategie von {team} geht auf – {driver} kommt vor der Konkurrenz zurück.'
+            ]),
+            pit_reparatur: (z => ({ e50: z, e62: z, e76: z, e94: z, e10: z }))([
+                '🔧 Runde {lap}: {driver} kommt mit Problemen an die Box – die {team}-Mechaniker müssen reparieren.',
+                '🔧 Runde {lap}: Reparaturhalt für {driver}! Das kostet viele Plätze.',
+                '🔧 Runde {lap}: {driver} rollt an die Box, am Wagen muss gearbeitet werden.',
+                '🔧 Runde {lap}: Technischer Halt bei {team} – {driver} verliert viel Zeit, das Rennen geht aber weiter.'
+            ]),
             start: {
                 e50: [
                     '🏁 Die Flagge fällt! {fieldSize} Piloten stürzen sich in die erste Kurve – {totalLaps} Runden liegen vor ihnen.',
@@ -38543,6 +38571,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     <td class="py-2 px-2">${p.name}</td>
                     <td class="py-2 px-2 text-xs text-tertiary">${p.teamName}</td>
                     <td class="py-2 px-2 text-right text-xs ${isPreRace ? 'text-tertiary' : ''}">${gapText}</td>
+                    <td class="py-2 px-2 text-center text-xs">${isPreRace ? '–' : (p.stopps || 0)}</td>
                     <td class="py-2 px-2 text-center ${statusColor}">${statusText}</td>
                 `;
                 tbody.appendChild(row);
@@ -38554,7 +38583,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             if (isPreRace && (liveRaceState.dnq || []).length > 0) {
                 // Separator-Zeile
                 const sepRow = document.createElement('tr');
-                sepRow.innerHTML = `<td colspan="5" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td>`;
+                sepRow.innerHTML = `<td colspan="6" style="padding:3px 8px;font-size:0.65em;font-weight:600;color:#C49494;background:#5C1517;border-top:2px solid #5C1517;letter-spacing:0.05em">NICHT QUALIFIZIERT</td>`;
                 tbody.appendChild(sepRow);
                 liveRaceState.dnq.forEach(id => {
                     const d = GAME_STATE.drivers.find(d => d.id === id)
@@ -38568,6 +38597,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         <td class="py-2 px-2">${name}</td>
                         <td class="py-2 px-2 text-xs text-tertiary">${team}</td>
                         <td class="py-2 px-2 text-right text-xs" style="color:#C49494;font-weight:bold;font-size:0.7em">DNQ</td>
+                        <td class="py-2 px-2 text-center text-tertiary">–</td>
                         <td class="py-2 px-2 text-center text-tertiary">–</td>
                     `;
                     tbody.appendChild(row);
@@ -38690,16 +38720,57 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // legte das Ergebnis zu früh fest (Spearman zum Ziel nach 75 % 0,976, real 0,925) und Führungswechsel
         // waren Flackern zweier Nachbarn. Real je Ära aus tests/rennverlauf-real.js, BEFUNDE.md 22.10.2026.
         // staerke = Streuung des Versatzes in Rängen. Vor 1996 keine Rundendaten: erbt 1996–2002.
-        const TICKER_VERSATZ = { 1950: 1.15, 2003: 1.45, 2010: 1.75, 2017: 1.2, 2022: 1.5 };
+        const TICKER_VERSATZ = { 1950: 1.04, 2003: 1.31, 2010: 1.58, 2017: 1.08, 2022: 1.35 };
         const TICKER_VERSATZ_DAUER = 0.5, TICKER_VERSATZ_SAMMELN_AB = 0.90;
         // Vorn liegen die Autos weiter auseinander: auf P1 wirkt nur SPITZE des Versatzes, ab P8 der volle.
-        const TICKER_VERSATZ_SPITZE = 0.65;
+        const TICKER_VERSATZ_SPITZE = 0.4;
 
         // Startrunde: einmaliger Sprung in Runde 1, klingt über das Gedächtnis ab. Real Start → Runde 1
         // Spearman 0,849 · 0,852 · 0,862 · 0,866 · 0,896 (start-runde1-real.js, BEFUNDE 18.10.2026 (6));
         // ohne Sprung zeigte der Ticker 0,997 — nach Runde 1 stand jeder noch auf seinem Startplatz.
         const TICKER_STARTRUNDE = { 1950: 3.3, 2003: 3.3, 2010: 3.4, 2017: 3.2, 2022: 2.6 };
         const TICKER_STARTRUNDE_WEG = 0.25;
+
+        // === BOXENSTOPPS IM TICKER (22.10.2026) — Darstellung, die Gründe erzählt ===
+        // Ein Stopp darf im Verlauf Plätze kosten oder bringen und erzählen, WARUM ein Fahrer laut Plan verliert
+        // oder gewinnt (CLAUDE.md, Live-Ticker-Regel). Was das Ergebnis nicht hergibt, klingt vor dem Ziel ab.
+        // Anzahl und Zeitpunkt je Ära aus F1DB-Boxenstopps ab 1994 (22 632 Stopps, BEFUNDE.md 22.10.2026 (4)):
+        // Stopps je Fahrer, Anteil je Zehntel der Distanz. Vor 1994 keine Daten — ANNAHME: bis 1981 keine
+        // geplanten Stopps (nur Reparatur), ab 1982 (Tank-/Reifenstopps) knapp einer, Verteilung wie 1994–2002.
+        const TICKER_STOPPS = {
+            1950: { schnitt: 0,   zehntel: [3, 4, 11, 20, 13, 14, 24, 9, 2, 0] },
+            1982: { schnitt: 0.9, zehntel: [3, 4, 11, 20, 13, 14, 24, 9, 2, 0] },
+            1994: { schnitt: 1.8, zehntel: [3, 4, 11, 20, 13, 14, 24, 9, 2, 0] },
+            2003: { schnitt: 2.1, zehntel: [4, 5, 14, 17, 13, 10, 16, 17, 3, 1] },
+            2010: { schnitt: 2.2, zehntel: [6, 13, 17, 13, 12, 13, 13, 9, 3, 1] },
+            2017: { schnitt: 1.8, zehntel: [15, 9, 12, 14, 15, 12, 11, 7, 3, 3] },
+            2022: { schnitt: 1.9, zehntel: [9, 11, 15, 13, 11, 12, 13, 10, 4, 3] }
+        };
+        const TICKER_STOPP_VERLUST = 2.0;       // Ränge, die ein Stopp vorübergehend kostet
+        const TICKER_STOPP_ERHOLUNG = 0.06;   // Anteil der Distanz, in dem dieser Verlust abklingt
+        const TICKER_STOPP_WEG = 0.3;         // Anteil des Wegs Start → Ziel, der als Sprung an den Stopps passiert
+        const TICKER_REPARATUR_AB = 6, TICKER_REPARATUR_CHANCE = 0.3;   // wer laut Plan ≥ 6 Plätze verliert
+
+        // Stopps eines Fahrers: [{ runde, art: 'plan' | 'reparatur' }], keiner ab der Ausfallrunde
+        function tickerStoppPlan(totalLaps, year, verlorenePlaetze, ausfallRunde) {
+            const t = getEraValue(TICKER_STOPPS, year);
+            const n = Math.floor(t.schnitt) + (Math.random() < t.schnitt % 1 ? 1 : 0);
+            const summe = t.zehntel.reduce((a, b) => a + b, 0);
+            const plan = [];
+            for (let i = 0; i < n; i++) {
+                let w = Math.random() * summe, k = 0;
+                while (k < 9 && (w -= t.zehntel[k]) >= 0) k++;
+                const runde = Math.floor((k + Math.random()) / 10 * totalLaps) + 1;
+                plan.push({ runde: Math.max(2, Math.min(runde, Math.floor(0.92 * totalLaps))), art: 'plan' });
+            }
+            if (verlorenePlaetze >= TICKER_REPARATUR_AB && Math.random() < TICKER_REPARATUR_CHANCE)
+                plan.push({ runde: Math.max(2, Math.floor((0.15 + 0.6 * Math.random()) * totalLaps)), art: 'reparatur' });
+            plan.sort((a, b) => a.runde - b.runde);
+            const ok = [];
+            for (const s of plan) if ((!ok.length || s.runde - ok[ok.length - 1].runde >= 3)
+                && (ausfallRunde == null || s.runde < ausfallRunde)) ok.push(s);
+            return ok;
+        }
 
         function tickerVersatzSchritt(v, totalLaps, year, ersteRunde) {
             const rho = Math.exp(-1 / (TICKER_VERSATZ_DAUER * Math.max(2, totalLaps)));
@@ -38819,23 +38890,34 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     : Math.max(0, (1 - _fortschritt) / (1 - TICKER_VERSATZ_SAMMELN_AB));
                 // Ein Teil des Wegs passiert schon in der Startrunde (TICKER_STARTRUNDE_WEG): real holen
                 // schnelle Fahrer von hinten dort bereits auf, der Sprung allein waere reiner Zufall.
-                const _wegAnteil = TICKER_STARTRUNDE_WEG + (1 - TICKER_STARTRUNDE_WEG) * _fortschritt;
+                // Ein weiterer Teil (TICKER_STOPP_WEG) passiert als Sprung an den Boxenstopps - der Stopp
+                // ist dann der Grund, warum der Fahrer laut Plan verliert oder gewinnt.
+                const _stopps = p._stopps || [];
+                const _a = _stopps.length ? TICKER_STOPP_WEG : 0;
+                const _erledigt = _stopps.filter(s => s.runde <= lap).length;
+                const _wegAnteil = TICKER_STARTRUNDE_WEG + (1 - TICKER_STARTRUNDE_WEG)
+                    * ((1 - _a) * _fortschritt + (_stopps.length ? _a * _erledigt / _stopps.length : 0));
                 const _weg = p._startRang + (p._zielRang - p._startRang) * _wegAnteil;
                 const _vorn = TICKER_VERSATZ_SPITZE + (1 - TICKER_VERSATZ_SPITZE) * Math.min(1, Math.max(0, (_weg - 1) / 7));
-                const _rang = _weg + p._versatz * _huelle * _vorn;
+                // Vorübergehender Verlust je Stopp, klingt ab (frühes Stoppen = Undercut sichtbar)
+                let _stoppVerlust = 0;
+                for (const s of _stopps) if (s.runde <= lap)
+                    _stoppVerlust += TICKER_STOPP_VERLUST * Math.exp(-(lap - s.runde) / Math.max(1, TICKER_STOPP_ERHOLUNG * totalLaps));
+                const _rang = _weg + (p._versatz + _stoppVerlust) * _vorn * _huelle;
                 p.totalTime = lap * _basisRunde + _rang * _abstandProRang;
-                p.tyreLaps++;
 
-                // Boxenstopp: reine Optik. Er kostet bewusst KEINE Zeit, sonst wuerde
-                // die Darstellung das feststehende Ergebnis verbiegen.
-                const _team = GAME_STATE.teams.find(t => t.id === p.team);
-                if (_team && p.tyreLaps > 15 && _team.strategy > 70 && !p.hasPitted && lap < totalLaps - 5) {
-                    if (Math.random() < ((_team.strategy + 60) / 200) * 0.15) {
-                        p.isPitting = true; p.hasPitted = true; p.tyreLaps = 0;
-                        addLiveEvent(liveLine('pit', { driver: p.name, team: _team.name, lap, totalLaps,
-                            pos: idx + 1, year: GAME_STATE.currentYear }), 'warning');
-                    } else { p.isPitting = false; }
-                } else { p.isPitting = false; }
+                const _stopp = _stopps.find(s => s.runde === lap);
+                p.isPitting = !!_stopp;
+                if (_stopp) {
+                    p.stopps++;
+                    // Plätze, die DIESER Stopp laut Plan kostet (+) oder bringt (−)
+                    const _sprung = (p._zielRang - p._startRang) * (1 - TICKER_STARTRUNDE_WEG) * _a / _stopps.length;
+                    const _art = _stopp.art === 'reparatur' ? 'pit_reparatur'
+                        : _sprung >= 1.5 ? 'pit_langsam' : _sprung <= -1.5 ? 'pit_gut' : 'pit';
+                    const _team = GAME_STATE.teams.find(t => t.id === p.team);
+                    addLiveEvent(liveLine(_art, { driver: p.name, team: _team ? _team.name : p.teamName, lap, totalLaps,
+                        pos: idx + 1, year: GAME_STATE.currentYear }), _art === 'pit_gut' ? 'positive' : 'warning');
+                }
             });
             // === POSITIONEN NEU SORTIEREN ===
             const activeDrivers = liveRaceState.positions.filter(p => !p.dnf);
@@ -38994,7 +39076,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     teamName: r.teamName, number: r.number, nation: r.nation,
                     isGuest: r.isGuest || false,
                     totalTime: 0, gap: 0,
-                    tyreLaps: 0, hasPitted: false, isPitting: false,
+                    stopps: 0, isPitting: false,
                     // dnf wird erst ab der geplanten Ausfallrunde gesetzt, damit der
                     // Ausfall im Ticker im richtigen Moment sichtbar wird.
                     dnf: false, dnfType: null, dnfReason: null, fatal: false,
@@ -39015,6 +39097,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 p._dnfLap = p._wirdDnf
                     ? ausfallRundeWuerfeln(liveRaceState.totalLaps, p._fatal ? 'accident' : p._dnfTyp, GAME_STATE.currentYear)
                     : null;
+                // Boxenstopps je Ära (TICKER_STOPPS), Reparaturhalt für große Verlierer, keiner nach dem Ausfall
+                p._stopps = tickerStoppPlan(liveRaceState.totalLaps, GAME_STATE.currentYear,
+                    p._zielRang - p._startRang, p._dnfLap);
             });
 
             // Start in Grid-Reihenfolge
