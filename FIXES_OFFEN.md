@@ -29,10 +29,9 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
   Sommerzeit, Parser nur über Tabulatoren, Sortierung bricht nach Neuladen, „Cache leeren" löscht den ganzen Speicher.
   **Entscheidung Nutzer 22.10.2026:** (1) beides — Kalender (welche Rennen kollidieren) UND Fahrer (wer fuhr wann wo).
   (2) erst eigenständiges `rennkalender.html`; Einbau in die Haupt-HTML später, wenn das Spiel weitere Rennserien kennt.
-- ✚ Claude MD Management Plugin nutzen bzw. Claude.md aufräumen/verschlanken. Konzepte und Themen raushalten. Gibt es weitere Plugins, die bei unserem Projekt hilfreich sind?
 - ✚ neu zu Unfall und natürlicher Teileabnutzung: Übersicht der Abnutzung der einzelnen Teile zwischen den Rennen: wo? im Fahrersteckbrief und im Teamsteckbrief bei den Fahrern. Läuft nach Ende der Saison ab/wird zurückgesetzt. Fahrer ohne Vertrag/tot haben die Teilabnutzungs-Info nicht. Teile sind Saisongenau der Stand der Technik. Da es einige Teile sind, könnte die Info aufblähen. Eine Teileübersicht hat niedrige Priorität. Die Frage ist, lohnt sich es vor Zeiten der Strafversetzung?
 - ✚ erst Konzept. Machbarkeits-Theorie. nur für den Spielstand generierte, komplette Kart-Welt eines Landes oder Region. Teilnahmen an mehreren Serien berücksichtigen. Realistische Teilnahmen. Global Pathway Kart-Konzept https://gemini.google.com/app/e56077b4a25061bd Gemini schon Teile der Auswertung
-- ✚ Ruanda-Strecke, Rennort bekannt gegeben: Bugesera
+- ✚ Ruanda-Strecke, Rennort bekannt gegeben: Bugesera-Distrikt Nähe Ort Rilima
 - ✚ Jetlag-Kalender https://gemini.google.com/app/92f1856b2cac4058. PDF des Chats in Dokumente-Ordner (Bereich: Aus dem Sheet – ungeprüft; im Sheet geändert, Original steht weiter in der Liste)
 
 ---
@@ -219,6 +218,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 | Doc-Punkt | Beleg |
 |---|---|
+| CLAUDE.md aufräumen/verschlanken, Plugins | 23.10.2026 (Nutzer bestätigt): 265 → 94 Zeilen, Hintergrund in `HINTERGRUND.md`, Ticker-Werkzeuge in `tests/README.md` (e8e555f); Plugins claude-md-management + claude-code-setup aktiv (1483f12) |
 | Auto-Backup aller Bilder | v0.9.15.54/.55 Backup; seit v0.9.17.0 917 Fahrerfotos + 256 Grafiken in `data/images.js` |
 | Pace-Verlauf Teams / Button für ehemalige Teams | Team-Entwicklungsverlauf v0.9.10.41; ehemalige Teams v0.9.15.27–.32 (`makeTeamMatcher`, `collectTeamIdAliases`, `getFormerTeamIndex`) |
 | `ent_COL_1987` / `ent_EUR_1988` / `ent_DAL_1988` in Wertung und Übersicht | v0.9.15.28 auflösbar, v0.9.15.85 Name statt Kennung, v0.9.15.86 keine `ent_`-IDs mehr |
