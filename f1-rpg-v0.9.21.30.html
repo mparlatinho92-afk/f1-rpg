@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.29</title>
+    <title>F1 RPG v0.9.21.30</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.29 (aktuell) - 23.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.30 (aktuell) - 24.10.2026</div>
+                            <div>&#8226; NEU: Ticker - Fuehrungswechsel ueber Boxenstopps statt Flackern, Haltevorsprung, ruhigeres Rennende</div>
+                            <div>&#8226; NEU: Rennen ab 2010 - Positionsvorteil auf der Strecke, weniger grosse Platzwechsel (trocken)</div>
+                            <div>&#8226; FIX: Messung Rennverlauf - Spaet-Ausfaelle und Ueberrundete verfaelschten den Vergleich</div>
+                            <div class="font-bold text-slate-400">v0.9.21.29 - 23.10.2026</div>
                             <div>&#8226; NEU: Boxenstopps im Live-Ticker je Ära nach echten F1DB-Daten (Anzahl, Zeitpunkt)</div>
                             <div>&#8226; NEU: Stopps erzählen Gründe – langsamer Halt, starker Halt, Reparatur</div>
                             <div>&#8226; NEU: Spalte Stopps in der Ticker-Tabelle</div>
@@ -23022,7 +23026,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.29';
+        const VERSION = '0.9.21.30';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24600,6 +24604,13 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // kam in 10 % seiner Zielankünfte auf P4+ (real 21 %), nasse Rennen waren zu geordnet.
         // Je Zielankömmling Wahrscheinlichkeit p, 1..max Plätze zurück (BEFUNDE.md 18.10.2026 (13)).
         const PLATZVERLUST = { p: 0.20, max: 6 };
+        // === POSITIONSVORTEIL AUF DER STRECKE (24.10.2026) ===
+        // Ab der Startreihenfolge kommt ein Fahrer nur vorbei, wenn sein Score um mehr als die Schwelle
+        // besser ist (paarweise, statt pauschal über den Startplatz-Bonus). Ab 2010 bewegte sich das Feld
+        // zu viel: |Δ| ≥ 4 2010er/2020er 28,9/31,4 statt 23,0/25,1 %, sechs andere Hebel ohne Wirkung
+        // (BEFUNDE.md 24.10.2026 (2)). Nicht bei Regen und nach wirksamer roter Flagge: dort entstehen
+        // real die Siege von hinten.
+        const UEBERHOLSCHWELLE = { 1950: 0, 2010: 3 };
 
         function dnfStartFaktor(gridPos, nGrid) {
             if (!gridPos || !(nGrid > 1)) return 1;
@@ -34521,6 +34532,24 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 return b.score - a.score;
             });
             
+            // Positionsvorteil auf der Strecke (UEBERHOLSCHWELLE): Startreihenfolge, getauscht nur mit Vorsprung
+            const _schwelle = (isRain || _roteFlaggeWirkt) ? 0 : getEraValue(UEBERHOLSCHWELLE, GAME_STATE.currentYear);
+            if (_schwelle > 0) {
+                const _fahrend = results.filter(r => !r.dnf)
+                    .sort((a, b) => (_gridPosMap[a.driver] || 99) - (_gridPosMap[b.driver] || 99));
+                for (let _getauscht = true, _n = 0; _getauscht && _n < _fahrend.length; _n++) {
+                    _getauscht = false;
+                    for (let i = 1; i < _fahrend.length; i++)
+                        if (_fahrend[i].score > _fahrend[i - 1].score + _schwelle) {
+                            [_fahrend[i - 1], _fahrend[i]] = [_fahrend[i], _fahrend[i - 1]];
+                            _getauscht = true;
+                        }
+                }
+                const _aus = results.filter(r => r.dnf);
+                results.length = 0;
+                results.push(..._fahrend, ..._aus);
+            }
+
             // Pit-Stopp-Effekt: Strategy → Undercut oder Katastrophenstopp
             // Höhere Strategy = seltener schlechte Stopps + schützt vor schlimmen Ausreißern
             const _pitFinishers = results.filter(r => !r.dnf);
@@ -38720,16 +38749,26 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // legte das Ergebnis zu früh fest (Spearman zum Ziel nach 75 % 0,976, real 0,925) und Führungswechsel
         // waren Flackern zweier Nachbarn. Real je Ära aus tests/rennverlauf-real.js, BEFUNDE.md 22.10.2026.
         // staerke = Streuung des Versatzes in Rängen. Vor 1996 keine Rundendaten: erbt 1996–2002.
-        const TICKER_VERSATZ = { 1950: 1.04, 2003: 1.31, 2010: 1.58, 2017: 1.08, 2022: 1.35 };
-        const TICKER_VERSATZ_DAUER = 0.5, TICKER_VERSATZ_SAMMELN_AB = 0.90;
+        const TICKER_VERSATZ = { 1950: 1.98, 2003: 2.49, 2010: 3.00, 2017: 2.05, 2022: 2.57 };
+        const TICKER_VERSATZ_DAUER = 0.5, TICKER_VERSATZ_SAMMELN_AB = 0.65;
+        // Ab RUHE_AB kommt immer weniger neuer Versatz dazu: real zieht sich das Feld auseinander, nach 70 %
+        // passieren nur noch 10 % der Platzwechsel. Der vorhandene Versatz bleibt und klingt über DAUER ab.
+        const TICKER_VERSATZ_RUHE_AB = 0.6;
         // Vorn liegen die Autos weiter auseinander: auf P1 wirkt nur SPITZE des Versatzes, ab P8 der volle.
-        const TICKER_VERSATZ_SPITZE = 0.4;
+        const TICKER_VERSATZ_SPITZE = 0.3;
+        // Der Stoppverlust wird vorn schwächer gedämpft als der Versatz: real wechseln die Führenden v. a.
+        // über die Boxenstopps durch, nicht durch Hin und Her zweier Nachbarn (BEFUNDE.md 24.10.2026).
+        // Tankstopp-Ära bis 2009 voll (Führung wechselt reihum), danach haben Führende beim Stopp Luft.
+        const TICKER_STOPP_SPITZE = { 1950: 1.0, 2010: 0.6 };
+        // Haltevorsprung: wer hinten liegt, geht erst vorbei, wenn er um so viele Ränge vorn ist. Dämpft
+        // das Flackern zweier Nachbarn; die Schlussrunde liegt einen vollen Rang auseinander, bleibt exakt.
+        const TICKER_HALTEN = 0.4;
 
         // Startrunde: einmaliger Sprung in Runde 1, klingt über das Gedächtnis ab. Real Start → Runde 1
         // Spearman 0,849 · 0,852 · 0,862 · 0,866 · 0,896 (start-runde1-real.js, BEFUNDE 18.10.2026 (6));
         // ohne Sprung zeigte der Ticker 0,997 — nach Runde 1 stand jeder noch auf seinem Startplatz.
         const TICKER_STARTRUNDE = { 1950: 3.3, 2003: 3.3, 2010: 3.4, 2017: 3.2, 2022: 2.6 };
-        const TICKER_STARTRUNDE_WEG = 0.25;
+        const TICKER_STARTRUNDE_WEG = 0.15;
 
         // === BOXENSTOPPS IM TICKER (22.10.2026) — Darstellung, die Gründe erzählt ===
         // Ein Stopp darf im Verlauf Plätze kosten oder bringen und erzählen, WARUM ein Fahrer laut Plan verliert
@@ -38748,7 +38787,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         };
         const TICKER_STOPP_VERLUST = 2.0;       // Ränge, die ein Stopp vorübergehend kostet
         const TICKER_STOPP_ERHOLUNG = 0.06;   // Anteil der Distanz, in dem dieser Verlust abklingt
-        const TICKER_STOPP_WEG = 0.3;         // Anteil des Wegs Start → Ziel, der als Sprung an den Stopps passiert
+        const TICKER_STOPP_WEG = 0.45;        // Anteil des Wegs Start → Ziel, der als Sprung an den Stopps passiert
         const TICKER_REPARATUR_AB = 6, TICKER_REPARATUR_CHANCE = 0.3;   // wer laut Plan ≥ 6 Plätze verliert
 
         // Stopps eines Fahrers: [{ runde, art: 'plan' | 'reparatur' }], keiner ab der Ausfallrunde
@@ -38772,10 +38811,11 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             return ok;
         }
 
-        function tickerVersatzSchritt(v, totalLaps, year, ersteRunde) {
+        function tickerVersatzSchritt(v, totalLaps, year, ersteRunde, fortschritt) {
             const rho = Math.exp(-1 / (TICKER_VERSATZ_DAUER * Math.max(2, totalLaps)));
             const normal = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
-            return rho * v + Math.sqrt(1 - rho * rho) * getEraValue(TICKER_VERSATZ, year) * normal()
+            const ruhe = fortschritt < TICKER_VERSATZ_RUHE_AB ? 1 : Math.max(0, (1 - fortschritt) / (1 - TICKER_VERSATZ_RUHE_AB));
+            return rho * v + Math.sqrt(1 - rho * rho) * getEraValue(TICKER_VERSATZ, year) * ruhe * normal()
                 + (ersteRunde ? getEraValue(TICKER_STARTRUNDE, year) * normal() : 0);
         }
 
@@ -38885,9 +38925,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 // Rang wandert vom Startplatz zur Zielposition, dazu der traege Versatz
                 // (TICKER_VERSATZ). Ab SAMMELN_AB wird er eingesammelt, damit die
                 // Schlussrunde exakt die geplante Reihenfolge zeigt.
-                p._versatz = tickerVersatzSchritt(p._versatz || 0, totalLaps, GAME_STATE.currentYear, lap === 1);
+                p._versatz = tickerVersatzSchritt(p._versatz || 0, totalLaps, GAME_STATE.currentYear, lap === 1, _fortschritt);
                 const _huelle = _fortschritt < TICKER_VERSATZ_SAMMELN_AB ? 1
-                    : Math.max(0, (1 - _fortschritt) / (1 - TICKER_VERSATZ_SAMMELN_AB));
+                    : 0.5 + 0.5 * Math.cos(Math.PI * Math.min(1, (_fortschritt - TICKER_VERSATZ_SAMMELN_AB) / (1 - TICKER_VERSATZ_SAMMELN_AB)));
                 // Ein Teil des Wegs passiert schon in der Startrunde (TICKER_STARTRUNDE_WEG): real holen
                 // schnelle Fahrer von hinten dort bereits auf, der Sprung allein waere reiner Zufall.
                 // Ein weiterer Teil (TICKER_STOPP_WEG) passiert als Sprung an den Boxenstopps - der Stopp
@@ -38898,12 +38938,15 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 const _wegAnteil = TICKER_STARTRUNDE_WEG + (1 - TICKER_STARTRUNDE_WEG)
                     * ((1 - _a) * _fortschritt + (_stopps.length ? _a * _erledigt / _stopps.length : 0));
                 const _weg = p._startRang + (p._zielRang - p._startRang) * _wegAnteil;
-                const _vorn = TICKER_VERSATZ_SPITZE + (1 - TICKER_VERSATZ_SPITZE) * Math.min(1, Math.max(0, (_weg - 1) / 7));
+                const _tiefe = Math.min(1, Math.max(0, (_weg - 1) / 7));
+                const _vorn = TICKER_VERSATZ_SPITZE + (1 - TICKER_VERSATZ_SPITZE) * _tiefe;
+                const _stoppSpitze = getEraValue(TICKER_STOPP_SPITZE, GAME_STATE.currentYear);
+                const _vornStopp = _stoppSpitze + (1 - _stoppSpitze) * _tiefe;
                 // Vorübergehender Verlust je Stopp, klingt ab (frühes Stoppen = Undercut sichtbar)
                 let _stoppVerlust = 0;
                 for (const s of _stopps) if (s.runde <= lap)
                     _stoppVerlust += TICKER_STOPP_VERLUST * Math.exp(-(lap - s.runde) / Math.max(1, TICKER_STOPP_ERHOLUNG * totalLaps));
-                const _rang = _weg + (p._versatz + _stoppVerlust) * _vorn * _huelle;
+                const _rang = _weg + (p._versatz * _vorn + _stoppVerlust * _vornStopp) * _huelle;
                 p.totalTime = lap * _basisRunde + _rang * _abstandProRang;
 
                 const _stopp = _stopps.find(s => s.runde === lap);
@@ -38920,8 +38963,20 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 }
             });
             // === POSITIONEN NEU SORTIEREN ===
+            // Ausgang ist die Reihenfolge der Vorrunde; getauscht wird nur mit Haltevorsprung (TICKER_HALTEN).
             const activeDrivers = liveRaceState.positions.filter(p => !p.dnf);
-            activeDrivers.sort((a, b) => a.totalTime - b.totalTime);
+            const _halten = TICKER_HALTEN * _abstandProRang;
+            for (let _getauscht = true, _n = 0; _getauscht && _n < activeDrivers.length; _n++) {
+                _getauscht = false;
+                for (let i = 1; i < activeDrivers.length; i++)
+                    if (activeDrivers[i].totalTime < activeDrivers[i - 1].totalTime - _halten) {
+                        [activeDrivers[i - 1], activeDrivers[i]] = [activeDrivers[i], activeDrivers[i - 1]];
+                        _getauscht = true;
+                    }
+            }
+            // Abstände bleiben positiv, auch wo jemand dank Haltevorsprung vorn bleibt
+            for (let i = 1; i < activeDrivers.length; i++)
+                activeDrivers[i].totalTime = Math.max(activeDrivers[i].totalTime, activeDrivers[i - 1].totalTime + 0.1);
             const dnfDrivers = liveRaceState.positions.filter(p => p.dnf);
             liveRaceState.positions = [...activeDrivers, ...dnfDrivers];
             _tickerWetterMeldungen(lap, activeDrivers);   // Paket 1b, reine Darstellung
