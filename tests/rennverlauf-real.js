@@ -49,7 +49,9 @@ function verlaufKennzahlen(laps) {
     const letzte = new Map();
     laps.forEach((lap, r) => lap.forEach((k, p) => letzte.set(k, [r, p])));
     const ziel = [...letzte.entries()].sort((a, b) => b[1][0] - a[1][0] || a[1][1] - b[1][1]).map(e => e[0]);
-    const ankommer = new Set(ziel.filter(k => letzte.get(k)[0] + 1 >= 0.9 * L));
+    // RV_VOLLE_DISTANZ=1: nur Fahrer über die volle Siegerdistanz (ohne Spät-Ausfälle und Überrundete).
+    // Real drücken beide den Spearman nach 90 % (0,953 statt 0,972), im Ticker gibt es keine Überrundeten.
+    const ankommer = new Set(ziel.filter(k => letzte.get(k)[0] + 1 >= (process.env.RV_VOLLE_DISTANZ === '1' ? L : 0.9 * L)));
     const zielRang = new Map(ziel.map((k, i) => [k, i]));
     const sieger = ziel[0];
 

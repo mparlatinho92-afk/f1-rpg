@@ -4344,3 +4344,85 @@ Parität 80/80, Browser 2010 und 1985 ohne Skriptfehler.
 - **Zielkonflikt bleibt:** Versatz an der Spitze steuert Führungswechsel UND späte Unordnung gleichzeitig. Mehr
   Versatz = späte Ordnung realistisch, aber Flackern vorn; weniger = ruhige Spitze, aber Ergebnis steht zu früh.
   Gewählt: Mitte. Wechsel/Rd je Ära jetzt ~+0,4 über real.
+  ⚠ **Teils Messfalle, s. 24.10.2026 (1):** die späte Unordnung real war zum Teil keine.
+
+### 24.10.2026 (1): Ticker – Führung über Stopps, Haltevorsprung, ruhiges Rennende (eingebaut)
+
+⚠ **Messfalle Spearman→Ziel:** `rennverlauf-real.js` zählt als Ankommer jeden mit ≥ 90 % der Siegerrunden. Real
+sind das auch Spät-Ausfälle und Überrundete, die nach 90 % ohne einen einzigen Platzwechsel aus der Reihenfolge
+fallen; im Ticker gibt es keine Überrundeten. Nur Fahrer über die volle Distanz (`RV_VOLLE_DISTANZ=1`, beide Seiten):
+real 1996–2024 Spearman 10/25/50/75/90 % **0,725 / 0,748 / 0,832 / 0,917 / 0,972** statt 0,781 / … / 0,925 / 0,953.
+Damit war der Ticker v.21.29 nach 90 % gar nicht zu geordnet (0,970), sondern **in der ersten Hälfte** (0,785 / 0,833
+/ 0,907). Der „Zielkonflikt" aus 22.10. (4) war zur Hälfte dieses Artefakt. Ticker gegen real ab jetzt so lesen.
+
+**Eingebaut** (reine Darstellung, `index.html` ~20100–20330):
+- `TICKER_STOPP_SPITZE` { 1950: 1,0 · 2010: 0,6 }: Stoppverlust vorn eigen gedämpft, nicht mehr mit dem Versatz
+  (0,4). Real wechselt die Führung über die Stopps reihum, in der Tankära bis 2009 am stärksten.
+- `TICKER_HALTEN` 0,4 Ränge: Überholen erst mit Vorsprung, Ausgang ist die Vorrunden-Reihenfolge. Nimmt das
+  Hin und Her zweier Nachbarn; Schlussrunde liegt einen Rang auseinander und bleibt exakt.
+- `TICKER_VERSATZ_RUHE_AB` 0,6: danach immer weniger neuer Versatz (real nach 70 % nur 10 % der Wechsel).
+- Einsammeln ab 0,65 statt 0,90, als Kosinus statt linear (linear bzw. quadratisch ballt die Wechsel am Anfang
+  der Sammelphase: 80–90 % 6–7 % statt 2,6).
+- Versatz × 1,9 (1,98 · 2,49 · 3,00 · 2,05 · 2,57), Spitze 0,3, `TICKER_STOPP_WEG` 0,45, `TICKER_STARTRUNDE_WEG` 0,15.
+
+`RV_VOLLE_DISTANZ=1 rennverlauf-ticker.js 20` (580 Rennen) gegen real, volle Distanz:
+
+| 1996–2024 | real | v.21.29 | **jetzt** |
+|---|---|---|---|
+| Wechsel/Runde | 2,55 | 2,93 | 2,53 |
+| Führungswechsel | 2,97 | 3,44 | **3,03** |
+| ohne Führungswechsel | 18,0 % | 24,4 % | **16,0 %** |
+| verschiedene Führende | 2,54 | 2,09 | **2,50** |
+| Sieger führt ab | 49,6 % | 44,7 % | 50,1 % |
+| Spearman→Ziel 10/25/50/75/90 % | 0,725 / 0,748 / 0,832 / 0,917 / 0,972 | 0,785 / 0,833 / 0,907 / 0,953 / 0,970 | 0,741 / 0,778 / 0,853 / 0,929 / 0,994 |
+| Profil 70–80 / 80–90 / 90–100 % | 5,8 / 2,6 / 1,8 | 7,0 (80–90) / 3,9 | 6,2 / 4,4 / 0,9 |
+
+Je Ära Führungswechsel jetzt / real: 2,69/2,75 · 3,67/3,80 · 3,59/3,06 · 2,22/2,27 · 2,38/2,68. Rauschen bei 140
+Rennen je Ära: ohne FW ±5 Pp (zwei Läufe gleicher Einstellung 27,1 und 16,4 %). Parität 40/40, Browser 1965/2010 grün.
+
+**Verworfen (Gesamt, volle Distanz, 20 je Jahr):**
+- Stoppverlust vorn ungedämpft ohne Haltevorsprung: 4,7–5,0 Führungswechsel, 9 % ohne.
+- Haltevorsprung 0,6 / 1,0 ohne mehr Versatz: Wechsel/Rd 1,01 / 0,75, bis 39 % ohne Führungswechsel.
+- Einsammeln ab 0,8 quadratisch: letztes Zehntel 0,9 %, aber 80–90 % 6,3 %.
+- Stoppdämpfung 0,8 in allen Ären: 2010–16 gut, 1996–2009 zu wenige Führungswechsel (Tankära).
+- Rest: 90 % steht im Ticker zu fest (0,994 / 0,972), das letzte Zehntel ist zu ruhig (0,9 / 1,8). Gegenläufig zu
+  80–90 % (4,4 / 2,6) — wer früher einsammelt, verschiebt die Wechsel nur nach vorn.
+
+### 24.10.2026 (2): Positionsvorteil auf der Strecke in `simulateRace` (eingebaut, `UEBERHOLSCHWELLE`)
+
+Neuer Hebel gegen „ab 2010 zu viel Bewegung" (18.10. (13), sechs Hebel ohne Wirkung): nach der Score-Sortierung
+ab Startreihenfolge neu ordnen, getauscht wird nur, wenn der Hintermann um mehr als T Score-Punkte besser ist
+(paarweise Überholschwelle statt pauschalem Startplatz-Bonus). Per `SIMCORE_PATCH`, `vakuum-batch.js 2000…2024 2
+--regen --quali`, nur ab 2010:
+
+| | Ausgang | T 2 | T 4 | T 4, `_GRID_K` 8 | T 7, K 8 | real |
+|---|---|---|---|---|---|---|
+| |Δ| ≥ 4, 2000er / 2010er / 2020er | 22,6 / 28,9 / 31,4 | 22,1 / **23,0 / 26,9** | 22,0 / 18,4 / 20,9 | 23,7 / 19,7 / 22,8 | 23,3 / 12,8 / 13,9 | 20,6 / 23,0 / 25,1 |
+| ≤ −8 Plätze, 2010er / 2020er | 2,4 / 2,9 | 1,3 / 1,9 | 0,9 / 1,3 | 1,0 / 1,1 | 0,3 / 0,5 | 2,6 / 2,7 |
+| Gegenprobe 4–8 von 10+, 2010er / 2020er | +4,6 / +4,3 | +3,7 / +4,0 | +3,7 / +4,2 | +4,1 / +4,5 | +3,2 / +2,8 | +3,2 / +2,2 |
+| Rest von P1–3 (Pace), 2020er | −4,6 | −4,4 | −3,6 | −3,6 | −2,1 | −2,8 |
+| Spearman Start→Ziel trocken (2000–24) | 0,739 | 0,777 | 0,801 | 0,788 | 0,828 | – |
+| Top 3 von P10+ siegt, 2010er / 2020er | 4,2 / 1,0 | 0,0 / 0,0 | 0,0 / 0,9 | 0,0 / 0,0 | 0,0 / 0,0 | 4,5 / 2,4 |
+
+- **Erster Hebel, der |Δ| ≥ 4 ab 2010 trifft** (T 2: 2010er genau real). Preis: große Abstürze (≤ −8) werden halb
+  so häufig, Siege von P10+ verschwinden, trockene Rennen werden geordneter.
+- Offen: Mittelfeld von hinten (+4,0 statt +2,2) bewegt sich kaum; erst T 7 trifft es, dann ist das Feld starr.
+
+**Eingebaut (Nutzer 24.10.2026): `UEBERHOLSCHWELLE` { 1950: 0, 2010: 3 }, nur trocken und ohne wirksame rote
+Flagge** (dort entstehen real die Siege von hinten). Je 4 Läufe 2000–2024, gleiche Rechnung:
+
+| | T 0 (vorher) | T 2 | **T 3** | T 3 + Platzverlust 0,20/10 | T 4 + Platzverlust 0,20/10 | real |
+|---|---|---|---|---|---|---|
+| |Δ| ≥ 4, 2010er / 2020er | 28,5 / 30,4 | 23,8 / 27,7 | **22,7 / 25,7** | 24,2 / 27,1 | 21,6 / 25,5 | 23,0 / 25,1 |
+| ≤ −8 Plätze, 2010er / 2020er | 1,9 / 2,3 | 1,5 / 2,2 | 1,4 / 1,9 | 1,7 / 2,5 | 1,5 / 1,7 | 2,6 / 2,7 |
+| Top 3 von P10+ siegt, 2010er / 2020er | 3,7 / 3,8 | 2,5 / 1,0 | 2,8 / 0,9 | 1,6 / 2,0 | 2,8 / 1,4 | 4,5 / 2,4 |
+| Spearman Start→Ziel trocken | 0,746 | 0,773 | 0,780 | 0,770 | 0,783 | – |
+| Punkteanteil starkes Drittel Spiel − real | −1,54 | −2,25 | −2,31 | −2,48 | −2,93 | – |
+| Ø Spearman Saison (Rauschgrenze) | 0,910 (0,913) | 0,898 | 0,906 (0,917) | 0,903 | 0,894 | – |
+
+- **NEGATIVERGEBNIS Ausgleich über `PLATZVERLUST` ab 2010** (Reichweite 6 → 10, p 0,20/0,22): bringt die großen
+  Abstürze kaum zurück, weil Punktefahrer höchstens bis zum letzten Punkteplatz fallen (gewollt), treibt |Δ| ≥ 4
+  wieder hoch und kostet das starke Drittel Punkte. Nicht übernommen.
+- Preis von T 3: Abstürze ≤ −8 etwas seltener als vorher, trockene Rennen geordneter, starkes Drittel −0,8 Pp.
+  Siege von hinten liegen im Rauschen (n real 44 / 42 Fälle). Ticker-Parität 40/40, Browser 2018 grün.
+- Offen bleibt: Mittelfeld von hinten (Gegenprobe 4–8 von 10+, 2020er +4,7 statt +2,2).
