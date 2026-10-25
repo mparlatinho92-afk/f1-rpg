@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rennkalender 1950–1985</title>
+<!-- Eigenständiges Werkzeug (Entscheidung Nutzer 22.10.2026): Terminkollisionen und Reisebelastung.
+     Daten: rennkalender/daten-*.js, erzeugt von tools/build-rennkalender.js. Kein localStorage für Daten. -->
+<style>
+    :root {
+        --bg: #14161a; --bg-panel: #1d2026; --bg-zeile: #23272f; --linie: #343a45;
+        --text-main: #e6e8ec; --text-muted: #a3aab6; --akzent: #e10600; --akzent-text: #ff6b63;
+        --warn-bg: #4a3410; --warn-text: #ffcf7a; --konflikt-bg: #4a1414; --konflikt-text: #ff9a9a;
+        --serie-wm: #c0392b; --serie-nwm: #2e86c1; --serie-f2: #27ae60; --serie-andere: #8e44ad;
+    }
+    @media (prefers-color-scheme: light) {
+        :root {
+            --bg: #f4f5f7; --bg-panel: #ffffff; --bg-zeile: #f0f2f5; --linie: #d5d9e0;
+            --text-main: #1b1e23; --text-muted: #555d6b; --akzent-text: #b30500;
+            --warn-bg: #fff1d6; --warn-text: #7a4b00; --konflikt-bg: #ffe0e0; --konflikt-text: #8f1010;
+        }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text-main); font-size: 14px; }
+    header { padding: 14px 16px; border-bottom: 3px solid var(--akzent); background: var(--bg-panel); }
+    header h1 { margin: 0 0 4px; font-size: 20px; }
+    header p { margin: 0; color: var(--text-muted); font-size: 12px; }
+    main { padding: 12px 16px 40px; max-width: 1200px; margin: 0 auto; }
+    .leiste { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .leiste label { color: var(--text-muted); font-size: 12px; }
+    select, input, button { font: inherit; background: var(--bg-panel); color: var(--text-main); border: 1px solid var(--linie); border-radius: 6px; padding: 6px 10px; }
+    button { cursor: pointer; }
+    button.aktiv { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+    .karte { background: var(--bg-panel); border: 1px solid var(--linie); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .karte h2 { margin: 0 0 8px; font-size: 16px; }
+    .hinweis { color: var(--text-muted); font-size: 12px; margin: 6px 0 0; }
+    .tabelle-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--linie); padding: 6px; white-space: nowrap; }
+    td { padding: 6px; border-bottom: 1px solid var(--linie); vertical-align: top; }
+    tr.konflikt td { background: var(--konflikt-bg); color: var(--konflikt-text); }
+    .zahl { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .serie { display: inline-block; padding: 1px 6px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .s-F1-WM { background: var(--serie-wm); } .s-F1-NWM { background: var(--serie-nwm); }
+    .s-F2 { background: var(--serie-f2); } .s-andere { background: var(--serie-andere); }
+    .warn { background: var(--warn-bg); color: var(--warn-text); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+    .stark { background: var(--konflikt-bg); color: var(--konflikt-text); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+    .gedimmt { color: var(--text-muted); }
+    a { color: var(--akzent-text); cursor: pointer; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 640px) { .nur-breit { display: none; } }
+    /* Terminkalender: Monatsraster Mo–So */
+    .monate { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; }
+    .monat h3 { margin: 0 0 6px; font-size: 14px; }
+    .raster { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+    .wt { color: var(--text-muted); font-size: 11px; text-align: center; padding: 2px 0; }
+    .tag { min-height: 58px; background: var(--bg-zeile); border-radius: 4px; padding: 2px; font-size: 11px; overflow: hidden; }
+    .tag.leer { background: transparent; }
+    .tag.kollision { outline: 2px solid var(--konflikt-text); outline-offset: -2px; }
+    .tag .nr { color: var(--text-muted); font-size: 10px; }
+    .termin { display: block; margin-top: 2px; padding: 1px 3px; border-radius: 3px; white-space: nowrap; overflow: hidden;
+        text-overflow: ellipsis; border-left: 3px solid var(--linie); background: var(--bg-panel); color: var(--text-main); }
+    .termin.R { color: #fff; font-weight: 600; }
+    .termin.R.s-F1-WM { background: var(--serie-wm); } .termin.R.s-F1-NWM { background: var(--serie-nwm); }
+    .termin.R.s-F2 { background: var(--serie-f2); } .termin.R.s-andere { background: var(--serie-andere); }
+    .termin.b-F1-WM { border-left-color: var(--serie-wm); } .termin.b-F1-NWM { border-left-color: var(--serie-nwm); }
+    .termin.b-F2 { border-left-color: var(--serie-f2); } .termin.b-andere { border-left-color: var(--serie-andere); }
+    .termin.reise { border-left-color: var(--text-muted); color: var(--text-muted); font-style: italic; }
+    .termin.reise.knapp { background: var(--konflikt-bg); color: var(--konflikt-text); }
+    .termin.fremd { border: 1px dashed var(--linie); color: var(--text-muted); background: transparent; }
+    @media (max-width: 640px) { .monate { grid-template-columns: 1fr; } .tag { min-height: 48px; font-size: 10px; } }
+</style>
+</head>
+<body>
+<header>
+    <h1>Rennkalender 1950–1985</h1>
+    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
+</header>
+<main>
+    <div class="tabs">
+        <button id="tab-kalender" class="aktiv" onclick="zeige('kalender')">Kalender</button>
+        <button id="tab-fahrer" onclick="zeige('fahrer')">Fahrer</button>
+    </div>
+
+    <section id="ansicht-kalender">
+        <div class="leiste">
+            <label for="jahr">Jahr</label><select id="jahr" onchange="renderKalender()"></select>
+            <label for="serien">Serien</label><span id="serien"></span>
+        </div>
+        <div class="leiste">
+            <button class="modus aktiv" data-modus="liste" onclick="setzeModus('liste')">Liste</button>
+            <button class="modus" data-modus="termin" onclick="setzeModus('termin')">Terminkalender</button>
+            <label><input type="checkbox" class="reise-schalter" checked onchange="setzeReise(this.checked)"> Reisezeit</label>
+        </div>
+        <div class="karte nur-termin" hidden>
+            <h2 id="termin-titel"></h2>
+            <div id="termin-kalender" class="monate"></div>
+            <p class="hinweis" id="annahmen-1"></p>
+        </div>
+        <div class="karte nur-liste">
+            <h2 id="kalender-titel"></h2>
+            <div class="tabelle-wrap"><table>
+                <thead><tr><th>Datum</th><th>Serie</th><th>Rennen</th><th>Strecke</th><th class="nur-breit">Zeitzone</th>
+                    <th class="zahl">Tage seit</th><th class="zahl">km</th><th class="zahl">Δ h</th><th class="zahl">Feld</th></tr></thead>
+                <tbody id="kalender-body"></tbody>
+            </table></div>
+            <p class="hinweis">Rot: zwei Rennen höchstens zwei Tage auseinander (Kollision am selben Wochenende). km und Δ h zum vorigen Rennen der Auswahl.</p>
+        </div>
+        <div class="karte">
+            <h2>Engste Programme</h2>
+            <div class="tabelle-wrap"><table>
+                <thead><tr><th>Fahrer</th><th class="zahl">Rennen</th><th class="zahl">kürzeste Pause</th><th class="zahl">km gesamt</th><th class="zahl">Zonen gewechselt (h)</th></tr></thead>
+                <tbody id="programme-body"></tbody>
+            </table></div>
+        </div>
+    </section>
+
+    <section id="ansicht-fahrer" hidden>
+        <div class="leiste">
+            <label for="fahrer-suche">Fahrer</label>
+            <input id="fahrer-suche" list="fahrer-liste" placeholder="Name eingeben" oninput="fahrerGewaehlt()" autocomplete="off">
+            <datalist id="fahrer-liste"></datalist>
+            <label for="fahrer-jahr">Jahr</label><select id="fahrer-jahr" onchange="renderFahrer(aktuellerFahrer)"></select>
+        </div>
+        <div class="leiste">
+            <button class="modus aktiv" data-modus="liste" onclick="setzeModus('liste')">Liste</button>
+            <button class="modus" data-modus="termin" onclick="setzeModus('termin')">Terminkalender</button>
+            <label><input type="checkbox" class="reise-schalter" checked onchange="setzeReise(this.checked)"> Reisezeit</label>
+            <label><input type="checkbox" id="fremde-zeigen" checked onchange="renderFahrer(aktuellerFahrer)"> nicht gemeldete Rennen</label>
+        </div>
+        <div class="karte nur-termin" hidden>
+            <h2 id="fahrer-termin-titel">Fahrer wählen</h2>
+            <div id="fahrer-termin" class="monate"></div>
+            <p class="hinweis" id="annahmen-2"></p>
+        </div>
+        <div class="karte nur-liste">
+            <h2 id="fahrer-titel">Fahrer wählen</h2>
+            <div class="tabelle-wrap"><table>
+                <thead><tr><th>Datum</th><th>Serie</th><th>Rennen</th><th>Strecke</th><th>Team</th><th class="zahl">Ergebnis</th>
+                    <th class="zahl">Tage seit</th><th class="zahl">km</th><th class="zahl">Δ h</th><th>Belastung</th></tr></thead>
+                <tbody id="fahrer-body"></tbody>
+            </table></div>
+            <p class="hinweis">Belastung: unter 7 Tagen Pause und mindestens 3 Stunden Zeitverschiebung oder über 3000 km. Rot unter 4 Tagen.</p>
+        </div>
+    </section>
+</main>
+
+<script src="rennkalender/daten-wm.js"></script>
+<script>
+'use strict';
+// Quellen zusammenführen: weitere Dateien (Nicht-WM, Importer) hängen später ihre rennen/strecken/fahrer an.
+const DATEN = { strecken: { ...RK_WM.strecken }, fahrer: { ...RK_WM.fahrer }, teams: { ...RK_WM.teams },
+    rennen: [...RK_WM.rennen] };
+DATEN.rennen.sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
+const SERIEN = { 'F1-WM': 'F1 WM', 'F1-NWM': 'F1 Nicht-WM', 'F2': 'Formel 2', 'andere': 'Andere' };
+const STARTZEIT_STUNDE = 14;
+const aktiveSerien = new Set(Object.keys(SERIEN));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// --- Zeit und Ort ---
+// UTC-Abstand einer IANA-Zone an einem Tag, historisch inkl. Sommerzeit (Intl kennt die tz-Datenbank).
+const offsetCache = new Map();
+function utcOffsetStunden(tz, datum) {
+    const key = tz + datum;
+    if (offsetCache.has(key)) return offsetCache.get(key);
+    const t = new Date(datum + 'T' + String(STARTZEIT_STUNDE).padStart(2, '0') + ':00:00Z');
+    const teile = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit',
+        day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(t);
+    const g = Object.fromEntries(teile.map(p => [p.type, p.value]));
+    const lokal = Date.UTC(+g.year, +g.month - 1, +g.day, +g.hour, +g.minute);
+    const h = Math.round((lokal - t.getTime()) / 900000) / 4;
+    offsetCache.set(key, h);
+    return h;
+}
+function kmZwischen(a, b) {
+    const r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+    return 6371 * 2 * Math.asin(Math.sqrt(x));
+}
+const tageZwischen = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+const datumDe = d => d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(0, 4);
+const offsetText = h => 'UTC' + (h >= 0 ? '+' : '−') + Math.abs(h).toString().replace('.5', ':30').replace('.75', ':45');
+const serieBadge = s => `<span class="serie s-${esc(s)}">${esc(SERIEN[s] || s)}</span>`;
+
+// Reisekennzahlen zwischen zwei Rennen
+function reise(vor, nach) {
+    const a = DATEN.strecken[vor.strecke], b = DATEN.strecken[nach.strecke];
+    return { tage: tageZwischen(vor.datum, nach.datum), km: Math.round(kmZwischen(a, b)),
+        dh: utcOffsetStunden(b.tz, nach.datum) - utcOffsetStunden(a.tz, vor.datum) };
+}
+function belastung(r) {
+    if (!r) return '';
+    if (r.tage < 4 && (Math.abs(r.dh) >= 3 || r.km > 3000)) return '<span class="stark">sehr hoch</span>';
+    if (r.tage < 7 && (Math.abs(r.dh) >= 3 || r.km > 3000)) return '<span class="warn">hoch</span>';
+    return '';
+}
+
+// --- Rennwochenende und Reise (Annahmen, keine Quelle) ---
+// Wochenende: Training zwei Tage, Qualifikation einen Tag vor dem Rennen (So-Rennen: Fr/Sa, Sa-Rennen: Do/Fr).
+// Indy 500 hatte in Wahrheit Wochen voraus Training und Qualifikation, das Raster zeigt trotzdem dieselbe Form.
+const WOCHENENDE = [[-2, 'T', 'Training', 'Training'], [-1, 'Q', 'Qualifikation', 'Quali'], [0, 'R', 'Rennen']];
+const TAG_BEGINN = 9, ABENDS_LOS = 20;                   // Ortszeit: Programm ab 9 Uhr, Abreise am Rennabend 20 Uhr
+const LANGE_PAUSE = 14;                                  // Tage; darüber Anreise statt Weiterreise
+const INSEL = new Set(['United Kingdom']);               // Auto zum Festland nur mit Fähre (+3 h)
+const addTage = (d, n) => new Date(Date.parse(d) + n * 86400000).toISOString().slice(0, 10);
+const WT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const MONATE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const ANNAHMEN = 'Annahmen: Training zwei Tage und Qualifikation einen Tag vor dem Rennen, Programm ab 9 Uhr Ortszeit. '
+    + 'Reise am Morgen nach dem Rennen, bei Zeitnot schon am Rennabend; liegen mehr als 14 Tage dazwischen, Anreise mit Ankunft '
+    + 'am Abend vor dem Training (Ausgangsort unbekannt, gerechnet ab der letzten Strecke). Auto bis 700 km immer, bis 1200 km wenn schneller (Straße = Luftlinie × 1,3; '
+    + '55/65/75 km/h in den 50ern/60ern/ab 1970; Fähre zur Insel +3 h), sonst Flug (bis 1958 Propeller 380 km/h mit Zwischenlandung '
+    + 'alle 3000 km, danach Jet 800 km/h; 3 h für Wege zum und vom Flughafen). Rot umrandet: zwei Wochenenden am selben Tag, '
+    + 'rote Reise: Ankunft erst nach Programmbeginn.';
+
+// Reisedauer in Stunden, schnellere der möglichen Arten
+function reiseArt(a, b, jahr) {
+    const km = kmZwischen(a, b);
+    if (km < 30) return null;
+    const flugTempo = jahr < 1959 ? 380 : 800, stoppAlle = jahr < 1959 ? 3000 : 9000;
+    const flug = { art: 'flug', h: 3 + km / flugTempo + Math.floor(km / stoppAlle) * 1.5 };
+    if (km > 1200) return { ...flug, km };
+    if (km <= 700) flug.h = Infinity;                    // kurze Wege fuhr man, Tross und Fahrer gleichermaßen
+    const autoTempo = jahr < 1960 ? 55 : jahr < 1970 ? 65 : 75;
+    const auto = { art: 'auto', h: km * 1.3 / autoTempo + (INSEL.has(a.land) !== INSEL.has(b.land) ? 3 : 0) };
+    return { ...(auto.h <= flug.h ? auto : flug), km };
+}
+// Reise von Rennen vor zu Rennen nach als Termin: Abreise, Ankunft (UTC ms) und ob sie vor Programmbeginn ankommt
+function reiseTermin(vor, nach) {
+    const a = DATEN.strecken[vor.strecke], b = DATEN.strecken[nach.strecke];
+    const art = reiseArt(a, b, +vor.datum.slice(0, 4));
+    if (!art) return null;
+    const oa = utcOffsetStunden(a.tz, vor.datum), ob = utcOffsetStunden(b.tz, nach.datum);
+    const utc = (d, h, o) => Date.parse(d) + (h - o) * 3600000;
+    const beginn = utc(addTage(nach.datum, WOCHENENDE[0][0]), TAG_BEGINN, ob);
+    const h = art.h * 3600000;
+    // Lange Pause: dazwischen war der Fahrer woanders (zu Hause, andere Serie). Gerechnet ab der letzten Strecke,
+    // Ankunft am Abend vor dem Training.
+    if (tageZwischen(vor.datum, nach.datum) > LANGE_PAUSE) {
+        let ab = utc(addTage(nach.datum, WOCHENENDE[0][0] - 1), 18, ob) - h;
+        if (lokal(ab, oa).getUTCHours() < 7) ab = utc(addTage(isoLokal(ab, oa), -1), 8, oa);   // nicht nachts losfahren
+        return { ...art, h: Math.round(art.h * 2) / 2, ab, an: ab + h, oa, ob, knapp: false, lang: true, nach };
+    }
+    let ab = utc(addTage(vor.datum, 1), TAG_BEGINN, oa);
+    if (ab + h > beginn) ab = utc(vor.datum, ABENDS_LOS, oa);
+    return { ...art, h: Math.round(art.h * 2) / 2, ab, an: ab + h, oa, ob, knapp: ab + h > beginn, nach };
+}
+const lokal = (ms, o) => new Date(ms + o * 3600000);   // UTC-Felder des Ergebnisses = Ortszeit
+const isoLokal = (ms, o) => lokal(ms, o).toISOString().slice(0, 10);
+const uhrLokal = (ms, o) => { const d = lokal(ms, o); return WT[d.getUTCDay()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+
+let modus = 'liste', reiseZeigen = true, aktuellerFahrer = null;
+function setzeModus(m) {
+    modus = m;
+    document.querySelectorAll('.modus').forEach(b => b.classList.toggle('aktiv', b.dataset.modus === m));
+    document.querySelectorAll('.nur-liste').forEach(e => { e.hidden = m !== 'liste'; });
+    document.querySelectorAll('.nur-termin').forEach(e => { e.hidden = m !== 'termin'; });
+    renderKalender(); if (aktuellerFahrer) renderFahrer(aktuellerFahrer);
+}
+function setzeReise(an) {
+    reiseZeigen = an;
+    document.querySelectorAll('.reise-schalter').forEach(c => { c.checked = an; });
+    renderKalender(); if (aktuellerFahrer) renderFahrer(aktuellerFahrer);
+}
+
+// Termine eines Programms (Rennliste in Datumsfolge) je Ortsdatum: Map datum -> [{art, cls, text, title}]
+// kette: Rennen, zwischen denen gereist wird; fremde: nur als gestrichelter Renntag
+function sammleTermine(rennen, kette, fremde = []) {
+    const tage = new Map(), dazu = (d, t) => { if (!tage.has(d)) tage.set(d, []); tage.get(d).push(t); };
+    for (const r of rennen) {
+        const s = DATEN.strecken[r.strecke];
+        for (const [n, art, wort, kurz] of WOCHENENDE) dazu(addTage(r.datum, n), { art, rennen: r.id, cls: `${art} s-${r.serie} b-${r.serie}`,
+            text: kurz || s.ort, title: `${wort}: ${r.name}, ${s.ort} (${SERIEN[r.serie] || r.serie})` });
+    }
+    for (const r of fremde) dazu(r.datum, { art: 'F', cls: 'fremd', text: DATEN.strecken[r.strecke].ort,
+        title: `nicht gemeldet: ${r.name} (${SERIEN[r.serie] || r.serie})` });
+    if (reiseZeigen) for (let i = 1; i < kette.length; i++) {
+        const t = reiseTermin(kette[i - 1], kette[i]);
+        if (!t) continue;
+        const ziel = DATEN.strecken[t.nach.strecke];
+        const zeichen = t.art === 'flug' ? '✈' : '🚗', dh = t.ob - t.oa;
+        const std = t.h.toLocaleString('de-DE');
+        const title = `${t.lang ? 'Anreise' : t.art === 'flug' ? 'Flug' : 'Auto'} nach ${ziel.ort}${t.lang ? ' (' + (t.art === 'flug' ? 'Flug' : 'Auto') + ', ab letzter Strecke)' : ''}: `
+            + `${t.km.toLocaleString('de-DE', { maximumFractionDigits: 0 })} km, etwa ${std} h · ab ${uhrLokal(t.ab, t.oa)} Ortszeit, an ${uhrLokal(t.an, t.ob)} Ortszeit`
+            + (dh ? ` · Zeitverschiebung ${dh > 0 ? '+' : ''}${dh} h` : '') + (t.knapp ? ' · kommt erst nach Programmbeginn an' : '');
+        const cls = 'reise' + (t.knapp ? ' knapp' : ''), tagAb = isoLokal(t.ab, t.oa), tagAn = isoLokal(t.an, t.ob);
+        dazu(tagAb, { art: 'reise', cls, text: `${zeichen} ${std} h`, title });
+        if (tagAn > tagAb) dazu(tagAn, { art: 'reise', cls, text: `${zeichen} bis ${uhrLokal(t.an, t.ob).slice(3)}`, title });
+    }
+    return tage;
+}
+
+// Monatsraster: nur Monate mit mindestens einem Termin (lange Winterpausen, „alle Jahre“ beim Fahrer)
+function renderRaster(el, tage) {
+    const monate = [...new Set([...tage.keys()].map(d => d.slice(0, 7)))].sort();
+    if (!monate.length) { el.innerHTML = '<p class="gedimmt">Keine Termine.</p>'; return; }
+    el.innerHTML = monate.map(jm => {
+        const [j, m] = jm.split('-').map(Number);
+        const erster = new Date(Date.UTC(j, m - 1, 1)), tageImMonat = new Date(Date.UTC(j, m, 0)).getUTCDate();
+        const zellen = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(w => `<div class="wt">${w}</div>`);
+        for (let k = (erster.getUTCDay() + 6) % 7; k > 0; k--) zellen.push('<div class="tag leer"></div>');
+        for (let d = 1; d <= tageImMonat; d++) {
+            const liste = tage.get(`${jm}-${String(d).padStart(2, '0')}`) || [];
+            const kollision = new Set(liste.filter(t => 'TQR'.includes(t.art)).map(t => t.rennen)).size > 1;
+            zellen.push(`<div class="tag${kollision ? ' kollision' : ''}"><span class="nr">${d}</span>`
+                + liste.map(t => `<span class="termin ${t.cls}" title="${esc(t.title)}">${esc(t.text)}</span>`).join('') + '</div>');
+        }
+        return `<div class="monat"><h3>${MONATE[m - 1]} ${j}</h3><div class="raster">${zellen.join('')}</div></div>`;
+    }).join('');
+}
+
+// Gemeinsames Reisen des Feldes: Indy 500 (1950–60) hatte ein eigenes Feld, der Tross reiste nicht hin
+const imTross = r => !(r.strecke === 'indianapolis' && r.datum < '1961');
+
+// --- Ansichten ---
+function zeige(name) {
+    for (const n of ['kalender', 'fahrer']) {
+        document.getElementById('ansicht-' + n).hidden = n !== name;
+        document.getElementById('tab-' + n).classList.toggle('aktiv', n === name);
+    }
+}
+
+function rennenImJahr(jahr) {
+    return DATEN.rennen.filter(r => r.datum.startsWith(jahr) && aktiveSerien.has(r.serie));
+}
+
+function renderKalender() {
+    const jahr = document.getElementById('jahr').value;
+    const liste = rennenImJahr(jahr);
+    document.getElementById('kalender-titel').textContent = `${jahr}: ${liste.length} Rennen`;
+    const zeilen = liste.map((r, i) => {
+        const s = DATEN.strecken[r.strecke];
+        const rv = i ? reise(liste[i - 1], r) : null;
+        const nachbar = (i && rv.tage <= 2) || (i + 1 < liste.length && tageZwischen(r.datum, liste[i + 1].datum) <= 2);
+        return `<tr class="${nachbar ? 'konflikt' : ''}"><td>${datumDe(r.datum)}</td><td>${serieBadge(r.serie)}</td>`
+            + `<td>${esc(r.name)}</td><td>${esc(s.ort)}, ${esc(s.land)}</td>`
+            + `<td class="nur-breit gedimmt">${offsetText(utcOffsetStunden(s.tz, r.datum))}</td>`
+            + `<td class="zahl">${rv ? rv.tage : '–'}</td><td class="zahl">${rv ? rv.km.toLocaleString('de-DE') : '–'}</td>`
+            + `<td class="zahl">${rv ? (rv.dh > 0 ? '+' : '') + rv.dh : '–'}</td><td class="zahl">${r.feld.length}</td></tr>`;
+    });
+    document.getElementById('kalender-body').innerHTML = zeilen.join('');
+    document.getElementById('termin-titel').textContent = `${jahr}: ${liste.length} Rennwochenenden`;
+    if (modus === 'termin') renderRaster(document.getElementById('termin-kalender'), sammleTermine(liste, liste.filter(imTross)));
+    renderProgramme(liste);
+}
+
+// Wer hatte im Jahr das dichteste Programm: kürzeste Pause, Reise-km, gewechselte Zeitzonen
+function renderProgramme(liste) {
+    const je = new Map();
+    // Je Fahrer jedes Rennen einmal: bei geteilten Wagen steht derselbe Fahrer mehrfach im Feld
+    for (const r of liste) for (const id of new Set(r.feld.map(e => e[0]))) {
+        if (!je.has(id)) je.set(id, []);
+        je.get(id).push(r);
+    }
+    const werte = [...je].filter(([, l]) => l.length > 1).map(([id, l]) => {
+        let km = 0, dh = 0, kuerzeste = Infinity;
+        for (let i = 1; i < l.length; i++) {
+            const rv = reise(l[i - 1], l[i]);
+            km += rv.km; dh += Math.abs(rv.dh); kuerzeste = Math.min(kuerzeste, rv.tage);
+        }
+        return { id, n: l.length, km, dh, kuerzeste };
+    }).sort((a, b) => a.kuerzeste - b.kuerzeste || b.km - a.km).slice(0, 15);
+    document.getElementById('programme-body').innerHTML = werte.map(w =>
+        `<tr><td><a onclick="oeffneFahrer('${esc(w.id)}')">${esc(DATEN.fahrer[w.id].n)}</a></td><td class="zahl">${w.n}</td>`
+        + `<td class="zahl">${w.kuerzeste} Tage</td><td class="zahl">${w.km.toLocaleString('de-DE')}</td><td class="zahl">${w.dh}</td></tr>`).join('');
+}
+
+const fahrerNachName = new Map();
+function oeffneFahrer(id) {
+    document.getElementById('fahrer-suche').value = DATEN.fahrer[id].n;
+    zeige('fahrer');
+    renderFahrer(id);
+}
+function fahrerGewaehlt() {
+    const id = fahrerNachName.get(document.getElementById('fahrer-suche').value.trim());
+    if (id) renderFahrer(id);
+}
+function renderFahrer(id) {
+    if (!id) return;
+    const jahrSel = document.getElementById('fahrer-jahr');
+    const alle = DATEN.rennen.filter(r => aktiveSerien.has(r.serie) && r.feld.some(e => e[0] === id));
+    if (id !== aktuellerFahrer) {
+        const jahre = [...new Set(alle.map(r => r.datum.slice(0, 4)))];
+        jahrSel.innerHTML = '<option value="">alle Jahre</option>' + jahre.map(j => `<option>${j}</option>`).join('');
+        jahrSel.value = jahre[0] || '';
+        aktuellerFahrer = id;
+    }
+    const liste = alle.filter(r => !jahrSel.value || r.datum.startsWith(jahrSel.value));
+    const f = DATEN.fahrer[id];
+    const titel = `${f.n}${f.nat ? ' (' + f.nat + ')' : ''}${jahrSel.value ? ' ' + jahrSel.value : ''}: ${liste.length} Meldungen`;
+    document.getElementById('fahrer-titel').textContent = titel;
+    document.getElementById('fahrer-termin-titel').textContent = titel;
+    if (modus === 'termin') {
+        const meine = new Set(liste.map(r => r.id)), jahre = new Set(liste.map(r => r.datum.slice(0, 4)));
+        const fremde = document.getElementById('fremde-zeigen').checked
+            ? DATEN.rennen.filter(r => aktiveSerien.has(r.serie) && !meine.has(r.id) && jahre.has(r.datum.slice(0, 4))) : [];
+        renderRaster(document.getElementById('fahrer-termin'), sammleTermine(liste, liste, fremde));
+    }
+    document.getElementById('fahrer-body').innerHTML = liste.map((r, i) => {
+        const s = DATEN.strecken[r.strecke], e = r.feld.find(x => x[0] === id);
+        const weitere = r.feld.filter(x => x[0] === id).length - 1;   // geteilter Wagen / zweites Auto
+        const rv = i ? reise(liste[i - 1], r) : null;
+        return `<tr><td>${datumDe(r.datum)}</td><td>${serieBadge(r.serie)}</td><td>${esc(r.name)}</td>`
+            + `<td>${esc(s.ort)}, ${esc(s.land)}</td><td>${esc(DATEN.teams[e[2]] || e[2] || '')}</td><td class="zahl">${esc(e[1])}${weitere ? ' <span class="gedimmt">(+' + weitere + ' Wagen)</span>' : ''}</td>`
+            + `<td class="zahl">${rv ? rv.tage : '–'}</td><td class="zahl">${rv ? rv.km.toLocaleString('de-DE') : '–'}</td>`
+            + `<td class="zahl">${rv ? (rv.dh > 0 ? '+' : '') + rv.dh : '–'}</td><td>${belastung(rv)}</td></tr>`;
+    }).join('');
+}
+
+// --- Start ---
+(function init() {
+    const jahre = [...new Set(DATEN.rennen.map(r => r.datum.slice(0, 4)))].sort();
+    document.getElementById('jahr').innerHTML = jahre.map(j => `<option>${j}</option>`).join('');
+    document.getElementById('serien').innerHTML = Object.entries(SERIEN)
+        .filter(([k]) => DATEN.rennen.some(r => r.serie === k))
+        .map(([k, n]) => `<label><input type="checkbox" checked onchange="this.checked ? aktiveSerien.add('${k}') : aktiveSerien.delete('${k}'); renderKalender()"> ${esc(n)}</label>`).join(' ');
+    const namen = Object.entries(DATEN.fahrer).sort((a, b) => a[1].n.localeCompare(b[1].n));
+    for (const [id, f] of namen) fahrerNachName.set(f.n, id);
+    document.getElementById('fahrer-liste').innerHTML = namen.map(([, f]) => `<option value="${esc(f.n)}">`).join('');
+    document.getElementById('annahmen-1').textContent = ANNAHMEN;
+    document.getElementById('annahmen-2').textContent = ANNAHMEN + ' Gestrichelt: Rennen derselben Serien, für die der Fahrer nicht gemeldet war.';
+    renderKalender();
+})();
+</script>
+</body>
+</html>
