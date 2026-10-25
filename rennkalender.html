@@ -11,7 +11,7 @@
         --bg: #14161a; --bg-panel: #1d2026; --bg-zeile: #23272f; --linie: #343a45;
         --text-main: #e6e8ec; --text-muted: #a3aab6; --akzent: #e10600; --akzent-text: #ff6b63;
         --warn-bg: #4a3410; --warn-text: #ffcf7a; --konflikt-bg: #4a1414; --konflikt-text: #ff9a9a;
-        --serie-wm: #c0392b; --serie-nwm: #2e86c1; --serie-f2: #27ae60; --serie-andere: #8e44ad;
+        --serie-wm: #c0392b; --serie-nwm: #2e86c1; --serie-f2: #27ae60; --serie-andere: #8e44ad; --serie-sw: #b9770e;
     }
     @media (prefers-color-scheme: light) {
         :root {
@@ -43,7 +43,7 @@
     .zahl { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .serie { display: inline-block; padding: 1px 6px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; }
     .s-F1-WM { background: var(--serie-wm); } .s-F1-NWM { background: var(--serie-nwm); }
-    .s-F2 { background: var(--serie-f2); } .s-andere { background: var(--serie-andere); }
+    .s-F2 { background: var(--serie-f2); } .s-andere { background: var(--serie-andere); } .s-SW-WM { background: var(--serie-sw); }
     .warn { background: var(--warn-bg); color: var(--warn-text); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
     .stark { background: var(--konflikt-bg); color: var(--konflikt-text); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
     .gedimmt { color: var(--text-muted); }
@@ -63,9 +63,9 @@
         text-overflow: ellipsis; border-left: 3px solid var(--linie); background: var(--bg-panel); color: var(--text-main); }
     .termin.R { color: #fff; font-weight: 600; }
     .termin.R.s-F1-WM { background: var(--serie-wm); } .termin.R.s-F1-NWM { background: var(--serie-nwm); }
-    .termin.R.s-F2 { background: var(--serie-f2); } .termin.R.s-andere { background: var(--serie-andere); }
+    .termin.R.s-F2 { background: var(--serie-f2); } .termin.R.s-andere { background: var(--serie-andere); } .termin.R.s-SW-WM { background: var(--serie-sw); }
     .termin.b-F1-WM { border-left-color: var(--serie-wm); } .termin.b-F1-NWM { border-left-color: var(--serie-nwm); }
-    .termin.b-F2 { border-left-color: var(--serie-f2); } .termin.b-andere { border-left-color: var(--serie-andere); }
+    .termin.b-F2 { border-left-color: var(--serie-f2); } .termin.b-andere { border-left-color: var(--serie-andere); } .termin.b-SW-WM { border-left-color: var(--serie-sw); }
     .termin.reise { border-left-color: var(--text-muted); color: var(--text-muted); font-style: italic; }
     .termin.reise.knapp { background: var(--konflikt-bg); color: var(--konflikt-text); }
     .termin.fremd { border: 1px dashed var(--linie); color: var(--text-muted); background: transparent; }
@@ -76,7 +76,7 @@
 <body>
 <header>
     <h1>Rennkalender 1950–1985</h1>
-    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Nicht-WM-Rennen Wikipedia (CC BY-SA 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
+    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Nicht-WM-Rennen en.wikipedia, Sportwagen-WM de.wikipedia (CC BY-SA 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
 </header>
 <main>
     <div class="tabs">
@@ -149,17 +149,20 @@
 
 <script src="rennkalender/daten-wm.js"></script>
 <script src="rennkalender/daten-nwm.js"></script>
+<script src="rennkalender/daten-sw.js"></script>
 <script>
 'use strict';
 // Quellen zusammenführen: jede Datei bringt rennen/strecken/fahrer/teams mit, IDs nach F1DB wo bekannt.
-const QUELLEN = [RK_WM, typeof RK_NWM === 'undefined' ? null : RK_NWM].filter(Boolean);
+const QUELLEN = [RK_WM, typeof RK_NWM === 'undefined' ? null : RK_NWM, typeof RK_SW === 'undefined' ? null : RK_SW].filter(Boolean);
 const DATEN = { strecken: {}, fahrer: {}, teams: {}, rennen: [] };
 for (const q of QUELLEN) {
     for (const k of ['strecken', 'fahrer', 'teams']) Object.assign(DATEN[k], q[k]);
     DATEN.rennen.push(...q.rennen);
 }
 DATEN.rennen.sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
-const SERIEN = { 'F1-WM': 'F1 WM', 'F1-NWM': 'F1 Nicht-WM', 'F2': 'Formel 2', 'andere': 'Andere' };
+const SERIEN = { 'F1-WM': 'F1 WM', 'F1-NWM': 'F1 Nicht-WM', 'SW-WM': 'Sportwagen-WM', 'F2': 'Formel 2', 'andere': 'Andere' };
+// Mehrtägige Rennen (24 Stunden, Mille Miglia): abgereist wird nach dem letzten Renntag
+const ende = r => r.bis || r.datum;
 const STARTZEIT_STUNDE = 14;
 const aktiveSerien = new Set(Object.keys(SERIEN));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -192,8 +195,8 @@ const serieBadge = s => `<span class="serie s-${esc(s)}">${esc(SERIEN[s] || s)}<
 // Reisekennzahlen zwischen zwei Rennen
 function reise(vor, nach) {
     const a = DATEN.strecken[vor.strecke], b = DATEN.strecken[nach.strecke];
-    return { tage: tageZwischen(vor.datum, nach.datum), km: Math.round(kmZwischen(a, b)),
-        dh: utcOffsetStunden(b.tz, nach.datum) - utcOffsetStunden(a.tz, vor.datum) };
+    return { tage: tageZwischen(ende(vor), nach.datum), km: Math.round(kmZwischen(a, b)),
+        dh: utcOffsetStunden(b.tz, nach.datum) - utcOffsetStunden(a.tz, ende(vor)) };
 }
 function belastung(r) {
     if (!r) return '';
@@ -222,6 +225,7 @@ const ANNAHMEN = 'Annahmen: Training zwei Tage und Qualifikation einen Tag vor d
     + '55/65/75 km/h in den 50ern/60ern/ab 1970; Fähre zur Insel +3 h), sonst Flug (bis 1958 Propeller 380 km/h mit Zwischenlandung '
     + 'alle 3000 km, danach Jet 800 km/h; 3 h für Wege zum und vom Flughafen). Muss man schon am Rennabend los, Charterflug bis 1500 km, wenn schneller '
     + '(250/350/500 km/h in den 50ern/60ern/ab 1970, 1,5 h am Boden). Feiertagsmontag in Großbritannien: Training am Morgen des Renntags. '
+    + 'Langstrecke ebenso vom Starttag aus gerechnet (Le Mans trainierte in Wahrheit Mittwoch und Donnerstag). '
     + 'Rot umrandet: zwei Wochenenden am selben Tag, '
     + 'rote Reise: Ankunft erst nach Programmbeginn.';
 
@@ -248,28 +252,28 @@ function reiseTermin(vor, nach) {
     const a = DATEN.strecken[vor.strecke], b = DATEN.strecken[nach.strecke];
     const art = reiseArt(a, b, +vor.datum.slice(0, 4));
     if (!art) return null;
-    const oa = utcOffsetStunden(a.tz, vor.datum), ob = utcOffsetStunden(b.tz, nach.datum);
+    const oa = utcOffsetStunden(a.tz, ende(vor)), ob = utcOffsetStunden(b.tz, nach.datum);
     const utc = (d, h, o) => Date.parse(d) + (h - o) * 3600000;
     const start = wochenende(nach)[0][0];
     const beginn = utc(addTage(nach.datum, start), TAG_BEGINN, ob);
     const h = art.h * 3600000;
     // Lange Pause: dazwischen war der Fahrer woanders (zu Hause, andere Serie). Gerechnet ab der letzten Strecke,
     // Ankunft am Abend vor dem Training.
-    if (tageZwischen(vor.datum, nach.datum) > LANGE_PAUSE) {
+    if (tageZwischen(ende(vor), nach.datum) > LANGE_PAUSE) {
         let ab = utc(addTage(nach.datum, start - 1), 18, ob) - h;
         if (lokal(ab, oa).getUTCHours() < 7) ab = utc(addTage(isoLokal(ab, oa), -1), 8, oa);   // nicht nachts losfahren
         return { ...art, h: Math.round(art.h * 2) / 2, ab, an: ab + h, oa, ob, knapp: false, lang: true, nach };
     }
-    let ab = utc(addTage(vor.datum, 1), TAG_BEGINN, oa);
+    let ab = utc(addTage(ende(vor), 1), TAG_BEGINN, oa);
     // Reicht die Abreise am Morgen danach nicht, geht es am Rennabend los, und dann lieber mit dem Charterflug als
     // die Nacht durch mit dem Auto (Moss, Nürburgring → Brands Hatch 1961: sonst 12,5 h über Nacht mit Fähre)
     if (ab + h > beginn) {
-        ab = utc(vor.datum, ABENDS_LOS, oa);
+        ab = utc(ende(vor), ABENDS_LOS, oa);
         const c = charter(a, b, +vor.datum.slice(0, 4));
         if (c && c.h < art.h) {
             const hc = c.h * 3600000;
-            let abc = utc(addTage(vor.datum, 1), TAG_BEGINN, oa);
-            if (abc + hc > beginn) abc = utc(vor.datum, ABENDS_LOS, oa);
+            let abc = utc(addTage(ende(vor), 1), TAG_BEGINN, oa);
+            if (abc + hc > beginn) abc = utc(ende(vor), ABENDS_LOS, oa);
             return { ...c, h: Math.round(c.h * 2) / 2, ab: abc, an: abc + hc, oa, ob, knapp: abc + hc > beginn, nach };
         }
     }
@@ -302,6 +306,9 @@ function sammleTermine(rennen, ketten, fremde = [], abgesagt = []) {
         const s = DATEN.strecken[r.strecke];
         for (const [n, art, wort, kurz] of wochenende(r)) dazu(addTage(r.datum, n), { art, rennen: r.id, strecke: r.strecke, cls: `${art} s-${r.serie} b-${r.serie}`,
             text: kurz || s.ort, title: `${wort}: ${r.name}, ${s.ort} (${SERIEN[r.serie] || r.serie})` });
+        // Weitere Renntage (24 Stunden: Sa–So)
+        for (let d = addTage(r.datum, 1); r.bis && d <= r.bis; d = addTage(d, 1)) dazu(d, { art: 'R', rennen: r.id, strecke: r.strecke,
+            cls: `R s-${r.serie} b-${r.serie}`, text: s.ort, title: `Rennen (Fortsetzung): ${r.name}, ${s.ort} (${SERIEN[r.serie] || r.serie})` });
     }
     for (const r of fremde) dazu(r.datum, { art: 'F', cls: 'fremd', text: DATEN.strecken[r.strecke].ort,
         title: `nicht gemeldet: ${r.name} (${SERIEN[r.serie] || r.serie})` });

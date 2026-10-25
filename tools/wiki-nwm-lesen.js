@@ -31,6 +31,9 @@ function klar(s) {
     s = s.replace(/\[\[(?:File|Image):[^\]]*\]\]/gi, '').replace(/<ref[^>]*\/>/g, '').replace(/<ref[\s\S]*?<\/ref>/g, '').replace(/<br\s*\/?>/g, ' ');
     s = s.replace(/\{\{\s*dts\s*\|\s*(\d{4})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})[^}]*\}\}/gi, '$3 #$2 $1');
     s = s.replace(/\{\{\s*sortname\s*\|([^|}]+)\|([^|}]+)[^}]*\}\}/gi, '$1 $2');
+    // de.wikipedia: Flaggenvorlage mit Namen, {{USA|Ziel=Bobby Rahal}} oder {{USA|Bob Garretson|Bob Garretson}}
+    s = s.replace(/\{\{[A-Z]{2,3}(?: [^{}|]*)?\|\s*Ziel\s*=\s*([^{}|]+)\}\}/g, '$1')
+        .replace(/\{\{[A-Z]{2,3}(?: [^{}|]*)?\|([^{}|#]+)\|([^{}|]+)\}\}/g, '$2');
     let alt;
     do { alt = s; s = s.replace(/\{\{[^{}]*\}\}/g, ''); } while (s !== alt);
     s = s.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, '$1').replace(/<[^>]+>/g, '').replace(/'''?/g, '');
@@ -159,4 +162,4 @@ function berichtFeld(w) {
     return { ort: ortL ? ortL.ziel : null, feld };
 }
 
-module.exports = { saisonZeilen, berichtFeld, klar, links, tabelle, abschnitt };
+module.exports = { saisonZeilen, berichtFeld, klar, links, tabelle, tabellen, abschnitt, abschnitte, teileOben };
