@@ -17,7 +17,7 @@
  *   · Britische F1 (Shellsport/Aurora) 26 / 78 · Japan 20 / 72 · Motorrad 10 / 59 · Tasman 17 / 54 · F5000 20 / 51.
  * Deckung des Importierten (--deckung): Nicht-WM 98 % (588/600), Sportwagen-WM 99 % (282/284), Le Mans 85 %
  * (630/738; 103 der 108 fehlenden in Jahren ohne WM-Status), Sebring/Daytona 98 %.
- * Formel 2 (nach Import daten-f2.js) 81 % (165/203): fehlend 1960/1964–66 ohne Artikel, 1973–76 ohne Punkte, 1983.
+ * Formel 2 (daten-f2.js mit Rennartikeln) 83 % (169/203): fehlend 1964–66 ohne Artikel, 1973–76 ohne Punkte, 1983.
  * Quellenlage Formel 2 (Stichprobe en/de.wikipedia 25.10.2026): Saisonartikel "<Jahr> European Formula Two
  * Championship" 1967–84 alle da (Kalender mit Datum, Strecke, Sieger, dazu Nicht-EM-Läufe), 1957–66 nur 1960.
  * Rennartikel fast keine (1967: 1 von 10). Volle Ergebnismatrix mit Ret/DNS nur 1967 und 1977–84 (25–40 je Rennen;

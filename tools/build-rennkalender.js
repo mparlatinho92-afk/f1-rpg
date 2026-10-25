@@ -45,9 +45,11 @@
  *    (ALIAS); Richard Gibson Le Mans 1958 (DNS, Peerless) nicht zu klären, bleibt getrennt. 6938 → 6911 F1DB-Einträge.
  *
  * Schritt 4: Formel 2 aus der ENGLISCHEN Wikipedia, nur Saisonartikel (node tools/wiki-f2-holen.js, gelesen mit
- * tools/wiki-f2-lesen.js) → rennkalender/daten-f2.js (const RK_F2). Stand 25.10.2026: 287 Läufe (202 EM-Läufe 1960,
- * 1967–84 ohne 1983 + 85 ohne EM-Status nur mit Sieger), 4320 Einträge, 2619 mit F1DB-ID, 230 KB.
- * Gegen die Fahrerartikel (wiki-fahrer-luecken.js --deckung): 165 von 203 F2-Fahrer-Jahren gefunden (81 %).
+ * tools/wiki-f2-lesen.js) → rennkalender/daten-f2.js (const RK_F2). Stand 25.10.2026: 282 Läufe (EM 1960, 1967–84
+ * ohne 1983, dazu Läufe ohne EM-Status, 82 nur mit Sieger), 4450 Einträge, 2683 mit F1DB-ID, 240 KB.
+ * Rennartikel: 21 von 46 verlinkten vorhanden; sie ergänzen das Feld (Pau 1973–75: 6 Punktefahrer → 23–28 Fahrer).
+ * Gegen die Fahrerartikel (wiki-fahrer-luecken.js --deckung): 169 von 203 F2-Fahrer-Jahren gefunden (83 %;
+ * ohne Rennartikel 165 = 81 %).
  * Fallen:
  *  - Rennartikel fehlen fast ganz → Feld aus Ergebnismatrix (1967, 1977–84) + "Teams and drivers" (gemeldete Runden,
  *    1967–72, 1982–84); 1960, 1968–76 nur Punkte → pos '' (in den Punkten, Platz unbekannt). 1973–76 daher ~6 je Lauf.
@@ -55,7 +57,11 @@
  *  - 1982–84 "Complete overview" hat zwei Spalten je Runde (Startplatz, Ergebnis) → jede zweite.
  *  - 1980 steht "Non-championship" VOR der Matrix: nur den Abschnitt ausschneiden, nicht alles danach.
  *  - Abgesagte Läufe im Kalender ("cancelled", Vallelunga 1972, Zolder 1976) verschieben sonst die Rundenzählung.
- *  - 1983 hat keinen Kalender (keine Daten) → fehlt. Pau 1972–75 verlinkt den Rennartikel statt der Strecke.
+ *  - 1983 hat keinen Kalender (keine Daten) → fehlt. Pau 1972–75 verlinkt den Rennartikel statt der Strecke
+ *    (dient zugleich als Bericht).
+ *  - Gemischte F1/F2-Rennen (‡/†, Gold Cup 1967, Madrid 1969) und die Lombank Trophy 1960 stehen auch bei Nicht-WM:
+ *    Lauf am selben Tag und Ort mit ≥ 80 % derselben Fahrer wird verworfen (5 Läufe). Lavant Cup/Glover Trophy 1960
+ *    und Deutschland Trophäe/GP Hockenheim 1967 sind getrennte Rennen derselben Veranstaltung (5 bzw. 0 gleiche Fahrer).
  *  - Bewerberzelle mit zwei Teams ("<br>") → nur das erste. Fehlendes Team füllt der Import aus dem zweiten Eintrag
  *    desselben Fahrers (Sieger aus dem Kalender hat keins).
  */
@@ -257,9 +263,10 @@ function fahrerId(e, datum, log) {
 
 // Je Fahrer ein Eintrag (Vorläufe, Meldeliste und Ergebnis nennen ihn mehrfach): Ergebnis vor Status vor leer vor DNA
 const rang = p => /^\d+$/.test(p) ? 0 : p === 'DNA' ? 3 : p ? 1 : 2;
-function importiere({ name, datei, konstante, rohdatei, kopf, serie, idPrefix, zeilenAus, feldAus }) {
+// doppelt: Rennen früherer Importe; dasselbe Rennen (Tag + Strecke, ≥ 80 % der Fahrer dort) wird verworfen
+function importiere({ name, datei, konstante, rohdatei, kopf, serie, idPrefix, zeilenAus, feldAus, doppelt = [] }) {
     const roh = path.join(ROOT, 'tools/quellen', rohdatei);
-    if (!fs.existsSync(roh)) { console.log(`${name} übersprungen: Rohdaten ${rohdatei} fehlen`); return; }
+    if (!fs.existsSync(roh)) { console.log(`${name} übersprungen: Rohdaten ${rohdatei} fehlen`); return []; }
     const wiki = JSON.parse(fs.readFileSync(roh, 'utf8'));
     const log = { naeherung: new Set(), unbekannt: new Map(), lebensdaten: new Set(), ohneArtikel: new Set(), verlinkt: new Set() };
     // Feld aus dem Rennbericht oder, ohne Berichte (Formel 2), schon in der Saisonzeile (z.feld)
@@ -272,7 +279,9 @@ function importiere({ name, datei, konstante, rohdatei, kopf, serie, idPrefix, z
     for (const zeilen of Object.values(zeilenJe)) {
         for (const z of zeilen) {
             const b = z.bericht && wiki.berichte[z.bericht];
-            const inhalt = z.feld ? { ort: null, feld: z.feld } : b ? feldAus(b.text) : { ort: null, feld: [] };
+            // Formel 2: Feld aus dem Saisonartikel (z.feld), ergänzt um den Rennartikel, wo es einen gibt
+            const ausBericht = b ? feldAus(b.text) : { ort: null, feld: [] };
+            const inhalt = z.feld ? { ort: ausBericht.ort, feld: [...ausBericht.feld, ...z.feld] } : ausBericht;
             const sid = strecke(wiki.koord, z.ort, z.ortText) || strecke(wiki.koord, inhalt.ort, z.ortText);
             if (!sid) { ohneOrt.push(`${z.datum} ${z.name} (${z.ort || z.ortText})`); continue; }
             const je = new Map();
@@ -286,6 +295,13 @@ function importiere({ name, datei, konstante, rohdatei, kopf, serie, idPrefix, z
             aus.push({ id: idPrefix + z.datum + '-' + slug(z.name), serie, datum: z.datum, ...(z.bis ? { bis: z.bis } : {}),
                 name: z.name, strecke: sid, quelle: b ? b.titel : null, ...(z.nichtEM ? { nichtEM: true } : {}), feld: [...je.values()] });
         }
+    }
+    const verworfen = [];
+    for (let i = aus.length - 1; i >= 0; i--) {
+        const r = aus[i], x = doppelt.find(d => d.datum === r.datum && d.strecke === r.strecke);
+        if (!x) continue;
+        const dort = new Set(x.feld.map(e => e[0]));
+        if (r.feld.filter(e => dort.has(e[0])).length >= 0.8 * r.feld.length) { verworfen.push(`${r.datum} ${r.name} = ${x.name}`); aus.splice(i, 1); }
     }
     aus.sort((a, b) => a.datum.localeCompare(b.datum));
     // Nur die Strecken und Fahrer, die diese Datei braucht
@@ -302,17 +318,19 @@ function importiere({ name, datei, konstante, rohdatei, kopf, serie, idPrefix, z
     console.log(`${name}: ${aus.length} Rennen (${ohneFeld} nur mit Sieger), ${Object.keys(st).length} Strecken, `
         + `${eintraege} Einträge, davon ${zugeordnet} F1DB-Fahrern zugeordnet → rennkalender/${datei} (${(fs.statSync(zielDatei).size / 1024).toFixed(0)} KB)`);
     if (ohneOrt.length) console.log('  ohne Ort: ' + ohneOrt.join(' · '));
+    if (verworfen.length) console.log('  schon in früherem Import: ' + verworfen.join(' · '));
     console.log('  über Nachname + Initiale: ' + [...log.naeherung].join(' · '));
     console.log('  nie verlinkt, nicht F1DB: ' + ([...log.ohneArtikel].join(' · ') || 'keine'));
     console.log('  Namensvetter nach Lebensdaten getrennt: ' + ([...log.lebensdaten].join(' · ') || 'keine'));
     console.log('  häufigste ohne F1DB-ID: ' + [...log.unbekannt].sort((a, b) => b[1] - a[1]).slice(0, 25).map(([n, k]) => `${n} ${k}`).join(' · '));
+    return aus;
 }
 
-importiere({ name: 'Nicht-WM', datei: 'daten-nwm.js', konstante: 'RK_NWM', rohdatei: 'wiki-nwm.json', serie: 'F1-NWM', idPrefix: 'nwm-',
+const nwm = importiere({ name: 'Nicht-WM', datei: 'daten-nwm.js', konstante: 'RK_NWM', rohdatei: 'wiki-nwm.json', serie: 'F1-NWM', idPrefix: 'nwm-',
     kopf: `// Quelle: englische Wikipedia (CC BY-SA 4.0), Saisonartikel "<Jahr> Formula One season" und Rennberichte;\n`
         + `// Fahrer-IDs nach F1DB, Zeitzonen GeoNames. Team = Konstrukteur als Text.\n`,
     zeilenAus: saisonZeilen, feldAus: berichtFeld });
-importiere({ name: 'Sportwagen-WM', datei: 'daten-sw.js', konstante: 'RK_SW', rohdatei: 'wiki-sportwagen.json', serie: 'SW-WM', idPrefix: 'sw-',
+const sw = importiere({ name: 'Sportwagen-WM', datei: 'daten-sw.js', konstante: 'RK_SW', rohdatei: 'wiki-sportwagen.json', serie: 'SW-WM', idPrefix: 'sw-',
     kopf: `// Quelle: deutsche Wikipedia (CC BY-SA 4.0), Saisonartikel "Sportwagen-Weltmeisterschaft <Jahr>" und Rennberichte;\n`
         + `// alle Fahrer eines Wagens einzeln, Fahrer-IDs nach F1DB, Zeitzonen GeoNames. Team = Bewerber als Text.\n`,
     zeilenAus: saisonZeilenDe, feldAus: berichtFeldDe });
@@ -323,5 +341,5 @@ importiere({ name: 'Formel 2', datei: 'daten-f2.js', konstante: 'RK_F2', rohdate
 `
         + `// in den Punkten ohne bekannten Platz. nichtEM = Lauf ohne EM-Status (nur Sieger). Fahrer-IDs nach F1DB.
 `,
-    zeilenAus: zeilenF2, feldAus: () => ({ ort: null, feld: [] }) });
+    zeilenAus: zeilenF2, feldAus: berichtFeld, doppelt: [...nwm, ...sw] });
 

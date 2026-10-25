@@ -48,12 +48,16 @@ function zeilenF2(w, jahr, log = []) {
             const d = datum(r[sD].inhalt, jahr);
             if (!d) continue;
             const ortL = links(r[sO].inhalt)[0], ortText = klar(r[sO].inhalt);
-            rennen.push({ name: (sN >= 0 && r[sN] ? klar(r[sN].inhalt) : '') || ortText, ort: ortL ? ortL.ziel : ortText, ortText, datum: d,
-                bis: null, sieger: r[sW] ? r[sW].inhalt : '', feld: [] });
+            // Rennartikel ("[[1967 Guards 100|Result]]", Pau 1972–75 in der Streckenzelle), selten
+            const berichtL = r.flatMap(c => links(c.inhalt)).find(l => /^\d{4} /.test(l.ziel) && !/championship|season/i.test(l.ziel));
+            rennen.push({ name: ((sN >= 0 && r[sN] ? klar(r[sN].inhalt) : '') || ortText).trim(), ort: ortL ? ortL.ziel : ortText, ortText, datum: d,
+                bis: null, bericht: berichtL ? berichtL.ziel : null, sieger: r[sW] ? r[sW].inhalt : '', feld: [] });
         }
         if (rennen.length) break;
     }
-    if (!rennen.length) { log.push(`${jahr}: kein Kalender`); return saisonZeilen(w, jahr).map(z => ({ ...z, nichtEM: true })); }
+    // Läufe ohne EM-Status; ‡/† sind Fußnoten (gemischte F1/F2-Felder)
+    const ohneEM = () => saisonZeilen(w, jahr).map(z => ({ ...z, name: z.name.replace(/[\s‡†*]+$/, ''), nichtEM: true }));
+    if (!rennen.length) { log.push(`${jahr}: kein Kalender`); return ohneEM(); }
 
     // Ergebnismatrix: Übersicht mit Spaltenpaaren vor Platz-Matrix vor Punkte-Matrix
     const kandidaten = [];
@@ -106,7 +110,7 @@ function zeilenF2(w, jahr, log = []) {
         if (s && !r.feld.some(e => e.pos === '1')) r.feld.push({ pos: '1', ...s, team: '' });
         r.sieger = s ? s.fahrer : '';
     }
-    return [...rennen, ...saisonZeilen(w, jahr).map(z => ({ ...z, nichtEM: true }))];
+    return [...rennen, ...ohneEM()];
 }
 
 module.exports = { zeilenF2, runden };
