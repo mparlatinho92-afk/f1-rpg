@@ -17,6 +17,12 @@
  *   · Britische F1 (Shellsport/Aurora) 26 / 78 · Japan 20 / 72 · Motorrad 10 / 59 · Tasman 17 / 54 · F5000 20 / 51.
  * Deckung des Importierten (--deckung): Nicht-WM 98 % (588/600), Sportwagen-WM 99 % (282/284), Le Mans 85 %
  * (630/738; 103 der 108 fehlenden in Jahren ohne WM-Status), Sebring/Daytona 98 %.
+ * Formel 2 (nach Import daten-f2.js) 81 % (165/203): fehlend 1960/1964–66 ohne Artikel, 1973–76 ohne Punkte, 1983.
+ * Quellenlage Formel 2 (Stichprobe en/de.wikipedia 25.10.2026): Saisonartikel "<Jahr> European Formula Two
+ * Championship" 1967–84 alle da (Kalender mit Datum, Strecke, Sieger, dazu Nicht-EM-Läufe), 1957–66 nur 1960.
+ * Rennartikel fast keine (1967: 1 von 10). Volle Ergebnismatrix mit Ret/DNS nur 1967 und 1977–84 (25–40 je Rennen;
+ * 1967 ohne die nicht punktberechtigten "graded drivers" wie Rindt), 1968–76 nur Punkte der ersten sechs.
+ * de.wikipedia: keine F2-Saisonartikel. → Volle Felder der F1-Fahrer-Jahre (1968–72) gibt es nur bei formula2.se.
  * Fallen:
  *  - {{sortname}} hat benannte Parameter (dab=racing driver → Artikel "Name (racing driver)"): 97 Artikel fehlten.
  *  - Muster-Reihenfolge: "Formula One non-championship" vor das F1-WM-Muster, sonst fällt Nicht-WM in die WM;
@@ -140,7 +146,7 @@ if (ARG.includes('--deckung')) {
     for (const d of JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'f1db-json-splitted', 'f1db-drivers.json'), 'utf8')))
         for (const n of [d.name, d.fullName]) if (n && !idJe.has(norm(n))) idJe.set(norm(n), d.id);
     const da = new Set(), namen = new Map(); // namen: Fahrer+Jahr → Renn- und Streckennamen (Einzelrennen-Abgleich)
-    for (const [datei, k] of [['daten-nwm.js', 'RK_NWM'], ['daten-sw.js', 'RK_SW']]) {
+    for (const [datei, k] of [['daten-nwm.js', 'RK_NWM'], ['daten-sw.js', 'RK_SW'], ['daten-f2.js', 'RK_F2']]) {
         const RK = new Function(fs.readFileSync(path.join(__dirname, '..', 'rennkalender', datei), 'utf8') + ';return ' + k)();
         for (const r of RK.rennen) for (const e of r.feld) {
             da.add(r.serie + e[0] + r.datum.slice(0, 4));
@@ -151,7 +157,7 @@ if (ARG.includes('--deckung')) {
     }
     // Einzelrennen (Sebring, Mille Miglia …): gefunden, wenn ein Rennen desselben Jahres ein Kennwort des Seriennamens trägt
     const kennwoerter = s => s.toLowerCase().split(/[^a-zà-ü]+/).filter(w => w.length > 3 && !/^(hours|grand|prix|race|trophy|international|championship|cup|series)$/.test(w));
-    for (const [g, schl] of [['F1 Nicht-WM', 'F1-NWM'], ['Sportwagen-WM', 'SW-WM'], ['24 h Le Mans', 'LM'],
+    for (const [g, schl] of [['F1 Nicht-WM', 'F1-NWM'], ['Sportwagen-WM', 'SW-WM'], ['24 h Le Mans', 'LM'], ['Formel 2', 'F2'],
         ['US-Langstrecke (Sebring, Daytona …)', null], ['Straßenrennen (Mille Miglia, Carrera, Targa)', null], ['sonstige Sportwagen/Langstrecke', null]]) {
         const fj = new Map();
         for (const e of eintraege) if (gruppe(e.serie)[0] === g) fj.set(e.fahrer + '|' + e.jahr, e);

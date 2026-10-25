@@ -76,7 +76,7 @@
 <body>
 <header>
     <h1>Rennkalender 1950–1985</h1>
-    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Nicht-WM-Rennen en.wikipedia, Sportwagen-WM de.wikipedia (CC BY-SA 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
+    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Nicht-WM-Rennen und Formel 2 en.wikipedia, Sportwagen-WM de.wikipedia (CC BY-SA 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
 </header>
 <main>
     <div class="tabs">
@@ -150,10 +150,12 @@
 <script src="rennkalender/daten-wm.js"></script>
 <script src="rennkalender/daten-nwm.js"></script>
 <script src="rennkalender/daten-sw.js"></script>
+<script src="rennkalender/daten-f2.js"></script>
 <script>
 'use strict';
 // Quellen zusammenführen: jede Datei bringt rennen/strecken/fahrer/teams mit, IDs nach F1DB wo bekannt.
-const QUELLEN = [RK_WM, typeof RK_NWM === 'undefined' ? null : RK_NWM, typeof RK_SW === 'undefined' ? null : RK_SW].filter(Boolean);
+const QUELLEN = [RK_WM, typeof RK_NWM === 'undefined' ? null : RK_NWM, typeof RK_SW === 'undefined' ? null : RK_SW,
+    typeof RK_F2 === 'undefined' ? null : RK_F2].filter(Boolean);
 const DATEN = { strecken: {}, fahrer: {}, teams: {}, rennen: [] };
 for (const q of QUELLEN) {
     for (const k of ['strecken', 'fahrer', 'teams']) Object.assign(DATEN[k], q[k]);
@@ -226,6 +228,7 @@ const ANNAHMEN = 'Annahmen: Training zwei Tage und Qualifikation einen Tag vor d
     + 'alle 3000 km, danach Jet 800 km/h; 3 h für Wege zum und vom Flughafen). Muss man schon am Rennabend los, Charterflug bis 1500 km, wenn schneller '
     + '(250/350/500 km/h in den 50ern/60ern/ab 1970, 1,5 h am Boden). Feiertagsmontag in Großbritannien: Training am Morgen des Renntags. '
     + 'Langstrecke ebenso vom Starttag aus gerechnet (Le Mans trainierte in Wahrheit Mittwoch und Donnerstag). '
+    + 'Formel 2 ohne Platz: gemeldet (1967–72) oder in den Punkten (1968–76), zählt als anwesend; Läufe ohne EM-Status nur mit Sieger, 1983 fehlt. '
     + 'Rot umrandet: zwei Wochenenden am selben Tag, '
     + 'rote Reise: Ankunft erst nach Programmbeginn.';
 

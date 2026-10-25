@@ -162,4 +162,4 @@ function berichtFeld(w) {
     return { ort: ortL ? ortL.ziel : null, feld };
 }
 
-module.exports = { saisonZeilen, berichtFeld, klar, links, tabelle, tabellen, abschnitt, abschnitte, teileOben };
+module.exports = { saisonZeilen, berichtFeld, klar, links, tabelle, tabellen, abschnitt, abschnitte, teileOben, datum, position };

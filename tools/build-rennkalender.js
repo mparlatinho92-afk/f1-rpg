@@ -43,6 +43,21 @@
  *    gleichnamiger Treffer ohne Artikel. Dazu Lebensdaten: ≥ 15 am Renntag, höchstens ein Jahr tot (Tote stehen
  *    noch in Meldelisten: Bianchi, Hansgen, Giunti). Alberto Augusto Crespo 1953 laut Rennbericht der F1-Fahrer
  *    (ALIAS); Richard Gibson Le Mans 1958 (DNS, Peerless) nicht zu klären, bleibt getrennt. 6938 → 6911 F1DB-Einträge.
+ *
+ * Schritt 4: Formel 2 aus der ENGLISCHEN Wikipedia, nur Saisonartikel (node tools/wiki-f2-holen.js, gelesen mit
+ * tools/wiki-f2-lesen.js) → rennkalender/daten-f2.js (const RK_F2). Stand 25.10.2026: 287 Läufe (202 EM-Läufe 1960,
+ * 1967–84 ohne 1983 + 85 ohne EM-Status nur mit Sieger), 4320 Einträge, 2619 mit F1DB-ID, 230 KB.
+ * Gegen die Fahrerartikel (wiki-fahrer-luecken.js --deckung): 165 von 203 F2-Fahrer-Jahren gefunden (81 %).
+ * Fallen:
+ *  - Rennartikel fehlen fast ganz → Feld aus Ergebnismatrix (1967, 1977–84) + "Teams and drivers" (gemeldete Runden,
+ *    1967–72, 1982–84); 1960, 1968–76 nur Punkte → pos '' (in den Punkten, Platz unbekannt). 1973–76 daher ~6 je Lauf.
+ *  - 1967 fehlen in der Matrix die "graded drivers" (Rindt 4 Siege): nur über die gemeldeten Runden und den Kalendersieger.
+ *  - 1982–84 "Complete overview" hat zwei Spalten je Runde (Startplatz, Ergebnis) → jede zweite.
+ *  - 1980 steht "Non-championship" VOR der Matrix: nur den Abschnitt ausschneiden, nicht alles danach.
+ *  - Abgesagte Läufe im Kalender ("cancelled", Vallelunga 1972, Zolder 1976) verschieben sonst die Rundenzählung.
+ *  - 1983 hat keinen Kalender (keine Daten) → fehlt. Pau 1972–75 verlinkt den Rennartikel statt der Strecke.
+ *  - Bewerberzelle mit zwei Teams ("<br>") → nur das erste. Fehlendes Team füllt der Import aus dem zweiten Eintrag
+ *    desselben Fahrers (Sieger aus dem Kalender hat keins).
  */
 'use strict';
 const fs = require('fs');
@@ -115,11 +130,13 @@ console.log('Zeitzonen: ' + Object.entries(zonen).map(([z, n]) => `${z} ${n}`).j
 // Schritt 2 und 3: Wikipedia-Quellen (Rohdaten vorher holen, siehe Dateikopf)
 //   F1 Nicht-WM  — en.wikipedia, node tools/wiki-nwm-holen.js        → rennkalender/daten-nwm.js (RK_NWM)
 //   Sportwagen-WM — de.wikipedia, node tools/wiki-sportwagen-holen.js → rennkalender/daten-sw.js  (RK_SW)
+//   Formel 2     — en.wikipedia, node tools/wiki-f2-holen.js         → rennkalender/daten-f2.js  (RK_F2)
 // Strecken und Fahrer ohne F1DB-ID bekommen quellenübergreifend dieselbe ID "w-…" (gleicher Ort in 8 km,
 // gleicher Name), damit ein Fahrer in Nicht-WM und Sportwagen derselbe ist.
 // =====================================================================================================
 const { saisonZeilen, berichtFeld } = require('./wiki-nwm-lesen.js');
 const { saisonZeilenDe, berichtFeldDe } = require('./wiki-sportwagen-lesen.js');
+const { zeilenF2 } = require('./wiki-f2-lesen.js');
 
 // Orte, deren Artikel keine Koordinaten tragen (Stand 25.10.2026), von Hand nachgeschlagen
 const KOORD_NACHTRAG = {
@@ -132,6 +149,10 @@ const KOORD_NACHTRAG = {
     'Piccolo circuito delle Madonie': [37.95, 13.80], 'Circuito del Garda': [45.60, 10.52],
     'Bridgehampton Race Circuit': [40.97, -72.31], 'Passo della Consuma': [43.79, 11.59],
     'Schauinslandstraße': [47.91, 7.90], 'Circuit de Dijon': [47.36, 4.90],
+    // Formel 2 (en.wikipedia; Pau-Läufe verlinken den Rennartikel statt der Strecke)
+    'Südschleife': [50.335, 6.947], 'Nürburgring Südschleife': [50.335, 6.947], 'Neubiberg Air Base': [48.07, 11.64],
+    '1972 Pau Grand Prix': [43.30, -0.37], '1973 Pau Grand Prix': [43.30, -0.37], '1974 Pau Grand Prix': [43.30, -0.37],
+    '1975 Pau Grand Prix': [43.30, -0.37],
 };
 const laenderIso2 = new Map([...laender.values()].map(c => [c.alpha2Code, c]));
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -241,25 +262,29 @@ function importiere({ name, datei, konstante, rohdatei, kopf, serie, idPrefix, z
     if (!fs.existsSync(roh)) { console.log(`${name} übersprungen: Rohdaten ${rohdatei} fehlen`); return; }
     const wiki = JSON.parse(fs.readFileSync(roh, 'utf8'));
     const log = { naeherung: new Set(), unbekannt: new Map(), lebensdaten: new Set(), ohneArtikel: new Set(), verlinkt: new Set() };
+    // Feld aus dem Rennbericht oder, ohne Berichte (Formel 2), schon in der Saisonzeile (z.feld)
+    const zeilenJe = {};
+    for (const [jahr, text] of Object.entries(wiki.saisons)) if (text && +jahr >= VON && +jahr <= BIS) zeilenJe[jahr] = zeilenAus(text, +jahr);
     for (const b of Object.values(wiki.berichte)) if (b) for (const e of feldAus(b.text).feld) if (e.fahrerZiel) log.verlinkt.add(norm(e.fahrer));
+    for (const z of Object.values(zeilenJe).flat()) for (const e of z.feld || []) if (e.fahrerZiel) log.verlinkt.add(norm(e.fahrer));
     const aus = [], ohneOrt = [];
     let ohneFeld = 0;
-    for (const [jahr, text] of Object.entries(wiki.saisons)) {
-        if (!text || +jahr < VON || +jahr > BIS) continue;
-        for (const z of zeilenAus(text, +jahr)) {
+    for (const zeilen of Object.values(zeilenJe)) {
+        for (const z of zeilen) {
             const b = z.bericht && wiki.berichte[z.bericht];
-            const inhalt = b ? feldAus(b.text) : { ort: null, feld: [] };
+            const inhalt = z.feld ? { ort: null, feld: z.feld } : b ? feldAus(b.text) : { ort: null, feld: [] };
             const sid = strecke(wiki.koord, z.ort, z.ortText) || strecke(wiki.koord, inhalt.ort, z.ortText);
             if (!sid) { ohneOrt.push(`${z.datum} ${z.name} (${z.ort || z.ortText})`); continue; }
             const je = new Map();
             for (const e of inhalt.feld) {
                 const id = fahrerId(e, z.datum, log), alt = je.get(id);
-                if (!alt || rang(e.pos) < rang(alt[1])) je.set(id, [id, e.pos, e.team]);
+                if (!alt || rang(e.pos) < rang(alt[1])) je.set(id, [id, e.pos, e.team || (alt ? alt[2] : '')]);
+                else if (!alt[2] && e.team) alt[2] = e.team;
             }
             // Ohne Bericht oder Tabelle bleibt nur der Sieger aus der Saisonübersicht
             if (!je.size && z.sieger) { ohneFeld++; je.set('s', [fahrerId({ fahrer: z.sieger }, z.datum, log), '1', '']); }
             aus.push({ id: idPrefix + z.datum + '-' + slug(z.name), serie, datum: z.datum, ...(z.bis ? { bis: z.bis } : {}),
-                name: z.name, strecke: sid, quelle: b ? b.titel : null, feld: [...je.values()] });
+                name: z.name, strecke: sid, quelle: b ? b.titel : null, ...(z.nichtEM ? { nichtEM: true } : {}), feld: [...je.values()] });
         }
     }
     aus.sort((a, b) => a.datum.localeCompare(b.datum));
@@ -291,4 +316,12 @@ importiere({ name: 'Sportwagen-WM', datei: 'daten-sw.js', konstante: 'RK_SW', ro
     kopf: `// Quelle: deutsche Wikipedia (CC BY-SA 4.0), Saisonartikel "Sportwagen-Weltmeisterschaft <Jahr>" und Rennberichte;\n`
         + `// alle Fahrer eines Wagens einzeln, Fahrer-IDs nach F1DB, Zeitzonen GeoNames. Team = Bewerber als Text.\n`,
     zeilenAus: saisonZeilenDe, feldAus: berichtFeldDe });
+importiere({ name: 'Formel 2', datei: 'daten-f2.js', konstante: 'RK_F2', rohdatei: 'wiki-f2.json', serie: 'F2', idPrefix: 'f2-',
+    kopf: `// Quelle: englische Wikipedia (CC BY-SA 4.0), Saisonartikel "1960 Formula Two season" und "<Jahr> European Formula
+`
+        + `// Two Championship" (1967–84 ohne 1983). Feld aus Ergebnismatrix und gemeldeten Runden; pos '' = gemeldet bzw.
+`
+        + `// in den Punkten ohne bekannten Platz. nichtEM = Lauf ohne EM-Status (nur Sieger). Fahrer-IDs nach F1DB.
+`,
+    zeilenAus: zeilenF2, feldAus: () => ({ ort: null, feld: [] }) });
 
