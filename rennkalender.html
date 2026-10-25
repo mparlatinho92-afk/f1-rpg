@@ -69,13 +69,14 @@
     .termin.reise { border-left-color: var(--text-muted); color: var(--text-muted); font-style: italic; }
     .termin.reise.knapp { background: var(--konflikt-bg); color: var(--konflikt-text); }
     .termin.fremd { border: 1px dashed var(--linie); color: var(--text-muted); background: transparent; }
+    .termin.abgesagt { text-decoration: line-through; border-color: var(--text-muted); }
     @media (max-width: 640px) { .monate { grid-template-columns: 1fr; } .tag { min-height: 48px; font-size: 10px; } }
 </style>
 </head>
 <body>
 <header>
     <h1>Rennkalender 1950–1985</h1>
-    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
+    <p>Terminkollisionen und Reisebelastung · Daten: F1DB (CC BY 4.0), Nicht-WM-Rennen Wikipedia (CC BY-SA 4.0), Zeitzonen GeoNames (CC BY 4.0) · Startzeit vor 1985 unbekannt, angesetzt 14 Uhr Ortszeit</p>
 </header>
 <main>
     <div class="tabs">
@@ -105,7 +106,7 @@
                     <th class="zahl">Tage seit</th><th class="zahl">km</th><th class="zahl">Δ h</th><th class="zahl">Feld</th></tr></thead>
                 <tbody id="kalender-body"></tbody>
             </table></div>
-            <p class="hinweis">Rot: zwei Rennen höchstens zwei Tage auseinander (Kollision am selben Wochenende). km und Δ h zum vorigen Rennen der Auswahl.</p>
+            <p class="hinweis">Rot: zwei Rennen an verschiedenen Orten höchstens zwei Tage auseinander (Kollision am selben Wochenende). km und Δ h zum vorigen Rennen der Auswahl.</p>
         </div>
         <div class="karte">
             <h2>Engste Programme</h2>
@@ -147,11 +148,16 @@
 </main>
 
 <script src="rennkalender/daten-wm.js"></script>
+<script src="rennkalender/daten-nwm.js"></script>
 <script>
 'use strict';
-// Quellen zusammenführen: weitere Dateien (Nicht-WM, Importer) hängen später ihre rennen/strecken/fahrer an.
-const DATEN = { strecken: { ...RK_WM.strecken }, fahrer: { ...RK_WM.fahrer }, teams: { ...RK_WM.teams },
-    rennen: [...RK_WM.rennen] };
+// Quellen zusammenführen: jede Datei bringt rennen/strecken/fahrer/teams mit, IDs nach F1DB wo bekannt.
+const QUELLEN = [RK_WM, typeof RK_NWM === 'undefined' ? null : RK_NWM].filter(Boolean);
+const DATEN = { strecken: {}, fahrer: {}, teams: {}, rennen: [] };
+for (const q of QUELLEN) {
+    for (const k of ['strecken', 'fahrer', 'teams']) Object.assign(DATEN[k], q[k]);
+    DATEN.rennen.push(...q.rennen);
+}
 DATEN.rennen.sort((a, b) => a.datum.localeCompare(b.datum) || a.id.localeCompare(b.id));
 const SERIEN = { 'F1-WM': 'F1 WM', 'F1-NWM': 'F1 Nicht-WM', 'F2': 'Formel 2', 'andere': 'Andere' };
 const STARTZEIT_STUNDE = 14;
@@ -264,17 +270,20 @@ function setzeReise(an) {
 }
 
 // Termine eines Programms (Rennliste in Datumsfolge) je Ortsdatum: Map datum -> [{art, cls, text, title}]
-// kette: Rennen, zwischen denen gereist wird; fremde: nur als gestrichelter Renntag
-function sammleTermine(rennen, kette, fremde = []) {
+// ketten: Listen von Rennen, zwischen denen jeweils gereist wird; fremde: gestrichelter Renntag;
+// abgesagt: gemeldet, aber nicht erschienen (DNA)
+function sammleTermine(rennen, ketten, fremde = [], abgesagt = []) {
     const tage = new Map(), dazu = (d, t) => { if (!tage.has(d)) tage.set(d, []); tage.get(d).push(t); };
     for (const r of rennen) {
         const s = DATEN.strecken[r.strecke];
-        for (const [n, art, wort, kurz] of WOCHENENDE) dazu(addTage(r.datum, n), { art, rennen: r.id, cls: `${art} s-${r.serie} b-${r.serie}`,
+        for (const [n, art, wort, kurz] of WOCHENENDE) dazu(addTage(r.datum, n), { art, rennen: r.id, strecke: r.strecke, cls: `${art} s-${r.serie} b-${r.serie}`,
             text: kurz || s.ort, title: `${wort}: ${r.name}, ${s.ort} (${SERIEN[r.serie] || r.serie})` });
     }
     for (const r of fremde) dazu(r.datum, { art: 'F', cls: 'fremd', text: DATEN.strecken[r.strecke].ort,
         title: `nicht gemeldet: ${r.name} (${SERIEN[r.serie] || r.serie})` });
-    if (reiseZeigen) for (let i = 1; i < kette.length; i++) {
+    for (const r of abgesagt) dazu(r.datum, { art: 'F', cls: 'fremd abgesagt', text: DATEN.strecken[r.strecke].ort,
+        title: `gemeldet, nicht erschienen: ${r.name} (${SERIEN[r.serie] || r.serie})` });
+    if (reiseZeigen) for (const kette of ketten) for (let i = 1; i < kette.length; i++) {
         const t = reiseTermin(kette[i - 1], kette[i]);
         if (!t) continue;
         const ziel = DATEN.strecken[t.nach.strecke];
@@ -301,7 +310,8 @@ function renderRaster(el, tage) {
         for (let k = (erster.getUTCDay() + 6) % 7; k > 0; k--) zellen.push('<div class="tag leer"></div>');
         for (let d = 1; d <= tageImMonat; d++) {
             const liste = tage.get(`${jm}-${String(d).padStart(2, '0')}`) || [];
-            const kollision = new Set(liste.filter(t => 'TQR'.includes(t.art)).map(t => t.rennen)).size > 1;
+            // Zwei Läufe derselben Veranstaltung (Goodwood 1961: Lavant Cup + Glover Trophy) sind keine Kollision
+            const kollision = new Set(liste.filter(t => 'TQR'.includes(t.art)).map(t => t.strecke)).size > 1;
             zellen.push(`<div class="tag${kollision ? ' kollision' : ''}"><span class="nr">${d}</span>`
                 + liste.map(t => `<span class="termin ${t.cls}" title="${esc(t.title)}">${esc(t.text)}</span>`).join('') + '</div>');
         }
@@ -331,7 +341,8 @@ function renderKalender() {
     const zeilen = liste.map((r, i) => {
         const s = DATEN.strecken[r.strecke];
         const rv = i ? reise(liste[i - 1], r) : null;
-        const nachbar = (i && rv.tage <= 2) || (i + 1 < liste.length && tageZwischen(r.datum, liste[i + 1].datum) <= 2);
+        const eng = (a, b) => a.strecke !== b.strecke && tageZwischen(a.datum, b.datum) <= 2;
+        const nachbar = liste.some(x => x !== r && Math.abs(tageZwischen(x.datum, r.datum)) <= 2 && eng(...[x, r].sort((a, b) => a.datum.localeCompare(b.datum))));
         return `<tr class="${nachbar ? 'konflikt' : ''}"><td>${datumDe(r.datum)}</td><td>${serieBadge(r.serie)}</td>`
             + `<td>${esc(r.name)}</td><td>${esc(s.ort)}, ${esc(s.land)}</td>`
             + `<td class="nur-breit gedimmt">${offsetText(utcOffsetStunden(s.tz, r.datum))}</td>`
@@ -340,7 +351,9 @@ function renderKalender() {
     });
     document.getElementById('kalender-body').innerHTML = zeilen.join('');
     document.getElementById('termin-titel').textContent = `${jahr}: ${liste.length} Rennwochenenden`;
-    if (modus === 'termin') renderRaster(document.getElementById('termin-kalender'), sammleTermine(liste, liste.filter(imTross)));
+    if (modus === 'termin') renderRaster(document.getElementById('termin-kalender'), sammleTermine(liste,
+        // Reise je Serie: WM- und Nicht-WM-Feld reisen nicht als ein Tross
+        Object.keys(SERIEN).map(k => liste.filter(r => r.serie === k && imTross(r)))));
     renderProgramme(liste);
 }
 
@@ -348,7 +361,7 @@ function renderKalender() {
 function renderProgramme(liste) {
     const je = new Map();
     // Je Fahrer jedes Rennen einmal: bei geteilten Wagen steht derselbe Fahrer mehrfach im Feld
-    for (const r of liste) for (const id of new Set(r.feld.map(e => e[0]))) {
+    for (const r of liste) for (const id of new Set(r.feld.filter(anwesend).map(e => e[0]))) {
         if (!je.has(id)) je.set(id, []);
         je.get(id).push(r);
     }
@@ -356,10 +369,11 @@ function renderProgramme(liste) {
         let km = 0, dh = 0, kuerzeste = Infinity;
         for (let i = 1; i < l.length; i++) {
             const rv = reise(l[i - 1], l[i]);
-            km += rv.km; dh += Math.abs(rv.dh); kuerzeste = Math.min(kuerzeste, rv.tage);
+            km += rv.km; dh += Math.abs(rv.dh);
+            if (l[i].strecke !== l[i - 1].strecke) kuerzeste = Math.min(kuerzeste, rv.tage);   // gleiche Veranstaltung zählt nicht
         }
         return { id, n: l.length, km, dh, kuerzeste };
-    }).sort((a, b) => a.kuerzeste - b.kuerzeste || b.km - a.km).slice(0, 15);
+    }).filter(w => w.kuerzeste < Infinity).sort((a, b) => a.kuerzeste - b.kuerzeste || b.km - a.km).slice(0, 15);
     document.getElementById('programme-body').innerHTML = werte.map(w =>
         `<tr><td><a onclick="oeffneFahrer('${esc(w.id)}')">${esc(DATEN.fahrer[w.id].n)}</a></td><td class="zahl">${w.n}</td>`
         + `<td class="zahl">${w.kuerzeste} Tage</td><td class="zahl">${w.km.toLocaleString('de-DE')}</td><td class="zahl">${w.dh}</td></tr>`).join('');
@@ -375,6 +389,10 @@ function fahrerGewaehlt() {
     const id = fahrerNachName.get(document.getElementById('fahrer-suche').value.trim());
     if (id) renderFahrer(id);
 }
+// Gemeldet und erschienen (DNA = Meldung zurückgezogen oder nicht angereist)
+const anwesend = e => e[1] !== 'DNA';
+const istDa = (r, id) => r.feld.some(e => e[0] === id && anwesend(e));
+
 function renderFahrer(id) {
     if (!id) return;
     const jahrSel = document.getElementById('fahrer-jahr');
@@ -387,19 +405,23 @@ function renderFahrer(id) {
     }
     const liste = alle.filter(r => !jahrSel.value || r.datum.startsWith(jahrSel.value));
     const f = DATEN.fahrer[id];
-    const titel = `${f.n}${f.nat ? ' (' + f.nat + ')' : ''}${jahrSel.value ? ' ' + jahrSel.value : ''}: ${liste.length} Meldungen`;
+    const da = liste.filter(r => istDa(r, id)), nichtDa = liste.length - da.length;
+    const titel = `${f.n}${f.nat ? ' (' + f.nat + ')' : ''}${jahrSel.value ? ' ' + jahrSel.value : ''}: ${liste.length} Meldungen`
+        + (nichtDa ? `, davon ${nichtDa} nicht erschienen` : '');
     document.getElementById('fahrer-titel').textContent = titel;
     document.getElementById('fahrer-termin-titel').textContent = titel;
     if (modus === 'termin') {
         const meine = new Set(liste.map(r => r.id)), jahre = new Set(liste.map(r => r.datum.slice(0, 4)));
         const fremde = document.getElementById('fremde-zeigen').checked
             ? DATEN.rennen.filter(r => aktiveSerien.has(r.serie) && !meine.has(r.id) && jahre.has(r.datum.slice(0, 4))) : [];
-        renderRaster(document.getElementById('fahrer-termin'), sammleTermine(liste, liste, fremde));
+        renderRaster(document.getElementById('fahrer-termin'), sammleTermine(da, [da], fremde, liste.filter(r => !istDa(r, id))));
     }
-    document.getElementById('fahrer-body').innerHTML = liste.map((r, i) => {
-        const s = DATEN.strecken[r.strecke], e = r.feld.find(x => x[0] === id);
+    let vorher = null;   // Reise zählt ab dem letzten Rennen, bei dem der Fahrer auch da war
+    document.getElementById('fahrer-body').innerHTML = liste.map(r => {
+        const s = DATEN.strecken[r.strecke], e = r.feld.find(x => x[0] === id && anwesend(x)) || r.feld.find(x => x[0] === id);
         const weitere = r.feld.filter(x => x[0] === id).length - 1;   // geteilter Wagen / zweites Auto
-        const rv = i ? reise(liste[i - 1], r) : null;
+        const da = anwesend(e), rv = da && vorher ? reise(vorher, r) : null;
+        if (da) vorher = r;
         return `<tr><td>${datumDe(r.datum)}</td><td>${serieBadge(r.serie)}</td><td>${esc(r.name)}</td>`
             + `<td>${esc(s.ort)}, ${esc(s.land)}</td><td>${esc(DATEN.teams[e[2]] || e[2] || '')}</td><td class="zahl">${esc(e[1])}${weitere ? ' <span class="gedimmt">(+' + weitere + ' Wagen)</span>' : ''}</td>`
             + `<td class="zahl">${rv ? rv.tage : '–'}</td><td class="zahl">${rv ? rv.km.toLocaleString('de-DE') : '–'}</td>`
@@ -418,7 +440,7 @@ function renderFahrer(id) {
     for (const [id, f] of namen) fahrerNachName.set(f.n, id);
     document.getElementById('fahrer-liste').innerHTML = namen.map(([, f]) => `<option value="${esc(f.n)}">`).join('');
     document.getElementById('annahmen-1').textContent = ANNAHMEN;
-    document.getElementById('annahmen-2').textContent = ANNAHMEN + ' Gestrichelt: Rennen derselben Serien, für die der Fahrer nicht gemeldet war.';
+    document.getElementById('annahmen-2').textContent = ANNAHMEN + ' Gestrichelt: Rennen derselben Serien, für die der Fahrer nicht gemeldet war; durchgestrichen: gemeldet, aber nicht erschienen (DNA).';
     renderKalender();
 })();
 </script>
