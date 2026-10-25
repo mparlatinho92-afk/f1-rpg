@@ -206,6 +206,10 @@ function belastung(r) {
 // Wochenende: Training zwei Tage, Qualifikation einen Tag vor dem Rennen (So-Rennen: Fr/Sa, Sa-Rennen: Do/Fr).
 // Indy 500 hatte in Wahrheit Wochen voraus Training und Qualifikation, das Raster zeigt trotzdem dieselbe Form.
 const WOCHENENDE = [[-2, 'T', 'Training', 'Training'], [-1, 'Q', 'Qualifikation', 'Quali'], [0, 'R', 'Rennen']];
+// Feiertagsmontag in Großbritannien (Ostern, Pfingsten, August): Training am Morgen des Renntags. Annahme aus
+// Brands Hatch 7.8.1961: Moss, Clark, Brabham, Hill, McLaren fuhren tags zuvor am Nürburgring, Moss stand auf Pole.
+const MONTAG_UK = [[0, 'T', 'Training und Qualifikation am Morgen', 'Training'], [0, 'R', 'Rennen']];
+const wochenende = r => new Date(r.datum).getUTCDay() === 1 && INSEL.has(DATEN.strecken[r.strecke].land) ? MONTAG_UK : WOCHENENDE;
 const TAG_BEGINN = 9, ABENDS_LOS = 20;                   // Ortszeit: Programm ab 9 Uhr, Abreise am Rennabend 20 Uhr
 const LANGE_PAUSE = 14;                                  // Tage; darüber Anreise statt Weiterreise
 const INSEL = new Set(['United Kingdom']);               // Auto zum Festland nur mit Fähre (+3 h)
@@ -216,7 +220,9 @@ const ANNAHMEN = 'Annahmen: Training zwei Tage und Qualifikation einen Tag vor d
     + 'Reise am Morgen nach dem Rennen, bei Zeitnot schon am Rennabend; liegen mehr als 14 Tage dazwischen, Anreise mit Ankunft '
     + 'am Abend vor dem Training (Ausgangsort unbekannt, gerechnet ab der letzten Strecke). Auto bis 700 km immer, bis 1200 km wenn schneller (Straße = Luftlinie × 1,3; '
     + '55/65/75 km/h in den 50ern/60ern/ab 1970; Fähre zur Insel +3 h), sonst Flug (bis 1958 Propeller 380 km/h mit Zwischenlandung '
-    + 'alle 3000 km, danach Jet 800 km/h; 3 h für Wege zum und vom Flughafen). Rot umrandet: zwei Wochenenden am selben Tag, '
+    + 'alle 3000 km, danach Jet 800 km/h; 3 h für Wege zum und vom Flughafen). Muss man schon am Rennabend los, Charterflug bis 1500 km, wenn schneller '
+    + '(250/350/500 km/h in den 50ern/60ern/ab 1970, 1,5 h am Boden). Feiertagsmontag in Großbritannien: Training am Morgen des Renntags. '
+    + 'Rot umrandet: zwei Wochenenden am selben Tag, '
     + 'rote Reise: Ankunft erst nach Programmbeginn.';
 
 // Reisedauer in Stunden, schnellere der möglichen Arten
@@ -231,6 +237,12 @@ function reiseArt(a, b, jahr) {
     const auto = { art: 'auto', h: km * 1.3 / autoTempo + (INSEL.has(a.land) !== INSEL.has(b.land) ? 3 : 0) };
     return { ...(auto.h <= flug.h ? auto : flug), km };
 }
+// Charterflug: kleine Maschine direkt zum nächsten Flugplatz, nur wenn die Zeit sonst nicht reicht
+function charter(a, b, jahr) {
+    const km = kmZwischen(a, b);
+    if (km < 150 || km > 1500) return null;
+    return { art: 'charter', h: 1.5 + km / (jahr < 1960 ? 250 : jahr < 1970 ? 350 : 500), km };
+}
 // Reise von Rennen vor zu Rennen nach als Termin: Abreise, Ankunft (UTC ms) und ob sie vor Programmbeginn ankommt
 function reiseTermin(vor, nach) {
     const a = DATEN.strecken[vor.strecke], b = DATEN.strecken[nach.strecke];
@@ -238,17 +250,29 @@ function reiseTermin(vor, nach) {
     if (!art) return null;
     const oa = utcOffsetStunden(a.tz, vor.datum), ob = utcOffsetStunden(b.tz, nach.datum);
     const utc = (d, h, o) => Date.parse(d) + (h - o) * 3600000;
-    const beginn = utc(addTage(nach.datum, WOCHENENDE[0][0]), TAG_BEGINN, ob);
+    const start = wochenende(nach)[0][0];
+    const beginn = utc(addTage(nach.datum, start), TAG_BEGINN, ob);
     const h = art.h * 3600000;
     // Lange Pause: dazwischen war der Fahrer woanders (zu Hause, andere Serie). Gerechnet ab der letzten Strecke,
     // Ankunft am Abend vor dem Training.
     if (tageZwischen(vor.datum, nach.datum) > LANGE_PAUSE) {
-        let ab = utc(addTage(nach.datum, WOCHENENDE[0][0] - 1), 18, ob) - h;
+        let ab = utc(addTage(nach.datum, start - 1), 18, ob) - h;
         if (lokal(ab, oa).getUTCHours() < 7) ab = utc(addTage(isoLokal(ab, oa), -1), 8, oa);   // nicht nachts losfahren
         return { ...art, h: Math.round(art.h * 2) / 2, ab, an: ab + h, oa, ob, knapp: false, lang: true, nach };
     }
     let ab = utc(addTage(vor.datum, 1), TAG_BEGINN, oa);
-    if (ab + h > beginn) ab = utc(vor.datum, ABENDS_LOS, oa);
+    // Reicht die Abreise am Morgen danach nicht, geht es am Rennabend los, und dann lieber mit dem Charterflug als
+    // die Nacht durch mit dem Auto (Moss, Nürburgring → Brands Hatch 1961: sonst 12,5 h über Nacht mit Fähre)
+    if (ab + h > beginn) {
+        ab = utc(vor.datum, ABENDS_LOS, oa);
+        const c = charter(a, b, +vor.datum.slice(0, 4));
+        if (c && c.h < art.h) {
+            const hc = c.h * 3600000;
+            let abc = utc(addTage(vor.datum, 1), TAG_BEGINN, oa);
+            if (abc + hc > beginn) abc = utc(vor.datum, ABENDS_LOS, oa);
+            return { ...c, h: Math.round(c.h * 2) / 2, ab: abc, an: abc + hc, oa, ob, knapp: abc + hc > beginn, nach };
+        }
+    }
     return { ...art, h: Math.round(art.h * 2) / 2, ab, an: ab + h, oa, ob, knapp: ab + h > beginn, nach };
 }
 const lokal = (ms, o) => new Date(ms + o * 3600000);   // UTC-Felder des Ergebnisses = Ortszeit
@@ -276,7 +300,7 @@ function sammleTermine(rennen, ketten, fremde = [], abgesagt = []) {
     const tage = new Map(), dazu = (d, t) => { if (!tage.has(d)) tage.set(d, []); tage.get(d).push(t); };
     for (const r of rennen) {
         const s = DATEN.strecken[r.strecke];
-        for (const [n, art, wort, kurz] of WOCHENENDE) dazu(addTage(r.datum, n), { art, rennen: r.id, strecke: r.strecke, cls: `${art} s-${r.serie} b-${r.serie}`,
+        for (const [n, art, wort, kurz] of wochenende(r)) dazu(addTage(r.datum, n), { art, rennen: r.id, strecke: r.strecke, cls: `${art} s-${r.serie} b-${r.serie}`,
             text: kurz || s.ort, title: `${wort}: ${r.name}, ${s.ort} (${SERIEN[r.serie] || r.serie})` });
     }
     for (const r of fremde) dazu(r.datum, { art: 'F', cls: 'fremd', text: DATEN.strecken[r.strecke].ort,
@@ -287,9 +311,10 @@ function sammleTermine(rennen, ketten, fremde = [], abgesagt = []) {
         const t = reiseTermin(kette[i - 1], kette[i]);
         if (!t) continue;
         const ziel = DATEN.strecken[t.nach.strecke];
-        const zeichen = t.art === 'flug' ? '✈' : '🚗', dh = t.ob - t.oa;
+        const zeichen = t.art === 'auto' ? '🚗' : '✈', dh = t.ob - t.oa;
+        const wort = { auto: 'Auto', flug: 'Flug', charter: 'Charterflug' }[t.art];
         const std = t.h.toLocaleString('de-DE');
-        const title = `${t.lang ? 'Anreise' : t.art === 'flug' ? 'Flug' : 'Auto'} nach ${ziel.ort}${t.lang ? ' (' + (t.art === 'flug' ? 'Flug' : 'Auto') + ', ab letzter Strecke)' : ''}: `
+        const title = `${t.lang ? 'Anreise' : wort} nach ${ziel.ort}${t.lang ? ' (' + wort + ', ab letzter Strecke)' : ''}: `
             + `${t.km.toLocaleString('de-DE', { maximumFractionDigits: 0 })} km, etwa ${std} h · ab ${uhrLokal(t.ab, t.oa)} Ortszeit, an ${uhrLokal(t.an, t.ob)} Ortszeit`
             + (dh ? ` · Zeitverschiebung ${dh > 0 ? '+' : ''}${dh} h` : '') + (t.knapp ? ' · kommt erst nach Programmbeginn an' : '');
         const cls = 'reise' + (t.knapp ? ' knapp' : ''), tagAb = isoLokal(t.ab, t.oa), tagAn = isoLokal(t.an, t.ob);
