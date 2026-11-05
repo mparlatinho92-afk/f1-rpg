@@ -35,6 +35,7 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 - ✚ Jetlag-Kalender https://gemini.google.com/app/92f1856b2cac4058. PDF des Chats in Dokumente-Ordner (Bereich: Aus dem Sheet – ungeprüft; im Sheet geändert, Original steht weiter in der Liste)
 - ✚ selber Spielstand: Piquet fährt bei zwei Teams 1981 , unklar wann genau . anzeige verwirrt . bei beiden 3 siege und 48 punkte
   ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Piquet war im Finale 1981 Gast bei Ligier (DNS) und blieb dort ohne Chronik-Eintrag; Rückholung der Gäste am Anfang von `processSeasonEndEvents` (4 → 0 stille Wechsel in 240 Saisons), Gäste nie DNS, Off-Season-Anzeigen mit Team zur Rennzeit + „ab 1982: …" (`tests/offseason-steckbrief.js`). Der bestehende Spielstand bleibt unverändert.
+  ↳ Nutzer 05.11.2026: Wechsel-Anzeige in der Off-Season im Spiel korrekt. Gastfahrer-Teil braucht Langzeittest.
 - ✚ Jamie Connolly von ATS entlassen. Nächste Saison wieder bei ATS https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
   ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Connolly war 1981 R6–7 Gast bei Lotus und wurde vom GASTTEAM entlassen; `processMidSeasonDismissals` nimmt Gäste jetzt aus (`tests/gast-haengt.js`: 12 → 0 Fälle in 240 Saisons, BEFUNDE 05.11.2026).
 - ✚ off-season benötigt Info wenn Fahrer cockpitlos ist wenn Team während oder Ende der Saison aufgibt . darf kein Malus in der fahrer-Zufriedenheit darstellen!
