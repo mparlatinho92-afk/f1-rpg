@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.30</title>
+    <title>F1 RPG v0.9.21.31</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.30 (aktuell) - 24.10.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.31 (aktuell) - 05.11.2026</div>
+                            <div>&#8226; FIX: Gastfahrer im letzten Saisonrennen wechselte still zum Gastteam (Piquet 1981 Ligier)</div>
+                            <div>&#8226; FIX: Gastteams entliessen Fahrer, die ihnen nicht gehoerten (Connolly 1981 Lotus)</div>
+                            <div>&#8226; FIX: Gastfahrer werden nicht mehr als DNS gewertet</div>
+                            <div>&#8226; FIX: Zwischen Saisonende und Saisonstart zeigten Steckbriefe und Meldeliste schon die neuen Teams - jetzt das Team der abgeschlossenen Saison, das neue als Zusatz ab Folgejahr</div>
+                            <div class="font-bold text-slate-400">v0.9.21.30 - 24.10.2026</div>
                             <div>&#8226; NEU: Ticker - Fuehrungswechsel ueber Boxenstopps statt Flackern, Haltevorsprung, ruhigeres Rennende</div>
                             <div>&#8226; NEU: Rennen ab 2010 - Positionsvorteil auf der Strecke, weniger grosse Platzwechsel (trocken)</div>
                             <div>&#8226; FIX: Messung Rennverlauf - Spaet-Ausfaelle und Ueberrundete verfaelschten den Vergleich</div>
@@ -4403,7 +4408,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.30';
+        const VERSION = '0.9.21.31';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -10553,6 +10558,56 @@
             return out;
         }
 
+        // === OFF-SEASON: TEAM DER ABGESCHLOSSENEN SAISON (v0.9.21.31) ===
+        // Der Markt laeuft im Saisonende-Fenster (processSeasonEndEvents), archiviert wird erst
+        // in startNewSeason. Dazwischen traegt driver.team schon das NEUE Team. Nutzer 05.11.2026:
+        // „die alte Saison darf keinen Wechsel erhalten" — Anzeigen zeigen das Team zur Rennzeit,
+        // das neue nur als Zusatz („ab 1982: Ligier"). Liefert null ausserhalb dieser Uebergangszeit
+        // und wenn sich nichts geaendert hat. neu = null heisst: ohne Cockpit.
+        // Letztes Team zur Rennzeit in der laufenden Saison (Starter aus results, DNQ/DNS aus tms).
+        function teamZurRennzeit(driverId) {
+            let alt = null;
+            for (const r of (GAME_STATE.results || [])) {
+                const x = (r.results || []).find(e => e.driver === driverId);
+                const tn = x ? (x.teamName || teamDisplayName(x.team)) : (r.tms || {})[driverId];
+                if (tn) alt = { name: tn, id: x?.team || null };
+            }
+            if (!alt) return null;
+            const t = (GAME_STATE.teams || []).find(t => t.id === alt.id || t.name === alt.name);
+            return t ? { name: t.name, id: t.id, color: t.color } : alt;
+        }
+        function offseasonTeamwechsel(driverId) {
+            if (!GAME_STATE._seasonEndEventsProcessed || !driverId) return null;
+            const alt = teamZurRennzeit(driverId);
+            if (!alt) return null;
+            const d = (GAME_STATE.drivers || []).find(x => x.id === driverId)
+                || (GAME_STATE.reservePool || []).find(x => x.id === driverId);
+            const nt = d && d.team ? (GAME_STATE.teams || []).find(t => t.id === d.team) : null;
+            const neu = nt ? { name: nt.name, id: nt.id, color: nt.color } : null;
+            if (neu && (neu.id === alt.id || neu.name === alt.name)) return null;
+            return { alt, neu, abJahr: GAME_STATE.currentYear + 1 };
+        }
+        // Fahrer der LAUFENDEN Saison mit ihrem Team. In der Off-Season zaehlt nur, wer in dieser
+        // Saison gemeldet war, mit dem Team zur Rennzeit (Kopie, team ueberschrieben) — ein fuer
+        // naechstes Jahr verpflichteter Neuling ohne Rennen erscheint dort nicht. Tote fehlen wie bisher.
+        function fahrerDerSaison() {
+            const aktiv = d => !d.status || d.status === 'active';
+            if (!GAME_STATE._seasonEndEventsProcessed) return (GAME_STATE.drivers || []).filter(d => aktiv(d) && d.team);
+            const alle = [...(GAME_STATE.drivers || []), ...(GAME_STATE.reservePool || [])];
+            const out = [];
+            for (const d of alle) {
+                if (out.some(x => x.id === d.id) || d.status === 'deceased') continue;
+                const t = teamZurRennzeit(d.id);
+                if (t && t.id) out.push(t.id === d.team ? d : { ...d, team: t.id });
+            }
+            return out;
+        }
+        // Kader eines Teams in der laufenden Saison (Team-Steckbrief: Fahrerkarte, Historie, Raster).
+        function kaderDerSaison(teamId) {
+            if (!GAME_STATE._seasonEndEventsProcessed) return (GAME_STATE.drivers || []).filter(d => d.team === teamId);
+            return fahrerDerSaison().filter(d => d.team === teamId);
+        }
+
         function privateerEntersRace(d, race) {
             const cid = race.circuitId?.toLowerCase();
             // === OHNE WAGEN KEINE MELDUNG (v0.9.17.23) ===
@@ -15703,6 +15758,9 @@
                 const _rate = _dnsRateFor(GAME_STATE.currentYear);
                 if (_rate > 0 && activeDrivers.length > 2) {
                     activeDrivers = activeDrivers.filter(d => {
+                        // DNS nur fuer Vertragsfahrer (Nutzer 05.11.2026): ein Gast hat beim
+                        // Gastteam keinen Vertrag, sein qualifizierter Wagen startet.
+                        if (d._guestFrom) return true;
                         if (Math.random() >= _rate) return true;
                         _dnsIds.push(d.id);
                         return false;
@@ -20839,6 +20897,18 @@
             // Guard: nicht doppelt ausführen (interaktiver Pfad ruft showSeasonEndModal() auf,
             // welches diese Funktion aufruft; startNewSeason() ruft sie nochmal → einmal reicht)
             if (GAME_STATE._seasonEndEventsProcessed) return;
+            // === GASTSPIELE ZURUECK INS STAMMTEAM (v0.9.21.31) ===
+            // applyGuestMoves holt einen Gast erst beim NAECHSTEN Rennen zurueck. Nach dem Finale
+            // gibt es keins: der Fahrer ging als Fahrer des Gastteams in den Transfermarkt und
+            // blieb dort, ohne Chronik-Eintrag (Spielstand 1980–88: Piquet, Stamm Brabham, im
+            // Finale 1981 Gast bei Ligier, fuhr 1982 fuer Ligier). Gemessen 0,02–0,03 Faelle je
+            // Saison (tests/gast-haengt.js). Vor dem Regel-Guard: Gastspiele laufen in jedem Modus.
+            for (const d of (GAME_STATE.drivers || [])) {
+                if (!d._guestFrom) continue;
+                if (d._guestYear === GAME_STATE.currentYear
+                    && (GAME_STATE.teams || []).some(t => t.id === d._guestFrom)) d.team = d._guestFrom;
+                d._guestFrom = null; d._guestYear = null;
+            }
             // Voller historischer Modus (alle Regeln aus) = alles eingefroren wie früher aiSimulation=false.
             // Sonst laufen die Stat-Updates immer, die roster-verändernden Teile self-gaten intern.
             if (!anySimRuleOn()) return;
@@ -24006,6 +24076,12 @@
 
             activeDrivers.forEach(driver => {
                 if (!driver.team || driver._midSeasonDismissed) return;
+                // Ein Gast gehoert nicht dem Team, bei dem er gerade sitzt (v0.9.21.31). Sonst
+                // entliess das Gastteam ihn, und `applyGuestMoves` setzte ihn danach wieder ins
+                // Stammteam — Connolly (Stamm ATS) 1981 „bei Lotus entlassen", 1982 wieder ATS.
+                // Gemessen 0,03–0,04 Faelle je Saison (tests/gast-haengt.js). Bewertet wird er,
+                // sobald er wieder beim Stammteam faehrt.
+                if (driver._guestFrom) return;
 
                 // Rookie-Schutz (optional, Standard: AUS)
                 if (GAME_STATE.rookieProtection) {
@@ -30924,7 +31000,8 @@
                 .sort((a, b) => b.points - a.points)[0];
             
             const nextRace = GAME_STATE.races[GAME_STATE.currentRace];
-            const activeDrivers = GAME_STATE.drivers.filter(d => (!d.status || d.status === 'active') && d.team);
+            // Off-Season: Meldeliste der abgeschlossenen Saison mit Team zur Rennzeit (v0.9.21.31)
+            const activeDrivers = fahrerDerSaison();
 
             // Amtierender Weltmeister (Vorjahressieger)
             const prevYear = GAME_STATE.currentYear - 1;
@@ -37702,6 +37779,8 @@ Empfohlene Wertebereiche:
             }
             
             const team = GAME_STATE.teams.find(t => t.id === driver.team);
+            // Off-Season: Kopf zeigt das Team der abgeschlossenen Saison, das neue als Zusatz
+            const _offW = offseasonTeamwechsel(driver.id);
             const standing = GAME_STATE.driverStandings[driver.id] || {};
             // Nutze histId für allTimeStATS wenn vorhanden
             const stATSId = driver.histId || driver.id;
@@ -38015,7 +38094,12 @@ Empfohlene Wertebereiche:
                         <div class="text-3xl font-bold mb-1">${driver.name}</div>
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
                             <span class="text-2xl">${renderFlag(driver.nation, driver.name, profileFlagYear)}</span>
-                            ${team ? `
+                            ${_offW ? `
+                                ${renderTeamNameColored(_offW.alt.name, _offW.alt.id, GAME_STATE.currentYear, _offW.alt.color, _offW.alt.id ? ` onclick="closeDriverProfile(); openTeamProfile('${_offW.alt.id}')"` : undefined)}
+                                <span class="text-sm text-secondary">ab ${_offW.abJahr}: ${_offW.neu
+                                    ? renderTeamNameColored(_offW.neu.name, _offW.neu.id, _offW.abJahr, _offW.neu.color, ` onclick="closeDriverProfile(); openTeamProfile('${_offW.neu.id}')"`)
+                                    : (isCurrentlyActive ? 'ohne Cockpit' : 'Karriere beendet')}</span>
+                            ` : team ? `
                                 <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="${teamNamensFeld(getTeamColors(team.id, viewingYear, team.color), true) || `background-color: ${team.color}20; color: ${lesbareTextfarbe(team.color)}`}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
                                     ${team.name}
                                 </span>
@@ -38713,16 +38797,32 @@ Empfohlene Wertebereiche:
                         const _liveDrv = GAME_STATE.drivers.find(d => d.id === driver.id)
                             || (GAME_STATE.reservePool || []).find(d => d.id === driver.id);
                         const _liveStanding = GAME_STATE.driverStandings?.[driver.id];
-                        if (_liveDrv && _liveDrv.team && (!_liveDrv.status || _liveDrv.status === 'active')) {
-                            const _lt = GAME_STATE.teams.find(t => t.id === _liveDrv.team);
+                        // TEAM ZUR RENNZEIT statt driver.team (v0.9.21.31). Der Transfermarkt laeuft
+                        // schon im Saisonende-Fenster; bis startNewSeason archiviert, zeigte diese
+                        // Zeile das NEUE Team, die Rennergebnisse darunter das alte (Nutzer:
+                        // „die alte Saison darf keinen Wechsel erhalten"). driver.team nur, solange
+                        // noch kein Rennen gefahren ist.
+                        const _rennTeams = new Map();
+                        for (const r of (GAME_STATE.results || [])) {
+                            const x = (r.results || []).find(e => e.driver === driver.id);
+                            const tn = x ? (x.teamName || teamDisplayName(x.team)) : (r.tms || {})[driver.id];
+                            if (!tn) continue;
+                            const tt = GAME_STATE.teams.find(t => (x && t.id === x.team) || t.name === tn);
+                            if (!_rennTeams.has(tn)) _rennTeams.set(tn, { name: tn, id: tt?.id || x?.team || null, color: tt?.color });
+                        }
+                        if (_liveDrv && (_rennTeams.size || _liveDrv.team) && (!_liveDrv.status || _liveDrv.status === 'active' || _rennTeams.size)) {
+                            const _rt = [..._rennTeams.values()];
+                            const _lt = _rt.length
+                                ? (GAME_STATE.teams.find(t => t.id === _rt[_rt.length - 1].id) || { name: _rt[_rt.length - 1].name, id: _rt[_rt.length - 1].id })
+                                : GAME_STATE.teams.find(t => t.id === _liveDrv.team);
                             const _pos = Object.entries(GAME_STATE.driverStandings || {})
                                 .map(([id, s]) => ({ id, points: s.points || 0 }))
                                 .sort((a, b) => b.points - a.points)
                                 .findIndex(d => d.id === driver.id) + 1;
                             fullCareer.push({
                                 year: GAME_STATE.currentYear,
-                                team: _lt?.name || '-',
-                                teams: _lt ? [{ name: _lt.name, id: _lt.id, color: _lt.color }] : [],
+                                team: _rt.length > 1 ? _rt.map(t => t.name).join(' / ') : (_lt?.name || '-'),
+                                teams: _rt.length ? _rt : (_lt ? [{ name: _lt.name, id: _lt.id, color: _lt.color }] : []),
                                 teamId: _lt?.id || _liveDrv.team || null,
                                 teamColor: getTeamColors(_lt?.id || '', GAME_STATE.currentYear, _lt?.color)[0] || ensureReadable(_lt?.color || '#888'),
                                 races: _liveStanding?.races || 0,
@@ -41016,7 +41116,7 @@ Empfohlene Wertebereiche:
             }
 
             const standing = GAME_STATE.teamStandings[team.id] || {};
-            const drivers = GAME_STATE.drivers.filter(d => d.team === team.id);
+            const drivers = kaderDerSaison(team.id);   // Off-Season: Kader zur Rennzeit (v0.9.21.31)
             // Nutze histId für allTimeStATS wenn vorhanden
             const stATSId = team.histId || team.id;
             // Fallback: StATS könnten unter team.id ("MCL"), histId ("McLaren") oder Name gespeichert sein
@@ -41223,8 +41323,18 @@ Empfohlene Wertebereiche:
                             `;
                         }).join('')}
                     </div>
+                    ${(() => {
+                        // Off-Season-Zusatz (v0.9.21.31): neuer Kader nach dem Markt, alte Saison bleibt oben
+                        if (!GAME_STATE._seasonEndEventsProcessed) return '';
+                        const neu = GAME_STATE.drivers.filter(d => d.team === team.id);
+                        const alt = new Set(drivers.map(d => d.id));
+                        if (neu.length === alt.size && neu.every(d => alt.has(d.id))) return '';
+                        return `<div class="text-sm text-secondary mt-3">ab ${GAME_STATE.currentYear + 1}: ${neu.length
+                            ? neu.map(d => `<span class="driver-link cursor-pointer" onclick="closeTeamProfile(); openDriverProfile('${d.id}')">${d.name}</span>`).join(', ')
+                            : 'noch kein Fahrer'}</div>`;
+                    })()}
                 </div>
-                
+
                 <!-- Saison StATS -->
                 <div class="card p-4 rounded-lg">
                     <h4 class="font-bold mb-3">🏆 Saison ${GAME_STATE.currentYear}</h4>
@@ -41655,8 +41765,8 @@ Empfohlene Wertebereiche:
                     || idsToCheck.map(x => String(x).toLowerCase()).includes(String(t.histId || '').toLowerCase()));
                 if (_liveTeam) {
                     const _ts = GAME_STATE.teamStandings?.[_liveTeam.id];
-                    const _drvObjs = GAME_STATE.drivers
-                        .filter(d => d.team === _liveTeam.id && (!d.status || d.status === 'active'))
+                    const _drvObjs = kaderDerSaison(_liveTeam.id)
+                        .filter(d => !d.status || d.status === 'active' || GAME_STATE._seasonEndEventsProcessed)
                         .map(d => {
                             const w = d.name.trim().split(/\s+/);
                             return { name: w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : d.name, id: d.id,
@@ -41989,7 +42099,7 @@ Empfohlene Wertebereiche:
                 // Laufende Saison
                 if (year===currentY&&hasCurrentTeam) {
                     const tid = curTeam.id||teamId;
-                    const teamDrivers = GAME_STATE.drivers.filter(d=>d.team===tid);
+                    const teamDrivers = kaderDerSaison(tid);   // Off-Season: Kader zur Rennzeit
                     const sortedSt = sortStandings(GAME_STATE.driverStandings);
                     const driverRows = teamDrivers.map(d=>{
                         const cells=(GAME_STATE.results||[]).map(race=>{
