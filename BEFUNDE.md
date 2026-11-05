@@ -36,9 +36,58 @@ versehentlich zurück.
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | **Gastspiel hängt übers Saisonende (05.11.2026)** | `applyGuestMoves`, `_guestFrom`, Entlassung mitten in der Saison, stille Teamwechsel ohne Chronik, `tests/gast-haengt.js` |
+| **Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)** | `_debuetAusfuehren`, `acquireSeatDriver` rookie, `_isBeginner`, Pool „kommend", `tests/generiert-herkunft.js` |
+| Nationsnamen: 51 von 119 Generator-Nationen nur als Kürzel (05.11.2026) | `nationDisplayName`, `NATION_OPTIONS`, `Intl.DisplayNames` |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
 ---
+
+## Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)
+
+**Anlass:** Spielstand Start 1980 (Review-Paket 1988), Echt-Anteil 100 %: drei `gen-`-Fahrer (Ralf Fricke ab 1980,
+Jamie Connolly ab 1981, Andrew Fitzgerald ab 1982). **Nutzer-Regel:** bis zur jüngsten echten Saison der Datenbank
+(heute 2024/25, wächst mit) kein erfundener Fahrer; Reihenfolge echter Debütant → verfrühtes Einspringen eines
+späteren echten Fahrers → bei echtem Mangel echter Ex-Fahrer. Generiert wird erst in der Sim-Zukunft.
+
+**Ursache:** einziger Erzeuger in echten Ären war das Debüt mitten in der Saison (`_debuetAusfuehren` →
+`acquireSeatDriver` mit `rookie: true`). `_isBeginner` verlangt `debutYear` — das hat nur, wer schon gestartet
+ist. Der Pool „kommend" (Gruppe C, 1960: 64, 1980: 32 Fahrer, z. B. Stohr → Arrows 1981) fiel nie darunter, und
+`rookie: true` schloss den Rückfall auf „irgendein echter" ausdrücklich aus → Generator.
+
+**Fix v0.9.21.32:** im Debüt-Fall Rückfall auf nie gestartete echte Fahrer (kein `lastRacedYear`), Reihenfolge wie
+sonst nach Pace — wann einer debütiert, regelt die gedämpfte Pace vor dem realen Debüt (`preDebut`), nicht das reale
+Jahr (Nutzer 05.11.2026: „muss nicht automatisch das echte Jahr sein"; ein erster Stand sortierte nach Nähe zum
+realen Debüt, wieder entfernt); dann echte Fahrer ohne Cockpit; in echten Saisons (`SEASON_DATA[year]`) sonst Ausfall statt Generator.
+Der übrige Fahrermarkt (`_isBeginner` für normale Sitze) bleibt unverändert.
+
+**Messung** `SIMCORE_FROM_INDEX=1 node tests/generiert-herkunft.js 15 <start> 6` (90 Saisons je Start):
+
+| Start | Debüts je Saison ohne Fix | davon generiert | mit Fix | davon generiert | Herkunft mit Fix |
+|---|---|---|---|---|---|
+| 1960 | 0,62 | 43 von 56 | 0,48 | 0 | kommend +0: 13, +1: 19, Anfänger 11 |
+| 1980 | 0,50 | 33 von 45 | 0,52 | 0 | kommend −1: 3, +0: 17, +1: 11, +2…+4: 10, Anfänger 6 |
+| 2000 | 0,08 | 5 von 7 | 0,06 | 0 | n zu klein |
+
+(„+1" = reales Debüt ein Jahr nach dem Spieljahr.)
+
++1-Einspringer haben im Folgejahr meist ein Cockpit (1960: 15 von 19, 1980: 10 von 11), oft bei einem anderen Team
+als real. Ex-Fahrer werden in diesen Läufen nie gebraucht. ⚠ **Messfallen:** (1) `starts` ist im Pool „kommend" ein
+Platzhalter (60) — wer „nie gestartet" daran misst, findet 0 Kandidaten (erster Fix-Versuch: Debütquote fiel auf
+0,20 / 0,09 und sah nach echtem Mangel aus). (2) Fahrer-IDs wechseln beim Saisonstart — Folgejahr über `histId`.
+(3) Debütquote schwankt zwischen Läufen um ±0,1 je Saison. **Rest in echten Ären** (je ~1 in 90 Saisons, nicht
+angefasst): Indy-Verpflichtung `_signIndyDriver` 1960, `_wechselAusfuehren` → `acquireSeatDriver` (Pool leer) 1963,
+ein Rückfall beim Saisonstart 1962.
+
+## Nationsnamen: kleinere Nationen nur als Kürzel (05.11.2026)
+
+Nationsnamen stehen im Spiel nur im Nationen-Tab (`nationDisplayName`, sonst nur Flaggen). Die Namensliste
+(`NATION_OPTIONS` 68 + `_NATION_NAME_EXTRA` 5) kannte 73 Codes, der Fahrergenerator hat Pools für 119 Nationen
+(`NAME_POOLS_BY_NATION`): **51 erschienen als IOC-Kürzel** (CRO, NGR, RWA, SMR …). Fix v0.9.21.32: Rückfall auf
+`Intl.DisplayNames('de')` über `FLAG_IOC_TO_ALPHA2`, dazu MAC (Intl: „Sonderverwaltungsregion Macau") von Hand.
+PUR fehlte in der Flaggentabelle (zeigte „PUR" statt Flagge), jetzt dort als `PR`; das Emoji 🇵🇷 war fälschlich `POR` =
+Portugal zugeordnet — einziger Fehler der Emoji-Tabelle (Gegenprobe aller 248 Einträge gegen `FLAG_IOC_TO_ALPHA2`). Danach ohne Namen nur `INT` (Sammel-Pool, keine Nation). ⚠ **Messfalle:** die
+Namensliste wurde in v0.9.17.47 gegen die 53 Codes geprüft, die damals im Spiel vorkamen — die Generator-Pools
+zählen erst, wenn ein seltener Fahrer gezogen wird. Prüfen gegen `NAME_POOLS_BY_NATION`, nicht gegen einen Spielstand.
 
 ## Gastspiel hängt übers Saisonende (05.11.2026)
 

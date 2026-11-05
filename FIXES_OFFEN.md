@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.31, Prüfdatum **2026-11-05** (vorher 2026-10-24 @ v0.9.21.30). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt.
+**Abgeglichen gegen:** v0.9.21.32, Prüfdatum **2026-11-05** (vorher 2026-11-05 @ v0.9.21.31). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -41,10 +41,10 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 - ✚ off-season benötigt Info wenn Fahrer cockpitlos ist wenn Team während oder Ende der Saison aufgibt . darf kein Malus in der fahrer-Zufriedenheit darstellen!
 - ✚ Reserve-Driver Bug in wm-stand. dieser Bug ist alt und hartnäckig
 - ✚ kleinere Nationen statt Name ioc kurzel
-  ↳ Code-Fix (unveröffentlicht), im Spiel unbestätigt: Nationen-Tab kannte 73 Namen, der Generator 119 Nationen — 51 erschienen als Kürzel; jetzt deutscher Landesname über `Intl.DisplayNames` (nur `INT` bleibt). Puerto Rico hat jetzt eine Flagge, 🇵🇷 war fälschlich Portugal zugeordnet (BEFUNDE 05.11.2026).
+  ↳ Code-Fix v0.9.21.32, im Spiel unbestätigt: Nationen-Tab kannte 73 Namen, der Generator 119 Nationen — 51 erschienen als Kürzel; jetzt deutscher Landesname über `Intl.DisplayNames` (nur `INT` bleibt). Puerto Rico hat jetzt eine Flagge, 🇵🇷 war fälschlich Portugal zugeordnet (BEFUNDE 05.11.2026).
 - ✚ generierter Fahrer taucht als Ersatz auf obwohl 0 Prozent generiert https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
   ↳ Befund 05.11.2026 (Review-Paket 1988, Start 1980): drei `gen-`-Fahrer im Stand — Ralf Fricke ab 1980, Jamie Connolly ab 1981, Andrew Fitzgerald ab 1982.
-  ↳ Code-Fix (unveröffentlicht), im Spiel unbestätigt: Debüt mitten in der Saison fand nie einen echten Neuling (Pool „kommend" ohne debutYear) und generierte — 1960/1980 drei Viertel aller Debüts. Jetzt echter Debütant → späterer echter Fahrer verfrüht → echter Ex-Fahrer; in echten Saisons nie generiert (`tests/generiert-herkunft.js`: 76 → 0 in 180 Saisons, BEFUNDE 05.11.2026).
+  ↳ Code-Fix v0.9.21.32, im Spiel unbestätigt: Debüt mitten in der Saison fand nie einen echten Neuling (Pool „kommend" ohne debutYear) und generierte — 1960/1980 drei Viertel aller Debüts. Jetzt echter Debütant → späterer echter Fahrer verfrüht → echter Ex-Fahrer; in echten Saisons nie generiert (`tests/generiert-herkunft.js`: 76 → 0 in 180 Saisons, BEFUNDE 05.11.2026).
 - ✚ Konstanz neu berechnen. Aus F1DB Häufigkeit und Schwere und Dauer der Konstanzabfälle (ohne Konstrukteurswechsel) + Gründe: Beispiel Oscar Piastr nach Baku 2025, oder schwere Crashes. Trennen von Pace-Abbau (z. B. nach Alter oder Crash) oder Form-Schwankungen
 
 ---
