@@ -11,6 +11,7 @@
 //   haengt   = Fahrer mit `_guestFrom` aus DIESEM Jahr nach dem letzten Rennen (vor dem Saisonwechsel)
 //   still    = davon nach processSeasonEndEvents noch beim Gastteam, ohne Saisonende-Transfer (der Fehler)
 //   gastRaus = Entlassungen mitten in der Saison, deren Opfer gerade Gast war
+//   gastDNS  = Gäste mit DNS (Sollwert 0: DNS nur für Vertragsfahrer, Nutzer 05.11.2026)
 //
 // AUFRUF   SIMCORE_FROM_INDEX=1 node tests/gast-haengt.js 1980 6 --saisons=4
 'use strict';
@@ -22,7 +23,7 @@ const YEAR = num[0] || 1980, SIMS = num[1] || 6, SEASONS = Number(opt('saisons')
 const { getContext } = require('./sim-core');
 const ctx = getContext();
 const G = () => ctx.GAME_STATE;
-let saisons = 0, haengt = 0, still = 0, gastRaus = 0, gastSumme = 0;
+let saisons = 0, haengt = 0, still = 0, gastRaus = 0, gastSumme = 0, gastDNS = 0, dnsSumme = 0;
 const beispiele = [];
 
 for (let s = 0; s < SIMS; s++) {
@@ -41,6 +42,11 @@ for (let s = 0; s < SIMS; s++) {
                     ctx.simulateQualifying(i, rain);
                     const r = ctx.simulateRace(i, rain);
                     if (!r) continue;
+                    dnsSumme += (r.dns || []).length;
+                    for (const id of r.dns || []) if (gaeste.has(id)) {
+                        gastDNS++;
+                        if (beispiele.length < 8) beispiele.push(`${y} R${i + 1} DNS als Gast: ${id}`);
+                    }
                     const vorher = (G().seasonRetirements || []).length;
                     ctx.applyRaceResults(r);
                     for (const e of (G().seasonRetirements || []).slice(vorher))
@@ -75,4 +81,5 @@ console.log(`Gastfahrer je Saison: ${(gastSumme / saisons).toFixed(1)}`);
 console.log(`hängt nach dem Finale: ${haengt} (${(haengt / saisons).toFixed(2)} je Saison)`);
 console.log(`davon nach dem Saisonende still beim Gastteam (ohne Transfer): ${still}`);
 console.log(`Gast mitten in der Saison entlassen: ${gastRaus} (${(gastRaus / saisons).toFixed(2)} je Saison)`);
+console.log(`Gast DNS: ${gastDNS} (DNS gesamt ${dnsSumme})`);
 beispiele.forEach(b => console.log('  ' + b));

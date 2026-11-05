@@ -73,6 +73,22 @@ werden nicht umgeschrieben.
 Fehler ist erst die Zeile „still beim Gastteam". Die Fälle sind selten (≈ 0,03 je Saison je Lücke): unter 30 Sims
 × 4 Saisons ist ein einzelner Lauf ohne Treffer kein Beleg.
 
+**Langzeittest mit Fix (05.11.2026, 1000 Saisons):** `gast-haengt.js <jahr> 20 --saisons=10`, Start 1950/1960/1975/1990/2010,
+je 200 Saisons, Ergebnis `tests/output/gast-langzeit.txt`:
+
+| Start | Gäste je Saison | hängt nach Finale | still beim Gastteam | Gast entlassen | Gast DNS (DNS gesamt) |
+|---|---|---|---|---|---|
+| 1950 | 1,5 | 1 | 0 | 0 | 0 (1057) |
+| 1960 | 2,0 | 3 | 0 | 0 | 0 (1449) |
+| 1975 | 0,5 | 5 | 0 | 0 | 0 (1271) |
+| 1990 | 0,0 | 0 | 0 | 0 | 0 (680) |
+| 2010 | 0,0 | 0 | 0 | 0 | 0 (609) |
+
+Alle 9 hängenden Gäste wurden am Saisonende zurückgeholt. ⚠ **Messfalle:** ab Start 1990 entstehen in der Kette
+keine Gastspiele, die Zeilen 1990/2010 belegen dort nichts. „still" prüft nur bis zur vorletzten Saison der Kette
+(nach der letzten läuft kein `processSeasonEndEvents`). Im Spiel bestätigt (Nutzer 05.11.2026): Wechsel-Anzeige in
+der Off-Season; der Gastfahrer-Teil ist im Spiel noch offen.
+
 **DNS nur für Vertragsfahrer (Nutzer 05.11.2026, v0.9.21.31):** Piquets DNS im Finale 1981 war der Zufallswurf
 `_dnsRateFor` — der traf jeden Qualifizierten, auch Gäste. Gäste sind jetzt ausgenommen. Gastspiele in ein volles
 Team bleiben erlaubt: in Ären mit mehr als zwei Wagen je Team (1960er) ist „voll" erst zu definieren (Nutzer).
