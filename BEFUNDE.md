@@ -35,7 +35,55 @@ versehentlich zurück.
 | **`ERA_DNF_RATES` neu: DNQ im Nenner drückte Vor-Quali-Jahre** | Ausreißer 1989/1991, jede Arbeit an Ausfallraten — global neutral, Vor-Quali-Jahre besser |
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
+| **Gastspiel hängt übers Saisonende (05.11.2026)** | `applyGuestMoves`, `_guestFrom`, Entlassung mitten in der Saison, stille Teamwechsel ohne Chronik, `tests/gast-haengt.js` |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
+
+---
+
+## Gastspiel hängt übers Saisonende (05.11.2026)
+
+**Anlass:** Spielstand vom Handy (Start 1980, v0.9.21.30, Review-Paket 1988). Piquet stand 1981 in der
+Karriere-Historie bei „Brabham / Ligier", fuhr 1982 für Ligier, obwohl sein Vertrag bei Brabham bis 1982 lief;
+die Markt-Chronik kennt keinen Wechsel. Jamie Connolly (generiert, Stamm ATS) fuhr 1981 R4–5 für ATS, R6–7 als
+Gast bei Lotus (DNQ), wurde nach R7 „von Lotus entlassen" und fuhr 1982 wieder ATS.
+
+**Ursache, zwei Lücken im Gastspiel:**
+1. `applyGuestMoves` holt einen Gast erst beim **nächsten** Rennen ins Stammteam zurück. Nach dem Finale gibt es
+   keins: Piquet war im letzten Rennen 1981 Gast bei Ligier (DNS, Ligier hatte zwei Stammfahrer, ganz Brabham
+   fehlte in dem Rennen) und ging als Ligier-Fahrer in `processSeasonEndEvents`. Im Folgejahr löschte die
+   Jahresprüfung (`_guestYear === jahr`) nur noch das Merkmal. `race.tms` hält das Team zur Rennzeit, daher
+   die zweite Team-Zeile in der Karriere-Historie — die ist für das Finale sogar richtig.
+2. `processMidSeasonDismissals` prüfte kein `_guestFrom`: das Gastteam entließ einen Fahrer, der ihm nicht
+   gehört, beim nächsten Rennen setzte `applyGuestMoves` ihn zurück ins Stammteam.
+
+**Fix v0.9.21.31:** Rückholung aller Gäste am Anfang von `processSeasonEndEvents` (vor dem Regel-Guard, Gastspiele
+laufen in jedem Modus); Gäste sind von der Entlassung mitten in der Saison ausgenommen. Bestehende Spielstände
+werden nicht umgeschrieben.
+
+**Messung** `SIMCORE_FROM_INDEX=1 node tests/gast-haengt.js <jahr> 30 --saisons=4`, Start 1960 + 1978, je 120 Saisons:
+
+| | ohne Fix | mit Fix |
+|---|---|---|
+| Gastfahrer je Saison (1960 / 1978) | 2,9 / 1,1 | 2,6 / 1,0 |
+| Gast nach dem Finale noch beim Gastteam | 1 / 6 | 2 / 3 (wird jetzt zurückgeholt) |
+| davon still beim Gastteam geblieben, ohne Saisonende-Transfer | 1 / 3 | **0 / 0** |
+| Gast mitten in der Saison vom Gastteam entlassen | 5 / 7 | **0 / 0** |
+
+⚠ **Messfalle:** „hängt nach dem Finale" wird VOR dem Saisonwechsel gezählt und sinkt durch den Fix nicht — der
+Fehler ist erst die Zeile „still beim Gastteam". Die Fälle sind selten (≈ 0,03 je Saison je Lücke): unter 30 Sims
+× 4 Saisons ist ein einzelner Lauf ohne Treffer kein Beleg.
+
+**DNS nur für Vertragsfahrer (Nutzer 05.11.2026, v0.9.21.31):** Piquets DNS im Finale 1981 war der Zufallswurf
+`_dnsRateFor` — der traf jeden Qualifizierten, auch Gäste. Gäste sind jetzt ausgenommen. Gastspiele in ein volles
+Team bleiben erlaubt: in Ären mit mehr als zwei Wagen je Team (1960er) ist „voll" erst zu definieren (Nutzer).
+
+**Off-Season: die abgeschlossene Saison zeigte schon die neuen Teams.** Der Markt läuft in `processSeasonEndEvents`
+(Saisonende-Fenster), archiviert wird erst in `startNewSeason`. Die Karriere-Historie baute die laufende Saison
+aus `driver.team`. Jetzt Team zur Rennzeit aus `GAME_STATE.results` (+ `tms`), `driver.team` nur vor dem ersten
+Rennen. Browser-Prüfung `node tests/offseason-steckbrief.js 1980`: ohne Fix 2 von 2 gewechselten Fahrern falsch
+(Scheckter: Zeile „Fittipaldi", Rennen Ferrari/Arrows), mit Fix 6 von 6 richtig, kein pageerror.
+**Nachgezogen (Nutzer 05.11.2026):** Kopf zeigt das Team der abgeschlossenen Saison + Zusatz „ab 1982: Ligier", Team-Steckbrief (Fahrerkarte, Historie, Raster) und Meldeliste lesen den Kader zur Rennzeit — zentral `teamZurRennzeit` / `offseasonTeamwechsel` / `fahrerDerSaison` / `kaderDerSaison`, Übergangszeit = `GAME_STATE._seasonEndEventsProcessed`. In der Übergangszeit zählt nur, wer in der Saison gemeldet war: ein für nächstes Jahr verpflichteter Neuling ohne Rennen erscheint nicht im alten Kader. Browser-Prüfung 1975 / 1980 / 1990: 13 Wechsler, Kopf, Team-Fahrerkarte und Meldeliste je 0 falsch, kein pageerror.
+⚠ **Messfallen dabei:** (1) die Prüfung muss DNQ/DNS aus `tms` mitzählen, sonst wirkt „Lotus / Penske" (Henton 1975, DNQ für Penske) falsch; (2) Fahrer eines am Saisonende AUSGESTIEGENEN Teams (Shadow 1980, Eurobrun 1990) fehlen in der Meldeliste der abgeschlossenen Saison, weil das Team nicht mehr in `GAME_STATE.teams` steht — schon vor dem Fix so, nicht angefasst (Nähe zu Sheet-Punkt „Team gibt auf → Off-Season-Info").
 
 ---
 

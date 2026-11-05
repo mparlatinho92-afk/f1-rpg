@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.30, Prüfdatum **2026-10-24** (vorher 2026-10-23 @ v0.9.21.29). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt.
+**Abgeglichen gegen:** v0.9.21.31, Prüfdatum **2026-11-05** (vorher 2026-10-24 @ v0.9.21.30). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -33,6 +33,16 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 - ✚ erst Konzept. Machbarkeits-Theorie. nur für den Spielstand generierte, komplette Kart-Welt eines Landes oder Region. Teilnahmen an mehreren Serien berücksichtigen. Realistische Teilnahmen. Global Pathway Kart-Konzept https://gemini.google.com/app/e56077b4a25061bd Gemini schon Teile der Auswertung
 - ✚ Ruanda-Strecke, Rennort bekannt gegeben: Bugesera-Distrikt Nähe Ort Rilima
 - ✚ Jetlag-Kalender https://gemini.google.com/app/92f1856b2cac4058. PDF des Chats in Dokumente-Ordner (Bereich: Aus dem Sheet – ungeprüft; im Sheet geändert, Original steht weiter in der Liste)
+- ✚ selber Spielstand: Piquet fährt bei zwei Teams 1981 , unklar wann genau . anzeige verwirrt . bei beiden 3 siege und 48 punkte
+  ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Piquet war im Finale 1981 Gast bei Ligier (DNS) und blieb dort ohne Chronik-Eintrag; Rückholung der Gäste am Anfang von `processSeasonEndEvents` (4 → 0 stille Wechsel in 240 Saisons), Gäste nie DNS, Off-Season-Anzeigen mit Team zur Rennzeit + „ab 1982: …" (`tests/offseason-steckbrief.js`). Der bestehende Spielstand bleibt unverändert.
+- ✚ Jamie Connolly von ATS entlassen. Nächste Saison wieder bei ATS https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
+  ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Connolly war 1981 R6–7 Gast bei Lotus und wurde vom GASTTEAM entlassen; `processMidSeasonDismissals` nimmt Gäste jetzt aus (`tests/gast-haengt.js`: 12 → 0 Fälle in 240 Saisons, BEFUNDE 05.11.2026).
+- ✚ off-season benötigt Info wenn Fahrer cockpitlos ist wenn Team während oder Ende der Saison aufgibt . darf kein Malus in der fahrer-Zufriedenheit darstellen!
+- ✚ Reserve-Driver Bug in wm-stand. dieser Bug ist alt und hartnäckig
+- ✚ kleinere Nationen statt Name ioc kurzel
+- ✚ generierter Fahrer taucht als Ersatz auf obwohl 0 Prozent generiert https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
+  ↳ Befund 05.11.2026 (Review-Paket 1988, Start 1980): drei `gen-`-Fahrer im Stand — Ralf Fricke ab 1980, Jamie Connolly ab 1981, Andrew Fitzgerald ab 1982. Ursache noch nicht gesucht.
+- ✚ Konstanz neu berechnen. Aus F1DB Häufigkeit und Schwere und Dauer der Konstanzabfälle (ohne Konstrukteurswechsel) + Gründe: Beispiel Oscar Piastr nach Baku 2025, oder schwere Crashes. Trennen von Pace-Abbau (z. B. nach Alter oder Crash) oder Form-Schwankungen
 
 ---
 
