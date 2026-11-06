@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.33</title>
+    <title>F1 RPG v0.9.21.34</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.33 (aktuell) - 06.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.34 (aktuell) - 06.11.2026</div>
+                            <div>&#8226; NEU: Mega-Sim zeigt am Ende die Fahrer- und Konstrukteurs-Weltmeister des Laufs, Wanduhr und Gesamtdauer</div>
+                            <div>&#8226; FIX: Mega-Sim fragt mit Vorgabe 10 und Obergrenze 250 samt Zielsaison statt '0 = unbegrenzt'</div>
+                            <div>&#8226; FIX: Stopp-Knopf wird bei jedem Start neu belegt, Schliessen stoppt immer</div>
+                            <div>&#8226; FIX: Junior-Welt-Modus speichert im Mega-Sim nicht mehr nach jeder Saison</div>
+                            <div class="font-bold text-slate-400">v0.9.21.33 - 06.11.2026</div>
                             <div>&#8226; FIX: Fahrer eines ausgestiegenen Teams erscheinen im Saisonende-Fenster als 'Team ausgestiegen -> ohne Cockpit' statt gar nicht oder als Entlassung</div>
                             <div>&#8226; FIX: Steckbrief-Kopf nennt den Ausstieg des alten Teams auch mit neuem Cockpit, Verstorbene als 'verstorben'</div>
                             <div class="font-bold text-slate-400">v0.9.21.32 - 05.11.2026</div>
@@ -3860,8 +3865,10 @@
                 <div id="megasim-bar" style="height:100%;width:0%;background:var(--accent-main,#e10600);transition:width .15s"></div>
             </div>
             <div style="color:var(--text-muted,#aaa);font-size:13px" id="megasim-season">–</div>
-            <button onclick="window._megaSimCancel()" class="btn-secondary" style="margin-top:8px;padding:8px 20px;border-radius:6px;cursor:pointer">
-                Abbrechen
+            <div style="color:var(--text-muted,#aaa);font-size:13px;font-variant-numeric:tabular-nums" id="megasim-uhr">⏱ 0:00</div>
+            <div id="megasim-summary" style="display:none;width:60%;max-width:420px;max-height:45vh;overflow:auto;color:var(--text-primary,#fff);font-size:13px"></div>
+            <button id="megasim-btn" class="btn-secondary" style="margin-top:8px;padding:8px 20px;border-radius:6px;cursor:pointer">
+                ⏹ Stoppen
             </button>
         </div>
 
@@ -4415,7 +4422,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.33';
+        const VERSION = '0.9.21.34';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -27433,7 +27440,9 @@
                     // sondern verteilt über die F1-Runden – der Zwischenstand wird abgeleitet.
                     advanceJuniorWorld(_js.year).then(() => {
                         startJuniorSeason(GAME_STATE.juniorWorld, newYear);
-                        saveGame();
+                        // Mega-Sim speichert selbst (alle 25 Saisons + Ende); ein Save je Saison serialisiert
+                        // den wachsenden Stand jedes Mal neu (Handout P7, Lehre 3).
+                        if (!window._megaSimFast) saveGame();
                     });
                 }
 
@@ -29481,12 +29490,50 @@
         window._megaSimCancelled = false;
         window._megaSimCancel = function() { window._megaSimCancelled = true; };
 
+        // Zusammenfassung nach dem Mega-Sim (Handout P7, Lehre 10): Weltmeister nur aus den Saisons,
+        // die IM LAUF dazukamen (History ab Index histStart), Fahrer und Teams, Top 6, anklickbar.
+        function megaSimSummary(histStart) {
+            const neu = (GAME_STATE.history || []).slice(histStart).filter(h => h && h.type === 'simulated');
+            if (!neu.length) return '';
+            const zaehle = (key, nameKey, idKey) => {
+                const m = new Map();
+                for (const h of neu) {
+                    const k = h[key] || h[nameKey]; if (!k || h[nameKey] === 'N/A') continue;
+                    const e = m.get(k) || { name: h[nameKey], id: h[idKey], n: 0, jahre: [] };
+                    e.n++; e.jahre.push(h.year); e.id = h[idKey] || e.id; m.set(k, e);
+                }
+                return [...m.values()].sort((a, b) => b.n - a.n || a.jahre[0] - b.jahre[0]).slice(0, 6);
+            };
+            const fahrer = zaehle('championHistId', 'champion', 'championId');
+            const teams  = zaehle('teamChampionId', 'teamChampion', 'teamChampionId');
+            // Laufzeit-IDs sind nicht stabil: Fahrer über histId bzw. Namen im aktuellen Stand suchen.
+            // Klick schließt zuerst das Overlay (Knopf = „Schließen"), sonst läge der Steckbrief dahinter.
+            const fahrerLink = e => {
+                const d = (GAME_STATE.drivers || []).find(x => x.id === e.id || (x.histId && x.histId === e.id) || x.name === e.name)
+                    || (GAME_STATE.reservePool || []).find(x => x.name === e.name);
+                return d ? `<span class="driver-link cursor-pointer" onclick="document.getElementById('megasim-btn').click(); openDriverProfile('${d.id}')">${e.name}</span>` : e.name;
+            };
+            const teamLink = e => (GAME_STATE.teams || []).some(t => t.id === e.id)
+                ? `<span class="team-link cursor-pointer" onclick="document.getElementById('megasim-btn').click(); openTeamProfile('${e.id}')">${e.name}</span>` : e.name;
+            const zeile = (link, e) => `<div style="display:flex;justify-content:space-between;gap:8px"><span>${link(e)}</span>`
+                + `<span style="color:var(--text-muted,#aaa)"><b style="color:var(--accent-main-text,#f0c040)">${e.n}×</b> ${e.jahre.length <= 3 ? e.jahre.join(', ') : e.jahre[0] + '–' + e.jahre[e.jahre.length - 1]}</span></div>`;
+            const block = (titel, liste, link) => liste.length
+                ? `<div style="font-size:11px;color:var(--text-muted,#aaa);margin:8px 0 4px;letter-spacing:.05em">${titel}</div>` + liste.map(e => zeile(link, e)).join('') : '';
+            return block('FAHRER-WELTMEISTER IM LAUF', fahrer, fahrerLink) + block('KONSTRUKTEURS-WELTMEISTER IM LAUF', teams, teamLink);
+        }
+
         window.megaSim = function() {
-            const input = prompt('🏎️ Wie viele Saisons simulieren?\n0 = unbegrenzt (läuft bis Abbruch oder Speichergrenze)', '0');
+            // Vorgabe 10, Obergrenze 250, Zielsaison im Dialog (Handout P7, Lehre 1): „0 = unbegrenzt"
+            // lief im Bundesliga-Spiel unbemerkt bis Saison 3501. Die laufende Saison zählt als erste.
+            const MEGASIM_MAX = 250, MEGASIM_VORGABE = 10;
+            const _bis = k => GAME_STATE.currentYear + k - 1;
+            const input = prompt(`🏎️ Wie viele Saisons simulieren? (1–${MEGASIM_MAX})\n${MEGASIM_VORGABE} Saisons = bis ${_bis(MEGASIM_VORGABE)}, ${MEGASIM_MAX} = bis ${_bis(MEGASIM_MAX)}`, String(MEGASIM_VORGABE));
             if (input === null) return;
-            const n = parseInt(input);
-            if (isNaN(n) || n < 0) { alert('Bitte 0 (unbegrenzt) oder eine positive Zahl eingeben.'); return; }
-            const unlimited = (n === 0);
+            const n = Math.min(MEGASIM_MAX, parseInt(input) || 0);
+            if (n < 1) { alert(`Bitte eine Zahl von 1 bis ${MEGASIM_MAX} eingeben.`); return; }
+            const unlimited = false;
+            const _ziel = _bis(n), _startJahr = GAME_STATE.currentYear;
+            const _histStart = (GAME_STATE.history || []).length;   // Zusammenfassung: nur, was im Lauf dazukam
             if (GAME_STATE.currentRace < GAME_STATE.races.length &&
                 !confirm(`Aktuelle Saison ${GAME_STATE.currentYear} läuft noch (${GAME_STATE.currentRace}/${GAME_STATE.races.length}).\n\nSie wird als erste Saison zu Ende simuliert. Fortfahren?`)) return;
 
@@ -29494,10 +29541,25 @@
             const bar      = document.getElementById('megasim-bar');
             const counter  = document.getElementById('megasim-counter');
             const seasonEl = document.getElementById('megasim-season');
+            const uhrEl = document.getElementById('megasim-uhr');
+            const sumEl = document.getElementById('megasim-summary');
+            const btn   = document.getElementById('megasim-btn');
             overlay.style.display = 'flex';
+            sumEl.style.display = 'none';
+            bar.parentElement.style.display = '';
             bar.style.width = '0%';
-            counter.textContent = unlimited ? '0 Saisons …' : `0 / ${n} Saisons`;
+            counter.textContent = `0 / ${n} Saisons · bis ${_ziel}`;
             seasonEl.textContent = '–';
+            // Knopf bei JEDEM Start neu belegen (Lehre 2): nach einem Lauf steht dort „Schließen".
+            btn.textContent = '⏹ Stoppen';
+            btn.title = 'Hält nach der laufenden Saison an – alles bis dahin wird gespeichert';
+            btn.onclick = () => window._megaSimCancel();
+            // Wanduhr inkl. Neuzeichnen (Lehre 11); die ms je Saison sind reine Rechenzeit.
+            const _t0 = performance.now();
+            const _dauer = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, p = x => String(x).padStart(2, '0');
+                return h ? `${h}:${p(m)}:${p(s % 60)}` : `${m}:${p(s % 60)}`; };
+            const _uhr = () => { uhrEl.textContent = '⏱ ' + _dauer(performance.now() - _t0); };
+            _uhr(); clearInterval(window._megaSimUhr); window._megaSimUhr = setInterval(_uhr, 500);
 
             let done = 0, totalMs = 0, healed = 0, warned = 0, _saving = false;
             const SAVE_EVERY = 25;   // Zwischenspeichern als Crash-Versicherung (v. a. unbegrenzter Lauf)
@@ -29517,15 +29579,28 @@
             window._megaSimCancelled = false;
             window._megaSimFast = true;
 
-            const teardown = () => {
+            // Ergebnis bleibt stehen, bis „Schließen" (Lehre 10). Schließen setzt IMMER auch das
+            // Stopp-Flag (Lehre 2b): ein geschlossenes Fenster darf keinen Lauf weiterrechnen lassen.
+            const close = () => {
+                clearInterval(window._megaSimUhr);
+                window._megaSimCancelled = true;
                 window._megaSimFast = false;
                 overlay.style.display = 'none';
                 renderAll();
             };
             const finish = (msg) => {
+                clearInterval(window._megaSimUhr);
+                window._megaSimFast = false;
                 counter.textContent = msg;
-                bar.style.width = '100%';
-                setTimeout(teardown, 1400);
+                const avg = done ? Math.round(totalMs / done) : 0;
+                seasonEl.textContent = `${_startJahr} → ${GAME_STATE.currentYear - 1} · Ø ${avg} ms/Saison Rechenzeit${warned ? ` · ${warned} Warnung(en)` : ''}`;
+                uhrEl.textContent = '⏱ Gesamtdauer ' + _dauer(performance.now() - _t0);
+                bar.parentElement.style.display = 'none';
+                sumEl.innerHTML = megaSimSummary(_histStart);
+                sumEl.style.display = 'block';
+                btn.textContent = 'Schließen';
+                btn.title = '';
+                btn.onclick = close;
             };
 
             const BATCH = 1;   // 1 Saison pro Macrotask → flüssige UI-Aktualisierung pro Saison
@@ -29545,7 +29620,7 @@
                 if (!unlimited && done >= n) {
                     saveGame();   // einmal am Ende
                     const avg = done ? Math.round(totalMs / done) : 0;
-                    let msg = `✓ ${done} Saisons · Ø ${avg} ms/Saison`;
+                    let msg = `✓ ${done} Saison${done === 1 ? "" : "s"} · Ø ${avg} ms/Saison`;
                     if (healed) msg += ` · ${healed} repariert`;
                     finish(msg);
                     return;
