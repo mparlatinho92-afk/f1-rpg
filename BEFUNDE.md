@@ -36,12 +36,32 @@ versehentlich zurück.
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | **Gastspiel hängt übers Saisonende (05.11.2026)** | `applyGuestMoves`, `_guestFrom`, Entlassung mitten in der Saison, stille Teamwechsel ohne Chronik, `tests/gast-haengt.js` |
+| Mega-Sim nach Handout P7 (Bundesliga) abgeglichen (06.11.2026) | `megaSim`, `runSeasonHeadless`, `_megaSimFast`, `megaSimSummary`, `tests/megasim-bedienung.js` |
 | Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026) | `applyTeamExits`, `_teamExit`, `executeTransfer` 'teamexit', Saisonende-Fenster, `tests/teamausstieg.js` |
 | **Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)** | `_debuetAusfuehren`, `acquireSeatDriver` rookie, `_isBeginner`, Pool „kommend", `tests/generiert-herkunft.js` |
 | Nationsnamen: 51 von 119 Generator-Nationen nur als Kürzel (05.11.2026) | `nationDisplayName`, `NATION_OPTIONS`, `Intl.DisplayNames` |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
 ---
+
+## Mega-Sim nach Handout P7 (Bundesliga Architect) abgeglichen (06.11.2026)
+
+**Anlass:** Handout P7 (Bundesliga-Repo `docs/handouts/P7_multisim*.{md,js}`) sollte eine Multi-Saison-Simulation
+übertragen. **Bestand:** das F1 RPG hatte sie schon (`megaSim`, `runSeasonHeadless`, Overlay, `_megaSimFast`,
+`megaSimSanityCheck` + Heilung, Speicherwächter 88 % Heap / 300 MB) — aus einem älteren Stand desselben Vorbilds.
+Erfüllt waren Lehren 3 (kein Save je Rennen/Saisonstart im Fastmode), 4 (eine Saison je `setTimeout`), 5, 6 (Fastmode
+überspringt nur Log, eine Bytes-Anzeige und Saves — Rennen und Rekorde laufen vollständig) und 9.
+
+**Nachgezogen v0.9.21.34:** Lehre 1 — Vorgabe 10, Obergrenze 250, Zielsaison im Dialog (vorher „0 = unbegrenzt", genau
+der Fehler, der im Bundesliga-Spiel bis Saison 3501 lief). Lehre 3 — im Junior-Welt-Modus speicherte `startNewSeason`
+nach JEDER Saison (`advanceJuniorWorld(...).then(saveGame)`), auch im Fastmode. Lehren 10/11/2 — Ergebnisfenster mit
+Fahrer- und Konstrukteurs-Weltmeistern im Lauf (aus `history` ab Lauf-Start, anklickbar), Wanduhr, Knopf bei jedem
+Start neu belegt, „Schließen" setzt das Stopp-Flag. Der Zwischen-Save alle 25 Saisons bleibt (Absturzversicherung).
+
+**Messung:** headless (`sim-core`, Fastmode, Start 1980, 40 Saisons): 97 / 64 / 47 / 81 ms je Saison in Zehnerblöcken,
+2,9 s gesamt — kein Anstieg mit der Laufzeit (Lehre 7/8 nicht nötig). Browser (`tests/megasim-bedienung.js`): 81–134 ms
+je Saison Rechenzeit. Nicht gemessen: Browser über 50+ Saisons, Junior-Welt-Modus. Die Gleichheitsprobe (Lehre „Tempo-
+Umbau") entfällt, solange am Tempo nichts umgebaut wird.
 
 ## Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026)
 
