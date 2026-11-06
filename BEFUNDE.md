@@ -36,11 +36,37 @@ versehentlich zurück.
 | **⚠ Der Batch-Parser maß die TEAMS statt der Fahrer** | jede Auswertung von `vakuum-batch.js` — dort stehen zwei widerrufene Messungen und die Gegenprobe |
 | Form-Vielfalt kalibriert, carSpeed-Gewicht verworfen | `BAD_DAY_PACE_FACTOR`, Streuung im Rennen |
 | **Gastspiel hängt übers Saisonende (05.11.2026)** | `applyGuestMoves`, `_guestFrom`, Entlassung mitten in der Saison, stille Teamwechsel ohne Chronik, `tests/gast-haengt.js` |
+| Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026) | `applyTeamExits`, `_teamExit`, `executeTransfer` 'teamexit', Saisonende-Fenster, `tests/teamausstieg.js` |
 | **Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)** | `_debuetAusfuehren`, `acquireSeatDriver` rookie, `_isBeginner`, Pool „kommend", `tests/generiert-herkunft.js` |
 | Nationsnamen: 51 von 119 Generator-Nationen nur als Kürzel (05.11.2026) | `nationDisplayName`, `NATION_OPTIONS`, `Intl.DisplayNames` |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
 ---
+
+## Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026)
+
+**Anlass (Sheet):** Gibt ein Team während oder am Ende der Saison auf, braucht die Off-Season einen Hinweis, dass der
+Fahrer deshalb ohne Cockpit ist — ohne Malus. **Befund** (Start 1980, Shadow steigt aus): `applyTeamExits` setzte
+die Fahrer still auf `team = null`. Danach zwei Ausgänge: (a) meist **unsichtbar** — aktiv, ohne Team, keine Zeile im
+Saisonende-Fenster (Johansson mit Vertrag bis 1981); (b) seltener über `executeTransfer(…, 'dismissed')` als
+Nicht-Verlängerung: rot „Vertrag ausgelaufen → Verlässt die Formel 1", zählt bei „Entlassungen", Grund „Vertrag nicht
+verlängert bei undefined". Ein Abzug bei Ansehen oder Zufriedenheit hängt an einer Entlassung nicht — der Malus ist
+die Einstufung. Shadow selbst stand nirgends im Fenster; der Steckbrief sagte nur „ab 1981: ohne Cockpit".
+
+**Fix v0.9.21.33:** `applyTeamExits` und die Auflösung nach Besitzer-Tod setzen `d._teamExit = {team, year}`;
+`executeTransfer` verbucht einen markierten Fahrer ohne neues Team als `teamexit` (kein `seasonRetirements`-Eintrag,
+Mechanik unverändert: Free Agent im Pool). Fenster: „Team ausgestiegen (Shadow) → ohne Cockpit" neutral, auch für die
+bisher Unsichtbaren; mit neuem Cockpit steht „Shadow ausgestiegen" links in jeder Zeilenart. Steckbrief-Kopf nennt den
+Ausstieg in beiden Fällen (Nutzer 06.11.2026: „dass das alte Team nicht mehr antritt, würde so oder so stehen"):
+„ab 1981: ohne Cockpit (Shadow ausgestiegen)" bzw. „ab 1981: Fittipaldi (Shadow ausgestiegen)". Transfer-Chronik eigene Zeile. Nebenfund aus v0.9.21.31: ein im Lauf der Saison
+Verstorbener zeigte im Kopf „ab 1981: ohne Cockpit" — jetzt „verstorben".
+
+**Messung** `node tests/teamausstieg.js` (12 Saisonenden): 33 lebende Fahrer ausgestiegener Teams, 21 „ohne Cockpit",
+12 mit neuem Team, Kopf mit Hinweis 33 von 33, 0 am Saisonende als entlassen verbucht (ein erster Lauf: 35 / 32 / 3). Markt unverändert: mit neuem Cockpit 15 % gegen 19 % vorher (sim-core,
+40 Saisonenden, Rauschen; der Merker wird nur von `executeTransfer` und der Anzeige gelesen). ⚠ **Messfalle:** Shadow-
+Fahrer mit Entlassung gibt es weiter (9 in 40) — das sind Entlassungen MITTEN in der Saison wegen Leistung, meist bei
+einem anderen Team vor dem Wechsel zu Shadow, kein Ausstiegsfolge. Wer „entlassen" nur über `seasonRetirements`
+zählt, hält sie für einen Rest des Fehlers.
 
 ## Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)
 

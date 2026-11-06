@@ -132,6 +132,10 @@ Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
 
 `SIMCORE_FROM_INDEX=1 node tests/gast-haengt.js 1978 30 --saisons=4` zählt je Saison: Gastfahrer, Gäste nach dem Finale noch beim Gastteam, davon nach `processSeasonEndEvents` **still** beim Gastteam (ohne Saisonende-Transfer = Fehler) und Gäste, die das Gastteam mitten in der Saison entlässt, dazu Gäste mit DNS. Sollstand seit v0.9.21.31: die letzten drei 0. Langzeit (1000 Saisons, ~4 Min.): `for y in 1950 1960 1975 1990 2010; do SIMCORE_FROM_INDEX=1 node tests/gast-haengt.js $y 20 --saisons=10; done` — ab 1990 entstehen keine Gastspiele. ⚠ ≈ 0,03 Fälle je Saison — unter 120 Saisons kein Beleg. Zahlen `BEFUNDE.md` 05.11.2026.
 
+## Teamausstieg im Saisonende-Fenster — `teamausstieg.js` (06.11.2026)
+
+`node tests/teamausstieg.js` (Browser, ~2 Min.): 12 Saisonenden ab 1980 (Shadow steigt aus), zählt lebende Fahrer ausgestiegener Teams und ihre Zeile im Fenster. Sollstand: „ohne Cockpit" + „mit neuem Team" = alle = Kopf mit Hinweis, entlassen 0. Screenshots des ersten Falls nach `tests/output/teamausstieg-nachher-*.png`. ⚠ Entlassungen mitten in der Saison (Leistung) sind kein Rest des Fehlers (BEFUNDE 06.11.2026).
+
 ## Generierte Fahrer: Herkunft — `generiert-herkunft.js` (05.11.2026)
 
 `SIMCORE_FROM_INDEX=1 node tests/generiert-herkunft.js 15 1980 6` (~10 s): jeder `generateDriver`-Aufruf mit Aufrufstapel, Debüts je Saison mit Herkunft des Platzes (Anfänger / kommend ±Jahre zum realen Debüt / Ex-Fahrer / ausgefallen / generiert) und ob +1-Einspringer im Folgejahr ein Cockpit haben. Sollstand bei Echt-Anteil 100 % bis zur jüngsten echten Saison: „davon generiert 0". ⚠ `starts` im Pool „kommend" ist ein Platzhalter; Folgejahr nur über `histId` (BEFUNDE 05.11.2026).
