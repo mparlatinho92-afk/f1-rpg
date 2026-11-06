@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.32</title>
+    <title>F1 RPG v0.9.21.33</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.32 (aktuell) - 05.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.33 (aktuell) - 06.11.2026</div>
+                            <div>&#8226; FIX: Fahrer eines ausgestiegenen Teams erscheinen im Saisonende-Fenster als 'Team ausgestiegen -> ohne Cockpit' statt gar nicht oder als Entlassung</div>
+                            <div>&#8226; FIX: Steckbrief-Kopf nennt den Ausstieg des alten Teams auch mit neuem Cockpit, Verstorbene als 'verstorben'</div>
+                            <div class="font-bold text-slate-400">v0.9.21.32 - 05.11.2026</div>
                             <div>&#8226; FIX: Debuet mitten in der Saison erfand bei Echt-Anteil 100 % Fahrer (3/4 aller Debuets) - jetzt echte kommende Fahrer, erst in der Sim-Zukunft generiert</div>
                             <div>&#8226; FIX: Nationen-Tab zeigt fuer alle Generator-Nationen den Landesnamen statt IOC-Kuerzel</div>
                             <div>&#8226; FIX: Puerto Rico mit Flagge, Emoji war Portugal zugeordnet</div>
@@ -4412,7 +4415,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.32';
+        const VERSION = '0.9.21.33';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -10589,7 +10592,17 @@
             const nt = d && d.team ? (GAME_STATE.teams || []).find(t => t.id === d.team) : null;
             const neu = nt ? { name: nt.name, id: nt.id, color: nt.color } : null;
             if (neu && (neu.id === alt.id || neu.name === alt.name)) return null;
-            return { alt, neu, abJahr: GAME_STATE.currentYear + 1 };
+            // Ohne neues Team: warum (verstorben / Karriere beendet / Team ausgestiegen). Der Status steht
+            // in GAME_STATE.drivers, die Pool-Kopie eines Free Agents ist immer 'active'.
+            const dd = (GAME_STATE.drivers || []).find(x => x.id === driverId) || d;
+            // Ausstieg des alten Teams steht in JEDEM Fall dabei, auch mit neuem Cockpit (Nutzer 06.11.2026).
+            const ausstieg = dd && dd._teamExit && dd._teamExit.year === GAME_STATE.currentYear
+                ? `${dd._teamExit.team} ausgestiegen` : null;
+            const grund = neu ? null
+                : dd && dd.status === 'deceased' ? 'verstorben'
+                : dd && dd.status === 'retired' ? 'Karriere beendet'
+                : 'ohne Cockpit';
+            return { alt, neu, abJahr: GAME_STATE.currentYear + 1, grund, ausstieg };
         }
         // Fahrer der LAUFENDEN Saison mit ihrem Team. In der Off-Season zaehlt nur, wer in dieser
         // Saison gemeldet war, mit dem Team zur Rennzeit (Kopie, team ueberschrieben) — ein fuer
@@ -20977,6 +20990,7 @@
                 GAME_STATE.drivers.forEach(d => {
                     if (d.team !== team.id) return;
                     d.team = null;
+                    d._teamExit = { team: team.name, year: GAME_STATE.currentYear };   // s. applyTeamExits
                     // Aktiv belassen → Free Agent, für alle Teams via Phase 3 verfügbar
                 });
                 GAME_STATE.teams = GAME_STATE.teams.filter(t => t.id !== team.id);
@@ -23540,7 +23554,17 @@
                     fromTeam: (r.reason || '').replace('Vertrag nicht verlängert bei ', '') || '–',
                     toTeam: null, score: null
                 }));
-            const allTransfers = [...transfers, ...careerDismissed];
+            // Sitz durch Teamausstieg verloren, aber vom Markt nie angefasst (Vertrag lief weiter, kein
+            // neues Team): stand bisher NIRGENDS im Fenster (Nutzer 05.11.2026). Wer in transfers steht,
+            // ist dort schon erfasst (teamexit/freeagent).
+            const _exitIds = new Set([...transferIds, ...careerDismissed.map(t => t.driverId)]);
+            const teamExitSilent = (GAME_STATE.drivers || [])
+                .filter(d => d._teamExit && d._teamExit.year === GAME_STATE.currentYear && !d.team
+                    && d.status !== 'deceased' && d.status !== 'retired' && !_exitIds.has(d.id))
+                .map(d => ({ driverId: d.id, driverName: d.name, type: 'teamexit', fromTeam: d._teamExit.team, toTeam: null }));
+            const allTransfers = [...transfers, ...careerDismissed, ...teamExitSilent];
+            const _ausstiegVon = id => { const d = (GAME_STATE.drivers || []).find(x => x.id === id);
+                return d && d._teamExit && d._teamExit.year === GAME_STATE.currentYear ? d._teamExit.team : null; };
 
             if (allTransfers.length > 0) {
                 const tLink = (t) => t.driverId
@@ -23616,6 +23640,17 @@
                         });
                         return;
                     }
+                    // Team ausgestiegen, kein neues Cockpit: neutral, keine Entlassung
+                    if (t.type === 'teamexit') {
+                        vertragsEntries.push({
+                            t,
+                            left: `Team ausgestiegen (${t.fromTeam})`,
+                            right: 'ohne Cockpit',
+                            color: 'var(--text-secondary)',
+                            order: 3
+                        });
+                        return;
+                    }
                     // Entlassen (Vertrag ausgelaufen, kein neues Team) → Verlässt die Formel 1
                     if (t.type === 'dismissed') {
                         vertragsEntries.push({
@@ -23680,6 +23715,11 @@
                     // Pool-Zuweisung + generierte Fahrer: nicht in Verträge
                 });
 
+                // Ausstieg des alten Teams in jeder Zeile des Fahrers, egal wie es weitergeht (Nutzer 06.11.2026)
+                vertragsEntries.forEach(e => {
+                    const _aus = e.t.type !== 'teamexit' && _ausstiegVon(e.t.driverId);
+                    if (_aus) e.left = `${_aus} ausgestiegen`;
+                });
                 vertragsEntries.sort((a, b) => a.order - b.order);
 
                 if (vertragsEntries.length > 0) {
@@ -25785,17 +25825,21 @@
                 driver.dismissedYear = GAME_STATE.currentYear;
                 driver._movedThisSeason = true;
 
+                // Sitz durch Teamausstieg verloren (applyTeamExits): keine Entlassung, kein Eintrag in
+                // seasonRetirements. Mechanik bleibt gleich — Free Agent im Pool (Nutzer 05.11.2026).
+                const _exit = driver._teamExit && driver._teamExit.year === GAME_STATE.currentYear ? driver._teamExit : null;
                 changes.push({
                     driverId: driver.id, driverName: driver.name,
-                    type: 'dismissed', typeEmoji: '🚫', typeText: 'Entlassen',
+                    type: _exit ? 'teamexit' : 'dismissed', typeEmoji: _exit ? '🏚️' : '🚫',
+                    typeText: _exit ? 'Team ausgestiegen' : 'Entlassen',
                     contractSource,
-                    fromTeam: oldTeam?.name || '-', toTeam: null,
+                    fromTeam: oldTeam?.name || (_exit && _exit.team) || '-', toTeam: null,
                     score: eval_?.score || null
                 });
 
-                logInfo('TRANSFER', `🚫 ${driver.name} verlässt die F1`);
+                logInfo('TRANSFER', _exit ? `🏚️ ${driver.name} ohne Cockpit (${_exit.team} ausgestiegen)` : `🚫 ${driver.name} verlässt die F1`);
 
-                GAME_STATE.seasonRetirements.push({
+                if (!_exit) GAME_STATE.seasonRetirements.push({
                     driver: driver.id, name: driver.name, type: 'dismissed',
                     fromTeam: oldTeam?.name || '-', fromTeamId: oldTeam?.id || null,
                     reason: `Vertrag nicht verlängert bei ${oldTeam?.name}`
@@ -25976,7 +26020,10 @@
                 GAME_STATE.drivers.forEach(d => {
                     if (d.team !== team.id) return;
                     d.team = null;
-                    // Aktiv belassen → Free Agent, für alle Teams via Phase 3 verfügbar
+                    // Aktiv belassen → Free Agent, für alle Teams via Phase 3 verfügbar.
+                    // Merker: der Sitz ging durch den Ausstieg verloren, nicht durch Leistung — keine
+                    // Entlassung (executeTransfer, Saisonende-Fenster, Steckbrief; Nutzer 05.11.2026).
+                    d._teamExit = { team: team.name, year: newYear - 1 };
                 });
                 GAME_STATE.teams = GAME_STATE.teams.filter(t => t.id !== team.id);
             });
@@ -33978,7 +34025,9 @@
                     const to = (e.toTeam && e.toTeam !== '-') ? e.toTeam : null;
                     const from = (e.fromTeam && e.fromTeam !== '-' && e.fromTeam !== '–') ? e.fromTeam : null;
                     let main, emoji = e.typeEmoji || '🔄';
-                    if (e.type === 'released' || e.type === 'early_release' || e.type === 'dismissed') {
+                    if (e.type === 'teamexit') {
+                        main = `<b>${name}</b> ohne Cockpit${from ? ` (${from} ausgestiegen)` : ' (Team ausgestiegen)'} → Free Agent`;
+                    } else if (e.type === 'released' || e.type === 'early_release' || e.type === 'dismissed') {
                         main = `<b>${name}</b> ${e.type === 'dismissed' ? 'entlassen' : 'freigesetzt'}${from ? ` (${from})` : ''} → Free Agent`;
                     } else if (e.type === 'contract_expired') {
                         main = `<b>${name}</b> nicht verlängert${from ? ` (${from})` : ''}`;
@@ -38135,7 +38184,7 @@ Empfohlene Wertebereiche:
                                 ${renderTeamNameColored(_offW.alt.name, _offW.alt.id, GAME_STATE.currentYear, _offW.alt.color, _offW.alt.id ? ` onclick="closeDriverProfile(); openTeamProfile('${_offW.alt.id}')"` : undefined)}
                                 <span class="text-sm text-secondary">ab ${_offW.abJahr}: ${_offW.neu
                                     ? renderTeamNameColored(_offW.neu.name, _offW.neu.id, _offW.abJahr, _offW.neu.color, ` onclick="closeDriverProfile(); openTeamProfile('${_offW.neu.id}')"`)
-                                    : (isCurrentlyActive ? 'ohne Cockpit' : 'Karriere beendet')}</span>
+                                    : (_offW.grund || (isCurrentlyActive ? 'ohne Cockpit' : 'Karriere beendet'))}${_offW.ausstieg ? ` (${_offW.ausstieg})` : ''}</span>
                             ` : team ? `
                                 <span class="px-2 py-1 rounded text-sm font-bold team-link cursor-pointer" style="${teamNamensFeld(getTeamColors(team.id, viewingYear, team.color), true) || `background-color: ${team.color}20; color: ${lesbareTextfarbe(team.color)}`}" onclick="closeDriverProfile(); openTeamProfile('${team.id}')">
                                     ${team.name}

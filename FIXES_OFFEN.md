@@ -39,6 +39,7 @@ Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich p
 - ✚ Jamie Connolly von ATS entlassen. Nächste Saison wieder bei ATS https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
   ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Connolly war 1981 R6–7 Gast bei Lotus und wurde vom GASTTEAM entlassen; `processMidSeasonDismissals` nimmt Gäste jetzt aus (`tests/gast-haengt.js`: 12 → 0 Fälle in 240 Saisons, BEFUNDE 05.11.2026).
 - ✚ off-season benötigt Info wenn Fahrer cockpitlos ist wenn Team während oder Ende der Saison aufgibt . darf kein Malus in der fahrer-Zufriedenheit darstellen!
+  ↳ Code-Fix (unveröffentlicht), im Spiel unbestätigt: Fahrer ausgestiegener Teams waren im Saisonende-Fenster unsichtbar oder als Entlassung verbucht. Jetzt „Team ausgestiegen (Shadow) → ohne Cockpit" neutral, keine Entlassung, Steckbrief nennt den Ausstieg auch mit neuem Team („ab 1981: Fittipaldi (Shadow ausgestiegen)") (`tests/teamausstieg.js`: 33 Fahrer, 0 Entlassungen; BEFUNDE 06.11.2026).
 - ✚ Reserve-Driver Bug in wm-stand. dieser Bug ist alt und hartnäckig
 - ✚ kleinere Nationen statt Name ioc kurzel
   ↳ Code-Fix v0.9.21.32, im Spiel unbestätigt: Nationen-Tab kannte 73 Namen, der Generator 119 Nationen — 51 erschienen als Kürzel; jetzt deutscher Landesname über `Intl.DisplayNames` (nur `INT` bleibt). Puerto Rico hat jetzt eine Flagge, 🇵🇷 war fälschlich Portugal zugeordnet (BEFUNDE 05.11.2026).
