@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.34, Prüfdatum **2026-11-06** (vorher 2026-11-06 @ v0.9.21.33). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt.
+**Abgeglichen gegen:** v0.9.21.34, Prüfdatum **2026-11-06** (vorher 2026-11-06 @ v0.9.21.33). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -13,40 +13,6 @@ Das Sheet wird in place überschrieben, **der Link bleibt gleich**; ihn nennt
 Spalte „Prüfen"; sie landen vor dem nächsten Überschreiben im Abschnitt „✚ Aus dem Sheet – ungeprüft".
 
 Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel prüfbar)
-
----
-
-## ✚ Aus dem Sheet – ungeprüft
-
-Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
-
-- ✚ Jetlag-Kalender siehe wohl Google Gemini
-- ✚ **Rennkalender / Reisebelastung 1950–1985** (Konzept aus Gemini-Chat, PDF `OneDrive/Dokumente/F1 Simulator_ Termin- und
-  Reiseplanung.pdf`; Dialog-Backup im Wortlaut in Git, Commit 35ad4f5). Kern: WM-Läufe, Nicht-WM-Rennen und andere Serien
-  farblich getrennt; Terminkonflikte; Reisebelastung (Tage, Zeitverschiebung, Entfernung, auch über den Jahreswechsel);
-  Importer für Wikipedia-Tabellen und 7-Zeilen-Blöcke mit Vorschau. Bausteine im Projekt: F1DB-Kalender + Streckenkoordinaten,
-  `data/places.js`, echte Zeitzonen (IANA) statt fester GMT-Liste. Mängel im Gemini-Code: feste Zeitzonenliste ohne
-  Sommerzeit, Parser nur über Tabulatoren, Sortierung bricht nach Neuladen, „Cache leeren" löscht den ganzen Speicher.
-  **Entscheidung Nutzer 22.10.2026:** (1) beides — Kalender (welche Rennen kollidieren) UND Fahrer (wer fuhr wann wo).
-  (2) erst eigenständiges `rennkalender.html`; Einbau in die Haupt-HTML später, wenn das Spiel weitere Rennserien kennt.
-- ✚ neu zu Unfall und natürlicher Teileabnutzung: Übersicht der Abnutzung der einzelnen Teile zwischen den Rennen: wo? im Fahrersteckbrief und im Teamsteckbrief bei den Fahrern. Läuft nach Ende der Saison ab/wird zurückgesetzt. Fahrer ohne Vertrag/tot haben die Teilabnutzungs-Info nicht. Teile sind Saisongenau der Stand der Technik. Da es einige Teile sind, könnte die Info aufblähen. Eine Teileübersicht hat niedrige Priorität. Die Frage ist, lohnt sich es vor Zeiten der Strafversetzung?
-- ✚ erst Konzept. Machbarkeits-Theorie. nur für den Spielstand generierte, komplette Kart-Welt eines Landes oder Region. Teilnahmen an mehreren Serien berücksichtigen. Realistische Teilnahmen. Global Pathway Kart-Konzept https://gemini.google.com/app/e56077b4a25061bd Gemini schon Teile der Auswertung
-- ✚ Ruanda-Strecke, Rennort bekannt gegeben: Bugesera-Distrikt Nähe Ort Rilima
-- ✚ Jetlag-Kalender https://gemini.google.com/app/92f1856b2cac4058. PDF des Chats in Dokumente-Ordner (Bereich: Aus dem Sheet – ungeprüft; im Sheet geändert, Original steht weiter in der Liste)
-- ✚ selber Spielstand: Piquet fährt bei zwei Teams 1981 , unklar wann genau . anzeige verwirrt . bei beiden 3 siege und 48 punkte
-  ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Piquet war im Finale 1981 Gast bei Ligier (DNS) und blieb dort ohne Chronik-Eintrag; Rückholung der Gäste am Anfang von `processSeasonEndEvents` (4 → 0 stille Wechsel in 240 Saisons), Gäste nie DNS, Off-Season-Anzeigen mit Team zur Rennzeit + „ab 1982: …" (`tests/offseason-steckbrief.js`). Der bestehende Spielstand bleibt unverändert.
-  ↳ Nutzer 05.11.2026: Wechsel-Anzeige in der Off-Season im Spiel korrekt. Gastfahrer-Teil braucht Langzeittest.
-- ✚ Jamie Connolly von ATS entlassen. Nächste Saison wieder bei ATS https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
-  ↳ Code-Fix v0.9.21.31, im Spiel unbestätigt: Connolly war 1981 R6–7 Gast bei Lotus und wurde vom GASTTEAM entlassen; `processMidSeasonDismissals` nimmt Gäste jetzt aus (`tests/gast-haengt.js`: 12 → 0 Fälle in 240 Saisons, BEFUNDE 05.11.2026).
-- ✚ off-season benötigt Info wenn Fahrer cockpitlos ist wenn Team während oder Ende der Saison aufgibt . darf kein Malus in der fahrer-Zufriedenheit darstellen!
-  ↳ Code-Fix v0.9.21.33, im Spiel unbestätigt: Fahrer ausgestiegener Teams waren im Saisonende-Fenster unsichtbar oder als Entlassung verbucht. Jetzt „Team ausgestiegen (Shadow) → ohne Cockpit" neutral, keine Entlassung, Steckbrief nennt den Ausstieg auch mit neuem Team („ab 1981: Fittipaldi (Shadow ausgestiegen)") (`tests/teamausstieg.js`: 33 Fahrer, 0 Entlassungen; BEFUNDE 06.11.2026).
-- ✚ Reserve-Driver Bug in wm-stand. dieser Bug ist alt und hartnäckig
-- ✚ kleinere Nationen statt Name ioc kurzel
-  ↳ Code-Fix v0.9.21.32, im Spiel unbestätigt: Nationen-Tab kannte 73 Namen, der Generator 119 Nationen — 51 erschienen als Kürzel; jetzt deutscher Landesname über `Intl.DisplayNames` (nur `INT` bleibt). Puerto Rico hat jetzt eine Flagge, 🇵🇷 war fälschlich Portugal zugeordnet (BEFUNDE 05.11.2026).
-- ✚ generierter Fahrer taucht als Ersatz auf obwohl 0 Prozent generiert https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b
-  ↳ Befund 05.11.2026 (Review-Paket 1988, Start 1980): drei `gen-`-Fahrer im Stand — Ralf Fricke ab 1980, Jamie Connolly ab 1981, Andrew Fitzgerald ab 1982.
-  ↳ Code-Fix v0.9.21.32, im Spiel unbestätigt: Debüt mitten in der Saison fand nie einen echten Neuling (Pool „kommend" ohne debutYear) und generierte — 1960/1980 drei Viertel aller Debüts. Jetzt echter Debütant → späterer echter Fahrer verfrüht → echter Ex-Fahrer; in echten Saisons nie generiert (`tests/generiert-herkunft.js`: 76 → 0 in 180 Saisons, BEFUNDE 05.11.2026).
-- ✚ Konstanz neu berechnen. Aus F1DB Häufigkeit und Schwere und Dauer der Konstanzabfälle (ohne Konstrukteurswechsel) + Gründe: Beispiel Oscar Piastr nach Baku 2025, oder schwere Crashes. Trennen von Pace-Abbau (z. B. nach Alter oder Crash) oder Form-Schwankungen
 
 ---
 
@@ -111,6 +77,9 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   Weltmeister-/Team-Bremse; v0.9.18.23 Marktvergleich für Hinterbänkler; Balken ab erster Wochenend-Teilnahme
 - ✅ Fahrer parken nicht mehr jahrelang hinten: dauerhaft zu langsam ohne Potenzial → gegen Fahrer mit Perspektive getauscht
 - ◐ Hinterbänkler in Ären mit vielen Ausfällen nicht mehr zu oft entlassen — DNF-Rate als Kritik-Dämpfer nur dort
+- ❌ **Weniger Meldungen ≠ Malus** (Konzept, noch nicht einbauen; Sheet 12.11.2026): schlechterer WM-Platz, weil der
+  Fahrer weniger Wochenenden gemeldet war, darf nicht bestrafen; mehr Erfolge an sich geben mehr Bonus. Es zählen
+  Ergebnisse und alle anderen Faktoren
 - ❌ noch nicht belegt aus dem Doc-Konzept:
   - **Erwartung nach Vorsaison-Konstrukteursplatz:** Platz 1 → P1/P2, Platz 2 → P3/P4, … Platz 11 → P21/P22;
     besser = Multiplikator (~×1,2), schlechter = Malus, gleich = neutral. Quali + Pre-Quali zusammengezählt
@@ -160,6 +129,10 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
 
 ### All-Time-Statistiken
 - Team-Tabelle: **keine Spalte Konstrukteurs-WM** (Titel-Spalte nur bei Fahrern)
+- **Filter „nur aktive Fahrer"** in All-Time-Statistiken und Rekorde-Tab; der Rekorde-Tab hebt aktive Fahrer grün
+  hervor wie die All-Time-Statistiken
+- **All-Time-Stats einer Strecke** ohne Links — `_venueCard` (Erste/Letzte Austragung, Rekordsieger, Rekord-Team)
+  ist reiner Text (Code 12.11.2026)
 
 ### Einstellungen
 - **Rennmodus als feste Voreinstellung**, damit ein Klick genügt — weiterhin Auswahlfenster
@@ -172,10 +145,70 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   Offen bleibt: der Verlauf zeigt nur die letzten 5 Saisons
 - ❔ **Team-Historie-Layout (S / P / Pkt. / WM)** auf Karriere-Historie von F1- und Junior-Welt-Fahrern übertragen,
   Designänderungen künftig synchron halten — Übertragung nicht belegt
+- **Team-Steckbrief, Fahrer-Kachel:** „Vertrag bis" je Fahrer fehlt
+- **Team-Steckbrief, Team-Historie und Rennergebnisse:** entlassene Fahrer verschwinden aus beiden Bereichen.
+  Sollen bleiben, nur ohne Vertrag, evtl. mit Emoji „nicht mehr aktiv bei diesem Team"
+- **Fahrer-Steckbrief, Rennergebnisse zählen Meldungen statt Rennen** (zwei Sheet-Einträge zusammengefasst):
+  (a) Kalender sind unterschiedlich lang — sichtbar machen, ob der Fahrer trotzdem alle Rennen gemeldet war;
+  (b) Saisons, die nur aus DSQ bestehen, fehlen
+- **WM-Stand-Fenster:** Anzeige „15/22 Rennen"
+- ❔ **WM-Stand: Reserve-Driver-Bug** — alt und hartnäckig; derzeit nicht nachweisbar (Nutzer 12.11.2026), beim nächsten Auftreten Symptom + Spielstand sichern
+- **Lupen-Suche** findet nicht jeden Fahrer — `globalSearchInput` liest nur `GAME_STATE.drivers` und `HIST_NAMES`;
+  Reserve-Pool und archivierte Ex-Fahrer fehlen (vermutete Ursache) (Code 12.11.2026)
+
+### Teamlinien & Umbenennungen
+- **Links auf Vorgänger statt aufs Team:** Sauber führt zu Alfa Romeo, Mercedes zu Tyrrell — jedes Team führt zu einem
+  seiner Vorgänger. Fehler fixen, Stats **nicht** übernehmen; der Steckbrief zeigt aber als reine Info die Einträge aller
+  Vorgänger, mit Trennlinie und Vorgängername als Überschrift. Nicht ausgelaufene Verträge werden weiter übernommen
+  (stimmt, `applyTeamSuccessions`, s. Fahrermarkt). Eine Vorgänger-Anzeige im Team-Steckbrief gibt es nicht (Code 12.11.2026)
+- **Off-Season:** bei Wechseln zu Nachfolgeteams und wenn ein Fahrer bei einem umbenannten Team bleibt, nennt die UI
+  immer beide Namen — fehlt; die Umbenennung läuft erst in `startNewSeason`, also nach dem Saisonende-Fenster (Code 12.11.2026)
+- ◐ **Stroll-Sonderfall:** `LOYAL_OWNER_DRIVERS` (`data/hist.js`) führt Stroll nur unter `aston-martin`, Vertrag
+  lebenslang seit v0.9.16.0; Racing Point 2019–20 seit 12.11.2026 ergänzt (Code-Fix, im Spiel unbestätigt). Offen bleibt nur der Privateer-Teil. Wunsch: ab Racing Point bis Karriereende im Team; Racing Point → Aston Martin zählt mit, er wird
+  übernommen. Späteren Privateer-Status abschaffen — entweder fest oder gar nicht. Durch seinen Vertrag gibt es nur
+  noch ein weiteres Cockpit, Privateer ist keine Ausweichmöglichkeit mehr
+
+### Teamfarben & Liveries
+- **Simulierte Saisons im WM-Stand** verlieren die Teamfarben, McLaren behält sie noch einige Saisons — vermutete
+  Ursache: jenseits von SEASON_DATA (endet 2025) fällt `getTeamColors` auf Grundfarbe oder Grau zurück; nur McLaren
+  hat eine Livery bis 2099 (Code 12.11.2026)
+- **2026:** Kick Sauber wird Audi, Cadillac kommt dazu — Teamfarben gleich mit festlegen. SEASON_DATA endet 2025,
+  `CONSTRUCTOR_SUCCESSION` kennt Kick Sauber → Audi nicht; nur die Logos ab 2026 sind da (Code 12.11.2026)
+
+### Strecken & Kalender
+- ◐ **Rennkalender / Reisebelastung 1950–1985** (drei Sheet-Einträge zusammengefasst; Gemini-Chats
+  <https://gemini.google.com/app/92f1856b2cac4058>, PDF `OneDrive/Dokumente/F1 Simulator_ Termin- und Reiseplanung.pdf`;
+  Dialog-Backup im Wortlaut in Git, Commit 35ad4f5). Kern: WM-Läufe, Nicht-WM-Rennen und andere Serien farblich
+  getrennt; Terminkonflikte; Reisebelastung (Tage, Zeitverschiebung, Entfernung, auch über den Jahreswechsel);
+  Importer für Wikipedia-Tabellen und 7-Zeilen-Blöcke mit Vorschau. Bausteine im Projekt: F1DB-Kalender +
+  Streckenkoordinaten, `data/places.js`, echte Zeitzonen (IANA) statt fester GMT-Liste. Mängel im Gemini-Code: feste
+  Zeitzonenliste ohne Sommerzeit, Parser nur über Tabulatoren, Sortierung bricht nach Neuladen, „Cache leeren" löscht
+  den ganzen Speicher. **Entscheidung Nutzer 22.10.2026:** (1) beides — Kalender (welche Rennen kollidieren) UND Fahrer
+  (wer fuhr wann wo). (2) erst eigenständiges `rennkalender.html`; Einbau in die Haupt-HTML später, wenn das Spiel
+  weitere Rennserien kennt. Stand (Code 12.11.2026): `rennkalender.html` steht seit 25.10.2026 (WM, Nicht-WM, Sportwagen-WM
+  1953–85, Formel 2; Fahrer-Ansicht, Zeitverschiebung mit Sommerzeit, Daten aus `tools/build-rennkalender.js`);
+  Einbau in die Haupt-HTML bleibt offen
+
+### Rennsimulation
+- ◐ **Realistische Boxenstopps** — vorhanden (Code 12.11.2026): Team-`strategy` steuert in `simulateRace` Undercut (+1 Platz) und
+  Katastrophenstopp, der Ticker erzählt Stopps mit Grund (`pit_langsam`/`pit_gut`/`pit_reparatur`). Fehlt: Stoppzeiten
+  je Ära, Boxen-Skill getrennt von Strategie, Folgefehler als Ausfallarten. Wunsch: pro Ära (Jahrfünft oder sogar Jahr) Summe aus Reparatur, Tanken, Reifenwechsel.
+  Abweichungen: zufällige Häufigkeit von Boxenstopp-Fehlern (inkl. Länge) und, je nach Team-Skill, Tempo von
+  Reparatur/Tanken/Reifenwechsel. Das Top-Team ist nicht automatisch das beste Boxenstopp-Team. Bonus: ein schlechter
+  Stopp wirkt nach (Schraube löst sich, falscher Reifensatz) und steuert die Häufigkeit bestimmter Ausfallarten —
+  prüfen, auch wenn die Gesamthäufigkeit am Ende gleich bleibt. Hängt am Strategie-Skill des Teams; der Live-Ticker
+  dokumentiert das Wichtigste
+- **Teileabnutzung (Unfall und natürlich):** Übersicht je Teil zwischen den Rennen, im Fahrer-Steckbrief und im
+  Team-Steckbrief bei den Fahrern; läuft zum Saisonende ab. Fahrer ohne Vertrag oder verstorben ohne Info. Teile
+  saisongenau nach Stand der Technik. Kann aufblähen, niedrige Priorität — offen, ob es sich vor den Zeiten der
+  Strafversetzung lohnt
 
 ### Fahrermarkt & Daten
-- **Nachfolgeteams übernehmen Verträge**; ausgelaufene ggf. verlängert (gleiche Wahrscheinlichkeit wie sonst) —
-  kein Mechanismus gefunden
+- **Red Bull Racing und Schwesterteams:** Verhältnis prüfen und festlegen, Transfer-Wahrscheinlichkeiten in beide
+  Richtungen. Red Bull hat wohl nie einen Rookie geholt; vermutlich erst ab 2008/09 gültig
+- ◐ **Nachfolgeteams übernehmen Verträge** — laufende ja: `applyTeamSuccessions` (`CONSTRUCTOR_SUCCESSION`) behält
+  Fahrer mit `contractEnd` > Vorjahr, `team.id` bleibt, nur Name und Farbe wechseln. ❌ Auslaufende werden nie
+  verlängert (gleiche Wahrscheinlichkeit wie sonst), alle werden Free Agent (Code 12.11.2026)
 - **Fangio:** fuhr 1952 nicht, 1953 wieder da. Bei Sim-Start 1952 fix für 1953 bei Maserati einplanen,
   Fallback anderes Top-Team
 - ❔ **Kurtis Kraft 1959:** Troy Ruttman meldet trotz Zufallswürfel zwei Grands Prix (sofern aktiv) —
@@ -192,6 +225,22 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 - Erfahrung soll andere Werte mitbestimmen
 - Persönlichkeit beeinflusst Verträge und Reaktionen auf WM-Stand/Ausfälle → Rücktritt oder Rauswurf als Folge
+- **Konstanz neu berechnen:** aus F1DB Häufigkeit, Schwere und Dauer der Konstanz-Einbrüche (ohne Konstrukteurswechsel)
+  plus Gründe, z. B. Oscar Piastri nach Baku 2025 oder schwere Crashes. Getrennt von Pace-Abbau (Alter, Crash) und
+  Form-Schwankungen
+
+### Namen
+- **Namens-Pakete für Fahrerinnen je Nation:** Frauen sind selten, Wiederholungen fallen kaum auf. Frauen-Wahrscheinlichkeit
+  je Ära prüfen und einbauen
+- ✅ **„'nathan' George": Vorname klein und in Anführungszeichen** — Datenfehler, nicht der Fahrer: GBR-Ära-Kurven trugen `"nathan"`/`"nathaniel"`/`"nate"`
+  (CSV-Quotes aus ukbabynames), ITA `Nicolo'`/`Niccolo'`/`Giosue'` (ISTAT-Apostroph), DOM „de Jesus“/„Vda“ als Vorname. Quelle
+  korrigiert, Kurven und `names.js` neu erzeugt; Alt-Spielstände nur in der Anzeige korrigiert (`nameAnzeigeFix`). Wächter
+  `tests/namen-anzeige.js`, BEFUNDE 12.11.2026
+
+### Junior-Welt
+- **Kart-Welt** (erst Konzept, Machbarkeit): nur für den Spielstand generierte, komplette Kart-Welt eines Landes oder einer
+  Region; Teilnahme an mehreren Serien, realistische Teilnahmen. Gemini-Chat „Global Pathway Kart-Konzept"
+  <https://gemini.google.com/app/e56077b4a25061bd> mit Teilen der Auswertung
 
 ### Exporte
 - **Alle Namenslisten leserlich exportieren:** mehrere Dateien, inkl. Ära- und Ethno-Listen, Index aller Listen,
@@ -215,6 +264,12 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
+- **BMW Sauber hatte Kick-Grün.** Code-Fix 12.11.2026: Die SEASON_DATA-Grundfarbe 2006–09 ist jetzt BMW-Blau #003FA3 statt #52E252.
+  Die Livery Weiß/BMW-Blau ist als provisorisch markiert, also im Livery-Editor ein Platzhalter
+- **Force India 2008–14 in BWT-Pink.** Code-Fix 12.11.2026: Es gibt jetzt provisorische, generische Ranges.
+  2008 Weiß/Gold/Tungsten, 2009–13 Weiß/Safran/Grün, 2014 Schwarz/Safran/Grün
+- **Ruanda-Strecke.** Code-Fix 12.11.2026: Der Rwandan GP heißt jetzt „Bugesera Circuit“ (Bugesera-Distrikt, nahe Rilima).
+  Die id `kigali` bleibt, weil bestehende Spielstände sie im Kalender führen
 - **Doppelter Fahrer in angeblich zwei Teams** (`Matías Zagazeta`, zweimal im selben Chinese GP, P1 **und** P3,
   beide McLaren; Karriere-Historie 14 Saisons „Red Bull / McLaren"). Zagazeta und Fornaroli stehen nur in
   `FEEDER_DRIVERS`; `injectFeederDrivers` prüfte nicht gegen Historie, Rücktritte und Tode, und weil `feederSlug`
@@ -225,6 +280,25 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   stellt Teams aus dem Snapshot der Vorsaison wieder her, ein mitten in der Saison erstelltes Team steht dort nicht drin.
 - **Team-Steckbriefe mischen echte Fahrer-Paare mit erspielten** — mehrfach repariert, dieser Fall nicht belegt
 - **Gesamt neu strukturieren** — zu allgemein für einen Code-Abgleich
+- **Piquet 1981 bei zwei Teams** (beide 3 Siege, 48 Punkte). Code-Fix v0.9.21.31: Piquet war im Finale 1981 Gast bei
+  Ligier (DNS) und blieb dort ohne Chronik-Eintrag; Rückholung der Gäste am Anfang von `processSeasonEndEvents`
+  (4 → 0 stille Wechsel in 240 Saisons), Gäste nie DNS, Off-Season-Anzeigen mit Team zur Rennzeit + „ab 1982: …"
+  (`tests/offseason-steckbrief.js`). Bestehender Spielstand unverändert. Nutzer 05.11.2026: Wechsel-Anzeige korrekt;
+  Gastfahrer-Teil braucht Langzeittest
+- **Jamie Connolly von ATS entlassen, nächste Saison wieder bei ATS** (Spielstand im Drive-Ordner
+  <https://drive.google.com/drive/folders/1umDNWql2RPEHJ5HbXp1H1Hzl815UTt8b>). Code-Fix v0.9.21.31: Connolly war 1981
+  R6–7 Gast bei Lotus und wurde vom Gastteam entlassen; `processMidSeasonDismissals` nimmt Gäste aus
+  (`tests/gast-haengt.js`: 12 → 0 Fälle in 240 Saisons, BEFUNDE 05.11.2026)
+- **Off-Season: Fahrer cockpitlos, weil das Team aufgibt** — kein Malus für die Zufriedenheit. Code-Fix v0.9.21.33:
+  „Team ausgestiegen (Shadow) → ohne Cockpit" neutral, keine Entlassung, Steckbrief nennt den Ausstieg auch mit neuem
+  Team (`tests/teamausstieg.js`: 33 Fahrer, 0 Entlassungen; BEFUNDE 06.11.2026)
+- **Kleinere Nationen als IOC-Kürzel statt Name.** Code-Fix v0.9.21.32: Nationen-Tab kannte 73 Namen, der Generator
+  119 Nationen — 51 erschienen als Kürzel; jetzt deutscher Landesname über `Intl.DisplayNames` (nur `INT` bleibt).
+  Puerto Rico hat eine eigene Flagge, sie war fälschlich Portugal zugeordnet (BEFUNDE 05.11.2026)
+- **Generierter Fahrer als Ersatz trotz 0 % generiert** (Review-Paket 1988, Start 1980: Ralf Fricke ab 1980, Jamie
+  Connolly ab 1981, Andrew Fitzgerald ab 1982). Code-Fix v0.9.21.32: Debüt mitten in der Saison fand nie einen echten
+  Neuling und generierte; jetzt echter Debütant → späterer echter Fahrer verfrüht → echter Ex-Fahrer, in echten Saisons
+  nie generiert (`tests/generiert-herkunft.js`: 76 → 0 in 180 Saisons, BEFUNDE 05.11.2026)
 
 ---
 

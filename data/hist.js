@@ -3082,6 +3082,7 @@ const LOYAL_OWNER_DRIVERS = {
     'brabham':           'jack-brabham',        // bis 1970
     'surtees':           'john-surtees',        // bis 1972
     'mclaren':           'bruce-mclaren',       // bis 1970 (Tod)
+    'racing-point':      'lance-stroll',        // 2019–20, geht in aston-martin über
     'aston-martin':      'lance-stroll',        // laufend
     'shadow':            'jackie-oliver',       // bis 1977
     'hill':              'graham-hill',         // bis 1975

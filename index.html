@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.34</title>
+    <title>F1 RPG v0.9.21.35</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,16 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.34 (aktuell) - 06.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.35 (aktuell) - 12.11.2026</div>
+                            <div>&#8226; FIX: Britische Vornamen wie Nathan erschienen als 'nathan' (klein, in Anfuehrungszeichen)</div>
+                            <div>&#8226; FIX: Italienische Vornamen mit Akzent (Nicolo, Giosue) erschienen mit Apostroph</div>
+                            <div>&#8226; FIX: de Jesus und Vda nicht mehr als dominikanische Vornamen</div>
+                            <div>&#8226; FIX: Bestehende Spielstaende zeigen diese Namen korrigiert an, ohne den Spielstand zu aendern</div>
+                            <div>&#8226; FIX: BMW Sauber 2006-2009 in Weiss/Blau statt Kick-Gruen</div>
+                            <div>&#8226; NEU: Force India 2008-2014 mit eigener Lackierung statt Pink (provisorisch)</div>
+                            <div>&#8226; FIX: Lance Stroll bleibt auch bei Racing Point fest im Team</div>
+                            <div>&#8226; FIX: Rwandan GP findet auf dem Bugesera Circuit statt</div>
+                            <div class="font-bold text-slate-400">v0.9.21.34 - 06.11.2026</div>
                             <div>&#8226; NEU: Mega-Sim zeigt am Ende die Fahrer- und Konstrukteurs-Weltmeister des Laufs, Wanduhr und Gesamtdauer</div>
                             <div>&#8226; FIX: Mega-Sim fragt mit Vorgabe 10 und Obergrenze 250 samt Zielsaison statt '0 = unbegrenzt'</div>
                             <div>&#8226; FIX: Stopp-Knopf wird bei jedem Start neu belegt, Schliessen stoppt immer</div>
@@ -4422,7 +4431,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.34';
+        const VERSION = '0.9.21.35';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -28248,7 +28257,9 @@
             { id: 'incheon',      gp: 'Korean GP',    laps: 55, months: [10, 9],  w: 2, country: 'KOR', length: 5.5 },
             { id: 'bangkok',      gp: 'Thai GP',      laps: 57, months: [11, 12], w: 2, country: 'THA', length: 5.0 },
             { id: 'qiddiya',      gp: 'Qiddiya GP',   laps: 55, months: [3, 12],  w: 2, country: 'SAU', length: 5.4 },
-            { id: 'kigali',       gp: 'Rwandan GP',   laps: 60, months: [7, 8],   w: 2, country: 'RWA', length: 5.0 },
+            // Rennort Bugesera-Distrikt bei Rilima, nicht Kigali selbst (Fix-Liste 12.11.2026).
+            // Die id bleibt 'kigali': bestehende Spielstände führen sie im Kalender.
+            { id: 'kigali',       gp: 'Rwandan GP',   laps: 60, months: [7, 8],   w: 2, country: 'RWA', length: 5.0, name: 'Bugesera Circuit' },
             { id: 'rio-racepark', gp: 'Rio de Janeiro GP', laps: 65, months: [3, 4], w: 2, country: 'BRA', length: 4.8 },
             { id: 'denmark',      gp: 'Danish GP',    laps: 60, months: [7, 8],   w: 2, country: 'DEN', length: 4.5 }
         ];
@@ -28259,6 +28270,9 @@
             FUTURE_CIRCUIT_POOL.forEach(p => {
                 if (p.country && typeof CIRCUIT_COUNTRY !== 'undefined' && !CIRCUIT_COUNTRY[p.id]) {
                     CIRCUIT_COUNTRY[p.id] = p.country;
+                }
+                if (p.name && typeof CIRCUIT_DISPLAY_NAMES !== 'undefined' && !CIRCUIT_DISPLAY_NAMES[p.id]) {
+                    CIRCUIT_DISPLAY_NAMES[p.id] = p.name;
                 }
                 if (p.length && typeof CIRCUIT_LENGTHS !== 'undefined' && !CIRCUIT_LENGTHS[p.id]) {
                     CIRCUIT_LENGTHS[p.id] = p.length;
@@ -31805,6 +31819,8 @@
 
         // Historische Livery-Ranges: [fromYear, toYear, teamId, colors[]]
         // Farbe kann wiederholt werden für ungleiche Splits: ['#A','#A','#B'] = 2/3 A + 1/3 B
+        // Optionales 5. Feld 'provisorisch': generisch, nicht jahresgenau geprüft — der
+        // Livery-Editor zeigt die Zelle als Platzhalter (wie eine SEASON_DATA-Basisfarbe).
         const TEAM_COLORS_RANGES = [
             [1958, 1967, 'LOT', ['#1B5E20', '#1B5E20', '#FFB800']], // BRG 2/3 + Gelb 1/3 (Jim-Clark-Ära)
             [1968, 1971, 'LOT', ['#C62828', '#FFFFFF', '#F9A825']], // Gold Leaf: Rot+Weiß+Gold (je 1/3)
@@ -31858,7 +31874,7 @@
             [1998, 1998, 'SAU', ['#2E3D70', '#1E6B5C']],            // Algen-Duo (C17)
             [1999, 1999, 'SAU', ['#2E3D70', '#1E6B5C']],            // Algen-Duo (C19)
             [2000, 2005, 'SAU', ['#003DAA', '#00B4C8']],            // Blau + Türkis (C20–C24)
-            [2006, 2009, 'BMW', ['#FFFFFF', '#FFFFFF', '#003FA3']], // BMW Sauber: 2/3 Weiß + 1/3 BMW-Blau
+            [2006, 2009, 'BMW', ['#FFFFFF', '#FFFFFF', '#003FA3'], 'provisorisch'], // BMW Sauber: 2/3 Weiß + 1/3 BMW-Blau, generisch
             [2010, 2010, 'SAU', ['#FFFFFF', '#FFFFFF', '#2A2A2A']], // C29: 2/3 Weiß + 1/3 Dunkel
             [2011, 2011, 'SAU', ['#FFFFFF', '#111111', '#CC0000']], // C30: Weiß+Schwarz+Rot
             [2012, 2012, 'SAU', ['#FFFFFF', '#3A3A3A', '#CC0000']], // C31: Weiß+Grau+Rot
@@ -32082,6 +32098,11 @@
             [2017, 2018, 'FER', ['#DC0000', '#DC0000', '#1A1A1A']], // #DC0000-#DC0000-#1A1A1A
             [2019, 2020, 'FER', ['#C00000', '#C00000', '#1A1A1A']], // #C00000-#C00000-#1A1A1A
             [2021, 2023, 'FER', ['#DC0000', '#DC0000', '#1A1A1A']], // #DC0000-#DC0000-#1A1A1A
+            // Force India 2008–14: provisorisch und generisch, nicht jahresgenau (Recherche 12.11.2026):
+            // VJM01 „Gold, Tungsten, Weiß“, VJM02–06 Weiß + Safran/Grün, VJM07 Schwarz statt Weiß.
+            [2008, 2008, 'FOR', ['#FFFFFF', '#C9A13B', '#4A4A4A'], 'provisorisch'], // provisorisch: Weiß+Gold+Tungsten
+            [2009, 2013, 'FOR', ['#FFFFFF', '#FF7F00', '#138808'], 'provisorisch'], // provisorisch: Weiß+Safran+Grün
+            [2014, 2014, 'FOR', ['#1A1A1A', '#FF7F00', '#138808'], 'provisorisch'], // provisorisch: Schwarz+Safran+Grün
             [2015, 2015, 'FOR', ['#1A1A1A', '#1A1A1A', '#E3611C']], // #1A1A1A-#1A1A1A-#E3611C
             [2016, 2016, 'FOR', ['#2A2A2A', '#A8A9AD', '#E8611A']], // #2A2A2A-#A8A9AD-#E8611A
             [2017, 2017, 'FOR', ['#F9C4D8']],                // #F9C4D8
@@ -43120,7 +43141,39 @@ Empfohlene Wertebereiche:
                 el.dataset.nmFit = '1';
             }
         }
-        
+
+        // Anzeige-Auflösung kaputter Vornamen (12.11.2026). Die Ära-Kurven trugen bis v0.9.21.34 GBR-Namen
+        // mit CSV-Anführungszeichen ("nathan", "nathaniel", "nate", "natan" — das " verhinderte die
+        // Großschreibung) und ITA-Namen mit ISTAT-Apostroph statt Akzent (Nicolo', Niccolo', Giosue').
+        // Quelle behoben (paketI-aera-vornamen/scripts/build-cohorts.js); gespeicherte Namen bleiben
+        // unverändert (Spielstände werden nie rückwirkend umgeschrieben) — korrigiert wird nur der
+        // angezeigte Text, für alle Ansichten und Modals über einen MutationObserver.
+        const _NAME_ANZEIGE_RE = /"(nathaniel|nathan|natan|nate)"|\b(Niccolo|Nicolo|Giosue)'/g;
+        const _NAME_ANZEIGE_ITA = { Niccolo: 'Niccolò', Nicolo: 'Nicolò', Giosue: 'Giosuè' };
+        function nameAnzeigeFix(root) {
+            if (!root || !_NAME_ANZEIGE_RE.test(root.textContent || '')) return;
+            _NAME_ANZEIGE_RE.lastIndex = 0;
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+                const v = n.nodeValue;
+                const neu = v.replace(_NAME_ANZEIGE_RE, (m, gbr, ita) =>
+                    gbr ? gbr.charAt(0).toUpperCase() + gbr.slice(1) : _NAME_ANZEIGE_ITA[ita]);
+                if (neu !== v) n.nodeValue = neu;
+            }
+        }
+        (function _nameAnzeigeBeobachten() {
+            const start = () => {
+                nameAnzeigeFix(document.body);
+                new MutationObserver(muts => {
+                    for (const m of muts) for (const node of m.addedNodes) {
+                        if (node.nodeType === 1) nameAnzeigeFix(node);
+                        else if (node.nodeType === 3 && node.parentNode) nameAnzeigeFix(node.parentNode);
+                    }
+                }).observe(document.body, { childList: true, subtree: true });
+            };
+            if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+        })();
+
         // === RENNEN-DETAIL MODAL ===
         window.openRaceDetails = async function(raceIndex, historicalYear = null) {
             let race, raceResult, qualiResult, trainingResult, drivers, teams;
