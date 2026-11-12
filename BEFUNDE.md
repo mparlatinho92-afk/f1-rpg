@@ -39,6 +39,7 @@ versehentlich zurück.
 | Mega-Sim nach Handout P7 (Bundesliga) abgeglichen (06.11.2026) | `megaSim`, `runSeasonHeadless`, `_megaSimFast`, `megaSimSummary`, `tests/megasim-bedienung.js` |
 | Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026) | `applyTeamExits`, `_teamExit`, `executeTransfer` 'teamexit', Saisonende-Fenster, `tests/teamausstieg.js` |
 | **Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)** | `_debuetAusfuehren`, `acquireSeatDriver` rookie, `_isBeginner`, Pool „kommend", `tests/generiert-herkunft.js` |
+| Vornamen mit Anführungszeichen und klein: `"nathan"`, `Nicolo'`, „de Jesus" (12.11.2026) | Ära-Kurven (Paket I), Namens-Pools (Paket A), `nameAnzeigeFix`, `tests/namen-anzeige.js` |
 | Nationsnamen: 51 von 119 Generator-Nationen nur als Kürzel (05.11.2026) | `nationDisplayName`, `NATION_OPTIONS`, `Intl.DisplayNames` |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
 
@@ -123,6 +124,27 @@ Platzhalter (60) — wer „nie gestartet" daran misst, findet 0 Kandidaten (ers
 (3) Debütquote schwankt zwischen Läufen um ±0,1 je Saison. **Rest in echten Ären** (je ~1 in 90 Saisons, nicht
 angefasst): Indy-Verpflichtung `_signIndyDriver` 1960, `_wechselAusfuehren` → `acquireSeatDriver` (Pool leer) 1963,
 ein Rückfall beim Saisonstart 1962.
+
+## Vornamen mit Anführungszeichen und klein (12.11.2026)
+
+Nutzer-Fund „'nathan' George" (Vorname klein, in Anführungszeichen). Der Spielstand war weg, die Ursache liegt aber
+nicht am Fahrer, sondern in den Daten: `data/era-first-names.js` führte **GBR `"nathan"` [2002,8,84]**, `"nathaniel"`,
+`"nate"` mit wörtlichen Anführungszeichen. Quelle `ukbabynames.csv` hat einzelne Namen CSV-gequotet; `build-cohorts.js`
+trennte nur per `split(',')`, und das `"` vorn verhinderte die Großschreibung in `titleCase`. In den Kohorten (GBR,
+1996–2020): nathan 44 632, nathaniel 10 780, nate 1 487, natan 1 239 Geburten — ein sauberes „Nathan“ gab es **nicht**,
+also hieß jeder generierte Brite dieses Namens `"nathan"`. Zweiter Fehler gleicher Art: ITA-ISTAT schreibt Schlussakzente als
+Apostroph (`Nicolo'` 37 926, `Niccolo'` 10 910, `Giosue'` 2 933). USA/FRA sauber. In `data/names.js` (Paket A) als einziger
+Fund DOM-Vorname „de Jesus“ (Rohliste 18 100), dazu „Vda“ (= viuda) — beide keine Vornamen.
+
+Fix: `build-cohorts.js` reinigt vor `titleCase` (Quotes weg, Schluss-Apostroph → Akzent); `cohorts-GBR/ITA.json`
+direkt korrigiert (ohne Rohdaten-Neuladen), Kurven neu (`zipf-calibrate`, `derive-era-first-names`). „Nathan“ ist jetzt
+**eine** Kurve [1996,13,86] statt zweier (Rang-Kurve vor 1996 [1990,4,113] + `"nathan"`); Nebenwirkung: „Barney“
+rückt in den GBR-Pool nach. `ERA_FIRST_EXCLUDE` unverändert. DOM: Filter `DOM_KEIN_VORNAME` in `nations-w10.js`,
+`names.js` neu gebaut (Diff nur DOM; Build vorher reproduzierbar geprüft). Ziehung im Browser je 20 000: GBR (Jahrgang 2002)
+Nathan 165, Nathaniel 35; ITA (2018) Nicolò 414, Niccolò 114, Giosuè 31; 0 kaputte Vornamen. Alt-Spielstände bleiben
+unverändert, `nameAnzeigeFix` korrigiert nur den angezeigten Text (MutationObserver, auch Modals).
+⚠ **Messfalle:** ein Fehler in den Kurven-Daten fällt in keinem Pool-Test auf, der nur `names.js` prüft — die Ära-Kurven
+ersetzen in Region 0 die Pool-Vornamen. Wächter `tests/namen-anzeige.js` prüft beide Dateien.
 
 ## Nationsnamen: kleinere Nationen nur als Kürzel (05.11.2026)
 

@@ -119,6 +119,13 @@ sah im Editor deshalb aus wie erledigte Arbeit. `platzhalter` fragt dagegen je
 man sieht den Ton, den das Spiel zeigt, **und** dass ihn niemand geprüft hat.
 Sobald in der Werkstatt ein Kandidat an der Zelle hängt, verschwindet sie von selbst.
 
+**Provisorische Ranges (seit 12.11.2026):** Eine Range in `TEAM_COLORS_RANGES` mit dem
+optionalen 5. Feld `'provisorisch'` ist ebenfalls ein Platzhalter. Damit sind mehrfarbige
+generische Lackierungen im Spiel möglich, ohne dass sie im Editor als geprüft gelten.
+Snapshot-Kürzel `p: 1`. Erste Fälle: BMW Sauber 2006–09 und Force India 2008–14
+(VJM01: Gold, Tungsten, Weiß · VJM02–06: Weiß, Safran, Grün · VJM07: Schwarz statt Weiß).
+Das ergibt 11 Zellen.
+
 Platzhalter zählen **nicht** in die „offenen Posten". 350 Team-Jahre würden dort
 jede echte Baustelle ertränken; sie haben ihren eigenen Filter und ihre eigene Zahl.
 

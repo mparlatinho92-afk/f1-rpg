@@ -106,6 +106,8 @@
                 if (extra && extra[id]) source = 'extra';
                 else if (game.TEAM_COLORS_RANGES.some(r => r[2] === id && year >= r[0] && year <= r[1])) source = 'range';
                 else if (!isGrey(colors[0])) source = 'sd';
+                // 5. Range-Feld 'provisorisch' = generisch eingetragen, im Editor ein Platzhalter.
+                const prov = source === 'range' && game.TEAM_COLORS_RANGES.some(r => r[2] === id && year >= r[0] && year <= r[1] && r[4] === 'provisorisch');
 
                 const key = id + ':' + year;
                 cells[key] = {
@@ -113,7 +115,8 @@
                     colors: source === 'none' ? [] : colors.slice(),
                     source: source,
                     sdColor: isGrey(sdColor) ? null : sdColor,
-                    indy: indyFlag
+                    indy: indyFlag,
+                    prov: prov
                 };
                 if (!teams[id]) teams[id] = { id: id, name: name, years: [], indy: indyFlag };
                 teams[id].years.push(year);

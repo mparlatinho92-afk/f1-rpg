@@ -26,8 +26,17 @@ const bucketOf = y => (y < B0 || y > B1 + STEP - 1) ? -1 : Math.min(Math.floor((
 
 // Title-Case mit Bindestrich/Apostroph ("JEAN-PIERRE"→"Jean-Pierre", "D'ARCY"→"D'Arcy").
 // Lokale-sicher für Akzente (É→é via toLowerCase mit Unicode).
+// Vorher reinigen (2026-11-12): ukbabynames fuehrt einzelne Namen CSV-gequotet ("NATHAN") — split(',')
+// liess die Anfuehrungszeichen stehen, das " davor verhinderte die Grossschreibung → Spielname `"nathan"`
+// (GBR: nathan 44 632, nathaniel 10 780, nate 1 487, natan 1 239 Geburten; ein sauberes „Nathan“ gab es nicht).
+// ISTAT schreibt Schlussakzente als Apostroph (NICOLO' → Nicolò, GIOSUE' → Giosuè).
+const ACCENT = { a: 'à', e: 'è', i: 'ì', o: 'ò', u: 'ù' };
+function cleanName(s) {
+    return s.trim().replace(/^["'“”]+|["“”]+$/g, '')
+        .replace(/([aeiou])'$/i, (m, v) => ACCENT[v.toLowerCase()]);
+}
 function titleCase(s) {
-    return s.toLowerCase().replace(/(^|[-'\s])(\p{L})/gu, (m, sep, c) => sep + c.toUpperCase());
+    return cleanName(s).toLowerCase().replace(/(^|[-'\s])(\p{L})/gu, (m, sep, c) => sep + c.toUpperCase());
 }
 
 function emit(nation, source, acc, totals) {

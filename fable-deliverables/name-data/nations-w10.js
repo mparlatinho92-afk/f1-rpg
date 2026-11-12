@@ -143,7 +143,10 @@ const SRI = { regions: [
 // PAR: Vornamenliste unbrauchbar (seltene/alte/weibliche Namen) → Vornamen im Build aus ARG (vorheriger Rückfall)
 // DOM: gemischte Liste → Referenz; Altagracia/Mercedes/Rosario u. a. sind weiblich
 const ES_FEMALE = /^(Maria|María|Ana|Carmen|Rosa|Juana|Altagracia|Mercedes|Rosario|Luz|Ramona|Angela|Ángela|Francisca|Josefa|Margarita|Antonia|Teresa|Isabel|Dolores|Gloria|Esperanza|Milagros|Yolanda|Miriam|Elena|Cristina|Patricia|Martha|Marta|Juana|Leonor|Belkis|Yanet|Yaneth|Yudelka|Yokasta|Yocasta|Mayra|Yesenia|Ysabel|Isabel|Daysi|Deysi|Fior|Fiordaliza|Altagracia)$/;
-const DOM = { first: weigh(read('worldnames-dom-fore.tsv').filter(e => !femaleRef(e.name) && !ES_FEMALE.test(e.name))),
+// Keine Vornamen (2026-11-12): „de Jesus“/„del Rosario“ sind Namenszusätze, „Vda“ = viuda (Witwe von) —
+// „de Jesus“ stand mit 18 100 Treffern im Pool und erschien klein geschrieben als Vorname.
+const DOM_KEIN_VORNAME = /^(de|del|Vda)\b/;
+const DOM = { first: weigh(read('worldnames-dom-fore.tsv').filter(e => !femaleRef(e.name) && !ES_FEMALE.test(e.name) && !DOM_KEIN_VORNAME.test(e.name))),
               last: weigh(read('worldnames-dom-sur.tsv')) };
 // CUB: worldnames hat nur einen Vornamen → kuratierter Kopf (spanisch + die typisch kubanischen Y-Namen der Jahrgänge 1970–2000)
 const CUB = { first: [['José',5],['Carlos',4],['Luis',4],['Jorge',4],['Juan',4],['Alejandro',3],['Yoandy',3],['Yasmany',3],['Yoel',3],['Yunior',3],['Yordanis',3],['Osmany',3],

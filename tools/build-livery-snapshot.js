@@ -62,6 +62,7 @@ function main() {
         const c = built.cells[key];
         cells[key] = { c: c.colors, s: c.source };
         if (c.indy) cells[key].i = 1;
+        if (c.prov) cells[key].p = 1;
     }
     const teams = {};
     for (const id of Object.keys(built.teams)) {

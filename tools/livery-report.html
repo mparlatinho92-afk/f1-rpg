@@ -410,7 +410,7 @@ async function bootSnapshot(whyLive) {
     const c = snap.cells[key];
     const [team, year] = key.split(':');
     S.cells[key] = { team, year: +year, name: snap.teams[team] ? snap.teams[team].name : team,
-                     colors: c.c || [], source: c.s, indy: !!c.i };
+                     colors: c.c || [], source: c.s, indy: !!c.i, prov: !!c.p };
   }
   // Aeltere Snapshots kennen `basisfarbe` nicht - fehlende Listen auffuellen,
   // sonst laeuft der Platzhalter-Filter auf undefined.
@@ -510,7 +510,8 @@ function verdict(key) {
   // Farbe da, aber ungeprueft: sie faellt aus SEASON_DATA durch, weil keine Range
   // greift. Sobald in der Werkstatt ein Kandidat haengt, greift der Zweig oben und
   // die Zelle ist kein Platzhalter mehr.
-  if (game && game.source === 'sd') return 'platzhalter';
+  // Range mit Feld 'provisorisch' (generisch eingetragen) zaehlt genauso.
+  if (game && (game.source === 'sd' || game.prov)) return 'platzhalter';
   return null;
 }
 
