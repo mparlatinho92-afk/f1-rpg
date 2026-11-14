@@ -330,6 +330,10 @@ Werkstatt weiterentwickelt wurde, ohne neu zu bauen.
   vor dem Dubletten-Abgleich (sonst verdrängt ein kaputtes „ältestes Exemplar“ das
   gültige) und meldet die Zahl. Außerdem: `.pkstage{display:flex}` hebelte `hidden` aus,
   die leere Lupe stand immer da → `.pkstage[hidden]{display:none}`.
+- **Zukunftsteams jenseits SEASON_DATA** (14.11.2026). Der Report baute Zellen nur aus
+  SEASON_DATA (endet 2025). `livery-core.js` schneidet jetzt auch `FUTURE_TEAMS` aus
+  index.html und legt je Team eine Zelle fürs Einstiegsjahr an (Audi, Cadillac 2026,
+  provisorisch → Platzhalter). Die Jahresachse reicht dadurch bis 2026.
 - **Pipette liest Originalpixel** (14.11.2026, Bildzoom). Das Canvas hat jetzt die volle
   Bildauflösung, der Zoom (Strg+Rad, Knöpfe, Tasten + − 0) ändert nur die CSS-Breite.
   Vorher war das Canvas auf 620 px verkleinert, der 5×5-Mittelwert deckte beim

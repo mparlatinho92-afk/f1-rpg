@@ -16,6 +16,7 @@
 
     // Diese Blöcke werden aus index.html geschnitten und im Werkzeug ausgeführt.
     const BLOCKS = [
+        ['const FUTURE_TEAMS = {', '\n        };'],
         ['const TEAM_COLORS_EXTRA = {', '\n        };'],
         ['const TEAM_COLORS_RANGES = [', '\n        ];'],
         ['function unpackEnteredTeamId(', '\n        }'],
@@ -60,7 +61,7 @@
 
         // new Function statt vm/eval: funktioniert in Node und im Browser gleich.
         const make = new Function('SEASON_DATA', body +
-            '\nreturn { getTeamColors, getTeamHeaderGradient, TEAM_COLORS_EXTRA, TEAM_COLORS_RANGES };');
+            '\nreturn { getTeamColors, getTeamHeaderGradient, TEAM_COLORS_EXTRA, TEAM_COLORS_RANGES, FUTURE_TEAMS };');
 
         return function bind(SEASON_DATA) {
             const api = make(SEASON_DATA);
@@ -123,6 +124,26 @@
                 teams[id].name = name;   // letzter bekannter Anzeigename gewinnt
             }
         }
+        // Zukunftsteams jenseits SEASON_DATA (Audi, Cadillac ab 2026): je eine Zelle fuers
+        // Einstiegsjahr, damit der Report ihre (provisorische) Livery kennt. Die Farbe kommt
+        // wie ueberall aus getTeamColors, das Jahr haengt hinten an die Achse.
+        const FT = game.FUTURE_TEAMS || {};
+        for (const fid in FT) {
+            const f = FT[fid], year = f.from;
+            if (SD[String(year)]) continue;           // SEASON_DATA deckt das Jahr ab
+            const colors = game.getTeamColors(fid, year, null) || [];
+            const rng = game.TEAM_COLORS_RANGES.find(r => r[2] === fid && year >= r[0] && year <= r[1]);
+            const source = rng ? 'range' : (!isGrey(colors[0]) ? 'sd' : 'none');
+            cells[fid + ':' + year] = {
+                team: fid, year: year, name: f.name,
+                colors: source === 'none' ? [] : colors.slice(),
+                source: source, sdColor: f.color || null, indy: false,
+                prov: !!(rng && rng[4] === 'provisorisch'), future: true
+            };
+            teams[fid] = { id: fid, name: f.name, years: [year], indy: false, future: true };
+            if (years.indexOf(year) < 0) years.push(year);
+        }
+        years.sort((a, b) => a - b);
         return { cells: cells, teams: teams, years: years };
     }
 

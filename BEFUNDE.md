@@ -39,6 +39,7 @@ versehentlich zurück.
 | Mega-Sim nach Handout P7 (Bundesliga) abgeglichen (06.11.2026) | `megaSim`, `runSeasonHeadless`, `_megaSimFast`, `megaSimSummary`, `tests/megasim-bedienung.js` |
 | Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026) | `applyTeamExits`, `_teamExit`, `executeTransfer` 'teamexit', Saisonende-Fenster, `tests/teamausstieg.js` |
 | **Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)** | `_debuetAusfuehren`, `acquireSeatDriver` rookie, `_isBeginner`, Pool „kommend", `tests/generiert-herkunft.js` |
+| Teamfarben jenseits 2025, Audi, Cadillac (14.11.2026) | `getTeamColors` Horizont-Rückfall, `FUTURE_TEAMS`, `applyFutureTeamEntries`, `CONSTRUCTOR_SUCCESSION`, `tests/zukunftsteams.js` |
 | Vornamen mit Anführungszeichen und klein: `"nathan"`, `Nicolo'`, „de Jesus" (12.11.2026) | Ära-Kurven (Paket I), Namens-Pools (Paket A), `nameAnzeigeFix`, `tests/namen-anzeige.js` |
 | Nationsnamen: 51 von 119 Generator-Nationen nur als Kürzel (05.11.2026) | `nationDisplayName`, `NATION_OPTIONS`, `Intl.DisplayNames` |
 | Ära-Abhängigkeit: das Auto zählt heute mehr | Auto/Fahrer-Verhältnis, Spearman-Fallen (⚠ `ERA_CAR_WEIGHT` wieder entfernt) |
@@ -124,6 +125,33 @@ Platzhalter (60) — wer „nie gestartet" daran misst, findet 0 Kandidaten (ers
 (3) Debütquote schwankt zwischen Läufen um ±0,1 je Saison. **Rest in echten Ären** (je ~1 in 90 Saisons, nicht
 angefasst): Indy-Verpflichtung `_signIndyDriver` 1960, `_wechselAusfuehren` → `acquireSeatDriver` (Pool leer) 1963,
 ein Rückfall beim Saisonstart 1962.
+
+## Teamfarben jenseits 2025, Audi, Cadillac (14.11.2026)
+
+Fix-Liste „Teamfarben & Liveries". SEASON_DATA endet 2025, `getTeamColors` fand ab 2026 weder Jahresfarbe noch
+Range. Gemessen mit `tests/zukunftsteams.js` (Start 2025, Saisonkette bis 2028), alter Stand (HEAD v0.9.21.36):
+
+| `getTeamColors(id, Jahr, …)` 2026–28 | grau vorher | grau nachher |
+|---|---|---|
+| ohne Grundfarbe | **9 von 10** (nur McLaren, Range bis 2099) | 0 von 11 |
+| mit `team.color` | **1 von 10** (RB: SEASON_DATA 2025 führt `#888888`, die RBF-Range endet 2025) | 0 von 11 |
+
+- Vorher außerdem: Kick Sauber fuhr ewig weiter (keine Nachfolge), Cadillac trat nie an. Neueinsteiger kamen nur über
+  `applyTeamEntryExit`, und das bricht ohne `SEASON_DATA[newYear]` ab.
+- Jetzt: jenseits des Horizonts gilt die Livery des letzten Template-Jahrs (Rekursion auf 2025, Ranges zuerst).
+  `CONSTRUCTOR_SUCCESSION` 'Kick Sauber' → 'Audi' (2025). `FUTURE_TEAMS` (AUD über `successorOf: 'KIC'`, weil die
+  Nachfolge `team.id` behält; CAD mit `entry`). `applyFutureTeamEntries` setzt Cadillac 2026 ein, höchstens einmal
+  (`GAME_STATE.futureTeamsEntered`). Ergebnis 2026–28: 11 Teams, Audi (id KIC) und Cadillac (id CAD) je 2 Fahrer,
+  Cadillac genau einmal. Farben und Cadillac-Pace (76/60/68, hinter Alpine 2025) sind **provisorisch**.
+- **Startfeld nach 2025 (Nutzer-Fund DNQ, 15.11.2026):** `GRID_SIZES` endet 2025, `getGridSize` lieferte danach fest 20.
+  Mit Cadillac (22 Wagen) schieden je Rennen zwei als DNQ aus: **46 DNQ je Saison** (23 Rennen × 2) in 2026–28.
+  Jetzt wächst das Feld jenseits der Tabelle mit den Teams (2 × Nicht-Indy-Teams, mindestens der letzte Tabellenwert,
+  Deckel 26): Feld 22, **0 DNQ**. Gegenprobe im Test: `GRID_SIZES[2026..28] = 20` setzen.
+- **Langlauf bis 2040** (`node tests/zukunftsteams.js 15`, ~5 Min.): jedes Jahr 11 Teams, Audi und Cadillac je 2 Fahrer, kein Team grau, keines unter 2 Fahrern, Feld 22, 0 DNQ, kein pageerror. Teams steigen jenseits 2025 nie aus (`applyTeamExits` braucht SEASON_DATA) — das Feld bleibt also eingefroren, bis es eine Ausstiegsregel für die Zukunft gibt.
+- ⚠ Messfalle: Wer `getTeamColors` mit `team.color` prüft, sieht vorher fast alles bunt. Die Grundfarbe überdeckt
+  den Fehler, die Aufrufer ohne Grundfarbe (u. a. Wertungen mit reiner Team-ID) zeigten grau.
+
+---
 
 ## Vornamen mit Anführungszeichen und klein (12.11.2026)
 

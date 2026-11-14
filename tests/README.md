@@ -128,6 +128,10 @@ Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
   und im Steady-State leer. Der Snapshot wird Saison für Saison selbst gezogen.
 - **Feldgröße kontrollieren**, bevor ein Streuungsbefund geglaubt wird.
 
+## Zukunftsteams jenseits 2025 — `zukunftsteams.js` (14.11.2026)
+
+`node tests/zukunftsteams.js [N]` (Browser, ~1 Min.; `15` = Langlauf bis 2040, ~5 Min.): Start 2025, N Saisonketten (Standard 3, bis 2028). Je Jahr Teamzahl, Kick Sauber noch da?, Audi/Cadillac mit id, Fahrerzahl und Farbe, Teams mit grauer `getTeamColors`-Farbe (ohne Grundfarbe), DNQ der Saison und `getGridSize`. Sollstand: ab 2026 11 Teams, `kick:false`, Audi (KIC) und Cadillac (CAD) je 2 Fahrer, `grau:[]`, `unter2:[]`, `grid:22`, `dnq:0` (mit festen 20 Plätzen 46). ⚠ Mit `team.color` als Grundfarbe aufgerufen verdeckt die Grundfarbe den Fehler (BEFUNDE 14.11.2026).
+
 ## Gastspiel übers Saisonende — `gast-haengt.js` (05.11.2026)
 
 `SIMCORE_FROM_INDEX=1 node tests/gast-haengt.js 1978 30 --saisons=4` zählt je Saison: Gastfahrer, Gäste nach dem Finale noch beim Gastteam, davon nach `processSeasonEndEvents` **still** beim Gastteam (ohne Saisonende-Transfer = Fehler) und Gäste, die das Gastteam mitten in der Saison entlässt, dazu Gäste mit DNS. Sollstand seit v0.9.21.31: die letzten drei 0. Langzeit (1000 Saisons, ~4 Min.): `for y in 1950 1960 1975 1990 2010; do SIMCORE_FROM_INDEX=1 node tests/gast-haengt.js $y 20 --saisons=10; done` — ab 1990 entstehen keine Gastspiele. ⚠ ≈ 0,03 Fälle je Saison — unter 120 Saisons kein Beleg. Zahlen `BEFUNDE.md` 05.11.2026.
