@@ -330,6 +330,11 @@ Werkstatt weiterentwickelt wurde, ohne neu zu bauen.
   vor dem Dubletten-Abgleich (sonst verdrängt ein kaputtes „ältestes Exemplar“ das
   gültige) und meldet die Zahl. Außerdem: `.pkstage{display:flex}` hebelte `hidden` aus,
   die leere Lupe stand immer da → `.pkstage[hidden]{display:none}`.
+- **Pipette liest Originalpixel** (14.11.2026, Bildzoom). Das Canvas hat jetzt die volle
+  Bildauflösung, der Zoom (Strg+Rad, Knöpfe, Tasten + − 0) ändert nur die CSS-Breite.
+  Vorher war das Canvas auf 620 px verkleinert, der 5×5-Mittelwert deckte beim
+  Osella-Sammelbild (1556 px) also rund 12×12 Originalpixel ab, jetzt genau 5×5. Bei
+  stark verrauschten JPEGs streut ein einzelner Klick dadurch etwas mehr.
 
 ## 10. Ist-Stand (gemessen 01.09.2026, v0.9.17.36)
 

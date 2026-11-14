@@ -146,7 +146,13 @@
   .thumb.on{border-color:var(--info)}
   .pkstage{display:flex;gap:12px;margin-top:12px;align-items:flex-start}
   .pkstage[hidden]{display:none}
-  #pkCanvas{max-width:100%;border-radius:7px;cursor:crosshair;display:block}
+  #pkCanvas{border-radius:7px;cursor:crosshair;display:block;image-rendering:pixelated}
+  /* Eigener Scrollkasten fuer das gezoomte Bild, die Lupe bleibt daneben stehen */
+  .pkwrap{flex:1;min-width:0;max-width:760px;max-height:72vh;overflow:auto;border-radius:7px}
+  .pkzoom{display:flex;gap:4px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .pkzoom button{padding:2px 8px;min-width:28px}
+  .pkwrap.hand #pkCanvas{cursor:grab}
+  .pkwrap.hand.dragging #pkCanvas{cursor:grabbing}
   /* Lupe wandert beim Scrollen durch grosse Sammelbilder mit (.dlg-b ist der Scrollcontainer) */
   .pkside{flex:none;width:120px;position:sticky;top:0}
   #pkLoupe{border:1px solid var(--line);border-radius:7px;background:#000;display:block;margin-bottom:6px}
@@ -1464,15 +1470,27 @@ function openPicker(key, files, fromLib) {
       <div id="pkThumbs" class="thumbs"></div>
     </div>
     <div id="pkStage" class="pkstage" hidden>
-      <canvas id="pkCanvas"></canvas>
+      <div id="pkWrap" class="pkwrap"><canvas id="pkCanvas"></canvas></div>
       <div class="pkside">
         <canvas id="pkLoupe" width="120" height="120"></canvas>
         <div id="pkHover" class="mono hint">Zeiger über das Bild</div>
+        <div class="pkzoom">
+          <button type="button" data-zoom="out" title="verkleinern (−)">−</button>
+          <button type="button" data-zoom="in" title="vergrößern (+)">+</button>
+          <button type="button" data-zoom="fit" title="ganzes Bild (0)">ganz</button>
+          <span id="pkZoomLbl" class="mono hint">100 %</span>
+        </div>
+        <div class="pkzoom">
+          <button type="button" data-tool="pipette" class="on" title="Farbe abnehmen (P)">Pipette</button>
+          <button type="button" data-tool="hand" title="Bild verschieben (H, oder Leertaste halten)">Hand</button>
+        </div>
       </div>
     </div>
     <div class="hint" style="margin-top:10px">Klick ins Bild nimmt eine Farbe ab –
-      bis zu drei, sie sammeln sich unten im Fuß. Fenster an der rechten unteren
-      Ecke größer ziehen.</div>`,
+      bis zu drei, sie sammeln sich unten im Fuß. Zoomen: Strg + Mausrad über dem Bild
+      (zoomt dorthin, wo der Zeiger steht) oder die Knöpfe unter der Lupe.
+      Verschieben: Hand-Werkzeug (H), Leertaste halten und ziehen, oder mit der mittleren Maustaste ziehen.
+      Fenster an der rechten unteren Ecke größer ziehen.</div>`,
     [{ label: 'Übernehmen', primary: true, fn: applyPicked }], true);
 
   const drop = $('#pkDrop');
@@ -1584,13 +1602,89 @@ function showImage(i) {
   if (!it) return;
   const stage = $('#pkStage');
   stage.hidden = false;
+  pkStatus('');   // „Sammlung ist leer“ o. Ä. ist ab hier ueberholt
 
-  const cv = $('#pkCanvas');
-  const maxW = 620, scale = Math.min(1, maxW / it.img.width);
-  cv.width = Math.round(it.img.width * scale);
-  cv.height = Math.round(it.img.height * scale);
+  // Canvas in voller Bildaufloesung: die Pipette liest Originalpixel, der Zoom
+  // vergroessert nur die Anzeige (CSS-Breite). canvasPos rechnet ueber die Box um.
+  const cv = $('#pkCanvas'), wrap = $('#pkWrap');
+  cv.width = it.img.width;
+  cv.height = it.img.height;
   const ctx = cv.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(it.img, 0, 0, cv.width, cv.height);
+  ctx.drawImage(it.img, 0, 0);
+  const fitW = Math.min(it.img.width, 620);
+  PICK.zoom = 1;
+  const setZoom = (z, ax, ay) => {
+    // ax/ay: Ankerpunkt im Kasten (Zeigerposition), bleibt unter dem Zeiger stehen
+    const maxZ = Math.max(1, it.img.width * 8 / fitW);
+    z = Math.min(maxZ, Math.max(1, z));
+    const old = PICK.zoom, r = z / old;
+    if (ax === undefined) { ax = wrap.clientWidth / 2; ay = wrap.clientHeight / 2; }
+    const sx = wrap.scrollLeft, sy = wrap.scrollTop;
+    PICK.zoom = z;
+    cv.style.width = Math.round(fitW * z) + 'px';
+    wrap.scrollLeft = (sx + ax) * r - ax;
+    wrap.scrollTop = (sy + ay) * r - ay;
+    const lbl = $('#pkZoomLbl');
+    if (lbl) lbl.textContent = Math.round(fitW * z / it.img.width * 100) + ' %';
+  };
+  setZoom(1);
+  const step = dir => setZoom(dir > 0 ? PICK.zoom * 1.5 : PICK.zoom / 1.5);
+  $('#pkStage').querySelectorAll('[data-zoom]').forEach(b => b.onclick = () =>
+    b.dataset.zoom === 'fit' ? setZoom(1) : step(b.dataset.zoom === 'in' ? 1 : -1));
+  wrap.onwheel = e => {
+    if (!e.ctrlKey) return;            // ohne Strg normal scrollen
+    e.preventDefault();                // sonst zoomt Chrome die ganze Seite
+    const r = wrap.getBoundingClientRect();
+    setZoom(PICK.zoom * (e.deltaY < 0 ? 1.25 : 0.8), e.clientX - r.left, e.clientY - r.top);
+  };
+  // Werkzeug: Pipette nimmt ab, Hand verschiebt. Leertaste halten = Hand auf Zeit,
+  // mittlere Maustaste verschiebt immer.
+  PICK.tool = PICK.tool || 'pipette';
+  let spaceHand = false;
+  const applyTool = () => {
+    const hand = PICK.tool === 'hand' || spaceHand;
+    wrap.classList.toggle('hand', hand);
+    $('#pkStage').querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === PICK.tool));
+  };
+  const setTool = t => { PICK.tool = t; applyTool(); };
+  $('#pkStage').querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+  applyTool();
+
+  let drag = null;
+  wrap.onmousedown = e => {
+    const hand = wrap.classList.contains('hand');
+    if (!(hand && e.button === 0) && e.button !== 1) return;
+    e.preventDefault();
+    drag = { x: e.clientX, y: e.clientY, sl: wrap.scrollLeft, st: wrap.scrollTop, moved: false };
+    wrap.classList.add('dragging');
+  };
+  window.onmousemove = e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    wrap.scrollLeft = drag.sl - dx;
+    wrap.scrollTop = drag.st - dy;
+  };
+  window.onmouseup = () => {
+    if (!drag) return;
+    PICK.justDragged = drag.moved;
+    drag = null;
+    wrap.classList.remove('dragging');
+  };
+
+  dlg.onkeydown = e => {
+    if (!$('#pkWrap') || !PICK.images.length || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === '+') step(1); else if (e.key === '-') step(-1); else if (e.key === '0') setZoom(1);
+    else if (e.key === 'h' || e.key === 'H') setTool('hand');
+    else if (e.key === 'p' || e.key === 'P') setTool('pipette');
+    else if (e.key === ' ') { e.preventDefault(); if (!spaceHand) { spaceHand = true; applyTool(); } }
+  };
+  // Leertaste auch beim Loslassen abfangen, sonst loest sie den fokussierten Knopf aus
+  dlg.onkeyup = e => {
+    if (e.key !== ' ' || !$('#pkWrap') || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    e.preventDefault();
+    if (spaceHand) { spaceHand = false; applyTool(); }
+  };
 
   cv.onmousemove = e => {
     const p = canvasPos(cv, e);
@@ -1601,6 +1695,8 @@ function showImage(i) {
       : 'außerhalb';
   };
   cv.onclick = e => {
+    // Im Hand-Modus oder am Ende eines Verschiebens wird nichts abgenommen
+    if (wrap.classList.contains('hand') || PICK.justDragged) { PICK.justDragged = false; return; }
     const p = canvasPos(cv, e);
     const hex = sampleAt(ctx, p.x, p.y);
     if (!hex) return;
@@ -1639,7 +1735,9 @@ function sampleAt(ctx, x, y) {
 }
 
 function drawLoupe(srcCtx, x, y) {
-  const lp = $('#pkLoupe'), z = 10, span = 12;
+  // Ausschnitt = 12 Anzeige-Pixel, umgerechnet in Bildpixel: gezoomt zeigt die Lupe feiner
+  const cv = srcCtx.canvas, shown = cv.getBoundingClientRect().width || cv.width;
+  const lp = $('#pkLoupe'), z = 10, span = Math.max(4, Math.round(12 * cv.width / shown));
   const g = lp.getContext('2d');
   g.imageSmoothingEnabled = false;
   g.clearRect(0, 0, lp.width, lp.height);
