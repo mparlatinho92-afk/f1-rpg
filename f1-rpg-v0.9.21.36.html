@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.35</title>
+    <title>F1 RPG v0.9.21.36</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.35 (aktuell) - 12.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.36 (aktuell) - 14.11.2026</div>
+                            <div>&#8226; FIX: Lupen-Suche findet auch Reserve-Fahrer und ehemalige Fahrer der eigenen Welt</div>
+                            <div>&#8226; NEU: WM-Stand zeigt den Saisonfortschritt (z. B. 15/22 Rennen)</div>
+                            <div>&#8226; NEU: Team-Steckbrief zeigt Vertrag bis je Fahrer</div>
+                            <div>&#8226; NEU: Rekorde-Tab hebt aktive Fahrer und Teams gruen hervor</div>
+                            <div>&#8226; NEU: Strecken-Kopf verlinkt Sieger, Rekordsieger und Rekord-Team</div>
+                            <div class="font-bold text-slate-400">v0.9.21.35 - 12.11.2026</div>
                             <div>&#8226; FIX: Britische Vornamen wie Nathan erschienen als 'nathan' (klein, in Anfuehrungszeichen)</div>
                             <div>&#8226; FIX: Italienische Vornamen mit Akzent (Nicolo, Giosue) erschienen mit Apostroph</div>
                             <div>&#8226; FIX: de Jesus und Vda nicht mehr als dominikanische Vornamen</div>
@@ -23054,7 +23060,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.35';
+        const VERSION = '0.9.21.36';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -51214,8 +51220,14 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     </div>
                 ` : ''}
                 
-                <h2 class="text-3xl font-bold mb-4">🏆 WM-Stand ${year}</h2>
-                
+                <h2 class="text-3xl font-bold mb-4">🏆 WM-Stand ${year}${(() => {
+                    // Saisonfortschritt „15/22 Rennen“ (Fix-Liste 13.11.2026); Archivsaison: Gesamtzahl.
+                    const _n = isHistorical ? (historicalViewData.races || []).length : (GAME_STATE.races || []).length;
+                    if (!_n) return '';
+                    const _txt = isHistorical ? `${_n} Rennen` : `${Math.min(GAME_STATE.currentRace || 0, _n)}/${_n} Rennen`;
+                    return ` <span class="text-tertiary" style="font-size:0.5em;font-weight:600;vertical-align:middle">${_txt}</span>`;
+                })()}</h2>
+
                 <!-- Sub-Navigation -->
                 <div class="flex gap-2 mb-6 flex-wrap">
                     <button onclick="setStandingsSubTab('drivers')" class="px-4 py-2 rounded-lg transition ${standingsSubTab === 'drivers' ? 'btn-primary' : 'bg-secondary'}">
@@ -53713,6 +53725,18 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         window.toggleRecordThreshold = function(id) { _recIgnoreThr[id] = !_recIgnoreThr[id]; renderContent(); };
 
         // ── Darstellung (Plan 6.3 + 8) ─────────────────────────────────────
+        // Menge aktiver Fahrer bzw. Teams für die Rekord-Karten: ids, histIds und 'n:'+Name.
+        function _recordActiveSet(teams) {
+            const out = new Set();
+            for (const x of (teams ? GAME_STATE.teams : GAME_STATE.drivers) || []) {
+                if (x.id) out.add(String(x.id));
+                if (x.histId) out.add(String(x.histId));
+                if (x.name) out.add('n:' + _nrm(x.name));
+                if (teams && x.name && typeof teamSlug === 'function') out.add(String(teamSlug(x.name)));
+            }
+            return out;
+        }
+
         function _renderRecordCard(def, rows, allRows) {
             // def.fmtValue erlaubt eigene Darstellung (Alters-Rekorde: „25 J 234 T"),
             // sonst Prozent oder blanke Zahl wie bisher.
@@ -53730,7 +53754,11 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 ? (def.minDen && !ignored ? allRows.filter(r => r._den >= def.minDen) : allRows)[0] : null;
             const decBest = shown[0];
 
+            // Aktive Fahrer/Teams grün wie in All-Time (Fix-Liste 13.11.2026). Rekord-Keys sind
+            // je Quelle id, histId oder Slug — deshalb zusätzlich über den Namen abgleichen.
+            const _akt = _recordActiveSet(def.scope === 'team');
             const listHtml = top.length ? top.map((r, i) => {
+                const _istAktiv = _akt.has(String(r.key)) || _akt.has('n:' + _nrm(r.name || ''));
                 const link = def.scope === 'team'
                     ? `onclick="openTeamProfile('${String(r.key).replace(/'/g, "\\'")}')"`
                     : `onclick="openDriverProfile('${String(r.key).replace(/'/g, "\\'")}')"`;
@@ -53740,7 +53768,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 return '<div class="flex justify-between items-baseline gap-2 py-1 border-t border-custom">'
                     + '<span class="text-tertiary text-xs" style="width:1.2rem">' + (i + 1) + '.</span>'
                     + '<span class="flex-1 font-bold ' + (def.scope === 'team' ? 'team-link' : 'driver-link') + '" '
-                    + 'style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ' + link + '>' + r.name + mix + '</span>'
+                    + 'style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ' + link + '>' + _activeName(r.name, _istAktiv) + mix + '</span>'
                     + (r.detail ? '<span class="text-xs text-tertiary">' + r.detail + '</span>' : '')
                     + '<span class="font-bold ' + (def.neg ? 'text-red-500' : 'accent-gold') + '" style="min-width:3.5rem;text-align:right">' + fmt(r) + '</span>'
                     + '</div>';
@@ -54553,6 +54581,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 addDriver(d.histId||d.id, d.name, tname || 'Aktiv');
             });
             (GAME_STATE.teams || []).forEach(t => addTeam(t.histId||t.id||t.name, t.name, 'Konstrukteur'));
+            // Reserve-Pool: Fahrer ohne Cockpit stehen nicht in GAME_STATE.drivers und waren
+            // deshalb nicht auffindbar (Fix-Liste 13.11.2026). openDriverProfile löst sie auf.
+            (GAME_STATE.reservePool || []).forEach(d => addDriver(d.histId||d.id, d.name, 'Reserve'));
 
             // Ehemalige Teams (Anzeigename als ID – openTeamProfile loest darueber auf).
             // Bewusst VOR den historischen Fahrern: die Trefferliste wird auf 12 gekappt,
@@ -54560,6 +54591,12 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             for (const t of getFormerTeamIndex()) {
                 const span = t.from && t.to ? ` · ${t.from}${t.to !== t.from ? '–' + t.to : ''}` : '';
                 addTeam(t.name, t.name, `Ehemaliges Team${span}`);
+            }
+
+            // Ehemalige Fahrer der eigenen Welt (auch generierte, zurückgetretene, verstorbene):
+            // allTimeStATS führt jeden, der je ein Rennen fuhr — HIST_NAMES kennt nur echte.
+            for (const [id, a] of Object.entries(GAME_STATE.allTimeStATS?.drivers || {})) {
+                if (a?.name) addDriver(id, a.name, 'Ehemalig');
             }
 
             // Historische Fahrer
@@ -60110,7 +60147,7 @@ Empfohlene Wertebereiche:
                                         </div>
                                         ${(() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${lesbareTextfarbe(c)};font-weight:bold">${s}</span></div>`; })()}
                                     </div>
-                                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                                    <div class="gap-2 text-center text-xs" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr))">
                                         <div>
                                             <div class="font-bold">${dStanding.points || 0}</div>
                                             <div class="text-tertiary">Punkte</div>
@@ -60122,6 +60159,18 @@ Empfohlene Wertebereiche:
                                         <div>
                                             <div class="font-bold">${dStanding.podiums || 0}</div>
                                             <div class="text-tertiary">Podien</div>
+                                        </div>
+                                        <div>
+                                            ${(() => {
+                                                // „Vertrag bis“ wie im Fahrer-Steckbrief (Fix-Liste 13.11.2026)
+                                                const _fi = driver._lifetimeContract || (typeof _isLockedOwner === 'function' && _isLockedOwner(driver));
+                                                // „für immer“ eine Stufe kleiner, wie im Fahrer-Steckbrief (text-base statt text-xl);
+                                                // Kleiner nur im inneren span: das div behält die Zeilenhöhe der Nachbarn (18 px),
+                                                // sonst rutscht „Vertrag bis“ 2 px nach oben.
+                                                return _fi ? `<div class="font-bold"><span style="font-size:0.65rem">für immer</span></div>`
+                                                           : `<div class="font-bold">${driver.contractEnd || '–'}</div>`;
+                                            })()}
+                                            <div class="text-tertiary">Vertrag bis</div>
                                         </div>
                                     </div>
                                 </div>
@@ -61512,6 +61561,15 @@ Empfohlene Wertebereiche:
             const first = all[0], last = all[all.length-1];
             const topD = _buildWinRanking(all)[0];
             const topC = _buildConstrRanking(all)[0];
+            // Verlinkt wie die Tabellenzeilen darunter (Fix-Liste 13.11.2026): Fahrer über
+            // driverId, Team über constrId; ohne id bleibt der Name reiner Text.
+            const _esc = v => String(v).replace(/'/g, "\\'");
+            const dLink = (name, id) => id
+                ? `<span class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${_esc(id)}')">${name}</span>` : name;
+            const tLink = (name, id) => id
+                ? `<span class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${_esc(id)}')">${name}</span>` : name;
+            const _who = e => e.driverName && e.driverName !== '—' ? dLink(e.driverName, e.driverId) : null;
+            const topDId = topD ? (all.find(e => e.driverName === topD[0] && e.driverId) || {}).driverId : null;
             const tile = (icon, lbl, val, sub) => `
                 <div style="background:var(--bg-secondary);border-radius:8px;padding:7px 10px;min-width:0;overflow:hidden">
                     <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px">${icon} ${lbl}</div>
@@ -61519,10 +61577,10 @@ Empfohlene Wertebereiche:
                     ${sub ? `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:1px">${sub}</div>` : ''}
                 </div>`;
             return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:5px;margin-bottom:10px">
-                ${tile('📅', 'Erste Austragung', String(first.year), first.driverName && first.driverName !== '—' ? first.driverName : null)}
-                ${tile('🏁', 'Letzte Austragung', String(last.year), last.driverName && last.driverName !== '—' ? last.driverName : null)}
-                ${topD ? tile('🏆', 'Rekordsieger', topD[0], topD[1] + ' Siege') : ''}
-                ${topC ? tile('🏗️', 'Rekord-Team', _tn(topC[0]), topC[1] + ' Siege') : ''}
+                ${tile('📅', 'Erste Austragung', String(first.year), _who(first))}
+                ${tile('🏁', 'Letzte Austragung', String(last.year), _who(last))}
+                ${topD ? tile('🏆', 'Rekordsieger', dLink(topD[0], topDId), topD[1] + ' Siege') : ''}
+                ${topC ? tile('🏗️', 'Rekord-Team', tLink(_tn(topC[0]), topC[0]), topC[1] + ' Siege') : ''}
             </div>`;
         }
 

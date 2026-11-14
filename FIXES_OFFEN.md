@@ -129,10 +129,8 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
 
 ### All-Time-Statistiken
 - Team-Tabelle: **keine Spalte Konstrukteurs-WM** (Titel-Spalte nur bei Fahrern)
-- **Filter „nur aktive Fahrer"** in All-Time-Statistiken und Rekorde-Tab; der Rekorde-Tab hebt aktive Fahrer grün
-  hervor wie die All-Time-Statistiken
-- **All-Time-Stats einer Strecke** ohne Links — `_venueCard` (Erste/Letzte Austragung, Rekordsieger, Rekord-Team)
-  ist reiner Text (Code 12.11.2026)
+- **Filter „nur aktive Fahrer"** in All-Time-Statistiken und Rekorde-Tab. Die grüne Hervorhebung im Rekorde-Tab
+  gibt es seit 13.11.2026 (Code-Fix, `_recordActiveSet`, siehe ❔); der Filter fehlt weiter
 
 ### Einstellungen
 - **Rennmodus als feste Voreinstellung**, damit ein Klick genügt — weiterhin Auswahlfenster
@@ -145,16 +143,12 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   Offen bleibt: der Verlauf zeigt nur die letzten 5 Saisons
 - ❔ **Team-Historie-Layout (S / P / Pkt. / WM)** auf Karriere-Historie von F1- und Junior-Welt-Fahrern übertragen,
   Designänderungen künftig synchron halten — Übertragung nicht belegt
-- **Team-Steckbrief, Fahrer-Kachel:** „Vertrag bis" je Fahrer fehlt
 - **Team-Steckbrief, Team-Historie und Rennergebnisse:** entlassene Fahrer verschwinden aus beiden Bereichen.
   Sollen bleiben, nur ohne Vertrag, evtl. mit Emoji „nicht mehr aktiv bei diesem Team"
 - **Fahrer-Steckbrief, Rennergebnisse zählen Meldungen statt Rennen** (zwei Sheet-Einträge zusammengefasst):
   (a) Kalender sind unterschiedlich lang — sichtbar machen, ob der Fahrer trotzdem alle Rennen gemeldet war;
   (b) Saisons, die nur aus DSQ bestehen, fehlen
-- **WM-Stand-Fenster:** Anzeige „15/22 Rennen"
 - ❔ **WM-Stand: Reserve-Driver-Bug** — alt und hartnäckig; derzeit nicht nachweisbar (Nutzer 12.11.2026), beim nächsten Auftreten Symptom + Spielstand sichern
-- **Lupen-Suche** findet nicht jeden Fahrer — `globalSearchInput` liest nur `GAME_STATE.drivers` und `HIST_NAMES`;
-  Reserve-Pool und archivierte Ex-Fahrer fehlen (vermutete Ursache) (Code 12.11.2026)
 
 ### Teamlinien & Umbenennungen
 - **Links auf Vorgänger statt aufs Team:** Sauber führt zu Alfa Romeo, Mercedes zu Tyrrell — jedes Team führt zu einem
@@ -264,6 +258,15 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
+- **Lupen-Suche findet nicht jeden Fahrer.** Code-Fix 13.11.2026: `globalSearchInput` durchsucht jetzt auch den
+  Reserve-Pool („Reserve“) und `allTimeStATS.drivers` („Ehemalig“, auch generierte Ex-Fahrer)
+- **WM-Stand „15/22 Rennen“.** Code-Fix 13.11.2026: Die Kopfzeile zeigt gefahrene/alle Rennen, in Archivsaisons die Gesamtzahl
+- **Team-Steckbrief „Vertrag bis“.** Code-Fix 13.11.2026: In der Fahrer-Kachel steht die vierte Spalte „Vertrag bis“,
+  bei Besitzer-Fahrern „für immer“
+- **Rekorde-Tab: aktive Fahrer grün.** Code-Fix 13.11.2026: gleiche Markierung wie in All-Time, Abgleich über id,
+  histId und Namen
+- **Strecken-Kopf ohne Links.** Code-Fix 13.11.2026: `_venueCard` verlinkt den Sieger der ersten und letzten Austragung,
+  den Rekordsieger und das Rekord-Team
 - **BMW Sauber hatte Kick-Grün.** Code-Fix 12.11.2026: Die SEASON_DATA-Grundfarbe 2006–09 ist jetzt BMW-Blau #003FA3 statt #52E252.
   Die Livery Weiß/BMW-Blau ist als provisorisch markiert, also im Livery-Editor ein Platzhalter
 - **Force India 2008–14 in BWT-Pink.** Code-Fix 12.11.2026: Es gibt jetzt provisorische, generische Ranges.
