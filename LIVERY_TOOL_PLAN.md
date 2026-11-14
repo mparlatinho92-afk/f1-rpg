@@ -309,6 +309,27 @@ Werkstatt weiterentwickelt wurde, ohne neu zu bauen.
 - Die Hauptfarbe ist Schriftfarbe. `renderTeamNameColored` zieht bei Luminanz
   < 0,13 und > 0,65 einen Shadow – die Übersicht zeigt `colors[0]` deshalb auf
   hellem **und** dunklem Grund plus Luminanzwert.
+- **`data-pick` gehört nur den „wählen“-Knöpfen** (14.11.2026). „Farbe aus Bild“
+  trug dasselbe Merkmal: Der Klick setzte die Auswahl auf einen Kandidaten „1“, den
+  es nicht gibt, die gewählte Farbe war weg. Außerdem öffnete bei mehreren Kandidaten
+  „wählen“ den Farbeditor. Jetzt `data-imgpick`.
+- **Als Datei geöffnet (`file://`)** gibt es keine Live-Daten und keinen Speicher-Dienst.
+  Der Kandidat liegt dann nur im Browser-Speicher. In die Projektdatei kommt er erst,
+  wenn beim ersten Speichern im Speichern-Dialog `tools/quellen/livery-work.json`
+  angelegt wird, oder wenn `node tools/livery-server.js` läuft.
+- **Bildersammlung ohne Dubletten** (14.11.2026). Jedes erneute Auswählen derselben
+  Datei legte in IndexedDB eine Kopie an (Osella-Sammelbild: 3–4 Kopien), und der
+  Farbeditor öffnete leer. Jetzt gilt Name + Größe als dieselbe Datei. Alt-Dubletten
+  räumt `libLoad` auf, das älteste Exemplar bleibt und übernimmt eine Notiz. Der
+  Farbeditor öffnet das zuletzt benutzte Bild (`usedAt`) selbst. Test mit Playwright:
+  3× dieselbe Datei → 1 Eintrag, 2 eingeschleuste Kopien → weg, Notiz übernommen.
+- **Eintrag ohne Bildinhalt legt die Sammlung lahm** (14.11.2026). Im echten Profil
+  blieb „Aus der Sammlung“ komplett leer, ohne Hinweis: `URL.createObjectURL` wirft bei
+  einem Eintrag ohne gültigen Blob, der Aufbau bricht im Promise stumm ab. Ein frisches
+  Testprofil hat solche Einträge nicht, dort lief alles. `libLoad` entfernt sie jetzt
+  vor dem Dubletten-Abgleich (sonst verdrängt ein kaputtes „ältestes Exemplar“ das
+  gültige) und meldet die Zahl. Außerdem: `.pkstage{display:flex}` hebelte `hidden` aus,
+  die leere Lupe stand immer da → `.pkstage[hidden]{display:none}`.
 
 ## 10. Ist-Stand (gemessen 01.09.2026, v0.9.17.36)
 

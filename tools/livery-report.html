@@ -145,8 +145,10 @@
   .thumb{border:2px solid var(--line);border-radius:5px;cursor:pointer;background:#000}
   .thumb.on{border-color:var(--info)}
   .pkstage{display:flex;gap:12px;margin-top:12px;align-items:flex-start}
+  .pkstage[hidden]{display:none}
   #pkCanvas{max-width:100%;border-radius:7px;cursor:crosshair;display:block}
-  .pkside{flex:none;width:120px}
+  /* Lupe wandert beim Scrollen durch grosse Sammelbilder mit (.dlg-b ist der Scrollcontainer) */
+  .pkside{flex:none;width:120px;position:sticky;top:0}
   #pkLoupe{border:1px solid var(--line);border-radius:7px;background:#000;display:block;margin-bottom:6px}
   .picked-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
   .pk{display:inline-flex;gap:6px;align-items:center;padding:4px 6px;border-radius:6px;
@@ -420,7 +422,9 @@ async function bootSnapshot(whyLive) {
 
   renderMode('Werkstatt-Modus · Snapshot vom ' + snap.meta.generated +
     ' (Spiel v' + snap.meta.gameVersion + ') · <small>Lieferstatus nicht prüfbar – ' +
-    esc(whyLive ? whyLive.message : 'kein Zugriff auf den Projektordner') + '</small>');
+    esc(location.protocol === 'file:'
+      ? 'als Datei geöffnet, der Browser darf die Spieldaten nicht lesen. Live-Prüfung nur über den Dev-Server (localhost:3000)'
+      : (whyLive ? whyLive.message : 'kein Zugriff auf den Projektordner')) + '</small>');
 }
 
 /** data/*.js im Browser auswerten – const landet nicht auf window, daher Rückgabe. */
@@ -747,7 +751,7 @@ function renderSide() {
         <input id="nc" placeholder="z. B. #FF6600-#FF6600-weiß"></label>
       <label class="field"><span>Notiz / Quelle</span><input id="nn" placeholder="optional"></label>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button data-pick="1" title="Bild reinziehen und Farbe abnehmen">Farbe aus Bild</button>
+        <button data-imgpick="1" title="Bild reinziehen und Farbe abnehmen">Farbe aus Bild</button>
         <button data-add="idee">als Idee</button>
         <button data-add="vorschlag">als Vorschlag</button>
         <button data-add="note">als Auftrag (ohne Farbe)</button>
@@ -770,7 +774,10 @@ function renderSide() {
     b.onclick = () => addCandidate(key, b.dataset.add));
   const span = $('#side').querySelector('[data-span]');
   if (span) span.onclick = () => addSpan(key);
-  const pick = $('#side').querySelector('[data-pick]');
+  // Eigenes Merkmal: data-pick gehört den „wählen“-Knöpfen der Kandidaten. Mit demselben
+  // Merkmal setzte „Farbe aus Bild“ die Auswahl auf einen Kandidaten „1“, den es nicht gibt,
+  // und querySelector griff bei mehreren Kandidaten den ersten „wählen“-Knopf statt dieses Knopfs.
+  const pick = $('#side').querySelector('[data-imgpick]');
   if (pick) pick.onclick = () => openPicker(key);
   const img = $('#img');
   if (img) img.onchange = () => { S.work.images[team] = img.value.trim(); saveWork(); renderSide(); };
@@ -1141,8 +1148,9 @@ async function saveWorkFile(silent) {
 
   if (window.showSaveFilePicker) {
     if (!confirm('Noch keine Zieldatei festgelegt.\n\n' +
-        'Jetzt einmalig tools/quellen/livery-work.json auswählen? ' +
-        'Danach speichert der Knopf ohne Nachfrage dorthin.')) return false;
+        'Im folgenden Speichern-Dialog einmalig in den Ordner tools/quellen wechseln und ' +
+        'mit dem vorgeschlagenen Namen livery-work.json speichern. Gibt es die Datei noch nicht, ' +
+        'wird sie dabei angelegt.\n\nDanach speichert der Knopf ohne Nachfrage dorthin.')) return false;
     try {
       await pickSaveFile();
       return saveWorkFile(silent);
@@ -1228,24 +1236,62 @@ async function libTx(mode, fn) {
   });
 }
 
+// Gleiche Datei = gleicher Name + gleiche Groesse. Frueher legte jedes erneute
+// Auswaehlen eine Kopie an, die Sammlung zeigte dasselbe Bild drei-, viermal.
+const libSig = r => (r.name || '') + '|' + (r.size || 0);
+
 async function libLoad() {
+  LIB.err = null;
   try {
     LIB.items = await libTx('readonly', st => st.getAll());
-    LIB.items.sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+    // Eintraege ohne Bildinhalt zuerst raus: an ihnen brach der Aufbau der Sammlung
+    // stumm ab (createObjectURL wirft), und beim Dubletten-Abgleich duerfen sie nicht
+    // als „aeltestes Exemplar“ ein gueltiges Bild verdraengen.
+    const broken = LIB.items.filter(r => !(r.blob instanceof Blob) || !r.blob.size).map(r => r.id);
+    if (broken.length) {
+      await libTx('readwrite', st => broken.forEach(id => st.delete(id)));
+      LIB.items = LIB.items.filter(r => !broken.includes(r.id));
+      LIB.removedBroken = (LIB.removedBroken || 0) + broken.length;
+      toast('Bildersammlung: ' + broken.length + ' kaputte Einträge ohne Bildinhalt entfernt');
+    }
+    LIB.items.sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''));
+    // Alt-Dubletten aufraeumen: das aelteste Exemplar bleibt, eine Notiz wandert mit.
+    const seen = {}, dupes = [];
+    for (const r of LIB.items) {
+      const k = libSig(r);
+      if (!seen[k]) { seen[k] = r; continue; }
+      if (r.note && !seen[k].note) { seen[k].note = r.note; await libTx('readwrite', st => st.put(seen[k])); }
+      dupes.push(r.id);
+    }
+    if (dupes.length) {
+      await libTx('readwrite', st => dupes.forEach(id => st.delete(id)));
+      LIB.items = LIB.items.filter(r => !dupes.includes(r.id));
+    }
+    LIB.items.sort((a, b) => (b.usedAt || b.addedAt || '').localeCompare(a.usedAt || a.addedAt || ''));
   } catch (e) {
     LIB.items = [];
-    console.warn('Bildersammlung nicht lesbar:', e.message);
+    LIB.err = e.message || String(e);
+    console.warn('Bildersammlung nicht lesbar:', LIB.err);
   }
+}
+
+/** Zuletzt benutztes Bild nach vorn – der Farbeditor oeffnet es beim naechsten Mal von selbst. */
+async function libTouch(rec) {
+  rec.usedAt = new Date().toISOString();
+  try { await libTx('readwrite', st => st.put(rec)); } catch (e) {}
 }
 
 async function libAdd(files) {
   const list = [...(files || [])].filter(f => /^image\//.test(f.type));
   if (!list.length) return 0;
+  await libLoad();
   for (const f of list) {
+    const known = LIB.items.find(r => libSig(r) === libSig(f));
+    if (known) { await libTouch(known); continue; }
     const rec = {
       id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       name: f.name || 'Bild', type: f.type, size: f.size,
-      blob: f, note: '', addedAt: new Date().toISOString()
+      blob: f, note: '', addedAt: new Date().toISOString(), usedAt: new Date().toISOString()
     };
     await libTx('readwrite', st => st.put(rec));
   }
@@ -1409,8 +1455,9 @@ function openPicker(key, files, fromLib) {
       ${S.work.images[team] ? `<button id="pkRef" type="button">Referenzbild des Teams laden</button>` : ''}
     </div>
     <div class="sect" style="margin-top:10px;padding-top:10px">
-      <h4>Aus der Sammlung <span class="hint" style="text-transform:none;font-weight:400">– bleibt gespeichert, gilt für alle Team-Jahre</span></h4>
+      <h4>Aus der Sammlung <span class="hint" style="text-transform:none;font-weight:400">– Klick öffnet das Bild, kein Explorer nötig · das zuletzt benutzte ist schon offen</span></h4>
       <div id="pkLib" class="thumbs"></div>
+      <div id="pkStatus" class="hint" style="margin-top:6px" hidden></div>
     </div>
     <div id="pkLoaded" class="sect" style="margin-top:10px;padding-top:10px" hidden>
       <h4>Gerade geladen</h4>
@@ -1439,7 +1486,18 @@ function openPicker(key, files, fromLib) {
   if (refBtn) refBtn.onclick = () => addImageUrl(S.work.images[team]);
 
   renderPicked();
-  libLoad().then(renderPickerLib);
+  PICK.images = [];
+  const explicit = (files && files.length) || (fromLib && fromLib.length);
+  libLoad().then(() => {
+    renderPickerLib();
+    // Ohne ausdrueckliches Bild: das zuletzt benutzte aus der Sammlung gleich oeffnen,
+    // statt es jedes Mal neu aus dem Explorer zu holen.
+    if (!explicit && LIB.items.length) addFromLib(LIB.items[0]);
+    const fixed = LIB.removedBroken ? LIB.removedBroken + ' kaputte Einträge ohne Bildinhalt entfernt. ' : '';
+    pkStatus(fixed + (LIB.err ? 'Sammlung nicht lesbar: ' + LIB.err
+      : !LIB.items.length ? 'Sammlung ist leer – nichts zum automatischen Öffnen.'
+      : explicit ? '' : 'Öffne zuletzt benutztes Bild: ' + LIB.items[0].name + ' …'));
+  }).catch(e => pkStatus('Sammlung konnte nicht angezeigt werden: ' + (e.message || e)));
   if (files && files.length) addImages(files);
   if (fromLib && fromLib.length) fromLib.forEach(rec => addFromLib(rec));
 }
@@ -1461,9 +1519,21 @@ function renderPickerLib() {
 }
 
 function addFromLib(rec) {
+  // Schon geladen: nur hinschalten, nicht doppelt in „Gerade geladen“
+  const have = PICK.images.findIndex(it => it.libId === rec.id);
+  if (have >= 0) return showImage(have);
+  libTouch(rec);
   const img = new Image();
-  img.onload = () => { PICK.images.push({ img, name: rec.name }); showImage(PICK.images.length - 1); };
+  img.onload = () => { PICK.images.push({ img, name: rec.name, libId: rec.id }); showImage(PICK.images.length - 1); pkStatus(''); };
+  img.onerror = () => pkStatus('„' + rec.name + '“ lässt sich nicht anzeigen (Typ ' + (rec.type || '?') + ', ' +
+    (rec.blob ? fmtKB(rec.blob.size || 0) : 'kein Inhalt gespeichert') + ').');
   img.src = libUrl(rec);
+}
+
+/** Sichtbare Statuszeile im Farbeditor – vorher scheiterte das Auto-Öffnen stumm. */
+function pkStatus(text) {
+  const el = $('#pkStatus');
+  if (el) { el.textContent = text; el.hidden = !text; }
 }
 
 function addImages(fileList) {
