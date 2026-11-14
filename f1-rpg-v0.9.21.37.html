@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.36</title>
+    <title>F1 RPG v0.9.21.37</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.36 (aktuell) - 14.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.37 (aktuell) - 15.11.2026</div>
+                            <div>&#8226; FIX: Simulierte Saisons nach 2025 behalten die Teamfarben (letzte bekannte Livery)</div>
+                            <div>&#8226; NEU: Kick Sauber wird 2026 zu Audi, laufende Vertraege bleiben</div>
+                            <div>&#8226; NEU: Cadillac steigt 2026 ein (Farben und Pace provisorisch)</div>
+                            <div>&#8226; FIX: Startfeld nach 2025 waechst mit den Teams, keine DNQ mehr durch Cadillac</div>
+                            <div>&#8226; NEU: Livery-Report zeigt Audi und Cadillac 2026 als Platzhalter</div>
+                            <div class="font-bold text-slate-400">v0.9.21.36 - 14.11.2026</div>
                             <div>&#8226; FIX: Lupen-Suche findet auch Reserve-Fahrer und ehemalige Fahrer der eigenen Welt</div>
                             <div>&#8226; NEU: WM-Stand zeigt den Saisonfortschritt (z. B. 15/22 Rennen)</div>
                             <div>&#8226; NEU: Team-Steckbrief zeigt Vertrag bis je Fahrer</div>
@@ -23060,7 +23066,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.36';
+        const VERSION = '0.9.21.37';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -24476,7 +24482,18 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         }
 
         function getGridSize(year, race) {
-            const base = GRID_SIZES[year] ?? 20;
+            let base = GRID_SIZES[year];
+            if (base == null) {
+                // Jenseits der Tabelle (endet 2025) waechst das Feld mit den Teams: Cadillac
+                // 2026 = 11 Teams, real 22 Wagen. Mit festen 20 schieden zwei Fahrer je Rennen
+                // als DNQ aus, die es in der Moderne nicht gibt. Deckel 26 = Reglement-Maximum.
+                const last = Math.max.apply(null, Object.keys(GRID_SIZES).map(Number));
+                base = GRID_SIZES[last] ?? 20;
+                if (year > last && typeof GAME_STATE !== 'undefined' && Array.isArray(GAME_STATE.teams)) {
+                    const n = GAME_STATE.teams.filter(t => !t.isIndyOnly).length;
+                    base = Math.min(26, Math.max(base, 2 * n));
+                }
+            }
             if (!race) return base;
             // REALE STARTERZAHL DIESES RENNENS, wenn bekannt (v0.9.15.94).
             // GRID_SIZES ist ein JAHRESMITTEL — real schwankte die Starterzahl stark
@@ -44563,6 +44580,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             'Sauber':        [{yearTo: 2005, nextId: 'BMW Sauber'}, {yearTo: 2018, nextId: 'Alfa Romeo'}],
             'BMW Sauber':    [{yearTo: 2009, nextId: 'Sauber'}],
             'Alfa Romeo':    [{yearTo: 2023, nextId: 'Kick Sauber'}],
+            'Kick Sauber':   [{yearTo: 2025, nextId: 'Audi'}],   // jenseits SEASON_DATA: Farbe aus FUTURE_TEAMS
             'Ligier':        [{yearTo: 1996, nextId: 'Prost'}],
             'Osella':        [{yearTo: 1990, nextId: 'Fondmetal'}],
             'Virgin':        [{yearTo: 2011, nextId: 'Marussia'}],
@@ -44599,6 +44617,10 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 } else {
                     // Fallback: newHistId ist bereits der Anzeigename aus HIST_TEAMS
                     team.name = newHistId;
+                    // Jenseits SEASON_DATA (Kick Sauber -> Audi 2026): Grundfarbe aus FUTURE_TEAMS
+                    const fut = typeof FUTURE_TEAMS !== 'undefined'
+                        && Object.values(FUTURE_TEAMS).find(f => f.name === newHistId);
+                    if (fut) team.color = fut.color;
                 }
                 team.histId = newHistId;
                 // Vertrags-Übernahme: nur laufende Verträge bleiben beim Team
@@ -44745,6 +44767,36 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             });
 
             placeLoyalOwnerDrivers();
+        }
+
+        // Einsteiger jenseits des SEASON_DATA-Horizonts (FUTURE_TEAMS mit entry, z. B. Cadillac
+        // 2026). applyTeamEntryExit kann sie nicht liefern: es liest SEASON_DATA[newYear], und
+        // das endet 2025. Jedes Team tritt hoechstens einmal an (futureTeamsEntered), steigt es
+        // spaeter aus, kommt es nicht wieder. Die Sitze fuellt fillEmptyTeamSeats wie bei jedem
+        // anderen Neueinsteiger.
+        function applyFutureTeamEntries(newYear) {
+            if (typeof FUTURE_TEAMS === 'undefined') return 0;
+            if (!GAME_STATE.futureTeamsEntered) GAME_STATE.futureTeamsEntered = {};
+            let entered = 0;
+            Object.entries(FUTURE_TEAMS).forEach(([fid, f]) => {
+                if (!f.entry || newYear < f.from || GAME_STATE.futureTeamsEntered[fid]) return;
+                // Gibt es SEASON_DATA fuer das Jahr, entscheidet applyTeamEntryExit
+                if (typeof SEASON_DATA !== 'undefined' && SEASON_DATA[String(newYear)]) return;
+                if (GAME_STATE.teams.some(t => t.name === f.name)) { GAME_STATE.futureTeamsEntered[fid] = newYear; return; }
+                let id = fid;
+                if (GAME_STATE.teams.some(t => t.id === id)) id = `${fid}_${newYear}`;
+                GAME_STATE.teams.push({
+                    id, name: f.name, color: f.color,
+                    carSpeed: f.carSpeed || 60, reliability: f.reliability || 50, strategy: f.strategy || 60,
+                    histId: f.name, isIndyOnly: false
+                });
+                if (!GAME_STATE.teamStandings) GAME_STATE.teamStandings = {};
+                GAME_STATE.teamStandings[id] = { points: 0, wins: 0, podiums: 0, poles: 0, fastestLaps: 0 };
+                GAME_STATE.futureTeamsEntered[fid] = newYear;
+                logInfo('ENTRY', `✅ ${f.name} tritt der F1 bei (${newYear}, Zukunftsteam)`);
+                entered++;
+            });
+            return entered;
         }
 
         // === BESITZER-FAHRER INS EIGENE TEAM (v0.9.14.99) ===
@@ -46170,6 +46222,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             applyTeamSuccessions(newYear);
             // ── Team Ein-/Austritt: SEASON_DATA als Wahrheitsquelle ──
             applyTeamEntryExit(newYear);
+            // ── Einsteiger jenseits SEASON_DATA (Cadillac 2026) ──
+            applyFutureTeamEntries(newYear);
             // ── Saisonnummern nach Ära vergeben ──
             assignSeasonNumbers(newYear);
 
@@ -50428,6 +50482,19 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Gemeinsame Meldelisten-Kacheln (aktive + historische Saison)
         // opts: { showPoints, showSatisfaction, showBirthYear, showContractEnd }
         // A/B-Test: Mehrfarbige Teamfarben für Meldelisten-Header (Jahr → TeamID → [c1, c2?, c3?])
+        // Teams jenseits des SEASON_DATA-Horizonts (endet 2025). Werte PROVISORISCH:
+        // Farben generisch, Pace geschaetzt (hinter dem letzten Team 2025).
+        // successorOf: die Kurz-ID des Vorgaengers. applyTeamSuccessions behaelt team.id,
+        //   KIC faehrt ab 2026 also als Audi weiter, die Farbe muss ueber die alte ID greifen.
+        // entry: tritt per applyFutureTeamEntries neu an (es gibt nach 2025 kein SEASON_DATA,
+        //   aus dem applyTeamEntryExit einen Einsteiger lesen koennte).
+        // Livery-Ranges dazu stehen in TEAM_COLORS_RANGES unter derselben Kurz-ID.
+        const FUTURE_TEAMS = {
+            AUD: { name: 'Audi',     from: 2026, successorOf: 'KIC', color: '#A7A9AC' },
+            CAD: { name: 'Cadillac', from: 2026, entry: true,        color: '#1A1A1A',
+                   carSpeed: 76, reliability: 60, strategy: 68 }
+        };
+
         const TEAM_COLORS_EXTRA = {
             '1962': { 'BRA': ['#00C5B0', '#00C5B0', '#00C5B0'] }, // Brabham 1962: Solid Türkis
             '1992': { 'BRA': ['#1A3A8A', '#1A3A8A', '#FFFFFF'] }, // Brabham 1992: 2/3 Blau + 1/3 Weiß
@@ -50464,6 +50531,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             [1997, 2006, 'MCL', ['#A8A8A8', '#A8A8A8', '#111111']], // West/Silver: 2/3 Silber + 1/3 Schwarz
             [2007, 2014, 'MCL', ['#C0C0C0', '#C0C0C0', '#E60026']], // Vodafone: 2/3 Chrome + 1/3 Rot
             [2024, 2099, 'MCL', ['#FF8000', '#FF8000', '#0090D0']], // Papaya modern ab 2024 (2015-2023 jahresgenau)
+            // Zukunftsteams (FUTURE_TEAMS), generisch: Audi Titan/Schwarz/Rot, Cadillac Schwarz/Weiss
+            [2026, 2099, 'AUD', ['#A7A9AC', '#1A1A1A', '#E2001A'], 'provisorisch'],
+            [2026, 2099, 'CAD', ['#1A1A1A', '#FFFFFF'], 'provisorisch'],
             [2015, 2015, 'MCL', ['#2C2C2C', '#1A1A1A']],     // #2C2C2C-#1A1A1A
             [2016, 2016, 'MCL', ['#1A1A1A']],                // #1A1A1A
             [2017, 2018, 'MCL', ['#FF8000', '#FF8000', '#2C2C2C']], // #FF8000-#FF8000-#2C2C2C
@@ -50932,11 +51002,28 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 if (sdT) resolvedId = sdT[0];
                 if (sdSameYear && sdSameYear[2] && sdSameYear[2] !== '#888888') sdYearColor = sdSameYear[2];
             }
+            const y = Number(year);
+            // Zukunftsteams: Name, eigene Kurz-ID oder (ab dem Einstiegsjahr) die ID des
+            // Vorgaengers – Kick Sauber behaelt als Audi die ID KIC.
+            if (lookupId && typeof FUTURE_TEAMS !== 'undefined') {
+                const fl = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+                for (const fid in FUTURE_TEAMS) {
+                    const f = FUTURE_TEAMS[fid];
+                    if (y >= f.from && (lookupId === fid || fl(lookupId) === fl(f.name)
+                        || (f.successorOf && resolvedId === f.successorOf))) { resolvedId = fid; break; }
+                }
+            }
             const extra = TEAM_COLORS_EXTRA[String(year)];
             if (extra && resolvedId && extra[resolvedId]) return extra[resolvedId];
-            const y = Number(year);
             for (const [from, to, id, colors] of TEAM_COLORS_RANGES) {
                 if (id === resolvedId && y >= from && y <= to) return colors;
+            }
+            // Jenseits des Template-Horizonts (SEASON_DATA endet 2025) gilt die zuletzt
+            // bekannte Livery weiter. Vorher fielen simulierte Saisons auf Grau zurueck,
+            // nur McLaren (Range bis 2099) behielt seine Farben.
+            if (typeof SEASON_DATA !== 'undefined' && !SEASON_DATA[String(year)]) {
+                const lastSd = Math.max.apply(null, Object.keys(SEASON_DATA).map(Number));
+                if (y > lastSd) return getTeamColors(teamId, lastSd, baseColor);
             }
             // Keine Ära-Livery hinterlegt (Ferrari, Williams, Benetton u.v.m. haben GAR KEINEN
             // TEAM_COLORS_RANGES-Eintrag): dann die SEASON_DATA-Farbe des Jahres statt Grau.

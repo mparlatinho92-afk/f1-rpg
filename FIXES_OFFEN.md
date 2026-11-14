@@ -16,6 +16,17 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 
 ---
 
+## ✚ Aus dem Sheet – ungeprüft
+
+Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
+
+- ✚ file:///C:/Users/lyric/OneDrive/Pictures/Screenshots/Screenshot%202026-11-14%20235820.png
+- ✚ Zwar wird ein natürlicher Tod nicht bekanntgegeben,  also das Alter nach der Karriere wird nach 5 Jahren Inaktivität ja bekanntlich in das Geburtsdatum umgewandelt, aber gewisse Tode sollten schon erwähnenswert sein. Alle tödlichen Unfälle die sonst, das Spiel in der SImulation nennt + rückwirkend alle tödlichen Unfälle, jemals aktiver F1-Fahrer. Wobei Denny Hulme, Clay Regazzoni, Michele Alboreto grenzwertig wären. Ich würde sagen, auch nur im 5 Jahresfenster nach der letzten Aklivität. oder noch besser hier sogar 10 jahre. ich meine die info im steckbrief
+- ✚ Startnummer sind nicht zu 100% vergeben. Startnummern außerhalb des Rennen selbst, nur wenn fest an Fahrer gebunden. es gibt ja drei Ären. Pro Rennen bis 1973, dann ganze Saison, dann ganze Karriere
+- ✚ Jackie Stewart zu konstant, Kimi Antonelli zu unbedeutend, Tim Tramnitz ist viel zu oft Top-Talent
+
+---
+
 ## ◐ Teilweise erledigt
 
 ### Strafversetzung (Startplatz ≠ Quali-Platz, seit v0.9.21.22)
@@ -162,13 +173,6 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   übernommen. Späteren Privateer-Status abschaffen — entweder fest oder gar nicht. Durch seinen Vertrag gibt es nur
   noch ein weiteres Cockpit, Privateer ist keine Ausweichmöglichkeit mehr
 
-### Teamfarben & Liveries
-- **Simulierte Saisons im WM-Stand** verlieren die Teamfarben, McLaren behält sie noch einige Saisons — vermutete
-  Ursache: jenseits von SEASON_DATA (endet 2025) fällt `getTeamColors` auf Grundfarbe oder Grau zurück; nur McLaren
-  hat eine Livery bis 2099 (Code 12.11.2026)
-- **2026:** Kick Sauber wird Audi, Cadillac kommt dazu — Teamfarben gleich mit festlegen. SEASON_DATA endet 2025,
-  `CONSTRUCTOR_SUCCESSION` kennt Kick Sauber → Audi nicht; nur die Logos ab 2026 sind da (Code 12.11.2026)
-
 ### Strecken & Kalender
 - ◐ **Rennkalender / Reisebelastung 1950–1985** (drei Sheet-Einträge zusammengefasst; Gemini-Chats
   <https://gemini.google.com/app/92f1856b2cac4058>, PDF `OneDrive/Dokumente/F1 Simulator_ Termin- und Reiseplanung.pdf`;
@@ -271,6 +275,11 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   Die Livery Weiß/BMW-Blau ist als provisorisch markiert, also im Livery-Editor ein Platzhalter
 - **Force India 2008–14 in BWT-Pink.** Code-Fix 12.11.2026: Es gibt jetzt provisorische, generische Ranges.
   2008 Weiß/Gold/Tungsten, 2009–13 Weiß/Safran/Grün, 2014 Schwarz/Safran/Grün
+- **Teamfarben in simulierten Saisons.** Code-Fix 14.11.2026: Nach 2025 gilt die zuletzt bekannte Livery weiter
+  (`getTeamColors` greift auf das letzte SEASON_DATA-Jahr zurück). Gemessen bis 2028: kein Team mehr grau, vorher 9 von 10
+- **2026: Audi und Cadillac.** Code-Fix 14.11.2026: Kick Sauber wird 2026 zu Audi (laufende Verträge bleiben),
+  Cadillac steigt 2026 ein, Sitze über den Sitzfüller; das Startfeld wächst nach 2025 mit den Teams (22 statt 20, vorher 46 DNQ je Saison). Farben provisorisch (Audi Titan/Schwarz/Rot, Cadillac
+  Schwarz/Weiß), im Livery-Report als Platzhalter 2026. Cadillac-Pace geschätzt, hinter Alpine 2025
 - **Ruanda-Strecke.** Code-Fix 12.11.2026: Der Rwandan GP heißt jetzt „Bugesera Circuit“ (Bugesera-Distrikt, nahe Rilima).
   Die id `kigali` bleibt, weil bestehende Spielstände sie im Kalender führen
 - **Doppelter Fahrer in angeblich zwei Teams** (`Matías Zagazeta`, zweimal im selben Chinese GP, P1 **und** P3,
