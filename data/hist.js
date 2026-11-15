@@ -3402,10 +3402,52 @@ function getHistoricalStATS(startYear) {
         };
     }
     
+    // Team-Vorgeschichte EXAKT aus den echten Ergebnissen vor dem Startjahr (15.11.2026). Vorher
+    // linear nach Kalenderjahren hochgerechnet: Mercedes 1954–2025 bei Start 2008 = 54/72 der
+    // Gesamtbilanz = 528 Rennen, 95 Siege – real vor 2008 nur 1954/55 (12 Rennen, 9 Siege). Traf
+    // jedes Team mit Luecken (Honda, Renault, Alfa Romeo, Lotus …). Zeilen = Fahrzeug-Starts wie in
+    // HIST_TEAMS; DNQ/DNPQ/DNP zaehlen nicht. Kein Treffer ueber den Slug → alte Hochrechnung.
+    const _slug = n => String(n).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const _vor = {}, _bekannt = new Set();
+    if (typeof F1DB_RESULTS !== 'undefined') {
+        for (const [y, rennen] of Object.entries(F1DB_RESULTS)) {
+            const jahr = Number(y);
+            for (const race of rennen) for (const r of (race[2] || [])) {
+                _bekannt.add(r[4]);
+                if (jahr >= startYear || r[2] === 'DNQ' || r[2] === 'DNPQ' || r[2] === 'DNP') continue;
+                const t = _vor[r[4]] = _vor[r[4]] || { wins: 0, podiums: 0, poles: 0, points: 0, races: 0, first: jahr, last: jahr };
+                t.races++;
+                if (r[1] === 1) t.wins++;
+                if (r[1] >= 1 && r[1] <= 3) t.podiums++;
+                if (r[11] === 1) t.poles++;
+                t.points += (r[10] || 0);
+                if (jahr < t.first) t.first = jahr;
+                if (jahr > t.last) t.last = jahr;
+            }
+        }
+    }
+
     for (const [teamName, data] of Object.entries(HIST_TEAMS)) {
         const [wins, podiums, poles, points, races, firstYear, lastYear] = data;
         if (firstYear >= startYear) continue;
-        
+
+        const _sl = _slug(teamName);
+        if (_bekannt.has(_sl)) {
+            const v = _vor[_sl];
+            if (!v) continue;                     // vor dem Start nie gestartet
+            result.teams[teamName] = {
+                name: teamName,
+                wins: v.wins, podiums: v.podiums, poles: v.poles,
+                points: Math.round(v.points * 10) / 10, races: v.races,
+                firstYear: v.first, lastYear: v.last,
+                isDefunct: lastYear < startYear,
+                hasIndy: isIndyOnlyConstructor(teamName),
+                hasF1: !isIndyOnlyConstructor(teamName)
+            };
+            continue;
+        }
+
         const careerYears = lastYear - firstYear + 1;
         const yearsBeforeStart = Math.min(lastYear, startYear - 1) - firstYear + 1;
         const fraction = yearsBeforeStart / careerYears;

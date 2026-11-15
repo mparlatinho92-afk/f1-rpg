@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.39</title>
+    <title>F1 RPG v0.9.21.40</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.39 (aktuell) - 15.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.40 (aktuell) - 15.11.2026</div>
+                            <div>&#8226; FIX: Teamlinks oeffnen das Team des angezeigten Namens statt des heutigen Nachfolgers (z. B. Honda 2008)</div>
+                            <div>&#8226; FIX: Team-Historie und Rennergebnisse zeigen nur die Jahre unter dem eigenen Namen</div>
+                            <div>&#8226; NEU: Team-Steckbrief zeigt die Vorgaenger als eigene Bloecke zur Info</div>
+                            <div>&#8226; FIX: Team-Vorgeschichte beim Spielstart exakt aus echten Ergebnissen statt hochgerechnet (Mercedes 2008: 9 statt 95 Siege)</div>
+                            <div class="font-bold text-slate-400">v0.9.21.39 - 15.11.2026</div>
                             <div>&#8226; FIX: Rueckkehrer aus anderen Serien trugen erneut das Debuet-Abzeichen (z. B. Antonelli 2030)</div>
                             <div>&#8226; FIX: Debuet zaehlt ab der ersten Meldung zur Quali oder Vorquali, auch bei DNQ, DNPQ und DNS</div>
                             <div>&#8226; FIX: Freitagstrainings zaehlen nicht mehr als Debuet, 93 echte Debuetjahre korrigiert</div>
@@ -4454,7 +4459,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.39';
+        const VERSION = '0.9.21.40';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -31600,7 +31605,7 @@
                     <div class="card p-4 rounded-xl mb-4" style="background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.05));">
                         <div class="text-xs text-tertiary">🏆 Sieger</div>
                         <div class="text-xl font-bold driver-link cursor-pointer" onclick="openDriverProfile('${winner.driverId}')">${driverName(winner.driverId)}</div>
-                        <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${winner.constrId}')">${teamName(winner.constrId)}</span> · ${winner.time || '-'} · ${winner.laps || '?'} Runden</div>
+                        <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${teamProfilArg(winner.constrId, teamName(winner.constrId))}')">${teamName(winner.constrId)}</span> · ${winner.time || '-'} · ${winner.laps || '?'} Runden</div>
                     </div>
                 ` : ''}
                 
@@ -31761,7 +31766,7 @@
                         <div class="champ-card-media">${renderTeamLogoHtml(_tcLogoId, h.year, getTeamColors(_tcTeam?.id || teamChampId || '', h.year, _tcTeam?.color)[0], teamChampName)}</div>
                         <div class="champ-card-body" style="${tcStyle.txt}">
                             <div class="champ-card-label">🏎️ Konstrukteur</div>
-                            <div class="champ-card-title ${teamChampId ? 'champ-card-name' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamChampId}')"` : ''}>${teamChampName}</div>
+                            <div class="champ-card-title ${teamChampId ? 'champ-card-name' : ''}" ${teamChampId ? `onclick="openTeamProfile('${teamProfilArg(teamChampId, teamChampName)}')"` : ''}>${teamChampName}</div>
                             <div class="champ-card-sub">${teamChampionPoints} Pkt</div>
                         </div>
                         <div class="champ-card-flag">${renderFlag(_tcTeam?.nation, teamChampName, h.year)}</div>
@@ -32586,6 +32591,19 @@
 
         // Teamnamen farbig rendern: immer Teamfarbe als Schriftfarbe
         // Farbe bleibt original; lesbareTextfarbe() ergänzt bei Bedarf einen Halo-Schatten.
+        // Ziel eines Teamlinks (15.11.2026): Umbenennungen behalten team.id (Honda 2008, Brawn 2009 und
+        // Mercedes 2010 sind alle 'HON'). Ein Link mit der ID oeffnete deshalb das HEUTIGE Team – „Honda“
+        // in der Wertung 2008 fuehrte zu Mercedes. Zeigt der Link einen anderen Namen als das aktuelle Team
+        // dieser ID, wird der NAME uebergeben; ohne Namen bleibt die ID. Rueckgabe fuer onclick in '…'.
+        function teamProfilArg(teamId, shownName) {
+            const esc = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            if (!teamId) return esc(shownName || '');
+            const nm = shownName ? teamDisplayName(shownName) : null;
+            const cur = (GAME_STATE.teams || []).find(t => t.id === teamId);
+            if (nm && cur && cur.name && cur.name !== nm) return esc(nm);
+            return esc(teamId);
+        }
+
         function renderTeamNameColored(name, teamId, year, baseColor, onclickAttr) {
             // EINE zentrale Auflösung statt drei Pflaster: mehrere Aufrufer übergeben als
             // `name` eine Team-ID, weil die Wertungen nur die ID führen —
@@ -32595,7 +32613,7 @@
             const colors = getTeamColors(teamId || '', year, baseColor) || [baseColor];
             const primary = colors[0] || '#888';
             const cls = `text-xs${teamId ? ' team-link cursor-pointer' : ''}`;
-            const click = onclickAttr !== undefined ? onclickAttr : (teamId ? ` onclick="openTeamProfile('${teamId}')"` : '');
+            const click = onclickAttr !== undefined ? onclickAttr : (teamId ? ` onclick="openTeamProfile('${teamProfilArg(teamId, name)}')"` : '');
             if (primary === '#888888' || primary === '#888') {
                 return `<span class="${cls}" style="color:var(--text-muted);font-weight:bold"${click}>${name}</span>`;
             }
@@ -32819,7 +32837,7 @@
                             <tr class="${r.position === 1 ? 'accent-gold' : ''} cursor-pointer card-hover" onclick="openDriverProfile('${r.driver}')">
                                 <td class="py-1 font-bold">${r.position}.</td>
                                 <td>${renderFlag(r.nation, r.name, r.year || r.raceYear)} <span class="driver-link">${r.name}</span></td>
-                                <td class="${r.team ? 'team-link cursor-pointer' : 'text-tertiary'}" onclick="${r.team ? `event.stopPropagation();openTeamProfile('${r.team}')` : ''}">${r.teamName}</td>
+                                <td class="${r.team ? 'team-link cursor-pointer' : 'text-tertiary'}" onclick="${r.team ? `event.stopPropagation();openTeamProfile('${teamProfilArg(r.team, r.teamName)}')` : ''}">${r.teamName}</td>
                                 <td class="font-bold">+${r.points}</td>
                             </tr>
                         `).join('')}
@@ -33001,7 +33019,7 @@
                                     const _allTeams = _driverTeamsMap[d.id] ? [..._driverTeamsMap[d.id].values()] : null;
                                     const _renderTeamBadge = t => {
                                         const tObj = teamsList.find(x => x.id === t.id || x.id === t.name || x.name?.toLowerCase() === t.name?.toLowerCase());
-                                        const click = tObj ? ` onclick="openTeamProfile('${tObj.id}')"` : undefined;
+                                        const click = tObj ? ` onclick="openTeamProfile('${teamProfilArg(tObj.id, t.name)}')"` : undefined;
                                         return renderTeamNameColored(tObj?.name || t.name, tObj?.id || t.id || null, flagYear, tObj?.color, click);
                                     };
                                     // RÜCKFALL ÜBER DENSELBEN BADGE (v0.9.16.7): hier stand
@@ -36103,7 +36121,7 @@
                                     <td class="p-3 text-center">${h.championPoints || '-'}</td>
                                     <td class="p-3 accent-blue" style="white-space:nowrap">${h.teamChampion && h.teamChampion !== '-' ? renderFlag(_teamNat(h.teamChampion), h.teamChampion, h.year) + ' ' : ''}
                                         ${!h.isHistorical && h.teamChampionId
-                                            ? `<span class="team-link" onclick="event.stopPropagation(); openTeamProfile('${h.teamChampionId}')">${h.teamChampion}</span>`
+                                            ? `<span class="team-link" onclick="event.stopPropagation(); openTeamProfile('${teamProfilArg(h.teamChampionId, h.teamChampion)}')">${h.teamChampion}</span>`
                                             : (h.teamChampion || '-')}
                                     </td>
                                     <td class="p-3 text-center">${h.teamChampionPoints || '-'}</td>
@@ -39717,7 +39735,7 @@ Empfohlene Wertebereiche:
                                                 : `<span style="width:34px;flex-shrink:0"></span>`}
                                             ${(row._aufklappbar || row._erste)
                                                 ? `<span class="mxArrow${row._gruppe}" style="font-size:0.78rem;line-height:1;cursor:pointer;flex-shrink:0;color:var(--accent-main-text)" title="Teams dieser Saison einzeln zeigen" onclick="event.stopPropagation();toggleMatrixYear(${row._gruppe},this)">${row._kopf ? '▸' : '▾'}</span>` : ''}
-                                            <span style="flex:0 1 auto; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${row.teamId}')"` : ''}>${row.teamName}</span>
+                                            <span style="flex:0 1 auto; min-width:0; font-size:0.7rem; ${row.teamColorStyle}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;${row.teamId ? ' cursor:pointer;' : ''}" title="${row.teamName}"${row.teamId ? ` onclick="event.stopPropagation();openTeamProfile('${teamProfilArg(row.teamId, row.teamName)}')"` : ''}>${row.teamName}</span>
                                         </div>
                                     ` + (mxTakt(row, _i, _a) ? mxLuecke() : '')).join('')}
                                 </div>
@@ -41493,6 +41511,13 @@ Empfohlene Wertebereiche:
         // =======================================
         // Phase 3 Option A: async Wrapper – hydriert nur die Teilnahme-Jahre (leichter teamHistIds-Index).
         window.openTeamProfile = async function(teamId) {
+            // Rueckfall fuer Links ohne Namen in der Archivansicht: dort heisst die ID evtl. anders als
+            // heute (HON = Honda 2008, heute Mercedes) – dann das Team des angesehenen Jahres oeffnen.
+            if (typeof viewingHistoricalYear !== 'undefined' && viewingHistoricalYear && historicalViewData) {
+                const altName = historicalViewData.teamStandings?.[teamId]?.name;
+                const cur = (GAME_STATE.teams || []).find(t => t.id === teamId);
+                if (altName && cur && cur.name !== altName) teamId = altName;
+            }
             const _recs = await _hydrateProfileYears(teamId, 'team');
             try { _openTeamProfileBody(teamId); }
             finally { for (const r of _recs) for (const k of HISTORY_HEAVY_FIELDS) delete r[k]; }
@@ -41690,8 +41715,8 @@ Empfohlene Wertebereiche:
                     </div>
                     
                     <!-- Team-Historie (alle Saisons) - AUCH für ehemalige Teams! -->
-                    ${renderTeamHistory(team.id, stATSId)}
-                    ${renderTeamRaceGrid(team.id, stATSId)}
+                    ${renderTeamHistory(team.id, stATSId, { profilName: team.name })}
+                    ${renderTeamRaceGrid(team.id, stATSId, { profilName: team.name })}
                 `;
                 bringModalToFront(document.getElementById('teamProfileModal')); document.getElementById('teamProfileModal').style.display = 'flex';
                 initLazyImages(document.getElementById('teamProfileBody'));
@@ -41883,8 +41908,8 @@ Empfohlene Wertebereiche:
                 ` : ''}
                 
                 <!-- Team-Historie (alle Saisons) -->
-                ${renderTeamHistory(team.id, stATSId)}
-                ${renderTeamRaceGrid(team.id, stATSId)}
+                ${renderTeamHistory(team.id, stATSId, { profilName: team.name })}
+                ${renderTeamRaceGrid(team.id, stATSId, { profilName: team.name })}
             `;
 
             bringModalToFront(document.getElementById('teamProfileModal')); document.getElementById('teamProfileModal').style.display = 'flex';
@@ -41954,7 +41979,28 @@ Empfohlene Wertebereiche:
             return set;
         }
 
-        function renderTeamHistory(teamId, histId = null) {
+        // Vorgaenger eines Teamnamens laut CONSTRUCTOR_SUCCESSION, naechster zuerst (Mercedes: Brawn,
+        // Honda, BAR, Tyrrell). Kreise (Sauber -> BMW Sauber -> Sauber) werden ueber `gesehen` gekappt.
+        function teamVorgaenger(name) {
+            const out = [], gesehen = new Set([name]);
+            let ebene = [name];
+            while (ebene.length) {
+                const naechste = [];
+                for (const n of ebene) {
+                    Object.entries(CONSTRUCTOR_SUCCESSION).forEach(([vor, eintr]) => {
+                        if (!gesehen.has(vor) && eintr.some(e => e.nextId === n)) { gesehen.add(vor); out.push(vor); naechste.push(vor); }
+                    });
+                }
+                ebene = naechste;
+            }
+            return out;
+        }
+
+        // opts.profilName: nur Saisons unter DIESEM Namen zaehlen (15.11.2026, Nutzer: Statistiken der
+        //   Vorgaenger nicht uebernehmen). Umbenennungen behalten team.id, ohne Filter stand Brawn 2009
+        //   in der Historie von Mercedes. Vorgaenger erscheinen darunter als eigene Bloecke, nur zur Info.
+        // opts.titel / opts.vorgaenger=false: fuer genau diese eingebetteten Vorgaenger-Bloecke.
+        function renderTeamHistory(teamId, histId = null, opts = {}) {
             const teamHistory = [];
             const idsToCheck = [teamId];
             if (histId && histId !== teamId) idsToCheck.push(histId);
@@ -42211,6 +42257,9 @@ Empfohlene Wertebereiche:
                     }
                 }
                 
+                // Andere Namensepoche derselben ID (Vorgaenger/Nachfolger) gehoert nicht in diese Tabelle
+                const _saisonName = teamStanding?.name || (season.teams || []).find(t => t.id === actualTeamId)?.name;
+                if (opts.profilName && _saisonName && _saisonName !== opts.profilName) continue;
                 if (teamStanding || actualTeamId) {
                     const _idSet = collectTeamIdAliases(season, [...idsToCheck, actualTeamId]);
                     // === AUSHILFEN AUCH IN DER JAHRESUEBERSICHT (v0.9.17.11) ===
@@ -42261,7 +42310,7 @@ Empfohlene Wertebereiche:
             if (!teamHistory.some(h => h.year === GAME_STATE.currentYear)) {
                 const _liveTeam = GAME_STATE.teams.find(t => idsToCheck.includes(t.id)
                     || idsToCheck.map(x => String(x).toLowerCase()).includes(String(t.histId || '').toLowerCase()));
-                if (_liveTeam) {
+                if (_liveTeam && !(opts.profilName && _liveTeam.name !== opts.profilName)) {
                     const _ts = GAME_STATE.teamStandings?.[_liveTeam.id];
                     const _drvObjs = kaderDerSaison(_liveTeam.id)
                         .filter(d => !d.status || d.status === 'active' || GAME_STATE._seasonEndEventsProcessed)
@@ -42285,13 +42334,20 @@ Empfohlene Wertebereiche:
                 }
             }
 
-            if (teamHistory.length === 0) return '';
+            // Vorgaenger-Bloecke (nur Info, eigene Zahlen, keine Summen mit diesem Team)
+            const _vorHtml = (opts.vorgaenger !== false && opts.profilName)
+                ? teamVorgaenger(opts.profilName).map(v => renderTeamHistory(v, v, {
+                    profilName: v, vorgaenger: false,
+                    titel: `↩ Vorgänger: <span class="team-link cursor-pointer" onclick="openTeamProfile('${teamProfilArg(null, v)}')">${v}</span>`
+                  })).join('')
+                : '';
+            if (teamHistory.length === 0) return _vorHtml;
 
             // Sortiere nach Jahr absteigend
             teamHistory.sort((a, b) => b.year - a.year);
             
-            let html = '<div class="card p-4 rounded-lg mt-4">';
-            html += '<h4 class="font-bold mb-3">📜 Team-Historie</h4>';
+            let html = '<div class="card p-4 rounded-lg mt-4"' + (opts.titel ? ' style="border-top:2px solid var(--border-color)"' : '') + '>';
+            html += '<h4 class="font-bold mb-3">' + (opts.titel || '📜 Team-Historie') + '</h4>';
             // Layout: Fahrerspalte bekommt width:100% und schluckt den freien Platz links,
             // die Zahlenspalten stehen dadurch rechtsbündig mit fester Eigenbreite statt
             // zusammenzukleben (Nutzer-Report: "4 16349 3" unlesbar bei dreistelligen Punkten).
@@ -42418,10 +42474,10 @@ Empfohlene Wertebereiche:
             });
             
             html += '</tbody></table></div></div>';
-            return html;
+            return html + _vorHtml;
         }
 
-        function renderTeamRaceGrid(teamId, stATSId) {
+        function renderTeamRaceGrid(teamId, stATSId, opts = {}) {
             if (typeof getF1DBYear !== 'function') return '';
             const ROW_H = 35;
             const TGL_H = 22; // Höhe der Toggle-Zeile
@@ -42474,6 +42530,10 @@ Empfohlene Wertebereiche:
                     (race.res||race.results||[]).some(r =>
                         _set.has(String(r.team||'').toLowerCase()) || _set.has(String(r.tmn||r.teamName||'').toLowerCase()))
                     || Object.values(race.tms||{}).some(tn => _set.has(String(tn||'').toLowerCase())));
+                // Andere Namensepoche derselben ID nicht mitzeigen (wie renderTeamHistory, 15.11.2026)
+                const _hName = h.teamStandings?.[teamId]?.name
+                    || (h.teams || []).find(t => _set.has(String(t.id).toLowerCase()))?.name;
+                if (opts.profilName && _hName && _hName !== opts.profilName) continue;
                 if (_imKader || _inRennen) {
                     simYearMap[h.year] = h;
                     simIdSets[h.year] = _set;
@@ -43063,7 +43123,7 @@ Empfohlene Wertebereiche:
                 </tr>`;
                 for (const { e, i } of group) {
                     const dClick = e.driverId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.driverId}')"` : '';
-                    const tClick = e.constrId ? `class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${e.constrId}')"` : '';
+                    const tClick = e.constrId ? `class="team-link cursor-pointer" onclick="closeCircuitGPProfile();openTeamProfile('${teamProfilArg(e.constrId, _tn(e.constrId))}')"` : '';
                     const pClick = e.poleId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.poleId}')"` : '';
                     const fClick = e.flId ? `class="driver-link cursor-pointer" onclick="closeCircuitGPProfile();openDriverProfile('${e.flId}')"` : '';
                     const nth = _nth[i] > 1 ? ` <sup style="color:var(--accent-main-text)">${_nth[i]}×</sup>` : '';
@@ -44119,7 +44179,7 @@ Empfohlene Wertebereiche:
                 ${winner ? `<div class="card p-4 rounded-xl mb-4" style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,165,0,0.05))">
                     <div class="text-xs text-tertiary">🏆 Sieger</div>
                     <div class="text-xl font-bold driver-link cursor-pointer" onclick="openDriverProfile('${winner.driverId}')">${dn(winner.driverId)}</div>
-                    <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${winner.constrId}')">${tn(winner.constrId)}</span> · ${winner.time || '-'}</div>
+                    <div class="text-sm text-secondary"><span class="team-link cursor-pointer" onclick="openTeamProfile('${teamProfilArg(winner.constrId, tn(winner.constrId))}')">${tn(winner.constrId)}</span> · ${winner.time || '-'}</div>
                 </div>` : ''}
                 ${hasQuali ? `<div class="flex border-b border-custom mb-4">
                     <button id="rdTab-quali" onclick="rdTab('quali')" class="px-4 py-2 text-sm transition" style="background:transparent;border-bottom:2px solid transparent;color:var(--text-secondary)">Qualifying</button>

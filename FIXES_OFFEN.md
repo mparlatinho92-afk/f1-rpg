@@ -162,10 +162,6 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
 - ❔ **WM-Stand: Reserve-Driver-Bug** — alt und hartnäckig; derzeit nicht nachweisbar (Nutzer 12.11.2026), beim nächsten Auftreten Symptom + Spielstand sichern
 
 ### Teamlinien & Umbenennungen
-- **Links auf Vorgänger statt aufs Team:** Sauber führt zu Alfa Romeo, Mercedes zu Tyrrell — jedes Team führt zu einem
-  seiner Vorgänger. Fehler fixen, Stats **nicht** übernehmen; der Steckbrief zeigt aber als reine Info die Einträge aller
-  Vorgänger, mit Trennlinie und Vorgängername als Überschrift. Nicht ausgelaufene Verträge werden weiter übernommen
-  (stimmt, `applyTeamSuccessions`, s. Fahrermarkt). Eine Vorgänger-Anzeige im Team-Steckbrief gibt es nicht (Code 12.11.2026)
 - ◐ **Off-Season:** bei Wechseln zu Nachfolgeteams und wenn ein Fahrer bei einem umbenannten Team bleibt, nennt die UI
   immer beide Namen — in den drei Off-Season-Fenstern seit 15.11.2026 (Teamblock „🏁 Teams“, Ziel im neuen Namen:
   „Kick Sauber → Audi bis 2026“, Code-Fix). Offen: Steckbrief und Off-Season-Übersicht (`showOffSeasonModal`)
@@ -281,6 +277,10 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 - **2026: Audi und Cadillac.** Code-Fix 14.11.2026: Kick Sauber wird 2026 zu Audi (laufende Verträge bleiben),
   Cadillac steigt 2026 ein, Sitze über den Sitzfüller; das Startfeld wächst nach 2025 mit den Teams (22 statt 20, vorher 46 DNQ je Saison). Farben provisorisch (Audi Titan/Schwarz/Rot, Cadillac
   Schwarz/Weiß), im Livery-Report als Platzhalter 2026. Cadillac-Pace geschätzt, hinter Alpine 2025
+- **Links auf Vorgänger statt aufs Team.** Code-Fix 15.11.2026: Umbenennungen behalten die interne Team-ID
+  (Honda 2008, Brawn 2009, Mercedes 2010 = `HON`), Links mit der ID öffneten das heutige Team. Links mit anderem
+  Namen öffnen jetzt das Team dieses Namens (`teamProfilArg`). Team-Historie und Rennergebnisse zeigen nur die
+  eigenen Jahre, Vorgänger stehen darunter als eigene Blöcke mit Trennlinie, nur zur Info (`teamVorgaenger`)
 - **Ruanda-Strecke.** Code-Fix 12.11.2026: Der Rwandan GP heißt jetzt „Bugesera Circuit“ (Bugesera-Distrikt, nahe Rilima).
   Die id `kigali` bleibt, weil bestehende Spielstände sie im Kalender führen
 - **Doppelter Fahrer in angeblich zwei Teams** (`Matías Zagazeta`, zweimal im selben Chinese GP, P1 **und** P3,
