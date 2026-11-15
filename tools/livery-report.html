@@ -1058,7 +1058,10 @@ function showExport() {
           try { localStorage.setItem(WORK_KEY, JSON.stringify(S.work)); } catch (e) {}
           render();
         } },
-      { label: 'Arbeitsstand einlesen', fn: importWork }
+      { label: 'Arbeitsstand einlesen', fn: importWork },
+      { label: 'Speicherort neu wählen', fn: async () => {
+          try { if (await pickSaveFile()) { dlg.close(); await saveWorkFile(); } } catch (e) {}
+        } }
     ]);
 }
 
@@ -1087,19 +1090,44 @@ async function getSaveHandle() {
   if (SAVE.handle !== undefined) return SAVE.handle;
   try {
     const rec = await handleStore('readonly', st => st.get('__savehandle'));
-    SAVE.handle = (rec && rec.handle) || null;
+    // Nur Handles aus der Ordnerwahl (rec.dir) gelten. Alte Datei-Handles aus dem Speichern-Dialog
+    // konnten auf jeden Ordner zeigen – beim Nutzer landete livery-work.json in tools/ statt in
+    // tools/quellen, und der Knopf schrieb danach still weiter dorthin (15.11.2026).
+    SAVE.handle = (rec && rec.dir && rec.handle) || null;
+    SAVE.dir = (rec && rec.dir) || null;
   } catch (e) { SAVE.handle = null; }
   return SAVE.handle;
 }
 
+/** Voller Zielpfad zum Anzeigen/Einfuegen; nur bei file:// bekannt. */
+function zielPfad() {
+  if (location.protocol === 'file:') {
+    const ordner = decodeURIComponent(location.pathname).replace(/^\/([A-Za-z]:)/, '$1').replace(/\/[^/]*$/, '');
+    return (ordner + '/quellen').replace(/\//g, '\\');
+  }
+  return 'tools\\quellen (im Projektordner)';
+}
+
+/**
+ * Ordner statt Datei waehlen lassen (15.11.2026): den Explorer kann man nicht auf einen beliebigen
+ * Pfad vorstellen (startIn kennt nur Standardordner oder fruehere Handles). Ein Ordner laesst sich
+ * aber PRUEFEN – tools/quellen enthaelt bekannte Nachbarn (wiki-fahrer.json …). Die id merkt sich
+ * der Browser: beim naechsten Mal oeffnet der Dialog dort.
+ */
 async function pickSaveFile() {
-  if (!window.showSaveFilePicker) return null;
-  const handle = await window.showSaveFilePicker({
-    suggestedName: 'livery-work.json',
-    types: [{ description: 'Arbeitsstand', accept: { 'application/json': ['.json'] } }]
-  });
-  SAVE.handle = handle;
-  try { await handleStore('readwrite', st => st.put({ id: '__savehandle', handle })); } catch (e) {}
+  if (!window.showDirectoryPicker) return null;
+  const opts = { id: 'livery-quellen', mode: 'readwrite' };
+  if (SAVE.dir) opts.startIn = SAVE.dir;
+  const dir = await window.showDirectoryPicker(opts);
+  const namen = [];
+  for await (const [n] of dir.entries()) namen.push(n);
+  const passt = dir.name === 'quellen' && namen.some(n => /^wiki-.*\.json$|^livery-sheet-import\.json$/.test(n));
+  if (!passt && !confirm(`Gewählt wurde der Ordner „${dir.name}“ – das sieht nicht nach tools\\quellen aus ` +
+      `(dort liegen z. B. wiki-fahrer.json und livery-sheet-import.json).\n\nRichtig wäre:\n${zielPfad()}\n\n` +
+      'Trotzdem hier speichern?')) return null;
+  const handle = await dir.getFileHandle('livery-work.json', { create: true });
+  SAVE.handle = handle; SAVE.dir = dir;
+  try { await handleStore('readwrite', st => st.put({ id: '__savehandle', handle, dir })); } catch (e) {}
   return handle;
 }
 
@@ -1130,7 +1158,7 @@ async function saveWorkFile(silent) {
         await w.write(json);
         await w.close();
         markSaved('Datei');
-        if (!silent) toast('Gespeichert in ' + handle.name);
+        if (!silent) toast('Gespeichert in ' + (SAVE.dir ? SAVE.dir.name + '/' : '') + handle.name);
         return true;
       }
     } catch (e) { /* Handle tot – unten weiter */ }
@@ -1152,13 +1180,16 @@ async function saveWorkFile(silent) {
     }
   }
 
-  if (window.showSaveFilePicker) {
-    if (!confirm('Noch keine Zieldatei festgelegt.\n\n' +
-        'Im folgenden Speichern-Dialog einmalig in den Ordner tools/quellen wechseln und ' +
-        'mit dem vorgeschlagenen Namen livery-work.json speichern. Gibt es die Datei noch nicht, ' +
-        'wird sie dabei angelegt.\n\nDanach speichert der Knopf ohne Nachfrage dorthin.')) return false;
+  if (window.showDirectoryPicker) {
+    const pfad = zielPfad();
+    let kopiert = false;
+    try { await navigator.clipboard.writeText(pfad); kopiert = true; } catch (e) {}
+    if (!confirm('Noch kein Speicherort festgelegt.\n\nIm folgenden Dialog den Ordner wählen:\n\n   ' + pfad + '\n\n' +
+        (kopiert ? 'Der Pfad liegt in der Zwischenablage: oben in die Adresszeile des Dialogs klicken, ' +
+                   'Strg+V, Enter, dann „Ordner auswählen“.\n\n' : '') +
+        'livery-work.json wird darin angelegt bzw. überschrieben. Danach speichert der Knopf ohne Nachfrage dorthin.')) return false;
     try {
-      await pickSaveFile();
+      if (!await pickSaveFile()) return false;
       return saveWorkFile(silent);
     } catch (e) { return false; }
   }

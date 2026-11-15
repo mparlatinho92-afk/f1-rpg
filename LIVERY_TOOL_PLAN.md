@@ -330,6 +330,13 @@ Werkstatt weiterentwickelt wurde, ohne neu zu bauen.
   vor dem Dubletten-Abgleich (sonst verdrängt ein kaputtes „ältestes Exemplar“ das
   gültige) und meldet die Zahl. Außerdem: `.pkstage{display:flex}` hebelte `hidden` aus,
   die leere Lupe stand immer da → `.pkstage[hidden]{display:none}`.
+- **Speicherort: Ordner wählen statt Datei** (15.11.2026). Der Speichern-Dialog liess jeden Ordner zu,
+  livery-work.json landete in `tools/` statt `tools/quellen/` (Osella 1981–88 nur dort), und der gemerkte
+  Datei-Handle schrieb danach still weiter dorthin. Den Explorer kann man nicht auf einen Pfad vorstellen
+  (`startIn` kennt nur Standardordner oder frühere Handles). Jetzt `showDirectoryPicker` mit `id`
+  (Browser merkt sich den Ordner) und Prüfung: Ordner heisst `quellen` und enthält `wiki-*.json` bzw.
+  `livery-sheet-import.json`, sonst Warnung. Der volle Pfad steht im Hinweis und liegt in der
+  Zwischenablage. Alte Datei-Handles (ohne `dir`) werden einmalig verworfen. Export-Dialog: „Speicherort neu wählen“.
 - **Zukunftsteams jenseits SEASON_DATA** (14.11.2026). Der Report baute Zellen nur aus
   SEASON_DATA (endet 2025). `livery-core.js` schneidet jetzt auch `FUTURE_TEAMS` aus
   index.html und legt je Team eine Zelle fürs Einstiegsjahr an (Audi, Cadillac 2026,
