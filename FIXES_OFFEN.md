@@ -166,8 +166,9 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   seiner Vorgänger. Fehler fixen, Stats **nicht** übernehmen; der Steckbrief zeigt aber als reine Info die Einträge aller
   Vorgänger, mit Trennlinie und Vorgängername als Überschrift. Nicht ausgelaufene Verträge werden weiter übernommen
   (stimmt, `applyTeamSuccessions`, s. Fahrermarkt). Eine Vorgänger-Anzeige im Team-Steckbrief gibt es nicht (Code 12.11.2026)
-- **Off-Season:** bei Wechseln zu Nachfolgeteams und wenn ein Fahrer bei einem umbenannten Team bleibt, nennt die UI
-  immer beide Namen — fehlt; die Umbenennung läuft erst in `startNewSeason`, also nach dem Saisonende-Fenster (Code 12.11.2026)
+- ◐ **Off-Season:** bei Wechseln zu Nachfolgeteams und wenn ein Fahrer bei einem umbenannten Team bleibt, nennt die UI
+  immer beide Namen — in den drei Off-Season-Fenstern seit 15.11.2026 (Teamblock „🏁 Teams“, Ziel im neuen Namen:
+  „Kick Sauber → Audi bis 2026“, Code-Fix). Offen: Steckbrief und Off-Season-Übersicht (`showOffSeasonModal`)
 - ◐ **Stroll-Sonderfall:** `LOYAL_OWNER_DRIVERS` (`data/hist.js`) führt Stroll nur unter `aston-martin`, Vertrag
   lebenslang seit v0.9.16.0; Racing Point 2019–20 seit 12.11.2026 ergänzt (Code-Fix, im Spiel unbestätigt). Offen bleibt nur der Privateer-Teil. Wunsch: ab Racing Point bis Karriereende im Team; Racing Point → Aston Martin zählt mit, er wird
   übernommen. Späteren Privateer-Status abschaffen — entweder fest oder gar nicht. Durch seinen Vertrag gibt es nur

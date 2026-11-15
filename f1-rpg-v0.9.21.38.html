@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.37</title>
+    <title>F1 RPG v0.9.21.38</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,13 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.37 (aktuell) - 15.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.38 (aktuell) - 15.11.2026</div>
+                            <div>&#8226; NEU: Off-Season-Fenster zeigen die Teamaenderungen der neuen Saison (Umbenennung, Einsteiger, Aussteiger)</div>
+                            <div>&#8226; FIX: Jede Fahrerbewegung nennt Herkunft (alle Teams der Saison) und Ziel, umbenannte Teams im neuen Namen</div>
+                            <div>&#8226; FIX: Debuets, Karriereenden und Wechsel in andere Serien fehlten im Saisonende-Fenster</div>
+                            <div>&#8226; FIX: Keine Doppel- und Widerspruchszeilen mehr bei Entlassung mit neuem Team</div>
+                            <div>&#8226; FIX: Cadillac-Logo auf hellem Grund lesbar</div>
+                            <div class="font-bold text-slate-400">v0.9.21.37 - 15.11.2026</div>
                             <div>&#8226; FIX: Simulierte Saisons nach 2025 behalten die Teamfarben (letzte bekannte Livery)</div>
                             <div>&#8226; NEU: Kick Sauber wird 2026 zu Audi, laufende Vertraege bleiben</div>
                             <div>&#8226; NEU: Cadillac steigt 2026 ein (Farben und Pace provisorisch)</div>
@@ -23066,7 +23072,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.37';
+        const VERSION = '0.9.21.38';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -29244,6 +29250,92 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             if (!alt) return null;
             const t = (GAME_STATE.teams || []).find(t => t.id === alt.id || t.name === alt.name);
             return t ? { name: t.name, id: t.id, color: t.color } : alt;
+        }
+        // === OFF-SEASON-FENSTER: HERKUNFT UND TEAMAENDERUNGEN (15.11.2026) ===
+        // Nutzer: jede Fahrerbewegung nennt Herkunft und Ziel; bei Tod, Ruecktritt usw. das Team der
+        // abgelaufenen Saison, bei mehreren Teams in dieser Saison alle. Quelle: Ergebnisse der
+        // laufenden Saison (Starter) und tms (DNQ/DNS), Reihenfolge des ersten Auftretens.
+        function saisonTeamsVon(driverId) {
+            const out = [];
+            if (!driverId) return out;
+            for (const r of (GAME_STATE.results || [])) {
+                const x = (r.results || []).find(e => e.driver === driverId);
+                const tn = x ? (x.teamName || teamDisplayName(x.team)) : (r.tms || {})[driverId];
+                if (tn && !out.includes(tn)) out.push(tn);
+            }
+            return out;
+        }
+        function saisonTeamLabel(driverId, fallback) {
+            const l = saisonTeamsVon(driverId);
+            if (l.length) return l.join(' / ');
+            const f = fallback && fallback !== '–' && fallback !== '-' ? teamDisplayName(fallback) : null;
+            return f || 'ohne Cockpit';
+        }
+        // Was sich zur Saison nextYear an den Teams aendert. Laeuft VOR startNewSeason (dort erst
+        // benennt applyTeamSuccessions um und setzen applyTeamEntryExit/applyFutureTeamEntries ein),
+        // deshalb hier vorausberechnet. Aussteiger sind zu diesem Zeitpunkt schon entfernt
+        // (applyTeamExits in processSeasonEndEvents) und stehen nur noch an ihren Fahrern (_teamExit).
+        function kommendeTeamAenderungen(nextYear) {
+            const teams = GAME_STATE.teams || [];
+            const umbenannt = [];
+            teams.forEach(t => {
+                const e = (CONSTRUCTOR_SUCCESSION[t.histId || t.id] || []).find(x => x.yearTo === nextYear - 1);
+                if (e && e.nextId !== t.name) umbenannt.push({ von: t.name, nach: e.nextId });
+            });
+            const namen = new Set(teams.map(t => t.name));
+            const ziele = new Set(umbenannt.map(u => u.nach));
+            const neu = [];
+            const sd = typeof SEASON_DATA !== 'undefined' && SEASON_DATA[String(nextYear)];
+            if (sd && sd.t) sd.t.forEach(t => { if (!namen.has(t[1]) && !ziele.has(t[1]) && !neu.includes(t[1])) neu.push(t[1]); });
+            if (!sd && typeof FUTURE_TEAMS !== 'undefined') Object.entries(FUTURE_TEAMS).forEach(([fid, f]) => {
+                if (f.entry && nextYear >= f.from && !(GAME_STATE.futureTeamsEntered || {})[fid]
+                    && !namen.has(f.name) && !neu.includes(f.name)) neu.push(f.name);
+            });
+            const raus = [];
+            (GAME_STATE.drivers || []).forEach(d => {
+                if (d._teamExit && d._teamExit.year === nextYear - 1 && d._teamExit.team && !raus.includes(d._teamExit.team)) raus.push(d._teamExit.team);
+            });
+            return { jahr: nextYear, umbenannt, neu, raus, leer: !umbenannt.length && !neu.length && !raus.length };
+        }
+        // Zielteam einer Bewegung im Namen der NEUEN Saison: wer bei Kick Sauber verlaengert oder
+        // unterschreibt, faehrt 2026 fuer Audi. Ohne Zielteam ausdruecklich „verlässt F1“ statt „–“.
+        function zielTeamLabel(toTeam, nextYear) {
+            const to = toTeam && toTeam !== '–' && toTeam !== '-' ? teamDisplayName(toTeam) : null;
+            if (!to) return 'verlässt F1';
+            const u = kommendeTeamAenderungen(nextYear || (GAME_STATE.currentYear + 1)).umbenannt.find(x => x.von === to);
+            return u ? u.nach : to;
+        }
+        // Ziel eines Abgangs in eine andere Serie (Formel E, WEC …) aus seasonRetirements, sonst null.
+        // Der Markt verbucht denselben Fahrer zusaetzlich als 'released' (🛫) ohne Zielteam.
+        function abgangsZiel(driverId) {
+            const r = (GAME_STATE.seasonRetirements || []).find(x => x.driver === driverId && x.type === 'other_series');
+            return r ? (r.reason || 'andere Serie') : null;
+        }
+        // Karriereenden fuer die Off-Season-Fenster: eine Entlassung ('dismissed'), nach der der Markt
+        // denselben Fahrer doch noch verpflichtet hat, ist kein Karriereende (Bortoleto 2025: „Entlassen“
+        // und zugleich „Kick Sauber → Red Bull“). Die Daten bleiben, nur die Anzeige filtert.
+        function angezeigteKarriereenden() {
+            const neuBei = new Set((GAME_STATE.seasonTransfers || [])
+                .filter(t => t.toTeam && t.toTeam !== '–' && t.toTeam !== '-' && t.toTeam !== 'Free Agent')
+                .map(t => t.driverId));
+            return (GAME_STATE.seasonRetirements || []).filter(r => !(r.type === 'dismissed' && neuBei.has(r.driver)));
+        }
+        function teamAenderungenText(ch) {
+            const z = [];
+            ch.umbenannt.forEach(u => z.push(`${u.von} → ${u.nach}`));
+            if (ch.neu.length) z.push('neu: ' + ch.neu.join(', '));
+            if (ch.raus.length) z.push('ausgestiegen: ' + ch.raus.join(', '));
+            return z;
+        }
+        function teamAenderungenHtml(ch) {
+            if (!ch || ch.leer) return '';
+            const zeile = (label, txt) => `<div class="text-sm py-0.5"><span style="color:var(--text-muted)">${label}</span> ${txt}</div>`;
+            return `<div class="card p-4 rounded-lg mb-4">
+                <h4 class="font-bold mb-2">🏁 Teams ${ch.jahr}</h4>
+                ${ch.umbenannt.map(u => zeile('umbenannt:', `<b>${u.von}</b> → <b>${u.nach}</b> <span style="color:var(--text-muted)">(laufende Verträge bleiben)</span>`)).join('')}
+                ${ch.neu.length ? zeile('neu dabei:', ch.neu.map(n => `<b>${n}</b>`).join(', ')) : ''}
+                ${ch.raus.length ? zeile('ausgestiegen:', ch.raus.map(n => `<b>${n}</b>`).join(', ')) : ''}
+            </div>`;
         }
         function offseasonTeamwechsel(driverId) {
             if (!GAME_STATE._seasonEndEventsProcessed || !driverId) return null;
@@ -42127,6 +42219,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 `;
             }
 
+            // Teams zur neuen Saison: Umbenennung, Einsteiger, Aussteiger (15.11.2026)
+            html += teamAenderungenHtml(kommendeTeamAenderungen(GAME_STATE.currentYear + 1));
+
             // Todesfälle anzeigen mit Ersatz-Info
             if (GAME_STATE.seasonDeaths.length > 0) {
                 html += `
@@ -42142,7 +42237,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                                 return `
                                     <div class="border-l-2 border-red-500 pl-3">
                                         <div class="flex justify-between items-center text-sm">
-                                            <span class="font-bold driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span><span class="font-bold"> (${d.team || '?'})</span>
+                                            <span class="font-bold driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span><span class="font-bold"> (${saisonTeamLabel(d.driver, d.team)})</span>
                                             <span class="text-tertiary">${d.raceName}</span>
                                         </div>
                                         ${d.replacement ? `<div class="text-xs text-tertiary mt-1">
@@ -42162,6 +42257,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             {
                 const byAge  = GAME_STATE.seasonRetirements.filter(r => r.type === 'age');
                 const gaveUp = GAME_STATE.seasonRetirements.filter(r => r.type === 'gaveup');
+                const sonstige = GAME_STATE.seasonRetirements.filter(r => r.type === 'career_end' || r.type === 'other_series');
                 const driverSpan = (r) => r.driver
                     ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>`
                     : r.name;
@@ -42173,7 +42269,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     return t ? `<div class="text-xs italic ml-4 mb-1.5" style="opacity:0.85">${t}</div>` : '';
                 };
 
-                if (byAge.length > 0 || gaveUp.length > 0) {
+                if (byAge.length > 0 || gaveUp.length > 0 || sonstige.length > 0) {
                     html += `<div class="card p-4 rounded-lg mb-4">
                         <h4 class="font-bold mb-3">🏁 Karriereenden</h4>
                         <div class="space-y-3">`;
@@ -42182,7 +42278,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         html += `<div class="mb-2">
                             <div class="text-sm font-bold mb-1">👴 Alters-Rücktritt</div>
                             ${byAge.map(r => `<div class="flex justify-between text-sm ml-4">
-                                <span>${driverSpan(r)}</span>
+                                <span>${driverSpan(r)} <span class="text-tertiary">(${saisonTeamLabel(r.driver)})</span></span>
                                 <span class="text-tertiary">${r.reason || (r.age + ' Jahre')}</span>
                             </div>${farewell(r)}`).join('')}
                         </div>`;
@@ -42192,8 +42288,19 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         html += `<div class="mb-2">
                             <div class="text-sm font-bold mb-1">🤚 Rücktritt</div>
                             ${gaveUp.map(r => `<div class="flex justify-between text-sm ml-4">
-                                <span>${driverSpan(r)}</span>
+                                <span>${driverSpan(r)} <span class="text-tertiary">(${saisonTeamLabel(r.driver)})</span></span>
                                 <span class="text-tertiary">${r.reason || ''}</span>
+                            </div>${farewell(r)}`).join('')}
+                        </div>`;
+                    }
+
+                    // Karriereende und andere Serie standen in keinem Abschnitt des Fensters (15.11.2026)
+                    if (sonstige.length > 0) {
+                        html += `<div class="mb-2">
+                            <div class="text-sm font-bold mb-1">🏁 Karriereende / andere Serie</div>
+                            ${sonstige.map(r => `<div class="flex justify-between text-sm ml-4">
+                                <span>${driverSpan(r)} <span class="text-tertiary">(${saisonTeamLabel(r.driver)})</span></span>
+                                <span class="text-tertiary">${r.type === 'other_series' ? '🛫 ' + (r.reason || 'andere Serie') : (r.reason || 'Karriereende')}</span>
                             </div>${farewell(r)}`).join('')}
                         </div>`;
                     }
@@ -42262,7 +42369,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                             vertragsEntries.push({
                                 t,
                                 left: 'Free Agent',
-                                right: `Neu verpflichtet bei ${t.toTeam}`,
+                                right: `Neu verpflichtet bei ${zielTeamLabel(t.toTeam)}`,
                                 color: 'var(--text-primary)',
                                 order: 2
                             });
@@ -42276,7 +42383,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                             vertragsEntries.push({
                                 t,
                                 left: 'Vorzeitig entlassen',
-                                right: `Sofort verpflichtet · ${rehired.toTeam}`,
+                                right: `Sofort verpflichtet · ${zielTeamLabel(rehired.toTeam)}`,
                                 color: '#60a5fa',
                                 order: 2
                             });
@@ -42284,7 +42391,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                             vertragsEntries.push({
                                 t,
                                 left: 'Vorzeitig entlassen',
-                                right: 'Verlässt die Formel 1',
+                                // Ohne neues Team, aber weiter aktiv = Free Agent im Pool, nicht „verlässt die F1“ (15.11.2026)
+                                right: abgangsZiel(t.driverId) || ((GAME_STATE.drivers || []).some(d => d.id === t.driverId && (!d.status || d.status === 'active')) || (GAME_STATE.reservePool || []).some(d => d.id === t.driverId) ? 'ohne Cockpit (Free Agent)' : 'Verlässt die Formel 1'),
                                 color: '#f87171',
                                 order: 3
                             });
@@ -42295,8 +42403,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     if (t.type === 'renewal') {
                         vertragsEntries.push({
                             t,
-                            left: `Verlängerung${t.fromTeam ? ' · ' + t.fromTeam : ''}`,
-                            right: `bis ${t.newContractEnd}`,
+                            left: 'Verlängerung',
+                            right: `${zielTeamLabel(t.fromTeam || saisonTeamLabel(t.driverId))} bis ${t.newContractEnd}`,
                             color: '#4ade80',
                             order: 0
                         });
@@ -42333,7 +42441,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         vertragsEntries.push({
                             t,
                             left: 'Rausgekauft',
-                            right: `${t.toTeam}`,
+                            right: `${zielTeamLabel(t.toTeam)}`,
                             color: '#facc15',
                             order: 1
                         });
@@ -42344,7 +42452,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         vertragsEntries.push({
                             t,
                             left: 'Vertrag ausgelaufen',
-                            right: `Aufstieg · ${t.toTeam}`,
+                            right: `Aufstieg · ${zielTeamLabel(t.toTeam)}`,
                             color: '#4ade80',
                             order: 0
                         });
@@ -42355,7 +42463,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         vertragsEntries.push({
                             t,
                             left: 'Vertrag läuft noch',
-                            right: `Rausgekauft · ${t.toTeam}`,
+                            right: `Rausgekauft · ${zielTeamLabel(t.toTeam)}`,
                             color: '#22d3ee',
                             order: -1
                         });
@@ -42365,9 +42473,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     if (['upgrade','lateral','downgrade'].includes(t.type)) {
                         const leftLabel = t.contractSource === 'early_release' ? 'Vorzeitig freigestellt'
                             : 'Vertrag ausgelaufen';
-                        const rightLabel = t.type === 'upgrade' ? `Aufstieg · ${t.toTeam}`
-                            : t.type === 'downgrade' ? `Abstieg · ${t.toTeam}`
-                            : `Seitenwechsel · ${t.toTeam}`;
+                        const rightLabel = t.type === 'upgrade' ? `Aufstieg · ${zielTeamLabel(t.toTeam)}`
+                            : t.type === 'downgrade' ? `Abstieg · ${zielTeamLabel(t.toTeam)}`
+                            : `Seitenwechsel · ${zielTeamLabel(t.toTeam)}`;
                         const color = t.type === 'upgrade' ? '#4ade80'
                             : t.type === 'downgrade' ? '#fb923c'
                             : 'var(--text-muted)';
@@ -42390,7 +42498,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         <div class="space-y-1">
                         ${vertragsEntries.map(e => `
                             <div class="text-sm py-0.5">
-                                ${tLink(e.t)}${_repBadge(e.t.driverId)}<span style="color:var(--text-muted)"> · ${e.left} → </span><span style="color:${e.color};font-weight:600">${e.right}</span>
+                                ${tLink(e.t)}${_repBadge(e.t.driverId)}<span style="color:var(--text-muted)"> (${saisonTeamLabel(e.t.driverId, e.t.fromTeam)}) · ${e.left} → </span><span style="color:${e.color};font-weight:600">${e.right}</span>
                             </div>
                         `).join('')}
                         </div>
@@ -42399,7 +42507,8 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
 
                 // ── WECHSEL ─────────────────────────────────────────────
                 // Nur Fahrer die wirklich das Team gewechselt haben (inkl. neue Fahrer)
-                const wechselTypes = ['upgrade','lateral','downgrade','poached','buyout','freeagent','generated','pool-assign'];
+                // pool-debut (🌟 Debuet aus dem Pool) fehlte: die Neulinge standen in keinem Abschnitt (15.11.2026)
+                const wechselTypes = ['upgrade','lateral','downgrade','poached','buyout','freeagent','generated','pool-assign','pool-debut'];
                 const wechsel = allTransfers.filter(t => wechselTypes.includes(t.type) && t.toTeam && t.toTeam !== t.fromTeam);
 
                 if (wechsel.length > 0) {
@@ -42409,16 +42518,15 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         lateral:  wechsel.filter(t => t.type === 'lateral'),
                         downgrade:wechsel.filter(t => t.type === 'downgrade'),
                         freeagent:wechsel.filter(t => t.type === 'freeagent'),
-                        generated:wechsel.filter(t => t.type === 'generated'),
+                        generated:wechsel.filter(t => t.type === 'generated' || t.type === 'pool-debut' || t.type === 'pool-assign'),
                     };
 
                     const wSection = (label, color, items, showScore = false) => items.length === 0 ? '' : `
                         <div class="mb-2">
                             <div class="text-xs font-bold mb-1" style="color:${color}">${label} (${items.length})</div>
                             ${items.map(t => {
-                                const route = t.fromTeam && t.fromTeam !== '–' && t.fromTeam !== '-'
-                                    ? `${t.fromTeam} → ${t.toTeam}`
-                                    : `→ ${t.toTeam}`;
+                                // Herkunft = Team(s) der abgelaufenen Saison, sonst „ohne Cockpit“ (Nutzer 15.11.2026)
+                                const route = `${saisonTeamLabel(t.driverId, t.fromTeam)} → ${zielTeamLabel(t.toTeam)}`;
                                 const score = showScore && t.score ? ` <span style="color:var(--text-muted)">(${t.score}/100)</span>` : '';
                                 return `<div class="text-sm ml-3 py-0.5">${tLink(t)}${_repBadge(t.driverId)} <span style="color:var(--text-muted)">${route}</span>${score}</div>`;
                             }).join('')}
@@ -48392,17 +48500,23 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             
             // Fahrerbewegungen zusammenfassen für Bestätigung
             const deaths = GAME_STATE.seasonDeaths || [];
-            const retirements = GAME_STATE.seasonRetirements || [];
+            const retirements = angezeigteKarriereenden();
             // v0.9.15.80 FIX: Verlängerungen sind KEINE Teamwechsel. Sie tragen weder
             // `toTeam` noch `typeEmoji` – ungefiltert wurde daraus „<undefined> Name:
             // Kick Sauber → verlässt F1", also das exakte Gegenteil der Wahrheit
             // (Vertrag verlängert). Saisonende-Modal und Off-Season trennen bereits
             // nach Typ, nur diese Vorschau tat es nicht.
             const _allT = (GAME_STATE.seasonTransfers || []).filter(t => t.type !== 'dismissed');
-            const transfers = _allT.filter(t => t.type !== 'renewal');
+            // Wer als Ruecktritt (z. B. andere Serie) schon mit Team und Ziel dasteht, nicht nochmal als Wechsel
+            const _rtIds = new Set(retirements.map(r => r.driver).filter(Boolean));
+            const transfers = _allT.filter(t => t.type !== 'renewal' && !(t.type === 'released' && _rtIds.has(t.driverId)));
             const renewals  = _allT.filter(t => t.type === 'renewal');
             
             let confirmMsg = `🏁 Neue Saison ${GAME_STATE.currentYear + 1} starten?\n\n`;
+            {
+                const _tz = teamAenderungenText(kommendeTeamAenderungen(GAME_STATE.currentYear + 1));
+                if (_tz.length) confirmMsg += `🏁 TEAMS ${GAME_STATE.currentYear + 1}:\n` + _tz.map(z => `   • ${z}\n`).join('') + `\n`;
+            }
             
             if (deaths.length > 0 || retirements.length > 0 || transfers.length > 0) {
                 confirmMsg += `📋 FAHRERBEWEGUNGEN ${GAME_STATE.currentYear}:\n`;
@@ -48411,7 +48525,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 if (deaths.length > 0) {
                     confirmMsg += `💀 Verstorben (${deaths.length}):\n`;
                     deaths.forEach(d => {
-                        confirmMsg += `   • ${d.name}${d.replacement ? ' → ' + d.replacement : ''}\n`;
+                        confirmMsg += `   • ${d.name} (${saisonTeamLabel(d.driver, d.team)})${d.replacement ? ' → ' + d.replacement : ''}\n`;
                     });
                 }
                 
@@ -48422,15 +48536,20 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     
                     if (byAge.length > 0) {
                         confirmMsg += `👴 Rücktritt (${byAge.length}):\n`;
-                        byAge.forEach(r => confirmMsg += `   • ${r.name}\n`);
+                        byAge.forEach(r => confirmMsg += `   • ${r.name} (${saisonTeamLabel(r.driver)}) → Karriereende\n`);
                     }
                     if (dismissed.length > 0) {
                         confirmMsg += `🚫 Entlassen (${dismissed.length}):\n`;
-                        dismissed.forEach(r => confirmMsg += `   • ${r.name}\n`);
+                        dismissed.forEach(r => confirmMsg += `   • ${r.name} (${saisonTeamLabel(r.driver)}) → verlässt F1\n`);
                     }
                     if (gaveUp.length > 0) {
                         confirmMsg += `😔 Aufgegeben (${gaveUp.length}):\n`;
-                        gaveUp.forEach(r => confirmMsg += `   • ${r.name}\n`);
+                        gaveUp.forEach(r => confirmMsg += `   • ${r.name} (${saisonTeamLabel(r.driver)}) → Karriereende\n`);
+                    }
+                    const sonst = retirements.filter(r => r.type === 'career_end' || r.type === 'other_series');
+                    if (sonst.length > 0) {
+                        confirmMsg += `🏁 Karriereende / andere Serie (${sonst.length}):\n`;
+                        sonst.forEach(r => confirmMsg += `   • ${r.name} (${saisonTeamLabel(r.driver)}) → ${r.type === 'other_series' ? (r.reason || 'andere Serie') : 'Karriereende'}\n`);
                     }
                 }
                 
@@ -48438,13 +48557,13 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     confirmMsg += `🔄 Teamwechsel (${transfers.length}):\n`;
                     transfers.forEach(t => {
                         // typeEmoji fehlt bei manchen Typen → sonst steht „undefined" davor
-                        confirmMsg += `   ${t.typeEmoji || '🔄'} ${t.driverName || 'Fahrer'}: ${t.fromTeam || '?'} → ${t.toTeam || 'verlässt F1'}\n`;
+                        confirmMsg += `   ${t.typeEmoji || '🔄'} ${t.driverName || 'Fahrer'}: ${saisonTeamLabel(t.driverId, t.fromTeam)} → ${zielTeamLabel(t.toTeam)}\n`;
                     });
                 }
                 if (renewals.length > 0) {
                     confirmMsg += `📋 Verlängerungen (${renewals.length}):\n`;
                     renewals.forEach(t => {
-                        confirmMsg += `   • ${t.driverName || 'Fahrer'}: ${t.fromTeam || '?'}`
+                        confirmMsg += `   • ${t.driverName || 'Fahrer'}: ${saisonTeamLabel(t.driverId, t.fromTeam)} → ${zielTeamLabel(t.fromTeam || saisonTeamLabel(t.driverId))}`
                                     + (t.newContractEnd ? ` bis ${t.newContractEnd}` : '') + `\n`;
                     });
                 }
@@ -48477,11 +48596,11 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             // === BEWEGUNGEN SAMMELN ===
             const movements = {
                 deaths: GAME_STATE.seasonDeaths || [],
-                retirements: GAME_STATE.seasonRetirements || [],
+                retirements: angezeigteKarriereenden(),
                 // v0.9.15.80 FIX: Verlängerungen raus aus „Teamwechsel" – sie haben kein
                 // toTeam und wurden deshalb als „verlässt F1" gemeldet, obwohl der Fahrer
                 // gerade verlängert hat. Sie bekommen unten einen eigenen Abschnitt.
-                transfers: (GAME_STATE.seasonTransfers || []).filter(t => t.type !== 'renewal'),
+                transfers: (GAME_STATE.seasonTransfers || []).filter(t => t.type !== 'renewal' && !((t.type === 'released' || t.type === 'dismissed') && (GAME_STATE.seasonRetirements || []).some(r => r.driver === t.driverId))),
                 renewals:  (GAME_STATE.seasonTransfers || []).filter(t => t.type === 'renewal'),
                 rookies: []
             };
@@ -48522,7 +48641,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         const dLink = d.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.driver}')">${d.name}</span>` : d.name;
                         const rLink = d.replacement ? (d.replacementId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${d.replacementId}')">${d.replacement}</span>` : d.replacement) : '';
                         const replacementStr = rLink ? ' → Ersetzt durch ' + rLink : '';
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + dLink + ' (' + d.raceName + ')' + replacementStr + '</div>';
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + dLink + ' (' + saisonTeamLabel(d.driver, d.team) + ', ' + d.raceName + ')' + replacementStr + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -48535,7 +48654,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         const typeEmoji = r.type === 'age' ? '👴' : r.type === 'dismissed' ? '🚫' : r.type === 'gaveup' ? '😔' : r.type === 'career_end' ? '🏁' : r.type === 'other_series' ? '🛫' : '❓';
                         const typeText = r.type === 'age' ? 'Alter' : r.type === 'dismissed' ? 'Entlassen' : r.type === 'gaveup' ? 'Aufgegeben' : r.type === 'career_end' ? 'Karriereende' : r.type === 'other_series' ? (r.reason || 'andere Serie') : '';
                         const rLink = r.driver ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${r.driver}')">${r.name}</span>` : r.name;
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + rLink + ' ' + typeEmoji + ' (' + typeText + ')</div>';
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + rLink + ' (' + saisonTeamLabel(r.driver) + ') → ' + typeEmoji + ' ' + typeText + '</div>';
                     });
                     movementsHtml += '</div>';
                 }
@@ -48545,10 +48664,11 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                     movementsHtml += '<div class="mb-3">';
                     movementsHtml += '<div class="text-sm font-bold accent-blue mb-1">🔄 Teamwechsel (' + movements.transfers.length + ')</div>';
                     movements.transfers.forEach(t => {
-                        const fromTeam = GAME_STATE.teams.find(team => team.id === t.fromTeam)?.name || t.fromTeam;
-                        const toTeam = t.toTeam ? (GAME_STATE.teams.find(team => team.id === t.toTeam)?.name || t.toTeam) : 'verlässt F1';
                         const driverName = t.driverName || t.name || 'Unbekannt';
                         const dId = t.driverId || t.driver;
+                        // Herkunft = Team(s) der abgelaufenen Saison (Nutzer 15.11.2026)
+                        const fromTeam = saisonTeamLabel(dId, GAME_STATE.teams.find(team => team.id === t.fromTeam)?.name || t.fromTeam);
+                        const toTeam = zielTeamLabel(t.toTeam ? (GAME_STATE.teams.find(team => team.id === t.toTeam)?.name || t.toTeam) : null, nextYear);
                         const tLink = dId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${dId}')">${driverName}</span>` : driverName;
                         movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + tLink + ': ' + fromTeam + ' → ' + toTeam + '</div>';
                     });
@@ -48565,7 +48685,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         const nm = t.driverName || t.name || 'Unbekannt';
                         const dId = t.driverId || t.driver;
                         const nLink = dId ? `<span class="driver-link cursor-pointer" onclick="openDriverProfile('${dId}')">${nm}</span>` : nm;
-                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + nLink + ': ' + team
+                        movementsHtml += '<div class="text-sm text-secondary pl-3">• ' + nLink + ': ' + saisonTeamLabel(dId, team) + ' → ' + zielTeamLabel(team, nextYear)
                             + (t.newContractEnd ? ' <span class="accent-green">bis ' + t.newContractEnd + '</span>' : '') + '</div>';
                     });
                     movementsHtml += '</div>';
@@ -48594,7 +48714,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 </div>
                 
                 ${eraWarning}
-                
+
+                ${teamAenderungenHtml(kommendeTeamAenderungen(nextYear))}
+
                 ${movementsHtml}
                 
                 <!-- Todes-Realismus Slider -->
@@ -59751,7 +59873,8 @@ Empfohlene Wertebereiche:
                 { from: 2026, to: 2099, url: "https://static.wikia.nocookie.net/logopedia/images/7/7d/Audi_2016.svg/revision/latest?cb=20260614040148" }
             ],
             "cadillac": [ // F1-Teamlogo, 2025 vorgestellt, Einstieg 2026
-                { from: 2026, to: 2099, url: "https://static.wikia.nocookie.net/logopedia/images/e/e2/CadillacF1_2025.svg/revision/latest?cb=20250504100403" }
+                // bg: schwarzer Schriftzug, auf der Teamfarbe (Schwarz) unsichtbar -> heller Grund
+                { from: 2026, to: 2099, bg: '#FFFFFF', url: "https://static.wikia.nocookie.net/logopedia/images/e/e2/CadillacF1_2025.svg/revision/latest?cb=20250504100403" }
             ],
             "veritas": [
                 { from: 1951, to: 1953, url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Veritas_logo.png/330px-Veritas_logo.png" }
@@ -59810,6 +59933,19 @@ Empfohlene Wertebereiche:
         };
 
         function getTeamLogoUrl(teamId, year, teamName) {
+            const e = _teamLogoEntry(teamId, year, teamName);
+            if (!e) return null;
+            return (typeof EMBEDDED_IMAGES !== 'undefined' && EMBEDDED_IMAGES[e.url]) || e.url;
+        }
+
+        // Eigener Logo-Hintergrund (Feld `bg` im TEAM_LOGOS-Eintrag), sonst null = Teamfarbe.
+        // Fuer Logos mit dunkler Schrift auf dunkler Teamfarbe (Cadillac 2026).
+        function getTeamLogoBg(teamId, year, teamName) {
+            const e = _teamLogoEntry(teamId, year, teamName);
+            return (e && e.bg) || null;
+        }
+
+        function _teamLogoEntry(teamId, year, teamName) {
             // Suche mit mehreren ID-Varianten: original, lowercase, Bindestrich↔Leerzeichen
             // und zuletzt satzzeichenfrei via teamSlug — sonst findet "O.S.C.A." nie den
             // Key 'osca' (keine der Varianten oben entfernt die Punkte).
@@ -59836,14 +59972,14 @@ Empfohlene Wertebereiche:
             // Vektorlogos bei doppelter Anzeigegroesse gerastert. Beim Nutzer blockierte
             // AdGuard `static.wikia.nocookie.net`, wo praktisch alle Team-Logos liegen;
             // sichtbar blieb der graue Buchstabenkasten. Ohne Eintrag bleibt die URL.
-            const _fest = u => (typeof EMBEDDED_IMAGES !== 'undefined' && EMBEDDED_IMAGES[u]) || u;
+            // (Abbildung URL -> data-URI jetzt in getTeamLogoUrl)
             // Bei Überlappungen: neuerer Eintrag (größeres from) gewinnt
             const matches = logos.filter(l => year >= (l.from || 0) && year <= (l.to || 9999));
-            if (matches.length > 0) return _fest(matches.sort((a,b) => b.from - a.from)[0].url);
+            if (matches.length > 0) return matches.sort((a,b) => b.from - a.from)[0];
             // Kein exakter Treffer: nächster Eintrag vor dem Jahr
             const before = logos.filter(l => l.to < year).sort((a,b) => b.to - a.to);
-            if (before.length > 0) return _fest(before[0].url);
-            return _fest(logos[0].url);
+            if (before.length > 0) return before[0];
+            return logos[0];
         }
 
         // Generisches Team-Logo SVG (Schild mit Teamfarbe + Initiale)
@@ -59883,7 +60019,8 @@ Empfohlene Wertebereiche:
         function renderTeamLogoHtml(teamId, year, teamColor, teamName) {
             const url = getTeamLogoUrl(teamId, year, teamName);
             const fallback = getTeamLogoSvg(teamColor, teamName);
-            const bgStyle = teamColor ? `style="background:${teamColor}"` : '';
+            const _bg = (url && getTeamLogoBg(teamId, year, teamName)) || teamColor;
+            const bgStyle = _bg ? `style="background:${_bg}"` : '';
             if (url) {
                 return `<div class="profile-logo-wrap" ${bgStyle}>
                     <img data-lazy-src="${url}" referrerpolicy="no-referrer" alt="${teamName} Logo"
@@ -59930,7 +60067,8 @@ Empfohlene Wertebereiche:
             // (Nutzer-Report 1955: Gordini, Lancia, Mercedes, HWM ohne Logo, waehrend
             // Ferrari und Maserati eines zeigten; die beiden lagen aus dem Team-Profil,
             // das den Header schon mitschickt, bereits im Browser-Cache).
-            return `<div class="entry-logo" style="background:${col}"><img data-lazy-src="${url}" referrerpolicy="no-referrer" alt="${teamName}"><div class="profile-logo-fallback">${svg}</div></div>`;
+            const _bg = getTeamLogoBg(teamId, year, teamName) || col;
+            return `<div class="entry-logo" style="background:${_bg}"><img data-lazy-src="${url}" referrerpolicy="no-referrer" alt="${teamName}"><div class="profile-logo-fallback">${svg}</div></div>`;
         }
 
         // =======================================
