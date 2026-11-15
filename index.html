@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.38</title>
+    <title>F1 RPG v0.9.21.39</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.38 (aktuell) - 15.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.39 (aktuell) - 15.11.2026</div>
+                            <div>&#8226; FIX: Rueckkehrer aus anderen Serien trugen erneut das Debuet-Abzeichen (z. B. Antonelli 2030)</div>
+                            <div>&#8226; FIX: Debuet zaehlt ab der ersten Meldung zur Quali oder Vorquali, auch bei DNQ, DNPQ und DNS</div>
+                            <div>&#8226; FIX: Freitagstrainings zaehlen nicht mehr als Debuet, 93 echte Debuetjahre korrigiert</div>
+                            <div>&#8226; FIX: Wer eine Saison ganz ohne Meldung beendet, gilt nicht als Debuetant</div>
+                            <div class="font-bold text-slate-400">v0.9.21.38 - 15.11.2026</div>
                             <div>&#8226; NEU: Off-Season-Fenster zeigen die Teamaenderungen der neuen Saison (Umbenennung, Einsteiger, Aussteiger)</div>
                             <div>&#8226; FIX: Jede Fahrerbewegung nennt Herkunft (alle Teams der Saison) und Ziel, umbenannte Teams im neuen Namen</div>
                             <div>&#8226; FIX: Debuets, Karriereenden und Wechsel in andere Serien fehlten im Saisonende-Fenster</div>
@@ -4449,7 +4454,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.38';
+        const VERSION = '0.9.21.39';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7018,13 +7023,26 @@
             const echt = (driver.histId && typeof HIST_DRIVERS !== 'undefined') ? HIST_DRIVERS[driver.histId]?.[6] : null;
             const start = (typeof GAME_STATE !== 'undefined' && parseInt(GAME_STATE.templateUsed)) || null;
             if (echt && (!start || echt < start)) return echt;
-            if (typeof driver.f1DebutYear === 'number') return driver.f1DebutYear;
+            // FRUEHESTES Jahr aus allen Spielquellen statt der ersten, die etwas liefert (15.11.2026):
+            // initReservePool legt Rueckkehrer (z. B. nach WEC/Formel E) als NEUES Objekt an, dem
+            // f1DebutYear fehlt; das erste Rennen danach setzte es neu – Antonelli/Hadjar/Bortoleto
+            // trugen 2029/2030 „Debüt“ (tests/debuet-pruefung.js). allTimeStATS haengt an der histId
+            // und ueberlebt jede Kopie. Jahre VOR dem Spielstart zaehlen dort nicht: die stammen aus
+            // HIST_SEASONS und enthalten Freitagstrainings – das echte Debuet steht oben in HIST_DRIVERS.
+            const kand = [];
+            if (typeof driver.f1DebutYear === 'number') kand.push(driver.f1DebutYear);
             const at = GAME_STATE?.allTimeStATS?.drivers?.[driver.histId || driver.id];
-            if (at && typeof at.firstYear === 'number') return at.firstYear;
+            // NICHT at.firstYear: beim Spielstart traegt die Init jedem Kaderfahrer das Startjahr ein, auch
+            // wem nie gemeldet wird (Start 1980: Wilson, Winkelhock, South „Debüt 1980“ ohne Meldung, die
+            // echte erste Meldung 1981/82 dann ohne Abzeichen). firstSimYear setzt erst ein Renneinsatz.
+            if (at && typeof at.firstSimYear === 'number') kand.push(at.firstSimYear);
+            const dj = GAME_STATE?.debutJahre?.[driver.histId || driver.id];
+            if (typeof dj === 'number') kand.push(dj);
             if (Array.isArray(driver.careerScores)) {
-                const echt = driver.careerScores.filter(c => c && !c.preSim && typeof c.year === 'number');
-                if (echt.length) return Math.min(...echt.map(c => c.year));
+                const cs = driver.careerScores.filter(c => c && !c.preSim && typeof c.year === 'number');
+                if (cs.length) kand.push(Math.min(...cs.map(c => c.year)));
             }
+            if (kand.length) return Math.min(...kand);
             // Nicht `debutYear`: das ist ein GEPLANTES Jahr, kein gefahrenes – und der Pool-Weg setzte
             // es bis 17.10.2026 aufs ablaufende Jahr (Bernard, Alboreto, Donnelly, Gachot 1988 statt
             // 1989). Wer im Spiel noch nie gestartet ist, hat kein Debüt.
@@ -11613,7 +11631,7 @@
                         number: (idx + 1) * 2,
                         birthYear: d[4] || null,
                         // v0.8.6: Echtes Debütjahr aus HIST_DRIVERS, nicht Sim-Startjahr
-                        debutYear: (HIST_DRIVERS[d[0]] ? HIST_DRIVERS[d[0]][6] : year),
+                        debutYear: (HIST_DRIVERS[d[0]]?.[6] ?? year),   // null = nur Freitagstraining (hist-debut-quali.js)
                         pace: d[5], rain: d[6], consistency: d[7] || 70,
                         experience: d[8], starts: d[9]
                     };
@@ -16709,7 +16727,25 @@
             
             GAME_STATE.results.push(raceResult);
             GAME_STATE.currentRace++;
-            
+
+            // Debuet = erste Meldung zur Qualifikation oder Vorqualifikation (Nutzer-Regel 15.11.2026):
+            // Start, DNQ, DNS und DNPQ zaehlen gleich – wie das Abzeichen in der Meldeliste, das ein neu
+            // gemeldeter Fahrer schon vor seinem ersten Start traegt. Freitagstraining zaehlt nie.
+            // Zusaetzlich GAME_STATE.debutJahre[histId]: haengt nicht am Fahrerobjekt. initReservePool legt
+            // Rueckkehrer als neues Objekt an; wer nur DNQ hatte, steht nicht in allTimeStATS (Joe James:
+            // DNQ 1951, als Kopie 1955 wieder „Debüt“).
+            if (!GAME_STATE.debutJahre) GAME_STATE.debutJahre = {};
+            const _dj = GAME_STATE.debutJahre;
+            // Nutzer 15.11.2026 (zweite Fassung): auch die Vorqualifikation ist eine Quali-Meldung –
+            // DNPQ zaehlt. Wilson, Winkelhock, South 1980 scheiterten dort und galten sonst als ungemeldet.
+            [...(raceResult.dnpq || []), ...(raceResult.dnq || []), ...(raceResult.dns || []), ...(raceResult.results || []).map(e => e.driver)].forEach(id => {
+                const d = GAME_STATE.drivers.find(x => x.id === id) || (GAME_STATE.reservePool || []).find(x => x.id === id);
+                if (!d) return;
+                if (typeof d.f1DebutYear !== 'number') d.f1DebutYear = GAME_STATE.currentYear;
+                const k = d.histId || d.id;
+                if (typeof _dj[k] !== 'number') _dj[k] = GAME_STATE.currentYear;
+            });
+
             // All-Time StATS update - FAHRER
             GAME_STATE.allTimeStATS.totalRaces++;
             raceResult.results.forEach(r => {
@@ -16718,9 +16754,9 @@
                                || (GAME_STATE.reservePool || []).find(d => d.id === r.driver);
                 const driverStATSId = driverObj?.histId || r.driver;
 
-                // Echtes F1-Debuet festhalten (v0.9.18.4): der erste RENNEINSATZ zaehlt,
-                // nicht das Erzeugungsjahr und nicht eine DNQ — wer die Qualifikation nie
-                // besteht, hat nicht debuetiert. Steht in `raceResult.dnq`, nicht hier.
+                // Echtes F1-Debuet festhalten (v0.9.18.4): der erste Renneinsatz zaehlt, nicht
+                // das Erzeugungsjahr. Seit 15.11.2026 zaehlt jede Quali-/Vorquali-Meldung (DNQ/DNS/DNPQ) – das
+                // setzt der Block oberhalb aus raceResult.dnq/dns/dnpq.
                 if (driverObj && typeof driverObj.f1DebutYear !== 'number') {
                     driverObj.f1DebutYear = GAME_STATE.currentYear;
                 }
@@ -16733,6 +16769,9 @@
                 }
                 const ad = GAME_STATE.allTimeStATS.drivers[driverStATSId];
                 ad.name = r.name; // Aktualisiere Namen
+                // Erstes Rennen IM SPIEL, an der histId statt am Fahrerobjekt (15.11.2026): Kopien aus
+                // initReservePool verlieren f1DebutYear, dieser Eintrag bleibt (getF1DebutYear).
+                if (typeof ad.firstSimYear !== 'number') ad.firstSimYear = GAME_STATE.currentYear;
                 // Nation dauerhaft sichern (auch für generierte Fahrer, sonst nach Ausscheiden "UNBEKANNT")
                 if (!ad.nation) { const _n = _iocOf(driverObj?.nation) || (typeof lookupNationByName === 'function' ? lookupNationByName(r.name) : null); if (_n) ad.nation = _n; }
                 ad.races++;
@@ -38450,7 +38489,10 @@ Empfohlene Wertebereiche:
                 const tc = GAME_STATE._titleClinch;
                 if (jahr === GAME_STATE.currentYear && tc && tc.year === jahr && istEr(tc.driverId))
                     teile.push(pille(`🏆 Weltmeister ${jahr}`, '#EAB308', tc.remaining > 0 ? `vorzeitig entschieden, ${tc.remaining} Rennen vor Schluss` : 'im Finale entschieden'));
-                const debut = getF1DebutYear(driver) ?? (jahr === GAME_STATE.currentYear && driver.team ? jahr : null);
+                // Rueckfall „hat ein Team“ nur, solange die Saison laeuft: wer sie ganz ohne Quali-Meldung
+                // beendet, hat nicht debuetiert (Start 1980: 7 Saisonend-Abzeichen ohne Meldung).
+                const _saisonLaeuft = (GAME_STATE.currentRace || 0) < (GAME_STATE.races || []).length;
+                const debut = getF1DebutYear(driver) ?? (jahr === GAME_STATE.currentYear && driver.team && _saisonLaeuft ? jahr : null);
                 if (debut === jahr) teile.push(pille('Debüt', '#22C55E', `Debütsaison ${jahr}`));
                 return teile.filter(Boolean).length ? ' ' + teile.filter(Boolean).join(' ') : '';
             })();

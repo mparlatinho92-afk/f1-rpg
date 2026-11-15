@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.38</title>
+    <title>F1 RPG v0.9.21.39</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.38 (aktuell) - 15.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.39 (aktuell) - 15.11.2026</div>
+                            <div>&#8226; FIX: Rueckkehrer aus anderen Serien trugen erneut das Debuet-Abzeichen (z. B. Antonelli 2030)</div>
+                            <div>&#8226; FIX: Debuet zaehlt ab der ersten Meldung zur Quali oder Vorquali, auch bei DNQ, DNPQ und DNS</div>
+                            <div>&#8226; FIX: Freitagstrainings zaehlen nicht mehr als Debuet, 93 echte Debuetjahre korrigiert</div>
+                            <div>&#8226; FIX: Wer eine Saison ganz ohne Meldung beendet, gilt nicht als Debuetant</div>
+                            <div class="font-bold text-slate-400">v0.9.21.38 - 15.11.2026</div>
                             <div>&#8226; NEU: Off-Season-Fenster zeigen die Teamaenderungen der neuen Saison (Umbenennung, Einsteiger, Aussteiger)</div>
                             <div>&#8226; FIX: Jede Fahrerbewegung nennt Herkunft (alle Teams der Saison) und Ziel, umbenannte Teams im neuen Namen</div>
                             <div>&#8226; FIX: Debuets, Karriereenden und Wechsel in andere Serien fehlten im Saisonende-Fenster</div>
@@ -4939,11 +4944,11 @@
     </script>
     <script>
         const HIST_DRIVERS = {
-"adderly-fong":[0, 0, 0, 0.0, 0, 0, 2014, 2014],
+"adderly-fong":[0, 0, 0, 0.0, 0, 0, null, 2014],
 "adolf-brudes":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
 "adolfo-schwelm-cruz":[0, 0, 0, 0.0, 1, 0, 1953, 1953],
 "adrian-campos":[0, 0, 0, 0.0, 17, 0, 1987, 1988],
-"adrian-sutil":[0, 0, 0, 124.0, 128, 0, 2006, 2014],
+"adrian-sutil":[0, 0, 0, 124.0, 128, 0, 2007, 2014],
 "aguri-suzuki":[0, 1, 0, 8.0, 65, 0, 1988, 1995],
 "al-herman":[0, 0, 0, 0.0, 5, 0, 1955, 1960],
 "al-keller":[0, 0, 0, 0.0, 5, 0, 1955, 1959],
@@ -4966,17 +4971,17 @@
 "alessandro-nannini":[1, 9, 0, 65.0, 76, 0, 1986, 1990],
 "alessandro-pesenti-rossi":[0, 0, 0, 0.0, 3, 0, 1976, 1976],
 "alex-caffi":[0, 0, 0, 6.0, 56, 0, 1986, 1992],
-"alex-palou":[0, 0, 0, 0.0, 0, 0, 2022, 2022],
+"alex-palou":[0, 0, 0, 0.0, 0, 0, null, 2022],
 "alex-ribeiro":[0, 0, 0, 0.0, 10, 0, 1976, 1979],
 "alex-soler-roig":[0, 0, 0, 0.0, 6, 0, 1970, 1972],
 "alex-yoong":[0, 0, 0, 0.0, 14, 0, 2001, 2002],
 "alex-zanardi":[0, 0, 0, 1.0, 41, 0, 1991, 1999],
 "alexander-albon":[0, 2, 0, 313.0, 128, 0, 2019, 2026],
-"alexander-dunne":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
-"alexander-rossi":[0, 0, 0, 0.0, 5, 0, 2012, 2015],
+"alexander-dunne":[0, 0, 0, 0.0, 0, 0, null, 2025],
+"alexander-rossi":[0, 0, 0, 0.0, 5, 0, 2015, 2015],
 "alexander-wurz":[0, 3, 0, 45.0, 69, 0, 1997, 2007],
-"alexandre-premat":[0, 0, 0, 0.0, 0, 0, 2006, 2006],
-"alfonso-celis-jr":[0, 0, 0, 0.0, 0, 0, 2016, 2017],
+"alexandre-premat":[0, 0, 0, 0.0, 0, 0, null, 2006],
+"alfonso-celis-jr":[0, 0, 0, 0.0, 0, 0, null, 2017],
 "alfonso-de-portago":[0, 1, 0, 4.0, 5, 0, 1956, 1957],
 "alfonso-thiele":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "alfredo-pian":[0, 0, 0, 0.0, 0, 0, 1950, 1950],
@@ -4997,22 +5002,22 @@
 "anthony-davidson":[0, 0, 0, 0.0, 24, 0, 2002, 2008],
 "anthony-joseph-foyt":[0, 0, 0, 0.0, 3, 0, 1958, 1960],
 "antonio-creus":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
-"antonio-fuoco":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
+"antonio-fuoco":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "antonio-giovinazzi":[0, 0, 0, 21.0, 62, 0, 2017, 2022],
 "antonio-pizzonia":[0, 0, 0, 8.0, 20, 0, 2003, 2005],
 "archie-scott-brown":[0, 0, 0, 0.0, 1, 0, 1956, 1956],
 "art-bisch":[0, 0, 0, 0.0, 1, 0, 1958, 1958],
 "art-cross":[0, 1, 0, 8.0, 4, 0, 1952, 1955],
-"artem-markelov":[0, 0, 0, 0.0, 0, 0, 2018, 2018],
-"arthur-leclerc":[0, 0, 0, 0.0, 0, 0, 2024, 2025],
+"artem-markelov":[0, 0, 0, 0.0, 0, 0, null, 2018],
+"arthur-leclerc":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "arthur-legat":[0, 0, 0, 0.0, 2, 0, 1952, 1953],
 "arthur-owen":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "arturo-merzario":[0, 0, 0, 11.0, 57, 0, 1972, 1979],
-"arvid-lindblad":[0, 0, 0, 0.0, 0, 0, 2025, 2026],
+"arvid-lindblad":[0, 0, 0, 0.0, 0, 0, 2026, 2026],
 "asdrubal-fontes-bayardo":[0, 0, 0, 0.0, 0, 0, 1959, 1959],
 "ayrton-senna":[41, 80, 65, 614.0, 161, 3, 1984, 1994],
-"ayumu-iwasa":[0, 0, 0, 0.0, 0, 0, 2024, 2025],
-"bas-leinders":[0, 0, 0, 0.0, 0, 0, 2004, 2004],
+"ayumu-iwasa":[0, 0, 0, 0.0, 0, 0, null, 2025],
+"bas-leinders":[0, 0, 0, 0.0, 0, 0, null, 2004],
 "basil-van-rooyen":[0, 0, 0, 0.0, 2, 0, 1968, 1969],
 "bayliss-levrett":[0, 0, 0, 0.0, 1, 0, 1950, 1950],
 "ben-pon":[0, 0, 0, 0.0, 1, 0, 1962, 1962],
@@ -5036,7 +5041,7 @@
 "bill-whitehouse":[0, 0, 0, 0.0, 1, 0, 1954, 1954],
 "billy-garrett":[0, 0, 0, 0.0, 2, 0, 1956, 1958],
 "birabongse-bhanudej":[0, 0, 0, 8.0, 19, 0, 1950, 1954],
-"bjorn-wirdheim":[0, 0, 0, 0.0, 0, 0, 2003, 2004],
+"bjorn-wirdheim":[0, 0, 0, 0.0, 0, 0, null, 2004],
 "bob-anderson":[0, 1, 0, 8.0, 25, 0, 1963, 1967],
 "bob-bondurant":[0, 0, 0, 3.0, 9, 0, 1965, 1966],
 "bob-christie":[0, 0, 0, 0.0, 5, 0, 1956, 1960],
@@ -5070,7 +5075,7 @@
 "bruno-senna":[0, 0, 0, 33.0, 46, 0, 2010, 2012],
 "bud-tingelstad":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "cal-niday":[0, 0, 0, 0.0, 3, 0, 1953, 1955],
-"callum-ilott":[0, 0, 0, 0.0, 0, 0, 2021, 2021],
+"callum-ilott":[0, 0, 0, 0.0, 0, 0, null, 2021],
 "carel-godin-de-beaufort":[0, 0, 0, 4.0, 28, 0, 1957, 1964],
 "carl-forberg":[0, 0, 0, 0.0, 1, 0, 1951, 1951],
 "carl-scarborough":[0, 0, 0, 0.0, 2, 0, 1951, 1953],
@@ -5083,9 +5088,9 @@
 "carroll-shelby":[0, 0, 0, 0.0, 8, 0, 1958, 1959],
 "cecil-green":[0, 0, 0, 3.0, 2, 0, 1950, 1951],
 "cesare-perdisa":[0, 2, 0, 5.0, 7, 0, 1955, 1957],
-"chanoch-nissany":[0, 0, 0, 0.0, 0, 0, 2005, 2005],
+"chanoch-nissany":[0, 0, 0, 0.0, 0, 0, null, 2005],
 "charles-de-tornaco":[0, 0, 0, 0.0, 2, 0, 1952, 1953],
-"charles-leclerc":[8, 50, 27, 1672.0, 171, 0, 2016, 2026],
+"charles-leclerc":[8, 50, 27, 1672.0, 171, 0, 2018, 2026],
 "charles-pic":[0, 0, 0, 0.0, 39, 0, 2012, 2014],
 "charles-pozzi":[0, 0, 0, 0.0, 1, 0, 1950, 1950],
 "chet-miller":[0, 0, 0, 0.0, 2, 0, 1951, 1952],
@@ -5101,12 +5106,12 @@
 "christian-goethals":[0, 0, 0, 0.0, 1, 0, 1958, 1958],
 "christian-klien":[0, 0, 0, 14.0, 49, 0, 2004, 2010],
 "christijan-albers":[0, 0, 0, 4.0, 46, 0, 2005, 2007],
-"christophe-bouchut":[0, 0, 0, 0.0, 0, 0, 1995, 1995],
+"christophe-bouchut":[0, 0, 0, 0.0, 0, 0, null, 1995],
 "chuck-arnold":[0, 0, 0, 0.0, 1, 0, 1959, 1959],
 "chuck-daigh":[0, 0, 0, 0.0, 3, 0, 1960, 1960],
 "chuck-stevenson":[0, 0, 0, 0.0, 5, 0, 1951, 1960],
 "chuck-weyant":[0, 0, 0, 0.0, 4, 0, 1955, 1959],
-"cian-shields":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
+"cian-shields":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "claudio-langes":[0, 0, 0, 0.0, 0, 0, 1990, 1990],
 "clay-regazzoni":[5, 28, 5, 212.0, 132, 0, 1970, 1980],
 "clemar-bucci":[0, 0, 0, 0.0, 5, 0, 1954, 1955],
@@ -5124,10 +5129,10 @@
 "damien-magee":[0, 0, 0, 0.0, 1, 0, 1975, 1976],
 "damon-hill":[22, 42, 20, 360.0, 115, 1, 1992, 1999],
 "dan-gurney":[4, 19, 3, 133.0, 86, 0, 1959, 1970],
-"dani-clos":[0, 0, 0, 0.0, 0, 0, 2012, 2012],
-"daniel-juncadella":[0, 0, 0, 0.0, 0, 0, 2014, 2014],
+"dani-clos":[0, 0, 0, 0.0, 0, 0, null, 2012],
+"daniel-juncadella":[0, 0, 0, 0.0, 0, 0, null, 2014],
 "daniel-ricciardo":[8, 32, 3, 1329.0, 257, 0, 2011, 2024],
-"daniil-kvyat":[0, 3, 0, 202.0, 110, 0, 2013, 2020],
+"daniil-kvyat":[0, 3, 0, 202.0, 110, 0, 2014, 2020],
 "danny-kladis":[0, 0, 0, 0.0, 1, 0, 1954, 1954],
 "danny-ongais":[0, 0, 0, 0.0, 4, 0, 1977, 1978],
 "danny-sullivan":[0, 0, 0, 2.0, 15, 0, 1983, 1983],
@@ -5143,7 +5148,7 @@
 "david-prophet":[0, 0, 0, 0.0, 2, 0, 1963, 1965],
 "david-purley":[0, 0, 0, 0.0, 7, 0, 1973, 1977],
 "david-walker":[0, 0, 0, 0.0, 11, 0, 1971, 1972],
-"davide-valsecchi":[0, 0, 0, 0.0, 0, 0, 2011, 2011],
+"davide-valsecchi":[0, 0, 0, 0.0, 0, 0, null, 2011],
 "dempsey-wilson":[0, 0, 0, 0.0, 2, 0, 1958, 1960],
 "dennis-poore":[0, 0, 0, 3.0, 2, 0, 1952, 1952],
 "dennis-taylor":[0, 0, 0, 0.0, 0, 0, 1959, 1959],
@@ -5157,7 +5162,7 @@
 "dick-rathmann":[0, 0, 1, 2.0, 5, 0, 1950, 1960],
 "didier-pironi":[3, 13, 4, 101.0, 70, 0, 1978, 1982],
 "dieter-quester":[0, 0, 0, 0.0, 1, 0, 1969, 1974],
-"dino-beganovic":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
+"dino-beganovic":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "divina-galica":[0, 0, 0, 0.0, 0, 0, 1976, 1978],
 "domenico-schiattarella":[0, 0, 0, 0.0, 6, 0, 1994, 1995],
 "don-beauman":[0, 0, 0, 0.0, 1, 0, 1954, 1954],
@@ -5191,7 +5196,7 @@
 "emilio-zapico":[0, 0, 0, 0.0, 0, 0, 1976, 1976],
 "emmanuel-de-graffenried":[0, 0, 0, 9.0, 22, 0, 1950, 1956],
 "enrico-bertaggia":[0, 0, 0, 0.0, 0, 0, 1989, 1992],
-"enrico-toccacelo":[0, 0, 0, 0.0, 0, 0, 2005, 2005],
+"enrico-toccacelo":[0, 0, 0, 0.0, 0, 0, null, 2005],
 "enrique-bernoldi":[0, 0, 0, 0.0, 28, 0, 2001, 2002],
 "eppie-wietzes":[0, 0, 0, 0.0, 2, 0, 1967, 1974],
 "eric-bernard":[0, 1, 0, 10.0, 45, 0, 1989, 1994],
@@ -5201,29 +5206,29 @@
 "erik-comas":[0, 0, 0, 7.0, 59, 0, 1991, 1995],
 "ernesto-brambilla":[0, 0, 0, 0.0, 0, 0, 1963, 1969],
 "ernesto-prinoth":[0, 0, 0, 0.0, 0, 0, 1962, 1962],
-"ernesto-viso":[0, 0, 0, 0.0, 0, 0, 2006, 2006],
+"ernesto-viso":[0, 0, 0, 0.0, 0, 0, null, 2006],
 "ernie-mccoy":[0, 0, 0, 0.0, 2, 0, 1953, 1954],
 "ernie-pieterse":[0, 0, 0, 0.0, 2, 0, 1962, 1965],
 "ernst-klodwig":[0, 0, 0, 0.0, 2, 0, 1952, 1953],
 "ernst-loof":[0, 0, 0, 0.0, 1, 0, 1953, 1953],
 "erwin-bauer":[0, 0, 0, 0.0, 1, 0, 1953, 1953],
-"esteban-gutierrez":[0, 0, 0, 6.0, 59, 0, 2012, 2016],
-"esteban-ocon":[1, 4, 0, 483.0, 180, 0, 2014, 2026],
+"esteban-gutierrez":[0, 0, 0, 6.0, 59, 0, 2013, 2016],
+"esteban-ocon":[1, 4, 0, 483.0, 180, 0, 2016, 2026],
 "esteban-tuero":[0, 0, 0, 0.0, 16, 0, 1998, 1998],
 "ettore-chimeri":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "eugene-chaboud":[0, 0, 0, 1.0, 3, 0, 1950, 1951],
 "eugene-martin":[0, 0, 0, 0.0, 2, 0, 1950, 1950],
 "eugenio-castellotti":[0, 3, 1, 19.5, 14, 0, 1955, 1957],
-"fabio-leimer":[0, 0, 0, 0.0, 0, 0, 2015, 2015],
+"fabio-leimer":[0, 0, 0, 0.0, 0, 0, null, 2015],
 "fabrizio-barbazza":[0, 0, 0, 2.0, 8, 0, 1991, 1993],
-"fairuz-fauzy":[0, 0, 0, 0.0, 0, 0, 2010, 2010],
+"fairuz-fauzy":[0, 0, 0, 0.0, 0, 0, null, 2010],
 "felice-bonetto":[0, 2, 0, 17.5, 15, 0, 1950, 1953],
-"felipe-drugovich":[0, 0, 0, 0.0, 0, 0, 2022, 2025],
+"felipe-drugovich":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "felipe-massa":[11, 41, 16, 1167.0, 269, 0, 2002, 2017],
-"felipe-nasr":[0, 0, 0, 29.0, 39, 0, 2014, 2016],
+"felipe-nasr":[0, 0, 0, 29.0, 39, 0, 2015, 2016],
 "fernando-alonso":[32, 106, 22, 2393.0, 426, 2, 2001, 2026],
 "franck-lagorce":[0, 0, 0, 0.0, 2, 0, 1994, 1994],
-"franck-montagny":[0, 0, 0, 0.0, 7, 0, 2003, 2006],
+"franck-montagny":[0, 0, 0, 0.0, 7, 0, 2006, 2006],
 "franco-colapinto":[0, 0, 0, 5.0, 26, 0, 2024, 2026],
 "franco-comotti":[0, 0, 0, 0.0, 2, 0, 1950, 1952],
 "franco-forini":[0, 0, 0, 0.0, 2, 0, 1987, 1987],
@@ -5239,7 +5244,7 @@
 "fred-agabashian":[0, 0, 1, 1.5, 8, 0, 1950, 1957],
 "fred-gamble":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "fred-wacker":[0, 0, 0, 0.0, 3, 0, 1953, 1954],
-"frederik-vesti":[0, 0, 0, 0.0, 0, 0, 2023, 2025],
+"frederik-vesti":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "fritz-dorey":[0, 0, 0, 0.0, 3, 0, 1959, 1959],
 "fritz-riess":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
 "gabriel-bortoleto":[0, 0, 0, 19.0, 24, 0, 2025, 2026],
@@ -5258,7 +5263,7 @@
 "george-eaton":[0, 0, 0, 0.0, 11, 0, 1969, 1971],
 "george-follmer":[0, 1, 0, 5.0, 12, 0, 1973, 1973],
 "george-fonder":[0, 0, 0, 0.0, 2, 0, 1952, 1954],
-"george-russell":[5, 24, 7, 1033.0, 152, 0, 2017, 2026],
+"george-russell":[5, 24, 7, 1033.0, 152, 0, 2019, 2026],
 "georges-berger":[0, 0, 0, 0.0, 2, 0, 1953, 1954],
 "georges-grignard":[0, 0, 0, 0.0, 1, 0, 1951, 1951],
 "gerard-larrousse":[0, 0, 0, 0.0, 1, 0, 1974, 1974],
@@ -5270,16 +5275,16 @@
 "giancarlo-baghetti":[1, 1, 0, 14.0, 21, 0, 1961, 1967],
 "giancarlo-fisichella":[3, 19, 4, 275.0, 229, 0, 1996, 2009],
 "gianfranco-brancatelli":[0, 0, 0, 0.0, 0, 0, 1979, 1979],
-"gianmaria-bruni":[0, 0, 0, 0.0, 18, 0, 2003, 2004],
+"gianmaria-bruni":[0, 0, 0, 0.0, 18, 0, 2004, 2004],
 "gianni-morbidelli":[0, 1, 0, 8.5, 67, 0, 1990, 1997],
-"giedo-van-der-garde":[0, 0, 0, 0.0, 19, 0, 2012, 2014],
+"giedo-van-der-garde":[0, 0, 0, 0.0, 19, 0, 2013, 2014],
 "gijs-van-lennep":[0, 0, 0, 2.0, 8, 0, 1971, 1975],
 "gilles-villeneuve":[6, 13, 2, 107.0, 67, 0, 1977, 1982],
 "gino-bianco":[0, 0, 0, 0.0, 4, 0, 1952, 1952],
 "gino-munaron":[0, 0, 0, 0.0, 4, 0, 1960, 1960],
 "giorgio-bassi":[0, 0, 0, 0.0, 1, 0, 1965, 1965],
 "giorgio-francia":[0, 0, 0, 0.0, 0, 0, 1977, 1981],
-"giorgio-mondini":[0, 0, 0, 0.0, 0, 0, 2006, 2006],
+"giorgio-mondini":[0, 0, 0, 0.0, 0, 0, null, 2006],
 "giorgio-pantano":[0, 0, 0, 0.0, 14, 0, 2004, 2004],
 "giorgio-scarlatti":[0, 0, 0, 1.0, 12, 0, 1956, 1961],
 "giovanna-amati":[0, 0, 0, 0.0, 0, 0, 1992, 1992],
@@ -5290,7 +5295,7 @@
 "graham-mcrae":[0, 0, 0, 0.0, 1, 0, 1973, 1973],
 "graham-whitehead":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
 "gregor-foitek":[0, 0, 0, 0.0, 7, 0, 1989, 1990],
-"guanyu-zhou":[0, 0, 0, 16.0, 68, 0, 2021, 2024],
+"guanyu-zhou":[0, 0, 0, 16.0, 68, 0, 2022, 2024],
 "gunnar-nilsson":[1, 4, 0, 31.0, 31, 0, 1976, 1977],
 "gunther-seiffert":[0, 0, 0, 0.0, 0, 0, 1962, 1962],
 "gus-hutchison":[0, 0, 0, 0.0, 1, 0, 1970, 1970],
@@ -5339,13 +5344,13 @@
 "ignazio-giunti":[0, 0, 0, 3.0, 4, 0, 1970, 1970],
 "ingo-hoffmann":[0, 0, 0, 0.0, 3, 0, 1976, 1977],
 "innes-ireland":[1, 4, 0, 47.0, 50, 0, 1959, 1966],
-"isack-hadjar":[0, 1, 0, 51.0, 24, 0, 2023, 2026],
+"isack-hadjar":[0, 1, 0, 51.0, 24, 0, 2025, 2026],
 "ivan-capelli":[0, 3, 0, 31.0, 93, 0, 1985, 1993],
 "ivor-bueb":[0, 0, 0, 0.0, 5, 0, 1957, 1959],
 "jac-nellemann":[0, 0, 0, 0.0, 0, 0, 1976, 1976],
 "jack-aitken":[0, 0, 0, 0.0, 1, 0, 2020, 2021],
 "jack-brabham":[14, 31, 13, 261.0, 126, 3, 1955, 1970],
-"jack-doohan":[0, 0, 0, 0.0, 7, 0, 2022, 2025],
+"jack-doohan":[0, 0, 0, 0.0, 7, 0, 2024, 2025],
 "jack-fairman":[0, 0, 0, 5.0, 12, 0, 1953, 1961],
 "jack-mcgrath":[0, 2, 1, 9.0, 6, 0, 1950, 1955],
 "jack-turner":[0, 0, 0, 0.0, 4, 0, 1956, 1959],
@@ -5361,11 +5366,11 @@
 "jacques-villeneuve":[11, 23, 13, 235.0, 163, 1, 1996, 2006],
 "jacques-villeneuve-sr":[0, 0, 0, 0.0, 0, 0, 1981, 1983],
 "jaime-alguersuari":[0, 0, 0, 31.0, 46, 0, 2009, 2011],
-"jak-crawford":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
-"jake-dennis":[0, 0, 0, 0.0, 0, 0, 2023, 2023],
-"james-calado":[0, 0, 0, 0.0, 0, 0, 2013, 2013],
+"jak-crawford":[0, 0, 0, 0.0, 0, 0, null, 2025],
+"jake-dennis":[0, 0, 0, 0.0, 0, 0, null, 2023],
+"james-calado":[0, 0, 0, 0.0, 0, 0, null, 2013],
 "james-hunt":[10, 23, 14, 179.0, 92, 1, 1973, 1979],
-"jan-charouz":[0, 0, 0, 0.0, 0, 0, 2011, 2011],
+"jan-charouz":[0, 0, 0, 0.0, 0, 0, null, 2011],
 "jan-flinterman":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
 "jan-lammers":[0, 0, 0, 0.0, 23, 0, 1979, 1993],
 "jan-magnussen":[0, 0, 0, 1.0, 24, 0, 1995, 1998],
@@ -5376,7 +5381,7 @@
 "jean-christophe-boullion":[0, 0, 0, 3.0, 11, 0, 1995, 1995],
 "jean-claude-rudaz":[0, 0, 0, 0.0, 0, 0, 1964, 1964],
 "jean-denis-deletraz":[0, 0, 0, 0.0, 3, 0, 1994, 1995],
-"jean-eric-vergne":[0, 0, 0, 51.0, 58, 0, 2011, 2014],
+"jean-eric-vergne":[0, 0, 0, 51.0, 58, 0, 2012, 2014],
 "jean-louis-schlesser":[0, 0, 0, 0.0, 1, 0, 1983, 1988],
 "jean-lucas":[0, 0, 0, 0.0, 1, 0, 1955, 1955],
 "jean-lucienbonnet":[0, 0, 0, 0.0, 0, 0, 1959, 1959],
@@ -5385,7 +5390,7 @@
 "jean-pierre-jabouille":[2, 2, 6, 21.0, 49, 0, 1974, 1981],
 "jean-pierre-jarier":[0, 3, 3, 31.5, 135, 0, 1971, 1983],
 "jenson-button":[15, 50, 8, 1235.0, 306, 1, 2000, 2017],
-"jerome-dambrosio":[0, 0, 0, 0.0, 20, 0, 2010, 2012],
+"jerome-dambrosio":[0, 0, 0, 0.0, 20, 0, 2011, 2012],
 "jerry-hoyt":[0, 0, 1, 0.0, 4, 0, 1950, 1955],
 "jerry-unser-jr":[0, 0, 0, 0.0, 1, 0, 1958, 1958],
 "jesus-iglesias":[0, 0, 0, 0.0, 1, 0, 1955, 1955],
@@ -5441,10 +5446,10 @@
 "johnny-servoz-gavin":[0, 1, 0, 9.0, 12, 0, 1967, 1970],
 "johnny-thomson":[0, 1, 1, 10.0, 8, 0, 1953, 1960],
 "joie-chitwood":[0, 0, 0, 1.0, 1, 0, 1950, 1950],
-"jolyon-palmer":[0, 0, 0, 9.0, 35, 0, 2015, 2017],
+"jolyon-palmer":[0, 0, 0, 9.0, 35, 0, 2016, 2017],
 "jonathan-palmer":[0, 0, 0, 14.0, 83, 0, 1983, 1989],
 "jonathan-williams":[0, 0, 0, 0.0, 1, 0, 1967, 1967],
-"jordan-king":[0, 0, 0, 0.0, 0, 0, 2016, 2016],
+"jordan-king":[0, 0, 0, 0.0, 0, 0, null, 2016],
 "jorge-daponte":[0, 0, 0, 0.0, 2, 0, 1954, 1954],
 "jos-verstappen":[0, 2, 0, 17.0, 106, 0, 1994, 2003],
 "jose-dolhem":[0, 0, 0, 0.0, 1, 0, 1974, 1974],
@@ -5455,9 +5460,9 @@
 "juan-manuel-fangio":[24, 35, 29, 277.6, 51, 5, 1950, 1958],
 "juan-pablo-montoya":[7, 30, 13, 307.0, 94, 0, 2001, 2006],
 "jud-larson":[0, 0, 0, 0.0, 2, 0, 1958, 1959],
-"jules-bianchi":[0, 0, 0, 2.0, 34, 0, 2012, 2014],
+"jules-bianchi":[0, 0, 0, 2.0, 34, 0, 2013, 2014],
 "julian-bailey":[0, 0, 0, 1.0, 7, 0, 1988, 1991],
-"juri-vips":[0, 0, 0, 0.0, 0, 0, 2022, 2022],
+"juri-vips":[0, 0, 0, 0.0, 0, 0, null, 2022],
 "justin-wilson":[0, 0, 0, 1.0, 16, 0, 2003, 2003],
 "kamui-kobayashi":[0, 1, 0, 125.0, 75, 0, 2009, 2014],
 "karl-gunther-bechem":[0, 0, 0, 0.0, 2, 0, 1952, 1953],
@@ -5477,7 +5482,7 @@
 "kenny-acheson":[0, 0, 0, 0.0, 3, 0, 1983, 1985],
 "kevin-cogan":[0, 0, 0, 0.0, 0, 0, 1980, 1981],
 "kevin-magnussen":[0, 1, 1, 202.0, 185, 0, 2014, 2024],
-"kimi-antonelli":[0, 3, 0, 150.0, 24, 0, 2024, 2026],
+"kimi-antonelli":[0, 3, 0, 150.0, 24, 0, 2025, 2026],
 "kimi-raikkonen":[21, 103, 18, 1873.0, 350, 1, 2001, 2021],
 "kunimitsu-takahashi":[0, 0, 0, 0.0, 1, 0, 1977, 1977],
 "kurt-adolff":[0, 0, 0, 0.0, 1, 0, 1953, 1953],
@@ -5487,7 +5492,7 @@
 "lance-macklin":[0, 0, 0, 0.0, 13, 0, 1952, 1955],
 "lance-reventlow":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "lance-stroll":[0, 3, 1, 325.0, 189, 0, 2017, 2026],
-"lando-norris":[11, 44, 16, 1430.0, 152, 1, 2018, 2026],
+"lando-norris":[11, 44, 16, 1430.0, 152, 1, 2019, 2026],
 "larry-crockett":[0, 0, 0, 0.0, 1, 0, 1954, 1954],
 "larry-perkins":[0, 0, 0, 0.0, 11, 0, 1974, 1977],
 "lee-wallard":[1, 1, 0, 9.0, 2, 0, 1950, 1951],
@@ -5500,9 +5505,9 @@
 "leslie-marr":[0, 0, 0, 0.0, 2, 0, 1954, 1955],
 "leslie-thorne":[0, 0, 0, 0.0, 1, 0, 1954, 1954],
 "lewis-hamilton":[105, 202, 104, 5018.5, 380, 7, 2007, 2026],
-"liam-lawson":[0, 0, 0, 44.0, 35, 0, 2022, 2026],
+"liam-lawson":[0, 0, 0, 44.0, 35, 0, 2023, 2026],
 "lloyd-ruby":[0, 0, 0, 0.0, 2, 0, 1960, 1961],
-"logan-sargeant":[0, 0, 0, 1.0, 36, 0, 2022, 2024],
+"logan-sargeant":[0, 0, 0, 1.0, 36, 0, 2023, 2024],
 "lorenzo-bandini":[1, 8, 1, 58.0, 42, 0, 1961, 1967],
 "loris-kessel":[0, 0, 0, 0.0, 3, 0, 1976, 1977],
 "louis-chiron":[0, 1, 0, 4.0, 15, 0, 1950, 1958],
@@ -5520,10 +5525,10 @@
 "luigi-villoresi":[0, 8, 0, 49.0, 31, 0, 1950, 1956],
 "luis-perez-sala":[0, 0, 0, 1.0, 26, 0, 1988, 1989],
 "luiz-bueno":[0, 0, 0, 0.0, 1, 0, 1973, 1973],
-"luiz-razia":[0, 0, 0, 0.0, 0, 0, 2011, 2011],
-"luke-browning":[0, 0, 0, 0.0, 0, 0, 2024, 2025],
+"luiz-razia":[0, 0, 0, 0.0, 0, 0, null, 2011],
+"luke-browning":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "luki-botha":[0, 0, 0, 0.0, 1, 0, 1967, 1967],
-"ma-qinghua":[0, 0, 0, 0.0, 0, 0, 2012, 2013],
+"ma-qinghua":[0, 0, 0, 0.0, 0, 0, null, 2013],
 "mack-hellings":[0, 0, 0, 0.0, 2, 0, 1950, 1951],
 "manfred-winkelhock":[0, 0, 0, 2.0, 47, 0, 1980, 1985],
 "manny-ayulo":[0, 1, 0, 2.0, 4, 0, 1951, 1954],
@@ -5538,7 +5543,7 @@
 "mark-blundell":[0, 3, 0, 32.0, 61, 0, 1991, 1995],
 "mark-donohue":[0, 1, 0, 8.0, 14, 0, 1971, 1975],
 "mark-webber":[9, 42, 13, 1047.5, 215, 0, 2002, 2013],
-"markus-winkelhock":[0, 0, 0, 0.0, 1, 0, 2006, 2007],
+"markus-winkelhock":[0, 0, 0, 0.0, 1, 0, 2007, 2007],
 "marshall-teague":[0, 0, 0, 0.0, 3, 0, 1953, 1957],
 "martin-brundle":[0, 9, 0, 98.0, 160, 0, 1984, 1996],
 "martin-donnelly":[0, 0, 0, 0.0, 14, 0, 1989, 1990],
@@ -5546,17 +5551,17 @@
 "masami-kuwashima":[0, 0, 0, 0.0, 0, 0, 1976, 1976],
 "massimo-natili":[0, 0, 0, 0.0, 1, 0, 1961, 1961],
 "masten-gregory":[0, 3, 0, 21.0, 38, 0, 1957, 1965],
-"matteo-bobbi":[0, 0, 0, 0.0, 0, 0, 2003, 2003],
+"matteo-bobbi":[0, 0, 0, 0.0, 0, 0, null, 2003],
 "mauri-rose":[0, 1, 0, 4.0, 2, 0, 1950, 1951],
 "maurice-trintignant":[2, 9, 0, 72.3, 82, 0, 1950, 1964],
 "mauricio-gugelmin":[0, 1, 0, 10.0, 74, 0, 1988, 1992],
 "mauro-baldi":[0, 0, 0, 5.0, 36, 0, 1982, 1985],
-"max-chilton":[0, 0, 0, 0.0, 35, 0, 2012, 2014],
+"max-chilton":[0, 0, 0, 0.0, 35, 0, 2013, 2014],
 "max-de-terra":[0, 0, 0, 0.0, 2, 0, 1952, 1953],
 "max-jean":[0, 0, 0, 0.0, 1, 0, 1971, 1971],
 "max-papis":[0, 0, 0, 0.0, 7, 0, 1995, 1995],
-"max-verstappen":[71, 127, 48, 3444.5, 233, 4, 2014, 2026],
-"michael-ammermuller":[0, 0, 0, 0.0, 0, 0, 2006, 2006],
+"max-verstappen":[71, 127, 48, 3444.5, 233, 4, 2015, 2026],
+"michael-ammermuller":[0, 0, 0, 0.0, 0, 0, null, 2006],
 "michael-andretti":[0, 1, 0, 7.0, 13, 0, 1993, 1993],
 "michael-bartels":[0, 0, 0, 0.0, 0, 0, 1991, 1991],
 "michael-bleekemolen":[0, 0, 0, 0.0, 1, 0, 1977, 1978],
@@ -5564,7 +5569,7 @@
 "michael-schumacher":[91, 155, 68, 1566.0, 306, 7, 1991, 2012],
 "michel-leclere":[0, 0, 0, 0.0, 7, 0, 1975, 1976],
 "michele-alboreto":[5, 23, 2, 186.5, 194, 0, 1981, 1994],
-"mick-schumacher":[0, 0, 0, 12.0, 43, 0, 2020, 2022],
+"mick-schumacher":[0, 0, 0, 12.0, 43, 0, 2021, 2022],
 "miguel-angel-guerra":[0, 0, 0, 0.0, 1, 0, 1981, 1981],
 "mika-hakkinen":[20, 51, 26, 420.0, 161, 2, 1991, 2001],
 "mika-salo":[0, 2, 0, 33.0, 109, 0, 1994, 2002],
@@ -5587,15 +5592,15 @@
 "myron-fohr":[0, 0, 0, 0.0, 1, 0, 1950, 1950],
 "nanni-galli":[0, 0, 0, 0.0, 17, 0, 1970, 1973],
 "naoki-hattori":[0, 0, 0, 0.0, 0, 0, 1991, 1991],
-"naoki-yamamoto":[0, 0, 0, 0.0, 0, 0, 2019, 2019],
+"naoki-yamamoto":[0, 0, 0, 0.0, 0, 0, null, 2019],
 "narain-karthikeyan":[0, 0, 0, 5.0, 46, 0, 2005, 2012],
 "nasif-estefano":[0, 0, 0, 0.0, 1, 0, 1960, 1962],
-"neel-jani":[0, 0, 0, 0.0, 0, 0, 2006, 2006],
+"neel-jani":[0, 0, 0, 0.0, 0, 0, null, 2006],
 "nello-pagani":[0, 0, 0, 0.0, 1, 0, 1950, 1950],
 "nelson-piquet":[23, 60, 24, 485.5, 203, 3, 1978, 1991],
 "nelson-piquet-jr":[0, 1, 0, 19.0, 28, 0, 2008, 2009],
 "neville-lederle":[0, 0, 0, 1.0, 1, 0, 1962, 1965],
-"nicholas-latifi":[0, 0, 0, 9.0, 61, 0, 2018, 2022],
+"nicholas-latifi":[0, 0, 0, 9.0, 61, 0, 2020, 2022],
 "nick-heidfeld":[0, 13, 1, 259.0, 183, 0, 2000, 2011],
 "nico-hulkenberg":[0, 1, 1, 622.0, 250, 0, 2010, 2026],
 "nico-rosberg":[23, 57, 30, 1594.5, 206, 1, 2006, 2016],
@@ -5609,7 +5614,7 @@
 "norberto-fontana":[0, 0, 0, 0.0, 4, 0, 1997, 1997],
 "noritake-takahara":[0, 0, 0, 0.0, 2, 0, 1976, 1977],
 "nyck-de-vries":[0, 0, 0, 2.0, 11, 0, 2022, 2023],
-"oliver-bearman":[0, 0, 0, 48.0, 27, 0, 2023, 2026],
+"oliver-bearman":[0, 0, 0, 48.0, 27, 0, 2024, 2026],
 "olivier-beretta":[0, 0, 0, 0.0, 10, 0, 1994, 1994],
 "olivier-gendebien":[0, 2, 0, 18.0, 14, 0, 1956, 1961],
 "olivier-grouillard":[0, 0, 0, 1.0, 41, 0, 1989, 1992],
@@ -5631,15 +5636,15 @@
 "pastor-maldonado":[1, 1, 1, 76.0, 95, 0, 2011, 2015],
 "pat-flaherty":[1, 1, 1, 8.0, 6, 0, 1950, 1959],
 "pat-oconnor":[0, 0, 1, 0.0, 5, 0, 1954, 1958],
-"patricio-oward":[0, 0, 0, 0.0, 0, 0, 2022, 2025],
+"patricio-oward":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "patrick-depailler":[2, 19, 1, 141.0, 95, 0, 1972, 1980],
 "patrick-friesacher":[0, 0, 0, 3.0, 11, 0, 2005, 2005],
 "patrick-gaillard":[0, 0, 0, 0.0, 2, 0, 1979, 1979],
 "patrick-neve":[0, 0, 0, 0.0, 10, 0, 1976, 1978],
 "patrick-tambay":[2, 11, 5, 103.0, 113, 0, 1977, 1986],
-"paul-aron":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
+"paul-aron":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "paul-belmondo":[0, 0, 0, 0.0, 7, 0, 1992, 1994],
-"paul-di-resta":[0, 0, 0, 121.0, 59, 0, 2010, 2017],
+"paul-di-resta":[0, 0, 0, 121.0, 59, 0, 2011, 2017],
 "paul-emery":[0, 0, 0, 0.0, 1, 0, 1956, 1958],
 "paul-england":[0, 0, 0, 0.0, 1, 0, 1957, 1957],
 "paul-frere":[0, 1, 0, 11.0, 11, 0, 1952, 1956],
@@ -5685,7 +5690,7 @@
 "pierre-levegh":[0, 0, 0, 0.0, 6, 0, 1950, 1951],
 "piers-courage":[0, 2, 0, 20.0, 28, 0, 1966, 1970],
 "pietro-fittipaldi":[0, 0, 0, 0.0, 2, 0, 2020, 2022],
-"raffaele-marciello":[0, 0, 0, 0.0, 0, 0, 2015, 2015],
+"raffaele-marciello":[0, 0, 0, 0.0, 0, 0, null, 2015],
 "ralf-schumacher":[6, 27, 6, 329.0, 180, 0, 1997, 2007],
 "ralph-firman":[0, 0, 0, 1.0, 14, 0, 2003, 2003],
 "raul-boesel":[0, 0, 0, 0.0, 23, 0, 1982, 1983],
@@ -5697,7 +5702,7 @@
 "renato-pirocchi":[0, 0, 0, 0.0, 1, 0, 1961, 1961],
 "rene-arnoux":[7, 22, 18, 181.0, 149, 0, 1978, 1989],
 "renzo-zorzi":[0, 0, 0, 1.0, 7, 0, 1975, 1977],
-"ricardo-londono":[0, 0, 0, 0.0, 0, 0, 1981, 1981],
+"ricardo-londono":[0, 0, 0, 0.0, 0, 0, null, 1981],
 "ricardo-rodriguez":[0, 0, 0, 4.0, 5, 0, 1961, 1962],
 "ricardo-rosset":[0, 0, 0, 0.0, 26, 0, 1996, 1998],
 "ricardo-zonta":[0, 0, 0, 3.0, 36, 0, 1999, 2005],
@@ -5710,26 +5715,26 @@
 "rikky-von-opel":[0, 0, 0, 0.0, 10, 0, 1973, 1974],
 "rio-haryanto":[0, 0, 0, 0.0, 12, 0, 2016, 2016],
 "rob-schroeder":[0, 0, 0, 0.0, 1, 0, 1962, 1962],
-"robert-doornbos":[0, 0, 0, 0.0, 11, 0, 2004, 2006],
+"robert-doornbos":[0, 0, 0, 0.0, 11, 0, 2005, 2006],
 "robert-kubica":[1, 12, 1, 274.0, 99, 0, 2006, 2022],
 "robert-la-caze":[0, 0, 0, 0.0, 1, 0, 1958, 1958],
 "robert-manzon":[0, 2, 0, 16.0, 28, 0, 1950, 1956],
 "robert-obrien":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
-"robert-shwartzman":[0, 0, 0, 0.0, 0, 0, 2022, 2024],
-"robert-wickens":[0, 0, 0, 0.0, 0, 0, 2011, 2011],
+"robert-shwartzman":[0, 0, 0, 0.0, 0, 0, null, 2024],
+"robert-wickens":[0, 0, 0, 0.0, 0, 0, null, 2011],
 "roberto-bonomi":[0, 0, 0, 0.0, 1, 0, 1960, 1960],
 "roberto-bussinello":[0, 0, 0, 0.0, 2, 0, 1961, 1965],
 "roberto-guerrero":[0, 0, 0, 0.0, 21, 0, 1982, 1983],
 "roberto-lippi":[0, 0, 0, 0.0, 1, 0, 1961, 1963],
-"roberto-merhi":[0, 0, 0, 0.0, 13, 0, 2014, 2015],
+"roberto-merhi":[0, 0, 0, 0.0, 13, 0, 2015, 2015],
 "roberto-mieres":[0, 0, 0, 13.0, 17, 0, 1953, 1955],
 "roberto-moreno":[0, 1, 0, 15.0, 42, 0, 1982, 1995],
-"robin-frijns":[0, 0, 0, 0.0, 0, 0, 2014, 2014],
+"robin-frijns":[0, 0, 0, 0.0, 0, 0, null, 2014],
 "robin-montgomerie-charrington":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
 "robin-widdows":[0, 0, 0, 0.0, 1, 0, 1968, 1968],
 "rodger-ward":[1, 2, 0, 14.0, 12, 0, 1951, 1963],
 "rodney-nuckey":[0, 0, 0, 0.0, 1, 0, 1953, 1954],
-"rodolfo-gonzalez":[0, 0, 0, 0.0, 0, 0, 2013, 2013],
+"rodolfo-gonzalez":[0, 0, 0, 0.0, 0, 0, null, 2013],
 "roelof-wunderink":[0, 0, 0, 0.0, 3, 0, 1975, 1975],
 "roger-laurent":[0, 0, 0, 0.0, 2, 0, 1952, 1952],
 "roger-loyer":[0, 0, 0, 0.0, 1, 0, 1954, 1954],
@@ -5741,27 +5746,27 @@
 "ron-flockhart":[0, 1, 0, 5.0, 13, 0, 1954, 1960],
 "ronnie-bucknum":[0, 0, 0, 2.0, 11, 0, 1964, 1966],
 "ronnie-peterson":[10, 26, 14, 206.0, 123, 0, 1970, 1978],
-"roy-nissany":[0, 0, 0, 0.0, 0, 0, 2020, 2021],
+"roy-nissany":[0, 0, 0, 0.0, 0, 0, null, 2021],
 "roy-salvadori":[0, 2, 0, 19.0, 47, 0, 1952, 1962],
 "rubens-barrichello":[11, 68, 14, 658.0, 322, 0, 1993, 2011],
 "rudi-fischer":[0, 2, 0, 10.0, 7, 0, 1951, 1952],
 "rudolf-krause":[0, 0, 0, 0.0, 2, 0, 1952, 1953],
 "rudolf-schoeller":[0, 0, 0, 0.0, 1, 0, 1952, 1952],
 "rupert-keegan":[0, 0, 0, 0.0, 25, 0, 1977, 1982],
-"ryan-briscoe":[0, 0, 0, 0.0, 0, 0, 2004, 2004],
-"ryo-hirakawa":[0, 0, 0, 0.0, 0, 0, 2024, 2025],
-"sakon-yamamoto":[0, 0, 0, 0.0, 21, 0, 2005, 2010],
+"ryan-briscoe":[0, 0, 0, 0.0, 0, 0, null, 2004],
+"ryo-hirakawa":[0, 0, 0, 0.0, 0, 0, 2026, 2025],
+"sakon-yamamoto":[0, 0, 0, 0.0, 21, 0, 2006, 2010],
 "sam-hanks":[1, 4, 0, 20.0, 8, 0, 1950, 1957],
 "sam-posey":[0, 0, 0, 0.0, 2, 0, 1971, 1972],
 "sam-tingle":[0, 0, 0, 0.0, 5, 0, 1963, 1969],
 "satoru-nakajima":[0, 0, 0, 16.0, 74, 0, 1987, 1991],
-"satoshi-motoyama":[0, 0, 0, 0.0, 0, 0, 2003, 2003],
-"scott-speed":[0, 0, 0, 0.0, 28, 0, 2005, 2007],
-"sean-gelael":[0, 0, 0, 0.0, 0, 0, 2017, 2018],
-"sebastian-vettel":[53, 122, 57, 3098.0, 299, 4, 2006, 2022],
+"satoshi-motoyama":[0, 0, 0, 0.0, 0, 0, null, 2003],
+"scott-speed":[0, 0, 0, 0.0, 28, 0, 2006, 2007],
+"sean-gelael":[0, 0, 0, 0.0, 0, 0, null, 2018],
+"sebastian-vettel":[53, 122, 57, 3098.0, 299, 4, 2007, 2022],
 "sebastien-bourdais":[0, 0, 0, 6.0, 27, 0, 2008, 2009],
 "sebastien-buemi":[0, 0, 0, 29.0, 55, 0, 2009, 2011],
-"sergey-sirotkin":[0, 0, 0, 1.0, 21, 0, 2014, 2018],
+"sergey-sirotkin":[0, 0, 0, 1.0, 21, 0, 2018, 2018],
 "sergio-mantovani":[0, 0, 0, 4.0, 7, 0, 1953, 1955],
 "sergio-perez":[6, 39, 3, 1638.0, 281, 0, 2011, 2026],
 "shinji-nakano":[0, 0, 0, 2.0, 33, 0, 1997, 1998],
@@ -5779,7 +5784,7 @@
 "stirling-moss":[16, 24, 16, 186.6, 66, 0, 1951, 1961],
 "stoffel-vandoorne":[0, 0, 0, 26.0, 41, 0, 2016, 2018],
 "stuart-lewis-evans":[0, 2, 2, 16.0, 14, 0, 1957, 1958],
-"susie-wolff":[0, 0, 0, 0.0, 0, 0, 2014, 2015],
+"susie-wolff":[0, 0, 0, 0.0, 0, 0, null, 2015],
 "taki-inoue":[0, 0, 0, 0.0, 18, 0, 1994, 1995],
 "takuma-sato":[0, 1, 0, 44.0, 90, 0, 2002, 2008],
 "tarso-marques":[0, 0, 0, 0.0, 24, 0, 1996, 2001],
@@ -5788,7 +5793,7 @@
 "teo-fabi":[0, 2, 3, 23.0, 64, 0, 1982, 1987],
 "theo-fitzau":[0, 0, 0, 0.0, 1, 0, 1953, 1953],
 "theo-helfrich":[0, 0, 0, 0.0, 3, 0, 1952, 1954],
-"theo-pourchaire":[0, 0, 0, 0.0, 0, 0, 2022, 2023],
+"theo-pourchaire":[0, 0, 0, 0.0, 0, 0, null, 2023],
 "thierry-boutsen":[3, 15, 1, 132.0, 163, 0, 1983, 1993],
 "tiago-monteiro":[0, 1, 0, 7.0, 37, 0, 2005, 2006],
 "tiff-needell":[0, 0, 0, 0.0, 1, 0, 1980, 1980],
@@ -5823,11 +5828,11 @@
 "troy-ruttman":[1, 1, 0, 9.5, 8, 0, 1950, 1960],
 "ukyo-katayama":[0, 0, 0, 5.0, 95, 0, 1992, 1997],
 "umberto-maglioli":[0, 2, 0, 3.3, 10, 0, 1953, 1957],
-"valtteri-bottas":[10, 67, 20, 1797.0, 246, 0, 2012, 2026],
+"valtteri-bottas":[10, 67, 20, 1797.0, 246, 0, 2013, 2026],
 "vern-schuppan":[0, 0, 0, 0.0, 9, 0, 1972, 1977],
 "vic-elford":[0, 0, 0, 8.0, 13, 0, 1968, 1971],
 "vic-wilson":[0, 0, 0, 0.0, 1, 0, 1960, 1966],
-"victor-martins":[0, 0, 0, 0.0, 0, 0, 2025, 2025],
+"victor-martins":[0, 0, 0, 0.0, 0, 0, null, 2025],
 "vincenzo-sospiri":[0, 0, 0, 0.0, 0, 0, 1997, 1997],
 "vitaly-petrov":[0, 1, 0, 64.0, 57, 0, 2010, 2012],
 "vitantonio-liuzzi":[0, 0, 0, 26.0, 80, 0, 2005, 2011],
@@ -5852,7 +5857,7 @@
 "yuji-ide":[0, 0, 0, 0.0, 4, 0, 2006, 2006],
 "yuki-tsunoda":[0, 0, 0, 124.0, 111, 0, 2021, 2025],
 "yves-giraud-cabantous":[0, 0, 0, 5.0, 13, 0, 1950, 1953],
-"zak-osullivan":[0, 0, 0, 0.0, 0, 0, 2023, 2023],
+"zak-osullivan":[0, 0, 0, 0.0, 0, 0, null, 2023],
 "zsolt-baumgartner":[0, 0, 0, 1.0, 20, 0, 2003, 2004],
 };
 
@@ -23072,7 +23077,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.38';
+        const VERSION = '0.9.21.39';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -25641,13 +25646,26 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             const echt = (driver.histId && typeof HIST_DRIVERS !== 'undefined') ? HIST_DRIVERS[driver.histId]?.[6] : null;
             const start = (typeof GAME_STATE !== 'undefined' && parseInt(GAME_STATE.templateUsed)) || null;
             if (echt && (!start || echt < start)) return echt;
-            if (typeof driver.f1DebutYear === 'number') return driver.f1DebutYear;
+            // FRUEHESTES Jahr aus allen Spielquellen statt der ersten, die etwas liefert (15.11.2026):
+            // initReservePool legt Rueckkehrer (z. B. nach WEC/Formel E) als NEUES Objekt an, dem
+            // f1DebutYear fehlt; das erste Rennen danach setzte es neu – Antonelli/Hadjar/Bortoleto
+            // trugen 2029/2030 „Debüt“ (tests/debuet-pruefung.js). allTimeStATS haengt an der histId
+            // und ueberlebt jede Kopie. Jahre VOR dem Spielstart zaehlen dort nicht: die stammen aus
+            // HIST_SEASONS und enthalten Freitagstrainings – das echte Debuet steht oben in HIST_DRIVERS.
+            const kand = [];
+            if (typeof driver.f1DebutYear === 'number') kand.push(driver.f1DebutYear);
             const at = GAME_STATE?.allTimeStATS?.drivers?.[driver.histId || driver.id];
-            if (at && typeof at.firstYear === 'number') return at.firstYear;
+            // NICHT at.firstYear: beim Spielstart traegt die Init jedem Kaderfahrer das Startjahr ein, auch
+            // wem nie gemeldet wird (Start 1980: Wilson, Winkelhock, South „Debüt 1980“ ohne Meldung, die
+            // echte erste Meldung 1981/82 dann ohne Abzeichen). firstSimYear setzt erst ein Renneinsatz.
+            if (at && typeof at.firstSimYear === 'number') kand.push(at.firstSimYear);
+            const dj = GAME_STATE?.debutJahre?.[driver.histId || driver.id];
+            if (typeof dj === 'number') kand.push(dj);
             if (Array.isArray(driver.careerScores)) {
-                const echt = driver.careerScores.filter(c => c && !c.preSim && typeof c.year === 'number');
-                if (echt.length) return Math.min(...echt.map(c => c.year));
+                const cs = driver.careerScores.filter(c => c && !c.preSim && typeof c.year === 'number');
+                if (cs.length) kand.push(Math.min(...cs.map(c => c.year)));
             }
+            if (kand.length) return Math.min(...kand);
             // Nicht `debutYear`: das ist ein GEPLANTES Jahr, kein gefahrenes – und der Pool-Weg setzte
             // es bis 17.10.2026 aufs ablaufende Jahr (Bernard, Alboreto, Donnelly, Gachot 1988 statt
             // 1989). Wer im Spiel noch nie gestartet ist, hat kein Debüt.
@@ -30236,7 +30254,7 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                         number: (idx + 1) * 2,
                         birthYear: d[4] || null,
                         // v0.8.6: Echtes Debütjahr aus HIST_DRIVERS, nicht Sim-Startjahr
-                        debutYear: (HIST_DRIVERS[d[0]] ? HIST_DRIVERS[d[0]][6] : year),
+                        debutYear: (HIST_DRIVERS[d[0]]?.[6] ?? year),   // null = nur Freitagstraining (hist-debut-quali.js)
                         pace: d[5], rain: d[6], consistency: d[7] || 70,
                         experience: d[8], starts: d[9]
                     };
@@ -35332,7 +35350,25 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
             
             GAME_STATE.results.push(raceResult);
             GAME_STATE.currentRace++;
-            
+
+            // Debuet = erste Meldung zur Qualifikation oder Vorqualifikation (Nutzer-Regel 15.11.2026):
+            // Start, DNQ, DNS und DNPQ zaehlen gleich – wie das Abzeichen in der Meldeliste, das ein neu
+            // gemeldeter Fahrer schon vor seinem ersten Start traegt. Freitagstraining zaehlt nie.
+            // Zusaetzlich GAME_STATE.debutJahre[histId]: haengt nicht am Fahrerobjekt. initReservePool legt
+            // Rueckkehrer als neues Objekt an; wer nur DNQ hatte, steht nicht in allTimeStATS (Joe James:
+            // DNQ 1951, als Kopie 1955 wieder „Debüt“).
+            if (!GAME_STATE.debutJahre) GAME_STATE.debutJahre = {};
+            const _dj = GAME_STATE.debutJahre;
+            // Nutzer 15.11.2026 (zweite Fassung): auch die Vorqualifikation ist eine Quali-Meldung –
+            // DNPQ zaehlt. Wilson, Winkelhock, South 1980 scheiterten dort und galten sonst als ungemeldet.
+            [...(raceResult.dnpq || []), ...(raceResult.dnq || []), ...(raceResult.dns || []), ...(raceResult.results || []).map(e => e.driver)].forEach(id => {
+                const d = GAME_STATE.drivers.find(x => x.id === id) || (GAME_STATE.reservePool || []).find(x => x.id === id);
+                if (!d) return;
+                if (typeof d.f1DebutYear !== 'number') d.f1DebutYear = GAME_STATE.currentYear;
+                const k = d.histId || d.id;
+                if (typeof _dj[k] !== 'number') _dj[k] = GAME_STATE.currentYear;
+            });
+
             // All-Time StATS update - FAHRER
             GAME_STATE.allTimeStATS.totalRaces++;
             raceResult.results.forEach(r => {
@@ -35341,9 +35377,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                                || (GAME_STATE.reservePool || []).find(d => d.id === r.driver);
                 const driverStATSId = driverObj?.histId || r.driver;
 
-                // Echtes F1-Debuet festhalten (v0.9.18.4): der erste RENNEINSATZ zaehlt,
-                // nicht das Erzeugungsjahr und nicht eine DNQ — wer die Qualifikation nie
-                // besteht, hat nicht debuetiert. Steht in `raceResult.dnq`, nicht hier.
+                // Echtes F1-Debuet festhalten (v0.9.18.4): der erste Renneinsatz zaehlt, nicht
+                // das Erzeugungsjahr. Seit 15.11.2026 zaehlt jede Quali-/Vorquali-Meldung (DNQ/DNS/DNPQ) – das
+                // setzt der Block oberhalb aus raceResult.dnq/dns/dnpq.
                 if (driverObj && typeof driverObj.f1DebutYear !== 'number') {
                     driverObj.f1DebutYear = GAME_STATE.currentYear;
                 }
@@ -35356,6 +35392,9 @@ const FEEDER_ELO = {"Roy Nissany":[58,53,0,34],"Ralph Boschung":[61,56,-1,63],"J
                 }
                 const ad = GAME_STATE.allTimeStATS.drivers[driverStATSId];
                 ad.name = r.name; // Aktualisiere Namen
+                // Erstes Rennen IM SPIEL, an der histId statt am Fahrerobjekt (15.11.2026): Kopien aus
+                // initReservePool verlieren f1DebutYear, dieser Eintrag bleibt (getF1DebutYear).
+                if (typeof ad.firstSimYear !== 'number') ad.firstSimYear = GAME_STATE.currentYear;
                 // Nation dauerhaft sichern (auch für generierte Fahrer, sonst nach Ausscheiden "UNBEKANNT")
                 if (!ad.nation) { const _n = _iocOf(driverObj?.nation) || (typeof lookupNationByName === 'function' ? lookupNationByName(r.name) : null); if (_n) ad.nation = _n; }
                 ad.races++;
@@ -57073,7 +57112,10 @@ Empfohlene Wertebereiche:
                 const tc = GAME_STATE._titleClinch;
                 if (jahr === GAME_STATE.currentYear && tc && tc.year === jahr && istEr(tc.driverId))
                     teile.push(pille(`🏆 Weltmeister ${jahr}`, '#EAB308', tc.remaining > 0 ? `vorzeitig entschieden, ${tc.remaining} Rennen vor Schluss` : 'im Finale entschieden'));
-                const debut = getF1DebutYear(driver) ?? (jahr === GAME_STATE.currentYear && driver.team ? jahr : null);
+                // Rueckfall „hat ein Team“ nur, solange die Saison laeuft: wer sie ganz ohne Quali-Meldung
+                // beendet, hat nicht debuetiert (Start 1980: 7 Saisonend-Abzeichen ohne Meldung).
+                const _saisonLaeuft = (GAME_STATE.currentRace || 0) < (GAME_STATE.races || []).length;
+                const debut = getF1DebutYear(driver) ?? (jahr === GAME_STATE.currentYear && driver.team && _saisonLaeuft ? jahr : null);
                 if (debut === jahr) teile.push(pille('Debüt', '#22C55E', `Debütsaison ${jahr}`));
                 return teile.filter(Boolean).length ? ' ' + teile.filter(Boolean).join(' ') : '';
             })();

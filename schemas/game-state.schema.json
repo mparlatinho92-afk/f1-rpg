@@ -38,6 +38,7 @@
     "$saisonEvents": {
       "seasonDeaths":       { "type": "array", "itemShape": "{ driver, name, race, raceName, replacement }", "note": "replacement: null bei Gastfahrern aus dem Reserve-Pool (seit v0.9.18.12)" },
       "futureEraChanges":   { "type": "array", "items": "number (Jahr)", "description": "Gewürfelte Regel-Ärenwechsel nach 2026 (Längen aus REAL_ERA_CHANGES). Wird bei Bedarf ein Jahr voraus ergänzt (eraChangesBis). Seit v0.9.18.15." },
+      "debutJahre":         { "type": "object", "itemShape": "{ [histId|id]: Jahr der ersten Quali-Meldung im Spiel }", "description": "Debüt nach Nutzer-Regel 15.11.2026 (Start, DNQ, DNS, DNPQ), unabhängig vom Fahrerobjekt — Pool-Kopien verlieren f1DebutYear. Gelesen von getF1DebutYear. Seit v0.9.21.39." },
       "futureTeamsEntered": { "type": "object", "itemShape": "{ [FUTURE_TEAMS-Kurz-ID]: Einstiegsjahr }", "description": "Zukunftsteams jenseits SEASON_DATA (Cadillac 2026), die schon angetreten sind; verhindert Wiedereinstieg. Seit v0.9.21.37." },
       "seasonRetirements":  { "type": "array", "itemShape": "{ driver, name, age, reason }" },
       "seasonTransfers":    { "type": "array" }
