@@ -148,6 +148,14 @@ Range. Gemessen mit `tests/zukunftsteams.js` (Start 2025, Saisonkette bis 2028),
   Jetzt wächst das Feld jenseits der Tabelle mit den Teams (2 × Nicht-Indy-Teams, mindestens der letzte Tabellenwert,
   Deckel 26): Feld 22, **0 DNQ**. Gegenprobe im Test: `GRID_SIZES[2026..28] = 20` setzen.
 - **Langlauf bis 2040** (`node tests/zukunftsteams.js 15`, ~5 Min.): jedes Jahr 11 Teams, Audi und Cadillac je 2 Fahrer, kein Team grau, keines unter 2 Fahrern, Feld 22, 0 DNQ, kein pageerror. Teams steigen jenseits 2025 nie aus (`applyTeamExits` braucht SEASON_DATA) — das Feld bleibt also eingefroren, bis es eine Ausstiegsregel für die Zukunft gibt.
+- **Off-Season-Fenster (Nutzer 15.11.2026):** Kein Fenster kündigte je Einsteiger oder Umbenennungen an (laufen erst in
+  `startNewSeason`), jetzt Block „🏁 Teams <Jahr>“ aus `kommendeTeamAenderungen` in Saisonende-Fenster, Bestätigung und
+  Saisonstart. Im Saisonende-Fenster fehlten außerdem ganze Bewegungsarten: `pool-debut` (🌟), Ruecktritte
+  `career_end` und `other_series` (3 Stichjahre 2025/1980/1965: 3 Debüts, 4 andere Serie, 3 Karriereende ohne Zeile).
+  Herkunft jetzt überall `saisonTeamLabel` (alle Teams der Saison, 1965: Stewart „BRM / Brabham“, Bonnier „Brabham / Honda“
+  statt „Honda → Honda“), Ziel `zielTeamLabel` (umbenannte Teams im neuen Namen: Dürksen „Kick Sauber → Audi bis 2026“).
+  Entlassung + spätere Verpflichtung erschien als Karriereende UND Wechsel (Bortoleto) — `angezeigteKarriereenden` filtert.
+  Werkzeug `tests/offseason-fenster.js`.
 - ⚠ Messfalle: Wer `getTeamColors` mit `team.color` prüft, sieht vorher fast alles bunt. Die Grundfarbe überdeckt
   den Fehler, die Aufrufer ohne Grundfarbe (u. a. Wertungen mit reiner Team-ID) zeigten grau.
 

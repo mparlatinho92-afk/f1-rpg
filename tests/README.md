@@ -128,6 +128,10 @@ Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
   und im Steady-State leer. Der Snapshot wird Saison für Saison selbst gezogen.
 - **Feldgröße kontrollieren**, bevor ein Streuungsbefund geglaubt wird.
 
+## Off-Season-Fenster — `offseason-fenster.js` (15.11.2026)
+
+`node tests/offseason-fenster.js [Jahr]` (Browser, ~1 Min.): simuliert die Saison und legt Saisonende-Fenster, Bestätigungsdialog (Text + nachgestelltes Bild) und Saisonstart-Fenster nach `tests/output/offseason-<Jahr>-*` ab. Konsole: Fahrer mit mehreren Teams, Tote/Rücktritte mit Team, `ohneCockpit` (Soll 0). 2025 zeigt den Teamblock (Audi, Cadillac), 1965 Tote und Mehrteam-Fahrer. ⚠ Das Bild „-3-saisonstart“ ist aufgeklappt, die Kopfzeile verdeckt dort den Anfang — „-3a-…-oben“ ist die normale Ansicht.
+
 ## Zukunftsteams jenseits 2025 — `zukunftsteams.js` (14.11.2026)
 
 `node tests/zukunftsteams.js [N]` (Browser, ~1 Min.; `15` = Langlauf bis 2040, ~5 Min.): Start 2025, N Saisonketten (Standard 3, bis 2028). Je Jahr Teamzahl, Kick Sauber noch da?, Audi/Cadillac mit id, Fahrerzahl und Farbe, Teams mit grauer `getTeamColors`-Farbe (ohne Grundfarbe), DNQ der Saison und `getGridSize`. Sollstand: ab 2026 11 Teams, `kick:false`, Audi (KIC) und Cadillac (CAD) je 2 Fahrer, `grau:[]`, `unter2:[]`, `grid:22`, `dnq:0` (mit festen 20 Plätzen 46). ⚠ Mit `team.color` als Grundfarbe aufgerufen verdeckt die Grundfarbe den Fehler (BEFUNDE 14.11.2026).
