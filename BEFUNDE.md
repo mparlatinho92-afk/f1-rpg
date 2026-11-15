@@ -177,6 +177,12 @@ Range. Gemessen mit `tests/zukunftsteams.js` (Start 2025, Saisonkette bis 2028),
   Jetzt wächst das Feld jenseits der Tabelle mit den Teams (2 × Nicht-Indy-Teams, mindestens der letzte Tabellenwert,
   Deckel 26): Feld 22, **0 DNQ**. Gegenprobe im Test: `GRID_SIZES[2026..28] = 20` setzen.
 - **Langlauf bis 2040** (`node tests/zukunftsteams.js 15`, ~5 Min.): jedes Jahr 11 Teams, Audi und Cadillac je 2 Fahrer, kein Team grau, keines unter 2 Fahrern, Feld 22, 0 DNQ, kein pageerror. Teams steigen jenseits 2025 nie aus (`applyTeamExits` braucht SEASON_DATA) — das Feld bleibt also eingefroren, bis es eine Ausstiegsregel für die Zukunft gibt.
+- **Off-Season: Umbenennung in Steckbrief und Übersicht (15.11.2026):** `offseasonTeamwechsel` lieferte `null`, wenn
+  der Fahrer beim umbenannten Team blieb (gleiche `team.id`) — kein Hinweis auf Audi. `showOffSeasonModal` führte die
+  Umbenennung als „Kick Sauber ausgestiegen“ + „Audi eingestiegen“. Jetzt `teamNameAb` (auch für Archivsaisons). Dabei
+  `→ –` bei Abgängen ohne Zielteam behoben. ⚠ Messfalle `tests/teamausstieg.js`: Fahrer eines ausgestiegenen Teams,
+  die in der Saison nie gemeldet waren (`teamZurRennzeit` = null), haben keinen Off-Season-Kopf — kopfOk liegt dann
+  um 1 unter exitFahrer, auch auf dem alten Stand (Guerra/Lauda, je 1 von 35–36); kein Fehler der Umbenennung.
 - **Teamlinks und Vorgänger (15.11.2026):** Umbenennungen behalten `team.id` (Start 2008: Honda 2008, Brawn 2009,
   Mercedes 2010 alle `HON`). Links mit der ID öffneten das heutige Team (Honda in der Wertung 2008 → Mercedes), der
   Steckbrief führte Brawn 2009 in Mercedes' Historie und Rennraster. Links mit Namen waren schon richtig. Jetzt

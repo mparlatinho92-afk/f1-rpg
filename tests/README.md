@@ -156,7 +156,7 @@ Datenwerkzeug dazu: `node tools/hist-debut-quali.js [--schreiben]` setzt `HIST_D
 
 ## Teamausstieg im Saisonende-Fenster — `teamausstieg.js` (06.11.2026)
 
-`node tests/teamausstieg.js` (Browser, ~2 Min.): 12 Saisonenden ab 1980 (Shadow steigt aus), zählt lebende Fahrer ausgestiegener Teams und ihre Zeile im Fenster. Sollstand: „ohne Cockpit" + „mit neuem Team" = alle = Kopf mit Hinweis, entlassen 0. Screenshots des ersten Falls nach `tests/output/teamausstieg-nachher-*.png`. ⚠ Entlassungen mitten in der Saison (Leistung) sind kein Rest des Fehlers (BEFUNDE 06.11.2026).
+`node tests/teamausstieg.js` (Browser, ~2 Min.): 12 Saisonenden ab 1980 (Shadow steigt aus), zählt lebende Fahrer ausgestiegener Teams und ihre Zeile im Fenster. Sollstand: „ohne Cockpit" + „mit neuem Team" = alle = Kopf mit Hinweis, entlassen 0. Screenshots des ersten Falls nach `tests/output/teamausstieg-nachher-*.png`. ⚠ Entlassungen mitten in der Saison (Leistung) sind kein Rest des Fehlers (BEFUNDE 06.11.2026). ⚠ kopfOk = exitFahrer − 1 ist erlaubt, wenn ein Ausstiegsfahrer die Saison nie gemeldet war (Konsole „Kopf ohne Hinweis … rz=null“, BEFUNDE 15.11.2026).
 
 ## Generierte Fahrer: Herkunft — `generiert-herkunft.js` (05.11.2026)
 
