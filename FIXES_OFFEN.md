@@ -162,9 +162,6 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
 - ❔ **WM-Stand: Reserve-Driver-Bug** — alt und hartnäckig; derzeit nicht nachweisbar (Nutzer 12.11.2026), beim nächsten Auftreten Symptom + Spielstand sichern
 
 ### Teamlinien & Umbenennungen
-- ◐ **Off-Season:** bei Wechseln zu Nachfolgeteams und wenn ein Fahrer bei einem umbenannten Team bleibt, nennt die UI
-  immer beide Namen — in den drei Off-Season-Fenstern seit 15.11.2026 (Teamblock „🏁 Teams“, Ziel im neuen Namen:
-  „Kick Sauber → Audi bis 2026“, Code-Fix). Offen: Steckbrief und Off-Season-Übersicht (`showOffSeasonModal`)
 - ◐ **Stroll-Sonderfall:** `LOYAL_OWNER_DRIVERS` (`data/hist.js`) führt Stroll nur unter `aston-martin`, Vertrag
   lebenslang seit v0.9.16.0; Racing Point 2019–20 seit 12.11.2026 ergänzt (Code-Fix, im Spiel unbestätigt). Offen bleibt nur der Privateer-Teil. Wunsch: ab Racing Point bis Karriereende im Team; Racing Point → Aston Martin zählt mit, er wird
   übernommen. Späteren Privateer-Status abschaffen — entweder fest oder gar nicht. Durch seinen Vertrag gibt es nur
@@ -281,6 +278,10 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   (Honda 2008, Brawn 2009, Mercedes 2010 = `HON`), Links mit der ID öffneten das heutige Team. Links mit anderem
   Namen öffnen jetzt das Team dieses Namens (`teamProfilArg`). Team-Historie und Rennergebnisse zeigen nur die
   eigenen Jahre, Vorgänger stehen darunter als eigene Blöcke mit Trennlinie, nur zur Info (`teamVorgaenger`)
+- **Off-Season: beide Namen bei Umbenennungen.** Code-Fix 15.11.2026: Saisonende-Fenster, Bestätigung und Saisonstart
+  zeigen den Teamblock „🏁 Teams“ und Ziele im neuen Namen (seit .38). Jetzt auch der Fahrer-Steckbrief („Kick Sauber ·
+  ab 2026: Audi (umbenannt, Vertrag läuft weiter)“ bzw. „(bisher Kick Sauber)“) und die Off-Season-Übersicht
+  („Kick Sauber → Audi (umbenannt)“ statt ausgestiegen + eingestiegen; Ziele „Audi (bisher Kick Sauber)“)
 - **Ruanda-Strecke.** Code-Fix 12.11.2026: Der Rwandan GP heißt jetzt „Bugesera Circuit“ (Bugesera-Distrikt, nahe Rilima).
   Die id `kigali` bleibt, weil bestehende Spielstände sie im Kalender führen
 - **Doppelter Fahrer in angeblich zwei Teams** (`Matías Zagazeta`, zweimal im selben Chinese GP, P1 **und** P3,
