@@ -128,6 +128,12 @@ Pace-Punkte Abbau pro Jahr; der pro Jahr geschlossene Gap-Anteil **steigt**
   und im Steady-State leer. Der Snapshot wird Saison für Saison selbst gezogen.
 - **Feldgröße kontrollieren**, bevor ein Streuungsbefund geglaubt wird.
 
+## Debüt-Abzeichen — `debuet-pruefung.js` (15.11.2026)
+
+`node tests/debuet-pruefung.js [Start=1980] [Saisons=10]` (Browser, ~25 s je Saison): prüft vor jedem Saisonende jedes Debüt-Abzeichen (Logik wie im Steckbrief-Titel) gegen die Wahrheit „erste Meldung zur Quali oder Vorquali“ (Start, DNQ, DNS, DNPQ) — im Spiel über histId/Name verfolgt, real über `HIST_DRIVERS[6]` vor dem Start. Zählt je Saison Abzeichen, falsch (früher schon gemeldet), fehlend, ohne Meldung, dazu den Grund (welche Quelle von `getF1DebutYear` das Jahr lieferte). Sollstand: falsch = fehlend = ohne Meldung = 0. ⚠ Rückkehrer aus anderen Serien sind selten — kurze Läufe zeigen den Fehler oft nicht (6 Saisons ab 2025: einmal 2 Fälle, einmal 0); für einen Beleg 15 Saisons ab 1950, 1980 und 2025 (BEFUNDE 15.11.2026).
+
+Datenwerkzeug dazu: `node tools/hist-debut-quali.js [--schreiben]` setzt `HIST_DRIVERS` Feld 6 auf das Jahr der ersten Meldung zur Quali oder Vorquali aus `f1db-json-splitted` (Freitagstrainings zählen nicht, nur Training = `null`).
+
 ## Off-Season-Fenster — `offseason-fenster.js` (15.11.2026)
 
 `node tests/offseason-fenster.js [Jahr]` (Browser, ~1 Min.): simuliert die Saison und legt Saisonende-Fenster, Bestätigungsdialog (Text + nachgestelltes Bild) und Saisonstart-Fenster nach `tests/output/offseason-<Jahr>-*` ab. Konsole: Fahrer mit mehreren Teams, Tote/Rücktritte mit Team, `ohneCockpit` (Soll 0). 2025 zeigt den Teamblock (Audi, Cadillac), 1965 Tote und Mehrteam-Fahrer. ⚠ Das Bild „-3-saisonstart“ ist aufgeklappt, die Kopfzeile verdeckt dort den Anfang — „-3a-…-oben“ ist die normale Ansicht.

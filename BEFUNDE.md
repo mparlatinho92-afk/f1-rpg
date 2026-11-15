@@ -39,6 +39,7 @@ versehentlich zurück.
 | Mega-Sim nach Handout P7 (Bundesliga) abgeglichen (06.11.2026) | `megaSim`, `runSeasonHeadless`, `_megaSimFast`, `megaSimSummary`, `tests/megasim-bedienung.js` |
 | Teamausstieg: Fahrer unsichtbar oder als Entlassung verbucht (06.11.2026) | `applyTeamExits`, `_teamExit`, `executeTransfer` 'teamexit', Saisonende-Fenster, `tests/teamausstieg.js` |
 | **Generierte Fahrer trotz Echt-Anteil 100 % (05.11.2026)** | `_debuetAusfuehren`, `acquireSeatDriver` rookie, `_isBeginner`, Pool „kommend", `tests/generiert-herkunft.js` |
+| **Debüt = erste (Vor-)Quali-Meldung; falsche Debüt-Abzeichen (15.11.2026)** | `getF1DebutYear`, `HIST_DRIVERS[6]`, Pool-Kopien aus `initReservePool`, `GAME_STATE.debutJahre`, `tests/debuet-pruefung.js` |
 | Teamfarben jenseits 2025, Audi, Cadillac (14.11.2026) | `getTeamColors` Horizont-Rückfall, `FUTURE_TEAMS`, `applyFutureTeamEntries`, `CONSTRUCTOR_SUCCESSION`, `tests/zukunftsteams.js` |
 | Vornamen mit Anführungszeichen und klein: `"nathan"`, `Nicolo'`, „de Jesus" (12.11.2026) | Ära-Kurven (Paket I), Namens-Pools (Paket A), `nameAnzeigeFix`, `tests/namen-anzeige.js` |
 | Nationsnamen: 51 von 119 Generator-Nationen nur als Kürzel (05.11.2026) | `nationDisplayName`, `NATION_OPTIONS`, `Intl.DisplayNames` |
@@ -125,6 +126,34 @@ Platzhalter (60) — wer „nie gestartet" daran misst, findet 0 Kandidaten (ers
 (3) Debütquote schwankt zwischen Läufen um ±0,1 je Saison. **Rest in echten Ären** (je ~1 in 90 Saisons, nicht
 angefasst): Indy-Verpflichtung `_signIndyDriver` 1960, `_wechselAusfuehren` → `acquireSeatDriver` (Pool leer) 1963,
 ein Rückfall beim Saisonstart 1962.
+
+## Debüt = erste Quali-Meldung; falsche Debüt-Abzeichen (15.11.2026)
+
+Nutzer-Fund: Kimi Antonelli trug 2030 „Debüt“ nach 69 Rennen seit 2025. Nutzer-Regel (zweite Fassung): Debüt = erste
+Meldung zur Qualifikation **oder Vorqualifikation** (Start, DNQ, DNS, DNPQ), nie Freitagstraining. Begründung: die
+Meldeliste zeigt „Debüt“ schon für neu gemeldete Fahrer vor dem ersten Start, ein Unterschied wäre widersinnig.
+
+- **Daten:** `HIST_DRIVERS` Feld 6 (erstes Jahr) zählte jede Meldung, auch Freitagstrainings. Neu aus F1DB Quali,
+  Vorquali und Rennen ohne DNP (`tools/hist-debut-quali.js`): **93 von 915 Fahrern geändert**, davon **55 auf `null`**
+  (nur Training: Dunne, Beganovic, Martins, Fong, Wolff …) und 38 verschoben (Antonelli 2024→2025, Verstappen
+  2014→2015, Leclerc 2016→2018, Russell 2017→2019, Sirotkin 2014→2018, Vettel 2006→2007). ⚠ Messfalle beim Werkzeug:
+  das Blockende nicht über „        };“ suchen, das trifft erst HIST_TEAMS (171 Teams fälschlich mitgerechnet).
+- **Spiel, Ursache des Abzeichens:** `initReservePool` legt Rückkehrer (z. B. nach WEC/Formel E) als **neues Objekt**
+  (`reserve-…`) an, ohne `f1DebutYear`; das erste Rennen danach setzte es neu. Nachgestellt ab 2025: Hadjar und
+  Bortoleto „Debüt 2029“. Im Langlauf ab 1980 außerdem: Rückfall „hat ein Team“ am Saisonende ohne jede Meldung
+  (7 Fälle); `allTimeStATS.firstYear` trägt beim Spielstart jedem Kaderfahrer das Startjahr ein, auch ohne Meldung.
+- ⚠ **Widerrufen:** „Wilson, Winkelhock, South 1980 ohne Meldung“ (erste Fassung dieses Befunds) war falsch – sie
+  scheiterten an der Vorqualifikation, die die erste Fassung der Regel nicht mitzählte.
+- **Fix:** `getF1DebutYear` nimmt das früheste Jahr aus `f1DebutYear`, `allTimeStATS.firstSimYear` (erster Start) und
+  `GAME_STATE.debutJahre[histId]` (Start/DNQ/DNS/DNPQ, unabhängig vom Objekt – Joe James: nur DNQ 1951, als Kopie
+  1955 wieder „Debüt“); `allTimeStATS.firstYear` zählt nicht mehr. Rückfall „hat ein Team“ nur bei laufender Saison.
+- **Messung** (`tests/debuet-pruefung.js`, je 15 Saisons): vorher ab 2025 2 falsche, ab 1950 2 falsche. Nachher
+  **0 falsch / 0 fehlend / 0 ohne Meldung** bei 1950 (400 Abzeichen), 1965 (158), 1980 (86), 2025 (63). Alte
+  Spielstände ohne `debutJahre`/`firstSimYear` behalten das alte Verhalten (nichts rückwirkend).
+- Beobachtung, nicht behoben: im Langlauf ab 1980 hatten mehrere Fahrer eine ganze Saison ein Team, aber keine
+  einzige Meldung (Villeneuve Sr. 1984, Barrichello 1991 bei Arrows) — Kader größer als die Meldungen.
+
+---
 
 ## Teamfarben jenseits 2025, Audi, Cadillac (14.11.2026)
 
