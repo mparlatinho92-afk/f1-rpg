@@ -177,6 +177,21 @@ Range. Gemessen mit `tests/zukunftsteams.js` (Start 2025, Saisonkette bis 2028),
   Jetzt wächst das Feld jenseits der Tabelle mit den Teams (2 × Nicht-Indy-Teams, mindestens der letzte Tabellenwert,
   Deckel 26): Feld 22, **0 DNQ**. Gegenprobe im Test: `GRID_SIZES[2026..28] = 20` setzen.
 - **Langlauf bis 2040** (`node tests/zukunftsteams.js 15`, ~5 Min.): jedes Jahr 11 Teams, Audi und Cadillac je 2 Fahrer, kein Team grau, keines unter 2 Fahrern, Feld 22, 0 DNQ, kein pageerror. Teams steigen jenseits 2025 nie aus (`applyTeamExits` braucht SEASON_DATA) — das Feld bleibt also eingefroren, bis es eine Ausstiegsregel für die Zukunft gibt.
+- **Teamlinks und Vorgänger (15.11.2026):** Umbenennungen behalten `team.id` (Start 2008: Honda 2008, Brawn 2009,
+  Mercedes 2010 alle `HON`). Links mit der ID öffneten das heutige Team (Honda in der Wertung 2008 → Mercedes), der
+  Steckbrief führte Brawn 2009 in Mercedes' Historie und Rennraster. Links mit Namen waren schon richtig. Jetzt
+  `teamProfilArg` (Name, wenn er vom heutigen Namen der ID abweicht) an 9 Linkstellen plus Rückfall über die
+  Archivansicht in `openTeamProfile`; `renderTeamHistory`/`renderTeamRaceGrid` filtern nach `profilName`, Vorgänger
+  aus `teamVorgaenger`. Geprüft: Mercedes 2010 zeigt 2010 + 1954/55, darunter Brawn, Honda, BAR, Tyrrell; kein pageerror.
+- **Team-Vorgeschichte beim Spielstart (15.11.2026, Nebenbefund):** `getHistoricalStATS` rechnete die Teambilanz
+  linear nach Kalenderjahren hoch (Anteil der Jahre zwischen erstem und letztem Jahr, die vor dem Start liegen).
+  Mercedes 1954–2025, Start 2008: 54/72 × 704 = **528 Starts, 95 Siege** — real vor 2008 nur 1954/55. Traf jedes Team
+  mit Lücken. Jetzt exakt aus `F1DB_RESULTS` vor dem Startjahr (Zeilen = Fahrzeug-Starts, ohne DNQ/DNPQ/DNP — so
+  zählt auch das Spiel weiter, `at.races++` je Ergebniszeile): Mercedes **41 Starts, 9 Siege, 8 Poles, 139 Pkt,
+  1954–55**; Honda 1964–2007 116 Starts / 3 Siege; Alfa Romeo 1950–85 239 / 11. 164 von 168 Teams per Slug
+  gefunden, ATS, ATS Wheels, O.S.C.A., Watson behalten die Hochrechnung. Gegenprobe Gesamtbilanz F1DB gegen
+  HIST_TEAMS: Abweichungen nur durch die 2026er Rennen in F1DB (Mercedes 131 statt 127 Siege) und Tyrrell (23 statt
+  16 Siege in HIST_TEAMS). Gilt für neue Spielstände; bestehende behalten ihren Seed.
 - **Off-Season-Fenster (Nutzer 15.11.2026):** Kein Fenster kündigte je Einsteiger oder Umbenennungen an (laufen erst in
   `startNewSeason`), jetzt Block „🏁 Teams <Jahr>“ aus `kommendeTeamAenderungen` in Saisonende-Fenster, Bestätigung und
   Saisonstart. Im Saisonende-Fenster fehlten außerdem ganze Bewegungsarten: `pool-debut` (🌟), Ruecktritte
