@@ -205,15 +205,6 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   `INDY_F1_CROSSOVER` kennt Ruttman nur 1958, gezielter Fix nicht belegt. Die Regel „Kurtis Kraft meldet seinen
   besten Fahrer zum US GP 1959" steht weiter in `data/hist.js` und muss bleiben; Absicherung für den Fall,
   dass Kurtis Kraft nicht mehr existiert, ungeprüft
-- ❌ **Tödliche Unfälle im Steckbrief, auch rückwirkend** (Sheet 2026-11-18): natürlicher Tod bleibt unsichtbar, aber
-  tödliche Unfälle sollen im Steckbrief stehen — alle, die die Simulation nennt, plus rückwirkend alle realen tödlichen
-  Unfälle jemals aktiver F1-Fahrer, **nur im Fenster von 10 Jahren nach der letzten Aktivität**. Stand (Code 18.11.2026):
-  `_todesAkte` im Steckbrief liest nur Sim-Tode (`GAME_STATE.seasonDeaths`, `history[].deaths`), also erst ab Spielstart.
-  **Für reale Tode fehlt die Datenquelle** — `hist.js` hat nur `DRIVER_DOB`; F1DB kennt ein Todesdatum, aber keine
-  Ursache → eigene Tabelle aus Wikipedia („List of Formula One fatalities“ plus Unfälle in anderen Serien und bei
-  Tests). Das 10-Jahres-Fenster entscheidet die Grenzfälle: Hulme (letzte F1-Saison 1974, † 1992) und Regazzoni (1980,
-  † 2006) fallen raus, Alboreto (1994, † 2001 Testunfall) gehört dazu. **Nutzer 18.11.2026:** Quelle = Motorsport
-  Memorial (hat alles); 10-Jahres-Fenster bestätigt; Tod durch Altersschwäche völlig irrelevant
 
 ### Fahrer-Stats
 Mehr Stats für Fahrer mit Zufalls-Stats (generierte + F2/F3 aus dem **Reserve-Pool**, nicht Junior-Welt),
@@ -280,6 +271,13 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
+- **Reale tödliche Unfälle im Steckbrief.** Code-Fix 18.11.2026 (Sheet 2026-11-18; Nutzer: Quelle Motorsport Memorial,
+  10-Jahres-Fenster nach der letzten F1-Saison, natürlicher Tod unsichtbar): `data/fatal-accidents.js` aus
+  `tools/build-fatal-accidents.js` — 143 F1DB-Kandidaten, 117 mit MM-Eintrag (Rennen 72, Training 15, Quali 9,
+  Test 12 …). `_todesAkte` zeigt den realen Unfall, wenn er VOR dem Spielstart lag („Tödlich verunglückt 1970 –
+  Qualifikation, Gran Premio d'Italia (Monza)“); ab Spielstart entscheidet die Sim. Geprüft im Browser: Start 1980 →
+  Rindt, Clark ja; Villeneuve, Alboreto, Bianchi nein; Start 2020 → alle fünf; Hulme und G. Hill nie. Lücke: Pironi
+  († 1987 Powerboot) steht nicht bei MM (nur Auto-Datenbank `ct`) und fehlt deshalb
 - **Startnummern nach Ära-Regeln.** Code-Fix v0.9.21.42 (Sheet 2026-11-18, Regeln Nutzer 18.11.2026): 1950–1973
   keine Nummern; 1974–2013 Teampaare nach Konstrukteurswertung der Vorsaison ohne 13, fest für die Saison, Teams ohne
   Wertungsplatz → nächste freie Paare, Einzelmelder und dritte Wagen → Rennnummer oberhalb des letzten Paars (nicht im

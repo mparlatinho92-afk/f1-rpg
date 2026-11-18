@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.42</title>
+    <title>F1 RPG v0.9.21.43</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.42 (aktuell) - 18.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.43 (aktuell) - 18.11.2026</div>
+                            <div>&#8226; NEU: Steckbrief zeigt reale toedliche Unfaelle vor dem Spielstart (Motorsport Memorial, 10 Jahre nach letzter F1-Saison)</div>
+                            <div class="font-bold text-slate-400">v0.9.21.42 - 18.11.2026</div>
                             <div>&#8226; NEU: Startnummern 1974-2013 nach Konstrukteurswertung der Vorsaison ohne 13, Einzelmelder mit Rennnummer</div>
                             <div>&#8226; NEU: echte Karriere-Nummern ab 2014</div>
                             <div>&#8226; FIX: Laden vergab Nummern neu und auf den falschen Spielstand</div>
@@ -4069,6 +4071,7 @@
     <script src="data/images.js"></script>
     <script src="data/feeder-elo.js"></script>
     <script src="data/car-numbers.js"></script>
+    <script src="data/fatal-accidents.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -4468,7 +4471,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.42';
+        const VERSION = '0.9.21.43';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -38664,6 +38667,18 @@ Empfohlene Wertebereiche:
                         const t = suche(h.deaths); if (t) { treffer = t; tJahr = h.year; break; }
                     }
                     if (treffer) { tot = true; jahr = jahr || tJahr; ort = ort || treffer.raceName || null; }
+                }
+                // Reale tödliche Unfälle VOR dem Spielstart (data/fatal-accidents.js, Motorsport Memorial,
+                // ≤ 10 Jahre nach der letzten F1-Saison; Nutzer 18.11.2026). Ab Spielstart entscheidet die Sim.
+                if (!tot && typeof REAL_FATAL_ACCIDENTS !== 'undefined') {
+                    const r = REAL_FATAL_ACCIDENTS[stATSId] || (driver.histId && REAL_FATAL_ACCIDENTS[driver.histId]);
+                    const spielStart = Math.min(GAME_STATE.currentYear || 9999, ...(GAME_STATE.history || []).map(h => h.year || 9999));
+                    if (r && +r.unfall.slice(0, 4) < spielStart) {
+                        tot = true; jahr = +r.tod.slice(0, 4);
+                        const uj = +r.unfall.slice(0, 4);
+                        ort = [r.art, r.anlass].filter(Boolean).join(', ') + (r.ort && r.ort !== r.anlass ? ` (${r.ort})` : '')
+                            + (uj !== jahr ? ` · Unfall ${uj}` : '');
+                    }
                 }
                 return { tot, jahr, ort };
             })();
