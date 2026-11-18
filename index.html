@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.41</title>
+    <title>F1 RPG v0.9.21.42</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.41 (aktuell) - 15.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.42 (aktuell) - 18.11.2026</div>
+                            <div>&#8226; NEU: Startnummern 1974-2013 nach Konstrukteurswertung der Vorsaison ohne 13, Einzelmelder mit Rennnummer</div>
+                            <div>&#8226; NEU: echte Karriere-Nummern ab 2014</div>
+                            <div>&#8226; FIX: Laden vergab Nummern neu und auf den falschen Spielstand</div>
+                            <div class="font-bold text-slate-400">v0.9.21.41 - 15.11.2026</div>
                             <div>&#8226; FIX: Fahrer-Steckbrief nennt in der Off-Season die Umbenennung des Teams (Kick Sauber, ab 2026 Audi)</div>
                             <div>&#8226; FIX: Off-Season-Uebersicht zeigt Umbenennungen als eine Zeile statt als Aus- und Einstieg, Ziele im neuen Namen</div>
                             <div>&#8226; FIX: Abgaenge ohne Zielteam heissen verlaesst F1 statt Strich</div>
@@ -4064,6 +4068,7 @@
     <script src="data/nation-extra.js"></script>
     <script src="data/images.js"></script>
     <script src="data/feeder-elo.js"></script>
+    <script src="data/car-numbers.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -4463,7 +4468,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.41';
+        const VERSION = '0.9.21.42';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -7720,55 +7725,132 @@
             return 'none';                          // 1950–1973: keine permanenten Nummern
         }
 
-        // Saisonnummern vergeben (wird bei Saisonstart aufgerufen)
-        function assignSeasonNumbers(year) {
+        // ── STARTNUMMERN (Regeln Nutzer 18.11.2026, FIXES_OFFEN.md „Startnummern“) ──
+        // 1950–1973: keine Nummern (auch nicht pro Rennen). 1974–2013: Saisonnummern, fest
+        // gebunden, Paare in der Reihenfolge der Konstrukteurswertung der VORSAISON, ohne die 13,
+        // keine festen Ausnahmen (Ferrari 27/28 hing an Villeneuves Tod). Teams ohne Wertungsplatz
+        // bekommen die nächsten freien Paare in Meldereihenfolge; Einzelmelder und dritte Wagen eine
+        // reine Rennnummer oberhalb des letzten Paars (`numberRaceOnly`, nicht im Steckbrief).
+        // Ab 2014: echte Karriere-Nummern (data/car-numbers.js), sonst eine freie aus 2–99;
+        // Nummern zurückgetretener Fahrer sind wieder frei.
+        // Zwei Schritte: assignSeasonNumbers legt die Teampaare fest (Saisonstart, solange die
+        // Vorsaison-Wertung noch steht), fillCarNumbers verteilt nur an Fahrer ohne gültige
+        // Nummer (Saisonende-Kaskade, Ersatzfahrer, Laden) — vergebene Nummern bleiben.
+        const _ohne13 = n => n === 13 ? 14 : n;
+        function _teamPaarAb(n) { const a = _ohne13(n), b = _ohne13(a + 1); return [a, b]; }
+
+        // Reihenfolge der Vorsaison: Spiel-Wertung, beim Spielstart echte F1DB-Punkte des Vorjahrs
+        function _carNumberTeamOrder(year) {
+            const teams = GAME_STATE.teams || [];
+            const pts = {};
+            const st = GAME_STATE.teamStandings || {};
+            if (Object.values(st).some(s => (s.points || 0) > 0)) {
+                for (const t of teams) if (st[t.id]) pts[t.id] = st[t.id].points || 0;
+            } else if (typeof F1DB_RESULTS !== 'undefined' && F1DB_RESULTS[String(year - 1)]) {
+                // Bis 1978 zählte je Rennen nur der bestplatzierte Wagen eines Konstrukteurs
+                const nurBester = year - 1 <= 1978;
+                const slugPts = {};
+                for (const [, , eintraege] of F1DB_RESULTS[String(year - 1)]) {
+                    const rennen = {};
+                    for (const e of eintraege) if (e[4]) rennen[e[4]] = nurBester ? Math.max(rennen[e[4]] || 0, +e[10] || 0) : (rennen[e[4]] || 0) + (+e[10] || 0);
+                    for (const [k, v] of Object.entries(rennen)) slugPts[k] = (slugPts[k] || 0) + v;
+                }
+                for (const t of teams) {
+                    const slug = String(t.histId || t.name || '').toLowerCase().normalize('NFD')
+                        .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                    if (slug in slugPts) pts[t.id] = slugPts[slug];
+                }
+            }
+            const gewertet = teams.filter(t => t.id in pts).sort((a, b) => pts[b.id] - pts[a.id]);
+            return [...gewertet, ...teams.filter(t => !(t.id in pts))].map(t => t.id);
+        }
+
+        function assignSeasonNumbers(year, spielstart = false) {
             const era = getCarNumberEra(year);
-            if (era === 'none') {
-                // Keine permanenten Nummern – Feld leeren
-                GAME_STATE.drivers.forEach(d => { d.number = null; });
-                return;
-            }
+            const cn = GAME_STATE.carNumbers = { year, era, teams: {} };
             if (era === 'team') {
-                // Teamnummern: Teams nach Konstrukteurs-Stand sortieren, je 2 Nummern
-                const teamOrder = Object.entries(GAME_STATE.teamStandings || {})
-                    .sort((a, b) => (b[1].points || 0) - (a[1].points || 0))
-                    .map(([id]) => id);
-                // Teams die nicht in Standings → hinten anhängen
-                GAME_STATE.teams.forEach(t => { if (!teamOrder.includes(t.id)) teamOrder.push(t.id); });
-                const teamNumbers = {};
-                teamOrder.forEach((teamId, i) => {
-                    const base = i === 0 ? 1 : i * 2 + 1; // #1/#2 für Meisterteam, dann #3/#4 usw.
-                    teamNumbers[teamId] = [base, base + 1];
-                });
-                // Fahrer pro Team sortiert nach Pace → Nummer 1 = besserer Fahrer
-                GAME_STATE.teams.forEach(t => {
-                    const nums = teamNumbers[t.id];
-                    if (!nums) return;
-                    const drivers = GAME_STATE.drivers
-                        .filter(d => d.team === t.id && (!d.status || d.status === 'active'))
-                        .sort((a, b) => (b.pace || 0) - (a.pace || 0));
-                    drivers.forEach((d, i) => { d.number = nums[i] ?? (nums[0] + i); });
-                });
-                return;
+                let n = 1;
+                for (const id of _carNumberTeamOrder(year)) { const p = _teamPaarAb(n); cn.teams[id] = p; n = p[1] + 1; }
             }
-            if (era === 'personal') {
-                // Permanentnummern: bestehende behalten, neue vergeben
-                GAME_STATE.drivers.forEach(d => {
-                    if (!d.number) d.number = getUniqueCarNumber(2, 99);
-                });
+            // Saisonnummern gelten eine Saison; Karriere-Nummern bleiben (außer beim Ärawechsel 2014)
+            const neu = spielstart || era !== 'personal' || year === 2014;
+            for (const d of [...(GAME_STATE.drivers || []), ...(GAME_STATE.reservePool || [])]) {
+                if (neu || d.numberRaceOnly) { d.number = null; delete d.numberRaceOnly; }
             }
         }
 
-        function getUniqueCarNumber(min = 2, max = 99) {
-            const used = new Set((GAME_STATE.drivers || []).map(d => d.number).filter(Boolean));
-            let n = min + Math.floor(Math.random() * (max - min + 1));
-            let attempts = 0;
-            while (used.has(n) && attempts++ < 200) {
-                n = min + Math.floor(Math.random() * (max - min + 1));
+        function _realCarNumber(histId, year) {
+            const l = typeof REAL_CAR_NUMBERS !== 'undefined' && histId ? REAL_CAR_NUMBERS[histId] : null;
+            if (!l || !l.length) return null;
+            let nr = l[0][1];
+            for (const [ab, n] of l) if (ab <= year) nr = n;
+            return nr;
+        }
+
+        function fillCarNumbers(year) {
+            const era = getCarNumberEra(year);
+            const fahrer = GAME_STATE.drivers || [];
+            if (era === 'none') { fahrer.forEach(d => { d.number = null; delete d.numberRaceOnly; }); return; }
+            let cn = GAME_STATE.carNumbers;
+            if (!cn && era === 'team' && fahrer.some(d => d.number != null && d.team)) {
+                // Spielstand von vor 0.9.21.42: Paare aus den vorhandenen Nummern ablesen statt neu würfeln
+                cn = GAME_STATE.carNumbers = { year, era, teams: {} };
+                for (const t of GAME_STATE.teams || []) {
+                    const nrs = fahrer.filter(d => d.team === t.id && d.number != null).map(d => d.number).sort((a, b) => a - b);
+                    if (nrs.length) cn.teams[t.id] = nrs.length > 1 ? nrs.slice(0, 2) : _teamPaarAb(nrs[0] % 2 ? nrs[0] : nrs[0] - 1);
+                }
+            } else if (!cn || cn.year !== year) { assignSeasonNumbers(year); cn = GAME_STATE.carNumbers; }
+            const aktiv = d => !d.status || d.status === 'active';
+            const used = new Set();
+            const belegen = d => {   // Dubletten auflösen: wer zuerst steht, behält die Nummer
+                if (d.number == null) return;
+                if (used.has(d.number)) { d.number = null; delete d.numberRaceOnly; } else used.add(d.number);
+            };
+
+            if (era === 'personal') {
+                const pool = [...fahrer, ...(GAME_STATE.reservePool || [])].filter(aktiv);
+                pool.forEach(belegen);
+                for (const d of pool.filter(d => d.number == null)) {
+                    const echt = _realCarNumber(d.histId, year);
+                    let n = echt && !used.has(echt) ? echt : null;
+                    for (let v = 0; n == null && v < 200; v++) { const z = 2 + Math.floor(Math.random() * 98); if (!used.has(z)) n = z; }
+                    for (let z = 2; n == null; z++) if (!used.has(z)) n = z;
+                    d.number = n; used.add(n);
+                }
+                return;
             }
-            // Fallback: lineares Suchen
-            if (used.has(n)) { for (let i = min; i <= 999; i++) { if (!used.has(i)) { n = i; break; } } }
-            return n;
+
+            // Saisonnummern-Ära
+            const imFeld = fahrer.filter(d => aktiv(d) && d.team);
+            fahrer.filter(d => !aktiv(d) || !d.team).forEach(d => { d.number = null; delete d.numberRaceOnly; });
+            // Teams, die erst während der Saison auftauchen → nächstes freies Paar
+            let hoch = Math.max(0, ...Object.values(cn.teams).flat());
+            for (const t of GAME_STATE.teams || []) {
+                if (cn.teams[t.id]) continue;
+                cn.teams[t.id] = _teamPaarAb(hoch + 1); hoch = cn.teams[t.id][1];
+            }
+            // Wer die Nummer eines fremden Teams trägt (Teamwechsel), gibt sie ab
+            for (const d of imFeld) {
+                if (d.number != null && !d.numberRaceOnly && !(cn.teams[d.team] || []).includes(d.number)) d.number = null;
+            }
+            imFeld.forEach(belegen);
+            const rang = d => [d.isPrivateer ? 0 : 1, Array.isArray(d.scheduledRaces) ? d.scheduledRaces.length : 999, d.pace || 0];
+            const vorne = (a, b) => { const x = rang(a), y = rang(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; };
+            const ohne = [];
+            for (const t of GAME_STATE.teams || []) {
+                const paar = cn.teams[t.id];
+                const frei = paar.filter(n => !used.has(n));
+                const kand = imFeld.filter(d => d.team === t.id && d.number == null).sort(vorne);
+                const stamm = kand.slice(0, frei.length).sort((a, b) => (b.pace || 0) - (a.pace || 0));
+                stamm.forEach((d, i) => { d.number = frei[i]; delete d.numberRaceOnly; used.add(frei[i]); });
+                ohne.push(...kand.slice(frei.length));
+            }
+            // Einzelmelder / dritte Wagen: reine Rennnummer oberhalb des letzten Paars
+            let z = hoch;
+            for (const d of [...ohne, ...imFeld.filter(d => d.number == null && !ohne.includes(d))]) {
+                do { z = _ohne13(z + 1); } while (used.has(z));
+                d.number = z; d.numberRaceOnly = true; used.add(z);
+            }
         }
 
         // Paket A: Raritäten-Schwänze EINMALIG in die Kern-Pools mergen (nicht pro Pick).
@@ -12583,9 +12665,13 @@
             // v0.9.14.65: Nutzer-Strecken-Dimensionen ins Laufzeit-Registry spiegeln
             if (typeof syncCustomCircuitDims === 'function') syncCustomCircuitDims(sanitized.customCircuits);
             logInfo('SANITIZE', `Spielstand validiert (v${sanitized.version})`);
-            // Saisonnummern nach Ära neu vergeben (löscht zufällige Altnummern, setzt korrekte)
-            if (typeof assignSeasonNumbers === 'function') {
-                assignSeasonNumbers(sanitized.currentYear);
+            // Startnummern nur AUFFÜLLEN, nie neu vergeben: feste Nummern bleiben beim Laden.
+            // Vor 0.9.21.42 lief hier assignSeasonNumbers — auf GAME_STATE, also auf den ALTEN
+            // Stand statt auf `sanitized`, und mit der laufenden statt der Vorsaison-Wertung.
+            if (typeof fillCarNumbers === 'function' && sanitized.currentYear) {
+                const _gsVorher = GAME_STATE;
+                GAME_STATE = sanitized;
+                try { fillCarNumbers(sanitized.currentYear); } finally { GAME_STATE = _gsVorher; }
             }
             // driverStandings: ID-artige Namen reparieren (reserve-... oder null)
             if (sanitized.driverStandings && typeof SEASON_DATA !== 'undefined') {
@@ -14961,7 +15047,7 @@
                 name,
                 team: null,
                 nation,
-                number: Math.floor(Math.random() * 80) + 20,
+                number: null,   // fillCarNumbers vergibt nach Ära (vorher Zufall 20–99, kollidierte mit echten Nummern)
                 pace,
                 currentPace: pace,
                 potentialPace: Math.min(99, potential),
@@ -15470,8 +15556,11 @@
                 logInfo('PACE', `${d.name} (${age}J, ${yearsActive}J aktiv): C:${d.currentPace} P:${d.potentialPace} [${status}]`);
             });
             
+            // Startnummern: Vorlage-Nummern (idx+1)*2 verwerfen, Paare nach der echten Vorjahreswertung
+            assignSeasonNumbers(year, true);
             initStandings();
             initReservePool(year);  // v0.9.1: Reserve-Pool mit unbesetzten hist. Fahrern befüllen
+            fillCarNumbers(year);
             prePopulateDriverCareerScores(year);
             rollSeasonNonWMDeaths();  // HOCH#4: Tode außerhalb WM für die 1. Saison terminieren
             saveGame();
@@ -16866,6 +16955,7 @@
 
             trackTeammateDuels(raceResult);
             processMidSeasonDismissals();
+            fillCarNumbers(GAME_STATE.currentYear);   // Ersatz- und Neueinsteiger bekommen ihre Nummer, feste bleiben
             // Im Mega-Sim-Fastmode NICHT pro Rennen speichern – sonst ~33 wachsende
             // State-Serialisierungen/Saison → Slowdown + OOM. Mega-Sim speichert selbst.
             if (!window._megaSimFast) {
@@ -28319,6 +28409,7 @@
             stabilizeConstructorPresence(newYear);
             pruneZeroEntryDrivers(newYear);
             rollSeasonNonWMDeaths();       // HOCH#4: Tode außerhalb WM für die neue Saison terminieren
+            fillCarNumbers(newYear);       // Paare stehen seit assignSeasonNumbers, jetzt das fertige Feld nummerieren
             if (!window._megaSimFast) saveGame();   // Mega-Sim speichert selbst (periodisch + Ende)
             logSuccess('SEASON', `Saison ${newYear} gestartet mit ${GAME_STATE.drivers.length} Fahrern`);
 
@@ -38630,7 +38721,7 @@ Empfohlene Wertebereiche:
                                 </span>
                             ` : (driver._nieImSpiel ? `<span class="text-tertiary">${driver._nieImSpiel.kommtNoch ? 'noch nicht in der F1' : 'nie in der F1'}</span>`
                                : !isCurrentlyActive ? '<span class="text-tertiary">Karriere beendet</span>' : '')}
-                            ${driver.number ? `<span class="text-2xl font-bold text-tertiary">#${driver.number}</span>` : ''}
+                            ${driver.number && !driver.numberRaceOnly ? `<span class="text-2xl font-bold text-tertiary">#${driver.number}</span>` : ''}
                         </div>
                         ${isCurrentlyActive ? `
                             <div class="text-sm text-secondary">
@@ -41849,7 +41940,7 @@ Empfohlene Wertebereiche:
                                         <div class="flex items-center gap-2">
                                             <span class="text-2xl">${renderFlag(driver.nation, driver.name, getDriverFlagYear(driver, GAME_STATE.currentYear))}</span>
                                             <span class="font-bold">${driver.name}</span>
-                                            ${driver.number ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
+                                            ${driver.number && !driver.numberRaceOnly ? `<span class="text-tertiary">#${driver.number}</span>` : ''}
                                         </div>
                                         ${(() => { const ev = typeof evaluateDriverPerformance === 'function' ? evaluateDriverPerformance(driver.id) : null; if (!ev) return ''; const s=ev.score; const c=s>=70?'#22C55E':s>=50?'#EAB308':s>=35?'#F97316':'#EF4444'; const st=s>=75?'Sehr sicher':s>=55?'Sicher':s>=40?'Wackelig':'Gefährdet'; return `<div class="flex items-center gap-1" title="Zufriedenheit: ${s}/100 – ${st}"><div style="width:55px;height:8px;background:#333;border-radius:4px;overflow:hidden"><div style="width:${Math.max(5,s)}%;height:100%;background:${c}"></div></div><span style="font-size:11px;color:${lesbareTextfarbe(c)};font-weight:bold">${s}</span></div>`; })()}
                                     </div>

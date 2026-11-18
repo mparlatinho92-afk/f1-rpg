@@ -20,10 +20,8 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
-- ✚ file:///C:/Users/lyric/OneDrive/Pictures/Screenshots/Screenshot%202026-11-14%20235820.png
-- ✚ Zwar wird ein natürlicher Tod nicht bekanntgegeben,  also das Alter nach der Karriere wird nach 5 Jahren Inaktivität ja bekanntlich in das Geburtsdatum umgewandelt, aber gewisse Tode sollten schon erwähnenswert sein. Alle tödlichen Unfälle die sonst, das Spiel in der SImulation nennt + rückwirkend alle tödlichen Unfälle, jemals aktiver F1-Fahrer. Wobei Denny Hulme, Clay Regazzoni, Michele Alboreto grenzwertig wären. Ich würde sagen, auch nur im 5 Jahresfenster nach der letzten Aklivität. oder noch besser hier sogar 10 jahre. ich meine die info im steckbrief
-- ✚ Startnummer sind nicht zu 100% vergeben. Startnummern außerhalb des Rennen selbst, nur wenn fest an Fahrer gebunden. es gibt ja drei Ären. Pro Rennen bis 1973, dann ganze Saison, dann ganze Karriere
-- ✚ Jackie Stewart zu konstant, Kimi Antonelli zu unbedeutend, Tim Tramnitz ist viel zu oft Top-Talent
+- ✚ Anregungen aus diesem Fremd-Projekt: https://claude.ai/chat/0ce1c8c7-5e84-4efd-9ad4-81236b4f516e
+- ✚ Fahrfehler-Mechanik. Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit
 
 ---
 
@@ -207,6 +205,33 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   `INDY_F1_CROSSOVER` kennt Ruttman nur 1958, gezielter Fix nicht belegt. Die Regel „Kurtis Kraft meldet seinen
   besten Fahrer zum US GP 1959" steht weiter in `data/hist.js` und muss bleiben; Absicherung für den Fall,
   dass Kurtis Kraft nicht mehr existiert, ungeprüft
+- ❌ **Tödliche Unfälle im Steckbrief, auch rückwirkend** (Sheet 2026-11-18): natürlicher Tod bleibt unsichtbar, aber
+  tödliche Unfälle sollen im Steckbrief stehen — alle, die die Simulation nennt, plus rückwirkend alle realen tödlichen
+  Unfälle jemals aktiver F1-Fahrer, **nur im Fenster von 10 Jahren nach der letzten Aktivität**. Stand (Code 18.11.2026):
+  `_todesAkte` im Steckbrief liest nur Sim-Tode (`GAME_STATE.seasonDeaths`, `history[].deaths`), also erst ab Spielstart.
+  **Für reale Tode fehlt die Datenquelle** — `hist.js` hat nur `DRIVER_DOB`; F1DB kennt ein Todesdatum, aber keine
+  Ursache → eigene Tabelle aus Wikipedia („List of Formula One fatalities“ plus Unfälle in anderen Serien und bei
+  Tests). Das 10-Jahres-Fenster entscheidet die Grenzfälle: Hulme (letzte F1-Saison 1974, † 1992) und Regazzoni (1980,
+  † 2006) fallen raus, Alboreto (1994, † 2001 Testunfall) gehört dazu. **Nutzer 18.11.2026:** Quelle = Motorsport
+  Memorial (hat alles); 10-Jahres-Fenster bestätigt; Tod durch Altersschwäche völlig irrelevant
+- ❌ **Startnummern nicht vollständig vergeben** (Sheet 2026-11-18): drei Ären — pro Rennen bis 1973, pro Saison
+  1974–2013, pro Karriere ab 2014. Außerhalb des Rennens nur zeigen, wenn die Nummer fest am Fahrer hängt. Ursache
+  (Code 18.11.2026): `assignSeasonNumbers` läuft nur beim Saisonstart und beim Bereinigen eines Spielstands — wer
+  während der Saison dazukommt (Ersatz, Grid-Füller, Teamwechsel, Pool-Rückkehrer), bekommt keine Nummer. Bis 1973
+  sind alle `null`, Nummern pro Rennen gibt es nicht. Der F1DB-Auszug enthält keine Startnummern, die volle F1DB schon.
+  **Regeln (Nutzer 18.11.2026):** ab 2014 echte Karriere-Nummern; neue Fahrer nehmen, was frei ist; frei gewordene
+  echte Nummern kommen wieder in den Topf. 1974–2013 Saison-Nummern, fest gebunden, nach dem Originalprinzip:
+  Reihenfolge der Konstrukteurswertung der Vorsaison, **ohne die 13**. Keine festen Ausnahmen wie Ferraris 27/28 (die
+  hingen an Villeneuves Tod, der im Spiel nicht fest ausgelöst wird). Schwierig: sporadisch gemeldete Wagen bis
+  Anfang/Mitte der 1980er. **Nutzer 18.11.2026 (2):** 1950–1973 vorerst nirgends Nummern, auch nicht im Rennen;
+  simulierte Jahre bekommen Nummern nur, wenn die Ära es regelt; Vorschlag zu Einzelmeldern angenommen.
+  **Umgesetzt (18.11.2026, wartet auf Version):** `assignSeasonNumbers` legt die Teampaare fest (Spielstart: echte
+  F1DB-Wertung des Vorjahrs, bis 1978 nur bester Wagen je Rennen), `fillCarNumbers` verteilt nur an Fahrer ohne
+  gültige Nummer (Saisonstart, nach jedem Rennen, Laden). Teams ohne Wertungsplatz → nächste freie Paare; Einzelmelder
+  und dritte Wagen → Rennnummer oberhalb des letzten Paars, nicht im Steckbrief. Ab 2014 echte Nummern aus
+  `data/car-numbers.js` (`tools/build-car-numbers.js`, nach F1DB-Update neu bauen). Probe 1974 = echte Vergabe Platz
+  für Platz; 1985–88 und 2012–15 durchsimuliert: keine Lücke, keine Dublette, keine 13, Laden ändert nichts.
+  Nebenbei behoben: das Laden schrieb die Nummern auf den alten statt den geladenen Spielstand
 
 ### Fahrer-Stats
 Mehr Stats für Fahrer mit Zufalls-Stats (generierte + F2/F3 aus dem **Reserve-Pool**, nicht Junior-Welt),
@@ -220,6 +245,23 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 - **Konstanz neu berechnen:** aus F1DB Häufigkeit, Schwere und Dauer der Konstanz-Einbrüche (ohne Konstrukteurswechsel)
   plus Gründe, z. B. Oscar Piastri nach Baku 2025 oder schwere Crashes. Getrennt von Pace-Abbau (Alter, Crash) und
   Form-Schwankungen
+- ❌ **Einzelfahrer falsch gewichtet** (Sheet 2026-11-18), Befunde aus den Daten (18.11.2026):
+  - **Tim Tramnitz viel zu oft Top-Talent** (real nie einer der Top-Kandidaten), **Joshua Dürksen** ebenso
+    (Sheet-Nachtrag 18.11.2026): beide `FEEDER_ELO` Potenzial 98. Ursache (BEFUNDE 18.11.2026): `tools/junior-elo.js`
+    legt nur den **Rang** in der oberen Gruppe (36 Fahrer) auf die Potenziale echter Rookies 2010–2025 — und die sind
+    Rückschau: 9 von 58 bei 93–98 (Verstappen, Leclerc, Norris …), danach sofort 81. Die obersten ~15 % (Dürksen, Dunne,
+    Tramnitz, Minì, Beganovic, Slater) erben Star-Werte, egal wie groß der Elo-Abstand ist. Gemessen wird nur die beste
+    Einzelsaison je Serie (F2, F3, FRECA, EFO, GB3, Eurocup-3), keine Karriere, kein Kart. Nutzer 18.11.2026: Werkzeug
+    nochmals prüfen; falls Kart dazukäme, anders gewichten
+  - **Kimi Antonelli zu unbedeutend:** `PACE_RATINGS` 2025 = Pace 75, Potenzial 81, Konstanz 69 (Russell 98/98), real
+    2025 150 Punkte. Bearman 74/74, Hadjar 58/73 ebenso. Ursache: am Datenende fehlt dem Potenzial die Rückschau, die
+    Junior-Skala hat sie → **Nahtstelle F1-Pace ↔ Junior-Pace** passt nicht (Junior ohne F1-Platz 98, Rookie mit Podien 81).
+    Nutzer 18.11.2026: Opfer des Wechsels in die F1 — gemeinsam mit Tramnitz lösen
+  - **Jackie Stewart zu konstant — bestätigt (Monte Carlo, BEFUNDE 18.11.2026, `tests/fahrer-streuung.js`):** Zielplatz-SD
+    1,7 statt real 2,6, Podium 56 statt 43 %, Siege 35 statt 27 %, Titel in 41 % der Saisons (real 3 von 9). Kein
+    Stewart-Einzelfall: Clark 1,6 statt 2,5, Prost 1,6 statt 2,1, Lauda 2,1 statt 2,6 — den Spitzenfahrern fehlen die
+    schwachen Zielankünfte (P4–P11). Gleiches Muster wie der offene Punkt „Dominator von vorn zu selten P4+“
+    (BEFUNDE 18.10.2026 (3)). Fix gehört in `simulateRace`, nicht in Stewarts Werte
 
 ### Namen
 - **Namens-Pakete für Fahrerinnen je Nation:** Frauen sind selten, Wiederholungen fallen kaum auf. Frauen-Wahrscheinlichkeit
@@ -332,6 +374,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 | Vertragsstatus: Farbe passte nicht zum Text | v0.9.15.53 beide Schwellen 75/55/40 |
 | Teamnamen in Rennergebnissen nicht in Teamfarbe | Rennergebnisse im Steckbrief aufklappbar, je Team eine Zeile in Ära-Farbe |
 | Fehlende Teams in der Fahrer-Historie, tote Links | v0.9.15.27 (`tmn`-only/`team`-only, alle ID-Kandidaten), Fallback auf `HIST_NAMES` |
+| Antonelli 2030 mit „Debüt“ nach 69 Rennen (Screenshot im Sheet, 14.11.2026) | v0.9.21.39 — Debüt = erste Meldung zur Quali/Vorquali, frühestes Jahr aller Spielquellen (`getF1DebutYear`, BEFUNDE 15.11.2026). ⚠ Erst 18.11. abgehakt: der ✚-Eintrag war nur ein Dateilink ohne Text, der Abgleich bei .39–.41 hielt die Changelog-Punkte nur gegen Text |
 | Reserve: Talente vs. Free Agents | v0.9.14.56 |
 | Nie-Wechsler-Liste inkl. Stroll | Besitzer-Fahrer verlassen ihr Team nie — Brabham, Surtees, McLaren, Stroll und 17 weitere |
 | Kleinstkonstrukteure auf wenige Einsätze prüfen | v0.9.14.93–.97, v0.9.16.0/.10/.11 |

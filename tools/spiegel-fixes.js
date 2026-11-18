@@ -59,7 +59,8 @@ const QUELLE = path.join(ROOT, 'FIXES_OFFEN.md');
 const STAND = path.join(__dirname, 'fixes-spiegel.json');
 const ZIEL = path.join(os.tmpdir(), 'f1rpg-fixes-offen-werte.json');   // projekteigener Name: ein anderes Projekt nutzt dasselbe Werkzeug und überschrieb die Datei (17.10.2026)
 const SHEET_ABSCHNITT = '## ✚ Aus dem Sheet – ungeprüft';
-const KENNUNG_LAENGE = 30;                   // muss zur Formel in Fixes!F2 passen: LEFT(C2:C;30)
+const NUR_LINK = '⚠ nur Link – Bild ansehen und Inhalt in Worten nachtragen';
+const KENNUNG_LAENGE = 30;                  // muss zur Formel in Fixes!F2 passen: LEFT(C2:C;30)
 
 const hashVon = text => crypto.createHash('sha256').update(text).digest('hex').slice(0, 16);
 const leseStand = () => { try { return JSON.parse(fs.readFileSync(STAND, 'utf8')); } catch (e) { return {}; } };
@@ -241,6 +242,9 @@ function uebernehmen(datei) {
         if (status.trim() && status.trim() !== '✚') teile.push('Status im Sheet: ' + status.trim());
         if (beleg.trim()) teile.push('Beleg: ' + beleg.trim());
         if (pruefen.trim() === 'geändert') teile.push('im Sheet geändert, Original steht weiter in der Liste');
+        // Nur ein Link (z. B. Screenshot) traegt keinen Text, gegen den der Abgleich Changelog-Punkte halten kann:
+        // der Antonelli-Debuet-Screenshot blieb so bei v0.9.21.39–.41 offen, obwohl .39 ihn behob (18.11.2026).
+        if (/^\S+:\/\/\S+$/.test(punkt.trim())) teile.push(NUR_LINK);
         return '- ✚ ' + punkt.trim() + (teile.length ? ' (' + teile.join('; ') + ')' : '');
     });
     let md = fs.readFileSync(QUELLE, 'utf8');
@@ -288,6 +292,7 @@ if (arg === '--hook') {
                         + '(2) `node tools/spiegel-fixes.js --seit` zeigt die Changelog-Punkte der neuen Versionen: '
                         + 'jeden gegen die offenen Punkte (❌ ◐ ❔ ✚) halten; nur mit Beleg im Code auf ✅ setzen und die Version dazuschreiben. '
                         + 'Manuelle Notizen und ✚-Zeilen nie loeschen oder umformulieren. '
+                        + `✚-Zeilen, die nur aus einem Link bestehen („${NUR_LINK}“): Link oeffnen und den Inhalt in Worten dahinterschreiben (Link bleibt), sonst findet der Abgleich nichts. `
                         + '(3) `node tools/spiegel-fixes.js --geprueft`. (4) Danach spiegeln (der Hook nennt die Schritte). '
                         + '(5) Dem Nutzer knapp sagen: was aus dem Sheet kam, welche Punkte sich geaendert haben — oder dass nichts betroffen war.'
                 }));
