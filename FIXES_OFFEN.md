@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.42, Prüfdatum **2026-11-18** (vorher 2026-11-15 @ v0.9.21.41). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.43, Prüfdatum **2026-11-18** (vorher 2026-11-18 @ v0.9.21.42). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -271,7 +271,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
-- **Reale tödliche Unfälle im Steckbrief.** Code-Fix 18.11.2026 (Sheet 2026-11-18; Nutzer: Quelle Motorsport Memorial,
+- **Reale tödliche Unfälle im Steckbrief.** Code-Fix v0.9.21.43 (Sheet 2026-11-18; Nutzer: Quelle Motorsport Memorial,
   10-Jahres-Fenster nach der letzten F1-Saison, natürlicher Tod unsichtbar): `data/fatal-accidents.js` aus
   `tools/build-fatal-accidents.js` — 143 F1DB-Kandidaten, 117 mit MM-Eintrag (Rennen 72, Training 15, Quali 9,
   Test 12 …). `_todesAkte` zeigt den realen Unfall, wenn er VOR dem Spielstart lag („Tödlich verunglückt 1970 –

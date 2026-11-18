@@ -47,6 +47,16 @@ versehentlich zurück.
 
 ---
 
+## Reale tödliche Unfälle: F1DB × Motorsport Memorial (18.11.2026)
+
+- **Kandidaten:** 517 F1DB-Fahrer mit Todesdatum, davon 143 gestorben ≤ 10 Jahre nach der letzten Saison
+  (`seasons-entrants-drivers`). **117 mit MM-Eintrag**, 26 ohne — fast alle kein Motorsport-Tod (Flugzeug: G. Hill,
+  Brise, Pace, Ertl, Purley; Straße: Hawthorn, Hailwood, Parkes; Krankheit: Nilsson).
+- ⚠ **Messfalle Datum:** MM nennt teils den Unfalltag, F1DB den Todestag (Hoyt, Whitehead je 1 Tag) → Abgleich
+  Nachname + Datum ± 3 Tage. Exakt gleiche Daten allein ergaben 115 statt 117.
+- ⚠ **Lücke:** MM hat nur die Auto-Datenbank `ct`. Pironi († 1987 Offshore-Powerboot) fehlt, also auch im Spiel.
+- Arten: Rennen 72, Training 15, Testfahrt 12, Qualifikation 9, Warm-up 3, nach dem Rennen 2, Bergrennen 3, Rallye 1.
+
 ## Startnummern: Vergabe gegen die echte Saison geprüft (18.11.2026)
 
 - **1974 nach dem Originalprinzip (Konstrukteurswertung 1973, ohne 13):** Lotus 1/2, Tyrrell 3/4, McLaren 5/6,
