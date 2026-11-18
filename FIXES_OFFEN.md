@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.41, Prüfdatum **2026-11-15** (vorher 2026-11-15 @ v0.9.21.40). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.42, Prüfdatum **2026-11-18** (vorher 2026-11-15 @ v0.9.21.41). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -214,24 +214,6 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   Tests). Das 10-Jahres-Fenster entscheidet die Grenzfälle: Hulme (letzte F1-Saison 1974, † 1992) und Regazzoni (1980,
   † 2006) fallen raus, Alboreto (1994, † 2001 Testunfall) gehört dazu. **Nutzer 18.11.2026:** Quelle = Motorsport
   Memorial (hat alles); 10-Jahres-Fenster bestätigt; Tod durch Altersschwäche völlig irrelevant
-- ❌ **Startnummern nicht vollständig vergeben** (Sheet 2026-11-18): drei Ären — pro Rennen bis 1973, pro Saison
-  1974–2013, pro Karriere ab 2014. Außerhalb des Rennens nur zeigen, wenn die Nummer fest am Fahrer hängt. Ursache
-  (Code 18.11.2026): `assignSeasonNumbers` läuft nur beim Saisonstart und beim Bereinigen eines Spielstands — wer
-  während der Saison dazukommt (Ersatz, Grid-Füller, Teamwechsel, Pool-Rückkehrer), bekommt keine Nummer. Bis 1973
-  sind alle `null`, Nummern pro Rennen gibt es nicht. Der F1DB-Auszug enthält keine Startnummern, die volle F1DB schon.
-  **Regeln (Nutzer 18.11.2026):** ab 2014 echte Karriere-Nummern; neue Fahrer nehmen, was frei ist; frei gewordene
-  echte Nummern kommen wieder in den Topf. 1974–2013 Saison-Nummern, fest gebunden, nach dem Originalprinzip:
-  Reihenfolge der Konstrukteurswertung der Vorsaison, **ohne die 13**. Keine festen Ausnahmen wie Ferraris 27/28 (die
-  hingen an Villeneuves Tod, der im Spiel nicht fest ausgelöst wird). Schwierig: sporadisch gemeldete Wagen bis
-  Anfang/Mitte der 1980er. **Nutzer 18.11.2026 (2):** 1950–1973 vorerst nirgends Nummern, auch nicht im Rennen;
-  simulierte Jahre bekommen Nummern nur, wenn die Ära es regelt; Vorschlag zu Einzelmeldern angenommen.
-  **Umgesetzt (18.11.2026, wartet auf Version):** `assignSeasonNumbers` legt die Teampaare fest (Spielstart: echte
-  F1DB-Wertung des Vorjahrs, bis 1978 nur bester Wagen je Rennen), `fillCarNumbers` verteilt nur an Fahrer ohne
-  gültige Nummer (Saisonstart, nach jedem Rennen, Laden). Teams ohne Wertungsplatz → nächste freie Paare; Einzelmelder
-  und dritte Wagen → Rennnummer oberhalb des letzten Paars, nicht im Steckbrief. Ab 2014 echte Nummern aus
-  `data/car-numbers.js` (`tools/build-car-numbers.js`, nach F1DB-Update neu bauen). Probe 1974 = echte Vergabe Platz
-  für Platz; 1985–88 und 2012–15 durchsimuliert: keine Lücke, keine Dublette, keine 13, Laden ändert nichts.
-  Nebenbei behoben: das Laden schrieb die Nummern auf den alten statt den geladenen Spielstand
 
 ### Fahrer-Stats
 Mehr Stats für Fahrer mit Zufalls-Stats (generierte + F2/F3 aus dem **Reserve-Pool**, nicht Junior-Welt),
@@ -298,6 +280,14 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
+- **Startnummern nach Ära-Regeln.** Code-Fix v0.9.21.42 (Sheet 2026-11-18, Regeln Nutzer 18.11.2026): 1950–1973
+  keine Nummern; 1974–2013 Teampaare nach Konstrukteurswertung der Vorsaison ohne 13, fest für die Saison, Teams ohne
+  Wertungsplatz → nächste freie Paare, Einzelmelder und dritte Wagen → Rennnummer oberhalb des letzten Paars (nicht im
+  Steckbrief); ab 2014 echte Karriere-Nummern (`data/car-numbers.js`), neue Fahrer nehmen eine freie. Vergabe
+  `assignSeasonNumbers` (Paare) + `fillCarNumbers` (Spielstart, Saisonstart, nach jedem Rennen, Laden). Probe 1974 =
+  echte Vergabe Platz für Platz; 1985–88 und 2012–15: keine Lücke, keine Dublette, keine 13, Laden ändert nichts
+  (BEFUNDE 18.11.2026). Nebenbei: das Laden schrieb die Nummern auf den alten Spielstand. Alte Spielstände behalten
+  ihre Nummern
 - **Lupen-Suche findet nicht jeden Fahrer.** Code-Fix 13.11.2026: `globalSearchInput` durchsucht jetzt auch den
   Reserve-Pool („Reserve“) und `allTimeStATS.drivers` („Ehemalig“, auch generierte Ex-Fahrer)
 - **WM-Stand „15/22 Rennen“.** Code-Fix 13.11.2026: Die Kopfzeile zeigt gefahrene/alle Rennen, in Archivsaisons die Gesamtzahl

@@ -47,6 +47,61 @@ versehentlich zurück.
 
 ---
 
+## Startnummern: Vergabe gegen die echte Saison geprüft (18.11.2026)
+
+- **1974 nach dem Originalprinzip (Konstrukteurswertung 1973, ohne 13):** Lotus 1/2, Tyrrell 3/4, McLaren 5/6,
+  Brabham 7/8, March 9/10, Ferrari 11/12, BRM 14/15, Shadow 16/17 — deckt sich Platz für Platz mit der echten
+  Vergabe 1974 (Fittipaldi #5).
+- ⚠ **Messfalle Konstrukteurspunkte aus F1DB-Rennergebnissen:** Bis 1978 zählte je Rennen nur der bestplatzierte
+  Wagen. Wer alle Wagen summiert, setzt 1973 Tyrrell vor Lotus (falsch). Ab 1979 zählen alle Wagen.
+- **Echte Karriere-Nummern ab 2014:** `drivers.permanentNumber` kennt nur ~30 aktuelle Fahrer. Die vollständige
+  Quelle ist `driverNumber` pro Rennergebnis, 65 Fahrer, davon 8 mit Wechsel (Verstappen 33→3 ab 2026).
+  Die Weltmeister-1 zählt nicht als Karriere-Nummer.
+- **Dauerlauf:** 1985→1988 und 2012→2015 durchsimuliert. Kein Fahrer ohne Nummer, keine Dublette, keine 13 vor 2014,
+  Laden (`sanitizeGameState`) ändert 0 Nummern. Davor vergab das Laden neu, nach der *laufenden* Wertung und auf den
+  falschen Spielstand.
+
+---
+
+## Spitzenfahrer streuen zu wenig; Junior-Potenzial auf Rückschau-Skala (18.11.2026)
+
+**Stewart zu konstant (Nutzer-Fund) — gemessen, betrifft alle Spitzenfahrer.** Werkzeug `tests/fahrer-streuung.js`:
+echte Saison je Jahr frisch simuliert (initFromYear, Training → Quali → Rennen), Rennergebnisse des Fahrers gegen F1DB.
+`SIMCORE_FROM_INDEX=1`, Stand v0.9.21.41.
+
+| Fahrer, Jahre, Läufe | | Sieg | Podium | DNF | Ziel Ø | **Ziel-SD** | WM Ø |
+|---|---|---|---|---|---|---|---|
+| Stewart 1965–73, 20 | real | 27 % | 43 % | 36 % | 3,0 | **2,6** | 3,4 |
+| | Spiel | 35 % | 56 % | 31 % | 2,2 | **1,7** | 2,6 (Titel 41 %) |
+| Clark 1962–67, 15 | real | 41 % | 48 % | 36 % | 2,5 | **2,5** | 2,7 |
+| | Spiel | 32 % | 59 % | 25 % | 2,3 | **1,6** | 2,1 |
+| Prost 1984–90, 15 | real | 31 % | 64 % | 23 % | 2,4 | **2,1** | 1,9 |
+| | Spiel | 30 % | 54 % | 32 % | 2,3 | **1,6** | 2,2 |
+| Lauda 1974–79, 15 | real | 20 % | 45 % | 40 % | 2,9 | **2,6** | 4,3 |
+| | Spiel | 34 % | 55 % | 28 % | 2,5 | **2,1** | 2,5 |
+
+- **Im Ziel fehlen die schwachen Ergebnisse (P4–P11):** die Streuung des Zielplatzes liegt bei allen vier um
+  0,5–0,9 Plätze unter real, bei Stewart am stärksten (1,7 statt 2,6). Stewart 1970 (real March, 62 % DNF, WM 5)
+  wird im Spiel Ø WM 1,8 mit 40 % Siegen. Dasselbe Muster wie der offene Punkt „Dominator landet von vorn zu selten
+  auf P4+“ (18.10.2026 (3), unten), jetzt je Fahrer nachweisbar.
+- ⚠ **Messfalle:** real ist jede Saison EIN Wurf — nur die Summen über alle Jahre vergleichen. Ausfälle zählen
+  nicht in die Ziel-SD. WM-Spannen bis Platz 23/24 im Spiel sind Läufe, in denen der Fahrer früh verunglückt.
+- **Laufzeit:** 9 Jahre × 20 Läufe ≈ 1 Minute.
+
+**Junior-Potenzial: warum Tramnitz, Dürksen & Co. 93–98 tragen (`tools/junior-elo.js`).**
+- Gemessen wird **nicht die Karriere und kein Kart**: nur F2, F3, FRECA, EFO, GB3, Eurocup-3 (Wikipedia), je Serie
+  die **beste einzelne Saison** mit ≥ 8 Rennen (Zuverlässigkeit n/(n+10)), dann die beste Serie mit Serienabstand.
+  Eine starke Saison reicht.
+- Die Elo bestimmt nur den **Rang** in der oberen Gruppe (36 Fahrer: Leiter noch offen + oberstes Viertel). Der Rang
+  wird auf die Verteilung der Potenziale echter Rookies 2010–2025 (n 58) gelegt. Diese Potenziale sind **Rückschau**
+  (Spitze der späteren Karriere): 9 von 58 liegen bei 93–98 (Ricciardo, Bottas, Verstappen, Leclerc, Norris 98,
+  Pérez 97, Piastri 96, Russell 95, Sainz 93), danach kommt sofort 81 (Antonelli). Die obersten ~15 % der Gruppe
+  (Dürksen, Dunne, Tramnitz, Minì, Beganovic, Slater) erben also Star-Werte, egal wie groß ihr Elo-Abstand ist.
+  Das ist die Stufe 93 → 80.
+- **Derselbe Grund drückt die Rookies 2024/25:** ohne spätere Saisons hat ihr Potenzial keine Rückschau
+  (Antonelli 75/81, Bearman 74/74, Hadjar 58/73). Junior-Skala (Rückschau-Stars) und F1-Skala (Datenende ohne
+  Rückschau) passen an der Nahtstelle nicht zusammen: ein Junior ohne F1-Platz trägt 98, ein Rookie mit Podien 81.
+
 ## Mega-Sim nach Handout P7 (Bundesliga Architect) abgeglichen (06.11.2026)
 
 **Anlass:** Handout P7 (Bundesliga-Repo `docs/handouts/P7_multisim*.{md,js}`) sollte eine Multi-Saison-Simulation
