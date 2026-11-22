@@ -98,6 +98,33 @@ echte Saison je Jahr frisch simuliert (initFromYear, Training → Quali → Renn
   nicht in die Ziel-SD. WM-Spannen bis Platz 23/24 im Spiel sind Läufe, in denen der Fahrer früh verunglückt.
 - **Laufzeit:** 9 Jahre × 20 Läufe ≈ 1 Minute.
 
+**Nachmessung 22.11.2026: es liegt an der Konstanz, nicht an der Person** (`tests/streuung-feld.js`, v0.9.21.43).
+- `simulateRace` kennt Identität nur über die Pace: echte Fahrer fahren das Rennen mit `PACE_RATINGS[histId][Jahr]`,
+  Quali und Training mit `driver.pace` (Stewart 1969: Rennen 90, Quali 94). Sonst gilt für alle dieselbe Formel.
+- **Klon-Test Stewart 1969, je 30 Läufe:** echt Ziel Ø 1,76 SD 1,45 · Klon ohne histId mit Pace 94: Ø 1,70 SD 1,29 ·
+  Klon mit Pace 90: Ø 1,82 SD 1,49. Das Original liegt zwischen den beiden Klonen → ein generierter Fahrer mit
+  denselben Werten fährt genauso.
+- **Feld 1960–2010, alle 5 Jahre, 5 Läufe, 163 Fahrer-Saisons** (Zielplatz-SD Spiel ÷ real):
+
+  | Gruppe | n | Spiel | real | Verhältnis |
+  |---|---|---|---|---|
+  | Konstanz < 80 | 82 | 3,08 | 2,98 | **1,04** |
+  | Konstanz 80–89 | 32 | 2,68 | 3,31 | **0,81** |
+  | Konstanz ≥ 90 | 49 | 1,91 | 2,73 | **0,70** |
+  | Mitte (real Ø 4–8) · Konstanz ≥ 90 | 14 | 2,03 | 3,81 | **0,53** |
+  | Spitze (real Ø ≤ 4) · Konstanz ≥ 90 | 35 | 1,87 | 2,30 | 0,81 |
+  | hinten (real Ø > 8) | 57 | 3,10 | 3,08 | 1,00 |
+
+  Die Streuung fehlt mit **steigender Konstanz**, unabhängig vom Rang. Am stärksten trifft es Mittelfeldfahrer mit
+  hoher Konstanz: real streuen sie mehr als die Spitze, im Spiel fahren sie wie auf Schienen. Hinterbänkler
+  (alle Konstanz < 80) stimmen.
+- **Generierte Fahrer:** Konstanz = Pace −15 … +5 (10 % Ausreißer ±15–25, Deckel 97). Ein generierter Fahrer mit
+  Pace 90+ landet also auch bei 90+ und bekommt dieselbe zu geringe Streuung. Selten nur, weil hohe Pace selten ist.
+- Ursache in der Formel: Konstanz senkt **zweimal**: Häufigkeit des schlechten Tags (P = 1 − Konstanz) UND Breite
+  des Rauschens (±4 bei 100 bis ±11 bei 0). Bei Konstanz 95 heißt das 5 % schlechte Tage und ±4,35 Rauschen.
+- ⚠ **Messfalle:** Gruppen nach realem Ø-Platz, nicht nach Pace (Feldgröße). Einzelne Saisons streuen real stark,
+  nur Gruppenmittel ab n ≈ 15 lesen. Laufzeit 11 Jahre × 5 Läufe + Klon ≈ wenige Minuten.
+
 **Junior-Potenzial: warum Tramnitz, Dürksen & Co. 93–98 tragen (`tools/junior-elo.js`).**
 - Gemessen wird **nicht die Karriere und kein Kart**: nur F2, F3, FRECA, EFO, GB3, Eurocup-3 (Wikipedia), je Serie
   die **beste einzelne Saison** mit ≥ 8 Rennen (Zuverlässigkeit n/(n+10)), dann die beste Serie mit Serienabstand.
