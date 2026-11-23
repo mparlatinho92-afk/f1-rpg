@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.43</title>
+    <title>F1 RPG v0.9.21.44</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.43 (aktuell) - 18.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.44 (aktuell) - 23.11.2026</div>
+                            <div>&#8226; NEU: Konstanz = Anteil Rennen ohne Ausreisser (aus F1DB, Teamkollegen-Vergleich)</div>
+                            <div>&#8226; NEU: schlechter Tag kostet Plaetze oder endet im eigenen Unfall, Ticker erzaehlt Fahrfehler</div>
+                            <div>&#8226; NEU: Auto-Form je Wochenende fuer beide Teamkollegen</div>
+                            <div>&#8226; FIX: Spitzenfahrer streuten im Ziel 30 % zu wenig</div>
+                            <div class="font-bold text-slate-400">v0.9.21.43 - 18.11.2026</div>
                             <div>&#8226; NEU: Steckbrief zeigt reale toedliche Unfaelle vor dem Spielstart (Motorsport Memorial, 10 Jahre nach letzter F1-Saison)</div>
                             <div class="font-bold text-slate-400">v0.9.21.42 - 18.11.2026</div>
                             <div>&#8226; NEU: Startnummern 1974-2013 nach Konstrukteurswertung der Vorsaison ohne 13, Einzelmelder mit Rennnummer</div>
@@ -4072,6 +4077,7 @@
     <script src="data/feeder-elo.js"></script>
     <script src="data/car-numbers.js"></script>
     <script src="data/fatal-accidents.js"></script>
+    <script src="data/konstanz.js"></script>
     <script>
 
         // === CUSTOM SVG FLAGS v0.8.7 ===
@@ -4471,7 +4477,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.43';
+        const VERSION = '0.9.21.44';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6852,6 +6858,67 @@
         // ⚠ Nicht ohne Messung anfassen — der Wert ist die staerkste einzelne
         //   Stellschraube der Ergebnisstreuung.
         const BAD_DAY_PACE_FACTOR = 0.70;
+
+        // ── KONSTANZ-MODELL A (Nutzer 22./23.11.2026, BEFUNDE.md „Konstanz aus F1DB neu“) ──────────
+        // Konstanz K = Anteil der Rennen OHNE Ausreißer: K 95 → 5 % Ausreißer, K 66 → 34 %. Ein Ausreißer ist ein
+        // schlechter Tag (Pace × schlechterTag) oder ein eigener Unfall. Die Konstanz wirkt NUR noch über die
+        // Häufigkeit; das Rauschen ist Rennglück und für alle gleich (vorher senkte hohe Konstanz zusätzlich das
+        // Rauschen → K ≥ 90 streute im Ziel 30 % zu wenig, tests/streuung-feld.js).
+        // • fahrerUnfall: Anteil der Unfall-Ausfälle, die beim Fahrer liegen (F1DB: Accident/Spun off ganz,
+        //   Collision halb ≈ 0,8). Dieser Teil kommt nur noch aus schlechten Tagen, verteilt nach (100 − K);
+        //   die Summe je Rennen bleibt die der Ära (dnfWahrscheinlichkeit), der Rest trifft alle gleich.
+        // • qualiKopplung: ein Quali-Ausreißer erhöht das Risiko im Rennen um diesen Faktor, der Rest wird so
+        //   gesenkt, dass jede Session für sich (100 − K) % behält. F1DB 1980–2025: 27,5 % nach Quali-Einbruch,
+        //   10,7 % ohne, im Mittel 13 % → ≈ 2,1.
+        // aktiv seit v0.9.21.44 (Nutzer 23.11.2026); aktiv:false = altes Modell (Vergleich: SIMCORE_PATCH).
+        // • Ein schlechter Tag im Rennen = Platzverlust verlustMin..verlustMax (sicher sichtbar) + Pace × schlechterTag;
+        //   der pauschale Zwischenfall (PLATZVERLUST, sonst 20 % aller Fahrer) schrumpft auf `zwischenfall`.
+        //   Grund: als reiner Pace-Abzug wurde nur jeder dritte schlechte Tag im Ziel sichtbar (BEFUNDE 23.11.2026).
+        // • teamForm*: Wochenendform des AUTOS (beide Teamkollegen gleich, ±). Liegt die Strecke dem Wagen nicht, startet
+        //   auch der Dominator weiter hinten — gegen den Teamkollegen unsichtbar, also kein Konstanz-Ausreißer.
+        // Werte = Variante A4 (BEFUNDE 23.11.2026): Rauschen 6/5, schlechter Tag ohne Pace-Abzug (nur Platzverlust),
+        // Quali-Tag × 0,9, Zwischenfall 12 %, Auto-Form 7/3, Fahrer-Form 3/2 (statt WOCHENENDFORM 8/4), Unfallanteil 0,95.
+        const KONSTANZ_MODELL = { aktiv: true, rauschenRennen: 6, rauschenQuali: 5, schlechterTag: 1,
+                                  qualiTag: 0.9, verlustMin: 4, verlustMax: 9, zwischenfall: 0.12,
+                                  teamFormQuali: 7, teamFormRennen: 3, formFahrerQuali: 3, formFahrerRennen: 2,
+                                  fahrerUnfall: 0.95, qualiKopplung: 2.1 };
+        // Wochenendform des Fahrers: im Konstanz-Modell klein (der Rest kommt aus Ausreißern und Auto-Form)
+        const _formFahrer = s => KONSTANZ_MODELL.aktiv
+            ? (s === 'quali' ? KONSTANZ_MODELL.formFahrerQuali : KONSTANZ_MODELL.formFahrerRennen)
+            : WOCHENENDFORM[s];
+        // Konstanz eines generierten Fahrers nach der realen Verteilung (data/konstanz.js gegen PACE_RATINGS, 2 053
+        // Fahrer-Saisons): kaum an die Pace gebunden (Korrelation 0,20). Median 74–76, ab Pace 90 81; P10/P90 ≈ ±15.
+        // Summe dreier Gleichverteilungen ≈ Normalverteilung mit SD 12. Grenzen wie die Daten (30–95).
+        // Mitte = Median der Ära (REAL_KONSTANZ.aera: 1970er 70, 2010er 84) — mit festen 75 sank der Feld-Median nach
+        // dem Datenende von 81 auf 68–73, weil moderne Felder real konstanter sind. Nach dem Datenende: letztes Jahrzehnt.
+        function generierteKonstanz(pace) {
+            const aera = typeof REAL_KONSTANZ !== 'undefined' ? REAL_KONSTANZ.aera : null;
+            const dek = Math.floor((GAME_STATE.currentYear || 2000) / 10) * 10;
+            const basis = aera ? (aera[dek] ?? aera[Math.max(...Object.keys(aera).map(Number).filter(k => k <= dek))] ?? 75) : 75;
+            const m = basis + Math.max(0, (pace || 75) - 85) * 0.6;
+            return Math.round(Math.max(30, Math.min(95, m + (Math.random() + Math.random() + Math.random() - 1.5) * 24)));
+        }
+        // Wörtliche Konstanz aus data/konstanz.js (tools/build-consistency.js --spiel): Saisonwert, sonst Karriere.
+        // Nur mit KONSTANZ_MODELL.aktiv — sonst bleibt der alte Wert (SEASON_DATA / PACE_RATINGS[2]).
+        function konstanzFuer(histId, year, fallback) {
+            if (!KONSTANZ_MODELL.aktiv || typeof REAL_KONSTANZ === 'undefined' || !histId) return fallback;
+            const e = REAL_KONSTANZ.fahrer[histId];
+            return e ? (e[String(year)] ?? e.k) : fallback;
+        }
+        const _wochenendAusreisser = {};   // 'Jahr|raceIndex' → { driverId: { q: bool, r: bool|undefined } }
+        function wochenendAusreisser(raceIndex, driverId, session, kQuali, kRennen) {
+            const key = GAME_STATE.currentYear + '|' + raceIndex;
+            const m = _wochenendAusreisser[key] || (_wochenendAusreisser[key] = {});
+            const z = m[driverId] || (m[driverId] = { q: Math.random() < (100 - kQuali) / 100 });
+            if (session === 'quali') return z.q;
+            if (z.r === undefined) {
+                const p = Math.max(0, Math.min(1, (100 - kRennen) / 100));
+                const pNachQ = Math.min(1, KONSTANZ_MODELL.qualiKopplung * p);
+                const pSonst = p < 1 ? Math.max(0, (p - p * pNachQ) / (1 - p)) : 1;
+                z.r = Math.random() < (z.q ? pNachQ : pSonst);
+            }
+            return z.r;
+        }
 
         // Gewicht des Autos in der Renn-Performance. Die carSpeed-SPANNE im Feld ist
         // mit 28-36 Punkten breit genug (gemessen ueber alle Aeren), sie kam nur zu
@@ -11005,7 +11072,7 @@
                     currentPace: Math.max(60, currentPace),
                     potentialPace: potentialPace,
                     rain: 65 + Math.floor(Math.random() * 15),
-                    consistency: (() => {
+                    consistency: KONSTANZ_MODELL.aktiv ? generierteKonstanz(currentPace) : (() => {
                         // 90% innerhalb ±10 vom Pace, Rookies tendieren zu inkonstanter (−15..+5)
                         const base = Math.max(60, currentPace);
                         const outlier = Math.random() < 0.10;
@@ -11042,7 +11109,7 @@
                     currentPace: currentPace,
                     potentialPace: potentialPace,
                     rain: 70 + Math.floor(Math.random() * 15),
-                    consistency: (() => {
+                    consistency: KONSTANZ_MODELL.aktiv ? generierteKonstanz(currentPace) : (() => {
                         // 90% innerhalb ±10 vom Pace, 10% Ausreißer (±15..25)
                         const outlier = Math.random() < 0.10;
                         const off = outlier ? (Math.random()<.5?-1:1)*(15+Math.floor(Math.random()*11))
@@ -12401,7 +12468,7 @@
                         driver.pace        = _prSan[0];
                         driver.currentPace = _prSan[0];
                         driver.potentialPace = _prSan[1];
-                        if (_prSan[2] > 0) driver.consistency = _prSan[2];
+                        if (_prSan[2] > 0) driver.consistency = konstanzFuer(driver.histId, sanitized.currentYear, _prSan[2]);
                     }
                 }
             });
@@ -12415,7 +12482,7 @@
                         driver.pace        = _prSan[0];
                         driver.currentPace = _prSan[0];
                         driver.potentialPace = _prSan[1];
-                        if (_prSan[2] > 0) driver.consistency = _prSan[2];
+                        if (_prSan[2] > 0) driver.consistency = konstanzFuer(driver.histId, sanitized.currentYear, _prSan[2]);
                     }
                 });
             }
@@ -13344,7 +13411,10 @@
             // der Rookie-Skala wie die Feeder, die real nicht aufstiegen (vorher 74–92 — darueber lagen alle Feeder).
             const currentPace = _elo ? _elo[1] : 50 + Math.floor(Math.random() * 8);            // 50–57
             const potentialPace = _elo ? _elo[0] : currentPace + 4 + Math.floor(Math.random() * 5);
-            const con = Math.min(95, Math.max(45, currentPace + (Math.floor(Math.random() * 21) - 12)));
+            // KONSTANZ_MODELL: Konstanz kaum an die Pace gebunden (Junioren haben niedrige Pace → alte Formel zog den
+            // Feld-Median nach dem Datenende von 81 auf 68, Dauerlauf 23.11.2026)
+            const con = KONSTANZ_MODELL.aktiv ? generierteKonstanz(currentPace)
+                : Math.min(95, Math.max(45, currentPace + (Math.floor(Math.random() * 21) - 12)));
             return {
                 id: feederSlug(name),
                 histId: FEEDER_HIST_IDS[name] || null, name, team: null,
@@ -13613,7 +13683,7 @@
                 const _prSrc     = _prPool || _prDebut;
                 const _debutPace = _prSrc ? _prSrc[0] : (pace || 70);
                 const p   = _vorDebut ? preDebutPace(_debutPace, _histDebut, year) : _debutPace;
-                const con = (_prSrc && _prSrc[2] > 0) ? _prSrc[2] : (consistency || 70);
+                const con = konstanzFuer(resolvedHistId, year, (_prSrc && _prSrc[2] > 0) ? _prSrc[2] : (consistency || 70));
                 const _debutPot = _prSrc ? _prSrc[1] : Math.min(99, (pace || 70) + Math.floor(Math.random() * 12));
                 const pot = _vorDebut ? Math.max(p, preDebutPace(_debutPot, _histDebut, year)) : _debutPot;
                 return {
@@ -14940,7 +15010,7 @@
                     driver.pace = _prAssign[0];
                     driver.currentPace = _prAssign[0];
                     driver.potentialPace = _prAssign[1];
-                    if (_prAssign[2] > 0) driver.consistency = _prAssign[2];
+                    if (_prAssign[2] > 0) driver.consistency = konstanzFuer(driver.histId, GAME_STATE.currentYear, _prAssign[2]);
                 }
             }
 
@@ -15121,7 +15191,7 @@
                 const pr = (typeof PACE_RATINGS !== 'undefined')
                     ? (PACE_RATINGS[resolvedHistId]?.[String(newYear)] ?? null) : null;
                 const p   = pr ? pr[0] : (pace || 70);
-                const con = (pr && pr[2] > 0) ? pr[2] : (consistency || 70);
+                const con = konstanzFuer(resolvedHistId, newYear, (pr && pr[2] > 0) ? pr[2] : (consistency || 70));
                 const pot = pr ? pr[1] : Math.min(99, (pace || 70) + Math.floor(Math.random() * 12));
 
                 GAME_STATE.reservePool.push({
@@ -15265,7 +15335,7 @@
             }
             
             // Wochenend-Todeseinträge löschen
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]); Object.keys(_wochenendAusreisser).forEach(k => delete _wochenendAusreisser[k]);
             _liveRaceDeathFired = false;
 
             // Default deathRealism basierend auf Ära
@@ -15329,7 +15399,7 @@
             }
 
             // Wochenend-Todeseinträge löschen (damit Monte-Carlo-Sims frisch starten)
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]); Object.keys(_wochenendAusreisser).forEach(k => delete _wochenendAusreisser[k]);
             _liveRaceDeathFired = false;
 
             const eraDeathRate = getEraValue(ERA_DEATH_RATES, year);
@@ -15441,6 +15511,7 @@
                 const normalizedName = d.name.toLowerCase().trim();
                 if (nameToHistId[normalizedName]) {
                     d.histId = nameToHistId[normalizedName];
+                    d.consistency = konstanzFuer(d.histId, year, d.consistency);
                     // Markiere in allTimeStATS dass dieser Fahrer jetzt aktiv ist
                     if (GAME_STATE.allTimeStATS.drivers[d.histId]) {
                         GAME_STATE.allTimeStATS.drivers[d.histId].isLegend = false;
@@ -16106,6 +16177,14 @@
             // Rote Flagge: einmal je Rennen gewürfelt; Wirkung auf die Leistung erst ab 2000
             const _roteFlagge = Math.random() < roteFlaggeWahrscheinlichkeit(GAME_STATE.currentYear, isRain);
             const _roteFlaggeWirkt = _roteFlagge && GAME_STATE.currentYear >= RED_FLAG_WIRKUNG_AB;
+            // KONSTANZ_MODELL: Konstanz je Fahrer für dieses Rennen (nass: Regengeschick mischt mit) und Feld-Mittel
+            // der Ausreißer-Quote, damit der Fahrer-Unfallanteil je Rennen die Ära-Summe behält.
+            const _konstanzRennen = d => {
+                const k = d.consistency ?? 75;
+                return _regenArt ? k + ((d.rain ?? 75) - k) * RAIN_CONSISTENCY_WEIGHT[_regenArt] : k;
+            };
+            const _ausreisserFeld = activeDrivers.length
+                ? activeDrivers.reduce((s, d) => s + (100 - _konstanzRennen(d)) / 100, 0) / activeDrivers.length : 0.2;
 
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -16147,8 +16226,10 @@
                 const _consVal = _regenArt
                     ? _effCon + ((driver.rain ?? 75) - _effCon) * RAIN_CONSISTENCY_WEIGHT[_regenArt]
                     : _effCon;
-                const _isGoodDay = Math.random() < (_consVal / 100);
-                const _paceFactor = _isGoodDay ? 1.0 : BAD_DAY_PACE_FACTOR;
+                const _isGoodDay = KONSTANZ_MODELL.aktiv
+                    ? !wochenendAusreisser(raceIndex, driver.id, 'rennen', isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75), _consVal)
+                    : Math.random() < (_consVal / 100);
+                const _paceFactor = _isGoodDay ? 1.0 : (KONSTANZ_MODELL.aktiv ? KONSTANZ_MODELL.schlechterTag : BAD_DAY_PACE_FACTOR);
                 let performance = (
                     _effPace * _paceFactor * 0.45 +
                     (isRain ? 15 + ((driver.rain ?? 75) - 75) * 0.2 : 15) +   // Regen: Abweichung vom Niveau, kein pauschaler Verlust (s. RAIN_CONSISTENCY_WEIGHT)
@@ -16160,10 +16241,11 @@
                 // 0,692 statt real 0,733, Sieg ab P10 4,4 % statt 2,8 %). Gegen einen größeren
                 // Startplatz-Vorteil (_GRID_K 12) abgewogen: der traf trocken genauer, machte aber
                 // auch nasse Rennen zu geordnet (BEFUNDE.md 26.09.2026).
-                const _halfVar = 4 + (100 - _consVal) * 0.07;
+                const _halfVar = KONSTANZ_MODELL.aktiv ? KONSTANZ_MODELL.rauschenRennen : 4 + (100 - _consVal) * 0.07;
                 // Teil davon ist Wochenendform (wirkt auch im Quali), Gesamtstreuung unverändert
-                performance += (Math.random() - 0.5) * 2 * formAnteilRauschen(_halfVar, WOCHENENDFORM.rennen)
-                             + wochenendForm(raceIndex, driver.id) * WOCHENENDFORM.rennen;
+                performance += (Math.random() - 0.5) * 2 * formAnteilRauschen(_halfVar, _formFahrer('rennen'))
+                             + wochenendForm(raceIndex, driver.id) * _formFahrer('rennen')
+                             + (KONSTANZ_MODELL.aktiv ? wochenendForm(raceIndex, 'team:' + driver.team) * KONSTANZ_MODELL.teamFormRennen : 0);
                 if (_lotterie && Math.random() < RAIN_PARTIAL_LOTTERY.anteil) performance += RAIN_PARTIAL_LOTTERY.bonus;
                 if (_roteFlaggeWirkt && Math.random() < RED_FLAG_LOTTERY.anteil) performance += RED_FLAG_LOTTERY.bonus;
 
@@ -16215,6 +16297,17 @@
                 let dnfType = null;
                 if (_multiplier === 0) {
                     isDNF = false;
+                } else if (KONSTANZ_MODELL.aktiv) {
+                    // Technik + der Unfall-Teil, der alle gleich trifft; der Fahrer-Teil nur an schlechten Tagen,
+                    // je Ausreißer mit Wahrscheinlichkeit Fahrer-Unfall ÷ Feld-Ausreißerquote (Ära-Summe bleibt).
+                    const _unfallFahrer = _dnfW.unfall * KONSTANZ_MODELL.fahrerUnfall;
+                    const _sonst = _dnfW.mech + _dnfW.unfall - _unfallFahrer;
+                    const _pEigen = !_isGoodDay && _ausreisserFeld > 0 ? Math.min(1, _unfallFahrer / 100 / _ausreisserFeld) : 0;
+                    if (Math.random() < _pEigen) { isDNF = true; dnfType = 'accident'; }
+                    else if (Math.random() < _sonst / 100) {
+                        isDNF = true;
+                        dnfType = Math.random() * _sonst < _dnfW.mech ? 'mechanical' : 'accident';
+                    }
                 } else {
                     isDNF = Math.random() < dnfPercent / 100;
                     dnfType = isDNF ? (Math.random() * _dnfW.gesamt < _dnfW.unfall ? 'accident' : 'mechanical') : null;
@@ -16275,7 +16368,8 @@
                         return pool[Math.floor(Math.random() * pool.length)];
                     })(),
                     status: isDNF ? (dnfType === 'heat' ? 'DNF (Heat)' : dnfType === 'mechanical' ? 'DNF (Mechanical)' : 'DNF (Accident)') : 'Finished',
-                    isGuest: driver.isGuest || false
+                    isGuest: driver.isGuest || false,
+                    ...(KONSTANZ_MODELL.aktiv && !_isGoodDay ? { schlechterTag: true } : {})   // → Platzverlust unten
                 });
             });
             
@@ -16329,11 +16423,22 @@
             // auf den letzten Punkteplatz: die Menge der Punktefahrer bleibt, nur die Reihenfolge ändert sich.
             let _nPunkte = 0;
             while (_nPunkte < _pitFinishers.length && getPointsForPosition(_nPunkte + 1, GAME_STATE.currentYear) > 0) _nPunkte++;
-            for (const _o of _pitFinishers.filter(() => Math.random() < PLATZVERLUST.p)) {
+            // KONSTANZ_MODELL: der pauschale Zwischenfall schrumpft auf `zwischenfall`; der schlechte Tag eines Fahrers
+            // kostet sicher verlustMin..verlustMax Plätze, ohne Punkte-Grenze (ein Ausreißer darf aus den Punkten fallen).
+            const _pZwischenfall = KONSTANZ_MODELL.aktiv ? KONSTANZ_MODELL.zwischenfall : PLATZVERLUST.p;
+            for (const _o of _pitFinishers.filter(() => Math.random() < _pZwischenfall)) {
                 const _i = _pitFinishers.indexOf(_o), _d = 1 + Math.floor(Math.random() * PLATZVERLUST.max);
                 const _grenze = _i < _nPunkte ? _nPunkte - 1 : _pitFinishers.length - 1;
                 _pitFinishers.splice(_i, 1);
                 _pitFinishers.splice(Math.min(_grenze, _i + _d), 0, _o);
+            }
+            if (KONSTANZ_MODELL.aktiv) {
+                for (const _o of _pitFinishers.filter(r => r.schlechterTag)) {
+                    const _i = _pitFinishers.indexOf(_o);
+                    const _d = KONSTANZ_MODELL.verlustMin + Math.floor(Math.random() * (KONSTANZ_MODELL.verlustMax - KONSTANZ_MODELL.verlustMin + 1));
+                    _pitFinishers.splice(_i, 1);
+                    _pitFinishers.splice(Math.min(_pitFinishers.length, _i + _d), 0, _o);
+                }
             }
             const _pitDnfs = results.filter(r => r.dnf);
             results.length = 0;
@@ -17322,18 +17427,22 @@
                 if (!team) return;
 
                 // Qualifying Performance – Konstanz noch als Varianz (Quali-Spezialfall folgt später)
+                const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
+                // KONSTANZ_MODELL: Quali-Ausreißer mit (100 − K) %, an das Rennen gekoppelt (wochenendAusreisser)
+                const _qAusreisser = KONSTANZ_MODELL.aktiv && wochenendAusreisser(raceIndex, driver.id, 'quali', _qConsVal, _qConsVal);
                 let qualiPerformance = (
-                    driver.pace * 0.60 +
+                    driver.pace * (_qAusreisser ? KONSTANZ_MODELL.qualiTag : 1) * 0.60 +
                     (isRain ? driver.rain * 0.2 : 15) +
                     team.carSpeed * 0.25
                 );
-                const _qConsVal = isRain ? (driver.rain ?? 75) : (driver.consistency ?? 75);
-                const _qHalfVar = 8 + (100 - _qConsVal) * 0.08; // ±8..16 (Minimum erhöht für mehr Pole-Vielfalt)
+                const _qHalfVar = KONSTANZ_MODELL.aktiv ? KONSTANZ_MODELL.rauschenQuali
+                    : 8 + (100 - _qConsVal) * 0.08; // ±8..16 (Minimum erhöht für mehr Pole-Vielfalt)
                 // Teil davon ist Wochenendform (wirkt auch im Rennen), Gesamtstreuung unverändert
                 // Ab 2000 streut das Quali insgesamt weniger (ERA_QUALI_STREUUNG), Form und Rest gleichermaßen
                 qualiPerformance += getEraValue(ERA_QUALI_STREUUNG, GAME_STATE.currentYear)
-                                  * ((Math.random() - 0.5) * 2 * formAnteilRauschen(_qHalfVar, WOCHENENDFORM.quali)
-                                     + wochenendForm(raceIndex, driver.id) * WOCHENENDFORM.quali);
+                                  * ((Math.random() - 0.5) * 2 * formAnteilRauschen(_qHalfVar, _formFahrer('quali'))
+                                     + wochenendForm(raceIndex, driver.id) * _formFahrer('quali')
+                                     + (KONSTANZ_MODELL.aktiv ? wochenendForm(raceIndex, 'team:' + driver.team) * KONSTANZ_MODELL.teamFormQuali : 0));
                 // Sonderrunde: 6% Chance auf außergewöhnliche Runde (perfektes Reifenfenster, ideale Abstimmung)
                 if (Math.random() < 0.06) qualiPerformance += Math.random() * 12;
                 
@@ -19029,6 +19138,15 @@
                 '🔧 Runde {lap}: {driver} kommt herein – und verliert an der Box mehr Zeit als geplant.',
                 '🔧 Runde {lap}: Missglückter Halt für {driver}, Platz {pos} ist so kaum zu halten.',
                 '🔧 Runde {lap}: Die Strategie geht für {driver} nicht auf – der Halt kommt zur falschen Zeit.'
+            ]),
+            // Schlechter Tag (KONSTANZ_MODELL): der Grund für den Platzverlust laut Plan. Ära-neutral, kein Pronomen.
+            fahrfehler: (z => ({ e50: z, e62: z, e76: z, e94: z, e10: z }))([
+                '🌀 Runde {lap}: Dreher von {driver}! Der {team} steht kurz quer, mehrere Plätze sind weg.',
+                '🌀 Runde {lap}: {driver} verbremst sich und rutscht über die Auslaufzone – das kostet Plätze.',
+                '🌀 Runde {lap}: Ausritt für {driver}! Zurück auf der Strecke, aber weit hinter der Gruppe.',
+                '🌀 Runde {lap}: {driver} findet heute keinen Rhythmus – ein Fehler in der Schikane wirft ihn zurück.',
+                '🌀 Runde {lap}: Kleiner Fehler, große Wirkung: {driver} verliert in einer Runde gleich mehrere Positionen.',
+                '🌀 Runde {lap}: {driver} kommt von der Ideallinie ab – die Verfolger ziehen vorbei.'
             ]),
             pit_gut: (z => ({ e50: z, e62: z, e76: z, e94: z, e10: z }))([
                 '🔧 Runde {lap}: Blitzsauberer Halt für {driver} – die {team}-Mannschaft arbeitet perfekt.',
@@ -20726,8 +20844,12 @@
                 p.totalTime = lap * _basisRunde + _rang * _abstandProRang;
 
                 const _stopp = _stopps.find(s => s.runde === lap);
-                p.isPitting = !!_stopp;
-                if (_stopp) {
+                p.isPitting = !!_stopp && _stopp.art !== 'fehler';
+                if (_stopp && _stopp.art === 'fehler') {
+                    const _team = GAME_STATE.teams.find(t => t.id === p.team);
+                    addLiveEvent(liveLine('fahrfehler', { driver: p.name, team: _team ? _team.name : p.teamName, lap, totalLaps,
+                        pos: idx + 1, year: GAME_STATE.currentYear }), 'warning');
+                } else if (_stopp) {
                     p.stopps++;
                     // Plätze, die DIESER Stopp laut Plan kostet (+) oder bringt (−)
                     const _sprung = (p._zielRang - p._startRang) * (1 - TICKER_STARTRUNDE_WEG) * _a / _stopps.length;
@@ -20917,7 +21039,8 @@
                     _wirdDnf: !!r.dnf,
                     _dnfTyp: r.dnfType || null,
                     _dnfGrund: r.reasonRetired || r.dnfReason || null,
-                    _fatal: !!r.fatal
+                    _fatal: !!r.fatal,
+                    _fahrfehler: !!r.schlechterTag   // KONSTANZ_MODELL: schlechter Tag → im Ticker als Fahrfehler erzählt
                 };
             });
 
@@ -20931,6 +21054,14 @@
                 // Boxenstopps je Ära (TICKER_STOPPS), Reparaturhalt für große Verlierer, keiner nach dem Ausfall
                 p._stopps = tickerStoppPlan(liveRaceState.totalLaps, GAME_STATE.currentYear,
                     p._zielRang - p._startRang, p._dnfLap);
+                // Schlechter Tag (KONSTANZ_MODELL) – REINE DARSTELLUNG: die Plätze, die er laut Plan verliert, gehen in
+                // einer Runde verloren, und der Ticker nennt den Grund (Dreher, Ausritt, Verbremser). Wie ein Stopp-Sprung.
+                if (p._fahrfehler && !p._wirdDnf) {
+                    const _n = liveRaceState.totalLaps, _belegt = new Set(p._stopps.map(x => x.runde));
+                    let _r = 0;
+                    for (let _v = 0; _v < 20 && (!_r || _belegt.has(_r)); _v++) _r = Math.max(2, Math.round(_n * (0.15 + Math.random() * 0.7)));
+                    if (_r && !_belegt.has(_r)) { p._stopps.push({ runde: _r, art: 'fehler' }); p._stopps.sort((a, b) => a.runde - b.runde); }
+                }
             });
 
             // Start in Grid-Reihenfolge
@@ -27839,7 +27970,7 @@
             GAME_STATE.seasonDeaths = [];      // Reset für neue Saison
             GAME_STATE.seasonRetirements = []; // Reset für neue Saison
             delete GAME_STATE._titleClinch;    // v0.9.15.79: Titel-Meldung gilt pro Saison
-            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]);
+            Object.keys(_weekendDeath).forEach(k => delete _weekendDeath[k]); Object.keys(_weekendWetter).forEach(k => delete _weekendWetter[k]); Object.keys(_weekendForm).forEach(k => delete _weekendForm[k]); Object.keys(_wochenendAusreisser).forEach(k => delete _wochenendAusreisser[k]);
             
             // === INDY-500 REGEL: Ab 1961 verschwinden alle Indy-only Teams und Fahrer ===
             // Das Indianapolis 500 zählte nur 1950-1960 zur F1-WM
@@ -27929,6 +28060,7 @@
                         driver.currentPace  = pr[0];
                         driver.potentialPace = pr[1];
                         if (pr[2] > 0) driver.consistency = pr[2];
+                        driver.consistency = konstanzFuer(driver.histId, newYear, driver.consistency);
                         // carSpeed bleibt am Team – simulateRace löst über _effCarSpeed auf
                         // Saisonstart ca. März = Jahr + 2/12
                         driver._lastPaceDate = newYear + (2 / 12);
@@ -28272,7 +28404,7 @@
                                     if (_prNow) {
                                         nd.pace = _prNow[0]; nd.currentPace = _prNow[0];
                                         nd.potentialPace = _prNow[1];
-                                        if (_prNow[2] > 0) nd.consistency = _prNow[2];
+                                        if (_prNow[2] > 0) nd.consistency = konstanzFuer(nd.histId, newYear, _prNow[2]);
                                         nd._lastPaceDate = newYear + (2 / 12);
                                     }
                                 }

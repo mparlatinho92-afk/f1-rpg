@@ -21,7 +21,6 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Anregungen aus diesem Fremd-Projekt: https://claude.ai/chat/0ce1c8c7-5e84-4efd-9ad4-81236b4f516e
-- ✚ Fahrfehler-Mechanik. Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit
 
 ---
 
@@ -215,9 +214,6 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 - Erfahrung soll andere Werte mitbestimmen
 - Persönlichkeit beeinflusst Verträge und Reaktionen auf WM-Stand/Ausfälle → Rücktritt oder Rauswurf als Folge
-- **Konstanz neu berechnen:** aus F1DB Häufigkeit, Schwere und Dauer der Konstanz-Einbrüche (ohne Konstrukteurswechsel)
-  plus Gründe, z. B. Oscar Piastri nach Baku 2025 oder schwere Crashes. Getrennt von Pace-Abbau (Alter, Crash) und
-  Form-Schwankungen
 - ❌ **Einzelfahrer falsch gewichtet** (Sheet 2026-11-18), Befunde aus den Daten (18.11.2026):
   - **Tim Tramnitz viel zu oft Top-Talent** (real nie einer der Top-Kandidaten), **Joshua Dürksen** ebenso
     (Sheet-Nachtrag 18.11.2026): beide `FEEDER_ELO` Potenzial 98. Ursache (BEFUNDE 18.11.2026): `tools/junior-elo.js`
@@ -234,7 +230,9 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
     1,7 statt real 2,6, Podium 56 statt 43 %, Siege 35 statt 27 %, Titel in 41 % der Saisons (real 3 von 9). Kein
     Stewart-Einzelfall: Clark 1,6 statt 2,5, Prost 1,6 statt 2,1, Lauda 2,1 statt 2,6 — den Spitzenfahrern fehlen die
     schwachen Zielankünfte (P4–P11). Gleiches Muster wie der offene Punkt „Dominator von vorn zu selten P4+“
-    (BEFUNDE 18.10.2026 (3)). Fix gehört in `simulateRace`, nicht in Stewarts Werte
+    (BEFUNDE 18.10.2026 (3)). Fix gehört in `simulateRace`, nicht in Stewarts Werte. **Code-Fix v0.9.21.44** (s. ❔
+    „Konstanz wörtlich“): Ursache war die Konstanz selbst, nicht Stewart — sie senkte zusätzlich das Rauschen. Streuung
+    Spiel ÷ real jetzt 0,90–1,05 in allen Konstanz-Gruppen (vorher 0,70 bei Konstanz ≥ 90). Tramnitz/Antonelli offen
 
 ### Namen
 - **Namens-Pakete für Fahrerinnen je Nation:** Frauen sind selten, Wiederholungen fallen kaum auf. Frauen-Wahrscheinlichkeit
@@ -271,6 +269,19 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
+- **Konstanz wörtlich aus F1DB** (Fix-Liste „Konstanz neu berechnen“; Nutzer 22./23.11.2026). Code-Fix v0.9.21.44:
+  Konstanz K = Anteil der Rennen ohne Ausreißer (K 95 = 5 %), aus F1DB gegen die Teamkollegen-Paare gemessen
+  (Rennstall + Konstrukteur, mehrere Kollegen gemittelt, Glättung Saison → Karriere → Feld; `tools/build-consistency.js`
+  → `data/konstanz.js`), Grenzen 30–95 (keine Hyper-Konstanz). Ein schlechter Tag kostet sicher 4–9 Plätze oder endet im
+  eigenen Unfall; Rauschen für alle gleich; Auto-Form je Wochenende für beide Teamkollegen; generierte Fahrer nach realer
+  Verteilung mit Ära-Median. Dominator DNF 23 → 21 % (real 16), Streuung 0,90–1,05 (BEFUNDE 23.11.2026). Offen: Fahrer
+  mit F1DB-Konstanz um 63 wirken im Spiel wie 71; Feinwerte aus 2 Läufen je Jahr
+- **Fahrfehler-Mechanik** (Sheet: „Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit
+  ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit“). Code-Fix v0.9.21.44: gemessen aus
+  jolpica-Runden 1996–2024 × F1DB-Boxenstopps (`tests/fahrfehler-real.js`): Dreher/Ausritt ohne Ausfall (≥ 3 Plätze in
+  einer Runde ohne Box) in 3,3 % der Fahrer-Rennen, kaum an die Konstanz gebunden → pauschaler Zwischenfall. Eigene
+  Unfälle kommen jetzt aus schlechten Tagen (95 % der Unfall-Ausfälle, verteilt nach 100 − Konstanz, Ära-Summe bleibt).
+  Der Ticker erzählt den schlechten Tag als Fahrfehler (Dreher, Ausritt, Verbremser)
 - **Reale tödliche Unfälle im Steckbrief.** Code-Fix v0.9.21.43 (Sheet 2026-11-18; Nutzer: Quelle Motorsport Memorial,
   10-Jahres-Fenster nach der letzten F1-Saison, natürlicher Tod unsichtbar): `data/fatal-accidents.js` aus
   `tools/build-fatal-accidents.js` — 143 F1DB-Kandidaten, 117 mit MM-Eintrag (Rennen 72, Training 15, Quali 9,
