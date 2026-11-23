@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.44, Prüfdatum **2026-11-23** (vorher 2026-11-18 @ v0.9.21.43). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.45, Prüfdatum **2026-11-23** (vorher 2026-11-23 @ v0.9.21.44). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -271,7 +271,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 - **Spielstand-Check Thackwell / Berger** (Sheet 2026-11-23: „Spielstand-Check: Mike Thackwell. siehee downloads-ordner.
   gerhard berger karriereende aber trootzdeem seelbes team verpflliichtet“; Nutzer: „der ewige nutzlose Privateer … Berger
-  Karriereende kommt aber wieder zurück … im Prinzip alle genannten Punkte“). Code-Fix (nach v0.9.21.44), Spielstände
+  Karriereende kommt aber wieder zurück … im Prinzip alle genannten Punkte“). Code-Fix v0.9.21.45, Spielstände
   F1RPG_1980–1988 vom 20.11.: (1) **Ewiger Privateer:** ohne Start in der Saison lieferte `evaluateDriverPerformance` nichts,
   die Vertragsschleife brach ab → Thackwell blieb mit Vertrag bis 1981 bis 1985 bei Tyrrell. Jetzt „Nicht verlängert (ohne
   Einsatz)“ → Free Agent (Besitzer-Fahrer ausgenommen). (2) **Karriereende und Rückkehr:** `initReservePool` kannte nur

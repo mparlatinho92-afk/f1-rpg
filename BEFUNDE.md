@@ -47,6 +47,24 @@ versehentlich zurück.
 
 ---
 
+## Ewiger Privateer, Rückkehr nach Karriereende (Spielstände 1980–1988, 23.11.2026)
+
+Spielstände des Nutzers `F1RPG_1980…1988_2026-11-20` (Downloads), Werkzeug: Stand laden (`sanitizeGameState` mit
+`core.history` aus den Saison-Zeilen), Saisons weiterspielen.
+- **Thackwell, ewiger Privateer:** Tyrrell-Privateer mit EINEM geplanten Rennen je Jahr, Vertrag bis 1981, 1982–85
+  weiter im Team. Ursache: ohne Start keine Bewertung (`evaluateDriverPerformance` → null), die Vertragsschleife brach
+  mit `return` ab. Erzwungener Fall (Vertrag 1985, kein fahrbares Rennen): jetzt „Nicht verlängert (ohne Einsatz)“ → Pool.
+- **Rückkehr nach Karriereende:** `initReservePool` (jede Saison) kannte nur Feld + Pool; Zurückgetretene fallen beim
+  Saisonwechsel aus dem Feld → galten als unbekannt → neu angelegt (Thackwell: Karriereende 1985, 1988 aktiv im Pool,
+  neue ID `reserve-MIKETH-…`). Im Stand 1985 lagen **7** Zurückgetretene im Pool, nach einem Saisonwechsel 0; bis 1989
+  keine Rückkehr. `autoAddNewDrivers`/`showNewDriversModal` prüften über `history[].drivers` — HEAVY, bei Lazy Loading leer.
+- ⚠ **Messfalle Kurz-ID:** Rücktritts-Einträge echter Fahrer nur über `histId` abgleichen (Kurz-IDs mehrdeutig:
+  JACKIE = Stewart und Oliver); frische `seasonRetirements` tragen die histId erst nach dem Archivieren.
+- ⚠ **Messfalle Laden:** `sanitizeGameState` gibt abgelaufenen Verträgen beim Laden einen neuen (Thackwell 1981 → 1988).
+  Wer den Privateer-Fall am geladenen Stand prüft, sieht ihn deshalb nicht — erzwingen.
+- **Beobachtung:** zu Saisonbeginn 1–3 Fahrer mit Vertrag des Vorjahrs im Feld (Sitzfüller nach der Vertragsphase),
+  werden zum nächsten Saisonende normal bearbeitet.
+
 ## Konstanz aus F1DB neu (Plan A, Schritt 1, 23.11.2026)
 
 **Definition (Nutzer):** K = Anteil der Rennen ohne Ausreißer (K 95 = 5 %). Ausreißer = eigener Fehler-Ausfall
@@ -125,6 +143,12 @@ Rennen ±3) statt großer Fahrer-Form, Quali-Rauschen 5, Quali-Tag × 0,9.
   Saisonwechsel, Laden ×2, Einsetzen, Reserve-Pool ×2, neuer Fahrer) — sonst überschrieb der alte Wert den neuen.
 - Ticker-Parität 40/40 mit und ohne Modell. Der schlechte Tag wird im Ticker als Fahrfehler erzählt (Dreher, Ausritt,
   Verbremser) — reine Darstellung, ein Sprung wie beim Boxenstopp.
+
+**Langer Lauf v0.9.21.44 (Modell an, 23.11.2026):** `tests/lauf-vakuum-lang.cmd` = `vakuum-batch --alle 2 5 --regen
+--quali`, 38 Saisons × 5 Läufe, Laufzeit ≈ 1 Minute (nicht 20–30). Trocken / teilw. / durchg. **0,725 / 0,666 / 0,699**
+(real 0,733 / 0,643 / 0,683) · Dominator DNF 17,0 % · von vorn 58 / 26 / 16 (real 64 / 21 / 14) · von P4+ 28 / 32 / 40
+(real 25 / 31 / 44) · startet P4+ 17,6 % (22,7) · Punktefahrer 1,90 / +1,21 · ▶ **offen: starkes Drittel −3,94 Pp**
+(Betrag 6,52), schwaches +0,42. Im kurzen Lauf A4 waren es −1,55 — der kurze Lauf unterschätzte die Lücke.
 
 **Fahrfehler ohne Ausfall, real** (`tests/fahrfehler-real.js`, jolpica-Runden 1996–2024 × F1DB-Boxenstopps): Verlust
 ≥ 3 Plätze in einer Runde ohne Box, nicht Runde 1 → **3,3 % der Fahrer-Rennen**, in jedem Jahrzehnt gleich (3,2–3,5).
