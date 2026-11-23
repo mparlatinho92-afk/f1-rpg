@@ -21,7 +21,6 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Anregungen aus diesem Fremd-Projekt: https://claude.ai/chat/0ce1c8c7-5e84-4efd-9ad4-81236b4f516e
-- ✚ Spielstand-Check: Mike Thackwell. siehee downloads-ordner. gerhard berger karriereende aber trootzdeem seelbes team verpflliichtet
 
 ---
 
@@ -270,6 +269,19 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
 
 ## ❔ Unklar — nur mit Spielstand prüfbar
 
+- **Spielstand-Check Thackwell / Berger** (Sheet 2026-11-23: „Spielstand-Check: Mike Thackwell. siehee downloads-ordner.
+  gerhard berger karriereende aber trootzdeem seelbes team verpflliichtet“; Nutzer: „der ewige nutzlose Privateer … Berger
+  Karriereende kommt aber wieder zurück … im Prinzip alle genannten Punkte“). Code-Fix (nach v0.9.21.44), Spielstände
+  F1RPG_1980–1988 vom 20.11.: (1) **Ewiger Privateer:** ohne Start in der Saison lieferte `evaluateDriverPerformance` nichts,
+  die Vertragsschleife brach ab → Thackwell blieb mit Vertrag bis 1981 bis 1985 bei Tyrrell. Jetzt „Nicht verlängert (ohne
+  Einsatz)“ → Free Agent (Besitzer-Fahrer ausgenommen). (2) **Karriereende und Rückkehr:** `initReservePool` kannte nur
+  Feld und Pool, Zurückgetretene galten nach dem Saisonwechsel als unbekannt und wurden neu angelegt (Thackwell: Karriereende
+  1985, 1988 aktiv im Pool). Jetzt `karriereVorbeiSets` (history-Rücktritte + Tode) in allen drei Pool-Wegen, dazu
+  Aufräumen je Saison wie bei Toten (Stand 1985: 7 → 0). (3) **Entlassung ≠ Karriereende:** Berger (1984 bei Spirit
+  entlassen, danach Alfa Romeo) stand als Abgang da; Entlassene mit Cockpit fallen jetzt heraus, sonst eigene Zeile
+  „Entlassen“. (4) **Off-Season-Fenster vollständig verlinkt** (Nutzer-Ergänzung): alle Fahrer und Teams, auch in
+  Rückblick und Vorschau; der Steckbrief öffnet über dem Fenster, „Zurück“ führt wieder hin (Fenster im Verlauf).
+  Geprüft im Browser: 22 Fahrer-, 23 Teamlinks, kein Name ohne Link; Klick → Zurück → Vor stimmt
 - **Konstanz wörtlich aus F1DB** (Fix-Liste „Konstanz neu berechnen“; Nutzer 22./23.11.2026). Code-Fix v0.9.21.44:
   Konstanz K = Anteil der Rennen ohne Ausreißer (K 95 = 5 %), aus F1DB gegen die Teamkollegen-Paare gemessen
   (Rennstall + Konstrukteur, mehrere Kollegen gemittelt, Glättung Saison → Karriere → Feld; `tools/build-consistency.js`

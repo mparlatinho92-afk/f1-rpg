@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.44</title>
+    <title>F1 RPG v0.9.21.45</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,12 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.44 (aktuell) - 23.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.45 (aktuell) - 23.11.2026</div>
+                            <div>&#8226; FIX: Fahrer ohne Start blieb mit abgelaufenem Vertrag ewig im Team</div>
+                            <div>&#8226; FIX: zurueckgetretene Fahrer kamen ueber den Reserve-Pool zurueck</div>
+                            <div>&#8226; FIX: Entlassene mit neuem Cockpit standen unter Karriereende</div>
+                            <div>&#8226; NEU: Off-Season-Fenster verlinkt alle Fahrer und Teams, Zurueck fuehrt wieder ins Fenster</div>
+                            <div class="font-bold text-slate-400">v0.9.21.44 - 23.11.2026</div>
                             <div>&#8226; NEU: Konstanz = Anteil Rennen ohne Ausreisser (aus F1DB, Teamkollegen-Vergleich)</div>
                             <div>&#8226; NEU: schlechter Tag kostet Plaetze oder endet im eigenen Unfall, Ticker erzaehlt Fahrfehler</div>
                             <div>&#8226; NEU: Auto-Form je Wochenende fuer beide Teamkollegen</div>
@@ -23159,7 +23164,7 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.44';
+        const VERSION = '0.9.21.45';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -29562,7 +29567,10 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
             const neuBei = new Set((GAME_STATE.seasonTransfers || [])
                 .filter(t => t.toTeam && t.toTeam !== '–' && t.toTeam !== '-' && t.toTeam !== 'Free Agent')
                 .map(t => t.driverId));
-            return (GAME_STATE.seasonRetirements || []).filter(r => !(r.type === 'dismissed' && neuBei.has(r.driver)));
+            // Auch wer OHNE Transfer-Eintrag wieder fährt (Ersatz mitten in der Saison, Berger 1984: Spirit entlässt,
+            // Alfa Romeo holt ihn), ist kein Abgang (Nutzer 23.11.2026).
+            const faehrt = id => !!(GAME_STATE.drivers || []).find(d => d.id === id && d.team && (!d.status || d.status === 'active'));
+            return (GAME_STATE.seasonRetirements || []).filter(r => !(r.type === 'dismissed' && (neuBei.has(r.driver) || faehrt(r.driver))));
         }
         function teamAenderungenText(ch) {
             const z = [];
@@ -32217,6 +32225,16 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                 GAME_STATE.reservePool = GAME_STATE.reservePool.filter(d => !_istTot(d));
                 logWarning('POOL', `${_totRaus.length} verstorbene Fahrer aus dem Reserve-Pool entfernt`);
             }
+            // ZURÜCKGETRETENE RAUS, wie die Toten (23.11.2026): wer im Spiel seine Karriere beendet hat und trotzdem im
+            // Pool liegt (bis v0.9.21.44 legte initReservePool ihn neu an), wird entfernt. Vergangene Saisons bleiben.
+            {
+                const _kv = karriereVorbeiSets();
+                const _weg = GAME_STATE.reservePool.filter(d => d && (d.histId ? _kv.ids.has(d.histId) : _kv.ids.has(d.id)));
+                if (_weg.length) {
+                    GAME_STATE.reservePool = GAME_STATE.reservePool.filter(d => !_weg.includes(d));
+                    logWarning('POOL', `${_weg.length} zurückgetretene Fahrer aus dem Reserve-Pool entfernt: ${_weg.map(d => d.name).join(', ')}`);
+                }
+            }
 
             const knownNames = new Set([
                 ...GAME_STATE.drivers.map(d => d.name?.toLowerCase().trim()).filter(Boolean),
@@ -32225,6 +32243,11 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
             const seenHistIds = new Set(
                 GAME_STATE.reservePool.map(d => d.histId).filter(Boolean)
             );
+            // WER IM SPIEL SEINE KARRIERE BEENDET HAT, KOMMT NICHT ZURÜCK (23.11.2026). knownNames kennt nur Feld und
+            // Pool; Zurückgetretene fallen beim Saisonwechsel aus dem Feld und galten damit als unbekannt — Mike
+            // Thackwell, „Historisches Karriereende“ Ende 1985, lag 1988 wieder aktiv im Pool. Nur Entlassene
+            // ('dismissed') dürfen zurück, sie haben bloß den Sitz verloren. Tote ebenso raus.
+            { const _kv = karriereVorbeiSets(); _kv.namen.forEach(n => knownNames.add(n)); _kv.ids.forEach(i => seenHistIds.add(i)); }
 
             function isKnown(d) {
                 if (seenHistIds.has(d[0])) return true;
@@ -32627,6 +32650,29 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
         };
 
         // Entlassene Simulations-Fahrer in den Reserve-Pool aufnehmen (als Free Agent)
+        // Namen und histIds aller, die IM SPIEL ihre Karriere beendet haben oder gestorben sind (23.11.2026).
+        // Quelle: history[].retirements/deaths + laufende Saison — beide leicht, also auch bei Lazy Loading im
+        // Speicher (history[].drivers dagegen ist HISTORY_HEAVY und meist leer). Entlassene ('dismissed') fehlen
+        // bewusst: sie haben nur den Sitz verloren und dürfen zurück.
+        // namen: für die Abgleiche gegen historische Daten (SEASON_DATA/HIST_NAMES kennen nur Namen).
+        // ids: Fahrer-IDs UND histIds — zum Aufräumen des Pools nur diese, denn Namen generierter Fahrer wiederholen sich.
+        function karriereVorbeiSets() {
+            const namen = new Set(), ids = new Set();
+            for (const h of [...(GAME_STATE.history || []), { retirements: GAME_STATE.seasonRetirements, deaths: GAME_STATE.seasonDeaths }]) {
+                // Tote nur über den Namen (ihre Einträge tragen keine histId; im Pool räumt sie _istTot ab)
+                for (const t of (h.deaths || [])) if (t && t.name) namen.add(String(t.name).toLowerCase().trim());
+                for (const r of (h.retirements || []).filter(x => x && x.type !== 'dismissed')) {
+                    if (r.name) namen.add(String(r.name).toLowerCase().trim());
+                    // ⚠ Kurz-IDs echter Fahrer sind nicht eindeutig (JACKIE = Stewart UND Oliver) → bei echten nur histId
+                    // Frische Einträge (seasonRetirements) tragen die histId erst nach dem Archivieren → über das Feld holen
+                    const hid = r.histId || (r.driver && (GAME_STATE.drivers || []).find(d => d.id === r.driver)?.histId);
+                    if (hid) ids.add(hid);
+                    else if (r.driver) ids.add(r.driver);
+                }
+            }
+            return { namen, ids };
+        }
+
         function addDismissedToPool(driver) {
             if (!GAME_STATE.reservePool) GAME_STATE.reservePool = [];
             // v0.9.15.80 FIX: Wer seine KARRIERE beendet hat, gehört nicht in den Pool.
@@ -33352,6 +33398,8 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
         };
 
         function showOffSeasonModal(year) {
+            // Nur ein Fenster: der Verlauf ruft beim Zurückgehen erneut auf (s. NAV_OPENERS)
+            document.getElementById('offSeasonModal')?.remove();
             const hist = GAME_STATE.history || [];
             const hArchived = hist.find(x => x.year === year);
             const h = hArchived
@@ -33414,6 +33462,29 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                 ? `<div class="mb-5"><div class="text-xs font-bold uppercase tracking-wide text-tertiary mb-2 pb-1" style="border-bottom:1px solid var(--border-color)">${title}</div>${content}</div>`
                 : '';
 
+            // VERLINKUNG (Nutzer 23.11.2026: „sämtliche Fahrer und Teams im Off-Season-Fenster“). Der Steckbrief öffnet sich
+            // ÜBER dem Fenster (bringModalToFront > 9999), das Fenster bleibt offen — „Zurück“ führt wieder hierher.
+            const _esc = v => String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const _zu = '';
+            const dL = (id, name) => id && name
+                ? `<span class="driver-link cursor-pointer" onclick="${_zu}openDriverProfile('${_esc(id)}')">${name}</span>` : (name || '–');
+            const _keinTeam = n => !n || n === '–' || n === '-' || n === 'Free Agent';
+            const tL = name => _keinTeam(name) ? (name || '–')
+                : `<span class="team-link cursor-pointer" onclick="${_zu}openTeamProfile('${_esc(name)}')">${name}</span>`;
+            // Fließtext (Rückblick, Vorschau): bekannte Fahrer- und Teamnamen verlinken, längste zuerst, nur außerhalb von Tags
+            const _linkMap = new Map();
+            const _merke = (n, l) => { if (n && n.length >= 3 && !_linkMap.has(n)) _linkMap.set(n, l); };
+            for (const [id, st] of Object.entries(h.driverStandings || {})) if (st && st.name) _merke(st.name, dL(id, st.name));
+            for (const d of (GAME_STATE.drivers || [])) _merke(d.name, dL(d.id, d.name));
+            for (const st of Object.values(h.teamStandings || {})) if (st && st.name) _merke(st.name, tL(st.name));
+            for (const t of (GAME_STATE.teams || [])) _merke(t.name, tL(t.name));
+            const _reEsc = n => n.replace(/[.*+?^${}()|[\]\\]/g, m => '\\' + m);
+            const _reName = _linkMap.size
+                ? new RegExp('(' + [..._linkMap.keys()].sort((a, b) => b.length - a.length).map(_reEsc).join('|') + ')(?![A-Za-zÀ-ž])', 'g')
+                : null;
+            const verlinkeText = txt => !txt || !_reName ? txt
+                : String(txt).split(/(<[^>]+>)/).map(t => t.startsWith('<') ? t : t.replace(_reName, m => _linkMap.get(m) || m)).join('');
+
             // Fahrerbewegungen: nach Fahrer-ID gruppieren und Endzustand bestimmen
             // Zwischenzustände (released → Free Agent) werden mit dem Folge-Signing gemergt
             const txRaw = transfers.filter(t => t.driverName && t.type !== 'renewal');
@@ -33438,27 +33509,29 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                 const leavingF1 = !t.toTeam || t.toTeam === '–' || t.toTeam === '-' || t.type === 'dismissed';
                 const to   = (!leavingF1 && t.toTeam !== 'Free Agent') ? t.toTeam : null;
                 let emoji, detail;
+                // Ziel verlinkt, bei Umbenennung mit dem bisherigen Namen dazu
+                const _zielL = n => { const nn = teamNameAb(n, year + 1); return nn !== n ? `${tL(nn)} (bisher ${tL(n)})` : tL(n); };
                 if (leavingF1) {
                     emoji  = '✗';
-                    detail = `${from || '–'} → verlässt F1`;
+                    detail = `${tL(from)} → verlässt F1`;
                 } else if (!to) {
                     // released ohne Folge-Signing – ebenfalls verlässt F1
                     emoji  = '✗';
-                    detail = `${from || '–'} → verlässt F1`;
+                    detail = `${tL(from)} → verlässt F1`;
                 } else if (!from) {
                     const isRookie = t.isRookie || t.type === 'generated';
                     emoji  = isRookie ? '★' : '↩';
-                    detail = `${isRookie ? 'neu' : 'cockpitlos'} → ${_zielMitBisher(to)}`;
+                    detail = `${isRookie ? 'neu' : 'cockpitlos'} → ${_zielL(to)}`;
                 } else {
                     const knownArrow = ['⬆️','⬇️','↔️'].includes(t.typeEmoji);
                     emoji  = knownArrow ? t.typeEmoji : dirArrow(from, to);
-                    detail = `${from} → ${_zielMitBisher(to)}`;
+                    detail = `${tL(from)} → ${_zielL(to)}`;
                 }
-                return row(emoji, t.driverName, detail);
+                return row(emoji, dL(t.driverId, t.driverName), detail);
             }).join('');
 
             const renewHtml = transfers.filter(t => t.type === 'renewal' && t.driverName)
-                .map(t => row('📝', t.driverName, `${t.fromTeam || '–'}${t.fromTeam && teamNameAb(t.fromTeam, year + 1) !== t.fromTeam ? ' → ' + teamNameAb(t.fromTeam, year + 1) : ''} bis ${t.newContractEnd ?? '?'}`)).join('');
+                .map(t => row('📝', dL(t.driverId, t.driverName), `${tL(t.fromTeam)}${t.fromTeam && teamNameAb(t.fromTeam, year + 1) !== t.fromTeam ? ' → ' + tL(teamNameAb(t.fromTeam, year + 1)) : ''} bis ${t.newContractEnd ?? '?'}`)).join('');
             // Paket C: Nachruf/Abschied regenerieren — bevorzugt aus eingefrorenen
             // Feldern (histId/birthYear/obitStats, ab v0.9.14.42), sonst Live-Lookup-
             // Fallback für Alt-Saisons. Deterministisch → wortgleich mit dem
@@ -33479,14 +33552,24 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
             };
             // Pool-Tode tragen kein Team (v0.9.15.96) — statt einer leeren Spalte der
             // Ort, sonst stünde da nur ein Name ohne jeden Zusammenhang.
-            const deathHtml = deaths.map(d => row('💀', d.name || d,
-                d.fromPool ? `ohne Cockpit${d.raceName ? ' · ' + d.raceName : ''}` : (d.team || ''))
+            const deathHtml = deaths.map(d => row('💀', dL(d.driver || d.histId, d.name || d),
+                d.fromPool ? `ohne Cockpit${d.raceName ? ' · ' + d.raceName : ''}` : tL(d.team || ''))
                 + obitFor(d, 'death')).join('');
-            const retHtml   = retirements.map(r => row('🏁', r.name || r, r.team || '') + obitFor(r, 'retire')).join('');
+            // Entlassungen sind KEIN Karriereende (Nutzer 23.11.2026: „Berger Karriereende, kommt aber wieder zurück“).
+            // Wer schon in den Fahrerbewegungen steht oder wieder ein Cockpit hat, erscheint dort gar nicht.
+            const _bewegt = new Set(resolved.map(t => t.driverId).filter(Boolean));
+            const _hatCockpit = id => !!(GAME_STATE.drivers || []).find(d => d.id === id && d.team && (!d.status || d.status === 'active'));
+            const _retTyp = r => r.type === 'age' ? 'Alter' : r.type === 'gaveup' ? 'aufgegeben'
+                : r.type === 'other_series' ? (r.reason || 'andere Serie') : r.type === 'career_end' ? 'Karriereende' : (r.reason || '');
+            const retHtml   = retirements.filter(r => r && r.type !== 'dismissed')
+                .map(r => row('🏁', dL(r.driver || r.histId, r.name || r),
+                    `${(r.team || r.fromTeam) ? tL(r.team || r.fromTeam) + ' · ' : ''}${_retTyp(r)}`) + obitFor(r, 'retire')).join('');
+            const entlHtml  = retirements.filter(r => r && r.type === 'dismissed' && !_bewegt.has(r.driver) && !_hatCockpit(r.driver))
+                .map(r => row('🚫', dL(r.driver || r.histId, r.name), `${tL(r.fromTeam)} · entlassen${r.midSeason ? ' (Saisonmitte)' : ''}`)).join('');
             const teamHtml  = [
-                ...renames.map(r => row('🔄', r.von, `→ ${r.nach} (umbenannt, laufende Verträge bleiben)`)),
-                ...exits.map(n => row('🚫', n, 'ausgestiegen')),
-                ...entries.map(n => row('✅', n, 'eingestiegen'))
+                ...renames.map(r => row('🔄', tL(r.von), `→ ${tL(r.nach)} (umbenannt, laufende Verträge bleiben)`)),
+                ...exits.map(n => row('🚫', tL(n), 'ausgestiegen')),
+                ...entries.map(n => row('✅', tL(n), 'eingestiegen'))
             ].join('');
 
             // 📰 Paket B: Saison-Rückblick deterministisch regenerieren — NICHT gespeichert.
@@ -33505,7 +33588,7 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                     hArchived.driverStandings, hArchived.teamStandings,
                     hArchived.deaths || [], year,
                     { raceCount: hArchived.raceCount || 0, isRookieChampion: !!hArchived.championRookie }) : '';
-                if (recap) recapHtml = `<p class="text-sm leading-relaxed">${recap}</p>`;
+                if (recap) recapHtml = `<p class="text-sm leading-relaxed">${verlinkeText(recap)}</p>`;
             }
 
             // 🔮 Paket 4: Saison-Vorschau (Prognose) – nur für die tatsächlich anstehende Saison,
@@ -33513,10 +33596,10 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
             let previewHtml = '';
             if (year === GAME_STATE.currentYear) {
                 const _pv = buildSeasonPreview(year);
-                if (_pv) previewHtml = `<p class="text-sm leading-relaxed">${_pv}</p>`;
+                if (_pv) previewHtml = `<p class="text-sm leading-relaxed">${verlinkeText(_pv)}</p>`;
             }
 
-            const noData = !movHtml && !renewHtml && !deathHtml && !retHtml && !teamHtml && !recapHtml && !previewHtml;
+            const noData = !movHtml && !renewHtml && !deathHtml && !retHtml && !entlHtml && !teamHtml && !recapHtml && !previewHtml;
 
             const modal = document.createElement('div');
             modal.id = 'offSeasonModal';
@@ -33537,6 +33620,7 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                                 section('Vertragsverlängerungen', renewHtml),
                                 section('Todesfälle', deathHtml),
                                 section('Karriereenden', retHtml),
+                                section('Entlassen, ohne neues Cockpit', entlHtml),
                                 section('Teamveränderungen', teamHtml)
                               ].join('')
                         }
@@ -33842,6 +33926,7 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                 ...GAME_STATE.reservePool.map(d => d.name?.toLowerCase().trim()).filter(Boolean),
                 ...(GAME_STATE.history || []).flatMap(s => (s.drivers || []).map(d => d.name?.toLowerCase().trim())).filter(Boolean),
                 ...(GAME_STATE._recentlyRetiredNames || []),
+                ...karriereVorbeiSets().namen,   // history[].drivers ist bei Lazy Loading leer (23.11.2026)
                 ...(GAME_STATE.history || []).flatMap(s => (s.deaths || []).map(d => d.name?.toLowerCase().trim())).filter(Boolean),
                 ...(GAME_STATE.seasonDeaths || []).map(d => d.name?.toLowerCase().trim()).filter(Boolean)
             ]);
@@ -33906,7 +33991,8 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                 // Fahrer aus alten Saisons (zurückgetreten) ausschließen
                 ...(GAME_STATE.history || []).flatMap(s => (s.drivers || []).map(d => d.name?.toLowerCase().trim())).filter(Boolean),
                 // Fahrer die genau in dieser Saison zurückgetreten sind (v0.9.3)
-                ...(GAME_STATE._recentlyRetiredNames || [])
+                ...(GAME_STATE._recentlyRetiredNames || []),
+                ...karriereVorbeiSets().namen   // history[].drivers ist bei Lazy Loading leer (23.11.2026)
             ]);
 
             const sd = SEASON_DATA[String(newYear)] || SEASON_DATA[newYear];
@@ -44332,7 +44418,22 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
 
             expiredContracts.forEach(driver => {
                 const eval_ = evaluateDriverPerformance(driver.id);
-                if (!eval_) return;
+                // OHNE START IN DER SAISON keine Bewertung → früher `return`: der abgelaufene Vertrag blieb für immer
+                // stehen (Mike Thackwell, Privateer bei Tyrrell, Vertrag bis 1981, 1982–85 jedes Jahr ein geplantes
+                // Rennen ohne Start — Nutzer 23.11.2026 „der ewige nutzlose Privateer"). Jetzt: nicht verlängert,
+                // Free Agent. Treue Besitzer-Fahrer bleiben (sie verlassen ihr Team nie).
+                if (!eval_) {
+                    const _t = GAME_STATE.teams.find(t => t.id === driver.team);
+                    if (!_t || isLoyalOwnerDriver(driver, _t.histId || _t.id)) return;
+                    driver.team = null;
+                    driver.contractEnd = currentYear;
+                    driver._movedThisSeason = true;
+                    changes.push({ driverId: driver.id, driverName: driver.name, type: 'released', typeEmoji: '💼',
+                        typeText: 'Nicht verlängert (ohne Einsatz)', contractSource: 'expired',
+                        fromTeam: _t.name || '–', toTeam: 'Free Agent', score: null });
+                    logInfo('TRANSFER', `💼 ${driver.name} nicht verlängert bei ${_t.name} — kein Start in ${currentYear}`);
+                    return;
+                }
 
                 // Karriere-Blend: Pre-Sim-History + vergangene Saisons dämpfen kurzfristige Volatilität
                 const _cs = driver.careerScores || [];
@@ -49015,7 +49116,10 @@ const REAL_KONSTANZ = {"feld":75,"aera":{"1950":82,"1960":82,"1970":70,"1980":71
                 // Rücktritte
                 if (movements.retirements.length > 0) {
                     movementsHtml += '<div class="mb-3">';
-                    movementsHtml += '<div class="text-sm font-bold accent-gold mb-1">👋 Karriereende (' + movements.retirements.length + ')</div>';
+                    // Entlassene sind kein Karriereende: getrennt zählen (Nutzer 23.11.2026, Fall Berger)
+                    const _nEntl = movements.retirements.filter(r => r.type === 'dismissed').length;
+                    const _nEnde = movements.retirements.length - _nEntl;
+                    movementsHtml += '<div class="text-sm font-bold accent-gold mb-1">' + [_nEnde ? '👋 Karriereende (' + _nEnde + ')' : '', _nEntl ? '🚫 Entlassen (' + _nEntl + ')' : ''].filter(Boolean).join(' · ') + '</div>';
                     movements.retirements.forEach(r => {
                         const typeEmoji = r.type === 'age' ? '👴' : r.type === 'dismissed' ? '🚫' : r.type === 'gaveup' ? '😔' : r.type === 'career_end' ? '🏁' : r.type === 'other_series' ? '🛫' : '❓';
                         const typeText = r.type === 'age' ? 'Alter' : r.type === 'dismissed' ? 'Entlassen' : r.type === 'gaveup' ? 'Aufgegeben' : r.type === 'career_end' ? 'Karriereende' : r.type === 'other_series' ? (r.reason || 'andere Serie') : '';
@@ -63199,6 +63303,9 @@ Empfohlene Wertebereiche:
             openTeamProfile: 'teamProfileModal',
             openRaceDetails: 'raceDetailModal', openHistoricalRaceModal: 'raceDetailModal',
             showRuleDetail: 'ruleDetailModal',
+            // Off-Season-Fenster (23.11.2026): wird bei jedem Aufruf neu gebaut; ohne Eintrag hier vergaß der Verlauf es,
+            // und „Zurück“ aus einem Steckbrief sprang an ihm vorbei
+            showOffSeasonModal: 'offSeasonModal',
             openGameCircuitProfile: 'circuitGPProfileModal', openGameGPProfile: 'circuitGPProfileModal'
         };
         const NAV_MODALS = [...new Set(Object.values(NAV_OPENERS))];
