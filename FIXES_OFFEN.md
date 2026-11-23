@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.43, Prüfdatum **2026-11-18** (vorher 2026-11-18 @ v0.9.21.42). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.44, Prüfdatum **2026-11-23** (vorher 2026-11-18 @ v0.9.21.43). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -21,6 +21,7 @@ Status: ✅ erledigt · ◐ teilweise · ❌ offen · ❔ unklar (nur im Spiel p
 Im Sheet von Hand eingetragen, noch nicht eingeordnet. Beim nächsten Abgleich prüfen und einsortieren.
 
 - ✚ Anregungen aus diesem Fremd-Projekt: https://claude.ai/chat/0ce1c8c7-5e84-4efd-9ad4-81236b4f516e
+- ✚ Spielstand-Check: Mike Thackwell. siehee downloads-ordner. gerhard berger karriereende aber trootzdeem seelbes team verpflliichtet
 
 ---
 

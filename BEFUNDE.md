@@ -47,6 +47,92 @@ versehentlich zurück.
 
 ---
 
+## Konstanz aus F1DB neu (Plan A, Schritt 1, 23.11.2026)
+
+**Definition (Nutzer):** K = Anteil der Rennen ohne Ausreißer (K 95 = 5 %). Ausreißer = eigener Fehler-Ausfall
+(Accident, Spun off, Spin, Stalled, Push start, Illegal start … = 1; Collision/Collision damage = 0,5) oder Einbruch
+im Ziel (≥ 4 Plätze schlechter gegen die Teamkollegen als der Paar-Median der Saison). Werkzeug
+`tools/build-consistency.js [Schwelle]` → `tests/output/konstanz-f1db.json`. Noch nicht im Spiel.
+
+- **Team = Rennstall + Konstrukteur je Lauf** (`seasons-entrants-drivers.rounds`): race-results kennt nur den
+  Konstrukteur, Werks- und Privat-Cooper der 1960er wären sonst Teamkollegen.
+- **Paarweise:** jedes Paar mit eigenem Median (≥ 3 gemeinsame Zielankünfte), je Rennen Durchschnitt über alle
+  Kollegen. Glättung Saison → Karriere → Feld mit je 10 Pseudo-Rennen.
+- ⚠ **Messfallen (drei Fassungen):** (1) Fehler-Ausfälle immer zählen, Zielankünfte nur mit Kollegen → Ausfälle
+  übergewichtet, 1970–89 „23 % Fehler-Ausfälle". (2) Ausfälle nur mit Paar-Median → de Cesaris 1987 = 0 Rennen
+  (er und Patrese kamen kaum gemeinsam ins Ziel). (3) Nicht messbare Zielankunft als „normal" → 1950–69 41 % ≥ 90.
+  **Gewählt:** Rennen zählt, wenn ein Kollege gestartet ist; nicht messbare Zielankünfte (5 020 von 15 073) bekommen
+  die Feld-Einbruchquote 13,1 % als Erwartungswert. Der Rückfall auf den eigenen Saison-Median war zu ungenau
+  (35 % der Rennen, Masten Gregory 1960 = 97) → gestrichen.
+- **Ergebnis (Schwelle 4):** Feld-Mittel 78,5. Verteilung neu P5 63 · P50 78 · P95 89, 4 % ≥ 90 (alt 70 · 83 · 96,
+  21 % ≥ 90). Korrelation alt ↔ neu nur 0,39: das alte Perzentil maß zu großen Teilen das Auto.
+- **Je Ära (Median / Fehler-Ausfall je Rennen):** 1950–69 83 / 6,6 % · 1970–89 75 / 15,0 % · 1990–2009 77 / 13,5 %
+  · 2010–25 83 / 4,5 %.
+- **Proben neu (alt):** Hamilton 2015 94 (96) · Prost 1988 92 (98) · Verstappen 2023 89 (98) · Stewart 1969 89 (92)
+  · Senna 1988 79 (88) · Norris 2024 80 (79) · Pérez 2023 86 (79) · Grosjean 2012 70 (58) · Villeneuve 1981 64 (74)
+  · de Cesaris 1985 53 (71). Karriere unten: Katayama 54, de Cesaris 64, Diniz 64, Tambay 66; oben: Zhou 87,
+  Russell 87, Kubica 87, Hulme 87, Piastri 86, Verstappen 86.
+- ⚠ Die absolute Höhe hängt an der Schwelle. Endgültig erst nach Schritt 3 (dieselbe Messung auf simulierte Rennen).
+
+### Schritt 2/3: KONSTANZ_MODELL im Spiel einstellen (23.11.2026)
+
+Code in `index.html` hinter `KONSTANZ_MODELL.aktiv = false` (Spiel unverändert); Messung per `SIMCORE_PATCH`
+(`tests/output/konstanz-A3-patch.txt`). Werkzeug `tests/konstanz-abgleich.js` misst im Spiel wie `build-consistency.js`.
+
+- **Teamkollegen-Messung staucht** (KPAAR/KFIX-Proben): alle K 50 → gemessen 75, alle K 100 → 88 (Sockel aus
+  Fahrer-unabhängigem Zufall). Fahrer K 50 neben K 100: gemessen 72 / 89. Wer oft schwächelt, verschiebt den eigenen
+  Paar-Median — das gilt in F1DB genauso. → Für die **wörtliche** Lesart (Nutzer) werden die F1DB-Werte umgerechnet:
+  K = 84 + 1,6·(K_F1DB − 84), Grenzen 30–95 (`build-consistency.js --spiel 1.6 84 30 95` → `data/konstanz.js`).
+- **Negativergebnis Pace-Abzug:** ein schlechter Tag als Pace × 0,7 oder × 0,4 machte keinen messbaren Unterschied;
+  Schumacher 1995 mit K 0 landet Ø P6,1 statt P2,0 — gegen den Teamkollegen oft unter der Schwelle. Nur jeder dritte
+  schlechte Tag war sichtbar. **Gewählt:** schlechter Tag = Platzverlust 4–9 (sicher sichtbar), der pauschale
+  Zwischenfall `PLATZVERLUST` (20 % aller Fahrer) schrumpft auf 12 %.
+- ⚠ **Messfalle Cache:** `_wochenendAusreisser` wurde anfangs nicht mit `_weekendForm` geleert → wiederholte Läufe
+  desselben Jahres (und ein neues Spiel im selben Jahr) erbten die Würfel. Behoben an allen drei Leerstellen.
+- ⚠ **Messfalle Patch:** im Objektliteral gewinnt der hintere gleichnamige Schlüssel — Einstellwerte müssen hinten
+  angehängt werden, sonst misst man die Vorgaben.
+
+| Variante | Dom. DNF | Dom. im Ziel Sieg/P2–3/P4+ | Dom. von vorn P4+ | Dom. startet P4+ | trocken / teilw. Sp. | starkes / schwaches Drittel | Punktefahrer |
+|---|---|---|---|---|---|---|---|
+| **real** | 16,2 | 55 / 28 / 17 | 12,8 | 22,2 | 0,733 / 0,643 | 0 / 0 | – |
+| alt | 23,3 | 58 / 24 / 18 | 14,7 | 16,8 | 0,744 / 0,701 | −2,75 / +1,48 | 2,50 / +0,77 |
+| A (Rauschen 3, Quali 5, Zwischenfall 5 %, Max 97) | 18,9 | 62,5 / 24 / 13,6 | 8,4 | 13,9 | 0,772 / 0,742 | −0,71 / +1,04 | 1,40 / +0,07 |
+| A2 (5, 5, 10 %, Max 95) | 17,8 | 55,9 / 26,9 / 17,2 | 13,8 | 11,8 | 0,752 / 0,716 | −0,87 / +0,61 | 1,90 / +0,97 |
+| **A3 (6, 7, 12 %, Max 95)** | **16,2** | 51,9 / 28,2 / 19,9 | 14,7 | 13,8 | **0,720** / 0,600 | −0,84 / +1,45 | 2,00 / +0,93 |
+
+Alle mit Wochenendform 3/2 (statt 8/4), schlechter Tag ohne Pace-Abzug, Quali-Tag × 0,8, Fahrer-Unfallanteil 0,95,
+`vakuum-batch.js --alle 5 2 --regen --quali`.
+
+- **Streuung A3** (`streuung-feld.js`, Gruppen nach neuer Konstanz): < 80 **0,95** · 80–89 **1,09** · ≥ 90 **0,94** ·
+  Spitze 1,09 · hinten 1,00 (alt 1,04 / 0,81 / 0,70 / 0,83 / 1,00). Die Hyper-Konstanz der Spitze ist weg.
+- **Offen A3:** Quali-Einbruch 22 % (real 14), der Dominator startet zu selten von P4+ (13,8 statt 22 %); Abgleich
+  unten weiter gestaucht (F1DB 62 → Spiel 76) und oben −5 (Grenze 95 bindet). Generierte Fahrer noch mit alter Formel.
+
+**A4 = Vorgabe in `KONSTANZ_MODELL` (23.11.2026):** Auto-Form je Wochenende (beide Teamkollegen gleich, Quali ±7,
+Rennen ±3) statt großer Fahrer-Form, Quali-Rauschen 5, Quali-Tag × 0,9.
+- **Widerspruch Quali gelöst:** gegen den Teamkollegen soll die Quali stabiler (14 %), gegen das Feld der Dominator
+  öfter hinten stehen (22 %). Nur Zufall, der beide Teamkollegen gleich trifft, kann beides. Negativ: Quali-Rauschen 9
+  ohne jeden Quali-Ausreißer gab allein 20 % Quali-Einbrüche.
+- **A4:** trocken / teilw. / durchg. 0,719 / **0,682 / 0,657** (real 0,733 / 0,643 / 0,683) · Dominator von P4+
+  33 / 31 / 35 % (real 32 / 37 / 32) · startet von P4+ 15,5 % (22) · DNF 20,6 % · Punktefahrer 2,37 / +1,43 ·
+  Streuung alle Gruppen 0,90–1,05. Abgleich mit den Vorgaben: F1DB 63 → 71 · 73 → 77 · 78 → 79 · 84 → 82 · 91 → 86;
+  Quali-Einbruch 16 %, Renn-Einbruch 16 %, nach Quali-Einbruch 36 %. ⚠ 2 Läufe je Jahr: Laufrauschen ≈ ±1 Pp.
+- **Generierte Fahrer:** reale Konstanz hängt kaum an der Pace (Korrelation 0,20; Median 74–76, ab Pace 90 81) →
+  `generierteKonstanz`: Ära-Median (wörtlich: 1950er 82, 1970er 70, 1990er 70, 2010er 84) + 0,6 je Pace-Punkt über 85,
+  SD 12. ⚠ **Dauerlauf-Falle:** mit festem Median 75 und der alten Junior-Formel (`makeFeederDriver`: Pace −12…+8)
+  sank der Feld-Median nach dem Datenende von 81 auf 68 (2031); mit Ära-Median und neuer Junior-Formel 75–81.
+- **Alle acht Stellen**, die `PACE_RATINGS[2]` als Konstanz setzen, laufen über `konstanzFuer` (Spielstart,
+  Saisonwechsel, Laden ×2, Einsetzen, Reserve-Pool ×2, neuer Fahrer) — sonst überschrieb der alte Wert den neuen.
+- Ticker-Parität 40/40 mit und ohne Modell. Der schlechte Tag wird im Ticker als Fahrfehler erzählt (Dreher, Ausritt,
+  Verbremser) — reine Darstellung, ein Sprung wie beim Boxenstopp.
+
+**Fahrfehler ohne Ausfall, real** (`tests/fahrfehler-real.js`, jolpica-Runden 1996–2024 × F1DB-Boxenstopps): Verlust
+≥ 3 Plätze in einer Runde ohne Box, nicht Runde 1 → **3,3 % der Fahrer-Rennen**, in jedem Jahrzehnt gleich (3,2–3,5).
+Kaum an die Konstanz gebunden (K < 70 2,7 % · 70–75 3,9 · 76–87 3,4 · ≥ 88 2,6). Verlust ≥ 5 Plätze: 1,0 %.
+Sichtbare Dreher sind also seltene Pech-Momente für alle → im Modell der pauschale Zwischenfall; schlechte Tage sind
+meist schleichend. ⚠ Unschärfe: auch Plattfuß/Defekt mit Weiterfahrt zählt mit, Fehler mit 1–2 Plätzen bleiben
+unsichtbar.
+
 ## Reale tödliche Unfälle: F1DB × Motorsport Memorial (18.11.2026)
 
 - **Kandidaten:** 517 F1DB-Fahrer mit Todesdatum, davon 143 gestorben ≤ 10 Jahre nach der letzten Saison
