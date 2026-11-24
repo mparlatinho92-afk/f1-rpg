@@ -92,6 +92,15 @@ im Ziel (≥ 4 Plätze schlechter gegen die Teamkollegen als der Paar-Median der
   Russell 87, Kubica 87, Hulme 87, Piastri 86, Verstappen 86.
 - ⚠ Die absolute Höhe hängt an der Schwelle. Endgültig erst nach Schritt 3 (dieselbe Messung auf simulierte Rennen).
 
+**F1DB-Update v2026.19 → v2026.21 (24.11.2026, v0.9.21.47):** inhaltlich nur EIN neues Rennen (Las Vegas 2026, R21)
+und eine Korrektur (1991 R10 Caffi DNQ → DNPQ). Startnummern und tödliche Unfälle unverändert; `data/konstanz.js`
+137 Werte geändert. ⚠ **Messfalle Median:** die 2026er-Werte sprangen weit mehr, als ein Rennen erklärt — Piastri 86 → 75
+(Einbrüche 2 → 5, obwohl Vegas-P3), Antonelli 77 → 70 (4 → 6), Russell 80 → 84 (4 → 3), Leclerc 81 → 85, Hamilton 94 → 91.
+Ursache: der Einbruch wird gegen den MEDIAN der Paar-Abstände gemessen; ein Rennen mehr verschiebt den Median um 1–2
+Plätze und mehrere alte Rennen kippen über/unter die Schwelle 4. Ältere Saisons: ± 1–2 über das leicht verschobene
+Feld-Mittel der Glättung. ▶ Kandidat: ruhigerer Normalwert (Mittel der mittleren Hälfte statt Median).
+⚠ Versionssprung ≠ Rennzahl: v2026.19 → v2026.21 sind Datenstände, nicht zwei Rennen.
+
 ### Schritt 2/3: KONSTANZ_MODELL im Spiel einstellen (23.11.2026)
 
 Code in `index.html` hinter `KONSTANZ_MODELL.aktiv = false` (Spiel unverändert); Messung per `SIMCORE_PATCH`
