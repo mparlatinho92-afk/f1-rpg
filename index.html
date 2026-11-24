@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.45</title>
+    <title>F1 RPG v0.9.21.46</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,9 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.45 (aktuell) - 23.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.46 (aktuell) - 24.11.2026</div>
+                            <div>&#8226; FIX: unbestaendige Fahrer wirkten zu gleichmaessig, eigene Unfaelle jetzt nach Unbestaendigkeit im Quadrat verteilt</div>
+                            <div class="font-bold text-slate-400">v0.9.21.45 - 23.11.2026</div>
                             <div>&#8226; FIX: Fahrer ohne Start blieb mit abgelaufenem Vertrag ewig im Team</div>
                             <div>&#8226; FIX: zurueckgetretene Fahrer kamen ueber den Reserve-Pool zurueck</div>
                             <div>&#8226; FIX: Entlassene mit neuem Cockpit standen unter Karriereende</div>
@@ -4482,7 +4484,7 @@
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.45';
+        const VERSION = '0.9.21.46';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -6886,7 +6888,7 @@
         const KONSTANZ_MODELL = { aktiv: true, rauschenRennen: 6, rauschenQuali: 5, schlechterTag: 1,
                                   qualiTag: 0.9, verlustMin: 4, verlustMax: 9, zwischenfall: 0.12,
                                   teamFormQuali: 7, teamFormRennen: 3, formFahrerQuali: 3, formFahrerRennen: 2,
-                                  fahrerUnfall: 0.95, qualiKopplung: 2.1 };
+                                  fahrerUnfall: 0.95, unfallExponent: 2, punkteGrenze: false, qualiKopplung: 2.1 };
         // Wochenendform des Fahrers: im Konstanz-Modell klein (der Rest kommt aus Ausreißern und Auto-Form)
         const _formFahrer = s => KONSTANZ_MODELL.aktiv
             ? (s === 'quali' ? KONSTANZ_MODELL.formFahrerQuali : KONSTANZ_MODELL.formFahrerRennen)
@@ -16271,6 +16273,12 @@
             };
             const _ausreisserFeld = activeDrivers.length
                 ? activeDrivers.reduce((s, d) => s + (100 - _konstanzRennen(d)) / 100, 0) / activeDrivers.length : 0.2;
+            // unfallExponent e: eigene Unfälle verteilen sich nach (1 − K)^e — fahrige Fahrer crashen an einem schlechten Tag
+            // auch öfter (de Cesaris 1985: 3 Unfälle in 6 Rennen). Feld-Mittel von (1 − K)^e hält die Ära-Summe. e = 1: bis v0.9.21.45;
+            // e = 2 seit 24.11.2026: Abgleich unten 75 → 68 (F1DB 62,5), oben 85,5 → 88,8 (91), BEFUNDE 24.11.2026.
+            const _uE = KONSTANZ_MODELL.unfallExponent || 1;
+            const _unfallGewichtFeld = activeDrivers.length
+                ? activeDrivers.reduce((s, d) => s + Math.pow((100 - _konstanzRennen(d)) / 100, _uE), 0) / activeDrivers.length : 0.2;
 
             activeDrivers.forEach(driver => {
                 const team = GAME_STATE.teams.find(t => t.id === driver.team);
@@ -16388,7 +16396,10 @@
                     // je Ausreißer mit Wahrscheinlichkeit Fahrer-Unfall ÷ Feld-Ausreißerquote (Ära-Summe bleibt).
                     const _unfallFahrer = _dnfW.unfall * KONSTANZ_MODELL.fahrerUnfall;
                     const _sonst = _dnfW.mech + _dnfW.unfall - _unfallFahrer;
-                    const _pEigen = !_isGoodDay && _ausreisserFeld > 0 ? Math.min(1, _unfallFahrer / 100 / _ausreisserFeld) : 0;
+                    // P(Unfall | schlechter Tag) = U · (1 − K)^(e−1) / Mittel((1 − K)^e)  →  P(Unfall) = U · (1 − K)^e / Mittel
+                    const _aus = (100 - _consVal) / 100;
+                    const _pEigen = !_isGoodDay && _unfallGewichtFeld > 0
+                        ? Math.min(1, _unfallFahrer / 100 * Math.pow(_aus, _uE - 1) / _unfallGewichtFeld) : 0;
                     if (Math.random() < _pEigen) { isDNF = true; dnfType = 'accident'; }
                     else if (Math.random() < _sonst / 100) {
                         isDNF = true;
@@ -16522,8 +16533,10 @@
                 for (const _o of _pitFinishers.filter(r => r.schlechterTag)) {
                     const _i = _pitFinishers.indexOf(_o);
                     const _d = KONSTANZ_MODELL.verlustMin + Math.floor(Math.random() * (KONSTANZ_MODELL.verlustMax - KONSTANZ_MODELL.verlustMin + 1));
+                    // punkteGrenze: wie beim pauschalen Zwischenfall höchstens bis auf den letzten Punkteplatz
+                    const _grenzeA = KONSTANZ_MODELL.punkteGrenze && _i < _nPunkte ? _nPunkte - 1 : _pitFinishers.length;
                     _pitFinishers.splice(_i, 1);
-                    _pitFinishers.splice(Math.min(_pitFinishers.length, _i + _d), 0, _o);
+                    _pitFinishers.splice(Math.min(_grenzeA, _i + _d), 0, _o);
                 }
             }
             const _pitDnfs = results.filter(r => r.dnf);

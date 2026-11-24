@@ -287,8 +287,11 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   (Rennstall + Konstrukteur, mehrere Kollegen gemittelt, Glättung Saison → Karriere → Feld; `tools/build-consistency.js`
   → `data/konstanz.js`), Grenzen 30–95 (keine Hyper-Konstanz). Ein schlechter Tag kostet sicher 4–9 Plätze oder endet im
   eigenen Unfall; Rauschen für alle gleich; Auto-Form je Wochenende für beide Teamkollegen; generierte Fahrer nach realer
-  Verteilung mit Ära-Median. Dominator DNF 23 → 21 % (real 16), Streuung 0,90–1,05 (BEFUNDE 23.11.2026). Offen: Fahrer
-  mit F1DB-Konstanz um 63 wirken im Spiel wie 71; Feinwerte aus 2 Läufen je Jahr
+  Verteilung mit Ära-Median. Langer Lauf (38 Saisons × 5): Dominator DNF 17,0 % (real ≈ 16; vorher 23), trocken /
+  teilw. / durchg. 0,725 / 0,666 / 0,699 (real 0,733 / 0,643 / 0,683), Streuung 0,90–1,05 (BEFUNDE 23.11.2026).
+  Nachtrag 24.11.2026: eigene Unfälle nach (1 − Konstanz)² verteilt (`unfallExponent` 2) → unbeständige Fahrer
+  F1DB 62,5 → Spiel 67,6 (vorher 75), Spitze 91 → 88,8 (85,5), starkes Drittel −3,9 → −3,4 Pp. Offen: starkes Drittel,
+  Ursache älter (altes Modell −3,25) — vermutlich Teamstärken-Spreizung, eigenes Thema
 - **Fahrfehler-Mechanik** (Sheet: „Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit
   ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit“). Code-Fix v0.9.21.44: gemessen aus
   jolpica-Runden 1996–2024 × F1DB-Boxenstopps (`tests/fahrfehler-real.js`): Dreher/Ausritt ohne Ausfall (≥ 3 Plätze in
