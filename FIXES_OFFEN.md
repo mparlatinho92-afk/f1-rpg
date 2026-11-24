@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.47, Prüfdatum **2026-11-24** (vorher 2026-11-24 @ v0.9.21.46). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.48, Prüfdatum **2026-11-24** (vorher 2026-11-24 @ v0.9.21.47). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -292,6 +292,8 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   Nachtrag v0.9.21.46: eigene Unfälle nach (1 − Konstanz)² verteilt (`unfallExponent` 2) → unbeständige Fahrer
   F1DB 62,5 → Spiel 67,6 (vorher 75), Spitze 91 → 88,8 (85,5), starkes Drittel −3,9 → −3,4 Pp. Offen: starkes Drittel,
   Ursache älter (altes Modell −3,25) — vermutlich Teamstärken-Spreizung, eigenes Thema
+  Nachtrag v0.9.21.48: Messung ruhiger (Normalwert = Mittel der mittleren Hälfte, Einbruch gleitend 2 → 0 / 6+ → 1);
+  ein Rennen mehr verschiebt eine Saison im Schnitt 0,8 statt 2,0 Punkte. Werte je Saison, kein gleitender Durchschnitt
 - **Fahrfehler-Mechanik** (Sheet: „Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit
   ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit“). Code-Fix v0.9.21.44: gemessen aus
   jolpica-Runden 1996–2024 × F1DB-Boxenstopps (`tests/fahrfehler-real.js`): Dreher/Ausritt ohne Ausfall (≥ 3 Plätze in

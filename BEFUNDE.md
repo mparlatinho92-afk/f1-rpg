@@ -98,8 +98,21 @@ und eine Korrektur (1991 R10 Caffi DNQ → DNPQ). Startnummern und tödliche Unf
 (Einbrüche 2 → 5, obwohl Vegas-P3), Antonelli 77 → 70 (4 → 6), Russell 80 → 84 (4 → 3), Leclerc 81 → 85, Hamilton 94 → 91.
 Ursache: der Einbruch wird gegen den MEDIAN der Paar-Abstände gemessen; ein Rennen mehr verschiebt den Median um 1–2
 Plätze und mehrere alte Rennen kippen über/unter die Schwelle 4. Ältere Saisons: ± 1–2 über das leicht verschobene
-Feld-Mittel der Glättung. ▶ Kandidat: ruhigerer Normalwert (Mittel der mittleren Hälfte statt Median).
+Feld-Mittel der Glättung. → gelöst v0.9.21.48 (unten).
 ⚠ Versionssprung ≠ Rennzahl: v2026.19 → v2026.21 sind Datenstände, nicht zwei Rennen.
+
+**Ruhigere Einbruch-Messung (24.11.2026, v0.9.21.48):** Normalabstand je Paar = Mittel der mittleren Hälfte (je Ende
+round(n/4) weg; n 3–4 = Median), Einbruch gleitend statt Kante: Verlust 2 → 0, 4 → 0,5, 6+ → 1 (`RAMPE` 2; Nutzer:
+„einzelne rennen dürfen nicht so ins gewicht fallen … je größer der platzunterschied desto eher“).
+- **Stabilitätsprobe** (mit/ohne Las Vegas 2026, je 25 Fahrer 2026): Ø |Sprung| **2,0 → 0,8**, max **11 → 4**, Sprünge ≥ 4
+  **7 → 1**. Der verbliebene: Lindblad 86 → 82 durch den eigenen Dreher — gewollt.
+- Niveau kaum verschoben: Feld 78,5 → 79,3, Einbruchquote 13,1 → 12,1 %; Proben Verstappen 2023 89 → 92, Senna 1988
+  79 → 82, Clark 1965 89 → 86, Piastri 2025 89 → 86, Norris 2024 80 → 82. Umrechnung `--spiel 1.6 84 30 95` bleibt.
+- Abgleich (`1975 2015 10 3`, 2 Läufe): Σ|Abw.| 18,6 / 15,8 (vorher 16,2) — innerhalb des Laufrauschens (±2 je Gruppe).
+  Streuung 0,96–1,13 (0,94–1,14) · Ticker-Parität 40/40 · langer Lauf: starkes / schwaches Drittel −3,28 / +0,62,
+  Dominator DNF 15,4 %, trocken / teilw. / durchg. 0,724 / 0,681 / 0,690.
+- **Gleitender Durchschnitt / frische Rennen schwerer: bewusst NICHT.** K gilt je Saison; ein Gewicht nach Rennfolge
+  hieße, ein Unfall in R1 zählt weniger als in R22 — willkürlich. Über die Saisons glättet schon Saison → Karriere.
 
 ### Schritt 2/3: KONSTANZ_MODELL im Spiel einstellen (23.11.2026)
 

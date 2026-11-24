@@ -31,7 +31,12 @@ const { getContext } = require('./sim-core');
 const ctx = getContext();
 const KON = JSON.parse(fs.readFileSync(path.join(__dirname, 'output', 'konstanz-f1db.json'), 'utf8'));
 const SCHWELLE = KON.schwelle;
-const med = a => { const b = [...a].sort((x, y) => x - y), n = b.length; return n % 2 ? b[n >> 1] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+// Gleiche Messung wie tools/build-consistency.js: Normalabstand = Mittel der mittleren Hälfte, Einbruch gleitend
+const RAMPE = KON.rampe ?? 0;
+const med = KON.norm === 'mittelhaelfte'
+    ? a => { const b = [...a].sort((x, y) => x - y), w = Math.round(b.length / 4), m = b.slice(w, b.length - w); return m.reduce((x, y) => x + y, 0) / m.length; }
+    : a => { const b = [...a].sort((x, y) => x - y), n = b.length; return n % 2 ? b[n >> 1] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+const gewicht = x => RAMPE ? Math.max(0, Math.min(1, (x - SCHWELLE + RAMPE) / (2 * RAMPE))) : +(x >= SCHWELLE);
 const mw = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
 if (modus !== 'aus') {
     const m = ctx.KONSTANZ_MODELL || (() => { try { return ctx.eval?.('KONSTANZ_MODELL'); } catch (e) { return null; } })();
@@ -44,7 +49,7 @@ const SK = +(process.env.KSKAL || 1), DREH = +(process.env.KDREH || 84), KMIN = 
 const SKU = +(process.env.KSKAL_UNTEN || SK);
 const wahr = k => Math.round(Math.max(KMIN, Math.min(KMAX, DREH + (k < DREH ? SKU : SK) * (k - DREH))));
 const gruppen = {};   // Stufe → { ein: [K_ein], aus: Ausreißer, n }
-let qN = 0, qE = 0, rN = 0, rE = 0, rNachQ = 0, nQ = 0, rOhneQ = 0, nOhneQ = 0, dnfN = 0, dnfS = 0, unfS = 0;
+let qN = 0, qE = 0, rN = 0, rE = 0, gE = 0, rNachQ = 0, nQ = 0, rOhneQ = 0, nOhneQ = 0, dnfN = 0, dnfS = 0, unfS = 0;
 for (let j = +von; j <= +bis; j += +schritt) {
     for (let l = 0; l < +laeufe; l++) {
         ctx.initFromYear(j);
@@ -93,11 +98,11 @@ for (let j = +von; j <= +bis; j += +schritt) {
             const dz = kol.filter(b => a.pos != null && b.pos != null && mz[a.id + '|' + b.id] != null).map(b => a.pos - b.pos - mz[a.id + '|' + b.id]);
             const dq = kol.filter(b => a.q && b.q && mq[a.id + '|' + b.id] != null).map(b => a.q - b.q - mq[a.id + '|' + b.id]);
             const eQ = dq.length ? mw(dq) >= SCHWELLE : null, eR = dz.length ? mw(dz) >= SCHWELLE : null;
-            if (a.pos != null) { if (eR == null) s.offen++; else if (eR) s.aus++; }
+            if (a.pos != null) { if (eR == null) s.offen++; else { const g = gewicht(mw(dz)); s.aus += g; gE += g; } }   // Quoten unten bleiben Kante (≥ SCHWELLE)
             if (eQ != null) { qN++; if (eQ) qE++; }
             if (eR != null) { rN++; if (eR) rE++; if (eQ === true) { nQ++; if (eR) rNachQ++; } else if (eQ === false) { nOhneQ++; if (eR) rOhneQ++; } }
         }
-        const feldE = rE / Math.max(1, rN);
+        const feldE = gE / Math.max(1, rN);   // Erwartungswert nicht messbarer Zielankünfte: gleitende Feldquote
         for (const s of Object.values(stat)) {
             if (s.n < 5) continue;
             const kSpiel = 100 * (1 - (s.aus + s.offen * feldE) / s.n);

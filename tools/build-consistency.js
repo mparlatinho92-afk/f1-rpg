@@ -10,12 +10,14 @@
 //   • Kollision (Gewicht 0,5): Collision, Collision damage — Täter oder Opfer ist aus F1DB nicht zu trennen.
 //   • Nicht gezählt: Technik, Reifen, „Illegal …“ am Auto (Team); Physical/Injury/Unwell/Illness/Withdrew
 //     (Gesundheit, keine Konstanz); alles „… in practice/qualifying/warm-up“ (nicht gestartet).
-//   • Einbruch (Gewicht 1): im Ziel ≥ SCHWELLE Plätze schlechter gegen die Teamkollegen als üblich.
+//   • Einbruch (Gewicht 0–1, gleitend): im Ziel schlechter gegen die Teamkollegen als üblich; SCHWELLE Plätze = 0,5,
+//     SCHWELLE ± RAMPE = 0 bzw. 1 (Nutzer 24.11.2026: einzelne Rennen wenig Gewicht, großer Verlust mehr).
 //
 // TEAMKOLLEGEN (Nutzer 23.11.2026)
 //   • Team = Rennstall + Konstrukteur je Lauf (seasons-entrants-drivers.rounds) — Werks- und Privat-Cooper der
 //     1960er sind keine Teamkollegen, obwohl race-results nur den Konstrukteur nennt.
-//   • Jedes PAAR hat seinen eigenen Normalabstand = Median ihrer gemeinsamen Zielankünfte der Saison (≥ MIN_PAAR).
+//   • Jedes PAAR hat seinen eigenen Normalabstand = Mittel der mittleren Hälfte ihrer gemeinsamen Zielankünfte der
+//     Saison (≥ MIN_PAAR; bis 24.11.2026 der Median, zu sprunghaft).
 //     Je Rennen zählt der DURCHSCHNITT über alle Teamkollegen dieses Rennens (viele Kollegen in den 1960ern).
 //   • Kollegen ohne gemeinsame Zielankunft bilden kein Paar. Ein Rennen ohne brauchbares Paar zählt nicht
 //     (der Rückfall auf den eigenen Saison-Median war zu ungenau: 35 % der Rennen, Masten Gregory 1960 = 97).
@@ -31,7 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
-const SCHWELLE = +(process.argv[2] || 4), MIN_PAAR = 3, GLAETTUNG = 10;
+const SCHWELLE = +(process.argv[2] || 4), MIN_PAAR = 3, GLAETTUNG = 10, RAMPE = 2;
 const J = f => JSON.parse(fs.readFileSync(path.join(root, 'f1db-json-splitted', `f1db-${f}.json`), 'utf8'));
 const res = J('races-race-results'), sed = J('seasons-entrants-drivers');
 
@@ -43,7 +45,12 @@ const gewichtAusfall = g => !g || NICHT_GESTARTET.test(g) ? 0 : FEHLER.test(g) ?
 const rennstall = {};
 for (const e of sed) for (const rd of (e.rounds || [])) rennstall[`${e.year}|${rd}|${e.driverId}|${e.constructorId}`] = e.entrantId;
 const team = e => (rennstall[`${e.year}|${e.round}|${e.driverId}|${e.constructorId}`] || '?') + '/' + e.constructorId;
-const median = a => { const b = [...a].sort((x, y) => x - y), n = b.length; return n % 2 ? b[n >> 1] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+// Normalabstand = Mittel der mittleren Hälfte (je Ende round(n/4) weg; n 3–4 = Median). Der reine Median sprang
+// mit einem Rennen mehr um ganze Plätze (Piastri 2026: 86 → 75 durch Las Vegas).
+const normal = a => { const b = [...a].sort((x, y) => x - y), w = Math.round(b.length / 4), m = b.slice(w, b.length - w);
+    return m.reduce((x, y) => x + y, 0) / m.length; };
+// Einbruch-Gewicht gleitend statt Kante: SCHWELLE − RAMPE → 0, SCHWELLE → 0,5, SCHWELLE + RAMPE → 1 (größerer Verlust zählt mehr)
+const einbruchGewicht = x => Math.max(0, Math.min(1, (x - SCHWELLE + RAMPE) / (2 * RAMPE)));
 
 const proRennen = {};
 for (const e of res) { if (['DNQ', 'DNPQ', 'DNS', 'EX'].includes(e.positionText)) continue; (proRennen[e.raceId] ??= []).push(e); }
@@ -57,7 +64,7 @@ for (const es of rennen) for (const a of es) {
         (paarAbst[`${a.year}|${a.driverId}|${b.driverId}`] ??= []).push(a.positionNumber - b.positionNumber);
 }
 const paarMed = {};
-for (const [k, v] of Object.entries(paarAbst)) if (v.length >= MIN_PAAR) paarMed[k] = median(v);
+for (const [k, v] of Object.entries(paarAbst)) if (v.length >= MIN_PAAR) paarMed[k] = normal(v);
 
 // 2. Ausreißer je Rennen
 const st = {};   // slug|jahr → { n, fehler, koll, einbruch, ohnePaar, techn }
@@ -83,7 +90,7 @@ for (const es of rennen) for (const a of es) {
     const d = partner.filter(b => b.positionNumber != null && paarMed[`${a.year}|${a.driverId}|${b.driverId}`] != null)
         .map(b => a.positionNumber - b.positionNumber - paarMed[`${a.year}|${a.driverId}|${b.driverId}`]);
     if (!d.length) { offen.push(s); continue; }
-    messN++; const e = d.reduce((x, y) => x + y, 0) / d.length >= SCHWELLE; if (e) { s.einbruch++; messE++; }
+    messN++; const e = einbruchGewicht(d.reduce((x, y) => x + y, 0) / d.length); s.einbruch += e; messE += e;
 }
 const feldEinbruch = messE / messN;
 for (const s of offen) s.erwartet += feldEinbruch;
@@ -100,11 +107,11 @@ for (const [k, s] of Object.entries(st)) {
     const roh = s.n ? 1 - aus(s) / s.n : null;
     const K = ((s.n ? s.n * roh : 0) + GLAETTUNG * kKar(slug)) / (s.n + GLAETTUNG);
     (out[slug] ??= {})[jahr] = { K: Math.round(100 * K), roh: roh == null ? null : Math.round(100 * roh), n: s.n,
-        fehler: s.fehler, koll: s.koll, einbruch: s.einbruch, ohnePaar: s.ohnePaar, karriere: Math.round(100 * kKar(slug)) };
+        fehler: s.fehler, koll: s.koll, einbruch: Math.round(10 * s.einbruch) / 10, ohnePaar: s.ohnePaar, karriere: Math.round(100 * kKar(slug)) };
 }
 fs.mkdirSync(path.join(root, 'tests', 'output'), { recursive: true });
 fs.writeFileSync(path.join(root, 'tests', 'output', 'konstanz-f1db.json'),
-    JSON.stringify({ schwelle: SCHWELLE, minPaar: MIN_PAAR, glaettung: GLAETTUNG, feld: Math.round(1000 * kFeld) / 10, fahrer: out }));
+    JSON.stringify({ schwelle: SCHWELLE, rampe: RAMPE, norm: 'mittelhaelfte', minPaar: MIN_PAAR, glaettung: GLAETTUNG, feld: Math.round(1000 * kFeld) / 10, fahrer: out }));
 
 // ── Bericht ────────────────────────────────────────────────────────────────
 const PR = require('vm').runInNewContext(fs.readFileSync(path.join(root, 'data', 'f1db.js'), 'utf8') + ';PACE_RATINGS', { window: {} });
