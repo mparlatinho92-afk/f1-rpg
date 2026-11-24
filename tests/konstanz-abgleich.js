@@ -19,10 +19,12 @@
 const fs = require('fs'), path = require('path');
 const [von = '1965', bis = '2015', schritt = '10', laeufe = '4', modus = ''] = process.argv.slice(2);
 const KM = Object.fromEntries((process.env.KM || '').split(',').filter(Boolean).map(s => s.split(':')).map(([k, v]) => [k, +v]));
-if (modus !== 'aus') {
-    // ⚠ Im Objektliteral gewinnt der HINTERE gleichnamige Schlüssel → Einstellwerte ans Ende, sonst bleiben die Vorgaben
-    const patches = ['const KONSTANZ_MODELL = { aktiv: false,~>const KONSTANZ_MODELL = { aktiv: true,',
-        'qualiKopplung: 2.1 };~>qualiKopplung: 2.1' + Object.entries(KM).map(([k, v]) => `, ${k}: ${v}`).join('') + ' };'];
+// Seit v0.9.21.44 ist das Modell im Code AN: Standard = Code wie er ist (+ Einstellwerte), „aus“ = altes Modell.
+// ⚠ Im Objektliteral gewinnt der HINTERE gleichnamige Schlüssel → Einstellwerte ans Ende, sonst bleiben die Vorgaben
+{
+    const patches = modus === 'aus'
+        ? ['const KONSTANZ_MODELL = { aktiv: true,~>const KONSTANZ_MODELL = { aktiv: false,']
+        : Object.keys(KM).length ? ['qualiKopplung: 2.1 };~>qualiKopplung: 2.1' + Object.entries(KM).map(([k, v]) => `, ${k}: ${v}`).join('') + ' };'] : [];
     process.env.SIMCORE_PATCH = [process.env.SIMCORE_PATCH, ...patches].filter(Boolean).join('@@');
 }
 const { getContext } = require('./sim-core');
@@ -38,7 +40,9 @@ if (modus !== 'aus') {
 
 // KSKAL=s: wörtliche Konstanz = Drehpunkt + s·(F1DB − Drehpunkt), begrenzt auf KMIN..KMAX (keine Hyper-Konstanz)
 const SK = +(process.env.KSKAL || 1), DREH = +(process.env.KDREH || 84), KMIN = +(process.env.KMIN || 30), KMAX = +(process.env.KMAX || 97);
-const wahr = k => Math.round(Math.max(KMIN, Math.min(KMAX, DREH + SK * (k - DREH))));
+// KSKAL_UNTEN: eigene Steigung unterhalb des Drehpunkts (unbeständige Fahrer werden von der Teamkollegen-Messung stärker gestaucht)
+const SKU = +(process.env.KSKAL_UNTEN || SK);
+const wahr = k => Math.round(Math.max(KMIN, Math.min(KMAX, DREH + (k < DREH ? SKU : SK) * (k - DREH))));
 const gruppen = {};   // Stufe → { ein: [K_ein], aus: Ausreißer, n }
 let qN = 0, qE = 0, rN = 0, rE = 0, rNachQ = 0, nQ = 0, rOhneQ = 0, nOhneQ = 0, dnfN = 0, dnfS = 0, unfS = 0;
 for (let j = +von; j <= +bis; j += +schritt) {
@@ -103,7 +107,7 @@ for (let j = +von; j <= +bis; j += +schritt) {
     }
     process.stderr.write(j + ' ');
 }
-console.log(`\nKONSTANZ-ABGLEICH ${von}–${bis} alle ${schritt} J., ${laeufe} Läufe, Modell ${modus === 'aus' ? 'ALT' : 'A'} ${process.env.KM || '(Vorgaben)'} · Umrechnung s ${SK} um ${DREH}, ${KMIN}–${KMAX}`);
+console.log(`\nKONSTANZ-ABGLEICH ${von}–${bis} alle ${schritt} J., ${laeufe} Läufe, Modell ${modus === 'aus' ? 'ALT' : 'A'} ${process.env.KM || '(Vorgaben)'} · Umrechnung s ${SK} (unten ${SKU}) um ${DREH}, ${KMIN}–${KMAX}`);
 for (const k of ['K < 70', 'K 70–75', 'K 76–81', 'K 82–87', 'K ≥ 88']) {
     const g = gruppen[k]; if (!g) continue;
     console.log(`  ${k.padEnd(8)} n ${String(g.ein.length).padStart(4)} · F1DB Ø ${mw(g.ein).toFixed(1)} · Spiel gemessen Ø ${mw(g.spiel).toFixed(1)} · Differenz ${(mw(g.spiel) - mw(g.ein)).toFixed(1)}`);

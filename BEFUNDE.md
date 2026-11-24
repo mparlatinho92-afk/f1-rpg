@@ -150,6 +150,39 @@ Rennen ±3) statt großer Fahrer-Form, Quali-Rauschen 5, Quali-Tag × 0,9.
 (real 25 / 31 / 44) · startet P4+ 17,6 % (22,7) · Punktefahrer 1,90 / +1,21 · ▶ **offen: starkes Drittel −3,94 Pp**
 (Betrag 6,52), schwaches +0,42. Im kurzen Lauf A4 waren es −1,55 — der kurze Lauf unterschätzte die Lücke.
 
+**Starkes Drittel: alt oder neu? (24.11.2026, je langer Lauf 38 × 5)** — die Lücke ist überwiegend ALT:
+
+| Variante | starkes / schwaches Drittel | Punktefahrer | trocken / teilw. / durchg. | Dom. DNF · Sieg im Ziel |
+|---|---|---|---|---|
+| **real** | 0 / 0 | – | 0,733 / 0,643 / 0,683 | ≈ 16 % · 55 % |
+| altes Modell (`aktiv:false`) | −3,25 / +0,40 | 1,63 / +0,62 | 0,741 / 0,651 / 0,666 | 22,6 · 54 |
+| v0.9.21.45 | −3,94 / +0,42 | 1,90 / +1,21 | 0,725 / 0,666 / 0,699 | 17,0 · 53 |
+| + `punkteGrenze` (schlechter Tag fällt höchstens auf den letzten Punkteplatz) | **−2,42 / −0,06** | 1,84 / −0,53 | 0,766 / 0,722 / 0,726 ✗ | 17,9 · 51 |
+| + Grenze, Rauschen 8 | −3,68 / +0,45 | 1,82 / +0,06 | 0,745 / 0,680 / 0,707 | 17,3 · 49 |
+| + Grenze, Rauschen 10 | −4,39 / +0,51 | 1,54 / +0,18 | 0,720 / 0,661 / 0,666 | 17,3 · 47 |
+
+- **Negativergebnis:** jede Stellschraube am schlechten Tag tauscht Punkte des starken Drittels gegen die Feldordnung.
+  Die Grenze schließt die Lücke zur Hälfte, macht aber die Rennen zu geordnet; mehr Rauschen dagegen nimmt den Gewinn
+  wieder weg. Das neue Modell verschlechtert das starke Drittel nur um ≈ 0,7 Pp.
+- → Ursache vermutlich bei der Spreizung der Teamstärken (BEFUNDE 24.09.2026: Punkteanteil der Drittel hängt an der
+  Teamstärken-Spreizung), eigenes Thema. `punkteGrenze` bleibt als Schalter (`false`) im Code.
+
+**Unbeständige Fahrer zu gleichmäßig — Unfälle nach (1 − K)^e (24.11.2026)** (`konstanz-abgleich.js 1975 2015 10 3`):
+- **Negativergebnis steilere Umrechnung unten** (`--spiel … sUnten`): Steigung 1,6 / 2,2 / 2,8 unter dem Drehpunkt →
+  Gruppe F1DB 62,5 misst 74,8 / 75,1 / 73,7. Die Messung sättigt: wer in > 50 % der Rennen schwächelt, verschiebt den
+  eigenen Paar-Median, Einbrüche werden unsichtbar. Real kommen niedrige Werte über eigene UNFÄLLE (de Cesaris 1985: 3/6).
+- **`unfallExponent` e:** P(eigener Unfall) = U · (1 − K)^e / Feld-Mittel((1 − K)^e), Ära-Summe bleibt.
+
+  | e | < 70 (F1DB 62,5) | 70–75 (73,4) | 76–81 (78,4) | 82–87 (84,1) | ≥ 88 (90,9) | Σ\|Abw.\| |
+  |---|---|---|---|---|---|---|
+  | 1 (bis .45) | 75,1 | 79,9 | 79,4 | 83,4 | 85,5 | 26,3 |
+  | **2** | **67,6** | 78,6 | 81,1 | 82,9 | **88,8** | **16,2** |
+  | 3 | 65,1 | 80,0 | 82,1 | 84,2 | 85,9 | 17,9 |
+
+- **Langer Lauf e = 2:** starkes / schwaches Drittel **−3,36 / +0,11** (e 1: −3,94 / +0,42) · Dominator DNF **16,4 %** ·
+  im Ziel 51 / 26 / 24 (real 55 / 28 / 17) · von vorn P4+ 18,9 % (14,2) · trocken / teilw. / durchg. 0,721 / 0,664 /
+  0,658 · Punktefahrer 2,01 / +1,06. Streuung (`streuung-feld.js`) 0,94–1,14. Ticker-Parität 40/40. → **Vorgabe e = 2.**
+
 **Fahrfehler ohne Ausfall, real** (`tests/fahrfehler-real.js`, jolpica-Runden 1996–2024 × F1DB-Boxenstopps): Verlust
 ≥ 3 Plätze in einer Runde ohne Box, nicht Runde 1 → **3,3 % der Fahrer-Rennen**, in jedem Jahrzehnt gleich (3,2–3,5).
 Kaum an die Konstanz gebunden (K < 70 2,7 % · 70–75 3,9 · 76–87 3,4 · ≥ 88 2,6). Verlust ≥ 5 Plätze: 1,0 %.

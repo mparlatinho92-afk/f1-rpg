@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.45, Prüfdatum **2026-11-23** (vorher 2026-11-23 @ v0.9.21.44). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.46, Prüfdatum **2026-11-24** (vorher 2026-11-23 @ v0.9.21.45). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -289,7 +289,7 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   eigenen Unfall; Rauschen für alle gleich; Auto-Form je Wochenende für beide Teamkollegen; generierte Fahrer nach realer
   Verteilung mit Ära-Median. Langer Lauf (38 Saisons × 5): Dominator DNF 17,0 % (real ≈ 16; vorher 23), trocken /
   teilw. / durchg. 0,725 / 0,666 / 0,699 (real 0,733 / 0,643 / 0,683), Streuung 0,90–1,05 (BEFUNDE 23.11.2026).
-  Nachtrag 24.11.2026: eigene Unfälle nach (1 − Konstanz)² verteilt (`unfallExponent` 2) → unbeständige Fahrer
+  Nachtrag v0.9.21.46: eigene Unfälle nach (1 − Konstanz)² verteilt (`unfallExponent` 2) → unbeständige Fahrer
   F1DB 62,5 → Spiel 67,6 (vorher 75), Spitze 91 → 88,8 (85,5), starkes Drittel −3,9 → −3,4 Pp. Offen: starkes Drittel,
   Ursache älter (altes Modell −3,25) — vermutlich Teamstärken-Spreizung, eigenes Thema
 - **Fahrfehler-Mechanik** (Sheet: „Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit

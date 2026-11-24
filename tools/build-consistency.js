@@ -148,14 +148,16 @@ console.log('                                 oben: ' + karListe.slice(-8).rever
 // Median schluckt Einbrüche) — die Umrechnung holt die wahre Häufigkeit zurück. s/dreh aus tests/konstanz-abgleich.js.
 const iSpiel = process.argv.indexOf('--spiel');
 if (iSpiel > 0) {
-    const [s, dreh, kmin, kmax] = process.argv.slice(iSpiel + 1, iSpiel + 5).map(Number);
-    const w = k => Math.round(Math.max(kmin, Math.min(kmax, dreh + s * (k - dreh))));
+    // optional 5. Wert: eigene Steigung unterhalb des Drehpunkts (sUnten), Vorgabe = s
+    const [s, dreh, kmin, kmax, sU] = process.argv.slice(iSpiel + 1, iSpiel + 6).map(Number);
+    const sUnten = Number.isFinite(sU) ? sU : s;
+    const w = k => Math.round(Math.max(kmin, Math.min(kmax, dreh + (k < dreh ? sUnten : s) * (k - dreh))));
     const fahrer = {};
     for (const [slug, jj] of Object.entries(out)) {
         const e = fahrer[slug] = { k: w(kKar(slug) * 100) };
         for (const [jahr, v] of Object.entries(jj)) if (v.n > 0) e[jahr] = w(v.K);
     }
-    const kopf = `// data/konstanz.js — GENERIERT von tools/build-consistency.js --spiel ${s} ${dreh} ${kmin} ${kmax}, nicht von Hand ändern.\n`
+    const kopf = `// data/konstanz.js — GENERIERT von tools/build-consistency.js --spiel ${s} ${dreh} ${kmin} ${kmax} ${sUnten}, nicht von Hand ändern.\n`
         + `// Wörtliche Konstanz (Plan A, Nutzer 23.11.2026): K = % der Rennen ohne schlechten Tag. { slug: { k: Karriere, Jahr: K } }.\n`
         + `// Wirkt nur mit KONSTANZ_MODELL.aktiv (konstanzFuer).\n`;
     // Median je Jahrzehnt (wörtlich, Saisons mit ≥ 5 gezählten Rennen) — für generierte Fahrer: moderne Felder sind
