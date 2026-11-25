@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.48</title>
+    <title>F1 RPG v0.9.21.49</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,11 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.48 (aktuell) - 24.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.49 (aktuell) - 25.11.2026</div>
+                            <div>&#8226; NEU: Erfahrung hebt die Konstanz – Neulinge bis zum 6. Karrierejahr leicht unter ihrem reifen Wert</div>
+                            <div>&#8226; FIX: Reale Fahrer verloren nach dem Datenende jedes Jahr Konstanz, auch wenn sie durchgehend fuhren</div>
+                            <div>&#8226; FIX: Pace-Verlauf zeigt die Konstanz aller Saisons statt teils nur einen Strich</div>
+                            <div class="font-bold text-slate-400">v0.9.21.48 - 24.11.2026</div>
                             <div>&#8226; FIX: Konstanz-Messung aus F1DB mit ruhigerem Normalwert (mittlere Hälfte) und gleitendem Einbruch-Gewicht – ein einzelnes Rennen verschiebt die Werte kaum noch</div>
                             <div class="font-bold text-slate-400">v0.9.21.47 - 24.11.2026</div>
                             <div>&#8226; Daten: Konstanz aus F1DB v2026.21.0 neu berechnet (zwei Rennen 2026 mehr)</div>
@@ -23170,7 +23174,7 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.48';
+        const VERSION = '0.9.21.49';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -25584,12 +25588,34 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
         // Summe dreier Gleichverteilungen ≈ Normalverteilung mit SD 12. Grenzen wie die Daten (30–95).
         // Mitte = Median der Ära (REAL_KONSTANZ.aera: 1970er 70, 2010er 84) — mit festen 75 sank der Feld-Median nach
         // dem Datenende von 81 auf 68–73, weil moderne Felder real konstanter sind. Nach dem Datenende: letztes Jahrzehnt.
-        function generierteKonstanz(pace) {
+        // kj = Karrierejahr beim Erzeugen (1 = Neuling): der Würfel ist der REIFE Wert, abzüglich Erfahrungsabzug.
+        function generierteKonstanz(pace, kj = 1) {
             const aera = typeof REAL_KONSTANZ !== 'undefined' ? REAL_KONSTANZ.aera : null;
             const dek = Math.floor((GAME_STATE.currentYear || 2000) / 10) * 10;
             const basis = aera ? (aera[dek] ?? aera[Math.max(...Object.keys(aera).map(Number).filter(k => k <= dek))] ?? 75) : 75;
             const m = basis + Math.max(0, (pace || 75) - 85) * 0.6;
-            return Math.round(Math.max(30, Math.min(95, m + (Math.random() + Math.random() + Math.random() - 1.5) * 24)));
+            const reif = Math.max(30, Math.min(95, m + (Math.random() + Math.random() + Math.random() - 1.5) * 24));
+            return Math.round(Math.max(30, reif - erfahrungsAbzug(kj, GAME_STATE.currentYear)));
+        }
+        // Erfahrung hebt die Konstanz (BEFUNDE 25.11.2026, tests/konstanz-karriere.js): Neuling bis 6. Karrierejahr
+        // linear um S Punkte unter dem reifen Wert; S 4 bis 2009 (F1DB 1970–2009: Spanne 3–6), 2 ab 2010 (≈ 3).
+        // Kein Abbau im Alter (bis 38+ nicht messbar). Wirkt fast nur über weniger eigene Unfälle.
+        function erfahrungsAbzug(kj, year) {
+            const S = (year || 2000) < 2010 ? 4 : 2;
+            return S * Math.max(0, Math.min(5, 6 - kj)) / 5;
+        }
+        // Konstanz für ein Jahr OHNE Saisonwert in data/konstanz.js (generierte Fahrer, reale nach dem Datenende oder
+        // nach ihrem echten Karriereende): reifer Wert _kReif − Erfahrungsabzug. _kReif einmalig: real = Karrierewert
+        // + mittlerer Abzug der gemessenen Saisons; sonst bisherige Konstanz + Abzug des Vorjahres.
+        function konstanzReife(driver, year) {
+            if (driver._kReif == null) {
+                const e = driver.histId && typeof REAL_KONSTANZ !== 'undefined' ? REAL_KONSTANZ.fahrer[driver.histId] : null;
+                const jj = e ? Object.keys(e).filter(k => k !== 'k').map(Number) : [];
+                driver._kReif = jj.length
+                    ? e.k + jj.reduce((s, y) => s + erfahrungsAbzug(getCareerYears(driver, y) + 1, y), 0) / jj.length
+                    : (driver.consistency || 75) + erfahrungsAbzug(getCareerYears(driver, year - 1) + 1, year - 1);
+            }
+            return Math.round(Math.max(30, Math.min(95, driver._kReif - erfahrungsAbzug(getCareerYears(driver, year) + 1, year))));
         }
         // Wörtliche Konstanz aus data/konstanz.js (tools/build-consistency.js --spiel): Saisonwert, sonst Karriere.
         // Nur mit KONSTANZ_MODELL.aktiv — sonst bleibt der alte Wert (SEASON_DATA / PACE_RATINGS[2]).
@@ -29805,7 +29831,7 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
                     currentPace: currentPace,
                     potentialPace: potentialPace,
                     rain: 70 + Math.floor(Math.random() * 15),
-                    consistency: KONSTANZ_MODELL.aktiv ? generierteKonstanz(currentPace) : (() => {
+                    consistency: KONSTANZ_MODELL.aktiv ? generierteKonstanz(currentPace, 4) : (() => {   // Debüt vor 2–4 J.
                         // 90% innerhalb ±10 vom Pace, 10% Ausreißer (±15..25)
                         const outlier = Math.random() < 0.10;
                         const off = outlier ? (Math.random()<.5?-1:1)*(15+Math.floor(Math.random()*11))
@@ -46908,9 +46934,14 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
                                 driver.pace = Math.max(40, (driver.currentPace || driver.pace) - _gapYears * _decayRate);
                                 driver.currentPace = driver.pace;
                                 // Consistency ebenfalls anteilig reduzieren (Rosteffekt)
+                                // Konstanz-Modell: reifer Wert − Erfahrungsabzug, Rost nur für echte Pausen über
+                                // ein Jahr. Vorher −2,5 je Jahr auch für Fahrende (Abstand ist jedes Jahr ≈ 1) →
+                                // reale Fahrer verloren nach dem Datenende stetig Konstanz (F1DB: kein Altersabbau).
                                 if (driver.consistency > 0) {
                                     const _consDecayRate = _pastF1Career ? 2.5 : 1.5;
-                                    driver.consistency = Math.max(40, driver.consistency - _gapYears * _consDecayRate);
+                                    driver.consistency = KONSTANZ_MODELL.aktiv
+                                        ? Math.max(40, Math.round(konstanzReife(driver, newYear) - Math.max(0, _gapYears - 1) * _consDecayRate))
+                                        : Math.max(40, driver.consistency - _gapYears * _consDecayRate);
                                 }
                             }
                             driver._lastPaceDate = _currentDate;
@@ -46942,6 +46973,7 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
                     }
                     if (!driver.potentialPace) driver.potentialPace = pot;
                     driver.currentPace = driver.pace; // sync: developDriverPace() könnte pace verändert haben
+                    if (KONSTANZ_MODELL.aktiv && driver.consistency > 0) driver.consistency = konstanzReife(driver, newYear);
                 }
             });
             // ── Phase 4b: Reserve-Pool altert mit (Reserve-Drain-Fix, Item 3) ────────
@@ -59129,7 +59161,9 @@ Empfohlene Wertebereiche:
                         Object.entries(PACE_RATINGS[stATSId])
                             .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
                             .filter(([y]) => parseInt(y) < startYear)
-                            .forEach(([y, v]) => paceHist.push({ year: parseInt(y), pace: v[0], pot: v[1] > v[0] ? v[1] : null, con: v[2] >= 0 ? v[2] : null }));
+                            .forEach(([y, v]) => paceHist.push({ year: parseInt(y), pace: v[0], pot: v[1] > v[0] ? v[1] : null,
+                                // F1DB-Konstanz (data/konstanz.js) wie im Spiel; PACE_RATINGS[2] fehlt in 1 606 von 3 287 Saisons (−1 → „–“)
+                                con: konstanzFuer(stATSId, parseInt(y), v[2] >= 0 ? v[2] : null) }));
                     }
                     const searchIds2 = new Set([driverId, ...(stATSId && stATSId !== driverId ? [stATSId] : [])]);
                     const seenY = new Set(paceHist.map(e => e.year));

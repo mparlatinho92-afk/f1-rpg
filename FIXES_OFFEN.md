@@ -191,6 +191,11 @@ Symptome laut Doc: Nigel Mansell Mitte 1970er, Jack Brabham Mitte 1950er.
   Team-Steckbrief bei den Fahrern; läuft zum Saisonende ab. Fahrer ohne Vertrag oder verstorben ohne Info. Teile
   saisongenau nach Stand der Technik. Kann aufblähen, niedrige Priorität — offen, ob es sich vor den Zeiten der
   Strafversetzung lohnt
+- **Rundenzeiten 1996–2024 herunterladen** (Nutzer 25.11.2026: „evtl. am Wochenende“): kleine Fahrfehler ohne
+  Platzverlust (auffällig langsamer Umlauf ohne Box) sind bisher unsichtbar — `tests/fahrfehler-real.js` sieht nur
+  Verluste ≥ 3 Plätze. Die jolpica-Antwort enthält die Zeiten (`Timings[].time`), `tests/scrape-jolpica-runden.js`
+  speichert nur die Reihenfolge → Skript erweitern (eigene Dateien), Neuladen ≈ 14 h im eigenen Terminal, Ruhezustand
+  aus. Danach: Fahrfehler-Häufigkeit nach Konstanz und Karrierejahr (BEFUNDE 25.11.2026)
 
 ### Fahrermarkt & Daten
 - **Red Bull Racing und Schwesterteams:** Verhältnis prüfen und festlegen, Transfer-Wahrscheinlichkeiten in beide
