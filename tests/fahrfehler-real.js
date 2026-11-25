@@ -79,3 +79,27 @@ for (const g of ['K < 70', 'K 70–75', 'K 76–81', 'K 82–87', 'K ≥ 88']) i
 const top = Object.entries(st).filter(([, e]) => e.rennen >= 12).map(([k, e]) => [k, 100 * e.mitFehler / e.rennen]).sort((a, b) => b[1] - a[1]);
 console.log('  häufigste Saisons: ' + top.slice(0, 8).map(([k, v]) => `${k} ${v.toFixed(0)} %`).join(', '));
 console.log('  seltenste Saisons: ' + top.slice(-6).map(([k, v]) => `${k} ${v.toFixed(0)} %`).join(', '));
+
+// ── Erfahrung (25.11.2026): Zwischenfälle je Karrierejahr, gegen das eigene Mittel desselben Fahrers ─────────────
+// Karrierejahr wie tests/konstanz-karriere.js (Zahl der F1DB-Saisons mit Ergebnis bis einschließlich dieser).
+// „eigen“ = Fahrer mit ≥ 3 Saisons à ≥ 8 Rennen; dämpft die Auslese (wer oft dreht, fliegt früh).
+{
+    const kj = {}; for (const [s, jj] of Object.entries(KON.fahrer)) Object.keys(jj).map(Number).sort((a, b) => a - b).forEach((j, i) => { kj[s + '|' + j] = i + 1; });
+    const eig = {};
+    for (const [k, e] of Object.entries(st)) { if (e.rennen < 8) continue; const s = k.split('|')[0]; const x = eig[s] ??= { r: 0, m: 0, n: 0 }; x.r += e.rennen; x.m += e.mitFehler; x.n++; }
+    const STUFEN = [[1, 1], [2, 2], [3, 3], [4, 5], [6, 8], [9, 12], [13, 99]];
+    console.log('\n  nach Karrierejahr (Saisons ≥ 8 Rennen): Feld % · eigen Pp  [1996–2009 | 2010–2024]');
+    for (const [von, bis] of STUFEN) {
+        const teil = [[1996, 2009], [2010, 2024]].map(([a, b]) => {
+            let r = 0, m = 0, er = 0, ed = 0, n = 0;
+            for (const [k, e] of Object.entries(st)) {
+                const [s, j] = k.split('|'); const t = kj[k];
+                if (e.rennen < 8 || t == null || t < von || t > bis || +j < a || +j > b) continue;
+                n++; r += e.rennen; m += e.mitFehler;
+                if (eig[s].n >= 3) { er += e.rennen; ed += e.mitFehler - e.rennen * eig[s].m / eig[s].r; }
+            }
+            return `n ${String(n).padStart(3)} · ${(100 * m / r).toFixed(1).padStart(4)} % · ${(ed >= 0 ? '+' : '') + (100 * ed / er).toFixed(1)}`;
+        });
+        console.log(`    ${(bis >= 99 ? von + '+' : von === bis ? '' + von : von + '–' + bis).padStart(5)}   ${teil.join('  |  ')}`);
+    }
+}

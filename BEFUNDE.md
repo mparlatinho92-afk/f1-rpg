@@ -205,6 +205,51 @@ Rennen ±3) statt großer Fahrer-Form, Quali-Rauschen 5, Quali-Tag × 0,9.
   im Ziel 51 / 26 / 24 (real 55 / 28 / 17) · von vorn P4+ 18,9 % (14,2) · trocken / teilw. / durchg. 0,721 / 0,664 /
   0,658 · Punktefahrer 2,01 / +1,06. Streuung (`streuung-feld.js`) 0,94–1,14. Ticker-Parität 40/40. → **Vorgabe e = 2.**
 
+**Hebt Erfahrung die Konstanz? (25.11.2026, `tests/konstanz-karriere.js`, F1DB-Messung v0.9.21.48)** — ja, mäßig, vor
+allem über weniger eigene Unfälle. „eigen“ = Abweichung vom Karriere-Mittel desselben Fahrers (≥ 3 Saisons à ≥ 5 Rennen):
+
+| Karrierejahr | 1970–89 K / Fehler-Pp | 1990–2009 | 2010–26 |
+|---|---|---|---|
+| 1 | −0,2 / −0,8 | −3,2 / +4,8 | +2,1 / +0,1 |
+| 2 | −4,8 / +5,0 | −4,2 / +4,4 | −1,7 / +1,1 |
+| 3 | −0,5 / +0,7 | −2,9 / +2,9 | −0,2 / +0,3 |
+| 4–5 | +0,9 / −1,1 | −2,6 / +2,7 | +0,5 / −0,5 |
+| 6–8 | −1,0 / +0,6 | +2,4 / −2,8 | +1,3 / −1,1 |
+| 9–12 | +1,7 / −0,8 | +2,2 / −2,2 | +1,4 / −0,9 |
+| 13+ | −0,1 / +2,2 | +0,8 / −2,0 | −0,5 / −1,1 |
+
+- Spanne Neuling → Routinier: **1990–2009 ≈ 6 Punkte** (Unfälle 17,9 → 9,4 % der Rennen im Feld), 1970–89 ≈ 3–5,
+  **2010–26 ≈ 3** (Unfälle durchweg 3–6 %). 1950–69: zu wenige Fahrer (n 2–40 je Stufe), nicht deutbar.
+- **Kein Abbau im Alter messbar:** nach Alter (bis 38+) keine Stufe unter −1 außer ≤ 22 (1990–09 −5,4, 1970–89 n 2).
+  Erfahrung wirkt also über Karrierejahre, nicht über das Alter. ⚠ Auslese: wer im Alter abbaut, fliegt — unsichtbar.
+- **Negativ / Rauschen:** Folgejahr-Δ desselben Fahrers (alle Ären) springt ± 2–4 im Wechsel (1→2 −2,5 ± 1,4,
+  2→3 +2,5 ± 1,2, 6→7 +3,4, 7→8 −2,5), Summe über 10 Jahre ≈ 0 — einzelne Saisonwerte sind zu verrauscht dafür.
+- ⚠ **Messfalle:** der Einbruch ist relativ zum Teamkollegen (reifen beide, hebt es sich auf) — sichtbar ist vor allem der
+  absolute Teil, die eigenen Unfälle. Das Feld-Mittel je Karrierejahr ist durch Auslese verzerrt (1990–09 Feld 74 → 80).
+- **Umgesetzt v0.9.21.49 (`konstanzReife`, `erfahrungsAbzug`):** ohne Saisonwert in `data/konstanz.js` gilt reifer Wert
+  `_kReif` − S·(6 − Karrierejahr)/5 (S 4 bis 2009, 2 ab 2010; ab Jahr 6 null). Generierte Fahrer würfeln den reifen Wert.
+  Reale nach dem Datenende: Karrierewert + mittlerer Abzug ihrer gemessenen Saisons — nach Karrierejahr, nicht nach Alter
+  (Alter zeigt keinen Effekt). `tests/konstanz-dauerlauf.js 2024 12 8` (Median mit Cockpit):
+
+  | | 2024 | 2027 | 2030 | 2033 | 2035 |
+  |---|---|---|---|---|---|
+  | Feld alt → neu | 84 → 84 | 80 → 84 | 78,5 → 84 | 79 → 84 | 80 → 83 |
+  | reale Fahrer alt → neu | 84 → 84 | 80 → 84 | 72,5 → 84 | 68 → 84 | **63 → 85** |
+  | generierte alt → neu | – | 84 → 81 | 84 → 81 | 84 → 82 | 84 → 82 |
+
+  ⚠ **Gefundener Fehler:** der „Rost“ (−1,5/−2,5 je Jahr Abstand zum letzten Pace-Datum) traf nach dem Datenende JEDEN
+  realen Fahrer jedes Jahr — der Abstand ist beim Durchfahren ≈ 1, und hinter dem F1DB-Karriereende gilt −2,5. Jetzt
+  Rost nur über ein Jahr hinaus. Neulinge im Dauerlauf 77–81, Jahr 6+ 84. ⚠ Messfalle Dauerlauf: ohne Rennen kein Debüt
+  (`getF1DebutYear` aus Starts) → jeder generierte Fahrer bliebe Karrierejahr 1.
+- **Beobachtung Pace nach dem Datenende** (derselbe Lauf, 1 Sim): Verstappen 93 (2026) → 61 (2035), Piastri 96 → 76
+  (Alter 25 → 34), Antonelli 75 → 69 (ab 20 kein Aufbau). Nicht untersucht — Ursache vermutlich derselbe Abstands-Abbau
+  (Pace −4/Jahr hinter dem F1DB-Karriereende).
+- **Fahrfehler OHNE Ausfall: kein Erfahrungseffekt** (`tests/fahrfehler-real.js`, Platzverlust ≥ 3 in einer Runde ohne Box,
+  1996–2024). Abweichung vom eigenen Mittel je Karrierejahr 1 / 2 / 3 / 4–5 / 6–8 / 9–12 / 13+: 1996–2009 −0,6 / +0,4 / −0,8 /
+  −0,7 / +0,3 / −0,3 / +0,5 Pp, 2010–24 −0,0 / +0,2 / +0,3 / +0,1 / −0,4 / +0,7 / +0,1 Pp (Basis 3,3 %) — Rauschen. Der Effekt
+  sitzt also bei den Unfällen. ⚠ Grenze: sichtbar sind nur Fehler mit ≥ 3 Plätzen; kleine Fehler bräuchten Rundenzeiten —
+  die jolpica-Antwort enthält sie (`Timings[].time`), `scrape-jolpica-runden.js` speichert aber nur die Reihenfolge.
+
 **Fahrfehler ohne Ausfall, real** (`tests/fahrfehler-real.js`, jolpica-Runden 1996–2024 × F1DB-Boxenstopps): Verlust
 ≥ 3 Plätze in einer Runde ohne Box, nicht Runde 1 → **3,3 % der Fahrer-Rennen**, in jedem Jahrzehnt gleich (3,2–3,5).
 Kaum an die Konstanz gebunden (K < 70 2,7 % · 70–75 3,9 · 76–87 3,4 · ≥ 88 2,6). Verlust ≥ 5 Plätze: 1,0 %.

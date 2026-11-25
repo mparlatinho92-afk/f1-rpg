@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.48, Prüfdatum **2026-11-24** (vorher 2026-11-24 @ v0.9.21.47). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.49, Prüfdatum **2026-11-25** (vorher 2026-11-24 @ v0.9.21.48). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt
@@ -299,6 +299,9 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   Ursache älter (altes Modell −3,25) — vermutlich Teamstärken-Spreizung, eigenes Thema
   Nachtrag v0.9.21.48: Messung ruhiger (Normalwert = Mittel der mittleren Hälfte, Einbruch gleitend 2 → 0 / 6+ → 1);
   ein Rennen mehr verschiebt eine Saison im Schnitt 0,8 statt 2,0 Punkte. Werte je Saison, kein gleitender Durchschnitt
+  Nachtrag v0.9.21.49: Erfahrung hebt die Konstanz (Neuling −4 bis 2009 / −2 ab 2010, bis Jahr 6 auf 0, kein
+  Altersabbau); reale Fahrer verloren nach dem Datenende jedes Jahr 2,5 (2035: 63 statt 84) — behoben; Pace-Verlauf
+  zeigt die F1DB-Konstanz statt „–“. Offen: Pace realer Fahrer fällt nach dem Datenende stetig (Verstappen 93 → 61)
 - **Fahrfehler-Mechanik** (Sheet: „Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit
   ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit“). Code-Fix v0.9.21.44: gemessen aus
   jolpica-Runden 1996–2024 × F1DB-Boxenstopps (`tests/fahrfehler-real.js`): Dreher/Ausritt ohne Ausfall (≥ 3 Plätze in
