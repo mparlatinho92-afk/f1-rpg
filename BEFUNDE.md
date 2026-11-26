@@ -241,9 +241,30 @@ allem über weniger eigene Unfälle. „eigen“ = Abweichung vom Karriere-Mitte
   realen Fahrer jedes Jahr — der Abstand ist beim Durchfahren ≈ 1, und hinter dem F1DB-Karriereende gilt −2,5. Jetzt
   Rost nur über ein Jahr hinaus. Neulinge im Dauerlauf 77–81, Jahr 6+ 84. ⚠ Messfalle Dauerlauf: ohne Rennen kein Debüt
   (`getF1DebutYear` aus Starts) → jeder generierte Fahrer bliebe Karrierejahr 1.
-- **Beobachtung Pace nach dem Datenende** (derselbe Lauf, 1 Sim): Verstappen 93 (2026) → 61 (2035), Piastri 96 → 76
-  (Alter 25 → 34), Antonelli 75 → 69 (ab 20 kein Aufbau). Nicht untersucht — Ursache vermutlich derselbe Abstands-Abbau
-  (Pace −4/Jahr hinter dem F1DB-Karriereende).
+- **Pace nach dem Datenende (26.11.2026, eingebaut v0.9.21.50):** derselbe Abstands-Fehler wie bei der Konstanz. Jeder
+  reale Fahrer verlor nach 2025 jedes Jahr max(4,0; Altersrate) Pace als „Rost“ (Abstand ≈ 1, F1DB-lastYear = Datenende →
+  „Karriereende überschritten“), dazu PACE_CAREER_DECLINE über `developDriverPace`. Jetzt bei offener Karriere (reicht bis
+  ans Datenende): Rost nur über ein Jahr hinaus, Altersrate wie beim generierten Fahrer auf Pace UND Potenzial.
+  Dauerlauf 2025, 11 Saisons, 2 Sims (Sim 1, Pace/Potenzial), vorher → nachher:
+
+  | | 2026 | 2028 | 2030 | 2032 |
+  |---|---|---|---|---|
+  | Verstappen (28) | 94 → 95 | 86 → 87 | 80 → 75 | 62 → 58 (Alter 35) |
+  | Piastri (24) | 94 → 94 | 90 → 96 | 86 → 93 | 82 → 85 |
+  | Russell (27) | 82 → 81 | 74 → 75 | 69 → 58 (2030, 32 J.) | – |
+  | Top-5-Ø Feld | 87,8 → 88,2 | 87,4 → 89,7 | 92,5 → 93,5 | 94,2 → 94,7 |
+
+  Bis ~31 jetzt −2,2/Jahr (nur Karriere-Verfall), danach kommt die Altersrate dazu (Verstappen 33–36: −5 bis −9/Jahr).
+- **Reale Referenz: Pace-Δ desselben Fahrers zum Folgejahr** (PACE_RATINGS, nur wer im Folgejahr noch Elo hat), Ø ± SE:
+  Alter 18–22 / 23–25 / 26–28 / 29–31 / 32–34 / 35–37 / 38+: 1980–2009 +2,5 / +1,8 / +1,2 / −1,0 / −0,7 / −1,8 / −3,9,
+  2010–25 +3,5 / +0,5 / −0,3 / −0,6 / −6,7±2,2 / +1,0 / −7,1 (n 15–63, laut). Karrierejahr 6–8 / 9–12 / 13+: 1980–2009 −1,1 /
+  −1,5 / −3,3, 2010–25 −2,2 / −1,2 / −5,6. ⚠ Messfalle in beide Richtungen: wer abbaut, fliegt raus (kein t+1, Δ zu gut);
+  der Peak-Bezug in `pace-kurve-real.js` (2,95/Jahr nach dem Peak) misst Regression zur Mitte mit (Peak = Maximum einer
+  verrauschten Reihe, Δ zu schlecht). Das Spiel (−2,2 ab Karrierejahr 5, plus Altersrate) liegt am steilen Rand — für
+  generierte UND reale Fahrer, eigenes Thema.
+- **Beobachtung Spielstart im letzten Datenjahr:** `initFromYear(2025)` nimmt SEASON_DATA, nicht PACE_RATINGS — Antonelli
+  60/65 statt 75/81, Hadjar 60/65 statt 58/73, Bearman 61/67 statt 74/74. Danach gibt es keinen PACE_RATINGS-Eintrag mehr,
+  die Rookies 2025 starten also mit dem Startwert in die Zukunft. Nicht untersucht.
 - **Fahrfehler OHNE Ausfall: kein Erfahrungseffekt** (`tests/fahrfehler-real.js`, Platzverlust ≥ 3 in einer Runde ohne Box,
   1996–2024). Abweichung vom eigenen Mittel je Karrierejahr 1 / 2 / 3 / 4–5 / 6–8 / 9–12 / 13+: 1996–2009 −0,6 / +0,4 / −0,8 /
   −0,7 / +0,3 / −0,3 / +0,5 Pp, 2010–24 −0,0 / +0,2 / +0,3 / +0,1 / −0,4 / +0,7 / +0,1 Pp (Basis 3,3 %) — Rauschen. Der Effekt

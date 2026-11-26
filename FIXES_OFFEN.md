@@ -3,7 +3,7 @@
 Bereinigte Fassung der Google-Doc-Sammelliste **„F1 RPG neue Fixes"**
 (Original-Doc `1-bE5uXu5dFeq-eBJ4V2zm1mIdTbtNknb5wty1M4CICg`, zuletzt bearbeitet 2026-08-07 — bleibt unverändert).
 
-**Abgeglichen gegen:** v0.9.21.49, Prüfdatum **2026-11-25** (vorher 2026-11-24 @ v0.9.21.48). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
+**Abgeglichen gegen:** v0.9.21.50, Prüfdatum **2026-11-26** (vorher 2026-11-25 @ v0.9.21.49). v0.9.21.28–.30 (Ticker-Rennverlauf, Boxenstopps, Überholschwelle ab 2010) berühren keinen Listenpunkt. **2026-11-12:** alle offenen Punkte einzeln gegen den Code geprüft, Befunde mit „(Code 12.11.2026)“ vermerkt.
 **Methode:** Code, Changelog und Git-Log. „Erledigt" heißt: Mechanik im Code nachweisbar — **nicht** funktional im Browser getestet.
 
 **Diese Datei ist die Quelle.** Sie wird bei jeder Änderung in ein Google Sheet gespiegelt

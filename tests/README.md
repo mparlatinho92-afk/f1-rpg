@@ -100,7 +100,13 @@ Gemessen wird der **Punkteanteil am Saisonbesten** (`points / championPoints`) �
 node tests/karriere-peak.js <export.json>              Export gegen F1DB, drei Gruppen
 node tests/karriere-peak-sim.js 1980 160 2010 --laeufe=3   simuliert und misst
 node tests/pace-kurve-real.js                          Zielkurve aus PACE_RATINGS
+node tests/pace-alter-real.js                          Pace-Δ desselben Fahrers zum Folgejahr, nach Alter/Karrierejahr
+SIMCORE_FROM_INDEX=1 node tests/pace-dauerlauf.js 2025 11 2   Pace realer Fahrer nach dem Datenende (~4 Min.)
 ```
+
+⚠ `pace-kurve-real.js` misst den Abbau gegen den eigenen Peak — das Maximum einer verrauschten Reihe, also mit
+Regression zur Mitte (zu steil). `pace-alter-real.js` misst Jahr zu Jahr, sieht aber nur, wer im Folgejahr noch
+fährt (zu flach). Die Wahrheit liegt dazwischen (Befund 26.11.2026 in `BEFUNDE.md`).
 
 **Drei Gruppen, eine Metrik.** `karriere-peak.js` vergleicht immer:
 
