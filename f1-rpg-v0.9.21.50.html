@@ -15,7 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="F1 RPG">
     <link rel="apple-touch-icon" href="icon-512.svg">
-    <title>F1 RPG v0.9.21.49</title>
+    <title>F1 RPG v0.9.21.50</title>
     <style>
         /* === RESET & BASE === */
         *, *::before, *::after {
@@ -1088,7 +1088,10 @@
         </div>
         <div class="text-xs space-y-2 " style="font-family: monospace;">
                     <!-- CHANGELOG -->
-                            <div class="font-bold text-green-400">v0.9.21.49 (aktuell) - 25.11.2026</div>
+                            <div class="font-bold text-green-400">v0.9.21.50 (aktuell) - 26.11.2026</div>
+                            <div>&#8226; FIX: Reale Fahrer verloren nach dem Datenende jedes Jahr 4 Pace als Rost, obwohl sie weiterfuhren</div>
+                            <div>&#8226;  jetzt Karriere- und Altersabbau wie bei generierten Fahrern</div>
+                            <div class="font-bold text-slate-400">v0.9.21.49 - 25.11.2026</div>
                             <div>&#8226; NEU: Erfahrung hebt die Konstanz – Neulinge bis zum 6. Karrierejahr leicht unter ihrem reifen Wert</div>
                             <div>&#8226; FIX: Reale Fahrer verloren nach dem Datenende jedes Jahr Konstanz, auch wenn sie durchgehend fuhren</div>
                             <div>&#8226; FIX: Pace-Verlauf zeigt die Konstanz aller Saisons statt teils nur einen Strich</div>
@@ -23174,7 +23177,7 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
         // Keine IndexedDB mehr - nur localStorage mit GAME_STATE
         // ============================================================
         
-        const VERSION = '0.9.21.49';
+        const VERSION = '0.9.21.50';
         // Debug-Kopfzeile aus der Konstanten befuellen (v0.9.16.7). Dort stand
         // hartkodiert „0.8.7.2 | Letztes Update: 01.03.2026" — ein Rest aus jener
         // Version, den nie jemand befuellt hat: `version-display` und `last-update`
@@ -46930,8 +46933,22 @@ const REAL_KONSTANZ = {"feld":77,"aera":{"1950":82,"1960":82,"1970":71,"1980":71
                                 // ein durchgehend startender Veteran rostet nicht (gap≈1), fällt aber
                                 // biologisch – sonst Champions mit 40/41 (Schumi-Befund).
                                 const _ageRate = ageDeclineRate(driver.birthYear ? newYear - driver.birthYear : 0, newYear);
-                                const _decayRate = Math.max(_flatDecay, _ageRate);
-                                driver.pace = Math.max(40, (driver.currentPace || driver.pace) - _gapYears * _decayRate);
+                                // Nach dem Datenende mit offener Karriere (reicht bis ans Datenende, wie
+                                // processSeasonEndEvents) fährt der Fahrer weiter: kein Rost für das laufende
+                                // Jahr (Abstand ≈ 1), nur für echte Pausen darüber; Alter wie beim generierten
+                                // Fahrer auf Pace UND Potenzial, sonst zieht developDriverPace es zurück.
+                                // Vorher −4/Jahr für jeden (F1DB-lastYear = Datenende): Verstappen 97 → 62 bis 2032.
+                                const _offenNachDatenende = newYear > _echteDatenBis()
+                                    && Math.max(_f1LastYearForDecay ?? 0, _lastPaceYear ?? 0) >= _echteDatenBis();
+                                if (_offenNachDatenende) {
+                                    driver.pace = Math.max(40, (driver.currentPace || driver.pace)
+                                        - Math.max(0, _gapYears - 1) * _flatDecay - Math.min(1, _gapYears) * _ageRate);
+                                    if (driver.potentialPace && _ageRate > 0)
+                                        driver.potentialPace = Math.max(50, driver.potentialPace - _ageRate);
+                                } else {
+                                    const _decayRate = Math.max(_flatDecay, _ageRate);
+                                    driver.pace = Math.max(40, (driver.currentPace || driver.pace) - _gapYears * _decayRate);
+                                }
                                 driver.currentPace = driver.pace;
                                 // Consistency ebenfalls anteilig reduzieren (Rosteffekt)
                                 // Konstanz-Modell: reifer Wert − Erfahrungsabzug, Rost nur für echte Pausen über

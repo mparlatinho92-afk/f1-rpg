@@ -302,6 +302,8 @@ Kraftstoff-/ERS-/DRS-Management · Persönlichkeit · Mentale Stärke
   Nachtrag v0.9.21.49: Erfahrung hebt die Konstanz (Neuling −4 bis 2009 / −2 ab 2010, bis Jahr 6 auf 0, kein
   Altersabbau); reale Fahrer verloren nach dem Datenende jedes Jahr 2,5 (2035: 63 statt 84) — behoben; Pace-Verlauf
   zeigt die F1DB-Konstanz statt „–“. Offen: Pace realer Fahrer fällt nach dem Datenende stetig (Verstappen 93 → 61)
+  Nachtrag v0.9.21.50: dieselbe Ursache wie bei der Konstanz (Rost −4/Jahr für jeden, der weiterfährt) — behoben; bis
+  ~31 jetzt −2,2/Jahr (Karriere-Verfall), danach Altersrate
 - **Fahrfehler-Mechanik** (Sheet: „Erst Häufigkeit messen. Oder haben wir das schon, wegen z.b. Regen? Dreherhäufigkeit
   ist nicht direkt messbar. Fahrfehler steuern Crash und Kollisions-Ausfälle mit“). Code-Fix v0.9.21.44: gemessen aus
   jolpica-Runden 1996–2024 × F1DB-Boxenstopps (`tests/fahrfehler-real.js`): Dreher/Ausritt ohne Ausfall (≥ 3 Plätze in
